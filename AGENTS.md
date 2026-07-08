@@ -48,33 +48,36 @@ integration this project performs, so read its `src/main.rs` (the `cargo-clippy`
 inject the sysroot, or install callbacks. Prefer verifying against these sources over guessing, but
 do not edit them and do not create a dependency on them.
 
+This repository keeps its own knowledge base under [`docs/`](docs/README.md), written by and for
+agents. Read it before a task and keep it in sync after one. The
+[implementation documentation](docs/implementation/README.md) explains how the tool is built and why
+— start with [Executable structure](docs/implementation/executable-structure.md) for the
+two-executable design, the cargo and rustc wrapping, and the compiler-API access. The knowledge base
+is bound by a **synchronization rule** ([docs/AGENTS.md](docs/AGENTS.md)): the source is the single
+source of truth, and when you change how the tool is structured or behaves, you revise the matching
+document in the same change. A document describing a design the code no longer has is worse than
+none.
+
 When your task involves editing markdown documentation or inline doc comments, **load the
 `/dual-reader-prose` skill** and follow its convention for the prose you write.
 
 ## Architecture: two binaries, like Clippy
 
 `cargo-cgp` mirrors Clippy's split into a front-end and a driver, and understanding that split is
-the key to the whole codebase. The front-end is the cargo subcommand a user invokes; the driver is a
-`rustc` replacement that cargo calls under the hood. They are separate crates for a concrete reason:
-only the driver links the compiler's internal libraries, and keeping that linkage out of the
-front-end keeps the front-end a small, ordinary binary that builds without loading LLVM.
+the key to the whole codebase. The **`cargo-cgp` crate** (`crates/cargo-cgp`) is the front-end: the
+cargo subcommand a user invokes, a plain `std` + `anyhow` binary that runs `cargo check` with
+`RUSTC_WORKSPACE_WRAPPER` set to the driver. The **`cargo-cgp-driver` crate**
+(`crates/cargo-cgp-driver`) is the driver: the `rustc` replacement cargo then calls for each
+workspace crate, running the real compiler in-process through `rustc_driver`. They are separate
+crates for one concrete reason — only the driver links the compiler's internal libraries, and
+keeping that linkage out of the front-end keeps it a small, ordinary binary that builds without
+loading LLVM.
 
-The **`cargo-cgp` crate** (`crates/cargo-cgp`) is the front-end. It parses the subcommand, then runs
-`cargo check` with `RUSTC_WORKSPACE_WRAPPER` set to the driver, so cargo routes only the user's own
-workspace crates through the driver and lets dependencies compile with plain `rustc`. It also hands
-the driver two things it needs: the toolchain sysroot (found via `rustc --print sysroot`) through
-the `CARGO_CGP_SYSROOT` environment variable, and the sysroot's `lib` directory prepended to the
-dynamic-library search path, so the driver can load `librustc_driver` at runtime. This crate depends
-only on `std` and `anyhow`.
-
-The **`cargo-cgp-driver` crate** (`crates/cargo-cgp-driver`) is the driver. Cargo invokes it as
-`cargo-cgp-driver <path-to-rustc> <rustc args...>`, and it runs the real compiler in-process through
-`rustc_driver::run_compiler` with a `Callbacks` implementation. It detects this "wrapper mode" — the
-second argument is a path to `rustc` — and drops the injected compiler path, then injects
-`--sysroot` from `CARGO_CGP_SYSROOT` unless cargo already supplied one, because the driver lives
-outside any toolchain and `rustc` cannot otherwise locate `std`. The callbacks are currently a no-op,
-which is exactly why `cargo cgp check` behaves like `cargo check`; **this is the extension point for
-the tool's real purpose**, and reading or rewriting diagnostics will hook in there.
+How the two cooperate in full — the argument normalization, the `CARGO_CGP_SYSROOT` and
+dynamic-library-path contract, wrapper-mode detection, the no-op `CgpCallbacks` that makes
+`cargo cgp check` behave like `cargo check` today, and the comparison with Clippy — is documented in
+[Executable structure](docs/implementation/executable-structure.md). Read it before changing how the
+executables interact, and keep it in sync when you do.
 
 ## Toolchain and `rustc_private`
 
@@ -85,17 +88,13 @@ API changes between nightlies; the `rustc-dev` and `llvm-tools` components insta
 first build. Bump the pin deliberately, and expect to fix driver code against `rustc_driver` API
 changes when you do.
 
-Two consequences of `rustc_private` are easy to trip over. First, the driver's *library* crate
-carries `#![feature(rustc_private)]` and the `extern crate rustc_driver;` declaration, **and the
-driver's binary crate needs the `#![feature(rustc_private)]` gate as well** — the binary is what
-ultimately links the compiler dylib, and that link is only permitted when the crate opts into the
-feature. Second, the pinned nightly is the version of the compiler the driver *embeds*: when you run
-`cargo cgp check` against a project, the compiler that actually checks it is this nightly, so the
-project's own diagnostics are that nightly's. This is intended — it matches how `clippy-driver`
-embeds its toolchain's compiler — but it means the sysroot the front-end discovers must belong to
-the same nightly the driver was built with, or the driver will load a mismatched `librustc_driver`
-and fail. In practice, run the tool under that toolchain (for example with `RUSTUP_TOOLCHAIN` set,
-or from a directory that selects it).
+Two `rustc_private` consequences are easy to trip over: the `#![feature(rustc_private)]` gate is
+needed on the driver's **binary** crate as well as its library (the binary is what links the compiler
+dylib), and the pinned nightly is the compiler the driver *embeds*, so the tool must be run against a
+project using that same nightly — for example with `RUSTUP_TOOLCHAIN` set — or it loads a mismatched
+`librustc_driver` and fails.
+[Executable structure](docs/implementation/executable-structure.md#accessing-the-rust-compiler-api)
+explains both in full.
 
 ## Code organization conventions
 

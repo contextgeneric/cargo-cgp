@@ -29,6 +29,11 @@ toolchain that carries the `rustc-dev` component. That toolchain is pinned in
 is unrelated to the toolchain your own project uses — `cargo-cgp` only wraps whichever compiler
 cargo already selects for the project being checked.
 
+For the full internal picture — the argument handling, the environment contract between the two
+executables, how the driver reaches the compiler API, a comparison with Clippy, and links to the
+authoritative Cargo and rustc references — see
+[docs/implementation/executable-structure.md](docs/implementation/executable-structure.md).
+
 ## Building and running
 
 Build both binaries from the workspace root:
