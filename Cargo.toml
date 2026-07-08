@@ -4,11 +4,9 @@ members  = [
     "crates/cargo-cgp",
     "crates/cargo-cgp-driver",
 ]
-# The example fixtures under `tests/` are a standalone package, deliberately kept
-# out of the workspace: many of them are CGP mistakes that fail to compile on
-# purpose, and a workspace member would break `cargo build`/`cargo clippy` at the
-# root. It is only ever compiled through cargo-cgp (see scripts/run-check.sh).
-exclude = ["tests"]
+# The UI fixtures under `tests/ui/` are loose `.rs` files, not a cargo package, so
+# nothing there is part of this workspace or the root build. The snapshot harness
+# (scripts/ui-test.sh) compiles each one through cargo-cgp in a throwaway crate.
 
 # Versions are kept in lockstep at the workspace level, mirroring the cgp
 # workspace: shared package metadata lives in `[workspace.package]` and each

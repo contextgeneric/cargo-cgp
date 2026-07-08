@@ -1,9 +1,7 @@
-//! A minimal, correctly-wired CGP program. `cargo cgp check --example greet_ok`
-//! (or `scripts/run-check.sh greet_ok`) should succeed with no errors — this is the
-//! baseline that the error examples contrast against.
-//!
-//! `Person` carries a `name` field, so `GreetHello`'s `Self: HasName` dependency is
-//! satisfied and `check_components!` passes.
+//! A minimal, correctly-wired CGP program — the passing baseline the error cases
+//! contrast against. `Person` carries a `name` field, so `GreetHello`'s
+//! `Self: HasName` dependency is satisfied and `check_components!` passes, so the
+//! snapshot of cargo-cgp's output is empty.
 
 use cgp::prelude::*;
 

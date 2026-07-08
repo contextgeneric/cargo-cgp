@@ -22,6 +22,7 @@ same change.
   front-end and the `cargo-cgp-driver` rustc wrapper), how the front-end wraps `cargo` and the
   driver wraps `rustc`, how the driver reaches the compiler through the `rustc_private`
   `rustc_driver` API, and how all of this compares to Clippy.
-- [Testing](testing.md) — how the tool is tested: unit tests over the argument handling, the runnable
-  example fixtures under `tests/`, the `scripts/run-check.sh` helper, the manual end-to-end
-  verification, and how the setup compares to Clippy's UI-test harness.
+- [Testing](testing.md) — how the tool is tested: unit tests over the argument handling, the UI
+  snapshot suite that compiles fixtures under `tests/ui/` through the tool and diffs committed
+  `.stderr` snapshots, the `scripts/` harness and bless workflow, and how the setup compares to
+  Clippy's UI-test harness.

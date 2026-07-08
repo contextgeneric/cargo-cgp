@@ -1,16 +1,15 @@
-//! A CGP wiring error whose root cause the compiler *hides* — the class `cargo-cgp`
-//! most wants to make readable.
+//! A CGP wiring error whose root cause the compiler *hides* — the class cargo-cgp
+//! most wants to make readable, so its snapshot is the one to watch change.
 //!
 //! `GreetHello` needs `Self: HasName`, but `Person` has no `name` field, so the
-//! dependency is unmet. The failure is triggered by calling `greet` directly, and
-//! there is no `check_components!` to surface it, so the compiler reports only that
-//! `greet`'s trait bounds are not satisfied (`E0599`/`E0277`) and never names the
-//! missing `name` field. Contrast `greet_ok.rs`, which is correctly wired, and note
-//! that adding a `check_components!` block here would instead *surface* the missing
+//! dependency is unmet. The failure is triggered by calling `greet` directly, with
+//! no `check_components!` to surface it, so the compiler reports only that `greet`'s
+//! trait bounds are not satisfied (`E0599`) and never names the missing `name`
+//! field. Adding a `check_components!` block would instead surface the missing
 //! `HasName` at the wiring site.
 //!
-//! See ../../../cgp/docs/errors/hidden/unsatisfied-dependency.md for the anatomy of
-//! this error class.
+//! See ../../../../cgp/docs/errors/hidden/unsatisfied-dependency.md for the anatomy
+//! of this error class.
 
 use cgp::prelude::*;
 

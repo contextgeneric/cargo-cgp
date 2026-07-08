@@ -1,51 +1,57 @@
-# cargo-cgp test examples
+# cargo-cgp UI tests
 
-This package hosts small, standalone CGP source files to run `cargo-cgp` against while developing the
-tool. Each file under [`examples/`](examples) is one self-contained scenario — a correctly-wired
-program, or a specific CGP mistake and the compiler error it produces — in the spirit of the
-[`cgp-compile-fail-tests`](../../cgp/crates/tests/cgp-compile-fail-tests) fixtures, but arranged so
-we can feed any one of them through `cargo-cgp check` and watch the diagnostics.
+This directory holds the UI test fixtures for `cargo-cgp`: small, standalone CGP source files, each
+compiled through the tool and compared against a committed snapshot of its output. It is modeled on
+Clippy's `tests/ui/` and, like the parent project's
+[`cgp-compile-fail-tests`](../../cgp/crates/tests/cgp-compile-fail-tests), pairs each `.rs` fixture
+with a blessed expected-output file.
 
-This README covers the package itself. For how it fits into the project's overall testing approach —
-the unit tests, the end-to-end verification, and the comparison with Clippy's test harness — see the
-[Testing](../docs/implementation/testing.md) implementation document.
+For how the fixtures fit into the project's overall testing approach — the unit tests, the harness
+mechanics, the toolchain caveat, and the comparison with Clippy — see the
+[Testing](../docs/implementation/testing.md) implementation document. This README is the quick
+operational guide.
 
-## How the shared configuration works
+## Layout
 
-Every example shares this package's single [`Cargo.toml`](Cargo.toml); there is no per-file manifest.
-Cargo auto-discovers `examples/*.rs` as example targets, so adding a scenario is just adding a file —
-no manifest edit, no entry to register. `cgp` is declared once as a dependency (a path into the
-sibling `cgp` checkout at `../../cgp`), so every example may `use cgp::prelude::*;`.
+Fixtures live under [`ui/`](ui), grouped into subdirectories by the kind of scenario. Each fixture
+`<name>.rs` has a sibling `<name>.stderr` holding the expected, normalized output; a fixture that
+compiles cleanly has an empty snapshot. The subdirectories mirror the
+[CGP error catalog](../../cgp/docs/errors/README.md) classes:
 
-This package is deliberately **excluded from the workspace** (see [`../Cargo.toml`](../Cargo.toml)).
-Many examples are CGP mistakes that fail to compile on purpose, and a workspace member would break
-`cargo build` and `cargo clippy` at the repository root. Because it is excluded, the package is only
-ever compiled on demand — through `cargo-cgp`, which is exactly what we want to exercise.
+- [`ui/ok/`](ui/ok) — correctly-wired programs that check cleanly (empty snapshots); the baseline.
+- [`ui/hidden/`](ui/hidden) — errors whose root cause the compiler hides; the class `cargo-cgp` most
+  wants to make readable, so these are the snapshots to watch change.
 
-## Running an example
+Add a class directory (`checks/`, `wiring/`, …) as fixtures for it are written.
 
-Use the helper script from the repository root, passing an example name (or the path to its file):
+## Running
+
+Use the scripts from the repository root. The snapshot suite compiles every fixture through
+`cargo-cgp` and diffs the output against its `.stderr`:
 
 ```sh
-scripts/run-check.sh greet_ok
-scripts/run-check.sh hidden_missing_dependency
+scripts/ui-test.sh            # run the whole suite
+scripts/ui-test.sh hidden     # only fixtures whose path contains "hidden"
+scripts/ui-test.sh --bless    # regenerate the .stderr snapshots (review the diff!)
 ```
 
-The script builds `cargo-cgp` and its driver, then runs `cargo cgp check --example <name>` in this
-directory. Run it with no argument to list the available examples. You can also invoke the tool by
-hand — `cargo check --example <name>` compiles just that file, and prefixing it with a built
-`cargo-cgp` runs it through the driver.
+To read the tool's raw output on one fixture, without normalizing or comparing, use the interactive
+runner:
 
-## Adding an example
+```sh
+scripts/run-check.sh unsatisfied_dependency
+```
 
-Drop a new `<name>.rs` file into [`examples/`](examples). Give it a `fn main`, since an example is a
-binary target, and open it with a `//!` comment stating what the scenario demonstrates and — for an
-error case — which [CGP error class](../../cgp/docs/errors/README.md) it reproduces and where the
-root cause sits. Keep one scenario per file so it can be checked in isolation.
+The snapshots capture `cargo-cgp`'s own output, so today — while the driver passes diagnostics
+through unchanged — a snapshot is the normalized `rustc` message. When the driver starts reformatting
+CGP errors, these snapshots are what change; `--bless` is how you record the new output after an
+intended change.
 
-The current examples are:
+## Adding a fixture
 
-- [`greet_ok.rs`](examples/greet_ok.rs) — a correctly-wired program that checks clean; the baseline.
-- [`hidden_missing_dependency.rs`](examples/hidden_missing_dependency.rs) — an unmet impl-side
-  dependency reached by a direct method call, so the compiler *hides* the root cause. This is the
-  kind of error `cargo-cgp` aims to make readable.
+Drop a new `<name>.rs` into the matching class directory under `ui/`. Give it a `fn main`, since the
+harness compiles it as a binary, and open it with a `//!` comment stating what the scenario
+demonstrates and — for an error case — which [CGP error class](../../cgp/docs/errors/README.md) it
+reproduces. `cgp` is available to every fixture (the harness compiles each in a throwaway crate that
+depends on it), so a fixture may `use cgp::prelude::*;` with no setup. Then run
+`scripts/ui-test.sh --bless` to create the snapshot and review it before committing.

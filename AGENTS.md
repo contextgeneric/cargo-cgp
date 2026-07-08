@@ -143,24 +143,28 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
 - **Unit tests:** `cargo test`. The argument-handling logic in both crates is covered by unit tests;
   prefer adding coverage there over ad-hoc checks.
 
-### Fixtures, running the tool, and end-to-end verification
+### UI snapshot tests and running the tool
 
-Standalone CGP example files live under [`tests/`](tests/README.md), a package excluded from the
-workspace so its intentionally-failing examples never break the root build. The helper
-[`scripts/run-check.sh`](scripts/run-check.sh) builds the binaries and runs the tool on one fixture:
+CGP example fixtures live under [`tests/ui/`](tests/README.md), loose `.rs` files grouped into class
+subdirectories, each paired with a committed `.stderr` snapshot of the tool's output — a UI suite
+modeled on Clippy's. [`scripts/ui-test.sh`](scripts/ui-test.sh) compiles every fixture through
+`cargo-cgp` and diffs the result; [`scripts/run-check.sh`](scripts/run-check.sh) runs one fixture and
+prints its raw output:
 
 ```sh
-scripts/run-check.sh greet_ok                   # a correctly-wired program: checks clean
-scripts/run-check.sh hidden_missing_dependency  # a hidden-cause CGP error
+scripts/ui-test.sh                        # run the snapshot suite
+scripts/ui-test.sh --bless                # regenerate snapshots after an intended change
+scripts/run-check.sh unsatisfied_dependency   # show raw output for one fixture
 ```
 
-Add a scenario by dropping a `<name>.rs` file (with a `fn main`) into `tests/examples/`. A green
-build does not prove the tool works — the driver has to actually run as the compiler — so verify by
-hand: valid code checks clean (exit `0`), broken code surfaces the compiler's errors (exit non-zero),
-and a `-v` run shows `cargo-cgp-driver` in cargo's rustc invocation. The full testing picture — the
-unit tests, the fixture package, the verification checklist, and the comparison with Clippy's
-UI-test harness — is documented in [Testing](docs/implementation/testing.md); read it before adding
-tests, and keep it in sync when the test setup changes.
+The snapshots capture `cargo-cgp`'s own output end to end, so they are what changes once the driver
+reformats diagnostics; a passing suite is also the standing end-to-end proof that the driver runs as
+the compiler. Add a scenario by dropping a `<name>.rs` file (with a `fn main`) into the matching
+`tests/ui/<class>/` directory and running `scripts/ui-test.sh --bless`. Snapshots are blessed under
+the pinned toolchain, so a toolchain bump can require a re-bless. The full testing picture — the unit
+tests, the harness mechanics, and the comparison with Clippy's UI-test harness — is documented in
+[Testing](docs/implementation/testing.md); read it before adding tests, and keep it in sync when the
+test setup changes.
 
 ## Ask when in doubt
 
