@@ -1,0 +1,64 @@
+error[E0277]: the trait bound `Rectangle: cgp::prelude::CanUseComponent<DensityCalculatorComponent>` is not satisfied
+  --> src/main.rs:82:9
+   |
+82 |         DensityCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<12, cgp::prelude::Chars<'s', cgp::prelude::Chars<'c', cgp::prelude::Chars<'a', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'f', cgp::prelude::Chars<'a', cgp::prelude::Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', cgp::prelude::Nil>>>>>>>>>>>>>>` is not implemented for `Rectangle`
+  --> src/main.rs:62:1
+   |
+62 | pub struct Rectangle {
+   | ^^^^^^^^^^^^^^^^^^^^
+help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
+  --> src/main.rs:61:10
+   |
+61 | #[derive(HasField)]
+   |          ^^^^^^^^
+   |          |
+   |          `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', ...>>>>>`
+   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', ...>>>>>`
+note: required for `Rectangle` to implement `HasScaleFactor`
+  --> src/main.rs:30:1
+   |
+30 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+31 | pub trait HasScaleFactor {
+   |           ^^^^^^^^^^^^^^
+note: required for `ScaledArea<RectangleArea>` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:35:1
+   |
+35 | #[cgp_impl(new ScaledArea<InnerCalculator>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+38 |     Self: HasScaleFactor,
+   |           -------------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `Rectangle` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`
+note: required for `Rectangle` to implement `AreaCalculator<Rectangle>`
+  --> src/main.rs:3:1
+   |
+ 3 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Rectangle` to implement `CanCalculateArea`
+  --> src/main.rs:3:1
+   |
+ 3 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 4 | pub trait CanCalculateArea {
+   |           ^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `DensityFromMassField` to implement `cgp::prelude::IsProviderFor<DensityCalculatorComponent, Rectangle>`
+   = note: required for `Rectangle` to implement `cgp::prelude::CanUseComponent<DensityCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:80:1
+   |
+80 | / check_components! {
+81 | |     Rectangle {
+82 | |         DensityCalculatorComponent,
+83 | |     }
+84 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `ui` (bin "ui") due to 1 previous error

@@ -1,0 +1,40 @@
+error[E0277]: the trait bound `Rectangle: cgp::prelude::CanUseComponent<AreaCalculatorComponent>` is not satisfied
+  --> src/main.rs:41:9
+   |
+41 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<5, cgp::prelude::Chars<'w', cgp::prelude::Chars<'i', cgp::prelude::Chars<'d', cgp::prelude::Chars<'t', cgp::prelude::Chars<'h', cgp::prelude::Nil>>>>>>>` is not implemented for `Rectangle`
+  --> src/main.rs:27:1
+   |
+27 | pub struct Rectangle {
+   | ^^^^^^^^^^^^^^^^^^^^
+note: required for `Rectangle` to implement `HasRectangleFields`
+  --> src/main.rs:8:1
+   |
+ 8 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+ 9 | pub trait HasRectangleFields {
+   |           ^^^^^^^^^^^^^^^^^^
+note: required for `RectangleArea` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:15:1
+   |
+15 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+18 |     Self: HasRectangleFields,
+   |           ------------------ unsatisfied trait bound introduced here
+   = note: required for `Rectangle` to implement `cgp::prelude::CanUseComponent<AreaCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:39:1
+   |
+39 | / check_components! {
+40 | |     Rectangle {
+41 | |         AreaCalculatorComponent,
+42 | |     }
+43 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `ui` (bin "ui") due to 1 previous error
