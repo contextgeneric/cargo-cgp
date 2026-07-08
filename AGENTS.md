@@ -12,12 +12,15 @@ across generated types the programmer never wrote and the root cause is often bu
 entirely. `cargo-cgp` will post-process those diagnostics into a compact, root-cause-first form,
 the way Clippy layers analysis on top of `rustc`.
 
-The project is at the scaffold stage. Only `cargo cgp check` exists, and it forwards to `cargo
-check` without change: the output is identical to `cargo check` today. Its value is structural, not
-behavioural — it compiles the workspace through a `rustc_driver`-based wrapper that has full access
-to the compiler's internals, which is the hook every later feature will build on. Keep this framing
-in mind: the near-term work is not to change what the user sees but to establish and then exploit
-the driver's access to compiler diagnostics.
+The project is early. Only `cargo cgp check` exists. It compiles the workspace through a
+`rustc_driver`-based wrapper, and that wrapper already earns its keep in one way: it injects
+`-Znext-solver=globally`, turning on the next-generation trait solver, which surfaces the CGP
+dependency errors the default solver hides (it descends to the real missing bound — e.g.
+`HasField<Symbol!("name")>` — instead of stopping at the provider trait). Beyond that the output
+still matches `cargo check`. The larger payoff is still ahead and rests on the same foothold: full
+access to the compiler's internals, which later features will use to read and rewrite CGP
+diagnostics. When reasoning about behaviour, remember the tool already diverges from plain
+`cargo check` by choice of trait solver.
 
 ## Orient before any task
 
@@ -74,10 +77,10 @@ keeping that linkage out of the front-end keeps it a small, ordinary binary that
 loading LLVM.
 
 How the two cooperate in full — the argument normalization, the `CARGO_CGP_SYSROOT` and
-dynamic-library-path contract, wrapper-mode detection, the no-op `CgpCallbacks` that makes
-`cargo cgp check` behave like `cargo check` today, and the comparison with Clippy — is documented in
-[Executable structure](docs/implementation/executable-structure.md). Read it before changing how the
-executables interact, and keep it in sync when you do.
+dynamic-library-path contract, wrapper-mode detection, the `-Znext-solver=globally` injection that
+un-hides CGP errors, the (still no-op) `CgpCallbacks`, and the comparison with Clippy — is documented
+in [Executable structure](docs/implementation/executable-structure.md). Read it before changing how
+the executables interact, and keep it in sync when you do.
 
 ## Toolchain and `rustc_private`
 

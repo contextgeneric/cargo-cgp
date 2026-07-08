@@ -12,6 +12,7 @@
 
 pub mod fixtures;
 pub mod harness;
+pub mod normalize;
 pub mod options;
 pub mod paths;
 pub mod snapshot;
@@ -38,21 +39,25 @@ pub fn run(args: Vec<String>) {
         std::process::exit(2);
     }
 
+    let cgp_root = paths::cgp_root();
+
     let mut failed = 0usize;
     for fixture in &fixtures {
         let name = fixture
             .strip_prefix(&fixtures_dir)
             .unwrap_or(fixture)
             .display();
-        let actual = harness::run_fixture(&harness_crate, fixture);
+        let raw = harness::run_fixture(&harness_crate, fixture);
 
         if options.print {
+            // Raw output, exactly as the tool emitted it — for reading, not snapshotting.
             println!("===== {name} =====");
-            print!("{actual}");
+            print!("{raw}");
             println!("===== end {name} =====");
             continue;
         }
 
+        let actual = normalize::normalize(&raw, &harness_crate, &cgp_root);
         match snapshot::review(fixture, &actual, options.bless) {
             Outcome::Ok => println!("ok       {name}"),
             Outcome::Blessed => println!("blessed  {name}"),

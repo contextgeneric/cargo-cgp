@@ -37,13 +37,14 @@ correctly-wired programs, `hidden/` for the hidden-cause error class, and furthe
 mirroring the [CGP error catalog](../../../cgp/docs/errors/README.md) as they are added. Each fixture
 `<name>.rs` has a sibling `<name>.stderr`; a fixture that compiles cleanly has an empty snapshot.
 
-What makes this suite worth having even while the tool's output equals `rustc`'s is *what* it
-snapshots: the output of `cargo-cgp` itself, not of plain `rustc`. Each fixture is compiled by
-running the real `cargo-cgp check` end to end — front-end, driver, and all — so the snapshot is
-whatever the tool emits. Today the driver is a passthrough, so a snapshot is the `rustc` diagnostic;
-when the driver begins reformatting CGP errors, these snapshots are exactly what will change, and the
-diff is the signal that the reformatting did what was intended. The suite exists now so that change
-is caught the moment it lands.
+What the suite snapshots is *the output of `cargo-cgp` itself*, not of plain `rustc`. Each fixture is
+compiled by running the real `cargo-cgp check` end to end — front-end, driver, and all — so the
+snapshot is whatever the tool emits, already shaped by what the driver does. That difference is
+visible today: because the driver enables the next-gen trait solver, the `hidden/` fixture's snapshot
+shows the un-hidden `HasField` root cause, not the default solver's dead-end. As the driver grows
+(reformatting diagnostics in its callbacks), these snapshots are exactly what will change, and the
+diff is the signal that the change did what was intended. The suite exists so that is caught the
+moment it lands.
 
 ### The harness is a custom Rust test binary
 
@@ -54,7 +55,8 @@ whose `ui` test target sets `harness = false` and provides its own `fn main`
 `tests/compile-test.rs`. The `fn main` is thin; the logic is in the crate's library so it stays small
 and testable, split into focused modules: `options` (argument parsing), `paths` (locating the
 workspace, fixtures, cgp checkout, and built binaries), `fixtures` (discovery), `harness` (building
-the binaries and compiling a fixture), and `snapshot` (compare, bless, diff).
+the binaries and compiling a fixture), `normalize` (rewriting volatile paths out of the output), and
+`snapshot` (compare, bless, diff).
 
 The harness crate is a full workspace member, so `cargo test` runs the whole suite alongside the
 unit tests. The crate itself depends on nothing but `std` — it shells out to `cargo` at run time —
@@ -70,11 +72,16 @@ Reusing one crate keeps `cgp` compiled and cached across fixtures; naming it `ui
 output stable; and an empty `[workspace]` table in its manifest stops cargo from folding it into the
 `cargo-cgp` workspace above it in `target/`.
 
-The `-q` is what keeps snapshots clean without post-processing: it suppresses cargo's own progress
-lines (`Checking`, `Compiling`, `Finished`), leaving the compiler diagnostics and the final
-`could not compile` summary — all deterministic, so the captured output can be snapshotted verbatim.
-The harness finds the built `cargo-cgp` beside its own test binary in `target/debug`, having first
-built both binaries with `cargo build` (the front-end locates the driver as its sibling).
+The `-q` removes most of the noise: it suppresses cargo's own progress lines (`Checking`,
+`Compiling`, `Finished`), leaving the compiler diagnostics and the final `could not compile` summary.
+What `-q` cannot remove is the machine-specific detail in the next-gen solver's richer cross-crate
+diagnostics — the absolute path of the `cgp` checkout, and a note pointing at a hash-named temp file
+when a long type is elided. The `normalize` module handles those: it rewrites the `cgp`-checkout and
+throwaway-crate paths to `$CGP`/`$DIR` and drops the temp-file note, so a committed snapshot depends
+only on the diagnostic content. Normalization applies to the compared/blessed output only; `--print`
+shows the raw output untouched. The harness finds the built `cargo-cgp` beside its own test binary in
+`target/debug`, having first built both binaries with `cargo build` (the front-end locates the driver
+as its sibling).
 
 ### Running and blessing
 
@@ -163,7 +170,7 @@ tests, and the UI snapshot suite. There is no dogfood test yet (see above).
 
 - [`crates/cargo-cgp-ui-tests/`](../../crates/cargo-cgp-ui-tests) — the custom UI-test harness:
   `tests/ui.rs` (the `harness = false` entrypoint) and the `src/` modules (`options`, `paths`,
-  `fixtures`, `harness`, `snapshot`).
+  `fixtures`, `harness`, `normalize`, `snapshot`).
 - [`tests/ui/`](../../tests/ui) — the fixture tree, one scenario per `.rs` file with its `.stderr`
   snapshot, grouped into class subdirectories.
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs),

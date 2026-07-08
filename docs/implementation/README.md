@@ -22,6 +22,10 @@ same change.
   front-end and the `cargo-cgp-driver` rustc wrapper), how the front-end wraps `cargo` and the
   driver wraps `rustc`, how the driver reaches the compiler through the `rustc_private`
   `rustc_driver` API, and how all of this compares to Clippy.
+- [Error transformation](error-transformation.md) — how the driver turns rustc's raw diagnostics into
+  readable CGP errors: the two levers (injected rustc flags and the diagnostic callbacks), the
+  current transformation (enabling the next-gen trait solver to un-hide dependency errors), and the
+  roadmap of transformations still to come.
 - [Testing](testing.md) — how the tool is tested: unit tests over the argument handling, and the UI
   snapshot suite — a custom Rust test harness (like Clippy's `compile-test`) that compiles fixtures
   under `tests/ui/` through the tool and diffs committed `.stderr` snapshots — its bless workflow,

@@ -30,6 +30,16 @@ pub fn cgp_crate_dir() -> PathBuf {
         .expect("resolving the cgp crate (expected a sibling ../cgp checkout)")
 }
 
+/// The root of the cgp checkout (`crates/main/cgp` stripped from [`cgp_crate_dir`]). Its
+/// absolute path appears in cross-crate diagnostic notes, so snapshots normalize it away.
+pub fn cgp_root() -> PathBuf {
+    cgp_crate_dir()
+        .ancestors()
+        .nth(3)
+        .expect("deriving the cgp checkout root")
+        .to_path_buf()
+}
+
 /// The `target/debug` directory, derived from the harness test binary's own path
 /// (`<target>/debug/deps/ui-<hash>`).
 pub fn debug_dir() -> PathBuf {

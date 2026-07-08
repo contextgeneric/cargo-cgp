@@ -43,8 +43,9 @@ cargo test -p cargo-cgp-ui-tests --test ui -- --bless   # regenerate the .stderr
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # raw output
 ```
 
-The snapshots capture `cargo-cgp`'s own output, so today — while the driver passes diagnostics
-through unchanged — a snapshot is the `rustc` message. When the driver starts reformatting CGP
+The snapshots capture `cargo-cgp`'s own output. Because the driver runs the workspace crate through
+the next-gen trait solver, that output already differs from a plain `cargo check` — the `hidden/`
+fixture's snapshot shows the un-hidden `HasField` root cause. As the driver grows to reformat CGP
 errors, these snapshots are what change; `--bless` is how you record the new output after an intended
 change. Snapshots are blessed under the toolchain the repository pins, so a toolchain bump can
 require a re-bless.
