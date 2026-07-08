@@ -21,4 +21,6 @@ well-known names, passed into functions as parameters rather than hardcoded; and
 driver), and [`sysroot.rs`](src/check/sysroot.rs) (discovers the toolchain sysroot).
 
 When you add a subcommand, add its handler as a sibling of `check`, dispatch to it from `run`, and
-keep the `bin` wrapper untouched. Cover argument handling with unit tests as `args.rs` does.
+keep the `bin` wrapper untouched. Cover argument handling with tests in the crate's `tests/`
+directory (never inline in `src/`, per [../../AGENTS.md](../../AGENTS.md)), as
+[`tests/args.rs`](tests/args.rs) does.

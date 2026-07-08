@@ -102,7 +102,7 @@ whereas `cargo-cgp` *rewrites and clarifies* the diagnostics rustc already produ
 - [`tests/ui/hidden/unsatisfied_dependency.stderr`](../../tests/ui/hidden/unsatisfied_dependency.stderr) —
   the UI snapshot that pins the un-hidden output the solver switch produces; it is the current
   regression guard for this transformation.
-- [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — unit tests that
+- [`crates/cargo-cgp-driver/tests/args.rs`](../../crates/cargo-cgp-driver/tests/args.rs) — tests that
   the injected flag is appended when absent and skipped when the invocation already sets
   `-Znext-solver`.
 

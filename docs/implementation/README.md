@@ -26,7 +26,7 @@ same change.
   readable CGP errors: the two levers (injected rustc flags and the diagnostic callbacks), the
   current transformation (enabling the next-gen trait solver to un-hide dependency errors), and the
   roadmap of transformations still to come.
-- [Testing](testing.md) — how the tool is tested: unit tests over the argument handling, and the UI
+- [Testing](testing.md) — how the tool is tested: tests over the argument handling, and the UI
   snapshot suite — a custom Rust test harness (like Clippy's `compile-test`) that compiles fixtures
   under `tests/ui/` through the tool and diffs committed `.stderr` snapshots — its bless workflow,
   and how it compares to Clippy's harness.

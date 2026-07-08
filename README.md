@@ -63,7 +63,7 @@ Any arguments after `check` are forwarded verbatim to `cargo check`, so `cargo c
 The common commands, run from the workspace root:
 
 ```sh
-cargo test                          # all tests: the tool crates' unit tests and the UI suite
+cargo test                          # all tests: the tool crates' argument tests and the UI suite
 cargo fmt --all -- --check          # formatting (uses nightly rustfmt settings)
 cargo clippy --all-targets -- -D warnings   # lints
 

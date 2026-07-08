@@ -6,8 +6,8 @@ Clippy's `tests/ui/` and, like the parent project's
 [`cgp-compile-fail-tests`](../../cgp/crates/tests/cgp-compile-fail-tests), pairs each `.rs` fixture
 with a blessed expected-output file.
 
-For how the fixtures fit into the project's overall testing approach — the unit tests, the harness
-mechanics, the toolchain caveat, and the comparison with Clippy — see the
+For how the fixtures fit into the project's overall testing approach — the argument tests, the
+harness mechanics, the toolchain caveat, and the comparison with Clippy — see the
 [Testing](../docs/implementation/testing.md) implementation document. This README is the quick
 operational guide.
 
@@ -35,7 +35,7 @@ cargo test -p cargo-cgp-ui-tests            # run the whole suite
 ```
 
 To filter, bless, or print, pass an argument to the harness — target `--test ui` so the flag is not
-also handed to the crate's unit tests:
+also handed to the crate's other tests:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests --test ui -- hidden    # only fixtures whose path contains "hidden"

@@ -114,6 +114,14 @@ literals. Do not put logic in a `bin` target; implement everything as library fu
 `bin` file be a lightweight wrapper around the entrypoint (the one exception is the driver binary's
 `#![feature(rustc_private)]` gate, which must be on the binary crate for linking).
 
+Keep tests out of `src/`. Do not write inline `#[cfg(test)] mod tests` blocks; every test lives in
+the crate's `tests/` directory alongside `src/`, as an integration test exercising the crate's
+public API. This keeps source files focused on the code, and it means a function worth testing is
+reached through the crate's public surface rather than through module-private access — expose it (or
+test it via a public entry point) instead of reaching inside. The custom UI harness is consistent
+with this: its `harness = false` target and its plain tests both live under
+`crates/cargo-cgp-ui-tests/tests/`.
+
 Keep inline docs brief and current as you write. Add a one-line `///` to any public item that lacks
 one, prefer naming the *why* or a corner case over restating the signature, and delete a comment
 that only repeats the code.
@@ -143,9 +151,10 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
   same unstable `group_imports`/`imports_granularity` settings as `cgp`, so formatting needs
   nightly.
 - **Lint:** `cargo clippy --all-targets -- -D warnings`.
-- **Test:** `cargo test` runs everything — the argument-handling unit tests in both tool crates and
-  the UI snapshot suite (below), which builds the driver and expects a sibling `cgp` checkout at
-  `../cgp`. Prefer adding unit-test coverage over ad-hoc checks.
+- **Test:** `cargo test` runs everything — the argument-handling tests in both tool crates and the UI
+  snapshot suite (below), which builds the driver and expects a sibling `cgp` checkout at `../cgp`.
+  Every test lives in its crate's `tests/` directory (no inline `#[cfg(test)]`); prefer adding
+  coverage there over ad-hoc checks.
 
 ### UI snapshot tests and running the tool
 
@@ -153,7 +162,7 @@ The UI suite is a custom Rust test harness modeled on Clippy's `compile-test`: t
 [`cargo-cgp-ui-tests`](crates/cargo-cgp-ui-tests) crate has a `harness = false` test with its own
 `fn main` that compiles each fixture under [`tests/ui/`](tests/README.md) through `cargo-cgp` and
 diffs the output against a committed `.stderr` snapshot. The crate is a full workspace member, so
-`cargo test` runs the whole suite alongside the unit tests; that also means a test run builds the
+`cargo test` runs the whole suite alongside the argument tests; that also means a test run builds the
 driver and expects a sibling `cgp` checkout at `../cgp`. Work with the suite directly through it:
 
 ```sh
@@ -163,7 +172,7 @@ cargo test -q -p cargo-cgp-ui-tests --test ui -- --print greet    # print raw ou
 ```
 
 Passing an argument to the harness needs `--test ui`, so the flag is not also handed to the crate's
-libtest unit tests. The snapshots capture `cargo-cgp`'s own output end to end, so they are what
+other (libtest) tests. The snapshots capture `cargo-cgp`'s own output end to end, so they are what
 changes once the driver reformats diagnostics; a passing suite is also the standing end-to-end proof
 that the driver runs as the compiler. Add a scenario by dropping a `<name>.rs` file (with a
 `fn main`) into the matching `tests/ui/<class>/` directory and running

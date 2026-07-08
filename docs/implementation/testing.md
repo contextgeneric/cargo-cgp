@@ -1,32 +1,36 @@
 # Testing
 
-`cargo-cgp` is tested at two levels: fast unit tests over the argument-handling logic, and a UI
-snapshot suite — a custom Rust test harness, in the style of Clippy's — that compiles example CGP
-programs through the real tool and pins its output against committed `.stderr` files.
+`cargo-cgp` is tested at two levels: fast tests over the argument-handling logic, and a UI snapshot
+suite — a custom Rust test harness, in the style of Clippy's — that compiles example CGP programs
+through the real tool and pins its output against committed `.stderr` files. Every test lives in its
+crate's `tests/` directory; per [../../AGENTS.md](../../AGENTS.md) the project keeps no inline
+`#[cfg(test)]` modules, so all tests are integration tests against a crate's public API.
 
 ## The layers of testing
 
 Testing the tool splits along the seam between its two kinds of logic: the ordinary Rust that decides
 *how to invoke the compiler*, and the emergent behavior of *actually invoking it*. The first is pure
-and cheap to unit-test; the second only appears when a real `cargo` drives a real compiler through
-the driver, so it is exercised by running the whole tool against example crates and snapshotting what
-it prints. Unit tests guard the former; the UI snapshot suite guards the latter. Each is described
-below.
+and cheap to test; the second only appears when a real `cargo` drives a real compiler through the
+driver, so it is exercised by running the whole tool against example crates and snapshotting what it
+prints. The argument tests guard the former; the UI snapshot suite guards the latter. Each is
+described below.
 
-## Unit tests
+## Argument-handling tests
 
-The argument-handling logic on both sides of the tool is covered by unit tests, because it is pure
-input-to-output transformation with corner cases that are easy to get wrong and easy to pin. These
-run under `cargo test` with no toolchain ceremony, and new argument-handling behavior should arrive
-with a test here rather than a manual check.
+The argument-handling logic on both sides of the tool is tested directly, because it is pure
+input-to-output transformation with corner cases that are easy to get wrong and easy to pin. Each
+crate's tests live in its `tests/` directory and run under `cargo test` with no toolchain ceremony;
+new argument-handling behavior should arrive with a test here rather than a manual check.
 
-Two modules carry them. The front-end's [`args.rs`](../../crates/cargo-cgp/src/args.rs) tests that
-`strip_subcommand` drops the cargo-inserted `cgp` token for the `cargo cgp check` form, leaves the
-direct form alone, keeps a later token that merely equals `cgp`, and yields nothing when only the
-program name is present. The driver's [`args.rs`](../../crates/cargo-cgp-driver/src/args.rs) tests
-that `rustc_args` strips the injected `rustc` path in wrapper mode, injects `--sysroot` when absent,
-keeps an existing sysroot, and leaves a non-wrapper invocation alone. The harness crate additionally
-unit-tests its own option parsing.
+Two crates carry these. The front-end's [`tests/args.rs`](../../crates/cargo-cgp/tests/args.rs) checks
+that `strip_subcommand` drops the cargo-inserted `cgp` token for the `cargo cgp check` form, leaves
+the direct form alone, keeps a later token that merely equals `cgp`, and yields nothing when only the
+program name is present. The driver's [`tests/args.rs`](../../crates/cargo-cgp-driver/tests/args.rs)
+checks that `rustc_args` strips the injected `rustc` path in wrapper mode, injects `--sysroot` when
+absent, keeps an existing sysroot, appends an injected flag when absent, and lets an explicit
+`-Znext-solver` override it. (That test links the driver, so — like the driver binary — it carries
+the `#![feature(rustc_private)]` gate.) The harness crate additionally tests its own option parsing
+and output normalization, also under `tests/`.
 
 ## The UI snapshot suite
 
@@ -59,9 +63,9 @@ the binaries and compiling a fixture), `normalize` (rewriting volatile paths out
 `snapshot` (compare, bless, diff).
 
 The harness crate is a full workspace member, so `cargo test` runs the whole suite alongside the
-unit tests. The crate itself depends on nothing but `std` — it shells out to `cargo` at run time —
-but running the suite therefore builds the driver and expects a sibling `cgp` checkout at `../cgp`,
-so a plain `cargo test` now needs both.
+argument tests. The crate itself depends on nothing but `std` — it shells out to `cargo` at run
+time — but running the suite therefore builds the driver and expects a sibling `cgp` checkout at
+`../cgp`, so a plain `cargo test` now needs both.
 
 ### How a fixture is compiled
 
@@ -88,12 +92,12 @@ as its sibling).
 The suite is part of `cargo test`; to run only it, select the crate:
 
 ```sh
-cargo test                                  # everything (unit tests + the UI suite)
+cargo test                                  # everything (the argument tests + the UI suite)
 cargo test -p cargo-cgp-ui-tests            # only the suite
 ```
 
 To pass an argument to the harness, target the `ui` test explicitly with `--test ui`, so the flag is
-not also handed to the crate's libtest unit tests. The harness accepts a path substring to filter
+not also handed to the crate's other (libtest) tests. The harness accepts a path substring to filter
 fixtures, `--bless` to rewrite the snapshots, and `--print` to show a fixture's raw output instead of
 comparing:
 
@@ -153,16 +157,18 @@ committed snapshot with a bless step, the workflow reproduced here.
 
 ## Tests
 
-The automated tests are the argument-handling unit tests, the harness crate's option-parsing unit
-tests, and the UI snapshot suite. There is no dogfood test yet (see above).
+The automated tests are the argument-handling tests, the harness crate's option-parsing and
+normalization tests, and the UI snapshot suite — all under each crate's `tests/` directory. There is
+no dogfood test yet (see above).
 
-- [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs) — `strip_subcommand` across the
-  `cargo cgp check` form, the direct form, a later matching token, and the program-name-only case.
-- [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — `rustc_args`
-  across wrapper-mode stripping, sysroot injection, an existing sysroot, and a non-wrapper
-  invocation.
-- [`crates/cargo-cgp-ui-tests/src/options.rs`](../../crates/cargo-cgp-ui-tests/src/options.rs) —
-  harness option and filter parsing.
+- [`crates/cargo-cgp/tests/args.rs`](../../crates/cargo-cgp/tests/args.rs) — `strip_subcommand` across
+  the `cargo cgp check` form, the direct form, a later matching token, and the program-name-only case.
+- [`crates/cargo-cgp-driver/tests/args.rs`](../../crates/cargo-cgp-driver/tests/args.rs) — `rustc_args`
+  across wrapper-mode stripping, sysroot injection, an existing sysroot, injected-flag appending, and
+  an explicit `-Znext-solver` override.
+- [`crates/cargo-cgp-ui-tests/tests/options.rs`](../../crates/cargo-cgp-ui-tests/tests/options.rs),
+  [`crates/cargo-cgp-ui-tests/tests/normalize.rs`](../../crates/cargo-cgp-ui-tests/tests/normalize.rs)
+  — harness option/filter parsing and output normalization.
 - [`tests/ui/`](../../tests/ui) — the UI snapshot fixtures, each `<name>.rs` paired with a blessed
   `<name>.stderr`, run by the harness.
 
@@ -175,4 +181,4 @@ tests, and the UI snapshot suite. There is no dogfood test yet (see above).
   snapshot, grouped into class subdirectories.
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs),
   [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — the modules the
-  argument unit tests cover.
+  argument tests cover.

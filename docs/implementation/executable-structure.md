@@ -201,14 +201,14 @@ a behavior described above.
 ## Tests
 
 The two argument transforms this document describes — `strip_subcommand` in the front-end and
-`rustc_args` in the driver — are covered by unit tests, and the end-to-end wrapping is verified by
-hand. The full testing picture, including the example fixtures and the verification checklist, is
-its own document: [Testing](testing.md).
+`rustc_args` in the driver — are covered by tests, and the end-to-end wrapping is verified by hand.
+The full testing picture, including the example fixtures and the verification checklist, is its own
+document: [Testing](testing.md).
 
-- [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs) — `strip_subcommand` across the
-  invocation forms.
-- [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — `rustc_args`
-  wrapper-mode stripping and sysroot injection.
+- [`crates/cargo-cgp/tests/args.rs`](../../crates/cargo-cgp/tests/args.rs) — `strip_subcommand` across
+  the invocation forms.
+- [`crates/cargo-cgp-driver/tests/args.rs`](../../crates/cargo-cgp-driver/tests/args.rs) — `rustc_args`
+  wrapper-mode stripping, sysroot injection, and flag injection.
 
 ## Source
 
