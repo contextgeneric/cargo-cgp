@@ -36,16 +36,19 @@ and output normalization, also under `tests/`.
 
 The UI suite is modeled on Clippy's: a tree of `.rs` fixtures, each paired with a committed `.stderr`
 snapshot of the expected output, checked by compiling the fixture and diffing. The fixtures live
-under [`tests/ui/`](../../tests/ui), grouped into subdirectories by the kind of scenario — `ok/` for
-correctly-wired programs, `hidden/` for the hidden-cause error class, and further class directories
-mirroring the [CGP error catalog](../../../cgp/docs/errors/README.md) as they are added. Each fixture
+under [`tests/ui/`](../../tests/ui), grouped into subdirectories by the *quality of the output* the
+tool produces — `hidden-root-cause/` for errors whose cause is unrecoverable from the output,
+`usability/` for errors that carry the cause but bury it, and `ok/` for output that needs no further
+work — the same categories as the pending-issue documents in
+[docs/issues/](../issues/README.md), each fixture exposing the issue its directory names. Each fixture
 `<name>.rs` has a sibling `<name>.stderr`; a fixture that compiles cleanly has an empty snapshot.
 
 What the suite snapshots is *the output of `cargo-cgp` itself*, not of plain `rustc`. Each fixture is
 compiled by running the real `cargo-cgp check` end to end — front-end, driver, and all — so the
 snapshot is whatever the tool emits, already shaped by what the driver does. That difference is
-visible today: because the driver enables the next-gen trait solver, the `hidden/` fixture's snapshot
-shows the un-hidden `HasField` root cause, not the default solver's dead-end. As the driver grows
+visible today: because the driver enables the next-gen trait solver, the
+`usability/unsatisfied_dependency` snapshot shows the un-hidden `HasField` root cause, not the default
+solver's dead-end. As the driver grows
 (reformatting diagnostics in its callbacks), these snapshots are exactly what will change, and the
 diff is the signal that the change did what was intended. The suite exists so that is caught the
 moment it lands.
@@ -102,7 +105,7 @@ fixtures, `--bless` to rewrite the snapshots, and `--print` to show a fixture's 
 comparing:
 
 ```sh
-cargo test -p cargo-cgp-ui-tests --test ui -- hidden      # only fixtures whose path contains "hidden"
+cargo test -p cargo-cgp-ui-tests --test ui -- usability    # only fixtures whose path contains "usability"
 cargo test -p cargo-cgp-ui-tests --test ui -- --bless     # rewrite the .stderr snapshots
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # print raw output
 ```
@@ -117,9 +120,9 @@ compiler's diagnostic text. The harness builds and runs under the toolchain the 
 [`rust-toolchain.toml`](../../rust-toolchain.toml) (overridable with `RUSTUP_TOOLCHAIN`), and
 snapshots must be blessed under that same toolchain. A deliberate toolchain bump can therefore change
 the diagnostic wording and require a re-bless, exactly as it does for Clippy — a `.stderr` diff after
-a toolchain change is expected, not a regression. A passing `hidden/` snapshot is also the standing
-proof that the driver genuinely stands in as the compiler, since it could only be produced by
-compiling the fixture through the tool.
+a toolchain change is expected, not a regression. A passing `usability/unsatisfied_dependency`
+snapshot is also the standing proof that the driver genuinely stands in as the compiler, since its
+un-hidden root cause could only be produced by compiling the fixture through the tool.
 
 ## Comparison with Clippy
 
@@ -178,7 +181,7 @@ no dogfood test yet (see above).
   `tests/ui.rs` (the `harness = false` entrypoint) and the `src/` modules (`options`, `paths`,
   `fixtures`, `harness`, `normalize`, `snapshot`).
 - [`tests/ui/`](../../tests/ui) — the fixture tree, one scenario per `.rs` file with its `.stderr`
-  snapshot, grouped into class subdirectories.
+  snapshot, grouped into the `hidden-root-cause/` / `usability/` / `ok/` category subdirectories.
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs),
   [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — the modules the
   argument tests cover.

@@ -1,3 +1,16 @@
+//! Usability: the failing layer of a higher-order provider is not spelled out.
+//!
+//! `ScaledArea<RectangleArea>` wraps an inner calculator; `Rectangle` has
+//! `scale_factor` but not `height`, so the *inner* `RectangleArea` layer fails. The
+//! signal is present — the "introduced here" caret sits on the inner provider's
+//! `where` clause and the chain runs through both providers' `IsProviderFor` — but
+//! the reader must know to read it. The cause is recoverable, so this is a usability
+//! problem: the tool should name the failing layer. Contrast scaled_area_2, where
+//! the outer layer fails.
+//!
+//! Exposes issues in docs/issues/usability.md. CGP error class:
+//! ../../../../cgp/docs/errors/checks/higher-order-provider-layer.md.
+
 use cgp::prelude::*;
 
 #[cgp_component(AreaCalculator)]

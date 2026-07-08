@@ -1,3 +1,16 @@
+//! Usability: the dependency path from the checked component to the cause is buried.
+//!
+//! `DensityFromMassField` depends on `CanCalculateArea`, which `RectangleArea`
+//! provides from `width`/`height`; `Rectangle` omits `height`. The check names
+//! `DensityCalculatorComponent`, but the missing field belongs to the transitive
+//! `AreaCalculator` dependency, and the connection is spelled only through a stack
+//! of `required for …` notes over `IsProviderFor`/`CanUseComponent`. The cause is
+//! present, so this is a usability problem: the tool should collapse the chain to a
+//! short path (Density → Area → missing `height`) and drop the scaffolding.
+//!
+//! Exposes issues in docs/issues/usability.md. CGP error class:
+//! ../../../../cgp/docs/errors/checks/verbose-cascade.md.
+
 use cgp::prelude::*;
 
 #[cgp_component(AreaCalculator)]

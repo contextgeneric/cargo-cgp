@@ -31,11 +31,22 @@ The knowledge base is divided into top-level categories, and it will grow to hol
 does. Each category answers a different question, so a reader picks the one that matches their need
 rather than reading in sequence.
 
-For now there is one category. The [implementation/](implementation/README.md) directory documents
+There are two categories. The [implementation/](implementation/README.md) directory documents
 the *internals* of the tool — how each executable is built, how they cooperate, and how the driver
 reaches the compiler — for an agent reviewing, debugging, or extending the source. Its
 [catalog](implementation/README.md#catalog) indexes every implementation document and tracks which
 parts of the tool are covered.
+
+The [issues/](issues/README.md) directory is the second category, and it tracks *work* rather than
+describing the tool: the problems `cargo-cgp` is meant to solve but does not yet, foremost the CGP
+error classes it does not yet handle. Every issue is backed by a fixture under
+[`tests/ui/`](../tests/ui) that reproduces it — a class with no reproducing fixture counts as
+resolved — and the issues split along one axis, whether the root cause is recoverable from the tool's
+output at all. [Hidden root cause](issues/hidden-root-cause.md) is the tool-oriented sufficiency
+question: the cases where no downstream consumer could identify the root cause from the output alone.
+[Usability issues](issues/usability.md) is the human-oriented readability question: output that
+carries the cause but buries it, foremost overly verbose messages. Unlike the other categories, its
+entries describe absent behavior and are deleted as the tool closes each gap.
 
 As the tool grows a user-facing surface and more moving parts, expect further categories to appear
 alongside `implementation/` — a user guide to running the tool, and a reference for the CGP error

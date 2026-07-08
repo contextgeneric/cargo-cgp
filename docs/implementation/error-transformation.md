@@ -51,7 +51,9 @@ The next-generation solver does compute it. Under `-Znext-solver=globally` the s
 workspace crate under the new solver un-hides the cause — no diagnostic parsing required yet. The
 flag is scoped to workspace crates (only they go through the driver), so dependencies still build
 with the default solver. The before/after is pinned by the
-[`hidden/unsatisfied_dependency`](../../tests/ui/hidden/unsatisfied_dependency.stderr) UI snapshot.
+[`usability/unsatisfied_dependency`](../../tests/ui/usability/unsatisfied_dependency.stderr) UI
+snapshot — a fixture that lives under `usability/` precisely because this solver switch has already
+turned its once-hidden cause into a recoverable (if still verbose) one.
 
 ### Caveats
 
@@ -99,7 +101,7 @@ whereas `cargo-cgp` *rewrites and clarifies* the diagnostics rustc already produ
 
 ## Tests
 
-- [`tests/ui/hidden/unsatisfied_dependency.stderr`](../../tests/ui/hidden/unsatisfied_dependency.stderr) —
+- [`tests/ui/usability/unsatisfied_dependency.stderr`](../../tests/ui/usability/unsatisfied_dependency.stderr) —
   the UI snapshot that pins the un-hidden output the solver switch produces; it is the current
   regression guard for this transformation.
 - [`crates/cargo-cgp-driver/tests/args.rs`](../../crates/cargo-cgp-driver/tests/args.rs) — tests that

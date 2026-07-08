@@ -13,16 +13,26 @@ operational guide.
 
 ## Layout
 
-Fixtures live under [`ui/`](ui), grouped into subdirectories by the kind of scenario. Each fixture
-`<name>.rs` has a sibling `<name>.stderr` holding the expected output; a fixture that
-compiles cleanly has an empty snapshot. The subdirectories mirror the
-[CGP error catalog](../../cgp/docs/errors/README.md) classes:
+Fixtures live under [`ui/`](ui), grouped into subdirectories by the *quality of the output* the tool
+produces for them. Each fixture `<name>.rs` has a sibling `<name>.stderr` holding the expected
+output; a fixture that compiles cleanly has an empty snapshot. The directories mirror the
+pending-issue categories in [docs/issues/](../docs/issues/README.md), so a fixture's directory names
+the kind of problem it exposes:
 
-- [`ui/ok/`](ui/ok) — correctly-wired programs that check cleanly (empty snapshots); the baseline.
-- [`ui/hidden/`](ui/hidden) — errors whose root cause the compiler hides; the class `cargo-cgp` most
-  wants to make readable, so these are the snapshots to watch change.
+- [`ui/hidden-root-cause/`](ui/hidden-root-cause) — errors whose root cause cannot be recovered from
+  the output at all, no matter how it is reformatted (a
+  [hidden root cause](../docs/issues/hidden-root-cause.md)); the highest-value class to fix, so these
+  snapshots are the ones to watch change.
+- [`ui/usability/`](ui/usability) — errors that carry the root cause but bury it in volume, encoding,
+  or misleading framing (a [usability issue](../docs/issues/usability.md)); the cause is present, so
+  the work is re-presentation.
+- [`ui/ok/`](ui/ok) — output that needs no further work: correctly-wired programs that check cleanly
+  today, and, as issues are fixed, the reformatted errors that graduate here. This is the passing
+  baseline.
 
-Add a class directory (`checks/`, `wiring/`, …) as fixtures for it are written.
+A fixture's placement follows the sufficiency test in [docs/issues/](../docs/issues/README.md): if no
+downstream tool could recover the cause from the output, it is `hidden-root-cause/`; if a careful
+reader could, it is `usability/`; if the output is already good, it is `ok/`.
 
 ## Running
 
@@ -38,24 +48,25 @@ To filter, bless, or print, pass an argument to the harness — target `--test u
 also handed to the crate's other tests:
 
 ```sh
-cargo test -p cargo-cgp-ui-tests --test ui -- hidden    # only fixtures whose path contains "hidden"
+cargo test -p cargo-cgp-ui-tests --test ui -- usability  # only fixtures whose path contains "usability"
 cargo test -p cargo-cgp-ui-tests --test ui -- --bless   # regenerate the .stderr snapshots
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # raw output
 ```
 
 The snapshots capture `cargo-cgp`'s own output. Because the driver runs the workspace crate through
-the next-gen trait solver, that output already differs from a plain `cargo check` — the `hidden/`
-fixture's snapshot shows the un-hidden `HasField` root cause. As the driver grows to reformat CGP
-errors, these snapshots are what change; `--bless` is how you record the new output after an intended
-change. Snapshots are blessed under the toolchain the repository pins, so a toolchain bump can
-require a re-bless.
+the next-gen trait solver, that output already differs from a plain `cargo check` — the
+`usability/unsatisfied_dependency` snapshot shows the un-hidden `HasField` root cause that a plain
+`cargo check` would suppress. As the driver grows to reformat CGP errors, these snapshots are what
+change; `--bless` is how you record the new output after an intended change. Snapshots are blessed
+under the toolchain the repository pins, so a toolchain bump can require a re-bless.
 
 ## Adding a fixture
 
-Drop a new `<name>.rs` into the matching class directory under `ui/`. Give it a `fn main`, since the
+Drop a new `<name>.rs` into the category directory under `ui/` its output belongs to (`ok/`,
+`usability/`, or `hidden-root-cause/`, per the sufficiency test above). Give it a `fn main`, since the
 harness compiles it as a binary, and open it with a `//!` comment stating what the scenario
-demonstrates and — for an error case — which [CGP error class](../../cgp/docs/errors/README.md) it
-reproduces. `cgp` is available to every fixture (the harness compiles each in a throwaway crate that
+demonstrates, which [CGP error class](../../cgp/docs/errors/README.md) it reproduces, and — for a
+problem case — the [issue](../docs/issues/README.md) it exposes. `cgp` is available to every fixture (the harness compiles each in a throwaway crate that
 depends on it), so a fixture may `use cgp::prelude::*;` with no setup. Then run
 `cargo test -p cargo-cgp-ui-tests --test ui -- --bless` to create the snapshot and review it before
 committing.

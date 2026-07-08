@@ -1,3 +1,15 @@
+//! Usability: one root cause reported as many errors.
+//!
+//! Both `AreaCalculatorComponent` and `DensityCalculatorComponent` are checked, and
+//! the single missing `height` field produces two full `E0277` cascades — the error
+//! count reflects the depth of the wiring graph, not the number of mistakes. The
+//! cause is present in both, so this is a usability problem: the tool should
+//! deduplicate, coalescing every block with the same unmet bound into one headline
+//! and reporting the count of affected components.
+//!
+//! Exposes issues in docs/issues/usability.md. CGP error class:
+//! ../../../../cgp/docs/errors/checks/verbose-cascade.md.
+
 use cgp::prelude::*;
 
 #[cgp_component(AreaCalculator)]
