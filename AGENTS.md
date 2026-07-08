@@ -140,31 +140,35 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
   same unstable `group_imports`/`imports_granularity` settings as `cgp`, so formatting needs
   nightly.
 - **Lint:** `cargo clippy --all-targets -- -D warnings`.
-- **Unit tests:** `cargo test`. The argument-handling logic in both crates is covered by unit tests;
-  prefer adding coverage there over ad-hoc checks.
+- **Test:** `cargo test` runs everything — the argument-handling unit tests in both tool crates and
+  the UI snapshot suite (below), which builds the driver and expects a sibling `cgp` checkout at
+  `../cgp`. Prefer adding unit-test coverage over ad-hoc checks.
 
 ### UI snapshot tests and running the tool
 
-CGP example fixtures live under [`tests/ui/`](tests/README.md), loose `.rs` files grouped into class
-subdirectories, each paired with a committed `.stderr` snapshot of the tool's output — a UI suite
-modeled on Clippy's. [`scripts/ui-test.sh`](scripts/ui-test.sh) compiles every fixture through
-`cargo-cgp` and diffs the result; [`scripts/run-check.sh`](scripts/run-check.sh) runs one fixture and
-prints its raw output:
+The UI suite is a custom Rust test harness modeled on Clippy's `compile-test`: the
+[`cargo-cgp-ui-tests`](crates/cargo-cgp-ui-tests) crate has a `harness = false` test with its own
+`fn main` that compiles each fixture under [`tests/ui/`](tests/README.md) through `cargo-cgp` and
+diffs the output against a committed `.stderr` snapshot. The crate is a full workspace member, so
+`cargo test` runs the whole suite alongside the unit tests; that also means a test run builds the
+driver and expects a sibling `cgp` checkout at `../cgp`. Work with the suite directly through it:
 
 ```sh
-scripts/ui-test.sh                        # run the snapshot suite
-scripts/ui-test.sh --bless                # regenerate snapshots after an intended change
-scripts/run-check.sh unsatisfied_dependency   # show raw output for one fixture
+cargo test -p cargo-cgp-ui-tests                                  # just the snapshot suite
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate snapshots
+cargo test -q -p cargo-cgp-ui-tests --test ui -- --print greet    # print raw output for a fixture
 ```
 
-The snapshots capture `cargo-cgp`'s own output end to end, so they are what changes once the driver
-reformats diagnostics; a passing suite is also the standing end-to-end proof that the driver runs as
-the compiler. Add a scenario by dropping a `<name>.rs` file (with a `fn main`) into the matching
-`tests/ui/<class>/` directory and running `scripts/ui-test.sh --bless`. Snapshots are blessed under
-the pinned toolchain, so a toolchain bump can require a re-bless. The full testing picture — the unit
-tests, the harness mechanics, and the comparison with Clippy's UI-test harness — is documented in
-[Testing](docs/implementation/testing.md); read it before adding tests, and keep it in sync when the
-test setup changes.
+Passing an argument to the harness needs `--test ui`, so the flag is not also handed to the crate's
+libtest unit tests. The snapshots capture `cargo-cgp`'s own output end to end, so they are what
+changes once the driver reformats diagnostics; a passing suite is also the standing end-to-end proof
+that the driver runs as the compiler. Add a scenario by dropping a `<name>.rs` file (with a
+`fn main`) into the matching `tests/ui/<class>/` directory and running
+`cargo test -p cargo-cgp-ui-tests --test ui -- --bless`. Snapshots are blessed under
+the pinned toolchain, so a toolchain bump can require a re-bless. The full testing picture — the
+harness structure, why it drives the whole tool rather than the driver directly, and the comparison
+with Clippy — is documented in [Testing](docs/implementation/testing.md); read it before adding
+tests, and keep it in sync when the test setup changes.
 
 ## Ask when in doubt
 

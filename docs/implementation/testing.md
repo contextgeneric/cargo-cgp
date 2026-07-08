@@ -1,8 +1,8 @@
 # Testing
 
 `cargo-cgp` is tested at two levels: fast unit tests over the argument-handling logic, and a UI
-snapshot suite that compiles example CGP programs through the real tool and pins its output against
-committed `.stderr` files.
+snapshot suite — a custom Rust test harness, in the style of Clippy's — that compiles example CGP
+programs through the real tool and pins its output against committed `.stderr` files.
 
 ## The layers of testing
 
@@ -25,8 +25,8 @@ Two modules carry them. The front-end's [`args.rs`](../../crates/cargo-cgp/src/a
 direct form alone, keeps a later token that merely equals `cgp`, and yields nothing when only the
 program name is present. The driver's [`args.rs`](../../crates/cargo-cgp-driver/src/args.rs) tests
 that `rustc_args` strips the injected `rustc` path in wrapper mode, injects `--sysroot` when absent,
-keeps an existing sysroot, and leaves a non-wrapper invocation alone. Between them they pin the two
-transforms that decide which arguments reach `cargo` and which reach `rustc`.
+keeps an existing sysroot, and leaves a non-wrapper invocation alone. The harness crate additionally
+unit-tests its own option parsing.
 
 ## The UI snapshot suite
 
@@ -40,112 +40,132 @@ mirroring the [CGP error catalog](../../../cgp/docs/errors/README.md) as they ar
 What makes this suite worth having even while the tool's output equals `rustc`'s is *what* it
 snapshots: the output of `cargo-cgp` itself, not of plain `rustc`. Each fixture is compiled by
 running the real `cargo-cgp check` end to end — front-end, driver, and all — so the snapshot is
-whatever the tool emits. Today the driver is a passthrough, so a snapshot is the normalized `rustc`
-diagnostic; when the driver begins reformatting CGP errors, these snapshots are exactly what will
-change, and the diff is the signal that the reformatting did what was intended. The suite exists now
-so that change is caught the moment it lands.
+whatever the tool emits. Today the driver is a passthrough, so a snapshot is the `rustc` diagnostic;
+when the driver begins reformatting CGP errors, these snapshots are exactly what will change, and the
+diff is the signal that the reformatting did what was intended. The suite exists now so that change
+is caught the moment it lands.
+
+### The harness is a custom Rust test binary
+
+Following Clippy, the suite is a **custom test harness written in Rust**, not a shell script and not
+libtest. It lives in its own crate, [`crates/cargo-cgp-ui-tests`](../../crates/cargo-cgp-ui-tests),
+whose `ui` test target sets `harness = false` and provides its own `fn main`
+([`tests/ui.rs`](../../crates/cargo-cgp-ui-tests/tests/ui.rs)) — the same shape as Clippy's
+`tests/compile-test.rs`. The `fn main` is thin; the logic is in the crate's library so it stays small
+and testable, split into focused modules: `options` (argument parsing), `paths` (locating the
+workspace, fixtures, cgp checkout, and built binaries), `fixtures` (discovery), `harness` (building
+the binaries and compiling a fixture), and `snapshot` (compare, bless, diff).
+
+The harness crate is a full workspace member, so `cargo test` runs the whole suite alongside the
+unit tests. The crate itself depends on nothing but `std` — it shells out to `cargo` at run time —
+but running the suite therefore builds the driver and expects a sibling `cgp` checkout at `../cgp`,
+so a plain `cargo test` now needs both.
 
 ### How a fixture is compiled
 
-The fixtures are loose `.rs` files, not cargo targets, so something has to turn one into a crate the
-tool can check. The shared script library [`scripts/lib.sh`](../../scripts/lib.sh) does this: it
+A fixture is a loose `.rs` file, so the harness turns it into a crate the tool can check: it
 maintains a throwaway crate (under the git-ignored `target/ui-harness/`) that depends on `cgp` by
-path, copies the chosen fixture in as its `src/main.rs`, and runs `cargo-cgp check` there. Reusing
-one crate keeps `cgp` compiled and cached across fixtures; naming it `ui` keeps cargo's
-`could not compile \`ui\`` line stable; and an empty `[workspace]` table in its manifest stops cargo
-from folding it into the `cargo-cgp` workspace above it in `target/`.
+path, copies the fixture in as its `src/main.rs`, and runs `cargo-cgp check -q --color never` there.
+Reusing one crate keeps `cgp` compiled and cached across fixtures; naming it `ui` keeps cargo's
+output stable; and an empty `[workspace]` table in its manifest stops cargo from folding it into the
+`cargo-cgp` workspace above it in `target/`.
 
-The tool's raw output carries cargo's own progress lines — `Checking`, `Compiling`, `Finished`, and
-the like — which name volatile paths, versions, and timings. `normalize_output` in the same library
-strips those status lines, leaving the compiler diagnostics and the final `could not compile`
-summary. That normalized text is what a snapshot holds, so a snapshot changes only when the
-*diagnostics* change, not when a path or a build time does.
+The `-q` is what keeps snapshots clean without post-processing: it suppresses cargo's own progress
+lines (`Checking`, `Compiling`, `Finished`), leaving the compiler diagnostics and the final
+`could not compile` summary — all deterministic, so the captured output can be snapshotted verbatim.
+The harness finds the built `cargo-cgp` beside its own test binary in `target/debug`, having first
+built both binaries with `cargo build` (the front-end locates the driver as its sibling).
 
 ### Running and blessing
 
-Two scripts drive the suite, both building on `lib.sh` so the tool is exercised the same way in each.
-[`scripts/ui-test.sh`](../../scripts/ui-test.sh) is the suite itself:
+The suite is part of `cargo test`; to run only it, select the crate:
 
 ```sh
-scripts/ui-test.sh            # compile every fixture, diff against its .stderr
-scripts/ui-test.sh hidden     # only fixtures whose path contains "hidden"
-scripts/ui-test.sh --bless    # rewrite the .stderr snapshots from current output
+cargo test                                  # everything (unit tests + the UI suite)
+cargo test -p cargo-cgp-ui-tests            # only the suite
 ```
 
-A run compiles each fixture, normalizes, and compares; a mismatch prints a unified diff and the suite
-exits non-zero. After an *intended* change to what the tool emits, `--bless` regenerates the
-snapshots — the analogue of Clippy's `cargo bless` — and the diff is reviewed before committing.
-[`scripts/run-check.sh`](../../scripts/run-check.sh) is the interactive counterpart: it runs one
-fixture through the same path but prints the tool's raw output, unmodified and uncompared, for
-reading exactly what the tool produced.
+To pass an argument to the harness, target the `ui` test explicitly with `--test ui`, so the flag is
+not also handed to the crate's libtest unit tests. The harness accepts a path substring to filter
+fixtures, `--bless` to rewrite the snapshots, and `--print` to show a fixture's raw output instead of
+comparing:
+
+```sh
+cargo test -p cargo-cgp-ui-tests --test ui -- hidden      # only fixtures whose path contains "hidden"
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless     # rewrite the .stderr snapshots
+cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # print raw output
+```
+
+After an *intended* change to what the tool emits, `--bless` regenerates the snapshots — the analogue
+of Clippy's `cargo bless` — and the diff is reviewed before committing.
 
 ### Toolchain and determinism
 
 A snapshot is only reproducible against the toolchain it was blessed with, because it contains the
-compiler's diagnostic text. The scripts build and run under the toolchain the repository pins in
+compiler's diagnostic text. The harness builds and runs under the toolchain the repository pins in
 [`rust-toolchain.toml`](../../rust-toolchain.toml) (overridable with `RUSTUP_TOOLCHAIN`), and
 snapshots must be blessed under that same toolchain. A deliberate toolchain bump can therefore change
 the diagnostic wording and require a re-bless, exactly as it does for Clippy — a `.stderr` diff after
-a toolchain change is expected, not a regression.
-
-The suite also serves as the end-to-end check that the driver genuinely stands in as the compiler: a
-passing `hidden/` snapshot could only be produced by compiling the fixture through the tool. To see
-the driver in the invocation directly, run a fixture with `run-check.sh` and read the output, or pass
-`-v` through to cargo.
+a toolchain change is expected, not a regression. A passing `hidden/` snapshot is also the standing
+proof that the driver genuinely stands in as the compiler, since it could only be produced by
+compiling the fixture through the tool.
 
 ## Comparison with Clippy
 
-The suite deliberately mirrors Clippy's UI-test *workflow* — a `tests/ui/` tree of `.rs` fixtures,
-each with a committed `.stderr`, regenerated with a bless step — so the mental model transfers
-directly. The parent `cgp` project pins its post-codegen failures the same snapshot way, with
-[`trybuild`](https://docs.rs/trybuild). Where `cargo-cgp` diverges is in the harness and what it
-drives, and each divergence has a reason.
+The suite now matches Clippy's *approach* closely: a custom Rust test harness with `harness = false`
+and its own `fn main`, driving a tree of `tests/ui/*.rs` fixtures against committed `.stderr`
+snapshots with a bless step. The mental model transfers directly, and
+[`external/rust-clippy/tests/compile-test.rs`](../../../external/rust-clippy/tests/compile-test.rs)
+is the reference to read alongside this crate. Two deliberate differences remain.
 
-Clippy's harness is a `cargo test` (`tests/compile-test.rs`) built on
-[`ui_test`](https://github.com/oli-obk/ui_test), which invokes `rustc` directly on each fixture and
-diffs the output. `cargo-cgp`'s harness is a shell script that runs the whole `cargo-cgp` binary,
-going through `cargo` rather than calling `rustc` directly. The reason is that the thing under test
-*is* a cargo subcommand and rustc wrapper: the behavior worth snapshotting only exists when the tool
-drives a real `cargo`, so the harness drives the tool, not the compiler. Going through cargo brings
-progress-line noise that `ui_test` never sees, which is why the harness normalizes it away.
+First, the harness is **hand-rolled rather than built on the [`ui_test`](https://github.com/oli-obk/ui_test)
+library** Clippy uses. `ui_test` invokes a compiler directly on each fixture and, via its
+`DependencyBuilder`, computes the `--extern`/`-L` flags needed to make a dependency like `cgp`
+available. The hand-rolled harness sidesteps that machinery — and the version-coupling of a large
+test dependency — by driving the whole `cargo-cgp` tool through `cargo`, which resolves `cgp` for us.
+The cost is that compilation goes through cargo (its progress noise, quieted with `-q`) instead of
+straight to the compiler.
 
-Two gaps remain against Clippy, both deliberate for now. There is no dogfood test that runs
-`cargo-cgp` on this repository's own crates; it becomes worthwhile once the tool does more than pass
-through. And the suite is script-driven rather than a `cargo test` target, because bootstrapping the
-driver binary and the pinned toolchain inside a `cargo test` is more machinery than a
-build-and-run script; if the suite grows, promoting it to a `cargo test` (or adopting `ui_test`
-pointed at the driver) is the natural next step.
+Second, and following from that, the harness **drives the whole tool, where Clippy's `ui_test`
+drives `clippy-driver` directly**. Driving the front-end is a stronger end-to-end test — it exercises
+`cargo-cgp` as a user invokes it — and it is what makes the cargo-resolves-`cgp` shortcut possible.
+If the suite grows enough to want per-diagnostic control (inline `//~` annotations, rustfix, and the
+like), adopting `ui_test` pointed at `cargo-cgp-driver` is the natural next step.
+
+One gap against Clippy is unrelated to the harness: there is no dogfood test that runs `cargo-cgp` on
+this repository's own crates. It becomes worthwhile once the tool does more than pass through.
 
 ## Further reading
 
-These are the snapshot harnesses the suite's design draws on; both compile each fixture and diff a
+These are the snapshot harnesses this suite's design draws on; both compile each fixture and diff a
 committed snapshot with a bless step, the workflow reproduced here.
 
-- [`ui_test`](https://github.com/oli-obk/ui_test) — the UI-test harness Clippy uses over `tests/ui`.
+- [`ui_test`](https://github.com/oli-obk/ui_test) — the UI-test library Clippy's harness is built on.
 - [`trybuild`](https://docs.rs/trybuild) — the compile-fail snapshot harness the parent `cgp` project
   uses for its post-codegen failures.
 
 ## Tests
 
-The automated tests are the argument-handling unit tests and the UI snapshot suite. There is no
-dogfood or `cargo test`-integrated end-to-end test yet (see the gaps above).
+The automated tests are the argument-handling unit tests, the harness crate's option-parsing unit
+tests, and the UI snapshot suite. There is no dogfood test yet (see above).
 
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs) — `strip_subcommand` across the
   `cargo cgp check` form, the direct form, a later matching token, and the program-name-only case.
 - [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — `rustc_args`
   across wrapper-mode stripping, sysroot injection, an existing sysroot, and a non-wrapper
   invocation.
+- [`crates/cargo-cgp-ui-tests/src/options.rs`](../../crates/cargo-cgp-ui-tests/src/options.rs) —
+  harness option and filter parsing.
 - [`tests/ui/`](../../tests/ui) — the UI snapshot fixtures, each `<name>.rs` paired with a blessed
-  `<name>.stderr`, run by `scripts/ui-test.sh`.
+  `<name>.stderr`, run by the harness.
 
 ## Source
 
-- [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs),
-  [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — the modules the
-  unit tests cover.
+- [`crates/cargo-cgp-ui-tests/`](../../crates/cargo-cgp-ui-tests) — the custom UI-test harness:
+  `tests/ui.rs` (the `harness = false` entrypoint) and the `src/` modules (`options`, `paths`,
+  `fixtures`, `harness`, `snapshot`).
 - [`tests/ui/`](../../tests/ui) — the fixture tree, one scenario per `.rs` file with its `.stderr`
   snapshot, grouped into class subdirectories.
-- [`scripts/lib.sh`](../../scripts/lib.sh) — shared helpers: builds the binaries, maintains the
-  throwaway crate, runs a fixture through `cargo-cgp`, and normalizes the output.
-- [`scripts/ui-test.sh`](../../scripts/ui-test.sh) — the snapshot suite (compare, filter, `--bless`).
-- [`scripts/run-check.sh`](../../scripts/run-check.sh) — runs one fixture and prints raw output.
+- [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs),
+  [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — the modules the
+  argument unit tests cover.

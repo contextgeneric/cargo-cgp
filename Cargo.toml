@@ -3,10 +3,13 @@ resolver = "3"
 members  = [
     "crates/cargo-cgp",
     "crates/cargo-cgp-driver",
+    "crates/cargo-cgp-ui-tests",
 ]
-# The UI fixtures under `tests/ui/` are loose `.rs` files, not a cargo package, so
-# nothing there is part of this workspace or the root build. The snapshot harness
-# (scripts/ui-test.sh) compiles each one through cargo-cgp in a throwaway crate.
+# The UI snapshot harness lives in its own crate (`cargo-cgp-ui-tests`), a full workspace
+# member, so `cargo test` runs the whole suite alongside the unit tests. The fixtures it
+# drives are loose `.rs` files under `tests/ui/`, not a cargo package. Running the suite
+# builds the driver, expects a sibling `cgp` checkout at `../cgp`, and uses the pinned
+# toolchain.
 
 # Versions are kept in lockstep at the workspace level, mirroring the cgp
 # workspace: shared package metadata lives in `[workspace.package]` and each

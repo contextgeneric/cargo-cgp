@@ -1,0 +1,24 @@
+[package]
+name         = "cargo-cgp-ui-tests"
+description  = "Custom Rust test harness that runs cargo-cgp on the UI fixtures and snapshots its output."
+version      = { workspace = true }
+edition      = { workspace = true }
+rust-version = { workspace = true }
+license      = { workspace = true }
+repository   = { workspace = true }
+authors      = { workspace = true }
+keywords     = { workspace = true }
+publish      = false
+
+# A custom test harness, in the style of Clippy's `tests/compile-test.rs`: the `ui`
+# test disables libtest (`harness = false`) and provides its own `fn main`, which
+# compiles each fixture under ../../tests/ui through cargo-cgp and diffs the output
+# against a committed `.stderr` snapshot. The logic lives in the library so it stays
+# small and testable; tests/ui.rs is a thin entrypoint. No dependencies — the harness
+# shells out to cargo and reads files with std only.
+[[test]]
+name    = "ui"
+path    = "tests/ui.rs"
+harness = false
+
+[dependencies]

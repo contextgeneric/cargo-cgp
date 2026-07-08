@@ -54,6 +54,27 @@ Any arguments after `check` are forwarded verbatim to `cargo check`, so `cargo c
 `cargo cgp check --workspace` work as expected. The command can also be run directly as
 `cargo-cgp check`.
 
+## Testing
+
+The common commands, run from the workspace root:
+
+```sh
+cargo test                          # all tests: the tool crates' unit tests and the UI suite
+cargo fmt --all -- --check          # formatting (uses nightly rustfmt settings)
+cargo clippy --all-targets -- -D warnings   # lints
+
+# The UI snapshot suite is part of `cargo test`. To work with it directly:
+cargo test -p cargo-cgp-ui-tests                             # just the suite
+cargo test -p cargo-cgp-ui-tests --test ui -- hidden         # filter by path substring
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless        # regenerate snapshots
+```
+
+The UI suite compiles example CGP programs through cargo-cgp and diffs the tool's output against
+committed `.stderr` snapshots (see [docs/implementation/testing.md](docs/implementation/testing.md)).
+Because it runs as part of `cargo test`, the test run builds the driver, expects a sibling `cgp`
+checkout at `../cgp`, and uses the pinned nightly toolchain — so snapshots are reproducible only
+under that toolchain, and a bump can require a re-bless.
+
 ## Status and roadmap
 
 The current release is the scaffold: a working `cargo cgp check` that transparently wraps

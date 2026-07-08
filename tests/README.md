@@ -14,7 +14,7 @@ operational guide.
 ## Layout
 
 Fixtures live under [`ui/`](ui), grouped into subdirectories by the kind of scenario. Each fixture
-`<name>.rs` has a sibling `<name>.stderr` holding the expected, normalized output; a fixture that
+`<name>.rs` has a sibling `<name>.stderr` holding the expected output; a fixture that
 compiles cleanly has an empty snapshot. The subdirectories mirror the
 [CGP error catalog](../../cgp/docs/errors/README.md) classes:
 
@@ -26,26 +26,28 @@ Add a class directory (`checks/`, `wiring/`, …) as fixtures for it are written
 
 ## Running
 
-Use the scripts from the repository root. The snapshot suite compiles every fixture through
-`cargo-cgp` and diffs the output against its `.stderr`:
+The suite is a custom Rust test harness in the [`cargo-cgp-ui-tests`](../crates/cargo-cgp-ui-tests)
+crate (modeled on Clippy's `compile-test`), which compiles every fixture through `cargo-cgp` and
+diffs the output against its `.stderr`. Run it with `cargo test`:
 
 ```sh
-scripts/ui-test.sh            # run the whole suite
-scripts/ui-test.sh hidden     # only fixtures whose path contains "hidden"
-scripts/ui-test.sh --bless    # regenerate the .stderr snapshots (review the diff!)
+cargo test -p cargo-cgp-ui-tests            # run the whole suite
 ```
 
-To read the tool's raw output on one fixture, without normalizing or comparing, use the interactive
-runner:
+To filter, bless, or print, pass an argument to the harness — target `--test ui` so the flag is not
+also handed to the crate's unit tests:
 
 ```sh
-scripts/run-check.sh unsatisfied_dependency
+cargo test -p cargo-cgp-ui-tests --test ui -- hidden    # only fixtures whose path contains "hidden"
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless   # regenerate the .stderr snapshots
+cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # raw output
 ```
 
 The snapshots capture `cargo-cgp`'s own output, so today — while the driver passes diagnostics
-through unchanged — a snapshot is the normalized `rustc` message. When the driver starts reformatting
-CGP errors, these snapshots are what change; `--bless` is how you record the new output after an
-intended change.
+through unchanged — a snapshot is the `rustc` message. When the driver starts reformatting CGP
+errors, these snapshots are what change; `--bless` is how you record the new output after an intended
+change. Snapshots are blessed under the toolchain the repository pins, so a toolchain bump can
+require a re-bless.
 
 ## Adding a fixture
 
@@ -54,4 +56,5 @@ harness compiles it as a binary, and open it with a `//!` comment stating what t
 demonstrates and — for an error case — which [CGP error class](../../cgp/docs/errors/README.md) it
 reproduces. `cgp` is available to every fixture (the harness compiles each in a throwaway crate that
 depends on it), so a fixture may `use cgp::prelude::*;` with no setup. Then run
-`scripts/ui-test.sh --bless` to create the snapshot and review it before committing.
+`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` to create the snapshot and review it before
+committing.

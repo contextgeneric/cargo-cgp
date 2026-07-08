@@ -18,3 +18,7 @@ dependencies = [
 [[package]]
 name = "cargo-cgp-driver"
 version = "0.1.0"
+
+[[package]]
+name = "cargo-cgp-ui-tests"
+version = "0.1.0"
