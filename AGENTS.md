@@ -143,17 +143,24 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
 - **Unit tests:** `cargo test`. The argument-handling logic in both crates is covered by unit tests;
   prefer adding coverage there over ad-hoc checks.
 
-### Verifying end-to-end
+### Fixtures, running the tool, and end-to-end verification
 
-A green build is not proof the tool works — the driver has to actually run as the compiler. Verify
-against a throwaway project: create a small crate, then run the built `cargo-cgp` on it with the
-pinned nightly selected, for example
-`env -C <project> RUSTUP_TOOLCHAIN=<pinned-nightly> <path>/target/debug/cargo-cgp check`. Confirm
-three things. Valid code checks clean and exits `0`. Broken code surfaces the compiler's errors and
-exits non-zero. And the driver is genuinely in the loop — run with `check -v` and confirm the
-`cargo-cgp-driver` executable appears in cargo's verbose rustc invocation, which also proves that
-forwarded arguments reach `cargo check`. Reach for the CGP compile-fail fixtures under
-`../cgp/crates/tests/cgp-compile-fail-tests` when you want a real CGP error to check against.
+Standalone CGP example files live under [`tests/`](tests/README.md), a package excluded from the
+workspace so its intentionally-failing examples never break the root build. The helper
+[`scripts/run-check.sh`](scripts/run-check.sh) builds the binaries and runs the tool on one fixture:
+
+```sh
+scripts/run-check.sh greet_ok                   # a correctly-wired program: checks clean
+scripts/run-check.sh hidden_missing_dependency  # a hidden-cause CGP error
+```
+
+Add a scenario by dropping a `<name>.rs` file (with a `fn main`) into `tests/examples/`. A green
+build does not prove the tool works — the driver has to actually run as the compiler — so verify by
+hand: valid code checks clean (exit `0`), broken code surfaces the compiler's errors (exit non-zero),
+and a `-v` run shows `cargo-cgp-driver` in cargo's rustc invocation. The full testing picture — the
+unit tests, the fixture package, the verification checklist, and the comparison with Clippy's
+UI-test harness — is documented in [Testing](docs/implementation/testing.md); read it before adding
+tests, and keep it in sync when the test setup changes.
 
 ## Ask when in doubt
 

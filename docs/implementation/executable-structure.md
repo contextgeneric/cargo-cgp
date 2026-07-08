@@ -199,19 +199,15 @@ a behavior described above.
 
 ## Tests
 
-The argument-normalization logic on both sides is unit-tested; the end-to-end wrapping is verified by
-hand against a throwaway project, as described in the repository-root
-[AGENTS.md](../../AGENTS.md#verifying-end-to-end).
+The two argument transforms this document describes — `strip_subcommand` in the front-end and
+`rustc_args` in the driver — are covered by unit tests, and the end-to-end wrapping is verified by
+hand. The full testing picture, including the example fixtures and the verification checklist, is
+its own document: [Testing](testing.md).
 
-- [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs) — `strip_subcommand` drops the
-  inserted `cgp` token for the `cargo cgp check` form, leaves the direct `cargo-cgp check` form
-  untouched, keeps a later matching token, and yields nothing when only the program name is present.
+- [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs) — `strip_subcommand` across the
+  invocation forms.
 - [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — `rustc_args`
-  strips the injected `rustc` path in wrapper mode, injects `--sysroot` when absent, keeps an
-  existing sysroot, and leaves a non-wrapper invocation untouched.
-
-There is no automated end-to-end test yet: that the driver is genuinely invoked as the compiler, and
-that errors and exit codes propagate through it, is currently checked by hand.
+  wrapper-mode stripping and sysroot injection.
 
 ## Source
 

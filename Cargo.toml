@@ -4,6 +4,11 @@ members  = [
     "crates/cargo-cgp",
     "crates/cargo-cgp-driver",
 ]
+# The example fixtures under `tests/` are a standalone package, deliberately kept
+# out of the workspace: many of them are CGP mistakes that fail to compile on
+# purpose, and a workspace member would break `cargo build`/`cargo clippy` at the
+# root. It is only ever compiled through cargo-cgp (see scripts/run-check.sh).
+exclude = ["tests"]
 
 # Versions are kept in lockstep at the workspace level, mirroring the cgp
 # workspace: shared package metadata lives in `[workspace.package]` and each
