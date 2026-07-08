@@ -1,0 +1,21 @@
+[workspace]
+resolver = "3"
+members  = [
+    "crates/cargo-cgp",
+    "crates/cargo-cgp-driver",
+]
+
+# Versions are kept in lockstep at the workspace level, mirroring the cgp
+# workspace: shared package metadata lives in `[workspace.package]` and each
+# crate references it with `{ workspace = true }`.
+[workspace.package]
+version      = "0.1.0"
+edition      = "2024"
+rust-version = "1.96"
+license      = "MIT"
+repository   = "https://github.com/contextgeneric/cargo-cgp"
+authors      = ["Soares Chen <soares.chen@maybevoid.com>"]
+keywords     = ["cgp"]
+
+[workspace.dependencies]
+anyhow = { version = "1" }

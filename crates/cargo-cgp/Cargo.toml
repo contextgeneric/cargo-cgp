@@ -1,0 +1,21 @@
+[package]
+name         = "cargo-cgp"
+description  = "A cargo subcommand that runs `cargo check` through the cargo-cgp rustc driver."
+version      = { workspace = true }
+edition      = { workspace = true }
+rust-version = { workspace = true }
+license      = { workspace = true }
+repository   = { workspace = true }
+authors      = { workspace = true }
+keywords     = { workspace = true }
+
+# The cargo-subcommand front-end. It is deliberately a plain std/anyhow binary and
+# does *not* depend on `rustc_private`: it only launches `cargo check` with the
+# driver wired in as the rustc wrapper. Keeping the compiler-internal linkage out of
+# this crate keeps the front-end small and buildable without loading LLVM.
+[[bin]]
+name = "cargo-cgp"
+path = "bin/cargo-cgp.rs"
+
+[dependencies]
+anyhow = { workspace = true }

@@ -1,0 +1,163 @@
+# AGENTS.md
+
+This file guides LLM agents working in the `cargo-cgp` repository. Read it before any task here,
+then read the sub-crate `AGENTS.md` for whichever crate you are about to touch.
+
+## What this project is
+
+`cargo-cgp` is a cargo subcommand whose eventual goal is to make Context-Generic Programming (CGP)
+compiler errors readable. A CGP macro expands to ordinary Rust, so many mistakes are caught not by
+the macro but by the compiler type-checking the generated code, where a single error can cascade
+across generated types the programmer never wrote and the root cause is often buried or suppressed
+entirely. `cargo-cgp` will post-process those diagnostics into a compact, root-cause-first form,
+the way Clippy layers analysis on top of `rustc`.
+
+The project is at the scaffold stage. Only `cargo cgp check` exists, and it forwards to `cargo
+check` without change: the output is identical to `cargo check` today. Its value is structural, not
+behavioural — it compiles the workspace through a `rustc_driver`-based wrapper that has full access
+to the compiler's internals, which is the hook every later feature will build on. Keep this framing
+in mind: the near-term work is not to change what the user sees but to establish and then exploit
+the driver's access to compiler diagnostics.
+
+## Orient before any task
+
+CGP is the subject matter, so load the CGP mental model before reasoning about what this tool
+should do to an error. **Invoke the `/cgp` skill** whenever a task touches CGP constructs or the
+diagnostics they produce; the skill is the ground truth for what each macro expands to and why its
+errors look the way they do.
+
+The `cgp` source is a sibling of this repository, at the parent directory — `../cgp`. Treat it as
+read-only reference. Agents may read anything under `../cgp` to understand CGP behaviour, and in
+particular the **[CGP error catalog](../cgp/docs/errors/README.md)** is the map of every error class
+this tool must eventually recognize: which classes hide the root cause, which surface it, and where
+the cause sits when it is present. The catalog is backed by the `trybuild` compile-fail fixtures in
+`../cgp/crates/tests/cgp-compile-fail-tests`, which are concrete inputs you can run through
+`cargo cgp check` to see a class of error in the raw. **Do not create any dependency from `cgp` on
+`cargo-cgp`.** The reference direction is one-way: `cargo-cgp` reads `cgp`, never the reverse, and
+nothing in `../cgp` should be edited to accommodate this project.
+
+Two more read-only references sit alongside this repository, and you should use them whenever a task
+turns on how the compiler actually behaves rather than on how it is documented to behave. The **Rust
+compiler source is at [`../external/rust`](../external/rust)** — consult it to confirm the real
+signature and behaviour of a `rustc_driver`/`rustc_interface` API before relying on it, since these
+internals are unstable and change between nightlies; grep `compiler/rustc_driver_impl/src` for the
+entrypoints this project calls. **Clippy's source is at
+[`../external/rust-clippy`](../external/rust-clippy)** — it is the closest working example of the
+integration this project performs, so read its `src/main.rs` (the `cargo-clippy` front-end) and
+`src/driver.rs` (the `clippy-driver` wrapper) when working out how to wire the driver into cargo,
+inject the sysroot, or install callbacks. Prefer verifying against these sources over guessing, but
+do not edit them and do not create a dependency on them.
+
+When your task involves editing markdown documentation or inline doc comments, **load the
+`/dual-reader-prose` skill** and follow its convention for the prose you write.
+
+## Architecture: two binaries, like Clippy
+
+`cargo-cgp` mirrors Clippy's split into a front-end and a driver, and understanding that split is
+the key to the whole codebase. The front-end is the cargo subcommand a user invokes; the driver is a
+`rustc` replacement that cargo calls under the hood. They are separate crates for a concrete reason:
+only the driver links the compiler's internal libraries, and keeping that linkage out of the
+front-end keeps the front-end a small, ordinary binary that builds without loading LLVM.
+
+The **`cargo-cgp` crate** (`crates/cargo-cgp`) is the front-end. It parses the subcommand, then runs
+`cargo check` with `RUSTC_WORKSPACE_WRAPPER` set to the driver, so cargo routes only the user's own
+workspace crates through the driver and lets dependencies compile with plain `rustc`. It also hands
+the driver two things it needs: the toolchain sysroot (found via `rustc --print sysroot`) through
+the `CARGO_CGP_SYSROOT` environment variable, and the sysroot's `lib` directory prepended to the
+dynamic-library search path, so the driver can load `librustc_driver` at runtime. This crate depends
+only on `std` and `anyhow`.
+
+The **`cargo-cgp-driver` crate** (`crates/cargo-cgp-driver`) is the driver. Cargo invokes it as
+`cargo-cgp-driver <path-to-rustc> <rustc args...>`, and it runs the real compiler in-process through
+`rustc_driver::run_compiler` with a `Callbacks` implementation. It detects this "wrapper mode" — the
+second argument is a path to `rustc` — and drops the injected compiler path, then injects
+`--sysroot` from `CARGO_CGP_SYSROOT` unless cargo already supplied one, because the driver lives
+outside any toolchain and `rustc` cannot otherwise locate `std`. The callbacks are currently a no-op,
+which is exactly why `cargo cgp check` behaves like `cargo check`; **this is the extension point for
+the tool's real purpose**, and reading or rewriting diagnostics will hook in there.
+
+## Toolchain and `rustc_private`
+
+The driver links the compiler's unstable internal crates, so it can only be built with a nightly
+toolchain that carries the `rustc-dev` component. That toolchain is pinned in
+[`rust-toolchain.toml`](rust-toolchain.toml) to an exact dated nightly, because the `rustc_private`
+API changes between nightlies; the `rustc-dev` and `llvm-tools` components install automatically on
+first build. Bump the pin deliberately, and expect to fix driver code against `rustc_driver` API
+changes when you do.
+
+Two consequences of `rustc_private` are easy to trip over. First, the driver's *library* crate
+carries `#![feature(rustc_private)]` and the `extern crate rustc_driver;` declaration, **and the
+driver's binary crate needs the `#![feature(rustc_private)]` gate as well** — the binary is what
+ultimately links the compiler dylib, and that link is only permitted when the crate opts into the
+feature. Second, the pinned nightly is the version of the compiler the driver *embeds*: when you run
+`cargo cgp check` against a project, the compiler that actually checks it is this nightly, so the
+project's own diagnostics are that nightly's. This is intended — it matches how `clippy-driver`
+embeds its toolchain's compiler — but it means the sysroot the front-end discovers must belong to
+the same nightly the driver was built with, or the driver will load a mismatched `librustc_driver`
+and fail. In practice, run the tool under that toolchain (for example with `RUSTUP_TOOLCHAIN` set,
+or from a directory that selects it).
+
+## Code organization conventions
+
+The code organization follows the same conventions as the `cgp` workspace, especially
+`../cgp/crates/macros/cgp-macro-core`. Hold to them when adding code.
+
+Keep each module small and focused on one concept, and give sub-directories a `mod.rs` that contains
+nothing but re-exports of its child modules (`mod child; pub use child::*;`). A top-level `lib.rs`
+declares its modules with `pub mod`. Keep code loosely coupled by passing values as parameters
+rather than reaching for hardcoded constants: the few unavoidable well-known strings (the cargo
+subcommand name, the driver executable name, the sysroot environment variable) live in a `config`
+module and are passed into the functions that use them, so call sites stay independent of the
+literals. Do not put logic in a `bin` target; implement everything as library functions and let the
+`bin` file be a lightweight wrapper around the entrypoint (the one exception is the driver binary's
+`#![feature(rustc_private)]` gate, which must be on the binary crate for linking).
+
+Keep inline docs brief and current as you write. Add a one-line `///` to any public item that lacks
+one, prefer naming the *why* or a corner case over restating the signature, and delete a comment
+that only repeats the code.
+
+### Module map
+
+The front-end (`crates/cargo-cgp/src`) is organized around dispatch and the `check` command.
+`run.rs` is the entrypoint that normalizes arguments and dispatches on the subcommand; `args.rs`
+strips the cargo-inserted `cgp` token so the same entrypoint serves both `cargo cgp check` and a
+direct `cargo-cgp check`; `config.rs` holds the shared well-known names. The `check/` directory
+holds the command itself: `command.rs` builds and runs the wrapped `cargo check`, `driver_path.rs`
+locates the sibling driver executable, and `sysroot.rs` discovers the toolchain sysroot.
+
+The driver (`crates/cargo-cgp-driver/src`) is smaller. `run.rs` is the entrypoint that runs the
+compiler through `rustc_driver`; `args.rs` turns the wrapper's process arguments into a rustc
+argument vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds
+the `Callbacks` implementation that is the future extension point; `config.rs` holds the shared
+names.
+
+## Commands
+
+The commands mirror the `cgp` workspace. Run them from the repository root.
+
+- **Build:** `cargo build` builds both binaries into `target/debug`. They must stay in the same
+  directory, since the front-end locates the driver as its sibling.
+- **Format:** `cargo +nightly fmt --all` (check with `-- --check`). The `.rustfmt.toml` uses the
+  same unstable `group_imports`/`imports_granularity` settings as `cgp`, so formatting needs
+  nightly.
+- **Lint:** `cargo clippy --all-targets -- -D warnings`.
+- **Unit tests:** `cargo test`. The argument-handling logic in both crates is covered by unit tests;
+  prefer adding coverage there over ad-hoc checks.
+
+### Verifying end-to-end
+
+A green build is not proof the tool works — the driver has to actually run as the compiler. Verify
+against a throwaway project: create a small crate, then run the built `cargo-cgp` on it with the
+pinned nightly selected, for example
+`env -C <project> RUSTUP_TOOLCHAIN=<pinned-nightly> <path>/target/debug/cargo-cgp check`. Confirm
+three things. Valid code checks clean and exits `0`. Broken code surfaces the compiler's errors and
+exits non-zero. And the driver is genuinely in the loop — run with `check -v` and confirm the
+`cargo-cgp-driver` executable appears in cargo's verbose rustc invocation, which also proves that
+forwarded arguments reach `cargo check`. Reach for the CGP compile-fail fixtures under
+`../cgp/crates/tests/cgp-compile-fail-tests` when you want a real CGP error to check against.
+
+## Ask when in doubt
+
+When something should be settled before the next step — an ambiguous intended behaviour, a design
+choice with more than one defensible answer, or a change that would couple this project to `cgp` —
+surface the question rather than guessing.

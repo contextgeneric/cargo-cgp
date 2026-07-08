@@ -1,0 +1,21 @@
+[package]
+name         = "cargo-cgp-driver"
+description  = "A rustc wrapper, built on rustc_driver, that cargo-cgp invokes to compile workspace crates."
+version      = { workspace = true }
+edition      = { workspace = true }
+rust-version = { workspace = true }
+license      = { workspace = true }
+repository   = { workspace = true }
+authors      = { workspace = true }
+keywords     = { workspace = true }
+
+# The rustc wrapper. It links the compiler-internal `rustc_driver`/`rustc_interface`
+# crates from the sysroot via the `rustc_private` feature (see `src/lib.rs`), so it can
+# only be built with a nightly toolchain carrying the `rustc-dev` component — hence the
+# workspace `rust-toolchain.toml`. The compiler crates are pulled from the sysroot by
+# `extern crate`, so there is nothing to declare under `[dependencies]`.
+[[bin]]
+name = "cargo-cgp-driver"
+path = "bin/cargo-cgp-driver.rs"
+
+[dependencies]

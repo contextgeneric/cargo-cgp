@@ -1,0 +1,14 @@
+# cargo-cgp links against the compiler's internal `rustc_driver`/`rustc_interface`
+# libraries (the `rustc_private` feature), so — like clippy — it must be built with
+# a nightly toolchain that carries the `rustc-dev` component. The channel is pinned
+# to an exact dated nightly because the `rustc_private` API is unstable and changes
+# between nightlies; bump this deliberately, in lockstep with any driver code that a
+# newer compiler API requires.
+#
+# The parent cgp workspace pins stable 1.96.1 for the *library*; that is unrelated to
+# the toolchain used to build this tool. A project being checked keeps its own
+# toolchain — cargo-cgp only wraps the compiler cargo already selects for it.
+[toolchain]
+channel    = "nightly-2026-07-02"
+components = ["rustc-dev", "llvm-tools"]
+profile    = "minimal"
