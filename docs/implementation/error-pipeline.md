@@ -1,9 +1,25 @@
-# Error transformation
+# The error pipeline
 
 `cargo-cgp` exists to turn rustc's raw diagnostics for CGP code into readable, root-cause-first
-errors; this document records *how* it transforms them. Today it does so in two coarse ways — choosing
-the trait solver, and un-eliding the diagnostic — and this is the place every later transformation is
-written down as it is added.
+errors, and it does so through a pipeline of stages; this document is the map of that pipeline and the
+detailed record of the stages that run inside a compilation. Today the tool implements the first
+stage in two coarse ways — choosing the trait solver and un-eliding the diagnostic — and this is where
+each such transformation is written down as it is added.
+
+## The stages
+
+The pipeline has four stages, and separating them is what lets each be reasoned about and tested on
+its own. **Configure rustc** injects flags so the compiler emits better raw diagnostics than it
+otherwise would. **Capture** collects those diagnostics as structured, serializable data. **Process**
+transforms the captured diagnostics into CGP diagnostics — deduplicating a cascade and lifting the
+root cause to the top — as a stateless function. **Render** formats the result as human-readable text
+or, later, JSON.
+
+This document owns the two stages that run inside a compilation, the configure and capture stages,
+because both are coupled to the compiler and the driver. The process stage is a self-contained pure
+function documented separately in [Error processing](error-processing.md); the render stage formats
+what processing returns. The configure stage is the only one implemented today, and its two
+transformations are the substance below.
 
 ## Why a transformation layer exists
 
@@ -13,22 +29,23 @@ that make it hard to read: a single mistake can cascade across generated types t
 wrote, and the real cause is often buried or hidden entirely. The [CGP error
 catalog](../../../cgp/docs/errors/README.md) maps those classes — which hide the root cause, which
 surface it, and where the cause sits. `cargo-cgp`'s job is to take rustc's output for those classes
-and re-present it with the cause first; this document is the running account of the transformations
-it applies to get there.
+and re-present it with the cause first; this document is the running account of the compilation-side
+transformations it applies to get there.
 
 ## Where transformation happens
 
-All transformation happens in the driver, because the driver runs the real compiler in-process
-through `rustc_driver` (the front-end only wires the driver into cargo — see
+Everything in this document happens in the driver, because the driver runs the real compiler
+in-process through `rustc_driver` (the front-end only wires the driver into cargo — see
 [Executable structure](executable-structure.md)). That gives two levers, and each transformation
 below is one or the other:
 
 - **The rustc arguments the driver injects** before compilation. This is coarse — it changes how the
   compiler produces diagnostics — but needs no diagnostic parsing. Both current transformations are of
-  this kind.
+  this kind, and both belong to the configure stage.
 - **The driver's [`Callbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs)**, which can read the
-  compiler's diagnostics after analysis and rewrite them. This is the finer lever and is where the
-  planned transformations will live. It is currently unused (`CgpCallbacks` is empty).
+  compiler's diagnostics after analysis. This is the finer lever and is where the capture stage will
+  live, including the enrichment that needs live compiler state. It is currently unused
+  (`CgpCallbacks` is empty).
 
 ## Choosing the trait solver (current)
 
@@ -109,38 +126,37 @@ carry no code to diagnose and which `--verbose` would actively break — `-vV` a
 second `--verbose` makes rustc reject the invocation. The skip is handled in `args::rustc_args`; see
 [`config::VERBOSE_FLAG`](../../crates/cargo-cgp-driver/src/config.rs) for the full rationale.
 
-## Planned transformations
+## The capture stage (planned)
 
-The transformations below are not implemented yet. Record each here as it lands — with its lever, the
-error class it targets, and a before/after pinned by a UI fixture — so this document stays the map of
-what `cargo-cgp` does to a diagnostic. They are listed roughly in order of expected value:
+Capture is the not-yet-built stage that collects rustc's diagnostics as the structured, serializable
+data the [processing stage](error-processing.md) consumes. Two mechanisms are open, and the choice is
+a tradeoff between simplicity and reach. The simpler one runs `cargo check --message-format=json` and
+parses the stream with `cargo_metadata::Message::parse_stream` in the plain front-end, yielding
+fully-rendered diagnostics with no `rustc_private`. The richer one installs a custom `Emitter` in the
+driver — via `interface::Config.psess_created` — to intercept each `DiagInner` as the compiler builds
+it, which is heavier (it must reconstruct rendering and resolve spans through the `SourceMap`) but is
+the only path that can enrich a diagnostic with facts only the live compiler holds.
 
-- **Decode CGP's type-level encodings.** A type like `Symbol<4, Chars<'n', Chars<'a', Chars<'m',
-  Chars<'e', Nil>>>>>` is the field name `"name"`; `Product![A, B]` is `Cons<A, Cons<B, Nil>>`; and so
-  on. Rewriting these back to their surface form (`Symbol!("name")`, `Product![…]`) in a diagnostic
-  would remove most of the visual noise a CGP error carries. This is a `Callbacks`-lever transform
-  over the emitted diagnostics.
-- **Lift the root cause and collapse the cascade.** For the verbose-cascade class, one deep mistake is
-  reported at every transitively dependent provider; the transform would detect the repetition,
-  present the single root cause first, and summarize or drop the repeats. Needs the `Callbacks` lever
-  and the catalog's per-class signatures.
-- **Recover chains the solver still renders tersely.** Where even the next-gen solver stops short,
-  the driver can re-run trait fulfillment on the failing obligation via the compiler's
-  `InferCtxt`/`ObligationCtxt` API to extract the full derived-obligation chain (the surfaced form
-  that `check_components!` forces at the source level), then attach it to the diagnostic.
-- **Map diagnostics to catalog classes.** Recognize an error's [catalog](../../../cgp/docs/errors/README.md)
-  class from its shape and annotate it (or link the relevant catalog entry), so a user is told which
-  kind of CGP mistake they are looking at.
+That enrichment is the reason the richer path may be worth its cost. Where even the next-gen solver
+renders an obligation chain tersely, the driver can re-run trait fulfillment on the failing obligation
+through the compiler's `InferCtxt` / `ObligationCtxt` API to reconstruct the full derived-obligation
+chain — the surfaced form that `check_components!` forces at the source level — and attach it to the
+diagnostic before processing sees it. This kind of work must happen here, during compilation, because
+processing is stateless and cannot ask the compiler anything; it belongs to capture and not to the
+processing stage's own planned work.
 
 ## Comparison with Clippy
 
-Clippy is also a diagnostic transformer, and it works entirely on the `Callbacks` lever: its
-`config` callback calls `register_lints` to add lint passes that run during the same compilation (see
+Clippy is also a diagnostic tool built on this integration, but it transforms diagnostics differently.
+It works entirely on the `Callbacks` lever: its `config` callback calls `register_lints` to add lint
+passes that run during the same compilation (see
 [`external/rust-clippy/src/driver.rs`](../../../external/rust-clippy/src/driver.rs)). `cargo-cgp`'s
-first transformation is coarser and of the other lever — a solver flag, not a callback — because it
-buys a large improvement for no diagnostic-parsing work. The planned transformations move onto the
-same `Callbacks` hook Clippy uses. The aims differ, though: Clippy *adds* new diagnostics (lints),
-whereas `cargo-cgp` *rewrites and clarifies* the diagnostics rustc already produces.
+current transformations are coarser and of the other lever — solver and verbosity flags, not
+callbacks — because they buy a large improvement for no diagnostic-parsing work. The planned capture
+and processing stages move onto the diagnostics themselves, but the aim still differs from Clippy's:
+Clippy *adds* new diagnostics (lints), whereas `cargo-cgp` *rewrites and clarifies* the diagnostics
+rustc already produces — which is why it needs a capture-and-process pipeline that Clippy has no
+equivalent of.
 
 ## Tests
 
@@ -163,10 +179,12 @@ whereas `cargo-cgp` *rewrites and clarifies* the diagnostics rustc already produ
 - [`crates/cargo-cgp-driver/src/run.rs`](../../crates/cargo-cgp-driver/src/run.rs) — passes the flag
   set to `rustc_args`.
 - [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs) — the
-  (empty) hook the planned `Callbacks`-lever transformations will use.
+  (empty) hook the planned capture stage will use.
 
 ## Further reading
 
+- [Error processing](error-processing.md) — the stateless stage that consumes what capture produces:
+  its interface, its input/output types, and why it is a many-to-fewer transform rather than a map.
 - [Next-gen trait solving — Rust Compiler Development Guide](https://rustc-dev-guide.rust-lang.org/solve/trait-solving.html)
   — what the solver `-Znext-solver` selects is and how it evaluates goals.
 - [Significant changes and quirks — Rust Compiler Development Guide](https://rustc-dev-guide.rust-lang.org/solve/significant-changes.html)

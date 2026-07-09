@@ -69,7 +69,7 @@ type like `Symbol<6/#0, …>` harder to read, not easier. `cargo-cgp` wants the 
 compiler's internal bookkeeping, so it injects the stable `--verbose`. This is the reasoning behind
 [`config::VERBOSE_FLAG`](../../crates/cargo-cgp-driver/src/config.rs); the injection itself, and the
 reason it is skipped for cargo's info queries, is documented in
-[Error transformation](error-transformation.md#un-eliding-the-diagnostic-current).
+[The error pipeline](error-pipeline.md#un-eliding-the-diagnostic-current).
 
 ## The suppression points
 
@@ -144,7 +144,7 @@ whose real missing bound the *default* trait solver never even computes — is s
 trait solving, not during printing. No verbosity flag recovers it, because the information was never
 produced. The driver defeats it with a different injected flag, `-Znext-solver=globally`, which selects
 a solver that does descend to the leaf bound. That mechanism, and why it is a separate lever from
-`--verbose`, is documented in [Error transformation](error-transformation.md#choosing-the-trait-solver-current);
+`--verbose`, is documented in [The error pipeline](error-pipeline.md#choosing-the-trait-solver-current);
 it is mentioned here only so the two are not confused. The rule of thumb: if the cause is *present but
 compressed* in the text, it is a printing elision and `--verbose` is the lever; if the cause is *absent*
 because the solver stopped short, it is a solver problem and `-Znext-solver` is the lever.
@@ -162,7 +162,7 @@ else. The finer work `cargo-cgp` still has ahead uses the compiler's own state d
 printed output: the driver's [`Callbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs) can read the
 built diagnostics after analysis, and can re-run trait fulfillment through the `InferCtxt` /
 `ObligationCtxt` API to reconstruct a chain the printed form renders tersely. Those are the levers the
-[planned transformations](error-transformation.md#planned-transformations) will use, and the reason the
+planned [capture stage](error-pipeline.md#the-capture-stage-planned) will use, and the reason the
 foothold is worth having: once inside the compiler, the full `Symbol` is an interned type you can read
 exactly, whatever the printer chose to show.
 

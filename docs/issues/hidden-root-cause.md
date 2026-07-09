@@ -30,14 +30,14 @@ carries its root cause in the tool's output — so the catalog's own hidden clas
 reached by a consumer-method call) surfaces here too, and nothing across the catalog lands in this
 category. The one upstream fixture that produces no usable diagnostic under cargo-cgp,
 `inheritance_cycle`, does so because the next-gen solver *accepts* it (a missing error, tracked as a
-solver caveat in [Error transformation](../implementation/error-transformation.md#caveats)), not
+solver caveat in [The error pipeline](../implementation/error-pipeline.md#caveats)), not
 because a cause is suppressed.
 
 The two archetypes are defeated by *different* levers, and the distinction is the useful one to carry
 forward. A cause can be hidden because the compiler **never computed it** or because the compiler
 computed it and then **elided it while printing** — the first is a trait-solver problem, the second a
 diagnostic-printing problem, and they need different flags. Both levers are argument injections
-documented in [Error transformation](../implementation/error-transformation.md); the printing side is
+documented in [The error pipeline](../implementation/error-pipeline.md); the printing side is
 mapped function-by-function in
 [rustc diagnostic internals](../implementation/rustc-diagnostic-internals.md).
 

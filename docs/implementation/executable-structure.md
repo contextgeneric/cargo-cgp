@@ -74,7 +74,7 @@ input file. It then injects flags, each unless the invocation already sets it: `
 sysroot is already present (see the environment contract below), plus the two *diagnostic* flags
 `-Znext-solver=globally` and `--verbose`. The diagnostic pair are not structural concerns — they are
 how the driver surfaces CGP errors the default solver hides and un-elides the types rustc would
-compress — so they are documented in [Error transformation](error-transformation.md) rather than here,
+compress — so they are documented in [The error pipeline](error-pipeline.md) rather than here,
 along with why they are skipped for cargo's `-vV` and `--print` info queries. The prepared vector is run under
 [`rustc_driver::catch_with_exit_code`](../../crates/cargo-cgp-driver/src/run.rs), which executes the
 compiler and converts a compiler-signalled failure into the process `ExitCode`, matching what plain
@@ -84,7 +84,7 @@ The compiler behavior itself is installed through
 [`callbacks::CgpCallbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs), still an empty
 `rustc_driver::Callbacks` implementation. The driver's current effect on diagnostics comes entirely
 from the injected diagnostic flags, not from the callbacks; those remain the extension point for the
-finer transformations to come, both covered in [Error transformation](error-transformation.md).
+diagnostic capture to come, covered in [The error pipeline](error-pipeline.md).
 
 ## The environment contract
 

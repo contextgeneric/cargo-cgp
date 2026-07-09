@@ -22,10 +22,14 @@ same change.
   front-end and the `cargo-cgp-driver` rustc wrapper), how the front-end wraps `cargo` and the
   driver wraps `rustc`, how the driver reaches the compiler through the `rustc_private`
   `rustc_driver` API, and how all of this compares to Clippy.
-- [Error transformation](error-transformation.md) — how the driver turns rustc's raw diagnostics into
-  readable CGP errors: the two levers (injected rustc flags and the diagnostic callbacks), the
-  current transformation (enabling the next-gen trait solver to un-hide dependency errors), and the
-  roadmap of transformations still to come.
+- [The error pipeline](error-pipeline.md) — the four-stage flow that turns rustc's raw diagnostics
+  into readable CGP errors (configure rustc, capture, process, render), and the detail of the two
+  compilation-side stages: the current flag injections that un-hide and un-elide CGP errors, and the
+  planned capture stage that will collect diagnostics for processing.
+- [Error processing](error-processing.md) — the stateless `process_cgp_errors` stage that transforms
+  captured diagnostics into a smaller, root-cause-first set of CGP errors: its interface, its
+  `RustError`/`CgpError` types, why it must be a stateful analysis rather than a per-error map, and
+  how it is snapshot-tested without running the tool. Designed, not yet built.
 - [rustc diagnostic internals](rustc-diagnostic-internals.md) — a map of the compiler code that
   builds CGP diagnostics and, crucially, where it *suppresses* information: the type/const printer, the
   trait-error reporters, the two verbosity switches (`--verbose` versus `-Zverbose-internals`), and the

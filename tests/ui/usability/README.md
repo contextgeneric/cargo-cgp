@@ -65,7 +65,7 @@ committed with a misleading snapshot:
   rejects it eagerly with an `E0275` overflow; under cargo-cgp's next-gen solver it **compiles clean**,
   so there is no error to snapshot. This is a *missing* error, not a suppressed cause — the "reverse"
   of the next-solver compatibility caveat noted in
-  [Error transformation](../../../docs/implementation/error-transformation.md#caveats).
+  [The error pipeline](../../../docs/implementation/error-pipeline.md#caveats).
 
 ## Keeping the imported mirror in sync
 

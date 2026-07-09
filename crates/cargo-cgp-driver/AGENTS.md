@@ -16,14 +16,15 @@ implementation.
 
 The driver's one current effect on diagnostics is a flag it injects: `-Znext-solver=globally`
 ([`config::NEXT_SOLVER_FLAG`](src/config.rs)) turns on the next-generation trait solver, which
-surfaces CGP dependency errors the default solver hides. `callbacks.rs` is where the crate's finer
-transformations will live: `CgpCallbacks` is still an empty `rustc_driver::Callbacks`, and overriding
-a callback such as `config` or `after_analysis` to read diagnostics and re-present CGP errors hooks
-in there. Both the current flag and the planned callback work — the what and why of transforming
-diagnostics — are documented in
-[Error transformation](../../docs/implementation/error-transformation.md); this file covers only the
-crate's structure. When you build out a callback, add the `extern crate rustc_*;` lines a new
-compiler crate needs to [`lib.rs`](src/lib.rs), and consult the
+surfaces CGP dependency errors the default solver hides. `callbacks.rs` is where the crate's
+diagnostic *capture* will live: `CgpCallbacks` is still an empty `rustc_driver::Callbacks`, and
+overriding a callback such as `config` or `after_analysis` to read diagnostics — and enrich them with
+facts only the live compiler holds — hooks in there. The current flag and the planned capture work
+sit in the compilation-side stages of [The error pipeline](../../docs/implementation/error-pipeline.md);
+the stateless stage that consumes captured diagnostics is [Error
+processing](../../docs/implementation/error-processing.md). This file covers only the crate's
+structure. When you build out a callback, add the `extern crate rustc_*;` lines a new compiler crate
+needs to [`lib.rs`](src/lib.rs), and consult the
 [CGP error catalog](../../../cgp/docs/errors/README.md) for the error classes to recognize.
 
 Two `rustc_private` constraints are non-negotiable and easy to break: the
