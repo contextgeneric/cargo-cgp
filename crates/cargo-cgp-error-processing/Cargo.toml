@@ -1,0 +1,23 @@
+[package]
+name         = "cargo-cgp-error-processing"
+description  = "Transforms rustc diagnostics for CGP code into readable, root-cause-first CGP diagnostics."
+version      = { workspace = true }
+edition      = { workspace = true }
+rust-version = { workspace = true }
+license      = { workspace = true }
+repository   = { workspace = true }
+authors      = { workspace = true }
+keywords     = { workspace = true }
+
+# This crate holds the stateless error-processing stage and the diagnostic types it
+# works over. It deliberately does *not* depend on `rustc_private`: it operates on the
+# serializable `cargo_metadata::Diagnostic`, so it builds and its tests run on any
+# toolchain, without the driver's compiler linkage. See
+# `docs/implementation/error-processing.md`.
+[dependencies]
+cargo_metadata = { workspace = true }
+
+# Only the tests deserialize a committed diagnostic fixture; the library itself never
+# parses JSON (capture happens upstream, in the front-end).
+[dev-dependencies]
+serde_json = { version = "1" }

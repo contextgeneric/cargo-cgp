@@ -15,11 +15,14 @@ transforms the captured diagnostics into CGP diagnostics — deduplicating a cas
 root cause to the top — as a stateless function. **Render** formats the result as human-readable text
 or, later, JSON.
 
-This document owns the two stages that run inside a compilation, the configure and capture stages,
-because both are coupled to the compiler and the driver. The process stage is a self-contained pure
-function documented separately in [Error processing](error-processing.md); the render stage formats
-what processing returns. The configure stage is the only one implemented today, and its two
-transformations are the substance below.
+These stages split across the two executables. The **configure** stage runs in the driver, inside
+each compilation, because injecting rustc flags is coupled to the compiler; its two flag
+transformations are the substance below. The **capture**, **process**, and **render** stages all run
+in the plain front-end, which invokes `cargo check --message-format=json`, parses the diagnostics
+back out, transforms them, and re-emits them. The process stage is a self-contained pure function
+documented separately in [Error processing](error-processing.md). All four stages exist today, but
+process is still a pass-through, so the output matches rustc's own diagnostics — the flag levers
+below are the only transformations that change what a user sees.
 
 ## Why a transformation layer exists
 
@@ -34,18 +37,19 @@ transformations it applies to get there.
 
 ## Where transformation happens
 
-Everything in this document happens in the driver, because the driver runs the real compiler
-in-process through `rustc_driver` (the front-end only wires the driver into cargo — see
-[Executable structure](executable-structure.md)). That gives two levers, and each transformation
-below is one or the other:
+The two current transformations both happen in the driver, because the driver runs the real compiler
+in-process through `rustc_driver` and can inject flags into each compilation (the front-end wires the
+driver into cargo — see [Executable structure](executable-structure.md)). Injecting a flag is a
+coarse lever — it changes how the compiler produces diagnostics — but needs no diagnostic parsing,
+and both transformations below are of this kind. This is the configure stage.
 
-- **The rustc arguments the driver injects** before compilation. This is coarse — it changes how the
-  compiler produces diagnostics — but needs no diagnostic parsing. Both current transformations are of
-  this kind, and both belong to the configure stage.
-- **The driver's [`Callbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs)**, which can read the
-  compiler's diagnostics after analysis. This is the finer lever and is where the capture stage will
-  live, including the enrichment that needs live compiler state. It is currently unused
-  (`CgpCallbacks` is empty).
+Reading and rewriting the diagnostics themselves is a separate, finer concern, and today it happens
+in the **front-end**, not the driver. The front-end runs `cargo check --message-format=json`, so
+cargo's diagnostics arrive as a structured JSON stream it can parse, transform, and re-emit — no
+`rustc_private` required. That is where the capture, process, and render stages live. The driver's
+[`Callbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs) is a *future* second capture lever, for
+the enrichment that needs live compiler state (below); it can read the compiler's diagnostics after
+analysis but is currently unused (`CgpCallbacks` is empty).
 
 ## Choosing the trait solver (current)
 
@@ -126,24 +130,39 @@ carry no code to diagnose and which `--verbose` would actively break — `-vV` a
 second `--verbose` makes rustc reject the invocation. The skip is handled in `args::rustc_args`; see
 [`config::VERBOSE_FLAG`](../../crates/cargo-cgp-driver/src/config.rs) for the full rationale.
 
-## The capture stage (planned)
+## The capture and render stages
 
-Capture is the not-yet-built stage that collects rustc's diagnostics as the structured, serializable
-data the [processing stage](error-processing.md) consumes. Two mechanisms are open, and the choice is
-a tradeoff between simplicity and reach. The simpler one runs `cargo check --message-format=json` and
-parses the stream with `cargo_metadata::Message::parse_stream` in the plain front-end, yielding
-fully-rendered diagnostics with no `rustc_private`. The richer one installs a custom `Emitter` in the
+Capture collects rustc's diagnostics as the structured, serializable data the [processing
+stage](error-processing.md) consumes, and it is implemented in the front-end. The front-end appends
+`--message-format=json` to its `cargo check` invocation, captures cargo's stdout, and parses the
+stream with `cargo_metadata::Message::parse_stream`, yielding
+[`cargo_metadata::Diagnostic`](../../../external/cargo_metadata/src/diagnostic.rs) values — no
+`rustc_private` required. The append is skipped if the caller already chose a message format, so a
+user asking for JSON output still gets it. This path lives in
+[`check::diagnostics`](../../crates/cargo-cgp/src/check/diagnostics.rs) and
+[`check::command`](../../crates/cargo-cgp/src/check/command.rs).
+
+Render turns the processed diagnostics back into the output a user sees, and today it reproduces
+rustc's own pretty text. Each `cargo_metadata::Diagnostic` carries a `rendered` field holding the
+exact text rustc would print, so the front-end prints that field for every processed diagnostic, then
+replays cargo's own captured output (progress, the "could not compile" summary) after it — preserving
+the "diagnostics then summary" order rustc's streaming output produced. One fidelity detail lives
+here: rustc's *human* emitter suppresses exact-duplicate diagnostics from the terminal (while still
+counting them), but the JSON stream repeats them, so the render step drops byte-identical repeats to
+match. Because the diagnostics are processed as a set, capture buffers the whole build rather than
+streaming it, so cargo's progress is shown at the end rather than live — the cost of a stage that must
+see every diagnostic before it can reorder them.
+
+A second, richer capture mechanism is planned but not built: installing a custom `Emitter` in the
 driver — via `interface::Config.psess_created` — to intercept each `DiagInner` as the compiler builds
-it, which is heavier (it must reconstruct rendering and resolve spans through the `SourceMap`) but is
-the only path that can enrich a diagnostic with facts only the live compiler holds.
-
-That enrichment is the reason the richer path may be worth its cost. Where even the next-gen solver
-renders an obligation chain tersely, the driver can re-run trait fulfillment on the failing obligation
-through the compiler's `InferCtxt` / `ObligationCtxt` API to reconstruct the full derived-obligation
-chain — the surfaced form that `check_components!` forces at the source level — and attach it to the
-diagnostic before processing sees it. This kind of work must happen here, during compilation, because
-processing is stateless and cannot ask the compiler anything; it belongs to capture and not to the
-processing stage's own planned work.
+it. It is heavier (it must reconstruct rendering and resolve spans through the `SourceMap`) but is the
+only path that can enrich a diagnostic with facts only the live compiler holds. Where even the
+next-gen solver renders an obligation chain tersely, the driver could re-run trait fulfillment on the
+failing obligation through the compiler's `InferCtxt` / `ObligationCtxt` API to reconstruct the full
+derived-obligation chain — the surfaced form that `check_components!` forces at the source level — and
+attach it to the diagnostic before processing sees it. This kind of work must happen during
+compilation, because processing is stateless and cannot ask the compiler anything; it belongs to
+capture and not to the processing stage's own planned work.
 
 ## Comparison with Clippy
 
@@ -151,12 +170,13 @@ Clippy is also a diagnostic tool built on this integration, but it transforms di
 It works entirely on the `Callbacks` lever: its `config` callback calls `register_lints` to add lint
 passes that run during the same compilation (see
 [`external/rust-clippy/src/driver.rs`](../../../external/rust-clippy/src/driver.rs)). `cargo-cgp`'s
-current transformations are coarser and of the other lever — solver and verbosity flags, not
-callbacks — because they buy a large improvement for no diagnostic-parsing work. The planned capture
-and processing stages move onto the diagnostics themselves, but the aim still differs from Clippy's:
-Clippy *adds* new diagnostics (lints), whereas `cargo-cgp` *rewrites and clarifies* the diagnostics
-rustc already produces — which is why it needs a capture-and-process pipeline that Clippy has no
-equivalent of.
+current *flag* transformations are coarser and of the other lever — solver and verbosity flags, not
+callbacks — because they buy a large improvement for no diagnostic-parsing work. Its capture and
+processing stages do move onto the diagnostics themselves, but in the front-end over cargo's JSON
+rather than in a callback, and the aim still differs from Clippy's: Clippy *adds* new diagnostics
+(lints) during the compilation, whereas `cargo-cgp` *rewrites and clarifies* the diagnostics rustc
+already produced, after the build — which is why it needs a capture-and-process pipeline that Clippy
+has no equivalent of.
 
 ## Tests
 
@@ -179,7 +199,13 @@ equivalent of.
 - [`crates/cargo-cgp-driver/src/run.rs`](../../crates/cargo-cgp-driver/src/run.rs) — passes the flag
   set to `rustc_args`.
 - [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs) — the
-  (empty) hook the planned capture stage will use.
+  (empty) hook the planned driver-side capture mechanism will use.
+- [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — the
+  front-end's capture and render: appends `--message-format=json`, captures cargo's output, runs the
+  diagnostics through processing, and re-emits.
+- [`crates/cargo-cgp/src/check/diagnostics.rs`](../../crates/cargo-cgp/src/check/diagnostics.rs) —
+  parses cargo's JSON stream into diagnostics and re-renders the processed result, with the
+  render-fidelity deduplication.
 
 ## Further reading
 

@@ -3,6 +3,7 @@ resolver = "3"
 members  = [
     "crates/cargo-cgp",
     "crates/cargo-cgp-driver",
+    "crates/cargo-cgp-error-processing",
     "crates/cargo-cgp-ui-tests",
 ]
 # The UI snapshot harness lives in its own crate (`cargo-cgp-ui-tests`), a full workspace
@@ -25,3 +26,8 @@ keywords     = ["cgp"]
 
 [workspace.dependencies]
 anyhow = { version = "1" }
+# The rustc-free error-processing library and the diagnostic types it works over. Both
+# are ordinary crates that do not touch `rustc_private`, so the front-end can depend on
+# them without dragging in the compiler.
+cargo-cgp-error-processing = { path = "crates/cargo-cgp-error-processing" }
+cargo_metadata = { version = "0.23" }

@@ -162,9 +162,9 @@ else. The finer work `cargo-cgp` still has ahead uses the compiler's own state d
 printed output: the driver's [`Callbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs) can read the
 built diagnostics after analysis, and can re-run trait fulfillment through the `InferCtxt` /
 `ObligationCtxt` API to reconstruct a chain the printed form renders tersely. Those are the levers the
-planned [capture stage](error-pipeline.md#the-capture-stage-planned) will use, and the reason the
-foothold is worth having: once inside the compiler, the full `Symbol` is an interned type you can read
-exactly, whatever the printer chose to show.
+planned driver-side [capture mechanism](error-pipeline.md#the-capture-and-render-stages) will use, and
+the reason the foothold is worth having: once inside the compiler, the full `Symbol` is an interned
+type you can read exactly, whatever the printer chose to show.
 
 ## Further reading
 

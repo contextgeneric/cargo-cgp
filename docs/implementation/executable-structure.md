@@ -16,8 +16,12 @@ two lived in one binary, the front-end would drag the compiler dylib — and LLV
 invocation; splitting them means the front-end builds and runs as a normal tool, and the heavyweight
 linkage is confined to the process that actually needs it.
 
-This is the same split Clippy uses, `cargo-clippy` to `clippy-driver`, and for the same reason. The
-mechanism that connects the two halves is cargo's wrapper protocol, described next.
+This is the same split Clippy uses, `cargo-clippy` to `clippy-driver`, and for the same reason. A
+third crate, the library-only [`cargo-cgp-error-processing`](../../crates/cargo-cgp-error-processing),
+holds the diagnostic-processing stage; it links no compiler internals either, so the front-end
+depends on it without compromising its plain-binary status (see [Error
+processing](error-processing.md)). The mechanism that connects the two executables is cargo's wrapper
+protocol, described next.
 
 ## Wrapping cargo: the front-end
 
@@ -46,9 +50,18 @@ subcommand today is `check`; anything after it is forwarded verbatim to `cargo c
 command. It sets `RUSTC_WORKSPACE_WRAPPER` to the driver's path — located by
 [`check::driver_path`](../../crates/cargo-cgp/src/check/driver_path.rs) as a sibling of the running
 front-end executable, since cargo and rustup lay the two binaries down together — and hands the
-driver the two further things it needs through the environment (the next section). Finally it runs
-`cargo check`, forwards the extra arguments, and propagates cargo's exit code, so a failed check
-fails the command.
+driver the two further things it needs through the environment (the next section).
+
+The front-end does not merely pass cargo's output through, though; it captures and re-emits it, which
+is how it will eventually reshape the diagnostics. It appends `--message-format=json` (unless the
+caller chose their own format), captures cargo's stdout and stderr, parses the JSON stream into
+[`cargo_metadata::Diagnostic`](../../../external/cargo_metadata/src/diagnostic.rs) values in
+[`check::diagnostics`](../../crates/cargo-cgp/src/check/diagnostics.rs), runs them through the
+`cargo-cgp-error-processing` crate's `process_cgp_errors`, and re-emits the result — printing each
+diagnostic's rendered text, then replaying cargo's own output. Today `process_cgp_errors` is a
+pass-through, so the printed diagnostics match rustc's own; the whole [error
+pipeline](error-pipeline.md) documents this path and what it will grow into. Throughout, the exit code
+of the `cargo` process is propagated, so a failed check fails the command.
 
 ## Wrapping rustc: the driver
 
@@ -218,7 +231,10 @@ document: [Testing](testing.md).
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs) — process-argument
   normalization.
 - [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — builds and
-  runs the wrapped `cargo check`, sets the environment contract.
+  runs the wrapped `cargo check`, sets the environment contract, captures its output, and re-emits the
+  processed diagnostics.
+- [`crates/cargo-cgp/src/check/diagnostics.rs`](../../crates/cargo-cgp/src/check/diagnostics.rs) —
+  parses cargo's JSON diagnostics and re-renders the processed result.
 - [`crates/cargo-cgp/src/check/driver_path.rs`](../../crates/cargo-cgp/src/check/driver_path.rs) —
   locates the sibling driver executable.
 - [`crates/cargo-cgp/src/check/sysroot.rs`](../../crates/cargo-cgp/src/check/sysroot.rs) — discovers

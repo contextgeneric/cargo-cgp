@@ -11,11 +11,17 @@ keywords     = { workspace = true }
 
 # The cargo-subcommand front-end. It is deliberately a plain std/anyhow binary and
 # does *not* depend on `rustc_private`: it only launches `cargo check` with the
-# driver wired in as the rustc wrapper. Keeping the compiler-internal linkage out of
-# this crate keeps the front-end small and buildable without loading LLVM.
+# driver wired in as the rustc wrapper, then post-processes the diagnostics. Keeping the
+# compiler-internal linkage out of this crate keeps the front-end small and buildable
+# without loading LLVM; its diagnostic dependencies are rustc-free for the same reason.
 [[bin]]
 name = "cargo-cgp"
 path = "bin/cargo-cgp.rs"
 
 [dependencies]
 anyhow = { workspace = true }
+# Post-processing the diagnostics: the stateless processing stage, and the
+# `cargo_metadata` types used to capture cargo's `--message-format=json` output. Both
+# are rustc-free, preserving the plain-binary rule above.
+cargo-cgp-error-processing = { workspace = true }
+cargo_metadata = { workspace = true }

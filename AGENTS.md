@@ -74,7 +74,10 @@ cargo subcommand a user invokes, a plain `std` + `anyhow` binary that runs `carg
 workspace crate, running the real compiler in-process through `rustc_driver`. They are separate
 crates for one concrete reason — only the driver links the compiler's internal libraries, and
 keeping that linkage out of the front-end keeps it a small, ordinary binary that builds without
-loading LLVM.
+loading LLVM. A third, library-only crate, **`cargo-cgp-error-processing`**
+(`crates/cargo-cgp-error-processing`), holds the stateless diagnostic-processing stage the front-end
+calls after a build; it links no compiler internals either, so it builds and tests on any toolchain
+(see [Error processing](docs/implementation/error-processing.md)).
 
 How the two cooperate in full — the argument normalization, the `CARGO_CGP_SYSROOT` and
 dynamic-library-path contract, wrapper-mode detection, the `-Znext-solver=globally` injection that
@@ -132,14 +135,21 @@ The front-end (`crates/cargo-cgp/src`) is organized around dispatch and the `che
 `run.rs` is the entrypoint that normalizes arguments and dispatches on the subcommand; `args.rs`
 strips the cargo-inserted `cgp` token so the same entrypoint serves both `cargo cgp check` and a
 direct `cargo-cgp check`; `config.rs` holds the shared well-known names. The `check/` directory
-holds the command itself: `command.rs` builds and runs the wrapped `cargo check`, `driver_path.rs`
-locates the sibling driver executable, and `sysroot.rs` discovers the toolchain sysroot.
+holds the command itself: `command.rs` builds and runs the wrapped `cargo check` (with
+`--message-format=json`), captures its output, and re-emits the processed diagnostics; `diagnostics.rs`
+parses cargo's JSON stream and re-renders the processed result; `driver_path.rs` locates the sibling
+driver executable; and `sysroot.rs` discovers the toolchain sysroot.
 
 The driver (`crates/cargo-cgp-driver/src`) is smaller. `run.rs` is the entrypoint that runs the
 compiler through `rustc_driver`; `args.rs` turns the wrapper's process arguments into a rustc
 argument vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds
 the `Callbacks` implementation that is the future extension point; `config.rs` holds the shared
 names.
+
+The processing library (`crates/cargo-cgp-error-processing/src`) is the smallest and holds no
+compiler linkage. `process.rs` is the stateless `process_cgp_errors` entrypoint (a pass-through
+placeholder today); `diagnostic.rs` defines the `CgpDiagnostic` output type. Its tests in `tests/`
+drive `process_cgp_errors` over committed serialized fixtures, so they run on any toolchain.
 
 ## Commands
 
@@ -151,7 +161,8 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
   same unstable `group_imports`/`imports_granularity` settings as `cgp`, so formatting needs
   nightly.
 - **Lint:** `cargo clippy --all-targets -- -D warnings`.
-- **Test:** `cargo test` runs everything — the argument-handling tests in both tool crates and the UI
+- **Test:** `cargo test` runs everything — the argument-handling tests in both tool crates, the
+  processing library's fixture tests (which run on any toolchain, needing no compiler), and the UI
   snapshot suite (below), which builds the driver and expects a sibling `cgp` checkout at `../cgp`.
   Every test lives in its crate's `tests/` directory (no inline `#[cfg(test)]`); prefer adding
   coverage there over ad-hoc checks.
