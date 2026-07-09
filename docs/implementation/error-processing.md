@@ -159,7 +159,7 @@ folded over the diagnostic, so a new preprocessor is added by adding it to the l
 the diagnostic's human-readable text (its `message` and, crucially, its `rendered` field, since that
 is what the tool prints) and sets `has_cgp_error` when it recognizes a CGP construct. Order matters:
 prefix stripping runs first so the later stages match the bare CGP names rather than their
-fully-qualified forms. Two preprocessors exist today:
+fully-qualified forms. Three preprocessors exist today:
 
 - **[`strip_cgp_prefixes`](../../crates/cargo-cgp-error-processing/src/preprocess/strip_prefixes.rs)**
   removes the CGP module paths rustc prints in front of CGP type names — `cgp::prelude::Chars` becomes
@@ -192,6 +192,20 @@ fully-qualified forms. Two preprocessors exist today:
   the detail. It does *not* yet handle the sibling form rustc emits for a direct method call rather than
   a `check_components!` assertion (an `E0599` carrying CGP's own `#[diagnostic::on_unimplemented]` text
   instead of the `` `HasField<…>` is not implemented `` clause); that is a future preprocessor.
+
+  **The empty-derived-struct case is fine, not a defect.** The single-vs-derive classification is
+  exact except for one degenerate input, and that input needs no fix. A context that derives
+  `HasField` but declares **no fields at all** gets the missing-derive message even though the derive
+  is present — but that is correct, because `#[derive(HasField)]` emits one impl per field, so on a
+  fieldless struct it emits *nothing*, identical to no derive at all. A fieldless derive leaves no
+  trace in the generated program, so it is genuinely impossible to tell whether it was written; the
+  two are the same program wherever `HasField` is concerned. `extract_missing_fields` reports
+  `MissingDeriveHasField`, which accurately states what is observable — the context implements
+  `HasField` for no field, and a fieldless derive is exactly that. There is nothing to recover (not
+  from one diagnostic, not from the whole set, not from the expansion), because the two situations do
+  not differ. The case is pinned by the
+  [`checks/empty_field_struct`](../../tests/ui/usability/checks/empty_field_struct.rs) fixture so the
+  behavior stays visible.
 
 A non-CGP diagnostic runs through the pipeline untouched: no prefix matches, no `Symbol` spine parses,
 no `HasField` clause matches, `has_cgp_error` stays false, and the diagnostic passes through unchanged.

@@ -31,7 +31,11 @@ Each kind directory mixes fixtures from two origins. The **hand-curated** fixtur
 `density_*`, `scaled_area_*`, `unsatisfied_dependency`) are the worked examples the
 [usability issue document](../../../docs/issues/usability.md) walks through in prose; they all
 exercise the check-trait-failure family (so they sit in `checks/`) apart from `unsatisfied_dependency`
-(the consumer-call form, in `unsatisfied-dependency/`). The remaining fixtures are a **verbatim mirror**
+(the consumer-call form, in `unsatisfied-dependency/`). One further hand-curated fixture,
+`checks/empty_field_struct`, is not a worked example but an edge-case regression: a context that
+derives `HasField` but has no fields, which the missing-derive message describes correctly (a
+fieldless derive emits nothing, so it is indistinguishable from — and equivalent to — no derive), as
+explained in [Error processing](../../../docs/implementation/error-processing.md). The remaining fixtures are a **verbatim mirror**
 of the upstream CGP compile-fail suite — the `acceptable/` fixtures under
 [`cgp-compile-fail-tests`](../../../../cgp/crates/tests/cgp-compile-fail-tests/tests), the concrete
 reproductions behind the [CGP error catalog](../../../../cgp/docs/errors/README.md) — imported so
