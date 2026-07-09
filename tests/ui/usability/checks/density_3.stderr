@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
 78 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol!("height")>` is not implemented for `Rectangle`
+help: missing field `height` in `Rectangle`
   --> src/main.rs:58:1
    |
 58 | pub struct Rectangle {
@@ -51,7 +51,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<DensityCalculatorCompo
 79 |         DensityCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol!("height")>` is not implemented for `Rectangle`
+help: missing field `height` in `Rectangle`
   --> src/main.rs:58:1
    |
 58 | pub struct Rectangle {

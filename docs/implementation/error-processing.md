@@ -124,10 +124,18 @@ worth analyzing from a plain Rust one to leave alone. A diagnostic is created wi
 `CgpDiagnostic::wrap`, which wraps a raw diagnostic with `has_cgp_error` at its `false` default before
 preprocessing runs.
 
+The second CGP-specific field is `pub details: Vec<CgpDiagnosticDetail>`, the structured facts a
+preprocessor extracts alongside rewriting the text. Where `has_cgp_error` is a yes/no flag, a detail
+records *what* was understood as typed data — a [`CgpDiagnosticDetail`](../../crates/cargo-cgp-error-processing/src/diagnostic.rs)
+enum, today with `MissingField { field_name, context }` and `MissingDeriveHasField { field_name,
+context }` variants. The point of extracting the fact, not just rewriting the prose, is that the later
+aggregation sub-stage (and eventual JSON output) can act on the structured detail — group diagnostics
+by context, dedupe by field — without re-parsing rendered text.
+
 The superset shape is what lets one output type serve two kinds of result. A **passed-through**
-diagnostic — a non-CGP error, or a CGP error not yet handled — keeps `has_cgp_error` false and its
-other extra fields empty. A **recognized** CGP diagnostic has `has_cgp_error` set and will, as more
-structure lands, carry what analysis recovered: a classified [catalog](../../../cgp/docs/errors/README.md)
+diagnostic — a non-CGP error, or a CGP error not yet handled — keeps `has_cgp_error` false and
+`details` empty. A **recognized** CGP diagnostic has `has_cgp_error` set and its `details` populated,
+and will carry more as analysis grows: a classified [catalog](../../../cgp/docs/errors/README.md)
 class, decoded encodings, the link from a root cause to the cascade it explains. Rendering never has
 to special-case the two, because both are the same type and both always carry the base diagnostic to
 fall back on. (An enum split between a passthrough variant and a recognized variant was the considered
@@ -167,9 +175,26 @@ fully-qualified forms. Two preprocessors exist today:
   `Chars` head must be a single plain character literal. A `Symbol<…>` that does not match exactly is
   left untouched, because another type could share the name; this caution is essential to every
   resugaring preprocessor, not just this one. A successful resugar also sets `has_cgp_error`.
+- **[`extract_missing_fields`](../../crates/cargo-cgp-error-processing/src/preprocess/missing_field.rs)**
+  turns an unmet `HasField` bound into a field-oriented message and extracts a `CgpDiagnosticDetail`.
+  It matches (after the two stages above)
+  `` the trait `HasField<Symbol!("name")>` is not implemented for `Context` `` and distinguishes two
+  cases whose fixes differ — a distinction available *within the one diagnostic*, so no cross-diagnostic
+  aggregation is needed. When the context implements `HasField` for some other field, it is a single
+  missing field (`` missing field `name` in `Context` ``, detail `MissingField`); when it implements
+  `HasField` for no field at all, the whole derive is missing
+  (`` `#[derive(HasField)]` is required to access field `name` in `Context` ``, detail
+  `MissingDeriveHasField`). The tell is rustc's "similar impl" landmark, which the CGP
+  [check-trait-failure catalog entry](../../../cgp/docs/errors/checks/check-trait-failure.md) documents:
+  its presence — either inline (`but trait `HasField<…>` is implemented for it`, one other field) or as
+  a separate `` `Context` implements trait `HasField<…>` `` note (several other fields) — means a single
+  missing field; its absence means the missing derive. Either way it sets `has_cgp_error` and records
+  the detail. It does *not* yet handle the sibling form rustc emits for a direct method call rather than
+  a `check_components!` assertion (an `E0599` carrying CGP's own `#[diagnostic::on_unimplemented]` text
+  instead of the `` `HasField<…>` is not implemented `` clause); that is a future preprocessor.
 
 A non-CGP diagnostic runs through the pipeline untouched: no prefix matches, no `Symbol` spine parses,
-`has_cgp_error` stays false, and the diagnostic passes through unchanged.
+no `HasField` clause matches, `has_cgp_error` stays false, and the diagnostic passes through unchanged.
 
 One deduplication happens near this stage but is *not* part of it — it is a render-fidelity step in
 the front-end. rustc's human emitter suppresses exact-duplicate diagnostics from its terminal output
@@ -212,9 +237,12 @@ same exact-match caution `resugar_symbol` sets the precedent for:
 - **Decode the remaining type-level encodings.** `Symbol!` is done; `Cons<A, Cons<B, Nil>>` is
   `Product![A, B]`, `Either<…>`/`Void` spines are `Sum![…]`, and so on. Rewriting these back to their
   surface form removes the rest of the visual noise a CGP error carries.
-- **Map diagnostics to catalog classes.** Recognize an error's [catalog](../../../cgp/docs/errors/README.md)
-  class from its shape and record it on the `CgpDiagnostic`, so a consumer can tell the user which kind
-  of CGP mistake they are looking at.
+- **Recognize more error classes.** `extract_missing_fields` handles the missing-field and
+  missing-derive classes and records a `CgpDiagnosticDetail`; the same shape extends to the other
+  [catalog](../../../cgp/docs/errors/README.md) classes, each rewriting its message and adding a detail
+  variant. The nearest next step is the sibling of the missing-field class reached through a direct
+  method call — the `E0599` form carrying CGP's `#[diagnostic::on_unimplemented]` text rather than the
+  `` `HasField<…>` is not implemented `` clause `extract_missing_fields` matches.
 
 **The aggregation sub-stage** does not exist yet and is the larger piece:
 
@@ -243,8 +271,10 @@ design is the right precedent to follow precisely because Clippy is not.
 ## Tests
 
 - [`crates/cargo-cgp-error-processing/tests/preprocess.rs`](../../crates/cargo-cgp-error-processing/tests/preprocess.rs) —
-  drives `strip_cgp_prefixes` and `resugar_symbol` over crafted diagnostics, asserting the rewritten
-  text and the `has_cgp_error` flag, including the exact-match cases `resugar_symbol` must skip.
+  drives each preprocessor over crafted diagnostics, asserting the rewritten text, the `has_cgp_error`
+  flag, and the extracted `details`: the exact-match cases `resugar_symbol` must skip, and the
+  single-field (inline and separate-note landmark) versus missing-derive branches of
+  `extract_missing_fields`.
 - [`crates/cargo-cgp-error-processing/tests/passthrough.rs`](../../crates/cargo-cgp-error-processing/tests/passthrough.rs) —
   drives `process_cgp_errors` over a committed serialized fixture
   ([`tests/fixtures/sample_diagnostics.json`](../../crates/cargo-cgp-error-processing/tests/fixtures/sample_diagnostics.json))
@@ -266,7 +296,8 @@ design is the right precedent to follow precisely because Clippy is not.
 - [`crates/cargo-cgp-error-processing/src/preprocess/`](../../crates/cargo-cgp-error-processing/src/preprocess) —
   the preprocessing pipeline: `pipeline.rs` (the `PREPROCESSORS` list and fold), `strip_prefixes.rs`
   (`strip_cgp_prefixes` and the `CGP_PREFIXES` constant), `resugar_symbol.rs` (the exact-match
-  `Symbol!` parser), and `text.rs` (applying a transform across a diagnostic's text fields).
+  `Symbol!` parser), `missing_field.rs` (`extract_missing_fields` and the single-field-vs-missing-derive
+  classification), and `text.rs` (applying a transform across a diagnostic's text fields).
 - [`crates/cargo-cgp/src/check/diagnostics.rs`](../../crates/cargo-cgp/src/check/diagnostics.rs) — the
   front-end's capture and render around this stage: parsing cargo's JSON stream into diagnostics, and
   re-emitting the processed result (with the render-fidelity deduplication).

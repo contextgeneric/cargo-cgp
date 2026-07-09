@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<DensityCalculatorCompo
 95 |         DensityCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol!("scale_factor")>` is not implemented for `Rectangle`
+help: missing field `scale_factor` in `Rectangle`
   --> src/main.rs:75:1
    |
 75 | pub struct Rectangle {

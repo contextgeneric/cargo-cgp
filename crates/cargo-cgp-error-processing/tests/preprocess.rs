@@ -5,7 +5,9 @@
 //! rewritten text and the `has_cgp_error` flag.
 
 use cargo_cgp_error_processing::cargo_metadata::diagnostic::Diagnostic;
-use cargo_cgp_error_processing::{CgpDiagnostic, resugar_symbol, strip_cgp_prefixes};
+use cargo_cgp_error_processing::{
+    CgpDiagnostic, CgpDiagnosticDetail, extract_missing_fields, resugar_symbol, strip_cgp_prefixes,
+};
 
 /// Build a `CgpDiagnostic` whose message and rendered text are both `text`.
 fn diagnostic(text: &str) -> CgpDiagnostic {
@@ -84,4 +86,83 @@ fn resugar_leaves_other_symbol_uses_alone() {
     let output = resugar_symbol(diagnostic(text));
     assert_eq!(output.rendered().unwrap(), text);
     assert!(!output.has_cgp_error);
+}
+
+#[test]
+fn missing_field_with_inline_landmark_absorbs_it() {
+    // A single missing field: the "but trait … is implemented for it" landmark follows
+    // the clause inline, so it is absorbed into the rewrite.
+    let output = extract_missing_fields(diagnostic(
+        "help: the trait `HasField<Symbol!(\"height\")>` is not implemented for `Rectangle`\n\
+         \x20     but trait `HasField<Symbol!(\"width\")>` is implemented for it\n\
+         \x20 --> src/main.rs:45:10",
+    ));
+    assert_eq!(
+        output.rendered().unwrap(),
+        "help: missing field `height` in `Rectangle`\n  --> src/main.rs:45:10"
+    );
+    assert!(output.has_cgp_error);
+    assert_eq!(
+        output.details,
+        [CgpDiagnosticDetail::MissingField {
+            field_name: "height".to_owned(),
+            context: "Rectangle".to_owned(),
+        }]
+    );
+}
+
+#[test]
+fn missing_field_with_separate_impls_note_is_recognized() {
+    // Several other fields: the landmark is a separate `implements trait HasField` note,
+    // not inline. It still classifies as a single missing field; the note is left as-is.
+    let output = extract_missing_fields(diagnostic(
+        "help: the trait `HasField<Symbol!(\"height\")>` is not implemented for `Rectangle`\n\
+         \x20 --> src/main.rs:59:1\n\
+         help: `Rectangle` implements trait `HasField<Tag>`",
+    ));
+    assert_eq!(
+        output.rendered().unwrap(),
+        "help: missing field `height` in `Rectangle`\n  --> src/main.rs:59:1\n\
+         help: `Rectangle` implements trait `HasField<Tag>`"
+    );
+    assert!(output.has_cgp_error);
+    assert_eq!(
+        output.details,
+        [CgpDiagnosticDetail::MissingField {
+            field_name: "height".to_owned(),
+            context: "Rectangle".to_owned(),
+        }]
+    );
+}
+
+#[test]
+fn missing_derive_when_no_impls_present() {
+    // No landmark at all: the context implements HasField for nothing, so the whole
+    // derive is missing and the message points at the derive, not a single field.
+    let output = extract_missing_fields(diagnostic(
+        "help: the trait `HasField<Symbol!(\"width\")>` is not implemented for `Rectangle`\n\
+         \x20 --> src/main.rs:41:1",
+    ));
+    assert_eq!(
+        output.rendered().unwrap(),
+        "help: `#[derive(HasField)]` is required to access field `width` in `Rectangle`\n\
+         \x20 --> src/main.rs:41:1"
+    );
+    assert!(output.has_cgp_error);
+    assert_eq!(
+        output.details,
+        [CgpDiagnosticDetail::MissingDeriveHasField {
+            field_name: "width".to_owned(),
+            context: "Rectangle".to_owned(),
+        }]
+    );
+}
+
+#[test]
+fn missing_field_leaves_unrelated_diagnostics_alone() {
+    let text = "error[E0277]: the trait bound `Foo: Bar` is not satisfied";
+    let output = extract_missing_fields(diagnostic(text));
+    assert_eq!(output.rendered().unwrap(), text);
+    assert!(!output.has_cgp_error);
+    assert!(output.details.is_empty());
 }

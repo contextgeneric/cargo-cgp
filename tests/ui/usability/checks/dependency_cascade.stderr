@@ -75,8 +75,7 @@ error[E0277]: the trait bound `App: CanUseComponent<BarComponent>` is not satisf
 85 |         BarComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol!("name")>` is not implemented for `App`
-      but trait `HasField<Symbol!("age")>` is implemented for it
+help: missing field `name` in `App`
   --> src/main.rs:66:10
    |
 66 | #[derive(HasField)]
@@ -131,8 +130,7 @@ error[E0277]: the trait bound `App: CanUseComponent<FooComponent>` is not satisf
 86 |         FooComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol!("name")>` is not implemented for `App`
-      but trait `HasField<Symbol!("age")>` is implemented for it
+help: missing field `name` in `App`
   --> src/main.rs:66:10
    |
 66 | #[derive(HasField)]

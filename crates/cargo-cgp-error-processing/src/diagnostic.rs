@@ -19,6 +19,25 @@ pub struct CgpDiagnostic {
     /// prefix, a `Symbol!` spine, and so on. Defaults to `false`; a plain non-CGP
     /// diagnostic keeps it `false` and passes through untouched.
     pub has_cgp_error: bool,
+    /// Structured facts a preprocessor extracted from the diagnostic, on top of rewriting
+    /// its text. Empty by default; a later aggregation stage will read these to group and
+    /// reorder diagnostics without re-parsing their text.
+    pub details: Vec<CgpDiagnosticDetail>,
+}
+
+/// A structured fact preprocessing recovered from a diagnostic.
+///
+/// A detail records *what* a preprocessor understood, independently of how it rewrote the
+/// message, so later stages (and eventual JSON output) can act on the fact rather than the
+/// prose. The variants grow as preprocessors learn to recognize more.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CgpDiagnosticDetail {
+    /// A context is missing a single field a getter needs, while implementing `HasField`
+    /// for other fields — the fix is to add the one field.
+    MissingField { field_name: String, context: String },
+    /// A context has no `HasField` impls at all behind a `HasField` requirement — the fix
+    /// is to add `#[derive(HasField)]`, not to add fields one at a time.
+    MissingDeriveHasField { field_name: String, context: String },
 }
 
 impl CgpDiagnostic {
@@ -27,6 +46,7 @@ impl CgpDiagnostic {
         Self {
             diagnostic,
             has_cgp_error: false,
+            details: Vec::new(),
         }
     }
 

@@ -22,8 +22,9 @@ in the plain front-end, which invokes `cargo check --message-format=json`, parse
 back out, transforms them, and re-emits them. The process stage is a self-contained pure function
 documented separately in [Error processing](error-processing.md). All four stages exist today; the
 process stage now runs its per-diagnostic preprocessing pipeline (stripping CGP path prefixes,
-resugaring `Symbol!`), so it too changes what a user sees, on top of the flag levers below. Its
-cross-diagnostic aggregation sub-stage — collapsing cascades — is still to come.
+resugaring `Symbol!`, rewriting unmet `HasField` bounds into missing-field messages), so it too
+changes what a user sees, on top of the flag levers below. Its cross-diagnostic aggregation sub-stage
+— collapsing cascades — is still to come.
 
 ## Why a transformation layer exists
 

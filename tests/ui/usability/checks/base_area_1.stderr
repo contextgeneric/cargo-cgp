@@ -4,8 +4,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
 61 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol!("height")>` is not implemented for `Rectangle`
-      but trait `HasField<Symbol!("width")>` is implemented for it
+help: missing field `height` in `Rectangle`
   --> src/main.rs:45:10
    |
 45 | #[derive(HasField)]

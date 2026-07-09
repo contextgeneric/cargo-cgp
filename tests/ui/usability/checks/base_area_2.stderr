@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
 55 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol!("width")>` is not implemented for `Rectangle`
+help: `#[derive(HasField)]` is required to access field `width` in `Rectangle`
   --> src/main.rs:41:1
    |
 41 | pub struct Rectangle {

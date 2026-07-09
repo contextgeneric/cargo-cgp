@@ -4,8 +4,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
 73 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol!("scale_factor")>` is not implemented for `Rectangle`
-      but trait `HasField<Symbol!("base_area")>` is implemented for it
+help: missing field `scale_factor` in `Rectangle`
   --> src/main.rs:56:10
    |
 56 | #[derive(HasField)]

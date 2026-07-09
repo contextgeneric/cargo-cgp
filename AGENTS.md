@@ -149,7 +149,8 @@ names.
 The processing library (`crates/cargo-cgp-error-processing/src`) is the smallest and holds no
 compiler linkage. `process.rs` is the stateless `process_cgp_errors` entrypoint, which wraps each
 diagnostic and runs the per-diagnostic preprocessing pipeline in `preprocess/` (stripping CGP path
-prefixes, resugaring `Symbol!`); `diagnostic.rs` defines the `CgpDiagnostic` output type. Its tests in
+prefixes, resugaring `Symbol!`, rewriting unmet `HasField` bounds into missing-field messages);
+`diagnostic.rs` defines the `CgpDiagnostic` output type. Its tests in
 `tests/` drive the preprocessors and `process_cgp_errors` over committed fixtures, so they run on any
 toolchain. The cross-diagnostic aggregation sub-stage (collapsing cascades) is still to come.
 

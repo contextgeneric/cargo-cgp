@@ -59,9 +59,9 @@ and stderr, parses the JSON stream into
 [`check::diagnostics`](../../crates/cargo-cgp/src/check/diagnostics.rs), runs them through the
 `cargo-cgp-error-processing` crate's `process_cgp_errors`, and re-emits the result — printing each
 diagnostic's rendered text, then replaying cargo's own output. `process_cgp_errors` already rewrites
-each diagnostic (stripping CGP path prefixes, resugaring `Symbol!`), so the printed diagnostics are
-cleaner than rustc's; the whole [error pipeline](error-pipeline.md) documents this path and what it
-will grow into. Throughout, the exit code of the `cargo` process is propagated, so a failed check
+each diagnostic (stripping CGP path prefixes, resugaring `Symbol!`, turning unmet `HasField` bounds
+into missing-field messages), so the printed diagnostics are cleaner than rustc's; the whole [error
+pipeline](error-pipeline.md) documents this path and what it will grow into. Throughout, the exit code of the `cargo` process is propagated, so a failed check
 fails the command.
 
 ## Wrapping rustc: the driver

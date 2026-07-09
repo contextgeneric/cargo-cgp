@@ -14,6 +14,6 @@ pub mod process;
 /// Re-export of the diagnostic library the input/output types are built on, so a
 /// dependent can name `cargo_metadata::diagnostic::Diagnostic` through this crate.
 pub use cargo_metadata;
-pub use diagnostic::CgpDiagnostic;
-pub use preprocess::{preprocess, resugar_symbol, strip_cgp_prefixes};
+pub use diagnostic::{CgpDiagnostic, CgpDiagnosticDetail};
+pub use preprocess::{extract_missing_fields, preprocess, resugar_symbol, strip_cgp_prefixes};
 pub use process::process_cgp_errors;

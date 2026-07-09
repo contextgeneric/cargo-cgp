@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Person: CanUseComponent<GreeterComponent>` is not
 58 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol!("name")>` is not implemented for `Person`
+help: `#[derive(HasField)]` is required to access field `name` in `Person`
   --> src/main.rs:44:1
    |
 44 | pub struct Person {
