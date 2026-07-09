@@ -15,8 +15,8 @@ help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
 54 | #[derive(HasField)]
    |          ^^^^^^^^
    |          |
-   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', ...>>>>>`
-   |          `HasField<Symbol<6, Chars<'h', Chars<'e', Chars<'i', ...>>>>>`
+   |          `cgp::prelude::HasField<cgp::prelude::Symbol<5, cgp::prelude::Chars<'w', cgp::prelude::Chars<'i', cgp::prelude::Chars<'d', cgp::prelude::Chars<'t', cgp::prelude::Chars<'h', cgp::prelude::Nil>>>>>>>`
+   |          `cgp::prelude::HasField<cgp::prelude::Symbol<6, cgp::prelude::Chars<'h', cgp::prelude::Chars<'e', cgp::prelude::Chars<'i', cgp::prelude::Chars<'g', cgp::prelude::Chars<'h', cgp::prelude::Chars<'t', cgp::prelude::Nil>>>>>>>>`
 note: required for `Rectangle` to implement `HasScaleFactor`
   --> src/main.rs:38:1
    |

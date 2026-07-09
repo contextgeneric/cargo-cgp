@@ -42,12 +42,18 @@ tool produces — `hidden-root-cause/` for errors whose cause is unrecoverable f
 work — the same categories as the pending-issue documents in
 [docs/issues/](../issues/README.md), each fixture exposing the issue its directory names. Each fixture
 `<name>.rs` has a sibling `<name>.stderr`; a fixture that compiles cleanly has an empty snapshot.
+The `usability/` fixtures are further sorted into kind subdirectories (`checks/`, `wiring/`,
+`lowering/`, `unsatisfied-dependency/`) mirroring the upstream catalog's sections; alongside the
+hand-curated examples they include a verbatim mirror of the upstream CGP compile-fail suite (one
+fixture per reproducible error class), giving the tool a snapshot of its own transformed output for the
+whole [error catalog](../../../cgp/docs/errors/README.md). The
+[usability fixtures README](../../tests/ui/usability/README.md) records the class-by-class findings.
 
 What the suite snapshots is *the output of `cargo-cgp` itself*, not of plain `rustc`. Each fixture is
 compiled by running the real `cargo-cgp check` end to end — front-end, driver, and all — so the
 snapshot is whatever the tool emits, already shaped by what the driver does. That difference is
 visible today: because the driver enables the next-gen trait solver, the
-`usability/unsatisfied_dependency` snapshot shows the un-hidden `HasField` root cause, not the default
+`usability/unsatisfied-dependency/unsatisfied_dependency` snapshot shows the un-hidden `HasField` root cause, not the default
 solver's dead-end. As the driver grows
 (reformatting diagnostics in its callbacks), these snapshots are exactly what will change, and the
 diff is the signal that the change did what was intended. The suite exists so that is caught the
@@ -120,7 +126,7 @@ compiler's diagnostic text. The harness builds and runs under the toolchain the 
 [`rust-toolchain.toml`](../../rust-toolchain.toml) (overridable with `RUSTUP_TOOLCHAIN`), and
 snapshots must be blessed under that same toolchain. A deliberate toolchain bump can therefore change
 the diagnostic wording and require a re-bless, exactly as it does for Clippy — a `.stderr` diff after
-a toolchain change is expected, not a regression. A passing `usability/unsatisfied_dependency`
+a toolchain change is expected, not a regression. A passing `usability/unsatisfied-dependency/unsatisfied_dependency`
 snapshot is also the standing proof that the driver genuinely stands in as the compiler, since its
 un-hidden root cause could only be produced by compiling the fixture through the tool.
 

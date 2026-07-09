@@ -1,0 +1,23 @@
+error[E0119]: conflicting implementations of trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `App`
+  --> src/main.rs:57:10
+   |
+55 |         namespace AppNamespace;
+   |                   ------------ first implementation here
+56 |
+57 |         @app.GreeterComponent: GreetBye,
+   |          ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+   |
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `GreetHello`
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `GreetBye`
+
+error[E0119]: conflicting implementations of trait `cgp::prelude::DelegateComponent<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>` for type `App`
+  --> src/main.rs:57:10
+   |
+55 |         namespace AppNamespace;
+   |                   ------------ first implementation here
+56 |
+57 |         @app.GreeterComponent: GreetBye,
+   |          ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.
+error: could not compile `ui` (bin "ui") due to 2 previous errors

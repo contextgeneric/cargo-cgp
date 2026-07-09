@@ -1,0 +1,28 @@
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:39:10
+   |
+39 |         <T> GreeterComponent: GreetWith<T>,
+   |          ^ unconstrained type parameter
+   |
+help: use the type parameter `T` in the `Person` type and use it in the type definition
+   |
+34 ~ pub struct Person<T>;
+35 |
+36 | // `T` is declared for the entry but only used in the value `GreetWith<T>`.
+37 | delegate_components! {
+38 ~     Person<T> {
+   |
+
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:39:10
+   |
+37 | / delegate_components! {
+38 | |     Person {
+39 | |         <T> GreeterComponent: GreetWith<T>,
+   | |          ^ unconstrained type parameter
+40 | |     }
+41 | | }
+   | |_- help: remove the unused type parameter `T`
+
+For more information about this error, try `rustc --explain E0207`.
+error: could not compile `ui` (bin "ui") due to 2 previous errors

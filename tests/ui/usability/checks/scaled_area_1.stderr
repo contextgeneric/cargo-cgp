@@ -15,8 +15,8 @@ help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
 54 | #[derive(HasField)]
    |          ^^^^^^^^
    |          |
-   |          `HasField<Symbol<12, Chars<'s', Chars<'c', Chars<'a', ...>>>>>`
-   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', ...>>>>>`
+   |          `cgp::prelude::HasField<cgp::prelude::Symbol<12, cgp::prelude::Chars<'s', cgp::prelude::Chars<'c', cgp::prelude::Chars<'a', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'f', cgp::prelude::Chars<'a', cgp::prelude::Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', cgp::prelude::Nil>>>>>>>>>>>>>>`
+   |          `cgp::prelude::HasField<cgp::prelude::Symbol<5, cgp::prelude::Chars<'w', cgp::prelude::Chars<'i', cgp::prelude::Chars<'d', cgp::prelude::Chars<'t', cgp::prelude::Chars<'h', cgp::prelude::Nil>>>>>>>`
 note: required for `Rectangle` to implement `HasRectangleFields`
   --> src/main.rs:21:1
    |

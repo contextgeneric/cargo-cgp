@@ -70,11 +70,12 @@ turns the wrapper's argument vector into a rustc argument vector. It detects "wr
 second argument is a path whose file stem is `rustc` — and removes that injected compiler path,
 because `rustc_driver::run_compiler` treats the vector's first element as the ignored program name
 and everything after it as flags; leaving the `rustc` path in would make the compiler treat it as an
-input file. It then injects two flags: `--sysroot` unless a sysroot is already present (see the
-environment contract below), and `-Znext-solver=globally` unless the invocation already sets
-`-Znext-solver`. The second is not a structural concern but a *diagnostic* one — it is how the driver
-surfaces CGP errors the default solver hides — so it is documented in
-[Error transformation](error-transformation.md) rather than here. The prepared vector is run under
+input file. It then injects flags, each unless the invocation already sets it: `--sysroot` unless a
+sysroot is already present (see the environment contract below), plus the two *diagnostic* flags
+`-Znext-solver=globally` and `--verbose`. The diagnostic pair are not structural concerns — they are
+how the driver surfaces CGP errors the default solver hides and un-elides the types rustc would
+compress — so they are documented in [Error transformation](error-transformation.md) rather than here,
+along with why they are skipped for cargo's `-vV` and `--print` info queries. The prepared vector is run under
 [`rustc_driver::catch_with_exit_code`](../../crates/cargo-cgp-driver/src/run.rs), which executes the
 compiler and converts a compiler-signalled failure into the process `ExitCode`, matching what plain
 `rustc` returns.
@@ -82,8 +83,8 @@ compiler and converts a compiler-signalled failure into the process `ExitCode`, 
 The compiler behavior itself is installed through
 [`callbacks::CgpCallbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs), still an empty
 `rustc_driver::Callbacks` implementation. The driver's current effect on diagnostics comes entirely
-from the injected solver flag, not from the callbacks; those remain the extension point for the finer
-transformations to come, both covered in [Error transformation](error-transformation.md).
+from the injected diagnostic flags, not from the callbacks; those remain the extension point for the
+finer transformations to come, both covered in [Error transformation](error-transformation.md).
 
 ## The environment contract
 

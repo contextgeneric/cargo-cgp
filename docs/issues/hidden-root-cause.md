@@ -10,56 +10,74 @@ output from which a downstream consumer — a formatter, an IDE, or an AI agent 
 cause; how that output is spelled or laid out is a separate concern, handled in
 [usability](usability.md). An issue belongs here only when the root cause is genuinely absent from,
 or unrecoverable from, `cargo-cgp`'s output, so that no downstream processing of the text could
-reconstruct it — and only when a fixture under
-[`tests/ui/hidden-root-cause/`](../../tests/ui/hidden-root-cause) reproduces it. These are the cases
-that justify the tool's compiler-internal foothold: where the ordinary text output has lost
+reconstruct it — and only when a fixture under [`tests/ui/`](../../tests/ui) reproduces it. These are
+the cases that justify the tool's compiler-internal foothold: where the ordinary text output has lost
 information, only a tool reading the compiler's own state can put it back.
 
-## A truncated type drops characters from the field name
+## No reproduced cases remain
 
-The one reproduced case is a field name that the compiler prints with a character missing, so the
-name cannot be read back from the diagnostic at all. When a provider needs a field the context lacks
-and the context has a *near-miss* field, rustc reports the unmet bound through its two-line "similar
-impl exists" hint — "the trait `HasField<…>` is not implemented … but trait `HasField<…>` is
-implemented for it" — and in that hint it abbreviates one character of each type-level string as
-`_`. In [`hidden-root-cause/base_area_1.rs`](../../tests/ui/hidden-root-cause/base_area_1.rs), a
-`Rectangle` that has `width` but not `height` produces
-([`.stderr`](../../tests/ui/hidden-root-cause/base_area_1.stderr)):
+There is currently **no reproduced hidden-root-cause case**. The two archetypes this category was
+built around are both defeated today, each by a flag the driver injects, so neither hides a cause the
+output cannot recover. Per the rule in [the issues README](README.md) — a class with no reproducing
+fixture counts as resolved — this document keeps no open entry; it records the two defeated archetypes
+below so a future agent recognizes them, and states what a genuinely new case would have to look like
+to belong here.
 
-```
-HasField<Symbol<6, Chars<'h', Chars<'e', Chars<'i', Chars<'g', Chars<_, Chars<'t', Nil>>>>>>>>
-```
+This is not merely the absence of a *known* case: the whole upstream CGP compile-fail suite has been
+run through cargo-cgp and snapshotted under the
+[`tests/ui/usability/`](../../tests/ui/usability) kind subdirectories, and every reproducible class
+carries its root cause in the tool's output — so the catalog's own hidden class (an unsatisfied dependency
+reached by a consumer-method call) surfaces here too, and nothing across the catalog lands in this
+category. The one upstream fixture that produces no usable diagnostic under cargo-cgp,
+`inheritance_cycle`, does so because the next-gen solver *accepts* it (a missing error, tracked as a
+solver caveat in [Error transformation](../implementation/error-transformation.md#caveats)), not
+because a cause is suppressed.
 
-The fifth character is gone. A consumer reading the diagnostic alone sees `h, e, i, g, _, t` and
-cannot know the field is `height` rather than any other name that fits — the information is not
-merely encoded, it is absent from the text. This is what separates it from the
-[encoded-but-readable field name](usability.md#the-field-name-is-an-encoded-type-level-string), a
-usability issue where the full string is present and can be decoded; here the string is incomplete.
-The abbreviation is specific to the two-line similar-impl hint shape, which is why the other fixtures
-— reporting the same class of mistake through the collapsed list hint — spell their symbols out in
-full and are usability problems instead.
+The two archetypes are defeated by *different* levers, and the distinction is the useful one to carry
+forward. A cause can be hidden because the compiler **never computed it** or because the compiler
+computed it and then **elided it while printing** — the first is a trait-solver problem, the second a
+diagnostic-printing problem, and they need different flags. Both levers are argument injections
+documented in [Error transformation](../implementation/error-transformation.md); the printing side is
+mapped function-by-function in
+[rustc diagnostic internals](../implementation/rustc-diagnostic-internals.md).
 
-This is the case that most directly justifies why `cargo-cgp` embeds the compiler rather than
-post-processing text. The full `Symbol` type is intact in the compiler's interned representation, so
-the driver can read the exact field name and emit it even though rustc's own textual output elides
-it. Passing the text through — what the tool does today — is here provably not enough; closing the
-gap requires the foothold.
+### Defeated: a cause the default trait solver never computed
 
-## What is deliberately not here
-
-Two absences are intentional, so that the list stays a record of reproduced problems rather than
-imagined ones. The archetypal hidden failure — the compiler suppressing a cause entirely, reporting
-only that a method's bounds are unsatisfied (`E0599`) without naming the failed dependency — is
-**not** listed, because `cargo-cgp` already defeats it: the `-Znext-solver` injection descends to the
-real bound, so the same wiring mistake now surfaces the unmet `HasField` and even an "add
+The archetypal hidden failure was a wiring mistake exercised by a direct consumer-method call, where
+the compiler reported only that a method's bounds were unsatisfied (`E0599`) without ever naming the
+failed dependency. On that path the *default* solver's method-resolution heuristic bottoms out at the
+provider trait and does not compute the real missing leaf bound at all, so no amount of text
+processing could recover it — the leaf was never in the diagnostic. `cargo-cgp` defeats this by
+injecting `-Znext-solver=globally`, which descends to the leaf and even renders CGP's own "add
 `#[derive(HasField)]`" hint. The fixture that once showed the hidden form,
-[`usability/unsatisfied_dependency.rs`](../../tests/ui/usability/unsatisfied_dependency.rs), now
-demonstrates that recovered cause and has moved to [usability](usability.md), where its remaining
-problem — a misleading, verbose presentation — actually lies. Should a wiring mistake be found whose
-cause the next-gen solver still cannot surface, it belongs here with a fixture that proves it. The
-upstream catalog's [hidden-versus-surfaced axis](../../../cgp/docs/errors/README.md#the-central-axis-hidden-versus-surfaced)
+[`usability/unsatisfied_dependency.rs`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.rs), now
+demonstrates the recovered cause and lives under [usability](usability.md), where its remaining
+problem — a misleading, verbose presentation — actually lies.
+
+### Defeated: a field name the printer elided a character from
+
+The second archetype was a field name the compiler printed with a character missing, so the name
+could not be read back from the diagnostic at all. When a provider needs a field the context lacks and
+the context has a *near-miss* field, rustc reports the unmet bound through its two-line "similar impl
+exists" hint and, in that hint, diffs the two `HasField` symbols and replaces every generic argument
+they share with `_`. In [`usability/base_area_1.rs`](../../tests/ui/usability/checks/base_area_1.rs) a
+`Rectangle` that has `width` but not `height` made the two symbols share the character `'h'`, and that
+shared `'h'` was collapsed to `_` in *both* names — `h,e,i,g,_,t` for `height` — so the field name was
+absent from the text, not merely encoded. `cargo-cgp` defeats this by injecting `--verbose`, which
+turns off the compiler's matching-argument elision (along with two related compressions) so the full
+`Symbol` always prints. That fixture, too, now lives under [usability](usability.md), where its
+remaining problem — the field name is present but written as an encoded type-level string — is a
+readability burden rather than an insufficiency.
+
+## What a new case would look like
+
+Should a wiring mistake be found whose cause survives *both* levers — the next-gen solver still does
+not compute it, and `--verbose` still does not print it — it belongs here, with a fixture under a
+recreated [`tests/ui/hidden-root-cause/`](../../tests/ui) directory that proves the cause is
+unrecoverable from the text. The upstream catalog's
+[hidden-versus-surfaced axis](../../../cgp/docs/errors/README.md#the-central-axis-hidden-versus-surfaced)
 is the same distinction from the CGP side and is the reference for judging which classes carry their
 cause and which suppress it.
 
-The second absence is by scope: plain Rust or Cargo diagnostics that have nothing to do with CGP are
-not `cargo-cgp`'s to recover and are not tracked here.
+The second thing that stays out is by scope: plain Rust or Cargo diagnostics that have nothing to do
+with CGP are not `cargo-cgp`'s to recover and are not tracked here.

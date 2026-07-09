@@ -36,8 +36,10 @@ the same categories, so a fixture's directory names the kind of problem it expos
   downstream consumer — a formatter, an IDE, or an AI agent — to identify the root cause from the
   output alone, no matter how that output is processed. These are the cases that justify the tool's
   compiler-internal access, because only a tool reading the compiler's own state can supply what the
-  ordinary text output has lost. Its fixtures live in
-  [`tests/ui/hidden-root-cause/`](../../tests/ui/hidden-root-cause).
+  ordinary text output has lost. It currently has **no reproduced case** — both known archetypes are
+  defeated by flags the driver injects (`-Znext-solver=globally` and `--verbose`), so the
+  `tests/ui/hidden-root-cause/` directory is empty and absent until a genuinely unrecoverable case is
+  found; the document records the two defeated archetypes so they are recognized again.
 - [Usability issues](usability.md) — **human-oriented**, about *readability*. It lists output that
   does carry the root cause but buries it — foremost the sheer verbosity of a CGP compile error — so
   a reader must wade through volume, encoding, and generated-type noise to reach a cause that is

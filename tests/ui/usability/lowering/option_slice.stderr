@@ -1,0 +1,34 @@
+error[E0277]: the size for values of type `[u8]` cannot be known at compilation time
+   --> src/main.rs:17:1
+    |
+ 17 | #[cgp_auto_getter]
+    | ^^^^^^^^^^^^^^^^^^ doesn't have a size known at compile-time
+    |
+    = help: the trait `std::marker::Sized` is not implemented for `[u8]`
+note: required by an implicit `Sized` bound in `std::option::Option`
+   --> /home/soares/.rustup/toolchains/nightly-2026-07-02-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:598:17
+    |
+598 | pub enum Option<T> {
+    |                 ^ required by the implicit `Sized` requirement on this type parameter in `Option`
+    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `as_ref` exists for reference `&std::option::Option<[u8]>`, but its trait bounds were not satisfied
+   --> src/main.rs:17:1
+    |
+ 17 | #[cgp_auto_getter]
+    | ^^^^^^^^^^^^^^^^^^ method cannot be called on `&std::option::Option<[u8]>` due to unsatisfied trait bounds
+    |
+   ::: /home/soares/.rustup/toolchains/nightly-2026-07-02-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:598:1
+    |
+598 | pub enum Option<T> {
+    | ------------------ doesn't satisfy `std::option::Option<[u8]>: std::convert::AsRef<_>`
+    |
+    = note: the following trait bounds were not satisfied:
+            `[u8]: std::marker::Sized`
+            `std::option::Option<[u8]>: std::convert::AsRef<_>`
+            which is required by `&std::option::Option<[u8]>: std::convert::AsRef<_>`
+    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0277, E0599.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `ui` (bin "ui") due to 3 previous errors

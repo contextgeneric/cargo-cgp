@@ -1,0 +1,14 @@
+error[E0425]: cannot find type `A` in this scope
+  --> src/main.rs:32:35
+   |
+32 | #[use_type(HasA.A in B, HasB.B in A)]
+   |                                   ^ not found in this scope
+
+error[E0425]: cannot find type `B` in this scope
+  --> src/main.rs:32:22
+   |
+32 | #[use_type(HasA.A in B, HasB.B in A)]
+   |                      ^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `ui` (bin "ui") due to 2 previous errors

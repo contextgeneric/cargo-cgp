@@ -18,8 +18,19 @@ use std::path::Path;
 ///   hardcoded so the injection logic stays independent of the flag's spelling.
 /// - Append each of `injected_flags` unless the invocation already sets that flag, so an
 ///   explicit flag on the command line wins. This is how cargo-cgp turns on the
-///   next-generation trait solver ([`crate::config::NEXT_SOLVER_FLAG`]) — see that
-///   constant for why.
+///   next-generation trait solver ([`crate::config::NEXT_SOLVER_FLAG`]) and the diagnostic
+///   `--verbose` flag ([`crate::config::VERBOSE_FLAG`]) — see those constants for why.
+///
+/// The injection is skipped for cargo's *info queries* — the `rustc -vV` version probe and
+/// the `--print` requests cargo runs before a build. Those need no CGP handling, and one of
+/// our flags actively breaks them: `-vV` already implies `-v`, so appending `--verbose` a
+/// second time makes rustc reject the invocation with "given more than once". Clippy skips
+/// its own added flags on the same queries, and for the same reason ([rust-lang/cargo#14385]
+/// notes that a query carrying unexpected flags also poisons cargo's cache). The real crate
+/// compilation — the only invocation whose diagnostics we care about — carries neither
+/// marker, so it still receives every flag.
+///
+/// [rust-lang/cargo#14385]: https://github.com/rust-lang/cargo/issues/14385
 pub fn rustc_args(
     raw_args: impl IntoIterator<Item = String>,
     sysroot: Option<String>,
@@ -39,16 +50,27 @@ pub fn rustc_args(
         args.push(sysroot);
     }
 
-    for flag in injected_flags {
-        // A `-Zkey=value` flag is "already set" if any argument carries the same key, so
-        // that an explicit `-Zkey=other` on the command line is left to take precedence.
-        let key = flag.split('=').next().unwrap_or(flag);
-        if !has_flag(&args, key) {
-            args.push((*flag).to_owned());
+    if !is_info_query(&args) {
+        for flag in injected_flags {
+            // A `-Zkey=value` flag is "already set" if any argument carries the same key, so
+            // that an explicit `-Zkey=other` on the command line is left to take precedence.
+            let key = flag.split('=').next().unwrap_or(flag);
+            if !has_flag(&args, key) {
+                args.push((*flag).to_owned());
+            }
         }
     }
 
     args
+}
+
+/// Whether this invocation is one of cargo's pre-build info queries rather than a real
+/// compilation: the `rustc -vV` version probe or any `--print` request. These carry no code
+/// to type-check, so our injected flags would have no diagnostic to act on — and `--verbose`
+/// would clash with the `-v` already inside `-vV`.
+fn is_info_query(args: &[String]) -> bool {
+    args.iter()
+        .any(|arg| arg == "-vV" || arg == "--print" || arg.starts_with("--print="))
 }
 
 /// Whether `args[1]` is a path to `rustc`, i.e. cargo called us as its rustc wrapper.

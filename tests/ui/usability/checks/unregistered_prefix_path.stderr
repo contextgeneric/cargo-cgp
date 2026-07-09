@@ -1,0 +1,41 @@
+error[E0277]: the trait bound `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>: cgp::prelude::IsProviderFor<GreeterComponent, App>` is not satisfied
+  --> src/main.rs:48:9
+   |
+48 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `cgp::prelude::IsProviderFor<GreeterComponent, App>` is not implemented for `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>`
+   = note: You need to add `#[cgp_provider(GreeterComponent)]` on the impl block for CGP provider traits
+   = help: `cgp::prelude::RedirectLookup<__Components__, __Path__>` implements trait `cgp::prelude::IsProviderFor<Component, Context, Params>`:
+             cgp::prelude::IsProviderFor<GreeterComponent, __Context__>
+             cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_error::ErrorRaiserComponent, __Context__, SourceError>
+             cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_error::ErrorTypeProviderComponent, __Context__>
+             cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_error::ErrorWrapperComponent, __Context__, Detail>
+             cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_type::TypeProviderComponent, __Context__, Tag>
+             cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_run::RunnerComponent, __Context__, Code>
+             cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_run::SendRunnerComponent, __Context__, Code>
+             cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_runtime::RuntimeGetterComponent, __Context__>
+             cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_runtime::RuntimeTypeProviderComponent, __Context__>
+             cgp::prelude::IsProviderFor<cgp::prelude::AsyncComputerComponent, __Context__, (Code, Input)>
+             cgp::prelude::IsProviderFor<cgp::prelude::AsyncComputerRefComponent, __Context__, (Code, Input)>
+             cgp::prelude::IsProviderFor<cgp::prelude::ComputerComponent, __Context__, (Code, Input)>
+             cgp::prelude::IsProviderFor<cgp::prelude::ComputerRefComponent, __Context__, (Code, Input)>
+             cgp::prelude::IsProviderFor<cgp::prelude::HandlerComponent, __Context__, (Code, Input)>
+             cgp::prelude::IsProviderFor<cgp::prelude::HandlerRefComponent, __Context__, (Code, Input)>
+             cgp::prelude::IsProviderFor<cgp::prelude::ProducerComponent, __Context__, Code>
+             cgp::prelude::IsProviderFor<cgp::prelude::TryComputerComponent, __Context__, (Code, Input)>
+             cgp::prelude::IsProviderFor<cgp::prelude::TryComputerRefComponent, __Context__, (Code, Input)>
+   = note: required for `App` to implement `cgp::prelude::CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:46:1
+   |
+46 | / check_components! {
+47 | |     App {
+48 | |         GreeterComponent,
+49 | |     }
+50 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `ui` (bin "ui") due to 1 previous error

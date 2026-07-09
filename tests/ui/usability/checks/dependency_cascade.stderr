@@ -1,0 +1,169 @@
+error[E0277]: the trait bound `ProvideFoo: cgp::prelude::IsProviderFor<FooComponent, App>` is not satisfied
+  --> src/main.rs:84:9
+   |
+84 |         BazComponent,
+   |         ^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::IsProviderFor<FooComponent, App>` is not implemented for `ProvideFoo`
+  --> src/main.rs:40:16
+   |
+40 | #[cgp_impl(new ProvideFoo)]
+   |                ^^^^^^^^^^
+   = note: You need to add `#[cgp_provider(FooComponent)]` on the impl block for CGP provider traits
+help: the trait `cgp::prelude::IsProviderFor<FooComponent, __Context__>` is implemented for `ProvideFoo`
+  --> src/main.rs:41:1
+   |
+41 | / impl Foo
+42 | | where
+43 | |     Self: HasName,
+   | |__________________^
+note: required for `App` to implement `cgp::prelude::IsProviderFor<FooComponent, App>`
+  --> src/main.rs:71:1
+   |
+71 | / delegate_components! {
+72 | |     App {
+   | |     ^^^
+73 | |         FooComponent: ProvideFoo,
+74 | |         BarComponent: ProvideBar,
+...  |
+77 | | }
+   | |_^
+note: required for `App` to implement `Foo<App>`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_component(Foo)]
+   | ^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanFoo`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_component(Foo)]
+   | ^^^^^^^^^^^^^^^^^^^^^
+26 | pub trait CanFoo {
+   |           ^^^^^^
+   = note: 2 redundant requirements hidden
+   = note: required for `App` to implement `cgp::prelude::IsProviderFor<BarComponent, App>`
+note: required for `App` to implement `Bar<App>`
+  --> src/main.rs:30:1
+   |
+30 | #[cgp_component(Bar)]
+   | ^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanBar`
+  --> src/main.rs:30:1
+   |
+30 | #[cgp_component(Bar)]
+   | ^^^^^^^^^^^^^^^^^^^^^
+31 | pub trait CanBar {
+   |           ^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `ProvideBaz` to implement `cgp::prelude::IsProviderFor<BazComponent, App>`
+   = note: required for `App` to implement `cgp::prelude::CanUseComponent<BazComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:82:1
+   |
+82 | / check_components! {
+83 | |     App {
+84 | |         BazComponent,
+85 | |         BarComponent,
+...  |
+88 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: cgp::prelude::CanUseComponent<BarComponent>` is not satisfied
+  --> src/main.rs:85:9
+   |
+85 |         BarComponent,
+   |         ^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` is not implemented for `App`
+      but trait `HasField<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'g', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>` is implemented for it
+  --> src/main.rs:66:10
+   |
+66 | #[derive(HasField)]
+   |          ^^^^^^^^
+note: required for `App` to implement `HasName`
+  --> src/main.rs:20:1
+   |
+20 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+21 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `ProvideFoo` to implement `cgp::prelude::IsProviderFor<FooComponent, App>`
+  --> src/main.rs:40:1
+   |
+40 | #[cgp_impl(new ProvideFoo)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+43 |     Self: HasName,
+   |           ------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `App` to implement `cgp::prelude::IsProviderFor<FooComponent, App>`
+note: required for `App` to implement `Foo<App>`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_component(Foo)]
+   | ^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanFoo`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_component(Foo)]
+   | ^^^^^^^^^^^^^^^^^^^^^
+26 | pub trait CanFoo {
+   |           ^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `ProvideBar` to implement `cgp::prelude::IsProviderFor<BarComponent, App>`
+   = note: required for `App` to implement `cgp::prelude::CanUseComponent<BarComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:82:1
+   |
+82 | / check_components! {
+83 | |     App {
+84 | |         BazComponent,
+85 | |         BarComponent,
+...  |
+88 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: cgp::prelude::CanUseComponent<FooComponent>` is not satisfied
+  --> src/main.rs:86:9
+   |
+86 |         FooComponent,
+   |         ^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` is not implemented for `App`
+      but trait `HasField<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'g', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>` is implemented for it
+  --> src/main.rs:66:10
+   |
+66 | #[derive(HasField)]
+   |          ^^^^^^^^
+note: required for `App` to implement `HasName`
+  --> src/main.rs:20:1
+   |
+20 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+21 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `ProvideFoo` to implement `cgp::prelude::IsProviderFor<FooComponent, App>`
+  --> src/main.rs:40:1
+   |
+40 | #[cgp_impl(new ProvideFoo)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+43 |     Self: HasName,
+   |           ------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `cgp::prelude::CanUseComponent<FooComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:82:1
+   |
+82 | / check_components! {
+83 | |     App {
+84 | |         BazComponent,
+85 | |         BarComponent,
+...  |
+88 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `ui` (bin "ui") due to 3 previous errors

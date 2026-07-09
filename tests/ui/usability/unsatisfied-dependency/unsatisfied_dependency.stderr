@@ -1,0 +1,43 @@
+error[E0599]: HasField is not implemented for Person with the field: cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>
+  --> src/main.rs:55:12
+   |
+40 | pub struct Person {
+   | ----------------- method `greet` not found for this struct because it doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', Chars<'e', Nil>>>>>>`
+...
+55 |     person.greet();
+   |            ^^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `Greeter`
+  --> src/main.rs:21:5
+   |
+21 |     fn greet(&self);
+   |     ^^^^^^^^^^^^^^^^
+note: trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` was not satisfied
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+25 | pub trait HasName {
+   |           ^^^^^^^
+   = note: You need to add #[derive(HasField)] to Person with the given field present in the struct
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:50:1
+   |
+50 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `CanGreet` defines an item `greet`, perhaps you need to implement it
+  --> src/main.rs:20:1
+   |
+20 | pub trait CanGreet {
+   | ^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+   |
+55 -     person.greet();
+55 +     Person::greet();
+   |
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `ui` (bin "ui") due to 1 previous error

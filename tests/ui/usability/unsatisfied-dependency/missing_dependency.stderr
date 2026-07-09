@@ -1,24 +1,24 @@
-error[E0599]: HasField is not implemented for Person with the field: Symbol<4, Chars<'n', Chars<'a', Chars<'m', Chars<'e', Nil>>>>>
-  --> src/main.rs:55:12
+error[E0599]: HasField is not implemented for Person with the field: cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>
+  --> src/main.rs:50:23
    |
-40 | pub struct Person {
+37 | pub struct Person {
    | ----------------- method `greet` not found for this struct because it doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', Chars<'e', Nil>>>>>>`
 ...
-55 |     person.greet();
-   |            ^^^^^ this is an associated function, not a method
+50 |     Person { age: 0 }.greet();
+   |                       ^^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `Greeter`
-  --> src/main.rs:21:5
+  --> src/main.rs:18:5
    |
-21 |     fn greet(&self);
+18 |     fn greet(&self);
    |     ^^^^^^^^^^^^^^^^
 note: trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` was not satisfied
-  --> src/main.rs:24:1
+  --> src/main.rs:21:1
    |
-24 | #[cgp_auto_getter]
+21 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-25 | pub trait HasName {
+22 | pub trait HasName {
    |           ^^^^^^^
    = note: You need to add #[derive(HasField)] to Person with the given field present in the struct
 note: the trait `cgp::prelude::HasField` must be implemented
@@ -28,15 +28,15 @@ note: the trait `cgp::prelude::HasField` must be implemented
    | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanGreet` defines an item `greet`, perhaps you need to implement it
-  --> src/main.rs:20:1
+  --> src/main.rs:17:1
    |
-20 | pub trait CanGreet {
+17 | pub trait CanGreet {
    | ^^^^^^^^^^^^^^^^^^
    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
-55 -     person.greet();
-55 +     Person::greet();
+50 -     Person { age: 0 }.greet();
+50 +     Person::greet();
    |
 
 For more information about this error, try `rustc --explain E0599`.

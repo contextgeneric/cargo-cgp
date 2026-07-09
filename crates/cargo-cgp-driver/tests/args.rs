@@ -84,3 +84,58 @@ fn keeps_user_override_of_injected_flag() {
     );
     assert_eq!(out, ["d", "-Znext-solver=no", "lib.rs"]);
 }
+
+#[test]
+fn skips_injection_on_version_probe() {
+    // cargo's `rustc -vV` version query already implies `-v`; injecting `--verbose` a
+    // second time would make rustc reject it, so no flag is added to an info query.
+    let out = rustc_args(
+        args(&["d", "/tk/bin/rustc", "-vV"]),
+        None,
+        "--sysroot",
+        &["-Znext-solver=globally", "--verbose"],
+    );
+    assert_eq!(out, ["d", "-vV"]);
+}
+
+#[test]
+fn skips_injection_on_print_query() {
+    // `--print` requests (e.g. `--print=cfg`) are cargo probes, not real compilations, so
+    // they receive none of the diagnostic flags either — in both the split and `=` forms.
+    let split = rustc_args(
+        args(&["d", "/tk/bin/rustc", "--print", "cfg"]),
+        None,
+        "--sysroot",
+        &["-Znext-solver=globally", "--verbose"],
+    );
+    assert_eq!(split, ["d", "--print", "cfg"]);
+
+    let joined = rustc_args(
+        args(&["d", "/tk/bin/rustc", "--print=file-names", "lib.rs"]),
+        None,
+        "--sysroot",
+        &["-Znext-solver=globally", "--verbose"],
+    );
+    assert_eq!(joined, ["d", "--print=file-names", "lib.rs"]);
+}
+
+#[test]
+fn injects_flags_on_a_real_compilation() {
+    // A genuine crate build carries neither `-vV` nor `--print`, so it gets every flag.
+    let out = rustc_args(
+        args(&["d", "/tk/bin/rustc", "--edition=2024", "lib.rs"]),
+        None,
+        "--sysroot",
+        &["-Znext-solver=globally", "--verbose"],
+    );
+    assert_eq!(
+        out,
+        [
+            "d",
+            "--edition=2024",
+            "lib.rs",
+            "-Znext-solver=globally",
+            "--verbose"
+        ]
+    );
+}

@@ -26,6 +26,11 @@ same change.
   readable CGP errors: the two levers (injected rustc flags and the diagnostic callbacks), the
   current transformation (enabling the next-gen trait solver to un-hide dependency errors), and the
   roadmap of transformations still to come.
+- [rustc diagnostic internals](rustc-diagnostic-internals.md) — a map of the compiler code that
+  builds CGP diagnostics and, crucially, where it *suppresses* information: the type/const printer, the
+  trait-error reporters, the two verbosity switches (`--verbose` versus `-Zverbose-internals`), and the
+  specific elision points the driver's `--verbose` injection defeats. Read it when a diagnostic is
+  dropping a cause the tool needs.
 - [Testing](testing.md) — how the tool is tested: tests over the argument handling, and the UI
   snapshot suite — a custom Rust test harness (like Clippy's `compile-test`) that compiles fixtures
   under `tests/ui/` through the tool and diffs committed `.stderr` snapshots — its bless workflow,

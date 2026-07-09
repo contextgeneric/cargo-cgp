@@ -10,7 +10,7 @@
 //! send the user to add one field at a time.
 //!
 //! Exposes issues in docs/issues/usability.md. CGP error class:
-//! ../../../../cgp/docs/errors/checks/check-trait-failure.md (derive-missing variant).
+//! ../../../../../cgp/docs/errors/checks/check-trait-failure.md (derive-missing variant).
 
 use cgp::prelude::*;
 
