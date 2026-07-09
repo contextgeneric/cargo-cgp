@@ -1,0 +1,95 @@
+[
+  {
+    "message": "cannot find associated type `Scalr` in trait `HasScalarType`",
+    "code": {
+      "code": "E0576",
+      "explanation": "An associated item wasn't found in the given type.\n\nErroneous code example:\n\n```compile_fail,E0576\ntrait Hello {\n    type Who;\n\n    fn hello() -> <Self as Hello>::You; // error!\n}\n```\n\nIn this example, we tried to use the nonexistent associated type `You` of the\n`Hello` trait. To fix this error, use an existing associated type:\n\n```\ntrait Hello {\n    type Who;\n\n    fn hello() -> <Self as Hello>::Who; // ok!\n}\n```\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1041,
+        "byte_end": 1053,
+        "line_start": 21,
+        "line_end": 21,
+        "column_start": 5,
+        "column_end": 17,
+        "is_primary": false,
+        "text": [
+          {
+            "text": "    type Scalar;",
+            "highlight_start": 5,
+            "highlight_end": 17
+          }
+        ],
+        "label": "similarly named associated type `Scalar` defined here",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      },
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1128,
+        "byte_end": 1133,
+        "line_start": 26,
+        "line_end": 26,
+        "column_start": 29,
+        "column_end": 34,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "pub fn get_scalar(&self) -> Scalr {",
+            "highlight_start": 29,
+            "highlight_end": 34
+          }
+        ],
+        "label": null,
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [
+      {
+        "message": "an associated type with a similar name exists",
+        "code": null,
+        "level": "help",
+        "spans": [
+          {
+            "file_name": "src/main.rs",
+            "byte_start": 1128,
+            "byte_end": 1133,
+            "line_start": 26,
+            "line_end": 26,
+            "column_start": 29,
+            "column_end": 34,
+            "is_primary": true,
+            "text": [
+              {
+                "text": "pub fn get_scalar(&self) -> Scalr {",
+                "highlight_start": 29,
+                "highlight_end": 34
+              }
+            ],
+            "label": null,
+            "suggested_replacement": "Scalar",
+            "suggestion_applicability": "MaybeIncorrect",
+            "expansion": null
+          }
+        ],
+        "children": [],
+        "rendered": null
+      }
+    ],
+    "rendered": "error[E0576]: cannot find associated type `Scalr` in trait `HasScalarType`\n  --> src/main.rs:26:29\n   |\n21 |     type Scalar;\n   |     ------------ similarly named associated type `Scalar` defined here\n...\n26 | pub fn get_scalar(&self) -> Scalr {\n   |                             ^^^^^\n   |\nhelp: an associated type with a similar name exists\n   |\n26 | pub fn get_scalar(&self) -> Scalar {\n   |                                 +\n\n"
+  },
+  {
+    "message": "For more information about this error, try `rustc --explain E0576`.",
+    "code": null,
+    "level": "failure-note",
+    "spans": [],
+    "children": [],
+    "rendered": "For more information about this error, try `rustc --explain E0576`.\n"
+  }
+]

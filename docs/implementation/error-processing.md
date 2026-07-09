@@ -170,13 +170,16 @@ statelessness requirement buys, and it is where the fuller per-class snapshot su
 analysis lands. Today's tests assert the pass-through invariant: every diagnostic is preserved, in
 order, with its rendered text intact.
 
-These tests complement the existing UI suite rather than replace it; the two guard different seams.
-The [UI snapshot tests](testing.md) drive the whole `cargo-cgp` executable against a compiled fixture
-and pin its end-to-end output, so they prove capture, processing, and rendering work together against
-the real compiler — and it is those snapshots that confirmed the pass-through re-render reproduces
-rustc's output. The processing tests pin the transform in isolation, so a change in how a cascade is
-collapsed shows up as a small, readable diff over structured data rather than buried in a wall of
-rendered compiler output.
+The [UI snapshot suite](testing.md) tests this stage a second way, over real captured diagnostics.
+Each fixture is pinned by both a `.stderr` snapshot and a `.output.json` snapshot of the diagnostics
+the tool captured, and one of the suite's three passes — the *process pass* — parses that
+`.output.json`, runs it through `process_cgp_errors`, renders the result, and checks it reproduces the
+`.stderr` the real binary produced. So `process_cgp_errors` is exercised over every fixture's actual
+diagnostics, not just the hand-picked fixture in this crate's own tests, and the process pass runs
+without invoking the compiler (`--process-only`), giving a sub-second loop for iterating on the
+processing code. The two levels guard different seams: this crate's tests pin the transform on a
+curated input, while the UI process pass proves it stays consistent with what the binary captures and
+renders across the whole catalog.
 
 ## Planned processing work
 
@@ -222,8 +225,10 @@ design is the right precedent to follow precisely because Clippy is not.
   and asserts the pass-through invariant: every diagnostic preserved, in order, with its rendered text
   intact. This is the seed of the per-class snapshot suite described under
   [Testing with snapshots](#testing-with-snapshots).
-- The [UI snapshot suite](testing.md) is the end-to-end guard that the front-end's capture-and-render
-  around this stage reproduces rustc's output.
+- The [UI snapshot suite](testing.md) exercises `process_cgp_errors` over every fixture's real
+  captured diagnostics: its *process pass* parses each `<name>.output.json`, runs the function,
+  renders the result, and checks it reproduces the binary's `<name>.stderr`. The `--process-only` mode
+  runs just this pass, with no compilation, as the fast iteration loop.
 
 ## Source
 

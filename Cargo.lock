@@ -41,6 +41,12 @@ dependencies = [
 [[package]]
 name = "cargo-cgp-ui-tests"
 version = "0.1.0"
+dependencies = [
+ "cargo-cgp",
+ "cargo-cgp-error-processing",
+ "cargo_metadata",
+ "serde_json",
+]
 
 [[package]]
 name = "cargo-platform"

@@ -17,4 +17,3 @@ error[E0119]: conflicting implementations of trait `cgp::prelude::IsProviderFor<
    = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'c', cgp::prelude::Chars<'g', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<cgp::prelude::Symbol<4, cgp::prelude::Chars<'c', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>, cgp::prelude::PathCons<cgp::prelude::Symbol<5, cgp::prelude::Chars<'e', cgp::prelude::Chars<'r', cgp::prelude::Chars<'r', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', cgp::prelude::Nil>>>>>>, cgp::prelude::PathCons<cgp::cgp_core::cgp_error::ErrorTypeProviderComponent, _>>>>, _, _>` for type `cgp::prelude::UseType<std::string::String>`
 
 For more information about this error, try `rustc --explain E0119`.
-error: could not compile `ui` (bin "ui") due to 2 previous errors

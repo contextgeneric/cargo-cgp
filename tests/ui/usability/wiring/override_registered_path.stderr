@@ -20,4 +20,3 @@ error[E0119]: conflicting implementations of trait `cgp::prelude::DelegateCompon
    |          ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
 For more information about this error, try `rustc --explain E0119`.
-error: could not compile `ui` (bin "ui") due to 2 previous errors

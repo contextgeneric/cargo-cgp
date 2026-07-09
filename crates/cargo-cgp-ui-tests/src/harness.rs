@@ -8,7 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::paths::{cargo_cgp_bin, cgp_crate_dir, debug_dir};
+use crate::paths::{cargo_cgp_bin, cgp_crate_dir};
 
 /// The cargo executable, from the `CARGO` cargo sets for us, falling back to `cargo`.
 fn cargo() -> String {
@@ -45,10 +45,7 @@ fn workspace_root_for_build() -> PathBuf {
 /// output stable; the empty `[workspace]` table stops cargo from folding it into the
 /// cargo-cgp workspace above it in `target/`.
 pub fn ensure_harness_crate() -> PathBuf {
-    let dir = debug_dir()
-        .parent()
-        .expect("target directory")
-        .join("ui-harness");
+    let dir = crate::paths::harness_crate_dir();
     fs::create_dir_all(dir.join("src")).expect("creating the throwaway crate");
 
     let manifest = format!(
@@ -74,18 +71,40 @@ pub fn ensure_harness_crate() -> PathBuf {
     dir
 }
 
-/// Compile one fixture through `cargo-cgp check` and return the tool's output. `-q`
-/// suppresses cargo's progress lines, leaving the compiler diagnostics; `--color never`
-/// keeps the snapshot free of ANSI escapes.
+/// Compile one fixture through `cargo-cgp check` and return the tool's rendered
+/// diagnostics from stderr. `-q` suppresses cargo's progress lines, leaving the compiler
+/// diagnostics; `--color never` keeps the snapshot free of ANSI escapes. This is the
+/// "call cargo-cgp directly" pass.
 pub fn run_fixture(harness_crate: &Path, fixture: &Path) -> String {
+    let output = run_cargo_cgp(harness_crate, fixture, &["check", "-q", "--color", "never"]);
+    String::from_utf8_lossy(&output.stderr).into_owned()
+}
+
+/// Compile one fixture through `cargo-cgp check --message-format=json` and return the raw
+/// JSON stream from stdout. With a message format already set, the front-end forwards
+/// cargo's JSON unchanged rather than processing it — so this is exactly the diagnostic
+/// stream the tool captures internally, which the caller parses into the diagnostics fed
+/// to `process_cgp_errors`.
+pub fn run_fixture_json(harness_crate: &Path, fixture: &Path) -> Vec<u8> {
+    let output = run_cargo_cgp(
+        harness_crate,
+        fixture,
+        &["check", "-q", "--color", "never", "--message-format=json"],
+    );
+    output.stdout
+}
+
+/// Copy the fixture in as the throwaway crate's `src/main.rs` and run `cargo-cgp` with
+/// the given arguments. Re-copying bumps the file's mtime, which forces cargo to
+/// recompile and re-emit diagnostics even when the same fixture was just built by another
+/// pass.
+fn run_cargo_cgp(harness_crate: &Path, fixture: &Path, args: &[&str]) -> std::process::Output {
     fs::copy(fixture, harness_crate.join("src/main.rs"))
         .unwrap_or_else(|e| panic!("copying fixture {}: {e}", fixture.display()));
 
-    let output = Command::new(cargo_cgp_bin())
+    Command::new(cargo_cgp_bin())
         .current_dir(harness_crate)
-        .args(["check", "-q", "--color", "never"])
+        .args(args)
         .output()
-        .expect("running cargo-cgp on a fixture");
-
-    String::from_utf8_lossy(&output.stderr).into_owned()
+        .expect("running cargo-cgp on a fixture")
 }

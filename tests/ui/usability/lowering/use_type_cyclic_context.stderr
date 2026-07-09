@@ -11,4 +11,3 @@ error[E0425]: cannot find type `B` in this scope
    |                      ^ not found in this scope
 
 For more information about this error, try `rustc --explain E0425`.
-error: could not compile `ui` (bin "ui") due to 2 previous errors

@@ -171,24 +171,30 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
 
 The UI suite is a custom Rust test harness modeled on Clippy's `compile-test`: the
 [`cargo-cgp-ui-tests`](crates/cargo-cgp-ui-tests) crate has a `harness = false` test with its own
-`fn main` that compiles each fixture under [`tests/ui/`](tests/README.md) through `cargo-cgp` and
-diffs the output against a committed `.stderr` snapshot. The crate is a full workspace member, so
-`cargo test` runs the whole suite alongside the argument tests; that also means a test run builds the
-driver and expects a sibling `cgp` checkout at `../cgp`. Work with the suite directly through it:
+`fn main` that checks each fixture under [`tests/ui/`](tests/README.md) through three passes that must
+agree — running `cargo-cgp` and diffing its stderr against `<name>.stderr`, capturing the diagnostics
+it feeds to processing and diffing them against `<name>.output.json`, and parsing that JSON through
+`process_cgp_errors` and diffing the rendered result back against `<name>.stderr`. The crate is a full
+workspace member, so `cargo test` runs the whole suite alongside the argument tests; a full run builds
+the driver and expects a sibling `cgp` checkout at `../cgp`. Work with the suite directly through it:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests                                  # just the snapshot suite
-cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate snapshots
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate .stderr and .output.json
+cargo test -p cargo-cgp-ui-tests --test ui -- --process-only      # only the process_cgp_errors unit pass (fast, no compile)
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print greet    # print raw output for a fixture
 ```
 
 Passing an argument to the harness needs `--test ui`, so the flag is not also handed to the crate's
-other (libtest) tests. The snapshots capture `cargo-cgp`'s own output end to end, so they are what
-changes once the driver reformats diagnostics; a passing suite is also the standing end-to-end proof
-that the driver runs as the compiler. Add a scenario by dropping a `<name>.rs` file (with a
-`fn main`) into the matching `tests/ui/<class>/` directory and running
-`cargo test -p cargo-cgp-ui-tests --test ui -- --bless`. Snapshots are blessed under
-the pinned toolchain, so a toolchain bump can require a re-bless. The full testing picture — the
+other (libtest) tests. `--process-only` is the fast loop for iterating on the processing
+implementation: it skips the two cargo-invoking passes and runs only `process_cgp_errors` over the
+committed `.output.json`, so the whole suite finishes in well under a second; pair it with `--bless`
+to re-bless `.stderr` from the new process output. The snapshots capture `cargo-cgp`'s own output end
+to end, so they are what changes once the tool reformats diagnostics; a passing suite is also the
+standing end-to-end proof that the driver runs as the compiler. Add a scenario by dropping a
+`<name>.rs` file (with a `fn main`) into the matching `tests/ui/<class>/` directory and running
+`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (a full run, which writes both snapshot
+files). Snapshots are blessed under the pinned toolchain, so a toolchain bump can require a re-bless. The full testing picture — the
 harness structure, why it drives the whole tool rather than the driver directly, and the comparison
 with Clippy — is documented in [Testing](docs/implementation/testing.md); read it before adding
 tests, and keep it in sync when the test setup changes.

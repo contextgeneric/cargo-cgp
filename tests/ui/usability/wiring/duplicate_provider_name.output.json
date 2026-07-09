@@ -1,0 +1,229 @@
+[
+  {
+    "message": "the name `GreetHello` is defined multiple times",
+    "code": {
+      "code": "E0428",
+      "explanation": "A type or module has been defined more than once.\n\nErroneous code example:\n\n```compile_fail,E0428\nstruct Bar;\nstruct Bar; // error: duplicate definition of value `Bar`\n```\n\nPlease verify you didn't misspell the type/module's name or remove/rename the\nduplicated one. Example:\n\n```\nstruct Bar;\nstruct Bar2; // ok!\n```\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1195,
+        "byte_end": 1205,
+        "line_start": 30,
+        "line_end": 30,
+        "column_start": 16,
+        "column_end": 26,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "#[cgp_impl(new GreetHello)]",
+            "highlight_start": 16,
+            "highlight_end": 26
+          }
+        ],
+        "label": "`GreetHello` redefined here",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      },
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1051,
+        "byte_end": 1061,
+        "line_start": 24,
+        "line_end": 24,
+        "column_start": 16,
+        "column_end": 26,
+        "is_primary": false,
+        "text": [
+          {
+            "text": "#[cgp_impl(new GreetHello)]",
+            "highlight_start": 16,
+            "highlight_end": 26
+          }
+        ],
+        "label": "previous definition of the type `GreetHello` here",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [
+      {
+        "message": "`GreetHello` must be defined only once in the type namespace of this module",
+        "code": null,
+        "level": "note",
+        "spans": [],
+        "children": [],
+        "rendered": null
+      }
+    ],
+    "rendered": "error[E0428]: the name `GreetHello` is defined multiple times\n  --> src/main.rs:30:16\n   |\n24 | #[cgp_impl(new GreetHello)]\n   |                ---------- previous definition of the type `GreetHello` here\n...\n30 | #[cgp_impl(new GreetHello)]\n   |                ^^^^^^^^^^ `GreetHello` redefined here\n   |\n   = note: `GreetHello` must be defined only once in the type namespace of this module\n\n"
+  },
+  {
+    "message": "conflicting implementations of trait `Greeter<_>` for type `GreetHello`",
+    "code": {
+      "code": "E0119",
+      "explanation": "There are conflicting trait implementations for the same type.\n\nErroneous code example:\n\n```compile_fail,E0119\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo {\n    value: usize\n}\n\nimpl MyTrait for Foo { // error: conflicting implementations of trait\n                       //        `MyTrait` for type `Foo`\n    fn get(&self) -> usize { self.value }\n}\n```\n\nWhen looking for the implementation for the trait, the compiler finds\nboth the `impl<T> MyTrait for T` where T is all types and the `impl\nMyTrait for Foo`. Since a trait cannot be implemented multiple times,\nthis is an error. So, when you write:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n```\n\nThis makes the trait implemented on all types in the scope. So if you\ntry to implement it on another one after that, the implementations will\nconflict. Example:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo;\n\nfn main() {\n    let f = Foo;\n\n    f.get(); // the trait is implemented so we can use it\n}\n```\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1064,
+        "byte_end": 1103,
+        "line_start": 25,
+        "line_end": 27,
+        "column_start": 1,
+        "column_end": 2,
+        "is_primary": false,
+        "text": [
+          {
+            "text": "impl Greeter {",
+            "highlight_start": 1,
+            "highlight_end": 15
+          },
+          {
+            "text": "    fn greet(&self) {}",
+            "highlight_start": 1,
+            "highlight_end": 23
+          },
+          {
+            "text": "}",
+            "highlight_start": 1,
+            "highlight_end": 2
+          }
+        ],
+        "label": "first implementation here",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      },
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1208,
+        "byte_end": 1247,
+        "line_start": 31,
+        "line_end": 33,
+        "column_start": 1,
+        "column_end": 2,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "impl Greeter {",
+            "highlight_start": 1,
+            "highlight_end": 15
+          },
+          {
+            "text": "    fn greet(&self) {}",
+            "highlight_start": 1,
+            "highlight_end": 23
+          },
+          {
+            "text": "}",
+            "highlight_start": 1,
+            "highlight_end": 2
+          }
+        ],
+        "label": "conflicting implementation for `GreetHello`",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [],
+    "rendered": "error[E0119]: conflicting implementations of trait `Greeter<_>` for type `GreetHello`\n  --> src/main.rs:31:1\n   |\n25 | / impl Greeter {\n26 | |     fn greet(&self) {}\n27 | | }\n   | |_- first implementation here\n...\n31 | / impl Greeter {\n32 | |     fn greet(&self) {}\n33 | | }\n   | |_^ conflicting implementation for `GreetHello`\n\n"
+  },
+  {
+    "message": "conflicting implementations of trait `cgp::prelude::IsProviderFor<GreeterComponent, _>` for type `GreetHello`",
+    "code": {
+      "code": "E0119",
+      "explanation": "There are conflicting trait implementations for the same type.\n\nErroneous code example:\n\n```compile_fail,E0119\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo {\n    value: usize\n}\n\nimpl MyTrait for Foo { // error: conflicting implementations of trait\n                       //        `MyTrait` for type `Foo`\n    fn get(&self) -> usize { self.value }\n}\n```\n\nWhen looking for the implementation for the trait, the compiler finds\nboth the `impl<T> MyTrait for T` where T is all types and the `impl\nMyTrait for Foo`. Since a trait cannot be implemented multiple times,\nthis is an error. So, when you write:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n```\n\nThis makes the trait implemented on all types in the scope. So if you\ntry to implement it on another one after that, the implementations will\nconflict. Example:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo;\n\nfn main() {\n    let f = Foo;\n\n    f.get(); // the trait is implemented so we can use it\n}\n```\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1064,
+        "byte_end": 1103,
+        "line_start": 25,
+        "line_end": 27,
+        "column_start": 1,
+        "column_end": 2,
+        "is_primary": false,
+        "text": [
+          {
+            "text": "impl Greeter {",
+            "highlight_start": 1,
+            "highlight_end": 15
+          },
+          {
+            "text": "    fn greet(&self) {}",
+            "highlight_start": 1,
+            "highlight_end": 23
+          },
+          {
+            "text": "}",
+            "highlight_start": 1,
+            "highlight_end": 2
+          }
+        ],
+        "label": "first implementation here",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      },
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1208,
+        "byte_end": 1247,
+        "line_start": 31,
+        "line_end": 33,
+        "column_start": 1,
+        "column_end": 2,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "impl Greeter {",
+            "highlight_start": 1,
+            "highlight_end": 15
+          },
+          {
+            "text": "    fn greet(&self) {}",
+            "highlight_start": 1,
+            "highlight_end": 23
+          },
+          {
+            "text": "}",
+            "highlight_start": 1,
+            "highlight_end": 2
+          }
+        ],
+        "label": "conflicting implementation for `GreetHello`",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [],
+    "rendered": "error[E0119]: conflicting implementations of trait `cgp::prelude::IsProviderFor<GreeterComponent, _>` for type `GreetHello`\n  --> src/main.rs:31:1\n   |\n25 | / impl Greeter {\n26 | |     fn greet(&self) {}\n27 | | }\n   | |_- first implementation here\n...\n31 | / impl Greeter {\n32 | |     fn greet(&self) {}\n33 | | }\n   | |_^ conflicting implementation for `GreetHello`\n\n"
+  },
+  {
+    "message": "Some errors have detailed explanations: E0119, E0428.",
+    "code": null,
+    "level": "failure-note",
+    "spans": [],
+    "children": [],
+    "rendered": "Some errors have detailed explanations: E0119, E0428.\n"
+  },
+  {
+    "message": "For more information about an error, try `rustc --explain E0119`.",
+    "code": null,
+    "level": "failure-note",
+    "spans": [],
+    "children": [],
+    "rendered": "For more information about an error, try `rustc --explain E0119`.\n"
+  }
+]

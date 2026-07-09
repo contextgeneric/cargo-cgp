@@ -1,0 +1,489 @@
+[
+  {
+    "message": "the trait bound `NoScalar: HasScalarType` is not satisfied",
+    "code": {
+      "code": "E0277",
+      "explanation": "You tried to use a type which doesn't implement some trait in a place which\nexpected that trait.\n\nErroneous code example:\n\n```compile_fail,E0277\n// here we declare the Foo trait with a bar method\ntrait Foo {\n    fn bar(&self);\n}\n\n// we now declare a function which takes an object implementing the Foo trait\nfn some_func<T: Foo>(foo: T) {\n    foo.bar();\n}\n\nfn main() {\n    // we now call the method with the i32 type, which doesn't implement\n    // the Foo trait\n    some_func(5i32); // error: the trait bound `i32 : Foo` is not satisfied\n}\n```\n\nIn order to fix this error, verify that the type you're using does implement\nthe trait. Example:\n\n```\ntrait Foo {\n    fn bar(&self);\n}\n\n// we implement the trait on the i32 type\nimpl Foo for i32 {\n    fn bar(&self) {}\n}\n\nfn some_func<T: Foo>(foo: T) {\n    foo.bar(); // we can now use this method since i32 implements the\n               // Foo trait\n}\n\nfn main() {\n    some_func(5i32); // ok!\n}\n```\n\nOr in a generic context, an erroneous code example would look like:\n\n```compile_fail,E0277\nfn some_func<T>(foo: T) {\n    println!(\"{:?}\", foo); // error: the trait `core::fmt::Debug` is not\n                           //        implemented for the type `T`\n}\n\nfn main() {\n    // We now call the method with the i32 type,\n    // which *does* implement the Debug trait.\n    some_func(5i32);\n}\n```\n\nNote that the error here is in the definition of the generic function. Although\nwe only call it with a parameter that does implement `Debug`, the compiler\nstill rejects the function. It must work with all possible input types. In\norder to make this example compile, we need to restrict the generic type we're\naccepting:\n\n```\nuse std::fmt;\n\n// Restrict the input type to types that implement Debug.\nfn some_func<T: fmt::Debug>(foo: T) {\n    println!(\"{:?}\", foo);\n}\n\nfn main() {\n    // Calling the method is still fine, as i32 implements Debug.\n    some_func(5i32);\n\n    // This would fail to compile now:\n    // struct WithoutDebug;\n    // some_func(WithoutDebug);\n}\n```\n\nRust only looks at the signature of the called function, as such it must\nalready specify all requirements that will be used for every type parameter.\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1250,
+        "byte_end": 1276,
+        "line_start": 31,
+        "line_end": 31,
+        "column_start": 31,
+        "column_end": 57,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "pub trait CheckMissingScalar: CanCalculateArea<NoScalar> {}",
+            "highlight_start": 31,
+            "highlight_end": 57
+          }
+        ],
+        "label": "unsatisfied trait bound",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [
+      {
+        "message": "the trait `ScalarTypeProvider<NoScalar>` is not implemented for `NoScalar`",
+        "code": null,
+        "level": "help",
+        "spans": [
+          {
+            "file_name": "src/main.rs",
+            "byte_start": 1050,
+            "byte_end": 1069,
+            "line_start": 27,
+            "line_end": 27,
+            "column_start": 1,
+            "column_end": 20,
+            "is_primary": true,
+            "text": [
+              {
+                "text": "pub struct NoScalar;",
+                "highlight_start": 1,
+                "highlight_end": 20
+              }
+            ],
+            "label": null,
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": null
+          }
+        ],
+        "children": [],
+        "rendered": null
+      },
+      {
+        "message": "the following other types implement trait `ScalarTypeProvider<__Context__>`",
+        "code": null,
+        "level": "help",
+        "spans": [
+          {
+            "file_name": "src/main.rs",
+            "byte_start": 784,
+            "byte_end": 795,
+            "line_start": 15,
+            "line_end": 15,
+            "column_start": 1,
+            "column_end": 12,
+            "is_primary": true,
+            "text": [
+              {
+                "text": "#[cgp_type]",
+                "highlight_start": 1,
+                "highlight_end": 12
+              }
+            ],
+            "label": "`cgp::prelude::RedirectLookup<__Components__, __Path__>`",
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": {
+              "span": {
+                "file_name": "src/main.rs",
+                "byte_start": 784,
+                "byte_end": 795,
+                "line_start": 15,
+                "line_end": 15,
+                "column_start": 1,
+                "column_end": 12,
+                "is_primary": false,
+                "text": [
+                  {
+                    "text": "#[cgp_type]",
+                    "highlight_start": 1,
+                    "highlight_end": 12
+                  }
+                ],
+                "label": null,
+                "suggested_replacement": null,
+                "suggestion_applicability": null,
+                "expansion": null
+              },
+              "macro_decl_name": "#[cgp_type]",
+              "def_site_span": {
+                "file_name": "$CGP/crates/macros/cgp-macro/src/lib.rs",
+                "byte_start": 21101,
+                "byte_end": 21170,
+                "line_start": 694,
+                "line_end": 694,
+                "column_start": 1,
+                "column_end": 70,
+                "is_primary": false,
+                "text": [
+                  {
+                    "text": "pub fn cgp_type(attrs: TokenStream, body: TokenStream) -> TokenStream {",
+                    "highlight_start": 1,
+                    "highlight_end": 70
+                  }
+                ],
+                "label": null,
+                "suggested_replacement": null,
+                "suggestion_applicability": null,
+                "expansion": null
+              }
+            }
+          },
+          {
+            "file_name": "src/main.rs",
+            "byte_start": 784,
+            "byte_end": 795,
+            "line_start": 15,
+            "line_end": 15,
+            "column_start": 1,
+            "column_end": 12,
+            "is_primary": true,
+            "text": [
+              {
+                "text": "#[cgp_type]",
+                "highlight_start": 1,
+                "highlight_end": 12
+              }
+            ],
+            "label": "`cgp::prelude::UseContext`",
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": {
+              "span": {
+                "file_name": "src/main.rs",
+                "byte_start": 784,
+                "byte_end": 795,
+                "line_start": 15,
+                "line_end": 15,
+                "column_start": 1,
+                "column_end": 12,
+                "is_primary": false,
+                "text": [
+                  {
+                    "text": "#[cgp_type]",
+                    "highlight_start": 1,
+                    "highlight_end": 12
+                  }
+                ],
+                "label": null,
+                "suggested_replacement": null,
+                "suggestion_applicability": null,
+                "expansion": null
+              },
+              "macro_decl_name": "#[cgp_type]",
+              "def_site_span": {
+                "file_name": "$CGP/crates/macros/cgp-macro/src/lib.rs",
+                "byte_start": 21101,
+                "byte_end": 21170,
+                "line_start": 694,
+                "line_end": 694,
+                "column_start": 1,
+                "column_end": 70,
+                "is_primary": false,
+                "text": [
+                  {
+                    "text": "pub fn cgp_type(attrs: TokenStream, body: TokenStream) -> TokenStream {",
+                    "highlight_start": 1,
+                    "highlight_end": 70
+                  }
+                ],
+                "label": null,
+                "suggested_replacement": null,
+                "suggestion_applicability": null,
+                "expansion": null
+              }
+            }
+          },
+          {
+            "file_name": "src/main.rs",
+            "byte_start": 784,
+            "byte_end": 795,
+            "line_start": 15,
+            "line_end": 15,
+            "column_start": 1,
+            "column_end": 12,
+            "is_primary": true,
+            "text": [
+              {
+                "text": "#[cgp_type]",
+                "highlight_start": 1,
+                "highlight_end": 12
+              }
+            ],
+            "label": "`cgp::prelude::UseType<Scalar>`",
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": {
+              "span": {
+                "file_name": "src/main.rs",
+                "byte_start": 784,
+                "byte_end": 795,
+                "line_start": 15,
+                "line_end": 15,
+                "column_start": 1,
+                "column_end": 12,
+                "is_primary": false,
+                "text": [
+                  {
+                    "text": "#[cgp_type]",
+                    "highlight_start": 1,
+                    "highlight_end": 12
+                  }
+                ],
+                "label": null,
+                "suggested_replacement": null,
+                "suggestion_applicability": null,
+                "expansion": null
+              },
+              "macro_decl_name": "#[cgp_type]",
+              "def_site_span": {
+                "file_name": "$CGP/crates/macros/cgp-macro/src/lib.rs",
+                "byte_start": 21101,
+                "byte_end": 21170,
+                "line_start": 694,
+                "line_end": 694,
+                "column_start": 1,
+                "column_end": 70,
+                "is_primary": false,
+                "text": [
+                  {
+                    "text": "pub fn cgp_type(attrs: TokenStream, body: TokenStream) -> TokenStream {",
+                    "highlight_start": 1,
+                    "highlight_end": 70
+                  }
+                ],
+                "label": null,
+                "suggested_replacement": null,
+                "suggestion_applicability": null,
+                "expansion": null
+              }
+            }
+          },
+          {
+            "file_name": "src/main.rs",
+            "byte_start": 784,
+            "byte_end": 795,
+            "line_start": 15,
+            "line_end": 15,
+            "column_start": 1,
+            "column_end": 12,
+            "is_primary": true,
+            "text": [
+              {
+                "text": "#[cgp_type]",
+                "highlight_start": 1,
+                "highlight_end": 12
+              }
+            ],
+            "label": "`cgp::prelude::WithProvider<__Provider__>`",
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": {
+              "span": {
+                "file_name": "src/main.rs",
+                "byte_start": 784,
+                "byte_end": 795,
+                "line_start": 15,
+                "line_end": 15,
+                "column_start": 1,
+                "column_end": 12,
+                "is_primary": false,
+                "text": [
+                  {
+                    "text": "#[cgp_type]",
+                    "highlight_start": 1,
+                    "highlight_end": 12
+                  }
+                ],
+                "label": null,
+                "suggested_replacement": null,
+                "suggestion_applicability": null,
+                "expansion": null
+              },
+              "macro_decl_name": "#[cgp_type]",
+              "def_site_span": {
+                "file_name": "$CGP/crates/macros/cgp-macro/src/lib.rs",
+                "byte_start": 21101,
+                "byte_end": 21170,
+                "line_start": 694,
+                "line_end": 694,
+                "column_start": 1,
+                "column_end": 70,
+                "is_primary": false,
+                "text": [
+                  {
+                    "text": "pub fn cgp_type(attrs: TokenStream, body: TokenStream) -> TokenStream {",
+                    "highlight_start": 1,
+                    "highlight_end": 70
+                  }
+                ],
+                "label": null,
+                "suggested_replacement": null,
+                "suggestion_applicability": null,
+                "expansion": null
+              }
+            }
+          }
+        ],
+        "children": [],
+        "rendered": null
+      },
+      {
+        "message": "required for `NoScalar` to implement `HasScalarType`",
+        "code": null,
+        "level": "note",
+        "spans": [
+          {
+            "file_name": "src/main.rs",
+            "byte_start": 784,
+            "byte_end": 795,
+            "line_start": 15,
+            "line_end": 15,
+            "column_start": 1,
+            "column_end": 12,
+            "is_primary": true,
+            "text": [
+              {
+                "text": "#[cgp_type]",
+                "highlight_start": 1,
+                "highlight_end": 12
+              }
+            ],
+            "label": null,
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": {
+              "span": {
+                "file_name": "src/main.rs",
+                "byte_start": 784,
+                "byte_end": 795,
+                "line_start": 15,
+                "line_end": 15,
+                "column_start": 1,
+                "column_end": 12,
+                "is_primary": false,
+                "text": [
+                  {
+                    "text": "#[cgp_type]",
+                    "highlight_start": 1,
+                    "highlight_end": 12
+                  }
+                ],
+                "label": null,
+                "suggested_replacement": null,
+                "suggestion_applicability": null,
+                "expansion": null
+              },
+              "macro_decl_name": "#[cgp_type]",
+              "def_site_span": {
+                "file_name": "$CGP/crates/macros/cgp-macro/src/lib.rs",
+                "byte_start": 21101,
+                "byte_end": 21170,
+                "line_start": 694,
+                "line_end": 694,
+                "column_start": 1,
+                "column_end": 70,
+                "is_primary": false,
+                "text": [
+                  {
+                    "text": "pub fn cgp_type(attrs: TokenStream, body: TokenStream) -> TokenStream {",
+                    "highlight_start": 1,
+                    "highlight_end": 70
+                  }
+                ],
+                "label": null,
+                "suggested_replacement": null,
+                "suggestion_applicability": null,
+                "expansion": null
+              }
+            }
+          },
+          {
+            "file_name": "src/main.rs",
+            "byte_start": 806,
+            "byte_end": 819,
+            "line_start": 16,
+            "line_end": 16,
+            "column_start": 11,
+            "column_end": 24,
+            "is_primary": true,
+            "text": [
+              {
+                "text": "pub trait HasScalarType {",
+                "highlight_start": 11,
+                "highlight_end": 24
+              }
+            ],
+            "label": null,
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": null
+          }
+        ],
+        "children": [],
+        "rendered": null
+      },
+      {
+        "message": "required by a bound in `CanCalculateArea`",
+        "code": null,
+        "level": "note",
+        "spans": [
+          {
+            "file_name": "src/main.rs",
+            "byte_start": 928,
+            "byte_end": 944,
+            "line_start": 22,
+            "line_end": 22,
+            "column_start": 11,
+            "column_end": 27,
+            "is_primary": false,
+            "text": [
+              {
+                "text": "pub trait CanCalculateArea<Types> {",
+                "highlight_start": 11,
+                "highlight_end": 27
+              }
+            ],
+            "label": "required by a bound in this trait",
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": null
+          },
+          {
+            "file_name": "src/main.rs",
+            "byte_start": 886,
+            "byte_end": 899,
+            "line_start": 21,
+            "line_end": 21,
+            "column_start": 12,
+            "column_end": 25,
+            "is_primary": true,
+            "text": [
+              {
+                "text": "#[use_type(HasScalarType.Scalar in Types)]",
+                "highlight_start": 12,
+                "highlight_end": 25
+              }
+            ],
+            "label": "required by this bound in `CanCalculateArea`",
+            "suggested_replacement": null,
+            "suggestion_applicability": null,
+            "expansion": null
+          }
+        ],
+        "children": [],
+        "rendered": null
+      }
+    ],
+    "rendered": "error[E0277]: the trait bound `NoScalar: HasScalarType` is not satisfied\n  --> src/main.rs:31:31\n   |\n31 | pub trait CheckMissingScalar: CanCalculateArea<NoScalar> {}\n   |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\nhelp: the trait `ScalarTypeProvider<NoScalar>` is not implemented for `NoScalar`\n  --> src/main.rs:27:1\n   |\n27 | pub struct NoScalar;\n   | ^^^^^^^^^^^^^^^^^^^\nhelp: the following other types implement trait `ScalarTypeProvider<__Context__>`\n  --> src/main.rs:15:1\n   |\n15 | #[cgp_type]\n   | ^^^^^^^^^^^\n   | |\n   | `cgp::prelude::RedirectLookup<__Components__, __Path__>`\n   | `cgp::prelude::UseContext`\n   | `cgp::prelude::UseType<Scalar>`\n   | `cgp::prelude::WithProvider<__Provider__>`\nnote: required for `NoScalar` to implement `HasScalarType`\n  --> src/main.rs:15:1\n   |\n15 | #[cgp_type]\n   | ^^^^^^^^^^^\n16 | pub trait HasScalarType {\n   |           ^^^^^^^^^^^^^\nnote: required by a bound in `CanCalculateArea`\n  --> src/main.rs:21:12\n   |\n21 | #[use_type(HasScalarType.Scalar in Types)]\n   |            ^^^^^^^^^^^^^ required by this bound in `CanCalculateArea`\n22 | pub trait CanCalculateArea<Types> {\n   |           ---------------- required by a bound in this trait\n   = note: this error originates in the attribute macro `cgp_type` (in Nightly builds, run with -Z macro-backtrace for more info)\n\n"
+  },
+  {
+    "message": "For more information about this error, try `rustc --explain E0277`.",
+    "code": null,
+    "level": "failure-note",
+    "spans": [],
+    "children": [],
+    "rendered": "For more information about this error, try `rustc --explain E0277`.\n"
+  }
+]

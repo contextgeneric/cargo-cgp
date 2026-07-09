@@ -50,6 +50,15 @@ pub fn debug_dir() -> PathBuf {
         .to_path_buf()
 }
 
+/// The throwaway crate directory (`target/ui-harness`), computed without creating it. The
+/// process-only pass needs this path to normalize output but does not build the crate.
+pub fn harness_crate_dir() -> PathBuf {
+    debug_dir()
+        .parent()
+        .expect("target directory")
+        .join("ui-harness")
+}
+
 /// Path to the built `cargo-cgp` front-end binary.
 pub fn cargo_cgp_bin() -> PathBuf {
     debug_dir().join(format!("cargo-cgp{}", env::consts::EXE_SUFFIX))

@@ -1,0 +1,64 @@
+[
+  {
+    "message": "conflicting implementations of trait `cgp::cgp_core::cgp_component::DefaultImpls1<ShowImplComponent, _>` for type `std::string::String`",
+    "code": {
+      "code": "E0119",
+      "explanation": "There are conflicting trait implementations for the same type.\n\nErroneous code example:\n\n```compile_fail,E0119\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo {\n    value: usize\n}\n\nimpl MyTrait for Foo { // error: conflicting implementations of trait\n                       //        `MyTrait` for type `Foo`\n    fn get(&self) -> usize { self.value }\n}\n```\n\nWhen looking for the implementation for the trait, the compiler finds\nboth the `impl<T> MyTrait for T` where T is all types and the `impl\nMyTrait for Foo`. Since a trait cannot be implemented multiple times,\nthis is an error. So, when you write:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n```\n\nThis makes the trait implemented on all types in the scope. So if you\ntry to implement it on another one after that, the implementations will\nconflict. Example:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo;\n\nfn main() {\n    let f = Foo;\n\n    f.get(); // the trait is implemented so we can use it\n}\n```\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1102,
+        "byte_end": 1108,
+        "line_start": 26,
+        "line_end": 26,
+        "column_start": 16,
+        "column_end": 22,
+        "is_primary": false,
+        "text": [
+          {
+            "text": "#[default_impl(String in DefaultImpls1<ShowImplComponent>)]",
+            "highlight_start": 16,
+            "highlight_end": 22
+          }
+        ],
+        "label": "first implementation here",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      },
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1372,
+        "byte_end": 1378,
+        "line_start": 35,
+        "line_end": 35,
+        "column_start": 16,
+        "column_end": 22,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "#[default_impl(String in DefaultImpls1<ShowImplComponent>)]",
+            "highlight_start": 16,
+            "highlight_end": 22
+          }
+        ],
+        "label": "conflicting implementation for `std::string::String`",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [],
+    "rendered": "error[E0119]: conflicting implementations of trait `cgp::cgp_core::cgp_component::DefaultImpls1<ShowImplComponent, _>` for type `std::string::String`\n  --> src/main.rs:35:16\n   |\n26 | #[default_impl(String in DefaultImpls1<ShowImplComponent>)]\n   |                ------ first implementation here\n...\n35 | #[default_impl(String in DefaultImpls1<ShowImplComponent>)]\n   |                ^^^^^^ conflicting implementation for `std::string::String`\n\n"
+  },
+  {
+    "message": "For more information about this error, try `rustc --explain E0119`.",
+    "code": null,
+    "level": "failure-note",
+    "spans": [],
+    "children": [],
+    "rendered": "For more information about this error, try `rustc --explain E0119`.\n"
+  }
+]

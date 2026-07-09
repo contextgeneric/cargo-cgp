@@ -1,0 +1,135 @@
+[
+  {
+    "message": "conflicting implementations of trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `App`",
+    "code": {
+      "code": "E0119",
+      "explanation": "There are conflicting trait implementations for the same type.\n\nErroneous code example:\n\n```compile_fail,E0119\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo {\n    value: usize\n}\n\nimpl MyTrait for Foo { // error: conflicting implementations of trait\n                       //        `MyTrait` for type `Foo`\n    fn get(&self) -> usize { self.value }\n}\n```\n\nWhen looking for the implementation for the trait, the compiler finds\nboth the `impl<T> MyTrait for T` where T is all types and the `impl\nMyTrait for Foo`. Since a trait cannot be implemented multiple times,\nthis is an error. So, when you write:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n```\n\nThis makes the trait implemented on all types in the scope. So if you\ntry to implement it on another one after that, the implementations will\nconflict. Example:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo;\n\nfn main() {\n    let f = Foo;\n\n    f.get(); // the trait is implemented so we can use it\n}\n```\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1964,
+        "byte_end": 1976,
+        "line_start": 55,
+        "line_end": 55,
+        "column_start": 19,
+        "column_end": 31,
+        "is_primary": false,
+        "text": [
+          {
+            "text": "        namespace AppNamespace;",
+            "highlight_start": 19,
+            "highlight_end": 31
+          }
+        ],
+        "label": "first implementation here",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      },
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1988,
+        "byte_end": 2008,
+        "line_start": 57,
+        "line_end": 57,
+        "column_start": 10,
+        "column_end": 30,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "        @app.GreeterComponent: GreetBye,",
+            "highlight_start": 10,
+            "highlight_end": 30
+          }
+        ],
+        "label": "conflicting implementation for `App`",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [
+      {
+        "message": "downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `GreetHello`",
+        "code": null,
+        "level": "note",
+        "spans": [],
+        "children": [],
+        "rendered": null
+      },
+      {
+        "message": "downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `GreetBye`",
+        "code": null,
+        "level": "note",
+        "spans": [],
+        "children": [],
+        "rendered": null
+      }
+    ],
+    "rendered": "error[E0119]: conflicting implementations of trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `App`\n  --> src/main.rs:57:10\n   |\n55 |         namespace AppNamespace;\n   |                   ------------ first implementation here\n56 |\n57 |         @app.GreeterComponent: GreetBye,\n   |          ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`\n   |\n   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `GreetHello`\n   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `GreetBye`\n\n"
+  },
+  {
+    "message": "conflicting implementations of trait `cgp::prelude::DelegateComponent<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>` for type `App`",
+    "code": {
+      "code": "E0119",
+      "explanation": "There are conflicting trait implementations for the same type.\n\nErroneous code example:\n\n```compile_fail,E0119\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo {\n    value: usize\n}\n\nimpl MyTrait for Foo { // error: conflicting implementations of trait\n                       //        `MyTrait` for type `Foo`\n    fn get(&self) -> usize { self.value }\n}\n```\n\nWhen looking for the implementation for the trait, the compiler finds\nboth the `impl<T> MyTrait for T` where T is all types and the `impl\nMyTrait for Foo`. Since a trait cannot be implemented multiple times,\nthis is an error. So, when you write:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n```\n\nThis makes the trait implemented on all types in the scope. So if you\ntry to implement it on another one after that, the implementations will\nconflict. Example:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo;\n\nfn main() {\n    let f = Foo;\n\n    f.get(); // the trait is implemented so we can use it\n}\n```\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1964,
+        "byte_end": 1976,
+        "line_start": 55,
+        "line_end": 55,
+        "column_start": 19,
+        "column_end": 31,
+        "is_primary": false,
+        "text": [
+          {
+            "text": "        namespace AppNamespace;",
+            "highlight_start": 19,
+            "highlight_end": 31
+          }
+        ],
+        "label": "first implementation here",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      },
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1988,
+        "byte_end": 2008,
+        "line_start": 57,
+        "line_end": 57,
+        "column_start": 10,
+        "column_end": 30,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "        @app.GreeterComponent: GreetBye,",
+            "highlight_start": 10,
+            "highlight_end": 30
+          }
+        ],
+        "label": "conflicting implementation for `App`",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [],
+    "rendered": "error[E0119]: conflicting implementations of trait `cgp::prelude::DelegateComponent<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>` for type `App`\n  --> src/main.rs:57:10\n   |\n55 |         namespace AppNamespace;\n   |                   ------------ first implementation here\n56 |\n57 |         @app.GreeterComponent: GreetBye,\n   |          ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`\n\n"
+  },
+  {
+    "message": "For more information about this error, try `rustc --explain E0119`.",
+    "code": null,
+    "level": "failure-note",
+    "spans": [],
+    "children": [],
+    "rendered": "For more information about this error, try `rustc --explain E0119`.\n"
+  }
+]

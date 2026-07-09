@@ -1,0 +1,118 @@
+[
+  {
+    "message": "conflicting implementations of trait `cgp::prelude::IsProviderFor<_, _, _>` for type `App`",
+    "code": {
+      "code": "E0119",
+      "explanation": "There are conflicting trait implementations for the same type.\n\nErroneous code example:\n\n```compile_fail,E0119\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo {\n    value: usize\n}\n\nimpl MyTrait for Foo { // error: conflicting implementations of trait\n                       //        `MyTrait` for type `Foo`\n    fn get(&self) -> usize { self.value }\n}\n```\n\nWhen looking for the implementation for the trait, the compiler finds\nboth the `impl<T> MyTrait for T` where T is all types and the `impl\nMyTrait for Foo`. Since a trait cannot be implemented multiple times,\nthis is an error. So, when you write:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n```\n\nThis makes the trait implemented on all types in the scope. So if you\ntry to implement it on another one after that, the implementations will\nconflict. Example:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo;\n\nfn main() {\n    let f = Foo;\n\n    f.get(); // the trait is implemented so we can use it\n}\n```\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1893,
+        "byte_end": 1903,
+        "line_start": 52,
+        "line_end": 52,
+        "column_start": 19,
+        "column_end": 29,
+        "is_primary": false,
+        "text": [
+          {
+            "text": "        namespace NamespaceA;",
+            "highlight_start": 19,
+            "highlight_end": 29
+          }
+        ],
+        "label": "first implementation here",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      },
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1923,
+        "byte_end": 1933,
+        "line_start": 53,
+        "line_end": 53,
+        "column_start": 19,
+        "column_end": 29,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "        namespace NamespaceB;",
+            "highlight_start": 19,
+            "highlight_end": 29
+          }
+        ],
+        "label": "conflicting implementation for `App`",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [],
+    "rendered": "error[E0119]: conflicting implementations of trait `cgp::prelude::IsProviderFor<_, _, _>` for type `App`\n  --> src/main.rs:53:19\n   |\n52 |         namespace NamespaceA;\n   |                   ---------- first implementation here\n53 |         namespace NamespaceB;\n   |                   ^^^^^^^^^^ conflicting implementation for `App`\n\n"
+  },
+  {
+    "message": "conflicting implementations of trait `cgp::prelude::DelegateComponent<_>` for type `App`",
+    "code": {
+      "code": "E0119",
+      "explanation": "There are conflicting trait implementations for the same type.\n\nErroneous code example:\n\n```compile_fail,E0119\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo {\n    value: usize\n}\n\nimpl MyTrait for Foo { // error: conflicting implementations of trait\n                       //        `MyTrait` for type `Foo`\n    fn get(&self) -> usize { self.value }\n}\n```\n\nWhen looking for the implementation for the trait, the compiler finds\nboth the `impl<T> MyTrait for T` where T is all types and the `impl\nMyTrait for Foo`. Since a trait cannot be implemented multiple times,\nthis is an error. So, when you write:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n```\n\nThis makes the trait implemented on all types in the scope. So if you\ntry to implement it on another one after that, the implementations will\nconflict. Example:\n\n```\ntrait MyTrait {\n    fn get(&self) -> usize;\n}\n\nimpl<T> MyTrait for T {\n    fn get(&self) -> usize { 0 }\n}\n\nstruct Foo;\n\nfn main() {\n    let f = Foo;\n\n    f.get(); // the trait is implemented so we can use it\n}\n```\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1893,
+        "byte_end": 1903,
+        "line_start": 52,
+        "line_end": 52,
+        "column_start": 19,
+        "column_end": 29,
+        "is_primary": false,
+        "text": [
+          {
+            "text": "        namespace NamespaceA;",
+            "highlight_start": 19,
+            "highlight_end": 29
+          }
+        ],
+        "label": "first implementation here",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      },
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1923,
+        "byte_end": 1933,
+        "line_start": 53,
+        "line_end": 53,
+        "column_start": 19,
+        "column_end": 29,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "        namespace NamespaceB;",
+            "highlight_start": 19,
+            "highlight_end": 29
+          }
+        ],
+        "label": "conflicting implementation for `App`",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [],
+    "rendered": "error[E0119]: conflicting implementations of trait `cgp::prelude::DelegateComponent<_>` for type `App`\n  --> src/main.rs:53:19\n   |\n52 |         namespace NamespaceA;\n   |                   ---------- first implementation here\n53 |         namespace NamespaceB;\n   |                   ^^^^^^^^^^ conflicting implementation for `App`\n\n"
+  },
+  {
+    "message": "For more information about this error, try `rustc --explain E0119`.",
+    "code": null,
+    "level": "failure-note",
+    "spans": [],
+    "children": [],
+    "rendered": "For more information about this error, try `rustc --explain E0119`.\n"
+  }
+]

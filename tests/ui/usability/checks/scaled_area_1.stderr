@@ -47,4 +47,3 @@ note: required by a bound in `__CheckRectangle`
    = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.
-error: could not compile `ui` (bin "ui") due to 1 previous error

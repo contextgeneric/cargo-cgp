@@ -13,12 +13,18 @@ publish      = false
 # A custom test harness, in the style of Clippy's `tests/compile-test.rs`: the `ui`
 # test disables libtest (`harness = false`) and provides its own `fn main`, which
 # compiles each fixture under ../../tests/ui through cargo-cgp and diffs the output
-# against a committed `.stderr` snapshot. The logic lives in the library so it stays
-# small and testable; tests/ui.rs is a thin entrypoint. No dependencies — the harness
-# shells out to cargo and reads files with std only.
+# against committed `.stderr` and `.output.json` snapshots. The logic lives in the
+# library so it stays small and testable; tests/ui.rs is a thin entrypoint.
 [[test]]
 name    = "ui"
 path    = "tests/ui.rs"
 harness = false
 
+# The harness reuses the tool's own rustc-free capture/render code so its unit pass
+# cannot drift from what the binary does: `cargo-cgp` (front-end lib) for parsing cargo's
+# JSON and rendering diagnostics, and `cargo-cgp-error-processing` for `process_cgp_errors`.
 [dependencies]
+cargo-cgp = { workspace = true }
+cargo-cgp-error-processing = { workspace = true }
+cargo_metadata = { workspace = true }
+serde_json = { workspace = true }

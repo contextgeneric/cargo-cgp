@@ -14,21 +14,26 @@ pub enum Outcome {
 }
 
 /// The `.stderr` snapshot path beside a fixture (`foo.rs` → `foo.stderr`).
-pub fn snapshot_path(fixture: &Path) -> PathBuf {
+pub fn stderr_path(fixture: &Path) -> PathBuf {
     fixture.with_extension("stderr")
 }
 
-/// Compare `actual` against the fixture's snapshot, or rewrite the snapshot when
-/// `bless` is set. On a mismatch, a diff is printed and [`Outcome::Mismatch`] returned.
-pub fn review(fixture: &Path, actual: &str, bless: bool) -> Outcome {
-    let path = snapshot_path(fixture);
+/// The `.output.json` snapshot path beside a fixture (`foo.rs` → `foo.output.json`) —
+/// the diagnostics the tool captured and fed to `process_cgp_errors`.
+pub fn output_json_path(fixture: &Path) -> PathBuf {
+    fixture.with_extension("output.json")
+}
 
+/// Compare `actual` against the snapshot at `path`, or rewrite it when `bless` is set. On
+/// a mismatch, a diff is printed and [`Outcome::Mismatch`] returned. Comparison ignores
+/// trailing whitespace so a snapshot's single trailing newline never matters.
+pub fn review(path: &Path, actual: &str, bless: bool) -> Outcome {
     if bless {
-        fs::write(&path, ensure_trailing_newline(actual)).expect("writing snapshot");
+        fs::write(path, ensure_trailing_newline(actual)).expect("writing snapshot");
         return Outcome::Blessed;
     }
 
-    let expected = fs::read_to_string(&path).unwrap_or_default();
+    let expected = fs::read_to_string(path).unwrap_or_default();
     if expected.trim_end() == actual.trim_end() {
         Outcome::Ok
     } else {

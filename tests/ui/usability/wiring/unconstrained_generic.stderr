@@ -25,4 +25,3 @@ error[E0207]: the type parameter `T` is not constrained by the impl trait, self 
    | |_- help: remove the unused type parameter `T`
 
 For more information about this error, try `rustc --explain E0207`.
-error: could not compile `ui` (bin "ui") due to 2 previous errors

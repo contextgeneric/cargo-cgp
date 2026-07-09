@@ -31,4 +31,3 @@ error[E0599]: the method `as_ref` exists for reference `&std::option::Option<[u8
 
 Some errors have detailed explanations: E0277, E0599.
 For more information about an error, try `rustc --explain E0277`.
-error: could not compile `ui` (bin "ui") due to 3 previous errors
