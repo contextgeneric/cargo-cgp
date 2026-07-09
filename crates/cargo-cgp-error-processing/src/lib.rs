@@ -8,10 +8,12 @@
 //! tested on any toolchain — see `docs/implementation/error-processing.md` for the design.
 
 pub mod diagnostic;
+pub mod preprocess;
 pub mod process;
 
 /// Re-export of the diagnostic library the input/output types are built on, so a
 /// dependent can name `cargo_metadata::diagnostic::Diagnostic` through this crate.
 pub use cargo_metadata;
 pub use diagnostic::CgpDiagnostic;
+pub use preprocess::{preprocess, resugar_symbol, strip_cgp_prefixes};
 pub use process::process_cgp_errors;

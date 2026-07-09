@@ -69,7 +69,7 @@ pub fn process_pass(harness_crate: &Path, fixture: &Path, cgp_root: &Path, bless
         }
     };
 
-    let rendered = render_from_json(&diagnostics);
+    let rendered = render_from_json(diagnostics);
     let actual = normalize(&rendered, harness_crate, cgp_root);
     review(&stderr_path(fixture), &actual, bless)
 }
@@ -82,7 +82,7 @@ pub fn print_process_output(fixture: &Path) -> String {
     match fs::read_to_string(&json_path).ok().and_then(|json| {
         serde_json::from_str::<Vec<Diagnostic>>(&json)
             .ok()
-            .map(|diagnostics| render_from_json(&diagnostics))
+            .map(render_from_json)
     }) {
         Some(rendered) => rendered,
         None => format!("(no readable {})\n", json_path.display()),
@@ -90,7 +90,7 @@ pub fn print_process_output(fixture: &Path) -> String {
 }
 
 /// Process the diagnostics and render them to a string, reusing the tool's own renderer.
-fn render_from_json(diagnostics: &[Diagnostic]) -> String {
+fn render_from_json(diagnostics: Vec<Diagnostic>) -> String {
     let processed = process_cgp_errors(diagnostics);
     let mut buffer = Vec::new();
     emit_rendered(&mut buffer, &processed).expect("rendering processed diagnostics");

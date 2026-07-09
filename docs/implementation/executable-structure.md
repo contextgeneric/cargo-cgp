@@ -52,16 +52,17 @@ command. It sets `RUSTC_WORKSPACE_WRAPPER` to the driver's path — located by
 front-end executable, since cargo and rustup lay the two binaries down together — and hands the
 driver the two further things it needs through the environment (the next section).
 
-The front-end does not merely pass cargo's output through, though; it captures and re-emits it, which
-is how it will eventually reshape the diagnostics. It appends `--message-format=json` (unless the
-caller chose their own format), captures cargo's stdout and stderr, parses the JSON stream into
+The front-end does not merely pass cargo's output through, though; it captures and reshapes it. It
+appends `--message-format=json` (unless the caller chose their own format), captures cargo's stdout
+and stderr, parses the JSON stream into
 [`cargo_metadata::Diagnostic`](../../../external/cargo_metadata/src/diagnostic.rs) values in
 [`check::diagnostics`](../../crates/cargo-cgp/src/check/diagnostics.rs), runs them through the
 `cargo-cgp-error-processing` crate's `process_cgp_errors`, and re-emits the result — printing each
-diagnostic's rendered text, then replaying cargo's own output. Today `process_cgp_errors` is a
-pass-through, so the printed diagnostics match rustc's own; the whole [error
-pipeline](error-pipeline.md) documents this path and what it will grow into. Throughout, the exit code
-of the `cargo` process is propagated, so a failed check fails the command.
+diagnostic's rendered text, then replaying cargo's own output. `process_cgp_errors` already rewrites
+each diagnostic (stripping CGP path prefixes, resugaring `Symbol!`), so the printed diagnostics are
+cleaner than rustc's; the whole [error pipeline](error-pipeline.md) documents this path and what it
+will grow into. Throughout, the exit code of the `cargo` process is propagated, so a failed check
+fails the command.
 
 ## Wrapping rustc: the driver
 

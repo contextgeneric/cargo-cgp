@@ -1,8 +1,8 @@
-error[E0599]: HasField is not implemented for Person with the field: cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>
+error[E0599]: HasField is not implemented for Person with the field: Symbol!("name")
   --> src/main.rs:50:23
    |
 37 | pub struct Person {
-   | ----------------- method `greet` not found for this struct because it doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', Chars<'e', Nil>>>>>>`
+   | ----------------- method `greet` not found for this struct because it doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol!("name")>`
 ...
 50 |     Person { age: 0 }.greet();
    |                       ^^^^^ this is an associated function, not a method
@@ -13,7 +13,7 @@ note: the candidate is defined in the trait `Greeter`
    |
 18 |     fn greet(&self);
    |     ^^^^^^^^^^^^^^^^
-note: trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` was not satisfied
+note: trait bound `Person: HasField<Symbol!("name")>` was not satisfied
   --> src/main.rs:21:1
    |
 21 | #[cgp_auto_getter]
@@ -21,7 +21,7 @@ note: trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::p
 22 | pub trait HasName {
    |           ^^^^^^^
    = note: You need to add #[derive(HasField)] to Person with the given field present in the struct
-note: the trait `cgp::prelude::HasField` must be implemented
+note: the trait `HasField` must be implemented
   --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:50:1
    |
 50 | pub trait HasField<Tag> {

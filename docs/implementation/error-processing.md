@@ -6,13 +6,15 @@ diagnostics rustc produced and returns a smaller, reordered set of CGP diagnosti
 records that stage's interface, the types on either side of it, why it must be a stateful analysis
 rather than a per-error rewrite, and how it is tested.
 
-**Status: scaffolding built, analysis not yet.** The stage exists as a crate,
-[`cargo-cgp-error-processing`](../../crates/cargo-cgp-error-processing), and is wired end to end: the
-front-end captures cargo's diagnostics, hands them to [`process_cgp_errors`], and re-emits the
-result, so the pipeline runs through the new interface today. But `process_cgp_errors` is still a
-**pass-through** — it does no CGP analysis yet, so the output matches rustc's own diagnostics. What
-follows describes both the built scaffold and the design the real analysis must grow into; where it
-says "the processor lifts the root cause," read that as the specified target, not current behavior.
+**Status: preprocessing built, aggregation not yet.** The stage exists as a crate,
+[`cargo-cgp-error-processing`](../../crates/cargo-cgp-error-processing), wired end to end: the
+front-end captures cargo's diagnostics, hands them to [`process_cgp_errors`], and re-emits the result.
+Processing has two sub-stages — **preprocessing**, which transforms each diagnostic on its own, and
+**aggregation**, which works across the whole set to collapse cascades. Preprocessing is implemented
+(it strips CGP path prefixes and resugars `Symbol!`, so the output is already more readable than
+rustc's); aggregation does not exist yet, so the output still has one entry per input. Where this
+document describes lifting a root cause or dropping an echo, read that as the specified target of the
+aggregation sub-stage, not current behavior.
 
 ## Where processing sits in the pipeline
 
@@ -34,34 +36,30 @@ before processing sees it. Processing itself receives only already-serialized di
 way to ask the compiler anything. This keeps the expensive, compiler-coupled work upstream and leaves
 processing a self-contained transform over plain data.
 
-## Why processing is not a one-to-one map
+## Two sub-stages: preprocess, then aggregate
 
-The processor must be free to return a different number of diagnostics than it received, and this is
-the single most important property of its design. A CGP mistake rarely produces one error. One
-missing field or one unsatisfied dependency cascades across the generated types the programmer never
-wrote, so the compiler reports the same root cause at every transitively dependent provider, often
-burying or eliding the cause itself along the way — the failure classes the [CGP error
-catalog](../../../cgp/docs/errors/README.md) maps in full. The whole point of the stage is to
-collapse that cascade: recognize the repetition, present the one root cause first, and drop or
-summarize the echoes. Input count and output count therefore differ by design, and usually the
-output is smaller.
+Processing splits into two sub-stages that differ in what they are allowed to see, and keeping them
+distinct is the single most important property of the design. **Preprocessing** transforms each
+diagnostic on its own — cleaning up its type names, resugaring its encodings — and never looks at any
+other diagnostic. **Aggregation** works across the whole set: it detects that one CGP mistake has
+cascaded into many diagnostics, lifts the single root cause to the top, and drops or summarizes the
+echoes. Preprocessing keeps the diagnostic count the same; aggregation is where it shrinks.
 
-That requirement rules out the shape the code most wants to fall into — a per-error rewrite. You
-cannot decide what to emit for one diagnostic by looking at that diagnostic alone, because whether it
-is a root cause or an echo of another one is a fact about the *whole set*. The processor must
-therefore work in two phases. It first **ingests** every raw diagnostic into an internal store — a
-queryable model of what the compilation reported, indexed so related diagnostics can be found. It
-then **queries** that store to synthesize the output, building each CGP diagnostic from a view across
-the ingested set rather than from a single input. The store is the mechanism that lets a
-many-to-fewer, reordered transform exist at all.
+Because preprocessing is per-diagnostic, it is legitimately a `map` over the input, and that is
+exactly how it is implemented (see [The preprocessing pipeline](#the-preprocessing-pipeline)).
+Aggregation cannot be a map, and this is the distinction to hold onto: you cannot decide what to emit
+for one diagnostic by looking at that diagnostic alone, because whether it is a root cause or an echo
+of another is a fact about the *whole set*. Aggregation must therefore **ingest** every preprocessed
+diagnostic into a queryable store and then **query** that store to synthesize the output, building
+each result from a view across the set. The store is what lets a many-to-fewer, reordered transform
+exist at all.
 
-**A future change must not collapse this into a naive loop.** The current placeholder walks the input
-once, and the most likely wrong turn is to "extend" it by adding rewrite logic inside that walk —
-turning the stage into `rust_errors.iter().map(...).collect()` with per-error branches. That shape
-can never deduplicate a cascade or lift a cause above the errors that follow it, because each step is
-blind to the others. The two-phase ingest-then-query structure is the design, not an optimization to
-be added later; the placeholder is a stand-in for the query phase, not a skeleton to be fleshed out
-in place. The same warning is stamped on the function's own doc comment.
+**A future change must not fold aggregation into the preprocessing map.** The processing entrypoint
+today is a `map` because only preprocessing exists, and the tempting wrong turn is to "extend" it by
+adding cascade-collapsing logic inside that `map` — which can never work, since each step is blind to
+the others. Aggregation is a *second phase* that runs after the preprocessing map completes and sees
+all its results at once; it is not more branches inside the per-diagnostic loop. The same warning is
+stamped on the entrypoint's own doc comment.
 
 ## The interface
 
@@ -69,15 +67,17 @@ The stage is one plain function, stateless and free of side effects, in the
 [`cargo-cgp-error-processing`](../../crates/cargo-cgp-error-processing) crate:
 
 ```rust
-pub fn process_cgp_errors(rust_errors: &[cargo_metadata::diagnostic::Diagnostic]) -> Vec<CgpDiagnostic>;
+pub fn process_cgp_errors(rust_errors: Vec<cargo_metadata::diagnostic::Diagnostic>) -> Vec<CgpDiagnostic>;
 ```
 
-Statelessness is a hard requirement, not a stylistic preference, because it is what lets the stage be
-tested without the rest of the tool. A pure function over serializable input and serializable output
-can be driven from a unit test that reads a fixture file and compares a snapshot, with no compiler,
-no cargo, and no `cargo-cgp` process in the loop (see [Testing with snapshots](#testing-with-snapshots)).
-Any state the analysis needs — the internal store — lives *inside* one call and is gone when it
-returns; nothing persists between calls and nothing is read from the environment.
+It takes the diagnostics by value: each is wrapped into a `CgpDiagnostic` (a move, not a clone) and
+run through the preprocessing pipeline. Statelessness is a hard requirement, not a stylistic
+preference, because it is what lets the stage be tested without the rest of the tool. A pure function
+over serializable input and serializable output can be driven from a unit test that reads a fixture
+file and compares a snapshot, with no compiler, no cargo, and no `cargo-cgp` process in the loop (see
+[Testing with snapshots](#testing-with-snapshots)). Any state the future aggregation sub-stage needs —
+the internal store — lives *inside* one call and is gone when it returns; nothing persists between
+calls and nothing is read from the environment.
 
 The function lives in its own crate precisely so that neither building nor testing it pulls in
 `rustc_private`. The driver crate links the compiler's unstable internals and can only be built on the
@@ -116,47 +116,67 @@ if it proves unable to carry enough.
 
 [`CgpDiagnostic`](../../crates/cargo-cgp-error-processing/src/diagnostic.rs) is a structural superset
 of the diagnostic. It always carries the underlying rustc diagnostic in a `pub diagnostic:
-cargo_metadata::diagnostic::Diagnostic` field, and will grow optional CGP-specific structure
-alongside it. The superset shape is what lets one output type serve two kinds of result. A
-**passed-through** diagnostic — a non-CGP error, or a CGP error the processor does not yet handle — is
-a `CgpDiagnostic` that carries the original and leaves the extra fields empty; the placeholder builds
-every output this way, through `CgpDiagnostic::passthrough`. A **synthesized** CGP diagnostic will
-fill those extra fields with what the analysis recovered: a classified
-[catalog](../../../cgp/docs/errors/README.md) class, decoded type-level encodings, the link from a
-root cause to the cascade it explains. Rendering never has to special-case the two, because both are
-the same type and both always carry the base diagnostic to fall back on. (An enum split between a
-passthrough variant and a synthesized variant was the considered alternative; the superset struct was
-chosen because it keeps the base diagnostic unconditionally present.)
+cargo_metadata::diagnostic::Diagnostic` field, and grows CGP-specific structure alongside it. The
+first such field exists today: `pub has_cgp_error: bool`, which a preprocessor sets to `true` once it
+recognizes a CGP construct in the diagnostic (a CGP path prefix, a `Symbol!` spine, …), and which
+defaults to `false`. It is the flag a later aggregation sub-stage will use to tell a CGP diagnostic
+worth analyzing from a plain Rust one to leave alone. A diagnostic is created with
+`CgpDiagnostic::wrap`, which wraps a raw diagnostic with `has_cgp_error` at its `false` default before
+preprocessing runs.
+
+The superset shape is what lets one output type serve two kinds of result. A **passed-through**
+diagnostic — a non-CGP error, or a CGP error not yet handled — keeps `has_cgp_error` false and its
+other extra fields empty. A **recognized** CGP diagnostic has `has_cgp_error` set and will, as more
+structure lands, carry what analysis recovered: a classified [catalog](../../../cgp/docs/errors/README.md)
+class, decoded encodings, the link from a root cause to the cascade it explains. Rendering never has
+to special-case the two, because both are the same type and both always carry the base diagnostic to
+fall back on. (An enum split between a passthrough variant and a recognized variant was the considered
+alternative; the superset struct was chosen because it keeps the base diagnostic unconditionally
+present.)
 
 `CgpDiagnostic` stays structured data, never a pre-rendered string, for the same reason rustc keeps
 its diagnostics structured until the emitter runs. The output feeds the render stage, which must be
 able to produce more than one form from it — human-readable text today, and the JSON that
 `--message-format=json` consumers expect later. A diagnostic frozen into a text blob at the end of
 processing could only ever be printed one way; keeping it structured defers the formatting choice to
-the stage that owns it. For today's pass-through render, `CgpDiagnostic::rendered` exposes the base
-diagnostic's rustc-rendered text so the front-end can reproduce rustc's own output.
+the stage that owns it. `CgpDiagnostic::rendered` exposes the base diagnostic's rustc-rendered text so
+the front-end can print it, and it is that `rendered` field the preprocessors rewrite.
 
-## The initial passthrough placeholder
+## The preprocessing pipeline
 
-`process_cgp_errors` currently does no CGP analysis: it treats every input as a non-CGP error and
-returns each one as a passed-through `CgpDiagnostic`. Because `CgpDiagnostic` is a superset of the
-diagnostic, this is well-typed and correct — it reproduces rustc's diagnostics, unchanged, through the
-new interface, so the pipeline is wired end to end before any transformation logic exists. It is a
-scaffold that proves the types and the plumbing, not the stage doing its job.
+Preprocessing is a chain of preprocessor functions, each with the shape
+`fn(CgpDiagnostic) -> CgpDiagnostic`, applied in order so the output of one feeds the next. The chain
+is a single list — [`preprocess::PREPROCESSORS`](../../crates/cargo-cgp-error-processing/src/preprocess/pipeline.rs) —
+folded over the diagnostic, so a new preprocessor is added by adding it to the list. Each transforms
+the diagnostic's human-readable text (its `message` and, crucially, its `rendered` field, since that
+is what the tool prints) and sets `has_cgp_error` when it recognizes a CGP construct. Order matters:
+prefix stripping runs first so the later stages match the bare CGP names rather than their
+fully-qualified forms. Two preprocessors exist today:
 
-The placeholder carries a warning in its own doc comment, and the warning is the reason this section
-exists: the placeholder happens to walk the input one-to-one, and that shape must not become the
-design. A later agent replacing it must build the ingest-then-query structure described above, not add
-rewrite branches inside the passthrough walk. The distinction is subtle precisely because the
-placeholder looks like the start of a per-error loop, so the comment says plainly that it is a
-stand-in for the query phase and that the real processor reads the whole set before it emits anything.
+- **[`strip_cgp_prefixes`](../../crates/cargo-cgp-error-processing/src/preprocess/strip_prefixes.rs)**
+  removes the CGP module paths rustc prints in front of CGP type names — `cgp::prelude::Chars` becomes
+  `Chars`. The prefixes it strips are a constant list, `CGP_PREFIXES` (`cgp::prelude::`,
+  `cgp::macro_prelude::`, `cgp::cgp_core::`, `cgp::cgp_extra::`), kept as a list precisely so more
+  re-export paths can be added as they turn up. A prefix is a reliable sign the diagnostic involves
+  CGP, so removing one also sets `has_cgp_error`.
+- **[`resugar_symbol`](../../crates/cargo-cgp-error-processing/src/preprocess/resugar_symbol.rs)**
+  reverses a `Symbol!` expansion back to its surface form: `Symbol<2, Chars<'x', Chars<'y', Nil>>>`
+  becomes `Symbol!("xy")`. It parses the spine and rewrites it **only on an exact structural match** —
+  the declared length must equal the decoded string's byte length (the length `Symbol!` bakes in is
+  `str::len()`, not the character count), the spine must be `Chars`/`Nil` all the way down, and each
+  `Chars` head must be a single plain character literal. A `Symbol<…>` that does not match exactly is
+  left untouched, because another type could share the name; this caution is essential to every
+  resugaring preprocessor, not just this one. A successful resugar also sets `has_cgp_error`.
 
-One deduplication already happens, but *not* here — it is a render-fidelity step in the front-end, not
-processing. rustc's human emitter suppresses exact-duplicate diagnostics from its terminal output
+A non-CGP diagnostic runs through the pipeline untouched: no prefix matches, no `Symbol` spine parses,
+`has_cgp_error` stays false, and the diagnostic passes through unchanged.
+
+One deduplication happens near this stage but is *not* part of it — it is a render-fidelity step in
+the front-end. rustc's human emitter suppresses exact-duplicate diagnostics from its terminal output
 (while still counting them), and capturing via `--message-format=json` loses that suppression because
 the JSON stream repeats them. The front-end restores it when it re-emits rendered text (see [The error
-pipeline](error-pipeline.md)). That is distinct from the cascade-collapsing deduplication above:
-this one drops byte-identical repeats to match rustc's own rendering; the processor's job is to
+pipeline](error-pipeline.md)). That is distinct from the cascade-collapsing deduplication aggregation
+will do: this one drops byte-identical repeats to match rustc's own rendering; aggregation must
 recognize *related* diagnostics that share a root cause and are not identical at all.
 
 ## Testing with snapshots
@@ -166,9 +186,11 @@ tool. A fixture is a text file holding serialized diagnostics — captured once 
 and committed — and a test reads it, calls `process_cgp_errors`, and asserts over the returned
 `CgpDiagnostic` set. Nothing compiles, no driver runs, and the test is fast and deterministic, so a
 whole catalog of error classes can be exercised as ordinary library tests. This is what the
-statelessness requirement buys, and it is where the fuller per-class snapshot suite will grow as the
-analysis lands. Today's tests assert the pass-through invariant: every diagnostic is preserved, in
-order, with its rendered text intact.
+statelessness requirement buys. Two test files cover the stage: `preprocess.rs` drives each
+preprocessor over crafted diagnostics — a stripped prefix, an exactly-matched `Symbol!`, a wrong
+length or foreign type left alone — and checks the rewritten text and the `has_cgp_error` flag; and
+`passthrough.rs` confirms a non-CGP diagnostic comes through the pipeline untouched with
+`has_cgp_error` false.
 
 The [UI snapshot suite](testing.md) tests this stage a second way, over real captured diagnostics.
 Each fixture is pinned by both a `.stderr` snapshot and a `.output.json` snapshot of the diagnostics
@@ -183,26 +205,27 @@ renders across the whole catalog.
 
 ## Planned processing work
 
-Once the placeholder is replaced by a real ingest-then-query core, the transformations below are the
-work this stage takes on, listed roughly in order of expected value. Each operates on the captured
-diagnostics as data — none needs the compiler, which is what keeps them in this stage rather than in
-capture:
+The work still ahead falls into the two sub-stages. **More preprocessors** extend the per-diagnostic
+pipeline — each a new `fn(CgpDiagnostic) -> CgpDiagnostic` added to `PREPROCESSORS`, each applying the
+same exact-match caution `resugar_symbol` sets the precedent for:
 
-- **Decode CGP's type-level encodings.** A type printed as `Symbol<4, Chars<'n', Chars<'a', Chars<'m',
-  Chars<'e', Nil>>>>>` is the field name `"name"`; `Cons<A, Cons<B, Nil>>` is `Product![A, B]`.
-  Rewriting these spines back to their surface form removes most of the visual noise a CGP error
-  carries.
-- **Lift the root cause and collapse the cascade.** Detect the one deep mistake reported at every
-  transitively dependent provider, present it first, and summarize or drop the repeats. This is the
-  transformation that most needs the store, since finding the repetition is a query across the whole
-  ingested set.
+- **Decode the remaining type-level encodings.** `Symbol!` is done; `Cons<A, Cons<B, Nil>>` is
+  `Product![A, B]`, `Either<…>`/`Void` spines are `Sum![…]`, and so on. Rewriting these back to their
+  surface form removes the rest of the visual noise a CGP error carries.
 - **Map diagnostics to catalog classes.** Recognize an error's [catalog](../../../cgp/docs/errors/README.md)
-  class from its shape and record it on the `CgpDiagnostic`, so a consumer can tell the user which
-  kind of CGP mistake they are looking at.
+  class from its shape and record it on the `CgpDiagnostic`, so a consumer can tell the user which kind
+  of CGP mistake they are looking at.
 
-One related transformation is deliberately *not* here: recovering an obligation chain the solver
-renders tersely by re-running fulfillment through the compiler's `InferCtxt`. That needs live
-compiler state, so it belongs to the capture stage and enriches the diagnostic data before this stage
+**The aggregation sub-stage** does not exist yet and is the larger piece:
+
+- **Lift the root cause and collapse the cascade.** Detect the one deep mistake reported at every
+  transitively dependent provider, present it first, and summarize or drop the repeats. This is what
+  needs the ingest-then-query store, since finding the repetition is a query across the whole set —
+  and it is what makes the output count finally differ from the input.
+
+One related transformation is deliberately in neither sub-stage: recovering an obligation chain the
+solver renders tersely by re-running fulfillment through the compiler's `InferCtxt`. That needs live
+compiler state, so it belongs to the capture stage and enriches the diagnostic data before processing
 runs; it is recorded in [The error pipeline](error-pipeline.md).
 
 ## Comparison with Clippy
@@ -219,12 +242,14 @@ design is the right precedent to follow precisely because Clippy is not.
 
 ## Tests
 
+- [`crates/cargo-cgp-error-processing/tests/preprocess.rs`](../../crates/cargo-cgp-error-processing/tests/preprocess.rs) —
+  drives `strip_cgp_prefixes` and `resugar_symbol` over crafted diagnostics, asserting the rewritten
+  text and the `has_cgp_error` flag, including the exact-match cases `resugar_symbol` must skip.
 - [`crates/cargo-cgp-error-processing/tests/passthrough.rs`](../../crates/cargo-cgp-error-processing/tests/passthrough.rs) —
   drives `process_cgp_errors` over a committed serialized fixture
   ([`tests/fixtures/sample_diagnostics.json`](../../crates/cargo-cgp-error-processing/tests/fixtures/sample_diagnostics.json))
-  and asserts the pass-through invariant: every diagnostic preserved, in order, with its rendered text
-  intact. This is the seed of the per-class snapshot suite described under
-  [Testing with snapshots](#testing-with-snapshots).
+  of plain-Rust diagnostics, asserting they pass through the pipeline untouched with `has_cgp_error`
+  false.
 - The [UI snapshot suite](testing.md) exercises `process_cgp_errors` over every fixture's real
   captured diagnostics: its *process pass* parses each `<name>.output.json`, runs the function,
   renders the result, and checks it reproduces the binary's `<name>.stderr`. The `--process-only` mode
@@ -233,10 +258,15 @@ design is the right precedent to follow precisely because Clippy is not.
 ## Source
 
 - [`crates/cargo-cgp-error-processing/src/process.rs`](../../crates/cargo-cgp-error-processing/src/process.rs) —
-  `process_cgp_errors`, the pass-through placeholder, carrying the "do not grow into a map" warning and
-  the `DiagInner` fallback note.
+  `process_cgp_errors`: wraps each diagnostic and runs the preprocessing pipeline, carrying the
+  "aggregation is a separate phase, not more branches in the map" warning and the `DiagInner` fallback
+  note.
 - [`crates/cargo-cgp-error-processing/src/diagnostic.rs`](../../crates/cargo-cgp-error-processing/src/diagnostic.rs) —
-  the `CgpDiagnostic` superset type and its `passthrough`/`rendered` helpers.
+  the `CgpDiagnostic` superset type (with `has_cgp_error`) and its `wrap`/`rendered` helpers.
+- [`crates/cargo-cgp-error-processing/src/preprocess/`](../../crates/cargo-cgp-error-processing/src/preprocess) —
+  the preprocessing pipeline: `pipeline.rs` (the `PREPROCESSORS` list and fold), `strip_prefixes.rs`
+  (`strip_cgp_prefixes` and the `CGP_PREFIXES` constant), `resugar_symbol.rs` (the exact-match
+  `Symbol!` parser), and `text.rs` (applying a transform across a diagnostic's text fields).
 - [`crates/cargo-cgp/src/check/diagnostics.rs`](../../crates/cargo-cgp/src/check/diagnostics.rs) — the
   front-end's capture and render around this stage: parsing cargo's JSON stream into diagnostics, and
   re-emitting the processed result (with the render-fidelity deduplication).

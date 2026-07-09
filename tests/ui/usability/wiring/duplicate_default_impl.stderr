@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `cgp::cgp_core::cgp_component::DefaultImpls1<ShowImplComponent, _>` for type `std::string::String`
+error[E0119]: conflicting implementations of trait `cgp_component::DefaultImpls1<ShowImplComponent, _>` for type `std::string::String`
   --> src/main.rs:35:16
    |
 26 | #[default_impl(String in DefaultImpls1<ShowImplComponent>)]

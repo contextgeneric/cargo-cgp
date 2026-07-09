@@ -30,8 +30,9 @@ same change.
   `cargo-cgp-error-processing` crate) that transforms captured diagnostics into a smaller,
   root-cause-first set of CGP errors: its interface, its `cargo_metadata::Diagnostic` input and
   `CgpDiagnostic` output types, why it must be a stateful analysis rather than a per-error map, and how
-  it is tested without running the tool. Scaffolding built and wired in as a pass-through; the
-  analysis itself is future work.
+  it is tested without running the tool. Its per-diagnostic preprocessing pipeline (stripping CGP path
+  prefixes, resugaring `Symbol!`) is built and wired in; the cross-diagnostic aggregation that
+  collapses cascades is future work.
 - [rustc diagnostic internals](rustc-diagnostic-internals.md) — a map of the compiler code that
   builds CGP diagnostics and, crucially, where it *suppresses* information: the type/const printer, the
   trait-error reporters, the two verbosity switches (`--verbose` versus `-Zverbose-internals`), and the

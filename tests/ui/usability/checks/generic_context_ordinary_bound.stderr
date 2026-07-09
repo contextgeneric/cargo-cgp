@@ -17,7 +17,7 @@ error[E0277]: the trait bound `f64: std::cmp::Eq` is not satisfied
              u64
              u8
              usize
-note: required for `CompareScalars` to implement `cgp::prelude::IsProviderFor<ScalarEqualityComponent, Wrapper<f64>>`
+note: required for `CompareScalars` to implement `IsProviderFor<ScalarEqualityComponent, Wrapper<f64>>`
   --> src/main.rs:28:1
    |
 28 | #[cgp_impl(new CompareScalars)]
@@ -25,7 +25,7 @@ note: required for `CompareScalars` to implement `cgp::prelude::IsProviderFor<Sc
 ...
 32 |     Scalar: Eq,
    |             -- unsatisfied trait bound introduced here
-   = note: required for `Wrapper<f64>` to implement `cgp::prelude::CanUseComponent<ScalarEqualityComponent>`
+   = note: required for `Wrapper<f64>` to implement `CanUseComponent<ScalarEqualityComponent>`
 note: required by a bound in `__CheckWrapper`
   --> src/main.rs:48:1
    |

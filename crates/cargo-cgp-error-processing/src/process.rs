@@ -3,33 +3,30 @@
 use cargo_metadata::diagnostic::Diagnostic;
 
 use crate::diagnostic::CgpDiagnostic;
+use crate::preprocess::preprocess;
 
 /// Transform the diagnostics rustc produced into CGP diagnostics.
 ///
-/// This is the stateless middle of the error pipeline: it takes the raw diagnostics
-/// captured from a compilation and returns the set to present to the user. It is a pure
-/// function over serializable data — no compiler, no filesystem, no global state — which
-/// is what lets it be exercised by snapshot tests without running the tool (see the
-/// crate's `tests/`).
+/// Each raw diagnostic is wrapped into a [`CgpDiagnostic`] and run through the
+/// [preprocessing pipeline](crate::preprocess::preprocess), which cleans up and resugars
+/// it on its own. The input is taken by value so wrapping is a move, not a clone.
 ///
-/// # This is a placeholder — do not grow it into a per-error map
+/// # This is only the preprocessing stage — the aggregation stage is still missing
 ///
-/// The current body is a scaffold: it treats every input as a non-CGP error and passes
-/// each one through unchanged, reproducing rustc's own output through the new interface
-/// so the pipeline can be wired end to end before any analysis exists. **The one-to-one
-/// shape below is a stand-in, not the design.**
+/// Preprocessing is deliberately per-diagnostic: it maps each diagnostic independently,
+/// so the output has exactly one entry per input. That is correct *for this stage* and
+/// is why the body is a `map`. It is **not** the whole processor. The stage still to come
+/// is aggregation: one CGP mistake cascades into many diagnostics, and the processor must
+/// detect the repetition, lift the single root cause to the top, and drop or summarize the
+/// echoes — a transform that returns fewer diagnostics than it received and that can only
+/// be decided by looking at the *whole set*.
 ///
-/// The real processor must return a *different, usually smaller* number of diagnostics
-/// than it received: one CGP mistake cascades into many diagnostics, and the whole point
-/// of this stage is to detect the repetition, lift the single root cause to the top, and
-/// drop or summarize the echoes. That is impossible to decide one diagnostic at a time,
-/// because whether a diagnostic is a root cause or an echo is a fact about the *whole
-/// set*. So the real implementation must work in two phases — first **ingest** every
-/// diagnostic into an internal, queryable store, then **query** that store to synthesize
-/// the output — and must not be extended by adding rewrite branches inside the walk
-/// below, which would permanently fix it as a naive `map` that can never deduplicate a
-/// cascade. Replace the placeholder with the ingest-then-query core; do not flesh it out
-/// in place. See `docs/implementation/error-processing.md`.
+/// So the shape to grow into is two phases: this per-diagnostic preprocessing map,
+/// followed by an aggregation phase that ingests all the preprocessed diagnostics into a
+/// queryable store and synthesizes the output from a view across them. Do not fold
+/// aggregation into the per-diagnostic map below — a `map` can never deduplicate a
+/// cascade, because each step is blind to the others. See
+/// `docs/implementation/error-processing.md`.
 ///
 /// # Input type note
 ///
@@ -44,11 +41,10 @@ use crate::diagnostic::CgpDiagnostic;
 /// move this function into the driver crate and cost it its standalone testability. We
 /// take the `cargo_metadata` route first for that reason and reconsider `DiagInner` only
 /// if it cannot carry enough.
-pub fn process_cgp_errors(rust_errors: &[Diagnostic]) -> Vec<CgpDiagnostic> {
-    // PLACEHOLDER passthrough — see the warning above. Not the shape of the real stage.
+pub fn process_cgp_errors(rust_errors: Vec<Diagnostic>) -> Vec<CgpDiagnostic> {
     rust_errors
-        .iter()
-        .cloned()
-        .map(CgpDiagnostic::passthrough)
+        .into_iter()
+        .map(CgpDiagnostic::wrap)
+        .map(preprocess)
         .collect()
 }

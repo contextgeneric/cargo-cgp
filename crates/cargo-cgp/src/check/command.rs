@@ -89,13 +89,13 @@ fn emit_output(output: &std::process::Output, capture: bool) -> anyhow::Result<(
 
     if capture {
         let captured = parse_cargo_output(&output.stdout);
-        let processed = process_cgp_errors(&captured.diagnostics);
 
         // Forward any non-JSON stdout lines verbatim so nothing cargo wrote is dropped.
         for line in &captured.text_lines {
             writeln!(stdout, "{line}").context("forwarding cargo stdout")?;
         }
 
+        let processed = process_cgp_errors(captured.diagnostics);
         emit_rendered(&mut stderr, &processed).context("writing processed diagnostics")?;
     } else {
         stdout

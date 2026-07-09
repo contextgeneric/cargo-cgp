@@ -20,9 +20,10 @@ each compilation, because injecting rustc flags is coupled to the compiler; its 
 transformations are the substance below. The **capture**, **process**, and **render** stages all run
 in the plain front-end, which invokes `cargo check --message-format=json`, parses the diagnostics
 back out, transforms them, and re-emits them. The process stage is a self-contained pure function
-documented separately in [Error processing](error-processing.md). All four stages exist today, but
-process is still a pass-through, so the output matches rustc's own diagnostics — the flag levers
-below are the only transformations that change what a user sees.
+documented separately in [Error processing](error-processing.md). All four stages exist today; the
+process stage now runs its per-diagnostic preprocessing pipeline (stripping CGP path prefixes,
+resugaring `Symbol!`), so it too changes what a user sees, on top of the flag levers below. Its
+cross-diagnostic aggregation sub-stage — collapsing cascades — is still to come.
 
 ## Why a transformation layer exists
 

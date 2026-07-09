@@ -15,10 +15,10 @@ help: the following other types implement trait `ScalarTypeProvider<__Context__>
 21 | #[cgp_type]
    | ^^^^^^^^^^^
    | |
-   | `cgp::prelude::RedirectLookup<__Components__, __Path__>`
-   | `cgp::prelude::UseContext`
-   | `cgp::prelude::UseType<Scalar>`
-   | `cgp::prelude::WithProvider<__Provider__>`
+   | `RedirectLookup<__Components__, __Path__>`
+   | `UseContext`
+   | `UseType<Scalar>`
+   | `WithProvider<__Provider__>`
 note: required for `NoScalar` to implement `HasScalarType`
   --> src/main.rs:21:1
    |
@@ -58,10 +58,10 @@ help: the following other types implement trait `ScalarTypeProvider<__Context__>
 21 | #[cgp_type]
    | ^^^^^^^^^^^
    | |
-   | `cgp::prelude::RedirectLookup<__Components__, __Path__>`
-   | `cgp::prelude::UseContext`
-   | `cgp::prelude::UseType<Scalar>`
-   | `cgp::prelude::WithProvider<__Provider__>`
+   | `RedirectLookup<__Components__, __Path__>`
+   | `UseContext`
+   | `UseType<Scalar>`
+   | `WithProvider<__Provider__>`
 note: required for `<App as HasTypes>::Types` to implement `HasScalarType`
   --> src/main.rs:21:1
    |
