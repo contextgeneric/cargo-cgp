@@ -7,9 +7,11 @@
 //! building in *separate* target directories — which is exactly what per-worker crates
 //! give us, at the cost of compiling cgp once per worker.
 //!
-//! Output is kept in fixture order regardless of finish order: each worker stores its
-//! result in the slot for the fixture's index, and [`run`] returns the slots in order for
-//! the caller to print. Nothing is printed here.
+//! Each fixture's result is reported the moment it finishes, through a `done` callback the
+//! runner calls one at a time (never overlapping), so a run streams live rather than
+//! withholding everything to the end. The order is completion order, not fixture order —
+//! whichever worker finishes first reports first — so a caller that needs its output
+//! identifiable prints the fixture's name on every line.
 
 use std::path::Path;
 use std::sync::Mutex;
@@ -27,23 +29,26 @@ pub fn default_jobs(fixture_count: usize) -> usize {
         .max(1)
 }
 
-/// Run `task` over every fixture across `jobs` workers, returning one result per fixture
-/// in the original order. Worker `w` (in `0..jobs`) is passed to `task` alongside the
+/// Run `task` over every fixture across `jobs` workers, calling `done` with each result as
+/// soon as it is ready. Worker `w` (in `0..jobs`) is passed to `task` alongside the
 /// fixture so the task can address that worker's own crate; the same worker index recurs
-/// for every fixture that worker picks up, so its crate stays warm across them.
-pub fn run<T, F>(jobs: usize, fixtures: &[&Path], task: F) -> Vec<T>
+/// for every fixture that worker picks up, so its crate stays warm across them. `done` is
+/// serialized — the runner never calls it from two workers at once — so it can print
+/// without interleaving; the results arrive in completion order.
+pub fn run<T, Task, Done>(jobs: usize, fixtures: &[&Path], task: Task, done: Done)
 where
-    T: Send,
-    F: Fn(usize, &Path) -> T + Sync,
+    Task: Fn(usize, &Path) -> T + Sync,
+    Done: Fn(T) + Sync,
 {
     let next = AtomicUsize::new(0);
-    let slots: Vec<Mutex<Option<T>>> = (0..fixtures.len()).map(|_| Mutex::new(None)).collect();
+    let done_lock = Mutex::new(());
 
     thread::scope(|scope| {
         for worker in 0..jobs {
             let next = &next;
-            let slots = &slots;
             let task = &task;
+            let done = &done;
+            let done_lock = &done_lock;
             scope.spawn(move || {
                 loop {
                     let index = next.fetch_add(1, Ordering::Relaxed);
@@ -51,14 +56,10 @@ where
                         break;
                     };
                     let result = task(worker, fixture);
-                    *slots[index].lock().unwrap() = Some(result);
+                    let _guard = done_lock.lock().unwrap();
+                    done(result);
                 }
             });
         }
     });
-
-    slots
-        .into_iter()
-        .map(|slot| slot.into_inner().unwrap().expect("every fixture was run"))
-        .collect()
 }

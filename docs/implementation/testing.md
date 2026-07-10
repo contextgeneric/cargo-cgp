@@ -125,9 +125,9 @@ built once per worker rather than once overall. The worker count defaults to the
 parallelism, capped at the fixture count, and is overridable with `--jobs`/`-j` (below) — the knob to
 turn down on a many-core machine where that many parallel `cgp` builds would cost more in compilation
 and disk than the parallelism saves. Each worker's crate directory carries the worker number, but that
-absolute path is normalized to `$DIR`, so a snapshot never depends on which worker produced it. Output
-is collected and printed in fixture order regardless of which worker finishes first, so a run reads the
-same every time.
+absolute path is normalized to `$DIR`, so a snapshot never depends on which worker produced it. Each
+fixture's result is printed the moment it finishes rather than held to the end, so a run streams live;
+the order is therefore completion order, not fixture order, which is why every line names its fixture.
 
 The `-q` removes most of the noise: it suppresses cargo's own progress lines (`Checking`,
 `Compiling`, `Finished`). What remains and must be normalized away is machine-specific or

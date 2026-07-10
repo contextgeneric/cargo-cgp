@@ -74,8 +74,9 @@ cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency 
 ```
 
 Fixtures are checked in parallel across a pool of workers — one throwaway crate each, so they never
-collide — with `--jobs`/`-j` setting the count (default: the machine's parallelism). Output stays in
-fixture order however the workers interleave.
+collide — with `--jobs`/`-j` setting the count (default: the machine's parallelism). Each fixture's
+result prints the moment it finishes, so the run streams live in completion order; every line names
+its fixture.
 
 The snapshots capture `cargo-cgp`'s own output. Because the driver runs the workspace crate through
 the next-gen trait solver, that output already differs from a plain `cargo check` — the

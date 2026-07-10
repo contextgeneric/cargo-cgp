@@ -21,7 +21,9 @@ pub mod paths;
 pub mod runner;
 pub mod snapshot;
 
+use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::options::Options;
 use crate::snapshot::Outcome;
@@ -68,39 +70,47 @@ pub fn run(args: Vec<String>) {
     }
 
     let fixture_refs: Vec<&Path> = fixtures.iter().map(PathBuf::as_path).collect();
-    let reports = runner::run(jobs, &fixture_refs, |worker, fixture| {
-        let crate_dir = &workers[worker];
-        let name = fixture
-            .strip_prefix(&fixtures_dir)
-            .unwrap_or(fixture)
-            .display()
-            .to_string();
+    let failed = AtomicUsize::new(0);
+    runner::run(
+        jobs,
+        &fixture_refs,
+        |worker, fixture| {
+            let crate_dir = &workers[worker];
+            let name = fixture
+                .strip_prefix(&fixtures_dir)
+                .unwrap_or(fixture)
+                .display()
+                .to_string();
 
-        if options.print {
-            Report {
-                text: print_block(&options, crate_dir, fixture, &name),
-                failed: false,
+            if options.print {
+                Report {
+                    text: print_block(&options, crate_dir, fixture, &name),
+                    failed: false,
+                }
+            } else {
+                let outcomes = run_passes(&options, crate_dir, fixture, &cgp_root);
+                let failed = outcomes
+                    .iter()
+                    .any(|(_, outcome)| matches!(outcome, Outcome::Mismatch(_)));
+                Report {
+                    text: report_block(&name, &outcomes),
+                    failed,
+                }
             }
-        } else {
-            let outcomes = run_passes(&options, crate_dir, fixture, &cgp_root);
-            let failed = outcomes
-                .iter()
-                .any(|(_, outcome)| matches!(outcome, Outcome::Mismatch(_)));
-            Report {
-                text: report_block(&name, &outcomes),
-                failed,
+        },
+        // Print each fixture as it finishes and flush, so the run streams live; the
+        // runner serializes this, so blocks never interleave. Order is completion order.
+        |report: Report| {
+            let mut out = std::io::stdout().lock();
+            let _ = out.write_all(report.text.as_bytes());
+            let _ = out.flush();
+            if report.failed {
+                failed.fetch_add(1, Ordering::Relaxed);
             }
-        }
-    });
+        },
+    );
 
-    let mut failed = 0usize;
-    for report in &reports {
-        print!("{}", report.text);
-        if report.failed {
-            failed += 1;
-        }
-    }
-
+    let failed = failed.into_inner();
     if failed > 0 {
         eprintln!(
             "\n{failed} fixture(s) with a snapshot mismatch; re-run with `--bless` to update after an intended change"
@@ -110,8 +120,8 @@ pub fn run(args: Vec<String>) {
 }
 
 /// One fixture's contribution to the run: the text to print for it (already fully
-/// rendered) and whether it counts as a failure. Held rather than printed so a parallel
-/// run can emit fixtures in order regardless of which worker finished first.
+/// rendered) and whether it counts as a failure. Built on a worker thread, then handed to
+/// the runner's `done` callback, which prints it live as the fixture finishes.
 struct Report {
     text: String,
     failed: bool,
