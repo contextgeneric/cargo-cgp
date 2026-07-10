@@ -19,9 +19,13 @@ This section indexes every implementation document. When you add a document, reg
 same change.
 
 - [Executable structure](executable-structure.md) — the two-executable split (the `cargo-cgp`
-  front-end and the `cargo-cgp-driver` rustc wrapper), how the front-end wraps `cargo` and the
-  driver wraps `rustc`, how the driver reaches the compiler through the `rustc_private`
-  `rustc_driver` API, and how all of this compares to Clippy.
+  front-end and the `cargo-cgp-driver` rustc wrapper), how the front-end wraps `cargo`, the
+  environment contract between the two, and how the split compares to Clippy.
+- [The driver](driver.md) — the deep dive into `cargo-cgp-driver`: how cargo invokes it, how it
+  prepares the rustc argument vector, how it reaches the compiler through the `rustc_private`
+  `rustc_driver` API, and the three transformations it applies to the diagnostics — the two flag
+  levers (trait solver, verbosity) and the emitter that renames CGP wiring notes using the live
+  compiler.
 - [The error pipeline](error-pipeline.md) — the four-stage flow that turns rustc's raw diagnostics
   into readable CGP errors (configure rustc, capture, process, render), and the detail of the two
   compilation-side stages: the current flag injections that un-hide and un-elide CGP errors, and the

@@ -55,7 +55,8 @@ This repository keeps its own knowledge base under [`docs/`](docs/README.md), wr
 agents. Read it before a task and keep it in sync after one. The
 [implementation documentation](docs/implementation/README.md) explains how the tool is built and why
 — start with [Executable structure](docs/implementation/executable-structure.md) for the
-two-executable design, the cargo and rustc wrapping, and the compiler-API access. The knowledge base
+two-executable design and the cargo wrapping, and [The driver](docs/implementation/driver.md) for the
+rustc wrapping, the compiler-API access, and the driver-side diagnostic transformations. The knowledge base
 is bound by a **synchronization rule** ([docs/AGENTS.md](docs/AGENTS.md)): the source is the single
 source of truth, and when you change how the tool is structured or behaves, you revise the matching
 document in the same change. A document describing a design the code no longer has is worse than
@@ -79,11 +80,14 @@ loading LLVM. A third, library-only crate, **`cargo-cgp-error-processing`**
 calls after a build; it links no compiler internals either, so it builds and tests on any toolchain
 (see [Error processing](docs/implementation/error-processing.md)).
 
-How the two cooperate in full — the argument normalization, the `CARGO_CGP_SYSROOT` and
-dynamic-library-path contract, wrapper-mode detection, the `-Znext-solver=globally` injection that
-un-hides CGP errors, the (still no-op) `CgpCallbacks`, and the comparison with Clippy — is documented
-in [Executable structure](docs/implementation/executable-structure.md). Read it before changing how
-the executables interact, and keep it in sync when you do.
+How the two cooperate — the argument normalization, the `CARGO_CGP_SYSROOT` and
+dynamic-library-path contract, wrapper-mode detection, and the front-end capture — is documented in
+[Executable structure](docs/implementation/executable-structure.md); the driver's own internals — the
+argument preparation, the `rustc_private` compiler-API access, and the three diagnostic
+transformations (the `-Znext-solver=globally` and `--verbose` flag injections and the `CgpCallbacks`
+emitter that renames CGP wiring notes) — are in [The driver](docs/implementation/driver.md). Read the
+relevant one before changing how the executables interact or what the driver does, and keep it in sync
+when you do.
 
 ## Toolchain and `rustc_private`
 
@@ -99,7 +103,7 @@ needed on the driver's **binary** crate as well as its library (the binary is wh
 dylib), and the pinned nightly is the compiler the driver *embeds*, so the tool must be run against a
 project using that same nightly — for example with `RUSTUP_TOOLCHAIN` set — or it loads a mismatched
 `librustc_driver` and fails.
-[Executable structure](docs/implementation/executable-structure.md#accessing-the-rust-compiler-api)
+[The driver](docs/implementation/driver.md#accessing-the-rust-compiler-api)
 explains both in full.
 
 ## Code organization conventions

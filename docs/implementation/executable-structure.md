@@ -74,33 +74,18 @@ cargo-cgp-driver  /path/to/rustc  --edition=2024  --crate-name foo  src/lib.rs  
 ```
 
 The driver runs the real compiler in-process rather than shelling out, which is the whole reason for
-its existence: running through [`rustc_driver`](../../crates/cargo-cgp-driver/src/run.rs) is what
-will let a future version read the compilation's diagnostics. The entrypoint is
+its existence: only in-process, through [`rustc_driver`](../../crates/cargo-cgp-driver/src/run.rs),
+can it read and rewrite the compilation's diagnostics. The entrypoint is
 [`run::run`](../../crates/cargo-cgp-driver/src/run.rs), called by the thin
-[`bin/cargo-cgp-driver.rs`](../../crates/cargo-cgp-driver/bin/cargo-cgp-driver.rs) wrapper.
+[`bin/cargo-cgp-driver.rs`](../../crates/cargo-cgp-driver/bin/cargo-cgp-driver.rs) wrapper; it
+prepares the rustc argument vector (dropping the injected `rustc` path and injecting the sysroot and
+the diagnostic flags), runs the compiler under `catch_with_exit_code`, and installs a custom emitter
+that renames CGP wiring notes.
 
-Before handing control to the compiler, [`args::rustc_args`](../../crates/cargo-cgp-driver/src/args.rs)
-turns the wrapper's argument vector into a rustc argument vector. It detects "wrapper mode" — the
-second argument is a path whose file stem is `rustc` — and removes that injected compiler path,
-because `rustc_driver::run_compiler` treats the vector's first element as the ignored program name
-and everything after it as flags; leaving the `rustc` path in would make the compiler treat it as an
-input file. It then injects flags, each unless the invocation already sets it: `--sysroot` unless a
-sysroot is already present (see the environment contract below), plus the two *diagnostic* flags
-`-Znext-solver=globally` and `--verbose`. The diagnostic pair are not structural concerns — they are
-how the driver surfaces CGP errors the default solver hides and un-elides the types rustc would
-compress — so they are documented in [The error pipeline](error-pipeline.md) rather than here,
-along with why they are skipped for cargo's `-vV` and `--print` info queries. The prepared vector is run under
-[`rustc_driver::catch_with_exit_code`](../../crates/cargo-cgp-driver/src/run.rs), which executes the
-compiler and converts a compiler-signalled failure into the process `ExitCode`, matching what plain
-`rustc` returns.
-
-The compiler behavior itself is installed through
-[`callbacks::CgpCallbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs), whose `config` hook
-installs a custom diagnostic emitter. That emitter renames CGP wiring notes to name the consumer and
-provider traits behind a component marker, using the live `TyCtxt` — the one transformation that needs
-the compiler's own state rather than an injected flag; it is documented in
-[The error pipeline](error-pipeline.md#naming-the-traits-behind-a-component-marker-current). The
-driver's remaining effect on diagnostics comes from the injected diagnostic flags.
+All of that — the argument preparation, the `rustc_private` compiler-API access, and the three
+diagnostic transformations — is the subject of the [driver deep dive](driver.md); this document
+covers only how the driver sits between cargo and the compiler, and the environment contract it needs
+to do so.
 
 ## The environment contract
 
@@ -123,27 +108,10 @@ sysroot, and nothing else would put it on the search path.
 
 ## Accessing the Rust compiler API
 
-The driver reaches the compiler through the `rustc_private` feature, which is what permits linking
-the compiler's internal crates from the sysroot. Three facts about that access shape the crate.
-
-First, the internal crates are pulled in by `extern crate`, not through Cargo. The library
-[`crates/cargo-cgp-driver/src/lib.rs`](../../crates/cargo-cgp-driver/src/lib.rs) carries
-`#![feature(rustc_private)]` and `extern crate rustc_driver;`, and a module that needs a further
-compiler crate adds another `extern crate rustc_*;` line there. There is nothing to declare under
-`[dependencies]` for these crates.
-
-Second, the feature gate is needed on **both** the library and the binary crate. The binary
-[`bin/cargo-cgp-driver.rs`](../../crates/cargo-cgp-driver/bin/cargo-cgp-driver.rs) repeats
-`#![feature(rustc_private)]`, because the binary is what ultimately links the compiler dylib, and
-that link is only permitted when the linking crate opts into the feature.
-
-Third, the API is unstable and only ships with a nightly toolchain carrying the `rustc-dev`
-component, so the toolchain is pinned in [`rust-toolchain.toml`](../../rust-toolchain.toml) to an
-exact dated nightly and bumped deliberately. A consequence worth holding onto: the pinned nightly is
-the compiler the driver *embeds*, so when `cargo cgp check` runs against a project, that nightly is
-the compiler doing the checking, and the sysroot the front-end discovers must belong to the same
-nightly — a sysroot from another toolchain would load a mismatched `librustc_driver`. In practice
-the tool is run under the pinned toolchain.
+The driver links the compiler's internal crates from the sysroot through the `rustc_private` feature,
+which is what its in-process access to the compiler rests on. How that linkage works — the
+`extern crate` declarations, the feature gate needed on both the library and the binary, and the
+pinned-nightly requirement — is part of the [driver deep dive](driver.md#accessing-the-rust-compiler-api).
 
 ## Comparison with Clippy
 
@@ -170,29 +138,14 @@ loader path. This is the one place `cargo-cgp` must do materially more than Clip
 directly from not being a rustup component.
 
 The remaining differences are gaps, where `cargo-cgp` is deliberately simpler than Clippy today and
-will likely grow toward it:
+will likely grow toward it. The one that is a front-end concern lives here; the driver-side gaps —
+argument reading, driver front-matter, info-query handling, and the `Callbacks` set — are catalogued
+in the [driver deep dive](driver.md#comparison-with-clippy).
 
-- **Argument reading.** The driver reads `env::args()`, whereas Clippy uses
-  `rustc_driver::args::raw_args`, which also expands `@argfile` arguments that cargo passes on some
-  platforms (notably Windows, to dodge command-line length limits). Until this is adopted, an
-  `@argfile` invocation would not be handled.
 - **Front-end argument forwarding.** `cargo-cgp` forwards extra arguments straight to `cargo check`.
   Clippy packs its own arguments into a `CLIPPY_ARGS` variable with a separator hack and chooses
   between the `check` and `fix` cargo subcommands; `cargo-cgp` has no tool-specific arguments and
   only `check`, so it needs none of that.
-- **Driver front-matter.** Clippy's driver installs a logger (`init_rustc_env_logger`) and an ICE
-  hook (`install_ice_hook`) with a bug-report URL, and handles `--version`, `--help`, and a
-  `--rustc` passthrough. `cargo-cgp` installs none of these yet; a panic in the driver therefore
-  surfaces as a plain panic rather than a formatted ICE report.
-- **Info-query handling.** Clippy detects cargo's info queries (`-vV`, `--print`) and its
-  `--cap-lints=allow` / `--no-deps` cases to *skip* running its lints for them. `cargo-cgp` has no
-  lints to skip, and `run_compiler` already answers those queries correctly as the real compiler, so
-  the driver needs no such guard — but one will be needed once the callbacks do real work that
-  should not run for an info query.
-- **Callbacks.** Clippy carries three `Callbacks` implementations (default, rustc-only, and
-  lint-registering) and selects among them per invocation. `cargo-cgp` has one `CgpCallbacks`, whose
-  `config` hook installs the diagnostic-rewriting emitter; the differentiation will grow as the driver
-  does more post-processing.
 
 ## Further reading
 
@@ -206,29 +159,25 @@ a behavior described above.
   path as its first argument, the workspace variant applies only to workspace members, and it affects
   the artifact hash so wrapped builds cache separately. This is the exact protocol the front-end
   drives and the driver decodes in wrapper mode.
-- [rustc_driver and rustc_interface — Rust Compiler Development Guide](https://rustc-dev-guide.rust-lang.org/rustc-driver/intro.html)
-  describes `rustc_driver::run_compiler` and the `Callbacks` trait — the entry point the driver calls
-  and the hook `CgpCallbacks` implements.
-- [Example: Getting diagnostics — Rust Compiler Development Guide](https://rustc-dev-guide.rust-lang.org/rustc-driver/getting-diagnostics.html)
-  walks a minimal `rustc_driver` program that captures the compiler's diagnostics through a callback,
-  which is the concrete shape the tool's future diagnostics work will take.
-- [Tracking issue for crates that are compiler dependencies (#27812) — rust-lang/rust](https://github.com/rust-lang/rust/issues/27812)
-  is the `rustc_private` feature's tracking issue, the background for why linking the compiler crates
-  needs a nightly toolchain with the `rustc-dev` component.
+
+The authoritative references for the compiler-side mechanisms — `rustc_driver`, the `Callbacks`
+trait, custom emitters, and the `rustc_private` feature — are collected in the
+[driver deep dive](driver.md#further-reading).
 
 ## Tests
 
-The two argument transforms this document describes — `strip_subcommand` in the front-end and
-`rustc_args` in the driver — are covered by tests, and the end-to-end wrapping is verified by hand.
-The full testing picture, including the example fixtures and the verification checklist, is its own
-document: [Testing](testing.md).
+The front-end's argument normalization is tested directly, and the end-to-end wrapping is verified by
+hand. The full testing picture, including the example fixtures and the verification checklist, is its
+own document: [Testing](testing.md); the driver's own argument and rewrite tests are listed in the
+[driver deep dive](driver.md#tests).
 
 - [`crates/cargo-cgp/tests/args.rs`](../../crates/cargo-cgp/tests/args.rs) — `strip_subcommand` across
   the invocation forms.
-- [`crates/cargo-cgp-driver/tests/args.rs`](../../crates/cargo-cgp-driver/tests/args.rs) — `rustc_args`
-  wrapper-mode stripping, sysroot injection, and flag injection.
 
 ## Source
+
+The front-end's modules are listed here; the driver's are in the
+[driver deep dive](driver.md#source).
 
 - [`crates/cargo-cgp/src/run.rs`](../../crates/cargo-cgp/src/run.rs) — front-end entrypoint and
   subcommand dispatch.
@@ -245,15 +194,3 @@ document: [Testing](testing.md).
   the toolchain sysroot.
 - [`crates/cargo-cgp/src/config.rs`](../../crates/cargo-cgp/src/config.rs) — the front-end's shared
   names.
-- [`crates/cargo-cgp-driver/src/run.rs`](../../crates/cargo-cgp-driver/src/run.rs) — driver
-  entrypoint; runs the compiler through `rustc_driver`.
-- [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — builds the
-  rustc argument vector (wrapper-mode stripping, sysroot injection).
-- [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs) — the
-  `Callbacks` implementation; its `config` hook installs the rewriting emitter.
-- [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs),
-  [`component_map.rs`](../../crates/cargo-cgp-driver/src/component_map.rs), and
-  [`rewrite.rs`](../../crates/cargo-cgp-driver/src/rewrite.rs) — the diagnostic-renaming transform (see
-  [The error pipeline](error-pipeline.md#naming-the-traits-behind-a-component-marker-current)).
-- [`crates/cargo-cgp-driver/src/lib.rs`](../../crates/cargo-cgp-driver/src/lib.rs) — the
-  `rustc_private` feature gate and `extern crate` declarations.

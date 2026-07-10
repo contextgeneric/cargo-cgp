@@ -37,7 +37,7 @@ way to ask the compiler anything. This keeps the expensive, compiler-coupled wor
 processing a self-contained transform over plain data. The driver already works this way when it
 renames CGP wiring notes: naming the consumer and provider traits behind a component marker needs the
 `TyCtxt`, so that rewrite lives in the driver's emitter, not in a preprocessor here (see
-[The error pipeline](error-pipeline.md#naming-the-traits-behind-a-component-marker-current)).
+[The driver](driver.md#naming-the-traits-behind-a-component-marker)).
 
 ## Two sub-stages: preprocess, then aggregate
 

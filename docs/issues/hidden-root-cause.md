@@ -30,7 +30,7 @@ carries its root cause in the tool's output — so the catalog's own hidden clas
 reached by a consumer-method call) surfaces here too, and nothing across the catalog lands in this
 category. The one upstream fixture that produces no usable diagnostic under cargo-cgp,
 `inheritance_cycle`, does so because the next-gen solver *accepts* it (a missing error, tracked as a
-solver caveat in [The error pipeline](../implementation/error-pipeline.md#caveats)), not
+solver caveat in [The driver](../implementation/driver.md#choosing-the-trait-solver)), not
 because a cause is suppressed.
 
 The two archetypes are defeated by *different* levers, and the distinction is the useful one to carry
