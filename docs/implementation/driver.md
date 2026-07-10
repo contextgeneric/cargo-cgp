@@ -222,10 +222,22 @@ anchor is limited: the string rewrite that consumes the map (below) keys on the 
 from rendered text, where no `DefId` survives, so two distinct structs that share a marker name would
 still collapse to one key — a residual, text-only ambiguity the identity check here cannot close.
 
-The walk runs once, lazily on the first wiring note and cached thereafter, and only for a diagnostic
-that actually carries a candidate note, so a non-CGP compilation never pays for it. It is reachable
-from inside the emitter because a wiring note is built during trait solving, when a `TyCtxt` is in
-thread-local scope, which the emitter reads through `rustc_middle::ty::tls`.
+The walk is expensive — it visits every trait and its blanket impls — so it is built once and
+memoized. The emitter's `emit_diagnostic` runs once per diagnostic, not once per compilation, so the
+map is *cached* in the emitter: it is built on the first diagnostic that carries a wiring note and
+reused for every later one, which means the walk runs at most once per crate compilation and not at
+all when no CGP wiring error is emitted (a candidate-note pre-check skips even the cache lookup for an
+ordinary diagnostic). It is reachable from inside the emitter because a wiring note is built during
+trait solving, when a `TyCtxt` is in thread-local scope, which the emitter reads through
+`rustc_middle::ty::tls`.
+
+Caching across `emit_diagnostic` calls carries no staleness risk. The map draws only on data that is
+fixed for the rest of the compilation once the crate is resolved and lowered — the trait set, the
+`IsProviderFor` supertraits, and the blanket impls, none of which the type-checking phase that emits
+these diagnostics ever mutates — and it stores owned `String`s rather than `DefId`s or other compiler
+handles that later interning or arena churn could invalidate. It is one `TyCtxt` for one driver
+invocation over one crate, with no cross-session, incremental database (unlike rust-analyzer's) that
+could change underneath the cache between calls.
 
 The rewrite itself is a plain string transform, kept compiler-free in
 [`rewrite`](../../crates/cargo-cgp-driver/src/rewrite.rs) so it is unit-tested without a `TyCtxt`. It

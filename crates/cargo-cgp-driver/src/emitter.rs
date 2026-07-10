@@ -111,6 +111,22 @@ fn resolve_terminal_url(setting: TerminalUrl, is_nightly: bool) -> TerminalUrl {
 /// build it run at most once, and only when a diagnostic actually carries a wiring note.
 struct CgpEmitter {
     inner: JsonEmitter,
+    /// The component-marker → trait-names map, built lazily and memoized.
+    ///
+    /// `emit_diagnostic` — and thus `rewrite` — runs once per diagnostic, so this cache is what
+    /// keeps the expensive whole-trait-graph walk in [`build_component_name_map`] from
+    /// repeating: it is built on the first diagnostic that carries a wiring note (see
+    /// `diag_has_wiring_note`) and reused for every later one, so the walk runs at most once per
+    /// compilation (and not at all when no CGP wiring error is emitted). It stays `None` only
+    /// while no wiring note has been seen yet, or if a `TyCtxt` was momentarily unavailable when
+    /// one was — in which case the next candidate retries.
+    ///
+    /// Caching across calls is sound because the map draws only on data that is fixed for the
+    /// rest of the compilation once the crate is resolved and lowered — the trait set, the
+    /// `IsProviderFor` supertraits, and the blanket impls, none of which type checking mutates
+    /// — and because the entries are owned `String`s, not compiler handles that later
+    /// interning or arena churn could invalidate. One `TyCtxt`, one driver invocation, one
+    /// crate: there is no cross-session database that could be swapped underneath it.
     names: Option<HashMap<String, ComponentTraitNames>>,
 }
 

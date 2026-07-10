@@ -19,7 +19,7 @@
 //! Composing the two gives, per marker, the consumer and provider trait names.
 //!
 //! **Identity, not spelling.** The `IsProviderFor` supertrait is matched by its resolved
-//! `DefId`, not by its name: [`is_cgp_is_provider_for`] verifies the bound's trait is defined
+//! `DefId`, not by its name: `is_cgp_is_provider_for` verifies the bound's trait is defined
 //! in the [`CGP_COMPONENT_CRATE`] crate, so a trait merely *spelled* `IsProviderFor` in an
 //! unrelated crate cannot seed a bogus entry. That anchor is what keeps every map entry
 //! provably rooted in a real CGP provider trait. (The rewrite that consumes the map still
