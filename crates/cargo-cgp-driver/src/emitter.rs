@@ -32,7 +32,7 @@ use rustc_session::config::ErrorOutputType;
 use rustc_span::source_map::SourceMap;
 
 use crate::component_map::build_component_name_map;
-use crate::rewrite::{ComponentTraitNames, is_wiring_note, rewrite_required_for};
+use crate::rewrite::{ComponentTraitNames, is_cgp_wiring_message, rewrite_message};
 
 /// Install the rewriting emitter on the compiler session, replicating how rustc builds its
 /// default JSON emitter so cargo's diagnostic stream is byte-for-byte the same apart from
@@ -135,14 +135,15 @@ impl CgpEmitter {
         Self { inner, names: None }
     }
 
-    /// Rewrite every recognized wiring note in `diag`, in place. No-op unless the
-    /// diagnostic carries a candidate note *and* a `TyCtxt` is reachable to name the traits.
+    /// Rewrite every recognized CGP wiring message in `diag`, in place — both the primary
+    /// header and the obligation-chain notes. No-op unless the diagnostic carries a candidate
+    /// message *and* a `TyCtxt` is reachable to name the traits.
     fn rewrite(&mut self, diag: &mut DiagInner) {
-        if !diag_has_wiring_note(diag) {
+        if !diag_has_cgp_message(diag) {
             return;
         }
         if self.names.is_none() {
-            // A wiring note is emitted during trait solving, so a `TyCtxt` is in TLS; if it
+            // A wiring message is emitted during trait solving, so a `TyCtxt` is in TLS; if it
             // is somehow absent, leave the diagnostic untouched and retry on the next one.
             match ty::tls::with_opt(|tcx| tcx.map(build_component_name_map)) {
                 Some(map) => self.names = Some(map),
@@ -188,20 +189,21 @@ impl Emitter for CgpEmitter {
     }
 }
 
-/// Whether any message in the diagnostic looks like a rewritable wiring note, used to skip
-/// the map-building queries for the common non-CGP diagnostic.
-fn diag_has_wiring_note(diag: &DiagInner) -> bool {
-    messages_have_wiring_note(&diag.messages)
+/// Whether any message in the diagnostic looks like a rewritable CGP wiring message (the
+/// primary header or an obligation-chain note), used to skip the map-building queries for the
+/// common non-CGP diagnostic.
+fn diag_has_cgp_message(diag: &DiagInner) -> bool {
+    messages_have_cgp_message(&diag.messages)
         || diag
             .children
             .iter()
-            .any(|child| messages_have_wiring_note(&child.messages))
+            .any(|child| messages_have_cgp_message(&child.messages))
 }
 
-fn messages_have_wiring_note<S>(messages: &[(DiagMessage, S)]) -> bool {
+fn messages_have_cgp_message<S>(messages: &[(DiagMessage, S)]) -> bool {
     messages
         .iter()
-        .any(|(message, _)| matches!(message, DiagMessage::Str(s) if is_wiring_note(s)))
+        .any(|(message, _)| matches!(message, DiagMessage::Str(s) if is_cgp_wiring_message(s)))
 }
 
 /// Rewrite each plain-string message in place, leaving its style and any Fluent message
@@ -212,7 +214,7 @@ fn rewrite_messages<S>(
 ) {
     for (message, _) in messages.iter_mut() {
         if let DiagMessage::Str(text) = message
-            && let Some(rewritten) = rewrite_required_for(text, names)
+            && let Some(rewritten) = rewrite_message(text, names)
         {
             *message = DiagMessage::Str(Cow::Owned(rewritten));
         }

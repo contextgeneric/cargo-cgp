@@ -65,9 +65,9 @@ solver, which computes the missing leaf bound the default solver never even reac
 ([un-eliding the diagnostic](driver.md#un-eliding-the-diagnostic)) stops rustc from compressing the
 deep `Symbol` / `Cons` types a CGP error carries. The third is a diagnostic rewrite: a custom emitter
 that [names the traits behind a component marker](driver.md#naming-the-traits-behind-a-component-marker),
-turning the marker-based wiring notes into ones that name the consumer and provider traits. The first
-two shape what the compiler *produces*; the third edits what it has already *built*, using the
-`TyCtxt`, which is why it lives in the driver rather than the front-end's processing stage.
+turning the marker-based header and wiring notes into ones that name the consumer and provider traits.
+The first two shape what the compiler *produces*; the third edits what it has already *built*, using
+the `TyCtxt`, which is why it lives in the driver rather than the front-end's processing stage.
 
 ## The capture and render stages
 

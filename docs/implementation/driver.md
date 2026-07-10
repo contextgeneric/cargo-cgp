@@ -173,15 +173,21 @@ recoverable (if still verbose) one — the same graduation the solver switch gav
 
 ### Naming the traits behind a component marker
 
-The driver rewrites the compiler's wiring notes to name the consumer and provider traits a reader
-thinks in, in place of the internal marker-based phrasing. Where rustc reports `` required for
-`RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>` `` and `` required
-for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>` ``, the tool emits
-`` required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the
-context `Rectangle` `` and `` required for the context `Rectangle` to implement the consumer trait
-`CanCalculateArea` ``. This is the transform the `IsProviderFor` and `CanUseComponent` marker traits
-otherwise hide: the component marker names neither trait, its `…Component` suffix is at best an
-unreliable guess at the provider trait, and it says nothing at all about the consumer trait.
+The driver rewrites the compiler's wiring diagnostics to name the consumer and provider traits a
+reader thinks in, in place of the internal marker-based phrasing — both the obligation-chain notes and
+the primary header the error opens with. Where rustc reports `` required for `RectangleArea` to
+implement `IsProviderFor<AreaCalculatorComponent, Rectangle>` `` and `` required for `Rectangle` to
+implement `CanUseComponent<AreaCalculatorComponent>` ``, the tool emits `` required for the provider
+`RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle` `` and
+`` required for the context `Rectangle` to implement the consumer trait `CanCalculateArea` ``. The
+header is rewritten the same way: `` the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>`
+is not satisfied `` becomes `` the consumer trait bound `Rectangle: CanCalculateArea` is not
+satisfied ``, and a provider-side header `` `RectangleArea: IsProviderFor<AreaCalculatorComponent,
+Rectangle>` `` becomes the provider trait bound `` `RectangleArea: AreaCalculator<Rectangle>` `` —
+recovering the actual provider-trait bound the marker form stands in for. This is the transform the
+`IsProviderFor` and `CanUseComponent` marker traits otherwise hide: the component marker names neither
+trait, its `…Component` suffix is at best an unreliable guess at the provider trait, and it says
+nothing at all about the consumer trait.
 
 This is the one transformation that reads the compiler's own state rather than pulling an argument
 lever, and that is why it needs everything the driver's in-process access provides. The two flag
@@ -240,14 +246,18 @@ invocation over one crate, with no cross-session, incremental database (unlike r
 could change underneath the cache between calls.
 
 The rewrite itself is a plain string transform, kept compiler-free in
-[`rewrite`](../../crates/cargo-cgp-driver/src/rewrite.rs) so it is unit-tested without a `TyCtxt`. It
-matches the two `required for … to implement …` note forms, reads the marker out of the trait's
-generic arguments, and looks the names up in the map; a note whose marker is absent from the map, or
-any other note, passes through untouched. One faithful oddity follows from naming the obligation's
-subject verbatim: the subject is usually a provider (`RectangleArea`, `ScaledArea<RectangleArea>`) but
-is the context itself when the context stands in as its own provider, so a self-provider case reads
-`` the provider `Rectangle` … for the context `Rectangle` ``. The before/after is pinned across the
-whole `usability/checks` fixture set, whose blessed snapshots show the trait-named notes;
+[`rewrite`](../../crates/cargo-cgp-driver/src/rewrite.rs) so it is unit-tested without a `TyCtxt`. Its
+entry point, `rewrite_message`, dispatches to the `required for … to implement …` note forms and the
+`the trait bound … is not satisfied` header form; each reads the marker out of the trait's generic
+arguments and looks the names up in the map. A message whose marker is absent from the map, or any
+other message, passes through untouched — and the header form additionally leaves a *parameterized*
+component alone (a `Params` tuple after the marker or context), rather than reducing it to an
+inaccurate bound, since dropping the parameters would misstate which bound failed. One faithful oddity
+follows from naming the obligation's subject verbatim: the subject is usually a provider
+(`RectangleArea`, `ScaledArea<RectangleArea>`) but is the context itself when the context stands in as
+its own provider, so a self-provider case reads `` the provider `Rectangle` … for the context
+`Rectangle` ``. The before/after is pinned across the whole `usability/checks` fixture set, whose
+blessed snapshots show the trait-named notes *and* headers;
 [`base_area_1`](../../tests/ui/usability/checks/base_area_1.stderr) is the worked example.
 
 The same emitter seam is where further compiler-state enrichment will hang. Where even the next-gen
@@ -317,14 +327,14 @@ will likely grow toward it:
   wrapper-mode stripping, sysroot injection, an existing sysroot left alone, injected-flag appending,
   an explicit `-Znext-solver` override, and the `-vV`/`--print` info-query skips.
 - [`crates/cargo-cgp-driver/tests/rewrite.rs`](../../crates/cargo-cgp-driver/tests/rewrite.rs) — the
-  compiler-free note rewrite over a hand-built name map: both note forms, the module-prefix and
-  generic-context cases, a params tuple after the context, and the unknown-marker and unrelated-note
-  pass-throughs.
+  compiler-free rewrite over a hand-built name map: both note forms and both header forms, the
+  module-prefix and generic-subject/context cases, the parameterized-form and non-CGP pass-throughs,
+  and the `rewrite_message`/candidate dispatch.
 - [`tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.stderr)
   — pins the un-hidden output the solver switch produces.
 - [`tests/ui/usability/checks/base_area_1.stderr`](../../tests/ui/usability/checks/base_area_1.stderr)
-  — pins both the un-elided field name (`--verbose`) and the trait-named wiring notes; watch for a `_`
-  returning inside its `Symbol`, or a marker-based note returning.
+  — pins the un-elided field name (`--verbose`) and the trait-named header and wiring notes; watch for
+  a `_` returning inside its `Symbol`, or a marker-based header/note returning.
 - [`tests/ui/usability/checks/`](../../tests/ui/usability/checks) — the blessed `.stderr`/`.output.json`
   snapshots across the set pin the trait-renaming transform end to end.
 
@@ -346,6 +356,6 @@ will likely grow toward it:
   — builds the component-marker → trait-names map by inverting the `IsProviderFor` supertrait
   (anchored by `DefId` identity to the `cgp_component` crate) and the consumer-blanket-impl links.
 - [`crates/cargo-cgp-driver/src/rewrite.rs`](../../crates/cargo-cgp-driver/src/rewrite.rs) — the
-  compiler-free string rewrite of the two wiring-note forms.
+  compiler-free string rewrite of the wiring-note and trait-bound-header forms.
 - [`crates/cargo-cgp-driver/src/lib.rs`](../../crates/cargo-cgp-driver/src/lib.rs) — the
   `rustc_private` feature gate and the `extern crate` declarations.

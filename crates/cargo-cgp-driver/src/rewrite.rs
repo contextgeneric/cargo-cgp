@@ -9,14 +9,25 @@
 //! required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
 //! ```
 //!
-//! Given a map from a component marker's name to the consumer and provider trait names
-//! behind it (built from the compiler in [`crate::component_map`]), this rewrites those two
-//! note forms into ones that name the traits:
+//! It also opens with a primary header naming the same internal trait:
 //!
 //! ```text
+//! the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
+//! ```
+//!
+//! Given a map from a component marker's name to the consumer and provider trait names
+//! behind it (built from the compiler in [`crate::component_map`]), this rewrites both the
+//! note forms and the header into ones that name the traits:
+//!
+//! ```text
+//! the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied
 //! required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
 //! required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
 //! ```
+//!
+//! [`rewrite_message`] is the entry point the emitter drives; it dispatches to the
+//! note-form rewrite ([`rewrite_required_for`]) and the header rewrite
+//! ([`rewrite_trait_bound`]).
 //!
 //! This module is deliberately free of any compiler dependency: it is a string-to-string
 //! function over the name map, so it can be unit-tested without a `TyCtxt`. The compiler
@@ -32,6 +43,24 @@ pub struct ComponentTraitNames {
     pub consumer: String,
     /// The provider trait a provider implements (e.g. `AreaCalculator`).
     pub provider: String,
+}
+
+/// Rewrite one diagnostic message into its trait-named form, or return `None` to leave it
+/// unchanged. This is the entry point the emitter drives over every message; it tries each
+/// recognized CGP wiring form — the obligation-chain notes ([`rewrite_required_for`]), then
+/// the primary `the trait bound … is not satisfied` header ([`rewrite_trait_bound`]).
+pub fn rewrite_message(
+    message: &str,
+    names: &HashMap<String, ComponentTraitNames>,
+) -> Option<String> {
+    rewrite_required_for(message, names).or_else(|| rewrite_trait_bound(message, names))
+}
+
+/// Whether a message carries any rewritable CGP wiring text — the union of the note and
+/// header candidate checks. Used as a cheap pre-filter so the name map is built only for a
+/// diagnostic that actually mentions CGP wiring.
+pub fn is_cgp_wiring_message(message: &str) -> bool {
+    is_wiring_note(message) || is_trait_bound_header(message)
 }
 
 /// Rewrite one `required for … to implement …` note into its trait-named form, or return
@@ -83,6 +112,63 @@ pub fn is_wiring_note(message: &str) -> bool {
     message.starts_with("required for `")
         && message.contains("` to implement `")
         && (message.contains("IsProviderFor<") || message.contains("CanUseComponent<"))
+}
+
+/// Rewrite the primary "the trait bound `…` is not satisfied" header a wiring failure opens
+/// with, or return `None` to leave it unchanged:
+///
+/// - a `Self: CanUseComponent<Marker>` bound becomes a "consumer trait bound" naming the
+///   consumer trait the context fails to implement — `Self: ConsumerTrait`.
+/// - a `Self: IsProviderFor<Marker, Context>` bound becomes a "provider trait bound" that
+///   recovers the actual provider-trait bound the marker form stands in for —
+///   `Self: ProviderTrait<Context>`.
+///
+/// Only the parameterless shape is rewritten — a component carrying extra generic parameters
+/// (a tuple after the marker/context) is left untouched rather than reduced to an inaccurate
+/// bound. As with [`rewrite_required_for`], a marker absent from `names`, or any other
+/// message, is left unchanged.
+pub fn rewrite_trait_bound(
+    message: &str,
+    names: &HashMap<String, ComponentTraitNames>,
+) -> Option<String> {
+    let rest = message.strip_prefix("the trait bound `")?;
+    let (bound, tail) = rest.split_once("` is not satisfied")?;
+    // `Self: Trait<…>` — the first `: ` separates the self type from the trait, and neither a
+    // path (`::`) nor a generic argument inside the self type contains a colon *followed by a
+    // space*, so this split cannot land inside either.
+    let (subject, trait_ref) = bound.split_once(": ")?;
+
+    let (path, args_str) = split_generics(trait_ref)?;
+    let args = split_top_level(args_str);
+
+    match last_segment(path) {
+        "CanUseComponent" if args.len() == 1 => {
+            let component = last_segment(args[0].trim());
+            let entry = names.get(component)?;
+            Some(format!(
+                "the consumer trait bound `{subject}: {}` is not satisfied{tail}",
+                entry.consumer
+            ))
+        }
+        "IsProviderFor" if args.len() == 2 => {
+            let component = last_segment(args[0].trim());
+            let context = args[1].trim();
+            let entry = names.get(component)?;
+            Some(format!(
+                "the provider trait bound `{subject}: {}<{context}>` is not satisfied{tail}",
+                entry.provider
+            ))
+        }
+        _ => None,
+    }
+}
+
+/// Whether a message is the primary `the trait bound `…: CanUseComponent/IsProviderFor<…>`
+/// is not satisfied` header — the pre-filter counterpart of [`rewrite_trait_bound`].
+pub fn is_trait_bound_header(message: &str) -> bool {
+    message.starts_with("the trait bound `")
+        && message.contains("` is not satisfied")
+        && (message.contains("CanUseComponent<") || message.contains("IsProviderFor<"))
 }
 
 /// Split `Path<args>` into its path (`Path`) and the raw argument text (`args`), requiring

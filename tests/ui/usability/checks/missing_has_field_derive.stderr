@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `Person: CanUseComponent<GreeterComponent>` is not satisfied
+error[E0277]: the consumer trait bound `Person: CanGreet` is not satisfied
   --> src/main.rs:58:9
    |
 58 |         GreeterComponent,

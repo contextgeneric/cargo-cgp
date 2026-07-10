@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
+error[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied
   --> src/main.rs:78:9
    |
 78 |         AreaCalculatorComponent,
@@ -45,7 +45,7 @@ note: required by a bound in `__CheckRectangle`
    | |_^ required by this bound in `__CheckRectangle`
    = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0277]: the trait bound `Rectangle: CanUseComponent<DensityCalculatorComponent>` is not satisfied
+error[E0277]: the consumer trait bound `Rectangle: CanCalculateDensity` is not satisfied
   --> src/main.rs:79:9
    |
 79 |         DensityCalculatorComponent,

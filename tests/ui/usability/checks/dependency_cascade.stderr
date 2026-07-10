@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `ProvideFoo: IsProviderFor<FooComponent, App>` is not satisfied
+error[E0277]: the provider trait bound `ProvideFoo: Foo<App>` is not satisfied
   --> src/main.rs:84:9
    |
 84 |         BazComponent,
@@ -68,7 +68,7 @@ note: required by a bound in `__CheckApp`
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0277]: the trait bound `App: CanUseComponent<BarComponent>` is not satisfied
+error[E0277]: the consumer trait bound `App: CanBar` is not satisfied
   --> src/main.rs:85:9
    |
 85 |         BarComponent,
@@ -123,7 +123,7 @@ note: required by a bound in `__CheckApp`
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0277]: the trait bound `App: CanUseComponent<FooComponent>` is not satisfied
+error[E0277]: the consumer trait bound `App: CanFoo` is not satisfied
   --> src/main.rs:86:9
    |
 86 |         FooComponent,

@@ -9,7 +9,10 @@
 
 use std::collections::HashMap;
 
-use cargo_cgp_driver::rewrite::{ComponentTraitNames, is_wiring_note, rewrite_required_for};
+use cargo_cgp_driver::rewrite::{
+    ComponentTraitNames, is_cgp_wiring_message, is_trait_bound_header, is_wiring_note,
+    rewrite_message, rewrite_required_for, rewrite_trait_bound,
+};
 
 fn names() -> HashMap<String, ComponentTraitNames> {
     let mut map = HashMap::new();
@@ -134,5 +137,137 @@ fn is_wiring_note_matches_only_the_two_forms() {
     ));
     assert!(!is_wiring_note(
         "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied"
+    ));
+}
+
+#[test]
+fn rewrites_can_use_component_header() {
+    let out = rewrite_trait_bound(
+        "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied",
+        &names(),
+    );
+    assert_eq!(
+        out.as_deref(),
+        Some("the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied")
+    );
+}
+
+#[test]
+fn rewrites_is_provider_for_header() {
+    let out = rewrite_trait_bound(
+        "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle>` is not satisfied",
+        &names(),
+    );
+    assert_eq!(
+        out.as_deref(),
+        Some(
+            "the provider trait bound `RectangleArea: AreaCalculator<Rectangle>` is not satisfied"
+        )
+    );
+}
+
+#[test]
+fn header_keeps_a_generic_subject_whole() {
+    // The `: ` split must find the self/trait separator, not a colon inside the subject's
+    // own generic arguments.
+    let out = rewrite_trait_bound(
+        "the trait bound `RedirectLookup<App, Nil>: IsProviderFor<AreaCalculatorComponent, Rectangle>` is not satisfied",
+        &names(),
+    );
+    assert_eq!(
+        out.as_deref(),
+        Some(
+            "the provider trait bound `RedirectLookup<App, Nil>: AreaCalculator<Rectangle>` is not satisfied"
+        )
+    );
+}
+
+#[test]
+fn header_strips_module_prefix() {
+    let out = rewrite_trait_bound(
+        "the trait bound `Rectangle: cgp::prelude::CanUseComponent<AreaCalculatorComponent>` is not satisfied",
+        &names(),
+    );
+    assert_eq!(
+        out.as_deref(),
+        Some("the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied")
+    );
+}
+
+#[test]
+fn header_leaves_parameterized_form_untouched() {
+    // A component with extra generic parameters would reduce to an inaccurate bound, so the
+    // header is left raw rather than dropping the parameters.
+    assert_eq!(
+        rewrite_trait_bound(
+            "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent, (u32, u64)>` is not satisfied",
+            &names(),
+        ),
+        None
+    );
+    assert_eq!(
+        rewrite_trait_bound(
+            "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle, (u32, u64)>` is not satisfied",
+            &names(),
+        ),
+        None
+    );
+}
+
+#[test]
+fn header_leaves_non_cgp_and_unknown_bounds_untouched() {
+    assert_eq!(
+        rewrite_trait_bound(
+            "the trait bound `f64: std::cmp::Eq` is not satisfied",
+            &names()
+        ),
+        None
+    );
+    assert_eq!(
+        rewrite_trait_bound(
+            "the trait bound `Rectangle: CanUseComponent<UnknownComponent>` is not satisfied",
+            &names(),
+        ),
+        None
+    );
+}
+
+#[test]
+fn rewrite_message_dispatches_note_and_header() {
+    // The entry point handles both the header and the note forms.
+    assert_eq!(
+        rewrite_message(
+            "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied",
+            &names(),
+        )
+        .as_deref(),
+        Some("the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied")
+    );
+    assert_eq!(
+        rewrite_message(
+            "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`",
+            &names(),
+        )
+        .as_deref(),
+        Some(
+            "required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`"
+        )
+    );
+    assert_eq!(rewrite_message("some unrelated message", &names()), None);
+}
+
+#[test]
+fn is_cgp_wiring_message_matches_notes_and_headers() {
+    assert!(is_trait_bound_header(
+        "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied"
+    ));
+    assert!(is_cgp_wiring_message(
+        "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied"
+    ));
+    assert!(is_cgp_wiring_message(
+        "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`"
+    ));
+    assert!(!is_cgp_wiring_message(
+        "the trait bound `f64: std::cmp::Eq` is not satisfied"
     ));
 }
