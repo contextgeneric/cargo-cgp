@@ -200,7 +200,7 @@
         "rendered": null
       },
       {
-        "message": "required for `BaseArea` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`",
+        "message": "required for the provider `BaseArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`",
         "code": null,
         "level": "note",
         "spans": [
@@ -324,7 +324,7 @@
         "rendered": null
       },
       {
-        "message": "required for `ScaledArea<BaseArea>` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`",
+        "message": "required for the provider `ScaledArea<BaseArea>` to implement the provider trait `AreaCalculator` for the context `Rectangle`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -332,7 +332,7 @@
         "rendered": null
       },
       {
-        "message": "required for `Rectangle` to implement `cgp::prelude::CanUseComponent<AreaCalculatorComponent>`",
+        "message": "required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -454,7 +454,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: the trait bound `Rectangle: cgp::prelude::CanUseComponent<AreaCalculatorComponent>` is not satisfied\n  --> src/main.rs:75:9\n   |\n75 |         AreaCalculatorComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\nhelp: the trait `HasField<cgp::prelude::Symbol<9, cgp::prelude::Chars<'b', cgp::prelude::Chars<'a', cgp::prelude::Chars<'s', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'a', cgp::prelude::Chars<'r', cgp::prelude::Chars<'e', cgp::prelude::Chars<'a', cgp::prelude::Nil>>>>>>>>>>>` is not implemented for `Rectangle`\n      but trait `HasField<cgp::prelude::Symbol<12, cgp::prelude::Chars<'s', cgp::prelude::Chars<'c', cgp::prelude::Chars<'a', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'f', cgp::prelude::Chars<'a', cgp::prelude::Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', cgp::prelude::Nil>>>>>>>>>>>>>>` is implemented for it\n  --> src/main.rs:59:10\n   |\n59 | #[derive(HasField)]\n   |          ^^^^^^^^\nnote: required for `Rectangle` to implement `HasBaseArea`\n  --> src/main.rs:28:1\n   |\n28 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n29 | pub trait HasBaseArea {\n   |           ^^^^^^^^^^^\nnote: required for `BaseArea` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`\n  --> src/main.rs:38:1\n   |\n38 | #[cgp_impl(new BaseArea)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^\n...\n41 |     Self: HasBaseArea,\n   |           ----------- unsatisfied trait bound introduced here\n   = note: 1 redundant requirement hidden\n   = note: required for `ScaledArea<BaseArea>` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`\n   = note: required for `Rectangle` to implement `cgp::prelude::CanUseComponent<AreaCalculatorComponent>`\nnote: required by a bound in `__CheckRectangle`\n  --> src/main.rs:73:1\n   |\n73 | / check_components! {\n74 | |     Rectangle {\n75 | |         AreaCalculatorComponent,\n76 | |     }\n77 | | }\n   | |_^ required by this bound in `__CheckRectangle`\n   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)\n\n"
+    "rendered": "error[E0277]: the trait bound `Rectangle: cgp::prelude::CanUseComponent<AreaCalculatorComponent>` is not satisfied\n  --> src/main.rs:75:9\n   |\n75 |         AreaCalculatorComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\nhelp: the trait `HasField<cgp::prelude::Symbol<9, cgp::prelude::Chars<'b', cgp::prelude::Chars<'a', cgp::prelude::Chars<'s', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'a', cgp::prelude::Chars<'r', cgp::prelude::Chars<'e', cgp::prelude::Chars<'a', cgp::prelude::Nil>>>>>>>>>>>` is not implemented for `Rectangle`\n      but trait `HasField<cgp::prelude::Symbol<12, cgp::prelude::Chars<'s', cgp::prelude::Chars<'c', cgp::prelude::Chars<'a', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'f', cgp::prelude::Chars<'a', cgp::prelude::Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', cgp::prelude::Nil>>>>>>>>>>>>>>` is implemented for it\n  --> src/main.rs:59:10\n   |\n59 | #[derive(HasField)]\n   |          ^^^^^^^^\nnote: required for `Rectangle` to implement `HasBaseArea`\n  --> src/main.rs:28:1\n   |\n28 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n29 | pub trait HasBaseArea {\n   |           ^^^^^^^^^^^\nnote: required for the provider `BaseArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`\n  --> src/main.rs:38:1\n   |\n38 | #[cgp_impl(new BaseArea)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^\n...\n41 |     Self: HasBaseArea,\n   |           ----------- unsatisfied trait bound introduced here\n   = note: 1 redundant requirement hidden\n   = note: required for the provider `ScaledArea<BaseArea>` to implement the provider trait `AreaCalculator` for the context `Rectangle`\n   = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`\nnote: required by a bound in `__CheckRectangle`\n  --> src/main.rs:73:1\n   |\n73 | / check_components! {\n74 | |     Rectangle {\n75 | |         AreaCalculatorComponent,\n76 | |     }\n77 | | }\n   | |_^ required by this bound in `__CheckRectangle`\n   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

@@ -156,7 +156,7 @@
         "rendered": null
       },
       {
-        "message": "required for `GreetHello` to implement `cgp::prelude::IsProviderFor<GreeterComponent, Person>`",
+        "message": "required for the provider `GreetHello` to implement the provider trait `Greeter` for the context `Person`",
         "code": null,
         "level": "note",
         "spans": [
@@ -272,7 +272,7 @@
         "rendered": null
       },
       {
-        "message": "required for `Person` to implement `cgp::prelude::CanUseComponent<GreeterComponent>`",
+        "message": "required for the context `Person` to implement the consumer trait `CanGreet`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -394,7 +394,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: the trait bound `Person: cgp::prelude::CanUseComponent<GreeterComponent>` is not satisfied\n  --> src/main.rs:58:9\n   |\n58 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\nhelp: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` is not implemented for `Person`\n  --> src/main.rs:44:1\n   |\n44 | pub struct Person {\n   | ^^^^^^^^^^^^^^^^^\nnote: required for `Person` to implement `HasName`\n  --> src/main.rs:27:1\n   |\n27 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n28 | pub trait HasName {\n   |           ^^^^^^^\nnote: required for `GreetHello` to implement `cgp::prelude::IsProviderFor<GreeterComponent, Person>`\n  --> src/main.rs:32:1\n   |\n32 | #[cgp_impl(new GreetHello)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n...\n35 |     Self: HasName,\n   |           ------- unsatisfied trait bound introduced here\n   = note: required for `Person` to implement `cgp::prelude::CanUseComponent<GreeterComponent>`\nnote: required by a bound in `__CheckPerson`\n  --> src/main.rs:56:1\n   |\n56 | / check_components! {\n57 | |     Person {\n58 | |         GreeterComponent,\n59 | |     }\n60 | | }\n   | |_^ required by this bound in `__CheckPerson`\n   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)\n\n"
+    "rendered": "error[E0277]: the trait bound `Person: cgp::prelude::CanUseComponent<GreeterComponent>` is not satisfied\n  --> src/main.rs:58:9\n   |\n58 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\nhelp: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` is not implemented for `Person`\n  --> src/main.rs:44:1\n   |\n44 | pub struct Person {\n   | ^^^^^^^^^^^^^^^^^\nnote: required for `Person` to implement `HasName`\n  --> src/main.rs:27:1\n   |\n27 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n28 | pub trait HasName {\n   |           ^^^^^^^\nnote: required for the provider `GreetHello` to implement the provider trait `Greeter` for the context `Person`\n  --> src/main.rs:32:1\n   |\n32 | #[cgp_impl(new GreetHello)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n...\n35 |     Self: HasName,\n   |           ------- unsatisfied trait bound introduced here\n   = note: required for the context `Person` to implement the consumer trait `CanGreet`\nnote: required by a bound in `__CheckPerson`\n  --> src/main.rs:56:1\n   |\n56 | / check_components! {\n57 | |     Person {\n58 | |         GreeterComponent,\n59 | |     }\n60 | | }\n   | |_^ required by this bound in `__CheckPerson`\n   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

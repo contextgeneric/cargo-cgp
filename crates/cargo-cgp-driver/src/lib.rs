@@ -6,10 +6,12 @@
 //! `cargo-cgp-driver <path-to-rustc> <rustc args...>`, and we run the real compiler
 //! in-process through [`rustc_driver`] with our own [`callbacks::CgpCallbacks`].
 //!
-//! For now the callbacks are a no-op, so the driver compiles exactly as `rustc` would —
-//! `cargo-cgp check` is behaviourally `cargo check`. The point of routing through
-//! `rustc_driver` is the hook it establishes: future work will use the callbacks to
-//! inspect the compiler's diagnostics and re-present CGP errors more readably.
+//! Besides injecting the diagnostic flags (see [`args`]), the callbacks install a custom
+//! diagnostic [`emitter`] that queries the compiler to name the consumer and provider
+//! traits behind a CGP component marker and rewrites the compiler's wiring notes
+//! accordingly. Aside from those transformations the driver compiles exactly as `rustc`
+//! would. Routing through `rustc_driver` is what gives the emitter access to the live
+//! `TyCtxt` needed to recover those names.
 //!
 //! # `rustc_private`
 //!
@@ -22,9 +24,19 @@
 
 #![feature(rustc_private)]
 
+extern crate rustc_data_structures;
 extern crate rustc_driver;
+extern crate rustc_errors;
+extern crate rustc_interface;
+extern crate rustc_lint_defs;
+extern crate rustc_middle;
+extern crate rustc_session;
+extern crate rustc_span;
 
 pub mod args;
 pub mod callbacks;
+pub mod component_map;
 pub mod config;
+pub mod emitter;
+pub mod rewrite;
 pub mod run;

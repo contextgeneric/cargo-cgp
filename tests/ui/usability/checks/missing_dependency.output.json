@@ -200,7 +200,7 @@
         "rendered": null
       },
       {
-        "message": "required for `GreetHello` to implement `cgp::prelude::IsProviderFor<GreeterComponent, Person>`",
+        "message": "required for the provider `GreetHello` to implement the provider trait `Greeter` for the context `Person`",
         "code": null,
         "level": "note",
         "spans": [
@@ -316,7 +316,7 @@
         "rendered": null
       },
       {
-        "message": "required for `Person` to implement `cgp::prelude::CanUseComponent<GreeterComponent>`",
+        "message": "required for the context `Person` to implement the consumer trait `CanGreet`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -438,7 +438,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: the trait bound `Person: cgp::prelude::CanUseComponent<GreeterComponent>` is not satisfied\n  --> src/main.rs:55:9\n   |\n55 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\nhelp: the trait `HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` is not implemented for `Person`\n      but trait `HasField<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'g', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>` is implemented for it\n  --> src/main.rs:41:10\n   |\n41 | #[derive(HasField)]\n   |          ^^^^^^^^\nnote: required for `Person` to implement `HasName`\n  --> src/main.rs:26:1\n   |\n26 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n27 | pub trait HasName {\n   |           ^^^^^^^\nnote: required for `GreetHello` to implement `cgp::prelude::IsProviderFor<GreeterComponent, Person>`\n  --> src/main.rs:31:1\n   |\n31 | #[cgp_impl(new GreetHello)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n...\n34 |     Self: HasName,\n   |           ------- unsatisfied trait bound introduced here\n   = note: required for `Person` to implement `cgp::prelude::CanUseComponent<GreeterComponent>`\nnote: required by a bound in `__CheckPerson`\n  --> src/main.rs:53:1\n   |\n53 | / check_components! {\n54 | |     Person {\n55 | |         GreeterComponent,\n56 | |     }\n57 | | }\n   | |_^ required by this bound in `__CheckPerson`\n   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)\n\n"
+    "rendered": "error[E0277]: the trait bound `Person: cgp::prelude::CanUseComponent<GreeterComponent>` is not satisfied\n  --> src/main.rs:55:9\n   |\n55 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\nhelp: the trait `HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` is not implemented for `Person`\n      but trait `HasField<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'g', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>` is implemented for it\n  --> src/main.rs:41:10\n   |\n41 | #[derive(HasField)]\n   |          ^^^^^^^^\nnote: required for `Person` to implement `HasName`\n  --> src/main.rs:26:1\n   |\n26 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n27 | pub trait HasName {\n   |           ^^^^^^^\nnote: required for the provider `GreetHello` to implement the provider trait `Greeter` for the context `Person`\n  --> src/main.rs:31:1\n   |\n31 | #[cgp_impl(new GreetHello)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n...\n34 |     Self: HasName,\n   |           ------- unsatisfied trait bound introduced here\n   = note: required for the context `Person` to implement the consumer trait `CanGreet`\nnote: required by a bound in `__CheckPerson`\n  --> src/main.rs:53:1\n   |\n53 | / check_components! {\n54 | |     Person {\n55 | |         GreeterComponent,\n56 | |     }\n57 | | }\n   | |_^ required by this bound in `__CheckPerson`\n   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

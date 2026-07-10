@@ -34,7 +34,10 @@ belongs. Anything that needs the compiler's live state — re-running trait fulf
 `Symbol` type the printer elided — must happen during capture, and be folded into the captured data
 before processing sees it. Processing itself receives only already-serialized diagnostics and has no
 way to ask the compiler anything. This keeps the expensive, compiler-coupled work upstream and leaves
-processing a self-contained transform over plain data.
+processing a self-contained transform over plain data. The driver already works this way when it
+renames CGP wiring notes: naming the consumer and provider traits behind a component marker needs the
+`TyCtxt`, so that rewrite lives in the driver's emitter, not in a preprocessor here (see
+[The error pipeline](error-pipeline.md#naming-the-traits-behind-a-component-marker-current)).
 
 ## Two sub-stages: preprocess, then aggregate
 

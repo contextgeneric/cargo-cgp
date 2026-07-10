@@ -295,7 +295,7 @@
         "rendered": null
       },
       {
-        "message": "required for `ScaledArea<RectangleArea>` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`",
+        "message": "required for the provider `ScaledArea<RectangleArea>` to implement the provider trait `AreaCalculator` for the context `Rectangle`",
         "code": null,
         "level": "note",
         "spans": [
@@ -419,7 +419,7 @@
         "rendered": null
       },
       {
-        "message": "required for `Rectangle` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`",
+        "message": "required for the provider `Rectangle` to implement the provider trait `AreaCalculator` for the context `Rectangle`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -604,7 +604,7 @@
         "rendered": null
       },
       {
-        "message": "required for `DensityFromMassField` to implement `cgp::prelude::IsProviderFor<DensityCalculatorComponent, Rectangle>`",
+        "message": "required for the provider `DensityFromMassField` to implement the provider trait `DensityCalculator` for the context `Rectangle`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -612,7 +612,7 @@
         "rendered": null
       },
       {
-        "message": "required for `Rectangle` to implement `cgp::prelude::CanUseComponent<DensityCalculatorComponent>`",
+        "message": "required for the context `Rectangle` to implement the consumer trait `CanCalculateDensity`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -734,7 +734,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: the trait bound `Rectangle: cgp::prelude::CanUseComponent<DensityCalculatorComponent>` is not satisfied\n  --> src/main.rs:95:9\n   |\n95 |         DensityCalculatorComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\nhelp: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<12, cgp::prelude::Chars<'s', cgp::prelude::Chars<'c', cgp::prelude::Chars<'a', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'f', cgp::prelude::Chars<'a', cgp::prelude::Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', cgp::prelude::Nil>>>>>>>>>>>>>>` is not implemented for `Rectangle`\n  --> src/main.rs:75:1\n   |\n75 | pub struct Rectangle {\n   | ^^^^^^^^^^^^^^^^^^^^\nhelp: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`\n  --> src/main.rs:74:10\n   |\n74 | #[derive(HasField)]\n   |          ^^^^^^^^\n   |          |\n   |          `cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'m', cgp::prelude::Chars<'a', cgp::prelude::Chars<'s', cgp::prelude::Chars<'s', cgp::prelude::Nil>>>>>>`\n   |          `cgp::prelude::HasField<cgp::prelude::Symbol<5, cgp::prelude::Chars<'w', cgp::prelude::Chars<'i', cgp::prelude::Chars<'d', cgp::prelude::Chars<'t', cgp::prelude::Chars<'h', cgp::prelude::Nil>>>>>>>`\nnote: required for `Rectangle` to implement `HasScaleFactor`\n  --> src/main.rs:43:1\n   |\n43 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n44 | pub trait HasScaleFactor {\n   |           ^^^^^^^^^^^^^^\nnote: required for `ScaledArea<RectangleArea>` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`\n  --> src/main.rs:48:1\n   |\n48 | #[cgp_impl(new ScaledArea<InnerCalculator>)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n...\n51 |     Self: HasScaleFactor,\n   |           -------------- unsatisfied trait bound introduced here\n   = note: 1 redundant requirement hidden\n   = note: required for `Rectangle` to implement `cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>`\nnote: required for `Rectangle` to implement `AreaCalculator<Rectangle>`\n  --> src/main.rs:16:1\n   |\n16 | #[cgp_component(AreaCalculator)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nnote: required for `Rectangle` to implement `CanCalculateArea`\n  --> src/main.rs:16:1\n   |\n16 | #[cgp_component(AreaCalculator)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n17 | pub trait CanCalculateArea {\n   |           ^^^^^^^^^^^^^^^^\n   = note: 1 redundant requirement hidden\n   = note: required for `DensityFromMassField` to implement `cgp::prelude::IsProviderFor<DensityCalculatorComponent, Rectangle>`\n   = note: required for `Rectangle` to implement `cgp::prelude::CanUseComponent<DensityCalculatorComponent>`\nnote: required by a bound in `__CheckRectangle`\n  --> src/main.rs:93:1\n   |\n93 | / check_components! {\n94 | |     Rectangle {\n95 | |         DensityCalculatorComponent,\n96 | |     }\n97 | | }\n   | |_^ required by this bound in `__CheckRectangle`\n   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)\n\n"
+    "rendered": "error[E0277]: the trait bound `Rectangle: cgp::prelude::CanUseComponent<DensityCalculatorComponent>` is not satisfied\n  --> src/main.rs:95:9\n   |\n95 |         DensityCalculatorComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\nhelp: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<12, cgp::prelude::Chars<'s', cgp::prelude::Chars<'c', cgp::prelude::Chars<'a', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'f', cgp::prelude::Chars<'a', cgp::prelude::Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', cgp::prelude::Nil>>>>>>>>>>>>>>` is not implemented for `Rectangle`\n  --> src/main.rs:75:1\n   |\n75 | pub struct Rectangle {\n   | ^^^^^^^^^^^^^^^^^^^^\nhelp: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`\n  --> src/main.rs:74:10\n   |\n74 | #[derive(HasField)]\n   |          ^^^^^^^^\n   |          |\n   |          `cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'m', cgp::prelude::Chars<'a', cgp::prelude::Chars<'s', cgp::prelude::Chars<'s', cgp::prelude::Nil>>>>>>`\n   |          `cgp::prelude::HasField<cgp::prelude::Symbol<5, cgp::prelude::Chars<'w', cgp::prelude::Chars<'i', cgp::prelude::Chars<'d', cgp::prelude::Chars<'t', cgp::prelude::Chars<'h', cgp::prelude::Nil>>>>>>>`\nnote: required for `Rectangle` to implement `HasScaleFactor`\n  --> src/main.rs:43:1\n   |\n43 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n44 | pub trait HasScaleFactor {\n   |           ^^^^^^^^^^^^^^\nnote: required for the provider `ScaledArea<RectangleArea>` to implement the provider trait `AreaCalculator` for the context `Rectangle`\n  --> src/main.rs:48:1\n   |\n48 | #[cgp_impl(new ScaledArea<InnerCalculator>)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n...\n51 |     Self: HasScaleFactor,\n   |           -------------- unsatisfied trait bound introduced here\n   = note: 1 redundant requirement hidden\n   = note: required for the provider `Rectangle` to implement the provider trait `AreaCalculator` for the context `Rectangle`\nnote: required for `Rectangle` to implement `AreaCalculator<Rectangle>`\n  --> src/main.rs:16:1\n   |\n16 | #[cgp_component(AreaCalculator)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nnote: required for `Rectangle` to implement `CanCalculateArea`\n  --> src/main.rs:16:1\n   |\n16 | #[cgp_component(AreaCalculator)]\n   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n17 | pub trait CanCalculateArea {\n   |           ^^^^^^^^^^^^^^^^\n   = note: 1 redundant requirement hidden\n   = note: required for the provider `DensityFromMassField` to implement the provider trait `DensityCalculator` for the context `Rectangle`\n   = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateDensity`\nnote: required by a bound in `__CheckRectangle`\n  --> src/main.rs:93:1\n   |\n93 | / check_components! {\n94 | |     Rectangle {\n95 | |         DensityCalculatorComponent,\n96 | |     }\n97 | | }\n   | |_^ required by this bound in `__CheckRectangle`\n   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

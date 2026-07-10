@@ -143,8 +143,10 @@ driver executable; and `sysroot.rs` discovers the toolchain sysroot.
 The driver (`crates/cargo-cgp-driver/src`) is smaller. `run.rs` is the entrypoint that runs the
 compiler through `rustc_driver`; `args.rs` turns the wrapper's process arguments into a rustc
 argument vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds
-the `Callbacks` implementation that is the future extension point; `config.rs` holds the shared
-names.
+the `Callbacks` implementation, whose `config` hook installs a diagnostic-rewriting emitter;
+`emitter.rs` is that emitter, which renames CGP wiring notes using the live compiler; `component_map.rs`
+builds the component-marker → consumer/provider trait-name map by querying the trait solver; `rewrite.rs`
+is the compiler-free string rewrite of the two wiring-note forms; `config.rs` holds the shared names.
 
 The processing library (`crates/cargo-cgp-error-processing/src`) is the smallest and holds no
 compiler linkage. `process.rs` is the stateless `process_cgp_errors` entrypoint, which wraps each

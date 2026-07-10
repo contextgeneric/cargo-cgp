@@ -17,7 +17,7 @@ help: the trait `IsProviderFor<FooComponent, __Context__>` is implemented for `P
 42 | | where
 43 | |     Self: HasName,
    | |__________________^
-note: required for `App` to implement `IsProviderFor<FooComponent, App>`
+note: required for the provider `App` to implement the provider trait `Foo` for the context `App`
   --> src/main.rs:71:1
    |
 71 | / delegate_components! {
@@ -41,7 +41,7 @@ note: required for `App` to implement `CanFoo`
 26 | pub trait CanFoo {
    |           ^^^^^^
    = note: 2 redundant requirements hidden
-   = note: required for `App` to implement `IsProviderFor<BarComponent, App>`
+   = note: required for the provider `App` to implement the provider trait `Bar` for the context `App`
 note: required for `App` to implement `Bar<App>`
   --> src/main.rs:30:1
    |
@@ -55,8 +55,8 @@ note: required for `App` to implement `CanBar`
 31 | pub trait CanBar {
    |           ^^^^^^
    = note: 1 redundant requirement hidden
-   = note: required for `ProvideBaz` to implement `IsProviderFor<BazComponent, App>`
-   = note: required for `App` to implement `CanUseComponent<BazComponent>`
+   = note: required for the provider `ProvideBaz` to implement the provider trait `Baz` for the context `App`
+   = note: required for the context `App` to implement the consumer trait `CanBaz`
 note: required by a bound in `__CheckApp`
   --> src/main.rs:82:1
    |
@@ -87,7 +87,7 @@ note: required for `App` to implement `HasName`
    | ^^^^^^^^^^^^^^^^^^
 21 | pub trait HasName {
    |           ^^^^^^^
-note: required for `ProvideFoo` to implement `IsProviderFor<FooComponent, App>`
+note: required for the provider `ProvideFoo` to implement the provider trait `Foo` for the context `App`
   --> src/main.rs:40:1
    |
 40 | #[cgp_impl(new ProvideFoo)]
@@ -96,7 +96,7 @@ note: required for `ProvideFoo` to implement `IsProviderFor<FooComponent, App>`
 43 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
-   = note: required for `App` to implement `IsProviderFor<FooComponent, App>`
+   = note: required for the provider `App` to implement the provider trait `Foo` for the context `App`
 note: required for `App` to implement `Foo<App>`
   --> src/main.rs:25:1
    |
@@ -110,8 +110,8 @@ note: required for `App` to implement `CanFoo`
 26 | pub trait CanFoo {
    |           ^^^^^^
    = note: 1 redundant requirement hidden
-   = note: required for `ProvideBar` to implement `IsProviderFor<BarComponent, App>`
-   = note: required for `App` to implement `CanUseComponent<BarComponent>`
+   = note: required for the provider `ProvideBar` to implement the provider trait `Bar` for the context `App`
+   = note: required for the context `App` to implement the consumer trait `CanBar`
 note: required by a bound in `__CheckApp`
   --> src/main.rs:82:1
    |
@@ -142,7 +142,7 @@ note: required for `App` to implement `HasName`
    | ^^^^^^^^^^^^^^^^^^
 21 | pub trait HasName {
    |           ^^^^^^^
-note: required for `ProvideFoo` to implement `IsProviderFor<FooComponent, App>`
+note: required for the provider `ProvideFoo` to implement the provider trait `Foo` for the context `App`
   --> src/main.rs:40:1
    |
 40 | #[cgp_impl(new ProvideFoo)]
@@ -150,7 +150,7 @@ note: required for `ProvideFoo` to implement `IsProviderFor<FooComponent, App>`
 ...
 43 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
-   = note: required for `App` to implement `CanUseComponent<FooComponent>`
+   = note: required for the context `App` to implement the consumer trait `CanFoo`
 note: required by a bound in `__CheckApp`
   --> src/main.rs:82:1
    |

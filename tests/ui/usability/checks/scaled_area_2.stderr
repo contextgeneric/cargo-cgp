@@ -24,7 +24,7 @@ note: required for `Rectangle` to implement `HasScaleFactor`
    | ^^^^^^^^^^^^^^^^^^
 39 | pub trait HasScaleFactor {
    |           ^^^^^^^^^^^^^^
-note: required for `ScaledArea<RectangleArea>` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+note: required for the provider `ScaledArea<RectangleArea>` to implement the provider trait `AreaCalculator` for the context `Rectangle`
   --> src/main.rs:43:1
    |
 43 | #[cgp_impl(new ScaledArea<InnerCalculator>)]
@@ -32,7 +32,7 @@ note: required for `ScaledArea<RectangleArea>` to implement `IsProviderFor<AreaC
 ...
 46 |     Self: HasScaleFactor,
    |           -------------- unsatisfied trait bound introduced here
-   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
+   = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
 note: required by a bound in `__CheckRectangle`
   --> src/main.rs:69:1
    |

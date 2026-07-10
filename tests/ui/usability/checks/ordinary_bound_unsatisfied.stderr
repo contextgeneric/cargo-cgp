@@ -17,7 +17,7 @@ error[E0277]: the trait bound `f64: std::cmp::Eq` is not satisfied
              u64
              u8
              usize
-note: required for `CompareScalars` to implement `IsProviderFor<ScalarEqualityComponent, App>`
+note: required for the provider `CompareScalars` to implement the provider trait `ScalarEquality` for the context `App`
   --> src/main.rs:37:1
    |
 37 | #[cgp_impl(new CompareScalars)]
@@ -25,7 +25,7 @@ note: required for `CompareScalars` to implement `IsProviderFor<ScalarEqualityCo
 ...
 41 |     Scalar: Eq,
    |             -- unsatisfied trait bound introduced here
-   = note: required for `App` to implement `CanUseComponent<ScalarEqualityComponent>`
+   = note: required for the context `App` to implement the consumer trait `CanCompareScalars`
 note: required by a bound in `__CheckApp`
   --> src/main.rs:57:1
    |

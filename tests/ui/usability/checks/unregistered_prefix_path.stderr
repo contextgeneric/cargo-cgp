@@ -25,7 +25,7 @@ error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol!("app"), Path
              IsProviderFor<ProducerComponent, __Context__, Code>
              IsProviderFor<TryComputerComponent, __Context__, (Code, Input)>
              IsProviderFor<TryComputerRefComponent, __Context__, (Code, Input)>
-   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+   = note: required for the context `App` to implement the consumer trait `CanGreet`
 note: required by a bound in `__CheckApp`
   --> src/main.rs:46:1
    |

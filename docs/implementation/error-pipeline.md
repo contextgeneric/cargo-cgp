@@ -2,9 +2,10 @@
 
 `cargo-cgp` exists to turn rustc's raw diagnostics for CGP code into readable, root-cause-first
 errors, and it does so through a pipeline of stages; this document is the map of that pipeline and the
-detailed record of the stages that run inside a compilation. Today the tool implements the first
-stage in two coarse ways — choosing the trait solver and un-eliding the diagnostic — and this is where
-each such transformation is written down as it is added.
+detailed record of the stages that run inside a compilation. The driver applies three transformations
+today: two coarse argument levers — choosing the trait solver and un-eliding the diagnostic — and a
+finer one that reads the compiler's own state to rename CGP wiring notes. This is where each such
+transformation is written down as it is added.
 
 ## The stages
 
@@ -39,19 +40,21 @@ transformations it applies to get there.
 
 ## Where transformation happens
 
-The two current transformations both happen in the driver, because the driver runs the real compiler
-in-process through `rustc_driver` and can inject flags into each compilation (the front-end wires the
-driver into cargo — see [Executable structure](executable-structure.md)). Injecting a flag is a
-coarse lever — it changes how the compiler produces diagnostics — but needs no diagnostic parsing,
-and both transformations below are of this kind. This is the configure stage.
+Two of the three transformations are flag injections, and they happen in the driver because it runs
+the real compiler in-process through `rustc_driver` and can inject flags into each compilation (the
+front-end wires the driver into cargo — see [Executable structure](executable-structure.md)).
+Injecting a flag is a coarse lever — it changes how the compiler produces diagnostics — but needs no
+diagnostic parsing. This is the configure stage.
 
-Reading and rewriting the diagnostics themselves is a separate, finer concern, and today it happens
-in the **front-end**, not the driver. The front-end runs `cargo check --message-format=json`, so
-cargo's diagnostics arrive as a structured JSON stream it can parse, transform, and re-emit — no
-`rustc_private` required. That is where the capture, process, and render stages live. The driver's
-[`Callbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs) is a *future* second capture lever, for
-the enrichment that needs live compiler state (below); it can read the compiler's diagnostics after
-analysis but is currently unused (`CgpCallbacks` is empty).
+Reading and rewriting the diagnostics themselves is a separate, finer concern, and it happens in two
+places. In the **front-end**, the capture, process, and render stages run over cargo's JSON output —
+the front-end runs `cargo check --message-format=json`, so the diagnostics arrive as a structured
+stream it can parse, transform, and re-emit with no `rustc_private` required. In the **driver**, a
+custom diagnostic emitter rewrites diagnostics that need facts only the live compiler holds, before
+they are serialized; the trait-renaming transform below is the first use of it, and it is installed
+through the driver's [`Callbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs). The two rewriting
+sites split by what each needs: text-only rewrites that any consumer of the JSON could do live in the
+front-end, and rewrites that must consult the `TyCtxt` live in the driver.
 
 ## Choosing the trait solver (current)
 
@@ -132,6 +135,51 @@ carry no code to diagnose and which `--verbose` would actively break — `-vV` a
 second `--verbose` makes rustc reject the invocation. The skip is handled in `args::rustc_args`; see
 [`config::VERBOSE_FLAG`](../../crates/cargo-cgp-driver/src/config.rs) for the full rationale.
 
+## Naming the traits behind a component marker (current)
+
+The driver rewrites the compiler's wiring notes to name the consumer and provider traits a reader
+thinks in, in place of the internal marker-based phrasing. Where rustc reports `` required for
+`RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>` `` and `` required
+for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>` ``, the tool now emits
+`` required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the
+context `Rectangle` `` and `` required for the context `Rectangle` to implement the consumer trait
+`CanCalculateArea` ``. This is the transform the `IsProviderFor` and `CanUseComponent` marker traits
+otherwise hide: the component marker names neither trait, its `…Component` suffix is at best an
+unreliable guess at the provider trait, and it says nothing at all about the consumer trait.
+
+This is the first transformation that reads the compiler's own state rather than pulling an argument
+lever, and that is why it lives in the driver. The two flag levers above change how the compiler
+*produces* diagnostics; this one edits diagnostics the compiler has already *built*, using the trait
+names only a live `TyCtxt` can supply. The driver installs a custom diagnostic emitter through the
+callbacks' `config` hook, and that emitter rewrites each diagnostic in place before handing it to a
+real `JsonEmitter`, so both the JSON `children` and the regenerated `rendered` text carry the new
+wording — the front-end receives the diagnostic already transformed. The emitter must be rebuilt to
+match the compiler's default because `set_emitter` replaces rather than wraps; the mechanics are in
+[`emitter`](../../crates/cargo-cgp-driver/src/emitter.rs).
+
+Recovering the names inverts two links `#[cgp_component]` generates, both in
+[`component_map`](../../crates/cargo-cgp-driver/src/component_map.rs). A component marker
+(`AreaCalculatorComponent`) is an empty struct with no reference to its traits, so the map is built by
+walking the trait graph: the provider trait carries `IsProviderFor<Marker, …>` as a supertrait, so
+scanning every trait's super-predicates yields each (provider trait, marker) pair, and the consumer
+trait's blanket impl reads `impl<C> Consumer for C where C: Provider<C>`, so a blanket impl bounding
+its *own* self type on a known provider trait names that provider's consumer (the self-type check is
+what tells this apart from the provider blanket impl, which bounds the same trait on a projected
+delegate). The walk runs once, lazily on the first wiring note and cached thereafter, and it is
+reachable from inside the emitter because a wiring note is built during trait solving, when a
+`TyCtxt` is in thread-local scope (`rustc_middle::ty::tls`).
+
+The rewrite itself is a plain string transform, kept compiler-free in
+[`rewrite`](../../crates/cargo-cgp-driver/src/rewrite.rs) so it is unit-tested without a `TyCtxt`. It
+matches the two `required for … to implement …` note forms, reads the marker out of the trait's
+generic arguments, and looks the names up in the map; a note whose marker is absent from the map, or
+any other note, passes through untouched. One faithful oddity follows from naming the obligation's
+subject verbatim: the subject is usually a provider (`RectangleArea`, `ScaledArea<RectangleArea>`) but
+is the context itself when the context stands in as its own provider, so a self-provider case reads
+`` the provider `Rectangle` … for the context `Rectangle` ``. The before/after is pinned across the
+whole `usability/checks` fixture set, whose blessed snapshots now show the trait-named notes;
+[`base_area_1`](../../tests/ui/usability/checks/base_area_1.stderr) is the worked example.
+
 ## The capture and render stages
 
 Capture collects rustc's diagnostics as the structured, serializable data the [processing
@@ -155,30 +203,32 @@ match. Because the diagnostics are processed as a set, capture buffers the whole
 streaming it, so cargo's progress is shown at the end rather than live — the cost of a stage that must
 see every diagnostic before it can reorder them.
 
-A second, richer capture mechanism is planned but not built: installing a custom `Emitter` in the
-driver — via `interface::Config.psess_created` — to intercept each `DiagInner` as the compiler builds
-it. It is heavier (it must reconstruct rendering and resolve spans through the `SourceMap`) but is the
-only path that can enrich a diagnostic with facts only the live compiler holds. Where even the
-next-gen solver renders an obligation chain tersely, the driver could re-run trait fulfillment on the
-failing obligation through the compiler's `InferCtxt` / `ObligationCtxt` API to reconstruct the full
-derived-obligation chain — the surfaced form that `check_components!` forces at the source level — and
-attach it to the diagnostic before processing sees it. This kind of work must happen during
-compilation, because processing is stateless and cannot ask the compiler anything; it belongs to
-capture and not to the processing stage's own planned work.
+A second, richer capture mechanism is now partly built: a custom `Emitter` in the driver, installed
+via `interface::Config.psess_created`, intercepts each `DiagInner` as the compiler builds it. The
+[trait-renaming transform](#naming-the-traits-behind-a-component-marker-current) is its first use — it
+reads the `TyCtxt` from thread-local scope to rename wiring notes — and the same seam is where further
+compiler-state enrichment will hang. Where even the next-gen solver renders an obligation chain
+tersely, the driver could re-run trait fulfillment on the failing obligation through the compiler's
+`InferCtxt` / `ObligationCtxt` API to reconstruct the full derived-obligation chain — the surfaced
+form that `check_components!` forces at the source level — and attach it to the diagnostic before the
+front-end sees it. This kind of work must happen during compilation, because the front-end's
+processing stage is stateless and cannot ask the compiler anything; it belongs to the driver, not to
+the processing stage's own planned work.
 
 ## Comparison with Clippy
 
 Clippy is also a diagnostic tool built on this integration, but it transforms diagnostics differently.
-It works entirely on the `Callbacks` lever: its `config` callback calls `register_lints` to add lint
-passes that run during the same compilation (see
-[`external/rust-clippy/src/driver.rs`](../../../external/rust-clippy/src/driver.rs)). `cargo-cgp`'s
-current *flag* transformations are coarser and of the other lever — solver and verbosity flags, not
-callbacks — because they buy a large improvement for no diagnostic-parsing work. Its capture and
-processing stages do move onto the diagnostics themselves, but in the front-end over cargo's JSON
-rather than in a callback, and the aim still differs from Clippy's: Clippy *adds* new diagnostics
-(lints) during the compilation, whereas `cargo-cgp` *rewrites and clarifies* the diagnostics rustc
-already produced, after the build — which is why it needs a capture-and-process pipeline that Clippy
-has no equivalent of.
+It works on the `Callbacks` lever: its `config` callback calls `register_lints` to add lint passes that
+run during the same compilation (see
+[`external/rust-clippy/src/driver.rs`](../../../external/rust-clippy/src/driver.rs)). `cargo-cgp` uses
+the same lever but for a different end — its `config` callback installs a diagnostic *emitter* that
+rewrites the compiler's own notes, where Clippy's *registers lints* that emit new ones. Its other two
+driver transformations are coarser still, of the flag lever — solver and verbosity flags — because
+they buy a large improvement for no diagnostic work. And its front-end capture and processing stages
+move onto the diagnostics over cargo's JSON, which Clippy has no equivalent of. The throughline is the
+aim: Clippy *adds* diagnostics, whereas `cargo-cgp` *rewrites and clarifies* the ones rustc already
+produced — in the driver's emitter for what needs the compiler, and in the front-end for what does
+not.
 
 ## Tests
 
@@ -191,6 +241,12 @@ has no equivalent of.
 - [`crates/cargo-cgp-driver/tests/args.rs`](../../crates/cargo-cgp-driver/tests/args.rs) — tests that
   each injected flag is appended when absent, skipped when the invocation already sets it, and skipped
   entirely for the `-vV` and `--print` info queries.
+- [`crates/cargo-cgp-driver/tests/rewrite.rs`](../../crates/cargo-cgp-driver/tests/rewrite.rs) — tests
+  the compiler-free note rewrite over a hand-built name map: both note forms, the module-prefix and
+  generic-context cases, and the unknown-marker and unrelated-note pass-throughs.
+- [`tests/ui/usability/checks/`](../../tests/ui/usability/checks) — the blessed `.stderr`/`.output.json`
+  snapshots pin the trait-named notes end to end; a regression to the marker-based phrasing changes
+  them.
 
 ## Source
 
@@ -201,7 +257,15 @@ has no equivalent of.
 - [`crates/cargo-cgp-driver/src/run.rs`](../../crates/cargo-cgp-driver/src/run.rs) — passes the flag
   set to `rustc_args`.
 - [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs) — the
-  (empty) hook the planned driver-side capture mechanism will use.
+  `config` hook that installs the rewriting emitter.
+- [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — the
+  diagnostic-rewriting emitter: rebuilds the default `JsonEmitter`, reaches the `TyCtxt` via TLS, and
+  rewrites wiring notes in place before delegating.
+- [`crates/cargo-cgp-driver/src/component_map.rs`](../../crates/cargo-cgp-driver/src/component_map.rs) —
+  builds the component-marker → trait-names map by inverting the `IsProviderFor` supertrait and
+  consumer-blanket-impl links.
+- [`crates/cargo-cgp-driver/src/rewrite.rs`](../../crates/cargo-cgp-driver/src/rewrite.rs) — the
+  compiler-free string rewrite of the two wiring-note forms.
 - [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — the
   front-end's capture and render: appends `--message-format=json`, captures cargo's output, runs the
   diagnostics through processing, and re-emits.

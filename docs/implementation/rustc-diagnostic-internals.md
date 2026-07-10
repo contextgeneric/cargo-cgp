@@ -158,13 +158,16 @@ Two grep patterns relocate the elision sites when a nightly bump moves them. Sea
 for `should_print_verbose` enumerates the internal-debug branches `--verbose` intentionally leaves off.
 
 Both suppression families are defeated with the coarse argument lever — inject a flag, change nothing
-else. The finer work `cargo-cgp` still has ahead uses the compiler's own state directly rather than its
-printed output: the driver's [`Callbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs) can read the
-built diagnostics after analysis, and can re-run trait fulfillment through the `InferCtxt` /
-`ObligationCtxt` API to reconstruct a chain the printed form renders tersely. Those are the levers the
-planned driver-side [capture mechanism](error-pipeline.md#the-capture-and-render-stages) will use, and
-the reason the foothold is worth having: once inside the compiler, the full `Symbol` is an interned
-type you can read exactly, whatever the printer chose to show.
+else. The finer work uses the compiler's own state directly rather than its printed output, and the
+driver's [`Callbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs) is where that happens: its
+`config` hook installs a custom emitter that reaches the live `TyCtxt` (from thread-local scope) and
+rewrites diagnostics before they are serialized. The first use of it renames CGP wiring notes to name
+the consumer and provider traits behind a component marker
+([Naming the traits behind a component marker](error-pipeline.md#naming-the-traits-behind-a-component-marker-current)),
+and the same seam can re-run trait fulfillment through the `InferCtxt` / `ObligationCtxt` API to
+reconstruct a chain the printed form renders tersely. This is the reason the foothold is worth having:
+once inside the compiler, the full `Symbol` is an interned type you can read exactly, whatever the
+printer chose to show.
 
 ## Further reading
 

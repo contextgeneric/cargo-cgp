@@ -24,7 +24,7 @@ note: required for `Rectangle` to implement `HasRectangleFields`
    | ^^^^^^^^^^^^^^^^^^
 26 | pub trait HasRectangleFields {
    |           ^^^^^^^^^^^^^^^^^^
-note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+note: required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
   --> src/main.rs:37:1
    |
 37 | #[cgp_impl(new RectangleArea)]
@@ -32,7 +32,7 @@ note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorCom
 ...
 40 |     Self: HasRectangleFields,
    |           ------------------ unsatisfied trait bound introduced here
-   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
+   = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
 note: required by a bound in `__CheckRectangle`
   --> src/main.rs:76:1
    |
@@ -71,7 +71,7 @@ note: required for `Rectangle` to implement `HasRectangleFields`
    | ^^^^^^^^^^^^^^^^^^
 26 | pub trait HasRectangleFields {
    |           ^^^^^^^^^^^^^^^^^^
-note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+note: required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
   --> src/main.rs:37:1
    |
 37 | #[cgp_impl(new RectangleArea)]
@@ -80,7 +80,7 @@ note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorCom
 40 |     Self: HasRectangleFields,
    |           ------------------ unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
-   = note: required for `Rectangle` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+   = note: required for the provider `Rectangle` to implement the provider trait `AreaCalculator` for the context `Rectangle`
 note: required for `Rectangle` to implement `AreaCalculator<Rectangle>`
   --> src/main.rs:15:1
    |
@@ -94,8 +94,8 @@ note: required for `Rectangle` to implement `CanCalculateArea`
 16 | pub trait CanCalculateArea {
    |           ^^^^^^^^^^^^^^^^
    = note: 1 redundant requirement hidden
-   = note: required for `DensityFromMassField` to implement `IsProviderFor<DensityCalculatorComponent, Rectangle>`
-   = note: required for `Rectangle` to implement `CanUseComponent<DensityCalculatorComponent>`
+   = note: required for the provider `DensityFromMassField` to implement the provider trait `DensityCalculator` for the context `Rectangle`
+   = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateDensity`
 note: required by a bound in `__CheckRectangle`
   --> src/main.rs:76:1
    |

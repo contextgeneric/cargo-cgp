@@ -95,10 +95,12 @@ compiler and converts a compiler-signalled failure into the process `ExitCode`, 
 `rustc` returns.
 
 The compiler behavior itself is installed through
-[`callbacks::CgpCallbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs), still an empty
-`rustc_driver::Callbacks` implementation. The driver's current effect on diagnostics comes entirely
-from the injected diagnostic flags, not from the callbacks; those remain the extension point for the
-diagnostic capture to come, covered in [The error pipeline](error-pipeline.md).
+[`callbacks::CgpCallbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs), whose `config` hook
+installs a custom diagnostic emitter. That emitter renames CGP wiring notes to name the consumer and
+provider traits behind a component marker, using the live `TyCtxt` — the one transformation that needs
+the compiler's own state rather than an injected flag; it is documented in
+[The error pipeline](error-pipeline.md#naming-the-traits-behind-a-component-marker-current). The
+driver's remaining effect on diagnostics comes from the injected diagnostic flags.
 
 ## The environment contract
 
@@ -188,8 +190,9 @@ will likely grow toward it:
   the driver needs no such guard — but one will be needed once the callbacks do real work that
   should not run for an info query.
 - **Callbacks.** Clippy carries three `Callbacks` implementations (default, rustc-only, and
-  lint-registering) and selects among them per invocation. `cargo-cgp` has one empty `CgpCallbacks`;
-  the differentiation will grow when the driver begins post-processing diagnostics.
+  lint-registering) and selects among them per invocation. `cargo-cgp` has one `CgpCallbacks`, whose
+  `config` hook installs the diagnostic-rewriting emitter; the differentiation will grow as the driver
+  does more post-processing.
 
 ## Further reading
 
@@ -247,6 +250,10 @@ document: [Testing](testing.md).
 - [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — builds the
   rustc argument vector (wrapper-mode stripping, sysroot injection).
 - [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs) — the
-  `Callbacks` implementation, the extension point for diagnostics work.
+  `Callbacks` implementation; its `config` hook installs the rewriting emitter.
+- [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs),
+  [`component_map.rs`](../../crates/cargo-cgp-driver/src/component_map.rs), and
+  [`rewrite.rs`](../../crates/cargo-cgp-driver/src/rewrite.rs) — the diagnostic-renaming transform (see
+  [The error pipeline](error-pipeline.md#naming-the-traits-behind-a-component-marker-current)).
 - [`crates/cargo-cgp-driver/src/lib.rs`](../../crates/cargo-cgp-driver/src/lib.rs) — the
   `rustc_private` feature gate and `extern crate` declarations.

@@ -16,7 +16,7 @@ note: required for `Person` to implement `HasName`
    | ^^^^^^^^^^^^^^^^^^
 27 | pub trait HasName {
    |           ^^^^^^^
-note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, Person>`
+note: required for the provider `GreetHello` to implement the provider trait `Greeter` for the context `Person`
   --> src/main.rs:31:1
    |
 31 | #[cgp_impl(new GreetHello)]
@@ -24,7 +24,7 @@ note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, Pe
 ...
 34 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
-   = note: required for `Person` to implement `CanUseComponent<GreeterComponent>`
+   = note: required for the context `Person` to implement the consumer trait `CanGreet`
 note: required by a bound in `__CheckPerson`
   --> src/main.rs:53:1
    |

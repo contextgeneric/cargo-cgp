@@ -16,7 +16,7 @@ note: required for `Rectangle` to implement `HasBaseArea`
    | ^^^^^^^^^^^^^^^^^^
 29 | pub trait HasBaseArea {
    |           ^^^^^^^^^^^
-note: required for `BaseArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+note: required for the provider `BaseArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
   --> src/main.rs:38:1
    |
 38 | #[cgp_impl(new BaseArea)]
@@ -25,8 +25,8 @@ note: required for `BaseArea` to implement `IsProviderFor<AreaCalculatorComponen
 41 |     Self: HasBaseArea,
    |           ----------- unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
-   = note: required for `ScaledArea<BaseArea>` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
-   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
+   = note: required for the provider `ScaledArea<BaseArea>` to implement the provider trait `AreaCalculator` for the context `Rectangle`
+   = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
 note: required by a bound in `__CheckRectangle`
   --> src/main.rs:73:1
    |
