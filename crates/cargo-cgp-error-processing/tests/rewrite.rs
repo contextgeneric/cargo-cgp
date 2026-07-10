@@ -256,6 +256,60 @@ fn header_unwraps_a_multi_parameter_tuple() {
 }
 
 #[test]
+fn rewrites_a_three_parameter_generic_component() {
+    // A component with three generic parameters: they arrive grouped as `(u32, u64, bool)`
+    // and are unwrapped in the header so the trait reads as written, while the notes name the
+    // bare trait. The strings mirror what `generic_area_multi.rs` produces end to end.
+    let map = name_map();
+
+    // Consumer header: `CanUseComponent<Marker, (u32, u64, bool)>` → `CanCalculateArea<u32, u64, bool>`.
+    assert_eq!(
+        rewrite_trait_bound(
+            "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent, (u32, u64, bool)>` is not satisfied",
+            &map,
+        )
+        .as_deref(),
+        Some(
+            "the consumer trait bound `Rectangle: CanCalculateArea<u32, u64, bool>` is not satisfied"
+        )
+    );
+
+    // Provider header: the context stays first, then the three parameters.
+    assert_eq!(
+        rewrite_trait_bound(
+            "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle, (u32, u64, bool)>` is not satisfied",
+            &map,
+        )
+        .as_deref(),
+        Some(
+            "the provider trait bound `RectangleArea: AreaCalculator<Rectangle, u32, u64, bool>` is not satisfied"
+        )
+    );
+
+    // Notes name the bare trait and elide the three parameters.
+    assert_eq!(
+        rewrite_required_for(
+            "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent, (u32, u64, bool)>`",
+            &map,
+        )
+        .as_deref(),
+        Some(
+            "required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`"
+        )
+    );
+    assert_eq!(
+        rewrite_required_for(
+            "required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle, (u32, u64, bool)>`",
+            &map,
+        )
+        .as_deref(),
+        Some(
+            "required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`"
+        )
+    );
+}
+
+#[test]
 fn header_leaves_non_cgp_and_unknown_bounds_untouched() {
     assert_eq!(
         rewrite_trait_bound(

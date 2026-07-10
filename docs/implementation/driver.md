@@ -352,7 +352,10 @@ will likely grow toward it:
   a `_` returning inside its `Symbol`, or a marker-based header/note returning.
 - [`tests/ui/usability/checks/generic_area.stderr`](../../tests/ui/usability/checks/generic_area.stderr)
   — the end-to-end regression guard that the transform still names the traits when the component is
-  generic: the header reattaches the `<f64>` parameter, the notes name the traits and elide it.
+  generic: the header reattaches the single `<f64>` parameter, the notes name the traits and elide it.
+- [`tests/ui/usability/checks/generic_area_multi.stderr`](../../tests/ui/usability/checks/generic_area_multi.stderr)
+  — the same, for a *three-parameter* component: the header unwraps the `(u32, u64, bool)` tuple to
+  `CanCalculateArea<u32, u64, bool>`.
 - [`tests/ui/usability/checks/`](../../tests/ui/usability/checks) — the blessed `.stderr`/`.output.json`
   snapshots across the set pin the trait-renaming transform end to end.
 
