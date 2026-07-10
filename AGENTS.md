@@ -148,17 +148,23 @@ The driver (`crates/cargo-cgp-driver/src`) is smaller. `run.rs` is the entrypoin
 compiler through `rustc_driver`; `args.rs` turns the wrapper's process arguments into a rustc
 argument vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds
 the `Callbacks` implementation, whose `config` hook installs a diagnostic-rewriting emitter;
-`emitter.rs` is that emitter, which renames CGP wiring notes using the live compiler; `component_map.rs`
-builds the component-marker → consumer/provider trait-name map by querying the trait solver; `rewrite.rs`
-is the compiler-free string rewrite of the two wiring-note forms; `config.rs` holds the shared names.
+`emitter.rs` is that emitter, which renames CGP wiring messages using the live compiler;
+`component_map.rs` builds the component-marker → consumer/provider trait-name map by querying the
+trait solver; `config.rs` holds the shared names. The compiler-free string rewrite and the lazily-built
+`ComponentNameMap` it uses live in the `cargo-cgp-error-processing` crate (the driver's one ordinary
+dependency), so they are unit-tested without the driver's `rustc_private` linkage.
 
 The processing library (`crates/cargo-cgp-error-processing/src`) is the smallest and holds no
 compiler linkage. `process.rs` is the stateless `process_cgp_errors` entrypoint, which wraps each
 diagnostic and runs the per-diagnostic preprocessing pipeline in `preprocess/` (stripping CGP path
 prefixes, resugaring `Symbol!`, rewriting unmet `HasField` bounds into missing-field messages);
-`diagnostic.rs` defines the `CgpDiagnostic` output type. Its tests in
-`tests/` drive the preprocessors and `process_cgp_errors` over committed fixtures, so they run on any
-toolchain. The cross-diagnostic aggregation sub-stage (collapsing cascades) is still to come.
+`diagnostic.rs` defines the `CgpDiagnostic` output type. Because this crate is rustc-free, it is also
+the home of `rewrite.rs` — the compiler-free string rewrite that renames CGP wiring messages and the
+lazily-built `ComponentNameMap` it uses. That logic is driven by the *driver*, not by
+`process_cgp_errors`, but it lives here so it can be unit-tested without the driver's compiler linkage.
+Its tests in `tests/` drive the preprocessors, `process_cgp_errors`, and the rewrite over committed
+fixtures and hand-built maps, so they run on any toolchain. The cross-diagnostic aggregation sub-stage
+(collapsing cascades) is still to come.
 
 ## Commands
 

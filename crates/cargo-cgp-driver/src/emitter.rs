@@ -1,38 +1,40 @@
 //! The diagnostic-rewriting emitter the driver installs.
 //!
 //! This is the compiler-side seam of the message transform. It replaces the session's JSON
-//! emitter with one that rewrites CGP wiring notes (via [`crate::rewrite`]) before handing
-//! the diagnostic to a real [`JsonEmitter`], so the transformed text reaches cargo — and
-//! the front-end — already shaped, both in the structured `children` and in the `rendered`
-//! field the JSON emitter regenerates from them.
+//! emitter with one that rewrites CGP wiring messages (via the rustc-free
+//! [`rewrite`](cargo_cgp_error_processing::rewrite) module) before handing the diagnostic to
+//! a real [`JsonEmitter`], so the transformed text reaches cargo — and the front-end —
+//! already shaped, both in the structured `children` and in the `rendered` field the JSON
+//! emitter regenerates from them.
 //!
 //! Two facts make this the right layer. First, naming the traits behind a component marker
-//! needs the compiler ([`build_component_name_map`]), and the emitter can reach the live
-//! `TyCtxt` through [`rustc_middle::ty::tls`] because a wiring note is built during trait
-//! solving, when a `TyCtxt` is in thread-local scope. Second, mutating the `DiagInner` in
-//! place before the inner emitter serializes it means both the JSON `children` and the
-//! regenerated `rendered` text carry the rewrite, with no re-parsing of rendered output.
+//! needs the compiler, and the driver reaches the live `TyCtxt` through
+//! [`rustc_middle::ty::tls`] because a wiring message is built during trait solving, when a
+//! `TyCtxt` is in thread-local scope. That compiler lookup is wrapped as the `fn`-pointer
+//! initializer of a [`ComponentNameMap`], which builds the map lazily on the first rewrite
+//! and never at all for a diagnostic that mentions no CGP wiring — so the emitter needs no
+//! separate "is this a CGP diagnostic?" pre-check. Second, mutating the `DiagInner` in place
+//! before the inner emitter serializes it means both the JSON `children` and the regenerated
+//! `rendered` text carry the rewrite, with no re-parsing of rendered output.
 //!
 //! The session's emitter cannot be *wrapped* — [`set_emitter`](rustc_errors::DiagCtxt::set_emitter)
 //! only replaces it, with no way to recover the original — so the inner `JsonEmitter` is
 //! rebuilt to match how the compiler builds its default one (see [`install`]).
 
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::io;
 use std::path::Path;
 
+use cargo_cgp_error_processing::rewrite::{ComponentNameMap, rewrite_message};
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::json::JsonEmitter;
 use rustc_errors::timings::TimingRecord;
 use rustc_errors::{DiagInner, DiagMessage, TerminalUrl};
 use rustc_interface::interface::Config;
-use rustc_middle::ty;
 use rustc_session::config::ErrorOutputType;
 use rustc_span::source_map::SourceMap;
 
-use crate::component_map::build_component_name_map;
-use crate::rewrite::{ComponentTraitNames, is_cgp_wiring_message, rewrite_message};
+use crate::component_map::build_name_map_from_tls;
 
 /// Install the rewriting emitter on the compiler session, replicating how rustc builds its
 /// default JSON emitter so cargo's diagnostic stream is byte-for-byte the same apart from
@@ -106,54 +108,36 @@ fn resolve_terminal_url(setting: TerminalUrl, is_nightly: bool) -> TerminalUrl {
     }
 }
 
-/// The wrapping [`Emitter`] that rewrites CGP wiring notes before delegating to the real
-/// JSON emitter. It caches the component-name map so the whole-crate compiler queries that
-/// build it run at most once, and only when a diagnostic actually carries a wiring note.
+/// The wrapping [`Emitter`] that rewrites CGP wiring messages before delegating to the real
+/// JSON emitter.
 struct CgpEmitter {
     inner: JsonEmitter,
-    /// The component-marker → trait-names map, built lazily and memoized.
-    ///
-    /// `emit_diagnostic` — and thus `rewrite` — runs once per diagnostic, so this cache is what
-    /// keeps the expensive whole-trait-graph walk in [`build_component_name_map`] from
-    /// repeating: it is built on the first diagnostic that carries a wiring note (see
-    /// `diag_has_wiring_note`) and reused for every later one, so the walk runs at most once per
-    /// compilation (and not at all when no CGP wiring error is emitted). It stays `None` only
-    /// while no wiring note has been seen yet, or if a `TyCtxt` was momentarily unavailable when
-    /// one was — in which case the next candidate retries.
-    ///
-    /// Caching across calls is sound because the map draws only on data that is fixed for the
-    /// rest of the compilation once the crate is resolved and lowered — the trait set, the
-    /// `IsProviderFor` supertraits, and the blanket impls, none of which type checking mutates
-    /// — and because the entries are owned `String`s, not compiler handles that later
-    /// interning or arena churn could invalidate. One `TyCtxt`, one driver invocation, one
-    /// crate: there is no cross-session database that could be swapped underneath it.
-    names: Option<HashMap<String, ComponentTraitNames>>,
+    /// The component-marker → trait-names map. A [`ComponentNameMap`] owns the laziness: its
+    /// `fn`-pointer initializer ([`build_name_map_from_tls`]) runs the expensive
+    /// whole-trait-graph walk at most once — on the first message that actually needs a
+    /// lookup — and never when no diagnostic mentions CGP wiring, so this emitter needs no
+    /// candidate pre-check of its own. Built once per compilation is sound because the map
+    /// draws only on data fixed for the rest of the compilation (the trait set, the
+    /// `IsProviderFor` supertraits, the blanket impls) and stores owned `String`s, not
+    /// compiler handles.
+    names: ComponentNameMap,
 }
 
 impl CgpEmitter {
     fn new(inner: JsonEmitter) -> Self {
-        Self { inner, names: None }
+        Self {
+            inner,
+            names: ComponentNameMap::new(build_name_map_from_tls),
+        }
     }
 
     /// Rewrite every recognized CGP wiring message in `diag`, in place — both the primary
-    /// header and the obligation-chain notes. No-op unless the diagnostic carries a candidate
-    /// message *and* a `TyCtxt` is reachable to name the traits.
-    fn rewrite(&mut self, diag: &mut DiagInner) {
-        if !diag_has_cgp_message(diag) {
-            return;
-        }
-        if self.names.is_none() {
-            // A wiring message is emitted during trait solving, so a `TyCtxt` is in TLS; if it
-            // is somehow absent, leave the diagnostic untouched and retry on the next one.
-            match ty::tls::with_opt(|tcx| tcx.map(build_component_name_map)) {
-                Some(map) => self.names = Some(map),
-                None => return,
-            }
-        }
-        let names = self.names.as_ref().expect("name map built above");
-        rewrite_messages(&mut diag.messages, names);
+    /// header and the obligation-chain notes. A message that is not a wiring form is left
+    /// untouched, and the name map is forced only when some message is actually rewritten.
+    fn rewrite(&self, diag: &mut DiagInner) {
+        rewrite_messages(&mut diag.messages, &self.names);
         for child in &mut diag.children {
-            rewrite_messages(&mut child.messages, names);
+            rewrite_messages(&mut child.messages, &self.names);
         }
     }
 }
@@ -189,29 +173,10 @@ impl Emitter for CgpEmitter {
     }
 }
 
-/// Whether any message in the diagnostic looks like a rewritable CGP wiring message (the
-/// primary header or an obligation-chain note), used to skip the map-building queries for the
-/// common non-CGP diagnostic.
-fn diag_has_cgp_message(diag: &DiagInner) -> bool {
-    messages_have_cgp_message(&diag.messages)
-        || diag
-            .children
-            .iter()
-            .any(|child| messages_have_cgp_message(&child.messages))
-}
-
-fn messages_have_cgp_message<S>(messages: &[(DiagMessage, S)]) -> bool {
-    messages
-        .iter()
-        .any(|(message, _)| matches!(message, DiagMessage::Str(s) if is_cgp_wiring_message(s)))
-}
-
 /// Rewrite each plain-string message in place, leaving its style and any Fluent message
-/// untouched.
-fn rewrite_messages<S>(
-    messages: &mut [(DiagMessage, S)],
-    names: &HashMap<String, ComponentTraitNames>,
-) {
+/// untouched. Delegates the match-and-rewrite to [`rewrite_message`], which consults the name
+/// map only for a message that parses as a CGP wiring form.
+fn rewrite_messages<S>(messages: &mut [(DiagMessage, S)], names: &ComponentNameMap) {
     for (message, _) in messages.iter_mut() {
         if let DiagMessage::Str(text) = message
             && let Some(rewritten) = rewrite_message(text, names)

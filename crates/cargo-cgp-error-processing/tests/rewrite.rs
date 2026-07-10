@@ -1,19 +1,17 @@
-//! Tests for the compiler-free message rewrite ([`cargo_cgp_driver::rewrite`]).
+//! Tests for the compiler-free wiring-message rewrite (`cargo_cgp_error_processing::rewrite`).
 //!
-//! Like the driver binary, this links `cargo-cgp-driver` (which links `rustc_driver`), so
-//! it carries the `#![feature(rustc_private)]` gate. The rewrite itself touches no compiler
-//! API — it is driven here from a hand-built name map, the same shape
-//! [`cargo_cgp_driver::component_map`] produces from a `TyCtxt`.
-
-#![feature(rustc_private)]
+//! This crate links no compiler internals, so — unlike the driver that drives this logic —
+//! the tests need no `rustc_private` gate and run on any toolchain. The rewrite is exercised
+//! from a hand-built name map, the same shape the driver produces from a `TyCtxt`.
 
 use std::collections::HashMap;
 
-use cargo_cgp_driver::rewrite::{
-    ComponentTraitNames, is_cgp_wiring_message, is_trait_bound_header, is_wiring_note,
-    rewrite_message, rewrite_required_for, rewrite_trait_bound,
+use cargo_cgp_error_processing::rewrite::{
+    ComponentNameMap, ComponentTraitNames, rewrite_message, rewrite_required_for,
+    rewrite_trait_bound,
 };
 
+/// The fixed map every test's [`ComponentNameMap`] initializes to.
 fn names() -> HashMap<String, ComponentTraitNames> {
     let mut map = HashMap::new();
     map.insert(
@@ -26,11 +24,16 @@ fn names() -> HashMap<String, ComponentTraitNames> {
     map
 }
 
+/// A lazily-initialized map over [`names`], the driver-side `ComponentNameMap` stand-in.
+fn name_map() -> ComponentNameMap {
+    ComponentNameMap::new(names)
+}
+
 #[test]
 fn rewrites_is_provider_for_note() {
     let out = rewrite_required_for(
         "required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`",
-        &names(),
+        &name_map(),
     );
     assert_eq!(
         out.as_deref(),
@@ -44,7 +47,7 @@ fn rewrites_is_provider_for_note() {
 fn rewrites_can_use_component_note() {
     let out = rewrite_required_for(
         "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`",
-        &names(),
+        &name_map(),
     );
     assert_eq!(
         out.as_deref(),
@@ -60,7 +63,7 @@ fn strips_module_prefix_on_trait_and_marker() {
     // trait is matched by its last segment and the marker keyed by its last segment.
     let out = rewrite_required_for(
         "required for `Rectangle` to implement `cgp::prelude::CanUseComponent<cgp::prelude::AreaCalculatorComponent>`",
-        &names(),
+        &name_map(),
     );
     assert_eq!(
         out.as_deref(),
@@ -75,7 +78,7 @@ fn keeps_a_generic_context_whole() {
     // A context with its own generic arguments must survive the top-level comma split.
     let out = rewrite_required_for(
         "required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, App<Foo, Bar>>`",
-        &names(),
+        &name_map(),
     );
     assert_eq!(
         out.as_deref(),
@@ -89,7 +92,7 @@ fn keeps_a_generic_context_whole() {
 fn ignores_a_params_tuple_after_the_context() {
     let out = rewrite_required_for(
         "required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle, (u32, u64)>`",
-        &names(),
+        &name_map(),
     );
     assert_eq!(
         out.as_deref(),
@@ -104,7 +107,7 @@ fn leaves_unknown_component_untouched() {
     // A marker absent from the map means the names are unknown, so nothing is rewritten.
     let out = rewrite_required_for(
         "required for `Rectangle` to implement `CanUseComponent<UnknownComponent>`",
-        &names(),
+        &name_map(),
     );
     assert_eq!(out, None);
 }
@@ -114,37 +117,21 @@ fn leaves_unrelated_notes_untouched() {
     assert_eq!(
         rewrite_required_for(
             "required for `Rectangle` to implement `HasRectangleFields`",
-            &names(),
+            &name_map(),
         ),
         None
     );
     assert_eq!(
-        rewrite_required_for("required by a bound in `__CheckRectangle`", &names()),
+        rewrite_required_for("required by a bound in `__CheckRectangle`", &name_map()),
         None
     );
-}
-
-#[test]
-fn is_wiring_note_matches_only_the_two_forms() {
-    assert!(is_wiring_note(
-        "required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`"
-    ));
-    assert!(is_wiring_note(
-        "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`"
-    ));
-    assert!(!is_wiring_note(
-        "required for `Rectangle` to implement `HasRectangleFields`"
-    ));
-    assert!(!is_wiring_note(
-        "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied"
-    ));
 }
 
 #[test]
 fn rewrites_can_use_component_header() {
     let out = rewrite_trait_bound(
         "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied",
-        &names(),
+        &name_map(),
     );
     assert_eq!(
         out.as_deref(),
@@ -156,7 +143,7 @@ fn rewrites_can_use_component_header() {
 fn rewrites_is_provider_for_header() {
     let out = rewrite_trait_bound(
         "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle>` is not satisfied",
-        &names(),
+        &name_map(),
     );
     assert_eq!(
         out.as_deref(),
@@ -172,7 +159,7 @@ fn header_keeps_a_generic_subject_whole() {
     // own generic arguments.
     let out = rewrite_trait_bound(
         "the trait bound `RedirectLookup<App, Nil>: IsProviderFor<AreaCalculatorComponent, Rectangle>` is not satisfied",
-        &names(),
+        &name_map(),
     );
     assert_eq!(
         out.as_deref(),
@@ -186,7 +173,7 @@ fn header_keeps_a_generic_subject_whole() {
 fn header_strips_module_prefix() {
     let out = rewrite_trait_bound(
         "the trait bound `Rectangle: cgp::prelude::CanUseComponent<AreaCalculatorComponent>` is not satisfied",
-        &names(),
+        &name_map(),
     );
     assert_eq!(
         out.as_deref(),
@@ -201,14 +188,14 @@ fn header_leaves_parameterized_form_untouched() {
     assert_eq!(
         rewrite_trait_bound(
             "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent, (u32, u64)>` is not satisfied",
-            &names(),
+            &name_map(),
         ),
         None
     );
     assert_eq!(
         rewrite_trait_bound(
             "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle, (u32, u64)>` is not satisfied",
-            &names(),
+            &name_map(),
         ),
         None
     );
@@ -219,14 +206,14 @@ fn header_leaves_non_cgp_and_unknown_bounds_untouched() {
     assert_eq!(
         rewrite_trait_bound(
             "the trait bound `f64: std::cmp::Eq` is not satisfied",
-            &names()
+            &name_map()
         ),
         None
     );
     assert_eq!(
         rewrite_trait_bound(
             "the trait bound `Rectangle: CanUseComponent<UnknownComponent>` is not satisfied",
-            &names(),
+            &name_map(),
         ),
         None
     );
@@ -238,7 +225,7 @@ fn rewrite_message_dispatches_note_and_header() {
     assert_eq!(
         rewrite_message(
             "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied",
-            &names(),
+            &name_map(),
         )
         .as_deref(),
         Some("the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied")
@@ -246,28 +233,37 @@ fn rewrite_message_dispatches_note_and_header() {
     assert_eq!(
         rewrite_message(
             "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`",
-            &names(),
+            &name_map(),
         )
         .as_deref(),
         Some(
             "required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`"
         )
     );
-    assert_eq!(rewrite_message("some unrelated message", &names()), None);
+    assert_eq!(rewrite_message("some unrelated message", &name_map()), None);
+}
+
+/// A `ComponentNameMap` whose initializer panics, to prove it is never forced.
+fn panicking_init() -> HashMap<String, ComponentTraitNames> {
+    panic!("the name map must not be built when no message is rewritten");
 }
 
 #[test]
-fn is_cgp_wiring_message_matches_notes_and_headers() {
-    assert!(is_trait_bound_header(
-        "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied"
-    ));
-    assert!(is_cgp_wiring_message(
-        "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied"
-    ));
-    assert!(is_cgp_wiring_message(
-        "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`"
-    ));
-    assert!(!is_cgp_wiring_message(
-        "the trait bound `f64: std::cmp::Eq` is not satisfied"
-    ));
+fn does_not_force_the_map_without_a_matching_message() {
+    // The lazy build must not run for a message that is not a CGP wiring form — even one that
+    // is a trait-bound header for an unrelated trait, or a `required for` note for a
+    // non-wiring trait. If any of these forced the map, `panicking_init` would panic.
+    let map = ComponentNameMap::new(panicking_init);
+    assert_eq!(rewrite_message("some unrelated message", &map), None);
+    assert_eq!(
+        rewrite_message("the trait bound `f64: std::cmp::Eq` is not satisfied", &map),
+        None
+    );
+    assert_eq!(
+        rewrite_required_for(
+            "required for `Rectangle` to implement `HasRectangleFields`",
+            &map
+        ),
+        None
+    );
 }

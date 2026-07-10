@@ -73,7 +73,9 @@ First, the internal crates are pulled in by `extern crate`, not through Cargo. T
 `extern crate rustc_*;` line per compiler crate it uses — `rustc_driver` to run the compiler, and
 `rustc_interface`, `rustc_errors`, `rustc_middle`, `rustc_session`, `rustc_span`,
 `rustc_data_structures`, and `rustc_lint_defs` for the emitter and its queries. A module needing a
-further crate adds another line there; there is nothing to declare under `[dependencies]` for these.
+further crate adds another line there; the compiler crates are never declared under `[dependencies]`.
+The crate's one ordinary Cargo dependency is `cargo-cgp-error-processing`, the rustc-free crate that
+holds the message-rewrite logic and the `ComponentNameMap` the driver fills in from the compiler.
 
 Second, the feature gate is needed on **both** the library and the binary crate. The binary
 [`bin/cargo-cgp-driver.rs`](../../crates/cargo-cgp-driver/bin/cargo-cgp-driver.rs) repeats
@@ -228,25 +230,32 @@ anchor is limited: the string rewrite that consumes the map (below) keys on the 
 from rendered text, where no `DefId` survives, so two distinct structs that share a marker name would
 still collapse to one key — a residual, text-only ambiguity the identity check here cannot close.
 
-The walk is expensive — it visits every trait and its blanket impls — so it is built once and
-memoized. The emitter's `emit_diagnostic` runs once per diagnostic, not once per compilation, so the
-map is *cached* in the emitter: it is built on the first diagnostic that carries a wiring note and
-reused for every later one, which means the walk runs at most once per crate compilation and not at
-all when no CGP wiring error is emitted (a candidate-note pre-check skips even the cache lookup for an
-ordinary diagnostic). It is reachable from inside the emitter because a wiring note is built during
-trait solving, when a `TyCtxt` is in thread-local scope, which the emitter reads through
-`rustc_middle::ty::tls`.
+The walk is expensive — it visits every trait and its blanket impls — so it runs at most once,
+wrapped in a [`ComponentNameMap`](../../crates/cargo-cgp-error-processing/src/rewrite.rs): a
+`LazyLock` whose initializer performs the walk on the first lookup and is cached for every lookup
+after. The emitter's `emit_diagnostic` runs once per diagnostic, not once per compilation, so this
+laziness is what keeps the walk from repeating. And because a lookup happens only when a message
+actually parses as a wiring form (the rewrite functions consult the map last, after matching the
+message shape), the walk never runs at all for a diagnostic that mentions no CGP wiring — which is why
+the emitter needs no separate "is this a CGP diagnostic?" pre-check. The initializer reaches the
+`TyCtxt` from thread-local scope (`rustc_middle::ty::tls`), valid because a wiring message is built
+during trait solving when a `TyCtxt` is in scope; the driver supplies it as the plain `fn`
+[`build_name_map_from_tls`](../../crates/cargo-cgp-driver/src/component_map.rs). Because that
+initializer is a `fn` pointer capturing no compiler state, the `ComponentNameMap` type itself carries
+no compiler types and lives in the rustc-free crate alongside the rewrite it feeds.
 
-Caching across `emit_diagnostic` calls carries no staleness risk. The map draws only on data that is
-fixed for the rest of the compilation once the crate is resolved and lowered — the trait set, the
-`IsProviderFor` supertraits, and the blanket impls, none of which the type-checking phase that emits
-these diagnostics ever mutates — and it stores owned `String`s rather than `DefId`s or other compiler
-handles that later interning or arena churn could invalidate. It is one `TyCtxt` for one driver
-invocation over one crate, with no cross-session, incremental database (unlike rust-analyzer's) that
-could change underneath the cache between calls.
+Caching across lookups carries no staleness risk. The map draws only on data that is fixed for the
+rest of the compilation once the crate is resolved and lowered — the trait set, the `IsProviderFor`
+supertraits, and the blanket impls, none of which the type-checking phase that emits these diagnostics
+ever mutates — and it stores owned `String`s rather than `DefId`s or other compiler handles that later
+interning or arena churn could invalidate. It is one `TyCtxt` for one driver invocation over one
+crate, with no cross-session, incremental database (unlike rust-analyzer's) that could change
+underneath the cache between calls.
 
-The rewrite itself is a plain string transform, kept compiler-free in
-[`rewrite`](../../crates/cargo-cgp-driver/src/rewrite.rs) so it is unit-tested without a `TyCtxt`. Its
+The rewrite itself is a plain string transform, kept in the rustc-free
+[`cargo-cgp-error-processing`](../../crates/cargo-cgp-error-processing) crate (module
+[`rewrite`](../../crates/cargo-cgp-error-processing/src/rewrite.rs), the driver's one ordinary
+dependency) so it is unit-tested on any toolchain without a `TyCtxt`. Its
 entry point, `rewrite_message`, dispatches to the `required for … to implement …` note forms and the
 `the trait bound … is not satisfied` header form; each reads the marker out of the trait's generic
 arguments and looks the names up in the map. A message whose marker is absent from the map, or any
@@ -326,10 +335,11 @@ will likely grow toward it:
 - [`crates/cargo-cgp-driver/tests/args.rs`](../../crates/cargo-cgp-driver/tests/args.rs) — `rustc_args`
   wrapper-mode stripping, sysroot injection, an existing sysroot left alone, injected-flag appending,
   an explicit `-Znext-solver` override, and the `-vV`/`--print` info-query skips.
-- [`crates/cargo-cgp-driver/tests/rewrite.rs`](../../crates/cargo-cgp-driver/tests/rewrite.rs) — the
-  compiler-free rewrite over a hand-built name map: both note forms and both header forms, the
-  module-prefix and generic-subject/context cases, the parameterized-form and non-CGP pass-throughs,
-  and the `rewrite_message`/candidate dispatch.
+- [`crates/cargo-cgp-error-processing/tests/rewrite.rs`](../../crates/cargo-cgp-error-processing/tests/rewrite.rs)
+  — the compiler-free rewrite over a hand-built name map, run on any toolchain: both note forms and
+  both header forms, the module-prefix and generic-subject/context cases, the parameterized-form and
+  non-CGP pass-throughs, and a check that the `ComponentNameMap` lazy initializer is *not* forced when
+  no message matches.
 - [`tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.stderr)
   — pins the un-hidden output the solver switch produces.
 - [`tests/ui/usability/checks/base_area_1.stderr`](../../tests/ui/usability/checks/base_area_1.stderr)
@@ -350,12 +360,14 @@ will likely grow toward it:
 - [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs) — the
   `Callbacks` implementation; its `config` hook installs the rewriting emitter.
 - [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — rebuilds
-  the default `JsonEmitter`, reaches the `TyCtxt` via TLS, and rewrites wiring notes in place before
+  the default `JsonEmitter`, holds the `ComponentNameMap`, and rewrites messages in place before
   delegating.
 - [`crates/cargo-cgp-driver/src/component_map.rs`](../../crates/cargo-cgp-driver/src/component_map.rs)
   — builds the component-marker → trait-names map by inverting the `IsProviderFor` supertrait
-  (anchored by `DefId` identity to the `cgp_component` crate) and the consumer-blanket-impl links.
-- [`crates/cargo-cgp-driver/src/rewrite.rs`](../../crates/cargo-cgp-driver/src/rewrite.rs) — the
-  compiler-free string rewrite of the wiring-note and trait-bound-header forms.
+  (anchored by `DefId` identity to the `cgp_component` crate) and the consumer-blanket-impl links, and
+  exposes `build_name_map_from_tls`, the `TyCtxt`-reading `fn` the `ComponentNameMap` is built with.
+- [`crates/cargo-cgp-error-processing/src/rewrite.rs`](../../crates/cargo-cgp-error-processing/src/rewrite.rs)
+  — the rustc-free home of the string rewrite (`rewrite_message` and the note/header forms) and the
+  lazy `ComponentNameMap`.
 - [`crates/cargo-cgp-driver/src/lib.rs`](../../crates/cargo-cgp-driver/src/lib.rs) — the
   `rustc_private` feature gate and the `extern crate` declarations.

@@ -1,23 +1,17 @@
-//! The message rewrite — the pure half of the driver's diagnostic transform.
+//! Rewriting CGP wiring messages to name the traits behind a component marker.
 //!
-//! rustc reports a CGP wiring failure through obligation-chain notes phrased in terms of
-//! the internal wiring traits, which name the *component marker* but not the consumer or
-//! provider trait a reader thinks in:
+//! rustc reports a CGP wiring failure in terms of the internal wiring traits, which name the
+//! *component marker* but not the consumer or provider trait a reader thinks in — both in the
+//! primary header the error opens with and in the obligation-chain notes:
 //!
 //! ```text
+//! the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
 //! required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
 //! required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
 //! ```
 //!
-//! It also opens with a primary header naming the same internal trait:
-//!
-//! ```text
-//! the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
-//! ```
-//!
-//! Given a map from a component marker's name to the consumer and provider trait names
-//! behind it (built from the compiler in [`crate::component_map`]), this rewrites both the
-//! note forms and the header into ones that name the traits:
+//! Given a [`ComponentNameMap`] from a marker's name to the trait names behind it, this
+//! rewrites both forms into ones that name the traits:
 //!
 //! ```text
 //! the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied
@@ -25,15 +19,18 @@
 //! required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
 //! ```
 //!
-//! [`rewrite_message`] is the entry point the emitter drives; it dispatches to the
-//! note-form rewrite ([`rewrite_required_for`]) and the header rewrite
-//! ([`rewrite_trait_bound`]).
+//! [`rewrite_message`] is the entry point; it dispatches to the note-form rewrite
+//! ([`rewrite_required_for`]) and the header rewrite ([`rewrite_trait_bound`]).
 //!
-//! This module is deliberately free of any compiler dependency: it is a string-to-string
-//! function over the name map, so it can be unit-tested without a `TyCtxt`. The compiler
-//! query that produces the map is the other half, in [`crate::component_map`].
+//! This module lives in the rustc-free error-processing crate on purpose. The rewrite is a
+//! plain string-to-string transform over the name map, so it is unit-tested on any toolchain
+//! without a `TyCtxt`. The compiler-coupled half — walking the trait graph to *build* the map
+//! — lives in the driver (`cargo-cgp-driver`), which hands the result in through
+//! [`ComponentNameMap`]'s `fn`-pointer initializer. It is used by the driver's diagnostic
+//! emitter, not by the front-end's [`process_cgp_errors`](crate::process_cgp_errors) pipeline.
 
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 /// The consumer and provider trait names behind one component marker, recovered from the
 /// compiler. Keyed in the map by the marker's own name (e.g. `AreaCalculatorComponent`).
@@ -45,34 +42,61 @@ pub struct ComponentTraitNames {
     pub provider: String,
 }
 
+/// A lazily-built map from a component-marker name to the trait names behind it.
+///
+/// Building the map is expensive — the driver walks the whole trait graph through a
+/// `TyCtxt` — so it is wrapped in a [`LazyLock`]: the initializer runs at most once, on the
+/// first [`get`](Self::get), and *not at all* if no message is ever rewritten. That is what
+/// lets the emitter drop a separate "does this diagnostic mention CGP?" pre-filter: the
+/// rewrite functions call [`get`](Self::get) only after a message parses as a wiring form, so
+/// an ordinary diagnostic never forces the map.
+///
+/// The initializer is a plain `fn` pointer, not a closure, so this type captures no compiler
+/// state and can live in this rustc-free crate. The driver supplies a `fn` that reads the
+/// `TyCtxt` from thread-local scope and builds the map (valid because a wiring message is
+/// emitted during trait solving, when a `TyCtxt` is in scope); the tests supply a `fn` that
+/// returns a fixed map.
+pub struct ComponentNameMap {
+    /// The underlying lazily-initialized map. Public so the driver and tests can also
+    /// construct one directly, though [`new`](Self::new) is the usual way.
+    pub name_map: LazyLock<HashMap<String, ComponentTraitNames>>,
+}
+
+impl ComponentNameMap {
+    /// Wrap a map initializer. `init` is a function pointer, so no state is captured here; it
+    /// runs lazily on the first [`get`](Self::get).
+    pub fn new(init: fn() -> HashMap<String, ComponentTraitNames>) -> Self {
+        Self {
+            name_map: LazyLock::new(init),
+        }
+    }
+
+    /// Look up the trait names behind a marker, forcing the lazy build on first use. Returns
+    /// an owned clone so the caller is not tied to the map's borrow.
+    pub fn get(&self, name: &str) -> Option<ComponentTraitNames> {
+        self.name_map.get(name).cloned()
+    }
+}
+
 /// Rewrite one diagnostic message into its trait-named form, or return `None` to leave it
 /// unchanged. This is the entry point the emitter drives over every message; it tries each
 /// recognized CGP wiring form — the obligation-chain notes ([`rewrite_required_for`]), then
 /// the primary `the trait bound … is not satisfied` header ([`rewrite_trait_bound`]).
-pub fn rewrite_message(
-    message: &str,
-    names: &HashMap<String, ComponentTraitNames>,
-) -> Option<String> {
+///
+/// Each form parses the message *before* consulting `names`, so a message that is not a CGP
+/// wiring form returns `None` without ever calling [`ComponentNameMap::get`] — which is what
+/// keeps the map's lazy initializer from running for an ordinary diagnostic.
+pub fn rewrite_message(message: &str, names: &ComponentNameMap) -> Option<String> {
     rewrite_required_for(message, names).or_else(|| rewrite_trait_bound(message, names))
 }
 
-/// Whether a message carries any rewritable CGP wiring text — the union of the note and
-/// header candidate checks. Used as a cheap pre-filter so the name map is built only for a
-/// diagnostic that actually mentions CGP wiring.
-pub fn is_cgp_wiring_message(message: &str) -> bool {
-    is_wiring_note(message) || is_trait_bound_header(message)
-}
-
-/// Rewrite one `required for … to implement …` note into its trait-named form, or return
-/// `None` to leave the message untouched.
+/// Rewrite one `required for … to implement …` obligation-chain note into its trait-named
+/// form, or return `None` to leave the message untouched.
 ///
-/// Returns `None` for any message that is not one of the two recognized wiring-note forms,
-/// and for a recognized form whose component marker is absent from `names` — so a message
-/// is only ever rewritten when the replacement names are known.
-pub fn rewrite_required_for(
-    message: &str,
-    names: &HashMap<String, ComponentTraitNames>,
-) -> Option<String> {
+/// Returns `None` for any message that is not one of the two recognized note forms, and for a
+/// recognized form whose component marker is absent from `names` — so a message is only ever
+/// rewritten when the replacement names are known.
+pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<String> {
     let rest = message.strip_prefix("required for `")?;
     let (subject, rest) = rest.split_once("` to implement `")?;
     let trait_ref = rest.strip_suffix('`')?;
@@ -106,14 +130,6 @@ pub fn rewrite_required_for(
     }
 }
 
-/// Whether a message is worth handing to [`rewrite_required_for`] — a cheap pre-filter that
-/// avoids building the name map for a diagnostic that carries no CGP wiring note.
-pub fn is_wiring_note(message: &str) -> bool {
-    message.starts_with("required for `")
-        && message.contains("` to implement `")
-        && (message.contains("IsProviderFor<") || message.contains("CanUseComponent<"))
-}
-
 /// Rewrite the primary "the trait bound `…` is not satisfied" header a wiring failure opens
 /// with, or return `None` to leave it unchanged:
 ///
@@ -127,10 +143,7 @@ pub fn is_wiring_note(message: &str) -> bool {
 /// (a tuple after the marker/context) is left untouched rather than reduced to an inaccurate
 /// bound. As with [`rewrite_required_for`], a marker absent from `names`, or any other
 /// message, is left unchanged.
-pub fn rewrite_trait_bound(
-    message: &str,
-    names: &HashMap<String, ComponentTraitNames>,
-) -> Option<String> {
+pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<String> {
     let rest = message.strip_prefix("the trait bound `")?;
     let (bound, tail) = rest.split_once("` is not satisfied")?;
     // `Self: Trait<…>` — the first `: ` separates the self type from the trait, and neither a
@@ -161,14 +174,6 @@ pub fn rewrite_trait_bound(
         }
         _ => None,
     }
-}
-
-/// Whether a message is the primary `the trait bound `…: CanUseComponent/IsProviderFor<…>`
-/// is not satisfied` header — the pre-filter counterpart of [`rewrite_trait_bound`].
-pub fn is_trait_bound_header(message: &str) -> bool {
-    message.starts_with("the trait bound `")
-        && message.contains("` is not satisfied")
-        && (message.contains("CanUseComponent<") || message.contains("IsProviderFor<"))
 }
 
 /// Split `Path<args>` into its path (`Path`) and the raw argument text (`args`), requiring

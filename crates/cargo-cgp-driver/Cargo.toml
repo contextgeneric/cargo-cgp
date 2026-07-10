@@ -13,9 +13,14 @@ keywords     = { workspace = true }
 # crates from the sysroot via the `rustc_private` feature (see `src/lib.rs`), so it can
 # only be built with a nightly toolchain carrying the `rustc-dev` component — hence the
 # workspace `rust-toolchain.toml`. The compiler crates are pulled from the sysroot by
-# `extern crate`, so there is nothing to declare under `[dependencies]`.
+# `extern crate`, not `[dependencies]`.
 [[bin]]
 name = "cargo-cgp-driver"
 path = "bin/cargo-cgp-driver.rs"
 
+# The one ordinary dependency: the rustc-free error-processing crate, for the compiler-free
+# message-rewrite logic (`rewrite`) and the `ComponentNameMap` the driver fills in from the
+# compiler. Keeping that logic there lets it be unit-tested without the driver's nightly
+# `rustc_private` linkage.
 [dependencies]
+cargo-cgp-error-processing = { workspace = true }

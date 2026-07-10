@@ -13,9 +13,11 @@ The module layout is short. [`run.rs`](src/run.rs) is the entrypoint — called 
 [`args.rs`](src/args.rs) prepares the rustc argument vector (wrapper-mode stripping, sysroot
 injection, and injecting the flags in [`config.rs`](src/config.rs)); `config.rs` holds the shared
 names and the injected flags; [`callbacks.rs`](src/callbacks.rs) holds the `Callbacks` implementation,
-whose `config` hook installs the rewriting emitter; and [`emitter.rs`](src/emitter.rs),
-[`component_map.rs`](src/component_map.rs), and [`rewrite.rs`](src/rewrite.rs) make up the
-diagnostic-renaming transform.
+whose `config` hook installs the rewriting emitter; and [`emitter.rs`](src/emitter.rs) and
+[`component_map.rs`](src/component_map.rs) make up the compiler-coupled half of the
+diagnostic-renaming transform. The compiler-free half — the string rewrite and the `ComponentNameMap`
+— lives in the `cargo-cgp-error-processing` crate (the driver's one ordinary dependency), so it can be
+unit-tested without this crate's `rustc_private` linkage.
 
 The driver affects diagnostics in two ways. It injects `-Znext-solver=globally`
 ([`config::NEXT_SOLVER_FLAG`](src/config.rs)) and `--verbose` to configure how the compiler produces
@@ -24,10 +26,10 @@ emitter that *rewrites* diagnostics the compiler has already built: [`emitter.rs
 reaches the live `TyCtxt` (from thread-local scope, valid because a wiring note is built during trait
 solving), [`component_map.rs`](src/component_map.rs) inverts the `IsProviderFor` supertrait (anchored
 by `DefId` identity to the `cgp_component` crate, not matched by name) and consumer-blanket-impl links
-into a component-marker → trait-names map, and the compiler-free
-[`rewrite.rs`](src/rewrite.rs) renames the wiring notes. This is the enrichment front-end capture
-cannot do, because it needs facts only the live compiler holds; the front-end still handles the
-text-only rewrites over cargo's `--message-format=json` output. The transform is documented in full in
+into a component-marker → trait-names map, wrapped in a lazily-built `ComponentNameMap`; the
+compiler-free `rewrite` module (in `cargo-cgp-error-processing`) then renames the messages. This is
+the enrichment front-end capture cannot do, because it needs facts only the live compiler holds; the
+front-end still handles the text-only rewrites over cargo's `--message-format=json` output. The transform is documented in full in
 [The driver](../../docs/implementation/driver.md#naming-the-traits-behind-a-component-marker);
 the stateless front-end stage is [Error processing](../../docs/implementation/error-processing.md).
 The `after_analysis` callback and an `InferCtxt`-reconstructed obligation chain remain future levers

@@ -38,5 +38,4 @@ pub mod callbacks;
 pub mod component_map;
 pub mod config;
 pub mod emitter;
-pub mod rewrite;
 pub mod run;

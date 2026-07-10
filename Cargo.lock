@@ -29,6 +29,9 @@ dependencies = [
 [[package]]
 name = "cargo-cgp-driver"
 version = "0.1.0"
+dependencies = [
+ "cargo-cgp-error-processing",
+]
 
 [[package]]
 name = "cargo-cgp-error-processing"

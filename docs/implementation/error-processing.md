@@ -16,6 +16,14 @@ rustc's); aggregation does not exist yet, so the output still has one entry per 
 document describes lifting a root cause or dropping an echo, read that as the specified target of the
 aggregation sub-stage, not current behavior.
 
+**One tenant of this crate is not part of the processing stage at all.** Because the crate is
+rustc-free, it is also the home of the `rewrite` module — the compiler-free string transform that
+renames CGP wiring messages, and the lazily-built `ComponentNameMap` behind it. That logic is driven
+by the **driver**, not by `process_cgp_errors`, and lives here only so it can be unit-tested without
+the driver's `rustc_private` linkage; the driver fills the map in from the compiler. It is documented
+where it is used, in [The driver](driver.md#naming-the-traits-behind-a-component-marker); this
+document covers only the front-end processing stage.
+
 ## Where processing sits in the pipeline
 
 Processing is the third of four stages, and it is the only one that needs neither the compiler nor
@@ -315,6 +323,10 @@ design is the right precedent to follow precisely because Clippy is not.
   (`strip_cgp_prefixes` and the `CGP_PREFIXES` constant), `resugar_symbol.rs` (the exact-match
   `Symbol!` parser), `missing_field.rs` (`extract_missing_fields` and the single-field-vs-missing-derive
   classification), and `text.rs` (applying a transform across a diagnostic's text fields).
+- [`crates/cargo-cgp-error-processing/src/rewrite.rs`](../../crates/cargo-cgp-error-processing/src/rewrite.rs) —
+  *not part of the processing stage*: the compiler-free wiring-message rewrite and `ComponentNameMap`
+  the driver drives (see [The driver](driver.md#naming-the-traits-behind-a-component-marker)), hosted
+  here for rustc-free testability.
 - [`crates/cargo-cgp/src/check/diagnostics.rs`](../../crates/cargo-cgp/src/check/diagnostics.rs) — the
   front-end's capture and render around this stage: parsing cargo's JSON stream into diagnostics, and
   re-emitting the processed result (with the render-fidelity deduplication).
