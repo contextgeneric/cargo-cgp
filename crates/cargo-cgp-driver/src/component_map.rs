@@ -17,31 +17,43 @@
 //!   bounds its own context on a known provider trait names that provider's consumer.
 //!
 //! Composing the two gives, per marker, the consumer and provider trait names.
+//!
+//! **Identity, not spelling.** The `IsProviderFor` supertrait is matched by its resolved
+//! `DefId`, not by its name: [`is_cgp_is_provider_for`] verifies the bound's trait is defined
+//! in the [`CGP_COMPONENT_CRATE`] crate, so a trait merely *spelled* `IsProviderFor` in an
+//! unrelated crate cannot seed a bogus entry. That anchor is what keeps every map entry
+//! provably rooted in a real CGP provider trait. (The rewrite that consumes the map still
+//! keys on the marker's *name* — see [`crate::rewrite`] — so two distinct structs sharing a
+//! marker name would still collapse to one key; that residual, text-only ambiguity is beyond
+//! what a `DefId` anchor here can reach.)
 
 use std::collections::HashMap;
 
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
+use crate::config::{CGP_COMPONENT_CRATE, IS_PROVIDER_FOR_TRAIT};
 use crate::rewrite::ComponentTraitNames;
+
+/// Whether `def_id` is the `IsProviderFor` trait *defined by* the `cgp-component` crate — not
+/// merely a trait spelled `IsProviderFor`. The name is checked first because it is the cheaper
+/// query and rules out almost every bound before the crate is even consulted.
+fn is_cgp_is_provider_for(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.item_name(def_id).as_str() == IS_PROVIDER_FOR_TRAIT
+        && tcx.crate_name(def_id.krate).as_str() == CGP_COMPONENT_CRATE
+}
 
 /// Build the map from component-marker name to the consumer/provider trait names behind it,
 /// by inverting the `IsProviderFor` supertrait and consumer-blanket-impl links across every
-/// trait in scope. Returns an empty map if CGP's `IsProviderFor` trait is not in scope,
-/// which is the case for a compilation that does not use CGP.
+/// trait in scope. Returns an empty map when no trait carries a genuine `cgp-component`
+/// `IsProviderFor` supertrait — the case for any compilation that does not use CGP.
 pub fn build_component_name_map(tcx: TyCtxt<'_>) -> HashMap<String, ComponentTraitNames> {
     let all_traits: Vec<DefId> = tcx.all_traits_including_private().collect();
 
-    let Some(is_provider_for) = all_traits
-        .iter()
-        .copied()
-        .find(|&did| tcx.item_name(did).as_str() == "IsProviderFor")
-    else {
-        return HashMap::new();
-    };
-
     // Provider trait DefId → (component marker name, provider trait name), found by the
-    // `IsProviderFor<Marker, …>` supertrait every provider trait carries.
+    // genuine `IsProviderFor<Marker, …>` supertrait every provider trait carries. Checking
+    // each supertrait's identity directly (rather than first picking "the" `IsProviderFor` by
+    // name) means a same-named trait from another crate is simply never matched.
     let mut providers: HashMap<DefId, (String, String)> = HashMap::new();
     for &trait_did in &all_traits {
         for &(clause, _) in tcx.explicit_super_predicates_of(trait_did).skip_binder() {
@@ -49,7 +61,7 @@ pub fn build_component_name_map(tcx: TyCtxt<'_>) -> HashMap<String, ComponentTra
                 continue;
             };
             let trait_ref = predicate.skip_binder().trait_ref;
-            if trait_ref.def_id != is_provider_for {
+            if !is_cgp_is_provider_for(tcx, trait_ref.def_id) {
                 continue;
             }
             // Args are `[Self, Marker, Context, Params]`; the marker is the second.

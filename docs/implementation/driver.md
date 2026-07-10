@@ -212,6 +212,16 @@ bound's self type to be the impl's self type is what tells this apart from the p
 which bounds the same provider trait on a projected `<C as DelegateComponent<…>>::Delegate` rather
 than on `C` itself. Composing the two gives, per marker, both trait names.
 
+The `IsProviderFor` supertrait is matched by **identity, not spelling**. Each candidate bound's
+resolved `DefId` is checked to be the `IsProviderFor` *defined in the `cgp_component` crate* — the
+crate that owns the trait, since `cgp` and `cgp_core` only re-export it and a `pub use` mints no new
+`DefId` — so a trait merely named `IsProviderFor` in some unrelated crate never seeds an entry, and
+the map is provably rooted in real CGP provider traits. The defining crate name lives in
+[`config`](../../crates/cargo-cgp-driver/src/config.rs) as `CGP_COMPONENT_CRATE`. One reach of this
+anchor is limited: the string rewrite that consumes the map (below) keys on the marker's *name* pulled
+from rendered text, where no `DefId` survives, so two distinct structs that share a marker name would
+still collapse to one key — a residual, text-only ambiguity the identity check here cannot close.
+
 The walk runs once, lazily on the first wiring note and cached thereafter, and only for a diagnostic
 that actually carries a candidate note, so a non-CGP compilation never pays for it. It is reachable
 from inside the emitter because a wiring note is built during trait solving, when a `TyCtxt` is in
@@ -313,16 +323,16 @@ will likely grow toward it:
 - [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — `rustc_args`:
   wrapper-mode stripping, sysroot injection, flag injection, and the info-query skip.
 - [`crates/cargo-cgp-driver/src/config.rs`](../../crates/cargo-cgp-driver/src/config.rs) — the shared
-  names and the injected flags (`NEXT_SOLVER_FLAG`, `VERBOSE_FLAG`, `SYSROOT_ENV`), each with its
-  rationale.
+  names: the injected flags (`NEXT_SOLVER_FLAG`, `VERBOSE_FLAG`, `SYSROOT_ENV`) and the
+  identity anchor (`CGP_COMPONENT_CRATE`, `IS_PROVIDER_FOR_TRAIT`), each with its rationale.
 - [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs) — the
   `Callbacks` implementation; its `config` hook installs the rewriting emitter.
 - [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — rebuilds
   the default `JsonEmitter`, reaches the `TyCtxt` via TLS, and rewrites wiring notes in place before
   delegating.
 - [`crates/cargo-cgp-driver/src/component_map.rs`](../../crates/cargo-cgp-driver/src/component_map.rs)
-  — builds the component-marker → trait-names map by inverting the `IsProviderFor` supertrait and
-  consumer-blanket-impl links.
+  — builds the component-marker → trait-names map by inverting the `IsProviderFor` supertrait
+  (anchored by `DefId` identity to the `cgp_component` crate) and the consumer-blanket-impl links.
 - [`crates/cargo-cgp-driver/src/rewrite.rs`](../../crates/cargo-cgp-driver/src/rewrite.rs) — the
   compiler-free string rewrite of the two wiring-note forms.
 - [`crates/cargo-cgp-driver/src/lib.rs`](../../crates/cargo-cgp-driver/src/lib.rs) — the

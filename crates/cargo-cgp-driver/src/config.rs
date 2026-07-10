@@ -23,6 +23,20 @@ pub const SYSROOT_FLAG: &str = "--sysroot";
 /// sets `-Znext-solver`, so an explicit choice wins.
 pub const NEXT_SOLVER_FLAG: &str = "-Znext-solver=globally";
 
+/// The name of the crate that *defines* CGP's wiring traits (`IsProviderFor`,
+/// `CanUseComponent`, `DelegateComponent`).
+///
+/// It is `cgp_component`, not `cgp`: the umbrella `cgp` crate only re-exports these traits
+/// through its prelude, and a `pub use` mints no new `DefId`, so the `DefId` the trait solver
+/// resolves always belongs to `cgp_component`. The diagnostic-renaming transform checks a
+/// candidate `IsProviderFor`'s defining crate against this name before trusting it, so a
+/// trait merely *spelled* `IsProviderFor` in some other crate cannot drive the rewrite.
+pub const CGP_COMPONENT_CRATE: &str = "cgp_component";
+
+/// The item name of the marker supertrait every CGP provider trait carries. Paired with
+/// [`CGP_COMPONENT_CRATE`] to identify the real trait rather than a same-named impostor.
+pub const IS_PROVIDER_FOR_TRAIT: &str = "IsProviderFor";
+
 /// The stable `--verbose` flag, injected into every workspace-crate compilation to stop
 /// the diagnostic machinery from *eliding* the parts of a type it deems uninteresting.
 ///

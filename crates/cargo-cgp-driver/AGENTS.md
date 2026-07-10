@@ -22,8 +22,9 @@ The driver affects diagnostics in two ways. It injects `-Znext-solver=globally`
 diagnostics — a coarse, parse-free lever. And, through `callbacks.rs`, it installs a custom diagnostic
 emitter that *rewrites* diagnostics the compiler has already built: [`emitter.rs`](src/emitter.rs)
 reaches the live `TyCtxt` (from thread-local scope, valid because a wiring note is built during trait
-solving), [`component_map.rs`](src/component_map.rs) inverts the `IsProviderFor` supertrait and
-consumer-blanket-impl links into a component-marker → trait-names map, and the compiler-free
+solving), [`component_map.rs`](src/component_map.rs) inverts the `IsProviderFor` supertrait (anchored
+by `DefId` identity to the `cgp_component` crate, not matched by name) and consumer-blanket-impl links
+into a component-marker → trait-names map, and the compiler-free
 [`rewrite.rs`](src/rewrite.rs) renames the wiring notes. This is the enrichment front-end capture
 cannot do, because it needs facts only the live compiler holds; the front-end still handles the
 text-only rewrites over cargo's `--message-format=json` output. The transform is documented in full in
