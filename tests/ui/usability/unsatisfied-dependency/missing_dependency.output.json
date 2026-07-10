@@ -1,6 +1,6 @@
 [
   {
-    "message": "HasField is not implemented for Person with the field: cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>",
+    "message": "the method `greet` exists for struct `Person`, but its trait bounds were not satisfied",
     "code": {
       "code": "E0599",
       "explanation": "This error occurs when a method is used on a type which doesn't implement it:\n\nErroneous code example:\n\n```compile_fail,E0599\nstruct Mouth;\n\nlet x = Mouth;\nx.chocolate(); // error: no method named `chocolate` found for type `Mouth`\n               //        in the current scope\n```\n\nIn this case, you need to implement the `chocolate` method to fix the error:\n\n```\nstruct Mouth;\n\nimpl Mouth {\n    fn chocolate(&self) { // We implement the `chocolate` method here.\n        println!(\"Hmmm! I love chocolate!\");\n    }\n}\n\nlet x = Mouth;\nx.chocolate(); // ok!\n```\n"
@@ -185,24 +185,16 @@
         "rendered": null
       },
       {
-        "message": "You need to add #[derive(HasField)] to Person with the given field present in the struct",
-        "code": null,
-        "level": "note",
-        "spans": [],
-        "children": [],
-        "rendered": null
-      },
-      {
         "message": "the trait `cgp::prelude::HasField` must be implemented",
         "code": null,
         "level": "note",
         "spans": [
           {
             "file_name": "$CGP/crates/core/cgp-field/src/traits/has_field.rs",
-            "byte_start": 1296,
-            "byte_end": 1319,
-            "line_start": 50,
-            "line_end": 50,
+            "byte_start": 1081,
+            "byte_end": 1104,
+            "line_start": 46,
+            "line_end": 46,
             "column_start": 1,
             "column_end": 24,
             "is_primary": true,
@@ -291,7 +283,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0599]: HasField is not implemented for Person with the field: cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>\n  --> src/main.rs:50:23\n   |\n37 | pub struct Person {\n   | ----------------- method `greet` not found for this struct because it doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', Chars<'e', Nil>>>>>>`\n...\n50 |     Person { age: 0 }.greet();\n   |                       ^^^^^ this is an associated function, not a method\n   |\n   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter\nnote: the candidate is defined in the trait `Greeter`\n  --> src/main.rs:18:5\n   |\n18 |     fn greet(&self);\n   |     ^^^^^^^^^^^^^^^^\nnote: trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` was not satisfied\n  --> src/main.rs:21:1\n   |\n21 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n22 | pub trait HasName {\n   |           ^^^^^^^\n   = note: You need to add #[derive(HasField)] to Person with the given field present in the struct\nnote: the trait `cgp::prelude::HasField` must be implemented\n  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:50:1\n   |\n50 | pub trait HasField<Tag> {\n   | ^^^^^^^^^^^^^^^^^^^^^^^\n   = help: items from traits can only be used if the trait is implemented and in scope\nnote: `CanGreet` defines an item `greet`, perhaps you need to implement it\n  --> src/main.rs:17:1\n   |\n17 | pub trait CanGreet {\n   | ^^^^^^^^^^^^^^^^^^\n   = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)\nhelp: use associated function syntax instead\n   |\n50 -     Person { age: 0 }.greet();\n50 +     Person::greet();\n   |\n\n"
+    "rendered": "error[E0599]: the method `greet` exists for struct `Person`, but its trait bounds were not satisfied\n  --> src/main.rs:50:23\n   |\n37 | pub struct Person {\n   | ----------------- method `greet` not found for this struct because it doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', Chars<'e', Nil>>>>>>`\n...\n50 |     Person { age: 0 }.greet();\n   |                       ^^^^^ this is an associated function, not a method\n   |\n   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter\nnote: the candidate is defined in the trait `Greeter`\n  --> src/main.rs:18:5\n   |\n18 |     fn greet(&self);\n   |     ^^^^^^^^^^^^^^^^\nnote: trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` was not satisfied\n  --> src/main.rs:21:1\n   |\n21 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n22 | pub trait HasName {\n   |           ^^^^^^^\nnote: the trait `cgp::prelude::HasField` must be implemented\n  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1\n   |\n46 | pub trait HasField<Tag> {\n   | ^^^^^^^^^^^^^^^^^^^^^^^\n   = help: items from traits can only be used if the trait is implemented and in scope\nnote: `CanGreet` defines an item `greet`, perhaps you need to implement it\n  --> src/main.rs:17:1\n   |\n17 | pub trait CanGreet {\n   | ^^^^^^^^^^^^^^^^^^\n   = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)\nhelp: use associated function syntax instead\n   |\n50 -     Person { age: 0 }.greet();\n50 +     Person::greet();\n   |\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0599`.",

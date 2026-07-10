@@ -1,4 +1,4 @@
-error[E0599]: HasField is not implemented for Person with the field: Symbol!("name")
+error[E0599]: the method `greet` exists for struct `Person`, but its trait bounds were not satisfied
   --> src/main.rs:50:23
    |
 37 | pub struct Person {
@@ -20,11 +20,10 @@ note: trait bound `Person: HasField<Symbol!("name")>` was not satisfied
    | ^^^^^^^^^^^^^^^^^^
 22 | pub trait HasName {
    |           ^^^^^^^
-   = note: You need to add #[derive(HasField)] to Person with the given field present in the struct
 note: the trait `HasField` must be implemented
-  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:50:1
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
    |
-50 | pub trait HasField<Tag> {
+46 | pub trait HasField<Tag> {
    | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanGreet` defines an item `greet`, perhaps you need to implement it

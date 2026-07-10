@@ -5,7 +5,6 @@ error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol!("app"), Path
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `IsProviderFor<GreeterComponent, App>` is not implemented for `RedirectLookup<App, PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>`
-   = note: You need to add `#[cgp_provider(GreeterComponent)]` on the impl block for CGP provider traits
    = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
              IsProviderFor<GreeterComponent, __Context__>
              IsProviderFor<cgp_error::ErrorRaiserComponent, __Context__, SourceError>

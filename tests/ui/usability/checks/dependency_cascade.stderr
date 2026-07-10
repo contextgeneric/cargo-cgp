@@ -9,7 +9,6 @@ help: the trait `IsProviderFor<FooComponent, App>` is not implemented for `Provi
    |
 40 | #[cgp_impl(new ProvideFoo)]
    |                ^^^^^^^^^^
-   = note: You need to add `#[cgp_provider(FooComponent)]` on the impl block for CGP provider traits
 help: the trait `IsProviderFor<FooComponent, __Context__>` is implemented for `ProvideFoo`
   --> src/main.rs:41:1
    |
