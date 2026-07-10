@@ -50,22 +50,20 @@ pub fn process_pass(harness_crate: &Path, fixture: &Path, cgp_root: &Path, bless
     let json = match fs::read_to_string(&json_path) {
         Ok(json) => json,
         Err(_) => {
-            eprintln!(
-                "  missing {} — run the full suite with --bless first",
+            return Outcome::Mismatch(format!(
+                "  missing {} — run the full suite with --bless first\n",
                 json_path.display()
-            );
-            return Outcome::Mismatch;
+            ));
         }
     };
 
     let diagnostics: Vec<Diagnostic> = match serde_json::from_str(&json) {
         Ok(diagnostics) => diagnostics,
         Err(error) => {
-            eprintln!(
-                "  {} is not valid diagnostics JSON: {error}",
+            return Outcome::Mismatch(format!(
+                "  {} is not valid diagnostics JSON: {error}\n",
                 json_path.display()
-            );
-            return Outcome::Mismatch;
+            ));
         }
     };
 

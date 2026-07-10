@@ -185,11 +185,15 @@ the driver and expects a sibling `cgp` checkout at `../cgp`. Work with the suite
 cargo test -p cargo-cgp-ui-tests                                  # just the snapshot suite
 cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate .stderr and .output.json
 cargo test -p cargo-cgp-ui-tests --test ui -- --process-only      # only the process_cgp_errors unit pass (fast, no compile)
+cargo test -p cargo-cgp-ui-tests --test ui -- -j 4                # check at most 4 fixtures at once
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print greet    # print raw output for a fixture
 ```
 
 Passing an argument to the harness needs `--test ui`, so the flag is not also handed to the crate's
-other (libtest) tests. `--process-only` is the fast loop for iterating on the processing
+other (libtest) tests. The harness checks fixtures in parallel across a pool of workers, each with its
+own throwaway crate (so they never share a `src/main.rs` or a cargo target lock); `--jobs`/`-j` sets
+the worker count, which otherwise defaults to the machine's parallelism. `--process-only` is the fast
+loop for iterating on the processing
 implementation: it skips the two cargo-invoking passes and runs only `process_cgp_errors` over the
 committed `.output.json`, so the whole suite finishes in well under a second; pair it with `--bless`
 to re-bless `.stderr` from the new process output. The snapshots capture `cargo-cgp`'s own output end

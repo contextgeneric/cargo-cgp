@@ -92,8 +92,9 @@ whose `ui` test target sets `harness = false` and provides its own `fn main`
 `tests/compile-test.rs`. The `fn main` is thin; the logic is in the crate's library so it stays small
 and testable, split into focused modules: `options` (argument parsing), `paths` (locating the
 workspace, fixtures, cgp checkout, and built binaries), `fixtures` (discovery), `harness` (building
-the binaries and compiling a fixture), `passes` (the three per-fixture passes), `normalize`
-(rewriting volatile paths out of the output), and `snapshot` (compare, bless, diff).
+the binaries and compiling a fixture in a worker crate), `passes` (the three per-fixture passes),
+`runner` (scheduling fixtures across the worker pool), `normalize` (rewriting volatile paths out of
+the output), and `snapshot` (compare, bless, diff).
 
 The harness crate is a full workspace member, so `cargo test` runs the whole suite alongside the
 argument tests. It depends on the tool's own rustc-free libraries — `cargo-cgp` (for its capture and
@@ -105,14 +106,28 @@ plain `cargo test` needs both. The process pass alone (`--process-only`, below) 
 ### How a fixture is compiled
 
 A fixture is a loose `.rs` file, so the harness turns it into a crate the tool can check: it
-maintains a throwaway crate (under the git-ignored `target/ui-harness/`) that depends on `cgp` by
-path, copies the fixture in as its `src/main.rs`, and runs `cargo-cgp check -q --color never` there.
-Reusing one crate keeps `cgp` compiled and cached across fixtures; naming it `ui` keeps cargo's
-output stable; and an empty `[workspace]` table in its manifest stops cargo from folding it into the
-`cargo-cgp` workspace above it in `target/`. In a full run the stderr and JSON passes each run the
-tool once (the second adds `--message-format=json`), so the fixture is compiled twice; re-copying it
-before each run bumps its mtime, which forces cargo to recompile and re-emit diagnostics rather than
-serve a cached build with none.
+maintains a throwaway crate that depends on `cgp` by path, copies the fixture in as its `src/main.rs`,
+and runs `cargo-cgp check -q --color never` there. Naming the crate `ui` keeps cargo's output stable,
+and an empty `[workspace]` table in its manifest stops cargo from folding it into the `cargo-cgp`
+workspace above it in `target/`. In a full run the stderr and JSON passes each run the tool once (the
+second adds `--message-format=json`), so the fixture is compiled twice; re-copying it before each run
+bumps its mtime, which forces cargo to recompile and re-emit diagnostics rather than serve a cached
+build with none.
+
+Fixtures are checked in parallel, and the shape of that parallelism is dictated by one cargo
+constraint: a `cargo` build holds an exclusive lock on its target directory for the whole build, so
+two checks can only overlap if they build in *separate* target directories. The harness therefore
+runs a **pool of workers**, each owning its own throwaway crate under
+`target/ui-harness/worker-<n>/` (so each gets its own target directory), and hands fixtures to
+whichever worker is free (the `runner` module). Reusing a worker's crate across the fixtures it picks
+up keeps `cgp` compiled and cached *within* that worker; the price of the isolation is that `cgp` is
+built once per worker rather than once overall. The worker count defaults to the machine's
+parallelism, capped at the fixture count, and is overridable with `--jobs`/`-j` (below) — the knob to
+turn down on a many-core machine where that many parallel `cgp` builds would cost more in compilation
+and disk than the parallelism saves. Each worker's crate directory carries the worker number, but that
+absolute path is normalized to `$DIR`, so a snapshot never depends on which worker produced it. Output
+is collected and printed in fixture order regardless of which worker finishes first, so a run reads the
+same every time.
 
 The `-q` removes most of the noise: it suppresses cargo's own progress lines (`Checking`,
 `Compiling`, `Finished`). What remains and must be normalized away is machine-specific or
@@ -139,15 +154,22 @@ cargo test -p cargo-cgp-ui-tests            # only the suite
 To pass an argument to the harness, target the `ui` test explicitly with `--test ui`, so the flag is
 not also handed to the crate's other (libtest) tests. The harness accepts a path substring to filter
 fixtures, `--bless` to rewrite the snapshots, `--print` to show a fixture's raw output instead of
-comparing, and `--process-only` to run just the fast process pass:
+comparing, `--process-only` to run just the fast process pass, and `--jobs N` (`-j N`) to set the
+worker count:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests --test ui -- usability    # only fixtures whose path contains "usability"
 cargo test -p cargo-cgp-ui-tests --test ui -- --bless      # rewrite the .stderr and .output.json snapshots
+cargo test -p cargo-cgp-ui-tests --test ui -- -j 4                    # check at most 4 fixtures at once
 cargo test -p cargo-cgp-ui-tests --test ui -- --process-only          # only the process_cgp_errors unit pass
 cargo test -p cargo-cgp-ui-tests --test ui -- --process-only --bless  # re-bless .stderr from the process output
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # print raw output
 ```
+
+**`--jobs N`** (`-j N`) sets how many fixtures the harness checks at once; it defaults to the
+machine's parallelism, capped at the number of fixtures. Turn it down when that many concurrent `cgp`
+builds — one per worker, since the workers cannot share a target directory (above) — would cost more
+than the parallelism saves; set `-j 1` to run fully sequentially.
 
 **`--process-only`** skips the two cargo-invoking passes and runs only the process pass over the
 committed `.output.json`. It needs no compilation — the whole suite runs in well under a second — so

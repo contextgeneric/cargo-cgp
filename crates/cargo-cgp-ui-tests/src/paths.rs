@@ -50,13 +50,21 @@ pub fn debug_dir() -> PathBuf {
         .to_path_buf()
 }
 
-/// The throwaway crate directory (`target/ui-harness`), computed without creating it. The
-/// process-only pass needs this path to normalize output but does not build the crate.
-pub fn harness_crate_dir() -> PathBuf {
+/// The root under which the per-worker throwaway crates live (`target/ui-harness`),
+/// computed without creating it.
+pub fn harness_crate_root() -> PathBuf {
     debug_dir()
         .parent()
         .expect("target directory")
         .join("ui-harness")
+}
+
+/// The directory of throwaway crate number `index` (`target/ui-harness/worker-<index>`),
+/// computed without creating it. Each concurrent worker owns one such crate so that
+/// running fixtures in parallel never contend on a shared `src/main.rs` or cargo target
+/// lock; see [`crate::runner`].
+pub fn worker_crate_dir(index: usize) -> PathBuf {
+    harness_crate_root().join(format!("worker-{index}"))
 }
 
 /// Path to the built `cargo-cgp` front-end binary.

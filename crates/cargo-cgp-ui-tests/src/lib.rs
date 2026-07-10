@@ -8,7 +8,8 @@
 //!
 //! Two passes run the whole tool end to end (front-end and driver), so when the tool
 //! begins reformatting diagnostics these snapshots are what change; the third parses the
-//! committed JSON and runs only `process_cgp_errors`, needing no compilation. See the
+//! committed JSON and runs only `process_cgp_errors`, needing no compilation. Fixtures are
+//! checked in parallel across a pool of workers (see [`runner`]). See the
 //! [testing document](../../docs/implementation/testing.md).
 
 pub mod fixtures;
@@ -17,9 +18,10 @@ pub mod normalize;
 pub mod options;
 pub mod passes;
 pub mod paths;
+pub mod runner;
 pub mod snapshot;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::options::Options;
 use crate::snapshot::Outcome;
@@ -27,7 +29,8 @@ use crate::snapshot::Outcome;
 /// Run the UI suite. `args` are the harness arguments (everything cargo passes after
 /// `--`): `--bless` to regenerate snapshots, `--print` to print each fixture's raw output
 /// instead of comparing, `--process-only` to run just the `process_cgp_errors` unit pass,
-/// and any bare words as path substring filters.
+/// `--jobs N` (`-j N`) to set the worker count, and any bare words as path substring
+/// filters.
 ///
 /// Exits the process: `0` if every fixture matched (or was blessed/printed), `1` on a
 /// snapshot mismatch, `2` if no fixture matched the filters.
@@ -42,18 +45,31 @@ pub fn run(args: Vec<String>) {
     }
 
     let cgp_root = paths::cgp_root();
+    let jobs = options
+        .jobs
+        .unwrap_or_else(|| runner::default_jobs(fixtures.len()))
+        .clamp(1, fixtures.len());
 
-    // The two cargo-invoking passes need the built binaries and the throwaway crate; the
-    // process-only pass needs neither, so skip the slow setup when it is all we run.
-    let harness_crate = if options.process_only {
-        paths::harness_crate_dir()
+    // Each worker checks fixtures in its own throwaway crate, so the two cargo-invoking
+    // passes need those crates (and the built binaries) first. The process-only pass
+    // compiles nothing, so it just needs each worker's crate path to normalize output.
+    let workers: Vec<PathBuf> = if options.process_only {
+        (0..jobs).map(paths::worker_crate_dir).collect()
     } else {
         harness::build_binaries();
-        harness::ensure_harness_crate()
+        harness::ensure_worker_crates(jobs)
     };
 
-    let mut failed = 0usize;
-    for fixture in &fixtures {
+    if !options.print {
+        eprintln!(
+            "checking {} fixture(s) across {jobs} worker(s)",
+            fixtures.len()
+        );
+    }
+
+    let fixture_refs: Vec<&Path> = fixtures.iter().map(PathBuf::as_path).collect();
+    let reports = runner::run(jobs, &fixture_refs, |worker, fixture| {
+        let crate_dir = &workers[worker];
         let name = fixture
             .strip_prefix(&fixtures_dir)
             .unwrap_or(fixture)
@@ -61,12 +77,26 @@ pub fn run(args: Vec<String>) {
             .to_string();
 
         if options.print {
-            print_fixture(&options, &harness_crate, fixture, &name);
-            continue;
+            Report {
+                text: print_block(&options, crate_dir, fixture, &name),
+                failed: false,
+            }
+        } else {
+            let outcomes = run_passes(&options, crate_dir, fixture, &cgp_root);
+            let failed = outcomes
+                .iter()
+                .any(|(_, outcome)| matches!(outcome, Outcome::Mismatch(_)));
+            Report {
+                text: report_block(&name, &outcomes),
+                failed,
+            }
         }
+    });
 
-        let outcomes = run_passes(&options, &harness_crate, fixture, &cgp_root);
-        if report(&name, &outcomes) {
+    let mut failed = 0usize;
+    for report in &reports {
+        print!("{}", report.text);
+        if report.failed {
             failed += 1;
         }
     }
@@ -77,6 +107,14 @@ pub fn run(args: Vec<String>) {
         );
         std::process::exit(1);
     }
+}
+
+/// One fixture's contribution to the run: the text to print for it (already fully
+/// rendered) and whether it counts as a failure. Held rather than printed so a parallel
+/// run can emit fixtures in order regardless of which worker finished first.
+struct Report {
+    text: String,
+    failed: bool,
 }
 
 /// Run the passes for one fixture and return each pass's label and outcome. In
@@ -111,37 +149,40 @@ fn run_passes(
     ]
 }
 
-/// Print one line summarizing a fixture's passes. Returns `true` if any pass mismatched.
-fn report(name: &str, outcomes: &[(&str, Outcome)]) -> bool {
-    let mismatched: Vec<&str> = outcomes
-        .iter()
-        .filter(|(_, outcome)| matches!(outcome, Outcome::Mismatch))
-        .map(|(label, _)| *label)
-        .collect();
+/// Render one fixture's summary line, plus any mismatch diffs beneath it. Returns the
+/// block ending in a newline so the caller can print blocks back to back.
+fn report_block(name: &str, outcomes: &[(&str, Outcome)]) -> String {
+    let mut diffs = String::new();
+    let mut mismatched: Vec<&str> = Vec::new();
+    let mut blessed = false;
+
+    for (label, outcome) in outcomes {
+        match outcome {
+            Outcome::Mismatch(diff) => {
+                mismatched.push(label);
+                diffs.push_str(diff);
+            }
+            Outcome::Blessed => blessed = true,
+            Outcome::Ok => {}
+        }
+    }
 
     if !mismatched.is_empty() {
-        println!("MISMATCH {name}  ({})", mismatched.join(", "));
-        true
-    } else if outcomes
-        .iter()
-        .any(|(_, outcome)| matches!(outcome, Outcome::Blessed))
-    {
-        println!("blessed  {name}");
-        false
+        format!("MISMATCH {name}  ({})\n{diffs}", mismatched.join(", "))
+    } else if blessed {
+        format!("blessed  {name}\n")
     } else {
-        println!("ok       {name}");
-        false
+        format!("ok       {name}\n")
     }
 }
 
-/// Print a fixture's raw output for interactive inspection: the tool's own stderr in full
+/// Render a fixture's raw output for interactive inspection: the tool's own stderr in full
 /// mode, or the process pass's rendered output in process-only mode.
-fn print_fixture(options: &Options, harness_crate: &Path, fixture: &Path, name: &str) {
-    println!("===== {name} =====");
-    if options.process_only {
-        print!("{}", passes::print_process_output(fixture));
+fn print_block(options: &Options, harness_crate: &Path, fixture: &Path, name: &str) -> String {
+    let body = if options.process_only {
+        passes::print_process_output(fixture)
     } else {
-        print!("{}", harness::run_fixture(harness_crate, fixture));
-    }
-    println!("===== end {name} =====");
+        harness::run_fixture(harness_crate, fixture)
+    };
+    format!("===== {name} =====\n{body}===== end {name} =====\n")
 }

@@ -9,8 +9,9 @@ pub enum Outcome {
     Ok,
     /// Snapshot was (re)written from the current output.
     Blessed,
-    /// Output differed from the committed snapshot; a diff was printed.
-    Mismatch,
+    /// Output differed from the committed snapshot; the carried string is the rendered
+    /// diff, held rather than printed so a parallel run can emit it in fixture order.
+    Mismatch(String),
 }
 
 /// The `.stderr` snapshot path beside a fixture (`foo.rs` → `foo.stderr`).
@@ -25,8 +26,9 @@ pub fn output_json_path(fixture: &Path) -> PathBuf {
 }
 
 /// Compare `actual` against the snapshot at `path`, or rewrite it when `bless` is set. On
-/// a mismatch, a diff is printed and [`Outcome::Mismatch`] returned. Comparison ignores
-/// trailing whitespace so a snapshot's single trailing newline never matters.
+/// a mismatch, [`Outcome::Mismatch`] carries the rendered diff (for the caller to print).
+/// Comparison ignores trailing whitespace so a snapshot's single trailing newline never
+/// matters.
 pub fn review(path: &Path, actual: &str, bless: bool) -> Outcome {
     if bless {
         fs::write(path, ensure_trailing_newline(actual)).expect("writing snapshot");
@@ -37,8 +39,7 @@ pub fn review(path: &Path, actual: &str, bless: bool) -> Outcome {
     if expected.trim_end() == actual.trim_end() {
         Outcome::Ok
     } else {
-        print_diff(expected.trim_end(), actual.trim_end());
-        Outcome::Mismatch
+        Outcome::Mismatch(format_diff(expected.trim_end(), actual.trim_end()))
     }
 }
 
@@ -48,16 +49,20 @@ fn ensure_trailing_newline(text: &str) -> String {
     format!("{}\n", text.trim_end())
 }
 
-/// Print the expected and actual output as two labeled blocks. Snapshots are small, so
+/// Render the expected and actual output as two labeled blocks. Snapshots are small, so
 /// full blocks are clearer than a computed line diff and never mislead.
-fn print_diff(expected: &str, actual: &str) {
-    eprintln!("  --- expected (committed .stderr) ---");
+fn format_diff(expected: &str, actual: &str) -> String {
+    use std::fmt::Write;
+
+    let mut out = String::new();
+    let _ = writeln!(out, "  --- expected (committed .stderr) ---");
     for line in expected.lines() {
-        eprintln!("  | {line}");
+        let _ = writeln!(out, "  | {line}");
     }
-    eprintln!("  --- actual (cargo-cgp output) ---");
+    let _ = writeln!(out, "  --- actual (cargo-cgp output) ---");
     for line in actual.lines() {
-        eprintln!("  | {line}");
+        let _ = writeln!(out, "  | {line}");
     }
-    eprintln!("  ---");
+    let _ = writeln!(out, "  ---");
+    out
 }

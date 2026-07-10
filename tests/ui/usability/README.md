@@ -55,7 +55,7 @@ under cargo-cgp's next-gen solver the leaf `HasField`/ordinary bound is recovere
 
 ## Four upstream fixtures are intentionally not imported
 
-The single-crate harness compiles each fixture as one crate depending only on `cgp`, and that boundary
+The harness compiles each fixture as one standalone crate depending only on `cgp`, and that boundary
 makes four upstream fixtures impossible to reproduce faithfully, so they are left out rather than
 committed with a misleading snapshot:
 

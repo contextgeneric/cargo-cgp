@@ -10,28 +10,38 @@ pub struct Options {
     /// skipping the two passes that invoke `cargo-cgp`. Fast — no compilation — for
     /// iterating on the core processing implementation.
     pub process_only: bool,
+    /// How many fixtures to check concurrently, from `--jobs`/`-j`. `None` lets the
+    /// harness pick a default from the machine's parallelism (see [`crate::runner`]).
+    pub jobs: Option<usize>,
     /// Path substrings; a fixture runs only if its relative path contains one of them.
     /// Empty means run every fixture.
     pub filters: Vec<String>,
 }
 
 impl Options {
-    /// Parse harness arguments. Recognized flags are `--bless`, `--print`, and
-    /// `--process-only`; any other `--flag` (such as those a test runner may inject) is
-    /// ignored, and bare words become path filters.
+    /// Parse harness arguments. Recognized flags are `--bless`, `--print`,
+    /// `--process-only`, and `--jobs N` / `-j N` (also `--jobs=N`, `-jN`); any other
+    /// `--flag` (such as those a test runner may inject) is ignored, and bare words become
+    /// path filters.
     pub fn parse(args: impl IntoIterator<Item = String>) -> Self {
         let mut options = Options {
             bless: false,
             print: false,
             process_only: false,
+            jobs: None,
             filters: Vec::new(),
         };
 
-        for arg in args {
+        let mut args = args.into_iter();
+        while let Some(arg) = args.next() {
             match arg.as_str() {
                 "--bless" => options.bless = true,
                 "--print" => options.print = true,
                 "--process-only" => options.process_only = true,
+                // `--jobs`/`-j` take their count from the next argument, so consume it
+                // even when it fails to parse — otherwise it would be read as a filter.
+                "--jobs" | "-j" => options.jobs = args.next().and_then(|n| n.parse().ok()),
+                flag if job_count(flag).is_some() => options.jobs = job_count(flag),
                 flag if flag.starts_with('-') => {}
                 _ => options.filters.push(arg),
             }
@@ -48,4 +58,14 @@ impl Options {
                 .iter()
                 .any(|filter| relative_path.contains(filter))
     }
+}
+
+/// The job count in a glued form — `--jobs=N`, `-j=N`, or `-jN` — or `None` if `flag` is
+/// not such a form (or its count does not parse).
+fn job_count(flag: &str) -> Option<usize> {
+    let rest = flag
+        .strip_prefix("--jobs=")
+        .or_else(|| flag.strip_prefix("-j="))
+        .or_else(|| flag.strip_prefix("-j"))?;
+    rest.parse().ok()
 }

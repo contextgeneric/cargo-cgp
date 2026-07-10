@@ -27,6 +27,25 @@ fn ignores_unknown_flags() {
     let o = opts(&["--nocapture", "--exact"]);
     assert!(o.filters.is_empty());
     assert!(!o.process_only);
+    assert_eq!(o.jobs, None);
+}
+
+#[test]
+fn parses_jobs_in_every_form() {
+    assert_eq!(opts(&["--jobs", "4"]).jobs, Some(4));
+    assert_eq!(opts(&["-j", "4"]).jobs, Some(4));
+    assert_eq!(opts(&["--jobs=4"]).jobs, Some(4));
+    assert_eq!(opts(&["-j=4"]).jobs, Some(4));
+    assert_eq!(opts(&["-j4"]).jobs, Some(4));
+}
+
+#[test]
+fn jobs_value_is_consumed_not_taken_as_a_filter() {
+    // A `--jobs` value that fails to parse is still swallowed, so it never leaks into the
+    // filters and silently narrows the run.
+    let o = opts(&["--jobs", "lots", "hidden"]);
+    assert_eq!(o.jobs, None);
+    assert_eq!(o.filters, ["hidden"]);
 }
 
 #[test]

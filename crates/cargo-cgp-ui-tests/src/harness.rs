@@ -1,14 +1,15 @@
 //! Building the tool and compiling a fixture through it.
 //!
 //! A fixture is a loose `.rs` file, so it is compiled by copying it into a throwaway
-//! crate that depends on cgp and running `cargo-cgp check` there. Reusing one crate
-//! keeps cgp built and cached across fixtures.
+//! crate that depends on cgp and running `cargo-cgp check` there. Each concurrent worker
+//! owns one such crate ([`ensure_worker_crates`]); reusing a worker's crate across the
+//! fixtures it checks keeps cgp built and cached within that worker.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::paths::{cargo_cgp_bin, cgp_crate_dir};
+use crate::paths::{cargo_cgp_bin, cgp_crate_dir, worker_crate_dir};
 
 /// The cargo executable, from the `CARGO` cargo sets for us, falling back to `cargo`.
 fn cargo() -> String {
@@ -40,12 +41,21 @@ fn workspace_root_for_build() -> PathBuf {
     crate::paths::workspace_root()
 }
 
-/// Create or refresh the throwaway crate the fixtures are compiled in, and return its
-/// directory. It lives under `target/` (git-ignored). Naming it `ui` keeps cargo's
-/// output stable; the empty `[workspace]` table stops cargo from folding it into the
-/// cargo-cgp workspace above it in `target/`.
-pub fn ensure_harness_crate() -> PathBuf {
-    let dir = crate::paths::harness_crate_dir();
+/// Create or refresh the `count` per-worker throwaway crates and return their directories.
+/// Giving each worker its own crate is what lets fixtures run in parallel: two workers
+/// never share a `src/main.rs` nor a cargo target lock. The cost is that cgp is built once
+/// per worker rather than once overall, since each crate has its own target directory.
+pub fn ensure_worker_crates(count: usize) -> Vec<PathBuf> {
+    (0..count).map(ensure_worker_crate).collect()
+}
+
+/// Create or refresh one worker's throwaway crate and return its directory. Every worker
+/// crate is identical apart from its directory: it lives under `target/` (git-ignored) and
+/// is named `ui` (a stable package name keeps cargo's output stable regardless of which
+/// worker ran a fixture — the differing directory is normalized to `$DIR`), and the empty
+/// `[workspace]` table stops cargo from folding it into the cargo-cgp workspace above it.
+fn ensure_worker_crate(index: usize) -> PathBuf {
+    let dir = worker_crate_dir(index);
     fs::create_dir_all(dir.join("src")).expect("creating the throwaway crate");
 
     let manifest = format!(

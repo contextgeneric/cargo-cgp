@@ -68,9 +68,14 @@ To filter, bless, print, or run only the fast unit pass, pass an argument to the
 ```sh
 cargo test -p cargo-cgp-ui-tests --test ui -- usability  # only fixtures whose path contains "usability"
 cargo test -p cargo-cgp-ui-tests --test ui -- --bless   # regenerate the .stderr and .output.json snapshots
+cargo test -p cargo-cgp-ui-tests --test ui -- -j 4      # check at most 4 fixtures at once
 cargo test -p cargo-cgp-ui-tests --test ui -- --process-only  # only the process_cgp_errors pass (no compile)
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # raw output
 ```
+
+Fixtures are checked in parallel across a pool of workers — one throwaway crate each, so they never
+collide — with `--jobs`/`-j` setting the count (default: the machine's parallelism). Output stays in
+fixture order however the workers interleave.
 
 The snapshots capture `cargo-cgp`'s own output. Because the driver runs the workspace crate through
 the next-gen trait solver, that output already differs from a plain `cargo check` — the
