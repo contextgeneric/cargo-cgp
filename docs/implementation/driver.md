@@ -259,9 +259,13 @@ dependency) so it is unit-tested on any toolchain without a `TyCtxt`. Its
 entry point, `rewrite_message`, dispatches to the `required for … to implement …` note forms and the
 `the trait bound … is not satisfied` header form; each reads the marker out of the trait's generic
 arguments and looks the names up in the map. A message whose marker is absent from the map, or any
-other message, passes through untouched — and the header form additionally leaves a *parameterized*
-component alone (a `Params` tuple after the marker or context), rather than reducing it to an
-inaccurate bound, since dropping the parameters would misstate which bound failed. One faithful oddity
+other message, passes through untouched. A **generic component** — one whose marker carries extra
+type parameters, so `CanUseComponent`/`IsProviderFor` gain arguments after the marker (and context) —
+is handled in both forms, but differently by design: the descriptive notes name the bare trait and
+elide the parameters, while the header *reattaches* them so the bound stays precise. So
+`CanUseComponent<AreaCalculatorComponent, f64>` yields the header `` `Rectangle: CanCalculateArea<f64>` ``
+and the note "the consumer trait `CanCalculateArea`"; a two-parameter component arrives tuple-grouped
+(`(u32, u64)`) and the header unwraps it to `` `CanCalculateArea<u32, u64>` ``. One faithful oddity
 follows from naming the obligation's subject verbatim: the subject is usually a provider
 (`RectangleArea`, `ScaledArea<RectangleArea>`) but is the context itself when the context stands in as
 its own provider, so a self-provider case reads `` the provider `Rectangle` … for the context
@@ -337,14 +341,18 @@ will likely grow toward it:
   an explicit `-Znext-solver` override, and the `-vV`/`--print` info-query skips.
 - [`crates/cargo-cgp-error-processing/tests/rewrite.rs`](../../crates/cargo-cgp-error-processing/tests/rewrite.rs)
   — the compiler-free rewrite over a hand-built name map, run on any toolchain: both note forms and
-  both header forms, the module-prefix and generic-subject/context cases, the parameterized-form and
-  non-CGP pass-throughs, and a check that the `ComponentNameMap` lazy initializer is *not* forced when
-  no message matches.
+  both header forms; generic components (a single parameter reattached to the header, a
+  multi-parameter tuple unwrapped, and the notes eliding parameters); the module-prefix and
+  generic-subject/context cases; the non-CGP and unknown-marker pass-throughs; and a check that the
+  `ComponentNameMap` lazy initializer is *not* forced when no message matches.
 - [`tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.stderr)
   — pins the un-hidden output the solver switch produces.
 - [`tests/ui/usability/checks/base_area_1.stderr`](../../tests/ui/usability/checks/base_area_1.stderr)
   — pins the un-elided field name (`--verbose`) and the trait-named header and wiring notes; watch for
   a `_` returning inside its `Symbol`, or a marker-based header/note returning.
+- [`tests/ui/usability/checks/generic_area.stderr`](../../tests/ui/usability/checks/generic_area.stderr)
+  — the end-to-end regression guard that the transform still names the traits when the component is
+  generic: the header reattaches the `<f64>` parameter, the notes name the traits and elide it.
 - [`tests/ui/usability/checks/`](../../tests/ui/usability/checks) — the blessed `.stderr`/`.output.json`
   snapshots across the set pin the trait-renaming transform end to end.
 

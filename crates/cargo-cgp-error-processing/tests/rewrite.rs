@@ -103,6 +103,32 @@ fn ignores_a_params_tuple_after_the_context() {
 }
 
 #[test]
+fn consumer_note_elides_generic_parameters() {
+    // A generic component's consumer note still names the trait; the extra parameters are
+    // elided in the descriptive prose (the header carries the fully-parameterized bound).
+    let single = rewrite_required_for(
+        "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent, f64>`",
+        &name_map(),
+    );
+    assert_eq!(
+        single.as_deref(),
+        Some(
+            "required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`"
+        )
+    );
+    let tuple = rewrite_required_for(
+        "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent, (u32, u64)>`",
+        &name_map(),
+    );
+    assert_eq!(
+        tuple.as_deref(),
+        Some(
+            "required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`"
+        )
+    );
+}
+
+#[test]
 fn leaves_unknown_component_untouched() {
     // A marker absent from the map means the names are unknown, so nothing is rewritten.
     let out = rewrite_required_for(
@@ -182,22 +208,50 @@ fn header_strips_module_prefix() {
 }
 
 #[test]
-fn header_leaves_parameterized_form_untouched() {
-    // A component with extra generic parameters would reduce to an inaccurate bound, so the
-    // header is left raw rather than dropping the parameters.
+fn header_reattaches_a_single_generic_parameter() {
+    // A generic component: `CanUseComponent<Marker, f64>` recovers `ConsumerTrait<f64>`, and
+    // `IsProviderFor<Marker, Context, f64>` recovers `ProviderTrait<Context, f64>`.
+    assert_eq!(
+        rewrite_trait_bound(
+            "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent, f64>` is not satisfied",
+            &name_map(),
+        )
+        .as_deref(),
+        Some("the consumer trait bound `Rectangle: CanCalculateArea<f64>` is not satisfied")
+    );
+    assert_eq!(
+        rewrite_trait_bound(
+            "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle, f64>` is not satisfied",
+            &name_map(),
+        )
+        .as_deref(),
+        Some(
+            "the provider trait bound `RectangleArea: AreaCalculator<Rectangle, f64>` is not satisfied"
+        )
+    );
+}
+
+#[test]
+fn header_unwraps_a_multi_parameter_tuple() {
+    // Two or more parameters arrive grouped in a tuple, which is unwrapped so the reattached
+    // list matches how the trait was written (`ConsumerTrait<u32, u64>`, not `<(u32, u64)>`).
     assert_eq!(
         rewrite_trait_bound(
             "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent, (u32, u64)>` is not satisfied",
             &name_map(),
-        ),
-        None
+        )
+        .as_deref(),
+        Some("the consumer trait bound `Rectangle: CanCalculateArea<u32, u64>` is not satisfied")
     );
     assert_eq!(
         rewrite_trait_bound(
             "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle, (u32, u64)>` is not satisfied",
             &name_map(),
-        ),
-        None
+        )
+        .as_deref(),
+        Some(
+            "the provider trait bound `RectangleArea: AreaCalculator<Rectangle, u32, u64>` is not satisfied"
+        )
     );
 }
 

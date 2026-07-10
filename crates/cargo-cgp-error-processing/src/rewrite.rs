@@ -133,16 +133,18 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
 /// Rewrite the primary "the trait bound `…` is not satisfied" header a wiring failure opens
 /// with, or return `None` to leave it unchanged:
 ///
-/// - a `Self: CanUseComponent<Marker>` bound becomes a "consumer trait bound" naming the
-///   consumer trait the context fails to implement — `Self: ConsumerTrait`.
-/// - a `Self: IsProviderFor<Marker, Context>` bound becomes a "provider trait bound" that
-///   recovers the actual provider-trait bound the marker form stands in for —
-///   `Self: ProviderTrait<Context>`.
+/// - a `Self: CanUseComponent<Marker, Params?>` bound becomes a "consumer trait bound" naming
+///   the consumer trait the context fails to implement — `Self: ConsumerTrait<Params?>`.
+/// - a `Self: IsProviderFor<Marker, Context, Params?>` bound becomes a "provider trait bound"
+///   that recovers the actual provider-trait bound the marker form stands in for —
+///   `Self: ProviderTrait<Context, Params?>`.
 ///
-/// Only the parameterless shape is rewritten — a component carrying extra generic parameters
-/// (a tuple after the marker/context) is left untouched rather than reduced to an inaccurate
-/// bound. As with [`rewrite_required_for`], a marker absent from `names`, or any other
-/// message, is left unchanged.
+/// A generic component carries its extra parameters after the marker (and, for the provider,
+/// after the context), grouped in a tuple when there is more than one; those parameters are
+/// reattached to the named trait so the rewritten bound stays accurate — `CanUseComponent<C,
+/// f64>` becomes `ConsumerTrait<f64>`, and `CanUseComponent<C, (u32, u64)>` becomes
+/// `ConsumerTrait<u32, u64>`. As with [`rewrite_required_for`], a marker absent from `names`,
+/// or any message that is not one of these two forms, is left unchanged.
 pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<String> {
     let rest = message.strip_prefix("the trait bound `")?;
     let (bound, tail) = rest.split_once("` is not satisfied")?;
@@ -155,24 +157,64 @@ pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<St
     let args = split_top_level(args_str);
 
     match last_segment(path) {
-        "CanUseComponent" if args.len() == 1 => {
+        "CanUseComponent" if !args.is_empty() => {
+            // `CanUseComponent<Marker, Params?>` — the consumer trait's generics are exactly
+            // the component's extra parameters.
             let component = last_segment(args[0].trim());
             let entry = names.get(component)?;
+            let generics = render_trait_generics(&[], &args[1..]);
             Some(format!(
-                "the consumer trait bound `{subject}: {}` is not satisfied{tail}",
+                "the consumer trait bound `{subject}: {}{generics}` is not satisfied{tail}",
                 entry.consumer
             ))
         }
-        "IsProviderFor" if args.len() == 2 => {
+        "IsProviderFor" if args.len() >= 2 => {
+            // `IsProviderFor<Marker, Context, Params?>` — the provider trait's generics are the
+            // context followed by the component's extra parameters.
             let component = last_segment(args[0].trim());
-            let context = args[1].trim();
             let entry = names.get(component)?;
+            let context = args[1].trim();
+            let generics = render_trait_generics(&[context], &args[2..]);
             Some(format!(
-                "the provider trait bound `{subject}: {}<{context}>` is not satisfied{tail}",
+                "the provider trait bound `{subject}: {}{generics}` is not satisfied{tail}",
                 entry.provider
             ))
         }
         _ => None,
+    }
+}
+
+/// Render a trait's generic-argument list from a `leading` run (the provider's context, or
+/// nothing for a consumer) followed by a component's extra parameters, and return it as
+/// `<a, b, c>` — or the empty string when there are no arguments at all.
+///
+/// The extra parameters arrive as CGP groups them in `IsProviderFor`/`CanUseComponent`: a
+/// single parameter appears bare, and two or more are wrapped in a tuple, which is unwrapped
+/// here so the reattached list matches how the trait was written.
+fn render_trait_generics(leading: &[&str], params: &[&str]) -> String {
+    let mut generics: Vec<&str> = leading.to_vec();
+    match params {
+        [] => {}
+        [grouped] => match grouped
+            .trim()
+            .strip_prefix('(')
+            .and_then(|inner| inner.strip_suffix(')'))
+        {
+            Some(inner) => generics.extend(
+                split_top_level(inner)
+                    .into_iter()
+                    .map(str::trim)
+                    .filter(|param| !param.is_empty()),
+            ),
+            None => generics.push(grouped.trim()),
+        },
+        many => generics.extend(many.iter().map(|param| param.trim())),
+    }
+
+    if generics.is_empty() {
+        String::new()
+    } else {
+        format!("<{}>", generics.join(", "))
     }
 }
 
