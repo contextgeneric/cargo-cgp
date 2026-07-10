@@ -192,7 +192,7 @@ cargo test -q -p cargo-cgp-ui-tests --test ui -- --print greet    # print raw ou
 Passing an argument to the harness needs `--test ui`, so the flag is not also handed to the crate's
 other (libtest) tests. The harness checks fixtures in parallel across a pool of workers, each with its
 own throwaway crate (so they never share a `src/main.rs` or a cargo target lock); `--jobs`/`-j` sets
-the worker count, which otherwise defaults to the machine's parallelism. `--process-only` is the fast
+the worker count, which otherwise defaults to the machine's parallelism capped at 8. `--process-only` is the fast
 loop for iterating on the processing
 implementation: it skips the two cargo-invoking passes and runs only `process_cgp_errors` over the
 committed `.output.json`, so the whole suite finishes in well under a second; pair it with `--bless`

@@ -122,9 +122,9 @@ runs a **pool of workers**, each owning its own throwaway crate under
 whichever worker is free (the `runner` module). Reusing a worker's crate across the fixtures it picks
 up keeps `cgp` compiled and cached *within* that worker; the price of the isolation is that `cgp` is
 built once per worker rather than once overall. The worker count defaults to the machine's
-parallelism, capped at the fixture count, and is overridable with `--jobs`/`-j` (below) — the knob to
-turn down on a many-core machine where that many parallel `cgp` builds would cost more in compilation
-and disk than the parallelism saves. Each worker's crate directory carries the worker number, but that
+parallelism, capped at both 8 and the fixture count, and is overridable with `--jobs`/`-j` (below) —
+the cap keeps a many-core machine from starting so many parallel `cgp` builds that the compilation and
+disk cost outweighs the parallelism, and `--jobs` raises it again on a machine that can afford more. Each worker's crate directory carries the worker number, but that
 absolute path is normalized to `$DIR`, so a snapshot never depends on which worker produced it. Each
 fixture's result is printed the moment it finishes rather than held to the end, so a run streams live;
 the order is therefore completion order, not fixture order, which is why every line names its fixture.
@@ -167,9 +167,9 @@ cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency 
 ```
 
 **`--jobs N`** (`-j N`) sets how many fixtures the harness checks at once; it defaults to the
-machine's parallelism, capped at the number of fixtures. Turn it down when that many concurrent `cgp`
-builds — one per worker, since the workers cannot share a target directory (above) — would cost more
-than the parallelism saves; set `-j 1` to run fully sequentially.
+machine's parallelism, capped at 8 and at the number of fixtures. Raise it past the default on a
+machine that can afford more concurrent `cgp` builds — one per worker, since the workers cannot share
+a target directory (above) — or set `-j 1` to run fully sequentially.
 
 **`--process-only`** skips the two cargo-invoking passes and runs only the process pass over the
 committed `.output.json`. It needs no compilation — the whole suite runs in well under a second — so

@@ -74,7 +74,7 @@ cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency 
 ```
 
 Fixtures are checked in parallel across a pool of workers — one throwaway crate each, so they never
-collide — with `--jobs`/`-j` setting the count (default: the machine's parallelism). Each fixture's
+collide — with `--jobs`/`-j` setting the count (default: the machine's parallelism, capped at 8). Each fixture's
 result prints the moment it finishes, so the run streams live in completion order; every line names
 its fixture.
 
