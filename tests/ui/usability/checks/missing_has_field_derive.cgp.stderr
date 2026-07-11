@@ -4,7 +4,7 @@ error[E0277]: missing field `name` on context `Person`
 58 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: the missing field is required through this dependency chain:
+   = note: field `name` is required through this dependency chain:
            `Person` uses consumer trait `CanGreet`
            └── provider `GreetHello` (provider trait `Greeter`)
                └── requires `HasName`

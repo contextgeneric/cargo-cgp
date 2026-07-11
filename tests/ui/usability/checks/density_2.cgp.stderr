@@ -1,15 +1,23 @@
-error[E0277]: missing field `scale_factor` on context `Rectangle`
+error[E0277]: missing fields `scale_factor` and `height` on context `Rectangle`
   --> src/main.rs:95:9
    |
 95 |         DensityCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: the missing field is required through this dependency chain:
+   = note: field `scale_factor` is required through this dependency chain:
            `Rectangle` uses consumer trait `CanCalculateDensity`
            └── provider `DensityFromMassField` (provider trait `DensityCalculator`)
                └── requires `CanCalculateArea`
                    └── provider `ScaledArea<RectangleArea>` (provider trait `AreaCalculator`)
                        └── requires `HasScaleFactor`
                            └── missing field `scale_factor`
+   = note: field `height` is required through this dependency chain:
+           `Rectangle` uses consumer trait `CanCalculateDensity`
+           └── provider `DensityFromMassField` (provider trait `DensityCalculator`)
+               └── requires `CanCalculateArea`
+                   └── provider `ScaledArea<RectangleArea>` (provider trait `AreaCalculator`)
+                       └── provider `RectangleArea` (provider trait `AreaCalculator`)
+                           └── requires `HasRectangleFields`
+                               └── missing field `height`
 
 For more information about this error, try `rustc --explain E0277`.

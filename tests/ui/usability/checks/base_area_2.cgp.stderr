@@ -1,10 +1,15 @@
-error[E0277]: missing field `width` on context `Rectangle`
+error[E0277]: missing fields `height` and `width` on context `Rectangle`
   --> src/main.rs:55:9
    |
 55 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: the missing field is required through this dependency chain:
+   = note: field `height` is required through this dependency chain:
+           `Rectangle` uses consumer trait `CanCalculateArea`
+           └── provider `RectangleArea` (provider trait `AreaCalculator`)
+               └── requires `HasRectangleFields`
+                   └── missing field `height`
+   = note: field `width` is required through this dependency chain:
            `Rectangle` uses consumer trait `CanCalculateArea`
            └── provider `RectangleArea` (provider trait `AreaCalculator`)
                └── requires `HasRectangleFields`

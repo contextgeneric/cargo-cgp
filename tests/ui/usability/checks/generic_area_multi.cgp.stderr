@@ -4,7 +4,7 @@ error[E0277]: missing field `width` on context `Rectangle`
 50 |         AreaCalculatorComponent: (u32, u64, bool),
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: the missing field is required through this dependency chain:
+   = note: field `width` is required through this dependency chain:
            `Rectangle` uses consumer trait `CanCalculateArea`
            └── provider `RectangleArea` (provider trait `AreaCalculator`)
                └── requires `HasWidth`

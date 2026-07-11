@@ -167,32 +167,47 @@ impl CgpEmitter {
     }
 }
 
-/// Build the replacement diagnostic for a resolved root cause: a root-cause-first header
-/// carrying the compiler's `E0277` code, its caret on the wiring entry, and one note that shows
-/// the whole transitive dependency chain — rendered as a tree — that leads to the missing field.
+/// The header phrase for one or more missing fields: `missing field \`x\``, or
+/// `missing fields \`x\` and \`y\``, or `missing fields \`x\`, \`y\`, and \`z\``.
+fn missing_fields_phrase(fields: &[String]) -> String {
+    let quoted: Vec<String> = fields.iter().map(|f| format!("`{f}`")).collect();
+    let list = match quoted.as_slice() {
+        [] => String::new(),
+        [one] => one.clone(),
+        [a, b] => format!("{a} and {b}"),
+        [rest @ .., last] => format!("{}, and {last}", rest.join(", ")),
+    };
+    let noun = if fields.len() == 1 { "field" } else { "fields" };
+    format!("missing {noun} {list}")
+}
+
+/// Build the replacement diagnostic for the resolved root cause(s): a root-cause-first header
+/// carrying the compiler's `E0277` code and its caret on the wiring entry, plus one note per
+/// missing field — each its own sub-error showing the transitive dependency chain, rendered as a
+/// tree, that leads to that field.
 fn render_root_cause(cause: RootCause, span: Span) -> DiagInner {
     match cause {
-        RootCause::MissingField {
-            context,
-            field,
-            tree,
-        } => {
+        RootCause::MissingFields { context, causes } => {
+            let fields: Vec<String> = causes.iter().map(|cause| cause.field.clone()).collect();
             let mut diag = DiagInner::new(
                 Level::Error,
-                format!("missing field `{field}` on context `{context}`"),
+                format!("{} on context `{context}`", missing_fields_phrase(&fields)),
             );
             diag.code = Some(E0277);
             diag.span = MultiSpan::from_span(span);
 
-            let note = format!(
-                "the missing field is required through this dependency chain:\n{}",
-                render_dependency_tree(&tree),
-            );
-            diag.children.push(Subdiag {
-                level: Level::Note,
-                messages: vec![(DiagMessage::Str(note.into()), Style::NoStyle)],
-                span: MultiSpan::new(),
-            });
+            for cause in &causes {
+                let note = format!(
+                    "field `{}` is required through this dependency chain:\n{}",
+                    cause.field,
+                    render_dependency_tree(&cause.tree),
+                );
+                diag.children.push(Subdiag {
+                    level: Level::Note,
+                    messages: vec![(DiagMessage::Str(note.into()), Style::NoStyle)],
+                    span: MultiSpan::new(),
+                });
+            }
             diag
         }
     }

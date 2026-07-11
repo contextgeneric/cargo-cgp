@@ -4,7 +4,7 @@ error[E0277]: missing field `name` on context `App`
 84 |         BazComponent,
    |         ^^^^^^^^^^^^
    |
-   = note: the missing field is required through this dependency chain:
+   = note: field `name` is required through this dependency chain:
            `App` uses consumer trait `CanBaz`
            └── provider `ProvideBaz` (provider trait `Baz`)
                └── requires `CanBar`
@@ -20,7 +20,7 @@ error[E0277]: missing field `name` on context `App`
 85 |         BarComponent,
    |         ^^^^^^^^^^^^
    |
-   = note: the missing field is required through this dependency chain:
+   = note: field `name` is required through this dependency chain:
            `App` uses consumer trait `CanBar`
            └── provider `ProvideBar` (provider trait `Bar`)
                └── requires `CanFoo`
@@ -34,7 +34,7 @@ error[E0277]: missing field `name` on context `App`
 86 |         FooComponent,
    |         ^^^^^^^^^^^^
    |
-   = note: the missing field is required through this dependency chain:
+   = note: field `name` is required through this dependency chain:
            `App` uses consumer trait `CanFoo`
            └── provider `ProvideFoo` (provider trait `Foo`)
                └── requires `HasName`

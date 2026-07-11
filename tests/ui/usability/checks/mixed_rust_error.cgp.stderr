@@ -1,0 +1,22 @@
+error[E0277]: missing field `name` on context `Person`
+  --> src/main.rs:46:9
+   |
+46 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: field `name` is required through this dependency chain:
+           `Person` uses consumer trait `CanGreet`
+           └── provider `GreetHello` (provider trait `Greeter`)
+               └── requires `HasName`
+                   └── missing field `name`
+
+error[E0308]: mismatched types
+  --> src/main.rs:53:5
+   |
+52 | fn wrong_type() -> u32 {
+   |                    --- expected `u32` because of return type
+53 |     "not a number"
+   |     ^^^^^^^^^^^^^^ expected `u32`, found `&str`
+
+Some errors have detailed explanations: E0277, E0308.
+For more information about an error, try `rustc --explain E0277`.

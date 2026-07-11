@@ -4,7 +4,7 @@ error[E0277]: missing field `base_area` on context `Rectangle`
 75 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: the missing field is required through this dependency chain:
+   = note: field `base_area` is required through this dependency chain:
            `Rectangle` uses consumer trait `CanCalculateArea`
            └── provider `ScaledArea<BaseArea>` (provider trait `AreaCalculator`)
                └── provider `BaseArea` (provider trait `AreaCalculator`)

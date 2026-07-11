@@ -9,10 +9,10 @@
     "spans": [
       {
         "file_name": "src/main.rs",
-        "byte_start": 1910,
-        "byte_end": 1926,
-        "line_start": 58,
-        "line_end": 58,
+        "byte_start": 1167,
+        "byte_end": 1183,
+        "line_start": 46,
+        "line_end": 46,
         "column_start": 9,
         "column_end": 25,
         "is_primary": true,
@@ -39,14 +39,76 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: missing field `name` on context `Person`\n  --> src/main.rs:58:9\n   |\n58 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           `Person` uses consumer trait `CanGreet`\n           └── provider `GreetHello` (provider trait `Greeter`)\n               └── requires `HasName`\n                   └── missing field `name`\n\n"
+    "rendered": "error[E0277]: missing field `name` on context `Person`\n  --> src/main.rs:46:9\n   |\n46 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           `Person` uses consumer trait `CanGreet`\n           └── provider `GreetHello` (provider trait `Greeter`)\n               └── requires `HasName`\n                   └── missing field `name`\n\n"
   },
   {
-    "message": "For more information about this error, try `rustc --explain E0277`.",
+    "message": "mismatched types",
+    "code": {
+      "code": "E0308",
+      "explanation": "Expected type did not match the received type.\n\nErroneous code examples:\n\n```compile_fail,E0308\nfn plus_one(x: i32) -> i32 {\n    x + 1\n}\n\nplus_one(\"Not a number\");\n//       ^^^^^^^^^^^^^^ expected `i32`, found `&str`\n\nif \"Not a bool\" {\n// ^^^^^^^^^^^^ expected `bool`, found `&str`\n}\n\nlet x: f32 = \"Not a float\";\n//     ---   ^^^^^^^^^^^^^ expected `f32`, found `&str`\n//     |\n//     expected due to this\n```\n\nThis error occurs when an expression was used in a place where the compiler\nexpected an expression of a different type. It can occur in several cases, the\nmost common being when calling a function and passing an argument which has a\ndifferent type than the matching type in the function declaration.\n"
+    },
+    "level": "error",
+    "spans": [
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1383,
+        "byte_end": 1397,
+        "line_start": 53,
+        "line_end": 53,
+        "column_start": 5,
+        "column_end": 19,
+        "is_primary": true,
+        "text": [
+          {
+            "text": "    \"not a number\"",
+            "highlight_start": 5,
+            "highlight_end": 19
+          }
+        ],
+        "label": "expected `u32`, found `&str`",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      },
+      {
+        "file_name": "src/main.rs",
+        "byte_start": 1373,
+        "byte_end": 1376,
+        "line_start": 52,
+        "line_end": 52,
+        "column_start": 20,
+        "column_end": 23,
+        "is_primary": false,
+        "text": [
+          {
+            "text": "fn wrong_type() -> u32 {",
+            "highlight_start": 20,
+            "highlight_end": 23
+          }
+        ],
+        "label": "expected `u32` because of return type",
+        "suggested_replacement": null,
+        "suggestion_applicability": null,
+        "expansion": null
+      }
+    ],
+    "children": [],
+    "rendered": "error[E0308]: mismatched types\n  --> src/main.rs:53:5\n   |\n52 | fn wrong_type() -> u32 {\n   |                    --- expected `u32` because of return type\n53 |     \"not a number\"\n   |     ^^^^^^^^^^^^^^ expected `u32`, found `&str`\n\n"
+  },
+  {
+    "message": "Some errors have detailed explanations: E0277, E0308.",
     "code": null,
     "level": "failure-note",
     "spans": [],
     "children": [],
-    "rendered": "For more information about this error, try `rustc --explain E0277`.\n"
+    "rendered": "Some errors have detailed explanations: E0277, E0308.\n"
+  },
+  {
+    "message": "For more information about an error, try `rustc --explain E0277`.",
+    "code": null,
+    "level": "failure-note",
+    "spans": [],
+    "children": [],
+    "rendered": "For more information about an error, try `rustc --explain E0277`.\n"
   }
 ]

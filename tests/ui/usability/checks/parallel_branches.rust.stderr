@@ -1,0 +1,39 @@
+error[E0277]: the trait bound `Person: CanUseComponent<GreeterComponent>` is not satisfied
+  --> src/main.rs:50:9
+   |
+50 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<10, cgp::prelude::Chars<'f', cgp::prelude::Chars<'i', cgp::prelude::Chars<'r', cgp::prelude::Chars<'s', cgp::prelude::Chars<'t', cgp::prelude::Chars<'_', cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>>>>>>>` is not implemented for `Person`
+  --> src/main.rs:38:1
+   |
+38 | pub struct Person {
+   | ^^^^^^^^^^^^^^^^^
+note: required for `Person` to implement `HasFirstName`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+18 | pub trait HasFirstName {
+   |           ^^^^^^^^^^^^
+note: required for `GreetFullName` to implement `IsProviderFor<GreeterComponent, Person>`
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_impl(new GreetFullName)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+30 |     Self: HasFirstName + HasLastName,
+   |           ------------ unsatisfied trait bound introduced here
+   = note: required for `Person` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckPerson`
+  --> src/main.rs:48:1
+   |
+48 | / check_components! {
+49 | |     Person {
+50 | |         GreeterComponent,
+51 | |     }
+52 | | }
+   | |_^ required by this bound in `__CheckPerson`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

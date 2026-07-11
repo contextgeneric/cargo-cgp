@@ -2,9 +2,8 @@
 //!
 //! This is the compiler-internals half of the diagnostic replacement. When the emitter sees a
 //! trait-bound error whose caret sits on a `check_components!` entry, it asks this module to
-//! recover the *real* root cause — and the whole transitive dependency chain that leads to it —
-//! by re-running the check obligation through the trait solver rather than by reading the
-//! rendered error text.
+//! recover the *real* root cause(s) — and the transitive dependency chain that leads to each —
+//! by walking the wiring's trait obligations rather than by reading the rendered error text.
 //!
 //! The flow, all DefId-anchored to the CGP crates so a same-named type from elsewhere can
 //! never drive it:
@@ -14,50 +13,63 @@
 //!    the impl whose `Self` type span equals the diagnostic's primary span — that is the
 //!    entry the error is about — and instantiate the supertrait with the impl's trait ref to
 //!    get the concrete obligation `Ctx: CanUseComponent<Marker, Params>`.
-//! 2. We solve that obligation in a fresh `ObligationCtxt`. This runs *during* trait solving —
-//!    the emitter reaches the live `TyCtxt` through `ty::tls` while a check error is being
-//!    emitted — yet a fresh inference context re-entered here solves cleanly; that re-entrancy
-//!    is the load-bearing assumption behind the whole design.
-//! 3. We walk the failing obligation's cause chain to recover every dependency step from the
-//!    check down toward the leaf, re-solving through intermediate CGP wiring obligations
-//!    (`IsProviderFor`/`CanUseComponent`) when the solver reports the failure one layer short
-//!    of the `HasField` leaf. The result is an ordered chain of trait predicates; when it
-//!    bottoms out on a genuine `cgp_field::HasField`, that leaf is the root cause. Its `Symbol!`
-//!    argument is decoded structurally (walking the `Chars` spine) into the field name, and the
-//!    whole chain is rendered as a `cargo tree`-style [`DependencyTree`] with each CGP wiring
-//!    trait replaced by its human form. Anything else yields `None`, and the caller falls back
-//!    to the untouched text-rewrite pipeline.
+//! 2. From that obligation we walk *down* the dependency graph: for each failing obligation we
+//!    find the impl that would satisfy it and take its `where`-clause obligations as the
+//!    children, keeping only the ones that do not already hold. Every branch that bottoms out
+//!    on an unmet `cgp_field::HasField` is a root cause. This descent unifies against candidate
+//!    impls with `fresh_args_for_item`, rather than using `SelectionContext`, which asserts
+//!    against the next-generation solver the driver runs under.
+//! 3. This all runs *during* trait solving — the emitter reaches the live `TyCtxt` through
+//!    `ty::tls` while a check error is being emitted — yet fresh inference contexts re-entered
+//!    here solve cleanly; that re-entrancy is the load-bearing assumption behind the design.
+//! 4. Each root-cause path is rendered as a `cargo tree`-style [`DependencyTree`] with every CGP
+//!    wiring trait replaced by its human form (`CanUseComponent`→consumer trait, `IsProviderFor`
+//!    →provider, `HasField`→missing field), and the field name is decoded structurally from its
+//!    `Symbol!`. When no branch reaches a missing field the resolver yields `None`, and the
+//!    caller falls back to the untouched text-rewrite pipeline.
 
 use cargo_cgp_error_processing::ComponentTraitNames;
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::tree::DependencyTree;
 use rustc_hir::ItemKind;
 use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::traits::ObligationCauseCode;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypingMode, Upcast};
-use rustc_span::Span;
+use rustc_infer::traits::Obligation;
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized};
 use rustc_span::def_id::DefId;
-use rustc_trait_selection::traits::{Obligation, ObligationCause, ObligationCtxt};
+use rustc_span::{DUMMY_SP, Span};
+use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
+use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::config::{
     CAN_USE_COMPONENT_TRAIT, CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE,
     DELEGATE_COMPONENT_TRAIT, HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT,
 };
 
-/// A recovered root cause, in owned form so it outlives the inference context it was read
-/// from. Today the only variant is a missing `HasField`; more leaf kinds will join it.
+/// A recovered root cause: one missing field, with the dependency chain that needs it.
+pub struct MissingField {
+    /// The missing field name, decoded from its `Symbol!`, e.g. `height`.
+    pub field: String,
+    /// The transitive dependency chain from the checked component down to this field, rendered
+    /// as a single spine.
+    pub tree: DependencyTree,
+}
+
+/// The recovered root cause(s) of a check failure, in owned form so they outlive the inference
+/// contexts they were read from. Today the only kind is missing fields; more will join it.
 pub enum RootCause {
-    /// A provider the context is wired to needs a field the context's struct does not have.
-    MissingField {
-        /// The context type that lacks the field, e.g. `Rectangle`.
+    /// The context is missing one or more fields its wiring needs. Each entry is an independent
+    /// root cause the emitter renders as its own sub-error.
+    MissingFields {
+        /// The context type that lacks the field(s), e.g. `Rectangle`.
         context: String,
-        /// The missing field name, decoded from the `Symbol!`, e.g. `height`.
-        field: String,
-        /// The transitive dependency chain from the checked component down to the missing
-        /// field, ready to render as one dependency note.
-        tree: DependencyTree,
+        /// One entry per distinct missing field, in first-seen order.
+        causes: Vec<MissingField>,
     },
 }
+
+/// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or
+/// cyclic wiring cannot make it loop. Real dependency chains are far shorter than this.
+const MAX_DEPTH: u32 = 32;
 
 /// Whether `def_id` is a trait/type named `name` defined by crate `krate` — the DefId anchor
 /// that keeps a same-named item from an unrelated crate from driving resolution, exactly as
@@ -66,7 +78,7 @@ fn is_cgp_item(tcx: TyCtxt<'_>, def_id: DefId, name: &str, krate: &str) -> bool 
     tcx.item_name(def_id).as_str() == name && tcx.crate_name(def_id.krate).as_str() == krate
 }
 
-/// Resolve the root cause of the check failure whose diagnostic caret sits at `primary_span`,
+/// Resolve the root cause(s) of the check failure whose diagnostic caret sits at `primary_span`,
 /// or `None` if this is not a resolvable `CanUseComponent` check failure (in which case the
 /// caller leaves the original diagnostic to the text-rewrite fallback). `names` supplies the
 /// consumer/provider trait names the dependency tree renders CGP markers as.
@@ -93,7 +105,7 @@ pub fn resolve_check_failure(
                 .skip_norm_wip();
             let concrete = super_clause.instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref));
 
-            if let Some(cause) = resolve_missing_field(tcx, concrete, names) {
+            if let Some(cause) = resolve_missing_fields(tcx, concrete, names) {
                 return Some(cause);
             }
         }
@@ -130,154 +142,152 @@ fn impl_self_ty_span(tcx: TyCtxt<'_>, impl_did: DefId) -> Option<Span> {
     }
 }
 
-/// Bound on how many CGP obligations the resolver descends through before giving up, so a
-/// pathological or cyclic wiring cannot make the descent loop. Real dependency chains are far
-/// shorter than this.
-const MAX_DEPTH: u32 = 32;
-
-/// Solve the concrete `Ctx: CanUseComponent<Marker, Params>` obligation, and if its dependency
-/// chain bottoms out on a `HasField` leaf, return that missing field together with the rendered
-/// chain that leads to it.
-fn resolve_missing_field<'tcx>(
+/// Walk the dependency graph of `concrete` (`Ctx: CanUseComponent<Marker, Params>`) and, for each
+/// distinct missing field it bottoms out on, return that field with its rendered dependency
+/// chain. `None` when no branch reaches a missing field.
+fn resolve_missing_fields<'tcx>(
     tcx: TyCtxt<'tcx>,
     concrete: ty::Clause<'tcx>,
     names: &ComponentNameMap,
 ) -> Option<RootCause> {
-    let chain = build_chain(tcx, concrete.as_predicate())?;
+    let top = concrete.as_trait_clause()?;
+    let context = tcx.erase_and_anonymize_regions(top.skip_binder().self_ty());
 
-    // The chain is only a root cause we replace when it ends at a genuine `HasField`.
-    let leaf = chain.last()?.skip_binder().trait_ref;
-    if !is_cgp_item(tcx, leaf.def_id, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
+    let mut causes = Vec::new();
+    for path in collect_field_paths(tcx, top, &[], 0) {
+        let leaf = path.last()?.skip_binder().trait_ref;
+        let Some(field) = decode_symbol(tcx, leaf.args.type_at(1)) else {
+            continue;
+        };
+        // One sub-error per distinct field: a field wanted by several branches is one fix.
+        if causes.iter().any(|c: &MissingField| c.field == field) {
+            continue;
+        }
+        let labels: Vec<String> = path
+            .iter()
+            .filter_map(|pred| label_for(tcx, *pred, context, names))
+            .collect();
+        if let Some(tree) = spine(labels) {
+            causes.push(MissingField { field, tree });
+        }
+    }
+
+    if causes.is_empty() {
         return None;
     }
-    let context_ty = leaf.self_ty();
-    let field = decode_symbol(tcx, leaf.args.type_at(1))?;
-    let tree = build_tree(tcx, &chain, context_ty, names)?;
-
-    Some(RootCause::MissingField {
-        context: context_ty.to_string(),
-        field,
-        tree,
+    Some(RootCause::MissingFields {
+        context: context.to_string(),
+        causes,
     })
 }
 
-/// Recover the ordered dependency chain — root check first, missing leaf last — behind a failing
-/// obligation. Each solve reports the failure at a leaf and carries a cause chain of its
-/// ancestors; when that leaf is an intermediate CGP wiring obligation rather than the final
-/// `HasField`, we re-solve it to descend one layer deeper, stitching each segment onto the chain
-/// until a `HasField` surfaces or [`MAX_DEPTH`] is reached. Descent is confined to CGP wiring
-/// traits, so an unmet *ordinary* bound simply ends the chain (and the caller declines to
-/// replace the diagnostic).
-fn build_chain<'tcx>(
+/// Collect every root→leaf path that bottoms out on an unmet `HasField`, by descending the
+/// failing obligation's dependency graph. `pred` is a failing obligation and `prefix` is the path
+/// of predicates above it; a `HasField` completes a path, and any other obligation contributes
+/// the `where`-clause obligations of the impl that would satisfy it, recursing into just the ones
+/// that do not already hold. Following *every* unmet dependency (not one) is what surfaces
+/// independent missing fields as separate paths. Bounded by [`MAX_DEPTH`].
+fn collect_field_paths<'tcx>(
     tcx: TyCtxt<'tcx>,
-    top: ty::Predicate<'tcx>,
-) -> Option<Vec<ty::PolyTraitPredicate<'tcx>>> {
-    let mut chain: Vec<ty::PolyTraitPredicate<'tcx>> = Vec::new();
-    let mut current = top;
-
-    for _ in 0..=MAX_DEPTH {
-        let (leaf, parents) = solve_leaf(tcx, current)?;
-
-        // `parents` runs leaf→root; reversed and with the leaf appended it is this segment
-        // root→leaf. Its first node repeats the previous segment's leaf, so drop that overlap.
-        let mut segment: Vec<_> = parents.into_iter().rev().collect();
-        segment.push(leaf);
-        if chain.last() == segment.first() {
-            segment.remove(0);
-        }
-        chain.extend(segment);
-
-        let leaf_did = leaf.skip_binder().def_id();
-        if is_cgp_item(tcx, leaf_did, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
-            return Some(chain);
-        }
-        if is_descendable(tcx, leaf_did) {
-            current = leaf.upcast(tcx);
-            continue;
-        }
-        return None;
+    pred: ty::PolyTraitPredicate<'tcx>,
+    prefix: &[ty::PolyTraitPredicate<'tcx>],
+    depth: u32,
+) -> Vec<Vec<ty::PolyTraitPredicate<'tcx>>> {
+    if depth > MAX_DEPTH {
+        return Vec::new();
     }
-    None
-}
 
-/// Solve `predicate` and return the failing leaf that leads toward the root cause, paired with
-/// its cause-chain ancestors (leaf→root order). The leaf is chosen as the first fulfillment
-/// error that is either a `HasField` or a descendable CGP wiring obligation.
-fn solve_leaf<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    predicate: ty::Predicate<'tcx>,
-) -> Option<(
-    ty::PolyTraitPredicate<'tcx>,
-    Vec<ty::PolyTraitPredicate<'tcx>>,
-)> {
-    let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
-    let ocx = ObligationCtxt::new_with_diagnostics(&infcx);
-    ocx.register_obligation(Obligation::new(
-        tcx,
-        ObligationCause::dummy(),
-        ty::ParamEnv::empty(),
-        predicate,
-    ));
+    let mut path = prefix.to_vec();
+    path.push(pred);
 
-    for err in ocx.evaluate_obligations_error_on_ambiguity() {
-        let Some(leaf) = err.obligation.predicate.as_trait_clause() else {
-            continue;
-        };
-        let did = leaf.skip_binder().def_id();
-        if is_cgp_item(tcx, did, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) || is_descendable(tcx, did) {
-            return Some((leaf, walk_cause_parents(err.obligation.cause.code())));
+    if is_has_field(tcx, pred) {
+        return vec![path];
+    }
+
+    let mut paths = Vec::new();
+    for nested in impl_where_obligations(tcx, pred) {
+        if !holds(tcx, nested) {
+            paths.extend(collect_field_paths(tcx, nested, &path, depth + 1));
         }
     }
-    None
+    paths
 }
 
-/// Collect the trait predicates on a failing obligation's derived-cause chain, from the
-/// immediate parent up to the root obligation — the same "required for …" chain rustc renders
-/// as notes, read here as typed predicates.
-fn walk_cause_parents<'tcx>(
-    mut code: &ObligationCauseCode<'tcx>,
+/// The instantiated `where`-clause trait obligations of the impl that would satisfy `obligation`
+/// — its direct dependencies. Found by unifying `obligation` with each candidate impl's trait ref
+/// (the next-solver-safe `fresh_args_for_item` + `eq` dance `SelectionContext` is unavailable
+/// for), then instantiating and normalizing that impl's predicates. Empty when no impl matches.
+fn impl_where_obligations<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    obligation: ty::PolyTraitPredicate<'tcx>,
 ) -> Vec<ty::PolyTraitPredicate<'tcx>> {
-    let mut parents = Vec::new();
-    loop {
-        let (parent_pred, parent_code) = match code {
-            ObligationCauseCode::ImplDerived(cause) => {
-                (cause.derived.parent_trait_pred, &cause.derived.parent_code)
+    let param_env = ty::ParamEnv::empty();
+    let obligation_ref = obligation.skip_binder().trait_ref;
+
+    for impl_did in tcx.all_impls(obligation.def_id()) {
+        let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
+        let ocx = ObligationCtxt::new(&infcx);
+
+        let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
+        let impl_ref = tcx
+            .impl_trait_ref(impl_did)
+            .instantiate(tcx, impl_args)
+            .skip_norm_wip();
+        let impl_ref = ocx.normalize(
+            &ObligationCause::dummy(),
+            param_env,
+            Unnormalized::new_wip(impl_ref),
+        );
+        if ocx
+            .eq(
+                &ObligationCause::dummy(),
+                param_env,
+                obligation_ref,
+                impl_ref,
+            )
+            .is_err()
+        {
+            continue;
+        }
+
+        let mut obligations = Vec::new();
+        for (predicate, _) in tcx.predicates_of(impl_did).instantiate(tcx, impl_args) {
+            let clause: ty::Clause<'tcx> =
+                ocx.normalize(&ObligationCause::dummy(), param_env, predicate);
+            let clause = infcx.resolve_vars_if_possible(clause);
+            // A predicate that still carries inference vars (an unconstrained impl parameter)
+            // cannot be re-evaluated in a fresh context; region vars are simply erased.
+            if clause.has_non_region_infer() {
+                continue;
             }
-            ObligationCauseCode::BuiltinDerived(derived)
-            | ObligationCauseCode::WellFormedDerived(derived) => {
-                (derived.parent_trait_pred, &derived.parent_code)
+            if let Some(tp) = tcx.erase_and_anonymize_regions(clause).as_trait_clause() {
+                obligations.push(tp);
             }
-            _ => break,
-        };
-        parents.push(parent_pred);
-        code = parent_code;
+        }
+        return obligations;
     }
-    parents
+    Vec::new()
 }
 
-/// Whether a failing leaf trait is a CGP wiring obligation worth re-solving to descend one
-/// dependency layer deeper — `IsProviderFor` or `CanUseComponent`, both defined by
-/// `cgp-component`. An ordinary trait is deliberately excluded so the descent never strays
-/// outside CGP's own machinery.
-fn is_descendable(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    is_cgp_item(tcx, def_id, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
-        || is_cgp_item(tcx, def_id, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+/// Whether `pred` already holds — a dependency that is satisfied and so is not descended into.
+fn holds<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitPredicate<'tcx>) -> bool {
+    let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
+    let obligation = Obligation::new(tcx, ObligationCause::dummy(), ty::ParamEnv::empty(), pred);
+    infcx.predicate_must_hold_modulo_regions(&obligation)
 }
 
-/// Fold the predicate chain into a rendered dependency tree, one node per meaningful step, with
-/// each CGP wiring trait replaced by its human form (see [`label_for`]). The chain is linear, so
-/// the tree is a single spine from the checked component down to the missing field.
-fn build_tree<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    chain: &[ty::PolyTraitPredicate<'tcx>],
-    context: Ty<'tcx>,
-    names: &ComponentNameMap,
-) -> Option<DependencyTree> {
-    let labels: Vec<String> = chain
-        .iter()
-        .filter_map(|pred| label_for(tcx, *pred, context, names))
-        .collect();
+/// Whether a trait predicate is a genuine CGP `HasField` bound — the missing-field leaf.
+fn is_has_field(tcx: TyCtxt<'_>, pred: ty::PolyTraitPredicate<'_>) -> bool {
+    is_cgp_item(
+        tcx,
+        pred.skip_binder().def_id(),
+        HAS_FIELD_TRAIT,
+        CGP_FIELD_CRATE,
+    )
+}
 
+/// Fold a path's rendered labels into a single-spine dependency tree, root first.
+fn spine(labels: Vec<String>) -> Option<DependencyTree> {
     let mut rev = labels.into_iter().rev();
     let mut node = DependencyTree::leaf(rev.next()?);
     for label in rev {
@@ -286,7 +296,7 @@ fn build_tree<'tcx>(
     Some(node)
 }
 
-/// The human-readable label for one predicate in the dependency chain, replacing each CGP wiring
+/// The human-readable label for one predicate in a dependency path, replacing each CGP wiring
 /// trait with the concept it stands for: `CanUseComponent` with the consumer trait, `IsProviderFor`
 /// with the concrete provider (and its provider trait), `HasField` with the missing field. Any
 /// other trait — a user's own consumer or getter capability — is shown by name.
