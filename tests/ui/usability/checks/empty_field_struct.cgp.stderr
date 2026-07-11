@@ -1,39 +1,9 @@
-CGP[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied
+error[E0277]: missing field `width` on context `Rectangle`
   --> src/main.rs:59:9
    |
 59 |         AreaCalculatorComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: [CGP0002] `#[derive(HasField)]` is required to access field `width` in `Rectangle`
-  --> src/main.rs:48:1
-   |
-48 | pub struct Rectangle {}
-   | ^^^^^^^^^^^^^^^^^^^^
-note: required for `Rectangle` to implement `HasRectangleFields`
-  --> src/main.rs:29:1
-   |
-29 | #[cgp_auto_getter]
-   | ^^^^^^^^^^^^^^^^^^
-30 | pub trait HasRectangleFields {
-   |           ^^^^^^^^^^^^^^^^^^
-note: required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
-  --> src/main.rs:36:1
-   |
-36 | #[cgp_impl(new RectangleArea)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-...
-39 |     Self: HasRectangleFields,
-   |           ------------------ unsatisfied trait bound introduced here
-   = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
-note: required by a bound in `__CheckRectangle`
-  --> src/main.rs:57:1
-   |
-57 | / check_components! {
-58 | |     Rectangle {
-59 | |         AreaCalculatorComponent,
-60 | |     }
-61 | | }
-   | |_^ required by this bound in `__CheckRectangle`
-   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: `Rectangle` is wired to use `CanCalculateArea`, whose provider reads the `width` field
 
 For more information about this error, try `rustc --explain E0277`.

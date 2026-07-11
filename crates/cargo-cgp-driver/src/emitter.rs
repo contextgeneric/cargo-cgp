@@ -1,11 +1,15 @@
 //! The diagnostic-rewriting emitter the driver installs.
 //!
 //! This is the compiler-side seam of the message transform. It replaces the session's JSON
-//! emitter with one that rewrites CGP wiring messages (via the rustc-free
-//! [`rewrite`](cargo_cgp_error_processing::rewrite) module) before handing the diagnostic to
-//! a real [`JsonEmitter`], so the transformed text reaches cargo — and the front-end —
-//! already shaped, both in the structured `children` and in the `rendered` field the JSON
-//! emitter regenerates from them.
+//! emitter with one that acts on each diagnostic before handing it to a real [`JsonEmitter`],
+//! so the transformed result reaches cargo — and the front-end — already shaped, both in the
+//! structured `children` and in the `rendered` field the JSON emitter regenerates from them.
+//! It does two things, in order of ambition. First it tries a **wholesale replacement**: for a
+//! missing-field check failure it builds a fresh, root-cause-first diagnostic recovered from
+//! the compiler by [`resolve`](crate::resolve), and emits that instead of rustc's. When that
+//! is not possible it falls back to a **text rewrite** of the compiler's own diagnostic,
+//! renaming CGP wiring messages via the rustc-free
+//! [`rewrite`](cargo_cgp_error_processing::rewrite) module.
 //!
 //! Two facts make this the right layer. First, naming the traits behind a component marker
 //! needs the compiler, and the driver reaches the live `TyCtxt` through
@@ -26,15 +30,18 @@ use std::io;
 use std::path::Path;
 
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, rewrite_message};
+use rustc_errors::codes::E0277;
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::json::JsonEmitter;
 use rustc_errors::timings::TimingRecord;
-use rustc_errors::{DiagInner, DiagMessage, TerminalUrl};
+use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, TerminalUrl};
 use rustc_interface::interface::Config;
 use rustc_session::config::ErrorOutputType;
+use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
 
 use crate::component_map::build_name_map_from_tls;
+use crate::resolve::{self, RootCause};
 
 /// Install the rewriting emitter on the compiler session, replicating how rustc builds its
 /// default JSON emitter so cargo's diagnostic stream is byte-for-byte the same apart from
@@ -140,10 +147,67 @@ impl CgpEmitter {
             rewrite_messages(&mut child.messages, &self.names);
         }
     }
+
+    /// Try to replace `diag` wholesale with a root-cause-first diagnostic recovered from the
+    /// compiler, returning `None` when this is not a resolvable CGP check failure (so the
+    /// caller falls back to the in-place text rewrite). Only an `E0277` whose caret sits on a
+    /// `check_components!` entry is a candidate; [`resolve::resolve_check_failure`] does the
+    /// typed work and yields `None` for everything it cannot fully resolve.
+    fn build_replacement(&self, diag: &DiagInner) -> Option<DiagInner> {
+        if diag.code != Some(E0277) {
+            return None;
+        }
+        let primary_span = diag.span.primary_span()?;
+        rustc_middle::ty::tls::with_opt(|tcx| {
+            let tcx = tcx?;
+            let cause = resolve::resolve_check_failure(tcx, primary_span)?;
+            Some(self.render_root_cause(cause, primary_span))
+        })
+    }
+
+    /// Build the replacement diagnostic for a resolved root cause: a root-cause-first header
+    /// carrying the compiler's `E0277` code, its caret on the wiring entry, and one note that
+    /// names the wiring the field is needed for (when the component's traits are known).
+    fn render_root_cause(&self, cause: RootCause, span: Span) -> DiagInner {
+        match cause {
+            RootCause::MissingField {
+                context,
+                field,
+                marker,
+            } => {
+                let mut diag = DiagInner::new(
+                    Level::Error,
+                    format!("missing field `{field}` on context `{context}`"),
+                );
+                diag.code = Some(E0277);
+                diag.span = MultiSpan::from_span(span);
+
+                let note = match self.names.get(&marker) {
+                    Some(names) => format!(
+                        "`{context}` is wired to use `{}`, whose provider reads the `{field}` field",
+                        names.consumer,
+                    ),
+                    None => format!("the provider wired for `{context}` reads the `{field}` field"),
+                };
+                diag.children.push(Subdiag {
+                    level: Level::Note,
+                    messages: vec![(DiagMessage::Str(note.into()), Style::NoStyle)],
+                    span: MultiSpan::new(),
+                });
+                diag
+            }
+        }
+    }
 }
 
 impl Emitter for CgpEmitter {
     fn emit_diagnostic(&mut self, mut diag: DiagInner) {
+        // Prefer a typed, root-cause-first replacement recovered from the compiler; only when
+        // that is not possible do we fall back to the in-place text rewrite.
+        if let Some(replacement) = self.build_replacement(&diag) {
+            self.inner.emit_diagnostic(replacement);
+            return;
+        }
         self.rewrite(&mut diag);
         self.inner.emit_diagnostic(diag);
     }

@@ -1,165 +1,25 @@
-CGP[E0277]: the provider trait bound `ProvideFoo: Foo<App>` is not satisfied
+error[E0277]: missing field `name` on context `App`
   --> src/main.rs:84:9
    |
 84 |         BazComponent,
-   |         ^^^^^^^^^^^^ unsatisfied trait bound
+   |         ^^^^^^^^^^^^
    |
-help: the trait `IsProviderFor<FooComponent, App>` is not implemented for `ProvideFoo`
-  --> src/main.rs:40:16
-   |
-40 | #[cgp_impl(new ProvideFoo)]
-   |                ^^^^^^^^^^
-help: the trait `IsProviderFor<FooComponent, __Context__>` is implemented for `ProvideFoo`
-  --> src/main.rs:41:1
-   |
-41 | / impl Foo
-42 | | where
-43 | |     Self: HasName,
-   | |__________________^
-note: required for the provider `App` to implement the provider trait `Foo` for the context `App`
-  --> src/main.rs:71:1
-   |
-71 | / delegate_components! {
-72 | |     App {
-   | |     ^^^
-73 | |         FooComponent: ProvideFoo,
-74 | |         BarComponent: ProvideBar,
-...  |
-77 | | }
-   | |_^
-note: required for `App` to implement `Foo<App>`
-  --> src/main.rs:25:1
-   |
-25 | #[cgp_component(Foo)]
-   | ^^^^^^^^^^^^^^^^^^^^^
-note: required for `App` to implement `CanFoo`
-  --> src/main.rs:25:1
-   |
-25 | #[cgp_component(Foo)]
-   | ^^^^^^^^^^^^^^^^^^^^^
-26 | pub trait CanFoo {
-   |           ^^^^^^
-   = note: 2 redundant requirements hidden
-   = note: required for the provider `App` to implement the provider trait `Bar` for the context `App`
-note: required for `App` to implement `Bar<App>`
-  --> src/main.rs:30:1
-   |
-30 | #[cgp_component(Bar)]
-   | ^^^^^^^^^^^^^^^^^^^^^
-note: required for `App` to implement `CanBar`
-  --> src/main.rs:30:1
-   |
-30 | #[cgp_component(Bar)]
-   | ^^^^^^^^^^^^^^^^^^^^^
-31 | pub trait CanBar {
-   |           ^^^^^^
-   = note: 1 redundant requirement hidden
-   = note: required for the provider `ProvideBaz` to implement the provider trait `Baz` for the context `App`
-   = note: required for the context `App` to implement the consumer trait `CanBaz`
-note: required by a bound in `__CheckApp`
-  --> src/main.rs:82:1
-   |
-82 | / check_components! {
-83 | |     App {
-84 | |         BazComponent,
-85 | |         BarComponent,
-...  |
-88 | | }
-   | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: `App` is wired to use `CanBaz`, whose provider reads the `name` field
 
-CGP[E0277]: the consumer trait bound `App: CanBar` is not satisfied
+error[E0277]: missing field `name` on context `App`
   --> src/main.rs:85:9
    |
 85 |         BarComponent,
-   |         ^^^^^^^^^^^^ unsatisfied trait bound
+   |         ^^^^^^^^^^^^
    |
-help: [CGP0001] missing field `name` in `App`
-  --> src/main.rs:66:10
-   |
-66 | #[derive(HasField)]
-   |          ^^^^^^^^
-note: required for `App` to implement `HasName`
-  --> src/main.rs:20:1
-   |
-20 | #[cgp_auto_getter]
-   | ^^^^^^^^^^^^^^^^^^
-21 | pub trait HasName {
-   |           ^^^^^^^
-note: required for the provider `ProvideFoo` to implement the provider trait `Foo` for the context `App`
-  --> src/main.rs:40:1
-   |
-40 | #[cgp_impl(new ProvideFoo)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-...
-43 |     Self: HasName,
-   |           ------- unsatisfied trait bound introduced here
-   = note: 1 redundant requirement hidden
-   = note: required for the provider `App` to implement the provider trait `Foo` for the context `App`
-note: required for `App` to implement `Foo<App>`
-  --> src/main.rs:25:1
-   |
-25 | #[cgp_component(Foo)]
-   | ^^^^^^^^^^^^^^^^^^^^^
-note: required for `App` to implement `CanFoo`
-  --> src/main.rs:25:1
-   |
-25 | #[cgp_component(Foo)]
-   | ^^^^^^^^^^^^^^^^^^^^^
-26 | pub trait CanFoo {
-   |           ^^^^^^
-   = note: 1 redundant requirement hidden
-   = note: required for the provider `ProvideBar` to implement the provider trait `Bar` for the context `App`
-   = note: required for the context `App` to implement the consumer trait `CanBar`
-note: required by a bound in `__CheckApp`
-  --> src/main.rs:82:1
-   |
-82 | / check_components! {
-83 | |     App {
-84 | |         BazComponent,
-85 | |         BarComponent,
-...  |
-88 | | }
-   | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: `App` is wired to use `CanBar`, whose provider reads the `name` field
 
-CGP[E0277]: the consumer trait bound `App: CanFoo` is not satisfied
+error[E0277]: missing field `name` on context `App`
   --> src/main.rs:86:9
    |
 86 |         FooComponent,
-   |         ^^^^^^^^^^^^ unsatisfied trait bound
+   |         ^^^^^^^^^^^^
    |
-help: [CGP0001] missing field `name` in `App`
-  --> src/main.rs:66:10
-   |
-66 | #[derive(HasField)]
-   |          ^^^^^^^^
-note: required for `App` to implement `HasName`
-  --> src/main.rs:20:1
-   |
-20 | #[cgp_auto_getter]
-   | ^^^^^^^^^^^^^^^^^^
-21 | pub trait HasName {
-   |           ^^^^^^^
-note: required for the provider `ProvideFoo` to implement the provider trait `Foo` for the context `App`
-  --> src/main.rs:40:1
-   |
-40 | #[cgp_impl(new ProvideFoo)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-...
-43 |     Self: HasName,
-   |           ------- unsatisfied trait bound introduced here
-   = note: required for the context `App` to implement the consumer trait `CanFoo`
-note: required by a bound in `__CheckApp`
-  --> src/main.rs:82:1
-   |
-82 | / check_components! {
-83 | |     App {
-84 | |         BazComponent,
-85 | |         BarComponent,
-...  |
-88 | | }
-   | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: `App` is wired to use `CanFoo`, whose provider reads the `name` field
 
 For more information about this error, try `rustc --explain E0277`.

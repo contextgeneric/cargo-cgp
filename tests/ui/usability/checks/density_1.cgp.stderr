@@ -1,63 +1,9 @@
-CGP[E0277]: the consumer trait bound `Rectangle: CanCalculateDensity` is not satisfied
+error[E0277]: missing field `height` on context `Rectangle`
   --> src/main.rs:79:9
    |
 79 |         DensityCalculatorComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: [CGP0001] missing field `height` in `Rectangle`
-  --> src/main.rs:59:1
-   |
-59 | pub struct Rectangle {
-   | ^^^^^^^^^^^^^^^^^^^^
-help: `Rectangle` implements trait `HasField<Tag>`
-  --> src/main.rs:58:10
-   |
-58 | #[derive(HasField)]
-   |          ^^^^^^^^
-   |          |
-   |          `HasField<Symbol!("mass")>`
-   |          `HasField<Symbol!("width")>`
-note: required for `Rectangle` to implement `HasRectangleFields`
-  --> src/main.rs:26:1
-   |
-26 | #[cgp_auto_getter]
-   | ^^^^^^^^^^^^^^^^^^
-27 | pub trait HasRectangleFields {
-   |           ^^^^^^^^^^^^^^^^^^
-note: required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
-  --> src/main.rs:38:1
-   |
-38 | #[cgp_impl(new RectangleArea)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-...
-41 |     Self: HasRectangleFields,
-   |           ------------------ unsatisfied trait bound introduced here
-   = note: 1 redundant requirement hidden
-   = note: required for the provider `Rectangle` to implement the provider trait `AreaCalculator` for the context `Rectangle`
-note: required for `Rectangle` to implement `AreaCalculator<Rectangle>`
-  --> src/main.rs:16:1
-   |
-16 | #[cgp_component(AreaCalculator)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: required for `Rectangle` to implement `CanCalculateArea`
-  --> src/main.rs:16:1
-   |
-16 | #[cgp_component(AreaCalculator)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-17 | pub trait CanCalculateArea {
-   |           ^^^^^^^^^^^^^^^^
-   = note: 1 redundant requirement hidden
-   = note: required for the provider `DensityFromMassField` to implement the provider trait `DensityCalculator` for the context `Rectangle`
-   = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateDensity`
-note: required by a bound in `__CheckRectangle`
-  --> src/main.rs:77:1
-   |
-77 | / check_components! {
-78 | |     Rectangle {
-79 | |         DensityCalculatorComponent,
-80 | |     }
-81 | | }
-   | |_^ required by this bound in `__CheckRectangle`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: `Rectangle` is wired to use `CanCalculateDensity`, whose provider reads the `height` field
 
 For more information about this error, try `rustc --explain E0277`.

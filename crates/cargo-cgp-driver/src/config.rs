@@ -37,6 +37,25 @@ pub const CGP_COMPONENT_CRATE: &str = "cgp_component";
 /// [`CGP_COMPONENT_CRATE`] to identify the real trait rather than a same-named impostor.
 pub const IS_PROVIDER_FOR_TRAIT: &str = "IsProviderFor";
 
+/// The item name of the check trait `check_components!` asserts on a context. Paired with
+/// [`CGP_COMPONENT_CRATE`] (its defining crate) to identify the genuine trait — the anchor
+/// the typed resolver keys on when it re-runs a check obligation. See `resolve`.
+pub const CAN_USE_COMPONENT_TRAIT: &str = "CanUseComponent";
+
+/// The item name of the field-access trait whose unmet bound is the root cause the typed
+/// resolver reports, paired with [`CGP_FIELD_CRATE`] to confirm a leaf obligation is a
+/// genuine CGP `HasField` before decoding its `Symbol!` field name.
+pub const HAS_FIELD_TRAIT: &str = "HasField";
+
+/// The crate that defines [`HAS_FIELD_TRAIT`] — distinct from [`CGP_COMPONENT_CRATE`], since
+/// `HasField` lives in `cgp-field`, not `cgp-component`.
+pub const CGP_FIELD_CRATE: &str = "cgp_field";
+
+/// The crate that defines the type-level string spine (`Symbol`, `Chars`, `Nil`) the resolver
+/// walks to decode a field name. Anchoring the decode to this crate keeps a same-named type
+/// from another crate from being mistaken for CGP's.
+pub const CGP_BASE_TYPES_CRATE: &str = "cgp_base_types";
+
 /// The stable `--verbose` flag, injected into every workspace-crate compilation to stop
 /// the diagnostic machinery from *eliding* the parts of a type it deems uninteresting.
 ///

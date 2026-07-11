@@ -94,12 +94,13 @@ see every diagnostic before it can reorder them.
 
 Capture in the front-end is not the only place diagnostics are collected. The driver also intercepts
 each `DiagInner` as the compiler builds it, through the custom emitter that powers the
-[trait-renaming transform](driver.md#naming-the-traits-behind-a-component-marker), and that same seam
-is where richer compiler-state enrichment will hang — for instance re-running trait fulfillment
-through the `InferCtxt` / `ObligationCtxt` API to reconstruct an obligation chain the printed form
-renders tersely. That kind of work must happen in the driver, because the front-end's processing
-stage is stateless and cannot ask the compiler anything; the [driver deep dive](driver.md) covers the
-emitter seam and what it can grow into.
+[trait-renaming transform](driver.md#naming-the-traits-behind-a-component-marker). That same seam has
+since grown richer compiler-state enrichment: the [typed root-cause resolver](typed-root-cause-resolution.md)
+re-runs a failing check obligation through the `InferCtxt` / `ObligationCtxt` API to recover the
+missing `HasField` and *replace* the diagnostic, rather than reading its text. That kind of work must
+happen in the driver, because the front-end's processing stage is stateless and cannot ask the
+compiler anything; the [driver deep dive](driver.md) covers the emitter seam and the resolver document
+covers the replacement.
 
 ## Comparison with Clippy
 

@@ -93,12 +93,16 @@ between nightlies, every use of it is verified against the read-only compiler ch
 
 ## The driver's diagnostic transformations
 
-The driver applies three transformations to the compilation's diagnostics, and they fall into two
-kinds. Two are **argument levers** — a flag that changes how the compiler *produces* diagnostics,
-needing no diagnostic parsing. The third is a **diagnostic rewrite** — a custom emitter that edits
-diagnostics the compiler has already *built*, using facts only the live compiler holds. The kinds
-matter because they explain why the third is far more involved than the first two: a flag is a
-one-line lever, while the rewrite links the compiler's internal API to reach the `TyCtxt`.
+The driver applies its diagnostic transformations in two kinds. Two are **argument levers** — a flag
+that changes how the compiler *produces* diagnostics, needing no diagnostic parsing. The rest run in a
+**custom emitter** that acts on diagnostics the compiler has already *built*, using facts only the
+live compiler holds; this is far more involved than a flag, because it links the compiler's internal
+API to reach the `TyCtxt`. The emitter carries two transformations of its own: the in-place
+[trait-renaming rewrite](#naming-the-traits-behind-a-component-marker) described below, and the deeper
+[typed root-cause resolution](typed-root-cause-resolution.md) that *replaces* a missing-field check
+failure with a root-cause-first diagnostic, covered in its own document. The three sections that
+follow detail the two levers and the rename; the replacement builds on the rename's `TyCtxt` access
+and is documented separately.
 
 ### Choosing the trait solver
 
@@ -273,13 +277,15 @@ its own provider, so a self-provider case reads `` the provider `Rectangle` … 
 blessed snapshots show the trait-named notes *and* headers;
 [`base_area_1`](../../tests/ui/usability/checks/base_area_1.cgp.stderr) is the worked example.
 
-The same emitter seam is where further compiler-state enrichment will hang. Where even the next-gen
-solver renders an obligation chain tersely, the driver could re-run trait fulfillment on the failing
-obligation through the compiler's `InferCtxt` / `ObligationCtxt` API to reconstruct the full
-derived-obligation chain — the surfaced form that `check_components!` forces at the source level — and
-attach it to the diagnostic before the front-end sees it. This kind of work must happen in the driver,
-because the front-end's [processing stage](error-processing.md) is stateless and cannot ask the
-compiler anything.
+The same emitter seam now hosts a deeper transformation that *replaces* a diagnostic rather than
+rewording it. Where the trait-renaming rewrite edits the compiler's diagnostic in place, the
+[typed root-cause resolver](typed-root-cause-resolution.md) re-runs the failing check obligation
+through the compiler's `InferCtxt` / `ObligationCtxt` API, descends to the `HasField` leaf, and emits
+a fresh, root-cause-first diagnostic in place of rustc's cascade — falling back to the in-place rewrite
+whenever it cannot fully resolve the cause. That kind of work must happen in the driver, because the
+front-end's [processing stage](error-processing.md) is stateless and cannot ask the compiler anything;
+it happens in the *emitter* specifically because the natural `after_analysis` hook is unreachable once
+the crate has errors (the resolver document explains why).
 
 ## Comparison with Clippy
 

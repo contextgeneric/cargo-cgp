@@ -148,7 +148,10 @@ The driver (`crates/cargo-cgp-driver/src`) is smaller. `run.rs` is the entrypoin
 compiler through `rustc_driver`; `args.rs` turns the wrapper's process arguments into a rustc
 argument vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds
 the `Callbacks` implementation, whose `config` hook installs a diagnostic-rewriting emitter;
-`emitter.rs` is that emitter, which renames CGP wiring messages using the live compiler;
+`emitter.rs` is that emitter, which renames CGP wiring messages using the live compiler and, when it
+can, replaces a missing-field check failure with a root-cause-first diagnostic; `resolve.rs` is that
+typed resolver, re-running the check obligation through the trait solver to recover the missing
+`HasField` (see [Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md));
 `component_map.rs` builds the component-marker → consumer/provider trait-name map by querying the
 trait solver; `config.rs` holds the shared names. The compiler-free string rewrite and the lazily-built
 `ComponentNameMap` it uses live in the `cargo-cgp-error-processing` crate (the driver's one ordinary

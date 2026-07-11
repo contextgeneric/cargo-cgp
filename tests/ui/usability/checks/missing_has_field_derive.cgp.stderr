@@ -1,39 +1,9 @@
-CGP[E0277]: the consumer trait bound `Person: CanGreet` is not satisfied
+error[E0277]: missing field `name` on context `Person`
   --> src/main.rs:58:9
    |
 58 |         GreeterComponent,
-   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |         ^^^^^^^^^^^^^^^^
    |
-help: [CGP0002] `#[derive(HasField)]` is required to access field `name` in `Person`
-  --> src/main.rs:44:1
-   |
-44 | pub struct Person {
-   | ^^^^^^^^^^^^^^^^^
-note: required for `Person` to implement `HasName`
-  --> src/main.rs:27:1
-   |
-27 | #[cgp_auto_getter]
-   | ^^^^^^^^^^^^^^^^^^
-28 | pub trait HasName {
-   |           ^^^^^^^
-note: required for the provider `GreetHello` to implement the provider trait `Greeter` for the context `Person`
-  --> src/main.rs:32:1
-   |
-32 | #[cgp_impl(new GreetHello)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-...
-35 |     Self: HasName,
-   |           ------- unsatisfied trait bound introduced here
-   = note: required for the context `Person` to implement the consumer trait `CanGreet`
-note: required by a bound in `__CheckPerson`
-  --> src/main.rs:56:1
-   |
-56 | / check_components! {
-57 | |     Person {
-58 | |         GreeterComponent,
-59 | |     }
-60 | | }
-   | |_^ required by this bound in `__CheckPerson`
-   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: `Person` is wired to use `CanGreet`, whose provider reads the `name` field
 
 For more information about this error, try `rustc --explain E0277`.

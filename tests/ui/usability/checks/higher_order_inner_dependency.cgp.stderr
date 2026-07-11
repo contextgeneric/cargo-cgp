@@ -1,41 +1,9 @@
-CGP[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied
+error[E0277]: missing field `base_area` on context `Rectangle`
   --> src/main.rs:75:9
    |
 75 |         AreaCalculatorComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: [CGP0001] missing field `base_area` in `Rectangle`
-  --> src/main.rs:59:10
-   |
-59 | #[derive(HasField)]
-   |          ^^^^^^^^
-note: required for `Rectangle` to implement `HasBaseArea`
-  --> src/main.rs:28:1
-   |
-28 | #[cgp_auto_getter]
-   | ^^^^^^^^^^^^^^^^^^
-29 | pub trait HasBaseArea {
-   |           ^^^^^^^^^^^
-note: required for the provider `BaseArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
-  --> src/main.rs:38:1
-   |
-38 | #[cgp_impl(new BaseArea)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-...
-41 |     Self: HasBaseArea,
-   |           ----------- unsatisfied trait bound introduced here
-   = note: 1 redundant requirement hidden
-   = note: required for the provider `ScaledArea<BaseArea>` to implement the provider trait `AreaCalculator` for the context `Rectangle`
-   = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
-note: required by a bound in `__CheckRectangle`
-  --> src/main.rs:73:1
-   |
-73 | / check_components! {
-74 | |     Rectangle {
-75 | |         AreaCalculatorComponent,
-76 | |     }
-77 | | }
-   | |_^ required by this bound in `__CheckRectangle`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: `Rectangle` is wired to use `CanCalculateArea`, whose provider reads the `base_area` field
 
 For more information about this error, try `rustc --explain E0277`.

@@ -26,6 +26,12 @@ same change.
   `rustc_driver` API, and the three transformations it applies to the diagnostics — the two flag
   levers (trait solver, verbosity) and the emitter that renames CGP wiring notes using the live
   compiler.
+- [Typed root-cause resolution](typed-root-cause-resolution.md) — the deeper emitter transformation
+  that *replaces* a missing-field check-failure diagnostic wholesale: recovering the root cause by
+  re-running the check obligation through the trait solver (from inside `emit_diagnostic`, since
+  `after_analysis` is unreachable once the crate has errors), descending to the `HasField` leaf, and
+  decoding the `Symbol!` field name — falling back to the text rewrite for everything it cannot fully
+  resolve.
 - [The error pipeline](error-pipeline.md) — the four-stage flow that turns rustc's raw diagnostics
   into readable CGP errors (configure rustc, capture, process, render), and the detail of the two
   compilation-side stages: the current flag injections that un-hide and un-elide CGP errors, and the
