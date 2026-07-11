@@ -4,7 +4,11 @@ error[E0277]: missing field `height` on context `Rectangle`
 78 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: `Rectangle` is wired to use `CanCalculateArea`, whose provider reads the `height` field
+   = note: the missing field is required through this dependency chain:
+           `Rectangle` uses consumer trait `CanCalculateArea`
+           └── provider `RectangleArea` (provider trait `AreaCalculator`)
+               └── requires `HasRectangleFields`
+                   └── missing field `height`
 
 error[E0277]: missing field `height` on context `Rectangle`
   --> src/main.rs:79:9
@@ -12,6 +16,12 @@ error[E0277]: missing field `height` on context `Rectangle`
 79 |         DensityCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: `Rectangle` is wired to use `CanCalculateDensity`, whose provider reads the `height` field
+   = note: the missing field is required through this dependency chain:
+           `Rectangle` uses consumer trait `CanCalculateDensity`
+           └── provider `DensityFromMassField` (provider trait `DensityCalculator`)
+               └── requires `CanCalculateArea`
+                   └── provider `RectangleArea` (provider trait `AreaCalculator`)
+                       └── requires `HasRectangleFields`
+                           └── missing field `height`
 
 For more information about this error, try `rustc --explain E0277`.

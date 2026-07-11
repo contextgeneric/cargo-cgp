@@ -31,7 +31,7 @@
     ],
     "children": [
       {
-        "message": "`Person` is wired to use `CanGreet`, whose provider reads the `name` field",
+        "message": "the missing field is required through this dependency chain:\n`Person` uses consumer trait `CanGreet`\n└── provider `GreetHello` (provider trait `Greeter`)\n    └── requires `HasName`\n        └── missing field `name`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -39,7 +39,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: missing field `name` on context `Person`\n  --> src/main.rs:58:9\n   |\n58 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^\n   |\n   = note: `Person` is wired to use `CanGreet`, whose provider reads the `name` field\n\n"
+    "rendered": "error[E0277]: missing field `name` on context `Person`\n  --> src/main.rs:58:9\n   |\n58 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^\n   |\n   = note: the missing field is required through this dependency chain:\n           `Person` uses consumer trait `CanGreet`\n           └── provider `GreetHello` (provider trait `Greeter`)\n               └── requires `HasName`\n                   └── missing field `name`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

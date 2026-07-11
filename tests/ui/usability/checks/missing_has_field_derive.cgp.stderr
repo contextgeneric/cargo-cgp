@@ -4,6 +4,10 @@ error[E0277]: missing field `name` on context `Person`
 58 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: `Person` is wired to use `CanGreet`, whose provider reads the `name` field
+   = note: the missing field is required through this dependency chain:
+           `Person` uses consumer trait `CanGreet`
+           └── provider `GreetHello` (provider trait `Greeter`)
+               └── requires `HasName`
+                   └── missing field `name`
 
 For more information about this error, try `rustc --explain E0277`.

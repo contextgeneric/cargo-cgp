@@ -17,6 +17,7 @@ pub mod diagnostic;
 pub mod preprocess;
 pub mod process;
 pub mod rewrite;
+pub mod tree;
 
 /// Re-export of the diagnostic library the input/output types are built on, so a
 /// dependent can name `cargo_metadata::diagnostic::Diagnostic` through this crate.
@@ -27,3 +28,4 @@ pub use preprocess::{
 };
 pub use process::process_cgp_errors;
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
+pub use tree::{DependencyTree, render_dependency_tree};

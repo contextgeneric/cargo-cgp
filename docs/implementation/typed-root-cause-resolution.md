@@ -78,17 +78,22 @@ reference (`instantiate_supertrait`) substitutes the concrete types back in, yie
 obligation the compiler failed to prove: `Rectangle: CanUseComponent<AreaCalculatorComponent, ()>`.
 The component marker for the eventual note is read straight off this obligation's arguments.
 
-**Solve, and descend to the leaf.** The resolver registers that obligation in a fresh
-`ObligationCtxt` and solves it, then reads the fulfillment errors. When a failing leaf is a genuine
-`cgp_field::HasField` bound, that *is* the root cause. When it is not — because the solver reports the
-failure at an intermediate wiring obligation one dependency layer up (an `IsProviderFor` or
-`CanUseComponent` for a provider that itself depends on the missing field) — the resolver re-solves
-that intermediate obligation to descend one layer deeper, and repeats until a `HasField` surfaces or a
-depth bound is hit. The descent is confined to CGP wiring traits, so it never wanders into an
-unrelated failing bound; an ordinary-trait leaf simply ends the search with `None`. This descent is
-what lets a deep cascade collapse to one clean message: in `dependency_cascade`, three checked
-components whose providers chain down to the same missing `name` field each resolve to
-`missing field \`name\``, attributed to their own capability, instead of three walls of nested types.
+**Solve, descend, and capture the whole chain.** The resolver registers that obligation in a fresh
+`ObligationCtxt`, solves it, and reads the fulfillment errors — but it keeps not just the failing leaf
+but the *whole dependency chain* that leads to it, because the replacement note shows the transitive
+path, not only the root. Each failing obligation carries a derived-cause chain — the same "required
+for … to implement …" ancestry rustc renders as notes — and the resolver walks it (`parent_trait_pred`
+by `parent_trait_pred`) to recover every intermediate predicate as typed data. When the leaf is a
+genuine `cgp_field::HasField` bound, that *is* the root cause and the chain is complete. When it is not
+— because the solver reports the failure at an intermediate wiring obligation one dependency layer up
+(an `IsProviderFor` or `CanUseComponent` for a provider that itself depends on the missing field) — the
+resolver re-solves that intermediate obligation to descend one layer deeper, stitching each segment's
+cause chain onto the growing chain, until a `HasField` surfaces or a depth bound is hit. The descent is
+confined to CGP wiring traits, so it never wanders into an unrelated failing bound; an ordinary-trait
+leaf simply ends the search with `None`. This is what lets a deep cascade collapse to one clean
+message: in `dependency_cascade`, three checked components whose providers chain down to the same
+missing `name` field each resolve to `missing field \`name\``, attributed to their own capability,
+instead of three walls of nested types.
 
 **Decode the field name.** The `HasField` leaf carries the field name as a type-level `Symbol!`, a
 nested `Chars<'h', Chars<'e', …>>` spine. The resolver decodes it structurally — walking the spine and
@@ -97,23 +102,42 @@ name from the type rather than the text is why the replacement never needs the `
 the [text path depends on](driver.md#un-eliding-the-diagnostic): the characters are in the `Symbol`
 arguments whether or not the diagnostic would have printed them.
 
-With the context type, the field name, and the component marker in hand, the emitter builds the
-replacement `DiagInner` — the root-cause header, the compiler's `E0277` code preserved so
-`rustc --explain` still works, the caret on the entry, and one note that names the consumer capability
-the field is needed for (looked up through the same [`ComponentNameMap`](error-processing.md) the
-trait-renaming rewrite uses). Emitting a hand-built `DiagInner` renders correctly for free, because
-the JSON emitter regenerates every rendered and structured field from it.
+**Render the chain as a tree, replacing the machinery.** The captured chain is a list of typed
+predicates, and rendering it is where each CGP wiring trait is replaced by the concept it stands for,
+so the reader never meets a raw `IsProviderFor` or `Symbol`. `CanUseComponent<Marker>` becomes the
+consumer capability (`\`App\` uses consumer trait \`CanBaz\``), an `IsProviderFor` becomes the concrete
+provider and its provider trait (`provider \`ProvideBaz\` (provider trait \`Baz\`)`), and `HasField`
+becomes `missing field \`name\``; the marker-to-trait-name lookups reuse the same
+[`ComponentNameMap`](error-processing.md) the trait-renaming rewrite is built on. Pure plumbing that
+carries no information — the `DelegateComponent` table, the routing `IsProviderFor` for the *context
+itself* (as opposed to the real provider), and a bare provider-trait obligation that an `IsProviderFor`
+node already stands for — is dropped, so the chain stays legible without losing a real dependency step.
+The cleaned labels are folded into a [`DependencyTree`](error-processing.md) and rendered as
+`cargo tree`-style indented text by the [`termtree`](https://crates.io/crates/termtree) crate (a tiny,
+dependency-free renderer), hosted in the rustc-free `cargo-cgp-error-processing` crate so the rendering
+is unit-tested on any toolchain.
+
+With the field name and the rendered tree in hand, the emitter builds the replacement `DiagInner` — a
+root-cause header (`missing field \`height\` on context \`Rectangle\``), the compiler's `E0277` code
+preserved so `rustc --explain` still works, the caret on the entry, and one note carrying the whole
+dependency tree. Emitting a hand-built `DiagInner` renders correctly for free, because the JSON emitter
+regenerates every rendered and structured field from it, and rustc's note-continuation indentation
+aligns the tree's box-drawing under the `= note:`.
 
 ## Boundaries and open ends
 
-The resolver is deliberately narrow, and three of its edges are worth recording. It handles only the
+The resolver is deliberately narrow, and four of its edges are worth recording. It handles only the
 **missing-field** root cause; other surfaced leaves an obligation can bottom out on — an ordinary
 trait bound, an unmet abstract type — are recognized well enough to *decline* but not yet to replace,
 and are candidates for the same treatment. It correlates a diagnostic to an entry by **exact span
 match**, which holds because the check macro re-spans the context type onto the entry; a future
-change to that spanning would need to be matched here. And it currently uses an **empty parameter
+change to that spanning would need to be matched here. It currently uses an **empty parameter
 environment** when re-solving, which suits the concrete check impls the fixtures exercise but will
-need the impl's own environment to extend cleanly to checks that carry generic parameters.
+need the impl's own environment to extend cleanly to checks that carry generic parameters. And the
+dependency tree is currently a **single spine**: at each layer the descent follows the first
+fulfillment error, so a provider with two independently unmet dependencies would show only the first
+path rather than branching — the `DependencyTree` type already models children, so this is a matter of
+following every error rather than a structural limit.
 
 One consistency gap is known and left for a deliberate decision rather than silently closed. The
 front-end's header preprocessor brands a transformed diagnostic's header as `CGP[E0277]`, gated on the
@@ -126,11 +150,15 @@ form, which touches the preprocessing stage the resolver otherwise leaves untouc
 ## Source
 
 - [`crates/cargo-cgp-driver/src/resolve.rs`](../../crates/cargo-cgp-driver/src/resolve.rs) — the typed
-  resolution: finding the check impl by span, recovering and solving the concrete obligation,
-  descending to the `HasField` leaf, and decoding the `Symbol!` field name.
+  resolution: finding the check impl by span, recovering and solving the concrete obligation, walking
+  the cause chain and descending to the `HasField` leaf, decoding the `Symbol!` field name, and folding
+  the chain into a `DependencyTree` with each wiring trait replaced by its human form.
 - [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — the
-  `build_replacement` seam that tries the resolver first and builds the replacement `DiagInner`,
-  falling back to the in-place text rewrite when it returns `None`.
+  `build_replacement` seam that tries the resolver first and builds the replacement `DiagInner` (header
+  plus the dependency-tree note), falling back to the in-place text rewrite when it returns `None`.
+- [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs)
+  — the rustc-free `DependencyTree` type and its `cargo tree`-style renderer (over `termtree`), with
+  unit tests in [`tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).
 - [`crates/cargo-cgp-driver/src/config.rs`](../../crates/cargo-cgp-driver/src/config.rs) — the crate
   and trait-name anchors (`CanUseComponent`, `IsProviderFor`, `HasField`, and the `Symbol` spine's
   crate) the resolution matches against.

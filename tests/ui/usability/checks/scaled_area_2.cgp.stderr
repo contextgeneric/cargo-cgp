@@ -4,6 +4,10 @@ error[E0277]: missing field `scale_factor` on context `Rectangle`
 71 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: `Rectangle` is wired to use `CanCalculateArea`, whose provider reads the `scale_factor` field
+   = note: the missing field is required through this dependency chain:
+           `Rectangle` uses consumer trait `CanCalculateArea`
+           └── provider `ScaledArea<RectangleArea>` (provider trait `AreaCalculator`)
+               └── requires `HasScaleFactor`
+                   └── missing field `scale_factor`
 
 For more information about this error, try `rustc --explain E0277`.

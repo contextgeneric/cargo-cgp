@@ -42,6 +42,11 @@ pub const IS_PROVIDER_FOR_TRAIT: &str = "IsProviderFor";
 /// the typed resolver keys on when it re-runs a check obligation. See `resolve`.
 pub const CAN_USE_COMPONENT_TRAIT: &str = "CanUseComponent";
 
+/// The item name of the wiring-table trait. The resolver recognizes it, anchored to
+/// [`CGP_COMPONENT_CRATE`], only to *drop* it from the rendered dependency chain: it is pure
+/// wiring plumbing that carries no information a reader of the tree needs.
+pub const DELEGATE_COMPONENT_TRAIT: &str = "DelegateComponent";
+
 /// The item name of the field-access trait whose unmet bound is the root cause the typed
 /// resolver reports, paired with [`CGP_FIELD_CRATE`] to confirm a leaf obligation is a
 /// genuine CGP `HasField` before decoding its `Symbol!` field name.

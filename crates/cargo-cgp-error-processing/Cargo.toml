@@ -16,6 +16,10 @@ keywords     = { workspace = true }
 # `docs/implementation/error-processing.md`.
 [dependencies]
 cargo_metadata = { workspace = true }
+# Renders the dependency tree of a resolved check failure. The driver builds the tree data
+# from typed compiler state and this crate turns it into `cargo tree`-style text, kept here so
+# the rendering is unit-tested without the driver's `rustc_private` linkage.
+termtree = { workspace = true }
 
 # Only the tests deserialize a committed diagnostic fixture; the library itself never
 # parses JSON (capture happens upstream, in the front-end).

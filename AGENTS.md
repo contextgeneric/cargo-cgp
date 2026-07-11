@@ -162,12 +162,14 @@ compiler linkage. `process.rs` is the stateless `process_cgp_errors` entrypoint,
 diagnostic and runs the per-diagnostic preprocessing pipeline in `preprocess/` (stripping CGP path
 prefixes, resugaring `Symbol!`, rewriting unmet `HasField` bounds into missing-field messages);
 `diagnostic.rs` defines the `CgpDiagnostic` output type. Because this crate is rustc-free, it is also
-the home of `rewrite.rs` — the compiler-free string rewrite that renames CGP wiring messages and the
-lazily-built `ComponentNameMap` it uses. That logic is driven by the *driver*, not by
-`process_cgp_errors`, but it lives here so it can be unit-tested without the driver's compiler linkage.
-Its tests in `tests/` drive the preprocessors, `process_cgp_errors`, and the rewrite over committed
-fixtures and hand-built maps, so they run on any toolchain. The cross-diagnostic aggregation sub-stage
-(collapsing cascades) is still to come.
+the home of two driver-driven helpers, hosted here so they can be unit-tested without the driver's
+compiler linkage: `rewrite.rs` — the compiler-free string rewrite that renames CGP wiring messages and
+the lazily-built `ComponentNameMap` it uses — and `tree.rs` — the `DependencyTree` type and its
+`cargo tree`-style renderer (over the `termtree` crate) that the driver's typed resolver uses to show a
+check failure's transitive dependency chain. Both are driven by the *driver*, not by
+`process_cgp_errors`. Its tests in `tests/` drive the preprocessors, `process_cgp_errors`, the rewrite,
+and the tree renderer over committed fixtures and hand-built inputs, so they run on any toolchain. The
+cross-diagnostic aggregation sub-stage (collapsing cascades) is still to come.
 
 ## Commands
 

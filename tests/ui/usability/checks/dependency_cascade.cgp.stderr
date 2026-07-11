@@ -4,7 +4,15 @@ error[E0277]: missing field `name` on context `App`
 84 |         BazComponent,
    |         ^^^^^^^^^^^^
    |
-   = note: `App` is wired to use `CanBaz`, whose provider reads the `name` field
+   = note: the missing field is required through this dependency chain:
+           `App` uses consumer trait `CanBaz`
+           └── provider `ProvideBaz` (provider trait `Baz`)
+               └── requires `CanBar`
+                   └── provider `ProvideBar` (provider trait `Bar`)
+                       └── requires `CanFoo`
+                           └── provider `ProvideFoo` (provider trait `Foo`)
+                               └── requires `HasName`
+                                   └── missing field `name`
 
 error[E0277]: missing field `name` on context `App`
   --> src/main.rs:85:9
@@ -12,7 +20,13 @@ error[E0277]: missing field `name` on context `App`
 85 |         BarComponent,
    |         ^^^^^^^^^^^^
    |
-   = note: `App` is wired to use `CanBar`, whose provider reads the `name` field
+   = note: the missing field is required through this dependency chain:
+           `App` uses consumer trait `CanBar`
+           └── provider `ProvideBar` (provider trait `Bar`)
+               └── requires `CanFoo`
+                   └── provider `ProvideFoo` (provider trait `Foo`)
+                       └── requires `HasName`
+                           └── missing field `name`
 
 error[E0277]: missing field `name` on context `App`
   --> src/main.rs:86:9
@@ -20,6 +34,10 @@ error[E0277]: missing field `name` on context `App`
 86 |         FooComponent,
    |         ^^^^^^^^^^^^
    |
-   = note: `App` is wired to use `CanFoo`, whose provider reads the `name` field
+   = note: the missing field is required through this dependency chain:
+           `App` uses consumer trait `CanFoo`
+           └── provider `ProvideFoo` (provider trait `Foo`)
+               └── requires `HasName`
+                   └── missing field `name`
 
 For more information about this error, try `rustc --explain E0277`.

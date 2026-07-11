@@ -4,6 +4,10 @@ error[E0277]: missing field `width` on context `Rectangle`
 50 |         AreaCalculatorComponent: (u32, u64, bool),
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: `Rectangle` is wired to use `CanCalculateArea`, whose provider reads the `width` field
+   = note: the missing field is required through this dependency chain:
+           `Rectangle` uses consumer trait `CanCalculateArea`
+           └── provider `RectangleArea` (provider trait `AreaCalculator`)
+               └── requires `HasWidth`
+                   └── missing field `width`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -31,7 +31,7 @@
     ],
     "children": [
       {
-        "message": "`Rectangle` is wired to use `CanCalculateArea`, whose provider reads the `scale_factor` field",
+        "message": "the missing field is required through this dependency chain:\n`Rectangle` uses consumer trait `CanCalculateArea`\n└── provider `ScaledArea<BaseArea>` (provider trait `AreaCalculator`)\n    └── requires `HasScaleFactor`\n        └── missing field `scale_factor`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -39,7 +39,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: missing field `scale_factor` on context `Rectangle`\n  --> src/main.rs:73:9\n   |\n73 |         AreaCalculatorComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: `Rectangle` is wired to use `CanCalculateArea`, whose provider reads the `scale_factor` field\n\n"
+    "rendered": "error[E0277]: missing field `scale_factor` on context `Rectangle`\n  --> src/main.rs:73:9\n   |\n73 |         AreaCalculatorComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: the missing field is required through this dependency chain:\n           `Rectangle` uses consumer trait `CanCalculateArea`\n           └── provider `ScaledArea<BaseArea>` (provider trait `AreaCalculator`)\n               └── requires `HasScaleFactor`\n                   └── missing field `scale_factor`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

@@ -29,6 +29,7 @@ use std::borrow::Cow;
 use std::io;
 use std::path::Path;
 
+use cargo_cgp_error_processing::render_dependency_tree;
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, rewrite_message};
 use rustc_errors::codes::E0277;
 use rustc_errors::emitter::{Emitter, TimingEvent};
@@ -160,42 +161,39 @@ impl CgpEmitter {
         let primary_span = diag.span.primary_span()?;
         rustc_middle::ty::tls::with_opt(|tcx| {
             let tcx = tcx?;
-            let cause = resolve::resolve_check_failure(tcx, primary_span)?;
-            Some(self.render_root_cause(cause, primary_span))
+            let cause = resolve::resolve_check_failure(tcx, primary_span, &self.names)?;
+            Some(render_root_cause(cause, primary_span))
         })
     }
+}
 
-    /// Build the replacement diagnostic for a resolved root cause: a root-cause-first header
-    /// carrying the compiler's `E0277` code, its caret on the wiring entry, and one note that
-    /// names the wiring the field is needed for (when the component's traits are known).
-    fn render_root_cause(&self, cause: RootCause, span: Span) -> DiagInner {
-        match cause {
-            RootCause::MissingField {
-                context,
-                field,
-                marker,
-            } => {
-                let mut diag = DiagInner::new(
-                    Level::Error,
-                    format!("missing field `{field}` on context `{context}`"),
-                );
-                diag.code = Some(E0277);
-                diag.span = MultiSpan::from_span(span);
+/// Build the replacement diagnostic for a resolved root cause: a root-cause-first header
+/// carrying the compiler's `E0277` code, its caret on the wiring entry, and one note that shows
+/// the whole transitive dependency chain — rendered as a tree — that leads to the missing field.
+fn render_root_cause(cause: RootCause, span: Span) -> DiagInner {
+    match cause {
+        RootCause::MissingField {
+            context,
+            field,
+            tree,
+        } => {
+            let mut diag = DiagInner::new(
+                Level::Error,
+                format!("missing field `{field}` on context `{context}`"),
+            );
+            diag.code = Some(E0277);
+            diag.span = MultiSpan::from_span(span);
 
-                let note = match self.names.get(&marker) {
-                    Some(names) => format!(
-                        "`{context}` is wired to use `{}`, whose provider reads the `{field}` field",
-                        names.consumer,
-                    ),
-                    None => format!("the provider wired for `{context}` reads the `{field}` field"),
-                };
-                diag.children.push(Subdiag {
-                    level: Level::Note,
-                    messages: vec![(DiagMessage::Str(note.into()), Style::NoStyle)],
-                    span: MultiSpan::new(),
-                });
-                diag
-            }
+            let note = format!(
+                "the missing field is required through this dependency chain:\n{}",
+                render_dependency_tree(&tree),
+            );
+            diag.children.push(Subdiag {
+                level: Level::Note,
+                messages: vec![(DiagMessage::Str(note.into()), Style::NoStyle)],
+                span: MultiSpan::new(),
+            });
+            diag
         }
     }
 }
