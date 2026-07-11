@@ -186,16 +186,19 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
 
 The UI suite is a custom Rust test harness modeled on Clippy's `compile-test`: the
 [`cargo-cgp-ui-tests`](crates/cargo-cgp-ui-tests) crate has a `harness = false` test with its own
-`fn main` that checks each fixture under [`tests/ui/`](tests/README.md) through three passes that must
-agree — running `cargo-cgp` and diffing its stderr against `<name>.stderr`, capturing the diagnostics
-it feeds to processing and diffing them against `<name>.output.json`, and parsing that JSON through
-`process_cgp_errors` and diffing the rendered result back against `<name>.stderr`. The crate is a full
-workspace member, so `cargo test` runs the whole suite alongside the argument tests; a full run builds
-the driver and expects a sibling `cgp` checkout at `../cgp`. Work with the suite directly through it:
+`fn main` that checks each fixture under [`tests/ui/`](tests/README.md) through four passes — three
+that must agree, plus a plain-compiler baseline. The agreeing three run `cargo-cgp` and diff its
+stderr against `<name>.cgp.stderr`, capture the diagnostics it feeds to processing and diff them
+against `<name>.output.json`, and parse that JSON through `process_cgp_errors` and diff the rendered
+result back against `<name>.cgp.stderr`. The fourth runs plain `cargo check` and diffs its stderr
+against `<name>.rust.stderr`, recording the untransformed "before" so the diff against `.cgp.stderr`
+shows what the tool changes. The crate is a full workspace member, so `cargo test` runs the whole
+suite alongside the argument tests; a full run builds the driver and expects a sibling `cgp` checkout
+at `../cgp`. Work with the suite directly through it:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests                                  # just the snapshot suite
-cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate .stderr and .output.json
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate .cgp.stderr, .rust.stderr, and .output.json
 cargo test -p cargo-cgp-ui-tests --test ui -- --process-only      # only the process_cgp_errors unit pass (fast, no compile)
 cargo test -p cargo-cgp-ui-tests --test ui -- -j 4                # check at most 4 fixtures at once
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print greet    # print raw output for a fixture
@@ -206,13 +209,13 @@ other (libtest) tests. The harness checks fixtures in parallel across a pool of 
 own throwaway crate (so they never share a `src/main.rs` or a cargo target lock); `--jobs`/`-j` sets
 the worker count, which otherwise defaults to the machine's parallelism capped at 8. `--process-only` is the fast
 loop for iterating on the processing
-implementation: it skips the two cargo-invoking passes and runs only `process_cgp_errors` over the
+implementation: it skips the three cargo-invoking passes and runs only `process_cgp_errors` over the
 committed `.output.json`, so the whole suite finishes in well under a second; pair it with `--bless`
-to re-bless `.stderr` from the new process output. The snapshots capture `cargo-cgp`'s own output end
+to re-bless `.cgp.stderr` from the new process output. The snapshots capture `cargo-cgp`'s own output end
 to end, so they are what changes once the tool reformats diagnostics; a passing suite is also the
 standing end-to-end proof that the driver runs as the compiler. Add a scenario by dropping a
 `<name>.rs` file (with a `fn main`) into the matching `tests/ui/<class>/` directory and running
-`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (a full run, which writes both snapshot
+`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (a full run, which writes all three snapshot
 files). Snapshots are blessed under the pinned toolchain, so a toolchain bump can require a re-bless. The full testing picture — the
 harness structure, why it drives the whole tool rather than the driver directly, and the comparison
 with Clippy — is documented in [Testing](docs/implementation/testing.md); read it before adding

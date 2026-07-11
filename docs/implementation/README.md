@@ -44,5 +44,5 @@ same change.
   dropping a cause the tool needs.
 - [Testing](testing.md) — how the tool is tested: tests over the argument handling, and the UI
   snapshot suite — a custom Rust test harness (like Clippy's `compile-test`) that compiles fixtures
-  under `tests/ui/` through the tool and diffs committed `.stderr` snapshots — its bless workflow,
+  under `tests/ui/` through the tool and diffs committed `.cgp.stderr` snapshots — its bless workflow,
   and how it compares to Clippy's harness.

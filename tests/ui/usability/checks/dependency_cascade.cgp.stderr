@@ -74,7 +74,7 @@ error[E0277]: the consumer trait bound `App: CanBar` is not satisfied
 85 |         BarComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: missing field `name` in `App`
+help: [CGP0001] missing field `name` in `App`
   --> src/main.rs:66:10
    |
 66 | #[derive(HasField)]
@@ -129,7 +129,7 @@ error[E0277]: the consumer trait bound `App: CanFoo` is not satisfied
 86 |         FooComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: missing field `name` in `App`
+help: [CGP0001] missing field `name` in `App`
   --> src/main.rs:66:10
    |
 66 | #[derive(HasField)]

@@ -1,10 +1,11 @@
-error[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied
+error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
   --> src/main.rs:61:9
    |
 61 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: missing field `height` in `Rectangle`
+help: the trait `HasField<Symbol<6, cgp::prelude::Chars<'h', cgp::prelude::Chars<'e', cgp::prelude::Chars<'i', cgp::prelude::Chars<'g', cgp::prelude::Chars<_, cgp::prelude::Chars<'t', Nil>>>>>>>>` is not implemented for `Rectangle`
+      but trait `HasField<Symbol<5, cgp::prelude::Chars<'w', cgp::prelude::Chars<'i', cgp::prelude::Chars<'d', cgp::prelude::Chars<'t', cgp::prelude::Chars<_, Nil>>>>>>>` is implemented for it
   --> src/main.rs:45:10
    |
 45 | #[derive(HasField)]
@@ -16,7 +17,7 @@ note: required for `Rectangle` to implement `HasRectangleFields`
    | ^^^^^^^^^^^^^^^^^^
 29 | pub trait HasRectangleFields {
    |           ^^^^^^^^^^^^^^^^^^
-note: required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
+note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
   --> src/main.rs:35:1
    |
 35 | #[cgp_impl(new RectangleArea)]
@@ -24,7 +25,7 @@ note: required for the provider `RectangleArea` to implement the provider trait 
 ...
 38 |     Self: HasRectangleFields,
    |           ------------------ unsatisfied trait bound introduced here
-   = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
+   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
 note: required by a bound in `__CheckRectangle`
   --> src/main.rs:59:1
    |

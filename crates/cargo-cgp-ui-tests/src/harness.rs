@@ -104,6 +104,29 @@ pub fn run_fixture_json(harness_crate: &Path, fixture: &Path) -> Vec<u8> {
     output.stdout
 }
 
+/// Compile one fixture through plain `cargo check` — no `cargo-cgp`, no driver — and return
+/// its rendered diagnostics from stderr. This records the *original* compiler output for the
+/// fixture, the "before" against which the tool's `.cgp.stderr` is the "after": no
+/// diagnostic rewriting, the default trait solver rather than the driver's
+/// `-Znext-solver=globally`, and none of the `--verbose` un-eliding the driver injects.
+///
+/// It builds in a separate target directory (`target-rust/`) from the `cargo-cgp` passes, so
+/// the two do not invalidate each other's `cgp` build: cargo's fingerprint includes
+/// `RUSTC_WORKSPACE_WRAPPER`, which `cargo-cgp` sets and plain `cargo` does not, so sharing a
+/// target directory would recompile `cgp` on every alternation.
+pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path) -> String {
+    fs::copy(fixture, harness_crate.join("src/main.rs"))
+        .unwrap_or_else(|e| panic!("copying fixture {}: {e}", fixture.display()));
+
+    let output = Command::new(cargo())
+        .current_dir(harness_crate)
+        .env("CARGO_TARGET_DIR", harness_crate.join("target-rust"))
+        .args(["check", "-q", "--color", "never"])
+        .output()
+        .expect("running plain cargo check on a fixture");
+    String::from_utf8_lossy(&output.stderr).into_owned()
+}
+
 /// Copy the fixture in as the throwaway crate's `src/main.rs` and run `cargo-cgp` with
 /// the given arguments. Re-copying bumps the file's mtime, which forces cargo to
 /// recompile and re-emit diagnostics even when the same fixture was just built by another

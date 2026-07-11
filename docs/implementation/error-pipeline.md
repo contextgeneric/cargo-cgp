@@ -118,7 +118,7 @@ the [driver deep dive](driver.md#comparison-with-clippy).
 The tests that pin the driver's three transformations are listed in the
 [driver deep dive](driver.md#tests). This document's own stages — capture and render in the front-end
 — are exercised end to end by the UI snapshot suite rather than by dedicated unit tests: every
-fixture's `.stderr` is what the front-end captured, processed, and rendered. The
+fixture's `.cgp.stderr` is what the front-end captured, processed, and rendered. The
 [Testing](testing.md) document describes that suite and its three passes.
 
 ## Source

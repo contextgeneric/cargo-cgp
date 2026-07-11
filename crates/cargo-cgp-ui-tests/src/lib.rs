@@ -2,14 +2,16 @@
 //!
 //! Each fixture under `tests/ui/` is checked through three passes that must agree, so the
 //! tool's real output, the diagnostics it captures, and its pure processing pipeline all
-//! stay consistent (see [`passes`]). It is driven by the `harness = false` test in
-//! [`tests/ui.rs`](../../tests/ui.rs), which calls [`run`]; the logic lives here so it
-//! stays small and out of the `bin`/test entrypoint.
+//! stay consistent, plus a fourth that records the plain-compiler baseline (see [`passes`]).
+//! It is driven by the `harness = false` test in [`tests/ui.rs`](../../tests/ui.rs), which
+//! calls [`run`]; the logic lives here so it stays small and out of the `bin`/test
+//! entrypoint.
 //!
-//! Two passes run the whole tool end to end (front-end and driver), so when the tool
-//! begins reformatting diagnostics these snapshots are what change; the third parses the
-//! committed JSON and runs only `process_cgp_errors`, needing no compilation. Fixtures are
-//! checked in parallel across a pool of workers (see [`runner`]). See the
+//! Two passes run the whole tool end to end (front-end and driver), so when the tool begins
+//! reformatting diagnostics these snapshots are what change; a third parses the committed
+//! JSON and runs only `process_cgp_errors`, needing no compilation; the fourth runs plain
+//! `cargo check` to record the untransformed `.rust.stderr` the tool improves on. Fixtures
+//! are checked in parallel across a pool of workers (see [`runner`]). See the
 //! [testing document](../../docs/implementation/testing.md).
 
 pub mod fixtures;
@@ -128,8 +130,9 @@ struct Report {
 }
 
 /// Run the passes for one fixture and return each pass's label and outcome. In
-/// process-only mode this is just the unit pass (which may bless `.stderr`); otherwise it
-/// is all three, and the process pass only verifies — the stderr pass owns `.stderr`.
+/// process-only mode this is just the unit pass (which may bless `.cgp.stderr`); otherwise
+/// it is all four, and the process pass only verifies — the cgp-stderr pass owns
+/// `.cgp.stderr`, and the rust pass owns the plain-compiler `.rust.stderr` baseline.
 fn run_passes(
     options: &Options,
     harness_crate: &Path,
@@ -145,8 +148,12 @@ fn run_passes(
 
     vec![
         (
-            "stderr",
-            passes::stderr_pass(harness_crate, fixture, cgp_root, options.bless),
+            "rust",
+            passes::rust_stderr_pass(harness_crate, fixture, cgp_root, options.bless),
+        ),
+        (
+            "cgp",
+            passes::cgp_stderr_pass(harness_crate, fixture, cgp_root, options.bless),
         ),
         (
             "json",

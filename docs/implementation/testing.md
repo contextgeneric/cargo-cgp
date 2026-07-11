@@ -2,8 +2,9 @@
 
 `cargo-cgp` is tested at two levels: fast tests over the argument-handling and diagnostic-processing
 logic, and a UI snapshot suite — a custom Rust test harness, in the style of Clippy's — that compiles
-example CGP programs through the real tool and pins both its rendered output (`.stderr`) and the
-diagnostics it captured (`.output.json`). Every test lives in its crate's `tests/` directory; per
+example CGP programs through the real tool and pins its rendered output (`.cgp.stderr`), the
+diagnostics it captured (`.output.json`), and — for contrast — the output plain `cargo check`
+produces for the same fixture (`.rust.stderr`). Every test lives in its crate's `tests/` directory; per
 [../../AGENTS.md](../../AGENTS.md) the project keeps no inline `#[cfg(test)]` modules, so all tests
 are integration tests against a crate's public API.
 
@@ -41,44 +42,53 @@ grouped into subdirectories by the *quality of the output* the tool produces —
 for errors whose cause is unrecoverable from the output, `usability/` for errors that carry the cause
 but bury it, and `ok/` for output that needs no further work — the same categories as the
 pending-issue documents in [docs/issues/](../issues/README.md), each fixture exposing the issue its
-directory names. Each fixture `<name>.rs` has two siblings: `<name>.stderr`, the tool's rendered
-output, and `<name>.output.json`, the diagnostics it captured; a fixture that compiles cleanly has an
-empty `.stderr` and an empty (`[]`) `.output.json`. The `usability/` fixtures are further sorted into
+directory names. Each fixture `<name>.rs` has three siblings: `<name>.cgp.stderr`, the tool's rendered
+output; `<name>.output.json`, the diagnostics it captured; and `<name>.rust.stderr`, what plain
+`cargo check` prints for the same fixture — the untransformed "before" against which the tool's
+`.cgp.stderr` is the "after". A fixture that compiles cleanly has an empty `.cgp.stderr`, an empty
+(`[]`) `.output.json`, and an empty `.rust.stderr`. The `usability/` fixtures are further sorted into
 kind subdirectories (`checks/`, `wiring/`, `lowering/`, `unsatisfied-dependency/`) mirroring the
 upstream catalog's sections; alongside the hand-curated examples they include a verbatim mirror of the
 upstream CGP compile-fail suite (one fixture per reproducible error class), giving the tool a snapshot
 of its own transformed output for the whole [error catalog](../../../cgp/docs/errors/README.md). The
 [usability fixtures README](../../tests/ui/usability/README.md) records the class-by-class findings.
 
-What the suite snapshots is *the output of `cargo-cgp` itself*, not of plain `rustc`. Each fixture is
-compiled by running the real `cargo-cgp check` end to end — front-end, driver, and all — so the
-snapshot is whatever the tool emits, already shaped by what the driver does. That difference is
-visible today: because the driver enables the next-gen trait solver, the
-`usability/unsatisfied-dependency/unsatisfied_dependency` snapshot shows the un-hidden `HasField` root
-cause, not the default solver's dead-end. As the tool grows (reformatting diagnostics in its
-processing stage), these snapshots are exactly what will change, and the diff is the signal that the
-change did what was intended. The suite exists so that is caught the moment it lands.
+The suite pins *both* halves of that transformation, so the tool's contribution is legible on the
+page. The `.cgp.stderr` is the output of `cargo-cgp` itself — each fixture compiled by running the
+real `cargo-cgp check` end to end, front-end, driver, and all, so the snapshot is whatever the tool
+emits, already shaped by what the driver does. The `.rust.stderr` beside it is the output of plain
+`cargo check` on the same fixture, with no driver and no processing, and it exists as the recorded
+"before": reading the two snapshots side by side shows exactly what the tool changed — the resugared
+type names, the renamed wiring traits, the CGP error codes on the messages it fully rewrites. As the
+tool grows (reformatting more diagnostics in its processing stage), the `.cgp.stderr` is what will
+change while the `.rust.stderr` stays fixed, so the widening gap between them is the visible measure
+of the tool's work, and the `.cgp.stderr` diff is the signal that a change did what was intended. The
+suite exists so that is caught the moment it lands.
 
-### Three passes per fixture
+### Four passes per fixture
 
-Each fixture is verified by three passes that must all agree, so the tool's real output, the
-diagnostics it captures, and its pure processing pipeline cannot drift apart. The passes are
-implemented in [`passes`](../../crates/cargo-cgp-ui-tests/src/passes.rs):
+Each fixture is verified by four passes. Three of them must all agree, so the tool's real output, the
+diagnostics it captures, and its pure processing pipeline cannot drift apart; the fourth stands alone
+and records the plain-compiler baseline. The passes are implemented in
+[`passes`](../../crates/cargo-cgp-ui-tests/src/passes.rs):
 
-- **The stderr pass** runs `cargo-cgp check` directly and compares the tool's rendered stderr to
-  `<name>.stderr`. This is the end-to-end check that the whole binary produces the expected output.
+- **The cgp-stderr pass** runs `cargo-cgp check` directly and compares the tool's rendered stderr to
+  `<name>.cgp.stderr`. This is the end-to-end check that the whole binary produces the expected output.
 - **The JSON pass** runs `cargo-cgp check --message-format=json`, through which the front-end forwards
   cargo's diagnostic stream unchanged; the harness extracts the diagnostics the tool feeds to
   `process_cgp_errors` and compares them to `<name>.output.json`. This pins the *input* to processing.
 - **The process pass** parses `<name>.output.json`, runs it through `process_cgp_errors`, renders the
-  result with the tool's own renderer, and compares to `<name>.stderr`. This is the pure unit pass —
-  no compiler, no cargo — and it shares the `.stderr` target with the stderr pass because rendering
-  the processed diagnostics must reproduce what the binary prints.
+  result with the tool's own renderer, and compares to `<name>.cgp.stderr`. This is the pure unit pass —
+  no compiler, no cargo — and it shares the `.cgp.stderr` target with the cgp-stderr pass because
+  rendering the processed diagnostics must reproduce what the binary prints.
+- **The rust-stderr pass** runs plain `cargo check` — no `cargo-cgp`, no driver — and compares its
+  rendered stderr to `<name>.rust.stderr`. Nothing cross-checks it, because it is the untransformed
+  compiler output, not a tool result; it exists to record the "before" the other three improve on.
 
-The stderr and process passes agree only because the cargo summary line (`could not compile … due to
-N errors`) is normalized away: it comes from cargo's own stderr, not from a diagnostic, so it is not
-present in the captured JSON and the process pass cannot reproduce it. Dropping it keeps `.stderr`
-equal to the rendered processing output. The process pass reuses the tool's real capture
+The cgp-stderr and process passes agree only because the cargo summary line (`could not compile … due
+to N errors`) is normalized away: it comes from cargo's own stderr, not from a diagnostic, so it is
+not present in the captured JSON and the process pass cannot reproduce it. Dropping it keeps
+`.cgp.stderr` equal to the rendered processing output. The process pass reuses the tool's real capture
 (`parse_cargo_output`) and render (`emit_rendered`) code, so the unit path cannot silently diverge
 from the binary — which is why the harness now depends on the `cargo-cgp` and
 `cargo-cgp-error-processing` libraries rather than only shelling out.
@@ -92,9 +102,9 @@ whose `ui` test target sets `harness = false` and provides its own `fn main`
 `tests/compile-test.rs`. The `fn main` is thin; the logic is in the crate's library so it stays small
 and testable, split into focused modules: `options` (argument parsing), `paths` (locating the
 workspace, fixtures, cgp checkout, and built binaries), `fixtures` (discovery), `harness` (building
-the binaries and compiling a fixture in a worker crate), `passes` (the three per-fixture passes),
-`runner` (scheduling fixtures across the worker pool), `normalize` (rewriting volatile paths out of
-the output), and `snapshot` (compare, bless, diff).
+the binaries and compiling a fixture in a worker crate, through `cargo-cgp` or plain `cargo`),
+`passes` (the four per-fixture passes), `runner` (scheduling fixtures across the worker pool),
+`normalize` (rewriting volatile paths out of the output), and `snapshot` (compare, bless, diff).
 
 The harness crate is a full workspace member, so `cargo test` runs the whole suite alongside the
 argument tests. It depends on the tool's own rustc-free libraries — `cargo-cgp` (for its capture and
@@ -109,10 +119,17 @@ A fixture is a loose `.rs` file, so the harness turns it into a crate the tool c
 maintains a throwaway crate that depends on `cgp` by path, copies the fixture in as its `src/main.rs`,
 and runs `cargo-cgp check -q --color never` there. Naming the crate `ui` keeps cargo's output stable,
 and an empty `[workspace]` table in its manifest stops cargo from folding it into the `cargo-cgp`
-workspace above it in `target/`. In a full run the stderr and JSON passes each run the tool once (the
-second adds `--message-format=json`), so the fixture is compiled twice; re-copying it before each run
-bumps its mtime, which forces cargo to recompile and re-emit diagnostics rather than serve a cached
-build with none.
+workspace above it in `target/`. In a full run the cgp-stderr and JSON passes each run the tool once
+(the second adds `--message-format=json`) and the rust-stderr pass runs plain `cargo check` once, so
+the fixture is compiled three times; re-copying it before each run bumps its mtime, which forces cargo
+to recompile and re-emit diagnostics rather than serve a cached build with none.
+
+The rust-stderr pass builds in a *separate* target directory from the two `cargo-cgp` passes —
+`target-rust/` beside the worker crate's default `target/`. The reason is cargo's fingerprinting:
+`cargo-cgp` sets `RUSTC_WORKSPACE_WRAPPER` and plain `cargo` does not, and that variable is part of
+the fingerprint, so sharing one target directory would rebuild `cgp` on every alternation between the
+wrapped and unwrapped runs. Two directories keep each variant's `cgp` build cached, at the cost of
+compiling `cgp` a second time per worker.
 
 Fixtures are checked in parallel, and the shape of that parallelism is dictated by one cargo
 constraint: a `cargo` build holds an exclusive lock on its target directory for the whole build, so
@@ -133,11 +150,13 @@ The `-q` removes most of the noise: it suppresses cargo's own progress lines (`C
 `Compiling`, `Finished`). What remains and must be normalized away is machine-specific or
 non-diagnostic: the absolute paths of the `cgp` checkout and the throwaway crate, the cargo
 build-failure summary (`could not compile …`, which the process pass cannot reproduce from the
-diagnostics alone), and — defensively — a note pointing at a hash-named temp file when a long type is
-elided (the driver's `--verbose` suppresses that elision, so it does not arise for the current
-fixtures). The `normalize` module handles the rendered `.stderr`: it rewrites the paths to
-`$CGP`/`$DIR` and drops the summary and temp-file lines. A second normalizer, `normalize_json`,
-handles `.output.json` with path rewriting only — the JSON is one value, so it must not drop lines.
+diagnostics alone), and a note pointing at a hash-named temp file when a long type is elided. The
+driver's `--verbose` suppresses that elision, so the temp-file note never reaches a `.cgp.stderr`; but
+the rust-stderr pass runs plain `cargo check` *without* `--verbose`, so a long CGP type can be elided
+there and the note does arise in `.rust.stderr` — which is exactly why dropping it earns its keep. The
+`normalize` module handles the rendered stderr of both passes: it rewrites the paths to `$CGP`/`$DIR`
+and drops the summary and temp-file lines. A second normalizer, `normalize_json`, handles
+`.output.json` with path rewriting only — the JSON is one value, so it must not drop lines.
 Normalization applies to the compared/blessed output only; `--print` shows the raw output untouched.
 The harness finds the built `cargo-cgp` beside its own test binary in `target/debug`, having first
 built both binaries with `cargo build` (the front-end locates the driver as its sibling).
@@ -159,10 +178,10 @@ worker count:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests --test ui -- usability    # only fixtures whose path contains "usability"
-cargo test -p cargo-cgp-ui-tests --test ui -- --bless      # rewrite the .stderr and .output.json snapshots
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless      # rewrite the .cgp.stderr, .rust.stderr, and .output.json snapshots
 cargo test -p cargo-cgp-ui-tests --test ui -- -j 4                    # check at most 4 fixtures at once
 cargo test -p cargo-cgp-ui-tests --test ui -- --process-only          # only the process_cgp_errors unit pass
-cargo test -p cargo-cgp-ui-tests --test ui -- --process-only --bless  # re-bless .stderr from the process output
+cargo test -p cargo-cgp-ui-tests --test ui -- --process-only --bless  # re-bless .cgp.stderr from the process output
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # print raw output
 ```
 
@@ -171,16 +190,18 @@ machine's parallelism, capped at 8 and at the number of fixtures. Raise it past 
 machine that can afford more concurrent `cgp` builds — one per worker, since the workers cannot share
 a target directory (above) — or set `-j 1` to run fully sequentially.
 
-**`--process-only`** skips the two cargo-invoking passes and runs only the process pass over the
+**`--process-only`** skips the three cargo-invoking passes and runs only the process pass over the
 committed `.output.json`. It needs no compilation — the whole suite runs in well under a second — so
 it is the loop to use while iterating on `process_cgp_errors`: change the processing code and re-run
-to see the effect on every fixture at once. With `--bless` it rewrites `.stderr` from the new process
-output (leaving `.output.json`, its input, untouched). A full run without `--process-only` is the
-reconciling check: the stderr pass blesses `.stderr` from the real binary, the JSON pass blesses
-`.output.json`, and the process pass verifies it still reproduces the blessed `.stderr`.
+to see the effect on every fixture at once. With `--bless` it rewrites `.cgp.stderr` from the new
+process output (leaving `.output.json`, its input, untouched). A full run without `--process-only` is
+the reconciling check: the cgp-stderr pass blesses `.cgp.stderr` from the real binary, the JSON pass
+blesses `.output.json`, the rust-stderr pass blesses `.rust.stderr` from plain `cargo check`, and the
+process pass verifies it still reproduces the blessed `.cgp.stderr`.
 
 After an *intended* change to what the tool emits, `--bless` regenerates the snapshots — the analogue
-of Clippy's `cargo bless` — and the diff is reviewed before committing.
+of Clippy's `cargo bless` — and the diff is reviewed before committing. Because `.rust.stderr` records
+plain `cargo check`, it changes only on a toolchain bump, not when the tool's own behavior changes.
 
 ### Toolchain and determinism
 
@@ -188,8 +209,9 @@ A snapshot is only reproducible against the toolchain it was blessed with, becau
 compiler's diagnostic text. The harness builds and runs under the toolchain the repository pins in
 [`rust-toolchain.toml`](../../rust-toolchain.toml) (overridable with `RUSTUP_TOOLCHAIN`), and
 snapshots must be blessed under that same toolchain. A deliberate toolchain bump can therefore change
-the diagnostic wording and require a re-bless, exactly as it does for Clippy — a `.stderr` diff after
-a toolchain change is expected, not a regression. A passing `usability/unsatisfied-dependency/unsatisfied_dependency`
+the diagnostic wording and require a re-bless, exactly as it does for Clippy — a `.cgp.stderr` or
+`.rust.stderr` diff after a toolchain change is expected, not a regression. A passing
+`usability/unsatisfied-dependency/unsatisfied_dependency`
 snapshot is also the standing proof that the driver genuinely stands in as the compiler, since its
 un-hidden root cause could only be produced by compiling the fixture through the tool.
 
@@ -215,10 +237,13 @@ drives `clippy-driver` directly**. Driving the front-end is a stronger end-to-en
 If the suite grows enough to want per-diagnostic control (inline `//~` annotations, rustfix, and the
 like), adopting `ui_test` pointed at `cargo-cgp-driver` is the natural next step.
 
-A third, smaller difference is that the suite pins *two* snapshots per fixture and adds the process
-pass — a pure unit check of `process_cgp_errors` that Clippy has no analogue for, because Clippy has
-no post-compilation processing stage to unit-test. It is what makes the `--process-only` fast loop
-possible.
+A third, smaller difference is that the suite pins *three* snapshots per fixture where Clippy pins
+one. Two have no Clippy analogue: the process pass is a pure unit check of `process_cgp_errors` that
+Clippy cannot have, because it has no post-compilation processing stage to unit-test (this is what
+makes the `--process-only` fast loop possible); and the `.rust.stderr` baseline records plain
+`cargo check`, which Clippy never needs because it only *adds* lints to rustc's output rather than
+rewriting it, so it has no "before" worth pinning. `cargo-cgp` rewrites, so the before/after pairing
+is what makes the rewrite legible.
 
 One gap against Clippy is unrelated to the harness: there is no dogfood test that runs `cargo-cgp` on
 this repository's own crates. It becomes worthwhile once the tool does more than pass through.
@@ -247,16 +272,17 @@ no dogfood test yet (see above).
   [`crates/cargo-cgp-ui-tests/tests/normalize.rs`](../../crates/cargo-cgp-ui-tests/tests/normalize.rs)
   — harness option/filter parsing (including `--process-only`) and both output normalizers.
 - [`tests/ui/`](../../tests/ui) — the UI snapshot fixtures, each `<name>.rs` paired with a blessed
-  `<name>.stderr` and `<name>.output.json`, run by the harness's three passes.
+  `<name>.cgp.stderr` (the tool's output), `<name>.rust.stderr` (the plain-`cargo check` baseline),
+  and `<name>.output.json` (the captured diagnostics), run by the harness's four passes.
 
 ## Source
 
 - [`crates/cargo-cgp-ui-tests/`](../../crates/cargo-cgp-ui-tests) — the custom UI-test harness:
   `tests/ui.rs` (the `harness = false` entrypoint) and the `src/` modules (`options`, `paths`,
   `fixtures`, `harness`, `passes`, `normalize`, `snapshot`).
-- [`tests/ui/`](../../tests/ui) — the fixture tree, one scenario per `.rs` file with its `.stderr` and
-  `.output.json` snapshots, grouped into the `hidden-root-cause/` / `usability/` / `ok/` category
-  subdirectories.
+- [`tests/ui/`](../../tests/ui) — the fixture tree, one scenario per `.rs` file with its `.cgp.stderr`,
+  `.rust.stderr`, and `.output.json` snapshots, grouped into the `hidden-root-cause/` / `usability/` /
+  `ok/` category subdirectories.
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs),
   [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — the modules the
   argument tests cover.

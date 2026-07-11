@@ -1,0 +1,44 @@
+error[E0277]: the trait bound `PathCons<Symbol<3, Chars<'a', ...>>, ...>: DefaultNamespace<...>` is not satisfied
+  --> src/main.rs:48:9
+   |
+48 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `cgp::prelude::DefaultNamespace<App>` is not implemented for `PathCons<Symbol<3, Chars<'a', Chars<'p', Chars<'p', Nil>>>>, ...>`
+   |
+   = help: the following other types implement trait `cgp::prelude::DefaultNamespace<Components>`:
+             AsyncComputerComponent
+             AsyncComputerRefComponent
+             ComputerComponent
+             ComputerRefComponent
+             ErrorRaiserComponent
+             ErrorTypeProviderComponent
+             ErrorWrapperComponent
+             GreeterComponent
+           and 5 others
+note: required for `App` to implement `DelegateComponent<PathCons<Symbol<3, Chars<'a', ...>>, ...>>`
+  --> src/main.rs:40:1
+   |
+40 | / delegate_components! {
+41 | |     App {
+   | |     ^^^
+42 | |         namespace DefaultNamespace;
+43 | |     }
+44 | | }
+   | |_^
+note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<'a', ...>>, ...>>` to implement `IsProviderFor<GreeterComponent, App>`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:46:1
+   |
+46 | / check_components! {
+47 | |     App {
+48 | |         GreeterComponent,
+49 | |     }
+50 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

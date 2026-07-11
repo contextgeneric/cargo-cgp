@@ -4,7 +4,7 @@ error[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not sati
 71 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: missing field `height` in `Rectangle`
+help: [CGP0001] missing field `scale_factor` in `Rectangle`
   --> src/main.rs:55:1
    |
 55 | pub struct Rectangle {
@@ -15,25 +15,23 @@ help: `Rectangle` implements trait `HasField<Tag>`
 54 | #[derive(HasField)]
    |          ^^^^^^^^
    |          |
-   |          `HasField<Symbol!("scale_factor")>`
    |          `HasField<Symbol!("width")>`
-note: required for `Rectangle` to implement `HasRectangleFields`
-  --> src/main.rs:21:1
+   |          `HasField<Symbol!("height")>`
+note: required for `Rectangle` to implement `HasScaleFactor`
+  --> src/main.rs:38:1
    |
-21 | #[cgp_auto_getter]
+38 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-22 | pub trait HasRectangleFields {
-   |           ^^^^^^^^^^^^^^^^^^
-note: required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
-  --> src/main.rs:28:1
+39 | pub trait HasScaleFactor {
+   |           ^^^^^^^^^^^^^^
+note: required for the provider `ScaledArea<RectangleArea>` to implement the provider trait `AreaCalculator` for the context `Rectangle`
+  --> src/main.rs:43:1
    |
-28 | #[cgp_impl(new RectangleArea)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+43 | #[cgp_impl(new ScaledArea<InnerCalculator>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-31 |     Self: HasRectangleFields,
-   |           ------------------ unsatisfied trait bound introduced here
-   = note: 1 redundant requirement hidden
-   = note: required for the provider `ScaledArea<RectangleArea>` to implement the provider trait `AreaCalculator` for the context `Rectangle`
+46 |     Self: HasScaleFactor,
+   |           -------------- unsatisfied trait bound introduced here
    = note: required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
 note: required by a bound in `__CheckRectangle`
   --> src/main.rs:69:1

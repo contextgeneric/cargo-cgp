@@ -122,7 +122,7 @@ The next-generation solver does compute it. Under `-Znext-solver=globally` the s
 workspace crate under the new solver un-hides the cause — no diagnostic parsing required. The flag is
 scoped to workspace crates (only they go through the driver), so dependencies still build with the
 default solver. The before/after is pinned by the
-[`usability/unsatisfied_dependency`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.stderr)
+[`usability/unsatisfied_dependency`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr)
 UI snapshot — a fixture that lives under `usability/` precisely because this solver switch has
 already turned its once-hidden cause into a recoverable (if still verbose) one.
 
@@ -168,7 +168,7 @@ against `HasField<Symbol!("width")>`; because the two symbols share the characte
 `'h'` was collapsed to `_` in *both* names, printing `h,e,i,g,_,t` and `w,i,d,t,_` — the field name
 could not be read back from the text at all. Under `--verbose` both symbols print in full. The
 before/after is pinned by the
-[`usability/base_area_1`](../../tests/ui/usability/checks/base_area_1.stderr) UI snapshot, a fixture
+[`usability/base_area_1`](../../tests/ui/usability/checks/base_area_1.cgp.stderr) UI snapshot, a fixture
 that lives under `usability/` precisely because the flag has turned its once-hidden cause into a
 recoverable (if still verbose) one — the same graduation the solver switch gave
 `unsatisfied_dependency`.
@@ -271,7 +271,7 @@ follows from naming the obligation's subject verbatim: the subject is usually a 
 its own provider, so a self-provider case reads `` the provider `Rectangle` … for the context
 `Rectangle` ``. The before/after is pinned across the whole `usability/checks` fixture set, whose
 blessed snapshots show the trait-named notes *and* headers;
-[`base_area_1`](../../tests/ui/usability/checks/base_area_1.stderr) is the worked example.
+[`base_area_1`](../../tests/ui/usability/checks/base_area_1.cgp.stderr) is the worked example.
 
 The same emitter seam is where further compiler-state enrichment will hang. Where even the next-gen
 solver renders an obligation chain tersely, the driver could re-run trait fulfillment on the failing
@@ -345,18 +345,18 @@ will likely grow toward it:
   multi-parameter tuple unwrapped, and the notes eliding parameters); the module-prefix and
   generic-subject/context cases; the non-CGP and unknown-marker pass-throughs; and a check that the
   `ComponentNameMap` lazy initializer is *not* forced when no message matches.
-- [`tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.stderr)
+- [`tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr)
   — pins the un-hidden output the solver switch produces.
-- [`tests/ui/usability/checks/base_area_1.stderr`](../../tests/ui/usability/checks/base_area_1.stderr)
+- [`tests/ui/usability/checks/base_area_1.cgp.stderr`](../../tests/ui/usability/checks/base_area_1.cgp.stderr)
   — pins the un-elided field name (`--verbose`) and the trait-named header and wiring notes; watch for
   a `_` returning inside its `Symbol`, or a marker-based header/note returning.
-- [`tests/ui/usability/checks/generic_area.stderr`](../../tests/ui/usability/checks/generic_area.stderr)
+- [`tests/ui/usability/checks/generic_area.cgp.stderr`](../../tests/ui/usability/checks/generic_area.cgp.stderr)
   — the end-to-end regression guard that the transform still names the traits when the component is
   generic: the header reattaches the single `<f64>` parameter, the notes name the traits and elide it.
-- [`tests/ui/usability/checks/generic_area_multi.stderr`](../../tests/ui/usability/checks/generic_area_multi.stderr)
+- [`tests/ui/usability/checks/generic_area_multi.cgp.stderr`](../../tests/ui/usability/checks/generic_area_multi.cgp.stderr)
   — the same, for a *three-parameter* component: the header unwraps the `(u32, u64, bool)` tuple to
   `CanCalculateArea<u32, u64, bool>`.
-- [`tests/ui/usability/checks/`](../../tests/ui/usability/checks) — the blessed `.stderr`/`.output.json`
+- [`tests/ui/usability/checks/`](../../tests/ui/usability/checks) — the blessed `.cgp.stderr`/`.output.json`
   snapshots across the set pin the trait-renaming transform end to end.
 
 ## Source

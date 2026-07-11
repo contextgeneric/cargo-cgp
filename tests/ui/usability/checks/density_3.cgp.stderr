@@ -4,7 +4,7 @@ error[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not sati
 78 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: missing field `height` in `Rectangle`
+help: [CGP0001] missing field `height` in `Rectangle`
   --> src/main.rs:58:1
    |
 58 | pub struct Rectangle {
@@ -51,7 +51,7 @@ error[E0277]: the consumer trait bound `Rectangle: CanCalculateDensity` is not s
 79 |         DensityCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: missing field `height` in `Rectangle`
+help: [CGP0001] missing field `height` in `Rectangle`
   --> src/main.rs:58:1
    |
 58 | pub struct Rectangle {

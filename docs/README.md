@@ -48,8 +48,15 @@ question: the cases where no downstream consumer could identify the root cause f
 carries the cause but buries it, foremost overly verbose messages. Unlike the other categories, its
 entries describe absent behavior and are deleted as the tool closes each gap.
 
+Alongside those two directories sits one standalone top-level document, [error-code.md](error-code.md):
+the catalog of the CGP error codes `cargo-cgp` stamps on the messages it fully rewrites — what each
+code means, what triggers it, and how to fix it — and the record of which rewrites are cosmetic and so
+carry no code. It is user-facing where the two directories are internals-facing, so it lives at the
+top level rather than inside a category.
+
 As the tool grows a user-facing surface and more moving parts, expect further categories to appear
-alongside `implementation/` — a user guide to running the tool, and a reference for the CGP error
-classes it learns to recognize (drawing on the upstream
+alongside `implementation/` — a user guide to running the tool, and a fuller reference for the CGP
+error classes it learns to recognize (drawing on the upstream
 [CGP error catalog](../../cgp/docs/errors/README.md)). Add a category by creating its directory with
-a `README.md` and registering it here in the same change.
+a `README.md` and registering it here in the same change; add a standalone document (like
+`error-code.md`) by registering it here too.

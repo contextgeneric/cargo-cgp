@@ -1,0 +1,168 @@
+error[E0277]: the trait bound `ScaledArea<RectangleArea>: AreaCalculator<Rectangle>` is not satisfied
+  --> src/main.rs:95:9
+   |
+95 |         DensityCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `AreaCalculator<Rectangle>` is not implemented for `ScaledArea<RectangleArea>`
+  --> src/main.rs:48:16
+   |
+48 | #[cgp_impl(new ScaledArea<InnerCalculator>)]
+   |                ^^^^^^^^^^
+help: the trait `AreaCalculator<__Context__>` is implemented for `ScaledArea<InnerCalculator>`
+  --> src/main.rs:49:1
+   |
+49 | / impl<InnerCalculator> AreaCalculator
+50 | | where
+51 | |     Self: HasScaleFactor,
+52 | |     InnerCalculator: AreaCalculator<Self>,
+   | |__________________________________________^
+note: required for `Rectangle` to implement `AreaCalculator<Rectangle>`
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Rectangle` to implement `CanCalculateArea`
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | pub trait CanCalculateArea {
+   |           ^^^^^^^^^^^^^^^^
+note: required for `DensityFromMassField` to implement `IsProviderFor<DensityCalculatorComponent, Rectangle>`
+  --> src/main.rs:64:1
+   |
+64 | #[cgp_impl(new DensityFromMassField)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+67 |     Self: CanCalculateArea + HasMass,
+   |           ---------------- unsatisfied trait bound introduced here
+   = note: required for `Rectangle` to implement `CanUseComponent<DensityCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:93:1
+   |
+93 | / check_components! {
+94 | |     Rectangle {
+95 | |         DensityCalculatorComponent,
+96 | |     }
+97 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RectangleArea: AreaCalculator<Rectangle>` is not satisfied
+  --> src/main.rs:95:9
+   |
+95 |         DensityCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `AreaCalculator<Rectangle>` is not implemented for `RectangleArea`
+  --> src/main.rs:33:16
+   |
+33 | #[cgp_impl(new RectangleArea)]
+   |                ^^^^^^^^^^^^^
+help: the trait `AreaCalculator<__Context__>` is implemented for `RectangleArea`
+  --> src/main.rs:34:1
+   |
+34 | / impl AreaCalculator
+35 | | where
+36 | |     Self: HasRectangleFields,
+   | |_____________________________^
+note: required for `ScaledArea<RectangleArea>` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:48:1
+   |
+48 | #[cgp_impl(new ScaledArea<InnerCalculator>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+52 |     InnerCalculator: AreaCalculator<Self>,
+   |                      -------------------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `Rectangle` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+note: required for `Rectangle` to implement `AreaCalculator<Rectangle>`
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Rectangle` to implement `CanCalculateArea`
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | pub trait CanCalculateArea {
+   |           ^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `DensityFromMassField` to implement `IsProviderFor<DensityCalculatorComponent, Rectangle>`
+   = note: required for `Rectangle` to implement `CanUseComponent<DensityCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:93:1
+   |
+93 | / check_components! {
+94 | |     Rectangle {
+95 | |         DensityCalculatorComponent,
+96 | |     }
+97 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Rectangle: CanUseComponent<DensityCalculatorComponent>` is not satisfied
+  --> src/main.rs:95:9
+   |
+95 |         DensityCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<12, cgp::prelude::Chars<'s', cgp::prelude::Chars<'c', cgp::prelude::Chars<'a', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'f', cgp::prelude::Chars<'a', cgp::prelude::Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', Nil>>>>>>>>>>>>>>` is not implemented for `Rectangle`
+  --> src/main.rs:75:1
+   |
+75 | pub struct Rectangle {
+   | ^^^^^^^^^^^^^^^^^^^^
+help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
+  --> src/main.rs:74:10
+   |
+74 | #[derive(HasField)]
+   |          ^^^^^^^^
+   |          |
+   |          `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', ...>>>>>`
+   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', ...>>>>>`
+note: required for `Rectangle` to implement `HasScaleFactor`
+  --> src/main.rs:43:1
+   |
+43 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+44 | pub trait HasScaleFactor {
+   |           ^^^^^^^^^^^^^^
+note: required for `ScaledArea<RectangleArea>` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:48:1
+   |
+48 | #[cgp_impl(new ScaledArea<InnerCalculator>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+51 |     Self: HasScaleFactor,
+   |           -------------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `Rectangle` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+note: required for `Rectangle` to implement `AreaCalculator<Rectangle>`
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Rectangle` to implement `CanCalculateArea`
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | pub trait CanCalculateArea {
+   |           ^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `DensityFromMassField` to implement `IsProviderFor<DensityCalculatorComponent, Rectangle>`
+   = note: required for `Rectangle` to implement `CanUseComponent<DensityCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:93:1
+   |
+93 | / check_components! {
+94 | |     Rectangle {
+95 | |         DensityCalculatorComponent,
+96 | |     }
+97 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

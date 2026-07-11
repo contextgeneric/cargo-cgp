@@ -1,0 +1,39 @@
+error[E0277]: the consumer trait bound `Person: CanGreet` is not satisfied
+  --> src/main.rs:55:9
+   |
+55 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: [CGP0001] missing field `name` in `Person`
+  --> src/main.rs:41:10
+   |
+41 | #[derive(HasField)]
+   |          ^^^^^^^^
+note: required for `Person` to implement `HasName`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+27 | pub trait HasName {
+   |           ^^^^^^^
+note: required for the provider `GreetHello` to implement the provider trait `Greeter` for the context `Person`
+  --> src/main.rs:31:1
+   |
+31 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+34 |     Self: HasName,
+   |           ------- unsatisfied trait bound introduced here
+   = note: required for the context `Person` to implement the consumer trait `CanGreet`
+note: required by a bound in `__CheckPerson`
+  --> src/main.rs:53:1
+   |
+53 | / check_components! {
+54 | |     Person {
+55 | |         GreeterComponent,
+56 | |     }
+57 | | }
+   | |_^ required by this bound in `__CheckPerson`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

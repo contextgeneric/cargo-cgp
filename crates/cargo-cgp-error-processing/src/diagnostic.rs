@@ -40,6 +40,27 @@ pub enum CgpDiagnosticDetail {
     MissingDeriveHasField { field_name: String, context: String },
 }
 
+impl CgpDiagnosticDetail {
+    /// The CGP error code for a single missing field ([`MissingField`](Self::MissingField)).
+    pub const MISSING_FIELD_CODE: &'static str = "CGP0001";
+    /// The CGP error code for a missing `#[derive(HasField)]`
+    /// ([`MissingDeriveHasField`](Self::MissingDeriveHasField)).
+    pub const MISSING_DERIVE_CODE: &'static str = "CGP0002";
+
+    /// The CGP error code identifying this class of fully-rewritten error. Each code names
+    /// one entry in `docs/error-code.md`, and a preprocessor tags the message it rewrites
+    /// with the code in a `[CGPxxxx]` prefix — deliberately unlike rustc's `E0277`, so the
+    /// two schemes never blur. Codes are attached only to *full* message rewrites like these;
+    /// the cosmetic partial rewrites (prefix stripping, `Symbol!` resugaring, the driver's
+    /// wiring-message renaming) carry none.
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::MissingField { .. } => Self::MISSING_FIELD_CODE,
+            Self::MissingDeriveHasField { .. } => Self::MISSING_DERIVE_CODE,
+        }
+    }
+}
+
 impl CgpDiagnostic {
     /// Wrap a rustc diagnostic before preprocessing, with no CGP analysis applied yet.
     pub fn wrap(diagnostic: Diagnostic) -> Self {

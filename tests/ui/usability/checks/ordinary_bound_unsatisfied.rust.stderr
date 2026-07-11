@@ -1,0 +1,37 @@
+error[E0277]: the trait bound `f64: Eq` is not satisfied
+  --> src/main.rs:59:9
+   |
+59 |         ScalarEqualityComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ the trait `Eq` is not implemented for `f64`
+   |
+   = help: the following other types implement trait `Eq`:
+             i128
+             i16
+             i32
+             i64
+             i8
+             isize
+             u128
+             u16
+           and 4 others
+note: required for `CompareScalars` to implement `IsProviderFor<ScalarEqualityComponent, App>`
+  --> src/main.rs:37:1
+   |
+37 | #[cgp_impl(new CompareScalars)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+41 |     Scalar: Eq,
+   |             -- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<ScalarEqualityComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:57:1
+   |
+57 | / check_components! {
+58 | |     App {
+59 | |         ScalarEqualityComponent,
+60 | |     }
+61 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

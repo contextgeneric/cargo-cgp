@@ -36,7 +36,7 @@ Worse, the error *count* reflects the depth of the wiring graph rather than the 
 [`density_3.rs`](../../tests/ui/usability/checks/density_3.rs) checks both `AreaCalculatorComponent` and
 `DensityCalculatorComponent`, and the one missing `height` field produces *two* full `E0277`
 cascades that a reader must get through before realizing they describe the same fix
-([`.stderr`](../../tests/ui/usability/checks/density_3.stderr)). The tool should deduplicate — coalesce
+([`.cgp.stderr`](../../tests/ui/usability/checks/density_3.cgp.stderr)). The tool should deduplicate — coalesce
 every block whose cause is the same unmet bound into one headline and report the count of affected
 components rather than repeating the cascade.
 
@@ -45,7 +45,7 @@ components rather than repeating the cascade.
 When broken wiring is exercised by a direct method call, the loudest line points the reader the wrong
 way. [`unsatisfied_dependency.rs`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.rs) calls
 `greet()` on a context that cannot satisfy the provider's `Self: HasName`, and the
-[`.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.stderr) leads with `E0599` "method
+[`.cgp.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr) leads with `E0599` "method
 `greet` not found … this is an associated function, not a method" and even suggests "use associated
 function syntax instead" — advice that is wrong for a wiring error. The real cause is present further
 down, because `cargo-cgp`'s next-gen solver surfaces the unmet `HasField<…name…>` bound and an "add
@@ -88,7 +88,7 @@ Clippy leads with a plain statement of a lint before its span.
 When the checked component is several hops from the failing field, the path connecting them is
 present but scattered through scaffolding. In [`density_1.rs`](../../tests/ui/usability/checks/density_1.rs)
 the check names `DensityCalculatorComponent`, yet the missing `height` field belongs to a transitive
-`AreaCalculator` dependency, and the [`.stderr`](../../tests/ui/usability/checks/density_1.stderr) traces
+`AreaCalculator` dependency, and the [`.cgp.stderr`](../../tests/ui/usability/checks/density_1.cgp.stderr) traces
 the connection only through a stack of `required for …` notes punctuated by `1 redundant requirement
 hidden`. [`density_2.rs`](../../tests/ui/usability/checks/density_2.rs) adds a `ScaledArea` layer and shows
 the chain growing longer with no new cause. The tool should collapse either into a short, readable
@@ -112,7 +112,7 @@ the way the upstream `#[check_providers(...)]` form does by hand (see the catalo
 The absence of `#[derive(HasField)]` altogether looks, at a glance, like a single missing field, even
 though the fix is entirely different. [`base_area_2.rs`](../../tests/ui/usability/checks/base_area_2.rs)
 omits the derive, so `Rectangle` has *no* `HasField` impls, and the
-[`.stderr`](../../tests/ui/usability/checks/base_area_2.stderr) reports only the first field (`width`) and —
+[`.cgp.stderr`](../../tests/ui/usability/checks/base_area_2.cgp.stderr) reports only the first field (`width`) and —
 unlike every other fixture — carries no "but trait `HasField<…>` is implemented for it" landmark.
 That absent landmark is the signal, and it is in the output, so a tool can detect it: a context with
 zero `HasField` impls behind a `#[derive(HasField)]`-shaped requirement has most likely forgotten the

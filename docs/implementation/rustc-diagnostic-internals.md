@@ -95,7 +95,7 @@ a `Rectangle` that only has `width`, so rustc diffs `HasField<Symbol!("height")>
 `width`), so `maybe_highlight` collapsed that shared `'h'` to `_` in *both* names, printing `h,e,i,g,_,t`
 and `w,i,d,t,_`. The field name could not be read back from the text at all. Under `--verbose` the same
 hint prints both symbols in full, which is what the fixture's blessed
-[`.stderr`](../../tests/ui/usability/checks/base_area_1.stderr) now records.
+[`.cgp.stderr`](../../tests/ui/usability/checks/base_area_1.cgp.stderr) now records.
 
 ### A long type is truncated and written to a file
 

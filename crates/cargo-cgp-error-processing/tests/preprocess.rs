@@ -99,7 +99,7 @@ fn missing_field_with_inline_landmark_absorbs_it() {
     ));
     assert_eq!(
         output.rendered().unwrap(),
-        "help: missing field `height` in `Rectangle`\n  --> src/main.rs:45:10"
+        "help: [CGP0001] missing field `height` in `Rectangle`\n  --> src/main.rs:45:10"
     );
     assert!(output.has_cgp_error);
     assert_eq!(
@@ -122,7 +122,7 @@ fn missing_field_with_separate_impls_note_is_recognized() {
     ));
     assert_eq!(
         output.rendered().unwrap(),
-        "help: missing field `height` in `Rectangle`\n  --> src/main.rs:59:1\n\
+        "help: [CGP0001] missing field `height` in `Rectangle`\n  --> src/main.rs:59:1\n\
          help: `Rectangle` implements trait `HasField<Tag>`"
     );
     assert!(output.has_cgp_error);
@@ -145,7 +145,7 @@ fn missing_derive_when_no_impls_present() {
     ));
     assert_eq!(
         output.rendered().unwrap(),
-        "help: `#[derive(HasField)]` is required to access field `width` in `Rectangle`\n\
+        "help: [CGP0002] `#[derive(HasField)]` is required to access field `width` in `Rectangle`\n\
          \x20 --> src/main.rs:41:1"
     );
     assert!(output.has_cgp_error);

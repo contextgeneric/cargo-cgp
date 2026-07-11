@@ -1,0 +1,9 @@
+error[E0119]: conflicting implementations of trait `ChildNs<_>` for type `GreeterComponent`
+  --> src/main.rs:55:9
+   |
+54 |     new ChildNs: BaseNs {
+   |                  ------ first implementation here
+55 |         GreeterComponent: GreetBye,
+   |         ^^^^^^^^^^^^^^^^ conflicting implementation for `GreeterComponent`
+
+For more information about this error, try `rustc --explain E0119`.

@@ -1,0 +1,10 @@
+error[E0119]: conflicting implementations of trait `DefaultImpls1<ShowImplComponent, _>` for type `String`
+  --> src/main.rs:35:16
+   |
+26 | #[default_impl(String in DefaultImpls1<ShowImplComponent>)]
+   |                ------ first implementation here
+...
+35 | #[default_impl(String in DefaultImpls1<ShowImplComponent>)]
+   |                ^^^^^^ conflicting implementation for `String`
+
+For more information about this error, try `rustc --explain E0119`.

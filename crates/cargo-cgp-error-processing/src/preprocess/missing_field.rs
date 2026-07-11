@@ -2,18 +2,21 @@
 //!
 //! rustc reports a getter's unmet dependency as
 //! `the trait `HasField<Symbol!("name")>` is not implemented for `Context``. This rewrites
-//! that to `missing field `name` in `Context``, and extracts a [`CgpDiagnosticDetail`].
+//! that to `[CGP0001] missing field `name` in `Context``, and extracts a
+//! [`CgpDiagnosticDetail`]. Because the whole message is replaced, it is tagged with a CGP
+//! error code (see `docs/error-code.md`); the [`code`](CgpDiagnosticDetail::code) is prefixed
+//! in a `[CGPxxxx]` form chosen to look nothing like rustc's `E0277`.
 //!
 //! It distinguishes two cases, because their fixes differ, and the tell is within the same
 //! diagnostic (see the CGP `check-trait-failure` error-catalog document):
 //!
 //! - The context implements `HasField` for *some* field but not the one asked for — a
-//!   single missing field. rustc shows a "similar impl" landmark, either inline (`but trait
-//!   `HasField<…>` is implemented for it`, one other field) or as a separate `` `Context`
-//!   implements trait `HasField<…>` `` note (several other fields).
+//!   single missing field (`CGP0001`). rustc shows a "similar impl" landmark, either inline
+//!   (`but trait `HasField<…>` is implemented for it`, one other field) or as a separate
+//!   `` `Context` implements trait `HasField<…>` `` note (several other fields).
 //! - The context implements `HasField` for *no* field — the whole `#[derive(HasField)]` is
-//!   missing. Neither landmark appears. The message instead points at the derive:
-//!   `` `#[derive(HasField)]` is required to access field `name` in `Context` ``.
+//!   missing (`CGP0002`). Neither landmark appears. The message instead points at the derive:
+//!   `` [CGP0002] `#[derive(HasField)]` is required to access field `name` in `Context` ``.
 //!
 //! Runs after [`strip_cgp_prefixes`](super::strip_cgp_prefixes) and
 //! [`resugar_symbol`](super::resugar_symbol), so it matches the bare, resugared
@@ -80,8 +83,14 @@ fn rewrite(text: &str, has_field_impls: bool) -> (String, Vec<CgpDiagnosticDetai
             continue;
         };
 
+        // A fully rewritten CGP message is tagged with its error code (see
+        // `docs/error-code.md`); the `[CGPxxxx]` prefix is deliberately unlike rustc's
+        // `E0277` so a reader never confuses the two.
         let after = if has_field_impls {
-            out.push_str(&format!("missing field `{field}` in `{context}`"));
+            out.push_str(&format!(
+                "[{}] missing field `{field}` in `{context}`",
+                CgpDiagnosticDetail::MISSING_FIELD_CODE
+            ));
             details.push(CgpDiagnosticDetail::MissingField {
                 field_name: field,
                 context,
@@ -92,7 +101,8 @@ fn rewrite(text: &str, has_field_impls: bool) -> (String, Vec<CgpDiagnosticDetai
             consume_inline_landmark(after_clause).unwrap_or(after_clause)
         } else {
             out.push_str(&format!(
-                "`#[derive(HasField)]` is required to access field `{field}` in `{context}`"
+                "[{}] `#[derive(HasField)]` is required to access field `{field}` in `{context}`",
+                CgpDiagnosticDetail::MISSING_DERIVE_CODE
             ));
             details.push(CgpDiagnosticDetail::MissingDeriveHasField {
                 field_name: field,

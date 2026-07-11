@@ -1,0 +1,12 @@
+error[E0428]: the name `GreeterComponent` is defined multiple times
+  --> src/main.rs:28:1
+   |
+22 | #[cgp_component(Greeter)]
+   |                 ------- previous definition of the type `GreeterComponent` here
+...
+28 | pub struct GreeterComponent;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `GreeterComponent` redefined here
+   |
+   = note: `GreeterComponent` must be defined only once in the type namespace of this module
+
+For more information about this error, try `rustc --explain E0428`.

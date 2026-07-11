@@ -1,14 +1,18 @@
-//! The three verification passes each fixture goes through.
+//! The verification passes each fixture goes through.
 //!
-//! All three must agree on the rendered diagnostics, so they cross-check each other:
+//! Three passes must agree on the rendered `cargo-cgp` diagnostics, so they cross-check each
+//! other, and a fourth records the plain-compiler baseline:
 //!
-//! - [`stderr_pass`] runs `cargo-cgp` directly and compares its stderr to `.stderr`.
+//! - [`cgp_stderr_pass`] runs `cargo-cgp` directly and compares its stderr to `.cgp.stderr`.
 //! - [`json_pass`] captures the raw JSON the tool sees, extracts the diagnostics, and
 //!   compares them to `.output.json`.
 //! - [`process_pass`] parses `.output.json`, runs it through `process_cgp_errors`, renders
-//!   the result, and compares to `.stderr` — the pure unit pass, needing no compilation.
+//!   the result, and compares to `.cgp.stderr` — the pure unit pass, needing no compilation.
+//! - [`rust_stderr_pass`] runs plain `cargo check` and records its stderr in `.rust.stderr`,
+//!   the "before" the tool improves on. It stands alone — nothing cross-checks it, because it
+//!   is the untransformed compiler output, not a tool result.
 //!
-//! The stderr and process passes share a target (`.stderr`) because rendering the
+//! The cgp-stderr and process passes share a target (`.cgp.stderr`) because rendering the
 //! processed diagnostics must reproduce what the tool itself prints. They reuse the tool's
 //! own capture (`parse_cargo_output`) and render (`emit_rendered`) code so the unit pass
 //! cannot drift from the binary.
@@ -22,13 +26,32 @@ use cargo_metadata::diagnostic::Diagnostic;
 
 use crate::harness;
 use crate::normalize::{normalize, normalize_json};
-use crate::snapshot::{Outcome, output_json_path, review, stderr_path};
+use crate::snapshot::{Outcome, cgp_stderr_path, output_json_path, review, rust_stderr_path};
 
-/// Pass 1 — run `cargo-cgp` on the fixture and review its stderr against `.stderr`.
-pub fn stderr_pass(harness_crate: &Path, fixture: &Path, cgp_root: &Path, bless: bool) -> Outcome {
+/// Run `cargo-cgp` on the fixture and review its stderr against `.cgp.stderr`.
+pub fn cgp_stderr_pass(
+    harness_crate: &Path,
+    fixture: &Path,
+    cgp_root: &Path,
+    bless: bool,
+) -> Outcome {
     let raw = harness::run_fixture(harness_crate, fixture);
     let actual = normalize(&raw, harness_crate, cgp_root);
-    review(&stderr_path(fixture), &actual, bless)
+    review(&cgp_stderr_path(fixture), &actual, bless)
+}
+
+/// Run plain `cargo check` on the fixture and review its stderr against `.rust.stderr` — the
+/// original compiler output the tool sets out to improve, recorded here so the diff against
+/// `.cgp.stderr` shows what `cargo-cgp` changes.
+pub fn rust_stderr_pass(
+    harness_crate: &Path,
+    fixture: &Path,
+    cgp_root: &Path,
+    bless: bool,
+) -> Outcome {
+    let raw = harness::run_fixture_rust(harness_crate, fixture);
+    let actual = normalize(&raw, harness_crate, cgp_root);
+    review(&rust_stderr_path(fixture), &actual, bless)
 }
 
 /// Pass 2 — capture the raw JSON the tool sees, extract the diagnostics it feeds to
@@ -41,9 +64,9 @@ pub fn json_pass(harness_crate: &Path, fixture: &Path, cgp_root: &Path, bless: b
     review(&output_json_path(fixture), &actual, bless)
 }
 
-/// Pass 3 — the unit pass: parse `.output.json`, run `process_cgp_errors`, render the
-/// result, and review it against `.stderr`. Needs no compilation, so it is the fast pass
-/// for iterating on the processing implementation. Returns [`Outcome::Mismatch`] (with a
+/// The unit pass: parse `.output.json`, run `process_cgp_errors`, render the result, and
+/// review it against `.cgp.stderr`. Needs no compilation, so it is the fast pass for
+/// iterating on the processing implementation. Returns [`Outcome::Mismatch`] (with a
 /// message) if the fixture has no committed `.output.json` to read yet.
 pub fn process_pass(harness_crate: &Path, fixture: &Path, cgp_root: &Path, bless: bool) -> Outcome {
     let json_path = output_json_path(fixture);
@@ -69,7 +92,7 @@ pub fn process_pass(harness_crate: &Path, fixture: &Path, cgp_root: &Path, bless
 
     let rendered = render_from_json(diagnostics);
     let actual = normalize(&rendered, harness_crate, cgp_root);
-    review(&stderr_path(fixture), &actual, bless)
+    review(&cgp_stderr_path(fixture), &actual, bless)
 }
 
 /// Render the diagnostics committed in `.output.json` through `process_cgp_errors`,

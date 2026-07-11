@@ -192,10 +192,15 @@ fully-qualified forms. Three preprocessors exist today:
   `` the trait `HasField<Symbol!("name")>` is not implemented for `Context` `` and distinguishes two
   cases whose fixes differ — a distinction available *within the one diagnostic*, so no cross-diagnostic
   aggregation is needed. When the context implements `HasField` for some other field, it is a single
-  missing field (`` missing field `name` in `Context` ``, detail `MissingField`); when it implements
-  `HasField` for no field at all, the whole derive is missing
-  (`` `#[derive(HasField)]` is required to access field `name` in `Context` ``, detail
-  `MissingDeriveHasField`). The tell is rustc's "similar impl" landmark, which the CGP
+  missing field (`` [CGP0001] missing field `name` in `Context` ``, detail `MissingField`); when it
+  implements `HasField` for no field at all, the whole derive is missing
+  (`` [CGP0002] `#[derive(HasField)]` is required to access field `name` in `Context` ``, detail
+  `MissingDeriveHasField`). Because these rewrites replace the *whole* message with a CGP-authored one,
+  each is tagged with a CGP error code (`CGP0001`, `CGP0002`), catalogued in
+  [error-code.md](../error-code.md); the code is the `CgpDiagnosticDetail`'s own `code`, prefixed in a
+  `[CGPxxxx]` form kept visually unlike rustc's `E0277`. The cosmetic rewrites above (prefix stripping,
+  `Symbol!` resugaring) carry no code, as does the driver's wiring-message renaming. The tell that
+  separates the two cases is rustc's "similar impl" landmark, which the CGP
   [check-trait-failure catalog entry](../../../cgp/docs/errors/checks/check-trait-failure.md) documents:
   its presence — either inline (`but trait `HasField<…>` is implemented for it`, one other field) or as
   a separate `` `Context` implements trait `HasField<…>` `` note (several other fields) — means a single
@@ -243,10 +248,11 @@ length or foreign type left alone — and checks the rewritten text and the `has
 `has_cgp_error` false.
 
 The [UI snapshot suite](testing.md) tests this stage a second way, over real captured diagnostics.
-Each fixture is pinned by both a `.stderr` snapshot and a `.output.json` snapshot of the diagnostics
-the tool captured, and one of the suite's three passes — the *process pass* — parses that
-`.output.json`, runs it through `process_cgp_errors`, renders the result, and checks it reproduces the
-`.stderr` the real binary produced. So `process_cgp_errors` is exercised over every fixture's actual
+Each fixture is pinned by a `.cgp.stderr` snapshot and a `.output.json` snapshot of the diagnostics
+the tool captured (and a `.rust.stderr` baseline the processing stage plays no part in), and one of
+the suite's four passes — the *process pass* — parses that `.output.json`, runs it through
+`process_cgp_errors`, renders the result, and checks it reproduces the `.cgp.stderr` the real binary
+produced. So `process_cgp_errors` is exercised over every fixture's actual
 diagnostics, not just the hand-picked fixture in this crate's own tests, and the process pass runs
 without invoking the compiler (`--process-only`), giving a sub-second loop for iterating on the
 processing code. The two levels guard different seams: this crate's tests pin the transform on a
@@ -307,7 +313,7 @@ design is the right precedent to follow precisely because Clippy is not.
   false.
 - The [UI snapshot suite](testing.md) exercises `process_cgp_errors` over every fixture's real
   captured diagnostics: its *process pass* parses each `<name>.output.json`, runs the function,
-  renders the result, and checks it reproduces the binary's `<name>.stderr`. The `--process-only` mode
+  renders the result, and checks it reproduces the binary's `<name>.cgp.stderr`. The `--process-only` mode
   runs just this pass, with no compilation, as the fast iteration loop.
 
 ## Source
@@ -317,7 +323,9 @@ design is the right precedent to follow precisely because Clippy is not.
   "aggregation is a separate phase, not more branches in the map" warning and the `DiagInner` fallback
   note.
 - [`crates/cargo-cgp-error-processing/src/diagnostic.rs`](../../crates/cargo-cgp-error-processing/src/diagnostic.rs) —
-  the `CgpDiagnostic` superset type (with `has_cgp_error`) and its `wrap`/`rendered` helpers.
+  the `CgpDiagnostic` superset type (with `has_cgp_error`) and its `wrap`/`rendered` helpers, and the
+  `CgpDiagnosticDetail` enum with the `code` mapping each recognized class to its CGP error code (see
+  [error-code.md](../error-code.md)).
 - [`crates/cargo-cgp-error-processing/src/preprocess/`](../../crates/cargo-cgp-error-processing/src/preprocess) —
   the preprocessing pipeline: `pipeline.rs` (the `PREPROCESSORS` list and fold), `strip_prefixes.rs`
   (`strip_cgp_prefixes` and the `CGP_PREFIXES` constant), `resugar_symbol.rs` (the exact-match

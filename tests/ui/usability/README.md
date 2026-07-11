@@ -41,8 +41,9 @@ of the upstream CGP compile-fail suite — the `acceptable/` fixtures under
 reproductions behind the [CGP error catalog](../../../../cgp/docs/errors/README.md) — imported so
 cargo-cgp has a snapshot of its own transformed output for every error class a single-crate harness
 can reproduce. An imported `.rs` is an unchanged copy of its upstream counterpart (header included, so
-its `//!` comment refers into the `cgp` checkout); its `.stderr` is cargo-cgp's output, not the
-upstream `trybuild` snapshot.
+its `//!` comment refers into the `cgp` checkout); its `.cgp.stderr` is cargo-cgp's output — not the
+upstream `trybuild` snapshot — and its `.rust.stderr` is what plain `cargo check` prints for the same
+copy, the "before" the tool improves on.
 
 ## What the import found
 
