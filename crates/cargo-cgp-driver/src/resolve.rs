@@ -30,10 +30,10 @@
 //!
 //! For each leaf the resolver also inspects the *actual struct* the `HasField` bound lands on —
 //! its own named fields, and, if the field is not there, the fields of the structs along its
-//! `Deref` chain — so it can tell a genuinely absent field from one that is present but unwired. A
-//! present field means that struct is missing its `#[derive(HasField)]`, or the field's type does
-//! not match what the wiring requires; the emitter words the diagnostic accordingly (see
-//! [`FieldIssue`]).
+//! `Deref` chain — so it can tell a genuinely absent field from one that is present but not derived.
+//! A present field means that struct is missing its `#[derive(HasField)]`; the emitter then words
+//! the diagnostic as an unimplemented `HasField` accessor and adds a `help` pointing at the derive
+//! (see [`FieldIssue`]).
 //!
 //! Component markers are resolved to their consumer/provider trait names through the
 //! [`ComponentNameMap`] keyed by each marker's *full path* (`def_path_str`), not its bare name, so
@@ -57,22 +57,23 @@ use crate::config::{
 };
 
 /// Why a required `HasField` bound is unmet — the distinction that tells a genuinely missing
-/// field apart from one some struct actually carries but has not wired. CGP's `HasField` follows
+/// field apart from one some struct actually carries but has not derived. CGP's `HasField` follows
 /// `Deref` (a blanket impl forwards to the target), so a field on a `Deref` target resolves when
-/// the target derives it; the failure the resolver diagnoses is a field present on some struct
-/// whose `HasField` impl is nonetheless absent or type-mismatched.
+/// the target derives it; the failure the resolver diagnoses is a field present on some struct that
+/// has no `HasField` impl for it. (A field present *with a mismatched type* keeps its `HasField`
+/// trait impl and fails only the associated-type projection — an `E0271` the resolver leaves to
+/// the fallback — so it never reaches this classification.)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FieldIssue {
     /// No struct in the context's `Deref` chain carries a field of this name: it is genuinely
     /// missing and must be added.
     Missing,
-    /// The context struct itself carries a field of this name, yet the `HasField` bound is unmet —
-    /// either the struct is missing its `#[derive(HasField)]`, or the field's type does not match
-    /// the type the wiring requires.
+    /// The context struct itself carries a field of this name, yet the `HasField` bound is unmet:
+    /// the struct is missing (or has an incomplete) `#[derive(HasField)]` for it.
     Present,
     /// The context does not carry the field directly, but a struct reached through its `Deref`
     /// chain does. Since `HasField` follows `Deref`, the bound would hold if that target derived
-    /// the field; the fault is that the target's own `HasField` impl is absent or type-mismatched.
+    /// the field; the fault is that the target does not derive `HasField`.
     PresentViaDeref {
         /// The `Deref`-reachable struct that carries the field, e.g. `AppFields`.
         target: String,

@@ -27,12 +27,20 @@ The header and each note are worded by *why* the bound is unmet, which the resol
 inspecting the actual struct the bound lands on (detailed under [How the root cause is
 recovered](#how-the-root-cause-is-recovered)). A genuinely absent field reads as
 `missing field \`height\` on context \`Rectangle\``. A field the struct *does* carry — the wiring is
-unmet because the struct lacks its `#[derive(HasField)]` or the field's type does not match — reads
-instead as `context \`Person\` cannot access field \`name\``, and its note names the fix: add the
-derive or correct the type. A field reached only through the context's `Deref` chain names the target
-struct that must derive it. This distinction matters because CGP's own [`missing_has_field_derive`
-fixture](../../tests/ui/usability/checks/missing_has_field_derive.rs) is exactly the present-but-unwired
+unmet because the struct lacks its `#[derive(HasField)]` — reads instead as `accessor trait
+\`HasField\` with field \`name\` is not implemented for \`Person\``, and a separate `help`
+subdiagnostic names the fix: `make sure that \`#[derive(HasField)]\` is used for \`Person\``. A field
+reached only through the context's `Deref` chain points that `help` at the target struct that must
+derive it. This distinction matters because CGP's own [`missing_has_field_derive`
+fixture](../../tests/ui/usability/checks/missing_has_field_derive.rs) is exactly the present-but-underived
 case a plain "missing field" would misdescribe.
+
+One kind of field fault is *not* this path: a field whose name matches but whose *type* does not. With
+`#[derive(HasField)]` present, the `HasField` trait bound still holds (for the wrong `Value` type), and
+only the associated-type projection fails — an `E0271`, not an `E0277`. The resolver's field branch
+never sees it, so it declines and the [`field_type_mismatch`
+fixture](../../tests/ui/usability/checks/field_type_mismatch.rs) flows through the text-rewrite fallback,
+which already points the caret at the offending field and its expected type.
 
 Every other diagnostic is left untouched for the existing pipeline to handle. The resolver is a
 strict addition guarded on both ends: it only *attempts* an `E0277` on a check entry, and it only
@@ -116,14 +124,16 @@ arguments whether or not the diagnostic would have printed them.
 field. The resolver inspects the struct the bound lands on — the leaf's self type — and its `Deref`
 chain, to tell three cases apart. If the struct carries no field of that name and neither does any
 `Deref` target, the field is genuinely **missing**. If the struct itself carries the field, the bound
-is unmet only because the struct lacks its `#[derive(HasField)]` or the field's type does not match
-the wiring's — **present**. If the field lives on a struct reached through `Deref` (CGP's `HasField`
-forwards across `Deref` via a blanket impl, so the bound *would* hold if that target derived the
-field), the fault is on the target — **present-via-`Deref`** — and the resolver records that target's
-name so the fix can point at it. The inspection reads named struct fields directly and follows `Deref`
-by reading each `impl Deref`'s `Target` associated type, so it needs no inference context; it is
-bounded against a cyclic `Deref`. This classification is what lets the emitter word a present field's
-diagnostic as an accessibility problem with a concrete fix rather than as a bare "missing field".
+is unmet only because the struct is missing (or has an incomplete) `#[derive(HasField)]` — **present**.
+If the field lives on a struct reached through `Deref` (CGP's `HasField` forwards across `Deref` via a
+blanket impl, so the bound *would* hold if that target derived the field), the fault is on the target —
+**present-via-`Deref`** — and the resolver records that target's name so the fix can point at it. The
+inspection reads named struct fields directly and follows `Deref` by reading each `impl Deref`'s
+`Target` associated type, so it needs no inference context; it is bounded against a cyclic `Deref`.
+This classification is what lets the emitter word a present field's diagnostic as an unimplemented
+accessor with a concrete fix rather than as a bare "missing field". (A field present with a
+mismatched *type* is not one of these three: its `HasField` trait impl holds, so the branch never
+reaches it — see the `E0271` boundary above.)
 
 **Render each root cause as its own sub-error.** Each root-cause path is a list of typed predicates,
 and rendering it is where every CGP wiring trait is replaced by the concept it stands for, so the reader
@@ -146,16 +156,19 @@ rustc-free `cargo-cgp-error-processing` crate so the rendering is unit-tested on
 
 The emitter then builds one replacement `DiagInner` per check entry: a header worded by the field
 classification — `missing field \`height\` on context \`Rectangle\`` when every field is absent,
-`context \`Person\` cannot access field \`name\`` when at least one is present-but-unwired, and the
-plural list when several are unmet (`missing fields \`first_name\` and \`last_name\` on context
-\`Person\``) — the compiler's `E0277` code preserved so `rustc --explain` still works, the caret on the
-entry, and — this is what "separate sub-errors" means — **one note per root cause**. Each note opens
-with a sentence stating that field's specific fault (required, present-but-unwired with the derive/type
-fix, or reachable only through a `Deref` target that must derive it) and then carries that field's own
-dependency tree. A provider with two absent fields therefore yields two notes, each a self-contained
-path to its field, rather than one merged tree. Emitting a hand-built `DiagInner` renders correctly for
-free, because the JSON emitter regenerates every rendered and structured field from it, and rustc's
-note-continuation indentation aligns each tree's box-drawing under its `= note:`.
+`accessor trait \`HasField\` with field \`name\` is not implemented for \`Person\`` when at least one
+is present-but-underived, and the plural list when several are unmet (`missing fields \`first_name\`
+and \`last_name\` on context \`Person\``) — the compiler's `E0277` code preserved so `rustc --explain`
+still works, and the caret on the entry. When any field is present-but-underived, a `help`
+subdiagnostic per distinct type that must derive names the fix once —
+`make sure that \`#[derive(HasField)]\` is used for \`Rectangle\`` (or the `Deref` target for a
+`Deref`-reachable field) — rather than repeating it in every note. Then — this is what "separate
+sub-errors" means — **one terse note per root cause**, each opening `field \`x\` is required through
+this dependency chain:` and carrying that field's own dependency tree. A provider with two absent
+fields therefore yields two notes, each a self-contained path to its field, rather than one merged
+tree. Emitting a hand-built `DiagInner` renders correctly for free, because the JSON emitter
+regenerates every rendered and structured field from it, and rustc's note-continuation indentation
+aligns each tree's box-drawing under its `= note:`.
 
 ## Boundaries and open ends
 
@@ -208,11 +221,13 @@ pin both the replacement and the decline-to-replace boundary. Several fixtures p
 `parallel_branches` (two independent missing fields → two sub-errors), `deep_nesting` (a stack of
 higher-order providers nested four deep → one long spine), `dependency_cascade` (a chain of providers
 each depending on the next), `mixed_rust_error` (a CGP tree beside an untouched ordinary `E0308`),
-`missing_has_field_derive` (a field the struct carries but has not derived → the present-but-unwired
-wording), `field_via_deref` (a field on a `Deref` target that does not derive `HasField` → the fix
-pointed at the target), and `same_name_components` (two components sharing a marker name in different
-modules → full-path resolution names the right consumer trait). The field classification is unit-tested
-through the name map in
+`missing_has_field_derive` (a field the struct carries but has not derived → the unimplemented-accessor
+header plus the derive `help`), `field_via_deref` (a field on a `Deref` target that does not derive
+`HasField` → the `help` pointed at the target), `field_type_mismatch` (a matching field name with a
+mismatched type → the `E0271` boundary that declines to the fallback), and `same_name_components` (two
+components forced to share a marker name in different modules, with distinct consumer *and* provider
+trait names, both checked → full-path resolution names each one's own traits with no cross-over). The
+field classification is unit-tested through the name map in
 [`cargo-cgp-error-processing/tests/rewrite.rs`](../../crates/cargo-cgp-error-processing/tests/rewrite.rs),
 and the renderer itself in
 [`cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).

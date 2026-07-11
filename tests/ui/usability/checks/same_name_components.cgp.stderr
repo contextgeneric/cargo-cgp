@@ -1,13 +1,25 @@
 error[E0277]: missing field `width_a` on context `App`
-  --> src/main.rs:78:9
+  --> src/main.rs:86:9
    |
-78 |         shapes_a::AreaCalculatorComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+86 |         shapes_a::MeasurerComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: field `width_a` is required through this dependency chain:
            consumer trait impl `CanMeasureA` for context `App`
-           └── provider trait impl `AreaCalculator` with context `App` for provider `shapes_a::MeasureA`
+           └── provider trait impl `MeasurerA` with context `App` for provider `shapes_a::MeasureWidthA`
                └── trait impl `HasWidthA` for `App`
                    └── field trait impl `HasField` with field `width_a` for `App`
+
+error[E0277]: missing field `width_b` on context `App`
+  --> src/main.rs:87:9
+   |
+87 |         shapes_b::MeasurerComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: field `width_b` is required through this dependency chain:
+           consumer trait impl `CanMeasureB` for context `App`
+           └── provider trait impl `MeasurerB` with context `App` for provider `shapes_b::MeasureWidthB`
+               └── trait impl `HasWidthB` for `App`
+                   └── field trait impl `HasField` with field `width_b` for `App`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -1,10 +1,11 @@
-error[E0277]: context `Person` cannot access field `name`
+error[E0277]: accessor trait `HasField` with field `name` is not implemented for `Person`
   --> src/main.rs:58:9
    |
 58 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: field `name` exists on `Person`, but its `HasField` impl is missing or its type does not match — add `#[derive(HasField)]` to `Person`, or check the field's type. It is required through this dependency chain:
+   = help: make sure that `#[derive(HasField)]` is used for `Person`
+   = note: field `name` is required through this dependency chain:
            consumer trait impl `CanGreet` for context `Person`
            └── provider trait impl `Greeter` with context `Person` for provider `GreetHello`
                └── trait impl `HasName` for `Person`

@@ -180,9 +180,9 @@ fn quoted_field_list(fields: &[String]) -> String {
 }
 
 /// The header for the resolved field root cause(s). When every field is genuinely absent the
-/// header reads as a missing field; when at least one is present-but-unwired it reads as the
-/// context being unable to access the field, since "missing" would misdescribe a field the struct
-/// visibly carries.
+/// header reads as a missing field; when at least one field the context carries is unwired it reads
+/// as `HasField` being unimplemented, since "missing" would misdescribe a field the struct visibly
+/// carries — the fix (adding the derive) is carried by a separate `help` subdiagnostic.
 fn field_header(context: &str, causes: &[MissingField]) -> String {
     let fields: Vec<String> = causes.iter().map(|c| c.field.clone()).collect();
     let noun = if fields.len() == 1 { "field" } else { "fields" };
@@ -193,44 +193,58 @@ fn field_header(context: &str, causes: &[MissingField]) -> String {
     {
         format!("missing {noun} {list} on context `{context}`")
     } else {
-        format!("context `{context}` cannot access {noun} {list}")
+        format!("accessor trait `HasField` with {noun} {list} is not implemented for `{context}`")
     }
 }
 
-/// The note body for one field root cause: a lead sentence stating the specific fault — absent,
-/// present-but-unwired, or reachable only via `Deref` — followed by the field's dependency chain.
+/// The note body for one field root cause: a short lead line plus the field's dependency chain.
+/// The specific fix (derive `HasField`) is not repeated per field — it rides in one `help`
+/// subdiagnostic — so every note is the same terse "required through this chain" form.
 fn field_note(cause: &MissingField) -> String {
-    let chain = render_dependency_tree(&cause.tree);
-    let field = &cause.field;
-    let owner = &cause.owner;
-    let lead = match &cause.issue {
-        FieldIssue::Missing => {
-            format!("field `{field}` is required through this dependency chain:")
+    format!(
+        "field `{}` is required through this dependency chain:\n{}",
+        cause.field,
+        render_dependency_tree(&cause.tree),
+    )
+}
+
+/// The distinct types that need a `#[derive(HasField)]`, in first-seen order — one per present or
+/// `Deref`-reachable field (a `Deref`-reachable field points at its target, the type that must
+/// actually derive). A genuinely missing field contributes none, since no derive would satisfy it.
+fn derive_targets(causes: &[MissingField]) -> Vec<String> {
+    let mut targets: Vec<String> = Vec::new();
+    for cause in causes {
+        let target = match &cause.issue {
+            FieldIssue::Missing => continue,
+            FieldIssue::Present => &cause.owner,
+            FieldIssue::PresentViaDeref { target } => target,
+        };
+        if !targets.iter().any(|t| t == target) {
+            targets.push(target.clone());
         }
-        FieldIssue::Present => format!(
-            "field `{field}` exists on `{owner}`, but its `HasField` impl is missing or its type \
-             does not match — add `#[derive(HasField)]` to `{owner}`, or check the field's type. \
-             It is required through this dependency chain:"
-        ),
-        FieldIssue::PresentViaDeref { target } => format!(
-            "field `{field}` exists on `{target}`, reached through the `Deref` chain of `{owner}`, \
-             but `{target}` has no matching `HasField` impl — add `#[derive(HasField)]` to \
-             `{target}`, or check the field's type. It is required through this dependency chain:"
-        ),
-    };
-    format!("{lead}\n{chain}")
+    }
+    targets
 }
 
 /// Build the replacement diagnostic for the resolved root cause(s): a root-cause-first header
-/// carrying the compiler's `E0277` code and its caret on the wiring entry, plus one note per
-/// field — each its own sub-error stating the specific fault and showing the transitive dependency
-/// chain, rendered as a tree, that leads to that field.
+/// carrying the compiler's `E0277` code and its caret on the wiring entry, a `help` naming each
+/// type that must derive `HasField` (for the present-but-unwired fields), and one terse note per
+/// field showing the transitive dependency chain, rendered as a tree, that leads to it.
 fn render_root_cause(cause: RootCause, span: Span) -> DiagInner {
     match cause {
         RootCause::MissingFields { context, causes } => {
             let mut diag = DiagInner::new(Level::Error, field_header(&context, &causes));
             diag.code = Some(E0277);
             diag.span = MultiSpan::from_span(span);
+
+            for target in derive_targets(&causes) {
+                let help = format!("make sure that `#[derive(HasField)]` is used for `{target}`");
+                diag.children.push(Subdiag {
+                    level: Level::Help,
+                    messages: vec![(DiagMessage::Str(help.into()), Style::NoStyle)],
+                    span: MultiSpan::new(),
+                });
+            }
 
             for cause in &causes {
                 diag.children.push(Subdiag {

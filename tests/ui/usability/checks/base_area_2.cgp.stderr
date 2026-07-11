@@ -1,15 +1,16 @@
-error[E0277]: context `Rectangle` cannot access fields `height` and `width`
+error[E0277]: accessor trait `HasField` with fields `height` and `width` is not implemented for `Rectangle`
   --> src/main.rs:55:9
    |
 55 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: field `height` exists on `Rectangle`, but its `HasField` impl is missing or its type does not match — add `#[derive(HasField)]` to `Rectangle`, or check the field's type. It is required through this dependency chain:
+   = help: make sure that `#[derive(HasField)]` is used for `Rectangle`
+   = note: field `height` is required through this dependency chain:
            consumer trait impl `CanCalculateArea` for context `Rectangle`
            └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
                └── trait impl `HasRectangleFields` for `Rectangle`
                    └── field trait impl `HasField` with field `height` for `Rectangle`
-   = note: field `width` exists on `Rectangle`, but its `HasField` impl is missing or its type does not match — add `#[derive(HasField)]` to `Rectangle`, or check the field's type. It is required through this dependency chain:
+   = note: field `width` is required through this dependency chain:
            consumer trait impl `CanCalculateArea` for context `Rectangle`
            └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
                └── trait impl `HasRectangleFields` for `Rectangle`

@@ -1,39 +1,80 @@
-error[E0277]: the trait bound `App: CanUseComponent<shapes_a::AreaCalculatorComponent>` is not satisfied
-  --> src/main.rs:78:9
+error[E0277]: the trait bound `App: CanUseComponent<shapes_a::MeasurerComponent>` is not satisfied
+  --> src/main.rs:86:9
    |
-78 |         shapes_a::AreaCalculatorComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+86 |         shapes_a::MeasurerComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<7, cgp::prelude::Chars<'w', cgp::prelude::Chars<'i', cgp::prelude::Chars<'d', cgp::prelude::Chars<'t', cgp::prelude::Chars<'h', cgp::prelude::Chars<'_', cgp::prelude::Chars<'a', Nil>>>>>>>>>` is not implemented for `App`
       but trait `HasField<Symbol<5, cgp::prelude::Chars<'o', cgp::prelude::Chars<'t', cgp::prelude::Chars<'h', cgp::prelude::Chars<'e', cgp::prelude::Chars<'r', Nil>>>>>>>` is implemented for it
-  --> src/main.rs:65:10
+  --> src/main.rs:72:10
    |
-65 | #[derive(HasField)]
+72 | #[derive(HasField)]
    |          ^^^^^^^^
 note: required for `App` to implement `HasWidthA`
-  --> src/main.rs:24:5
+  --> src/main.rs:28:5
    |
-24 |     #[cgp_auto_getter]
+28 |     #[cgp_auto_getter]
    |     ^^^^^^^^^^^^^^^^^^
-25 |     pub trait HasWidthA {
+29 |     pub trait HasWidthA {
    |               ^^^^^^^^^
-note: required for `MeasureA` to implement `IsProviderFor<shapes_a::AreaCalculatorComponent, App>`
-  --> src/main.rs:29:5
+note: required for `MeasureWidthA` to implement `IsProviderFor<shapes_a::MeasurerComponent, App>`
+  --> src/main.rs:33:5
    |
-29 |     #[cgp_impl(new MeasureA)]
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+33 |     #[cgp_impl(new MeasureWidthA: MeasurerComponent)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-32 |         Self: HasWidthA,
+36 |         Self: HasWidthA,
    |               --------- unsatisfied trait bound introduced here
-   = note: required for `App` to implement `CanUseComponent<shapes_a::AreaCalculatorComponent>`
+   = note: required for `App` to implement `CanUseComponent<shapes_a::MeasurerComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:76:1
+  --> src/main.rs:84:1
    |
-76 | / check_components! {
-77 | |     App {
-78 | |         shapes_a::AreaCalculatorComponent,
-79 | |     }
-80 | | }
+84 | / check_components! {
+85 | |     App {
+86 | |         shapes_a::MeasurerComponent,
+87 | |         shapes_b::MeasurerComponent,
+88 | |     }
+89 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: CanUseComponent<shapes_b::MeasurerComponent>` is not satisfied
+  --> src/main.rs:87:9
+   |
+87 |         shapes_b::MeasurerComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<7, cgp::prelude::Chars<'w', cgp::prelude::Chars<'i', cgp::prelude::Chars<'d', cgp::prelude::Chars<'t', cgp::prelude::Chars<'h', cgp::prelude::Chars<'_', cgp::prelude::Chars<'b', Nil>>>>>>>>>` is not implemented for `App`
+      but trait `HasField<Symbol<5, cgp::prelude::Chars<'o', cgp::prelude::Chars<'t', cgp::prelude::Chars<'h', cgp::prelude::Chars<'e', cgp::prelude::Chars<'r', Nil>>>>>>>` is implemented for it
+  --> src/main.rs:72:10
+   |
+72 | #[derive(HasField)]
+   |          ^^^^^^^^
+note: required for `App` to implement `HasWidthB`
+  --> src/main.rs:55:5
+   |
+55 |     #[cgp_auto_getter]
+   |     ^^^^^^^^^^^^^^^^^^
+56 |     pub trait HasWidthB {
+   |               ^^^^^^^^^
+note: required for `MeasureWidthB` to implement `IsProviderFor<shapes_b::MeasurerComponent, App>`
+  --> src/main.rs:60:5
+   |
+60 |     #[cgp_impl(new MeasureWidthB: MeasurerComponent)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+63 |         Self: HasWidthB,
+   |               --------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<shapes_b::MeasurerComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:84:1
+   |
+84 | / check_components! {
+85 | |     App {
+86 | |         shapes_a::MeasurerComponent,
+87 | |         shapes_b::MeasurerComponent,
+88 | |     }
+89 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
