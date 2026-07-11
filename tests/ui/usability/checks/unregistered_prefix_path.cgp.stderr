@@ -4,36 +4,9 @@ CGP[E0277]: the provider trait bound `RedirectLookup<App, PathCons<Symbol!("app"
 48 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-   = help: the trait `IsProviderFor<GreeterComponent, App>` is not implemented for `RedirectLookup<App, PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>`
-   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
-             IsProviderFor<GreeterComponent, __Context__>
-             IsProviderFor<cgp_error::ErrorRaiserComponent, __Context__, SourceError>
-             IsProviderFor<cgp_error::ErrorTypeProviderComponent, __Context__>
-             IsProviderFor<cgp_error::ErrorWrapperComponent, __Context__, Detail>
-             IsProviderFor<cgp_type::TypeProviderComponent, __Context__, Tag>
-             IsProviderFor<cgp_run::RunnerComponent, __Context__, Code>
-             IsProviderFor<cgp_run::SendRunnerComponent, __Context__, Code>
-             IsProviderFor<cgp_runtime::RuntimeGetterComponent, __Context__>
-             IsProviderFor<cgp_runtime::RuntimeTypeProviderComponent, __Context__>
-             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
-             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
-             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
-             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
-             IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
-             IsProviderFor<HandlerRefComponent, __Context__, (Code, Input)>
-             IsProviderFor<ProducerComponent, __Context__, Code>
-             IsProviderFor<TryComputerComponent, __Context__, (Code, Input)>
-             IsProviderFor<TryComputerRefComponent, __Context__, (Code, Input)>
-   = note: required for the context `App` to implement the consumer trait `CanGreet`
-note: required by a bound in `__CheckApp`
-  --> src/main.rs:46:1
-   |
-46 | / check_components! {
-47 | |     App {
-48 | |         GreeterComponent,
-49 | |     }
-50 | | }
-   | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>: DefaultNamespace<App>` is required through this dependency chain:
+           consumer trait impl `CanGreet` for context `App`
+           └── provider trait impl `Greeter` with context `App` for provider `RedirectLookup<App, PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>`
+               └── trait impl `DefaultNamespace` for `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>`
 
 For more information about this error, try `rustc --explain E0277`.

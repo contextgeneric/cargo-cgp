@@ -15,18 +15,22 @@
 //!    get the concrete obligation `Ctx: CanUseComponent<Marker, Params>`.
 //! 2. From that obligation we walk *down* the dependency graph: for each failing obligation we
 //!    find the impl that would satisfy it and take its `where`-clause obligations as the
-//!    children, keeping only the ones that do not already hold. Every branch that bottoms out
-//!    on an unmet `cgp_field::HasField` is a root cause. This descent unifies against candidate
-//!    impls with `fresh_args_for_item`, rather than using `SelectionContext`, which asserts
-//!    against the next-generation solver the driver runs under.
+//!    children, keeping only the ones that do not already hold. A branch descends only the CGP
+//!    wiring vocabulary — `CanUseComponent`/`IsProviderFor`/`DelegateComponent`, provider traits,
+//!    and obligations on the context itself — and stops at any *terminal* unmet bound: an unmet
+//!    `cgp_field::HasField` (the field leaf) or an ordinary bound on a foreign type (`f64: Eq`).
+//!    This descent unifies against candidate impls with `fresh_args_for_item`, rather than using
+//!    `SelectionContext`, which asserts against the next-generation solver the driver runs under.
 //! 3. This all runs *during* trait solving — the emitter reaches the live `TyCtxt` through
 //!    `ty::tls` while a check error is being emitted — yet fresh inference contexts re-entered
 //!    here solve cleanly; that re-entrancy is the load-bearing assumption behind the design.
 //! 4. Each root-cause path is rendered as a `cargo tree`-style [`DependencyTree`] with every CGP
 //!    wiring trait replaced by its human form (`CanUseComponent`→consumer-trait impl, `IsProviderFor`
-//!    →provider-trait impl, `HasField`→field-trait impl), and the field name is decoded structurally
-//!    from its `Symbol!`. When no branch reaches a missing field the resolver yields `None`, and the
-//!    caller falls back to the untouched text-rewrite pipeline.
+//!    →provider-trait impl, `HasField`→field-trait impl), and a field name is decoded structurally
+//!    from its `Symbol!`. A field leaf ([`Leaf::Field`]) drives a clean, tree-first replacement of
+//!    the whole diagnostic; any other leaf ([`Leaf::Bound`]) keeps rustc's own header and only
+//!    swaps the sub-notes for the tree. When no branch reaches a reportable leaf the resolver
+//!    yields `None`, and the caller falls back to the untouched text-rewrite pipeline.
 //!
 //! For each leaf the resolver also inspects the *actual struct* the `HasField` bound lands on —
 //! its own named fields, and, if the field is not there, the fields of the structs along its
@@ -45,6 +49,7 @@ use cargo_cgp_error_processing::tree::DependencyTree;
 use rustc_hir::ItemKind;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_infer::traits::Obligation;
+use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized};
 use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span};
@@ -80,34 +85,56 @@ pub enum FieldIssue {
     },
 }
 
-/// A recovered root cause: one field a wiring needs, the dependency chain that needs it, and
-/// whether the field is truly absent or merely unwired.
-pub struct MissingField {
-    /// The field name, decoded from its `Symbol!`, e.g. `height`.
-    pub field: String,
-    /// The type the `HasField` bound lands on — the struct that should carry (or derive) the
-    /// field, e.g. `Rectangle`. Usually the checked context itself, but a nested getter can make
-    /// it a different context.
-    pub owner: String,
-    /// Whether the field is genuinely missing, present-but-unwired, or reachable only via `Deref`.
-    pub issue: FieldIssue,
-    /// The transitive dependency chain from the checked component down to this field, rendered
-    /// as a single spine.
+/// What a resolved dependency chain bottoms out on — the actual root cause the tree leads to.
+pub enum Leaf {
+    /// A `HasField` bound the wiring needs. The emitter renders this as a clean, tree-first
+    /// diagnostic of its own, with a header worded by the [`FieldIssue`] and a derive `help`.
+    Field {
+        /// The field name, decoded from its `Symbol!`, e.g. `height`.
+        name: String,
+        /// The struct the `HasField` bound lands on — the type that must carry (or derive) the
+        /// field. Usually the checked context, but a nested getter can make it another type.
+        owner: String,
+        /// Whether the field is genuinely missing, present-but-underived, or behind a `Deref`.
+        issue: FieldIssue,
+    },
+    /// Any other terminal unmet bound — an ordinary trait bound (`f64: Eq`), an unmet abstract
+    /// type, and so on. The emitter keeps rustc's own header for these and only replaces the
+    /// sub-notes with the dependency tree.
+    Bound {
+        /// The bound restated as `self: Trait`, e.g. `f64: std::cmp::Eq`, for the note lead and
+        /// for de-duplicating a leaf reached by several paths.
+        summary: String,
+    },
+}
+
+/// One recovered root cause: the leaf the chain bottoms out on and the transitive dependency
+/// chain that leads to it, rendered as a single spine.
+pub struct Cause {
+    /// What the chain bottoms out on.
+    pub leaf: Leaf,
+    /// The dependency chain from the checked component down to the leaf.
     pub tree: DependencyTree,
 }
 
 /// The recovered root cause(s) of a check failure, in owned form so they outlive the inference
-/// contexts they were read from. Today the only kind is unmet field access; more will join it.
-pub enum RootCause {
-    /// The context's wiring needs one or more fields whose `HasField` bound is unmet — each
-    /// either genuinely missing, present-but-unwired, or reachable only via `Deref`. Every entry
-    /// is an independent root cause the emitter renders as its own sub-error.
-    MissingFields {
-        /// The context type that lacks the field(s), e.g. `Rectangle`.
-        context: String,
-        /// One entry per distinct missing field, in first-seen order.
-        causes: Vec<MissingField>,
-    },
+/// contexts they were read from.
+pub struct Resolved {
+    /// The checked context type, e.g. `Rectangle`.
+    pub context: String,
+    /// One entry per distinct root cause, in first-seen order.
+    pub causes: Vec<Cause>,
+}
+
+impl Cause {
+    /// A stable key that de-duplicates a leaf reached by several dependency paths — the field name
+    /// for a field, the bound restatement otherwise.
+    fn key(&self) -> &str {
+        match &self.leaf {
+            Leaf::Field { name, .. } => name,
+            Leaf::Bound { summary } => summary,
+        }
+    }
 }
 
 /// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or
@@ -129,7 +156,7 @@ pub fn resolve_check_failure(
     tcx: TyCtxt<'_>,
     primary_span: Span,
     names: &ComponentNameMap,
-) -> Option<RootCause> {
+) -> Option<Resolved> {
     for trait_did in tcx.all_traits_including_private() {
         let Some(super_clause) = can_use_component_supertrait(tcx, trait_did) else {
             continue;
@@ -148,8 +175,8 @@ pub fn resolve_check_failure(
                 .skip_norm_wip();
             let concrete = super_clause.instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref));
 
-            if let Some(cause) = resolve_missing_fields(tcx, concrete, names) {
-                return Some(cause);
+            if let Some(resolved) = resolve_leaves(tcx, concrete, names) {
+                return Some(resolved);
             }
         }
     }
@@ -186,62 +213,112 @@ fn impl_self_ty_span(tcx: TyCtxt<'_>, impl_did: DefId) -> Option<Span> {
 }
 
 /// Walk the dependency graph of `concrete` (`Ctx: CanUseComponent<Marker, Params>`) and, for each
-/// distinct missing field it bottoms out on, return that field with its rendered dependency
-/// chain. `None` when no branch reaches a missing field.
-fn resolve_missing_fields<'tcx>(
+/// distinct terminal unmet bound it bottoms out on, return that leaf with its rendered dependency
+/// chain. `None` when no branch reaches a resolvable leaf.
+fn resolve_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
     concrete: ty::Clause<'tcx>,
     names: &ComponentNameMap,
-) -> Option<RootCause> {
+) -> Option<Resolved> {
     let top = concrete.as_trait_clause()?;
     let context = tcx.erase_and_anonymize_regions(top.skip_binder().self_ty());
 
-    let mut causes = Vec::new();
-    for path in collect_field_paths(tcx, top, &[], 0) {
-        let leaf = path.last()?.skip_binder().trait_ref;
-        let Some(field) = decode_symbol(tcx, leaf.args.type_at(1)) else {
-            continue;
-        };
-        // One sub-error per distinct field: a field wanted by several branches is one fix.
-        if causes.iter().any(|c: &MissingField| c.field == field) {
+    let mut causes: Vec<Cause> = Vec::new();
+    for path in collect_leaf_paths(tcx, top, context, &[], 0) {
+        let leaf_ref = path.last()?.skip_binder().trait_ref;
+        // A path that bottoms out on pure wiring plumbing (a routing dead-end) is not a root
+        // cause — a real cause is found down another branch — so drop it rather than report it.
+        if !is_reportable_leaf(tcx, leaf_ref) {
             continue;
         }
-        // Inspect the struct the bound lands on so the emitter can distinguish a genuinely
-        // missing field from one that is present but unwired.
-        let owner = tcx.erase_and_anonymize_regions(leaf.self_ty());
-        let issue = field_issue(tcx, owner, &field);
+        let leaf = classify_leaf(tcx, leaf_ref);
+        // One sub-error per distinct leaf: a leaf wanted by several branches is one fix.
+        if causes.iter().any(|c| c.key() == leaf_key(&leaf)) {
+            continue;
+        }
         let labels: Vec<String> = path
             .iter()
             .filter_map(|pred| label_for(tcx, *pred, context, names))
             .collect();
         if let Some(tree) = spine(labels) {
-            causes.push(MissingField {
-                field,
-                owner: owner.to_string(),
-                issue,
-                tree,
-            });
+            causes.push(Cause { leaf, tree });
         }
     }
 
     if causes.is_empty() {
         return None;
     }
-    Some(RootCause::MissingFields {
+    Some(Resolved {
         context: context.to_string(),
         causes,
     })
 }
 
-/// Collect every root→leaf path that bottoms out on an unmet `HasField`, by descending the
+/// Classify the terminal predicate a dependency chain bottoms out on. A `HasField` becomes a
+/// [`Leaf::Field`] (inspecting the struct so the emitter can tell missing from underived); any
+/// other bound becomes a [`Leaf::Bound`] restating it as `self: Trait`.
+fn classify_leaf<'tcx>(tcx: TyCtxt<'tcx>, leaf_ref: ty::TraitRef<'tcx>) -> Leaf {
+    if is_cgp_item(tcx, leaf_ref.def_id, HAS_FIELD_TRAIT, CGP_FIELD_CRATE)
+        && let Some(name) = decode_symbol(tcx, leaf_ref.args.type_at(1))
+    {
+        let owner = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
+        let issue = field_issue(tcx, owner, &name);
+        return Leaf::Field {
+            name,
+            owner: owner.to_string(),
+            issue,
+        };
+    }
+    Leaf::Bound {
+        summary: format!(
+            "{}: {}",
+            leaf_ref.self_ty(),
+            leaf_ref.print_only_trait_path()
+        ),
+    }
+}
+
+/// Whether a terminal leaf is a real root cause worth reporting, rather than pure wiring plumbing.
+/// A `CanUseComponent`, `IsProviderFor`, or `DelegateComponent` that bottoms out unmet is a routing
+/// dead-end (the real cause sits down another branch), so it is dropped instead of shown.
+fn is_reportable_leaf<'tcx>(tcx: TyCtxt<'tcx>, leaf_ref: ty::TraitRef<'tcx>) -> bool {
+    let did = leaf_ref.def_id;
+    !is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+        && !is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
+        && !is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+}
+
+/// The de-duplication key for a freshly classified leaf, mirroring [`Cause::key`].
+fn leaf_key(leaf: &Leaf) -> &str {
+    match leaf {
+        Leaf::Field { name, .. } => name,
+        Leaf::Bound { summary } => summary,
+    }
+}
+
+/// Collect every root→leaf path that bottoms out on a terminal unmet bound, by descending the
 /// failing obligation's dependency graph. `pred` is a failing obligation and `prefix` is the path
-/// of predicates above it; a `HasField` completes a path, and any other obligation contributes
+/// of predicates above it. A `HasField` completes a path directly; any other obligation contributes
 /// the `where`-clause obligations of the impl that would satisfy it, recursing into just the ones
-/// that do not already hold. Following *every* unmet dependency (not one) is what surfaces
-/// independent missing fields as separate paths. Bounded by [`MAX_DEPTH`].
-fn collect_field_paths<'tcx>(
+/// that do not already hold. An obligation with **no** satisfying impl is itself a terminal leaf
+/// (an ordinary bound like `f64: Eq`). Following *every* unmet dependency (not one) is what surfaces
+/// independent causes as separate paths. Bounded by [`MAX_DEPTH`].
+///
+/// One case yields no path on purpose: an unmet obligation whose satisfying impl's `where`-clause
+/// obligations all *hold*. The obligation is then unmet for a reason the trait-clause walk cannot
+/// see — a projection/associated-type mismatch, e.g. a field present with the wrong type — so
+/// rendering a tree here would point at a leaf that is not the real fault. Declining lets the
+/// caller keep rustc's own (already precise) diagnostic for that case.
+///
+/// The descent stops at any ordinary bound on a foreign type (a bound whose `Self` is not the
+/// context and whose trait is not CGP wiring), treating it as the terminal leaf. That bound *is*
+/// the root cause a reader wants (`f64: Eq`); descending it would wander into whatever unrelated
+/// `std` blanket impl happens to match its `Self` (e.g. `impl<F: FnPtr> Eq for F`) and fabricate a
+/// misleading chain.
+fn collect_leaf_paths<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitPredicate<'tcx>,
+    context: Ty<'tcx>,
     prefix: &[ty::PolyTraitPredicate<'tcx>],
     depth: u32,
 ) -> Vec<Vec<ty::PolyTraitPredicate<'tcx>>> {
@@ -256,23 +333,63 @@ fn collect_field_paths<'tcx>(
         return vec![path];
     }
 
+    if !is_descendable(tcx, pred, context) {
+        // An ordinary bound on a foreign type — the root-cause leaf. Do not walk into `std` impls.
+        return vec![path];
+    }
+
+    let Some(children) = impl_where_obligations(tcx, pred) else {
+        // No impl satisfies `pred` at all — `pred` is itself the terminal root-cause bound.
+        return vec![path];
+    };
+
+    let unmet: Vec<_> = children
+        .into_iter()
+        .filter(|nested| !holds(tcx, *nested))
+        .collect();
+    if unmet.is_empty() {
+        // Matched an impl, yet every `where`-clause holds: the fault is a projection the walk
+        // cannot see. Yield nothing so the resolver declines to this branch.
+        return Vec::new();
+    }
+
     let mut paths = Vec::new();
-    for nested in impl_where_obligations(tcx, pred) {
-        if !holds(tcx, nested) {
-            paths.extend(collect_field_paths(tcx, nested, &path, depth + 1));
-        }
+    for nested in unmet {
+        paths.extend(collect_leaf_paths(tcx, nested, context, &path, depth + 1));
     }
     paths
 }
 
+/// Whether the descent should walk *into* `pred`'s dependencies, rather than treat `pred` as a
+/// terminal leaf. It descends the CGP wiring vocabulary (`CanUseComponent`, `IsProviderFor`,
+/// `DelegateComponent`), any provider trait (a `ProvideFoo: Foo<App>` bound routes on to the
+/// provider's own dependencies), and any obligation on the context itself (its getter and
+/// capability traits). It stops at everything else — an ordinary bound like `f64: Eq`, whose `Self`
+/// is a foreign type, is a leaf, not a step to descend.
+fn is_descendable<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    pred: ty::PolyTraitPredicate<'tcx>,
+    context: Ty<'tcx>,
+) -> bool {
+    let trait_ref = pred.skip_binder().trait_ref;
+    let did = trait_ref.def_id;
+    tcx.erase_and_anonymize_regions(trait_ref.self_ty()) == context
+        || is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+        || is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
+        || is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+        || is_provider_trait(tcx, did)
+}
+
 /// The instantiated `where`-clause trait obligations of the impl that would satisfy `obligation`
-/// — its direct dependencies. Found by unifying `obligation` with each candidate impl's trait ref
-/// (the next-solver-safe `fresh_args_for_item` + `eq` dance `SelectionContext` is unavailable
-/// for), then instantiating and normalizing that impl's predicates. Empty when no impl matches.
+/// — its direct dependencies — or `None` when no impl matches at all (so the caller can treat the
+/// obligation as a terminal leaf). Found by unifying `obligation` with each candidate impl's trait
+/// ref (the next-solver-safe `fresh_args_for_item` + `eq` dance `SelectionContext` is unavailable
+/// for), then instantiating and normalizing that impl's predicates. `Some(vec![])` means an impl
+/// matched but carries no trait-clause `where` obligations.
 fn impl_where_obligations<'tcx>(
     tcx: TyCtxt<'tcx>,
     obligation: ty::PolyTraitPredicate<'tcx>,
-) -> Vec<ty::PolyTraitPredicate<'tcx>> {
+) -> Option<Vec<ty::PolyTraitPredicate<'tcx>>> {
     let param_env = ty::ParamEnv::empty();
     let obligation_ref = obligation.skip_binder().trait_ref;
 
@@ -316,9 +433,9 @@ fn impl_where_obligations<'tcx>(
                 obligations.push(tp);
             }
         }
-        return obligations;
+        return Some(obligations);
     }
-    Vec::new()
+    None
 }
 
 /// Whether `pred` already holds — a dependency that is satisfied and so is not descended into.
@@ -435,8 +552,11 @@ fn label_for<'tcx>(
 
     if is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE) {
         let consumer = marker_role(tcx, trait_ref.args.type_at(1), names, |n| n.consumer);
+        // `CanUseComponent<Marker, Params>` — the component's extra parameters, reattached so a
+        // generic component's consumer trait reads as written (`CanCalculateArea<u32, u64, bool>`).
+        let generics = render_params(trait_ref.args.type_at(2));
         Some(format!(
-            "consumer trait impl `{consumer}` for context `{}`",
+            "consumer trait impl `{consumer}{generics}` for context `{}`",
             trait_ref.self_ty()
         ))
     } else if is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE) {
@@ -446,10 +566,12 @@ fn label_for<'tcx>(
         }
         let provider = trait_ref.self_ty().to_string();
         let provider_trait = marker_role(tcx, trait_ref.args.type_at(1), names, |n| n.provider);
-        // `IsProviderFor<Provider, Marker, Context, Params>` — the third argument is the context.
+        // `IsProviderFor<Provider, Marker, Context, Params>` — the third argument is the context,
+        // the fourth the component's extra parameters (reattached to the provider trait).
         let provider_context = trait_ref.args.type_at(2);
+        let generics = render_params(trait_ref.args.type_at(3));
         Some(format!(
-            "provider trait impl `{provider_trait}` with context `{provider_context}` for provider `{provider}`"
+            "provider trait impl `{provider_trait}{generics}` with context `{provider_context}` for provider `{provider}`"
         ))
     } else if is_cgp_item(tcx, did, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
         let field = decode_symbol(tcx, trait_ref.args.type_at(1))?;
@@ -479,6 +601,25 @@ fn is_provider_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         .iter()
         .filter_map(|(clause, _)| clause.as_trait_clause())
         .any(|tp| is_cgp_item(tcx, tp.def_id(), IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE))
+}
+
+/// Render a component's extra type parameters as a trait generic list — `<u32, u64, bool>`, or the
+/// empty string when there are none. CGP groups the parameters into the `Params` slot of
+/// `CanUseComponent`/`IsProviderFor`: none as the unit `()`, a single one bare, several as a tuple,
+/// so a tuple is unwrapped and a bare parameter reattached directly.
+fn render_params(params: Ty<'_>) -> String {
+    match params.kind() {
+        ty::Tuple(elems) if elems.is_empty() => String::new(),
+        ty::Tuple(elems) => format!(
+            "<{}>",
+            elems
+                .iter()
+                .map(|elem| elem.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+        _ => format!("<{params}>"),
+    }
 }
 
 /// Resolve a component marker type to its consumer or provider trait name through the name map,

@@ -31,145 +31,15 @@
     ],
     "children": [
       {
-        "message": "the trait `cgp::prelude::IsProviderFor<GreeterComponent, App>` is not implemented for `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>`",
-        "code": null,
-        "level": "help",
-        "spans": [],
-        "children": [],
-        "rendered": null
-      },
-      {
-        "message": "`cgp::prelude::RedirectLookup<__Components__, __Path__>` implements trait `cgp::prelude::IsProviderFor<Component, Context, Params>`:\n  cgp::prelude::IsProviderFor<GreeterComponent, __Context__>\n  cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_error::ErrorRaiserComponent, __Context__, SourceError>\n  cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_error::ErrorTypeProviderComponent, __Context__>\n  cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_error::ErrorWrapperComponent, __Context__, Detail>\n  cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_type::TypeProviderComponent, __Context__, Tag>\n  cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_run::RunnerComponent, __Context__, Code>\n  cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_run::SendRunnerComponent, __Context__, Code>\n  cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_runtime::RuntimeGetterComponent, __Context__>\n  cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_runtime::RuntimeTypeProviderComponent, __Context__>\n  cgp::prelude::IsProviderFor<cgp::prelude::AsyncComputerComponent, __Context__, (Code, Input)>\n  cgp::prelude::IsProviderFor<cgp::prelude::AsyncComputerRefComponent, __Context__, (Code, Input)>\n  cgp::prelude::IsProviderFor<cgp::prelude::ComputerComponent, __Context__, (Code, Input)>\n  cgp::prelude::IsProviderFor<cgp::prelude::ComputerRefComponent, __Context__, (Code, Input)>\n  cgp::prelude::IsProviderFor<cgp::prelude::HandlerComponent, __Context__, (Code, Input)>\n  cgp::prelude::IsProviderFor<cgp::prelude::HandlerRefComponent, __Context__, (Code, Input)>\n  cgp::prelude::IsProviderFor<cgp::prelude::ProducerComponent, __Context__, Code>\n  cgp::prelude::IsProviderFor<cgp::prelude::TryComputerComponent, __Context__, (Code, Input)>\n  cgp::prelude::IsProviderFor<cgp::prelude::TryComputerRefComponent, __Context__, (Code, Input)>",
-        "code": null,
-        "level": "help",
-        "spans": [],
-        "children": [],
-        "rendered": null
-      },
-      {
-        "message": "required for the context `App` to implement the consumer trait `CanGreet`",
+        "message": "`cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>: cgp::prelude::DefaultNamespace<App>` is required through this dependency chain:\nconsumer trait impl `CanGreet` for context `App`\n└── provider trait impl `Greeter` with context `App` for provider `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>`\n    └── trait impl `DefaultNamespace` for `cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>`",
         "code": null,
         "level": "note",
         "spans": [],
-        "children": [],
-        "rendered": null
-      },
-      {
-        "message": "required by a bound in `__CheckApp`",
-        "code": null,
-        "level": "note",
-        "spans": [
-          {
-            "file_name": "src/main.rs",
-            "byte_start": 1789,
-            "byte_end": 1852,
-            "line_start": 46,
-            "line_end": 50,
-            "column_start": 1,
-            "column_end": 2,
-            "is_primary": true,
-            "text": [
-              {
-                "text": "check_components! {",
-                "highlight_start": 1,
-                "highlight_end": 20
-              },
-              {
-                "text": "    App {",
-                "highlight_start": 1,
-                "highlight_end": 10
-              },
-              {
-                "text": "        GreeterComponent,",
-                "highlight_start": 1,
-                "highlight_end": 26
-              },
-              {
-                "text": "    }",
-                "highlight_start": 1,
-                "highlight_end": 6
-              },
-              {
-                "text": "}",
-                "highlight_start": 1,
-                "highlight_end": 2
-              }
-            ],
-            "label": "required by this bound in `__CheckApp`",
-            "suggested_replacement": null,
-            "suggestion_applicability": null,
-            "expansion": {
-              "span": {
-                "file_name": "src/main.rs",
-                "byte_start": 1789,
-                "byte_end": 1852,
-                "line_start": 46,
-                "line_end": 50,
-                "column_start": 1,
-                "column_end": 2,
-                "is_primary": false,
-                "text": [
-                  {
-                    "text": "check_components! {",
-                    "highlight_start": 1,
-                    "highlight_end": 20
-                  },
-                  {
-                    "text": "    App {",
-                    "highlight_start": 1,
-                    "highlight_end": 10
-                  },
-                  {
-                    "text": "        GreeterComponent,",
-                    "highlight_start": 1,
-                    "highlight_end": 26
-                  },
-                  {
-                    "text": "    }",
-                    "highlight_start": 1,
-                    "highlight_end": 6
-                  },
-                  {
-                    "text": "}",
-                    "highlight_start": 1,
-                    "highlight_end": 2
-                  }
-                ],
-                "label": null,
-                "suggested_replacement": null,
-                "suggestion_applicability": null,
-                "expansion": null
-              },
-              "macro_decl_name": "check_components!",
-              "def_site_span": {
-                "file_name": "$CGP/crates/macros/cgp-macro/src/lib.rs",
-                "byte_start": 17623,
-                "byte_end": 17680,
-                "line_start": 573,
-                "line_end": 573,
-                "column_start": 1,
-                "column_end": 58,
-                "is_primary": false,
-                "text": [
-                  {
-                    "text": "pub fn check_components(body: TokenStream) -> TokenStream {",
-                    "highlight_start": 1,
-                    "highlight_end": 58
-                  }
-                ],
-                "label": null,
-                "suggested_replacement": null,
-                "suggestion_applicability": null,
-                "expansion": null
-              }
-            }
-          }
-        ],
         "children": [],
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: the provider trait bound `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>: Greeter<App>` is not satisfied\n  --> src/main.rs:48:9\n   |\n48 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\n   = help: the trait `cgp::prelude::IsProviderFor<GreeterComponent, App>` is not implemented for `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>`\n   = help: `cgp::prelude::RedirectLookup<__Components__, __Path__>` implements trait `cgp::prelude::IsProviderFor<Component, Context, Params>`:\n             cgp::prelude::IsProviderFor<GreeterComponent, __Context__>\n             cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_error::ErrorRaiserComponent, __Context__, SourceError>\n             cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_error::ErrorTypeProviderComponent, __Context__>\n             cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_error::ErrorWrapperComponent, __Context__, Detail>\n             cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_type::TypeProviderComponent, __Context__, Tag>\n             cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_run::RunnerComponent, __Context__, Code>\n             cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_run::SendRunnerComponent, __Context__, Code>\n             cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_runtime::RuntimeGetterComponent, __Context__>\n             cgp::prelude::IsProviderFor<cgp::cgp_extra::cgp_runtime::RuntimeTypeProviderComponent, __Context__>\n             cgp::prelude::IsProviderFor<cgp::prelude::AsyncComputerComponent, __Context__, (Code, Input)>\n             cgp::prelude::IsProviderFor<cgp::prelude::AsyncComputerRefComponent, __Context__, (Code, Input)>\n             cgp::prelude::IsProviderFor<cgp::prelude::ComputerComponent, __Context__, (Code, Input)>\n             cgp::prelude::IsProviderFor<cgp::prelude::ComputerRefComponent, __Context__, (Code, Input)>\n             cgp::prelude::IsProviderFor<cgp::prelude::HandlerComponent, __Context__, (Code, Input)>\n             cgp::prelude::IsProviderFor<cgp::prelude::HandlerRefComponent, __Context__, (Code, Input)>\n             cgp::prelude::IsProviderFor<cgp::prelude::ProducerComponent, __Context__, Code>\n             cgp::prelude::IsProviderFor<cgp::prelude::TryComputerComponent, __Context__, (Code, Input)>\n             cgp::prelude::IsProviderFor<cgp::prelude::TryComputerRefComponent, __Context__, (Code, Input)>\n   = note: required for the context `App` to implement the consumer trait `CanGreet`\nnote: required by a bound in `__CheckApp`\n  --> src/main.rs:46:1\n   |\n46 | / check_components! {\n47 | |     App {\n48 | |         GreeterComponent,\n49 | |     }\n50 | | }\n   | |_^ required by this bound in `__CheckApp`\n   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)\n\n"
+    "rendered": "error[E0277]: the provider trait bound `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>: Greeter<App>` is not satisfied\n  --> src/main.rs:48:9\n   |\n48 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound\n   |\n   = note: `cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>: cgp::prelude::DefaultNamespace<App>` is required through this dependency chain:\n           consumer trait impl `CanGreet` for context `App`\n           └── provider trait impl `Greeter` with context `App` for provider `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>>`\n               └── trait impl `DefaultNamespace` for `cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

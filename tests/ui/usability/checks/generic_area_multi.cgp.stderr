@@ -5,8 +5,8 @@ error[E0277]: missing field `width` on context `Rectangle`
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: field `width` is required through this dependency chain:
-           consumer trait impl `CanCalculateArea` for context `Rectangle`
-           └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+           consumer trait impl `CanCalculateArea<u32, u64, bool>` for context `Rectangle`
+           └── provider trait impl `AreaCalculator<u32, u64, bool>` with context `Rectangle` for provider `RectangleArea`
                └── trait impl `HasWidth` for `Rectangle`
                    └── field trait impl `HasField` with field `width` for `Rectangle`
 

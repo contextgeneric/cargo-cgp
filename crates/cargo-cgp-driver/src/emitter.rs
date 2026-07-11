@@ -4,11 +4,14 @@
 //! emitter with one that acts on each diagnostic before handing it to a real [`JsonEmitter`],
 //! so the transformed result reaches cargo — and the front-end — already shaped, both in the
 //! structured `children` and in the `rendered` field the JSON emitter regenerates from them.
-//! It does two things, in order of ambition. First it tries a **wholesale replacement**: for a
-//! missing-field check failure it builds a fresh, root-cause-first diagnostic recovered from
-//! the compiler by [`resolve`](crate::resolve), and emits that instead of rustc's. When that
-//! is not possible it falls back to a **text rewrite** of the compiler's own diagnostic,
-//! renaming CGP wiring messages via the rustc-free
+//! It transforms a resolvable CGP wiring failure — any diagnostic whose messages mention a wiring
+//! trait and whose caret sits on a `check_components!` entry — into its root-cause dependency
+//! tree(s), recovered from the compiler by [`resolve`](crate::resolve). A failure that bottoms out
+//! entirely on missing *fields* is **replaced wholesale** with a fresh, tree-first diagnostic
+//! (custom header naming the field(s), a derive `help`, one tree note each). A failure that bottoms
+//! out on any other bound **keeps rustc's own main message** and only swaps its sub-notes for the
+//! tree. Everything the resolver cannot handle falls back to a **text rewrite** of the compiler's
+//! own diagnostic, renaming CGP wiring messages via the rustc-free
 //! [`rewrite`](cargo_cgp_error_processing::rewrite) module.
 //!
 //! Two facts make this the right layer. First, naming the traits behind a component marker
@@ -42,7 +45,7 @@ use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
 
 use crate::component_map::build_name_map_from_tls;
-use crate::resolve::{self, FieldIssue, MissingField, RootCause};
+use crate::resolve::{self, Cause, FieldIssue, Leaf, Resolved};
 
 /// Install the rewriting emitter on the compiler session, replicating how rustc builds its
 /// default JSON emitter so cargo's diagnostic stream is byte-for-byte the same apart from
@@ -149,22 +152,37 @@ impl CgpEmitter {
         }
     }
 
-    /// Try to replace `diag` wholesale with a root-cause-first diagnostic recovered from the
-    /// compiler, returning `None` when this is not a resolvable CGP check failure (so the
-    /// caller falls back to the in-place text rewrite). Only an `E0277` whose caret sits on a
-    /// `check_components!` entry is a candidate; [`resolve::resolve_check_failure`] does the
-    /// typed work and yields `None` for everything it cannot fully resolve.
-    fn build_replacement(&self, diag: &DiagInner) -> Option<DiagInner> {
-        if diag.code != Some(E0277) {
+    /// Resolve `diag`'s CGP wiring failure to its root-cause dependency tree(s), or `None` when
+    /// this is not a resolvable wiring diagnostic (so the caller falls back to the in-place text
+    /// rewrite). A candidate is any diagnostic whose messages mention a CGP wiring trait and whose
+    /// caret sits on a `check_components!` entry; [`resolve::resolve_check_failure`] does the typed
+    /// work and yields `None` for everything it cannot fully resolve. Returns the primary span
+    /// alongside the resolution so the field-replacement path can re-aim the caret at the entry.
+    fn try_resolve(&self, diag: &DiagInner) -> Option<(Resolved, Span)> {
+        if !mentions_wiring(diag) {
             return None;
         }
         let primary_span = diag.span.primary_span()?;
-        rustc_middle::ty::tls::with_opt(|tcx| {
-            let tcx = tcx?;
-            let cause = resolve::resolve_check_failure(tcx, primary_span, &self.names)?;
-            Some(render_root_cause(cause, primary_span))
+        let resolved = rustc_middle::ty::tls::with_opt(|tcx| {
+            resolve::resolve_check_failure(tcx?, primary_span, &self.names)
+        })?;
+        Some((resolved, primary_span))
+    }
+}
+
+/// Whether any of `diag`'s messages — its header or a child's — mentions a CGP wiring trait. This
+/// is the cheap pre-filter that decides whether to attempt the (expensive) typed resolution at all,
+/// standing in for the old `E0277`-only gate so that any wiring diagnostic is considered.
+fn mentions_wiring(diag: &DiagInner) -> bool {
+    fn any(messages: &[(DiagMessage, Style)]) -> bool {
+        messages.iter().any(|(message, _)| match message {
+            DiagMessage::Str(text) => {
+                text.contains("CanUseComponent") || text.contains("IsProviderFor")
+            }
+            _ => false,
         })
     }
+    any(&diag.messages) || diag.children.iter().any(|child| any(&child.messages))
 }
 
 /// A `and`-joined, back-quoted list of field names: `\`x\``, `\`x\` and \`y\``, or
@@ -179,44 +197,77 @@ fn quoted_field_list(fields: &[String]) -> String {
     }
 }
 
-/// The header for the resolved field root cause(s). When every field is genuinely absent the
-/// header reads as a missing field; when at least one field the context carries is unwired it reads
-/// as `HasField` being unimplemented, since "missing" would misdescribe a field the struct visibly
-/// carries — the fix (adding the derive) is carried by a separate `help` subdiagnostic.
-fn field_header(context: &str, causes: &[MissingField]) -> String {
-    let fields: Vec<String> = causes.iter().map(|c| c.field.clone()).collect();
+/// The header for an all-field resolution. When every field is genuinely absent the header reads as
+/// a missing field; when at least one field the context carries is unwired it reads as `HasField`
+/// being unimplemented, since "missing" would misdescribe a field the struct visibly carries — the
+/// fix (adding the derive) is carried by a separate `help` subdiagnostic.
+fn field_header(resolved: &Resolved) -> String {
+    let fields: Vec<String> = resolved
+        .causes
+        .iter()
+        .filter_map(|cause| match &cause.leaf {
+            Leaf::Field { name, .. } => Some(name.clone()),
+            Leaf::Bound { .. } => None,
+        })
+        .collect();
     let noun = if fields.len() == 1 { "field" } else { "fields" };
     let list = quoted_field_list(&fields);
-    if causes
-        .iter()
-        .all(|c| matches!(c.issue, FieldIssue::Missing))
-    {
+    let all_missing = resolved.causes.iter().all(|cause| {
+        matches!(
+            &cause.leaf,
+            Leaf::Field {
+                issue: FieldIssue::Missing,
+                ..
+            }
+        )
+    });
+    let context = &resolved.context;
+    if all_missing {
         format!("missing {noun} {list} on context `{context}`")
     } else {
         format!("accessor trait `HasField` with {noun} {list} is not implemented for `{context}`")
     }
 }
 
-/// The note body for one field root cause: a short lead line plus the field's dependency chain.
-/// The specific fix (derive `HasField`) is not repeated per field — it rides in one `help`
-/// subdiagnostic — so every note is the same terse "required through this chain" form.
-fn field_note(cause: &MissingField) -> String {
+/// The note body for one root cause: a short lead naming the leaf, then its dependency chain. The
+/// specific fix (derive `HasField`) is not repeated per note — it rides in one `help` — so every
+/// note is the same terse "required through this chain" form.
+fn cause_note(cause: &Cause) -> String {
+    let subject = match &cause.leaf {
+        Leaf::Field { name, .. } => format!("field `{name}`"),
+        Leaf::Bound { summary } => format!("`{summary}`"),
+    };
     format!(
-        "field `{}` is required through this dependency chain:\n{}",
-        cause.field,
+        "{subject} is required through this dependency chain:\n{}",
         render_dependency_tree(&cause.tree),
     )
 }
 
+/// The `= note:` subdiagnostic per root cause, each carrying that cause's dependency tree — the
+/// sub-messages that replace rustc's own obligation-chain notes.
+fn tree_notes(causes: &[Cause]) -> Vec<Subdiag> {
+    causes
+        .iter()
+        .map(|cause| Subdiag {
+            level: Level::Note,
+            messages: vec![(DiagMessage::Str(cause_note(cause).into()), Style::NoStyle)],
+            span: MultiSpan::new(),
+        })
+        .collect()
+}
+
 /// The distinct types that need a `#[derive(HasField)]`, in first-seen order — one per present or
 /// `Deref`-reachable field (a `Deref`-reachable field points at its target, the type that must
-/// actually derive). A genuinely missing field contributes none, since no derive would satisfy it.
-fn derive_targets(causes: &[MissingField]) -> Vec<String> {
+/// actually derive). A genuinely missing field, or a non-field leaf, contributes none.
+fn derive_targets(causes: &[Cause]) -> Vec<String> {
     let mut targets: Vec<String> = Vec::new();
     for cause in causes {
-        let target = match &cause.issue {
+        let Leaf::Field { owner, issue, .. } = &cause.leaf else {
+            continue;
+        };
+        let target = match issue {
             FieldIssue::Missing => continue,
-            FieldIssue::Present => &cause.owner,
+            FieldIssue::Present => owner,
             FieldIssue::PresentViaDeref { target } => target,
         };
         if !targets.iter().any(|t| t == target) {
@@ -226,46 +277,49 @@ fn derive_targets(causes: &[MissingField]) -> Vec<String> {
     targets
 }
 
-/// Build the replacement diagnostic for the resolved root cause(s): a root-cause-first header
-/// carrying the compiler's `E0277` code and its caret on the wiring entry, a `help` naming each
-/// type that must derive `HasField` (for the present-but-unwired fields), and one terse note per
-/// field showing the transitive dependency chain, rendered as a tree, that leads to it.
-fn render_root_cause(cause: RootCause, span: Span) -> DiagInner {
-    match cause {
-        RootCause::MissingFields { context, causes } => {
-            let mut diag = DiagInner::new(Level::Error, field_header(&context, &causes));
-            diag.code = Some(E0277);
-            diag.span = MultiSpan::from_span(span);
+/// Build the wholesale replacement for an all-field resolution: a root-cause-first header carrying
+/// the compiler's `E0277` code and its caret on the wiring entry, a `help` naming each type that
+/// must derive `HasField`, and one terse tree note per field.
+fn render_field_replacement(resolved: &Resolved, span: Span) -> DiagInner {
+    let mut diag = DiagInner::new(Level::Error, field_header(resolved));
+    diag.code = Some(E0277);
+    diag.span = MultiSpan::from_span(span);
 
-            for target in derive_targets(&causes) {
-                let help = format!("make sure that `#[derive(HasField)]` is used for `{target}`");
-                diag.children.push(Subdiag {
-                    level: Level::Help,
-                    messages: vec![(DiagMessage::Str(help.into()), Style::NoStyle)],
-                    span: MultiSpan::new(),
-                });
-            }
-
-            for cause in &causes {
-                diag.children.push(Subdiag {
-                    level: Level::Note,
-                    messages: vec![(DiagMessage::Str(field_note(cause).into()), Style::NoStyle)],
-                    span: MultiSpan::new(),
-                });
-            }
-            diag
-        }
+    for target in derive_targets(&resolved.causes) {
+        let help = format!("make sure that `#[derive(HasField)]` is used for `{target}`");
+        diag.children.push(Subdiag {
+            level: Level::Help,
+            messages: vec![(DiagMessage::Str(help.into()), Style::NoStyle)],
+            span: MultiSpan::new(),
+        });
     }
+
+    diag.children.extend(tree_notes(&resolved.causes));
+    diag
 }
 
 impl Emitter for CgpEmitter {
     fn emit_diagnostic(&mut self, mut diag: DiagInner) {
-        // Prefer a typed, root-cause-first replacement recovered from the compiler; only when
-        // that is not possible do we fall back to the in-place text rewrite.
-        if let Some(replacement) = self.build_replacement(&diag) {
-            self.inner.emit_diagnostic(replacement);
+        // A resolvable wiring failure is transformed to its dependency tree(s). An all-field cause
+        // is replaced wholesale with a clean, tree-first diagnostic; any other cause keeps rustc's
+        // own main message and only swaps its sub-notes for the tree. Everything else falls back to
+        // the in-place text rewrite.
+        if let Some((resolved, span)) = self.try_resolve(&diag) {
+            if resolved
+                .causes
+                .iter()
+                .all(|cause| matches!(cause.leaf, Leaf::Field { .. }))
+            {
+                self.inner
+                    .emit_diagnostic(render_field_replacement(&resolved, span));
+            } else {
+                rewrite_messages(&mut diag.messages, &self.names);
+                diag.children = tree_notes(&resolved.causes);
+                self.inner.emit_diagnostic(diag);
+            }
             return;
         }
+
         self.rewrite(&mut diag);
         self.inner.emit_diagnostic(diag);
     }

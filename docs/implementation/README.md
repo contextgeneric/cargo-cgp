@@ -27,11 +27,13 @@ same change.
   levers (trait solver, verbosity) and the emitter that renames CGP wiring notes using the live
   compiler.
 - [Typed root-cause resolution](typed-root-cause-resolution.md) — the deeper emitter transformation
-  that *replaces* a missing-field check-failure diagnostic wholesale: recovering the root cause by
+  that turns a check-failure diagnostic into its root-cause `cargo tree`: recovering the chain by
   re-running the check obligation through the trait solver (from inside `emit_diagnostic`, since
-  `after_analysis` is unreachable once the crate has errors), descending to the `HasField` leaf, and
-  rendering the whole transitive dependency chain as a `cargo tree`-style tree with each wiring trait
-  replaced by its human form — falling back to the text rewrite for everything it cannot fully resolve.
+  `after_analysis` is unreachable once the crate has errors), descending the wiring to each terminal
+  leaf (a `HasField` field or an ordinary bound), and rendering the transitive dependency chain with
+  each wiring trait replaced by its human form. An all-field failure is replaced wholesale; any other
+  keeps rustc's header and swaps only its sub-notes for the tree; anything it declines falls back to
+  the text rewrite.
 - [The error pipeline](error-pipeline.md) — the four-stage flow that turns rustc's raw diagnostics
   into readable CGP errors (configure rustc, capture, process, render), and the detail of the two
   compilation-side stages: the current flag injections that un-hide and un-elide CGP errors, and the
