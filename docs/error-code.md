@@ -23,6 +23,30 @@ which is often a `help:` line nested inside a larger rustc diagnostic, so the co
 message's text instead — `help: [CGP0001] missing field ...`. This also keeps the code greppable: a
 reader confirming a class need only search the output for `CGP0001`.
 
+## The transformed-diagnostic header (`CGP[E0277]`)
+
+The primary header of a diagnostic `cargo-cgp` has transformed is marked too, but in a different
+form: the level word `error` is replaced by `CGP`, and the original Rust code is kept in place, so
+`error[E0277]:` becomes `CGP[E0277]:`. The line reads
+`CGP[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied`. This flags on
+the primary line — the first thing a reader sees — that the tool reshaped the diagnostic, without
+inventing a new classification for it.
+
+The header marker and the `[CGPxxxx]` codes are deliberately different devices, and the difference is
+the point. A `[CGP0001]` names a *new* CGP error class that replaces a whole message, so it is a new
+code in a new namespace. `CGP[E0277]` wraps the diagnostic's *existing* Rust code: the diagnostic is
+still fundamentally rustc's `E0277`, only reshaped, so its code is preserved — the marker keeps
+`--explain E0277` meaningful and the trailing `For more information ... rustc --explain E0277` line
+untouched. In one diagnostic you may see both at once: a `CGP[E0277]:` header over a
+`help: [CGP0001] missing field ...` line, the header saying "this E0277 was reshaped" and the code
+saying "this help line is CGP class 0001".
+
+The header is marked whenever `cargo-cgp` recognized the diagnostic as a CGP one — because a
+preprocessor rewrote or resugared part of it, or because its header carries the driver's
+wiring-message rename, whose phrasing (`the consumer trait bound`, `the provider trait bound`, and the
+matching obligation-chain notes) plain rustc never produces. A diagnostic the tool did not touch keeps
+rustc's plain `error[E0277]:` header.
+
 ## When a code is assigned
 
 A code is assigned only when `cargo-cgp` **replaces a whole message** with a CGP-authored one — a
@@ -95,7 +119,10 @@ the consumer and provider traits a reader thinks in — `` `Person: CanUseCompon
 becomes `` `Person: CanGreet` ``, and the obligation-chain notes are renamed to name the provider and
 consumer traits. This is a rename of the types inside a bound rustc already framed as a trait-bound
 error, not a new message, so the diagnostic keeps its Rust code (typically `E0277`) and gains no CGP
-code. It runs in the driver, not the front-end processing pipeline, and is documented in
+code. It does, however, mark the diagnostic as CGP-transformed, so its header is rewritten to
+`CGP[E0277]:` per [the section above](#the-transformed-diagnostic-header-cgpe0277) — a wrapper of the
+kept Rust code, not a new code. The rename runs in the driver, not the front-end processing pipeline,
+and is documented in
 [The driver](implementation/driver.md#naming-the-traits-behind-a-component-marker); the compiler-free
 rewrite itself lives in
 [`rewrite.rs`](../crates/cargo-cgp-error-processing/src/rewrite.rs).
@@ -107,6 +134,9 @@ This catalog is bound by the same synchronization rule as the rest of the knowle
 The codes live as constants on
 [`CgpDiagnosticDetail`](../crates/cargo-cgp-error-processing/src/diagnostic.rs) (its `code` method maps
 a recognized detail to its code), and each is emitted by the preprocessor that recognizes the class.
-When a preprocessor learns to fully rewrite a new class, assign it the next `CGP` number, add the
-constant and its `code` arm, and register the class here in the same change. When a rewrite is only
-cosmetic, add it to [partial rewrites](#partial-rewrites-no-code) instead — do not spend a code on it.
+The `CGP[...]` header marker is applied by the
+[`mark_cgp_header`](../crates/cargo-cgp-error-processing/src/preprocess/header.rs) preprocessor, which
+runs last so it sees every earlier recognizer's `has_cgp_error` flag. When a preprocessor learns to
+fully rewrite a new class, assign it the next `CGP` number, add the constant and its `code` arm, and
+register the class here in the same change. When a rewrite is only cosmetic, add it to
+[partial rewrites](#partial-rewrites-no-code) instead — do not spend a code on it.

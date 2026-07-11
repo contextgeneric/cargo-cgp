@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `NoScalar: ScalarTypeProvider<NoScalar>` is not satisfied
+CGP[E0277]: the trait bound `NoScalar: ScalarTypeProvider<NoScalar>` is not satisfied
   --> src/main.rs:49:5
    |
 49 |     App: GetScalar,
@@ -41,7 +41,7 @@ help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
 14 + #![feature(trivial_bounds)]
    |
 
-error[E0277]: the trait bound `<App as HasTypes>::Types: HasScalarType` is not satisfied
+CGP[E0277]: the trait bound `<App as HasTypes>::Types: HasScalarType` is not satisfied
   --> src/main.rs:49:10
    |
 49 |     App: GetScalar,

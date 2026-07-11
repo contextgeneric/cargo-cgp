@@ -22,6 +22,8 @@ pub mod rewrite;
 /// dependent can name `cargo_metadata::diagnostic::Diagnostic` through this crate.
 pub use cargo_metadata;
 pub use diagnostic::{CgpDiagnostic, CgpDiagnosticDetail};
-pub use preprocess::{extract_missing_fields, preprocess, resugar_symbol, strip_cgp_prefixes};
+pub use preprocess::{
+    extract_missing_fields, mark_cgp_header, preprocess, resugar_symbol, strip_cgp_prefixes,
+};
 pub use process::process_cgp_errors;
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};

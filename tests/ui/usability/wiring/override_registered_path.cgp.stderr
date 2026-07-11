@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>, _, _>` for type `App`
+CGP[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>, _, _>` for type `App`
   --> src/main.rs:57:10
    |
 55 |         namespace AppNamespace;
@@ -10,7 +10,7 @@ error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbo
    = note: downstream crates may implement trait `IsProviderFor<PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>, _, _>` for type `GreetHello`
    = note: downstream crates may implement trait `IsProviderFor<PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>, _, _>` for type `GreetBye`
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>` for type `App`
+CGP[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>` for type `App`
   --> src/main.rs:57:10
    |
 55 |         namespace AppNamespace;

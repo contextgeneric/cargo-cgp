@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `f64: std::cmp::Eq` is not satisfied
+CGP[E0277]: the trait bound `f64: std::cmp::Eq` is not satisfied
   --> src/main.rs:59:9
    |
 59 |         ScalarEqualityComponent,

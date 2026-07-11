@@ -1,4 +1,4 @@
-error[E0277]: the consumer trait bound `Rectangle: CanCalculateArea<f64>` is not satisfied
+CGP[E0277]: the consumer trait bound `Rectangle: CanCalculateArea<f64>` is not satisfied
   --> src/main.rs:50:9
    |
 50 |         AreaCalculatorComponent: f64,

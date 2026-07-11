@@ -1,4 +1,4 @@
-error[E0599]: the method `greet` exists for struct `Person`, but its trait bounds were not satisfied
+CGP[E0599]: the method `greet` exists for struct `Person`, but its trait bounds were not satisfied
   --> src/main.rs:50:23
    |
 37 | pub struct Person {

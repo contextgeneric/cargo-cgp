@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `MyNamespace<_>` for type `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>`
+CGP[E0119]: conflicting implementations of trait `MyNamespace<_>` for type `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>`
   --> src/main.rs:22:10
    |
 21 |         @foo.bar => @baz,

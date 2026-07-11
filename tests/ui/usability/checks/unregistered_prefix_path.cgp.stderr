@@ -1,4 +1,4 @@
-error[E0277]: the provider trait bound `RedirectLookup<App, PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>: Greeter<App>` is not satisfied
+CGP[E0277]: the provider trait bound `RedirectLookup<App, PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>: Greeter<App>` is not satisfied
   --> src/main.rs:48:9
    |
 48 |         GreeterComponent,
