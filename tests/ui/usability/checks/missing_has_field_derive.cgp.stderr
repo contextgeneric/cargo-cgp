@@ -1,13 +1,13 @@
-error[E0277]: missing field `name` on context `Person`
+error[E0277]: context `Person` cannot access field `name`
   --> src/main.rs:58:9
    |
 58 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: field `name` is required through this dependency chain:
-           `Person` uses consumer trait `CanGreet`
-           └── provider `GreetHello` (provider trait `Greeter`)
-               └── requires `HasName`
-                   └── missing field `name`
+   = note: field `name` exists on `Person`, but its `HasField` impl is missing or its type does not match — add `#[derive(HasField)]` to `Person`, or check the field's type. It is required through this dependency chain:
+           consumer trait impl `CanGreet` for context `Person`
+           └── provider trait impl `Greeter` with context `Person` for provider `GreetHello`
+               └── trait impl `HasName` for `Person`
+                   └── field trait impl `HasField` with field `name` for `Person`
 
 For more information about this error, try `rustc --explain E0277`.

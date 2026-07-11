@@ -46,9 +46,10 @@ impl DependencyTree {
 /// Render a dependency tree as `cargo tree`-style indented text, e.g.
 ///
 /// ```text
-/// `Rectangle` uses `CanCalculateArea` (provider `RectangleArea`)
-/// └── requires `HasRectangleFields`
-///     └── requires field `height` (missing)
+/// consumer trait impl `CanCalculateArea` for context `Rectangle`
+/// └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+///     └── trait impl `HasRectangleFields` for `Rectangle`
+///         └── field trait impl `HasField` with field `height` for `Rectangle`
 /// ```
 ///
 /// The returned string has no trailing newline, so a caller can drop it straight into a

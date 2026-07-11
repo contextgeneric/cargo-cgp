@@ -31,7 +31,7 @@
     ],
     "children": [
       {
-        "message": "field `base_area` is required through this dependency chain:\n`Rectangle` uses consumer trait `CanCalculateArea`\n└── provider `ScaledArea<BaseArea>` (provider trait `AreaCalculator`)\n    └── provider `BaseArea` (provider trait `AreaCalculator`)\n        └── requires `HasBaseArea`\n            └── missing field `base_area`",
+        "message": "field `base_area` is required through this dependency chain:\nconsumer trait impl `CanCalculateArea` for context `Rectangle`\n└── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<BaseArea>`\n    └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `BaseArea`\n        └── trait impl `HasBaseArea` for `Rectangle`\n            └── field trait impl `HasField` with field `base_area` for `Rectangle`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -39,7 +39,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: missing field `base_area` on context `Rectangle`\n  --> src/main.rs:75:9\n   |\n75 |         AreaCalculatorComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: field `base_area` is required through this dependency chain:\n           `Rectangle` uses consumer trait `CanCalculateArea`\n           └── provider `ScaledArea<BaseArea>` (provider trait `AreaCalculator`)\n               └── provider `BaseArea` (provider trait `AreaCalculator`)\n                   └── requires `HasBaseArea`\n                       └── missing field `base_area`\n\n"
+    "rendered": "error[E0277]: missing field `base_area` on context `Rectangle`\n  --> src/main.rs:75:9\n   |\n75 |         AreaCalculatorComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: field `base_area` is required through this dependency chain:\n           consumer trait impl `CanCalculateArea` for context `Rectangle`\n           └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<BaseArea>`\n               └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `BaseArea`\n                   └── trait impl `HasBaseArea` for `Rectangle`\n                       └── field trait impl `HasField` with field `base_area` for `Rectangle`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

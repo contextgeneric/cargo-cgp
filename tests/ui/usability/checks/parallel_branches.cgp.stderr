@@ -5,14 +5,14 @@ error[E0277]: missing fields `first_name` and `last_name` on context `Person`
    |         ^^^^^^^^^^^^^^^^
    |
    = note: field `first_name` is required through this dependency chain:
-           `Person` uses consumer trait `CanGreet`
-           └── provider `GreetFullName` (provider trait `Greeter`)
-               └── requires `HasFirstName`
-                   └── missing field `first_name`
+           consumer trait impl `CanGreet` for context `Person`
+           └── provider trait impl `Greeter` with context `Person` for provider `GreetFullName`
+               └── trait impl `HasFirstName` for `Person`
+                   └── field trait impl `HasField` with field `first_name` for `Person`
    = note: field `last_name` is required through this dependency chain:
-           `Person` uses consumer trait `CanGreet`
-           └── provider `GreetFullName` (provider trait `Greeter`)
-               └── requires `HasLastName`
-                   └── missing field `last_name`
+           consumer trait impl `CanGreet` for context `Person`
+           └── provider trait impl `Greeter` with context `Person` for provider `GreetFullName`
+               └── trait impl `HasLastName` for `Person`
+                   └── field trait impl `HasField` with field `last_name` for `Person`
 
 For more information about this error, try `rustc --explain E0277`.

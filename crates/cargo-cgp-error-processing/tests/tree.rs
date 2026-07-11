@@ -7,10 +7,15 @@ use cargo_cgp_error_processing::tree::{DependencyTree, render_dependency_tree};
 #[test]
 fn renders_linear_spine() {
     let tree = DependencyTree::node(
-        "`Rectangle` uses `CanCalculateArea` (provider `RectangleArea`)",
+        "consumer trait impl `CanCalculateArea` for context `Rectangle`",
         vec![DependencyTree::node(
-            "requires `HasRectangleFields`",
-            vec![DependencyTree::leaf("requires field `height` (missing)")],
+            "provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`",
+            vec![DependencyTree::node(
+                "trait impl `HasRectangleFields` for `Rectangle`",
+                vec![DependencyTree::leaf(
+                    "field trait impl `HasField` with field `height` for `Rectangle`",
+                )],
+            )],
         )],
     );
 
@@ -19,9 +24,10 @@ fn renders_linear_spine() {
     assert_eq!(
         rendered,
         "\
-`Rectangle` uses `CanCalculateArea` (provider `RectangleArea`)
-└── requires `HasRectangleFields`
-    └── requires field `height` (missing)"
+consumer trait impl `CanCalculateArea` for context `Rectangle`
+└── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+    └── trait impl `HasRectangleFields` for `Rectangle`
+        └── field trait impl `HasField` with field `height` for `Rectangle`"
     );
     assert!(!rendered.ends_with('\n'), "no trailing newline for a note");
 }
@@ -30,18 +36,18 @@ fn renders_linear_spine() {
 #[test]
 fn renders_branches() {
     let tree = DependencyTree::node(
-        "`App` uses `CanHandle`",
+        "consumer trait impl `CanHandle` for context `App`",
         vec![
-            DependencyTree::leaf("requires field `name` (missing)"),
-            DependencyTree::leaf("requires field `age` (missing)"),
+            DependencyTree::leaf("field trait impl `HasField` with field `name` for `App`"),
+            DependencyTree::leaf("field trait impl `HasField` with field `age` for `App`"),
         ],
     );
 
     assert_eq!(
         render_dependency_tree(&tree),
         "\
-`App` uses `CanHandle`
-├── requires field `name` (missing)
-└── requires field `age` (missing)"
+consumer trait impl `CanHandle` for context `App`
+├── field trait impl `HasField` with field `name` for `App`
+└── field trait impl `HasField` with field `age` for `App`"
     );
 }

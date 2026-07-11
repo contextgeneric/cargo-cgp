@@ -1,0 +1,13 @@
+error[E0277]: context `App` cannot access field `name`
+  --> src/main.rs:66:9
+   |
+66 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: field `name` exists on `AppFields`, reached through the `Deref` chain of `App`, but `AppFields` has no matching `HasField` impl — add `#[derive(HasField)]` to `AppFields`, or check the field's type. It is required through this dependency chain:
+           consumer trait impl `CanGreet` for context `App`
+           └── provider trait impl `Greeter` with context `App` for provider `GreetHello`
+               └── trait impl `HasName` for `App`
+                   └── field trait impl `HasField` with field `name` for `App`
+
+For more information about this error, try `rustc --explain E0277`.

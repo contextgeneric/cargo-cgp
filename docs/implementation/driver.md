@@ -229,10 +229,15 @@ resolved `DefId` is checked to be the `IsProviderFor` *defined in the `cgp_compo
 crate that owns the trait, since `cgp` and `cgp_core` only re-export it and a `pub use` mints no new
 `DefId` — so a trait merely named `IsProviderFor` in some unrelated crate never seeds an entry, and
 the map is provably rooted in real CGP provider traits. The defining crate name lives in
-[`config`](../../crates/cargo-cgp-driver/src/config.rs) as `CGP_COMPONENT_CRATE`. One reach of this
-anchor is limited: the string rewrite that consumes the map (below) keys on the marker's *name* pulled
-from rendered text, where no `DefId` survives, so two distinct structs that share a marker name would
-still collapse to one key — a residual, text-only ambiguity the identity check here cannot close.
+[`config`](../../crates/cargo-cgp-driver/src/config.rs) as `CGP_COMPONENT_CRATE`.
+
+Each entry is **keyed by the marker's full path** (`def_path_str`), not its bare name, so two distinct
+structs sharing a marker name in different modules occupy separate entries. The two consumers of the
+map reach it by their two available keys. The driver's typed resolver holds a marker's `DefId`, so it
+looks the entry up by that same full path — an exact, collision-free match. The string rewrite below
+has only the marker *name* rendered into the diagnostic text, where no `DefId` and rarely a full path
+survives, so it matches a key by its last path segment; that is ambiguous only when two markers share a
+name, a residual the text form cannot close but the full-path key removes for the typed path.
 
 The walk is expensive — it visits every trait and its blanket impls — so it runs at most once,
 wrapped in a [`ComponentNameMap`](../../crates/cargo-cgp-error-processing/src/rewrite.rs): a

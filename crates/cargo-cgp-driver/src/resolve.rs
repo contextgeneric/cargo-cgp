@@ -23,10 +23,21 @@
 //!    `ty::tls` while a check error is being emitted — yet fresh inference contexts re-entered
 //!    here solve cleanly; that re-entrancy is the load-bearing assumption behind the design.
 //! 4. Each root-cause path is rendered as a `cargo tree`-style [`DependencyTree`] with every CGP
-//!    wiring trait replaced by its human form (`CanUseComponent`→consumer trait, `IsProviderFor`
-//!    →provider, `HasField`→missing field), and the field name is decoded structurally from its
-//!    `Symbol!`. When no branch reaches a missing field the resolver yields `None`, and the
+//!    wiring trait replaced by its human form (`CanUseComponent`→consumer-trait impl, `IsProviderFor`
+//!    →provider-trait impl, `HasField`→field-trait impl), and the field name is decoded structurally
+//!    from its `Symbol!`. When no branch reaches a missing field the resolver yields `None`, and the
 //!    caller falls back to the untouched text-rewrite pipeline.
+//!
+//! For each leaf the resolver also inspects the *actual struct* the `HasField` bound lands on —
+//! its own named fields, and, if the field is not there, the fields of the structs along its
+//! `Deref` chain — so it can tell a genuinely absent field from one that is present but unwired. A
+//! present field means that struct is missing its `#[derive(HasField)]`, or the field's type does
+//! not match what the wiring requires; the emitter words the diagnostic accordingly (see
+//! [`FieldIssue`]).
+//!
+//! Component markers are resolved to their consumer/provider trait names through the
+//! [`ComponentNameMap`] keyed by each marker's *full path* (`def_path_str`), not its bare name, so
+//! two components that share a name in different modules never collide.
 
 use cargo_cgp_error_processing::ComponentTraitNames;
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
@@ -45,20 +56,51 @@ use crate::config::{
     DELEGATE_COMPONENT_TRAIT, HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT,
 };
 
-/// A recovered root cause: one missing field, with the dependency chain that needs it.
+/// Why a required `HasField` bound is unmet — the distinction that tells a genuinely missing
+/// field apart from one some struct actually carries but has not wired. CGP's `HasField` follows
+/// `Deref` (a blanket impl forwards to the target), so a field on a `Deref` target resolves when
+/// the target derives it; the failure the resolver diagnoses is a field present on some struct
+/// whose `HasField` impl is nonetheless absent or type-mismatched.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FieldIssue {
+    /// No struct in the context's `Deref` chain carries a field of this name: it is genuinely
+    /// missing and must be added.
+    Missing,
+    /// The context struct itself carries a field of this name, yet the `HasField` bound is unmet —
+    /// either the struct is missing its `#[derive(HasField)]`, or the field's type does not match
+    /// the type the wiring requires.
+    Present,
+    /// The context does not carry the field directly, but a struct reached through its `Deref`
+    /// chain does. Since `HasField` follows `Deref`, the bound would hold if that target derived
+    /// the field; the fault is that the target's own `HasField` impl is absent or type-mismatched.
+    PresentViaDeref {
+        /// The `Deref`-reachable struct that carries the field, e.g. `AppFields`.
+        target: String,
+    },
+}
+
+/// A recovered root cause: one field a wiring needs, the dependency chain that needs it, and
+/// whether the field is truly absent or merely unwired.
 pub struct MissingField {
-    /// The missing field name, decoded from its `Symbol!`, e.g. `height`.
+    /// The field name, decoded from its `Symbol!`, e.g. `height`.
     pub field: String,
+    /// The type the `HasField` bound lands on — the struct that should carry (or derive) the
+    /// field, e.g. `Rectangle`. Usually the checked context itself, but a nested getter can make
+    /// it a different context.
+    pub owner: String,
+    /// Whether the field is genuinely missing, present-but-unwired, or reachable only via `Deref`.
+    pub issue: FieldIssue,
     /// The transitive dependency chain from the checked component down to this field, rendered
     /// as a single spine.
     pub tree: DependencyTree,
 }
 
 /// The recovered root cause(s) of a check failure, in owned form so they outlive the inference
-/// contexts they were read from. Today the only kind is missing fields; more will join it.
+/// contexts they were read from. Today the only kind is unmet field access; more will join it.
 pub enum RootCause {
-    /// The context is missing one or more fields its wiring needs. Each entry is an independent
-    /// root cause the emitter renders as its own sub-error.
+    /// The context's wiring needs one or more fields whose `HasField` bound is unmet — each
+    /// either genuinely missing, present-but-unwired, or reachable only via `Deref`. Every entry
+    /// is an independent root cause the emitter renders as its own sub-error.
     MissingFields {
         /// The context type that lacks the field(s), e.g. `Rectangle`.
         context: String,
@@ -163,12 +205,21 @@ fn resolve_missing_fields<'tcx>(
         if causes.iter().any(|c: &MissingField| c.field == field) {
             continue;
         }
+        // Inspect the struct the bound lands on so the emitter can distinguish a genuinely
+        // missing field from one that is present but unwired.
+        let owner = tcx.erase_and_anonymize_regions(leaf.self_ty());
+        let issue = field_issue(tcx, owner, &field);
         let labels: Vec<String> = path
             .iter()
             .filter_map(|pred| label_for(tcx, *pred, context, names))
             .collect();
         if let Some(tree) = spine(labels) {
-            causes.push(MissingField { field, tree });
+            causes.push(MissingField {
+                field,
+                owner: owner.to_string(),
+                issue,
+                tree,
+            });
         }
     }
 
@@ -286,6 +337,72 @@ fn is_has_field(tcx: TyCtxt<'_>, pred: ty::PolyTraitPredicate<'_>) -> bool {
     )
 }
 
+/// Bound on how far the `Deref` chain is followed when looking for a field, so a cyclic `Deref`
+/// (`A: Deref<Target = B>`, `B: Deref<Target = A>`) cannot make the search loop.
+const MAX_DEREF: u32 = 16;
+
+/// Classify why the `HasField` bound on `owner` for `field` is unmet: whether `owner` genuinely
+/// lacks the field, carries it directly (so only the `HasField` impl or its type is at fault), or
+/// reaches it only through a `Deref` target the derive does not cross.
+fn field_issue<'tcx>(tcx: TyCtxt<'tcx>, owner: Ty<'tcx>, field: &str) -> FieldIssue {
+    if adt_has_field(owner, field) {
+        return FieldIssue::Present;
+    }
+    let mut current = owner;
+    for _ in 0..MAX_DEREF {
+        let Some(target) = deref_target(tcx, current) else {
+            break;
+        };
+        if adt_has_field(target, field) {
+            return FieldIssue::PresentViaDeref {
+                target: target.to_string(),
+            };
+        }
+        current = target;
+    }
+    FieldIssue::Missing
+}
+
+/// Whether `ty` is a struct with a named field called `field`. Only a struct can carry named
+/// fields a `HasField` derive would key on, so an enum, tuple, or non-ADT is never a match.
+fn adt_has_field(ty: Ty<'_>, field: &str) -> bool {
+    match ty.kind() {
+        ty::Adt(def, _) if def.is_struct() => def
+            .non_enum_variant()
+            .fields
+            .iter()
+            .any(|f| f.name.as_str() == field),
+        _ => false,
+    }
+}
+
+/// The `Deref::Target` of `ty`, read straight from the concrete `impl Deref for ty` rather than by
+/// normalizing a projection, so it needs no inference context. Returns `None` when `ty` has no
+/// matching `Deref` impl. Matches the impl by its `Self` type, so a generic `Deref` impl whose
+/// `Self` is not exactly `ty` is skipped — sufficient for the concrete contexts a check targets.
+fn deref_target<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    let deref_trait = tcx.lang_items().deref_trait()?;
+    let ty = tcx.erase_and_anonymize_regions(ty);
+
+    for impl_did in tcx.all_impls(deref_trait) {
+        let impl_self = tcx.type_of(impl_did).instantiate_identity().skip_norm_wip();
+        if tcx.erase_and_anonymize_regions(impl_self) != ty {
+            continue;
+        }
+        // The `Deref` impl's single associated type is its `Target`; its value is the target type.
+        for assoc in tcx.associated_items(impl_did).in_definition_order() {
+            if assoc.kind.tag() == ty::AssocTag::Type {
+                let target = tcx
+                    .type_of(assoc.def_id)
+                    .instantiate_identity()
+                    .skip_norm_wip();
+                return Some(tcx.erase_and_anonymize_regions(target));
+            }
+        }
+    }
+    None
+}
+
 /// Fold a path's rendered labels into a single-spine dependency tree, root first.
 fn spine(labels: Vec<String>) -> Option<DependencyTree> {
     let mut rev = labels.into_iter().rev();
@@ -297,9 +414,10 @@ fn spine(labels: Vec<String>) -> Option<DependencyTree> {
 }
 
 /// The human-readable label for one predicate in a dependency path, replacing each CGP wiring
-/// trait with the concept it stands for: `CanUseComponent` with the consumer trait, `IsProviderFor`
-/// with the concrete provider (and its provider trait), `HasField` with the missing field. Any
-/// other trait — a user's own consumer or getter capability — is shown by name.
+/// trait with the concept it stands for: `CanUseComponent` with the consumer-trait impl,
+/// `IsProviderFor` with the provider-trait impl (its provider trait, context, and provider struct),
+/// `HasField` with the field-trait impl (the field and the struct that must carry it). Any other
+/// trait — a user's own consumer or getter capability — is shown as a trait impl for its self type.
 ///
 /// The steps that carry no information for a reader are dropped so the chain stays legible: the
 /// `DelegateComponent` wiring table, an `IsProviderFor` for the *context itself* (the delegation
@@ -317,7 +435,7 @@ fn label_for<'tcx>(
     if is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE) {
         let consumer = marker_role(tcx, trait_ref.args.type_at(1), names, |n| n.consumer);
         Some(format!(
-            "`{}` uses consumer trait `{consumer}`",
+            "consumer trait impl `{consumer}` for context `{}`",
             trait_ref.self_ty()
         ))
     } else if is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE) {
@@ -327,18 +445,27 @@ fn label_for<'tcx>(
         }
         let provider = trait_ref.self_ty().to_string();
         let provider_trait = marker_role(tcx, trait_ref.args.type_at(1), names, |n| n.provider);
+        // `IsProviderFor<Provider, Marker, Context, Params>` — the third argument is the context.
+        let provider_context = trait_ref.args.type_at(2);
         Some(format!(
-            "provider `{provider}` (provider trait `{provider_trait}`)"
+            "provider trait impl `{provider_trait}` with context `{provider_context}` for provider `{provider}`"
         ))
     } else if is_cgp_item(tcx, did, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
         let field = decode_symbol(tcx, trait_ref.args.type_at(1))?;
-        Some(format!("missing field `{field}`"))
+        Some(format!(
+            "field trait impl `HasField` with field `{field}` for `{}`",
+            trait_ref.self_ty()
+        ))
     } else if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         || is_provider_trait(tcx, did)
     {
         None
     } else {
-        Some(format!("requires `{}`", tcx.item_name(did)))
+        Some(format!(
+            "trait impl `{}` for `{}`",
+            tcx.item_name(did),
+            trait_ref.self_ty()
+        ))
     }
 }
 
@@ -354,24 +481,21 @@ fn is_provider_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// Resolve a component marker type to its consumer or provider trait name through the name map,
-/// falling back to the marker's own name when the component is not fully recognized.
+/// keyed by the marker's *full path* so two same-named markers in different modules never collide.
+/// Falls back to the marker's bare item name when the component is not in the map, and to the
+/// marker's printed form when it is not an ADT at all.
 fn marker_role(
     tcx: TyCtxt<'_>,
     marker: Ty<'_>,
     names: &ComponentNameMap,
     role: impl Fn(ComponentTraitNames) -> String,
 ) -> String {
-    match adt_name(tcx, marker) {
-        Some(name) => names.get(&name).map(role).unwrap_or(name),
-        None => marker.to_string(),
-    }
-}
-
-/// The item name of `ty` when it is an ADT (`Rectangle`, `AreaCalculatorComponent`, …).
-fn adt_name(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<String> {
-    match ty.kind() {
-        ty::Adt(def, _) => Some(tcx.item_name(def.did()).to_string()),
-        _ => None,
+    let ty::Adt(def, _) = marker.kind() else {
+        return marker.to_string();
+    };
+    match names.get_by_path(&tcx.def_path_str(def.did())) {
+        Some(entry) => role(entry),
+        None => tcx.item_name(def.did()).to_string(),
     }
 }
 

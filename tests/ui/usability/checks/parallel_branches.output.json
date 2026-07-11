@@ -31,7 +31,7 @@
     ],
     "children": [
       {
-        "message": "field `first_name` is required through this dependency chain:\n`Person` uses consumer trait `CanGreet`\n└── provider `GreetFullName` (provider trait `Greeter`)\n    └── requires `HasFirstName`\n        └── missing field `first_name`",
+        "message": "field `first_name` is required through this dependency chain:\nconsumer trait impl `CanGreet` for context `Person`\n└── provider trait impl `Greeter` with context `Person` for provider `GreetFullName`\n    └── trait impl `HasFirstName` for `Person`\n        └── field trait impl `HasField` with field `first_name` for `Person`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -39,7 +39,7 @@
         "rendered": null
       },
       {
-        "message": "field `last_name` is required through this dependency chain:\n`Person` uses consumer trait `CanGreet`\n└── provider `GreetFullName` (provider trait `Greeter`)\n    └── requires `HasLastName`\n        └── missing field `last_name`",
+        "message": "field `last_name` is required through this dependency chain:\nconsumer trait impl `CanGreet` for context `Person`\n└── provider trait impl `Greeter` with context `Person` for provider `GreetFullName`\n    └── trait impl `HasLastName` for `Person`\n        └── field trait impl `HasField` with field `last_name` for `Person`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -47,7 +47,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: missing fields `first_name` and `last_name` on context `Person`\n  --> src/main.rs:50:9\n   |\n50 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^\n   |\n   = note: field `first_name` is required through this dependency chain:\n           `Person` uses consumer trait `CanGreet`\n           └── provider `GreetFullName` (provider trait `Greeter`)\n               └── requires `HasFirstName`\n                   └── missing field `first_name`\n   = note: field `last_name` is required through this dependency chain:\n           `Person` uses consumer trait `CanGreet`\n           └── provider `GreetFullName` (provider trait `Greeter`)\n               └── requires `HasLastName`\n                   └── missing field `last_name`\n\n"
+    "rendered": "error[E0277]: missing fields `first_name` and `last_name` on context `Person`\n  --> src/main.rs:50:9\n   |\n50 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^\n   |\n   = note: field `first_name` is required through this dependency chain:\n           consumer trait impl `CanGreet` for context `Person`\n           └── provider trait impl `Greeter` with context `Person` for provider `GreetFullName`\n               └── trait impl `HasFirstName` for `Person`\n                   └── field trait impl `HasField` with field `first_name` for `Person`\n   = note: field `last_name` is required through this dependency chain:\n           consumer trait impl `CanGreet` for context `Person`\n           └── provider trait impl `Greeter` with context `Person` for provider `GreetFullName`\n               └── trait impl `HasLastName` for `Person`\n                   └── field trait impl `HasField` with field `last_name` for `Person`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

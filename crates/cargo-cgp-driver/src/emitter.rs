@@ -42,7 +42,7 @@ use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
 
 use crate::component_map::build_name_map_from_tls;
-use crate::resolve::{self, RootCause};
+use crate::resolve::{self, FieldIssue, MissingField, RootCause};
 
 /// Install the rewriting emitter on the compiler session, replicating how rustc builds its
 /// default JSON emitter so cargo's diagnostic stream is byte-for-byte the same apart from
@@ -167,44 +167,75 @@ impl CgpEmitter {
     }
 }
 
-/// The header phrase for one or more missing fields: `missing field \`x\``, or
-/// `missing fields \`x\` and \`y\``, or `missing fields \`x\`, \`y\`, and \`z\``.
-fn missing_fields_phrase(fields: &[String]) -> String {
+/// A `and`-joined, back-quoted list of field names: `\`x\``, `\`x\` and \`y\``, or
+/// `\`x\`, \`y\`, and \`z\``.
+fn quoted_field_list(fields: &[String]) -> String {
     let quoted: Vec<String> = fields.iter().map(|f| format!("`{f}`")).collect();
-    let list = match quoted.as_slice() {
+    match quoted.as_slice() {
         [] => String::new(),
         [one] => one.clone(),
         [a, b] => format!("{a} and {b}"),
         [rest @ .., last] => format!("{}, and {last}", rest.join(", ")),
-    };
+    }
+}
+
+/// The header for the resolved field root cause(s). When every field is genuinely absent the
+/// header reads as a missing field; when at least one is present-but-unwired it reads as the
+/// context being unable to access the field, since "missing" would misdescribe a field the struct
+/// visibly carries.
+fn field_header(context: &str, causes: &[MissingField]) -> String {
+    let fields: Vec<String> = causes.iter().map(|c| c.field.clone()).collect();
     let noun = if fields.len() == 1 { "field" } else { "fields" };
-    format!("missing {noun} {list}")
+    let list = quoted_field_list(&fields);
+    if causes
+        .iter()
+        .all(|c| matches!(c.issue, FieldIssue::Missing))
+    {
+        format!("missing {noun} {list} on context `{context}`")
+    } else {
+        format!("context `{context}` cannot access {noun} {list}")
+    }
+}
+
+/// The note body for one field root cause: a lead sentence stating the specific fault — absent,
+/// present-but-unwired, or reachable only via `Deref` — followed by the field's dependency chain.
+fn field_note(cause: &MissingField) -> String {
+    let chain = render_dependency_tree(&cause.tree);
+    let field = &cause.field;
+    let owner = &cause.owner;
+    let lead = match &cause.issue {
+        FieldIssue::Missing => {
+            format!("field `{field}` is required through this dependency chain:")
+        }
+        FieldIssue::Present => format!(
+            "field `{field}` exists on `{owner}`, but its `HasField` impl is missing or its type \
+             does not match — add `#[derive(HasField)]` to `{owner}`, or check the field's type. \
+             It is required through this dependency chain:"
+        ),
+        FieldIssue::PresentViaDeref { target } => format!(
+            "field `{field}` exists on `{target}`, reached through the `Deref` chain of `{owner}`, \
+             but `{target}` has no matching `HasField` impl — add `#[derive(HasField)]` to \
+             `{target}`, or check the field's type. It is required through this dependency chain:"
+        ),
+    };
+    format!("{lead}\n{chain}")
 }
 
 /// Build the replacement diagnostic for the resolved root cause(s): a root-cause-first header
 /// carrying the compiler's `E0277` code and its caret on the wiring entry, plus one note per
-/// missing field — each its own sub-error showing the transitive dependency chain, rendered as a
-/// tree, that leads to that field.
+/// field — each its own sub-error stating the specific fault and showing the transitive dependency
+/// chain, rendered as a tree, that leads to that field.
 fn render_root_cause(cause: RootCause, span: Span) -> DiagInner {
     match cause {
         RootCause::MissingFields { context, causes } => {
-            let fields: Vec<String> = causes.iter().map(|cause| cause.field.clone()).collect();
-            let mut diag = DiagInner::new(
-                Level::Error,
-                format!("{} on context `{context}`", missing_fields_phrase(&fields)),
-            );
+            let mut diag = DiagInner::new(Level::Error, field_header(&context, &causes));
             diag.code = Some(E0277);
             diag.span = MultiSpan::from_span(span);
 
             for cause in &causes {
-                let note = format!(
-                    "field `{}` is required through this dependency chain:\n{}",
-                    cause.field,
-                    render_dependency_tree(&cause.tree),
-                );
                 diag.children.push(Subdiag {
                     level: Level::Note,
-                    messages: vec![(DiagMessage::Str(note.into()), Style::NoStyle)],
+                    messages: vec![(DiagMessage::Str(field_note(cause).into()), Style::NoStyle)],
                     span: MultiSpan::new(),
                 });
             }

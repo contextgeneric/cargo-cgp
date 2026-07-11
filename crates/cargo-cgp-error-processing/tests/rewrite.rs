@@ -351,6 +351,92 @@ fn rewrite_message_dispatches_note_and_header() {
     assert_eq!(rewrite_message("some unrelated message", &name_map()), None);
 }
 
+/// A map keyed by a marker's *full path*, the shape the driver builds from `def_path_str`.
+fn full_path_names() -> HashMap<String, ComponentTraitNames> {
+    let mut map = HashMap::new();
+    map.insert(
+        "my_crate::area::AreaCalculatorComponent".to_owned(),
+        ComponentTraitNames {
+            consumer: "CanCalculateArea".to_owned(),
+            provider: "AreaCalculator".to_owned(),
+        },
+    );
+    map
+}
+
+#[test]
+fn resolves_a_full_path_key_by_path_and_by_name() {
+    let map = ComponentNameMap::new(full_path_names);
+
+    // The typed resolver's exact lookup: the full path resolves, a bare name does not.
+    assert_eq!(
+        map.get_by_path("my_crate::area::AreaCalculatorComponent")
+            .map(|n| n.provider),
+        Some("AreaCalculator".to_owned())
+    );
+    assert_eq!(map.get_by_path("AreaCalculatorComponent"), None);
+
+    // The text rewrite's name lookup matches the full-path key by its last segment, so a note
+    // that carries only the unqualified marker still rewrites.
+    assert_eq!(
+        map.get("AreaCalculatorComponent").map(|n| n.consumer),
+        Some("CanCalculateArea".to_owned())
+    );
+    assert_eq!(
+        rewrite_required_for(
+            "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`",
+            &map,
+        )
+        .as_deref(),
+        Some(
+            "required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`"
+        )
+    );
+}
+
+/// Two markers that share a name in different modules must occupy distinct entries, so the typed
+/// resolver's full-path lookup returns each one's own trait names rather than one clobbering the
+/// other — the guarantee the full-path key exists for.
+fn colliding_names() -> HashMap<String, ComponentTraitNames> {
+    let mut map = HashMap::new();
+    map.insert(
+        "my_crate::mod_a::FooComponent".to_owned(),
+        ComponentTraitNames {
+            consumer: "CanFooA".to_owned(),
+            provider: "FooerA".to_owned(),
+        },
+    );
+    map.insert(
+        "my_crate::mod_b::FooComponent".to_owned(),
+        ComponentTraitNames {
+            consumer: "CanFooB".to_owned(),
+            provider: "FooerB".to_owned(),
+        },
+    );
+    map
+}
+
+#[test]
+fn same_named_markers_in_different_modules_do_not_collide() {
+    let map = ComponentNameMap::new(colliding_names);
+
+    // Each full path resolves to its own module's trait names — no overlap.
+    assert_eq!(
+        map.get_by_path("my_crate::mod_a::FooComponent"),
+        Some(ComponentTraitNames {
+            consumer: "CanFooA".to_owned(),
+            provider: "FooerA".to_owned(),
+        })
+    );
+    assert_eq!(
+        map.get_by_path("my_crate::mod_b::FooComponent"),
+        Some(ComponentTraitNames {
+            consumer: "CanFooB".to_owned(),
+            provider: "FooerB".to_owned(),
+        })
+    );
+}
+
 /// A `ComponentNameMap` whose initializer panics, to prove it is never forced.
 fn panicking_init() -> HashMap<String, ComponentTraitNames> {
     panic!("the name map must not be built when no message is rewritten");

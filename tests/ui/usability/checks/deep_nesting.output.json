@@ -31,7 +31,7 @@
     ],
     "children": [
       {
-        "message": "field `height` is required through this dependency chain:\n`Rectangle` uses consumer trait `CanCalculateArea`\n└── provider `ScaledArea<ScaledArea<ScaledArea<RectangleArea>>>` (provider trait `AreaCalculator`)\n    └── provider `ScaledArea<ScaledArea<RectangleArea>>` (provider trait `AreaCalculator`)\n        └── provider `ScaledArea<RectangleArea>` (provider trait `AreaCalculator`)\n            └── provider `RectangleArea` (provider trait `AreaCalculator`)\n                └── requires `HasRectangleFields`\n                    └── missing field `height`",
+        "message": "field `height` is required through this dependency chain:\nconsumer trait impl `CanCalculateArea` for context `Rectangle`\n└── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<ScaledArea<ScaledArea<RectangleArea>>>`\n    └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<ScaledArea<RectangleArea>>`\n        └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<RectangleArea>`\n            └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`\n                └── trait impl `HasRectangleFields` for `Rectangle`\n                    └── field trait impl `HasField` with field `height` for `Rectangle`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -39,7 +39,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: missing field `height` on context `Rectangle`\n  --> src/main.rs:68:9\n   |\n68 |         AreaCalculatorComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: field `height` is required through this dependency chain:\n           `Rectangle` uses consumer trait `CanCalculateArea`\n           └── provider `ScaledArea<ScaledArea<ScaledArea<RectangleArea>>>` (provider trait `AreaCalculator`)\n               └── provider `ScaledArea<ScaledArea<RectangleArea>>` (provider trait `AreaCalculator`)\n                   └── provider `ScaledArea<RectangleArea>` (provider trait `AreaCalculator`)\n                       └── provider `RectangleArea` (provider trait `AreaCalculator`)\n                           └── requires `HasRectangleFields`\n                               └── missing field `height`\n\n"
+    "rendered": "error[E0277]: missing field `height` on context `Rectangle`\n  --> src/main.rs:68:9\n   |\n68 |         AreaCalculatorComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^\n   |\n   = note: field `height` is required through this dependency chain:\n           consumer trait impl `CanCalculateArea` for context `Rectangle`\n           └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<ScaledArea<ScaledArea<RectangleArea>>>`\n               └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<ScaledArea<RectangleArea>>`\n                   └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<RectangleArea>`\n                       └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`\n                           └── trait impl `HasRectangleFields` for `Rectangle`\n                               └── field trait impl `HasField` with field `height` for `Rectangle`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

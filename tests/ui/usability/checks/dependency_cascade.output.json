@@ -31,7 +31,7 @@
     ],
     "children": [
       {
-        "message": "field `name` is required through this dependency chain:\n`App` uses consumer trait `CanBaz`\n└── provider `ProvideBaz` (provider trait `Baz`)\n    └── requires `CanBar`\n        └── provider `ProvideBar` (provider trait `Bar`)\n            └── requires `CanFoo`\n                └── provider `ProvideFoo` (provider trait `Foo`)\n                    └── requires `HasName`\n                        └── missing field `name`",
+        "message": "field `name` is required through this dependency chain:\nconsumer trait impl `CanBaz` for context `App`\n└── provider trait impl `Baz` with context `App` for provider `ProvideBaz`\n    └── trait impl `CanBar` for `App`\n        └── provider trait impl `Bar` with context `App` for provider `ProvideBar`\n            └── trait impl `CanFoo` for `App`\n                └── provider trait impl `Foo` with context `App` for provider `ProvideFoo`\n                    └── trait impl `HasName` for `App`\n                        └── field trait impl `HasField` with field `name` for `App`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -39,7 +39,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: missing field `name` on context `App`\n  --> src/main.rs:84:9\n   |\n84 |         BazComponent,\n   |         ^^^^^^^^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           `App` uses consumer trait `CanBaz`\n           └── provider `ProvideBaz` (provider trait `Baz`)\n               └── requires `CanBar`\n                   └── provider `ProvideBar` (provider trait `Bar`)\n                       └── requires `CanFoo`\n                           └── provider `ProvideFoo` (provider trait `Foo`)\n                               └── requires `HasName`\n                                   └── missing field `name`\n\n"
+    "rendered": "error[E0277]: missing field `name` on context `App`\n  --> src/main.rs:84:9\n   |\n84 |         BazComponent,\n   |         ^^^^^^^^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           consumer trait impl `CanBaz` for context `App`\n           └── provider trait impl `Baz` with context `App` for provider `ProvideBaz`\n               └── trait impl `CanBar` for `App`\n                   └── provider trait impl `Bar` with context `App` for provider `ProvideBar`\n                       └── trait impl `CanFoo` for `App`\n                           └── provider trait impl `Foo` with context `App` for provider `ProvideFoo`\n                               └── trait impl `HasName` for `App`\n                                   └── field trait impl `HasField` with field `name` for `App`\n\n"
   },
   {
     "message": "missing field `name` on context `App`",
@@ -73,7 +73,7 @@
     ],
     "children": [
       {
-        "message": "field `name` is required through this dependency chain:\n`App` uses consumer trait `CanBar`\n└── provider `ProvideBar` (provider trait `Bar`)\n    └── requires `CanFoo`\n        └── provider `ProvideFoo` (provider trait `Foo`)\n            └── requires `HasName`\n                └── missing field `name`",
+        "message": "field `name` is required through this dependency chain:\nconsumer trait impl `CanBar` for context `App`\n└── provider trait impl `Bar` with context `App` for provider `ProvideBar`\n    └── trait impl `CanFoo` for `App`\n        └── provider trait impl `Foo` with context `App` for provider `ProvideFoo`\n            └── trait impl `HasName` for `App`\n                └── field trait impl `HasField` with field `name` for `App`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -81,7 +81,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: missing field `name` on context `App`\n  --> src/main.rs:85:9\n   |\n85 |         BarComponent,\n   |         ^^^^^^^^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           `App` uses consumer trait `CanBar`\n           └── provider `ProvideBar` (provider trait `Bar`)\n               └── requires `CanFoo`\n                   └── provider `ProvideFoo` (provider trait `Foo`)\n                       └── requires `HasName`\n                           └── missing field `name`\n\n"
+    "rendered": "error[E0277]: missing field `name` on context `App`\n  --> src/main.rs:85:9\n   |\n85 |         BarComponent,\n   |         ^^^^^^^^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           consumer trait impl `CanBar` for context `App`\n           └── provider trait impl `Bar` with context `App` for provider `ProvideBar`\n               └── trait impl `CanFoo` for `App`\n                   └── provider trait impl `Foo` with context `App` for provider `ProvideFoo`\n                       └── trait impl `HasName` for `App`\n                           └── field trait impl `HasField` with field `name` for `App`\n\n"
   },
   {
     "message": "missing field `name` on context `App`",
@@ -115,7 +115,7 @@
     ],
     "children": [
       {
-        "message": "field `name` is required through this dependency chain:\n`App` uses consumer trait `CanFoo`\n└── provider `ProvideFoo` (provider trait `Foo`)\n    └── requires `HasName`\n        └── missing field `name`",
+        "message": "field `name` is required through this dependency chain:\nconsumer trait impl `CanFoo` for context `App`\n└── provider trait impl `Foo` with context `App` for provider `ProvideFoo`\n    └── trait impl `HasName` for `App`\n        └── field trait impl `HasField` with field `name` for `App`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -123,7 +123,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: missing field `name` on context `App`\n  --> src/main.rs:86:9\n   |\n86 |         FooComponent,\n   |         ^^^^^^^^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           `App` uses consumer trait `CanFoo`\n           └── provider `ProvideFoo` (provider trait `Foo`)\n               └── requires `HasName`\n                   └── missing field `name`\n\n"
+    "rendered": "error[E0277]: missing field `name` on context `App`\n  --> src/main.rs:86:9\n   |\n86 |         FooComponent,\n   |         ^^^^^^^^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           consumer trait impl `CanFoo` for context `App`\n           └── provider trait impl `Foo` with context `App` for provider `ProvideFoo`\n               └── trait impl `HasName` for `App`\n                   └── field trait impl `HasField` with field `name` for `App`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

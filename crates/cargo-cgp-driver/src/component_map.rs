@@ -23,10 +23,15 @@
 //! `DefId`, not by its name: `is_cgp_is_provider_for` verifies the bound's trait is defined
 //! in the [`CGP_COMPONENT_CRATE`] crate, so a trait merely *spelled* `IsProviderFor` in an
 //! unrelated crate cannot seed a bogus entry. That anchor is what keeps every map entry
-//! provably rooted in a real CGP provider trait. (The rewrite that consumes the map still
-//! keys on the marker's *name* — see [`rewrite`](cargo_cgp_error_processing::rewrite) — so two
-//! distinct structs sharing a marker name would still collapse to one key; that residual,
-//! text-only ambiguity is beyond what a `DefId` anchor here can reach.)
+//! provably rooted in a real CGP provider trait.
+//!
+//! **Keyed by full path.** Each entry is keyed by the marker's *full path* (`def_path_str`),
+//! not its bare name, so two distinct markers sharing a name in different modules occupy
+//! separate entries instead of one clobbering the other. The driver's typed resolver looks the
+//! entry up by that same full path (via `def_path_str` on the marker's `DefId`), an exact match
+//! with no ambiguity. Only the compiler-free text rewrite, which sees just the unqualified name
+//! rustc printed, still resolves by last segment — a residual, text-only ambiguity the full-path
+//! key removes for the typed path but cannot for a bare printed name.
 
 use std::collections::HashMap;
 
@@ -87,7 +92,10 @@ pub fn build_component_name_map(tcx: TyCtxt<'_>) -> HashMap<String, ComponentTra
                 providers.insert(
                     trait_did,
                     (
-                        tcx.item_name(marker.did()).to_string(),
+                        // Full path, not the bare name, so same-named markers in different
+                        // modules key distinct entries. The typed resolver looks up by the same
+                        // `def_path_str`.
+                        tcx.def_path_str(marker.did()),
                         tcx.item_name(trait_did).to_string(),
                     ),
                 );

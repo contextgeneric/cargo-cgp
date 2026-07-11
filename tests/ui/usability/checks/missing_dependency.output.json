@@ -31,7 +31,7 @@
     ],
     "children": [
       {
-        "message": "field `name` is required through this dependency chain:\n`Person` uses consumer trait `CanGreet`\n└── provider `GreetHello` (provider trait `Greeter`)\n    └── requires `HasName`\n        └── missing field `name`",
+        "message": "field `name` is required through this dependency chain:\nconsumer trait impl `CanGreet` for context `Person`\n└── provider trait impl `Greeter` with context `Person` for provider `GreetHello`\n    └── trait impl `HasName` for `Person`\n        └── field trait impl `HasField` with field `name` for `Person`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -39,7 +39,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: missing field `name` on context `Person`\n  --> src/main.rs:55:9\n   |\n55 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           `Person` uses consumer trait `CanGreet`\n           └── provider `GreetHello` (provider trait `Greeter`)\n               └── requires `HasName`\n                   └── missing field `name`\n\n"
+    "rendered": "error[E0277]: missing field `name` on context `Person`\n  --> src/main.rs:55:9\n   |\n55 |         GreeterComponent,\n   |         ^^^^^^^^^^^^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           consumer trait impl `CanGreet` for context `Person`\n           └── provider trait impl `Greeter` with context `Person` for provider `GreetHello`\n               └── trait impl `HasName` for `Person`\n                   └── field trait impl `HasField` with field `name` for `Person`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

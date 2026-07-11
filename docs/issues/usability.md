@@ -107,17 +107,6 @@ present — which provider's `where` clause the "introduced here" caret sits on,
 the way the upstream `#[check_providers(...)]` form does by hand (see the catalog's
 [higher-order provider layer failure](../../../cgp/docs/errors/checks/higher-order-provider-layer.md)).
 
-## A missing derive reads like a missing field
-
-The absence of `#[derive(HasField)]` altogether looks, at a glance, like a single missing field, even
-though the fix is entirely different. [`base_area_2.rs`](../../tests/ui/usability/checks/base_area_2.rs)
-omits the derive, so `Rectangle` has *no* `HasField` impls, and the
-[`.cgp.stderr`](../../tests/ui/usability/checks/base_area_2.cgp.stderr) reports only the first field (`width`) and —
-unlike every other fixture — carries no "but trait `HasField<…>` is implemented for it" landmark.
-That absent landmark is the signal, and it is in the output, so a tool can detect it: a context with
-zero `HasField` impls behind a `#[derive(HasField)]`-shaped requirement has most likely forgotten the
-derive. The tool should say so, rather than sending the user to add one field at a time.
-
 ## What good presentation looks like
 
 Taken together, these issues define the tool's presentation target for this class: lead with the
