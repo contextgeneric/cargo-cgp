@@ -16,10 +16,12 @@ anticipated.
 
 ## What it transforms, and what it leaves alone
 
-The resolver considers **any diagnostic whose messages mention a CGP wiring trait**
-(`CanUseComponent` or `IsProviderFor`) and whose caret sits on a `check_components!` entry — no longer
-only an `E0277`. It walks that entry's wiring obligations down to the terminal unmet bound(s) they
-rest on, and how it presents the result depends on what those leaves are.
+The resolver considers **any diagnostic that names a CGP wiring or field trait**
+(`CanUseComponent`, `IsProviderFor`, or `HasField`) and **every method `E0599`** — no longer only an
+`E0277`. It recovers a starting obligation two ways: from a `check_components!` entry when the caret
+sits on one, and otherwise from the *use site* of a broken consumer-method call (below). Either way it
+walks the wiring obligations down to the terminal unmet bound(s) they rest on, and how it presents the
+result depends on what those leaves are.
 
 **A failure that bottoms out entirely on missing fields is replaced wholesale.** This is the surfaced
 [check-trait failure](../../../cgp/docs/errors/checks/check-trait-failure.md) class, the most common
@@ -46,16 +48,31 @@ untouched, discards rustc's own obligation-chain notes and any supplementary hel
 [`unregistered_prefix_path`](../../tests/ui/usability/checks/unregistered_prefix_path.rs) fixtures show
 this shape.
 
+**A use-site failure is handled the same way, once its obligation is recovered.** CGP wiring is lazy,
+so a broken provider dependency often surfaces not at a check but where the consumer method is *called*
+— `person.greet()` on a `Person` that cannot satisfy `HasName` — as an `E0599` "method exists but its
+trait bounds were not satisfied". There is no check impl to anchor on, so the resolver instead recovers
+the context type from the diagnostic's own spans (the "method not found for this struct" span lands on
+`Person`'s definition) and re-checks every component that context wires. The missing-field case then
+takes the wholesale-replacement path, so
+[`missing_dependency`](../../tests/ui/usability/unsatisfied-dependency/missing_dependency.rs) and
+[`unsatisfied_dependency`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.rs)
+become `missing field \`name\` on context \`Person\`` with a tree — and the misleading "this is an
+associated function… use associated function syntax instead" advice, which the method probe emits for
+CGP's `self`-less provider methods, is dropped with the rest of rustc's sub-notes. The ordinary-bound
+use-site case
+([`unsatisfied-dependency/ordinary_bound_unsatisfied`](../../tests/ui/usability/unsatisfied-dependency/ordinary_bound_unsatisfied.rs))
+keeps rustc's `E0599` header and swaps its notes for the `f64: Eq` tree.
+
 Two boundaries keep the transform honest. A field whose name matches but whose **type** does not is
 *not* handled: with the derive present, the `HasField` trait bound still holds (for the wrong `Value`),
 and only the associated-type projection fails — an `E0271` the walk cannot see, so the resolver
 declines and [`field_type_mismatch`](../../tests/ui/usability/checks/field_type_mismatch.rs) keeps
-rustc's already-precise output. And a diagnostic whose caret is *not* on a check entry — a manual
-supertrait bound, a consumer-method call — finds no entry to anchor on and also falls back
-(`use_type_foreign_unsatisfied`, `use_type_nested_unsatisfied`). Everything the resolver declines flows
-through the untouched `rewrite`/`preprocess` stages exactly as before. `mixed_rust_error` shows both
-sides at once: its CGP check failure becomes a tree while its ordinary `E0308` type mismatch passes
-through the fallback.
+rustc's already-precise output. And a diagnostic that is neither a check entry nor a method `E0599` — a
+manual supertrait bound like `use_type_foreign_unsatisfied`/`use_type_nested_unsatisfied` — has no
+context to recover and falls back. Everything the resolver declines flows through the untouched
+`rewrite`/`preprocess` stages exactly as before. `mixed_rust_error` shows both sides at once: its CGP
+check failure becomes a tree while its ordinary `E0308` type mismatch passes through the fallback.
 
 ## Why it runs in the emitter
 
@@ -99,6 +116,15 @@ either one's text.
 `Self: CanUseComponent<__Component__, __Params__>`. Instantiating it with the matched impl's trait
 reference (`instantiate_supertrait`) substitutes the concrete types back in, yielding the real
 obligation the compiler failed to prove: `Rectangle: CanUseComponent<AreaCalculatorComponent, ()>`.
+
+**Or recover it at a use site.** When no check impl matches the caret — a consumer-method `E0599` —
+`resolve_use_site` recovers the obligation instead from the diagnostic's spans. It scans every local
+struct/enum whose definition span contains one of the diagnostic's spans (the receiver's type is one
+such), and for each candidate reads the `DelegateComponent<Marker>` impls that context carries — the
+components it wires — building a fresh `Ctx: CanUseComponent<Marker, ()>` per marker and keeping the
+ones that do not hold. A diagnostic span can also land on a *provider* struct, so a candidate that
+wires no failing component is discarded, which selects the real context. From there the walk is
+identical.
 
 **Walk the dependency graph downward.** From that obligation the resolver walks *down* the wiring's
 trait obligations, because the tree shows the transitive path to each root cause, not only the root.
@@ -187,22 +213,26 @@ terse note per field**, each opening `field \`x\` is required through this depen
 leaf is *not* a field, the emitter instead keeps rustc's own `DiagInner` — its header (renamed by the
 text rewrite), code, and caret — and only *replaces its children* with those same per-cause tree notes
 (a non-field cause opens `\`f64: Eq\` is required through this dependency chain:`), discarding rustc's
-obligation-chain notes and any supplementary help. Either way, a provider with two absent dependencies
+obligation-chain notes, its supplementary help, and its structured suggestions (the misleading "use
+associated function syntax" a method `E0599` carries). Either way, a provider with two absent dependencies
 yields two notes, each a self-contained path to its leaf, and the JSON emitter regenerates every
 rendered and structured field from the `DiagInner` for free, with rustc's note-continuation indentation
 aligning each tree's box-drawing under its `= note:`.
 
 ## Boundaries and open ends
 
-The resolver is deliberately bounded, and a few of its edges are worth recording. It anchors on a
-`check_components!` entry by **exact span match** (the check macro re-spans the context type onto the
-entry), so a wiring failure that is *not* a check-entry diagnostic — a manual supertrait bound, a
-consumer-method call — finds nothing to anchor on and declines, which is why `use_type_foreign_unsatisfied`
-and `use_type_nested_unsatisfied` keep their fallback output; extending to those would need a second way
-to recover the obligation. It only renders leaves it can trust: a `HasField` field, an ordinary bound on
-a foreign type, or a terminal capability bound — but it deliberately *declines* the projection/associated-type
-mismatch (the `E0271` field-type case) and drops pure wiring-plumbing dead-ends, so a diagnostic whose
-only recoverable leaf is one of those falls back. And it uses an **empty parameter environment**
+The resolver is deliberately bounded, and a few of its edges are worth recording. It recovers a
+starting obligation two ways — a `check_components!` entry by **exact span match** (the check macro
+re-spans the context type onto the entry) and a use-site `E0599` by finding the context ADT from the
+diagnostic's spans — so a wiring failure that is *neither* — a manual supertrait bound like
+`use_type_foreign_unsatisfied`/`use_type_nested_unsatisfied` — still finds nothing to anchor on and
+declines. The use-site path builds each `CanUseComponent<Marker, ()>` with an **empty `Params` slot**,
+so a generic component whose real parameters matter is not re-checked there (only the check path
+recovers those). It renders only leaves it can trust: a `HasField` field, an ordinary bound on a
+foreign type, or a terminal capability bound — but it deliberately *declines* the
+projection/associated-type mismatch (the `E0271` field-type case) and drops pure wiring-plumbing
+dead-ends, so a diagnostic whose only recoverable leaf is one of those falls back. And it uses an
+**empty parameter environment**
 throughout, which suits the concrete check impls the fixtures exercise but will need the impl's own
 environment to extend cleanly to checks that carry generic parameters. (Parallel branches, deep nesting,
 and non-field leaves, by contrast, are handled: independent unmet dependencies become separate sub-errors,
@@ -221,17 +251,18 @@ about the new forms, which touches the preprocessing stage the resolver otherwis
 ## Source
 
 - [`crates/cargo-cgp-driver/src/resolve.rs`](../../crates/cargo-cgp-driver/src/resolve.rs) — the typed
-  resolution: finding the check impl by span, recovering and solving the concrete obligation, walking
-  the cause chain down to each terminal leaf (the descendable-vocabulary rule, the plumbing-leaf and
-  projection-mismatch drops), classifying a leaf as a field (inspecting the struct and its `Deref`
+  resolution: `resolve_check_failure` finding the check impl by span, `resolve_use_site` recovering the
+  context ADT from the diagnostic's spans and its wired components from `DelegateComponent` impls,
+  walking the cause chain down to each terminal leaf (the descendable-vocabulary rule, the plumbing-leaf
+  and projection-mismatch drops), classifying a leaf as a field (inspecting the struct and its `Deref`
   chain) or a bound, decoding the `Symbol!` field name, resolving component markers to trait names by
   full path, and folding each chain into a `DependencyTree` with each wiring trait replaced by its human
   form (generic parameters reattached).
 - [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — the
-  `try_resolve` seam (gated by a cheap `mentions_wiring` scan) that recovers the `Resolved` causes and
-  either replaces an all-field diagnostic wholesale (`render_field_replacement`) or keeps rustc's main
-  message and swaps its children for the `tree_notes`, falling back to the in-place text rewrite when it
-  returns `None`.
+  `try_resolve` seam (gated by a cheap `mentions_wiring` scan, or a method `E0599`) that tries the
+  check anchor then the use-site anchor, and either replaces an all-field diagnostic wholesale
+  (`render_field_replacement`) or keeps rustc's main message and swaps its children (and suggestions)
+  for the `tree_notes`, falling back to the in-place text rewrite when it returns `None`.
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs)
   — the rustc-free `DependencyTree` type and its `cargo tree`-style renderer (over `termtree`), with
   unit tests in [`tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).
@@ -257,7 +288,11 @@ full-path resolution names each one's own traits with no cross-over), `generic_a
 three-parameter component → the parameters reattached to the consumer and provider labels), and
 `ordinary_bound_unsatisfied`/`unregistered_prefix_path` (non-field leaves — an `f64: Eq` bound and an
 unregistered `DefaultNamespace` — where rustc's header is kept and only the sub-notes become the tree).
-The field classification is unit-tested through the name map in
+The use-site path is pinned by the [`unsatisfied-dependency/`](../../tests/ui/usability/unsatisfied-dependency)
+fixtures: `missing_dependency` and `unsatisfied_dependency` (a consumer-method `E0599` → the
+misleading method-syntax advice dropped and replaced by a `missing field` tree) and its
+`ordinary_bound_unsatisfied` (a use-site `f64: Eq` → rustc's `E0599` header kept, notes swapped for the
+tree). The field classification is unit-tested through the name map in
 [`cargo-cgp-error-processing/tests/rewrite.rs`](../../crates/cargo-cgp-error-processing/tests/rewrite.rs),
 and the renderer itself in
 [`cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).

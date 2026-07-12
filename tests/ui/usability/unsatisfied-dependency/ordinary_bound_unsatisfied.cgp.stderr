@@ -7,32 +7,9 @@ error[E0599]: the method `scalars_equal` exists for struct `App`, but its trait 
 54 |     let _ = app.scalars_equal(&1.0, &2.0);
    |                 ^^^^^^^^^^^^^ this is an associated function, not a method
    |
-   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
-note: the candidate is defined in the trait `ScalarEquality`
-  --> src/main.rs:29:5
-   |
-29 |     fn scalars_equal(&self, a: &Scalar, b: &Scalar) -> bool;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `f64: std::cmp::Eq` was not satisfied
-  --> src/main.rs:36:13
-   |
-32 | #[cgp_impl(new CompareScalars)]
-   | -------------------------------
-...
-36 |     Scalar: Eq,
-   |             ^^ unsatisfied trait bound introduced here
-   = help: items from traits can only be used if the trait is implemented and in scope
-note: `CanCompareScalars` defines an item `scalars_equal`, perhaps you need to implement it
-  --> src/main.rs:28:1
-   |
-28 | / pub trait CanCompareScalars {
-29 | |     fn scalars_equal(&self, a: &Scalar, b: &Scalar) -> bool;
-30 | | }
-   | |_^
-help: use associated function syntax instead
-   |
-54 -     let _ = app.scalars_equal(&1.0, &2.0);
-54 +     let _ = App::scalars_equal(&1.0, &2.0);
-   |
+   = note: `f64: std::cmp::Eq` is required through this dependency chain:
+           consumer trait impl `CanCompareScalars` for context `App`
+           └── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`
+               └── trait impl `Eq` for `f64`
 
 For more information about this error, try `rustc --explain E0599`.

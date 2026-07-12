@@ -1,9 +1,9 @@
 [
   {
-    "message": "the method `greet` exists for struct `Person`, but its trait bounds were not satisfied",
+    "message": "missing field `name` on context `Person`",
     "code": {
-      "code": "E0599",
-      "explanation": "This error occurs when a method is used on a type which doesn't implement it:\n\nErroneous code example:\n\n```compile_fail,E0599\nstruct Mouth;\n\nlet x = Mouth;\nx.chocolate(); // error: no method named `chocolate` found for type `Mouth`\n               //        in the current scope\n```\n\nIn this case, you need to implement the `chocolate` method to fix the error:\n\n```\nstruct Mouth;\n\nimpl Mouth {\n    fn chocolate(&self) { // We implement the `chocolate` method here.\n        println!(\"Hmmm! I love chocolate!\");\n    }\n}\n\nlet x = Mouth;\nx.chocolate(); // ok!\n```\n"
+      "code": "E0277",
+      "explanation": "You tried to use a type which doesn't implement some trait in a place which\nexpected that trait.\n\nErroneous code example:\n\n```compile_fail,E0277\n// here we declare the Foo trait with a bar method\ntrait Foo {\n    fn bar(&self);\n}\n\n// we now declare a function which takes an object implementing the Foo trait\nfn some_func<T: Foo>(foo: T) {\n    foo.bar();\n}\n\nfn main() {\n    // we now call the method with the i32 type, which doesn't implement\n    // the Foo trait\n    some_func(5i32); // error: the trait bound `i32 : Foo` is not satisfied\n}\n```\n\nIn order to fix this error, verify that the type you're using does implement\nthe trait. Example:\n\n```\ntrait Foo {\n    fn bar(&self);\n}\n\n// we implement the trait on the i32 type\nimpl Foo for i32 {\n    fn bar(&self) {}\n}\n\nfn some_func<T: Foo>(foo: T) {\n    foo.bar(); // we can now use this method since i32 implements the\n               // Foo trait\n}\n\nfn main() {\n    some_func(5i32); // ok!\n}\n```\n\nOr in a generic context, an erroneous code example would look like:\n\n```compile_fail,E0277\nfn some_func<T>(foo: T) {\n    println!(\"{:?}\", foo); // error: the trait `core::fmt::Debug` is not\n                           //        implemented for the type `T`\n}\n\nfn main() {\n    // We now call the method with the i32 type,\n    // which *does* implement the Debug trait.\n    some_func(5i32);\n}\n```\n\nNote that the error here is in the definition of the generic function. Although\nwe only call it with a parameter that does implement `Debug`, the compiler\nstill rejects the function. It must work with all possible input types. In\norder to make this example compile, we need to restrict the generic type we're\naccepting:\n\n```\nuse std::fmt;\n\n// Restrict the input type to types that implement Debug.\nfn some_func<T: fmt::Debug>(foo: T) {\n    println!(\"{:?}\", foo);\n}\n\nfn main() {\n    // Calling the method is still fine, as i32 implements Debug.\n    some_func(5i32);\n\n    // This would fail to compile now:\n    // struct WithoutDebug;\n    // some_func(WithoutDebug);\n}\n```\n\nRust only looks at the signature of the called function, as such it must\nalready specify all requirements that will be used for every type parameter.\n"
     },
     "level": "error",
     "spans": [
@@ -23,28 +23,7 @@
             "highlight_end": 17
           }
         ],
-        "label": "this is an associated function, not a method",
-        "suggested_replacement": null,
-        "suggestion_applicability": null,
-        "expansion": null
-      },
-      {
-        "file_name": "src/main.rs",
-        "byte_start": 1296,
-        "byte_end": 1313,
-        "line_start": 40,
-        "line_end": 40,
-        "column_start": 1,
-        "column_end": 18,
-        "is_primary": false,
-        "text": [
-          {
-            "text": "pub struct Person {",
-            "highlight_start": 1,
-            "highlight_end": 18
-          }
-        ],
-        "label": "method `greet` not found for this struct because it doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', Chars<'e', Nil>>>>>>`",
+        "label": null,
         "suggested_replacement": null,
         "suggestion_applicability": null,
         "expansion": null
@@ -52,238 +31,15 @@
     ],
     "children": [
       {
-        "message": "found the following associated functions; to be used as methods, functions must have a `self` parameter",
+        "message": "field `name` is required through this dependency chain:\nconsumer trait impl `CanGreet` for context `Person`\n└── provider trait impl `Greeter` with context `Person` for provider `GreetHello`\n    └── trait impl `HasName` for `Person`\n        └── field trait impl `HasField` with field `name` for `Person`",
         "code": null,
         "level": "note",
         "spans": [],
-        "children": [],
-        "rendered": null
-      },
-      {
-        "message": "the candidate is defined in the trait `Greeter`",
-        "code": null,
-        "level": "note",
-        "spans": [
-          {
-            "file_name": "src/main.rs",
-            "byte_start": 1042,
-            "byte_end": 1058,
-            "line_start": 21,
-            "line_end": 21,
-            "column_start": 5,
-            "column_end": 21,
-            "is_primary": true,
-            "text": [
-              {
-                "text": "    fn greet(&self);",
-                "highlight_start": 5,
-                "highlight_end": 21
-              }
-            ],
-            "label": null,
-            "suggested_replacement": null,
-            "suggestion_applicability": null,
-            "expansion": null
-          }
-        ],
-        "children": [],
-        "rendered": null
-      },
-      {
-        "message": "trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` was not satisfied",
-        "code": null,
-        "level": "note",
-        "spans": [
-          {
-            "file_name": "src/main.rs",
-            "byte_start": 1091,
-            "byte_end": 1098,
-            "line_start": 25,
-            "line_end": 25,
-            "column_start": 11,
-            "column_end": 18,
-            "is_primary": true,
-            "text": [
-              {
-                "text": "pub trait HasName {",
-                "highlight_start": 11,
-                "highlight_end": 18
-              }
-            ],
-            "label": "",
-            "suggested_replacement": null,
-            "suggestion_applicability": null,
-            "expansion": null
-          },
-          {
-            "file_name": "src/main.rs",
-            "byte_start": 1062,
-            "byte_end": 1080,
-            "line_start": 24,
-            "line_end": 24,
-            "column_start": 1,
-            "column_end": 19,
-            "is_primary": true,
-            "text": [
-              {
-                "text": "#[cgp_auto_getter]",
-                "highlight_start": 1,
-                "highlight_end": 19
-              }
-            ],
-            "label": "",
-            "suggested_replacement": null,
-            "suggestion_applicability": null,
-            "expansion": {
-              "span": {
-                "file_name": "src/main.rs",
-                "byte_start": 1062,
-                "byte_end": 1080,
-                "line_start": 24,
-                "line_end": 24,
-                "column_start": 1,
-                "column_end": 19,
-                "is_primary": false,
-                "text": [
-                  {
-                    "text": "#[cgp_auto_getter]",
-                    "highlight_start": 1,
-                    "highlight_end": 19
-                  }
-                ],
-                "label": null,
-                "suggested_replacement": null,
-                "suggestion_applicability": null,
-                "expansion": null
-              },
-              "macro_decl_name": "#[cgp_auto_getter]",
-              "def_site_span": {
-                "file_name": "$CGP/crates/macros/cgp-macro/src/lib.rs",
-                "byte_start": 12123,
-                "byte_end": 12198,
-                "line_start": 376,
-                "line_end": 376,
-                "column_start": 1,
-                "column_end": 76,
-                "is_primary": false,
-                "text": [
-                  {
-                    "text": "pub fn cgp_auto_getter(attr: TokenStream, item: TokenStream) -> TokenStream {",
-                    "highlight_start": 1,
-                    "highlight_end": 76
-                  }
-                ],
-                "label": null,
-                "suggested_replacement": null,
-                "suggestion_applicability": null,
-                "expansion": null
-              }
-            }
-          }
-        ],
-        "children": [],
-        "rendered": null
-      },
-      {
-        "message": "the trait `cgp::prelude::HasField` must be implemented",
-        "code": null,
-        "level": "note",
-        "spans": [
-          {
-            "file_name": "$CGP/crates/core/cgp-field/src/traits/has_field.rs",
-            "byte_start": 1081,
-            "byte_end": 1104,
-            "line_start": 46,
-            "line_end": 46,
-            "column_start": 1,
-            "column_end": 24,
-            "is_primary": true,
-            "text": [
-              {
-                "text": "pub trait HasField<Tag> {",
-                "highlight_start": 1,
-                "highlight_end": 24
-              }
-            ],
-            "label": null,
-            "suggested_replacement": null,
-            "suggestion_applicability": null,
-            "expansion": null
-          }
-        ],
-        "children": [],
-        "rendered": null
-      },
-      {
-        "message": "items from traits can only be used if the trait is implemented and in scope",
-        "code": null,
-        "level": "help",
-        "spans": [],
-        "children": [],
-        "rendered": null
-      },
-      {
-        "message": "`CanGreet` defines an item `greet`, perhaps you need to implement it",
-        "code": null,
-        "level": "note",
-        "spans": [
-          {
-            "file_name": "src/main.rs",
-            "byte_start": 1017,
-            "byte_end": 1035,
-            "line_start": 20,
-            "line_end": 20,
-            "column_start": 1,
-            "column_end": 19,
-            "is_primary": true,
-            "text": [
-              {
-                "text": "pub trait CanGreet {",
-                "highlight_start": 1,
-                "highlight_end": 19
-              }
-            ],
-            "label": null,
-            "suggested_replacement": null,
-            "suggestion_applicability": null,
-            "expansion": null
-          }
-        ],
-        "children": [],
-        "rendered": null
-      },
-      {
-        "message": "use associated function syntax instead",
-        "code": null,
-        "level": "help",
-        "spans": [
-          {
-            "file_name": "src/main.rs",
-            "byte_start": 1682,
-            "byte_end": 1696,
-            "line_start": 55,
-            "line_end": 55,
-            "column_start": 5,
-            "column_end": 19,
-            "is_primary": true,
-            "text": [
-              {
-                "text": "    person.greet();",
-                "highlight_start": 5,
-                "highlight_end": 19
-              }
-            ],
-            "label": null,
-            "suggested_replacement": "Person::greet()",
-            "suggestion_applicability": "MachineApplicable",
-            "expansion": null
-          }
-        ],
         "children": [],
         "rendered": null
       }
     ],
-    "rendered": "error[E0599]: the method `greet` exists for struct `Person`, but its trait bounds were not satisfied\n  --> src/main.rs:55:12\n   |\n40 | pub struct Person {\n   | ----------------- method `greet` not found for this struct because it doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', Chars<'e', Nil>>>>>>`\n...\n55 |     person.greet();\n   |            ^^^^^ this is an associated function, not a method\n   |\n   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter\nnote: the candidate is defined in the trait `Greeter`\n  --> src/main.rs:21:5\n   |\n21 |     fn greet(&self);\n   |     ^^^^^^^^^^^^^^^^\nnote: trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', cgp::prelude::Nil>>>>>>` was not satisfied\n  --> src/main.rs:24:1\n   |\n24 | #[cgp_auto_getter]\n   | ^^^^^^^^^^^^^^^^^^\n25 | pub trait HasName {\n   |           ^^^^^^^\nnote: the trait `cgp::prelude::HasField` must be implemented\n  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1\n   |\n46 | pub trait HasField<Tag> {\n   | ^^^^^^^^^^^^^^^^^^^^^^^\n   = help: items from traits can only be used if the trait is implemented and in scope\nnote: `CanGreet` defines an item `greet`, perhaps you need to implement it\n  --> src/main.rs:20:1\n   |\n20 | pub trait CanGreet {\n   | ^^^^^^^^^^^^^^^^^^\n   = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)\nhelp: use associated function syntax instead\n   |\n55 -     person.greet();\n55 +     Person::greet();\n   |\n\n"
+    "rendered": "error[E0277]: missing field `name` on context `Person`\n  --> src/main.rs:55:12\n   |\n55 |     person.greet();\n   |            ^^^^^\n   |\n   = note: field `name` is required through this dependency chain:\n           consumer trait impl `CanGreet` for context `Person`\n           └── provider trait impl `Greeter` with context `Person` for provider `GreetHello`\n               └── trait impl `HasName` for `Person`\n                   └── field trait impl `HasField` with field `name` for `Person`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0599`.",

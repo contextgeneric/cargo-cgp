@@ -149,10 +149,11 @@ compiler through `rustc_driver`; `args.rs` turns the wrapper's process arguments
 argument vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds
 the `Callbacks` implementation, whose `config` hook installs a diagnostic-rewriting emitter;
 `emitter.rs` is that emitter, which renames CGP wiring messages using the live compiler and, when it
-can, transforms a check failure into its root-cause dependency tree (replacing an all-field failure
+can, transforms a wiring failure into its root-cause dependency tree (replacing an all-field failure
 wholesale, or keeping rustc's header and swapping only the sub-notes for the tree otherwise);
-`resolve.rs` is that typed resolver, re-running the check obligation through the trait solver and
-descending the wiring to each terminal leaf (a `HasField` field or an ordinary bound) (see
+`resolve.rs` is that typed resolver, recovering the failing obligation either from a `check_components!`
+entry or from the use site of a broken consumer-method call (`E0599`), then descending the wiring to
+each terminal leaf (a `HasField` field or an ordinary bound) (see
 [Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md));
 `component_map.rs` builds the component-marker → consumer/provider trait-name map by querying the
 trait solver; `config.rs` holds the shared names. The compiler-free string rewrite and the lazily-built

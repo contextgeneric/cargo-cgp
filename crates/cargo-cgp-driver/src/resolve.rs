@@ -1,12 +1,16 @@
 //! Typed root-cause resolution for CGP check-trait failures.
 //!
-//! This is the compiler-internals half of the diagnostic replacement. When the emitter sees a
-//! trait-bound error whose caret sits on a `check_components!` entry, it asks this module to
-//! recover the *real* root cause(s) — and the transitive dependency chain that leads to each —
-//! by walking the wiring's trait obligations rather than by reading the rendered error text.
+//! This is the compiler-internals half of the diagnostic replacement. When the emitter sees a CGP
+//! wiring failure, it asks this module to recover the *real* root cause(s) — and the transitive
+//! dependency chain that leads to each — by walking the wiring's trait obligations rather than by
+//! reading the rendered error text. Two entry points recover the starting obligation differently:
+//! [`resolve_check_failure`] anchors on a `check_components!` entry (the common case, below), while
+//! [`resolve_use_site`] handles a failure reported at a *use site* — a consumer-method call
+//! (`E0599`) whose obligation no check impl carries — by recovering the context type from the
+//! diagnostic's spans and re-checking every component that context wires. Both feed the same walk.
 //!
-//! The flow, all DefId-anchored to the CGP crates so a same-named type from elsewhere can
-//! never drive it:
+//! The check-entry flow, all DefId-anchored to the CGP crates so a same-named type from elsewhere
+//! can never drive it:
 //!
 //! 1. A `check_components!` entry expands to `impl __CheckCtx<Marker, Params> for Ctx {}`,
 //!    whose check trait carries `CanUseComponent<Marker, Params>` as a supertrait. We find
@@ -50,7 +54,7 @@ use rustc_hir::ItemKind;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_infer::traits::Obligation;
 use rustc_middle::ty::print::PrintTraitRefExt as _;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized, Upcast as _};
 use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
@@ -175,12 +179,116 @@ pub fn resolve_check_failure(
                 .skip_norm_wip();
             let concrete = super_clause.instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref));
 
-            if let Some(resolved) = resolve_leaves(tcx, concrete, names) {
+            let Some(top) = concrete.as_trait_clause() else {
+                continue;
+            };
+            if let Some(resolved) = resolve_leaves(tcx, top, names) {
                 return Some(resolved);
             }
         }
     }
     None
+}
+
+/// Resolve the root cause(s) of a CGP wiring failure reported at a *use site* rather than a
+/// `check_components!` entry — a consumer-method call (`E0599`) or any other diagnostic whose
+/// obligation is not recoverable from a check impl. There is no check impl to anchor on, so the
+/// context type is recovered from a diagnostic span that lands on a local struct/enum definition,
+/// and every component that context wires (through its `DelegateComponent` impls) is re-checked;
+/// each one that cannot be used contributes its dependency tree. `None` when no context is found
+/// or no wired component fails resolvably.
+pub fn resolve_use_site(
+    tcx: TyCtxt<'_>,
+    spans: &[Span],
+    names: &ComponentNameMap,
+) -> Option<Resolved> {
+    let can_use_did = find_cgp_trait(tcx, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)?;
+
+    // A diagnostic span can land on a provider struct as well as the real context (both are local
+    // ADTs), so try each candidate and keep the first that actually wires a failing component.
+    for context in context_candidates_from_spans(tcx, spans) {
+        let mut causes: Vec<Cause> = Vec::new();
+        for marker in delegated_markers(tcx, context) {
+            // `Ctx: CanUseComponent<Marker, ()>` — the parameterless form, which suits the
+            // components a use-site failure exercises; a component whose `()` form holds is skipped.
+            let trait_ref = ty::TraitRef::new(tcx, can_use_did, [context, marker, tcx.types.unit]);
+            let top: ty::PolyTraitPredicate<'_> = ty::Binder::dummy(trait_ref).upcast(tcx);
+            if holds(tcx, top) {
+                continue;
+            }
+            if let Some(resolved) = resolve_leaves(tcx, top, names) {
+                for cause in resolved.causes {
+                    if !causes.iter().any(|c| c.key() == cause.key()) {
+                        causes.push(cause);
+                    }
+                }
+            }
+        }
+        if !causes.is_empty() {
+            return Some(Resolved {
+                context: tcx.erase_and_anonymize_regions(context).to_string(),
+                causes,
+            });
+        }
+    }
+    None
+}
+
+/// The candidate context types of a use-site failure: every local struct or enum whose definition
+/// span contains one of the diagnostic's spans — for an `E0599` method error that includes the
+/// "method not found for this struct" span on the receiver's type. Each ADT is returned with
+/// identity arguments (so a generic context keeps its generic form); the caller picks the one that
+/// actually wires a failing component, which discards a provider struct that merely shares a span.
+fn context_candidates_from_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Ty<'tcx>> {
+    let mut candidates = Vec::new();
+    for local in tcx.hir_crate_items(()).definitions() {
+        let did = local.to_def_id();
+        if !matches!(
+            tcx.def_kind(did),
+            rustc_hir::def::DefKind::Struct | rustc_hir::def::DefKind::Enum
+        ) {
+            continue;
+        }
+        let def_span = tcx.def_span(did);
+        if spans.iter().any(|&span| def_span.contains(span)) {
+            candidates.push(tcx.type_of(did).instantiate_identity().skip_norm_wip());
+        }
+    }
+    candidates
+}
+
+/// The component markers a context wires, read from its `DelegateComponent<Marker>` impls — the
+/// components whose use-site failure the resolver re-checks.
+fn delegated_markers<'tcx>(tcx: TyCtxt<'tcx>, context: Ty<'tcx>) -> Vec<Ty<'tcx>> {
+    let Some(delegate_did) = find_cgp_trait(tcx, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+    else {
+        return Vec::new();
+    };
+    let context = tcx.erase_and_anonymize_regions(context);
+
+    let mut markers = Vec::new();
+    for impl_did in tcx.all_impls(delegate_did) {
+        let impl_self = tcx.type_of(impl_did).instantiate_identity().skip_norm_wip();
+        if tcx.erase_and_anonymize_regions(impl_self) != context {
+            continue;
+        }
+        // `DelegateComponent<Marker>` — args are `[Self, Marker]`.
+        let marker = tcx
+            .impl_trait_ref(impl_did)
+            .instantiate_identity()
+            .skip_norm_wip()
+            .args
+            .type_at(1);
+        markers.push(tcx.erase_and_anonymize_regions(marker));
+    }
+    markers
+}
+
+/// The `DefId` of the CGP trait named `name` defined by crate `krate`, or `None` if the crate does
+/// not use CGP. Anchored by name *and* crate, like every other CGP lookup here.
+fn find_cgp_trait(tcx: TyCtxt<'_>, name: &str, krate: &str) -> Option<DefId> {
+    tcx.all_traits_including_private()
+        .find(|&did| is_cgp_item(tcx, did, name, krate))
 }
 
 /// The `CanUseComponent<..>` supertrait clause of `trait_did`, if it carries one — the marker
@@ -212,15 +320,14 @@ fn impl_self_ty_span(tcx: TyCtxt<'_>, impl_did: DefId) -> Option<Span> {
     }
 }
 
-/// Walk the dependency graph of `concrete` (`Ctx: CanUseComponent<Marker, Params>`) and, for each
+/// Walk the dependency graph of `top` (`Ctx: CanUseComponent<Marker, Params>`) and, for each
 /// distinct terminal unmet bound it bottoms out on, return that leaf with its rendered dependency
 /// chain. `None` when no branch reaches a resolvable leaf.
 fn resolve_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
-    concrete: ty::Clause<'tcx>,
+    top: ty::PolyTraitPredicate<'tcx>,
     names: &ComponentNameMap,
 ) -> Option<Resolved> {
-    let top = concrete.as_trait_clause()?;
     let context = tcx.erase_and_anonymize_regions(top.skip_binder().self_ty());
 
     let mut causes: Vec<Cause> = Vec::new();

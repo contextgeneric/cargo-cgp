@@ -4,14 +4,14 @@
 //! emitter with one that acts on each diagnostic before handing it to a real [`JsonEmitter`],
 //! so the transformed result reaches cargo — and the front-end — already shaped, both in the
 //! structured `children` and in the `rendered` field the JSON emitter regenerates from them.
-//! It transforms a resolvable CGP wiring failure — any diagnostic whose messages mention a wiring
-//! trait and whose caret sits on a `check_components!` entry — into its root-cause dependency
-//! tree(s), recovered from the compiler by [`resolve`](crate::resolve). A failure that bottoms out
-//! entirely on missing *fields* is **replaced wholesale** with a fresh, tree-first diagnostic
-//! (custom header naming the field(s), a derive `help`, one tree note each). A failure that bottoms
-//! out on any other bound **keeps rustc's own main message** and only swaps its sub-notes for the
-//! tree. Everything the resolver cannot handle falls back to a **text rewrite** of the compiler's
-//! own diagnostic, renaming CGP wiring messages via the rustc-free
+//! It transforms a resolvable CGP wiring failure — a diagnostic on a `check_components!` entry, or
+//! a broken consumer-method call (`E0599`) at its use site — into its root-cause dependency tree(s),
+//! recovered from the compiler by [`resolve`](crate::resolve). A failure that bottoms out entirely on
+//! missing *fields* is **replaced wholesale** with a fresh, tree-first diagnostic (custom header
+//! naming the field(s), a derive `help`, one tree note each). A failure that bottoms out on any other
+//! bound **keeps rustc's own main message** and only swaps its sub-notes (and structured suggestions)
+//! for the tree. Everything the resolver cannot handle falls back to a **text rewrite** of the
+//! compiler's own diagnostic, renaming CGP wiring messages via the rustc-free
 //! [`rewrite`](cargo_cgp_error_processing::rewrite) module.
 //!
 //! Two facts make this the right layer. First, naming the traits behind a component marker
@@ -34,7 +34,7 @@ use std::path::Path;
 
 use cargo_cgp_error_processing::render_dependency_tree;
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, rewrite_message};
-use rustc_errors::codes::E0277;
+use rustc_errors::codes::{E0277, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::json::JsonEmitter;
 use rustc_errors::timings::TimingRecord;
@@ -159,15 +159,35 @@ impl CgpEmitter {
     /// work and yields `None` for everything it cannot fully resolve. Returns the primary span
     /// alongside the resolution so the field-replacement path can re-aim the caret at the entry.
     fn try_resolve(&self, diag: &DiagInner) -> Option<(Resolved, Span)> {
-        if !mentions_wiring(diag) {
+        // Attempt resolution for any diagnostic that names a wiring trait, and for every method
+        // `E0599` — a broken consumer call whose text may name only the user's own traits. The
+        // use-site resolver declines cheaply when the caret is not on a CGP context.
+        if !mentions_wiring(diag) && diag.code != Some(E0599) {
             return None;
         }
         let primary_span = diag.span.primary_span()?;
         let resolved = rustc_middle::ty::tls::with_opt(|tcx| {
-            resolve::resolve_check_failure(tcx?, primary_span, &self.names)
+            let tcx = tcx?;
+            // Prefer the check-entry anchor (an obligation recovered from the check impl at the
+            // caret). Failing that — a use-site failure such as a consumer-method call, whose
+            // obligation no check impl carries — recover the context from the diagnostic's spans.
+            resolve::resolve_check_failure(tcx, primary_span, &self.names)
+                .or_else(|| resolve::resolve_use_site(tcx, &diagnostic_spans(diag), &self.names))
         })?;
         Some((resolved, primary_span))
     }
+}
+
+/// Every span a diagnostic carries — its primary and labelled spans plus each child's — the pool
+/// the use-site resolver searches for one that lands on the failing context's type definition.
+fn diagnostic_spans(diag: &DiagInner) -> Vec<Span> {
+    let mut spans: Vec<Span> = diag.span.primary_spans().to_vec();
+    spans.extend(diag.span.span_labels().into_iter().map(|label| label.span));
+    for child in &diag.children {
+        spans.extend(child.span.primary_spans());
+        spans.extend(child.span.span_labels().into_iter().map(|label| label.span));
+    }
+    spans
 }
 
 /// Whether any of `diag`'s messages — its header or a child's — mentions a CGP wiring trait. This
@@ -176,8 +196,12 @@ impl CgpEmitter {
 fn mentions_wiring(diag: &DiagInner) -> bool {
     fn any(messages: &[(DiagMessage, Style)]) -> bool {
         messages.iter().any(|(message, _)| match message {
+            // `HasField` catches a use-site failure (a consumer-method `E0599`), whose text names
+            // the missing leaf but not `CanUseComponent`/`IsProviderFor`.
             DiagMessage::Str(text) => {
-                text.contains("CanUseComponent") || text.contains("IsProviderFor")
+                text.contains("CanUseComponent")
+                    || text.contains("IsProviderFor")
+                    || text.contains("HasField")
             }
             _ => false,
         })
@@ -315,6 +339,9 @@ impl Emitter for CgpEmitter {
             } else {
                 rewrite_messages(&mut diag.messages, &self.names);
                 diag.children = tree_notes(&resolved.causes);
+                // Drop rustc's structured suggestions along with its notes — for a use-site
+                // failure that includes the misleading "use associated function syntax instead".
+                diag.suggestions = rustc_errors::Suggestions::Enabled(vec![]);
                 self.inner.emit_diagnostic(diag);
             }
             return;
