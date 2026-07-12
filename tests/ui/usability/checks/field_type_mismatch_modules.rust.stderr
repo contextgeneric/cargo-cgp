@@ -1,0 +1,81 @@
+error[E0271]: type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<'h', ...>>>>::Value == f64`
+  --> src/main.rs:59:13
+   |
+59 |             AreaCalculatorAComponent,
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<'h', ...>>>>::Value == f64`
+   |
+note: expected this to be `f64`
+  --> src/main.rs:48:21
+   |
+48 |         pub height: i32,
+   |                     ^^^
+note: required for `shape_a::Rectangle` to implement `HasRectangleFieldsA`
+  --> src/main.rs:28:5
+   |
+28 |     #[cgp_auto_getter]
+   |     ^^^^^^^^^^^^^^^^^^
+29 |     pub trait HasRectangleFieldsA {
+   |               ^^^^^^^^^^^^^^^^^^^
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+note: required for `RectangleAreaA` to implement `IsProviderFor<AreaCalculatorAComponent, shape_a::Rectangle>`
+  --> src/main.rs:35:5
+   |
+35 |     #[cgp_impl(new RectangleAreaA)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+38 |         Self: HasRectangleFieldsA,
+   |               ------------------- unsatisfied trait bound introduced here
+   = note: required for `shape_a::Rectangle` to implement `CanUseComponent<AreaCalculatorAComponent>`
+note: required by a bound in `shape_a::__CheckRectangle`
+  --> src/main.rs:57:5
+   |
+57 | /     check_components! {
+58 | |         Rectangle {
+59 | |             AreaCalculatorAComponent,
+60 | |         }
+61 | |     }
+   | |_____^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<'h', ...>>>>::Value == f64`
+   --> src/main.rs:103:13
+    |
+103 |             AreaCalculatorBComponent,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<'h', ...>>>>::Value == f64`
+    |
+note: expected this to be `f64`
+   --> src/main.rs:92:21
+    |
+ 92 |         pub height: i16,
+    |                     ^^^
+note: required for `shape_b::Rectangle` to implement `HasRectangleFieldsB`
+   --> src/main.rs:72:5
+    |
+ 72 |     #[cgp_auto_getter]
+    |     ^^^^^^^^^^^^^^^^^^
+ 73 |     pub trait HasRectangleFieldsB {
+    |               ^^^^^^^^^^^^^^^^^^^
+    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+note: required for `RectangleAreaB` to implement `IsProviderFor<AreaCalculatorBComponent, shape_b::Rectangle>`
+   --> src/main.rs:79:5
+    |
+ 79 |     #[cgp_impl(new RectangleAreaB)]
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 82 |         Self: HasRectangleFieldsB,
+    |               ------------------- unsatisfied trait bound introduced here
+    = note: required for `shape_b::Rectangle` to implement `CanUseComponent<AreaCalculatorBComponent>`
+note: required by a bound in `shape_b::__CheckRectangle`
+   --> src/main.rs:101:5
+    |
+101 | /     check_components! {
+102 | |         Rectangle {
+103 | |             AreaCalculatorBComponent,
+104 | |         }
+105 | |     }
+    | |_____^ required by this bound in `__CheckRectangle`
+    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.

@@ -29,11 +29,15 @@ it is an identified CGP class.** An unsatisfied `CanUseComponent` bound is a
 `[CGP-E001] the consumer trait \`CanCalculateArea\` is not implemented for context \`Rectangle\``,
 worded from the typed resolution (whose full-path marker keys make the consumer name exact even for
 same-named components); a consumer-method `E0599`, whose text names no wiring trait, gets the same
-`CGP-E001` form from the resolution; and an unsatisfied `IsProviderFor` bound becomes the `[CGP-E002]`
-provider form via the text rewrite. The rewrite restates the same fact readably — the caret is re-aimed
-at the failing entry alone, and the diagnostic's own Rust code (`E0277`, `E0599`) is kept. A main
-message that is *not* a CGP class — an ordinary bound (`f64: Eq`) the next-gen solver already descended
-to — stays rustc's own, header, labels, and caret untouched
+`CGP-E001` form from the resolution; an unsatisfied `IsProviderFor` bound becomes the `[CGP-E002]`
+provider form via the text rewrite; and a field-type mismatch — an `E0271` the resolver traced to a
+`HasField` projection — becomes the `[CGP-E003]` field form
+`[CGP-E003] expected a \`height\` field of type \`f64\` on \`Rectangle\`, but found \`i32\``, the
+expected type read from the failing projection and the actual type queried from the struct. The
+rewrite restates the same fact readably — the caret is re-aimed at the failing entry alone, and the
+diagnostic's own Rust code (`E0277`, `E0599`, `E0271`) is kept. A main message that is *not* a CGP
+class — an ordinary bound (`f64: Eq`) the next-gen solver already descended to — stays rustc's own,
+header, labels, and caret untouched
 ([`ordinary_bound_unsatisfied`](../../tests/ui/usability/checks/ordinary_bound_unsatisfied.rs)).
 
 **The sub-messages are replaced either way.** rustc's obligation-chain notes, supplementary help, and
@@ -73,15 +77,24 @@ sub-notes. The ordinary-bound use-site case
 gets the same `CGP-E001` header over a `root cause: the trait bound \`f64: std::cmp::Eq\` is not
 satisfied` note.
 
-Two boundaries keep the transform honest. A field whose name matches but whose **type** does not is
-*not* handled: with the derive present, the `HasField` trait bound still holds (for the wrong `Value`),
-and only the associated-type projection fails — an `E0271` the walk cannot see, so the resolver
-declines and [`field_type_mismatch`](../../tests/ui/usability/checks/field_type_mismatch.rs) keeps
-rustc's already-precise output. And a diagnostic that is neither a check entry nor a method `E0599` — a
-manual supertrait bound like `use_type_foreign_unsatisfied`/`use_type_nested_unsatisfied` — has no
-context to recover and falls back. Everything the resolver declines flows through the fallback
-`rewrite` and `postprocess` transforms instead. `mixed_rust_error` shows both sides at once: its CGP
-check failure becomes a tree while its ordinary `E0308` type mismatch passes through the fallback.
+A field whose name matches but whose **type** does not is handled as its own class. With the derive
+present, the `HasField` trait bound still holds (for the wrong `Value`), and only the associated-type
+projection `<Rectangle as HasField<Symbol!("height")>>::Value == f64` fails — an `E0271`. The
+trait-clause walk cannot see the projection directly, so when a branch reaches an impl whose
+trait-clause dependencies all hold, the resolver inspects that impl's own predicates for an unmet
+`HasField` projection; finding one, it takes the expected type from the projection and the actual type
+from the struct and yields a field-type-mismatch leaf, worded as the `[CGP-E003]` header (detailed
+under [How the root cause is recovered](#how-the-root-cause-is-recovered)).
+[`field_type_mismatch`](../../tests/ui/usability/checks/field_type_mismatch.rs) and its shorter-chain
+sibling [`field_type_mismatch_1`](../../tests/ui/usability/checks/field_type_mismatch_1.rs) pin it.
+
+One boundary still keeps the transform honest. A diagnostic that is neither a check entry nor a method
+`E0599` — a manual supertrait bound like `use_type_foreign_unsatisfied`/`use_type_nested_unsatisfied` —
+has no context to recover and falls back; so does a branch that reaches an impl whose trait clauses all
+hold *and* carries no unmet `HasField` projection, a projection the walk still cannot explain.
+Everything the resolver declines flows through the fallback `rewrite` and `postprocess` transforms
+instead. `mixed_rust_error` shows both sides at once: its CGP check failure becomes a tree while its
+ordinary `E0308` type mismatch passes through the fallback.
 
 ## Why it runs in the emitter
 
@@ -148,11 +161,16 @@ capability traits) — and treats everything else as a leaf. An unmet `HasField`
 ordinary bound on a *foreign* type (`f64: Eq`) is a terminal leaf too, and crucially the descent stops
 there rather than walking into whatever unrelated `std` blanket impl happens to match its `Self` (an
 `impl<F: FnPtr> Eq for F` would otherwise fabricate a misleading `f64: FnPtr` step). Two further rules
-prune noise: an obligation whose satisfying impl's `where`-clauses **all hold**, yet is itself unmet,
-is a projection/associated-type mismatch the trait-clause walk cannot see, so that branch yields
-nothing (this is the `E0271` type-mismatch decline); and a branch that bottoms out on pure wiring
-plumbing — a `CanUseComponent`/`IsProviderFor`/`DelegateComponent` routing dead-end — is dropped,
-since the real cause is found down another branch.
+handle the remaining cases. An obligation whose satisfying impl's trait-clause `where`-obligations
+**all hold**, yet is itself unmet, is failing for a projection/associated-type mismatch the
+trait-clause walk cannot see. The resolver looks among that impl's own predicates for the one form it
+can pin down — an unmet `HasField` projection (`<Ctx as HasField<Symbol!("f")>>::Value == T`), a field
+present with the wrong type — and, finding one, completes the branch with that field's `HasField` trait
+ref, tagging the path with the expected type so the leaf renders as a `FieldTypeMismatch` (the
+`E0271` field case); a branch with no such projection yields nothing and declines to the fallback. And
+a branch that bottoms out on pure wiring plumbing — a
+`CanUseComponent`/`IsProviderFor`/`DelegateComponent` routing dead-end — is dropped, since the real
+cause is found down another branch.
 
 Two mechanical properties matter. First, following *every* unmet dependency, not just the first, is
 what surfaces independent causes as **separate** paths — the next-generation solver short-circuits a
@@ -181,9 +199,19 @@ blanket impl, so the bound *would* hold if that target derived the field), the f
 inspection reads named struct fields directly and follows `Deref` by reading each `impl Deref`'s
 `Target` associated type, so it needs no inference context; it is bounded against a cyclic `Deref`.
 This classification is what lets the emitter word a present field's diagnostic as an unimplemented
-accessor with a concrete fix rather than as a bare "missing field". (A field present with a
-mismatched *type* is not one of these three: its `HasField` trait impl holds, so the branch never
-reaches it — see the `E0271` boundary above.)
+accessor with a concrete fix rather than as a bare "missing field".
+
+A field present with a mismatched *type* is a fourth case, reached differently. Its `HasField` trait
+impl holds, so the trait-clause walk never treats it as unmet; instead the branch's impl matches with
+every trait clause satisfied, and the resolver then finds the unmet `HasField` projection among that
+impl's predicates (see the projection rule under
+[Walk the dependency graph downward](#how-the-root-cause-is-recovered) above). From that projection it
+reads the **expected** type — the projection's right-hand side (`f64`) — and it queries the struct for
+the field's **actual** type: it reads the named field's declared type straight off the struct's
+`DefId`, with the struct's own generic arguments substituted, so a same-named struct in another module
+is never the one queried and a generic context's field type instantiates correctly. The leaf records
+the field name, the owning struct, and both types, and the emitter words it as the `[CGP-E003]`
+`expected a \`height\` field of type \`f64\` on \`Rectangle\`, but found \`i32\`` header.
 
 A non-field leaf carries no struct to inspect, so it is simply restated as `self: Trait`
 (`f64: std::cmp::Eq`) for its note lead and for de-duplicating a leaf reached by several paths.
@@ -214,15 +242,18 @@ rustc-free `cargo-cgp-error-processing` crate so the rendering is unit-tested on
 **Emit.** The emitter (`transform_resolved`) mutates rustc's own `DiagInner` in place. The main
 message is replaced with its coded form when `categorized_header` recognizes it — the `CGP-E001`
 consumer form worded from the resolution's context and consumer trait(s) (pluralized when a use-site
-failure spans several components), or the `CGP-E002` provider form from the text rewrite — and the
-span is then collapsed to the primary caret, since the original labels restate the replaced message;
-an unrecognized main message keeps its header, labels, and caret. The children are replaced in either
-case: a `help` per distinct type that must derive
-(`make sure that \`#[derive(HasField)]\` is used for \`Rectangle\``, or the `Deref` target), then
-**one note per root cause**, each opening with its `root cause:` lead over `this is required through
-the dependency chain:` and the tree indented beneath (the lead is omitted when the kept header states
-the same bound, where the note is the chain alone). rustc's structured suggestions are discarded with
-its notes (the misleading "use associated function syntax" a method `E0599` carries). The diagnostic's
+failure spans several components), the `CGP-E002` provider form from the text rewrite, or the
+`CGP-E003` field-type-mismatch form worded from the mismatch leaf when the diagnostic is an `E0271`
+the resolver traced to a `HasField` projection — and the span is then collapsed to the primary caret,
+since the original labels restate the replaced message; an unrecognized main message keeps its header,
+labels, and caret. The children are replaced in either case: a `help` per distinct type that must
+derive (`make sure that \`#[derive(HasField)]\` is used for \`Rectangle\``, or the `Deref` target —
+a field-type mismatch contributes none, its field being present and derived), then **one note per
+root cause**, each opening with its `root cause:` lead over `this is required through the dependency
+chain:` and the tree indented beneath (the lead is omitted, and the note is the chain alone, when the
+kept header states the same bound or when the leaf is a field-type mismatch, whose `CGP-E003` header
+already states it in full). rustc's structured suggestions are discarded with its notes (the
+misleading "use associated function syntax" a method `E0599` carries). The diagnostic's
 code is never touched, so a check failure stays `E0277` and a use-site failure stays `E0599`. A
 provider with two absent dependencies yields two notes, each a self-contained path to its leaf, and
 the JSON emitter regenerates every rendered and structured field from the `DiagInner` for free, with
@@ -237,16 +268,16 @@ diagnostic's spans — so a wiring failure that is *neither* — a manual supert
 `use_type_foreign_unsatisfied`/`use_type_nested_unsatisfied` — still finds nothing to anchor on and
 declines. The use-site path builds each `CanUseComponent<Marker, ()>` with an **empty `Params` slot**,
 so a generic component whose real parameters matter is not re-checked there (only the check path
-recovers those). It renders only leaves it can trust: a `HasField` field, an ordinary bound on a
-foreign type, or a terminal capability bound — but it deliberately *declines* the
-projection/associated-type mismatch (the `E0271` field-type case) and drops pure wiring-plumbing
-dead-ends, so a diagnostic whose only recoverable leaf is one of those falls back. And it uses an
-**empty parameter environment**
-throughout, which suits the concrete check impls the fixtures exercise but will need the impl's own
-environment to extend cleanly to checks that carry generic parameters. (Parallel branches, deep nesting,
-and non-field leaves, by contrast, are handled: independent unmet dependencies become separate sub-errors,
-the descent follows the wiring to any depth up to a recursion bound, and an ordinary or capability bound
-renders as its own tree.)
+recovers those). It renders only leaves it can trust: a `HasField` field (missing, underived, or —
+via its projection — present with the wrong type), an ordinary bound on a foreign type, or a terminal
+capability bound — but it still *declines* an associated-type projection mismatch that is **not** a
+`HasField` one (the projection form it cannot word), and drops pure wiring-plumbing dead-ends, so a
+diagnostic whose only recoverable leaf is one of those falls back. And it uses an **empty parameter
+environment** throughout, which suits the concrete check impls the fixtures exercise but will need the
+impl's own environment to extend cleanly to checks that carry generic parameters. (Parallel branches,
+deep nesting, and non-field leaves, by contrast, are handled: independent unmet dependencies become
+separate sub-errors, the descent follows the wiring to any depth up to a recursion bound, and an
+ordinary or capability bound renders as its own tree.)
 
 How a transformed diagnostic is *marked* as CGP is settled by the [error-code scheme](../error-code.md):
 a rewritten, classified main message carries its `[CGP-Exxx]` code inline, and everything else — a kept
@@ -260,10 +291,12 @@ says what it needs to without altering the header's shape.
   resolution: `resolve_check_failure` finding the check impl by span, `resolve_use_site` recovering the
   context ADT from the diagnostic's spans and its wired components from `DelegateComponent` impls,
   walking the cause chain down to each terminal leaf (the descendable-vocabulary rule, the plumbing-leaf
-  and projection-mismatch drops), classifying a leaf as a field (inspecting the struct and its `Deref`
-  chain) or a bound, decoding the `Symbol!` field name, resolving component markers to trait names by
-  full path, and folding each chain into a `DependencyTree` with each wiring trait replaced by its human
-  form (generic parameters reattached).
+  drop, and `has_field_projection_mismatch` finding an unmet `HasField` projection where the trait
+  clauses all hold), classifying a leaf as a field (inspecting the struct and its `Deref` chain), a
+  field-type mismatch (`field_type` reading the actual field type off the struct by `DefId`), or a
+  bound, decoding the `Symbol!` field name, resolving component markers to trait names by full path,
+  and folding each chain into a `DependencyTree` with each wiring trait replaced by its human form
+  (generic parameters reattached).
 - [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — the
   `try_resolve` seam (gated by a cheap `mentions_wiring` scan, or a method `E0599`) that tries the
   check anchor then the use-site anchor, and the `transform_resolved` mutation it feeds: the
@@ -287,8 +320,12 @@ four deep → one long spine), `dependency_cascade` (a chain of providers each d
 `mixed_rust_error` (a CGP tree beside an untouched ordinary `E0308`), `missing_has_field_derive` (a
 field the struct carries but has not derived → the unimplemented-accessor header plus the derive
 `help`), `field_via_deref` (a field on a `Deref` target that does not derive `HasField` → the `help`
-pointed at the target), `field_type_mismatch` (a matching field name with a mismatched type → the
-`E0271` boundary that declines to the fallback), `same_name_components` (two components forced to share
+pointed at the target), `field_type_mismatch` and `field_type_mismatch_1` (a matching field name with
+a mismatched type, read through a getter trait and directly via an `#[implicit]` argument → the
+`CGP-E003` field-type-mismatch header over the dependency chain), `field_type_mismatch_modules` (two
+different `Rectangle` contexts in separate modules, each with a differently-typed `height` → each
+error reports its own struct's actual type, proving the field query is `DefId`-anchored),
+`same_name_components` (two components forced to share
 a marker name in different modules, with distinct consumer *and* provider trait names, both checked →
 full-path resolution names each one's own traits with no cross-over), `generic_area_multi` (a
 three-parameter component → the parameters reattached to the consumer and provider labels), and

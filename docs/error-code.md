@@ -20,10 +20,10 @@ namespace for the other: `E0277` is a Rust code you explain with `rustc --explai
 `[CGP-E001]` is a CGP code you look up here. The two coexist on the same line by design — **the
 diagnostic's own Rust code is always kept**. A rewritten message restates the same error more
 readably; it does not reclassify the error away from rustc, so `error[E0277]:` (or `error[E0599]:`
-at a consumer-call use site) stays in the header, the trailing `rustc --explain` line stays
-meaningful, and the CGP code rides inside the message text where it reads as a tag on the sentence
-it classifies. This also keeps the code greppable: a reader confirming a class need only search the
-output for `CGP-E001`.
+at a consumer-call use site, or `error[E0271]:` at a field-type mismatch) stays in the header, the
+trailing `rustc --explain` line stays meaningful, and the CGP code rides inside the message text
+where it reads as a tag on the sentence it classifies. This also keeps the code greppable: a reader
+confirming a class need only search the output for `CGP-E001`.
 
 ## When a code is assigned
 
@@ -42,12 +42,13 @@ implied.
 
 ## Codes
 
-The catalog today holds the two classes the driver's emitter recognizes in a main message. Each
+The catalog today holds the three classes the driver's emitter recognizes in a main message. Each
 entry gives the rewritten message, the mistake behind it, the fix, and the upstream
 [CGP error catalog](../../cgp/docs/errors/README.md) class it recognizes. The root cause behind
-either message is carried by the accompanying `note`s — one per recovered cause, each opening
+each message is carried by the accompanying `note`s — one per recovered cause, each opening
 `root cause: …` over its dependency chain (see
-[Typed root-cause resolution](implementation/typed-root-cause-resolution.md)).
+[Typed root-cause resolution](implementation/typed-root-cause-resolution.md)), except `CGP-E003`,
+whose main message already states its cause in full and so carries the chain alone.
 
 ### `CGP-E001` — consumer trait not implemented
 
@@ -76,6 +77,25 @@ either message is carried by the accompanying `note`s — one per recovered caus
 - **Fix:** follow the `root cause:` note(s) to the dependency the provider is missing.
 - **Upstream class:** [check-trait failure](../../cgp/docs/errors/checks/check-trait-failure.md)
   (its provider-side face).
+
+### `CGP-E003` — field has the wrong type
+
+- **Message:** `` [CGP-E003] expected a `<field>` field of type `<expected>` on `<Context>`, but
+  found `<actual>` ``.
+- **Means:** a context field the wiring reads is present and derives `HasField`, but its type is
+  not the type a provider needs. The `HasField<Symbol!("<field>")>` trait bound holds; only the
+  associated-type projection `<Context as HasField<Symbol!("<field>")>>::Value == <expected>`
+  fails. The expected type is read from the failing projection, and the actual type is queried from
+  the struct itself (by `DefId`, so a same-named struct in another module is never read).
+- **Triggered by:** a `` type mismatch resolving `<Context as HasField<Symbol!("<field>")>>::Value
+  == <expected>` `` (`E0271`) that the typed resolver traced through CGP wiring to a `HasField`
+  projection — a `check_components!` entry whose provider reads the field with the wrong type. The
+  Rust code stays `E0271`.
+- **Fix:** change the field's type on the struct to the expected type (or change the provider to
+  accept the actual type). The accompanying `note` shows the dependency chain the field is read
+  through.
+- **Upstream class:** [check-trait failure](../../cgp/docs/errors/checks/check-trait-failure.md)
+  (its projection-mismatch face).
 
 ## Uncoded rewrites
 

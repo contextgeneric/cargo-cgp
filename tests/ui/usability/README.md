@@ -35,7 +35,14 @@ exercise the check-trait-failure family (so they sit in `checks/`) apart from `u
 `checks/empty_field_struct`, is not a worked example but an edge-case regression: a context that
 derives `HasField` but has no fields, which the missing-derive message describes correctly (a
 fieldless derive emits nothing, so it is indistinguishable from — and equivalent to — no derive), as
-explained in [Error processing](../../../docs/implementation/error-processing.md). The remaining fixtures are a **verbatim mirror**
+explained in [Error processing](../../../docs/implementation/error-processing.md). A further set of
+hand-curated `checks/` fixtures pins specific behaviors of the driver's typed resolver rather than a
+usability-prose example — `same_name_components` and `field_type_mismatch_modules` (full-path
+component and `DefId` struct resolution across modules), `field_type_mismatch`/`field_type_mismatch_1`
+(the `CGP-E003` field-type mismatch), `generic_area*`, `deep_nesting`, `parallel_branches`,
+`dependency_cascade`, `missing_has_field_derive`, `field_via_deref`, `ordinary_bound_unsatisfied`, and
+`mixed_rust_error` — each catalogued under
+[Typed root-cause resolution](../../../docs/implementation/typed-root-cause-resolution.md#tests). The remaining fixtures are a **verbatim mirror**
 of the upstream CGP compile-fail suite — the `acceptable/` fixtures under
 [`cgp-compile-fail-tests`](../../../../cgp/crates/tests/cgp-compile-fail-tests/tests), the concrete
 reproductions behind the [CGP error catalog](../../../../cgp/docs/errors/README.md) — imported so

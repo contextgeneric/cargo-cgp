@@ -18,9 +18,12 @@
 //! with the class's [CGP error code](cargo_cgp_error_processing::code) — an unsatisfied
 //! `CanUseComponent` bound (or a broken consumer call) becomes `[CGP-E001] the consumer trait
 //! `CanCalculateArea` is not implemented for context `Rectangle``, an unsatisfied
-//! `IsProviderFor` bound the `[CGP-E002]` provider form. The diagnostic's own Rust code
-//! (`E0277`, `E0599`) is always kept. A main message that is *not* a CGP class — an ordinary
-//! bound like `f64: Eq` that the next-gen solver already descended to — stays rustc's own.
+//! `IsProviderFor` bound the `[CGP-E002]` provider form, and a `HasField`-projection type
+//! mismatch (`E0271`) the `[CGP-E003]` field form `[CGP-E003] expected a `height` field of
+//! type `f64` on `Rectangle`, but found `i32`` (the actual type queried from the struct). The
+//! diagnostic's own Rust code (`E0277`, `E0599`, `E0271`) is always kept. A main message that
+//! is *not* a CGP class — an ordinary bound like `f64: Eq` that the next-gen solver already
+//! descended to — stays rustc's own.
 //! The **sub-messages** are replaced in either case: each recovered root cause becomes one
 //! `note` naming the leaf (`root cause: missing field `height` on `Rectangle``, omitted when
 //! the kept header already names that bound) followed by its rendered dependency chain, and a
@@ -58,7 +61,7 @@ use std::borrow::Cow;
 use std::io;
 use std::path::Path;
 
-use cargo_cgp_error_processing::code::CONSUMER_TRAIT_UNIMPLEMENTED;
+use cargo_cgp_error_processing::code::{CONSUMER_TRAIT_UNIMPLEMENTED, FIELD_TYPE_MISMATCH};
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, parse_trait_bound, rewrite_message, rewrite_required_for, rewrite_trait_bound,
 };
@@ -66,7 +69,7 @@ use cargo_cgp_error_processing::{
     context_has_hasfield_impls, postprocess_message, render_dependency_tree,
 };
 use rustc_errors::annotate_snippet_emitter_writer::AnnotateSnippetEmitter;
-use rustc_errors::codes::E0599;
+use rustc_errors::codes::{E0271, E0599};
 use rustc_errors::emitter::{
     Emitter, HumanReadableErrorType, OutputTheme, TimingEvent, stderr_destination,
 };
@@ -324,6 +327,25 @@ fn consumer_header(resolved: &Resolved) -> String {
     )
 }
 
+/// The `[CGP-E003]` main message for a field-type mismatch: the field the wiring reads carries the
+/// wrong type. The expected type comes from the failing projection and the actual from querying the
+/// struct by `DefId`, so the two are read from the real type, never a same-named one elsewhere.
+fn field_mismatch_header(name: &str, owner: &str, expected: &str, actual: &str) -> String {
+    format!(
+        "[{FIELD_TYPE_MISMATCH}] expected a `{name}` field of type `{expected}` on `{owner}`, but found `{actual}`"
+    )
+}
+
+/// The first field-type-mismatch cause of a resolution, if any — the leaf `[CGP-E003]` is worded
+/// from.
+fn mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
+    resolved
+        .causes
+        .iter()
+        .map(|cause| &cause.leaf)
+        .find(|leaf| matches!(leaf, Leaf::FieldTypeMismatch { .. }))
+}
+
 /// The one root-cause lead line for a leaf — what the note names before the dependency chain.
 /// A genuinely missing field is said plainly (without a `context` qualifier, since `HasField`
 /// can land on any struct); a present-but-underived field is worded as the unimplemented
@@ -341,6 +363,14 @@ fn root_cause_lead(leaf: &Leaf) -> String {
                 "accessor trait `HasField` with field `{name}` is not implemented for `{owner}`"
             )
         }
+        Leaf::FieldTypeMismatch {
+            name,
+            owner,
+            expected,
+            actual,
+        } => {
+            format!("field `{name}` on `{owner}` has type `{actual}`, but `{expected}` is required")
+        }
         Leaf::Bound { summary } => format!("the trait bound `{summary}` is not satisfied"),
     }
 }
@@ -351,6 +381,12 @@ fn root_cause_lead(leaf: &Leaf) -> String {
 /// the chain alone.
 fn cause_note(cause: &Cause, header_bound: Option<&str>) -> String {
     let chain = render_dependency_tree(&cause.tree);
+    // A field-type mismatch is fully stated by the rewritten `[CGP-E003]` header, so its note is
+    // the dependency chain alone — restating the leaf as a `root cause:` lead would only repeat
+    // the header, exactly as the kept-bound case below.
+    if let Leaf::FieldTypeMismatch { .. } = &cause.leaf {
+        return format!("this is required through the dependency chain:\n{chain}");
+    }
     if let (Some(bound), Leaf::Bound { summary }) = (header_bound, &cause.leaf)
         && summary == bound
     {
@@ -432,12 +468,26 @@ fn main_message_text(diag: &DiagInner) -> Option<&str> {
 impl<E> CgpEmitter<E> {
     /// The rewritten, `[CGP-Exxx]`-coded main message for a resolved failure — or `None` when
     /// the original main message is not an identified CGP error class and must be kept (an
-    /// ordinary bound such as `f64: Eq` the solver already descended to). An unsatisfied
+    /// ordinary bound such as `f64: Eq` the solver already descended to). A field-type mismatch
+    /// (`E0271`) the resolver traced to a `HasField` projection becomes the `[CGP-E003]` field
+    /// form, worded from the mismatch leaf's expected and actual types. An unsatisfied
     /// `CanUseComponent` bound and a consumer-method `E0599` (whose text names no wiring
     /// trait) are both worded from the typed resolution, whose full-path marker keys make the
     /// consumer name exact; an unsatisfied `IsProviderFor` bound rewrites by its text, since
     /// the resolution does not carry the provider-side names.
     fn categorized_header(&self, diag: &DiagInner, resolved: &Resolved) -> Option<String> {
+        // A field-type mismatch (`E0271`) the resolver traced to a `HasField` projection is its
+        // own class, worded from the mismatch leaf rather than from the consumer trait.
+        if diag.code == Some(E0271)
+            && let Some(Leaf::FieldTypeMismatch {
+                name,
+                owner,
+                expected,
+                actual,
+            }) = mismatch_leaf(resolved)
+        {
+            return Some(field_mismatch_header(name, owner, expected, actual));
+        }
         if resolved.consumers.is_empty() {
             return None;
         }

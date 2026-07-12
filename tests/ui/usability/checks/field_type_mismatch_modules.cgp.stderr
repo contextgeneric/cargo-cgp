@@ -1,0 +1,25 @@
+error[E0271]: [CGP-E003] expected a `height` field of type `f64` on `shape_a::Rectangle`, but found `i32`
+  --> src/main.rs:59:13
+   |
+59 |             AreaCalculatorAComponent,
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this is required through the dependency chain:
+           consumer trait impl `CanCalculateAreaA` for context `shape_a::Rectangle`
+           └── provider trait impl `AreaCalculatorA` with context `shape_a::Rectangle` for provider `shape_a::RectangleAreaA`
+               └── trait impl `HasRectangleFieldsA` for `shape_a::Rectangle`
+                   └── field trait impl `HasField` with field `height` for `shape_a::Rectangle`
+
+error[E0271]: [CGP-E003] expected a `height` field of type `f64` on `shape_b::Rectangle`, but found `i16`
+   --> src/main.rs:103:13
+    |
+103 |             AreaCalculatorBComponent,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this is required through the dependency chain:
+            consumer trait impl `CanCalculateAreaB` for context `shape_b::Rectangle`
+            └── provider trait impl `AreaCalculatorB` with context `shape_b::Rectangle` for provider `shape_b::RectangleAreaB`
+                └── trait impl `HasRectangleFieldsB` for `shape_b::Rectangle`
+                    └── field trait impl `HasField` with field `height` for `shape_b::Rectangle`
+
+For more information about this error, try `rustc --explain E0271`.

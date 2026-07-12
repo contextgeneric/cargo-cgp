@@ -27,3 +27,10 @@ pub const CONSUMER_TRAIT_UNIMPLEMENTED: &str = "CGP-E001";
 /// Stamped on a failed `IsProviderFor` bound (a `#[check_providers(...)]` assertion, or a
 /// provider the wiring routes through).
 pub const PROVIDER_TRAIT_UNIMPLEMENTED: &str = "CGP-E002";
+
+/// `CGP-E003` — a context field the wiring reads has the wrong type. Stamped on a `type mismatch
+/// resolving <Ctx as HasField<Symbol!("f")>>::Value == T` (`E0271`) that the typed resolver traced
+/// through CGP wiring to a `HasField` projection: the field is present and derived, but its type
+/// does not match the type a provider needs. The rewritten message names the field, its expected
+/// type, and the actual type found on the struct.
+pub const FIELD_TYPE_MISMATCH: &str = "CGP-E003";

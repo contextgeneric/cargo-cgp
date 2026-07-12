@@ -33,8 +33,9 @@
 //!    →provider-trait impl, `HasField`→field-trait impl), and a field name is decoded structurally
 //!    from its `Symbol!`. The emitter turns each leaf into one `root cause:` note over its chain,
 //!    with the leaf's [`Leaf`] variant choosing the wording (a missing field, an underived
-//!    `HasField`, or an ordinary unmet bound). When no branch reaches a reportable leaf the
-//!    resolver yields `None`, and the caller falls back to the untouched text-rewrite pipeline.
+//!    `HasField`, a field present with the wrong type, or an ordinary unmet bound). When no branch
+//!    reaches a reportable leaf the resolver yields `None`, and the caller falls back to the
+//!    untouched text-rewrite pipeline.
 //!
 //! For each leaf the resolver also inspects the *actual struct* the `HasField` bound lands on —
 //! its own named fields, and, if the field is not there, the fields of the structs along its
@@ -42,6 +43,18 @@
 //! A present field means that struct is missing its `#[derive(HasField)]`; the emitter then words
 //! the diagnostic as an unimplemented `HasField` accessor and adds a `help` pointing at the derive
 //! (see [`FieldIssue`]).
+//!
+//! A field that is present *with the wrong type* is a fourth case, and the resolver handles it as
+//! its own leaf. Its `HasField` trait bound holds (for the wrong `Value`), and only the
+//! associated-type projection `<Ctx as HasField<Symbol!("height")>>::Value == f64` fails — an
+//! `E0271` the trait-clause walk cannot see. So when a branch reaches an impl whose trait-clause
+//! dependencies all hold, the resolver looks for an unmet `HasField` *projection* among the impl's
+//! own predicates; finding one, it takes the projection's expected type (`f64`) and queries the
+//! struct for the field's actual type (`i32`) — by `DefId`, so a same-named struct elsewhere is
+//! never read — and yields a [`Leaf::FieldTypeMismatch`]. The emitter words that leaf as its own
+//! `[CGP-E003]` main message. A branch with neither an unmet trait clause nor a `HasField`
+//! projection mismatch is a projection the walk still cannot explain, and it declines to the
+//! fallback as before.
 //!
 //! Component markers are resolved to their consumer/provider trait names through the
 //! [`ComponentNameMap`] keyed by each marker's *full path* (`def_path_str`), not its bare name, so
@@ -70,8 +83,8 @@ use crate::config::{
 /// `Deref` (a blanket impl forwards to the target), so a field on a `Deref` target resolves when
 /// the target derives it; the failure the resolver diagnoses is a field present on some struct that
 /// has no `HasField` impl for it. (A field present *with a mismatched type* keeps its `HasField`
-/// trait impl and fails only the associated-type projection — an `E0271` the resolver leaves to
-/// the fallback — so it never reaches this classification.)
+/// trait impl and fails only the associated-type projection, so it never reaches this
+/// classification — it is a [`Leaf::FieldTypeMismatch`] instead.)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FieldIssue {
     /// No struct in the context's `Deref` chain carries a field of this name: it is genuinely
@@ -101,6 +114,20 @@ pub enum Leaf {
         owner: String,
         /// Whether the field is genuinely missing, present-but-underived, or behind a `Deref`.
         issue: FieldIssue,
+    },
+    /// A `HasField` bound whose field is present but carries the wrong type: the trait bound holds
+    /// and only the `<owner as HasField<name>>::Value == expected` projection fails. The emitter
+    /// words this as a `[CGP-E003]` main message of its own.
+    FieldTypeMismatch {
+        /// The field name, decoded from its `Symbol!`, e.g. `height`.
+        name: String,
+        /// The struct that carries the field, e.g. `Rectangle`.
+        owner: String,
+        /// The type the wiring requires the field to have, taken from the failing projection's
+        /// right-hand side, e.g. `f64`.
+        expected: String,
+        /// The type the field actually has, queried from the struct by `DefId`, e.g. `i32`.
+        actual: String,
     },
     /// Any other terminal unmet bound — an ordinary trait bound (`f64: Eq`), an unmet abstract
     /// type, and so on. The emitter keeps rustc's own header for these and only replaces the
@@ -139,7 +166,7 @@ impl Cause {
     /// for a field, the bound restatement otherwise.
     fn key(&self) -> &str {
         match &self.leaf {
-            Leaf::Field { name, .. } => name,
+            Leaf::Field { name, .. } | Leaf::FieldTypeMismatch { name, .. } => name,
             Leaf::Bound { summary } => summary,
         }
     }
@@ -343,18 +370,19 @@ fn resolve_leaves<'tcx>(
 
     let mut causes: Vec<Cause> = Vec::new();
     for path in collect_leaf_paths(tcx, top, context, &[], 0) {
-        let leaf_ref = path.last()?.skip_binder().trait_ref;
+        let leaf_ref = path.preds.last()?.skip_binder().trait_ref;
         // A path that bottoms out on pure wiring plumbing (a routing dead-end) is not a root
         // cause — a real cause is found down another branch — so drop it rather than report it.
         if !is_reportable_leaf(tcx, leaf_ref) {
             continue;
         }
-        let leaf = classify_leaf(tcx, leaf_ref);
+        let leaf = classify_leaf(tcx, leaf_ref, path.mismatch);
         // One sub-error per distinct leaf: a leaf wanted by several branches is one fix.
         if causes.iter().any(|c| c.key() == leaf_key(&leaf)) {
             continue;
         }
         let labels: Vec<String> = path
+            .preds
             .iter()
             .filter_map(|pred| label_for(tcx, *pred, context, names))
             .collect();
@@ -384,14 +412,28 @@ fn resolve_leaves<'tcx>(
     })
 }
 
-/// Classify the terminal predicate a dependency chain bottoms out on. A `HasField` becomes a
-/// [`Leaf::Field`] (inspecting the struct so the emitter can tell missing from underived); any
-/// other bound becomes a [`Leaf::Bound`] restating it as `self: Trait`.
-fn classify_leaf<'tcx>(tcx: TyCtxt<'tcx>, leaf_ref: ty::TraitRef<'tcx>) -> Leaf {
+/// Classify the terminal predicate a dependency chain bottoms out on. A `HasField` whose branch
+/// carried an unmet projection (`mismatch` is `Some(expected)`) becomes a
+/// [`Leaf::FieldTypeMismatch`], its actual field type queried from the struct; a plain `HasField`
+/// becomes a [`Leaf::Field`] (inspecting the struct so the emitter can tell missing from
+/// underived); any other bound becomes a [`Leaf::Bound`] restating it as `self: Trait`.
+fn classify_leaf<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    leaf_ref: ty::TraitRef<'tcx>,
+    mismatch: Option<Ty<'tcx>>,
+) -> Leaf {
     if is_cgp_item(tcx, leaf_ref.def_id, HAS_FIELD_TRAIT, CGP_FIELD_CRATE)
         && let Some(name) = decode_symbol(tcx, leaf_ref.args.type_at(1))
     {
         let owner = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
+        if let Some(expected) = mismatch {
+            return Leaf::FieldTypeMismatch {
+                actual: field_type(tcx, owner, &name).unwrap_or_else(|| "_".to_owned()),
+                name,
+                owner: owner.to_string(),
+                expected: expected.to_string(),
+            };
+        }
         let issue = field_issue(tcx, owner, &name);
         return Leaf::Field {
             name,
@@ -421,9 +463,19 @@ fn is_reportable_leaf<'tcx>(tcx: TyCtxt<'tcx>, leaf_ref: ty::TraitRef<'tcx>) -> 
 /// The de-duplication key for a freshly classified leaf, mirroring [`Cause::key`].
 fn leaf_key(leaf: &Leaf) -> &str {
     match leaf {
-        Leaf::Field { name, .. } => name,
+        Leaf::Field { name, .. } | Leaf::FieldTypeMismatch { name, .. } => name,
         Leaf::Bound { summary } => summary,
     }
+}
+
+/// One collected root→leaf path: the chain of trait predicates from the top down to (and
+/// including) the leaf, plus — when the leaf is a field-type mismatch — the type the failing
+/// projection required. A `mismatch` of `Some(expected)` means the last predicate is a `HasField`
+/// bound that *holds* as a trait, and the real fault is the associated-type projection `Value ==
+/// expected`; `None` means an ordinary unmet-bound leaf.
+struct LeafPath<'tcx> {
+    preds: Vec<ty::PolyTraitPredicate<'tcx>>,
+    mismatch: Option<Ty<'tcx>>,
 }
 
 /// Collect every root→leaf path that bottoms out on a terminal unmet bound, by descending the
@@ -434,11 +486,15 @@ fn leaf_key(leaf: &Leaf) -> &str {
 /// (an ordinary bound like `f64: Eq`). Following *every* unmet dependency (not one) is what surfaces
 /// independent causes as separate paths. Bounded by [`MAX_DEPTH`].
 ///
-/// One case yields no path on purpose: an unmet obligation whose satisfying impl's `where`-clause
-/// obligations all *hold*. The obligation is then unmet for a reason the trait-clause walk cannot
-/// see — a projection/associated-type mismatch, e.g. a field present with the wrong type — so
-/// rendering a tree here would point at a leaf that is not the real fault. Declining lets the
-/// caller keep rustc's own (already precise) diagnostic for that case.
+/// One case does not descend by trait clauses: an unmet obligation whose satisfying impl's
+/// trait-clause `where`-obligations all *hold*. The obligation is then unmet for a reason the
+/// trait-clause walk cannot see — a projection/associated-type mismatch. The resolver looks for one
+/// specific, reportable form: a `HasField` projection (`<Ctx as HasField<Symbol!(..)>>::Value ==
+/// T`) among the impl's own predicates that does not hold — a field present with the wrong type. It
+/// completes the path with that field's `HasField` trait ref and records the expected type as the
+/// path's `mismatch`, so the caller renders a [`Leaf::FieldTypeMismatch`]. A branch with no such
+/// projection yields nothing, so the resolver declines it to the fallback (rustc's own already-precise
+/// diagnostic for a projection the walk cannot explain).
 ///
 /// The descent stops at any ordinary bound on a foreign type (a bound whose `Self` is not the
 /// context and whose trait is not CGP wiring), treating it as the terminal leaf. That bound *is*
@@ -451,7 +507,7 @@ fn collect_leaf_paths<'tcx>(
     context: Ty<'tcx>,
     prefix: &[ty::PolyTraitPredicate<'tcx>],
     depth: u32,
-) -> Vec<Vec<ty::PolyTraitPredicate<'tcx>>> {
+) -> Vec<LeafPath<'tcx>> {
     if depth > MAX_DEPTH {
         return Vec::new();
     }
@@ -460,17 +516,26 @@ fn collect_leaf_paths<'tcx>(
     path.push(pred);
 
     if is_has_field(tcx, pred) {
-        return vec![path];
+        return vec![LeafPath {
+            preds: path,
+            mismatch: None,
+        }];
     }
 
     if !is_descendable(tcx, pred, context) {
         // An ordinary bound on a foreign type — the root-cause leaf. Do not walk into `std` impls.
-        return vec![path];
+        return vec![LeafPath {
+            preds: path,
+            mismatch: None,
+        }];
     }
 
     let Some(children) = impl_where_obligations(tcx, pred) else {
         // No impl satisfies `pred` at all — `pred` is itself the terminal root-cause bound.
-        return vec![path];
+        return vec![LeafPath {
+            preds: path,
+            mismatch: None,
+        }];
     };
 
     let unmet: Vec<_> = children
@@ -478,9 +543,20 @@ fn collect_leaf_paths<'tcx>(
         .filter(|nested| !holds(tcx, *nested))
         .collect();
     if unmet.is_empty() {
-        // Matched an impl, yet every `where`-clause holds: the fault is a projection the walk
-        // cannot see. Yield nothing so the resolver declines to this branch.
-        return Vec::new();
+        // Matched an impl, yet every trait-clause `where`-obligation holds: the fault is a
+        // projection the trait-clause walk cannot see. Surface the one form we can pin down — a
+        // `HasField::Value` mismatch (a field present with the wrong type) — and decline anything
+        // else to the fallback.
+        return match has_field_projection_mismatch(tcx, pred) {
+            Some((field_ref, expected)) => {
+                path.push(ty::Binder::dummy(field_ref).upcast(tcx));
+                vec![LeafPath {
+                    preds: path,
+                    mismatch: Some(expected),
+                }]
+            }
+            None => Vec::new(),
+        };
     }
 
     let mut paths = Vec::new();
@@ -488,6 +564,81 @@ fn collect_leaf_paths<'tcx>(
         paths.extend(collect_leaf_paths(tcx, nested, context, &path, depth + 1));
     }
     paths
+}
+
+/// When the impl that satisfies `pred`'s trait obligation carries an unmet `HasField`
+/// associated-type projection — `<Ctx as HasField<Symbol!("height")>>::Value == f64` — return that
+/// field's `HasField` trait ref (the terminal the tree shows) paired with the expected type
+/// (`f64`). This is the field-present-with-wrong-type case: the trait bound holds, so the walk
+/// reaches it only here, in the branch where every trait-clause dependency held. `None` when the
+/// impl carries no such unmet `HasField` projection.
+///
+/// Mirrors [`impl_where_obligations`]'s next-solver-safe impl match (`fresh_args_for_item` + `eq`),
+/// but keeps the projection predicates rather than the trait ones, and leaves each projection
+/// un-normalized so its `<.. as HasField<..>>::Value` alias survives for the hold check.
+fn has_field_projection_mismatch<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    pred: ty::PolyTraitPredicate<'tcx>,
+) -> Option<(ty::TraitRef<'tcx>, Ty<'tcx>)> {
+    let param_env = ty::ParamEnv::empty();
+    let obligation_ref = pred.skip_binder().trait_ref;
+
+    for impl_did in tcx.all_impls(pred.def_id()) {
+        let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
+        let ocx = ObligationCtxt::new(&infcx);
+
+        let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
+        let impl_ref = tcx
+            .impl_trait_ref(impl_did)
+            .instantiate(tcx, impl_args)
+            .skip_norm_wip();
+        let impl_ref = ocx.normalize(
+            &ObligationCause::dummy(),
+            param_env,
+            Unnormalized::new_wip(impl_ref),
+        );
+        if ocx
+            .eq(
+                &ObligationCause::dummy(),
+                param_env,
+                obligation_ref,
+                impl_ref,
+            )
+            .is_err()
+        {
+            continue;
+        }
+
+        for (predicate, _) in tcx.predicates_of(impl_did).instantiate(tcx, impl_args) {
+            // Keep the projection un-normalized so its `<.. as HasField<..>>::Value` alias
+            // survives; `skip_norm_wip` unwraps without normalizing, unlike the `ocx.normalize`
+            // the trait-clause walk uses.
+            let clause = infcx.resolve_vars_if_possible(predicate.skip_norm_wip());
+            // An unconstrained impl parameter leaves inference vars behind; such a projection
+            // cannot be re-checked in a fresh context, so skip it (regions are erased below).
+            if clause.has_non_region_infer() {
+                continue;
+            }
+            let Some(proj) = tcx
+                .erase_and_anonymize_regions(clause)
+                .as_projection_clause()
+            else {
+                continue;
+            };
+            let field_ref = proj.skip_binder().projection_term.trait_ref(tcx);
+            if !is_cgp_item(tcx, field_ref.def_id, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
+                continue;
+            }
+            if holds_projection(tcx, proj) {
+                continue;
+            }
+            let expected = proj.skip_binder().term.as_type()?;
+            return Some((field_ref, expected));
+        }
+        // Matched the impl but found no unmet `HasField` projection on it.
+        return None;
+    }
+    None
 }
 
 /// Whether the descent should walk *into* `pred`'s dependencies, rather than treat `pred` as a
@@ -575,6 +726,15 @@ fn holds<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitPredicate<'tcx>) -> bool {
     infcx.predicate_must_hold_modulo_regions(&obligation)
 }
 
+/// Whether an associated-type projection already holds — used to tell a matching field type from a
+/// mismatched one (`<Rectangle as HasField<Symbol!("height")>>::Value == f64` holds when `height`
+/// is `f64`, fails when it is `i32`).
+fn holds_projection<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyProjectionPredicate<'tcx>) -> bool {
+    let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
+    let obligation = Obligation::new(tcx, ObligationCause::dummy(), ty::ParamEnv::empty(), pred);
+    infcx.predicate_must_hold_modulo_regions(&obligation)
+}
+
 /// Whether a trait predicate is a genuine CGP `HasField` bound — the missing-field leaf.
 fn is_has_field(tcx: TyCtxt<'_>, pred: ty::PolyTraitPredicate<'_>) -> bool {
     is_cgp_item(
@@ -609,6 +769,26 @@ fn field_issue<'tcx>(tcx: TyCtxt<'tcx>, owner: Ty<'tcx>, field: &str) -> FieldIs
         current = target;
     }
     FieldIssue::Missing
+}
+
+/// The declared type of `ty`'s named field `field`, as a display string, or `None` when `ty` is
+/// not a struct or has no such field. Read from the struct's `DefId` with the type's own generic
+/// arguments substituted, so a same-named struct in another module is never queried and a generic
+/// context's field type is instantiated correctly.
+fn field_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, field: &str) -> Option<String> {
+    let ty::Adt(def, args) = ty.kind() else {
+        return None;
+    };
+    if !def.is_struct() {
+        return None;
+    }
+    let field_def = def
+        .non_enum_variant()
+        .fields
+        .iter()
+        .find(|f| f.name.as_str() == field)?;
+    let field_ty = field_def.ty(tcx, args).skip_norm_wip();
+    Some(tcx.erase_and_anonymize_regions(field_ty).to_string())
 }
 
 /// Whether `ty` is a struct with a named field called `field`. Only a struct can carry named
