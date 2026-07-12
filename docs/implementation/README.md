@@ -40,9 +40,9 @@ same change.
   or JSON), with the front-end forwarding cargo's output untouched.
 - [Error processing](error-processing.md) — the rustc-free `cargo-cgp-error-processing` crate that
   holds the driver's string-level diagnostic logic: the post-processing text transforms (stripping
-  CGP path prefixes, resugaring `Symbol!`, rewriting unmet `HasField` bounds into missing-field
-  messages), the wiring-message rewrite, and the dependency-tree renderer, all driven by the driver's
-  emitter and unit-tested without a compiler.
+  CGP path prefixes, resugaring `Symbol!` and `Path!`, rewriting unmet `HasField` bounds into
+  missing-field messages), the wiring-message rewrite, and the dependency-tree renderer, all driven by
+  the driver's emitter and unit-tested without a compiler.
 - [rustc diagnostic internals](rustc-diagnostic-internals.md) — a map of the compiler code that
   builds CGP diagnostics and, crucially, where it *suppresses* information: the type/const printer, the
   trait-error reporters, the two verbosity switches (`--verbose` versus `-Zverbose-internals`), and the

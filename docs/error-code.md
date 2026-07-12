@@ -101,6 +101,11 @@ traits. The rename runs in the driver;
 programmer wrote and nothing more;
 [`resugar_symbol`](../crates/cargo-cgp-error-processing/src/postprocess/resugar_symbol.rs) owns it.
 
+**`Path!` resugaring** reverses a `Path!` type expansion back to its surface form, so
+`PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` becomes `Path!(@app.GreeterComponent)`.
+It restores the syntax the programmer wrote and nothing more;
+[`resugar_path`](../crates/cargo-cgp-error-processing/src/postprocess/resugar_path.rs) owns it.
+
 **Missing-field clause rewriting** turns an unmet `` `HasField<Symbol!("name")>` `` clause inside a
 sub-message into `` missing field `name` on `Context` `` (or the `#[derive(HasField)]` form when
 the context implements `HasField` for nothing);

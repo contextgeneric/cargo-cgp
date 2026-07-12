@@ -104,8 +104,8 @@ merely forwards what the driver renders — and it carries three transformations
 failure with a root-cause-first diagnostic, covered in its own document; failing that, the in-place
 [trait-renaming rewrite](#naming-the-traits-behind-a-component-marker) described below renames the CGP
 wiring notes; and finally every diagnostic passes through the
-[post-processing](error-processing.md) transforms — stripping CGP path prefixes, resugaring `Symbol!`,
-rewording an unmet `HasField` bound — so no raw CGP construct leaks. The sections that follow detail
+[post-processing](error-processing.md) transforms — stripping CGP path prefixes, resugaring `Symbol!`
+and `Path!`, rewording an unmet `HasField` bound — so no raw CGP construct leaks. The sections that follow detail
 the two levers and the rename; the replacement and the post-processing build on the rename's `TyCtxt`
 access and rustc-free helpers, and are documented separately.
 
@@ -384,7 +384,7 @@ will likely grow toward it:
   `ComponentNameMap` lazy initializer is *not* forced when no message matches.
 - [`crates/cargo-cgp-error-processing/tests/postprocess.rs`](../../crates/cargo-cgp-error-processing/tests/postprocess.rs)
   — the compiler-free post-processing transforms the emitter applies as its final pass: prefix
-  stripping, `Symbol!` resugaring's exact-match cases, and the missing-field reword branches.
+  stripping, the `Symbol!` and `Path!` resugaring, and the missing-field reword branches.
 - [`tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr)
   — pins the un-hidden output the solver switch produces.
 - [`tests/ui/usability/checks/base_area_1.cgp.stderr`](../../tests/ui/usability/checks/base_area_1.cgp.stderr)

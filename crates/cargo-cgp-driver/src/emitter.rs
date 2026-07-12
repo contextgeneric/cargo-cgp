@@ -31,13 +31,14 @@
 //! rustc-free [`rewrite`](cargo_cgp_error_processing::rewrite) module.
 //!
 //! Every diagnostic then goes through the rustc-free **post-processing** transforms
-//! ([`postprocess_message`]) — strip CGP path prefixes, resugar `Symbol!`, reword an unmet
-//! `HasField` bound — over its `DiagInner` messages and span labels, so the inner emitter
-//! renders the cleaned text. For a diagnostic the tool left un-rewritten this is the whole
-//! cleanup, so raw CGP constructs do not look confusing; for a rewritten one only the prefix
-//! strip and `Symbol!` resugaring bite, tidying the compiler-formatted CGP type names the
-//! transform embeds (a provider like `RedirectLookup<…, PathCons<Symbol<…>>>`), since the
-//! missing-field reword can never match the tree the resolver produced.
+//! ([`postprocess_message`]) — strip CGP path prefixes, resugar `Symbol!` and `Path!`, reword
+//! an unmet `HasField` bound — over its `DiagInner` messages and span labels, so the inner
+//! emitter renders the cleaned text. For a diagnostic the tool left un-rewritten this is the
+//! whole cleanup, so raw CGP constructs do not look confusing; for a rewritten one only the
+//! prefix strip and the `Symbol!`/`Path!` resugaring bite, tidying the compiler-formatted CGP
+//! type names the transform embeds (a provider like `RedirectLookup<…, PathCons<Symbol<…>>>`,
+//! folded to `RedirectLookup<…, Path!(@…)>`), since the missing-field reword can never match
+//! the tree the resolver produced.
 //!
 //! Two facts make this the right layer. First, naming the traits behind a component marker
 //! needs the compiler, and the driver reaches the live `TyCtxt` through
@@ -220,10 +221,11 @@ impl<E> CgpEmitter<E> {
     /// Post-process a diagnostic after transforming it — the final cleanup pass, over every
     /// message and span label of the diagnostic and its children, matching the whole-text
     /// transform the front-end once did over the rendered output. It strips CGP path
-    /// prefixes, resugars `Symbol!`, and rewords an unmet `HasField` bound. For a diagnostic
-    /// the tool left un-rewritten this keeps raw CGP constructs readable; for a rewritten one
-    /// the prefix strip and `Symbol!` resugaring tidy the type names the transform embeds,
-    /// while the reword finds nothing to match. Whether the context implements `HasField` for
+    /// prefixes, resugars `Symbol!` and `Path!`, and rewords an unmet `HasField` bound. For a
+    /// diagnostic the tool left un-rewritten this keeps raw CGP constructs readable; for a
+    /// rewritten one the prefix strip and the `Symbol!`/`Path!` resugaring tidy the type names
+    /// the transform embeds, while the reword finds nothing to match. Whether the context
+    /// implements `HasField` for
     /// any field is a fact of the whole diagnostic (the "similar impl" landmark can sit far
     /// from the clause), so it is decided once up front and passed into each per-message
     /// rewrite.

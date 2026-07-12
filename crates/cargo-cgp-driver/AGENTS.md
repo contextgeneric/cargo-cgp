@@ -34,8 +34,8 @@ consumer-blanket-impl links into a component-marker → trait-names map, wrapped
 `ComponentNameMap`, and [`resolve.rs`](src/resolve.rs) recovers a check failure's root-cause
 dependency tree from the trait solver; the compiler-free `rewrite` module (in
 `cargo-cgp-error-processing`) renames the wiring messages. Third, every diagnostic then goes through
-the compiler-free `postprocess` transforms (strip CGP path prefixes, resugar `Symbol!`, reword an
-unmet `HasField` bound), the final cleanup that keeps raw CGP constructs readable. The transforms are
+the compiler-free `postprocess` transforms (strip CGP path prefixes, resugar `Symbol!` and `Path!`,
+reword an unmet `HasField` bound), the final cleanup that keeps raw CGP constructs readable. The transforms are
 documented in full in
 [The driver](../../docs/implementation/driver.md#naming-the-traits-behind-a-component-marker) and
 [Typed root-cause resolution](../../docs/implementation/typed-root-cause-resolution.md); the

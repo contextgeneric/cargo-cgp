@@ -4,8 +4,8 @@
 //! it is driven directly over the case under test — no diagnostic wrapper, no compiler.
 
 use cargo_cgp_error_processing::{
-    context_has_hasfield_impls, postprocess_message, resugar_symbol, rewrite_missing_fields,
-    strip_cgp_prefixes,
+    context_has_hasfield_impls, postprocess_message, resugar_path, resugar_symbol,
+    rewrite_missing_fields, strip_cgp_prefixes,
 };
 
 #[test]
@@ -68,6 +68,69 @@ fn resugar_leaves_other_symbol_uses_alone() {
     assert_eq!(
         resugar_symbol("the trait `Symbolic` is not implemented"),
         None
+    );
+}
+
+#[test]
+fn resugars_a_symbol_and_type_path() {
+    // The common shape: a namespace path of one lowercase symbol segment and one component
+    // marker, embedded in a provider type. Runs after `Symbol!` resugaring, so the head is
+    // already `Symbol!("app")`.
+    assert_eq!(
+        resugar_path(
+            "RedirectLookup<App, PathCons<Symbol!(\"app\"), PathCons<GreeterComponent, Nil>>>"
+        )
+        .as_deref(),
+        Some("RedirectLookup<App, Path!(@app.GreeterComponent)>"),
+    );
+}
+
+#[test]
+fn resugars_a_single_segment_path() {
+    assert_eq!(
+        resugar_path("PathCons<MyFooComponent, Nil>").as_deref(),
+        Some("Path!(@MyFooComponent)"),
+    );
+}
+
+#[test]
+fn resugars_a_primitive_segment_as_a_type() {
+    // A primitive segment is kept as the named type by `Path!`, so it round-trips bare.
+    assert_eq!(
+        resugar_path("PathCons<u32, Nil>").as_deref(),
+        Some("Path!(@u32)"),
+    );
+}
+
+#[test]
+fn resugar_path_skips_a_non_nil_terminated_spine() {
+    // A tail that is neither `Nil` nor another `PathCons` is not a path spine.
+    assert_eq!(resugar_path("PathCons<GreeterComponent, App>"), None);
+}
+
+#[test]
+fn resugar_path_skips_an_uppercase_symbol_segment() {
+    // `Path!` would never encode `Foo` (capitalized) as a `Symbol`, so a `Symbol!("Foo")`
+    // head did not come from a path and must not be resugared to a lowercase-style segment.
+    assert_eq!(resugar_path("PathCons<Symbol!(\"Foo\"), Nil>"), None);
+}
+
+#[test]
+fn resugar_path_leaves_plain_text_alone() {
+    assert_eq!(
+        resugar_path("the trait bound `Foo: Bar` is not satisfied"),
+        None
+    );
+}
+
+#[test]
+fn postprocess_message_resugars_an_expanded_path() {
+    // End to end through the chain: an expanded `Symbol` spine inside a `PathCons` is
+    // resugared to a symbol and then folded into a `Path!`.
+    let text = "PathCons<Symbol<3, Chars<'a', Chars<'p', Chars<'p', Nil>>>>, PathCons<GreeterComponent, Nil>>";
+    assert_eq!(
+        postprocess_message(text, false).as_deref(),
+        Some("Path!(@app.GreeterComponent)"),
     );
 }
 

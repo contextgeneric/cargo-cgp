@@ -49,12 +49,13 @@ passes through the post-processing transforms.
 
 The pass does two jobs depending on what came before it, and both keep raw CGP spellings out of the
 output. For a diagnostic the tool left **un-rewritten**, post-processing is the whole cleanup — it
-strips the `cgp::` prefixes, resugars the `Symbol!` spines, and rewords an unmet `HasField` bound, so
-a diagnostic the tool does not classify still reads cleanly. For a **rewritten** one, only the prefix
-strip and `Symbol!` resugaring bite: they tidy the compiler-formatted CGP type names a rewrite
-embeds — a provider like `RedirectLookup<…, PathCons<Symbol<…>>>` in a coded header, say — while the
-missing-field reword finds nothing to match, because the resolver's tree never carries the
-`` `HasField<…>` is not implemented `` clause the reword keys on.
+strips the `cgp::` prefixes, resugars the `Symbol!` and `Path!` spines, and rewords an unmet
+`HasField` bound, so a diagnostic the tool does not classify still reads cleanly. For a **rewritten**
+one, only the prefix strip and the `Symbol!`/`Path!` resugaring bite: they tidy the compiler-formatted
+CGP type names a rewrite embeds — a provider like `RedirectLookup<…, PathCons<Symbol<…>>>` in a coded
+header, folded to `RedirectLookup<…, Path!(@…)>`, say — while the missing-field reword finds nothing
+to match, because the resolver's tree never carries the `` `HasField<…>` is not implemented `` clause
+the reword keys on.
 
 ## How the driver applies the transforms
 
@@ -78,8 +79,9 @@ first, then passes the answer into each per-message rewrite.
 
 Post-processing is a chain of transforms applied in order, so the output of one feeds the next, and
 the order matters. Prefix stripping runs first so the later transforms match the bare CGP names
-(`Symbol`, `Chars`, …) rather than their fully-qualified forms; `Symbol!` resugaring runs next so the
-field rewrite can match the resugared `HasField<Symbol!("…")>` form. Three transforms exist today:
+(`Symbol`, `Chars`, …) rather than their fully-qualified forms; `Symbol!` resugaring runs before
+`Path!` resugaring (which reads the already-resugared `Symbol!("…")` segments) and before the field
+rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Four transforms exist today:
 
 - **[`strip_cgp_prefixes`](../../crates/cargo-cgp-error-processing/src/postprocess/strip_prefixes.rs)**
   removes the CGP module paths rustc prints in front of CGP type names — `cgp::prelude::Chars` becomes
@@ -94,6 +96,16 @@ field rewrite can match the resugared `HasField<Symbol!("…")>` form. Three tra
   `Chars` head must be a single plain character literal. A `Symbol<…>` that does not match exactly is
   left untouched, because another type could share the name; this caution is essential to every
   resugaring transform, not just this one.
+- **[`resugar_path`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_path.rs)**
+  reverses a `Path!` expansion back to its surface form:
+  `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` becomes `Path!(@app.GreeterComponent)`.
+  It walks the right-nested `PathCons`/`Nil` spine and rewrites it **only on an exact,
+  round-trippable match**, mirroring how `Path!` classifies each segment forward: a `Symbol!("name")`
+  head becomes the bare segment `name` only when `name` is a lowercase, non-primitive identifier
+  `Path!` would encode as a `Symbol`, and a named-type head is kept only when it is a plain identifier
+  `Path!` would leave as a type — capitalized or a primitive. A spine that is not `PathCons`/`Nil` all
+  the way down, or that carries a segment that would not round-trip, is left untouched. It runs after
+  `resugar_symbol`, so its symbol segments are already in `Symbol!("…")` form.
 - **[`rewrite_missing_fields`](../../crates/cargo-cgp-error-processing/src/postprocess/missing_field.rs)**
   turns an unmet `HasField` bound into a field-oriented message. It matches (after the two transforms
   above) `` the trait `HasField<Symbol!("name")>` is not implemented for `Context` `` and distinguishes
@@ -143,11 +155,11 @@ the transforms stay consistent with what the driver emits across the whole catal
 
 The transforms still ahead extend the per-diagnostic cleanup, each a new function added to the
 post-processing chain, each applying the same exact-match caution `resugar_symbol` sets the precedent
-for. Decoding the remaining type-level encodings is the nearest: `Symbol!` is done; `Cons<A, Cons<B,
-Nil>>` is `Product![A, B]`, `Either<…>`/`Void` spines are `Sum![…]`, and so on — rewriting these back
-to their surface form removes the rest of the visual noise a CGP error carries. Recognizing more
-error classes is the other direction, each rewriting its message the way the missing-field transform
-does.
+for. Decoding the remaining type-level encodings is the nearest: `Symbol!` and `Path!` are done;
+`Cons<A, Cons<B, Nil>>` is `Product![A, B]`, `Either<…>`/`Void` spines are `Sum![…]`, and so on —
+rewriting these back to their surface form removes the rest of the visual noise a CGP error carries.
+Recognizing more error classes is the other direction, each rewriting its message the way the
+missing-field transform does.
 
 One larger transformation is deliberately out of scope for this crate: collapsing a *cascade* — the
 one deep mistake reported at every transitively dependent provider — into a single root cause. That
@@ -170,8 +182,10 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
 
 - [`crates/cargo-cgp-error-processing/tests/postprocess.rs`](../../crates/cargo-cgp-error-processing/tests/postprocess.rs) —
   drives each post-processing transform over crafted inputs: the stripped/left-alone prefix cases, the
-  exact-match cases `resugar_symbol` must skip, the single-field (inline and separate-note landmark)
-  versus missing-derive branches of `rewrite_missing_fields`, and the `postprocess_message` chain.
+  exact-match cases `resugar_symbol` must skip, the `PathCons` → `Path!` resugaring (symbol, type, and
+  primitive segments, and the non-round-trippable cases `resugar_path` must skip), the single-field
+  (inline and separate-note landmark) versus missing-derive branches of `rewrite_missing_fields`, and
+  the `postprocess_message` chain.
 - [`crates/cargo-cgp-error-processing/tests/rewrite.rs`](../../crates/cargo-cgp-error-processing/tests/rewrite.rs) —
   the wiring-message rewrite over a hand-built name map (see [The driver](driver.md#tests)).
 - [`crates/cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs) —
@@ -184,8 +198,9 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
 - [`crates/cargo-cgp-error-processing/src/postprocess/`](../../crates/cargo-cgp-error-processing/src/postprocess) —
   the post-processing transforms: `mod.rs` (the `postprocess_message` chain), `strip_prefixes.rs`
   (`strip_cgp_prefixes` and the `CGP_PREFIXES` constant), `resugar_symbol.rs` (the exact-match
-  `Symbol!` parser), and `missing_field.rs` (`rewrite_missing_fields`, `context_has_hasfield_impls`,
-  and the single-field-vs-missing-derive classification).
+  `Symbol!` parser), `resugar_path.rs` (the `PathCons` → `Path!` resugarer), and `missing_field.rs`
+  (`rewrite_missing_fields`, `context_has_hasfield_impls`, and the single-field-vs-missing-derive
+  classification).
 - [`crates/cargo-cgp-error-processing/src/rewrite.rs`](../../crates/cargo-cgp-error-processing/src/rewrite.rs) —
   the wiring-message rewrite and `ComponentNameMap` the driver drives (see
   [The driver](driver.md#naming-the-traits-behind-a-component-marker)).

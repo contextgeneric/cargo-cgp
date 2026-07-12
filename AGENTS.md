@@ -158,8 +158,8 @@ render text or JSON like vanilla `rustc`. It transforms a wiring failure into it
 dependency tree when it can (rewriting a main message that is an identified CGP class into its
 `[CGP-Exxx]`-coded form — the Rust code kept — and swapping the sub-notes for one `root cause:` note
 per leaf); otherwise it falls back to renaming CGP wiring messages, and every diagnostic then goes
-through the post-processing cleanup (strip CGP path prefixes, resugar `Symbol!`, reword an unmet
-`HasField` bound) so no raw CGP construct leaks. `resolve.rs` is that typed resolver, recovering the
+through the post-processing cleanup (strip CGP path prefixes, resugar `Symbol!` and `Path!`, reword an
+unmet `HasField` bound) so no raw CGP construct leaks. `resolve.rs` is that typed resolver, recovering the
 failing obligation either from a `check_components!` entry or from the use site of a broken
 consumer-method call (`E0599`), then descending the wiring to each terminal leaf (a `HasField` field
 or an ordinary bound) (see
@@ -174,8 +174,8 @@ The helper library (`crates/cargo-cgp-error-processing/src`) is the smallest and
 linkage. It is entirely driver-driven — the front-end no longer touches diagnostics — and hosts the
 string-level logic here so it can be unit-tested on any toolchain. `postprocess/` holds the fallback
 text transforms the driver applies to a diagnostic's messages (stripping CGP path prefixes,
-resugaring `Symbol!`, rewriting unmet `HasField` bounds into missing-field messages), exposed as pure
-`&str -> Option<String>` functions and the `postprocess_message` chain; `rewrite.rs` is the string
+resugaring `Symbol!` and `Path!`, rewriting unmet `HasField` bounds into missing-field messages),
+exposed as pure `&str -> Option<String>` functions and the `postprocess_message` chain; `rewrite.rs` is the string
 rewrite that renames CGP wiring messages and the lazily-built `ComponentNameMap` it uses; `tree.rs`
 is the `DependencyTree` type and its `cargo tree`-style renderer (over the `termtree` crate) that the
 driver's typed resolver uses to show a check failure's transitive dependency chain; `code.rs` holds

@@ -51,8 +51,8 @@ diagnostic is a resolvable CGP wiring failure, the [typed root-cause resolver](t
 replaces it with its dependency tree(s) and a coded main message. Otherwise a text
 [wiring-message rewrite](driver.md#naming-the-traits-behind-a-component-marker) renames the CGP wiring
 notes it recognizes. Either way, the diagnostic then passes through the
-[post-processing](error-processing.md) transforms — stripping CGP path prefixes, resugaring `Symbol!`,
-rewording an unmet `HasField` bound — so a diagnostic the tool did not fully rewrite still reads
+[post-processing](error-processing.md) transforms — stripping CGP path prefixes, resugaring `Symbol!`
+and `Path!`, rewording an unmet `HasField` bound — so a diagnostic the tool did not fully rewrite still reads
 cleanly, and the compiler-formatted CGP type names a rewrite embeds are tidied too.
 
 ## Configuring rustc

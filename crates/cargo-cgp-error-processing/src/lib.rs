@@ -20,7 +20,7 @@ pub mod rewrite;
 pub mod tree;
 
 pub use postprocess::{
-    CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_symbol,
+    CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_path, resugar_symbol,
     rewrite_missing_fields, strip_cgp_prefixes,
 };
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
