@@ -1,15 +1,20 @@
-//! The diagnostic-rewriting emitter the driver installs.
+//! The diagnostic-transforming emitter the driver installs.
 //!
-//! This is the compiler-side seam of the message transform. It replaces the session's JSON
-//! emitter with one that acts on each diagnostic before handing it to a real [`JsonEmitter`],
-//! so the transformed result reaches cargo — and the front-end — already shaped, both in the
-//! structured `children` and in the `rendered` field the JSON emitter regenerates from them.
-//! It transforms a resolvable CGP wiring failure — a diagnostic on a `check_components!` entry, or
-//! a broken consumer-method call (`E0599`) at its use site — into its root-cause dependency tree(s),
-//! recovered from the compiler by [`resolve`](crate::resolve).
+//! This is the compiler-side seam of the message transform. It replaces the session's own
+//! emitter with one that acts on each diagnostic before handing it to a real inner emitter,
+//! so the transformed result reaches cargo — and the front-end — already shaped. The wrapper
+//! [`CgpEmitter`] is generic over its inner emitter, and [`install`] rebuilds the same
+//! emitter the compiler's default would be — a [`JsonEmitter`] for the JSON error format, an
+//! [`AnnotateSnippetEmitter`] for a human-readable one — so `cargo-cgp-driver` renders like
+//! vanilla `rustc` in either format, only with the CGP transforms applied. For JSON the
+//! rewrite reaches both the structured `children` and the `rendered` field the emitter
+//! regenerates from them; for text it reaches the rendered output directly.
 //!
-//! The transform has two halves. The **main message** is rewritten only when it is identified
-//! as a class of CGP error, and the rewrite then restates the same fact readably and stamps it
+//! A resolvable CGP wiring failure — a diagnostic on a `check_components!` entry, or a broken
+//! consumer-method call (`E0599`) at its use site — is transformed into its root-cause
+//! dependency tree(s), recovered from the compiler by [`resolve`](crate::resolve). That
+//! transform has two halves. The **main message** is rewritten only when it is identified as
+//! a class of CGP error, and the rewrite then restates the same fact readably and stamps it
 //! with the class's [CGP error code](cargo_cgp_error_processing::code) — an unsatisfied
 //! `CanUseComponent` bound (or a broken consumer call) becomes `[CGP-E001] the consumer trait
 //! `CanCalculateArea` is not implemented for context `Rectangle``, an unsatisfied
@@ -19,9 +24,20 @@
 //! The **sub-messages** are replaced in either case: each recovered root cause becomes one
 //! `note` naming the leaf (`root cause: missing field `height` on `Rectangle``, omitted when
 //! the kept header already names that bound) followed by its rendered dependency chain, and a
-//! `help` names each type that needs a `#[derive(HasField)]`. Everything the resolver cannot
-//! handle falls back to a **text rewrite** of the compiler's own diagnostic, renaming CGP
-//! wiring messages via the rustc-free [`rewrite`](cargo_cgp_error_processing::rewrite) module.
+//! `help` names each type that needs a `#[derive(HasField)]`.
+//!
+//! When the resolver declines a diagnostic there is **no such rewrite** for it, so a
+//! **wiring-message rewrite** runs first as a fallback, renaming CGP wiring notes via the
+//! rustc-free [`rewrite`](cargo_cgp_error_processing::rewrite) module.
+//!
+//! Every diagnostic then goes through the rustc-free **post-processing** transforms
+//! ([`postprocess_message`]) — strip CGP path prefixes, resugar `Symbol!`, reword an unmet
+//! `HasField` bound — over its `DiagInner` messages and span labels, so the inner emitter
+//! renders the cleaned text. For a diagnostic the tool left un-rewritten this is the whole
+//! cleanup, so raw CGP constructs do not look confusing; for a rewritten one only the prefix
+//! strip and `Symbol!` resugaring bite, tidying the compiler-formatted CGP type names the
+//! transform embeds (a provider like `RedirectLookup<…, PathCons<Symbol<…>>>`), since the
+//! missing-field reword can never match the tree the resolver produced.
 //!
 //! Two facts make this the right layer. First, naming the traits behind a component marker
 //! needs the compiler, and the driver reaches the live `TyCtxt` through
@@ -30,24 +46,29 @@
 //! initializer of a [`ComponentNameMap`], which builds the map lazily on the first rewrite
 //! and never at all for a diagnostic that mentions no CGP wiring — so the emitter needs no
 //! separate "is this a CGP diagnostic?" pre-check. Second, mutating the `DiagInner` in place
-//! before the inner emitter serializes it means both the JSON `children` and the regenerated
-//! `rendered` text carry the rewrite, with no re-parsing of rendered output.
+//! before the inner emitter renders it means both the structured children and the regenerated
+//! output carry the transform, with no re-parsing of rendered text.
 //!
 //! The session's emitter cannot be *wrapped* — [`set_emitter`](rustc_errors::DiagCtxt::set_emitter)
-//! only replaces it, with no way to recover the original — so the inner `JsonEmitter` is
-//! rebuilt to match how the compiler builds its default one (see [`install`]).
+//! only replaces it, with no way to recover the original — so the inner emitter is rebuilt to
+//! match how the compiler builds its default one (see [`install`]).
 
 use std::borrow::Cow;
 use std::io;
 use std::path::Path;
 
 use cargo_cgp_error_processing::code::CONSUMER_TRAIT_UNIMPLEMENTED;
-use cargo_cgp_error_processing::render_dependency_tree;
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, parse_trait_bound, rewrite_message, rewrite_required_for, rewrite_trait_bound,
 };
+use cargo_cgp_error_processing::{
+    context_has_hasfield_impls, postprocess_message, render_dependency_tree,
+};
+use rustc_errors::annotate_snippet_emitter_writer::AnnotateSnippetEmitter;
 use rustc_errors::codes::E0599;
-use rustc_errors::emitter::{Emitter, TimingEvent};
+use rustc_errors::emitter::{
+    Emitter, HumanReadableErrorType, OutputTheme, TimingEvent, stderr_destination,
+};
 use rustc_errors::json::JsonEmitter;
 use rustc_errors::timings::TimingRecord;
 use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, TerminalUrl};
@@ -59,26 +80,18 @@ use rustc_span::source_map::SourceMap;
 use crate::component_map::build_name_map_from_tls;
 use crate::resolve::{self, Cause, FieldIssue, Leaf, Resolved};
 
-/// Install the rewriting emitter on the compiler session, replicating how rustc builds its
-/// default JSON emitter so cargo's diagnostic stream is byte-for-byte the same apart from
-/// the rewritten CGP notes.
+/// Install the transforming emitter on the compiler session, replicating how rustc builds its
+/// default emitter so cargo's output is what vanilla `rustc` would produce apart from the CGP
+/// transforms.
 ///
-/// It only acts on the JSON error format — the one the front-end drives cargo with, and the
-/// only one whose output the tool consumes; a human-format invocation (e.g. running the
-/// driver by hand) is left with the compiler's own emitter. The session options the emitter
-/// construction needs are not reachable from `psess_created`'s `&mut ParseSess`, so they are
-/// read here from [`Config::opts`] and moved into the callback.
+/// It handles both the JSON error format — the one the front-end drives cargo with — and the
+/// human-readable one a direct `cargo-cgp-driver` (or `cargo cgp check`) invocation renders,
+/// rebuilding whichever emitter the compiler's `default_emitter` would for that format and
+/// wrapping it in [`CgpEmitter`]. The session options the emitter construction needs are not
+/// reachable from `psess_created`'s `&mut ParseSess`, so they are read here from
+/// [`Config::opts`] and moved into the callback.
 pub fn install(config: &mut Config) {
     let sopts = &config.opts;
-
-    let (pretty, json_rendered, color_config) = match &sopts.error_format {
-        ErrorOutputType::Json {
-            pretty,
-            json_rendered,
-            color_config,
-        } => (*pretty, *json_rendered, *color_config),
-        ErrorOutputType::HumanReadable { .. } => return,
-    };
 
     let macro_backtrace = sopts.unstable_opts.macro_backtrace;
     let track_diagnostics = sopts.unstable_opts.track_diagnostics;
@@ -93,25 +106,60 @@ pub fn install(config: &mut Config) {
         sopts.unstable_opts.terminal_urls,
         sopts.unstable_features.is_nightly_build(),
     );
+    // Copy the format out (it is `Copy`) so the immutable borrow of `config.opts` ends
+    // before `config.psess_created` is assigned.
+    let error_format = sopts.error_format;
 
-    config.psess_created = Some(Box::new(move |psess| {
-        let source_map = (!link_only).then(|| psess.clone_source_map());
-        let inner = JsonEmitter::new(
-            Box::new(io::BufWriter::new(io::stderr())),
-            source_map,
+    match error_format {
+        ErrorOutputType::Json {
             pretty,
             json_rendered,
             color_config,
-        )
-        .ui_testing(ui_testing)
-        .ignored_directories_in_source_blocks(ignored_directories)
-        .diagnostic_width(diagnostic_width)
-        .macro_backtrace(macro_backtrace)
-        .track_diagnostics(track_diagnostics)
-        .terminal_url(terminal_url);
+        } => {
+            config.psess_created = Some(Box::new(move |psess| {
+                let source_map = (!link_only).then(|| psess.clone_source_map());
+                let inner = JsonEmitter::new(
+                    Box::new(io::BufWriter::new(io::stderr())),
+                    source_map,
+                    pretty,
+                    json_rendered,
+                    color_config,
+                )
+                .ui_testing(ui_testing)
+                .ignored_directories_in_source_blocks(ignored_directories)
+                .diagnostic_width(diagnostic_width)
+                .macro_backtrace(macro_backtrace)
+                .track_diagnostics(track_diagnostics)
+                .terminal_url(terminal_url);
 
-        psess.dcx().set_emitter(Box::new(CgpEmitter::new(inner)));
-    }));
+                psess.dcx().set_emitter(Box::new(CgpEmitter::new(inner)));
+            }));
+        }
+        ErrorOutputType::HumanReadable {
+            kind: HumanReadableErrorType { short, unicode },
+            color_config,
+        } => {
+            config.psess_created = Some(Box::new(move |psess| {
+                let source_map = (!link_only).then(|| psess.clone_source_map());
+                let inner = AnnotateSnippetEmitter::new(stderr_destination(color_config))
+                    .sm(source_map)
+                    .short_message(short)
+                    .diagnostic_width(diagnostic_width)
+                    .macro_backtrace(macro_backtrace)
+                    .track_diagnostics(track_diagnostics)
+                    .terminal_url(terminal_url)
+                    .theme(if unicode {
+                        OutputTheme::Unicode
+                    } else {
+                        OutputTheme::Ascii
+                    })
+                    .ignored_directories_in_source_blocks(ignored_directories)
+                    .ui_testing(ui_testing);
+
+                psess.dcx().set_emitter(Box::new(CgpEmitter::new(inner)));
+            }));
+        }
+    }
 }
 
 /// Resolve `--terminal-urls=auto` the same way `rustc_session::session::default_emitter`
@@ -131,10 +179,12 @@ fn resolve_terminal_url(setting: TerminalUrl, is_nightly: bool) -> TerminalUrl {
     }
 }
 
-/// The wrapping [`Emitter`] that rewrites CGP wiring messages before delegating to the real
-/// JSON emitter.
-struct CgpEmitter {
-    inner: JsonEmitter,
+/// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
+/// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
+/// compiler's default would build for the active error format — a [`JsonEmitter`] or an
+/// [`AnnotateSnippetEmitter`] — and render like vanilla `rustc` in either.
+struct CgpEmitter<E> {
+    inner: E,
     /// The component-marker → trait-names map. A [`ComponentNameMap`] owns the laziness: its
     /// `fn`-pointer initializer ([`build_name_map_from_tls`]) runs the expensive
     /// whole-trait-graph walk at most once — on the first message that actually needs a
@@ -146,16 +196,16 @@ struct CgpEmitter {
     names: ComponentNameMap,
 }
 
-impl CgpEmitter {
-    fn new(inner: JsonEmitter) -> Self {
+impl<E> CgpEmitter<E> {
+    fn new(inner: E) -> Self {
         Self {
             inner,
             names: ComponentNameMap::new(build_name_map_from_tls),
         }
     }
 
-    /// Rewrite every recognized CGP wiring message in `diag`, in place — the fallback text
-    /// transform for a diagnostic the typed resolver declined. The primary header takes the
+    /// Rewrite every recognized CGP wiring message in `diag`, in place — the first fallback
+    /// text pass for a diagnostic the typed resolver declined. The primary header takes the
     /// full rewrite (including the coded main-message forms); the children take only the
     /// obligation-chain rename, since a CGP error code belongs on a main message and never on
     /// a sub-message. A message that is not a wiring form is left untouched, and the name map
@@ -164,6 +214,26 @@ impl CgpEmitter {
         rewrite_messages(&mut diag.messages, &self.names, rewrite_message);
         for child in &mut diag.children {
             rewrite_messages(&mut child.messages, &self.names, rewrite_required_for);
+        }
+    }
+
+    /// Post-process a diagnostic after transforming it — the final cleanup pass, over every
+    /// message and span label of the diagnostic and its children, matching the whole-text
+    /// transform the front-end once did over the rendered output. It strips CGP path
+    /// prefixes, resugars `Symbol!`, and rewords an unmet `HasField` bound. For a diagnostic
+    /// the tool left un-rewritten this keeps raw CGP constructs readable; for a rewritten one
+    /// the prefix strip and `Symbol!` resugaring tidy the type names the transform embeds,
+    /// while the reword finds nothing to match. Whether the context implements `HasField` for
+    /// any field is a fact of the whole diagnostic (the "similar impl" landmark can sit far
+    /// from the clause), so it is decided once up front and passed into each per-message
+    /// rewrite.
+    fn postprocess(&self, diag: &mut DiagInner) {
+        let has_field_impls = mentions_hasfield_impls(diag);
+        postprocess_messages(&mut diag.messages, has_field_impls);
+        postprocess_multispan(&mut diag.span, has_field_impls);
+        for child in &mut diag.children {
+            postprocess_messages(&mut child.messages, has_field_impls);
+            postprocess_multispan(&mut child.span, has_field_impls);
         }
     }
 
@@ -357,7 +427,7 @@ fn main_message_text(diag: &DiagInner) -> Option<&str> {
     }
 }
 
-impl CgpEmitter {
+impl<E> CgpEmitter<E> {
     /// The rewritten, `[CGP-Exxx]`-coded main message for a resolved failure — or `None` when
     /// the original main message is not an identified CGP error class and must be kept (an
     /// ordinary bound such as `f64: Eq` the solver already descended to). An unsatisfied
@@ -413,17 +483,23 @@ impl CgpEmitter {
     }
 }
 
-impl Emitter for CgpEmitter {
+impl<E: Emitter> Emitter for CgpEmitter<E> {
     fn emit_diagnostic(&mut self, mut diag: DiagInner) {
         // A resolvable wiring failure is transformed around its dependency tree(s): the main
         // message is rewritten (and coded) when it is an identified CGP class, and the
-        // sub-messages become the root-cause notes. Everything else falls back to the in-place
-        // text rewrite.
+        // sub-messages become the root-cause notes. When the resolver declines there is no
+        // such rewrite, so the wiring-message rename runs as the first fallback pass.
         if let Some((resolved, span)) = self.try_resolve(&diag) {
             self.transform_resolved(&mut diag, &resolved, span);
         } else {
             self.rewrite(&mut diag);
         }
+        // Post-process the result either way. For a diagnostic left un-rewritten this is the
+        // whole cleanup, so raw CGP constructs do not look confusing; for a rewritten one it
+        // only tidies the compiler-formatted CGP type names the transform embeds (a provider
+        // like `RedirectLookup<…, PathCons<Symbol<…>>>`), since the missing-field reword can
+        // never match the tree the resolver produced.
+        self.postprocess(&mut diag);
         self.inner.emit_diagnostic(diag);
     }
 
@@ -450,6 +526,10 @@ impl Emitter for CgpEmitter {
     fn should_show_explain(&self) -> bool {
         self.inner.should_show_explain()
     }
+
+    fn supports_color(&self) -> bool {
+        self.inner.supports_color()
+    }
 }
 
 /// Rewrite each plain-string message in place through `rewrite`, leaving its style and any
@@ -468,4 +548,81 @@ fn rewrite_messages<S>(
             *message = DiagMessage::Str(Cow::Owned(rewritten));
         }
     }
+}
+
+/// Whether any plain-string message or span label across `diag` and its children shows the
+/// context implementing `HasField` for a field — the whole-diagnostic fact the missing-field
+/// rewrite needs to tell a single missing field from a missing `#[derive(HasField)]`.
+fn mentions_hasfield_impls(diag: &DiagInner) -> bool {
+    fn in_messages<S>(messages: &[(DiagMessage, S)]) -> bool {
+        messages.iter().any(|(message, _)| match message {
+            DiagMessage::Str(text) => context_has_hasfield_impls(text),
+            _ => false,
+        })
+    }
+    fn in_span(span: &MultiSpan) -> bool {
+        span.span_labels_raw()
+            .iter()
+            .any(|(_, message)| match message {
+                DiagMessage::Str(text) => context_has_hasfield_impls(text),
+                _ => false,
+            })
+    }
+    in_messages(&diag.messages)
+        || in_span(&diag.span)
+        || diag
+            .children
+            .iter()
+            .any(|child| in_messages(&child.messages) || in_span(&child.span))
+}
+
+/// Post-process each plain-string message in place through [`postprocess_message`], leaving
+/// its style and any Fluent message untouched.
+fn postprocess_messages<S>(messages: &mut [(DiagMessage, S)], has_field_impls: bool) {
+    for (message, _) in messages.iter_mut() {
+        if let DiagMessage::Str(text) = message
+            && let Some(rewritten) = postprocess_message(text, has_field_impls)
+        {
+            *message = DiagMessage::Str(Cow::Owned(rewritten));
+        }
+    }
+}
+
+/// Post-process each of a [`MultiSpan`]'s labels — the caret and secondary-label text the
+/// emitter renders alongside the source. The span is rebuilt only when a label actually
+/// changes, so an unaffected diagnostic keeps its exact `MultiSpan`; the primary spans are
+/// re-pushed in order (rather than through `from_spans`, which sorts them) so the rendering
+/// order is preserved.
+fn postprocess_multispan(span: &mut MultiSpan, has_field_impls: bool) {
+    let labels: Vec<(Span, DiagMessage)> = span.span_labels_raw().to_vec();
+    if labels.is_empty() {
+        return;
+    }
+
+    let mut changed = false;
+    let new_labels: Vec<(Span, DiagMessage)> = labels
+        .into_iter()
+        .map(|(span, message)| {
+            if let DiagMessage::Str(text) = &message
+                && let Some(rewritten) = postprocess_message(text, has_field_impls)
+            {
+                changed = true;
+                (span, DiagMessage::Str(Cow::Owned(rewritten)))
+            } else {
+                (span, message)
+            }
+        })
+        .collect();
+    if !changed {
+        return;
+    }
+
+    let mut rebuilt = MultiSpan::new();
+    for primary in span.primary_spans() {
+        rebuilt.push_primary_span(*primary);
+    }
+    for (span, message) in new_labels {
+        rebuilt.push_span_diag(span, message);
+    }
+    *span = rebuilt;
 }

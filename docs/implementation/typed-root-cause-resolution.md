@@ -79,8 +79,8 @@ and only the associated-type projection fails — an `E0271` the walk cannot see
 declines and [`field_type_mismatch`](../../tests/ui/usability/checks/field_type_mismatch.rs) keeps
 rustc's already-precise output. And a diagnostic that is neither a check entry nor a method `E0599` — a
 manual supertrait bound like `use_type_foreign_unsatisfied`/`use_type_nested_unsatisfied` — has no
-context to recover and falls back. Everything the resolver declines flows through the untouched
-`rewrite`/`preprocess` stages exactly as before. `mixed_rust_error` shows both sides at once: its CGP
+context to recover and falls back. Everything the resolver declines flows through the fallback
+`rewrite` and `postprocess` transforms instead. `mixed_rust_error` shows both sides at once: its CGP
 check failure becomes a tree while its ordinary `E0308` type mismatch passes through the fallback.
 
 ## Why it runs in the emitter
@@ -251,9 +251,8 @@ renders as its own tree.)
 How a transformed diagnostic is *marked* as CGP is settled by the [error-code scheme](../error-code.md):
 a rewritten, classified main message carries its `[CGP-Exxx]` code inline, and everything else — a kept
 header over rewritten sub-messages included — is deliberately unmarked, keeping rustc's own
-`error[E0277]:` form. There is no separate header brand; an earlier `CGP[E0277]` wrapper the front-end
-once applied has been removed, since the inline code says the same thing without altering the header's
-shape.
+`error[E0277]:` form. There is no separate header brand; the inline code is the only marking, which
+says what it needs to without altering the header's shape.
 
 ## Source
 

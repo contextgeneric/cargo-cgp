@@ -13,29 +13,35 @@ The module layout is short. [`run.rs`](src/run.rs) is the entrypoint — called 
 [`args.rs`](src/args.rs) prepares the rustc argument vector (wrapper-mode stripping, sysroot
 injection, and injecting the flags in [`config.rs`](src/config.rs)); `config.rs` holds the shared
 names and the injected flags; [`callbacks.rs`](src/callbacks.rs) holds the `Callbacks` implementation,
-whose `config` hook installs the rewriting emitter; and [`emitter.rs`](src/emitter.rs) and
-[`component_map.rs`](src/component_map.rs) make up the compiler-coupled half of the
-diagnostic-renaming transform. The compiler-free half — the string rewrite and the `ComponentNameMap`
-— lives in the `cargo-cgp-error-processing` crate (the driver's one ordinary dependency), so it can be
-unit-tested without this crate's `rustc_private` linkage.
+whose `config` hook installs the transforming emitter; [`emitter.rs`](src/emitter.rs),
+[`resolve.rs`](src/resolve.rs), and [`component_map.rs`](src/component_map.rs) make up the
+compiler-coupled half of the diagnostic transforms. The compiler-free half — the wiring rewrite, the
+post-processing text transforms, and the `ComponentNameMap` — lives in the
+`cargo-cgp-error-processing` crate (the driver's one ordinary dependency), so it can be unit-tested
+without this crate's `rustc_private` linkage.
 
-The driver affects diagnostics in two ways. It injects `-Znext-solver=globally`
+The driver does **all** of the tool's diagnostic work; the front-end merely forwards cargo's output.
+It affects diagnostics in three ways. First it injects `-Znext-solver=globally`
 ([`config::NEXT_SOLVER_FLAG`](src/config.rs)) and `--verbose` to configure how the compiler produces
-diagnostics — a coarse, parse-free lever. And, through `callbacks.rs`, it installs a custom diagnostic
-emitter that *rewrites* diagnostics the compiler has already built: [`emitter.rs`](src/emitter.rs)
-reaches the live `TyCtxt` (from thread-local scope, valid because a wiring note is built during trait
-solving), [`component_map.rs`](src/component_map.rs) inverts the `IsProviderFor` supertrait (anchored
-by `DefId` identity to the `cgp_component` crate, not matched by name) and consumer-blanket-impl links
-into a component-marker → trait-names map, wrapped in a lazily-built `ComponentNameMap`; the
-compiler-free `rewrite` module (in `cargo-cgp-error-processing`) then renames the messages. This is
-the enrichment front-end capture cannot do, because it needs facts only the live compiler holds; the
-front-end still handles the text-only rewrites over cargo's `--message-format=json` output. The transform is documented in full in
-[The driver](../../docs/implementation/driver.md#naming-the-traits-behind-a-component-marker);
-the stateless front-end stage is [Error processing](../../docs/implementation/error-processing.md).
-The `after_analysis` callback and an `InferCtxt`-reconstructed obligation chain remain future levers
-on the same seam ([The driver](../../docs/implementation/driver.md#naming-the-traits-behind-a-component-marker)
-covers the seam and what it can grow into). When a new module needs a further compiler crate, add its
-`extern crate rustc_*;` line to [`lib.rs`](src/lib.rs), and consult the
+diagnostics — a coarse, parse-free lever. Second, through `callbacks.rs`, it installs a custom
+emitter — [`emitter.rs`](src/emitter.rs)'s `CgpEmitter<E>`, generic over its inner emitter so it wraps
+whichever the compiler's default would build (a `JsonEmitter` or an `AnnotateSnippetEmitter`) and
+renders text or JSON like vanilla `rustc`. That emitter *rewrites* diagnostics the compiler has
+already built: it reaches the live `TyCtxt` (from thread-local scope, valid because a wiring note is
+built during trait solving), [`component_map.rs`](src/component_map.rs) inverts the `IsProviderFor`
+supertrait (anchored by `DefId` identity to the `cgp_component` crate, not matched by name) and
+consumer-blanket-impl links into a component-marker → trait-names map, wrapped in a lazily-built
+`ComponentNameMap`, and [`resolve.rs`](src/resolve.rs) recovers a check failure's root-cause
+dependency tree from the trait solver; the compiler-free `rewrite` module (in
+`cargo-cgp-error-processing`) renames the wiring messages. Third, every diagnostic then goes through
+the compiler-free `postprocess` transforms (strip CGP path prefixes, resugar `Symbol!`, reword an
+unmet `HasField` bound), the final cleanup that keeps raw CGP constructs readable. The transforms are
+documented in full in
+[The driver](../../docs/implementation/driver.md#naming-the-traits-behind-a-component-marker) and
+[Typed root-cause resolution](../../docs/implementation/typed-root-cause-resolution.md); the
+compiler-free helpers are [Error processing](../../docs/implementation/error-processing.md). When a
+new module needs a further compiler crate, add its `extern crate rustc_*;` line to
+[`lib.rs`](src/lib.rs), and consult the
 [CGP error catalog](../../../cgp/docs/errors/README.md) for the error classes to recognize.
 
 Two `rustc_private` constraints are non-negotiable and easy to break: the

@@ -90,20 +90,6 @@ pub fn run_fixture(harness_crate: &Path, fixture: &Path) -> String {
     String::from_utf8_lossy(&output.stderr).into_owned()
 }
 
-/// Compile one fixture through `cargo-cgp check --message-format=json` and return the raw
-/// JSON stream from stdout. With a message format already set, the front-end forwards
-/// cargo's JSON unchanged rather than processing it — so this is exactly the diagnostic
-/// stream the tool captures internally, which the caller parses into the diagnostics fed
-/// to `process_cgp_errors`.
-pub fn run_fixture_json(harness_crate: &Path, fixture: &Path) -> Vec<u8> {
-    let output = run_cargo_cgp(
-        harness_crate,
-        fixture,
-        &["check", "-q", "--color", "never", "--message-format=json"],
-    );
-    output.stdout
-}
-
 /// Compile one fixture through plain `cargo check` — no `cargo-cgp`, no driver — and return
 /// its rendered diagnostics from stderr. This records the *original* compiler output for the
 /// fixture, the "before" against which the tool's `.cgp.stderr` is the "after": no

@@ -2,9 +2,10 @@
 
 `cargo-cgp-driver` is the `rustc` replacement cargo runs for each workspace crate: it executes the
 real compiler in-process through `rustc_driver`, and on that foothold it applies the transformations
-that make CGP errors readable. This document is the deep dive into how the driver is built — how it
-prepares the compiler's arguments, how it links the compiler's internal API, and the three
-transformations it applies to the diagnostics — for an agent reviewing, debugging, or extending it.
+that make CGP errors readable and renders them like vanilla `rustc`. This document is the deep dive
+into how the driver is built — how it prepares the compiler's arguments, how it links the compiler's
+internal API, and the transformations it applies to the diagnostics — for an agent reviewing,
+debugging, or extending it.
 
 The driver is one half of a two-executable design, and this document assumes the shape of the other
 half. The front-end that invokes it, the reason the tool is split in two, and the environment
@@ -97,12 +98,27 @@ The driver applies its diagnostic transformations in two kinds. Two are **argume
 that changes how the compiler *produces* diagnostics, needing no diagnostic parsing. The rest run in a
 **custom emitter** that acts on diagnostics the compiler has already *built*, using facts only the
 live compiler holds; this is far more involved than a flag, because it links the compiler's internal
-API to reach the `TyCtxt`. The emitter carries two transformations of its own: the in-place
-[trait-renaming rewrite](#naming-the-traits-behind-a-component-marker) described below, and the deeper
-[typed root-cause resolution](typed-root-cause-resolution.md) that *replaces* a missing-field check
-failure with a root-cause-first diagnostic, covered in its own document. The three sections that
-follow detail the two levers and the rename; the replacement builds on the rename's `TyCtxt` access
-and is documented separately.
+API to reach the `TyCtxt`. That emitter is where the whole diagnostic layer now lives — the front-end
+merely forwards what the driver renders — and it carries three transformations. The deepest is the
+[typed root-cause resolution](typed-root-cause-resolution.md) that *replaces* a resolvable wiring
+failure with a root-cause-first diagnostic, covered in its own document; failing that, the in-place
+[trait-renaming rewrite](#naming-the-traits-behind-a-component-marker) described below renames the CGP
+wiring notes; and finally every diagnostic passes through the
+[post-processing](error-processing.md) transforms — stripping CGP path prefixes, resugaring `Symbol!`,
+rewording an unmet `HasField` bound — so no raw CGP construct leaks. The sections that follow detail
+the two levers and the rename; the replacement and the post-processing build on the rename's `TyCtxt`
+access and rustc-free helpers, and are documented separately.
+
+The emitter is also what *renders* the diagnostics, the way vanilla `rustc` would. The wrapper type
+[`CgpEmitter`](../../crates/cargo-cgp-driver/src/emitter.rs) is generic over an inner emitter, and
+[`install`](../../crates/cargo-cgp-driver/src/emitter.rs) rebuilds whichever emitter the compiler's own
+`default_emitter` would build for the active error format — a `JsonEmitter` for `--message-format=json`
+(the format cargo uses when a tool asks for JSON), an `AnnotateSnippetEmitter` for the default human
+format (what a plain `cargo cgp check` produces) — and wraps it. The emitter transforms the compiler's
+`DiagInner` in place before handing it to that inner emitter, so the transform reaches a JSON
+diagnostic's structured `children` and its regenerated `rendered` field, and a human diagnostic's
+rendered text, alike; because the inner emitter is the compiler's own, the driver's output matches
+plain `rustc`'s apart from the CGP transforms.
 
 ### Choosing the trait solver
 
@@ -202,18 +218,19 @@ lever, and that is why it needs everything the driver's in-process access provid
 levers above change how the compiler *produces* diagnostics; this one edits diagnostics the compiler
 has already *built*, using the trait names only a live `TyCtxt` can supply. The driver installs a
 custom diagnostic emitter through the callbacks' `config` hook, and that emitter rewrites each
-diagnostic in place before handing it to a real `JsonEmitter`, so both the JSON `children` and the
-regenerated `rendered` text carry the new wording — the front-end receives the diagnostic already
-transformed.
+diagnostic in place before handing it to a real inner emitter, so both a JSON diagnostic's `children`
+and its regenerated `rendered` text — and a human diagnostic's rendered text — carry the new wording;
+cargo then carries the transformed output out and the front-end forwards it untouched.
 
-The emitter must be *rebuilt* rather than wrapped. The session's own emitter cannot be reached to
-wrap it — `DiagCtxt::set_emitter` only replaces it, with no way to recover the original — so
+The inner emitter must be *rebuilt* rather than wrapped. The session's own emitter cannot be reached
+to wrap it — `DiagCtxt::set_emitter` only replaces it, with no way to recover the original — so
 [`emitter::install`](../../crates/cargo-cgp-driver/src/emitter.rs) reads the session options in the
-callbacks' `config` hook and, from inside `psess_created`, rebuilds a `JsonEmitter` matching how the
-compiler builds its default one, then wraps *that* and installs the wrapper. It rebuilds only for the
-JSON error format — the one the front-end drives cargo with — and leaves a human-format invocation
-(the driver run by hand) on the compiler's own emitter. The wrapper forwards every emitter method to
-the inner `JsonEmitter` unchanged except `emit_diagnostic`, which rewrites first.
+callbacks' `config` hook and, from inside `psess_created`, rebuilds the emitter the compiler's own
+`default_emitter` would build for the active error format — a `JsonEmitter` for JSON, an
+`AnnotateSnippetEmitter` for the human format — then wraps *that* in the generic
+[`CgpEmitter`](../../crates/cargo-cgp-driver/src/emitter.rs) and installs the wrapper. The wrapper
+forwards every emitter method to the inner emitter unchanged except `emit_diagnostic`, which
+transforms first.
 
 Recovering the names inverts two links `#[cgp_component]` generates, both built in
 [`component_map`](../../crates/cargo-cgp-driver/src/component_map.rs). A component marker
@@ -288,16 +305,18 @@ its own provider, so a self-provider case reads `` the provider `Rectangle` … 
 blessed snapshots show the trait-named notes *and* headers;
 [`base_area_1`](../../tests/ui/usability/checks/base_area_1.cgp.stderr) is the worked example.
 
-The same emitter seam now hosts a deeper transformation that rebuilds a diagnostic's sub-messages
-rather than rewording them. Where the trait-renaming rewrite edits the compiler's text in place, the
-[typed root-cause resolver](typed-root-cause-resolution.md) re-runs the failing check obligation
-through the compiler's `InferCtxt` / `ObligationCtxt` API, descends to each terminal leaf, and
-replaces rustc's cascade of sub-notes with one `root cause:` note per leaf over its dependency chain
-(wording the coded main message from typed data where the text lookup could be ambiguous) — falling
-back to the in-place rewrite whenever it cannot fully resolve the cause. That kind of work must
-happen in the driver, because the front-end's [processing stage](error-processing.md) is stateless
-and cannot ask the compiler anything; it happens in the *emitter* specifically because the natural
-`after_analysis` hook is unreachable once the crate has errors (the resolver document explains why).
+The same emitter seam hosts a deeper transformation that rebuilds a diagnostic's sub-messages rather
+than rewording them, and it is tried *before* the rename. Where the trait-renaming rewrite edits the
+compiler's text in place, the [typed root-cause resolver](typed-root-cause-resolution.md) re-runs the
+failing check obligation through the compiler's `InferCtxt` / `ObligationCtxt` API, descends to each
+terminal leaf, and replaces rustc's cascade of sub-notes with one `root cause:` note per leaf over its
+dependency chain (wording the coded main message from typed data where the text lookup could be
+ambiguous) — falling back to the in-place rename whenever it cannot fully resolve the cause. That kind
+of work must happen in the driver, because it needs the live compiler the front-end never sees; it
+happens in the *emitter* specifically because the natural `after_analysis` hook is unreachable once
+the crate has errors (the resolver document explains why). Whichever of the two produced the
+diagnostic, it then passes through the rustc-free [post-processing](error-processing.md) cleanup, so
+the type names either transform embeds are stripped of CGP path prefixes and resugared.
 
 ## Comparison with Clippy
 
@@ -363,6 +382,9 @@ will likely grow toward it:
   multi-parameter tuple unwrapped, and the notes eliding parameters); the module-prefix and
   generic-subject/context cases; the non-CGP and unknown-marker pass-throughs; and a check that the
   `ComponentNameMap` lazy initializer is *not* forced when no message matches.
+- [`crates/cargo-cgp-error-processing/tests/postprocess.rs`](../../crates/cargo-cgp-error-processing/tests/postprocess.rs)
+  — the compiler-free post-processing transforms the emitter applies as its final pass: prefix
+  stripping, `Symbol!` resugaring's exact-match cases, and the missing-field reword branches.
 - [`tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr)
   — pins the un-hidden output the solver switch produces.
 - [`tests/ui/usability/checks/base_area_1.cgp.stderr`](../../tests/ui/usability/checks/base_area_1.cgp.stderr)
@@ -374,7 +396,7 @@ will likely grow toward it:
 - [`tests/ui/usability/checks/generic_area_multi.cgp.stderr`](../../tests/ui/usability/checks/generic_area_multi.cgp.stderr)
   — the same, for a *three-parameter* component: the header unwraps the `(u32, u64, bool)` tuple to
   `CanCalculateArea<u32, u64, bool>`.
-- [`tests/ui/usability/checks/`](../../tests/ui/usability/checks) — the blessed `.cgp.stderr`/`.output.json`
+- [`tests/ui/usability/checks/`](../../tests/ui/usability/checks) — the blessed `.cgp.stderr`
   snapshots across the set pin the trait-renaming transform end to end.
 
 ## Source
@@ -387,10 +409,11 @@ will likely grow toward it:
   names: the injected flags (`NEXT_SOLVER_FLAG`, `VERBOSE_FLAG`, `SYSROOT_ENV`) and the
   identity anchor (`CGP_COMPONENT_CRATE`, `IS_PROVIDER_FOR_TRAIT`), each with its rationale.
 - [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs) — the
-  `Callbacks` implementation; its `config` hook installs the rewriting emitter.
-- [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — rebuilds
-  the default `JsonEmitter`, holds the `ComponentNameMap`, and rewrites messages in place before
-  delegating.
+  `Callbacks` implementation; its `config` hook installs the transforming emitter.
+- [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — the
+  generic `CgpEmitter<E>`: rebuilds the compiler's default emitter for the active format (a
+  `JsonEmitter` or an `AnnotateSnippetEmitter`) and wraps it, holds the `ComponentNameMap`, and
+  transforms and post-processes messages in place before delegating.
 - [`crates/cargo-cgp-driver/src/component_map.rs`](../../crates/cargo-cgp-driver/src/component_map.rs)
   — builds the component-marker → trait-names map by inverting the `IsProviderFor` supertrait
   (anchored by `DefId` identity to the `cgp_component` crate) and the consumer-blanket-impl links, and

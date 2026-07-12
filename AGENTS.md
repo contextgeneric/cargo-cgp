@@ -70,24 +70,27 @@ When your task involves editing markdown documentation or inline doc comments, *
 `cargo-cgp` mirrors Clippy's split into a front-end and a driver, and understanding that split is
 the key to the whole codebase. The **`cargo-cgp` crate** (`crates/cargo-cgp`) is the front-end: the
 cargo subcommand a user invokes, a plain `std` + `anyhow` binary that runs `cargo check` with
-`RUSTC_WORKSPACE_WRAPPER` set to the driver. The **`cargo-cgp-driver` crate**
-(`crates/cargo-cgp-driver`) is the driver: the `rustc` replacement cargo then calls for each
-workspace crate, running the real compiler in-process through `rustc_driver`. They are separate
-crates for one concrete reason — only the driver links the compiler's internal libraries, and
-keeping that linkage out of the front-end keeps it a small, ordinary binary that builds without
-loading LLVM. A third, library-only crate, **`cargo-cgp-error-processing`**
-(`crates/cargo-cgp-error-processing`), holds the stateless diagnostic-processing stage the front-end
-calls after a build; it links no compiler internals either, so it builds and tests on any toolchain
-(see [Error processing](docs/implementation/error-processing.md)).
+`RUSTC_WORKSPACE_WRAPPER` set to the driver and lets cargo's output stream through untouched. The
+**`cargo-cgp-driver` crate** (`crates/cargo-cgp-driver`) is the driver: the `rustc` replacement cargo
+then calls for each workspace crate, running the real compiler in-process through `rustc_driver`, and
+it is where every diagnostic transform now happens. They are separate crates for one concrete
+reason — only the driver links the compiler's internal libraries, and keeping that linkage out of the
+front-end keeps it a small, ordinary binary that builds without loading LLVM. A third, library-only
+crate, **`cargo-cgp-error-processing`** (`crates/cargo-cgp-error-processing`), holds the rustc-free
+string-level diagnostic helpers the driver drives — the wiring-message rewrite, the fallback
+post-processing text transforms, and the dependency-tree renderer; it links no compiler internals
+either, so it builds and tests on any toolchain (see
+[Error processing](docs/implementation/error-processing.md)).
 
 How the two cooperate — the argument normalization, the `CARGO_CGP_SYSROOT` and
-dynamic-library-path contract, wrapper-mode detection, and the front-end capture — is documented in
+dynamic-library-path contract, wrapper-mode detection, and the front-end's plain forwarding of
+cargo's output — is documented in
 [Executable structure](docs/implementation/executable-structure.md); the driver's own internals — the
-argument preparation, the `rustc_private` compiler-API access, and the three diagnostic
-transformations (the `-Znext-solver=globally` and `--verbose` flag injections and the `CgpCallbacks`
-emitter that renames CGP wiring notes) — are in [The driver](docs/implementation/driver.md). Read the
-relevant one before changing how the executables interact or what the driver does, and keep it in sync
-when you do.
+argument preparation, the `rustc_private` compiler-API access, and the diagnostic transformations (the
+`-Znext-solver=globally` and `--verbose` flag injections, the generic `CgpEmitter` that renders text
+or JSON like vanilla `rustc`, its typed root-cause resolution, and its wiring-note rename plus
+post-processing fallback) — are in [The driver](docs/implementation/driver.md). Read the relevant one
+before changing how the executables interact or what the driver does, and keep it in sync when you do.
 
 ## Toolchain and `rustc_private`
 
@@ -139,42 +142,46 @@ The front-end (`crates/cargo-cgp/src`) is organized around dispatch and the `che
 `run.rs` is the entrypoint that normalizes arguments and dispatches on the subcommand; `args.rs`
 strips the cargo-inserted `cgp` token so the same entrypoint serves both `cargo cgp check` and a
 direct `cargo-cgp check`; `config.rs` holds the shared well-known names. The `check/` directory
-holds the command itself: `command.rs` builds and runs the wrapped `cargo check` (with
-`--message-format=json`), captures its output, and re-emits the processed diagnostics; `diagnostics.rs`
-parses cargo's JSON stream and re-renders the processed result; `driver_path.rs` locates the sibling
-driver executable; and `sysroot.rs` discovers the toolchain sysroot.
+holds the command itself: `command.rs` builds and runs the wrapped `cargo check` with the driver
+wired in as the workspace rustc wrapper, inheriting cargo's stdio so its output streams through
+untouched (the driver does every diagnostic transform, so the front-end captures and processes
+nothing); `driver_path.rs` locates the sibling driver executable; and `sysroot.rs` discovers the
+toolchain sysroot.
 
 The driver (`crates/cargo-cgp-driver/src`) is smaller. `run.rs` is the entrypoint that runs the
 compiler through `rustc_driver`; `args.rs` turns the wrapper's process arguments into a rustc
 argument vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds
-the `Callbacks` implementation, whose `config` hook installs a diagnostic-rewriting emitter;
-`emitter.rs` is that emitter, which renames CGP wiring messages using the live compiler and, when it
-can, transforms a wiring failure into its root-cause dependency tree (rewriting a main message that
-is an identified CGP class into its `[CGP-Exxx]`-coded form — the Rust code kept — and swapping the
-sub-notes for one `root cause:` note per leaf);
-`resolve.rs` is that typed resolver, recovering the failing obligation either from a `check_components!`
-entry or from the use site of a broken consumer-method call (`E0599`), then descending the wiring to
-each terminal leaf (a `HasField` field or an ordinary bound) (see
+the `Callbacks` implementation, whose `config` hook installs the diagnostic-transforming emitter;
+`emitter.rs` is that emitter, `CgpEmitter<E>`, generic over its inner emitter so `install` can wrap
+whichever the compiler's default would build — a `JsonEmitter` or an `AnnotateSnippetEmitter` — and
+render text or JSON like vanilla `rustc`. It transforms a wiring failure into its root-cause
+dependency tree when it can (rewriting a main message that is an identified CGP class into its
+`[CGP-Exxx]`-coded form — the Rust code kept — and swapping the sub-notes for one `root cause:` note
+per leaf); otherwise it falls back to renaming CGP wiring messages, and every diagnostic then goes
+through the post-processing cleanup (strip CGP path prefixes, resugar `Symbol!`, reword an unmet
+`HasField` bound) so no raw CGP construct leaks. `resolve.rs` is that typed resolver, recovering the
+failing obligation either from a `check_components!` entry or from the use site of a broken
+consumer-method call (`E0599`), then descending the wiring to each terminal leaf (a `HasField` field
+or an ordinary bound) (see
 [Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md));
 `component_map.rs` builds the component-marker → consumer/provider trait-name map by querying the
-trait solver; `config.rs` holds the shared names. The compiler-free string rewrite and the lazily-built
-`ComponentNameMap` it uses live in the `cargo-cgp-error-processing` crate (the driver's one ordinary
-dependency), so they are unit-tested without the driver's `rustc_private` linkage.
+trait solver; `config.rs` holds the shared names. The compiler-free wiring rewrite, the
+post-processing transforms, and the lazily-built `ComponentNameMap` all live in the
+`cargo-cgp-error-processing` crate (the driver's one ordinary dependency), so they are unit-tested
+without the driver's `rustc_private` linkage.
 
-The processing library (`crates/cargo-cgp-error-processing/src`) is the smallest and holds no
-compiler linkage. `process.rs` is the stateless `process_cgp_errors` entrypoint, which wraps each
-diagnostic and runs the per-diagnostic preprocessing pipeline in `preprocess/` (stripping CGP path
-prefixes, resugaring `Symbol!`, rewriting unmet `HasField` bounds into missing-field messages);
-`diagnostic.rs` defines the `CgpDiagnostic` output type. Because this crate is rustc-free, it is also
-the home of two driver-driven helpers, hosted here so they can be unit-tested without the driver's
-compiler linkage: `rewrite.rs` — the compiler-free string rewrite that renames CGP wiring messages and
-the lazily-built `ComponentNameMap` it uses — and `tree.rs` — the `DependencyTree` type and its
-`cargo tree`-style renderer (over the `termtree` crate) that the driver's typed resolver uses to show a
-check failure's transitive dependency chain. Both are driven by the *driver*, not by
-`process_cgp_errors`; `code.rs` holds the `CGP-E` error-code constants they stamp on classified main
-messages (catalogued in docs/error-code.md). Its tests in `tests/` drive the preprocessors, `process_cgp_errors`, the rewrite,
-and the tree renderer over committed fixtures and hand-built inputs, so they run on any toolchain. The
-cross-diagnostic aggregation sub-stage (collapsing cascades) is still to come.
+The helper library (`crates/cargo-cgp-error-processing/src`) is the smallest and holds no compiler
+linkage. It is entirely driver-driven — the front-end no longer touches diagnostics — and hosts the
+string-level logic here so it can be unit-tested on any toolchain. `postprocess/` holds the fallback
+text transforms the driver applies to a diagnostic's messages (stripping CGP path prefixes,
+resugaring `Symbol!`, rewriting unmet `HasField` bounds into missing-field messages), exposed as pure
+`&str -> Option<String>` functions and the `postprocess_message` chain; `rewrite.rs` is the string
+rewrite that renames CGP wiring messages and the lazily-built `ComponentNameMap` it uses; `tree.rs`
+is the `DependencyTree` type and its `cargo tree`-style renderer (over the `termtree` crate) that the
+driver's typed resolver uses to show a check failure's transitive dependency chain; `code.rs` holds
+the `CGP-E` error-code constants stamped on classified main messages (catalogued in
+docs/error-code.md). Its tests in `tests/` drive the post-processors, the rewrite, and the tree
+renderer over hand-built inputs, so they run on any toolchain.
 
 ## Commands
 
@@ -187,7 +194,7 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
   nightly.
 - **Lint:** `cargo clippy --all-targets -- -D warnings`.
 - **Test:** `cargo test` runs everything — the argument-handling tests in both tool crates, the
-  processing library's fixture tests (which run on any toolchain, needing no compiler), and the UI
+  helper library's transform tests (which run on any toolchain, needing no compiler), and the UI
   snapshot suite (below), which builds the driver and expects a sibling `cgp` checkout at `../cgp`.
   Every test lives in its crate's `tests/` directory (no inline `#[cfg(test)]`); prefer adding
   coverage there over ad-hoc checks.
@@ -196,40 +203,37 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
 
 The UI suite is a custom Rust test harness modeled on Clippy's `compile-test`: the
 [`cargo-cgp-ui-tests`](crates/cargo-cgp-ui-tests) crate has a `harness = false` test with its own
-`fn main` that checks each fixture under [`tests/ui/`](tests/README.md) through four passes — three
-that must agree, plus a plain-compiler baseline. The agreeing three run `cargo-cgp` and diff its
-stderr against `<name>.cgp.stderr`, capture the diagnostics it feeds to processing and diff them
-against `<name>.output.json`, and parse that JSON through `process_cgp_errors` and diff the rendered
-result back against `<name>.cgp.stderr`. The fourth runs plain `cargo check` and diffs its stderr
-against `<name>.rust.stderr`, recording the untransformed "before" so the diff against `.cgp.stderr`
-shows what the tool changes. The crate is a full workspace member, so `cargo test` runs the whole
-suite alongside the argument tests; a full run builds the driver and expects a sibling `cgp` checkout
-at `../cgp`. Work with the suite directly through it:
+`fn main` that checks each fixture under [`tests/ui/`](tests/README.md) through two passes. The tool
+pass runs `cargo-cgp` and diffs its stderr against `<name>.cgp.stderr`; the baseline pass runs plain
+`cargo check` and diffs its stderr against `<name>.rust.stderr`, recording the untransformed "before"
+so the diff against `.cgp.stderr` shows what the tool changes. Because the driver now renders the
+diagnostics in-process, `<name>.cgp.stderr` is simply what `cargo-cgp` prints — there is no captured
+JSON or separate processing pass to keep in sync. The crate is a full workspace member, so
+`cargo test` runs the whole suite alongside the argument tests; a full run builds the driver and
+expects a sibling `cgp` checkout at `../cgp`. Work with the suite directly through it:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests                                  # just the snapshot suite
-cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate .cgp.stderr, .rust.stderr, and .output.json
-cargo test -p cargo-cgp-ui-tests --test ui -- --process-only      # only the process_cgp_errors unit pass (fast, no compile)
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate .cgp.stderr and .rust.stderr
 cargo test -p cargo-cgp-ui-tests --test ui -- -j 4                # check at most 4 fixtures at once
+cargo test -q -p cargo-cgp-ui-tests --test ui -- usability        # only fixtures whose path contains "usability"
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print greet    # print raw output for a fixture
 ```
 
 Passing an argument to the harness needs `--test ui`, so the flag is not also handed to the crate's
 other (libtest) tests. The harness checks fixtures in parallel across a pool of workers, each with its
 own throwaway crate (so they never share a `src/main.rs` or a cargo target lock); `--jobs`/`-j` sets
-the worker count, which otherwise defaults to the machine's parallelism capped at 8. `--process-only` is the fast
-loop for iterating on the processing
-implementation: it skips the three cargo-invoking passes and runs only `process_cgp_errors` over the
-committed `.output.json`, so the whole suite finishes in well under a second; pair it with `--bless`
-to re-bless `.cgp.stderr` from the new process output. The snapshots capture `cargo-cgp`'s own output end
-to end, so they are what changes once the tool reformats diagnostics; a passing suite is also the
-standing end-to-end proof that the driver runs as the compiler. Add a scenario by dropping a
-`<name>.rs` file (with a `fn main`) into the matching `tests/ui/<class>/` directory and running
-`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (a full run, which writes all three snapshot
-files). Snapshots are blessed under the pinned toolchain, so a toolchain bump can require a re-bless. The full testing picture — the
-harness structure, why it drives the whole tool rather than the driver directly, and the comparison
-with Clippy — is documented in [Testing](docs/implementation/testing.md); read it before adding
-tests, and keep it in sync when the test setup changes.
+the worker count, which otherwise defaults to the machine's parallelism capped at 8. The snapshots
+capture `cargo-cgp`'s own output end to end, so they are what changes once the tool reformats
+diagnostics; a passing suite is also the standing end-to-end proof that the driver runs as the
+compiler. Add a scenario by dropping a `<name>.rs` file (with a `fn main`) into the matching
+`tests/ui/<class>/` directory and running
+`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes both snapshot files).
+Snapshots are blessed under the pinned toolchain, so a toolchain bump can require a re-bless. The full
+testing picture — the harness structure, why it drives the whole tool rather than the driver
+directly, and the comparison with Clippy — is documented in
+[Testing](docs/implementation/testing.md); read it before adding tests, and keep it in sync when the
+test setup changes.
 
 ## Ask when in doubt
 

@@ -1,30 +1,27 @@
-//! The `cargo-cgp` error-processing stage.
+//! The `cargo-cgp` compiler-free diagnostic helpers.
 //!
-//! This crate is the stateless middle of the [error
-//! pipeline](../cargo_cgp/index.html): it takes the structured diagnostics rustc
-//! produced and returns a smaller, root-cause-first set of CGP diagnostics. The
-//! entrypoint is [`process::process_cgp_errors`]; the output type is
-//! [`diagnostic::CgpDiagnostic`]. It is kept free of `rustc_private` so it builds and is
-//! tested on any toolchain — see `docs/implementation/error-processing.md` for the design.
+//! This crate holds the string-level diagnostic logic the driver drives but keeps out of
+//! its `rustc_private` linkage, so it builds and its tests run on any toolchain. The driver
+//! (`cargo-cgp-driver`) is the only caller; the front-end no longer touches diagnostics.
+//! See `docs/implementation/error-processing.md` for the design.
 //!
-//! Being rustc-free, this crate is also the home of the [`rewrite`] module — the pure
-//! string transform that renames CGP wiring messages. That logic is driven by the *driver*
-//! (`cargo-cgp-driver`), not by [`process_cgp_errors`], but it lives here so it can be
-//! unit-tested without the driver's compiler linkage; the driver supplies the
-//! compiler-derived name map through [`rewrite::ComponentNameMap`].
+//! Three tenants live here, all driven by the driver's emitter:
+//!
+//! - [`rewrite`] — the string transform that renames CGP wiring messages, over the
+//!   [`ComponentNameMap`] the driver fills in from the compiler.
+//! - [`postprocess`] — the fallback text transforms ([`postprocess_message`]) the driver
+//!   applies to a diagnostic it did not rewrite, so raw CGP constructs stay readable.
+//! - [`tree`] — the [`DependencyTree`] and its `cargo tree`-style renderer the driver's
+//!   typed resolver uses to show a check failure's dependency chain.
 
 pub mod code;
-pub mod diagnostic;
-pub mod preprocess;
-pub mod process;
+pub mod postprocess;
 pub mod rewrite;
 pub mod tree;
 
-/// Re-export of the diagnostic library the input/output types are built on, so a
-/// dependent can name `cargo_metadata::diagnostic::Diagnostic` through this crate.
-pub use cargo_metadata;
-pub use diagnostic::{CgpDiagnostic, CgpDiagnosticDetail};
-pub use preprocess::{extract_missing_fields, preprocess, resugar_symbol, strip_cgp_prefixes};
-pub use process::process_cgp_errors;
+pub use postprocess::{
+    CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_symbol,
+    rewrite_missing_fields, strip_cgp_prefixes,
+};
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use tree::{DependencyTree, render_dependency_tree};

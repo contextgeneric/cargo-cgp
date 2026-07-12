@@ -1,18 +1,13 @@
 //! A custom UI-test harness for `cargo-cgp`, modeled on Clippy's `compile-test`.
 //!
-//! Each fixture under `tests/ui/` is checked through three passes that must agree, so the
-//! tool's real output, the diagnostics it captures, and its pure processing pipeline all
-//! stay consistent, plus a fourth that records the plain-compiler baseline (see [`passes`]).
+//! Each fixture under `tests/ui/` is checked through two passes (see [`passes`]): one runs
+//! the whole tool end to end (front-end and driver) and pins its rendered `.cgp.stderr`, so
+//! when the tool reformats diagnostics that snapshot is what changes; the other runs plain
+//! `cargo check` to record the untransformed `.rust.stderr` baseline the tool improves on.
 //! It is driven by the `harness = false` test in [`tests/ui.rs`](../../tests/ui.rs), which
 //! calls [`run`]; the logic lives here so it stays small and out of the `bin`/test
-//! entrypoint.
-//!
-//! Two passes run the whole tool end to end (front-end and driver), so when the tool begins
-//! reformatting diagnostics these snapshots are what change; a third parses the committed
-//! JSON and runs only `process_cgp_errors`, needing no compilation; the fourth runs plain
-//! `cargo check` to record the untransformed `.rust.stderr` the tool improves on. Fixtures
-//! are checked in parallel across a pool of workers (see [`runner`]). See the
-//! [testing document](../../docs/implementation/testing.md).
+//! entrypoint. Fixtures are checked in parallel across a pool of workers (see [`runner`]).
+//! See the [testing document](../../docs/implementation/testing.md).
 
 pub mod fixtures;
 pub mod harness;
@@ -32,9 +27,8 @@ use crate::snapshot::Outcome;
 
 /// Run the UI suite. `args` are the harness arguments (everything cargo passes after
 /// `--`): `--bless` to regenerate snapshots, `--print` to print each fixture's raw output
-/// instead of comparing, `--process-only` to run just the `process_cgp_errors` unit pass,
-/// `--jobs N` (`-j N`) to set the worker count, and any bare words as path substring
-/// filters.
+/// instead of comparing, `--jobs N` (`-j N`) to set the worker count, and any bare words as
+/// path substring filters.
 ///
 /// Exits the process: `0` if every fixture matched (or was blessed/printed), `1` on a
 /// snapshot mismatch, `2` if no fixture matched the filters.
@@ -54,15 +48,10 @@ pub fn run(args: Vec<String>) {
         .unwrap_or_else(|| runner::default_jobs(fixtures.len()))
         .clamp(1, fixtures.len());
 
-    // Each worker checks fixtures in its own throwaway crate, so the two cargo-invoking
-    // passes need those crates (and the built binaries) first. The process-only pass
-    // compiles nothing, so it just needs each worker's crate path to normalize output.
-    let workers: Vec<PathBuf> = if options.process_only {
-        (0..jobs).map(paths::worker_crate_dir).collect()
-    } else {
-        harness::build_binaries();
-        harness::ensure_worker_crates(jobs)
-    };
+    // Each worker checks fixtures in its own throwaway crate, so both passes need those
+    // crates (and the built binaries) first.
+    harness::build_binaries();
+    let workers: Vec<PathBuf> = harness::ensure_worker_crates(jobs);
 
     if !options.print {
         eprintln!(
@@ -129,23 +118,15 @@ struct Report {
     failed: bool,
 }
 
-/// Run the passes for one fixture and return each pass's label and outcome. In
-/// process-only mode this is just the unit pass (which may bless `.cgp.stderr`); otherwise
-/// it is all four, and the process pass only verifies — the cgp-stderr pass owns
-/// `.cgp.stderr`, and the rust pass owns the plain-compiler `.rust.stderr` baseline.
+/// Run the passes for one fixture and return each pass's label and outcome: the rust pass
+/// records the plain-compiler `.rust.stderr` baseline, and the cgp-stderr pass owns the
+/// tool's `.cgp.stderr` output.
 fn run_passes(
     options: &Options,
     harness_crate: &Path,
     fixture: &Path,
     cgp_root: &Path,
 ) -> Vec<(&'static str, Outcome)> {
-    if options.process_only {
-        return vec![(
-            "process",
-            passes::process_pass(harness_crate, fixture, cgp_root, options.bless),
-        )];
-    }
-
     vec![
         (
             "rust",
@@ -154,14 +135,6 @@ fn run_passes(
         (
             "cgp",
             passes::cgp_stderr_pass(harness_crate, fixture, cgp_root, options.bless),
-        ),
-        (
-            "json",
-            passes::json_pass(harness_crate, fixture, cgp_root, options.bless),
-        ),
-        (
-            "process",
-            passes::process_pass(harness_crate, fixture, cgp_root, false),
         ),
     ]
 }
@@ -193,13 +166,8 @@ fn report_block(name: &str, outcomes: &[(&str, Outcome)]) -> String {
     }
 }
 
-/// Render a fixture's raw output for interactive inspection: the tool's own stderr in full
-/// mode, or the process pass's rendered output in process-only mode.
-fn print_block(options: &Options, harness_crate: &Path, fixture: &Path, name: &str) -> String {
-    let body = if options.process_only {
-        passes::print_process_output(fixture)
-    } else {
-        harness::run_fixture(harness_crate, fixture)
-    };
+/// Render a fixture's raw output for interactive inspection — the tool's own stderr.
+fn print_block(_options: &Options, harness_crate: &Path, fixture: &Path, name: &str) -> String {
+    let body = harness::run_fixture(harness_crate, fixture);
     format!("===== {name} =====\n{body}===== end {name} =====\n")
 }

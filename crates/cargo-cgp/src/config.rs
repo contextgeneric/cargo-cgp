@@ -21,12 +21,3 @@ pub const DRIVER_BIN: &str = "cargo-cgp-driver";
 /// to the driver. The driver reads it to inject `--sysroot` when cargo does not.
 /// The driver crate declares the same name independently; the two form a contract.
 pub const SYSROOT_ENV: &str = "CARGO_CGP_SYSROOT";
-
-/// The `cargo check` flag that switches its output to the machine-readable JSON stream
-/// the front-end parses to capture diagnostics. The `rendered` field of each message
-/// still holds rustc's own pretty text, so re-emitting it reproduces the human output.
-pub const MESSAGE_FORMAT_ARG: &str = "--message-format=json";
-
-/// Prefix of the message-format flag, used to detect a caller who already set one so the
-/// front-end does not append a conflicting second `--message-format`.
-pub const MESSAGE_FORMAT_FLAG: &str = "--message-format";

@@ -94,17 +94,17 @@ traits. The rename runs in the driver;
 
 **Prefix stripping** removes the CGP module paths rustc prints in front of CGP type names, so
 `cgp::prelude::Chars` becomes `Chars`. It only shortens a name;
-[`strip_cgp_prefixes`](../crates/cargo-cgp-error-processing/src/preprocess/strip_prefixes.rs) owns it.
+[`strip_cgp_prefixes`](../crates/cargo-cgp-error-processing/src/postprocess/strip_prefixes.rs) owns it.
 
 **`Symbol!` resugaring** reverses a `Symbol!` type expansion back to its surface form, so
 `Symbol<2, Chars<'x', Chars<'y', Nil>>>` becomes `Symbol!("xy")`. It restores the syntax the
 programmer wrote and nothing more;
-[`resugar_symbol`](../crates/cargo-cgp-error-processing/src/preprocess/resugar_symbol.rs) owns it.
+[`resugar_symbol`](../crates/cargo-cgp-error-processing/src/postprocess/resugar_symbol.rs) owns it.
 
 **Missing-field clause rewriting** turns an unmet `` `HasField<Symbol!("name")>` `` clause inside a
 sub-message into `` missing field `name` on `Context` `` (or the `#[derive(HasField)]` form when
 the context implements `HasField` for nothing);
-[`extract_missing_fields`](../crates/cargo-cgp-error-processing/src/preprocess/missing_field.rs)
+[`rewrite_missing_fields`](../crates/cargo-cgp-error-processing/src/postprocess/missing_field.rs)
 owns it.
 
 ## Maintaining this catalog

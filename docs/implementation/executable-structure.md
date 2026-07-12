@@ -18,8 +18,9 @@ linkage is confined to the process that actually needs it.
 
 This is the same split Clippy uses, `cargo-clippy` to `clippy-driver`, and for the same reason. A
 third crate, the library-only [`cargo-cgp-error-processing`](../../crates/cargo-cgp-error-processing),
-holds the diagnostic-processing stage; it links no compiler internals either, so the front-end
-depends on it without compromising its plain-binary status (see [Error
+holds the driver's rustc-free string helpers — the wiring rename, the text post-processing, and the
+dependency-tree rendering. It links no compiler internals, so the driver drives those helpers while
+keeping them out of its `rustc_private` linkage and buildable on any toolchain (see [Error
 processing](error-processing.md)). The mechanism that connects the two executables is cargo's wrapper
 protocol, described next.
 
@@ -52,17 +53,14 @@ command. It sets `RUSTC_WORKSPACE_WRAPPER` to the driver's path — located by
 front-end executable, since cargo and rustup lay the two binaries down together — and hands the
 driver the two further things it needs through the environment (the next section).
 
-The front-end does not merely pass cargo's output through, though; it captures and reshapes it. It
-appends `--message-format=json` (unless the caller chose their own format), captures cargo's stdout
-and stderr, parses the JSON stream into
-[`cargo_metadata::Diagnostic`](../../../external/cargo_metadata/src/diagnostic.rs) values in
-[`check::diagnostics`](../../crates/cargo-cgp/src/check/diagnostics.rs), runs them through the
-`cargo-cgp-error-processing` crate's `process_cgp_errors`, and re-emits the result — printing each
-diagnostic's rendered text, then replaying cargo's own output. `process_cgp_errors` already rewrites
-each diagnostic (stripping CGP path prefixes, resugaring `Symbol!`, turning unmet `HasField` bounds
-into missing-field messages), so the printed diagnostics are cleaner than rustc's; the whole [error
-pipeline](error-pipeline.md) documents this path and what it will grow into. Throughout, the exit code of the `cargo` process is propagated, so a failed check
-fails the command.
+The front-end passes cargo's output straight through rather than reshaping it. It inherits cargo's
+stdio (`command.status()`) and touches nothing on the diagnostic stream, so cargo's progress lines
+and the compiler's diagnostics appear live at the terminal, exactly as a plain `cargo check` would.
+Every CGP transform happens inside the driver's emitter, which renders the finished diagnostics in
+whatever format the invocation asks for — human text by default, JSON when the caller requests it —
+so the front-end never sees, parses, or re-emits a diagnostic itself. Throughout, the exit code of
+the `cargo` process is propagated, so a failed check fails the command. The [error
+pipeline](error-pipeline.md) documents where the transforms happen and what they will grow into.
 
 ## Wrapping rustc: the driver
 
@@ -80,7 +78,8 @@ can it read and rewrite the compilation's diagnostics. The entrypoint is
 [`bin/cargo-cgp-driver.rs`](../../crates/cargo-cgp-driver/bin/cargo-cgp-driver.rs) wrapper; it
 prepares the rustc argument vector (dropping the injected `rustc` path and injecting the sysroot and
 the diagnostic flags), runs the compiler under `catch_with_exit_code`, and installs a custom emitter
-that renames CGP wiring notes.
+that transforms the diagnostics and renders them — as human text or JSON, matching whatever format
+the invocation asks for, like vanilla `rustc`.
 
 All of that — the argument preparation, the `rustc_private` compiler-API access, and the three
 diagnostic transformations — is the subject of the [driver deep dive](driver.md); this document
@@ -184,10 +183,8 @@ The front-end's modules are listed here; the driver's are in the
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs) — process-argument
   normalization.
 - [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — builds and
-  runs the wrapped `cargo check`, sets the environment contract, captures its output, and re-emits the
-  processed diagnostics.
-- [`crates/cargo-cgp/src/check/diagnostics.rs`](../../crates/cargo-cgp/src/check/diagnostics.rs) —
-  parses cargo's JSON diagnostics and re-renders the processed result.
+  runs the wrapped `cargo check`, sets the environment contract, forwards cargo's output, and
+  propagates the exit code.
 - [`crates/cargo-cgp/src/check/driver_path.rs`](../../crates/cargo-cgp/src/check/driver_path.rs) —
   locates the sibling driver executable.
 - [`crates/cargo-cgp/src/check/sysroot.rs`](../../crates/cargo-cgp/src/check/sysroot.rs) — discovers

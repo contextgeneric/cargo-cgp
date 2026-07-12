@@ -1,35 +1,21 @@
-//! Preprocessor: resugar the `Symbol!` type-level string.
+//! Post-processor: resugar the `Symbol!` type-level string.
 //!
 //! `Symbol!("xy")` expands to `Symbol<2, Chars<'x', Chars<'y', Nil>>>` — a length and a
 //! right-folded character list terminated by `Nil` (see the CGP `Symbol!` reference). This
-//! preprocessor reverses that spine back to `Symbol!("xy")` in the diagnostic text.
+//! reverses that spine back to `Symbol!("xy")` in the diagnostic text.
 //!
 //! Resugaring is applied only on an *exact* structural match: the length must equal the
 //! decoded string's byte length, the spine must be `Chars`/`Nil` all the way down, and
 //! each `Chars` head must be a single plain character literal. Anything else is left
 //! untouched, because a differently-shaped type that merely shares the `Symbol` or `Chars`
 //! name must not be silently rewritten. This caution applies to every resugaring
-//! preprocessor, not just this one.
+//! post-processor, not just this one.
 
-use crate::diagnostic::CgpDiagnostic;
-use crate::preprocess::text::map_diagnostic_text;
-
-/// Rewrite every well-formed `Symbol<…>` spine in the diagnostic text to its `Symbol!("…")`
-/// surface form, and set `has_cgp_error` if any was rewritten — a resugared `Symbol!` is a
-/// CGP construct, so recognizing one flags the diagnostic as CGP-related. Runs after
-/// [`strip_cgp_prefixes`](super::strip_cgp_prefixes), so it matches the bare `Symbol`,
-/// `Chars`, and `Nil` names left once the CGP path prefixes are gone.
-pub fn resugar_symbol(mut diagnostic: CgpDiagnostic) -> CgpDiagnostic {
-    if map_diagnostic_text(&mut diagnostic.diagnostic, resugar_symbols_in_text) {
-        diagnostic.has_cgp_error = true;
-    }
-    diagnostic
-}
-
-/// Replace each exact `Symbol<…>` spine in `text`, returning the result and whether any
-/// replacement happened. A `Symbol<` that does not parse as an exact spine is emitted
-/// unchanged and scanning resumes after it.
-fn resugar_symbols_in_text(text: &str) -> (String, bool) {
+/// Rewrite every well-formed `Symbol<…>` spine in `text` to its `Symbol!("…")` surface
+/// form, returning the rewritten text when any was rewritten (and `None` otherwise). Meant
+/// to run after [`strip_cgp_prefixes`](super::strip_cgp_prefixes), so it matches the bare
+/// `Symbol`, `Chars`, and `Nil` names left once the CGP path prefixes are gone.
+pub fn resugar_symbol(text: &str) -> Option<String> {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     let mut changed = false;
@@ -51,7 +37,7 @@ fn resugar_symbols_in_text(text: &str) -> (String, bool) {
     }
 
     out.push_str(rest);
-    (out, changed)
+    changed.then_some(out)
 }
 
 /// Parse a `Symbol<LEN, spine>` at the start of `input` (which begins with `Symbol<`).

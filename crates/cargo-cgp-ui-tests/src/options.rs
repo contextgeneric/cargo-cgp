@@ -6,10 +6,6 @@ pub struct Options {
     pub bless: bool,
     /// Print each fixture's raw output instead of comparing (interactive inspection).
     pub print: bool,
-    /// Run only the `process_cgp_errors` unit pass over the committed `.output.json`,
-    /// skipping the two passes that invoke `cargo-cgp`. Fast — no compilation — for
-    /// iterating on the core processing implementation.
-    pub process_only: bool,
     /// How many fixtures to check concurrently, from `--jobs`/`-j`. `None` lets the
     /// harness pick a default from the machine's parallelism (see [`crate::runner`]).
     pub jobs: Option<usize>,
@@ -19,15 +15,13 @@ pub struct Options {
 }
 
 impl Options {
-    /// Parse harness arguments. Recognized flags are `--bless`, `--print`,
-    /// `--process-only`, and `--jobs N` / `-j N` (also `--jobs=N`, `-jN`); any other
-    /// `--flag` (such as those a test runner may inject) is ignored, and bare words become
-    /// path filters.
+    /// Parse harness arguments. Recognized flags are `--bless`, `--print`, and
+    /// `--jobs N` / `-j N` (also `--jobs=N`, `-jN`); any other `--flag` (such as those a
+    /// test runner may inject) is ignored, and bare words become path filters.
     pub fn parse(args: impl IntoIterator<Item = String>) -> Self {
         let mut options = Options {
             bless: false,
             print: false,
-            process_only: false,
             jobs: None,
             filters: Vec::new(),
         };
@@ -37,7 +31,6 @@ impl Options {
             match arg.as_str() {
                 "--bless" => options.bless = true,
                 "--print" => options.print = true,
-                "--process-only" => options.process_only = true,
                 // `--jobs`/`-j` take their count from the next argument, so consume it
                 // even when it fails to parse — otherwise it would be read as a filter.
                 "--jobs" | "-j" => options.jobs = args.next().and_then(|n| n.parse().ok()),

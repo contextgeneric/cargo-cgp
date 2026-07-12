@@ -23,9 +23,10 @@ same change.
   environment contract between the two, and how the split compares to Clippy.
 - [The driver](driver.md) — the deep dive into `cargo-cgp-driver`: how cargo invokes it, how it
   prepares the rustc argument vector, how it reaches the compiler through the `rustc_private`
-  `rustc_driver` API, and the three transformations it applies to the diagnostics — the two flag
-  levers (trait solver, verbosity) and the emitter that renames CGP wiring notes using the live
-  compiler.
+  `rustc_driver` API, and the transformations it applies to the diagnostics — the two flag levers
+  (trait solver, verbosity), the generic `CgpEmitter` that renders text or JSON like vanilla `rustc`,
+  the emitter that renames CGP wiring notes using the live compiler, and the post-processing fallback
+  that keeps un-rewritten CGP constructs readable.
 - [Typed root-cause resolution](typed-root-cause-resolution.md) — the deeper emitter transformation
   that turns a check-failure diagnostic into its root-cause `cargo tree`: recovering the chain by
   re-running the check obligation through the trait solver (from inside `emit_diagnostic`, since
@@ -34,17 +35,14 @@ same change.
   each wiring trait replaced by its human form. A main message identified as a CGP class is rewritten
   and stamped with its `[CGP-Exxx]` code (the Rust code kept); the sub-notes become one `root cause:`
   note per leaf over its chain; anything it declines falls back to the text rewrite.
-- [The error pipeline](error-pipeline.md) — the four-stage flow that turns rustc's raw diagnostics
-  into readable CGP errors (configure rustc, capture, process, render), and the detail of the two
-  compilation-side stages: the current flag injections that un-hide and un-elide CGP errors, and the
-  planned capture stage that will collect diagnostics for processing.
-- [Error processing](error-processing.md) — the stateless `process_cgp_errors` stage (in the
-  `cargo-cgp-error-processing` crate) that transforms captured diagnostics into a smaller,
-  root-cause-first set of CGP errors: its interface, its `cargo_metadata::Diagnostic` input and
-  `CgpDiagnostic` output types, why it must be a stateful analysis rather than a per-error map, and how
-  it is tested without running the tool. Its per-diagnostic preprocessing pipeline (stripping CGP path
-  prefixes, resugaring `Symbol!`, rewriting unmet `HasField` bounds into missing-field messages) is
-  built and wired in; the cross-diagnostic aggregation that collapses cascades is future work.
+- [The error pipeline](error-pipeline.md) — the flow that turns rustc's raw diagnostics into readable
+  CGP errors, now entirely inside the driver (configure rustc, transform each diagnostic, render text
+  or JSON), with the front-end forwarding cargo's output untouched.
+- [Error processing](error-processing.md) — the rustc-free `cargo-cgp-error-processing` crate that
+  holds the driver's string-level diagnostic logic: the post-processing text transforms (stripping
+  CGP path prefixes, resugaring `Symbol!`, rewriting unmet `HasField` bounds into missing-field
+  messages), the wiring-message rewrite, and the dependency-tree renderer, all driven by the driver's
+  emitter and unit-tested without a compiler.
 - [rustc diagnostic internals](rustc-diagnostic-internals.md) — a map of the compiler code that
   builds CGP diagnostics and, crucially, where it *suppresses* information: the type/const printer, the
   trait-error reporters, the two verbosity switches (`--verbose` versus `-Zverbose-internals`), and the

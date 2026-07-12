@@ -15,18 +15,10 @@ fn parses_flags_and_filters() {
 }
 
 #[test]
-fn parses_process_only() {
-    let o = opts(&["--process-only", "wiring"]);
-    assert!(o.process_only);
-    assert!(!o.bless);
-    assert_eq!(o.filters, ["wiring"]);
-}
-
-#[test]
 fn ignores_unknown_flags() {
     let o = opts(&["--nocapture", "--exact"]);
     assert!(o.filters.is_empty());
-    assert!(!o.process_only);
+    assert!(!o.bless);
     assert_eq!(o.jobs, None);
 }
 

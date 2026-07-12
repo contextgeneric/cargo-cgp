@@ -14,11 +14,12 @@ operational guide.
 ## Layout
 
 Fixtures live under [`ui/`](ui), grouped into subdirectories by the *quality of the output* the tool
-produces for them. Each fixture `<name>.rs` has two siblings: `<name>.stderr`, the tool's rendered
-output, and `<name>.output.json`, the diagnostics it captured and fed to `process_cgp_errors`; a
-fixture that compiles cleanly has an empty `.stderr` and an empty (`[]`) `.output.json`. The
-directories mirror the pending-issue categories in [docs/issues/](../docs/issues/README.md), so a
-fixture's directory names the kind of problem it exposes:
+produces for them. Each fixture `<name>.rs` has two siblings: `<name>.cgp.stderr`, the tool's rendered
+output, and `<name>.rust.stderr`, what plain `cargo check` prints for the same fixture — the
+untransformed "before" against which the tool's `.cgp.stderr` is the "after". A fixture that compiles
+cleanly has an empty `.cgp.stderr` and an empty `.rust.stderr`. The directories mirror the
+pending-issue categories in [docs/issues/](../docs/issues/README.md), so a fixture's directory names
+the kind of problem it exposes:
 
 - `ui/hidden-root-cause/` — errors whose root cause cannot be recovered from the output at all, no
   matter how it is reformatted (a [hidden root cause](../docs/issues/hidden-root-cause.md)); the
@@ -53,23 +54,23 @@ re-sync workflow.
 ## Running
 
 The suite is a custom Rust test harness in the [`cargo-cgp-ui-tests`](../crates/cargo-cgp-ui-tests)
-crate (modeled on Clippy's `compile-test`). It checks every fixture through three passes that must
-agree: it runs `cargo-cgp` and diffs its stderr against `.stderr`, captures the diagnostics the tool
-feeds to processing and diffs them against `.output.json`, and parses that JSON through
-`process_cgp_errors` and diffs the rendered result back against `.stderr`. Run it with `cargo test`:
+crate (modeled on Clippy's `compile-test`). It checks every fixture through two passes: it runs
+`cargo-cgp` and diffs its stderr against `.cgp.stderr`, and it runs plain `cargo check` and diffs its
+stderr against `.rust.stderr`, the untransformed baseline. Because the driver now renders the
+diagnostics in-process, `.cgp.stderr` is simply what `cargo-cgp` prints — there is no captured JSON or
+separate processing pass to keep in sync. Run it with `cargo test`:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests            # run the whole suite
 ```
 
-To filter, bless, print, or run only the fast unit pass, pass an argument to the harness — target
-`--test ui` so the flag is not also handed to the crate's other tests:
+To filter, bless, or print, pass an argument to the harness — target `--test ui` so the flag is not
+also handed to the crate's other tests:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests --test ui -- usability  # only fixtures whose path contains "usability"
-cargo test -p cargo-cgp-ui-tests --test ui -- --bless   # regenerate the .stderr and .output.json snapshots
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless   # regenerate the .cgp.stderr and .rust.stderr snapshots
 cargo test -p cargo-cgp-ui-tests --test ui -- -j 4      # check at most 4 fixtures at once
-cargo test -p cargo-cgp-ui-tests --test ui -- --process-only  # only the process_cgp_errors pass (no compile)
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # raw output
 ```
 
@@ -93,8 +94,8 @@ harness compiles it as a binary, and open it with a `//!` comment stating what t
 demonstrates, which [CGP error class](../../cgp/docs/errors/README.md) it reproduces, and — for a
 problem case — the [issue](../docs/issues/README.md) it exposes. `cgp` is available to every fixture (the harness compiles each in a throwaway crate that
 depends on it), so a fixture may `use cgp::prelude::*;` with no setup. Then run
-`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (a full run, which writes both the `.stderr`
-and `.output.json` snapshots) and review them before committing.
+`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes both the `.cgp.stderr` and
+`.rust.stderr` snapshots) and review them before committing.
 
 The imported mirror inside the `usability/` kind subdirectories is the exception to the authoring
 convention: those fixtures are verbatim copies of the upstream compile-fail fixtures, headers included,

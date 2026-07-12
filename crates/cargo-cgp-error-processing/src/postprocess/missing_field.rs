@@ -1,11 +1,10 @@
-//! Preprocessor: turn an unmet `HasField` bound into a field-oriented message.
+//! Post-processor: turn an unmet `HasField` bound into a field-oriented message.
 //!
 //! rustc reports a getter's unmet dependency as
 //! `the trait `HasField<Symbol!("name")>` is not implemented for `Context``. This rewrites
-//! that to `missing field `name` on `Context``, and extracts a [`CgpDiagnosticDetail`].
-//! The rewritten clause carries no CGP error code: this preprocessor acts on whatever
-//! sub-message the clause appears in, and codes classify only a rewritten *main* message
-//! (see `crate::code`).
+//! that to `missing field `name` on `Context``. The rewritten clause carries no CGP error
+//! code: this acts on whatever sub-message the clause appears in, and codes classify only a
+//! rewritten *main* message (see `crate::code`).
 //!
 //! It distinguishes two cases, because their fixes differ, and the tell is within the same
 //! diagnostic (see the CGP `check-trait-failure` error-catalog document):
@@ -18,60 +17,33 @@
 //!   missing. Neither landmark appears. The message instead points at the derive:
 //!   `` `#[derive(HasField)]` is required to access field `name` on `Context` ``.
 //!
-//! Runs after [`strip_cgp_prefixes`](super::strip_cgp_prefixes) and
+//! Whether the context has any `HasField` impl ([`context_has_hasfield_impls`]) is a
+//! property of the *whole* diagnostic — the landmark can sit far from the clause — so a
+//! caller decides it once across every message before rewriting each in turn.
+//!
+//! Meant to run after [`strip_cgp_prefixes`](super::strip_cgp_prefixes) and
 //! [`resugar_symbol`](super::resugar_symbol), so it matches the bare, resugared
 //! `HasField<Symbol!("…")>` form.
-
-use crate::diagnostic::{CgpDiagnostic, CgpDiagnosticDetail};
 
 /// The text that opens the unmet-`HasField` clause, once prefixes are stripped and the
 /// symbol resugared.
 const ANCHOR: &str = "the trait `HasField<Symbol!(\"";
 
-/// Rewrite each unmet-`HasField` clause in the diagnostic to a field-oriented message and
-/// record a [`CgpDiagnosticDetail`] for it. Sets `has_cgp_error` when anything matched.
-pub fn extract_missing_fields(mut diagnostic: CgpDiagnostic) -> CgpDiagnostic {
-    // Whether the context implements `HasField` for any field is a property of the whole
-    // diagnostic (the landmark can sit far from the clause), so decide it once up front.
-    let has_field_impls = {
-        let diag = &diagnostic.diagnostic;
-        context_has_hasfield_impls(diag.rendered.as_deref().unwrap_or(&diag.message))
-    };
-
-    // Rewrite the message; its details are only a fallback for a diagnostic with no
-    // rendered form, since `rendered` is the full text and normally carries every clause.
-    let (message, message_details) = rewrite(&diagnostic.diagnostic.message, has_field_impls);
-    diagnostic.diagnostic.message = message;
-
-    let details = match diagnostic.diagnostic.rendered.take() {
-        Some(rendered) => {
-            let (rendered, details) = rewrite(&rendered, has_field_impls);
-            diagnostic.diagnostic.rendered = Some(rendered);
-            details
-        }
-        None => message_details,
-    };
-
-    if !details.is_empty() {
-        diagnostic.has_cgp_error = true;
-        diagnostic.details.extend(details);
-    }
-
-    diagnostic
-}
-
-/// Does the diagnostic show the context implementing `HasField` for at least one field?
-/// Both of rustc's "similar impl" phrasings count; their absence means no impls at all.
-fn context_has_hasfield_impls(text: &str) -> bool {
+/// Does the text show the context implementing `HasField` for at least one field? Both of
+/// rustc's "similar impl" phrasings count; their absence across the whole diagnostic means
+/// no impls at all.
+pub fn context_has_hasfield_impls(text: &str) -> bool {
     text.contains("is implemented for it") || text.contains("implements trait `HasField")
 }
 
-/// Rewrite every unmet-`HasField` clause in `text`, returning the result and the details.
-/// `has_field_impls` selects the message and detail for each clause.
-fn rewrite(text: &str, has_field_impls: bool) -> (String, Vec<CgpDiagnosticDetail>) {
+/// Rewrite every unmet-`HasField` clause in `text` to a field-oriented message, returning
+/// the rewritten text when any clause matched (and `None` otherwise). `has_field_impls`
+/// selects the single-missing-field wording from the missing-derive wording — the caller
+/// computes it across the whole diagnostic with [`context_has_hasfield_impls`].
+pub fn rewrite_missing_fields(text: &str, has_field_impls: bool) -> Option<String> {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
-    let mut details = Vec::new();
+    let mut changed = false;
 
     while let Some(index) = rest.find(ANCHOR) {
         out.push_str(&rest[..index]);
@@ -83,12 +55,9 @@ fn rewrite(text: &str, has_field_impls: bool) -> (String, Vec<CgpDiagnosticDetai
             continue;
         };
 
+        changed = true;
         let after = if has_field_impls {
             out.push_str(&format!("missing field `{field}` on `{context}`"));
-            details.push(CgpDiagnosticDetail::MissingField {
-                field_name: field,
-                context,
-            });
             // Absorb the inline single-impl landmark when it directly follows the clause,
             // so it does not dangle after the rewrite. The separate multi-impl note (when
             // present instead) is left in place.
@@ -97,10 +66,6 @@ fn rewrite(text: &str, has_field_impls: bool) -> (String, Vec<CgpDiagnosticDetai
             out.push_str(&format!(
                 "`#[derive(HasField)]` is required to access field `{field}` on `{context}`"
             ));
-            details.push(CgpDiagnosticDetail::MissingDeriveHasField {
-                field_name: field,
-                context,
-            });
             after_clause
         };
 
@@ -108,7 +73,7 @@ fn rewrite(text: &str, has_field_impls: bool) -> (String, Vec<CgpDiagnosticDetai
     }
 
     out.push_str(rest);
-    (out, details)
+    changed.then_some(out)
 }
 
 /// Parse `the trait `HasField<Symbol!("FIELD")>` is not implemented for `CONTEXT`` at the
