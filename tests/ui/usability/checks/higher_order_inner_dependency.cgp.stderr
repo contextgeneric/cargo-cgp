@@ -1,14 +1,15 @@
-error[E0277]: missing field `base_area` on context `Rectangle`
+error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`
   --> src/main.rs:75:9
    |
 75 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: field `base_area` is required through this dependency chain:
-           consumer trait impl `CanCalculateArea` for context `Rectangle`
-           └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<BaseArea>`
-               └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `BaseArea`
-                   └── trait impl `HasBaseArea` for `Rectangle`
-                       └── field trait impl `HasField` with field `base_area` for `Rectangle`
+   = note: root cause: missing field `base_area` on `Rectangle`
+           this is required through the dependency chain:
+               consumer trait impl `CanCalculateArea` for context `Rectangle`
+               └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<BaseArea>`
+                   └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `BaseArea`
+                       └── trait impl `HasBaseArea` for `Rectangle`
+                           └── field trait impl `HasField` with field `base_area` for `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

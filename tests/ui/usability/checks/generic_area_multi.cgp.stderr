@@ -1,13 +1,14 @@
-error[E0277]: missing field `width` on context `Rectangle`
+error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea<u32, u64, bool>` is not implemented for context `Rectangle`
   --> src/main.rs:50:9
    |
 50 |         AreaCalculatorComponent: (u32, u64, bool),
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: field `width` is required through this dependency chain:
-           consumer trait impl `CanCalculateArea<u32, u64, bool>` for context `Rectangle`
-           └── provider trait impl `AreaCalculator<u32, u64, bool>` with context `Rectangle` for provider `RectangleArea`
-               └── trait impl `HasWidth` for `Rectangle`
-                   └── field trait impl `HasField` with field `width` for `Rectangle`
+   = note: root cause: missing field `width` on `Rectangle`
+           this is required through the dependency chain:
+               consumer trait impl `CanCalculateArea<u32, u64, bool>` for context `Rectangle`
+               └── provider trait impl `AreaCalculator<u32, u64, bool>` with context `Rectangle` for provider `RectangleArea`
+                   └── trait impl `HasWidth` for `Rectangle`
+                       └── field trait impl `HasField` with field `width` for `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

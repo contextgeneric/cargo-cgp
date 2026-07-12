@@ -7,8 +7,8 @@
 use std::collections::HashMap;
 
 use cargo_cgp_error_processing::rewrite::{
-    ComponentNameMap, ComponentTraitNames, rewrite_message, rewrite_required_for,
-    rewrite_trait_bound,
+    ComponentNameMap, ComponentTraitNames, parse_trait_bound, rewrite_message,
+    rewrite_required_for, rewrite_trait_bound,
 };
 
 /// The fixed map every test's [`ComponentNameMap`] initializes to.
@@ -161,7 +161,9 @@ fn rewrites_can_use_component_header() {
     );
     assert_eq!(
         out.as_deref(),
-        Some("the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied")
+        Some(
+            "[CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`"
+        )
     );
 }
 
@@ -174,7 +176,7 @@ fn rewrites_is_provider_for_header() {
     assert_eq!(
         out.as_deref(),
         Some(
-            "the provider trait bound `RectangleArea: AreaCalculator<Rectangle>` is not satisfied"
+            "[CGP-E002] the provider trait `AreaCalculator` with context `Rectangle` is not implemented for provider `RectangleArea`"
         )
     );
 }
@@ -190,7 +192,7 @@ fn header_keeps_a_generic_subject_whole() {
     assert_eq!(
         out.as_deref(),
         Some(
-            "the provider trait bound `RedirectLookup<App, Nil>: AreaCalculator<Rectangle>` is not satisfied"
+            "[CGP-E002] the provider trait `AreaCalculator` with context `Rectangle` is not implemented for provider `RedirectLookup<App, Nil>`"
         )
     );
 }
@@ -203,7 +205,9 @@ fn header_strips_module_prefix() {
     );
     assert_eq!(
         out.as_deref(),
-        Some("the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied")
+        Some(
+            "[CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`"
+        )
     );
 }
 
@@ -217,7 +221,9 @@ fn header_reattaches_a_single_generic_parameter() {
             &name_map(),
         )
         .as_deref(),
-        Some("the consumer trait bound `Rectangle: CanCalculateArea<f64>` is not satisfied")
+        Some(
+            "[CGP-E001] the consumer trait `CanCalculateArea<f64>` is not implemented for context `Rectangle`"
+        )
     );
     assert_eq!(
         rewrite_trait_bound(
@@ -226,7 +232,7 @@ fn header_reattaches_a_single_generic_parameter() {
         )
         .as_deref(),
         Some(
-            "the provider trait bound `RectangleArea: AreaCalculator<Rectangle, f64>` is not satisfied"
+            "[CGP-E002] the provider trait `AreaCalculator<f64>` with context `Rectangle` is not implemented for provider `RectangleArea`"
         )
     );
 }
@@ -241,7 +247,9 @@ fn header_unwraps_a_multi_parameter_tuple() {
             &name_map(),
         )
         .as_deref(),
-        Some("the consumer trait bound `Rectangle: CanCalculateArea<u32, u64>` is not satisfied")
+        Some(
+            "[CGP-E001] the consumer trait `CanCalculateArea<u32, u64>` is not implemented for context `Rectangle`"
+        )
     );
     assert_eq!(
         rewrite_trait_bound(
@@ -250,7 +258,7 @@ fn header_unwraps_a_multi_parameter_tuple() {
         )
         .as_deref(),
         Some(
-            "the provider trait bound `RectangleArea: AreaCalculator<Rectangle, u32, u64>` is not satisfied"
+            "[CGP-E002] the provider trait `AreaCalculator<u32, u64>` with context `Rectangle` is not implemented for provider `RectangleArea`"
         )
     );
 }
@@ -270,11 +278,11 @@ fn rewrites_a_three_parameter_generic_component() {
         )
         .as_deref(),
         Some(
-            "the consumer trait bound `Rectangle: CanCalculateArea<u32, u64, bool>` is not satisfied"
+            "[CGP-E001] the consumer trait `CanCalculateArea<u32, u64, bool>` is not implemented for context `Rectangle`"
         )
     );
 
-    // Provider header: the context stays first, then the three parameters.
+    // Provider header: the context is named in prose, then the three parameters reattach.
     assert_eq!(
         rewrite_trait_bound(
             "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle, (u32, u64, bool)>` is not satisfied",
@@ -282,7 +290,7 @@ fn rewrites_a_three_parameter_generic_component() {
         )
         .as_deref(),
         Some(
-            "the provider trait bound `RectangleArea: AreaCalculator<Rectangle, u32, u64, bool>` is not satisfied"
+            "[CGP-E002] the provider trait `AreaCalculator<u32, u64, bool>` with context `Rectangle` is not implemented for provider `RectangleArea`"
         )
     );
 
@@ -307,6 +315,31 @@ fn rewrites_a_three_parameter_generic_component() {
             "required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`"
         )
     );
+}
+
+#[test]
+fn parses_a_trait_bound_header() {
+    // The classification parse the driver uses on its own: subject, whole bound, trait name.
+    let parsed = parse_trait_bound(
+        "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied",
+    )
+    .expect("a trait-bound header must parse");
+    assert_eq!(parsed.subject, "Rectangle");
+    assert_eq!(
+        parsed.bound,
+        "Rectangle: CanUseComponent<AreaCalculatorComponent>"
+    );
+    assert_eq!(parsed.trait_name, "CanUseComponent");
+
+    // A bound without generics parses too, with empty args.
+    let parsed = parse_trait_bound("the trait bound `f64: std::cmp::Eq` is not satisfied")
+        .expect("an ordinary bound must parse");
+    assert_eq!(parsed.subject, "f64");
+    assert_eq!(parsed.bound, "f64: std::cmp::Eq");
+    assert_eq!(parsed.trait_name, "Eq");
+    assert_eq!(parsed.args, "");
+
+    assert!(parse_trait_bound("mismatched types").is_none());
 }
 
 #[test]
@@ -336,7 +369,9 @@ fn rewrite_message_dispatches_note_and_header() {
             &name_map(),
         )
         .as_deref(),
-        Some("the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied")
+        Some(
+            "[CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`"
+        )
     );
     assert_eq!(
         rewrite_message(

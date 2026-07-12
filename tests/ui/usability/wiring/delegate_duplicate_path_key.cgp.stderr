@@ -1,4 +1,4 @@
-CGP[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol!("cgp"), PathCons<Symbol!("core"), PathCons<Symbol!("error"), PathCons<cgp_error::ErrorTypeProviderComponent, _>>>>>` for type `App`
+error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol!("cgp"), PathCons<Symbol!("core"), PathCons<Symbol!("error"), PathCons<cgp_error::ErrorTypeProviderComponent, _>>>>>` for type `App`
   --> src/main.rs:26:10
    |
 25 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,
@@ -6,7 +6,7 @@ CGP[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Sym
 26 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
-CGP[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol!("cgp"), PathCons<Symbol!("core"), PathCons<Symbol!("error"), PathCons<cgp_error::ErrorTypeProviderComponent, _>>>>, _, _>` for type `App`
+error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol!("cgp"), PathCons<Symbol!("core"), PathCons<Symbol!("error"), PathCons<cgp_error::ErrorTypeProviderComponent, _>>>>, _, _>` for type `App`
   --> src/main.rs:26:10
    |
 25 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,

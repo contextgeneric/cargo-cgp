@@ -11,16 +11,20 @@
 //! ```
 //!
 //! Given a [`ComponentNameMap`] from a marker's name to the trait names behind it, this
-//! rewrites both forms into ones that name the traits:
+//! rewrites both forms into ones that name the traits. The header rewrite also classifies
+//! the message with its [CGP error code](crate::code), since an unsatisfied
+//! `CanUseComponent`/`IsProviderFor` bound is a recognized CGP error class:
 //!
 //! ```text
-//! the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied
+//! [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`
 //! required for the provider `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle`
 //! required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`
 //! ```
 //!
 //! [`rewrite_message`] is the entry point; it dispatches to the note-form rewrite
-//! ([`rewrite_required_for`]) and the header rewrite ([`rewrite_trait_bound`]).
+//! ([`rewrite_required_for`]) and the header rewrite ([`rewrite_trait_bound`]). The codes
+//! belong on *main* messages only — the driver applies [`rewrite_trait_bound`] to a
+//! diagnostic's header and [`rewrite_required_for`] to its sub-messages.
 //!
 //! This module lives in the rustc-free error-processing crate on purpose. The rewrite is a
 //! plain string-to-string transform over the name map, so it is unit-tested on any toolchain
@@ -31,6 +35,8 @@
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
+
+use crate::code::{CONSUMER_TRAIT_UNIMPLEMENTED, PROVIDER_TRAIT_UNIMPLEMENTED};
 
 /// The consumer and provider trait names behind one component marker, recovered from the
 /// compiler. Keyed in the map by the marker's *full path* (e.g.
@@ -152,22 +158,27 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
     }
 }
 
-/// Rewrite the primary "the trait bound `…` is not satisfied" header a wiring failure opens
-/// with, or return `None` to leave it unchanged:
-///
-/// - a `Self: CanUseComponent<Marker, Params?>` bound becomes a "consumer trait bound" naming
-///   the consumer trait the context fails to implement — `Self: ConsumerTrait<Params?>`.
-/// - a `Self: IsProviderFor<Marker, Context, Params?>` bound becomes a "provider trait bound"
-///   that recovers the actual provider-trait bound the marker form stands in for —
-///   `Self: ProviderTrait<Context, Params?>`.
-///
-/// A generic component carries its extra parameters after the marker (and, for the provider,
-/// after the context), grouped in a tuple when there is more than one; those parameters are
-/// reattached to the named trait so the rewritten bound stays accurate — `CanUseComponent<C,
-/// f64>` becomes `ConsumerTrait<f64>`, and `CanUseComponent<C, (u32, u64)>` becomes
-/// `ConsumerTrait<u32, u64>`. As with [`rewrite_required_for`], a marker absent from `names`,
-/// or any message that is not one of these two forms, is left unchanged.
-pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<String> {
+/// The parsed pieces of a "the trait bound `S: Trait<…>` is not satisfied" message — the form
+/// rustc opens a trait-bound failure with. The driver uses the parse on its own to *classify*
+/// a main message (is this a `CanUseComponent` failure? does the header already name the
+/// leaf bound?) before deciding how to transform the diagnostic around it.
+pub struct ParsedTraitBound<'a> {
+    /// The bound's self type, e.g. `Rectangle` or `f64`.
+    pub subject: &'a str,
+    /// The whole bound as printed, e.g. `f64: std::cmp::Eq`.
+    pub bound: &'a str,
+    /// The trait path's last segment, e.g. `CanUseComponent` or `Eq`.
+    pub trait_name: &'a str,
+    /// The raw generic-argument text of the trait, e.g. `AreaCalculatorComponent, Rectangle`
+    /// — empty when the trait has no generics.
+    pub args: &'a str,
+    /// Whatever follows `is not satisfied`, usually empty.
+    pub tail: &'a str,
+}
+
+/// Parse a "the trait bound `…` is not satisfied" message, or return `None` for any other
+/// message shape.
+pub fn parse_trait_bound(message: &str) -> Option<ParsedTraitBound<'_>> {
     let rest = message.strip_prefix("the trait bound `")?;
     let (bound, tail) = rest.split_once("` is not satisfied")?;
     // `Self: Trait<…>` — the first `: ` separates the self type from the trait, and neither a
@@ -175,30 +186,63 @@ pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<St
     // space*, so this split cannot land inside either.
     let (subject, trait_ref) = bound.split_once(": ")?;
 
-    let (path, args_str) = split_generics(trait_ref)?;
-    let args = split_top_level(args_str);
+    let (path, args) = match split_generics(trait_ref) {
+        Some((path, args)) => (path, args),
+        None => (trait_ref, ""),
+    };
+    Some(ParsedTraitBound {
+        subject,
+        bound,
+        trait_name: last_segment(path),
+        args,
+        tail,
+    })
+}
 
-    match last_segment(path) {
-        "CanUseComponent" if !args.is_empty() => {
+/// Rewrite the primary "the trait bound `…` is not satisfied" header a wiring failure opens
+/// with — stamping it with its [CGP error code](crate::code), since both recognized forms are
+/// classified CGP error classes — or return `None` to leave it unchanged:
+///
+/// - a `Self: CanUseComponent<Marker, Params?>` bound is a check-trait failure
+///   ([`CONSUMER_TRAIT_UNIMPLEMENTED`]): the context fails to implement the consumer trait
+///   behind the marker, so the message says exactly that.
+/// - a `Self: IsProviderFor<Marker, Context, Params?>` bound is a provider check failure
+///   ([`PROVIDER_TRAIT_UNIMPLEMENTED`]): the provider fails to implement the provider trait
+///   behind the marker for the context.
+///
+/// A generic component carries its extra parameters after the marker (and, for the provider,
+/// after the context), grouped in a tuple when there is more than one; those parameters are
+/// reattached to the named trait so the rewritten message stays accurate —
+/// `CanUseComponent<C, f64>` names `ConsumerTrait<f64>`, and `CanUseComponent<C, (u32, u64)>`
+/// names `ConsumerTrait<u32, u64>`. As with [`rewrite_required_for`], a marker absent from
+/// `names`, or any message that is not one of these two forms, is left unchanged.
+pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<String> {
+    let parsed = parse_trait_bound(message)?;
+    let subject = parsed.subject;
+    let tail = parsed.tail;
+    let args = split_top_level(parsed.args);
+
+    match parsed.trait_name {
+        "CanUseComponent" if !args.is_empty() && !args[0].trim().is_empty() => {
             // `CanUseComponent<Marker, Params?>` — the consumer trait's generics are exactly
             // the component's extra parameters.
             let component = last_segment(args[0].trim());
             let entry = names.get(component)?;
             let generics = render_trait_generics(&[], &args[1..]);
             Some(format!(
-                "the consumer trait bound `{subject}: {}{generics}` is not satisfied{tail}",
+                "[{CONSUMER_TRAIT_UNIMPLEMENTED}] the consumer trait `{}{generics}` is not implemented for context `{subject}`{tail}",
                 entry.consumer
             ))
         }
         "IsProviderFor" if args.len() >= 2 => {
-            // `IsProviderFor<Marker, Context, Params?>` — the provider trait's generics are the
-            // context followed by the component's extra parameters.
+            // `IsProviderFor<Marker, Context, Params?>` — the context is named in prose, and
+            // the provider trait's generics are the component's extra parameters.
             let component = last_segment(args[0].trim());
             let entry = names.get(component)?;
             let context = args[1].trim();
-            let generics = render_trait_generics(&[context], &args[2..]);
+            let generics = render_trait_generics(&[], &args[2..]);
             Some(format!(
-                "the provider trait bound `{subject}: {}{generics}` is not satisfied{tail}",
+                "[{PROVIDER_TRAIT_UNIMPLEMENTED}] the provider trait `{}{generics}` with context `{context}` is not implemented for provider `{subject}`{tail}",
                 entry.provider
             ))
         }

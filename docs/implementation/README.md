@@ -31,9 +31,9 @@ same change.
   re-running the check obligation through the trait solver (from inside `emit_diagnostic`, since
   `after_analysis` is unreachable once the crate has errors), descending the wiring to each terminal
   leaf (a `HasField` field or an ordinary bound), and rendering the transitive dependency chain with
-  each wiring trait replaced by its human form. An all-field failure is replaced wholesale; any other
-  keeps rustc's header and swaps only its sub-notes for the tree; anything it declines falls back to
-  the text rewrite.
+  each wiring trait replaced by its human form. A main message identified as a CGP class is rewritten
+  and stamped with its `[CGP-Exxx]` code (the Rust code kept); the sub-notes become one `root cause:`
+  note per leaf over its chain; anything it declines falls back to the text rewrite.
 - [The error pipeline](error-pipeline.md) — the four-stage flow that turns rustc's raw diagnostics
   into readable CGP errors (configure rustc, capture, process, render), and the detail of the two
   compilation-side stages: the current flag injections that un-hide and un-elide CGP errors, and the

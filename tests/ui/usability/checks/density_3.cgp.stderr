@@ -1,27 +1,29 @@
-error[E0277]: missing field `height` on context `Rectangle`
+error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`
   --> src/main.rs:78:9
    |
 78 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: field `height` is required through this dependency chain:
-           consumer trait impl `CanCalculateArea` for context `Rectangle`
-           └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-               └── trait impl `HasRectangleFields` for `Rectangle`
-                   └── field trait impl `HasField` with field `height` for `Rectangle`
+   = note: root cause: missing field `height` on `Rectangle`
+           this is required through the dependency chain:
+               consumer trait impl `CanCalculateArea` for context `Rectangle`
+               └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+                   └── trait impl `HasRectangleFields` for `Rectangle`
+                       └── field trait impl `HasField` with field `height` for `Rectangle`
 
-error[E0277]: missing field `height` on context `Rectangle`
+error[E0277]: [CGP-E001] the consumer trait `CanCalculateDensity` is not implemented for context `Rectangle`
   --> src/main.rs:79:9
    |
 79 |         DensityCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: field `height` is required through this dependency chain:
-           consumer trait impl `CanCalculateDensity` for context `Rectangle`
-           └── provider trait impl `DensityCalculator` with context `Rectangle` for provider `DensityFromMassField`
-               └── trait impl `CanCalculateArea` for `Rectangle`
-                   └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-                       └── trait impl `HasRectangleFields` for `Rectangle`
-                           └── field trait impl `HasField` with field `height` for `Rectangle`
+   = note: root cause: missing field `height` on `Rectangle`
+           this is required through the dependency chain:
+               consumer trait impl `CanCalculateDensity` for context `Rectangle`
+               └── provider trait impl `DensityCalculator` with context `Rectangle` for provider `DensityFromMassField`
+                   └── trait impl `CanCalculateArea` for `Rectangle`
+                       └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+                           └── trait impl `HasRectangleFields` for `Rectangle`
+                               └── field trait impl `HasField` with field `height` for `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

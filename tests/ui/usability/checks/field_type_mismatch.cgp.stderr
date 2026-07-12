@@ -1,4 +1,4 @@
-CGP[E0271]: type mismatch resolving `<Rectangle as HasField<Symbol!("height")>>::Value == f64`
+error[E0271]: type mismatch resolving `<Rectangle as HasField<Symbol!("height")>>::Value == f64`
   --> src/main.rs:44:9
    |
 44 |         AreaCalculatorComponent,

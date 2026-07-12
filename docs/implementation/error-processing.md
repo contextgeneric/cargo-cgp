@@ -193,14 +193,12 @@ preprocessors exist today:
   `` the trait `HasField<Symbol!("name")>` is not implemented for `Context` `` and distinguishes two
   cases whose fixes differ — a distinction available *within the one diagnostic*, so no cross-diagnostic
   aggregation is needed. When the context implements `HasField` for some other field, it is a single
-  missing field (`` [CGP0001] missing field `name` in `Context` ``, detail `MissingField`); when it
+  missing field (`` missing field `name` on `Context` ``, detail `MissingField`); when it
   implements `HasField` for no field at all, the whole derive is missing
-  (`` [CGP0002] `#[derive(HasField)]` is required to access field `name` in `Context` ``, detail
-  `MissingDeriveHasField`). Because these rewrites replace the *whole* message with a CGP-authored one,
-  each is tagged with a CGP error code (`CGP0001`, `CGP0002`), catalogued in
-  [error-code.md](../error-code.md); the code is the `CgpDiagnosticDetail`'s own `code`, prefixed in a
-  `[CGPxxxx]` form kept visually unlike rustc's `E0277`. The cosmetic rewrites above (prefix stripping,
-  `Symbol!` resugaring) carry no code, as does the driver's wiring-message renaming. The tell that
+  (`` `#[derive(HasField)]` is required to access field `name` on `Context` ``, detail
+  `MissingDeriveHasField`). Neither rewrite carries a CGP error code: the clause it rewrites sits in a
+  sub-message, and codes classify only a rewritten *main* message (see
+  [error-code.md](../error-code.md)). The tell that
   separates the two cases is rustc's "similar impl" landmark, which the CGP
   [check-trait-failure catalog entry](../../../cgp/docs/errors/checks/check-trait-failure.md) documents:
   its presence — either inline (`but trait `HasField<…>` is implemented for it`, one other field) or as
@@ -224,18 +222,13 @@ preprocessors exist today:
   [`checks/empty_field_struct`](../../tests/ui/usability/checks/empty_field_struct.rs) fixture so the
   behavior stays visible.
 
-- **[`mark_cgp_header`](../../crates/cargo-cgp-error-processing/src/preprocess/header.rs)** marks the
-  primary header of a CGP-recognized diagnostic, rewriting rustc's `error[E0277]:` into `CGP[E0277]:`
-  — the level word replaced by `CGP`, the original Rust code kept so `--explain` still works (see
-  [error-code.md](../error-code.md) for how this header marker differs from the `[CGPxxxx]` codes). It
-  runs last, so `has_cgp_error` already reflects the earlier recognizers; it also flags a diagnostic on
-  its own when the header carries the driver's wiring-message rename, whose phrasing (`the consumer
-  trait bound`, `the provider trait bound`, and the matching obligation-chain notes) plain rustc never
-  emits — so a wiring failure with no resugared leaf is still recognized and marked.
-
 A non-CGP diagnostic runs through the pipeline untouched: no prefix matches, no `Symbol` spine parses,
-no `HasField` clause matches, no wiring-rename phrase appears, `has_cgp_error` stays false, and the
-diagnostic passes through unchanged with rustc's own `error[…]:` header.
+no `HasField` clause matches, `has_cgp_error` stays false, and the diagnostic passes through unchanged
+with rustc's own `error[…]:` header. The header itself is never restyled: how a CGP diagnostic is
+marked is settled entirely by the `[CGP-Exxx]` code the *driver* stamps inside a rewritten,
+classified main message (see [error-code.md](../error-code.md)) — an earlier `mark_cgp_header`
+preprocessor that rebranded `error[E0277]:` as `CGP[E0277]:` has been removed, since the inline code
+carries the same signal without altering the header's shape.
 
 One deduplication happens near this stage but is *not* part of it — it is a render-fidelity step in
 the front-end. rustc's human emitter suppresses exact-duplicate diagnostics from its terminal output
@@ -314,11 +307,9 @@ design is the right precedent to follow precisely because Clippy is not.
 
 - [`crates/cargo-cgp-error-processing/tests/preprocess.rs`](../../crates/cargo-cgp-error-processing/tests/preprocess.rs) —
   drives each preprocessor over crafted diagnostics, asserting the rewritten text, the `has_cgp_error`
-  flag, and the extracted `details`: the exact-match cases `resugar_symbol` must skip, the
+  flag, and the extracted `details`: the exact-match cases `resugar_symbol` must skip, and the
   single-field (inline and separate-note landmark) versus missing-derive branches of
-  `extract_missing_fields` (each carrying its `[CGP000x]` code), and `mark_cgp_header` rewriting an
-  `error[E0277]:` header into `CGP[E0277]:` — for a wiring rename it recognizes and for an
-  already-flagged diagnostic — while leaving a non-CGP diagnostic and the `--explain` line alone.
+  `extract_missing_fields`, while leaving a non-CGP diagnostic alone.
 - [`crates/cargo-cgp-error-processing/tests/passthrough.rs`](../../crates/cargo-cgp-error-processing/tests/passthrough.rs) —
   drives `process_cgp_errors` over a committed serialized fixture
   ([`tests/fixtures/sample_diagnostics.json`](../../crates/cargo-cgp-error-processing/tests/fixtures/sample_diagnostics.json))
@@ -337,18 +328,19 @@ design is the right precedent to follow precisely because Clippy is not.
   note.
 - [`crates/cargo-cgp-error-processing/src/diagnostic.rs`](../../crates/cargo-cgp-error-processing/src/diagnostic.rs) —
   the `CgpDiagnostic` superset type (with `has_cgp_error`) and its `wrap`/`rendered` helpers, and the
-  `CgpDiagnosticDetail` enum with the `code` mapping each recognized class to its CGP error code (see
-  [error-code.md](../error-code.md)).
+  `CgpDiagnosticDetail` enum of recognized structured facts.
 - [`crates/cargo-cgp-error-processing/src/preprocess/`](../../crates/cargo-cgp-error-processing/src/preprocess) —
   the preprocessing pipeline: `pipeline.rs` (the `PREPROCESSORS` list and fold), `strip_prefixes.rs`
   (`strip_cgp_prefixes` and the `CGP_PREFIXES` constant), `resugar_symbol.rs` (the exact-match
   `Symbol!` parser), `missing_field.rs` (`extract_missing_fields` and the single-field-vs-missing-derive
-  classification), `header.rs` (`mark_cgp_header`, the `CGP[…]` header marker and wiring-rename
-  recognizer), and `text.rs` (applying a transform across a diagnostic's text fields).
+  classification), and `text.rs` (applying a transform across a diagnostic's text fields).
 - [`crates/cargo-cgp-error-processing/src/rewrite.rs`](../../crates/cargo-cgp-error-processing/src/rewrite.rs) —
   *not part of the processing stage*: the compiler-free wiring-message rewrite and `ComponentNameMap`
   the driver drives (see [The driver](driver.md#naming-the-traits-behind-a-component-marker)), hosted
   here for rustc-free testability.
+- [`crates/cargo-cgp-error-processing/src/code.rs`](../../crates/cargo-cgp-error-processing/src/code.rs) —
+  the `CGP-E` error-code constants and the rule for when one is stamped, catalogued in
+  [error-code.md](../error-code.md); used by the rewrite here and by the driver's emitter.
 - [`crates/cargo-cgp/src/check/diagnostics.rs`](../../crates/cargo-cgp/src/check/diagnostics.rs) — the
   front-end's capture and render around this stage: parsing cargo's JSON stream into diagnostics, and
   re-emitting the processed result (with the render-fidelity deduplication).

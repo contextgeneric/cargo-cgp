@@ -186,14 +186,16 @@ implement `IsProviderFor<AreaCalculatorComponent, Rectangle>` `` and `` required
 implement `CanUseComponent<AreaCalculatorComponent>` ``, the tool emits `` required for the provider
 `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle` `` and
 `` required for the context `Rectangle` to implement the consumer trait `CanCalculateArea` ``. The
-header is rewritten the same way: `` the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>`
-is not satisfied `` becomes `` the consumer trait bound `Rectangle: CanCalculateArea` is not
-satisfied ``, and a provider-side header `` `RectangleArea: IsProviderFor<AreaCalculatorComponent,
-Rectangle>` `` becomes the provider trait bound `` `RectangleArea: AreaCalculator<Rectangle>` `` —
-recovering the actual provider-trait bound the marker form stands in for. This is the transform the
-`IsProviderFor` and `CanUseComponent` marker traits otherwise hide: the component marker names neither
-trait, its `…Component` suffix is at best an unreliable guess at the provider trait, and it says
-nothing at all about the consumer trait.
+primary header is rewritten further, because an unsatisfied wiring bound is an identified CGP error
+class and gains its [CGP error code](../error-code.md): `` the trait bound `Rectangle:
+CanUseComponent<AreaCalculatorComponent>` is not satisfied `` becomes `` [CGP-E001] the consumer
+trait `CanCalculateArea` is not implemented for context `Rectangle` ``, and a provider-side header
+`` `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle>` `` becomes `` [CGP-E002] the
+provider trait `AreaCalculator` with context `Rectangle` is not implemented for provider
+`RectangleArea` `` — restating the fact the marker form stands in for, with the diagnostic's own
+Rust code kept. This is the transform the `IsProviderFor` and `CanUseComponent` marker traits
+otherwise hide: the component marker names neither trait, its `…Component` suffix is at best an
+unreliable guess at the provider trait, and it says nothing at all about the consumer trait.
 
 This is the one transformation that reads the compiler's own state rather than pulling an argument
 lever, and that is why it needs everything the driver's in-process access provides. The two flag
@@ -265,16 +267,20 @@ The rewrite itself is a plain string transform, kept in the rustc-free
 [`cargo-cgp-error-processing`](../../crates/cargo-cgp-error-processing) crate (module
 [`rewrite`](../../crates/cargo-cgp-error-processing/src/rewrite.rs), the driver's one ordinary
 dependency) so it is unit-tested on any toolchain without a `TyCtxt`. Its
-entry point, `rewrite_message`, dispatches to the `required for … to implement …` note forms and the
-`the trait bound … is not satisfied` header form; each reads the marker out of the trait's generic
-arguments and looks the names up in the map. A message whose marker is absent from the map, or any
-other message, passes through untouched. A **generic component** — one whose marker carries extra
+entry point, `rewrite_message`, dispatches to the `required for … to implement …` note forms
+(`rewrite_required_for`) and the `the trait bound … is not satisfied` header form
+(`rewrite_trait_bound`, which stamps the `[CGP-Exxx]` code); each reads the marker out of the trait's
+generic arguments and looks the names up in the map. The emitter applies the full dispatch only to a
+diagnostic's *main* message and the note rename to its children, since a CGP error code belongs on a
+main message alone. A message whose marker is absent from the map, or any other message, passes
+through untouched. A **generic component** — one whose marker carries extra
 type parameters, so `CanUseComponent`/`IsProviderFor` gain arguments after the marker (and context) —
 is handled in both forms, but differently by design: the descriptive notes name the bare trait and
-elide the parameters, while the header *reattaches* them so the bound stays precise. So
-`CanUseComponent<AreaCalculatorComponent, f64>` yields the header `` `Rectangle: CanCalculateArea<f64>` ``
-and the note "the consumer trait `CanCalculateArea`"; a two-parameter component arrives tuple-grouped
-(`(u32, u64)`) and the header unwraps it to `` `CanCalculateArea<u32, u64>` ``. One faithful oddity
+elide the parameters, while the header *reattaches* them so the message stays precise. So
+`CanUseComponent<AreaCalculatorComponent, f64>` yields the header `` the consumer trait
+`CanCalculateArea<f64>` `` and the note "the consumer trait `CanCalculateArea`"; a two-parameter
+component arrives tuple-grouped (`(u32, u64)`) and the header unwraps it to
+`` `CanCalculateArea<u32, u64>` ``. One faithful oddity
 follows from naming the obligation's subject verbatim: the subject is usually a provider
 (`RectangleArea`, `ScaledArea<RectangleArea>`) but is the context itself when the context stands in as
 its own provider, so a self-provider case reads `` the provider `Rectangle` … for the context
@@ -282,15 +288,16 @@ its own provider, so a self-provider case reads `` the provider `Rectangle` … 
 blessed snapshots show the trait-named notes *and* headers;
 [`base_area_1`](../../tests/ui/usability/checks/base_area_1.cgp.stderr) is the worked example.
 
-The same emitter seam now hosts a deeper transformation that *replaces* a diagnostic rather than
-rewording it. Where the trait-renaming rewrite edits the compiler's diagnostic in place, the
+The same emitter seam now hosts a deeper transformation that rebuilds a diagnostic's sub-messages
+rather than rewording them. Where the trait-renaming rewrite edits the compiler's text in place, the
 [typed root-cause resolver](typed-root-cause-resolution.md) re-runs the failing check obligation
-through the compiler's `InferCtxt` / `ObligationCtxt` API, descends to the `HasField` leaf, and emits
-a fresh, root-cause-first diagnostic in place of rustc's cascade — falling back to the in-place rewrite
-whenever it cannot fully resolve the cause. That kind of work must happen in the driver, because the
-front-end's [processing stage](error-processing.md) is stateless and cannot ask the compiler anything;
-it happens in the *emitter* specifically because the natural `after_analysis` hook is unreachable once
-the crate has errors (the resolver document explains why).
+through the compiler's `InferCtxt` / `ObligationCtxt` API, descends to each terminal leaf, and
+replaces rustc's cascade of sub-notes with one `root cause:` note per leaf over its dependency chain
+(wording the coded main message from typed data where the text lookup could be ambiguous) — falling
+back to the in-place rewrite whenever it cannot fully resolve the cause. That kind of work must
+happen in the driver, because the front-end's [processing stage](error-processing.md) is stateless
+and cannot ask the compiler anything; it happens in the *emitter* specifically because the natural
+`after_analysis` hook is unreachable once the crate has errors (the resolver document explains why).
 
 ## Comparison with Clippy
 

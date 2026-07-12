@@ -31,7 +31,7 @@
     ],
     "children": [
       {
-        "message": "`f64: std::cmp::Eq` is required through this dependency chain:\nconsumer trait impl `CanCompareScalars` for context `App`\n└── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`\n    └── trait impl `Eq` for `f64`",
+        "message": "this is required through the dependency chain:\nconsumer trait impl `CanCompareScalars` for context `App`\n└── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`\n    └── trait impl `Eq` for `f64`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -39,7 +39,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0277]: the trait bound `f64: std::cmp::Eq` is not satisfied\n  --> src/main.rs:59:9\n   |\n59 |         ScalarEqualityComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^ the trait `std::cmp::Eq` is not implemented for `f64`\n   |\n   = note: `f64: std::cmp::Eq` is required through this dependency chain:\n           consumer trait impl `CanCompareScalars` for context `App`\n           └── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`\n               └── trait impl `Eq` for `f64`\n\n"
+    "rendered": "error[E0277]: the trait bound `f64: std::cmp::Eq` is not satisfied\n  --> src/main.rs:59:9\n   |\n59 |         ScalarEqualityComponent,\n   |         ^^^^^^^^^^^^^^^^^^^^^^^ the trait `std::cmp::Eq` is not implemented for `f64`\n   |\n   = note: this is required through the dependency chain:\n           consumer trait impl `CanCompareScalars` for context `App`\n           └── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`\n               └── trait impl `Eq` for `f64`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0277`.",

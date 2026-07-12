@@ -1,18 +1,20 @@
-error[E0277]: missing fields `first_name` and `last_name` on context `Person`
+error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `Person`
   --> src/main.rs:50:9
    |
 50 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: field `first_name` is required through this dependency chain:
-           consumer trait impl `CanGreet` for context `Person`
-           └── provider trait impl `Greeter` with context `Person` for provider `GreetFullName`
-               └── trait impl `HasFirstName` for `Person`
-                   └── field trait impl `HasField` with field `first_name` for `Person`
-   = note: field `last_name` is required through this dependency chain:
-           consumer trait impl `CanGreet` for context `Person`
-           └── provider trait impl `Greeter` with context `Person` for provider `GreetFullName`
-               └── trait impl `HasLastName` for `Person`
-                   └── field trait impl `HasField` with field `last_name` for `Person`
+   = note: root cause: missing field `first_name` on `Person`
+           this is required through the dependency chain:
+               consumer trait impl `CanGreet` for context `Person`
+               └── provider trait impl `Greeter` with context `Person` for provider `GreetFullName`
+                   └── trait impl `HasFirstName` for `Person`
+                       └── field trait impl `HasField` with field `first_name` for `Person`
+   = note: root cause: missing field `last_name` on `Person`
+           this is required through the dependency chain:
+               consumer trait impl `CanGreet` for context `Person`
+               └── provider trait impl `Greeter` with context `Person` for provider `GreetFullName`
+                   └── trait impl `HasLastName` for `Person`
+                       └── field trait impl `HasField` with field `last_name` for `Person`
 
 For more information about this error, try `rustc --explain E0277`.

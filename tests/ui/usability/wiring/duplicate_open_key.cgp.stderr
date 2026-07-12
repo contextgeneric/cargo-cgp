@@ -1,4 +1,4 @@
-CGP[E0119]: conflicting implementations of trait `IsProviderFor<GreeterComponent, _, _>` for type `Person`
+error[E0119]: conflicting implementations of trait `IsProviderFor<GreeterComponent, _, _>` for type `Person`
   --> src/main.rs:35:9
    |
 33 |         open GreeterComponent;
@@ -9,7 +9,7 @@ CGP[E0119]: conflicting implementations of trait `IsProviderFor<GreeterComponent
    |
    = note: downstream crates may implement trait `IsProviderFor<GreeterComponent, _, _>` for type `RedirectLookup<Person, PathCons<GreeterComponent, Nil>>`
 
-CGP[E0119]: conflicting implementations of trait `DelegateComponent<GreeterComponent>` for type `Person`
+error[E0119]: conflicting implementations of trait `DelegateComponent<GreeterComponent>` for type `Person`
   --> src/main.rs:35:9
    |
 33 |         open GreeterComponent;

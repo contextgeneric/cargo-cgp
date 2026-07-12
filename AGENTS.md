@@ -149,8 +149,9 @@ compiler through `rustc_driver`; `args.rs` turns the wrapper's process arguments
 argument vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds
 the `Callbacks` implementation, whose `config` hook installs a diagnostic-rewriting emitter;
 `emitter.rs` is that emitter, which renames CGP wiring messages using the live compiler and, when it
-can, transforms a wiring failure into its root-cause dependency tree (replacing an all-field failure
-wholesale, or keeping rustc's header and swapping only the sub-notes for the tree otherwise);
+can, transforms a wiring failure into its root-cause dependency tree (rewriting a main message that
+is an identified CGP class into its `[CGP-Exxx]`-coded form — the Rust code kept — and swapping the
+sub-notes for one `root cause:` note per leaf);
 `resolve.rs` is that typed resolver, recovering the failing obligation either from a `check_components!`
 entry or from the use site of a broken consumer-method call (`E0599`), then descending the wiring to
 each terminal leaf (a `HasField` field or an ordinary bound) (see
@@ -170,7 +171,8 @@ compiler linkage: `rewrite.rs` — the compiler-free string rewrite that renames
 the lazily-built `ComponentNameMap` it uses — and `tree.rs` — the `DependencyTree` type and its
 `cargo tree`-style renderer (over the `termtree` crate) that the driver's typed resolver uses to show a
 check failure's transitive dependency chain. Both are driven by the *driver*, not by
-`process_cgp_errors`. Its tests in `tests/` drive the preprocessors, `process_cgp_errors`, the rewrite,
+`process_cgp_errors`; `code.rs` holds the `CGP-E` error-code constants they stamp on classified main
+messages (catalogued in docs/error-code.md). Its tests in `tests/` drive the preprocessors, `process_cgp_errors`, the rewrite,
 and the tree renderer over committed fixtures and hand-built inputs, so they run on any toolchain. The
 cross-diagnostic aggregation sub-stage (collapsing cascades) is still to come.
 

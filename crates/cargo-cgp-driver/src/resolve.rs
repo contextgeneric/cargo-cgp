@@ -31,10 +31,10 @@
 //! 4. Each root-cause path is rendered as a `cargo tree`-style [`DependencyTree`] with every CGP
 //!    wiring trait replaced by its human form (`CanUseComponent`→consumer-trait impl, `IsProviderFor`
 //!    →provider-trait impl, `HasField`→field-trait impl), and a field name is decoded structurally
-//!    from its `Symbol!`. A field leaf ([`Leaf::Field`]) drives a clean, tree-first replacement of
-//!    the whole diagnostic; any other leaf ([`Leaf::Bound`]) keeps rustc's own header and only
-//!    swaps the sub-notes for the tree. When no branch reaches a reportable leaf the resolver
-//!    yields `None`, and the caller falls back to the untouched text-rewrite pipeline.
+//!    from its `Symbol!`. The emitter turns each leaf into one `root cause:` note over its chain,
+//!    with the leaf's [`Leaf`] variant choosing the wording (a missing field, an underived
+//!    `HasField`, or an ordinary unmet bound). When no branch reaches a reportable leaf the
+//!    resolver yields `None`, and the caller falls back to the untouched text-rewrite pipeline.
 //!
 //! For each leaf the resolver also inspects the *actual struct* the `HasField` bound lands on —
 //! its own named fields, and, if the field is not there, the fields of the structs along its
@@ -126,6 +126,10 @@ pub struct Cause {
 pub struct Resolved {
     /// The checked context type, e.g. `Rectangle`.
     pub context: String,
+    /// The consumer trait(s) the context fails to implement, with a generic component's extra
+    /// parameters reattached (e.g. `CanCalculateArea<f64>`) — one per failing component, in
+    /// first-seen order. The emitter words a rewritten main message around these.
+    pub consumers: Vec<String>,
     /// One entry per distinct root cause, in first-seen order.
     pub causes: Vec<Cause>,
 }
@@ -208,6 +212,7 @@ pub fn resolve_use_site(
     // ADTs), so try each candidate and keep the first that actually wires a failing component.
     for context in context_candidates_from_spans(tcx, spans) {
         let mut causes: Vec<Cause> = Vec::new();
+        let mut consumers: Vec<String> = Vec::new();
         for marker in delegated_markers(tcx, context) {
             // `Ctx: CanUseComponent<Marker, ()>` — the parameterless form, which suits the
             // components a use-site failure exercises; a component whose `()` form holds is skipped.
@@ -217,6 +222,11 @@ pub fn resolve_use_site(
                 continue;
             }
             if let Some(resolved) = resolve_leaves(tcx, top, names) {
+                for consumer in resolved.consumers {
+                    if !consumers.contains(&consumer) {
+                        consumers.push(consumer);
+                    }
+                }
                 for cause in resolved.causes {
                     if !causes.iter().any(|c| c.key() == cause.key()) {
                         causes.push(cause);
@@ -227,6 +237,7 @@ pub fn resolve_use_site(
         if !causes.is_empty() {
             return Some(Resolved {
                 context: tcx.erase_and_anonymize_regions(context).to_string(),
+                consumers,
                 causes,
             });
         }
@@ -355,8 +366,20 @@ fn resolve_leaves<'tcx>(
     if causes.is_empty() {
         return None;
     }
+
+    // The consumer trait the failing `CanUseComponent` obligation stands for, with the
+    // component's extra parameters reattached — resolved from the marker's typed `DefId` path,
+    // so two same-named components in different modules cannot be confused.
+    let top_ref = top.skip_binder().trait_ref;
+    let consumer = format!(
+        "{}{}",
+        marker_role(tcx, top_ref.args.type_at(1), names, |n| n.consumer),
+        render_params(top_ref.args.type_at(2))
+    );
+
     Some(Resolved {
         context: context.to_string(),
+        consumers: vec![consumer],
         causes,
     })
 }

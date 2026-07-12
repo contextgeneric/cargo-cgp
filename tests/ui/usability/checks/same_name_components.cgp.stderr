@@ -1,25 +1,27 @@
-error[E0277]: missing field `width_a` on context `App`
+error[E0277]: [CGP-E001] the consumer trait `CanMeasureA` is not implemented for context `App`
   --> src/main.rs:86:9
    |
 86 |         shapes_a::MeasurerComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: field `width_a` is required through this dependency chain:
-           consumer trait impl `CanMeasureA` for context `App`
-           └── provider trait impl `MeasurerA` with context `App` for provider `shapes_a::MeasureWidthA`
-               └── trait impl `HasWidthA` for `App`
-                   └── field trait impl `HasField` with field `width_a` for `App`
+   = note: root cause: missing field `width_a` on `App`
+           this is required through the dependency chain:
+               consumer trait impl `CanMeasureA` for context `App`
+               └── provider trait impl `MeasurerA` with context `App` for provider `shapes_a::MeasureWidthA`
+                   └── trait impl `HasWidthA` for `App`
+                       └── field trait impl `HasField` with field `width_a` for `App`
 
-error[E0277]: missing field `width_b` on context `App`
+error[E0277]: [CGP-E001] the consumer trait `CanMeasureB` is not implemented for context `App`
   --> src/main.rs:87:9
    |
 87 |         shapes_b::MeasurerComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: field `width_b` is required through this dependency chain:
-           consumer trait impl `CanMeasureB` for context `App`
-           └── provider trait impl `MeasurerB` with context `App` for provider `shapes_b::MeasureWidthB`
-               └── trait impl `HasWidthB` for `App`
-                   └── field trait impl `HasField` with field `width_b` for `App`
+   = note: root cause: missing field `width_b` on `App`
+           this is required through the dependency chain:
+               consumer trait impl `CanMeasureB` for context `App`
+               └── provider trait impl `MeasurerB` with context `App` for provider `shapes_b::MeasureWidthB`
+                   └── trait impl `HasWidthB` for `App`
+                       └── field trait impl `HasField` with field `width_b` for `App`
 
 For more information about this error, try `rustc --explain E0277`.

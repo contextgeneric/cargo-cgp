@@ -22,7 +22,7 @@ error[E0119]: conflicting implementations of trait `Greeter<_>` for type `GreetH
 33 | | }
    | |_^ conflicting implementation for `GreetHello`
 
-CGP[E0119]: conflicting implementations of trait `IsProviderFor<GreeterComponent, _>` for type `GreetHello`
+error[E0119]: conflicting implementations of trait `IsProviderFor<GreeterComponent, _>` for type `GreetHello`
   --> src/main.rs:31:1
    |
 25 | / impl Greeter {

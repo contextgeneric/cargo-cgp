@@ -1,14 +1,15 @@
-error[E0277]: accessor trait `HasField` with field `name` is not implemented for `App`
+error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `App`
   --> src/main.rs:66:9
    |
 66 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = help: make sure that `#[derive(HasField)]` is used for `AppFields`
-   = note: field `name` is required through this dependency chain:
-           consumer trait impl `CanGreet` for context `App`
-           └── provider trait impl `Greeter` with context `App` for provider `GreetHello`
-               └── trait impl `HasName` for `App`
-                   └── field trait impl `HasField` with field `name` for `App`
+   = note: root cause: accessor trait `HasField` with field `name` is not implemented for `App`
+           this is required through the dependency chain:
+               consumer trait impl `CanGreet` for context `App`
+               └── provider trait impl `Greeter` with context `App` for provider `GreetHello`
+                   └── trait impl `HasName` for `App`
+                       └── field trait impl `HasField` with field `name` for `App`
 
 For more information about this error, try `rustc --explain E0277`.

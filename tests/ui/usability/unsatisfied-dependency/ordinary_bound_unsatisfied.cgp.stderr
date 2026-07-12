@@ -1,15 +1,13 @@
-error[E0599]: the method `scalars_equal` exists for struct `App`, but its trait bounds were not satisfied
+error[E0599]: [CGP-E001] the consumer trait `CanCompareScalars` is not implemented for context `App`
   --> src/main.rs:54:17
    |
-43 | pub struct App;
-   | -------------- method `scalars_equal` not found for this struct because it doesn't satisfy `App: CanCompareScalars`
-...
 54 |     let _ = app.scalars_equal(&1.0, &2.0);
-   |                 ^^^^^^^^^^^^^ this is an associated function, not a method
+   |                 ^^^^^^^^^^^^^
    |
-   = note: `f64: std::cmp::Eq` is required through this dependency chain:
-           consumer trait impl `CanCompareScalars` for context `App`
-           └── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`
-               └── trait impl `Eq` for `f64`
+   = note: root cause: the trait bound `f64: std::cmp::Eq` is not satisfied
+           this is required through the dependency chain:
+               consumer trait impl `CanCompareScalars` for context `App`
+               └── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`
+                   └── trait impl `Eq` for `f64`
 
 For more information about this error, try `rustc --explain E0599`.

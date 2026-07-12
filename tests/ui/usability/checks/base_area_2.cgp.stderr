@@ -1,19 +1,21 @@
-error[E0277]: accessor trait `HasField` with fields `height` and `width` is not implemented for `Rectangle`
+error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`
   --> src/main.rs:55:9
    |
 55 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: make sure that `#[derive(HasField)]` is used for `Rectangle`
-   = note: field `height` is required through this dependency chain:
-           consumer trait impl `CanCalculateArea` for context `Rectangle`
-           └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-               └── trait impl `HasRectangleFields` for `Rectangle`
-                   └── field trait impl `HasField` with field `height` for `Rectangle`
-   = note: field `width` is required through this dependency chain:
-           consumer trait impl `CanCalculateArea` for context `Rectangle`
-           └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-               └── trait impl `HasRectangleFields` for `Rectangle`
-                   └── field trait impl `HasField` with field `width` for `Rectangle`
+   = note: root cause: accessor trait `HasField` with field `height` is not implemented for `Rectangle`
+           this is required through the dependency chain:
+               consumer trait impl `CanCalculateArea` for context `Rectangle`
+               └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+                   └── trait impl `HasRectangleFields` for `Rectangle`
+                       └── field trait impl `HasField` with field `height` for `Rectangle`
+   = note: root cause: accessor trait `HasField` with field `width` is not implemented for `Rectangle`
+           this is required through the dependency chain:
+               consumer trait impl `CanCalculateArea` for context `Rectangle`
+               └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+                   └── trait impl `HasRectangleFields` for `Rectangle`
+                       └── field trait impl `HasField` with field `width` for `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -49,10 +49,10 @@ carries the cause but buries it, foremost overly verbose messages. Unlike the ot
 entries describe absent behavior and are deleted as the tool closes each gap.
 
 Alongside those two directories sits one standalone top-level document, [error-code.md](error-code.md):
-the catalog of the CGP error codes `cargo-cgp` stamps on the messages it fully rewrites — what each
-code means, what triggers it, and how to fix it — and the record of which rewrites are cosmetic and so
-carry no code. It is user-facing where the two directories are internals-facing, so it lives at the
-top level rather than inside a category.
+the catalog of the `CGP-E` error codes `cargo-cgp` stamps on a main message it rewrites into a
+recognized CGP error class — what each code means, what triggers it, and how to fix it — and the
+record of the rewrites that carry no code. It is user-facing where the two directories are
+internals-facing, so it lives at the top level rather than inside a category.
 
 As the tool grows a user-facing surface and more moving parts, expect further categories to appear
 alongside `implementation/` — a user guide to running the tool, and a fuller reference for the CGP

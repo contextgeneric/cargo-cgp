@@ -1,12 +1,13 @@
-CGP[E0277]: the provider trait bound `RedirectLookup<App, PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>: Greeter<App>` is not satisfied
+error[E0277]: [CGP-E002] the provider trait `Greeter` with context `App` is not implemented for provider `RedirectLookup<App, PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>`
   --> src/main.rs:48:9
    |
 48 |         GreeterComponent,
-   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |         ^^^^^^^^^^^^^^^^
    |
-   = note: `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>: DefaultNamespace<App>` is required through this dependency chain:
-           consumer trait impl `CanGreet` for context `App`
-           └── provider trait impl `Greeter` with context `App` for provider `RedirectLookup<App, PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>`
-               └── trait impl `DefaultNamespace` for `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>`
+   = note: root cause: the trait bound `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>: DefaultNamespace<App>` is not satisfied
+           this is required through the dependency chain:
+               consumer trait impl `CanGreet` for context `App`
+               └── provider trait impl `Greeter` with context `App` for provider `RedirectLookup<App, PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>>`
+                   └── trait impl `DefaultNamespace` for `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>`
 
 For more information about this error, try `rustc --explain E0277`.

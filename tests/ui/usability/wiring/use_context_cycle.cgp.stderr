@@ -1,4 +1,4 @@
-CGP[E0275]: overflow evaluating the requirement `Person: CanUseComponent<GreeterComponent>`
+error[E0275]: overflow evaluating the requirement `Person: CanUseComponent<GreeterComponent>`
   --> src/main.rs:40:9
    |
 40 |         GreeterComponent,

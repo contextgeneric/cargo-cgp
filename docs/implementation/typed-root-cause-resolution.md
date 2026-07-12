@@ -10,9 +10,9 @@ This is the second, deeper transformation the driver's emitter performs. The fir
 [naming the traits behind a component marker](driver.md#naming-the-traits-behind-a-component-marker) —
 edits the compiler's diagnostic in place, renaming its wording. The resolver goes further: it walks
 the wiring's typed obligations to the real root cause and renders the whole chain as a `cargo tree`,
-either replacing the diagnostic outright or swapping its sub-notes for the tree. It realizes the
-compiler-state enrichment that [The driver](driver.md) and [The error pipeline](error-pipeline.md)
-anticipated.
+rewriting the main message into its coded CGP form when it is an identified CGP class and replacing
+the sub-notes with one `root cause:` note per leaf. It realizes the compiler-state enrichment that
+[The driver](driver.md) and [The error pipeline](error-pipeline.md) anticipated.
 
 ## What it transforms, and what it leaves alone
 
@@ -20,49 +20,58 @@ The resolver considers **any diagnostic that names a CGP wiring or field trait**
 (`CanUseComponent`, `IsProviderFor`, or `HasField`) and **every method `E0599`** — no longer only an
 `E0277`. It recovers a starting obligation two ways: from a `check_components!` entry when the caret
 sits on one, and otherwise from the *use site* of a broken consumer-method call (below). Either way it
-walks the wiring obligations down to the terminal unmet bound(s) they rest on, and how it presents the
-result depends on what those leaves are.
+walks the wiring obligations down to the terminal unmet bound(s) they rest on, and the diagnostic is
+then transformed in two independent halves.
 
-**A failure that bottoms out entirely on missing fields is replaced wholesale.** This is the surfaced
-[check-trait failure](../../../cgp/docs/errors/checks/check-trait-failure.md) class, the most common
-CGP error, whose root cause the compiler renders as an unreadable nested `Symbol`. The resolver emits,
-in place of rustc's cascade, a header naming the field(s) and the context, the caret still on the
-entry, and one note per field carrying its dependency chain as a tree. The header is worded by *why*
-the bound is unmet, which the resolver decides by inspecting the actual struct the bound lands on
-(detailed under [How the root cause is recovered](#how-the-root-cause-is-recovered)): a genuinely
-absent field reads as `missing field \`height\` on context \`Rectangle\``, while a field the struct
-*does* carry but has not derived reads as `accessor trait \`HasField\` with field \`name\` is not
-implemented for \`Person\``, with a separate `help` naming the fix —
-`make sure that \`#[derive(HasField)]\` is used for \`Person\`` (pointed at the `Deref` target when
-the field is only reachable through one). That is exactly CGP's own [`missing_has_field_derive`
-fixture](../../tests/ui/usability/checks/missing_has_field_derive.rs), the present-but-underived case a
-plain "missing field" would misdescribe.
+**The main message is rewritten — and stamped with its [CGP error code](../error-code.md) — only when
+it is an identified CGP class.** An unsatisfied `CanUseComponent` bound is a
+[check-trait failure](../../../cgp/docs/errors/checks/check-trait-failure.md), so it becomes
+`[CGP-E001] the consumer trait \`CanCalculateArea\` is not implemented for context \`Rectangle\``,
+worded from the typed resolution (whose full-path marker keys make the consumer name exact even for
+same-named components); a consumer-method `E0599`, whose text names no wiring trait, gets the same
+`CGP-E001` form from the resolution; and an unsatisfied `IsProviderFor` bound becomes the `[CGP-E002]`
+provider form via the text rewrite. The rewrite restates the same fact readably — the caret is re-aimed
+at the failing entry alone, and the diagnostic's own Rust code (`E0277`, `E0599`) is kept. A main
+message that is *not* a CGP class — an ordinary bound (`f64: Eq`) the next-gen solver already descended
+to — stays rustc's own, header, labels, and caret untouched
+([`ordinary_bound_unsatisfied`](../../tests/ui/usability/checks/ordinary_bound_unsatisfied.rs)).
 
-**A failure that bottoms out on any other bound keeps rustc's own main message and only replaces the
-sub-notes with the tree.** An ordinary bound (`f64: Eq`), an unmet abstract type, or a namespace
-lookup that ends at `DefaultNamespace` gives rustc a perfectly good *header* already; what it lacks is
-the wiring context. So the resolver leaves the header (renamed by the text rewrite) and the caret
-untouched, discards rustc's own obligation-chain notes and any supplementary help, and emits one
-`= note:` per root cause carrying the dependency tree down to that leaf. The
-[`ordinary_bound_unsatisfied`](../../tests/ui/usability/checks/ordinary_bound_unsatisfied.rs) and
-[`unregistered_prefix_path`](../../tests/ui/usability/checks/unregistered_prefix_path.rs) fixtures show
-this shape.
+**The sub-messages are replaced either way.** rustc's obligation-chain notes, supplementary help, and
+structured suggestions are discarded, and each recovered root cause becomes one `= note:` opening with
+a `root cause:` lead naming its leaf, followed by the dependency chain rendered as a tree. The lead is
+worded by *why* the leaf is unmet, which the resolver decides by inspecting the actual struct a
+`HasField` bound lands on (detailed under
+[How the root cause is recovered](#how-the-root-cause-is-recovered)): a genuinely absent field reads as
+`root cause: missing field \`height\` on \`Rectangle\`` (no `context` qualifier, since `HasField` can
+land on any struct), while a field the struct *does* carry but has not derived reads as `root cause:
+accessor trait \`HasField\` with field \`name\` is not implemented for \`Person\``, with a separate
+`help` naming the fix — `make sure that \`#[derive(HasField)]\` is used for \`Person\`` (pointed at the
+`Deref` target when the field is only reachable through one; that is exactly the
+[`missing_has_field_derive` fixture](../../tests/ui/usability/checks/missing_has_field_derive.rs), the
+present-but-underived case a plain "missing field" would misdescribe). Any other leaf restates its
+bound — `root cause: the trait bound \`f64: std::cmp::Eq\` is not satisfied` — except when the kept
+main message already states that very bound, where the lead would only repeat the header and the note
+carries the chain alone
+([`ordinary_bound_unsatisfied`](../../tests/ui/usability/checks/ordinary_bound_unsatisfied.rs) versus
+[`unregistered_prefix_path`](../../tests/ui/usability/checks/unregistered_prefix_path.rs), whose
+rewritten `CGP-E002` header names the `RedirectLookup` step, not the `DefaultNamespace` leaf).
 
 **A use-site failure is handled the same way, once its obligation is recovered.** CGP wiring is lazy,
 so a broken provider dependency often surfaces not at a check but where the consumer method is *called*
 — `person.greet()` on a `Person` that cannot satisfy `HasName` — as an `E0599` "method exists but its
 trait bounds were not satisfied". There is no check impl to anchor on, so the resolver instead recovers
 the context type from the diagnostic's own spans (the "method not found for this struct" span lands on
-`Person`'s definition) and re-checks every component that context wires. The missing-field case then
-takes the wholesale-replacement path, so
+`Person`'s definition) and re-checks every component that context wires. So
 [`missing_dependency`](../../tests/ui/usability/unsatisfied-dependency/missing_dependency.rs) and
 [`unsatisfied_dependency`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.rs)
-become `missing field \`name\` on context \`Person\`` with a tree — and the misleading "this is an
-associated function… use associated function syntax instead" advice, which the method probe emits for
-CGP's `self`-less provider methods, is dropped with the rest of rustc's sub-notes. The ordinary-bound
-use-site case
+become `[CGP-E001] the consumer trait \`CanGreet\` is not implemented for context \`Person\`` (the
+code stays `E0599`, since the error is still rustc's) over a `missing field` root-cause note — and the
+misleading "this is an associated function… use associated function syntax instead" advice, which the
+method probe emits for CGP's `self`-less provider methods, is dropped with the rest of rustc's
+sub-notes. The ordinary-bound use-site case
 ([`unsatisfied-dependency/ordinary_bound_unsatisfied`](../../tests/ui/usability/unsatisfied-dependency/ordinary_bound_unsatisfied.rs))
-keeps rustc's `E0599` header and swaps its notes for the `f64: Eq` tree.
+gets the same `CGP-E001` header over a `root cause: the trait bound \`f64: std::cmp::Eq\` is not
+satisfied` note.
 
 Two boundaries keep the transform honest. A field whose name matches but whose **type** does not is
 *not* handled: with the derive present, the `HasField` trait bound still holds (for the wrong `Value`),
@@ -97,7 +106,7 @@ machinery was built.
 ## How the root cause is recovered
 
 The recovery runs in [`resolve.rs`](../../crates/cargo-cgp-driver/src/resolve.rs), driven by the
-emitter's `build_replacement`, and it is a chain of typed lookups with no string parsing until the
+emitter's `transform_resolved`, and it is a chain of typed lookups with no string parsing until the
 very last step decodes a field name. Each stage is anchored by `DefId` to the CGP crate that defines
 the trait or type it matches, so a same-named item from an unrelated crate can never drive a
 replacement — the same discipline [`component_map`](../../crates/cargo-cgp-driver/src/component_map.rs)
@@ -202,22 +211,22 @@ a [`DependencyTree`](error-processing.md) spine, rendered as `cargo tree`-style 
 [`termtree`](https://crates.io/crates/termtree) crate (a tiny, dependency-free renderer) hosted in the
 rustc-free `cargo-cgp-error-processing` crate so the rendering is unit-tested on any toolchain.
 
-**Emit in one of two shapes.** When every leaf is a field, the emitter builds a fresh replacement
-`DiagInner`: a header worded by the field classification — `missing field \`height\` on context
-\`Rectangle\`` when every field is absent, `accessor trait \`HasField\` with field \`name\` is not
-implemented for \`Person\`` when at least one is present-but-underived, and the plural list when several
-are unmet (`missing fields \`first_name\` and \`last_name\` on context \`Person\``) — carrying the
-compiler's `E0277` code and the caret on the entry, a `help` per distinct type that must derive
-(`make sure that \`#[derive(HasField)]\` is used for \`Rectangle\``, or the `Deref` target), and **one
-terse note per field**, each opening `field \`x\` is required through this dependency chain:`. When any
-leaf is *not* a field, the emitter instead keeps rustc's own `DiagInner` — its header (renamed by the
-text rewrite), code, and caret — and only *replaces its children* with those same per-cause tree notes
-(a non-field cause opens `\`f64: Eq\` is required through this dependency chain:`), discarding rustc's
-obligation-chain notes, its supplementary help, and its structured suggestions (the misleading "use
-associated function syntax" a method `E0599` carries). Either way, a provider with two absent dependencies
-yields two notes, each a self-contained path to its leaf, and the JSON emitter regenerates every
-rendered and structured field from the `DiagInner` for free, with rustc's note-continuation indentation
-aligning each tree's box-drawing under its `= note:`.
+**Emit.** The emitter (`transform_resolved`) mutates rustc's own `DiagInner` in place. The main
+message is replaced with its coded form when `categorized_header` recognizes it — the `CGP-E001`
+consumer form worded from the resolution's context and consumer trait(s) (pluralized when a use-site
+failure spans several components), or the `CGP-E002` provider form from the text rewrite — and the
+span is then collapsed to the primary caret, since the original labels restate the replaced message;
+an unrecognized main message keeps its header, labels, and caret. The children are replaced in either
+case: a `help` per distinct type that must derive
+(`make sure that \`#[derive(HasField)]\` is used for \`Rectangle\``, or the `Deref` target), then
+**one note per root cause**, each opening with its `root cause:` lead over `this is required through
+the dependency chain:` and the tree indented beneath (the lead is omitted when the kept header states
+the same bound, where the note is the chain alone). rustc's structured suggestions are discarded with
+its notes (the misleading "use associated function syntax" a method `E0599` carries). The diagnostic's
+code is never touched, so a check failure stays `E0277` and a use-site failure stays `E0599`. A
+provider with two absent dependencies yields two notes, each a self-contained path to its leaf, and
+the JSON emitter regenerates every rendered and structured field from the `DiagInner` for free, with
+rustc's note-continuation indentation aligning each tree's box-drawing under its `= note:`.
 
 ## Boundaries and open ends
 
@@ -239,14 +248,12 @@ and non-field leaves, by contrast, are handled: independent unmet dependencies b
 the descent follows the wiring to any depth up to a recursion bound, and an ordinary or capability bound
 renders as its own tree.)
 
-One consistency gap is known and left for a deliberate decision rather than silently closed. The
-front-end's header preprocessor brands a transformed diagnostic's header as `CGP[E0277]`, gated on the
-diagnostic carrying a recognizable CGP marker. A wholesale field replacement carries none of those
-markers — its text is already clean — so it renders as a plain `error[E0277]`; a non-field
-transformation keeps rustc's own header, which the text rewrite may still brand `CGP[…]`. The messages
-are unmistakably CGP-shaped either way, so this is not wrong, but it does mean the two transform shapes
-and the fallback are branded differently; closing the gap would mean teaching the front-end recognizer
-about the new forms, which touches the preprocessing stage the resolver otherwise leaves untouched.
+How a transformed diagnostic is *marked* as CGP is settled by the [error-code scheme](../error-code.md):
+a rewritten, classified main message carries its `[CGP-Exxx]` code inline, and everything else — a kept
+header over rewritten sub-messages included — is deliberately unmarked, keeping rustc's own
+`error[E0277]:` form. There is no separate header brand; an earlier `CGP[E0277]` wrapper the front-end
+once applied has been removed, since the inline code says the same thing without altering the header's
+shape.
 
 ## Source
 
@@ -260,9 +267,9 @@ about the new forms, which touches the preprocessing stage the resolver otherwis
   form (generic parameters reattached).
 - [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — the
   `try_resolve` seam (gated by a cheap `mentions_wiring` scan, or a method `E0599`) that tries the
-  check anchor then the use-site anchor, and either replaces an all-field diagnostic wholesale
-  (`render_field_replacement`) or keeps rustc's main message and swaps its children (and suggestions)
-  for the `tree_notes`, falling back to the in-place text rewrite when it returns `None`.
+  check anchor then the use-site anchor, and the `transform_resolved` mutation it feeds: the
+  `categorized_header` classification and coded main-message rewrite, the `derive_helps`, and the
+  per-cause `tree_notes`, falling back to the in-place text rewrite when resolution returns `None`.
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs)
   — the rustc-free `DependencyTree` type and its `cargo tree`-style renderer (over `termtree`), with
   unit tests in [`tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).
@@ -286,13 +293,14 @@ pointed at the target), `field_type_mismatch` (a matching field name with a mism
 a marker name in different modules, with distinct consumer *and* provider trait names, both checked →
 full-path resolution names each one's own traits with no cross-over), `generic_area_multi` (a
 three-parameter component → the parameters reattached to the consumer and provider labels), and
-`ordinary_bound_unsatisfied`/`unregistered_prefix_path` (non-field leaves — an `f64: Eq` bound and an
-unregistered `DefaultNamespace` — where rustc's header is kept and only the sub-notes become the tree).
-The use-site path is pinned by the [`unsatisfied-dependency/`](../../tests/ui/usability/unsatisfied-dependency)
+`ordinary_bound_unsatisfied`/`unregistered_prefix_path` (non-field leaves — an `f64: Eq` bound, whose
+rustc header is kept over a lead-less chain note, and an unregistered `DefaultNamespace` behind an
+`IsProviderFor` header, rewritten to the `CGP-E002` form over a `root cause:` note). The use-site path
+is pinned by the [`unsatisfied-dependency/`](../../tests/ui/usability/unsatisfied-dependency)
 fixtures: `missing_dependency` and `unsatisfied_dependency` (a consumer-method `E0599` → the
-misleading method-syntax advice dropped and replaced by a `missing field` tree) and its
-`ordinary_bound_unsatisfied` (a use-site `f64: Eq` → rustc's `E0599` header kept, notes swapped for the
-tree). The field classification is unit-tested through the name map in
+`CGP-E001` header, the misleading method-syntax advice dropped, and a `missing field` root-cause note)
+and its `ordinary_bound_unsatisfied` (a use-site `f64: Eq` → the `CGP-E001` header, code kept `E0599`,
+over the `f64: Eq` root-cause note). The field classification is unit-tested through the name map in
 [`cargo-cgp-error-processing/tests/rewrite.rs`](../../crates/cargo-cgp-error-processing/tests/rewrite.rs),
 and the renderer itself in
 [`cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).

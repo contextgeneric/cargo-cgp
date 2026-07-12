@@ -1,11 +1,9 @@
-mod header;
 mod missing_field;
 mod pipeline;
 mod resugar_symbol;
 mod strip_prefixes;
 mod text;
 
-pub use header::*;
 pub use missing_field::*;
 pub use pipeline::*;
 pub use resugar_symbol::*;

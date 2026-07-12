@@ -6,8 +6,7 @@
 
 use cargo_cgp_error_processing::cargo_metadata::diagnostic::Diagnostic;
 use cargo_cgp_error_processing::{
-    CgpDiagnostic, CgpDiagnosticDetail, extract_missing_fields, mark_cgp_header, resugar_symbol,
-    strip_cgp_prefixes,
+    CgpDiagnostic, CgpDiagnosticDetail, extract_missing_fields, resugar_symbol, strip_cgp_prefixes,
 };
 
 /// Build a `CgpDiagnostic` whose message and rendered text are both `text`.
@@ -100,7 +99,7 @@ fn missing_field_with_inline_landmark_absorbs_it() {
     ));
     assert_eq!(
         output.rendered().unwrap(),
-        "help: [CGP0001] missing field `height` in `Rectangle`\n  --> src/main.rs:45:10"
+        "help: missing field `height` on `Rectangle`\n  --> src/main.rs:45:10"
     );
     assert!(output.has_cgp_error);
     assert_eq!(
@@ -123,7 +122,7 @@ fn missing_field_with_separate_impls_note_is_recognized() {
     ));
     assert_eq!(
         output.rendered().unwrap(),
-        "help: [CGP0001] missing field `height` in `Rectangle`\n  --> src/main.rs:59:1\n\
+        "help: missing field `height` on `Rectangle`\n  --> src/main.rs:59:1\n\
          help: `Rectangle` implements trait `HasField<Tag>`"
     );
     assert!(output.has_cgp_error);
@@ -146,7 +145,7 @@ fn missing_derive_when_no_impls_present() {
     ));
     assert_eq!(
         output.rendered().unwrap(),
-        "help: [CGP0002] `#[derive(HasField)]` is required to access field `width` in `Rectangle`\n\
+        "help: `#[derive(HasField)]` is required to access field `width` on `Rectangle`\n\
          \x20 --> src/main.rs:41:1"
     );
     assert!(output.has_cgp_error);
@@ -166,55 +165,4 @@ fn missing_field_leaves_unrelated_diagnostics_alone() {
     assert_eq!(output.rendered().unwrap(), text);
     assert!(!output.has_cgp_error);
     assert!(output.details.is_empty());
-}
-
-#[test]
-fn header_mark_recognizes_a_wiring_rename_and_marks_the_header() {
-    // The driver's rename phrasing ("consumer trait bound") flags the diagnostic on its own,
-    // and its `error[E0277]:` header becomes `CGP[E0277]:` with the code kept.
-    let output = mark_cgp_header(diagnostic(
-        "error[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied",
-    ));
-    assert_eq!(
-        output.rendered().unwrap(),
-        "CGP[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied"
-    );
-    assert!(output.has_cgp_error);
-}
-
-#[test]
-fn header_mark_marks_an_already_flagged_diagnostic() {
-    // A diagnostic an earlier preprocessor flagged (has_cgp_error true) gets its header
-    // marked even without a wiring-rename phrase.
-    let mut input = diagnostic("error[E0277]: some already-recognized CGP error");
-    input.has_cgp_error = true;
-    let output = mark_cgp_header(input);
-    assert_eq!(
-        output.rendered().unwrap(),
-        "CGP[E0277]: some already-recognized CGP error"
-    );
-}
-
-#[test]
-fn header_mark_leaves_non_cgp_diagnostics_alone() {
-    let text = "error[E0277]: the trait bound `Foo: Bar` is not satisfied";
-    let output = mark_cgp_header(diagnostic(text));
-    assert_eq!(output.rendered().unwrap(), text);
-    assert!(!output.has_cgp_error);
-}
-
-#[test]
-fn header_mark_keeps_the_explain_line_and_its_code() {
-    // Only the leading header is rewritten; the trailing `--explain E0277` keeps its code.
-    let mut input = diagnostic(
-        "error[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied\n\
-         For more information about this error, try `rustc --explain E0277`.",
-    );
-    input.has_cgp_error = true;
-    let output = mark_cgp_header(input);
-    assert_eq!(
-        output.rendered().unwrap(),
-        "CGP[E0277]: the consumer trait bound `Rectangle: CanCalculateArea` is not satisfied\n\
-         For more information about this error, try `rustc --explain E0277`."
-    );
 }

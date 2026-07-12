@@ -1,4 +1,4 @@
-CGP[E0277]: the trait bound `NoScalar: HasScalarType` is not satisfied
+error[E0277]: the trait bound `NoScalar: HasScalarType` is not satisfied
   --> src/main.rs:31:31
    |
 31 | pub trait CheckMissingScalar: CanCalculateArea<NoScalar> {}

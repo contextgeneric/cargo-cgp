@@ -1,6 +1,6 @@
 [
   {
-    "message": "the method `scalars_equal` exists for struct `App`, but its trait bounds were not satisfied",
+    "message": "[CGP-E001] the consumer trait `CanCompareScalars` is not implemented for context `App`",
     "code": {
       "code": "E0599",
       "explanation": "This error occurs when a method is used on a type which doesn't implement it:\n\nErroneous code example:\n\n```compile_fail,E0599\nstruct Mouth;\n\nlet x = Mouth;\nx.chocolate(); // error: no method named `chocolate` found for type `Mouth`\n               //        in the current scope\n```\n\nIn this case, you need to implement the `chocolate` method to fix the error:\n\n```\nstruct Mouth;\n\nimpl Mouth {\n    fn chocolate(&self) { // We implement the `chocolate` method here.\n        println!(\"Hmmm! I love chocolate!\");\n    }\n}\n\nlet x = Mouth;\nx.chocolate(); // ok!\n```\n"
@@ -23,28 +23,7 @@
             "highlight_end": 30
           }
         ],
-        "label": "this is an associated function, not a method",
-        "suggested_replacement": null,
-        "suggestion_applicability": null,
-        "expansion": null
-      },
-      {
-        "file_name": "src/main.rs",
-        "byte_start": 1577,
-        "byte_end": 1591,
-        "line_start": 43,
-        "line_end": 43,
-        "column_start": 1,
-        "column_end": 15,
-        "is_primary": false,
-        "text": [
-          {
-            "text": "pub struct App;",
-            "highlight_start": 1,
-            "highlight_end": 15
-          }
-        ],
-        "label": "method `scalars_equal` not found for this struct because it doesn't satisfy `App: CanCompareScalars`",
+        "label": null,
         "suggested_replacement": null,
         "suggestion_applicability": null,
         "expansion": null
@@ -52,7 +31,7 @@
     ],
     "children": [
       {
-        "message": "`f64: std::cmp::Eq` is required through this dependency chain:\nconsumer trait impl `CanCompareScalars` for context `App`\n└── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`\n    └── trait impl `Eq` for `f64`",
+        "message": "root cause: the trait bound `f64: std::cmp::Eq` is not satisfied\nthis is required through the dependency chain:\n    consumer trait impl `CanCompareScalars` for context `App`\n    └── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`\n        └── trait impl `Eq` for `f64`",
         "code": null,
         "level": "note",
         "spans": [],
@@ -60,7 +39,7 @@
         "rendered": null
       }
     ],
-    "rendered": "error[E0599]: the method `scalars_equal` exists for struct `App`, but its trait bounds were not satisfied\n  --> src/main.rs:54:17\n   |\n43 | pub struct App;\n   | -------------- method `scalars_equal` not found for this struct because it doesn't satisfy `App: CanCompareScalars`\n...\n54 |     let _ = app.scalars_equal(&1.0, &2.0);\n   |                 ^^^^^^^^^^^^^ this is an associated function, not a method\n   |\n   = note: `f64: std::cmp::Eq` is required through this dependency chain:\n           consumer trait impl `CanCompareScalars` for context `App`\n           └── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`\n               └── trait impl `Eq` for `f64`\n\n"
+    "rendered": "error[E0599]: [CGP-E001] the consumer trait `CanCompareScalars` is not implemented for context `App`\n  --> src/main.rs:54:17\n   |\n54 |     let _ = app.scalars_equal(&1.0, &2.0);\n   |                 ^^^^^^^^^^^^^\n   |\n   = note: root cause: the trait bound `f64: std::cmp::Eq` is not satisfied\n           this is required through the dependency chain:\n               consumer trait impl `CanCompareScalars` for context `App`\n               └── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`\n                   └── trait impl `Eq` for `f64`\n\n"
   },
   {
     "message": "For more information about this error, try `rustc --explain E0599`.",
