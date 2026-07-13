@@ -26,16 +26,10 @@ keywords     = ["cgp"]
 
 [workspace.dependencies]
 anyhow = { version = "1" }
-# The rustc-free error-processing library and the diagnostic types it works over. Both
-# are ordinary crates that do not touch `rustc_private`, so the front-end can depend on
-# them without dragging in the compiler.
+# The rustc-free error-processing library the driver drives. An ordinary crate that does
+# not touch `rustc_private`, so it builds and its tests run on any toolchain.
 cargo-cgp-error-processing = { path = "crates/cargo-cgp-error-processing" }
-cargo_metadata = { version = "0.23" }
 # Renders the transitive dependency chain of a resolved check failure as a `cargo tree`-style
 # tree in the replacement diagnostic. Tiny and dependency-free, so it does not weigh down the
 # rustc-free error-processing crate that hosts the pure renderer.
 termtree = { version = "1" }
-# The front-end as a library, so the UI-test harness can reuse its own capture and render
-# functions (parsing cargo's JSON, formatting diagnostics) — the same code the tool runs.
-cargo-cgp = { path = "crates/cargo-cgp" }
-serde_json = { version = "1" }

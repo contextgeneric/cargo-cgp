@@ -10,8 +10,8 @@
 //! required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
 //! ```
 //!
-//! Given a [`ComponentNameMap`] from a marker's name to the trait names behind it, this
-//! rewrites both forms into ones that name the traits. The header rewrite also classifies
+//! Given a [`ComponentNameMap`] from a marker's name to the trait names behind it, these
+//! rewrites turn both forms into ones that name the traits. The header rewrite also classifies
 //! the message with its [CGP error code](crate::code), since an unsatisfied
 //! `CanUseComponent`/`IsProviderFor` bound is a recognized CGP error class:
 //!
@@ -26,94 +26,18 @@
 //! belong on *main* messages only — the driver applies [`rewrite_trait_bound`] to a
 //! diagnostic's header and [`rewrite_required_for`] to its sub-messages.
 //!
-//! This module lives in the rustc-free error-processing crate on purpose. The rewrite is a
-//! plain string-to-string transform over the name map, so it is unit-tested on any toolchain
-//! without a `TyCtxt`. The compiler-coupled half — walking the trait graph to *build* the map
-//! — lives in the driver (`cargo-cgp-driver`), which hands the result in through
-//! [`ComponentNameMap`]'s `fn`-pointer initializer. It is used by the driver's diagnostic
-//! emitter, alongside the [`postprocess`](crate::postprocess) fallback transforms.
-
-use std::collections::HashMap;
-use std::sync::LazyLock;
+//! Each form parses the message *before* consulting `names`, so a message that is not a CGP
+//! wiring form returns `None` without ever forcing the map's lazy initializer.
 
 use crate::code::{CONSUMER_TRAIT_UNIMPLEMENTED, PROVIDER_TRAIT_UNIMPLEMENTED};
-
-/// The consumer and provider trait names behind one component marker, recovered from the
-/// compiler. Keyed in the map by the marker's *full path* (e.g.
-/// `my_crate::area::AreaCalculatorComponent`), so two markers that share a name in different
-/// modules never collide.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ComponentTraitNames {
-    /// The consumer trait a context implements (e.g. `CanCalculateArea`).
-    pub consumer: String,
-    /// The provider trait a provider implements (e.g. `AreaCalculator`).
-    pub provider: String,
-}
-
-/// A lazily-built map from a component-marker's full path to the trait names behind it.
-///
-/// Building the map is expensive — the driver walks the whole trait graph through a
-/// `TyCtxt` — so it is wrapped in a [`LazyLock`]: the initializer runs at most once, on the
-/// first lookup, and *not at all* if no message is ever rewritten. That is what lets the
-/// emitter drop a separate "does this diagnostic mention CGP?" pre-filter: the rewrite
-/// functions look a marker up only after a message parses as a wiring form, so an ordinary
-/// diagnostic never forces the map.
-///
-/// The map has two lookup paths for its two callers. The driver's typed resolver holds a
-/// marker's `DefId` and looks it up by [`get_by_path`](Self::get_by_path) — an exact full-path
-/// match that can never confuse two same-named markers from different modules. The text rewrite
-/// has only the marker *name* rustc printed (rarely a full path), so it uses [`get`](Self::get),
-/// which matches a key by its last path segment; that is inherently ambiguous when two markers
-/// share a name, a residual the text form cannot resolve and the typed path avoids.
-///
-/// The initializer is a plain `fn` pointer, not a closure, so this type captures no compiler
-/// state and can live in this rustc-free crate. The driver supplies a `fn` that reads the
-/// `TyCtxt` from thread-local scope and builds the map (valid because a wiring message is
-/// emitted during trait solving, when a `TyCtxt` is in scope); the tests supply a `fn` that
-/// returns a fixed map.
-pub struct ComponentNameMap {
-    /// The underlying lazily-initialized map, keyed by each marker's full path. Public so the
-    /// driver and tests can also construct one directly, though [`new`](Self::new) is the usual
-    /// way.
-    pub name_map: LazyLock<HashMap<String, ComponentTraitNames>>,
-}
-
-impl ComponentNameMap {
-    /// Wrap a map initializer. `init` is a function pointer, so no state is captured here; it
-    /// runs lazily on the first lookup.
-    pub fn new(init: fn() -> HashMap<String, ComponentTraitNames>) -> Self {
-        Self {
-            name_map: LazyLock::new(init),
-        }
-    }
-
-    /// Look up the trait names behind a marker by its full path — the exact, collision-free
-    /// lookup the driver's typed resolver uses. Forces the lazy build on first use.
-    pub fn get_by_path(&self, path: &str) -> Option<ComponentTraitNames> {
-        self.name_map.get(path).cloned()
-    }
-
-    /// Look up the trait names behind a marker by its bare name, matching a full-path key by its
-    /// last segment — the lookup the text rewrite uses, since rustc prints the marker unqualified.
-    /// When two markers share a name (in different modules) the match is arbitrary; the text form
-    /// cannot tell them apart, whereas the typed resolver keys on the full path via
-    /// [`get_by_path`](Self::get_by_path). Forces the lazy build on first use.
-    pub fn get(&self, name: &str) -> Option<ComponentTraitNames> {
-        self.name_map
-            .iter()
-            .find(|(path, _)| last_segment(path) == name)
-            .map(|(_, entry)| entry.clone())
-    }
-}
+use crate::rewrite::names::ComponentNameMap;
+use crate::rewrite::parse::parse_trait_bound;
+use crate::rewrite::text::{last_segment, split_generics, split_top_level};
 
 /// Rewrite one diagnostic message into its trait-named form, or return `None` to leave it
 /// unchanged. This is the entry point the emitter drives over every message; it tries each
 /// recognized CGP wiring form — the obligation-chain notes ([`rewrite_required_for`]), then
 /// the primary `the trait bound … is not satisfied` header ([`rewrite_trait_bound`]).
-///
-/// Each form parses the message *before* consulting `names`, so a message that is not a CGP
-/// wiring form returns `None` without ever calling [`ComponentNameMap::get`] — which is what
-/// keeps the map's lazy initializer from running for an ordinary diagnostic.
 pub fn rewrite_message(message: &str, names: &ComponentNameMap) -> Option<String> {
     rewrite_required_for(message, names).or_else(|| rewrite_trait_bound(message, names))
 }
@@ -156,47 +80,6 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
         }
         _ => None,
     }
-}
-
-/// The parsed pieces of a "the trait bound `S: Trait<…>` is not satisfied" message — the form
-/// rustc opens a trait-bound failure with. The driver uses the parse on its own to *classify*
-/// a main message (is this a `CanUseComponent` failure? does the header already name the
-/// leaf bound?) before deciding how to transform the diagnostic around it.
-pub struct ParsedTraitBound<'a> {
-    /// The bound's self type, e.g. `Rectangle` or `f64`.
-    pub subject: &'a str,
-    /// The whole bound as printed, e.g. `f64: std::cmp::Eq`.
-    pub bound: &'a str,
-    /// The trait path's last segment, e.g. `CanUseComponent` or `Eq`.
-    pub trait_name: &'a str,
-    /// The raw generic-argument text of the trait, e.g. `AreaCalculatorComponent, Rectangle`
-    /// — empty when the trait has no generics.
-    pub args: &'a str,
-    /// Whatever follows `is not satisfied`, usually empty.
-    pub tail: &'a str,
-}
-
-/// Parse a "the trait bound `…` is not satisfied" message, or return `None` for any other
-/// message shape.
-pub fn parse_trait_bound(message: &str) -> Option<ParsedTraitBound<'_>> {
-    let rest = message.strip_prefix("the trait bound `")?;
-    let (bound, tail) = rest.split_once("` is not satisfied")?;
-    // `Self: Trait<…>` — the first `: ` separates the self type from the trait, and neither a
-    // path (`::`) nor a generic argument inside the self type contains a colon *followed by a
-    // space*, so this split cannot land inside either.
-    let (subject, trait_ref) = bound.split_once(": ")?;
-
-    let (path, args) = match split_generics(trait_ref) {
-        Some((path, args)) => (path, args),
-        None => (trait_ref, ""),
-    };
-    Some(ParsedTraitBound {
-        subject,
-        bound,
-        trait_name: last_segment(path),
-        args,
-        tail,
-    })
 }
 
 /// Rewrite the primary "the trait bound `…` is not satisfied" header a wiring failure opens
@@ -282,39 +165,4 @@ fn render_trait_generics(leading: &[&str], params: &[&str]) -> String {
     } else {
         format!("<{}>", generics.join(", "))
     }
-}
-
-/// Split `Path<args>` into its path (`Path`) and the raw argument text (`args`), requiring
-/// the string to be a single generic application closed by a trailing `>`.
-fn split_generics(s: &str) -> Option<(&str, &str)> {
-    let lt = s.find('<')?;
-    let args = s.strip_suffix('>')?.get(lt + 1..)?;
-    Some((&s[..lt], args))
-}
-
-/// The last `::`-separated segment of a path, so `cgp::prelude::IsProviderFor` becomes
-/// `IsProviderFor` and a component key matches the compiler's unqualified item name.
-fn last_segment(path: &str) -> &str {
-    path.rsplit("::").next().unwrap_or(path).trim()
-}
-
-/// Split a generic argument list on its top-level commas, so a nested `<…>`, `(…)`, or
-/// `[…]` argument (e.g. a generic context or a `Params` tuple) is kept whole.
-fn split_top_level(args: &str) -> Vec<&str> {
-    let mut depth: i32 = 0;
-    let mut parts = Vec::new();
-    let mut start = 0;
-    for (i, c) in args.char_indices() {
-        match c {
-            '<' | '(' | '[' => depth += 1,
-            '>' | ')' | ']' => depth -= 1,
-            ',' if depth == 0 => {
-                parts.push(&args[start..i]);
-                start = i + 1;
-            }
-            _ => {}
-        }
-    }
-    parts.push(&args[start..]);
-    parts
 }

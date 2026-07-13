@@ -78,7 +78,8 @@ reason — only the driver links the compiler's internal libraries, and keeping 
 front-end keeps it a small, ordinary binary that builds without loading LLVM. A third, library-only
 crate, **`cargo-cgp-error-processing`** (`crates/cargo-cgp-error-processing`), holds the rustc-free
 string-level diagnostic helpers the driver drives — the wiring-message rewrite, the fallback
-post-processing text transforms, and the dependency-tree renderer; it links no compiler internals
+post-processing text transforms, the rustc-free root-cause model and the diagnostic-plan wording
+that turns it into text, and the dependency-tree renderer; it links no compiler internals
 either, so it builds and tests on any toolchain (see
 [Error processing](docs/implementation/error-processing.md)).
 
@@ -124,6 +125,31 @@ literals. Do not put logic in a `bin` target; implement everything as library fu
 `bin` file be a lightweight wrapper around the entrypoint (the one exception is the driver binary's
 `#![feature(rustc_private)]` gate, which must be on the binary crate for linking).
 
+Give each module one construct — a single type with its inherent impls, or one function — or a small
+group of closely-related utility functions, and no more. A module that accumulates several constructs
+is a directory waiting to happen: split it into one file per construct under a sub-directory whose
+`mod.rs` re-exports them, rather than letting one file grow. The driver's `emitter/` and `resolve/`,
+and the helper library's `rewrite/`, `postprocess/`, and `diagnosis/`, are the worked examples — each
+was one large file before it earned a directory.
+
+Prefer plain, side-effect-free functions that take their inputs as parameters and return data. A
+function that *computes* a value — a rewritten message, a diagnostic plan, a dependency tree — is
+reachable and pinnable by a unit test through the crate's public API, so keep the side effects
+(launching a process, reading the environment, mutating rustc's `DiagInner`) at the thin edges that
+call those functions. The diagnostic wording is the pattern to follow: the driver's emitter mutates a
+`DiagInner`, but only from the strings a pure `plan_resolved` returns, and that planning is tested on
+hand-built inputs with no compiler in the loop.
+
+Keep as much logic as possible out of the `rustc_private` linkage, in the rustc-free
+`cargo-cgp-error-processing` crate, so it builds and its tests run on any toolchain. When logic is
+entangled with the compiler, look for a plain-data boundary that lets the rustc-free half move
+across: the driver reads compiler state into an owned, `String`-only model (`Resolved`,
+`DependencyTree`), and everything downstream of that model — the wording, the plan, the tree
+rendering — lives in the helper crate. Reach for a newtype, a small enum, or a `fn`-pointer seam (as
+`ComponentNameMap` and `DiagKind` do) rather than dragging a compiler type into code that does not
+truly need it. When you move code across the boundary, add the unit test that its new rustc-free home
+makes possible.
+
 Keep tests out of `src/`. Do not write inline `#[cfg(test)] mod tests` blocks; every test lives in
 the crate's `tests/` directory alongside `src/`, as an integration test exercising the crate's
 public API. This keeps source files focused on the code, and it means a function worth testing is
@@ -148,40 +174,46 @@ untouched (the driver does every diagnostic transform, so the front-end captures
 nothing); `driver_path.rs` locates the sibling driver executable; and `sysroot.rs` discovers the
 toolchain sysroot.
 
-The driver (`crates/cargo-cgp-driver/src`) is smaller. `run.rs` is the entrypoint that runs the
-compiler through `rustc_driver`; `args.rs` turns the wrapper's process arguments into a rustc
-argument vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds
-the `Callbacks` implementation, whose `config` hook installs the diagnostic-transforming emitter;
-`emitter.rs` is that emitter, `CgpEmitter<E>`, generic over its inner emitter so `install` can wrap
-whichever the compiler's default would build — a `JsonEmitter` or an `AnnotateSnippetEmitter` — and
-render text or JSON like vanilla `rustc`. It transforms a wiring failure into its root-cause
-dependency tree when it can (rewriting a main message that is an identified CGP class into its
-`[CGP-Exxx]`-coded form — the Rust code kept — and swapping the sub-notes for one `root cause:` note
-per leaf); otherwise it falls back to renaming CGP wiring messages, and every diagnostic then goes
-through the post-processing cleanup (strip CGP path prefixes, resugar `Symbol!` and `Path!`, reword an
-unmet `HasField` bound) so no raw CGP construct leaks. `resolve.rs` is that typed resolver, recovering the
-failing obligation either from a `check_components!` entry or from the use site of a broken
-consumer-method call (`E0599`), then descending the wiring to each terminal leaf (a `HasField` field
-or an ordinary bound) (see
-[Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md));
+The driver (`crates/cargo-cgp-driver/src`) is organized around the compiler wrapping and the
+diagnostic transform. `run.rs` is the entrypoint that runs the compiler through `rustc_driver`;
+`args.rs` turns the wrapper's process arguments into a rustc argument vector (dropping the injected
+`rustc` path and injecting `--sysroot`); `callbacks.rs` holds the `Callbacks` implementation, whose
+`config` hook installs the diagnostic-transforming emitter; `config.rs` holds the shared names and
+the injected flags. The transform is split across two directories. `emitter/` is the `CgpEmitter<E>`
+seam: `install.rs` rebuilds whichever inner emitter the compiler's default would build — a
+`JsonEmitter` or an `AnnotateSnippetEmitter` — and wraps it, `cgp_emitter.rs` is the wrapper type and
+its `emit_diagnostic` orchestration (try the typed resolver, else the text rewrite, then always
+post-process), and `edit.rs` holds the `DiagInner`-editing helpers. `resolve/` is the typed
+root-cause resolver: `anchor.rs` recovers the failing obligation from a `check_components!` entry or
+the use site of a broken consumer-method call (`E0599`), `walk.rs` descends the wiring to each
+terminal leaf, `classify.rs` turns a leaf into the rustc-free model by inspecting the struct it lands
+on, `label.rs` renders each path predicate as a tree label, and `cgp_item.rs` holds the
+DefId-anchored CGP-trait recognition every stage relies on (see
+[Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md)).
 `component_map.rs` builds the component-marker → consumer/provider trait-name map by querying the
-trait solver; `config.rs` holds the shared names. The compiler-free wiring rewrite, the
-post-processing transforms, and the lazily-built `ComponentNameMap` all live in the
-`cargo-cgp-error-processing` crate (the driver's one ordinary dependency), so they are unit-tested
-without the driver's `rustc_private` linkage.
+trait solver. Everything downstream of the resolver's rustc-free `Resolved` model — the
+header/note/help wording, the diagnostic plan, the wiring rewrite, the post-processing transforms,
+and the lazily-built `ComponentNameMap` — lives in the `cargo-cgp-error-processing` crate (the
+driver's one ordinary dependency), so it is unit-tested without the driver's `rustc_private` linkage.
 
-The helper library (`crates/cargo-cgp-error-processing/src`) is the smallest and holds no compiler
-linkage. It is entirely driver-driven — the front-end no longer touches diagnostics — and hosts the
-string-level logic here so it can be unit-tested on any toolchain. `postprocess/` holds the fallback
-text transforms the driver applies to a diagnostic's messages (stripping CGP path prefixes,
-resugaring `Symbol!` and `Path!`, rewriting unmet `HasField` bounds into missing-field messages),
-exposed as pure `&str -> Option<String>` functions and the `postprocess_message` chain; `rewrite.rs` is the string
-rewrite that renames CGP wiring messages and the lazily-built `ComponentNameMap` it uses; `tree.rs`
-is the `DependencyTree` type and its `cargo tree`-style renderer (over the `termtree` crate) that the
-driver's typed resolver uses to show a check failure's transitive dependency chain; `code.rs` holds
-the `CGP-E` error-code constants stamped on classified main messages (catalogued in
-docs/error-code.md). Its tests in `tests/` drive the post-processors, the rewrite, and the tree
-renderer over hand-built inputs, so they run on any toolchain.
+The helper library (`crates/cargo-cgp-error-processing/src`) is the rustc-free half, holding no
+compiler linkage and driven entirely by the driver's emitter (the front-end no longer touches
+diagnostics), so its logic is unit-tested on any toolchain. `postprocess/` holds the fallback text
+transforms the driver applies to a diagnostic's messages — one module per transform (stripping CGP
+path prefixes, resugaring `Symbol!` and `Path!`, rewriting unmet `HasField` bounds into missing-field
+messages), each a pure `&str -> Option<String>` function — plus `chain.rs` for the
+`postprocess_message` chain, with `mod.rs` re-exporting only. `rewrite/` is the wiring-message
+rewrite: `message.rs` (the note and header rewrites), `names.rs` (the `ComponentTraitNames` and the
+lazily-built `ComponentNameMap`), `parse.rs` (the trait-bound parse), and `text.rs` (the shared
+splitting utilities). `diagnosis/` is the rustc-free root-cause model and its wording:
+`leaf.rs`/`resolved.rs` (the `Leaf`/`FieldIssue`/`Cause`/`Resolved` types the driver's resolver fills
+in), `wording.rs` (the pure `Resolved`-to-text builders), and `plan.rs` (`plan_resolved`, which words
+a `Resolved` into the header, help, and note strings the emitter emits, and holds the
+`categorized_header` classification). `tree.rs` is the `DependencyTree` type and its `cargo tree`-style
+renderer (over the `termtree` crate); `code.rs` holds the `CGP-E` error-code constants stamped on
+classified main messages (catalogued in docs/error-code.md). Its tests in `tests/` drive the
+post-processors, the rewrite, the diagnosis plan and wording, and the tree renderer over hand-built
+inputs, so they run on any toolchain.
 
 ## Commands
 
@@ -226,9 +258,15 @@ own throwaway crate (so they never share a `src/main.rs` or a cargo target lock)
 the worker count, which otherwise defaults to the machine's parallelism capped at 8. The snapshots
 capture `cargo-cgp`'s own output end to end, so they are what changes once the tool reformats
 diagnostics; a passing suite is also the standing end-to-end proof that the driver runs as the
-compiler. Add a scenario by dropping a `<name>.rs` file (with a `fn main`) into the matching
-`tests/ui/<class>/` directory and running
-`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes both snapshot files).
+compiler. The fixtures are grouped under `tests/ui/` by the *quality of the output* the tool
+produces: `ok/` for a clean compile, `acceptable/` for an error whose cause the tool already presents
+well, and `usability/` for one with a remaining presentation problem — each split into concept
+sub-directories so no directory grows crowded. Add a scenario by dropping a `<name>.rs` file (with a
+`fn main`) into the sub-directory that matches its output quality and running
+`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes both snapshot files). A fixture
+whose output improves enough to clear the usability bar graduates from `usability/` into
+`acceptable/` (a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr` triple — the snapshots are
+independent of the fixture's directory, so no re-bless is needed).
 Snapshots are blessed under the pinned toolchain, so a toolchain bump can require a re-bless. The full
 testing picture — the harness structure, why it drives the whole tool rather than the driver
 directly, and the comparison with Clippy — is documented in

@@ -110,7 +110,8 @@ fix). They accompany a coded main message or a kept rustc one; the note itself i
 **Obligation-note renaming** rewrites the `required for … to implement …` chain notes of an
 unresolved (fallback) diagnostic to name the consumer and provider traits instead of the wiring
 traits. The rename runs in the driver;
-[`rewrite.rs`](../crates/cargo-cgp-error-processing/src/rewrite.rs) owns the string transform.
+[`rewrite/message.rs`](../crates/cargo-cgp-error-processing/src/rewrite/message.rs) owns the string
+transform.
 
 **Prefix stripping** removes the CGP module paths rustc prints in front of CGP type names, so
 `cgp::prelude::Chars` becomes `Chars`. It only shortens a name;
@@ -137,9 +138,11 @@ owns it.
 This catalog is bound by the same synchronization rule as the rest of the knowledge base
 ([docs/AGENTS.md](AGENTS.md)): the codes are defined in the code, so this document must track them.
 The constants live in the [`code`](../crates/cargo-cgp-error-processing/src/code.rs) module of the
-error-processing crate, and are stamped by the two main-message rewrites — the text form in
-[`rewrite_trait_bound`](../crates/cargo-cgp-error-processing/src/rewrite.rs) and the typed form in
-the driver's [`emitter`](../crates/cargo-cgp-driver/src/emitter.rs) (`categorized_header`). When a
+error-processing crate, and are stamped by the two main-message rewrites — both rustc-free, in that
+same crate. The text form is stamped by
+[`rewrite_trait_bound`](../crates/cargo-cgp-error-processing/src/rewrite/message.rs), and the typed
+form by [`plan_resolved`](../crates/cargo-cgp-error-processing/src/diagnosis/plan.rs)'s
+`categorized_header`, which the driver's emitter feeds from the resolved failure. When a
 new class of main message is recognized and rewritten, assign it the next `CGP-E` number, add the
 constant, and register the class here in the same change. When a rewrite does not classify the main
 message, add it to [uncoded rewrites](#uncoded-rewrites) instead — do not spend a code on it.

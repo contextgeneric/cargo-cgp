@@ -15,29 +15,38 @@ compiler, no cargo, and no `cargo-cgp` process in the loop.
 
 ## What the crate holds
 
-The crate has three tenants, and all three are driven by the driver's emitter. Grouping them here,
-apart from the driver, is what keeps them unit-testable.
+The crate has four tenants, all driven by the driver's emitter. Grouping them here, apart from the
+driver, is what keeps them unit-testable.
 
 - **Post-processing** ([`postprocess`](../../crates/cargo-cgp-error-processing/src/postprocess)) is
   the set of fallback text transforms the driver applies to a diagnostic's messages so raw CGP
   constructs do not look confusing. Each is a pure `&str -> Option<String>` — `Some` when it changed
-  the text — and [`postprocess_message`](../../crates/cargo-cgp-error-processing/src/postprocess/mod.rs)
-  chains them.
-- **The wiring rewrite** ([`rewrite`](../../crates/cargo-cgp-error-processing/src/rewrite.rs)) is the
+  the text — and
+  [`postprocess_message`](../../crates/cargo-cgp-error-processing/src/postprocess/chain.rs) chains
+  them.
+- **The wiring rewrite** ([`rewrite`](../../crates/cargo-cgp-error-processing/src/rewrite)) is the
   string transform that renames CGP wiring messages, over the
-  [`ComponentNameMap`](../../crates/cargo-cgp-error-processing/src/rewrite.rs) the driver fills in
-  from the compiler. It is documented where it is used, in
+  [`ComponentNameMap`](../../crates/cargo-cgp-error-processing/src/rewrite/names.rs) the driver fills
+  in from the compiler. It is documented where it is used, in
   [The driver](driver.md#naming-the-traits-behind-a-component-marker).
+- **The diagnosis model and its wording**
+  ([`diagnosis`](../../crates/cargo-cgp-error-processing/src/diagnosis)) is the rustc-free root-cause
+  model — the `Resolved` failure the driver's typed resolver produces, in owned `String` form — and
+  the wording that turns it into diagnostic text. `plan_resolved` composes the rewritten header, the
+  derive `help`s, and the per-cause `root cause:` notes into a `DiagnosisPlan`, which the emitter only
+  maps onto rustc's `DiagInner`; keeping every piece rustc-free is what makes the whole
+  diagnosis-to-text layer unit-testable without a `TyCtxt`. It is documented in
+  [Typed root-cause resolution](typed-root-cause-resolution.md).
 - **The dependency-tree renderer**
   ([`tree`](../../crates/cargo-cgp-error-processing/src/tree.rs)) is the `DependencyTree` type and its
-  `cargo tree`-style renderer, over the tiny `termtree` crate, that the driver's typed resolver uses
-  to show a check failure's transitive dependency chain. It is documented in
-  [Typed root-cause resolution](typed-root-cause-resolution.md).
+  `cargo tree`-style renderer, over the tiny `termtree` crate, that the driver's resolver builds and
+  the diagnosis wording renders to show a check failure's transitive dependency chain. It is
+  documented in [Typed root-cause resolution](typed-root-cause-resolution.md).
 
-A fourth module, [`code`](../../crates/cargo-cgp-error-processing/src/code.rs), holds the `CGP-E`
-error-code constants the rewrite and the resolver stamp on classified main messages (catalogued in
-[error-code.md](../error-code.md)). This document covers the post-processing transforms in full and
-points at the other tenants' own documents.
+A fifth module, [`code`](../../crates/cargo-cgp-error-processing/src/code.rs), holds the `CGP-E`
+error-code constants the rewrite and the diagnosis wording stamp on classified main messages
+(catalogued in [error-code.md](../error-code.md)). This document covers the post-processing transforms
+in full and points at the other tenants' own documents.
 
 ## Where post-processing sits in the pipeline
 
@@ -143,7 +152,12 @@ cases can be exercised as ordinary library tests. This is what the rustc-free de
 [`tests/postprocess.rs`](../../crates/cargo-cgp-error-processing/tests/postprocess.rs) drives each
 transform — a stripped prefix, an exactly-matched `Symbol!`, a wrong length or foreign type left
 alone, the single-field (inline and separate-note landmark) versus missing-derive branches, and the
-`postprocess_message` chain end to end.
+`postprocess_message` chain end to end. The diagnosis wording is tested the same way, only over a
+hand-built `Resolved` rather than a string:
+[`tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs) drives
+`plan_resolved` through the missing-field, missing-derive, `Deref`-target, field-type-mismatch,
+use-site, kept-ordinary-bound, and provider-header cases, asserting the header, `help`s, and notes it
+returns with no compiler in the loop.
 
 The [UI snapshot suite](testing.md) exercises the transforms a second way, over real diagnostics:
 every fixture's `.cgp.stderr` is what the driver rendered after applying them, so a change to a
@@ -188,6 +202,11 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   the `postprocess_message` chain.
 - [`crates/cargo-cgp-error-processing/tests/rewrite.rs`](../../crates/cargo-cgp-error-processing/tests/rewrite.rs) —
   the wiring-message rewrite over a hand-built name map (see [The driver](driver.md#tests)).
+- [`crates/cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs) —
+  `plan_resolved` and the wording over hand-built `Resolved` values: the missing-field, missing-derive,
+  and `Deref`-target field cases, a field-type mismatch, a use-site method failure, a kept ordinary
+  bound (header dropped, lead-less note), a provider header via the text rewrite, and the pluralized
+  consumer header.
 - [`crates/cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs) —
   the dependency-tree renderer (see [Typed root-cause resolution](typed-root-cause-resolution.md#tests)).
 - The [UI snapshot suite](testing.md) exercises the transforms over every fixture's real diagnostics:
@@ -196,19 +215,28 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
 ## Source
 
 - [`crates/cargo-cgp-error-processing/src/postprocess/`](../../crates/cargo-cgp-error-processing/src/postprocess) —
-  the post-processing transforms: `mod.rs` (the `postprocess_message` chain), `strip_prefixes.rs`
-  (`strip_cgp_prefixes` and the `CGP_PREFIXES` constant), `resugar_symbol.rs` (the exact-match
-  `Symbol!` parser), `resugar_path.rs` (the `PathCons` → `Path!` resugarer), and `missing_field.rs`
-  (`rewrite_missing_fields`, `context_has_hasfield_impls`, and the single-field-vs-missing-derive
-  classification).
-- [`crates/cargo-cgp-error-processing/src/rewrite.rs`](../../crates/cargo-cgp-error-processing/src/rewrite.rs) —
-  the wiring-message rewrite and `ComponentNameMap` the driver drives (see
-  [The driver](driver.md#naming-the-traits-behind-a-component-marker)).
+  the post-processing transforms: `mod.rs` (re-exports), `chain.rs` (the `postprocess_message` chain),
+  `strip_prefixes.rs` (`strip_cgp_prefixes` and the `CGP_PREFIXES` constant), `resugar_symbol.rs` (the
+  exact-match `Symbol!` parser), `resugar_path.rs` (the `PathCons` → `Path!` resugarer), and
+  `missing_field.rs` (`rewrite_missing_fields`, `context_has_hasfield_impls`, and the
+  single-field-vs-missing-derive classification).
+- [`crates/cargo-cgp-error-processing/src/rewrite/`](../../crates/cargo-cgp-error-processing/src/rewrite) —
+  the wiring-message rewrite and `ComponentNameMap` the driver drives: `mod.rs` (re-exports),
+  `message.rs` (`rewrite_message` and the note/header forms, including the code-stamping
+  `rewrite_trait_bound`), `names.rs` (`ComponentNameMap`/`ComponentTraitNames`), `parse.rs`
+  (`parse_trait_bound`), and `text.rs` (the segment/generics splitters). See
+  [The driver](driver.md#naming-the-traits-behind-a-component-marker).
+- [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis) —
+  the rustc-free root-cause model and its wording: `leaf.rs` (`Leaf`/`FieldIssue`), `resolved.rs`
+  (`Cause`/`Resolved`), `wording.rs` (the `Resolved`→`String` builders — `consumer_header`,
+  `field_mismatch_header`, `cause_note`, `derive_help_messages`), and `plan.rs` (`DiagKind`,
+  `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`). See
+  [Typed root-cause resolution](typed-root-cause-resolution.md).
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs) —
   the `DependencyTree` type and its `cargo tree`-style renderer.
 - [`crates/cargo-cgp-error-processing/src/code.rs`](../../crates/cargo-cgp-error-processing/src/code.rs) —
   the `CGP-E` error-code constants, catalogued in [error-code.md](../error-code.md).
-- [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — the
+- [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the
   driver-side caller: applies the transforms over a `DiagInner`'s messages and span labels after its
   own rewrite.
 

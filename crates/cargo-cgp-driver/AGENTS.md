@@ -13,27 +13,31 @@ The module layout is short. [`run.rs`](src/run.rs) is the entrypoint — called 
 [`args.rs`](src/args.rs) prepares the rustc argument vector (wrapper-mode stripping, sysroot
 injection, and injecting the flags in [`config.rs`](src/config.rs)); `config.rs` holds the shared
 names and the injected flags; [`callbacks.rs`](src/callbacks.rs) holds the `Callbacks` implementation,
-whose `config` hook installs the transforming emitter; [`emitter.rs`](src/emitter.rs),
-[`resolve.rs`](src/resolve.rs), and [`component_map.rs`](src/component_map.rs) make up the
+whose `config` hook installs the transforming emitter; [`emitter/`](src/emitter),
+[`resolve/`](src/resolve), and [`component_map.rs`](src/component_map.rs) make up the
 compiler-coupled half of the diagnostic transforms. The compiler-free half — the wiring rewrite, the
-post-processing text transforms, and the `ComponentNameMap` — lives in the
-`cargo-cgp-error-processing` crate (the driver's one ordinary dependency), so it can be unit-tested
-without this crate's `rustc_private` linkage.
+post-processing text transforms, the root-cause `diagnosis` model and the wording it turns into
+diagnostic text, and the `ComponentNameMap` — lives in the `cargo-cgp-error-processing` crate (the
+driver's one ordinary dependency), so it can be unit-tested without this crate's `rustc_private`
+linkage. Both compiler-coupled modules are split into a directory of focused files behind a re-exporting
+`mod.rs`: `emitter/` into `install`, `cgp_emitter`, and `edit`, and `resolve/` into `anchor`, `walk`,
+`classify`, `label`, and `cgp_item`.
 
 The driver does **all** of the tool's diagnostic work; the front-end merely forwards cargo's output.
 It affects diagnostics in three ways. First it injects `-Znext-solver=globally`
 ([`config::NEXT_SOLVER_FLAG`](src/config.rs)) and `--verbose` to configure how the compiler produces
 diagnostics — a coarse, parse-free lever. Second, through `callbacks.rs`, it installs a custom
-emitter — [`emitter.rs`](src/emitter.rs)'s `CgpEmitter<E>`, generic over its inner emitter so it wraps
+emitter — [`emitter/`](src/emitter)'s `CgpEmitter<E>`, generic over its inner emitter so it wraps
 whichever the compiler's default would build (a `JsonEmitter` or an `AnnotateSnippetEmitter`) and
 renders text or JSON like vanilla `rustc`. That emitter *rewrites* diagnostics the compiler has
 already built: it reaches the live `TyCtxt` (from thread-local scope, valid because a wiring note is
 built during trait solving), [`component_map.rs`](src/component_map.rs) inverts the `IsProviderFor`
 supertrait (anchored by `DefId` identity to the `cgp_component` crate, not matched by name) and
 consumer-blanket-impl links into a component-marker → trait-names map, wrapped in a lazily-built
-`ComponentNameMap`, and [`resolve.rs`](src/resolve.rs) recovers a check failure's root-cause
-dependency tree from the trait solver; the compiler-free `rewrite` module (in
-`cargo-cgp-error-processing`) renames the wiring messages. Third, every diagnostic then goes through
+`ComponentNameMap`, and [`resolve/`](src/resolve) recovers a check failure's root causes from the
+trait solver as the rustc-free `Resolved` model the `diagnosis` module (in
+`cargo-cgp-error-processing`) words into the replacement header, help, and note text; the compiler-free
+`rewrite` module renames the wiring messages when the resolver declines. Third, every diagnostic then goes through
 the compiler-free `postprocess` transforms (strip CGP path prefixes, resugar `Symbol!` and `Path!`,
 reword an unmet `HasField` bound), the final cleanup that keeps raw CGP constructs readable. The transforms are
 documented in full in

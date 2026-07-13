@@ -51,10 +51,13 @@ tool could, it is a usability issue. Both draw their evidence from the fixtures 
 the upstream [CGP error catalog](../../../cgp/docs/errors/README.md), which maps every error class
 CGP produces and, class by class, whether the root cause is present in the output or suppressed.
 
-A third category holds the fixtures that are *not* problems: [`tests/ui/ok/`](../../tests/ui/ok) is
-the passing baseline, where `cargo-cgp`'s output is of high quality and needs no further work. It has
-no matching issues document because there is nothing to fix. For now it holds only the
-clean-compile baseline (a correctly-wired program that checks with empty output); no *reformatted
-error message* has reached that bar yet, because no usability issue has been fixed. As issues are
-closed, their fixtures graduate into `ok/`, and its snapshots become the standing proof the tool
-keeps producing good output.
+Two further categories hold the fixtures that are *not* open problems, and neither has a matching
+issues document because there is nothing to fix. [`tests/ui/ok/`](../../tests/ui/ok) is the
+clean-compile baseline — correctly-wired programs that check with empty output.
+[`tests/ui/acceptable/`](../../tests/ui/acceptable) is where an *error* fixture graduates once
+`cargo-cgp` presents its cause well enough: the typed root-cause resolver has already carried the
+whole check-trait-failure family there, so `acceptable/` holds the reformatted errors that clear the
+usability bar, grouped into concept sub-directories. Their snapshots are the standing proof the tool
+keeps producing good output. As a usability issue is closed, its fixture graduates from `usability/`
+into `acceptable/` — a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr` triple, since the
+snapshots are independent of the fixture's directory.

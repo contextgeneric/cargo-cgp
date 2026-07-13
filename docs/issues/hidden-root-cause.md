@@ -24,11 +24,10 @@ below so a future agent recognizes them, and states what a genuinely new case wo
 to belong here.
 
 This is not merely the absence of a *known* case: the whole upstream CGP compile-fail suite has been
-run through cargo-cgp and snapshotted under the
-[`tests/ui/usability/`](../../tests/ui/usability) kind subdirectories, and every reproducible class
-carries its root cause in the tool's output — so the catalog's own hidden class (an unsatisfied dependency
-reached by a consumer-method call) surfaces here too, and nothing across the catalog lands in this
-category. The one upstream fixture that produces no usable diagnostic under cargo-cgp,
+run through cargo-cgp and snapshotted under [`tests/ui/`](../../tests/ui) (across the `acceptable/`
+and `usability/` categories), and every reproducible class carries its root cause in the tool's
+output — so the catalog's own hidden class (an unsatisfied dependency reached by a consumer-method
+call) surfaces here too, and nothing across the catalog lands in this category. The one upstream fixture that produces no usable diagnostic under cargo-cgp,
 `inheritance_cycle`, does so because the next-gen solver *accepts* it (a missing error, tracked as a
 solver caveat in [The driver](../implementation/driver.md#choosing-the-trait-solver)), not
 because a cause is suppressed.
@@ -50,9 +49,10 @@ provider trait and does not compute the real missing leaf bound at all, so no am
 processing could recover it — the leaf was never in the diagnostic. `cargo-cgp` defeats this by
 injecting `-Znext-solver=globally`, which descends to the leaf and even renders CGP's own "add
 `#[derive(HasField)]`" hint. The fixture that once showed the hidden form,
-[`usability/unsatisfied_dependency.rs`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.rs), now
-demonstrates the recovered cause and lives under [usability](usability.md), where its remaining
-problem — a misleading, verbose presentation — actually lies.
+[`unsatisfied_dependency`](../../tests/ui/acceptable/use-site/unsatisfied_dependency.rs), now
+demonstrates the recovered cause — and, since the typed resolver also cleaned up its once-verbose,
+misleading presentation into a `[CGP-E001]` headline over a `root cause:` note, it lives under
+[`acceptable/`](../../tests/ui/acceptable) rather than as a usability case.
 
 ### Defeated: a field name the printer elided a character from
 
@@ -60,14 +60,14 @@ The second archetype was a field name the compiler printed with a character miss
 could not be read back from the diagnostic at all. When a provider needs a field the context lacks and
 the context has a *near-miss* field, rustc reports the unmet bound through its two-line "similar impl
 exists" hint and, in that hint, diffs the two `HasField` symbols and replaces every generic argument
-they share with `_`. In [`usability/base_area_1.rs`](../../tests/ui/usability/checks/base_area_1.rs) a
+they share with `_`. In [`base_area_1`](../../tests/ui/acceptable/fields/base_area_1.rs) a
 `Rectangle` that has `width` but not `height` made the two symbols share the character `'h'`, and that
 shared `'h'` was collapsed to `_` in *both* names — `h,e,i,g,_,t` for `height` — so the field name was
 absent from the text, not merely encoded. `cargo-cgp` defeats this by injecting `--verbose`, which
 turns off the compiler's matching-argument elision (along with two related compressions) so the full
-`Symbol` always prints. That fixture, too, now lives under [usability](usability.md), where its
-remaining problem — the field name is present but written as an encoded type-level string — is a
-readability burden rather than an insufficiency.
+`Symbol` always prints. That fixture, too, now lives under [`acceptable/`](../../tests/ui/acceptable):
+the typed resolver reads the field name straight from the `Symbol!` and states it plainly, so the
+readability burden it once carried is gone as well.
 
 ## What a new case would look like
 

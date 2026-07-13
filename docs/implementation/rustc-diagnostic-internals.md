@@ -89,13 +89,13 @@ pushes the literal string `"_"` for both — unless `opts.verbose` is set. The t
 
 For ordinary types this is a readable shorthand — `Foo<_, Bar>` says "the first argument is the same
 in both, look at the second". For a CGP `Symbol` it is destructive. The
-[`usability/base_area_1`](../../tests/ui/usability/checks/base_area_1.rs) fixture asks for a `height` field on
+[`acceptable/fields/base_area_1`](../../tests/ui/acceptable/fields/base_area_1.rs) fixture asks for a `height` field on
 a `Rectangle` that only has `width`, so rustc diffs `HasField<Symbol!("height")>` against
 `HasField<Symbol!("width")>`. The two symbols share the character `'h'` (fifth in `height`, last in
 `width`), so `maybe_highlight` collapsed that shared `'h'` to `_` in *both* names, printing `h,e,i,g,_,t`
 and `w,i,d,t,_`. The field name could not be read back from the text at all. Under `--verbose` the same
 hint prints both symbols in full, which is what the fixture's blessed
-[`.cgp.stderr`](../../tests/ui/usability/checks/base_area_1.cgp.stderr) now records.
+[`.cgp.stderr`](../../tests/ui/acceptable/fields/base_area_1.cgp.stderr) now records.
 
 ### A long type is truncated and written to a file
 

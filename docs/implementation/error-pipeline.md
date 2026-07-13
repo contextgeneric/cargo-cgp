@@ -109,12 +109,13 @@ printed. The [Testing](testing.md) document describes that suite and its two pas
   front-end's whole role: run the wrapped `cargo check` with the driver installed and forward its
   output untouched.
 - [`crates/cargo-cgp-error-processing/src`](../../crates/cargo-cgp-error-processing/src) — the
-  rustc-free rewrite, post-processing, and tree-rendering helpers the driver's transforms are built
-  on.
+  rustc-free rewrite, post-processing, diagnosis-wording, and tree-rendering helpers the driver's
+  transforms are built on.
 
 ## Further reading
 
 - [The driver](driver.md) — the driver-side transformations this pipeline's configure, transform, and
   render stages are made of, in full.
 - [Error processing](error-processing.md) — the rustc-free string helpers the transform stage uses:
-  the wiring rewrite, the post-processing text transforms, and the dependency-tree renderer.
+  the wiring rewrite, the post-processing text transforms, the root-cause diagnosis model and its
+  wording, and the dependency-tree renderer.

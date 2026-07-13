@@ -38,7 +38,7 @@ rewrite restates the same fact readably — the caret is re-aimed at the failing
 diagnostic's own Rust code (`E0277`, `E0599`, `E0271`) is kept. A main message that is *not* a CGP
 class — an ordinary bound (`f64: Eq`) the next-gen solver already descended to — stays rustc's own,
 header, labels, and caret untouched
-([`ordinary_bound_unsatisfied`](../../tests/ui/usability/checks/ordinary_bound_unsatisfied.rs)).
+([`ordinary_bound_unsatisfied`](../../tests/ui/acceptable/resolution/ordinary_bound_unsatisfied.rs)).
 
 **The sub-messages are replaced either way.** rustc's obligation-chain notes, supplementary help, and
 structured suggestions are discarded, and each recovered root cause becomes one `= note:` opening with
@@ -51,13 +51,13 @@ land on any struct), while a field the struct *does* carry but has not derived r
 accessor trait \`HasField\` with field \`name\` is not implemented for \`Person\``, with a separate
 `help` naming the fix — `make sure that \`#[derive(HasField)]\` is used for \`Person\`` (pointed at the
 `Deref` target when the field is only reachable through one; that is exactly the
-[`missing_has_field_derive` fixture](../../tests/ui/usability/checks/missing_has_field_derive.rs), the
+[`missing_has_field_derive` fixture](../../tests/ui/acceptable/fields/missing_has_field_derive.rs), the
 present-but-underived case a plain "missing field" would misdescribe). Any other leaf restates its
 bound — `root cause: the trait bound \`f64: std::cmp::Eq\` is not satisfied` — except when the kept
 main message already states that very bound, where the lead would only repeat the header and the note
 carries the chain alone
-([`ordinary_bound_unsatisfied`](../../tests/ui/usability/checks/ordinary_bound_unsatisfied.rs) versus
-[`unregistered_prefix_path`](../../tests/ui/usability/checks/unregistered_prefix_path.rs), whose
+([`ordinary_bound_unsatisfied`](../../tests/ui/acceptable/resolution/ordinary_bound_unsatisfied.rs) versus
+[`unregistered_prefix_path`](../../tests/ui/acceptable/resolution/unregistered_prefix_path.rs), whose
 rewritten `CGP-E002` header names the `RedirectLookup` step, not the `DefaultNamespace` leaf).
 
 **A use-site failure is handled the same way, once its obligation is recovered.** CGP wiring is lazy,
@@ -66,14 +66,14 @@ so a broken provider dependency often surfaces not at a check but where the cons
 trait bounds were not satisfied". There is no check impl to anchor on, so the resolver instead recovers
 the context type from the diagnostic's own spans (the "method not found for this struct" span lands on
 `Person`'s definition) and re-checks every component that context wires. So
-[`missing_dependency`](../../tests/ui/usability/unsatisfied-dependency/missing_dependency.rs) and
-[`unsatisfied_dependency`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.rs)
+[`missing_dependency`](../../tests/ui/acceptable/use-site/missing_dependency.rs) and
+[`unsatisfied_dependency`](../../tests/ui/acceptable/use-site/unsatisfied_dependency.rs)
 become `[CGP-E001] the consumer trait \`CanGreet\` is not implemented for context \`Person\`` (the
 code stays `E0599`, since the error is still rustc's) over a `missing field` root-cause note — and the
 misleading "this is an associated function… use associated function syntax instead" advice, which the
 method probe emits for CGP's `self`-less provider methods, is dropped with the rest of rustc's
 sub-notes. The ordinary-bound use-site case
-([`unsatisfied-dependency/ordinary_bound_unsatisfied`](../../tests/ui/usability/unsatisfied-dependency/ordinary_bound_unsatisfied.rs))
+([`use-site/ordinary_bound_unsatisfied`](../../tests/ui/acceptable/use-site/ordinary_bound_unsatisfied.rs))
 gets the same `CGP-E001` header over a `root cause: the trait bound \`f64: std::cmp::Eq\` is not
 satisfied` note.
 
@@ -85,8 +85,8 @@ trait-clause dependencies all hold, the resolver inspects that impl's own predic
 `HasField` projection; finding one, it takes the expected type from the projection and the actual type
 from the struct and yields a field-type-mismatch leaf, worded as the `[CGP-E003]` header (detailed
 under [How the root cause is recovered](#how-the-root-cause-is-recovered)).
-[`field_type_mismatch`](../../tests/ui/usability/checks/field_type_mismatch.rs) and its shorter-chain
-sibling [`field_type_mismatch_1`](../../tests/ui/usability/checks/field_type_mismatch_1.rs) pin it.
+[`field_type_mismatch`](../../tests/ui/acceptable/field-types/field_type_mismatch.rs) and its shorter-chain
+sibling [`field_type_mismatch_1`](../../tests/ui/acceptable/field-types/field_type_mismatch_1.rs) pin it.
 
 One boundary still keeps the transform honest. A diagnostic that is neither a check entry nor a method
 `E0599` — a manual supertrait bound like `use_type_foreign_unsatisfied`/`use_type_nested_unsatisfied` —
@@ -118,12 +118,17 @@ machinery was built.
 
 ## How the root cause is recovered
 
-The recovery runs in [`resolve.rs`](../../crates/cargo-cgp-driver/src/resolve.rs), driven by the
-emitter's `transform_resolved`, and it is a chain of typed lookups with no string parsing until the
-very last step decodes a field name. Each stage is anchored by `DefId` to the CGP crate that defines
-the trait or type it matches, so a same-named item from an unrelated crate can never drive a
-replacement — the same discipline [`component_map`](../../crates/cargo-cgp-driver/src/component_map.rs)
-uses for `IsProviderFor`.
+The recovery runs in the driver's [`resolve`](../../crates/cargo-cgp-driver/src/resolve) module — a
+directory of stage files (`anchor`, `walk`, `classify`, `label`, `cgp_item`) behind a re-exporting
+`mod.rs` — driven by the emitter's `try_resolve`, and it is a chain of typed lookups with no string
+parsing until the very last step decodes a field name. What it produces is the rustc-free
+[`Resolved`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs) model: the module
+imports `Cause`, `Leaf`, `FieldIssue`, and `Resolved` from the error-processing crate and fills them
+with owned `String`s, rather than defining those types itself, so the wording that consumes them needs
+no compiler. Each stage is anchored by `DefId` to the CGP crate that defines the trait or type it
+matches, so a same-named item from an unrelated crate can never drive a replacement — the same
+discipline [`component_map`](../../crates/cargo-cgp-driver/src/component_map.rs) uses for
+`IsProviderFor`.
 
 **Find the entry.** A `check_components!` entry expands to a concrete impl of a generated check
 trait — `impl __CheckRectangle<AreaCalculatorComponent, ()> for Rectangle {}` — whose check trait
@@ -239,21 +244,27 @@ a [`DependencyTree`](error-processing.md) spine, rendered as `cargo tree`-style 
 [`termtree`](https://crates.io/crates/termtree) crate (a tiny, dependency-free renderer) hosted in the
 rustc-free `cargo-cgp-error-processing` crate so the rendering is unit-tested on any toolchain.
 
-**Emit.** The emitter (`transform_resolved`) mutates rustc's own `DiagInner` in place. The main
-message is replaced with its coded form when `categorized_header` recognizes it — the `CGP-E001`
-consumer form worded from the resolution's context and consumer trait(s) (pluralized when a use-site
-failure spans several components), the `CGP-E002` provider form from the text rewrite, or the
-`CGP-E003` field-type-mismatch form worded from the mismatch leaf when the diagnostic is an `E0271`
-the resolver traced to a `HasField` projection — and the span is then collapsed to the primary caret,
-since the original labels restate the replaced message; an unrecognized main message keeps its header,
-labels, and caret. The children are replaced in either case: a `help` per distinct type that must
-derive (`make sure that \`#[derive(HasField)]\` is used for \`Rectangle\``, or the `Deref` target —
-a field-type mismatch contributes none, its field being present and derived), then **one note per
-root cause**, each opening with its `root cause:` lead over `this is required through the dependency
-chain:` and the tree indented beneath (the lead is omitted, and the note is the chain alone, when the
-kept header states the same bound or when the leaf is a field-type mismatch, whose `CGP-E003` header
-already states it in full). rustc's structured suggestions are discarded with its notes (the
-misleading "use associated function syntax" a method `E0599` carries). The diagnostic's
+**Emit.** The wording is decided rustc-free and only *applied* by the emitter. The emitter maps the
+diagnostic's own rustc code to a rustc-free
+[`DiagKind`](../../crates/cargo-cgp-error-processing/src/diagnosis/plan.rs) (`E0271` → field mismatch,
+`E0599` → use-site method, everything else → a plain check) and hands that, the main-message text, the
+`Resolved`, and the name map to `plan_resolved`, which returns a `DiagnosisPlan`: the rewritten header
+(or `None`), the derive `help`s, and one note per cause. `plan_resolved`'s `categorized_header` is what
+recognizes the class — the `CGP-E001` consumer form worded from the resolution's context and consumer
+trait(s) (pluralized when a use-site failure spans several components), the `CGP-E002` provider form
+from the text rewrite, or the `CGP-E003` field-type-mismatch form worded from the mismatch leaf when the
+kind is a field mismatch the resolver traced to a `HasField` projection — and yields `None` for an
+unrecognized main message. `transform_resolved` then only mutates rustc's own `DiagInner`: when the
+plan carries a header it replaces the main message and collapses the span to the primary caret, since
+the original labels restate the replaced message; an unrecognized (`None`) header leaves the header,
+labels, and caret alone. Either way it replaces the children with the plan's `help`s (one per distinct
+type that must derive — `make sure that \`#[derive(HasField)]\` is used for \`Rectangle\``, or the
+`Deref` target; a field-type mismatch contributes none, its field being present and derived) and the
+plan's notes — **one per root cause**, each opening with its `root cause:` lead over `this is required
+through the dependency chain:` and the tree indented beneath (the lead omitted, and the note the chain
+alone, when the kept header states the same bound or when the leaf is a field-type mismatch whose
+`CGP-E003` header already states it in full). rustc's structured suggestions are discarded with its
+notes (the misleading "use associated function syntax" a method `E0599` carries). The diagnostic's
 code is never touched, so a check failure stays `E0277` and a use-site failure stays `E0599`. A
 provider with two absent dependencies yields two notes, each a self-contained path to its leaf, and
 the JSON emitter regenerates every rendered and structured field from the `DiagInner` for free, with
@@ -287,21 +298,29 @@ says what it needs to without altering the header's shape.
 
 ## Source
 
-- [`crates/cargo-cgp-driver/src/resolve.rs`](../../crates/cargo-cgp-driver/src/resolve.rs) — the typed
-  resolution: `resolve_check_failure` finding the check impl by span, `resolve_use_site` recovering the
-  context ADT from the diagnostic's spans and its wired components from `DelegateComponent` impls,
-  walking the cause chain down to each terminal leaf (the descendable-vocabulary rule, the plumbing-leaf
-  drop, and `has_field_projection_mismatch` finding an unmet `HasField` projection where the trait
-  clauses all hold), classifying a leaf as a field (inspecting the struct and its `Deref` chain), a
-  field-type mismatch (`field_type` reading the actual field type off the struct by `DefId`), or a
-  bound, decoding the `Symbol!` field name, resolving component markers to trait names by full path,
-  and folding each chain into a `DependencyTree` with each wiring trait replaced by its human form
-  (generic parameters reattached).
-- [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — the
+- [`crates/cargo-cgp-driver/src/resolve/`](../../crates/cargo-cgp-driver/src/resolve) — the typed
+  resolution, split by stage behind a re-exporting `mod.rs` and building the rustc-free `Resolved`
+  model: `anchor.rs` (`resolve_check_failure` finding the check impl by span, `resolve_use_site`
+  recovering the context ADT from the diagnostic's spans and its wired components from
+  `DelegateComponent` impls), `walk.rs` (walking the cause chain down to each terminal leaf — the
+  descendable-vocabulary rule, the plumbing-leaf drop, and `has_field_projection_mismatch` finding an
+  unmet `HasField` projection where the trait clauses all hold), `classify.rs` (classifying a leaf as a
+  field by inspecting the struct and its `Deref` chain, a field-type mismatch with `field_type` reading
+  the actual field type off the struct by `DefId`, or a bound), `label.rs` (folding each chain into a
+  `DependencyTree` with each wiring trait replaced by its human form, generic parameters reattached),
+  and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition and the `Symbol!` field-name decode).
+- [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the
   `try_resolve` seam (gated by a cheap `mentions_wiring` scan, or a method `E0599`) that tries the
-  check anchor then the use-site anchor, and the `transform_resolved` mutation it feeds: the
-  `categorized_header` classification and coded main-message rewrite, the `derive_helps`, and the
-  per-cause `tree_notes`, falling back to the in-place text rewrite when resolution returns `None`.
+  check anchor then the use-site anchor, and the `transform_resolved` mutation it feeds: it maps the
+  diagnostic's rustc code to a `DiagKind` (`edit::diag_kind`), calls the rustc-free `plan_resolved`
+  for the rewritten header and the help/note strings, and applies that plan to the `DiagInner`,
+  falling back to the in-place text rewrite when resolution returns `None`.
+- [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
+  — the rustc-free model and wording the resolution feeds: `leaf.rs` and `resolved.rs` (the `Leaf`,
+  `FieldIssue`, `Cause`, and `Resolved` types the resolver builds), `wording.rs` (the
+  `Resolved`→`String` builders — the coded headers, the `root cause:` notes, and the derive `help`s),
+  and `plan.rs` (`DiagKind`, `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`), with
+  unit tests in [`tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs).
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs)
   — the rustc-free `DependencyTree` type and its `cargo tree`-style renderer (over `termtree`), with
   unit tests in [`tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).
@@ -311,10 +330,12 @@ says what it needs to without altering the header's shape.
 
 ## Tests
 
-The resolver is exercised end to end by the UI snapshot suite: the check fixtures under
-[`tests/ui/usability/checks/`](../../tests/ui) carry `.cgp.stderr` snapshots showing the transformed
-output, and the fixtures the resolver declines keep their fallback snapshots, which together pin both
-the transform and the decline boundary. Several fixtures pin the harder cases: `parallel_branches` (two
+The resolver is exercised end to end by the UI snapshot suite: the fixtures it reshapes live under
+[`tests/ui/acceptable/`](../../tests/ui/acceptable) — the `fields/`, `field-types/`, `providers/`,
+`generic/`, `resolution/`, and `use-site/` subgroups — and carry `.cgp.stderr` snapshots showing the
+transformed output, while the fixtures it declines keep their fallback snapshots under
+[`tests/ui/usability/use-type/`](../../tests/ui/usability/use-type), so the two together pin both the
+transform and the decline boundary. Several fixtures pin the harder cases: `parallel_branches` (two
 independent missing fields → two sub-errors), `deep_nesting` (a stack of higher-order providers nested
 four deep → one long spine), `dependency_cascade` (a chain of providers each depending on the next),
 `mixed_rust_error` (a CGP tree beside an untouched ordinary `E0308`), `missing_has_field_derive` (a
@@ -332,12 +353,13 @@ three-parameter component → the parameters reattached to the consumer and prov
 `ordinary_bound_unsatisfied`/`unregistered_prefix_path` (non-field leaves — an `f64: Eq` bound, whose
 rustc header is kept over a lead-less chain note, and an unregistered `DefaultNamespace` behind an
 `IsProviderFor` header, rewritten to the `CGP-E002` form over a `root cause:` note). The use-site path
-is pinned by the [`unsatisfied-dependency/`](../../tests/ui/usability/unsatisfied-dependency)
+is pinned by the [`acceptable/use-site/`](../../tests/ui/acceptable/use-site)
 fixtures: `missing_dependency` and `unsatisfied_dependency` (a consumer-method `E0599` → the
 `CGP-E001` header, the misleading method-syntax advice dropped, and a `missing field` root-cause note)
 and its `ordinary_bound_unsatisfied` (a use-site `f64: Eq` → the `CGP-E001` header, code kept `E0599`,
-over the `f64: Eq` root-cause note). The field classification is unit-tested through the name map in
-[`cargo-cgp-error-processing/tests/rewrite.rs`](../../crates/cargo-cgp-error-processing/tests/rewrite.rs),
+over the `f64: Eq` root-cause note). The field-classification wording — a missing field, a
+present-but-underived one, and a `Deref`-target one — is unit-tested over hand-built `Resolved` values
+in [`cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs),
 and the renderer itself in
 [`cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).
 [Testing](testing.md) describes the suite and its passes.

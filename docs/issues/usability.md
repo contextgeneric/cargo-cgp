@@ -5,116 +5,117 @@ problems a reader hits even when the diagnostic contains everything needed to fi
 separates these from a [hidden root cause](hidden-root-cause.md) is that the information is present:
 the cause could be recovered from the output by a careful reader or a post-processor, so the work
 here is re-presentation, not recovery. Every issue is backed by a fixture under
-[`tests/ui/usability/`](../../tests/ui/usability).
+[`tests/ui/usability/`](../../tests/ui/usability), grouped into a sub-directory that names the issue
+class. When a fixture's presentation reaches the bar, it graduates out of `usability/` into
+[`tests/ui/acceptable/`](../../tests/ui/acceptable) and its issue is deleted from this document.
 
-The hand-curated fixtures at the top level of that directory are the worked examples this document's
-prose walks through — all instances of one upstream class, a missing context field surfaced through
-`check_components!` (the catalog's
-[check-trait failure](../../../cgp/docs/errors/checks/check-trait-failure.md) and its
-[verbose cascade](../../../cgp/docs/errors/checks/verbose-cascade.md) form), except
-[`unsatisfied_dependency`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.rs), the consumer-call form
-whose cause the next-gen solver recovers. The fixtures are sorted into kind subdirectories —
-[`checks/`](../../tests/ui/usability/checks), [`wiring/`](../../tests/ui/usability/wiring),
-[`lowering/`](../../tests/ui/usability/lowering), and
-[`unsatisfied-dependency/`](../../tests/ui/usability/unsatisfied-dependency) — mirroring the upstream
-catalog's own sections. Alongside the curated examples, those directories hold a verbatim mirror of
-the *whole* upstream compile-fail suite, one fixture per reproducible CGP error class; importing it
-confirmed that every reproducible class carries its root cause in cargo-cgp's output, which is why the
-entire mirror sits under this category rather than under [hidden root cause](hidden-root-cause.md). The
-class-by-class findings and the four fixtures not importable in a single-crate harness are recorded in
-the [usability fixtures README](../../tests/ui/usability/README.md).
+## What the typed resolver already fixed
 
-## Overly verbose error messages
+The check-trait-failure family — the dominant class of CGP error — is now presented well, so its
+fixtures have graduated into [`acceptable/`](../../tests/ui/acceptable). The driver's
+[typed root-cause resolver](../implementation/typed-root-cause-resolution.md) leads with a single
+coded headline (`[CGP-E001]` for an unimplemented consumer trait, `[CGP-E003]` for a field-type
+mismatch), states the cause as one plain sentence (`root cause: missing field \`height\` on
+\`Rectangle\``), decodes the field name from its `Symbol!`, and renders the dependency path as a
+compact `cargo tree`, with the `IsProviderFor` / `CanUseComponent` / `__Check…` scaffolding
+suppressed throughout. The worked examples this document once walked through in prose all clear that
+bar now and live under `acceptable/`: the encoded missing field
+([`base_area_1`](../../tests/ui/acceptable/fields/base_area_1.rs)), the buried dependency path
+([`density_1`](../../tests/ui/acceptable/providers/density_1.rs)), the higher-order layer
+([`scaled_area_1`](../../tests/ui/acceptable/providers/scaled_area_1.rs) versus
+[`scaled_area_2`](../../tests/ui/acceptable/providers/scaled_area_2.rs)), and the misleading
+consumer-call error whose `E0599` "use associated function syntax" advice is now dropped
+([`unsatisfied_dependency`](../../tests/ui/acceptable/use-site/unsatisfied_dependency.rs)). What
+remains below are the classes the resolver does not yet reshape.
 
-The dominant usability problem is sheer volume: a single mistake produces far more output than there
-is to fix. A CGP error interleaves the actual cause with generated-type scaffolding the user never
-wrote — `CanUseComponent`, `IsProviderFor`, the `__CheckRectangle` check trait, and `N redundant
-requirement hidden` notes — so even a single-field mistake spans a screen of `required for …` frames
-around one relevant line. The tool should suppress the scaffolding and lead with the cause.
+## One mistake reported as many errors
 
-Worse, the error *count* reflects the depth of the wiring graph rather than the number of mistakes.
-[`density_3.rs`](../../tests/ui/usability/checks/density_3.rs) checks both `AreaCalculatorComponent` and
-`DensityCalculatorComponent`, and the one missing `height` field produces *two* full `E0277`
-cascades that a reader must get through before realizing they describe the same fix
-([`.cgp.stderr`](../../tests/ui/usability/checks/density_3.cgp.stderr)). The tool should deduplicate — coalesce
-every block whose cause is the same unmet bound into one headline and report the count of affected
-components rather than repeating the cascade.
+The tool does not deduplicate a single cause that surfaces at several wiring sites, so one mistake
+produces several full error blocks. [`density_3`](../../tests/ui/usability/duplication/density_3.rs)
+checks two components against one missing `height` field and gets *two* complete `E0277` cascades;
+[`dependency_cascade`](../../tests/ui/usability/duplication/dependency_cascade.rs) chains three
+providers and gets three. The error count reflects the depth of the wiring graph, not the number of
+mistakes. This is a cross-diagnostic transform the per-diagnostic resolver cannot do on its own: it
+needs the emitter to buffer the compilation's diagnostics and coalesce every block whose recovered
+cause is the same unmet bound into one headline that reports the count of affected components.
 
-## The primary error can be misleading, not just verbose
+## One missing derive reported field by field
 
-When broken wiring is exercised by a direct method call, the loudest line points the reader the wrong
-way. [`unsatisfied_dependency.rs`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.rs) calls
-`greet()` on a context that cannot satisfy the provider's `Self: HasName`, and the
-[`.cgp.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr) leads with `E0599` "method
-`greet` not found … this is an associated function, not a method" and even suggests "use associated
-function syntax instead" — advice that is wrong for a wiring error. The real cause is present further
-down, because `cargo-cgp`'s next-gen solver surfaces the unmet `HasField<…name…>` bound and an "add
-`#[derive(HasField)]`" hint (which is exactly why this fixture is a usability case and not a
-[hidden root cause](hidden-root-cause.md)). The tool should promote that recovered cause to the
-headline and drop the method-versus-associated-function misdirection.
+A struct missing its `#[derive(HasField)]` has no `HasField` impl for *any* field, so the resolver
+recovers each field the providers read as a separate root cause even though the single fix is one
+derive. [`base_area_2`](../../tests/ui/usability/duplication/base_area_2.rs) reports both `height`
+and `width` as distinct `root cause:` notes, each with its own dependency chain, on top of the one
+`help` that already names the fix. The deduplication key here is not the unmet bound — the bounds
+differ (`HasField<Symbol!("height")>` versus `HasField<Symbol!("width")>`), so the same-bound rule
+above cannot catch it — but the shared *fix*: when every recovered cause is an underived field on the
+same struct, they should collapse to one "add the derive" note. The subtlety is that a struct whose
+fields are genuinely absent (`empty_field_struct`, `parallel_branches`, both now in
+[`acceptable/fields`](../../tests/ui/acceptable/fields)) correctly stays several causes — several real
+fixes — so the coalescing must key on the derive being present-but-empty, not merely on there being
+more than one field cause.
 
-## The field name is an encoded type-level string
+## Abstract-type imports fail untransformed and leak generated names
 
-The single most important fact in each error — which field is missing — is present but written as a
-type the reader must decode character by character. In
-[`base_area_2.rs`](../../tests/ui/usability/checks/base_area_2.rs) a missing field appears as
-`HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', Chars<'h', Nil>>>>>>>`, which spells
-the name out but demands the reader (or an IDE hover) reassemble it.
-[`base_area_1.rs`](../../tests/ui/usability/checks/base_area_1.rs) shows the same encoding through the
-two-line "similar impl" hint — `HasField<Symbol<6, Chars<'h', …, Chars<'t', Nil>>>>` for the missing
-`height` — the shape that reports one near-miss field against another. The tool should render either
-back as `Symbol!("height")`, or better as the plain field name `height`.
+A `#[use_type]` abstract-type dependency that cannot be satisfied is not recognized by the resolver,
+so it falls through untransformed — no `[CGP-Exxx]` code, no root-cause note — and rustc's "the
+following other types implement …" help then exposes the generated placeholder identifiers
+`__Context__`, `__Components__`, `__Path__`, and `__Provider__` that the user never wrote.
+[`use_type_foreign_unsatisfied`](../../tests/ui/usability/use-type/use_type_foreign_unsatisfied.rs)
+shows the placeholder leak, and
+[`use_type_nested_unsatisfied`](../../tests/ui/usability/use-type/use_type_nested_unsatisfied.rs)
+adds a second error block for the one cause and a misleading `add #![feature(trivial_bounds)]`
+suggestion — a rustc heuristic that is wrong for a wiring error, the same kind of misdirection the
+resolver already strips from the consumer-call case. At minimum the post-processing should strip the
+`__…__` placeholders the way it strips the CGP path prefixes; better, the resolver should learn to
+recover this class into a coded root-cause note.
 
-This is a readability burden, not an insufficiency: the full string is present, so it *can* be read.
-That is only reliably true because the driver injects `--verbose`. Without it, the two-line hint in
-`base_area_1` diffs the two symbols and elides the character they share, dropping the `'h'` out of
-both names and leaving `height` genuinely unreadable — which is why that fixture used to be a
-[hidden root cause](hidden-root-cause.md#defeated-a-field-name-the-printer-elided-a-character-from)
-and, now that the flag defeats the elision, is a usability case here. The mechanism is documented in
-[rustc diagnostic internals](../implementation/rustc-diagnostic-internals.md#matching-generic-arguments-are-elided-to-_).
+## Wiring coherence conflicts fan out and expose internal traits
 
-## The root cause is never stated plainly
+A structural wiring mistake — a key or provider name wired twice, an overlapping generic, a namespace
+path registered twice — surfaces as a coherence conflict (`E0119`) that the tool passes through with
+only light post-processing, so one mistake becomes two near-identical blocks: one keyed on
+`IsProviderFor<…>` and one on `DelegateComponent<…>`, both internal traits the user never wrote. The
+duplicate-key family ([`tests/ui/usability/wiring/duplicate-keys`](../../tests/ui/usability/wiring/duplicate-keys))
+and the namespace-path family
+([`tests/ui/usability/wiring/namespace-paths`](../../tests/ui/usability/wiring/namespace-paths)) all
+show this fan-out. Two adjacent constraint failures round out the class
+([`tests/ui/usability/wiring/constraints`](../../tests/ui/usability/wiring/constraints)): the
+unconstrained-generic `E0207` emits two errors with contradictory auto-fixes ("add the parameter"
+versus "remove it"), and the `UseContext` cycle `E0275` exposes `CanUseComponent` / `__Check…` and
+never names the cycle. A smaller gap rides along in the namespace-path headers: the conflicting key
+prints as a raw `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>` because the `Path!`
+resugaring does not reach a path whose tail is an open `_`
+([`namespace_duplicate_path_key`](../../tests/ui/usability/wiring/namespace-paths/namespace_duplicate_path_key.rs),
+[`delegate_duplicate_path_key`](../../tests/ui/usability/wiring/namespace-paths/delegate_duplicate_path_key.rs)).
+The tool should coalesce the paired blocks, suppress the internal traits, finish the `Path!`
+resugaring for open-tailed paths, and name the wiring mistake behind each code.
 
-No line in any fixture says, in words, what the mistake is. In
-[`base_area_2.rs`](../../tests/ui/usability/checks/base_area_2.rs) the reader assembles "`Rectangle` is
-missing an accessible `width` field, which `RectangleArea` needs through `HasRectangleFields`" out of
-three separate fragments: the `help:` note naming the unmet `HasField` bound, the `note: required
-for Rectangle to implement HasRectangleFields`, and the caret on the struct definition. The tool
-should emit that one sentence as the headline and demote the fragments to supporting detail, the way
-Clippy leads with a plain statement of a lint before its span.
+## Macro lowering errors point at the attribute, not the cause
 
-## The dependency path is not summarized
-
-When the checked component is several hops from the failing field, the path connecting them is
-present but scattered through scaffolding. In [`density_1.rs`](../../tests/ui/usability/checks/density_1.rs)
-the check names `DensityCalculatorComponent`, yet the missing `height` field belongs to a transitive
-`AreaCalculator` dependency, and the [`.cgp.stderr`](../../tests/ui/usability/checks/density_1.cgp.stderr) traces
-the connection only through a stack of `required for …` notes punctuated by `1 redundant requirement
-hidden`. [`density_2.rs`](../../tests/ui/usability/checks/density_2.rs) adds a `ScaledArea` layer and shows
-the chain growing longer with no new cause. The tool should collapse either into a short, readable
-path — `DensityCalculatorComponent → AreaCalculator → missing field height` — reconstructed from the
-chain rather than dumped.
-
-## The failing layer of a higher-order provider is not spelled out
-
-When a provider wraps another, the output identifies the failing layer but does not say so outright,
-so the reader must infer it. [`scaled_area_1.rs`](../../tests/ui/usability/checks/scaled_area_1.rs) and
-[`scaled_area_2.rs`](../../tests/ui/usability/checks/scaled_area_2.rs) both wire `ScaledArea<RectangleArea>`
-and look nearly identical, but in the first the *inner* `RectangleArea` is missing `height` and in
-the second the *outer* `ScaledArea` is missing its own `scale_factor`. The distinguishing signal is
-present — which provider's `where` clause the "introduced here" caret sits on, and how deep the
-`required for …` chain runs — but the reader has to know to read it. The tool should name the layer,
-the way the upstream `#[check_providers(...)]` form does by hand (see the catalog's
-[higher-order provider layer failure](../../../cgp/docs/errors/checks/higher-order-provider-layer.md)).
+When a macro lowers accepted input into ill-formed Rust, the error lands on the macro attribute and
+never states the real cause.
+[`option_slice`](../../tests/ui/usability/lowering/option_slice.rs) produces an unsized-type failure
+— an `Option<[u8]>` generated from an auto-getter returning `&[u8]` — as two cascading errors both
+anchored on the `#[cgp_auto_getter]` attribute, and
+[`use_type_cyclic_context`](../../tests/ui/usability/lowering/use_type_cyclic_context.rs) reports
+`cannot find type A`/`B` without ever saying the `#[use_type]` routing is cyclic. The cause is hinted
+by the spans but never named; the `use_type_cyclic_context` case in particular trends toward a hidden
+cause, since nothing in the output states "cycle" (its counterpart
+[`use_type_unknown_assoc`](../../tests/ui/acceptable/lowering/use_type_unknown_assoc.rs) is
+`acceptable/` precisely because rustc already names the typo and its fix). Recognizing the lowering
+class and naming the offending construct is the work here.
 
 ## What good presentation looks like
 
-Taken together, these issues define the tool's presentation target for this class: lead with the
-root cause as one plain sentence, name the decoded field, give a short dependency path, name the
-failing provider layer, deduplicate a cascade down to its distinct causes, and never let a
-misleading `rustc` heuristic outrank the real cause — with the
-`IsProviderFor`/`CanUseComponent`/`__Check…` scaffolding suppressed throughout. The
+Taken together, these issues define the tool's presentation target for the classes it does not yet
+reshape: deduplicate one cause down to a single headline whether it fans out across diagnostics (the
+cascade) or within one (the missing derive); recover the untransformed `#[use_type]` and lowering
+classes into coded, root-cause-first diagnostics, or at least strip the generated `__…__` names and
+misleading suggestions they leak; coalesce a coherence conflict's paired blocks and name the wiring
+mistake behind its `E0119`/`E0207`/`E0275` code rather than exposing the internal traits; and finish
+the `Path!` resugaring so no encoded type-level path survives in a header. The bar is the same one
+the check-trait-failure family already meets: lead with the cause as one plain sentence, name the
+decoded construct, give a short dependency path, and never let a misleading `rustc` heuristic outrank
+the real cause. The
 [upstream tooling notes](../../../cgp/docs/errors/checks/check-trait-failure.md#notes-for-tooling)
-for this class describe the same extraction from the CGP side and are the reference to build against.
-When a fixture here reaches that bar, it graduates from `tests/ui/usability/` into `tests/ui/ok/` and
-its issue is deleted from this document.
+describe the same extraction from the CGP side and are the reference to build against.

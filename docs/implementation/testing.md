@@ -37,18 +37,25 @@ and output normalization, also under `tests/`.
 
 The UI suite is modeled on Clippy's: a tree of `.rs` fixtures, each paired with committed snapshots,
 checked by compiling the fixture and diffing. The fixtures live under [`tests/ui/`](../../tests/ui),
-grouped into subdirectories by the *quality of the output* the tool produces — `hidden-root-cause/`
-for errors whose cause is unrecoverable from the output, `usability/` for errors that carry the cause
-but bury it, and `ok/` for output that needs no further work — the same categories as the
-pending-issue documents in [docs/issues/](../issues/README.md), each fixture exposing the issue its
-directory names. Each fixture `<name>.rs` has two siblings: `<name>.cgp.stderr`, the tool's rendered
-output; and `<name>.rust.stderr`, what plain `cargo check` prints for the same fixture — the
-untransformed "before" against which the tool's `.cgp.stderr` is the "after". A fixture that compiles
-cleanly has an empty `.cgp.stderr` and an empty `.rust.stderr`. The `usability/` fixtures are further sorted into
-kind subdirectories (`checks/`, `wiring/`, `lowering/`, `unsatisfied-dependency/`) mirroring the
-upstream catalog's sections; alongside the hand-curated examples they include a verbatim mirror of the
-upstream CGP compile-fail suite (one fixture per reproducible error class), giving the tool a snapshot
-of its own transformed output for the whole [error catalog](../../../cgp/docs/errors/README.md). The
+grouped into three top-level categories by the *quality of the output* the tool now produces:
+`acceptable/` for output that meets the bar — the diagnostic the tool renders is a clean,
+root-cause-first error a reader can act on; `usability/` for errors that still carry the cause but
+bury it, the remaining issues; and `ok/` for a fixture that compiles clean and needs no diagnostic
+work. Each fixture `<name>.rs` has two siblings: `<name>.cgp.stderr`, the tool's rendered output;
+and `<name>.rust.stderr`, what plain `cargo check` prints for the same fixture — the untransformed
+"before" against which the tool's `.cgp.stderr` is the "after". A fixture that compiles cleanly has
+an empty `.cgp.stderr` and an empty `.rust.stderr`.
+
+Within each category the fixtures are sorted into kind subdirectories. `acceptable/` is split by the
+kind of failure the tool resolves — `fields/` and `field-types/` for missing and mistyped fields,
+`providers/` for provider dependency chains, `generic/` for generic components, `resolution/` for the
+non-field and boundary cases the resolver still reshapes, `use-site/` for consumer-method call
+failures, and `lowering/` and `wiring/` for the remaining classes. `usability/` is split by the kind
+of issue that remains — `duplication/`, `use-type/`, `lowering/`, and `wiring/` (itself split into
+`constraints/`, `duplicate-keys/`, and `namespace-paths/`). Alongside the hand-curated examples the
+tree includes a verbatim mirror of the upstream CGP compile-fail suite (one fixture per reproducible
+error class), giving the tool a snapshot of its own transformed output for the whole
+[error catalog](../../../cgp/docs/errors/README.md). The
 [usability fixtures README](../../tests/ui/usability/README.md) records the class-by-class findings.
 
 The suite pins *both* halves of that transformation, so the tool's contribution is legible on the
@@ -188,7 +195,7 @@ compiler's diagnostic text. The harness builds and runs under the toolchain the 
 snapshots must be blessed under that same toolchain. A deliberate toolchain bump can therefore change
 the diagnostic wording and require a re-bless, exactly as it does for Clippy — a `.cgp.stderr` or
 `.rust.stderr` diff after a toolchain change is expected, not a regression. A passing
-`usability/unsatisfied-dependency/unsatisfied_dependency`
+`acceptable/use-site/unsatisfied_dependency`
 snapshot is also the standing proof that the driver genuinely stands in as the compiler, since its
 un-hidden root cause could only be produced by compiling the fixture through the tool.
 
@@ -259,7 +266,7 @@ no dogfood test yet (see above).
   `tests/ui.rs` (the `harness = false` entrypoint) and the `src/` modules (`options`, `paths`,
   `fixtures`, `harness`, `passes`, `runner`, `normalize`, `snapshot`).
 - [`tests/ui/`](../../tests/ui) — the fixture tree, one scenario per `.rs` file with its `.cgp.stderr`
-  and `.rust.stderr` snapshots, grouped into the `hidden-root-cause/` / `usability/` / `ok/` category
+  and `.rust.stderr` snapshots, grouped into the `acceptable/` / `usability/` / `ok/` category
   subdirectories.
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs),
   [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs) — the modules the

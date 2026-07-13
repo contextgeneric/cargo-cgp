@@ -110,9 +110,9 @@ the two levers and the rename; the replacement and the post-processing build on 
 access and rustc-free helpers, and are documented separately.
 
 The emitter is also what *renders* the diagnostics, the way vanilla `rustc` would. The wrapper type
-[`CgpEmitter`](../../crates/cargo-cgp-driver/src/emitter.rs) is generic over an inner emitter, and
-[`install`](../../crates/cargo-cgp-driver/src/emitter.rs) rebuilds whichever emitter the compiler's own
-`default_emitter` would build for the active error format — a `JsonEmitter` for `--message-format=json`
+[`CgpEmitter`](../../crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs) is generic over an inner
+emitter, and [`install`](../../crates/cargo-cgp-driver/src/emitter/install.rs) rebuilds whichever
+emitter the compiler's own `default_emitter` would build for the active error format — a `JsonEmitter` for `--message-format=json`
 (the format cargo uses when a tool asks for JSON), an `AnnotateSnippetEmitter` for the default human
 format (what a plain `cargo cgp check` produces) — and wraps it. The emitter transforms the compiler's
 `DiagInner` in place before handing it to that inner emitter, so the transform reaches a JSON
@@ -142,9 +142,9 @@ The next-generation solver does compute it. Under `-Znext-solver=globally` the s
 workspace crate under the new solver un-hides the cause — no diagnostic parsing required. The flag is
 scoped to workspace crates (only they go through the driver), so dependencies still build with the
 default solver. The before/after is pinned by the
-[`usability/unsatisfied_dependency`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr)
-UI snapshot — a fixture that lives under `usability/` precisely because this solver switch has
-already turned its once-hidden cause into a recoverable (if still verbose) one.
+[`acceptable/use-site/unsatisfied_dependency`](../../tests/ui/acceptable/use-site/unsatisfied_dependency.cgp.stderr)
+UI snapshot — a fixture that now lives under `acceptable/` precisely because this solver switch, with
+the typed resolver on top, turns its once-hidden cause into a clean, root-cause-first error.
 
 Two things follow from changing the solver. The new solver is not perfectly compatible with the old
 one (see [Significant changes and quirks](https://rustc-dev-guide.rust-lang.org/solve/significant-changes.html)),
@@ -188,10 +188,10 @@ against `HasField<Symbol!("width")>`; because the two symbols share the characte
 `'h'` was collapsed to `_` in *both* names, printing `h,e,i,g,_,t` and `w,i,d,t,_` — the field name
 could not be read back from the text at all. Under `--verbose` both symbols print in full. The
 before/after is pinned by the
-[`usability/base_area_1`](../../tests/ui/usability/checks/base_area_1.cgp.stderr) UI snapshot, a fixture
-that lives under `usability/` precisely because the flag has turned its once-hidden cause into a
-recoverable (if still verbose) one — the same graduation the solver switch gave
-`unsatisfied_dependency`.
+[`acceptable/fields/base_area_1`](../../tests/ui/acceptable/fields/base_area_1.cgp.stderr) UI snapshot, a fixture
+that now lives under `acceptable/` precisely because the flag, with the typed resolver on top, has
+turned its once-hidden cause into a clean, root-cause-first error — the same graduation the solver
+switch gave `unsatisfied_dependency`.
 
 ### Naming the traits behind a component marker
 
@@ -224,11 +224,11 @@ cargo then carries the transformed output out and the front-end forwards it unto
 
 The inner emitter must be *rebuilt* rather than wrapped. The session's own emitter cannot be reached
 to wrap it — `DiagCtxt::set_emitter` only replaces it, with no way to recover the original — so
-[`emitter::install`](../../crates/cargo-cgp-driver/src/emitter.rs) reads the session options in the
+[`emitter::install`](../../crates/cargo-cgp-driver/src/emitter/install.rs) reads the session options in the
 callbacks' `config` hook and, from inside `psess_created`, rebuilds the emitter the compiler's own
 `default_emitter` would build for the active error format — a `JsonEmitter` for JSON, an
 `AnnotateSnippetEmitter` for the human format — then wraps *that* in the generic
-[`CgpEmitter`](../../crates/cargo-cgp-driver/src/emitter.rs) and installs the wrapper. The wrapper
+[`CgpEmitter`](../../crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs) and installs the wrapper. The wrapper
 forwards every emitter method to the inner emitter unchanged except `emit_diagnostic`, which
 transforms first.
 
@@ -259,7 +259,7 @@ survives, so it matches a key by its last path segment; that is ambiguous only w
 name, a residual the text form cannot close but the full-path key removes for the typed path.
 
 The walk is expensive — it visits every trait and its blanket impls — so it runs at most once,
-wrapped in a [`ComponentNameMap`](../../crates/cargo-cgp-error-processing/src/rewrite.rs): a
+wrapped in a [`ComponentNameMap`](../../crates/cargo-cgp-error-processing/src/rewrite/names.rs): a
 `LazyLock` whose initializer performs the walk on the first lookup and is cached for every lookup
 after. The emitter's `emit_diagnostic` runs once per diagnostic, not once per compilation, so this
 laziness is what keeps the walk from repeating. And because a lookup happens only when a message
@@ -282,7 +282,7 @@ underneath the cache between calls.
 
 The rewrite itself is a plain string transform, kept in the rustc-free
 [`cargo-cgp-error-processing`](../../crates/cargo-cgp-error-processing) crate (module
-[`rewrite`](../../crates/cargo-cgp-error-processing/src/rewrite.rs), the driver's one ordinary
+[`rewrite`](../../crates/cargo-cgp-error-processing/src/rewrite), the driver's one ordinary
 dependency) so it is unit-tested on any toolchain without a `TyCtxt`. Its
 entry point, `rewrite_message`, dispatches to the `required for … to implement …` note forms
 (`rewrite_required_for`) and the `the trait bound … is not satisfied` header form
@@ -301,9 +301,10 @@ component arrives tuple-grouped (`(u32, u64)`) and the header unwraps it to
 follows from naming the obligation's subject verbatim: the subject is usually a provider
 (`RectangleArea`, `ScaledArea<RectangleArea>`) but is the context itself when the context stands in as
 its own provider, so a self-provider case reads `` the provider `Rectangle` … for the context
-`Rectangle` ``. The before/after is pinned across the whole `usability/checks` fixture set, whose
-blessed snapshots show the trait-named notes *and* headers;
-[`base_area_1`](../../tests/ui/usability/checks/base_area_1.cgp.stderr) is the worked example.
+`Rectangle` ``. The before/after is pinned across the `acceptable/` check fixtures — the `fields/`,
+`providers/`, `generic/`, `field-types/`, and `resolution/` subgroups — whose blessed snapshots show
+the trait-named notes *and* headers;
+[`base_area_1`](../../tests/ui/acceptable/fields/base_area_1.cgp.stderr) is the worked example.
 
 The same emitter seam hosts a deeper transformation that rebuilds a diagnostic's sub-messages rather
 than rewording them, and it is tried *before* the rename. Where the trait-renaming rewrite edits the
@@ -385,19 +386,20 @@ will likely grow toward it:
 - [`crates/cargo-cgp-error-processing/tests/postprocess.rs`](../../crates/cargo-cgp-error-processing/tests/postprocess.rs)
   — the compiler-free post-processing transforms the emitter applies as its final pass: prefix
   stripping, the `Symbol!` and `Path!` resugaring, and the missing-field reword branches.
-- [`tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr`](../../tests/ui/usability/unsatisfied-dependency/unsatisfied_dependency.cgp.stderr)
+- [`tests/ui/acceptable/use-site/unsatisfied_dependency.cgp.stderr`](../../tests/ui/acceptable/use-site/unsatisfied_dependency.cgp.stderr)
   — pins the un-hidden output the solver switch produces.
-- [`tests/ui/usability/checks/base_area_1.cgp.stderr`](../../tests/ui/usability/checks/base_area_1.cgp.stderr)
+- [`tests/ui/acceptable/fields/base_area_1.cgp.stderr`](../../tests/ui/acceptable/fields/base_area_1.cgp.stderr)
   — pins the un-elided field name (`--verbose`) and the trait-named header and wiring notes; watch for
   a `_` returning inside its `Symbol`, or a marker-based header/note returning.
-- [`tests/ui/usability/checks/generic_area.cgp.stderr`](../../tests/ui/usability/checks/generic_area.cgp.stderr)
+- [`tests/ui/acceptable/generic/generic_area.cgp.stderr`](../../tests/ui/acceptable/generic/generic_area.cgp.stderr)
   — the end-to-end regression guard that the transform still names the traits when the component is
   generic: the header reattaches the single `<f64>` parameter, the notes name the traits and elide it.
-- [`tests/ui/usability/checks/generic_area_multi.cgp.stderr`](../../tests/ui/usability/checks/generic_area_multi.cgp.stderr)
+- [`tests/ui/acceptable/generic/generic_area_multi.cgp.stderr`](../../tests/ui/acceptable/generic/generic_area_multi.cgp.stderr)
   — the same, for a *three-parameter* component: the header unwraps the `(u32, u64, bool)` tuple to
   `CanCalculateArea<u32, u64, bool>`.
-- [`tests/ui/usability/checks/`](../../tests/ui/usability/checks) — the blessed `.cgp.stderr`
-  snapshots across the set pin the trait-renaming transform end to end.
+- [`tests/ui/acceptable/`](../../tests/ui/acceptable) — the blessed `.cgp.stderr` snapshots across the
+  check subgroups (`fields/`, `providers/`, `generic/`, `field-types/`, `resolution/`) pin the
+  trait-renaming transform end to end.
 
 ## Source
 
@@ -410,16 +412,17 @@ will likely grow toward it:
   identity anchor (`CGP_COMPONENT_CRATE`, `IS_PROVIDER_FOR_TRAIT`), each with its rationale.
 - [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs) — the
   `Callbacks` implementation; its `config` hook installs the transforming emitter.
-- [`crates/cargo-cgp-driver/src/emitter.rs`](../../crates/cargo-cgp-driver/src/emitter.rs) — the
-  generic `CgpEmitter<E>`: rebuilds the compiler's default emitter for the active format (a
-  `JsonEmitter` or an `AnnotateSnippetEmitter`) and wraps it, holds the `ComponentNameMap`, and
-  transforms and post-processes messages in place before delegating.
+- [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the generic
+  `CgpEmitter<E>`, split behind a re-exporting `mod.rs`: `install.rs` rebuilds the compiler's default
+  emitter for the active format (a `JsonEmitter` or an `AnnotateSnippetEmitter`) and wraps it,
+  `cgp_emitter.rs` holds the `CgpEmitter<E>` type (holding the `ComponentNameMap`) and its
+  transform/post-process orchestration, and `edit.rs` holds the `DiagInner`-editing helpers.
 - [`crates/cargo-cgp-driver/src/component_map.rs`](../../crates/cargo-cgp-driver/src/component_map.rs)
   — builds the component-marker → trait-names map by inverting the `IsProviderFor` supertrait
   (anchored by `DefId` identity to the `cgp_component` crate) and the consumer-blanket-impl links, and
   exposes `build_name_map_from_tls`, the `TyCtxt`-reading `fn` the `ComponentNameMap` is built with.
-- [`crates/cargo-cgp-error-processing/src/rewrite.rs`](../../crates/cargo-cgp-error-processing/src/rewrite.rs)
-  — the rustc-free home of the string rewrite (`rewrite_message` and the note/header forms) and the
-  lazy `ComponentNameMap`.
+- [`crates/cargo-cgp-error-processing/src/rewrite/`](../../crates/cargo-cgp-error-processing/src/rewrite)
+  — the rustc-free home of the string rewrite (`message.rs`'s `rewrite_message` and the note/header
+  forms) and the lazy `ComponentNameMap` (`names.rs`).
 - [`crates/cargo-cgp-driver/src/lib.rs`](../../crates/cargo-cgp-driver/src/lib.rs) — the
   `rustc_private` feature gate and the `extern crate` declarations.
