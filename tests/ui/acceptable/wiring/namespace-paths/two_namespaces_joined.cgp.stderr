@@ -1,0 +1,9 @@
+error[E0119]: [CGP-E004] `App` cannot wire a key through `NamespaceB` that is already set through `NamespaceA`
+  --> src/main.rs:53:19
+   |
+52 |         namespace NamespaceA;
+   |                   ---------- first implementation here
+53 |         namespace NamespaceB;
+   |                   ^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

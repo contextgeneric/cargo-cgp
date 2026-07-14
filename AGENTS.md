@@ -182,13 +182,16 @@ diagnostic transform. `run.rs` is the entrypoint that runs the compiler through 
 the injected flags. The transform is split across two directories. `emitter/` is the `CgpEmitter<E>`
 seam: `install.rs` rebuilds whichever inner emitter the compiler's default would build — a
 `JsonEmitter` or an `AnnotateSnippetEmitter` — and wraps it, `cgp_emitter.rs` is the wrapper type and
-its `emit_diagnostic` orchestration (try the typed resolver, else the text rewrite, then always
-post-process), and `edit.rs` holds the `DiagInner`-editing helpers. `resolve/` is the typed
-root-cause resolver: `anchor.rs` recovers the failing obligation from a `check_components!` entry or
-the use site of a broken consumer-method call (`E0599`), `walk.rs` descends the wiring to each
-terminal leaf, `classify.rs` turns a leaf into the rustc-free model by inspecting the struct it lands
-on, `label.rs` renders each path predicate as a tree label, and `cgp_item.rs` holds the
-DefId-anchored CGP-trait recognition every stage relies on (see
+its `emit_diagnostic` orchestration (first recognize a duplicate-key `E0119` conflict — suppressing
+the redundant `IsProviderFor` half, rewriting the `DelegateComponent` half; else try the typed
+resolver, else the text rewrite; then always post-process), and `edit.rs` holds the
+`DiagInner`-editing helpers. `resolve/` is the typed root-cause resolver: `anchor.rs` recovers the
+failing obligation from a `check_components!` entry or the use site of a broken consumer-method call
+(`E0599`), `walk.rs` descends the wiring to each terminal leaf, `classify.rs` turns a leaf into the
+rustc-free model by inspecting the struct it lands on, `label.rs` renders each path predicate as a
+tree label, `conflict.rs` classifies a duplicate-key `E0119` by reading the two conflicting
+`DelegateComponent` impls off the compiler (which keys collide, whether either is a `RedirectLookup`),
+and `cgp_item.rs` holds the DefId-anchored CGP-trait recognition every stage relies on (see
 [Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md)).
 `component_map.rs` builds the component-marker → consumer/provider trait-name map by querying the
 trait solver. Everything downstream of the resolver's rustc-free `Resolved` model — the
@@ -207,9 +210,10 @@ rewrite: `message.rs` (the note and header rewrites), `names.rs` (the `Component
 lazily-built `ComponentNameMap`), `parse.rs` (the trait-bound parse), and `text.rs` (the shared
 splitting utilities). `diagnosis/` is the rustc-free root-cause model and its wording:
 `leaf.rs`/`resolved.rs` (the `Leaf`/`FieldIssue`/`Cause`/`Resolved` types the driver's resolver fills
-in), `wording.rs` (the pure `Resolved`-to-text builders), and `plan.rs` (`plan_resolved`, which words
+in), `wording.rs` (the pure `Resolved`-to-text builders), `plan.rs` (`plan_resolved`, which words
 a `Resolved` into the header, help, and note strings the emitter emits, and holds the
-`categorized_header` classification). `tree.rs` is the `DependencyTree` type and its `cargo tree`-style
+`categorized_header` classification), and `wiring.rs` (the `WiringConflict` model and
+`plan_wiring_conflict`, which words a duplicate-key conflict into its `[CGP-E004]` header). `tree.rs` is the `DependencyTree` type and its `cargo tree`-style
 renderer (over the `termtree` crate); `code.rs` holds the `CGP-E` error-code constants stamped on
 classified main messages (catalogued in docs/error-code.md). Its tests in `tests/` drive the
 post-processors, the rewrite, the diagnosis plan and wording, and the tree renderer over hand-built

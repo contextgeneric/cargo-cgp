@@ -1,0 +1,9 @@
+error[E0119]: [CGP-E004] duplicate redirect for component `GreeterComponent` on `Person` (redirected to `Path!(@GreeterComponent)`)
+  --> src/main.rs:33:14
+   |
+32 |         open GreeterComponent;
+   |              ---------------- first implementation here
+33 |         open GreeterComponent;
+   |              ^^^^^^^^^^^^^^^^ conflicting implementation for `Person`
+
+For more information about this error, try `rustc --explain E0119`.

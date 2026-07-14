@@ -42,13 +42,15 @@ implied.
 
 ## Codes
 
-The catalog today holds the three classes the driver's emitter recognizes in a main message. Each
+The catalog today holds the four classes the driver's emitter recognizes in a main message. Each
 entry gives the rewritten message, the mistake behind it, the fix, and the upstream
-[CGP error catalog](../../cgp/docs/errors/README.md) class it recognizes. The root cause behind
-each message is carried by the accompanying `note`s — one per recovered cause, each opening
-`root cause: …` over its dependency chain (see
-[Typed root-cause resolution](implementation/typed-root-cause-resolution.md)), except `CGP-E003`,
-whose main message already states its cause in full and so carries the chain alone.
+[CGP error catalog](../../cgp/docs/errors/README.md) class it recognizes. For the three
+check-failure classes the root cause is carried by the accompanying `note`s — one per recovered
+cause, each opening `root cause: …` over its dependency chain (see
+[Typed root-cause resolution](implementation/typed-root-cause-resolution.md)) — except `CGP-E003`,
+whose main message already states its cause in full and so carries the chain alone. `CGP-E004` is
+different in kind: it is a *structural* conflict, so it carries no root-cause note and instead keeps
+rustc's two carets, which already point at the two colliding entries.
 
 ### `CGP-E001` — consumer trait not implemented
 
@@ -97,6 +99,32 @@ whose main message already states its cause in full and so carries the chain alo
 - **Upstream class:** [check-trait failure](../../cgp/docs/errors/checks/check-trait-failure.md)
   (its projection-mismatch face).
 
+### `CGP-E004` — component wired more than once
+
+- **Message:** one of four forms, by how the two conflicting entries relate:
+  - `` [CGP-E004] duplicate wiring for <key> on `<Context>` `` — the same key mapped twice (a
+    component marker, or an `@`-path written `` `Path!(@…)` ``);
+  - `` [CGP-E004] `<Context>` cannot wire <key> that is already set through <source> `` — two
+    *overlapping* entries, where one cannot claim what the other already covers (a bare component or
+    an `@`-path over a `namespace`/`for` blanket, one blanket over another, or a path that is a
+    prefix of another);
+  - `` [CGP-E004] <component> on `<Context>` is redirected to `<path>`; set the redirected key
+    instead of wiring it directly `` — a direct wiring that collides with an `open`/namespace
+    redirect of the same key;
+  - `` [CGP-E004] duplicate redirect for <component> on `<Context>` (redirected to `<path>`) `` —
+    the same key redirected more than once.
+- **Means:** a `delegate_components!` block wires one component key (or overlapping keys) more than
+  once, so the expansion emits two overlapping `DelegateComponent` impls that coherence rejects.
+- **Triggered by:** an `E0119` conflicting-implementation error on a CGP `DelegateComponent` impl —
+  a duplicate key, an overlapping generic, a duplicated `@`-path, two namespace forwardings, a
+  namespace override, or a redirect collision. The pair's redundant `IsProviderFor` half is
+  suppressed; the Rust code stays `E0119`.
+- **Fix:** remove one of the two entries the carets point at (or, for a redirect collision, wire the
+  redirected key the message names rather than the bare key).
+- **Upstream class:** [conflicting wiring](../../cgp/docs/errors/wiring/conflicting-wiring.md), and
+  its two namespace faces [overlapping namespace forwarding](../../cgp/docs/errors/wiring/namespace-forwarding-conflict.md)
+  and [namespace override conflict](../../cgp/docs/errors/wiring/namespace-override-conflict.md).
+
 ## Uncoded rewrites
 
 These rewrites improve a diagnostic's readability without classifying its main message, so they
@@ -141,11 +169,13 @@ owns it.
 This catalog is bound by the same synchronization rule as the rest of the knowledge base
 ([docs/AGENTS.md](AGENTS.md)): the codes are defined in the code, so this document must track them.
 The constants live in the [`code`](../crates/cargo-cgp-error-processing/src/code.rs) module of the
-error-processing crate, and are stamped by the two main-message rewrites — both rustc-free, in that
+error-processing crate, and are stamped by the main-message rewrites — all rustc-free, in that
 same crate. The text form is stamped by
-[`rewrite_trait_bound`](../crates/cargo-cgp-error-processing/src/rewrite/message.rs), and the typed
-form by [`plan_resolved`](../crates/cargo-cgp-error-processing/src/diagnosis/plan.rs)'s
-`categorized_header`, which the driver's emitter feeds from the resolved failure. When a
+[`rewrite_trait_bound`](../crates/cargo-cgp-error-processing/src/rewrite/message.rs), the typed
+check-failure form by [`plan_resolved`](../crates/cargo-cgp-error-processing/src/diagnosis/plan.rs)'s
+`categorized_header` (fed from the resolved failure), and the `CGP-E004` conflict form by
+[`plan_wiring_conflict`](../crates/cargo-cgp-error-processing/src/diagnosis/wiring.rs) (fed from the
+conflict the driver's `resolve::conflict` classifier recovers). When a
 new class of main message is recognized and rewritten, assign it the next `CGP-E` number, add the
 constant, and register the class here in the same change. When a rewrite does not classify the main
 message, add it to [uncoded rewrites](#uncoded-rewrites) instead — do not spend a code on it.

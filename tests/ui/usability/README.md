@@ -21,12 +21,13 @@ class in [the usability issue document](../../../docs/issues/usability.md):
 - [`lowering/`](lowering) — a macro lowered accepted input into ill-formed Rust, and the error lands
   on the macro attribute without naming the real cause: an unsized generated type (`option_slice`) or
   a cyclic `#[use_type]` routing (`use_type_cyclic_context`).
-- [`wiring/`](wiring) — structural coherence conflicts (`E0119`/`E0207`/`E0275`) that pass through
-  with only light post-processing, so one mistake fans out into paired blocks exposing the internal
-  `IsProviderFor`/`DelegateComponent` traits. It is split further into `duplicate-keys/` (a key or
-  name wired twice, an overlapping generic), `namespace-paths/` (a namespace path registered or
-  overridden twice — also where the incomplete `Path!` resugaring shows), and `constraints/` (an
-  unconstrained per-entry generic and a `UseContext` wiring cycle).
+- [`wiring/`](wiring) — the structural coherence conflicts (`E0119`/`E0207`/`E0275`) that still pass
+  through with only light post-processing. The duplicate delegate-key `E0119` is now reshaped into a
+  `[CGP-E004]` headline and has moved to [`../acceptable/wiring`](../acceptable/wiring); what remains
+  here is `duplicate-keys/` (a duplicate provider *name*, whose `Greeter`/`IsProviderFor` pair still
+  fans out — not a `DelegateComponent` conflict), `namespace-paths/` (a duplicate `cgp_namespace!`
+  `@`-path, a single `E0119` on the user's own namespace trait), and `constraints/` (an unconstrained
+  per-entry generic and a `UseContext` wiring cycle).
 
 ## Origins and the imported mirror
 

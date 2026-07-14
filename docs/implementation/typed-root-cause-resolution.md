@@ -309,6 +309,9 @@ says what it needs to without altering the header's shape.
   the actual field type off the struct by `DefId`, or a bound), `label.rs` (folding each chain into a
   `DependencyTree` with each wiring trait replaced by its human form, generic parameters reattached),
   and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition and the `Symbol!` field-name decode).
+  A sibling `conflict.rs` handles the duplicate-key coherence conflict (`E0119`) rather than a check
+  failure — a separate transform documented in
+  [The driver](driver.md#reshaping-a-duplicate-key-conflict), not part of this resolution.
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the
   `try_resolve` seam (gated by a cheap `mentions_wiring` scan, or a method `E0599`) that tries the
   check anchor then the use-site anchor, and the `transform_resolved` mutation it feeds: it maps the

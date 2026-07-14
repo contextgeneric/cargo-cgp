@@ -134,5 +134,7 @@ the `acceptable/` or `usability/` sub-directory that matches the quality of the 
 produces for it — unless it is one of the cross-crate or next-solver-divergent cases above, which are
 recorded there rather than imported. The one edit made on import is disambiguating a name collision:
 `duplicate_path_key` exists under two upstream constructs, so the copies are
-`namespace_duplicate_path_key` and `delegate_duplicate_path_key` in
-[`ui/usability/wiring/namespace-paths/`](ui/usability/wiring/namespace-paths).
+`namespace_duplicate_path_key` (a single raw `E0119`, still under
+[`ui/usability/wiring/namespace-paths/`](ui/usability/wiring/namespace-paths)) and
+`delegate_duplicate_path_key` (reshaped into `[CGP-E004]`, graduated to
+[`ui/acceptable/wiring/namespace-paths/`](ui/acceptable/wiring/namespace-paths)).

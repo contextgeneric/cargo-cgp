@@ -5,8 +5,8 @@ use std::path::Path;
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for,
 };
-use cargo_cgp_error_processing::{Resolved, plan_resolved};
-use rustc_errors::codes::E0599;
+use cargo_cgp_error_processing::{Resolved, plan_resolved, plan_wiring_conflict};
+use rustc_errors::codes::{E0119, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
 use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Suggestions};
@@ -16,9 +16,9 @@ use rustc_span::source_map::SourceMap;
 use crate::component_map::build_name_map_from_tls;
 use crate::emitter::edit::{
     diag_kind, diagnostic_spans, main_message_text, mentions_hasfield_impls, mentions_wiring,
-    postprocess_messages, postprocess_multispan, rewrite_messages, subdiag,
+    postprocess_messages, postprocess_multispan, replace_header, rewrite_messages, subdiag,
 };
-use crate::resolve;
+use crate::resolve::{self, ConflictAction, ConflictTrait};
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
 /// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
@@ -72,6 +72,37 @@ impl<E> CgpEmitter<E> {
             postprocess_messages(&mut child.messages, has_field_impls);
             postprocess_multispan(&mut child.span, has_field_impls);
         }
+    }
+
+    /// Recognize `diag` as a duplicate-key wiring conflict — the `E0119` coherence-error pair a
+    /// duplicate `delegate_components!` key produces — returning the action to take, or `None`
+    /// when it is not one. The message text routes within the pair (its `IsProviderFor` half is
+    /// suppressed, its `DelegateComponent` half rewritten); the typed classifier verifies a
+    /// genuine CGP `DelegateComponent` conflict sits at the caret before either fires.
+    fn wiring_conflict(&self, diag: &DiagInner) -> Option<ConflictAction> {
+        if diag.code != Some(E0119) {
+            return None;
+        }
+        let message = main_message_text(diag)?;
+        // `IsProviderFor` is checked first: a `DelegateComponent` conflict names only
+        // `DelegateComponent`, while its companion names `IsProviderFor`.
+        let variant = if message.contains("IsProviderFor") {
+            ConflictTrait::IsProviderFor
+        } else if message.contains("DelegateComponent") {
+            ConflictTrait::Delegate
+        } else {
+            return None;
+        };
+        let primary_span = diag.span.primary_span()?;
+        let label_spans: Vec<Span> = diag
+            .span
+            .span_labels()
+            .into_iter()
+            .map(|label| label.span)
+            .collect();
+        rustc_middle::ty::tls::with_opt(|tcx| {
+            resolve::classify_wiring_conflict(tcx?, variant, primary_span, &label_spans)
+        })
     }
 
     /// Resolve `diag`'s CGP wiring failure to its root-cause dependency tree(s), or `None` when
@@ -135,6 +166,20 @@ impl<E> CgpEmitter<E> {
 
 impl<E: Emitter> Emitter for CgpEmitter<E> {
     fn emit_diagnostic(&mut self, mut diag: DiagInner) {
+        // A duplicate-key coherence conflict (E0119) is handled as one logical error: the
+        // redundant `IsProviderFor` half of the pair is dropped, and the `DelegateComponent` half
+        // is reworded to name the colliding key(s), keeping rustc's two carets.
+        if let Some(action) = self.wiring_conflict(&diag) {
+            match action {
+                ConflictAction::Suppress => return,
+                ConflictAction::Rewrite(conflict) => {
+                    replace_header(&mut diag, plan_wiring_conflict(&conflict));
+                    self.postprocess(&mut diag);
+                    self.inner.emit_diagnostic(diag);
+                    return;
+                }
+            }
+        }
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
         // resolver declines, the wiring-message rename runs as the first fallback pass.
         if let Some((resolved, span)) = self.try_resolve(&diag) {

@@ -44,8 +44,15 @@ pub const CAN_USE_COMPONENT_TRAIT: &str = "CanUseComponent";
 
 /// The item name of the wiring-table trait. The resolver recognizes it, anchored to
 /// [`CGP_COMPONENT_CRATE`], only to *drop* it from the rendered dependency chain: it is pure
-/// wiring plumbing that carries no information a reader of the tree needs.
+/// wiring plumbing that carries no information a reader of the tree needs. It is also the trait
+/// whose conflicting impls the duplicate-key conflict classifier reads.
 pub const DELEGATE_COMPONENT_TRAIT: &str = "DelegateComponent";
+
+/// The name of the `RedirectLookup` provider type (defined by [`CGP_COMPONENT_CRATE`]). The
+/// conflict classifier recognizes a `DelegateComponent` entry whose `Delegate` is a
+/// `RedirectLookup<Table, Path>` as a *redirect* (from `open` or a namespace), reading its
+/// `Path` (the second argument) to tell the user which redirected key to set.
+pub const REDIRECT_LOOKUP_TYPE: &str = "RedirectLookup";
 
 /// The item name of the field-access trait whose unmet bound is the root cause the typed
 /// resolver reports, paired with [`CGP_FIELD_CRATE`] to confirm a leaf obligation is a

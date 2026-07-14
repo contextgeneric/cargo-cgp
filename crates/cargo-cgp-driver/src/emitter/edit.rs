@@ -10,7 +10,7 @@ use std::borrow::Cow;
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{DiagKind, context_has_hasfield_impls, postprocess_message};
 use rustc_errors::codes::{E0271, E0599};
-use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag};
+use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, Suggestions};
 use rustc_span::Span;
 
 /// The text of the diagnostic's main message, when it is a plain string.
@@ -30,6 +30,17 @@ pub(crate) fn diag_kind(diag: &DiagInner) -> DiagKind {
         Some(E0599) => DiagKind::MethodNotFound,
         _ => DiagKind::Check,
     }
+}
+
+/// Replace a diagnostic's main message with `header`, keeping its spans and their labels — for a
+/// duplicate-key conflict, the two carets ("first implementation here" and "conflicting
+/// implementation") that point at the colliding entries — while dropping its children (rustc's
+/// redundant coherence notes, such as "downstream crates may implement …") and its structured
+/// suggestions. The header says *what* collided; the kept carets say *where*.
+pub(crate) fn replace_header(diag: &mut DiagInner, header: String) {
+    diag.messages = vec![(DiagMessage::Str(header.into()), Style::NoStyle)];
+    diag.children = Vec::new();
+    diag.suggestions = Suggestions::Enabled(Vec::new());
 }
 
 /// Build a plain-text sub-diagnostic (a `help` or `note`) with no span — the shape every

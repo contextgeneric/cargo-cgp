@@ -27,8 +27,9 @@ pub mod rewrite;
 pub mod tree;
 
 pub use diagnosis::{
-    Cause, DiagKind, DiagnosisPlan, FieldIssue, Leaf, Resolved, cause_note, consumer_header,
-    derive_help_messages, field_mismatch_header, plan_resolved,
+    Cause, DiagKind, DiagnosisPlan, FieldIssue, Leaf, Resolved, WiringConflict, WiringKey,
+    cause_note, consumer_header, derive_help_messages, field_mismatch_header, plan_resolved,
+    plan_wiring_conflict,
 };
 pub use postprocess::{
     CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_path, resugar_symbol,

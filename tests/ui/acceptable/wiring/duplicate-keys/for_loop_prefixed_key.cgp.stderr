@@ -1,0 +1,10 @@
+error[E0119]: [CGP-E004] `App` cannot wire `Path!(@cgp.core.error.ErrorRaiserComponent.*)` that is already set through `AppDefaults`
+  --> src/main.rs:48:14
+   |
+45 |         namespace AppDefaults;
+   |                   ----------- first implementation here
+...
+48 |             @cgp.core.error.ErrorRaiserComponent.Key: Value,
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

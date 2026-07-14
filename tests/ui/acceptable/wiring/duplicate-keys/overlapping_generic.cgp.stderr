@@ -1,0 +1,10 @@
+error[E0119]: [CGP-E004] duplicate wiring for component `GreeterComponent` on `Wrapper<u64>`
+  --> src/main.rs:35:9
+   |
+28 |         GreeterComponent: GreetHello,
+   |         ---------------- first implementation here
+...
+35 |         GreeterComponent: GreetHello,
+   |         ^^^^^^^^^^^^^^^^ conflicting implementation for `Wrapper<u64>`
+
+For more information about this error, try `rustc --explain E0119`.

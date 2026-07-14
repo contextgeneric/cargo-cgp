@@ -36,7 +36,10 @@ driver, is what keeps them unit-testable.
   derive `help`s, and the per-cause `root cause:` notes into a `DiagnosisPlan`, which the emitter only
   maps onto rustc's `DiagInner`; keeping every piece rustc-free is what makes the whole
   diagnosis-to-text layer unit-testable without a `TyCtxt`. It is documented in
-  [Typed root-cause resolution](typed-root-cause-resolution.md).
+  [Typed root-cause resolution](typed-root-cause-resolution.md). The same module also holds the
+  duplicate-key conflict wording (`wiring.rs`): the `WiringConflict` model and `plan_wiring_conflict`,
+  which words the `[CGP-E004]` header the driver's `resolve::conflict` classifier feeds it (see
+  [The driver](driver.md#reshaping-a-duplicate-key-conflict)).
 - **The dependency-tree renderer**
   ([`tree`](../../crates/cargo-cgp-error-processing/src/tree.rs)) is the `DependencyTree` type and its
   `cargo tree`-style renderer, over the tiny `termtree` crate, that the driver's resolver builds and
@@ -216,6 +219,9 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   consumer header.
 - [`crates/cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs) —
   the dependency-tree renderer (see [Typed root-cause resolution](typed-root-cause-resolution.md#tests)).
+- [`crates/cargo-cgp-error-processing/tests/wiring.rs`](../../crates/cargo-cgp-error-processing/tests/wiring.rs) —
+  `plan_wiring_conflict` over hand-built `WiringConflict` values: the duplicate, overlap (blanket,
+  component, and path forms), redirect, and duplicate-redirect headers.
 - The [UI snapshot suite](testing.md) exercises the transforms over every fixture's real diagnostics:
   each `.cgp.stderr` is what the driver rendered after applying them.
 
@@ -236,9 +242,11 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis) —
   the rustc-free root-cause model and its wording: `leaf.rs` (`Leaf`/`FieldIssue`), `resolved.rs`
   (`Cause`/`Resolved`), `wording.rs` (the `Resolved`→`String` builders — `consumer_header`,
-  `field_mismatch_header`, `cause_note`, `derive_help_messages`), and `plan.rs` (`DiagKind`,
-  `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`). See
-  [Typed root-cause resolution](typed-root-cause-resolution.md).
+  `field_mismatch_header`, `cause_note`, `derive_help_messages`), `plan.rs` (`DiagKind`,
+  `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`), and `wiring.rs`
+  (`WiringConflict`/`WiringKey` and `plan_wiring_conflict` for the `[CGP-E004]` duplicate-key
+  header). See [Typed root-cause resolution](typed-root-cause-resolution.md) and
+  [The driver](driver.md#reshaping-a-duplicate-key-conflict).
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs) —
   the `DependencyTree` type and its `cargo tree`-style renderer.
 - [`crates/cargo-cgp-error-processing/src/code.rs`](../../crates/cargo-cgp-error-processing/src/code.rs) —

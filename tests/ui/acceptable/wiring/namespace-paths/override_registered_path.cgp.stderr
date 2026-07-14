@@ -1,0 +1,10 @@
+error[E0119]: [CGP-E004] `App` cannot wire `Path!(@app.GreeterComponent.*)` that is already set through `AppNamespace`
+  --> src/main.rs:57:10
+   |
+55 |         namespace AppNamespace;
+   |                   ------------ first implementation here
+56 |
+57 |         @app.GreeterComponent: GreetBye,
+   |          ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

@@ -34,3 +34,11 @@ pub const PROVIDER_TRAIT_UNIMPLEMENTED: &str = "CGP-E002";
 /// does not match the type a provider needs. The rewritten message names the field, its expected
 /// type, and the actual type found on the struct.
 pub const FIELD_TYPE_MISMATCH: &str = "CGP-E003";
+
+/// `CGP-E004` — a component is wired more than once on one context. Stamped on the
+/// `DelegateComponent` half of the `E0119` conflicting-implementation pair a duplicate
+/// `delegate_components!` key produces (its redundant `IsProviderFor` half is dropped): the same
+/// key mapped twice, an overlapping generic or namespace forwarding, a duplicated `@`-path, or a
+/// direct wiring that collides with a redirect. The rewritten message names the conflicting
+/// key(s) and, for a redirect collision, the redirected path to set instead.
+pub const CONFLICTING_WIRING: &str = "CGP-E004";

@@ -69,31 +69,33 @@ resolver already strips from the consumer-call case. At minimum the post-process
 `__…__` placeholders the way it strips the CGP path prefixes; better, the resolver should learn to
 recover this class into a coded root-cause note.
 
-## Wiring coherence conflicts fan out and expose internal traits
+## Some wiring coherence conflicts still fan out or expose internal traits
 
-A structural wiring mistake — a key or provider name wired twice, an overlapping generic, a namespace
-path registered twice — surfaces as a coherence conflict (`E0119`) that the tool passes through with
-only light post-processing, so one mistake becomes two near-identical blocks: one keyed on
-`IsProviderFor<…>` and one on `DelegateComponent<…>`, both internal traits the user never wrote. The
-duplicate-key family ([`tests/ui/usability/wiring/duplicate-keys`](../../tests/ui/usability/wiring/duplicate-keys))
-and the namespace-path family
-([`tests/ui/usability/wiring/namespace-paths`](../../tests/ui/usability/wiring/namespace-paths)) all
-show this fan-out. Two adjacent constraint failures round out the class
+A structural wiring mistake surfaces as a coherence conflict (`E0119`/`E0207`/`E0275`), and rustc
+often reports it *twice* — one block keyed on `IsProviderFor<…>` and one on `DelegateComponent<…>`,
+both internal traits the user never wrote. The **duplicate delegate-key** case is now handled: the
+tool recognizes the `DelegateComponent`/`IsProviderFor` `E0119` pair, drops the redundant
+`IsProviderFor` half, and rewrites the `DelegateComponent` half into the `[CGP-E004]` headline that
+names the colliding key(s) — the same key twice, an overlapping generic, a namespace forwarding or
+override, a duplicated `@`-path, or a redirect collision — so those fixtures have graduated to
+[`tests/ui/acceptable/wiring`](../../tests/ui/acceptable/wiring). What remains here is the conflicts
+that are *not* a duplicate delegate key.
+
+Two of them still pass through with only light post-processing. A duplicate provider *name*
+([`duplicate_provider_name`](../../tests/ui/usability/wiring/duplicate-keys/duplicate_provider_name.rs))
+is an `E0428` plus a `Greeter`/`IsProviderFor` `E0119` pair on the provider *struct* — not a
+`DelegateComponent` conflict, so the `CGP-E004` handling does not reach it and its pair still fans
+out. A duplicate `cgp_namespace!` `@`-path
+([`namespace_duplicate_path_key`](../../tests/ui/usability/wiring/namespace-paths/namespace_duplicate_path_key.rs))
+is a *single* `E0119` on the user's own namespace trait (`MyNamespace<_>`); its path resugars to the
+readable `Path!(@foo.bar.*)`, but the header still exposes the raw namespace-trait conflict, uncoded.
+
+Two adjacent constraint failures round out the class
 ([`tests/ui/usability/wiring/constraints`](../../tests/ui/usability/wiring/constraints)): the
 unconstrained-generic `E0207` emits two errors with contradictory auto-fixes ("add the parameter"
 versus "remove it"), and the `UseContext` cycle `E0275` exposes `CanUseComponent` / `__Check…` and
-never names the cycle. A smaller gap rides along in the namespace-path headers, now narrowed. The open-`_`-tail case is
-handled: a path whose spine ends in the generic "rest of path" parameter rustc prints as `_` resugars
-to a trailing `.*` wildcard, so
-[`namespace_duplicate_path_key`](../../tests/ui/usability/wiring/namespace-paths/namespace_duplicate_path_key.rs)
-prints the readable `Path!(@foo.bar.*)` for its conflicting key. What still survives raw is a path
-carrying a **crate-qualified segment**:
-[`delegate_duplicate_path_key`](../../tests/ui/usability/wiring/namespace-paths/delegate_duplicate_path_key.rs)'s
-key prints as `PathCons<Symbol!("cgp"), …, PathCons<cgp_error::ErrorTypeProviderComponent, _>>` because
-`resugar_path` declines the `cgp_error::ErrorTypeProviderComponent` segment — a `::`-qualified name it
-cannot round-trip to a bare `@…` segment, and one whose `cgp_error::` prefix `strip_cgp_prefixes` does
-not strip. The tool should coalesce the paired blocks, suppress the internal traits, extend the
-`Path!` resugaring to crate-qualified segments, and name the wiring mistake behind each code.
+never names the cycle. The tool should coalesce or suppress these remaining paired blocks and name the
+wiring mistake behind each code, as it now does for the duplicate delegate-key `E0119`.
 
 ## Macro lowering errors point at the attribute, not the cause
 
@@ -116,10 +118,10 @@ Taken together, these issues define the tool's presentation target for the class
 reshape: deduplicate one cause down to a single headline whether it fans out across diagnostics (the
 cascade) or within one (the missing derive); recover the untransformed `#[use_type]` and lowering
 classes into coded, root-cause-first diagnostics, or at least strip the generated `__…__` names and
-misleading suggestions they leak; coalesce a coherence conflict's paired blocks and name the wiring
-mistake behind its `E0119`/`E0207`/`E0275` code rather than exposing the internal traits; and finish
-the `Path!` resugaring — open-tailed paths now fold to a `.*` wildcard, and crate-qualified segments
-are the remaining case — so no encoded type-level path survives in a header. The bar is the same one
+misleading suggestions they leak; and coalesce the coherence conflicts that still fan out — the
+duplicate provider *name*, the `E0207` unconstrained generic, and the `E0275` `UseContext` cycle —
+and name the wiring mistake behind each code, the way the duplicate delegate-key `E0119` is now
+reshaped into `[CGP-E004]`. The bar is the same one
 the check-trait-failure family already meets: lead with the cause as one plain sentence, name the
 decoded construct, give a short dependency path, and never let a misleading `rustc` heuristic outrank
 the real cause. The

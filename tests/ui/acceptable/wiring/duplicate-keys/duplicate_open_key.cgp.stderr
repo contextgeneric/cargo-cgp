@@ -1,0 +1,10 @@
+error[E0119]: [CGP-E004] component `GreeterComponent` on `Person` is redirected to `Path!(@GreeterComponent)`; set the redirected key instead of wiring it directly
+  --> src/main.rs:35:9
+   |
+33 |         open GreeterComponent;
+   |              ---------------- first implementation here
+34 |
+35 |         GreeterComponent: GreetHello,
+   |         ^^^^^^^^^^^^^^^^ conflicting implementation for `Person`
+
+For more information about this error, try `rustc --explain E0119`.

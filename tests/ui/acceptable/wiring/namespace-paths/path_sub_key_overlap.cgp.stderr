@@ -1,0 +1,9 @@
+error[E0119]: [CGP-E004] `App` cannot wire `Path!(@cgp.core.error.ErrorTypeProviderComponent.String.*)` that is already set through `Path!(@cgp.core.error.ErrorTypeProviderComponent.*)`
+  --> src/main.rs:28:10
+   |
+27 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,
+   |          ----------------------------------------- first implementation here
+28 |         @cgp.core.error.ErrorTypeProviderComponent.String: UseType<String>,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

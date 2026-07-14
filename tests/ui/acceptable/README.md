@@ -25,8 +25,14 @@ are split into concept sub-directories so no directory grows crowded:
   namespace path.
 - [`use-site/`](use-site) — a broken dependency reached by a direct consumer-method call (`E0599`),
   recovered from the use site with the misleading method-syntax advice dropped.
-- [`wiring/`](wiring) — coherence conflicts whose output is already clear (a duplicate component name,
-  a duplicate default impl on user types, an inherited-override conflict).
+- [`wiring/`](wiring) — coherence conflicts whose output is already clear: a duplicate component
+  name, a duplicate default impl on user types, and an inherited-override conflict at the top level,
+  plus the duplicate delegate-key `E0119` reshaped into a `[CGP-E004]` headline (the redundant
+  `IsProviderFor` half dropped, the colliding key named). The latter is split into `duplicate-keys/`
+  (a key wired twice, an overlapping generic, an `open` redirect collision or duplicate, a bare-key
+  namespace forwarding) and `namespace-paths/` (a duplicated or overriding `@`-path, a path that is a
+  prefix of another, two joined namespaces, a prefixed `for`-loop key, and a bare unprefixed key over
+  a namespace).
 - [`lowering/`](lowering) — a macro-lowering error rustc already states well on its own
   (`use_type_unknown_assoc`, whose typo and fix rustc names).
 

@@ -1,0 +1,10 @@
+error[E0119]: [CGP-E004] `App` cannot wire component `ErrorTypeProviderComponent` that is already set through `DefaultNamespace`
+  --> src/main.rs:25:9
+   |
+23 |         namespace DefaultNamespace;
+   |                   ---------------- first implementation here
+24 |
+25 |         ErrorTypeProviderComponent: UseType<String>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

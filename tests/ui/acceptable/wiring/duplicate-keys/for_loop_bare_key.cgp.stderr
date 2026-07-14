@@ -1,0 +1,10 @@
+error[E0119]: [CGP-E004] `App` cannot wire a key through `GreeterTable` that is already set through `DefaultNamespace`
+  --> src/main.rs:50:13
+   |
+47 |         namespace DefaultNamespace;
+   |                   ---------------- first implementation here
+...
+50 |             Key: Value,
+   |             ^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

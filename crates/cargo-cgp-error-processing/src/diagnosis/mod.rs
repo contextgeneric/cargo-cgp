@@ -10,9 +10,11 @@
 mod leaf;
 mod plan;
 mod resolved;
+mod wiring;
 mod wording;
 
 pub use leaf::*;
 pub use plan::*;
 pub use resolved::*;
+pub use wiring::*;
 pub use wording::*;
