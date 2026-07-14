@@ -15,8 +15,8 @@ The check-trait-failure family — the dominant class of CGP error — is now pr
 fixtures have graduated into [`acceptable/`](../../tests/ui/acceptable). The driver's
 [typed root-cause resolver](../implementation/typed-root-cause-resolution.md) leads with a single
 coded headline (`[CGP-E001]` for an unimplemented consumer trait, `[CGP-E003]` for a field-type
-mismatch), states the cause as one plain sentence (`root cause: missing field \`height\` on
-\`Rectangle\``), decodes the field name from its `Symbol!`, and renders the dependency path as a
+mismatch), states the cause as one plain sentence (`` root cause: missing field `height` on
+`Rectangle` ``), decodes the field name from its `Symbol!`, and renders the dependency path as a
 compact `cargo tree`, with the `IsProviderFor` / `CanUseComponent` / `__Check…` scaffolding
 suppressed throughout. The worked examples this document once walked through in prose all clear that
 bar now and live under `acceptable/`: the encoded missing field
@@ -82,13 +82,18 @@ show this fan-out. Two adjacent constraint failures round out the class
 ([`tests/ui/usability/wiring/constraints`](../../tests/ui/usability/wiring/constraints)): the
 unconstrained-generic `E0207` emits two errors with contradictory auto-fixes ("add the parameter"
 versus "remove it"), and the `UseContext` cycle `E0275` exposes `CanUseComponent` / `__Check…` and
-never names the cycle. A smaller gap rides along in the namespace-path headers: the conflicting key
-prints as a raw `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>` because the `Path!`
-resugaring does not reach a path whose tail is an open `_`
-([`namespace_duplicate_path_key`](../../tests/ui/usability/wiring/namespace-paths/namespace_duplicate_path_key.rs),
-[`delegate_duplicate_path_key`](../../tests/ui/usability/wiring/namespace-paths/delegate_duplicate_path_key.rs)).
-The tool should coalesce the paired blocks, suppress the internal traits, finish the `Path!`
-resugaring for open-tailed paths, and name the wiring mistake behind each code.
+never names the cycle. A smaller gap rides along in the namespace-path headers, now narrowed. The open-`_`-tail case is
+handled: a path whose spine ends in the generic "rest of path" parameter rustc prints as `_` resugars
+to a trailing `.*` wildcard, so
+[`namespace_duplicate_path_key`](../../tests/ui/usability/wiring/namespace-paths/namespace_duplicate_path_key.rs)
+prints the readable `Path!(@foo.bar.*)` for its conflicting key. What still survives raw is a path
+carrying a **crate-qualified segment**:
+[`delegate_duplicate_path_key`](../../tests/ui/usability/wiring/namespace-paths/delegate_duplicate_path_key.rs)'s
+key prints as `PathCons<Symbol!("cgp"), …, PathCons<cgp_error::ErrorTypeProviderComponent, _>>` because
+`resugar_path` declines the `cgp_error::ErrorTypeProviderComponent` segment — a `::`-qualified name it
+cannot round-trip to a bare `@…` segment, and one whose `cgp_error::` prefix `strip_cgp_prefixes` does
+not strip. The tool should coalesce the paired blocks, suppress the internal traits, extend the
+`Path!` resugaring to crate-qualified segments, and name the wiring mistake behind each code.
 
 ## Macro lowering errors point at the attribute, not the cause
 
@@ -113,7 +118,8 @@ cascade) or within one (the missing derive); recover the untransformed `#[use_ty
 classes into coded, root-cause-first diagnostics, or at least strip the generated `__…__` names and
 misleading suggestions they leak; coalesce a coherence conflict's paired blocks and name the wiring
 mistake behind its `E0119`/`E0207`/`E0275` code rather than exposing the internal traits; and finish
-the `Path!` resugaring so no encoded type-level path survives in a header. The bar is the same one
+the `Path!` resugaring — open-tailed paths now fold to a `.*` wildcard, and crate-qualified segments
+are the remaining case — so no encoded type-level path survives in a header. The bar is the same one
 the check-trait-failure family already meets: lead with the cause as one plain sentence, name the
 decoded construct, give a short dependency path, and never let a misleading `rustc` heuristic outrank
 the real cause. The

@@ -103,8 +103,28 @@ fn resugars_a_primitive_segment_as_a_type() {
 }
 
 #[test]
+fn resugars_an_open_tailed_path_as_a_wildcard() {
+    // An open-ended path ends in a generic "rest of path" parameter, which rustc renders as
+    // `_`. It resugars to a trailing `.*` wildcard segment — the form seen in the
+    // conflicting-wiring E0119 blocks over a duplicated `@`-path key.
+    assert_eq!(
+        resugar_path("PathCons<Symbol!(\"foo\"), PathCons<Symbol!(\"bar\"), _>>").as_deref(),
+        Some("Path!(@foo.bar.*)"),
+    );
+}
+
+#[test]
+fn resugars_a_single_segment_open_tailed_path() {
+    assert_eq!(
+        resugar_path("PathCons<Symbol!(\"foo\"), _>").as_deref(),
+        Some("Path!(@foo.*)"),
+    );
+}
+
+#[test]
 fn resugar_path_skips_a_non_nil_terminated_spine() {
-    // A tail that is neither `Nil` nor another `PathCons` is not a path spine.
+    // A tail that is neither `Nil`, another `PathCons`, nor the open `_` placeholder is not a
+    // path spine — a concrete type like `App` is a genuine mismatch, not an open tail.
     assert_eq!(resugar_path("PathCons<GreeterComponent, App>"), None);
 }
 
@@ -131,6 +151,18 @@ fn postprocess_message_resugars_an_expanded_path() {
     assert_eq!(
         postprocess_message(text, false).as_deref(),
         Some("Path!(@app.GreeterComponent)"),
+    );
+}
+
+#[test]
+fn postprocess_message_resugars_an_open_tailed_path() {
+    // The conflicting-wiring E0119 shape end to end: two prefixed, expanded `Symbol` spines
+    // inside a `PathCons` whose open `_` tail is the impl's generic "rest of path" parameter.
+    // Stripped, resugared to symbols, then folded into a wildcard `Path!`.
+    let text = "PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'f', cgp::prelude::Chars<'o', cgp::prelude::Chars<'o', Nil>>>>, PathCons<Symbol<3, Chars<'b', Chars<'a', Chars<'r', Nil>>>>, _>>";
+    assert_eq!(
+        postprocess_message(text, false).as_deref(),
+        Some("Path!(@foo.bar.*)"),
     );
 }
 

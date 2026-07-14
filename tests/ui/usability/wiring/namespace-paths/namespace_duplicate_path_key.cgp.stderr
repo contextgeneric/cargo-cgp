@@ -1,9 +1,9 @@
-error[E0119]: conflicting implementations of trait `MyNamespace<_>` for type `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>`
+error[E0119]: conflicting implementations of trait `MyNamespace<_>` for type `Path!(@foo.bar.*)`
   --> src/main.rs:22:10
    |
 21 |         @foo.bar => @baz,
    |          ------- first implementation here
 22 |         @foo.bar => @qux,
-   |          ^^^^^^^ conflicting implementation for `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>`
+   |          ^^^^^^^ conflicting implementation for `Path!(@foo.bar.*)`
 
 For more information about this error, try `rustc --explain E0119`.

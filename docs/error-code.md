@@ -124,7 +124,10 @@ programmer wrote and nothing more;
 
 **`Path!` resugaring** reverses a `Path!` type expansion back to its surface form, so
 `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` becomes `Path!(@app.GreeterComponent)`.
-It restores the syntax the programmer wrote and nothing more;
+It restores the syntax the programmer wrote, save for one readable extension: an open-ended path whose
+spine ends in a generic parameter rustc prints as `_` gets a trailing `.*` wildcard segment
+(`PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>` becomes `Path!(@foo.bar.*)`), which is not
+real `Path!` syntax but reads far better than the raw spine.
 [`resugar_path`](../crates/cargo-cgp-error-processing/src/postprocess/resugar_path.rs) owns it.
 
 **Missing-field clause rewriting** turns an unmet `` `HasField<Symbol!("name")>` `` clause inside a

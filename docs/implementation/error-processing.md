@@ -113,8 +113,15 @@ rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Four tran
   head becomes the bare segment `name` only when `name` is a lowercase, non-primitive identifier
   `Path!` would encode as a `Symbol`, and a named-type head is kept only when it is a plain identifier
   `Path!` would leave as a type — capitalized or a primitive. A spine that is not `PathCons`/`Nil` all
-  the way down, or that carries a segment that would not round-trip, is left untouched. It runs after
-  `resugar_symbol`, so its symbol segments are already in `Symbol!("…")` form.
+  the way down, or that carries a segment that would not round-trip, is left untouched. One spine that
+  is *not* `Nil`-terminated is still rewritten: an **open-ended path**, whose spine ends in a generic
+  "rest of path" parameter that rustc prints as the placeholder `_` (as in the conflicting-wiring
+  `E0119` blocks over a duplicated `@`-path key). Such a tail resugars to a trailing `.*` wildcard
+  segment, so `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>` becomes `Path!(@foo.bar.*)`. The
+  `.*` is not real `Path!` syntax and would not parse back, but it reads far better than the raw spine;
+  only a bare `_` tail triggers it, since `_` is never a concrete segment, and any other non-`Nil` tail
+  still declines. It runs after `resugar_symbol`, so its symbol segments are already in `Symbol!("…")`
+  form.
 - **[`rewrite_missing_fields`](../../crates/cargo-cgp-error-processing/src/postprocess/missing_field.rs)**
   turns an unmet `HasField` bound into a field-oriented message. It matches (after the two transforms
   above) `` the trait `HasField<Symbol!("name")>` is not implemented for `Context` `` and distinguishes
@@ -197,9 +204,9 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
 - [`crates/cargo-cgp-error-processing/tests/postprocess.rs`](../../crates/cargo-cgp-error-processing/tests/postprocess.rs) —
   drives each post-processing transform over crafted inputs: the stripped/left-alone prefix cases, the
   exact-match cases `resugar_symbol` must skip, the `PathCons` → `Path!` resugaring (symbol, type, and
-  primitive segments, and the non-round-trippable cases `resugar_path` must skip), the single-field
-  (inline and separate-note landmark) versus missing-derive branches of `rewrite_missing_fields`, and
-  the `postprocess_message` chain.
+  primitive segments, the open `_` tail folded to a `.*` wildcard, and the non-round-trippable cases
+  `resugar_path` must skip), the single-field (inline and separate-note landmark) versus missing-derive
+  branches of `rewrite_missing_fields`, and the `postprocess_message` chain.
 - [`crates/cargo-cgp-error-processing/tests/rewrite.rs`](../../crates/cargo-cgp-error-processing/tests/rewrite.rs) —
   the wiring-message rewrite over a hand-built name map (see [The driver](driver.md#tests)).
 - [`crates/cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs) —
