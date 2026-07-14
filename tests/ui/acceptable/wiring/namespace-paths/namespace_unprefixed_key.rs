@@ -7,11 +7,11 @@
 //! [override_registered_path.rs].
 //!
 //! The tool drops the redundant `IsProviderFor` half (and rustc's downstream note with
-//! it) and rewrites the `DelegateComponent` half to `[CGP-E004] `App` cannot wire
+//! it) and rewrites the `DelegateComponent` half to `[CGP-E005] `App` cannot wire
 //! component `ErrorTypeProviderComponent` that is already set through
 //! `DefaultNamespace``.
 //!
-//! See docs/errors/wiring/namespace-override-conflict.md and docs/error-code.md (CGP-E004).
+//! See docs/errors/wiring/namespace-override-conflict.md and docs/error-code.md (CGP-E005).
 
 use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::prelude::*;

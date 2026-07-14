@@ -35,10 +35,28 @@ pub const PROVIDER_TRAIT_UNIMPLEMENTED: &str = "CGP-E002";
 /// type, and the actual type found on the struct.
 pub const FIELD_TYPE_MISMATCH: &str = "CGP-E003";
 
-/// `CGP-E004` — a component is wired more than once on one context. Stamped on the
-/// `DelegateComponent` half of the `E0119` conflicting-implementation pair a duplicate
-/// `delegate_components!` key produces (its redundant `IsProviderFor` half is dropped): the same
-/// key mapped twice, an overlapping generic or namespace forwarding, a duplicated `@`-path, or a
-/// direct wiring that collides with a redirect. The rewritten message names the conflicting
-/// key(s) and, for a redirect collision, the redirected path to set instead.
-pub const CONFLICTING_WIRING: &str = "CGP-E004";
+// The `CGP-E004`–`CGP-E008` family covers the duplicate-key coherence conflict (`E0119`) a
+// `delegate_components!` block produces. All five are stamped on the `DelegateComponent` half of
+// the conflict pair (its redundant `IsProviderFor` half is dropped); they are separate codes
+// because each rewrites the message into a distinct form with its own fix.
+
+/// `CGP-E004` — the same key is wired more than once directly. The same component marker, or the
+/// same `@`-path, mapped twice on one context.
+pub const DUPLICATE_WIRING: &str = "CGP-E004";
+
+/// `CGP-E005` — two entries wire *overlapping but distinct* keys, so one cannot claim what the
+/// other already covers: a generic over a specific, a bare key or `@`-path over a namespace
+/// forwarding, or a path that is a prefix of another.
+pub const OVERLAPPING_WIRING: &str = "CGP-E005";
+
+/// `CGP-E006` — a context joins more than one namespace (or a bare-key `for` loop, which desugars
+/// the same way), so two blanket forwardings cover every key and overlap. Only one namespace can
+/// key each target type.
+pub const MULTIPLE_NAMESPACES: &str = "CGP-E006";
+
+/// `CGP-E007` — a direct wiring collides with an `open`/namespace redirect of the same key, so the
+/// direct entry never takes effect; the fix is to set the redirected path instead.
+pub const REDIRECT_COLLISION: &str = "CGP-E007";
+
+/// `CGP-E008` — the same key is redirected more than once (two `open`s, or two `=>` mappings).
+pub const DUPLICATE_REDIRECT: &str = "CGP-E008";

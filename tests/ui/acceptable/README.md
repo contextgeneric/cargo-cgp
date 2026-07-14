@@ -27,7 +27,7 @@ are split into concept sub-directories so no directory grows crowded:
   recovered from the use site with the misleading method-syntax advice dropped.
 - [`wiring/`](wiring) — coherence conflicts whose output is already clear: a duplicate component
   name, a duplicate default impl on user types, and an inherited-override conflict at the top level,
-  plus the duplicate delegate-key `E0119` reshaped into a `[CGP-E004]` headline (the redundant
+  plus the duplicate delegate-key `E0119` reshaped into a coded `[CGP-E004]`–`[CGP-E008]` headline (the redundant
   `IsProviderFor` half dropped, the colliding key named). The latter is split into `duplicate-keys/`
   (a key wired twice, an overlapping generic, an `open` redirect collision or duplicate, a bare-key
   namespace forwarding) and `namespace-paths/` (a duplicated or overriding `@`-path, a path that is a

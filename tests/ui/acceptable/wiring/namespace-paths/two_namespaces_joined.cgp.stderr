@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E004] `App` cannot wire a key through `NamespaceB` that is already set through `NamespaceA`
+error[E0119]: [CGP-E006] only one namespace can be used for each target type in `delegate_components!`, but `App` uses both `NamespaceA` and `NamespaceB`
   --> src/main.rs:53:19
    |
 52 |         namespace NamespaceA;

@@ -7,13 +7,13 @@
 //! ([delegate_duplicate_path_key.rs] maps the *same* path twice).
 //!
 //! The tool drops the redundant `IsProviderFor` half and rewrites the
-//! `DelegateComponent` half to `[CGP-E004] `App` cannot wire
-//! `Path!(@cgp.core.error.ErrorTypeProviderComponent.String.*)` that is already set
-//! through `Path!(@cgp.core.error.ErrorTypeProviderComponent.*)``, naming both
-//! overlapping paths in their resugared form (the wildcard tail is what makes the
+//! `DelegateComponent` half to `[CGP-E005] `App` cannot wire
+//! `@cgp.core.error.ErrorTypeProviderComponent.String.*` that is already set
+//! through `@cgp.core.error.ErrorTypeProviderComponent.*``, naming both
+//! overlapping paths in bare `@…` form (the wildcard tail is what makes the
 //! overlap visible).
 //!
-//! See docs/errors/wiring/conflicting-wiring.md and docs/error-code.md (CGP-E004).
+//! See docs/errors/wiring/conflicting-wiring.md and docs/error-code.md (CGP-E005).
 
 use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::prelude::*;

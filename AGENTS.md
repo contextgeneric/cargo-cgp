@@ -213,7 +213,7 @@ splitting utilities). `diagnosis/` is the rustc-free root-cause model and its wo
 in), `wording.rs` (the pure `Resolved`-to-text builders), `plan.rs` (`plan_resolved`, which words
 a `Resolved` into the header, help, and note strings the emitter emits, and holds the
 `categorized_header` classification), and `wiring.rs` (the `WiringConflict` model and
-`plan_wiring_conflict`, which words a duplicate-key conflict into its `[CGP-E004]` header). `tree.rs` is the `DependencyTree` type and its `cargo tree`-style
+`plan_wiring_conflict`, which words a duplicate-key conflict into its `[CGP-E004]`–`[CGP-E008]` header, one code per conflict shape). `tree.rs` is the `DependencyTree` type and its `cargo tree`-style
 renderer (over the `termtree` crate); `code.rs` holds the `CGP-E` error-code constants stamped on
 classified main messages (catalogued in docs/error-code.md). Its tests in `tests/` drive the
 post-processors, the rewrite, the diagnosis plan and wording, and the tree renderer over hand-built

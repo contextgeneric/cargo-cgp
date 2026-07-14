@@ -15,12 +15,12 @@
 //! `for` key is the fix.)
 //!
 //! The tool drops the redundant `IsProviderFor` half and rewrites the
-//! `DelegateComponent` half to `[CGP-E004] `App` cannot wire
-//! `Path!(@cgp.core.error.ErrorRaiserComponent.*)` that is already set through
+//! `DelegateComponent` half to `[CGP-E005] `App` cannot wire
+//! `@cgp.core.error.ErrorRaiserComponent.*` that is already set through
 //! `AppDefaults``, exercising the typed path renderer's collapse of a `for`-loop key
 //! parameter to a trailing `.*` wildcard.
 //!
-//! See docs/errors/wiring/namespace-forwarding-conflict.md and docs/error-code.md (CGP-E004).
+//! See docs/errors/wiring/namespace-forwarding-conflict.md and docs/error-code.md (CGP-E005).
 
 use cgp::core::error::ErrorRaiserComponent;
 use cgp::extra::error::DisplayError;

@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E004] `App` cannot wire component `ErrorTypeProviderComponent` that is already set through `DefaultNamespace`
+error[E0119]: [CGP-E005] `App` cannot wire component `ErrorTypeProviderComponent` that is already set through `DefaultNamespace`
   --> src/main.rs:25:9
    |
 23 |         namespace DefaultNamespace;

@@ -118,33 +118,45 @@ fn build_conflict<'tcx>(
     let first_redirect = first
         .and_then(|f| f.delegate)
         .and_then(|d| redirect_path(tcx, d));
-    let redirect_count = conflicting_redirect.is_some() as u8 + first_redirect.is_some() as u8;
 
-    if redirect_count > 0 {
-        // The path is the same for a true duplicate redirect; either side's is fine.
-        let path = conflicting_redirect.or(first_redirect)?;
-        return Some(if redirect_count == 2 {
-            WiringConflict::DuplicateRedirect { context, key, path }
-        } else {
-            WiringConflict::Redirect { context, key, path }
-        });
-    }
-
-    match first {
-        Some(first) => {
-            let first_key = describe_key(tcx, first.key, first.impl_did)?;
-            Some(if first_key == key {
-                WiringConflict::Duplicate { context, key }
-            } else {
-                WiringConflict::Overlap {
-                    context,
-                    conflicting: key,
-                    first: first_key,
-                }
-            })
+    match (first_redirect, conflicting_redirect) {
+        // Both entries redirect the same key — a duplicate redirect (the two targets may differ).
+        (Some(first_path), Some(second_path)) => {
+            return Some(WiringConflict::DuplicateRedirect {
+                context,
+                key,
+                first_path,
+                second_path,
+            });
         }
-        None => Some(WiringConflict::Duplicate { context, key }),
+        // One entry redirects the key while the other sets it directly — a redirect collision.
+        (Some(path), None) | (None, Some(path)) => {
+            return Some(WiringConflict::Redirect { context, key, path });
+        }
+        (None, None) => {}
     }
+
+    let Some(first) = first else {
+        return Some(WiringConflict::Duplicate { context, key });
+    };
+    let first_key = describe_key(tcx, first.key, first.impl_did)?;
+    Some(match (&first_key, &key) {
+        // Two blanket forwardings, each over every key — a context joining more than one
+        // namespace (`namespace` desugars to a bare-key `for` loop, so the two are the same shape).
+        (WiringKey::Blanket(first_ns), WiringKey::Blanket(second_ns)) => {
+            WiringConflict::MultipleNamespaces {
+                context,
+                first: first_ns.clone(),
+                second: second_ns.clone(),
+            }
+        }
+        _ if first_key == key => WiringConflict::Duplicate { context, key },
+        _ => WiringConflict::Overlap {
+            context,
+            conflicting: key,
+            first: first_key,
+        },
+    })
 }
 
 /// The surface form of a `DelegateComponent` key: a bare component marker, an `@`-path, or a
@@ -169,11 +181,12 @@ fn describe_key<'tcx>(tcx: TyCtxt<'tcx>, key: Ty<'tcx>, impl_did: DefId) -> Opti
     }
 }
 
-/// Render a `PathCons<..>` key back to its `Path!(@a.b.*)` surface form — the typed counterpart of
+/// Render a `PathCons<..>` key back to its bare `@a.b.*` surface form — the typed counterpart of
 /// the text `resugar_path`, done straight off the types so a generic tail or loop parameter is
 /// read as a `.*` wildcard rather than a printed parameter name. A lowercase `Symbol` segment
 /// decodes to its string; a named segment keeps its type name; a `Param` anywhere ends the path in
-/// `.*`. `None` on a spine that is not `PathCons`/`Nil`.
+/// `.*`. The bare `@…` form (no `Path!(…)` wrapper) is what the rewritten conflict message uses.
+/// `None` on a spine that is not `PathCons`/`Nil`.
 fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
     let mut segments: Vec<String> = Vec::new();
     let mut wildcard = false;
@@ -224,7 +237,7 @@ fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
         }
     }
 
-    let mut rendered = String::from("Path!(@");
+    let mut rendered = String::from("@");
     rendered.push_str(&segments.join("."));
     if wildcard {
         if !segments.is_empty() {
@@ -232,12 +245,11 @@ fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
         }
         rendered.push('*');
     }
-    rendered.push(')');
     Some(rendered)
 }
 
 /// If `delegate` is a `RedirectLookup<Table, Path>`, render its `Path` (the second argument) to
-/// its `Path!(@..)` surface form — the redirected key the user should set. `None` for any other
+/// its bare `@..` surface form — the redirected key the user should set. `None` for any other
 /// `Delegate`, which is an ordinary provider, not a redirect.
 fn redirect_path<'tcx>(tcx: TyCtxt<'tcx>, delegate: Ty<'tcx>) -> Option<String> {
     let ty::Adt(def, args) = delegate.kind() else {

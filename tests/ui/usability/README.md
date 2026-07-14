@@ -23,7 +23,7 @@ class in [the usability issue document](../../../docs/issues/usability.md):
   a cyclic `#[use_type]` routing (`use_type_cyclic_context`).
 - [`wiring/`](wiring) — the structural coherence conflicts (`E0119`/`E0207`/`E0275`) that still pass
   through with only light post-processing. The duplicate delegate-key `E0119` is now reshaped into a
-  `[CGP-E004]` headline and has moved to [`../acceptable/wiring`](../acceptable/wiring); what remains
+  coded `[CGP-E004]`–`[CGP-E008]` headline and has moved to [`../acceptable/wiring`](../acceptable/wiring); what remains
   here is `duplicate-keys/` (a duplicate provider *name*, whose `Greeter`/`IsProviderFor` pair still
   fans out — not a `DelegateComponent` conflict), `namespace-paths/` (a duplicate `cgp_namespace!`
   `@`-path, a single `E0119` on the user's own namespace trait), and `constraints/` (an unconstrained

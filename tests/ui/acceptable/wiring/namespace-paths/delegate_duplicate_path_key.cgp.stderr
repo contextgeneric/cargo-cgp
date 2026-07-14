@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E004] duplicate wiring for `Path!(@cgp.core.error.ErrorTypeProviderComponent.*)` on `App`
+error[E0119]: [CGP-E004] duplicate wiring for `@cgp.core.error.ErrorTypeProviderComponent.*` on `App`
   --> src/main.rs:26:10
    |
 25 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,

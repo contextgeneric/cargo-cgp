@@ -75,17 +75,18 @@ A structural wiring mistake surfaces as a coherence conflict (`E0119`/`E0207`/`E
 often reports it *twice* — one block keyed on `IsProviderFor<…>` and one on `DelegateComponent<…>`,
 both internal traits the user never wrote. The **duplicate delegate-key** case is now handled: the
 tool recognizes the `DelegateComponent`/`IsProviderFor` `E0119` pair, drops the redundant
-`IsProviderFor` half, and rewrites the `DelegateComponent` half into the `[CGP-E004]` headline that
-names the colliding key(s) — the same key twice, an overlapping generic, a namespace forwarding or
-override, a duplicated `@`-path, or a redirect collision — so those fixtures have graduated to
+`IsProviderFor` half, and rewrites the `DelegateComponent` half into a coded
+`[CGP-E004]`–`[CGP-E008]` headline that names the colliding key(s) — one code per shape: the same key
+twice, an overlapping generic, multiple namespaces, a duplicated `@`-path, or a redirect collision —
+so those fixtures have graduated to
 [`tests/ui/acceptable/wiring`](../../tests/ui/acceptable/wiring). What remains here is the conflicts
 that are *not* a duplicate delegate key.
 
 Two of them still pass through with only light post-processing. A duplicate provider *name*
 ([`duplicate_provider_name`](../../tests/ui/usability/wiring/duplicate-keys/duplicate_provider_name.rs))
 is an `E0428` plus a `Greeter`/`IsProviderFor` `E0119` pair on the provider *struct* — not a
-`DelegateComponent` conflict, so the `CGP-E004` handling does not reach it and its pair still fans
-out. A duplicate `cgp_namespace!` `@`-path
+`DelegateComponent` conflict, so the `CGP-E004`–`CGP-E008` handling does not reach it and its pair
+still fans out. A duplicate `cgp_namespace!` `@`-path
 ([`namespace_duplicate_path_key`](../../tests/ui/usability/wiring/namespace-paths/namespace_duplicate_path_key.rs))
 is a *single* `E0119` on the user's own namespace trait (`MyNamespace<_>`); its path resugars to the
 readable `Path!(@foo.bar.*)`, but the header still exposes the raw namespace-trait conflict, uncoded.
@@ -121,7 +122,7 @@ classes into coded, root-cause-first diagnostics, or at least strip the generate
 misleading suggestions they leak; and coalesce the coherence conflicts that still fan out — the
 duplicate provider *name*, the `E0207` unconstrained generic, and the `E0275` `UseContext` cycle —
 and name the wiring mistake behind each code, the way the duplicate delegate-key `E0119` is now
-reshaped into `[CGP-E004]`. The bar is the same one
+reshaped into the `[CGP-E004]`–`[CGP-E008]` family. The bar is the same one
 the check-trait-failure family already meets: lead with the cause as one plain sentence, name the
 decoded construct, give a short dependency path, and never let a misleading `rustc` heuristic outrank
 the real cause. The

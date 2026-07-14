@@ -101,7 +101,7 @@ live compiler holds; this is far more involved than a flag, because it links the
 API to reach the `TyCtxt`. That emitter is where the whole diagnostic layer now lives — the front-end
 merely forwards what the driver renders — and it carries four transformations. First, a
 duplicate-key coherence conflict (`E0119`) is recognized as one logical mistake and
-[reshaped into its `[CGP-E004]` form](#reshaping-a-duplicate-key-conflict), described below. Otherwise
+[reshaped into its coded `[CGP-E004]`–`[CGP-E008]` form](#reshaping-a-duplicate-key-conflict), described below. Otherwise
 the deepest transform, the [typed root-cause resolution](typed-root-cause-resolution.md), *replaces* a
 resolvable wiring failure with a root-cause-first diagnostic, covered in its own document; failing
 that, the in-place [trait-renaming rewrite](#naming-the-traits-behind-a-component-marker) described
@@ -329,9 +329,10 @@ the expansion emit two overlapping `DelegateComponent` impls, and because each c
 also generates an `IsProviderFor` forwarding impl, the compiler reports the same conflict *twice* —
 once keyed on `DelegateComponent<…>` and once on `IsProviderFor<…>`, both internal traits the user
 never wrote. The transform recognizes the pair as one logical mistake: it **drops** the redundant
-`IsProviderFor` diagnostic (emitting nothing) and **rewrites** the `DelegateComponent` one into the
-`[CGP-E004]` headline that names the colliding key(s), keeping rustc's two carets — "first
-implementation here" and "conflicting implementation" — which already point at the two entries.
+`IsProviderFor` diagnostic (emitting nothing) and **rewrites** the `DelegateComponent` one into a
+coded headline that names the colliding key(s), keeping rustc's two carets — "first implementation
+here" and "conflicting implementation" — which already point at the two entries. The code is one of
+`[CGP-E004]`–`[CGP-E008]`, chosen by the shape of the collision.
 
 Everything is recovered from the compiler, not the error text. rustc aims the `E0119` at
 `tcx.def_span` of the conflicting impl, and the delegate macro re-spans each entry onto its key token,
@@ -339,13 +340,15 @@ so [`resolve::conflict`](../../crates/cargo-cgp-driver/src/resolve/conflict.rs) 
 that `DelegateComponent` impl (by source range, since the two halves of the pair carry the same range
 under different `SyntaxContext`s) and reads the entry off it — its context, its key, and its
 `Delegate`. It does the same for the "first implementation here" impl at the diagnostic's other
-labelled span, then classifies the shape: a **duplicate** (the two keys render equal), an **overlap**
-(distinct but colliding keys — a generic over a specific, two namespace forwardings, a path prefixing
-another), a **redirect** collision (one entry's `Delegate` is a `RedirectLookup`, so the message names
-the redirected path to set instead), or a **duplicate redirect** (both are). Each key is rendered to
-its surface form off the types — a component marker to its name, a `PathCons<…>` to its `Path!(@…)`
-(a generic tail or `for`-loop key collapsing to `.*`), a blanket forwarding to the namespace/table
-trait that keys it — so the headline names what the programmer wrote. The message wording is decided
+labelled span, then classifies the shape into one of the five, each with its own code: a
+**duplicate** (`CGP-E004`, the two keys render equal), an **overlap** (`CGP-E005`, distinct but
+colliding keys — a generic over a specific, or a path prefixing another), **multiple namespaces**
+(`CGP-E006`, both keys are blanket forwardings, so the context joins more than one namespace), a
+**redirect** collision (`CGP-E007`, one entry's `Delegate` is a `RedirectLookup`, so the message
+names the redirected path to set instead), or a **duplicate redirect** (`CGP-E008`, both are). Each
+key is rendered to its surface form off the types — a component marker to its name, a `PathCons<…>`
+to its bare `@…` path (a generic tail or `for`-loop key collapsing to `.*`), a blanket forwarding to
+the namespace/table trait that keys it — so the headline names what the programmer wrote. The message wording is decided
 by the rustc-free [`plan_wiring_conflict`](../../crates/cargo-cgp-error-processing/src/diagnosis/wiring.rs)
 over the owned `WiringConflict` the classifier fills in, so it is unit-tested without a compiler. The
 transform is anchored to the genuine CGP `DelegateComponent` (by `DefId`, like the rest of the

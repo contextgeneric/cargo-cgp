@@ -1,19 +1,22 @@
-error[E0119]: conflicting implementations of trait `IsProviderFor<GreeterComponent, _, _>` for type `Person`
-  --> src/main.rs:33:14
+error[E0119]: conflicting implementations of trait `IsProviderFor<FooComponent, _, _>` for type `App`
+  --> src/main.rs:29:9
    |
-32 |         open GreeterComponent;
-   |              ---------------- first implementation here
-33 |         open GreeterComponent;
-   |              ^^^^^^^^^^^^^^^^ conflicting implementation for `Person`
+27 |         FooComponent =>
+   |         ------------ first implementation here
+28 |             @app.foo,
+29 |         FooComponent =>
+   |         ^^^^^^^^^^^^ conflicting implementation for `App`
    |
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<GreeterComponent, _, _>` for type `cgp::prelude::RedirectLookup<Person, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>`
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<FooComponent, _, _>` for type `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'f', cgp::prelude::Chars<'o', cgp::prelude::Chars<'o', cgp::prelude::Nil>>>>, cgp::prelude::Nil>>>`
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<FooComponent, _, _>` for type `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'b', cgp::prelude::Chars<'a', cgp::prelude::Chars<'r', cgp::prelude::Nil>>>>, cgp::prelude::Nil>>>`
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<GreeterComponent>` for type `Person`
-  --> src/main.rs:33:14
+error[E0119]: conflicting implementations of trait `DelegateComponent<FooComponent>` for type `App`
+  --> src/main.rs:29:9
    |
-32 |         open GreeterComponent;
-   |              ---------------- first implementation here
-33 |         open GreeterComponent;
-   |              ^^^^^^^^^^^^^^^^ conflicting implementation for `Person`
+27 |         FooComponent =>
+   |         ------------ first implementation here
+28 |             @app.foo,
+29 |         FooComponent =>
+   |         ^^^^^^^^^^^^ conflicting implementation for `App`
 
 For more information about this error, try `rustc --explain E0119`.
