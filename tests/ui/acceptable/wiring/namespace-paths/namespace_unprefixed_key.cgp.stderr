@@ -1,10 +1,12 @@
-error[E0119]: [CGP-E005] `App` cannot wire component `ErrorTypeProviderComponent` that is already set through `DefaultNamespace`
-  --> src/main.rs:25:9
+error[E0119]: [CGP-E007] component `ErrorTypeProviderComponent` on `App` is redirected to `@cgp.core.error.ErrorTypeProviderComponent`
+  --> src/main.rs:29:9
    |
-23 |         namespace DefaultNamespace;
+27 |         namespace DefaultNamespace;
    |                   ---------------- first implementation here
-24 |
-25 |         ErrorTypeProviderComponent: UseType<String>,
+28 |
+29 |         ErrorTypeProviderComponent: UseType<String>,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+   |
+   = help: wire the provider `UseType<std::string::String>` with the key `@cgp.core.error.ErrorTypeProviderComponent`
 
 For more information about this error, try `rustc --explain E0119`.

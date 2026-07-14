@@ -5,7 +5,9 @@ use std::path::Path;
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for,
 };
-use cargo_cgp_error_processing::{Resolved, plan_resolved, plan_wiring_conflict};
+use cargo_cgp_error_processing::{
+    Resolved, plan_resolved, plan_wiring_conflict, wiring_conflict_help,
+};
 use rustc_errors::codes::{E0119, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
@@ -174,6 +176,10 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                 ConflictAction::Suppress => return,
                 ConflictAction::Rewrite(conflict) => {
                     replace_header(&mut diag, plan_wiring_conflict(&conflict));
+                    // A redirect collision carries its fix as a `help`, kept out of the header.
+                    if let Some(help) = wiring_conflict_help(&conflict) {
+                        diag.children.push(subdiag(Level::Help, help));
+                    }
                     self.postprocess(&mut diag);
                     self.inner.emit_diagnostic(diag);
                     return;

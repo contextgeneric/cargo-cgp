@@ -86,13 +86,14 @@ pub enum WiringConflict {
         first: String,
         second: String,
     },
-    /// One entry redirects the key (via `open` or a namespace) while the other sets it, so the
-    /// direct wiring never takes effect; the fix is to set the redirected `path` instead
-    /// (`CGP-E007`).
+    /// One entry redirects the key (via `open` or a namespace) while the other sets it directly to
+    /// `provider`, so the direct wiring never takes effect; the fix is to wire `provider` under the
+    /// redirected `path` instead (`CGP-E007`).
     Redirect {
         context: String,
         key: WiringKey,
         path: String,
+        provider: String,
     },
     /// The same key is redirected more than once. `first_path` and `second_path` are the two
     /// redirect targets, equal when both redirects point the same way (`CGP-E008`).
@@ -131,9 +132,10 @@ pub fn plan_wiring_conflict(conflict: &WiringConflict) -> String {
             "[{MULTIPLE_NAMESPACES}] only one namespace can be used for each target type in \
              `delegate_components!`, but `{context}` uses both `{first}` and `{second}`",
         ),
-        WiringConflict::Redirect { context, key, path } => format!(
-            "[{REDIRECT_COLLISION}] {} on `{context}` is redirected to `{path}`; set the \
-             redirected key instead of wiring it directly",
+        WiringConflict::Redirect {
+            context, key, path, ..
+        } => format!(
+            "[{REDIRECT_COLLISION}] {} on `{context}` is redirected to `{path}`",
             key.noun(),
         ),
         WiringConflict::DuplicateRedirect {
@@ -156,5 +158,18 @@ pub fn plan_wiring_conflict(conflict: &WiringConflict) -> String {
                 )
             }
         }
+    }
+}
+
+/// The `help` message accompanying a conflict's header, when it has one. A redirect collision names
+/// how to fix it — wire the provider under the redirected key rather than setting the key directly
+/// — kept out of the header so the headline stays one short sentence. Every other shape's carets are
+/// the fix, so they carry no help.
+pub fn wiring_conflict_help(conflict: &WiringConflict) -> Option<String> {
+    match conflict {
+        WiringConflict::Redirect { path, provider, .. } => Some(format!(
+            "wire the provider `{provider}` with the key `{path}`"
+        )),
+        _ => None,
     }
 }

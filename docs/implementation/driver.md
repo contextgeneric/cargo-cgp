@@ -344,12 +344,18 @@ labelled span, then classifies the shape into one of the five, each with its own
 **duplicate** (`CGP-E004`, the two keys render equal), an **overlap** (`CGP-E005`, distinct but
 colliding keys — a generic over a specific, or a path prefixing another), **multiple namespaces**
 (`CGP-E006`, both keys are blanket forwardings, so the context joins more than one namespace), a
-**redirect** collision (`CGP-E007`, one entry's `Delegate` is a `RedirectLookup`, so the message
-names the redirected path to set instead), or a **duplicate redirect** (`CGP-E008`, both are). Each
+**redirect** collision (`CGP-E007`), or a **duplicate redirect** (`CGP-E008`, both entries redirect).
+A redirect collision is detected two ways: one entry's `Delegate` is literally a `RedirectLookup`
+(an `open` or `=>` redirect), *or* one entry is a blanket namespace and the other a concrete key the
+namespace maps to a `RedirectLookup` — recovered by normalizing `<key as Namespace<Ctx>>::Delegate`
+through the trait solver (the same re-entrant normalization the typed resolver uses). Its header
+names only the redirected path; the *fix* — wire the direct entry's provider under that key — rides
+in a separate `help`, kept out of the header so the headline stays one short sentence. Each
 key is rendered to its surface form off the types — a component marker to its name, a `PathCons<…>`
 to its bare `@…` path (a generic tail or `for`-loop key collapsing to `.*`), a blanket forwarding to
 the namespace/table trait that keys it — so the headline names what the programmer wrote. The message wording is decided
 by the rustc-free [`plan_wiring_conflict`](../../crates/cargo-cgp-error-processing/src/diagnosis/wiring.rs)
+(and `wiring_conflict_help` for the redirect fix)
 over the owned `WiringConflict` the classifier fills in, so it is unit-tested without a compiler. The
 transform is anchored to the genuine CGP `DelegateComponent` (by `DefId`, like the rest of the
 resolver), so a same-named trait cannot drive it, and it declines a conflict whose caret sits on no

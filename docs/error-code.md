@@ -119,17 +119,20 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
   the carets point at.
 - **`CGP-E005` — overlapping wiring.** `` [CGP-E005] `<Context>` cannot wire <key> that is already
   set through <source> `` — two distinct but overlapping keys, where one cannot claim what the other
-  already covers (a bare component or an `@`-path over a namespace forwarding, or a path that is a
-  prefix of another). **Fix:** remove or narrow the overlapping entry.
+  already covers (a generic entry over a specific one, an `@`-path over a namespace forwarding, or a
+  path that is a prefix of another). **Fix:** remove or narrow the overlapping entry. (A *bare* key
+  the namespace resolves to a redirect is `CGP-E007` instead.)
 - **`CGP-E006` — multiple namespaces.** `` [CGP-E006] only one namespace can be used for each target
   type in `delegate_components!`, but `<Context>` uses both `<A>` and `<B>` `` — two blanket
   forwardings that each cover every key, from joining two namespaces (or a namespace plus a bare-key
   `for` loop, which desugars the same way). **Fix:** join one namespace and inherit the others into
   it, or move a bare `for` key into a path.
 - **`CGP-E007` — redirect collision.** `` [CGP-E007] <component> on `<Context>` is redirected to
-  `<path>`; set the redirected key instead of wiring it directly `` — a direct wiring that collides
-  with an `open`/namespace redirect of the same key. **Fix:** wire the redirected key the message
-  names rather than the bare key.
+  `<path>` `` — a direct wiring that collides with a redirect of the same key: an `open` header, an
+  explicit `=>` redirect, or a `namespace` that maps the key to a redirected path (recovered by
+  normalizing the namespace's `Delegate` for that key). The fix rides in a `help`:
+  `` wire the provider `<Provider>` with the key `<path>` ``. **Fix:** wire the direct entry's
+  provider under the redirected key rather than the bare key.
 - **`CGP-E008` — duplicate redirect.** `` [CGP-E008] duplicate redirect for <component> on
   `<Context>` … `` (naming one redirect target, or both when they differ) — the same key redirected
   more than once. **Fix:** keep a single redirect.

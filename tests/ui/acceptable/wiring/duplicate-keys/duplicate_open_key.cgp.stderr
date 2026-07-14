@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E007] component `GreeterComponent` on `Person` is redirected to `@GreeterComponent`; set the redirected key instead of wiring it directly
+error[E0119]: [CGP-E007] component `GreeterComponent` on `Person` is redirected to `@GreeterComponent`
   --> src/main.rs:35:9
    |
 33 |         open GreeterComponent;
@@ -6,5 +6,7 @@ error[E0119]: [CGP-E007] component `GreeterComponent` on `Person` is redirected 
 34 |
 35 |         GreeterComponent: GreetHello,
    |         ^^^^^^^^^^^^^^^^ conflicting implementation for `Person`
+   |
+   = help: wire the provider `GreetHello` with the key `@GreeterComponent`
 
 For more information about this error, try `rustc --explain E0119`.

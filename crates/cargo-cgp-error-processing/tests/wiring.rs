@@ -5,7 +5,9 @@
 //! fills the same model in from the live `TyCtxt`. Each shape carries its own `[CGP-E0xx]` code,
 //! and an `@`-path renders in bare notation (no `Path!(…)` wrapper).
 
-use cargo_cgp_error_processing::{WiringConflict, WiringKey, plan_wiring_conflict};
+use cargo_cgp_error_processing::{
+    WiringConflict, WiringKey, plan_wiring_conflict, wiring_conflict_help,
+};
 
 #[test]
 fn duplicate_component_key() {
@@ -89,15 +91,30 @@ fn multiple_namespaces() {
 
 #[test]
 fn redirect_collides_with_direct_wiring() {
+    // The fix moves to a `help`, keeping the header a single short sentence.
     let conflict = WiringConflict::Redirect {
         context: "Person".to_owned(),
         key: WiringKey::Component("GreeterComponent".to_owned()),
         path: "@GreeterComponent".to_owned(),
+        provider: "GreetHello".to_owned(),
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E007] component `GreeterComponent` on `Person` is redirected to `@GreeterComponent`; set the redirected key instead of wiring it directly",
+        "[CGP-E007] component `GreeterComponent` on `Person` is redirected to `@GreeterComponent`",
     );
+    assert_eq!(
+        wiring_conflict_help(&conflict).as_deref(),
+        Some("wire the provider `GreetHello` with the key `@GreeterComponent`"),
+    );
+}
+
+#[test]
+fn non_redirect_conflicts_have_no_help() {
+    let conflict = WiringConflict::Duplicate {
+        context: "Person".to_owned(),
+        key: WiringKey::Component("GreeterComponent".to_owned()),
+    };
+    assert_eq!(wiring_conflict_help(&conflict), None);
 }
 
 #[test]
