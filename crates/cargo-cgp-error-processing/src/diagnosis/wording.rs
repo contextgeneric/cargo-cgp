@@ -62,8 +62,8 @@ pub fn mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
 /// The one root-cause lead line for a leaf — what the note names before the dependency chain.
 /// A genuinely missing field is said plainly (without a `context` qualifier, since `HasField`
 /// can land on any struct); a present-but-underived field is worded as the unimplemented
-/// accessor, with the fix (the derive) carried by a separate `help`; any other leaf restates
-/// its unmet bound.
+/// accessor, with the fix (the derive) carried by a separate `help`; a component the context
+/// does not wire names the missing component; any other leaf restates its unmet bound.
 fn root_cause_lead(leaf: &Leaf) -> String {
     match leaf {
         Leaf::Field {
@@ -71,6 +71,9 @@ fn root_cause_lead(leaf: &Leaf) -> String {
             owner,
             issue: FieldIssue::Missing,
         } => format!("missing field `{name}` on `{owner}`"),
+        Leaf::MissingWiring { component, owner } => {
+            format!("missing wiring for `{component}` on `{owner}`")
+        }
         Leaf::Field { name, owner, .. } => {
             format!(
                 "accessor trait `HasField` with field `{name}` is not implemented for `{owner}`"

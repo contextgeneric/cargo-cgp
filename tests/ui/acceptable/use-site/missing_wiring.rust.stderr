@@ -1,0 +1,43 @@
+error[E0599]: the method `foo` exists for struct `App`, but its trait bounds were not satisfied
+  --> src/main.rs:51:9
+   |
+39 | pub struct App;
+   | -------------- method `foo` not found for this struct because it doesn't satisfy `App: CanUseFoo` or `App: FooProvider<App>`
+...
+51 |     App.foo();
+   |         ^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `FooProvider`
+  --> src/main.rs:23:5
+   |
+23 |     fn foo(&self);
+   |     ^^^^^^^^^^^^^^
+note: trait bound `App: FooProvider<App>` was not satisfied
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_component(FooProvider)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+22 | pub trait CanUseFoo {
+   |           ^^^^^^^^^
+note: the trait `FooProvider` must be implemented
+  --> src/main.rs:22:1
+   |
+22 | / pub trait CanUseFoo {
+23 | |     fn foo(&self);
+24 | | }
+   | |_^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `CanUseFoo` defines an item `foo`, perhaps you need to implement it
+  --> src/main.rs:22:1
+   |
+22 | pub trait CanUseFoo {
+   | ^^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+   |
+51 -     App.foo();
+51 +     App::foo();
+   |
+
+For more information about this error, try `rustc --explain E0599`.

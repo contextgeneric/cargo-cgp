@@ -52,7 +52,12 @@ accessor trait \`HasField\` with field \`name\` is not implemented for \`Person\
 `help` naming the fix — `make sure that \`#[derive(HasField)]\` is used for \`Person\`` (pointed at the
 `Deref` target when the field is only reachable through one; that is exactly the
 [`missing_has_field_derive` fixture](../../tests/ui/acceptable/fields/missing_has_field_derive.rs), the
-present-but-underived case a plain "missing field" would misdescribe). Any other leaf restates its
+present-but-underived case a plain "missing field" would misdescribe). A component the context does
+not wire at all — an unmet `DelegateComponent<Marker>` on the context — is the wiring counterpart of a
+missing field, reading as `root cause: missing wiring for \`BarProviderComponent\` on \`App\`` and
+naming the component marker the programmer writes to fix it
+([`basic_missing_wiring`](../../tests/ui/acceptable/wiring/missing-wiring/basic_missing_wiring.rs)).
+Any other leaf restates its
 bound — `root cause: the trait bound \`f64: std::cmp::Eq\` is not satisfied` — except when the kept
 main message already states that very bound, where the lead would only repeat the header and the note
 carries the chain alone
@@ -163,6 +168,10 @@ A branch ends at a **terminal leaf**, and which obligations count as terminal is
 honest. The descent follows only the CGP wiring vocabulary — `CanUseComponent`, `IsProviderFor`,
 `DelegateComponent`, any provider trait, and any obligation whose `Self` is the context (its getter and
 capability traits) — and treats everything else as a leaf. An unmet `HasField` is the field leaf. An
+unmet `DelegateComponent<Marker>` **on the context** is the missing-wiring leaf: the context does not
+delegate that component to any provider, so the wiring is absent (that a `DelegateComponent` on any
+*other* type — a provider struct that implements its provider trait directly rather than delegating —
+is instead a dead-end is covered below). An
 ordinary bound on a *foreign* type (`f64: Eq`) is a terminal leaf too, and crucially the descent stops
 there rather than walking into whatever unrelated `std` blanket impl happens to match its `Self` (an
 `impl<F: FnPtr> Eq for F` would otherwise fabricate a misleading `f64: FnPtr` step). Two further rules
@@ -173,9 +182,12 @@ can pin down — an unmet `HasField` projection (`<Ctx as HasField<Symbol!("f")>
 present with the wrong type — and, finding one, completes the branch with that field's `HasField` trait
 ref, tagging the path with the expected type so the leaf renders as a `FieldTypeMismatch` (the
 `E0271` field case); a branch with no such projection yields nothing and declines to the fallback. And
-a branch that bottoms out on pure wiring plumbing — a
-`CanUseComponent`/`IsProviderFor`/`DelegateComponent` routing dead-end — is dropped, since the real
-cause is found down another branch.
+a branch that bottoms out on pure wiring plumbing — an unmet `CanUseComponent` or `IsProviderFor`, or a
+`DelegateComponent` on a type *other* than the context — is a routing dead-end and is dropped, since
+the real cause is found down another branch. A `DelegateComponent` on the context is the exception the
+rule turns on: it is never plumbing but the missing-wiring leaf itself, because a delegation that
+*holds* is pruned before it can be a leaf, so the only way one bottoms out unmet on the context is that
+the context genuinely does not wire it.
 
 Two mechanical properties matter. First, following *every* unmet dependency, not just the first, is
 what surfaces independent causes as **separate** paths — the next-generation solver short-circuits a
@@ -280,10 +292,12 @@ diagnostic's spans — so a wiring failure that is *neither* — a manual supert
 declines. The use-site path builds each `CanUseComponent<Marker, ()>` with an **empty `Params` slot**,
 so a generic component whose real parameters matter is not re-checked there (only the check path
 recovers those). It renders only leaves it can trust: a `HasField` field (missing, underived, or —
-via its projection — present with the wrong type), an ordinary bound on a foreign type, or a terminal
+via its projection — present with the wrong type), a component the context does not wire (an unmet
+`DelegateComponent` on the context), an ordinary bound on a foreign type, or a terminal
 capability bound — but it still *declines* an associated-type projection mismatch that is **not** a
-`HasField` one (the projection form it cannot word), and drops pure wiring-plumbing dead-ends, so a
-diagnostic whose only recoverable leaf is one of those falls back. And it uses an **empty parameter
+`HasField` one (the projection form it cannot word), and drops pure wiring-plumbing dead-ends (an
+unmet `CanUseComponent`/`IsProviderFor`, or a `DelegateComponent` on a *provider* rather than the
+context), so a diagnostic whose only recoverable leaf is one of those falls back. And it uses an **empty parameter
 environment** throughout, which suits the concrete check impls the fixtures exercise but will need the
 impl's own environment to extend cleanly to checks that carry generic parameters. (Parallel branches,
 deep nesting, and non-field leaves, by contrast, are handled: independent unmet dependencies become
@@ -303,10 +317,12 @@ says what it needs to without altering the header's shape.
   model: `anchor.rs` (`resolve_check_failure` finding the check impl by span, `resolve_use_site`
   recovering the context ADT from the diagnostic's spans and its wired components from
   `DelegateComponent` impls), `walk.rs` (walking the cause chain down to each terminal leaf — the
-  descendable-vocabulary rule, the plumbing-leaf drop, and `has_field_projection_mismatch` finding an
+  descendable-vocabulary rule, the plumbing-leaf drop, `is_reportable_leaf` keeping an unmet
+  `DelegateComponent` only when it lands on the context, and `has_field_projection_mismatch` finding an
   unmet `HasField` projection where the trait clauses all hold), `classify.rs` (classifying a leaf as a
   field by inspecting the struct and its `Deref` chain, a field-type mismatch with `field_type` reading
-  the actual field type off the struct by `DefId`, or a bound), `label.rs` (folding each chain into a
+  the actual field type off the struct by `DefId`, a missing wiring naming the unwired component
+  marker, or a bound), `label.rs` (folding each chain into a
   `DependencyTree` with each wiring trait replaced by its human form, generic parameters reattached),
   and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition and the `Symbol!` field-name decode).
   A sibling `conflict.rs` handles the duplicate-key coherence conflict (`E0119`) rather than a check
@@ -335,7 +351,7 @@ says what it needs to without altering the header's shape.
 
 The resolver is exercised end to end by the UI snapshot suite: the fixtures it reshapes live under
 [`tests/ui/acceptable/`](../../tests/ui/acceptable) — the `fields/`, `field-types/`, `providers/`,
-`generic/`, `resolution/`, and `use-site/` subgroups — and carry `.cgp.stderr` snapshots showing the
+`generic/`, `resolution/`, `wiring/`, and `use-site/` subgroups — and carry `.cgp.stderr` snapshots showing the
 transformed output, while the fixtures it declines keep their fallback snapshots under
 [`tests/ui/usability/use-type/`](../../tests/ui/usability/use-type), so the two together pin both the
 transform and the decline boundary. Several fixtures pin the harder cases: `parallel_branches` (two
@@ -355,13 +371,20 @@ full-path resolution names each one's own traits with no cross-over), `generic_a
 three-parameter component → the parameters reattached to the consumer and provider labels), and
 `ordinary_bound_unsatisfied`/`unregistered_prefix_path` (non-field leaves — an `f64: Eq` bound, whose
 rustc header is kept over a lead-less chain note, and an unregistered `DefaultNamespace` behind an
-`IsProviderFor` header, rewritten to the `CGP-E002` form over a `root cause:` note). The use-site path
+`IsProviderFor` header, rewritten to the `CGP-E002` form over a `root cause:` note). The missing-wiring
+leaf is pinned by the [`acceptable/wiring/missing-wiring/`](../../tests/ui/acceptable/wiring/missing-wiring)
+fixtures: `basic_missing_wiring` (a provider's `#[uses]` dependency on an unwired component → a
+`missing wiring` note over the transitive chain), `direct_missing_wiring` (a `check_components!` entry
+for a component the context wires nowhere → a single-node chain), and `parallel_missing_wiring` (a
+provider needing two unwired components → two `missing wiring` notes, one per component). The use-site path
 is pinned by the [`acceptable/use-site/`](../../tests/ui/acceptable/use-site)
 fixtures: `missing_dependency` and `unsatisfied_dependency` (a consumer-method `E0599` → the
-`CGP-E001` header, the misleading method-syntax advice dropped, and a `missing field` root-cause note)
-and its `ordinary_bound_unsatisfied` (a use-site `f64: Eq` → the `CGP-E001` header, code kept `E0599`,
-over the `f64: Eq` root-cause note). The field-classification wording — a missing field, a
-present-but-underived one, and a `Deref`-target one — is unit-tested over hand-built `Resolved` values
+`CGP-E001` header, the misleading method-syntax advice dropped, and a `missing field` root-cause note),
+`missing_wiring` (a use-site `E0599` whose provider needs an unwired component → the `CGP-E001` header
+over a `missing wiring` note),
+and `ordinary_bound_unsatisfied` (a use-site `f64: Eq` → the `CGP-E001` header, code kept `E0599`,
+over the `f64: Eq` root-cause note). The leaf wording — a missing field, a
+present-but-underived one, a `Deref`-target one, and a missing wiring — is unit-tested over hand-built `Resolved` values
 in [`cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs),
 and the renderer itself in
 [`cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).

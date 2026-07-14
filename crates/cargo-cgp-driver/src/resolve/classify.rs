@@ -3,8 +3,9 @@
 //! Once the [walk](crate::resolve::walk) reaches a terminal predicate, this module turns it into
 //! the rustc-free [`Leaf`] the emitter words — inspecting the actual struct a `HasField` bound
 //! lands on (and its `Deref` chain) so a genuinely missing field is told apart from one present
-//! but underived, and reading a mismatched field's actual type straight off the struct by
-//! `DefId`.
+//! but underived, reading a mismatched field's actual type straight off the struct by
+//! `DefId`, and naming the unwired component marker behind an unmet `DelegateComponent` on the
+//! context (a missing wiring).
 
 use cargo_cgp_error_processing::{FieldIssue, Leaf};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
@@ -24,12 +25,30 @@ const MAX_DEREF: u32 = 16;
 /// carried an unmet projection (`mismatch` is `Some(expected)`) becomes a
 /// [`Leaf::FieldTypeMismatch`], its actual field type queried from the struct; a plain `HasField`
 /// becomes a [`Leaf::Field`] (inspecting the struct so the emitter can tell missing from
-/// underived); any other bound becomes a [`Leaf::Bound`] restating it as `self: Trait`.
+/// underived); an unmet `DelegateComponent<Marker>` — a component the context does not wire —
+/// becomes a [`Leaf::MissingWiring`] naming that component marker; any other bound becomes a
+/// [`Leaf::Bound`] restating it as `self: Trait`.
 pub(crate) fn classify_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
     mismatch: Option<Ty<'tcx>>,
 ) -> Leaf {
+    if is_cgp_item(
+        tcx,
+        leaf_ref.def_id,
+        DELEGATE_COMPONENT_TRAIT,
+        CGP_COMPONENT_CRATE,
+    ) {
+        // `DelegateComponent<Marker>` with no satisfying impl: the context does not wire the
+        // component at all. The marker's own item name (`BarProviderComponent`) is what the
+        // programmer writes to fix it, so it names the leaf.
+        return Leaf::MissingWiring {
+            component: component_marker_name(tcx, leaf_ref.args.type_at(1)),
+            owner: tcx
+                .erase_and_anonymize_regions(leaf_ref.self_ty())
+                .to_string(),
+        };
+    }
     if is_cgp_item(tcx, leaf_ref.def_id, HAS_FIELD_TRAIT, CGP_FIELD_CRATE)
         && let Some(name) = decode_symbol(tcx, leaf_ref.args.type_at(1))
     {
@@ -59,13 +78,35 @@ pub(crate) fn classify_leaf<'tcx>(
 }
 
 /// Whether a terminal leaf is a real root cause worth reporting, rather than pure wiring plumbing.
-/// A `CanUseComponent`, `IsProviderFor`, or `DelegateComponent` that bottoms out unmet is a routing
-/// dead-end (the real cause sits down another branch), so it is dropped instead of shown.
-pub(crate) fn is_reportable_leaf<'tcx>(tcx: TyCtxt<'tcx>, leaf_ref: ty::TraitRef<'tcx>) -> bool {
+/// A `CanUseComponent` or `IsProviderFor` that bottoms out unmet is a routing dead-end (the real
+/// cause sits down another branch), so it is dropped instead of shown. A `DelegateComponent` is a
+/// real root cause — the context does not wire the component (a [`Leaf::MissingWiring`]) — but
+/// *only* when it lands on the `context` itself: an unmet `DelegateComponent` on a provider struct
+/// (a higher-order provider that implements its provider trait directly rather than delegating) is
+/// a dead-end whose real path runs through that direct impl, so it is dropped like the other
+/// wiring traits.
+pub(crate) fn is_reportable_leaf<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    leaf_ref: ty::TraitRef<'tcx>,
+    context: Ty<'tcx>,
+) -> bool {
     let did = leaf_ref.def_id;
+    if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE) {
+        return tcx.erase_and_anonymize_regions(leaf_ref.self_ty()) == context;
+    }
     !is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         && !is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
-        && !is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+}
+
+/// The plain item name of a component marker type — `BarProviderComponent` for the
+/// `DelegateComponent<BarProviderComponent>` key — which is the identifier a programmer writes on
+/// the left of a `delegate_components!` entry. Falls back to the marker's printed form when it is
+/// not an ADT (which a real component marker always is).
+fn component_marker_name<'tcx>(tcx: TyCtxt<'tcx>, marker: Ty<'tcx>) -> String {
+    match marker.kind() {
+        ty::Adt(def, _) => tcx.item_name(def.did()).to_string(),
+        _ => marker.to_string(),
+    }
 }
 
 /// Classify why the `HasField` bound on `owner` for `field` is unmet: whether `owner` genuinely

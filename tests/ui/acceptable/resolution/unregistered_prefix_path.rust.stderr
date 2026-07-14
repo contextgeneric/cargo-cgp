@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `PathCons<Symbol<3, Chars<'a', ...>>, ...>: DefaultNamespace<...>` is not satisfied
+error[E0277]: the trait bound `PathCons<Symbol<3, Chars<'a', Chars<'p', ...>>>, ...>: DefaultNamespace<...>` is not satisfied
   --> src/main.rs:48:9
    |
 48 |         GreeterComponent,
@@ -14,7 +14,7 @@ error[E0277]: the trait bound `PathCons<Symbol<3, Chars<'a', ...>>, ...>: Defaul
              ErrorWrapperComponent
              GreeterComponent
            and 5 others
-note: required for `App` to implement `DelegateComponent<PathCons<Symbol<3, Chars<'a', ...>>, ...>>`
+note: required for `App` to implement `DelegateComponent<PathCons<Symbol<3, Chars<'a', Chars<'p', ...>>>, ...>>`
   --> src/main.rs:40:1
    |
 40 | / delegate_components! {
@@ -24,7 +24,7 @@ note: required for `App` to implement `DelegateComponent<PathCons<Symbol<3, Char
 43 | |     }
 44 | | }
    | |_^
-note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<'a', ...>>, ...>>` to implement `IsProviderFor<GreeterComponent, App>`
+note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<'a', Chars<'p', ...>>>, ...>>` to implement `IsProviderFor<GreeterComponent, App>`
   --> src/main.rs:25:1
    |
 25 | #[cgp_component(Greeter)]

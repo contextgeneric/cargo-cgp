@@ -41,7 +41,7 @@ pub(crate) fn resolve_leaves<'tcx>(
         let leaf_ref = path.preds.last()?.skip_binder().trait_ref;
         // A path that bottoms out on pure wiring plumbing (a routing dead-end) is not a root
         // cause — a real cause is found down another branch — so drop it rather than report it.
-        if !is_reportable_leaf(tcx, leaf_ref) {
+        if !is_reportable_leaf(tcx, leaf_ref, context) {
             continue;
         }
         let leaf = classify_leaf(tcx, leaf_ref, path.mismatch);

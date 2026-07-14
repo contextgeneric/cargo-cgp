@@ -57,6 +57,18 @@ pub enum Leaf {
         /// The type the field actually has, queried from the struct by `DefId`, e.g. `i32`.
         actual: String,
     },
+    /// A component the wiring needs but the context does not delegate at all — the
+    /// `DelegateComponent<Marker>` bound has no impl, so no provider is chosen for it. Parallel
+    /// to a genuinely missing field, but the fix is to wire the component rather than add a
+    /// field. The emitter renders this as a tree-first diagnostic of its own, with a lead naming
+    /// the component to wire.
+    MissingWiring {
+        /// The component marker the context does not wire, e.g. `BarProviderComponent` — the name
+        /// the programmer writes on the left of a `delegate_components!` entry to fix it.
+        component: String,
+        /// The context that must wire the component, e.g. `App`.
+        owner: String,
+    },
     /// Any other terminal unmet bound — an ordinary trait bound (`f64: Eq`), an unmet abstract
     /// type, and so on. The emitter keeps rustc's own header for these and only replaces the
     /// sub-notes with the dependency tree.
@@ -73,6 +85,7 @@ impl Leaf {
     pub fn key(&self) -> &str {
         match self {
             Leaf::Field { name, .. } | Leaf::FieldTypeMismatch { name, .. } => name,
+            Leaf::MissingWiring { component, .. } => component,
             Leaf::Bound { summary } => summary,
         }
     }

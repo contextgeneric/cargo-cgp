@@ -87,6 +87,50 @@ fn plans_a_missing_field_check_failure() {
 }
 
 #[test]
+fn plans_a_missing_wiring_check_failure() {
+    // A two-node spine: the checked consumer over the `CanUseBar` capability the unwired
+    // component would supply.
+    let tree = DependencyTree::node(
+        "consumer trait impl `CanUseFoo` for context `App`",
+        vec![DependencyTree::leaf("trait impl `CanUseBar` for `App`")],
+    );
+    let resolved = Resolved {
+        context: "App".to_owned(),
+        consumers: vec!["CanUseFoo".to_owned()],
+        causes: vec![Cause {
+            leaf: Leaf::MissingWiring {
+                component: "BarProviderComponent".to_owned(),
+                owner: "App".to_owned(),
+            },
+            tree,
+        }],
+    };
+    let plan = plan_resolved(
+        DiagKind::Check,
+        Some("the trait bound `App: CanUseComponent<FooProviderComponent>` is not satisfied"),
+        &resolved,
+        &empty_names(),
+    );
+
+    assert_eq!(
+        plan.header.as_deref(),
+        Some("[CGP-E001] the consumer trait `CanUseFoo` is not implemented for context `App`")
+    );
+    // A missing wiring, like a genuinely missing field, carries no `help` — the note names the
+    // fix.
+    assert!(plan.helps.is_empty());
+    assert_eq!(
+        plan.notes,
+        vec![String::from(
+            "root cause: missing wiring for `BarProviderComponent` on `App`\n\
+             this is required through the dependency chain:\n\
+             \x20   consumer trait impl `CanUseFoo` for context `App`\n\
+             \x20   └── trait impl `CanUseBar` for `App`"
+        )]
+    );
+}
+
+#[test]
 fn plans_a_missing_derive_with_a_help() {
     let resolved = Resolved {
         context: "Rectangle".to_owned(),

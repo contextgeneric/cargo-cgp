@@ -1,0 +1,92 @@
+error[E0277]: the trait bound `App: CanUseComponent<FooProviderComponent>` is not satisfied
+  --> src/main.rs:48:9
+   |
+48 |         FooProviderComponent: DoFooWithBar,
+   |         ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `DelegateComponent<BarProviderComponent>` is not implemented for `App`
+      but trait `DelegateComponent<FooProviderComponent>` is implemented for it
+  --> src/main.rs:48:9
+   |
+48 |         FooProviderComponent: DoFooWithBar,
+   |         ^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `FooProviderComponent`, found `BarProviderComponent`
+note: required for `App` to implement `BarProvider<App>`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_component(BarProvider)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanUseBar`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_component(BarProvider)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+27 | pub trait CanUseBar {
+   |           ^^^^^^^^^
+note: required for `DoFooWithBar` to implement `IsProviderFor<FooProviderComponent, App>`
+  --> src/main.rs:36:1
+   |
+36 | #[cgp_impl(new DoFooWithBar)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+37 | #[uses(CanUseBar)]
+   |        --------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<FooProviderComponent>`
+note: required by a bound in `__CanUseApp`
+  --> src/main.rs:46:1
+   |
+46 | / delegate_and_check_components! {
+47 | |     new App {
+48 | |         FooProviderComponent: DoFooWithBar,
+49 | |     }
+50 | | }
+   | |_^ required by this bound in `__CanUseApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: CanUseComponent<FooProviderComponent>` is not satisfied
+  --> src/main.rs:48:9
+   |
+48 |         FooProviderComponent: DoFooWithBar,
+   |         ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<BarProviderComponent, App>` is not implemented for `App`
+  --> src/main.rs:47:9
+   |
+47 |     new App {
+   |         ^^^
+help: the trait `IsProviderFor<FooProviderComponent, __Context__, __Params__>` is implemented for `App`
+  --> src/main.rs:48:9
+   |
+48 |         FooProviderComponent: DoFooWithBar,
+   |         ^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `BarProvider<App>`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_component(BarProvider)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanUseBar`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_component(BarProvider)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+27 | pub trait CanUseBar {
+   |           ^^^^^^^^^
+note: required for `DoFooWithBar` to implement `IsProviderFor<FooProviderComponent, App>`
+  --> src/main.rs:36:1
+   |
+36 | #[cgp_impl(new DoFooWithBar)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+37 | #[uses(CanUseBar)]
+   |        --------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<FooProviderComponent>`
+note: required by a bound in `__CanUseApp`
+  --> src/main.rs:46:1
+   |
+46 | / delegate_and_check_components! {
+47 | |     new App {
+48 | |         FooProviderComponent: DoFooWithBar,
+49 | |     }
+50 | | }
+   | |_^ required by this bound in `__CanUseApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

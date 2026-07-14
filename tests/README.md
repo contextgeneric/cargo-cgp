@@ -52,7 +52,8 @@ regression pins the knowledge base references — the check-trait-failure family
 `density_*`, `scaled_area_*`, the consumer-call `unsatisfied_dependency`) and the typed-resolver pins
 (`field_type_mismatch*`, `same_name_components`, `generic_area*`, `deep_nesting`, `parallel_branches`,
 `dependency_cascade`, `missing_has_field_derive`, `field_via_deref`, `ordinary_bound_unsatisfied`,
-`mixed_rust_error`, `empty_field_struct`), each catalogued under
+`mixed_rust_error`, `empty_field_struct`, and the missing-wiring family `basic_missing_wiring`,
+`direct_missing_wiring`, `parallel_missing_wiring`, and the use-site `missing_wiring`), each catalogued under
 [Typed root-cause resolution](../docs/implementation/typed-root-cause-resolution.md#tests). The rest
 are a **verbatim mirror** of the upstream CGP compile-fail suite (the `acceptable/` fixtures under
 [`cgp-compile-fail-tests`](../../cgp/crates/tests/cgp-compile-fail-tests/tests)), imported so

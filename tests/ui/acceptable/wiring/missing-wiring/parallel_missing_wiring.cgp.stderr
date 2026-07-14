@@ -1,0 +1,18 @@
+error[E0277]: [CGP-E001] the consumer trait `CanUseFoo` is not implemented for context `App`
+  --> src/main.rs:45:9
+   |
+45 |         FooProviderComponent: DoFooWithBarBaz,
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: missing wiring for `BarProviderComponent` on `App`
+           this is required through the dependency chain:
+               consumer trait impl `CanUseFoo` for context `App`
+               └── provider trait impl `FooProvider` with context `App` for provider `DoFooWithBarBaz`
+                   └── trait impl `CanUseBar` for `App`
+   = note: root cause: missing wiring for `BazProviderComponent` on `App`
+           this is required through the dependency chain:
+               consumer trait impl `CanUseFoo` for context `App`
+               └── provider trait impl `FooProvider` with context `App` for provider `DoFooWithBarBaz`
+                   └── trait impl `CanUseBaz` for `App`
+
+For more information about this error, try `rustc --explain E0277`.
