@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E002] the provider trait `BarProvider` with context `App` is not implemented for provider `CommonProvider`
+  --> src/main.rs:43:9
+   |
+43 |         FooProviderComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: missing wiring for `BarProviderComponent` on `CommonProvider`
+           this is required through the dependency chain:
+               consumer trait impl `CanUseFoo` for context `CommonProvider`
+               └── provider trait impl `FooProvider` with context `CommonProvider` for provider `DoFooWithBar`
+                   └── trait impl `CanUseBar` for `CommonProvider`
+
+For more information about this error, try `rustc --explain E0277`.
