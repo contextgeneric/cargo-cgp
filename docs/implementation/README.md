@@ -53,3 +53,12 @@ same change.
   snapshot suite — a custom Rust test harness (like Clippy's `compile-test`) that compiles fixtures
   under `tests/ui/` through the tool and diffs committed `.cgp.stderr` snapshots — its bless workflow,
   and how it compares to Clippy's harness.
+- [Distribution](distribution.md) — the blueprint (ahead of implementation) for packaging and
+  installing the tool on a machine that has only stable Rust: installing both binaries through cargo
+  in lockstep, provisioning the pinned nightly with `rustc-dev`, forcing that nightly for the check so
+  the project needs no toolchain of its own, and the version preflight that keeps front-end and driver
+  matched. Follows the `rustc_plugin` model where Clippy's in-toolchain distribution is closed to an
+  out-of-tree tool, and covers the `setup`/`update` subcommands (all provisioning confined to `setup`,
+  a read-only preflight in `check`, cargo-delegated update with crates.io version discovery) and
+  running the tool as a Rust Analyzer check backend (the JSON pipeline, the `RUSTC_WRAPPER`
+  non-collision, and the isolated target directory).
