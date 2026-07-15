@@ -74,7 +74,11 @@ fn is_info_query(args: &[String]) -> bool {
 }
 
 /// Whether `args[1]` is a path to `rustc`, i.e. cargo called us as its rustc wrapper.
-fn is_wrapper_mode(args: &[String]) -> bool {
+///
+/// Public because [`crate::run`] uses it to tell a cargo probe (wrapper mode, where `-vV`
+/// or `--version` must reach the real compiler) from a direct `cargo-cgp-driver --version`
+/// query (non-wrapper mode, which the driver answers itself — see [`crate::version`]).
+pub fn is_wrapper_mode(args: &[String]) -> bool {
     args.get(1)
         .map(Path::new)
         .and_then(Path::file_stem)

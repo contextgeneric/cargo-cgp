@@ -20,3 +20,4 @@ path = "bin/cargo-cgp.rs"
 
 [dependencies]
 anyhow = { workspace = true }
+semver = { workspace = true }

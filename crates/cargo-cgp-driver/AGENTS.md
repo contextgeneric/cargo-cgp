@@ -9,10 +9,13 @@ crate — how cargo invokes it, how it reaches the compiler API, and the three d
 transformations. This file covers only the orientation specific to working in the crate.
 
 The module layout is short. [`run.rs`](src/run.rs) is the entrypoint — called by the thin
-[`bin/cargo-cgp-driver.rs`](bin/cargo-cgp-driver.rs) — that drives `rustc_driver::run_compiler`;
-[`args.rs`](src/args.rs) prepares the rustc argument vector (wrapper-mode stripping, sysroot
-injection, and injecting the flags in [`config.rs`](src/config.rs)); `config.rs` holds the shared
-names and the injected flags; [`callbacks.rs`](src/callbacks.rs) holds the `Callbacks` implementation,
+[`bin/cargo-cgp-driver.rs`](bin/cargo-cgp-driver.rs) — that drives `rustc_driver::run_compiler`, and
+first answers a direct (non-wrapper-mode) `--version` query from [`version.rs`](src/version.rs) so the
+front-end's preflight can read the driver's identity; [`version.rs`](src/version.rs) holds the
+`tool_version`/`pinned_toolchain`/`built_against_rustc` constants (baked in by
+[`build.rs`](build.rs)) and formats them; [`args.rs`](src/args.rs) prepares the rustc argument vector
+(wrapper-mode stripping, sysroot injection, and injecting the flags in [`config.rs`](src/config.rs));
+`config.rs` holds the shared names and the injected flags; [`callbacks.rs`](src/callbacks.rs) holds the `Callbacks` implementation,
 whose `config` hook installs the transforming emitter; [`emitter/`](src/emitter),
 [`resolve/`](src/resolve), and [`component_map.rs`](src/component_map.rs) make up the
 compiler-coupled half of the diagnostic transforms. The compiler-free half — the wiring rewrite, the

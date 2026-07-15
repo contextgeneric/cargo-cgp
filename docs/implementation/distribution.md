@@ -2,19 +2,17 @@
 
 `cargo-cgp` must run smoothly on a machine that never asked for a nightly toolchain, so distribution
 is the problem of delivering two binaries and one exact nightly compiler, keeping them in lockstep,
-and hiding all of it from a user whose own project builds on stable. This document is the blueprint
-for how the tool is packaged, installed, and provisioned. It is written ahead of the implementation
-and will be revised to describe the code once the design here is built; where it describes behavior
-the tool does not yet have, it says so.
+and hiding all of it from a user whose own project builds on stable. This document describes how the
+tool is packaged, installed, and provisioned, and why it is built that way.
 
-The status today is narrow. The two crates exist, the nightly is pinned in
-[`rust-toolchain.toml`](../../rust-toolchain.toml), and the front-end already discovers the sysroot
-and locates the driver as its sibling (see
-[Executable structure](executable-structure.md#the-environment-contract)). What does *not* exist yet
-is any of the packaging, provisioning, or version-checking machinery below: today the tool assumes
-it is run from a source checkout under the pinned toolchain, which is why running it against an
-arbitrary project "just works" only when that project already happens to use the same nightly. This
-document is the plan to remove that assumption.
+The machinery is in place. A bare `cargo install cargo-cgp` installs the front-end; `cargo cgp setup`
+provisions the pinned toolchain and the matching driver; `cargo cgp check` forces the pinned nightly
+for the wrapped compilation and runs a read-only preflight that verifies a matching driver is present
+before doing anything; and `cargo cgp update` upgrades the tool when a newer version is published. A
+handful of environment variables ([`config`](../../crates/cargo-cgp/src/config.rs)) override the
+management for local development. What is *not* yet automated is the release process itself — the two
+crates must be published to crates.io together, at the same version, for the version handshake and
+`setup`'s versioned driver install to hold (see [Open decisions and risks](#open-decisions-and-risks-to-resolve)).
 
 ## The problem
 
@@ -219,16 +217,17 @@ from the wrong release fails the second:
   common case, one compiled against the wrong nightly — and because the previous step already
   confirmed the toolchain *is* installed, the preflight attributes a launch failure to the driver and
   points at `setup` with that specific message, rather than passing a cryptic loader error to the user.
-- **Is it the right build?** When the driver does load, it prints its `--version` line and exits, and
-  the line carries three fields baked in at build time: the driver's crate `tool_version`, its
-  `pinned_toolchain` name, and `built_against_rustc` — the compiler it was actually compiled with,
-  which the driver's build script captured by querying the compiling rustc (`$RUSTC --version
-  --verbose`) so the value reflects reality rather than intent. The preflight then makes two strict
+- **Is it the right build?** When the driver does load, it prints its `--version` output and exits.
+  That output carries three fields baked in at build time, one per line so a value with spaces stays
+  unambiguous — `cargo-cgp-driver <tool_version>`, `pinned-toolchain: <name>`, and
+  `built-against-rustc: <rustc --version line>`, the last being the compiler that *actually* compiled
+  the driver, which its build script captured by querying the compiling rustc (`$RUSTC --version`) so
+  the value reflects reality rather than intent. The preflight parses these and makes two strict
   comparisons: `tool_version` must equal the front-end's own version exactly (a difference is a partial
   upgrade or a stale binary on `PATH`), and `built_against_rustc` must equal the installed toolchain's
-  rustc identity read in the previous step (a difference is a driver built against a nightly other than
-  the pinned one, which loaded only because its hash happened to resolve). Either mismatch sends the
-  user to `setup`.
+  `rustc --version` read in the previous step (a difference is a driver built against a nightly other
+  than the pinned one, which loaded only because its hash happened to resolve). Either mismatch sends
+  the user to `setup`.
 
 The flag is the ordinary `--version`, not a tool-specific name: `cargo-cgp` versions on its own track,
 unrelated to `cgp`'s, so a `--cgp-version` would misleadingly imply otherwise. The driver already
@@ -266,20 +265,19 @@ brings the driver and toolchain up to the new version. The heavy `rustc-dev` wor
 the new `setup`, exactly where it belongs.
 
 Before touching anything, `update` finds out whether there is a newer version to move to and skips out
-early when there is not. It reads the crate's published versions from the crates.io **sparse index** —
-`https://index.crates.io/ca/rg/cargo-cgp`, the newline-delimited JSON list of versions with their
-`vers` and `yanked` fields that cargo itself reads — takes the highest non-yanked version by semver,
-and compares it against the front-end's own baked-in version. If the latest is **not strictly newer**,
-`update` prints "already up to date (v<current>)" and exits without invoking cargo, rustup, or
-`setup`; only a strictly newer version triggers the reinstall. Three details matter in the
-implementation: any crates.io request must carry a descriptive `User-Agent`, since crates.io rejects
-requests without one; if the index cannot be reached, `update` reports the network failure and stops
-rather than guessing; and whatever versioning scheme the release process adopts (see
-[Open decisions and risks](#open-decisions-and-risks-to-resolve)) governs the "highest version" pick — if a nightly is ever carried
-as a semver prerelease label, that pick must filter prereleases the way cargo does unless the installed
-version is itself one. The crates.io registry API (`/api/v1/crates/cargo-cgp`, whose
-`max_stable_version` names the latest release) is an equivalent source; the sparse index is preferred
-as the lighter, cache-friendly one that needs no query beyond a plain GET.
+early when there is not. It asks cargo for the published versions by running `cargo search cargo-cgp`,
+takes the version cargo lists for the exact crate name, and compares it against the front-end's own
+baked-in version with `semver`. If the latest is **not strictly newer**, `update` prints "already up
+to date (v<current>)" and exits without invoking `cargo install`, rustup, or `setup`; only a strictly
+newer version triggers the reinstall. Using `cargo search` rather than fetching the crates.io sparse
+index directly is a deliberate choice: it honors the user's own registry configuration (a mirror or a
+private registry) the way the eventual `cargo install` will, and it keeps the lean front-end free of
+an HTTP/TLS dependency. The trade-off is that `cargo search`'s output is a human format rather than a
+stable API, so `update` parses it defensively and errors clearly if it cannot find the crate. The
+versioning scheme the release process settles on (see
+[Open decisions and risks](#open-decisions-and-risks-to-resolve)) governs the comparison — the
+`semver` parse orders a prerelease below its release, so a nightly carried as a prerelease label would
+compare correctly without special handling.
 
 Installation and update both go **through cargo** — there is no self-replace mechanism to maintain.
 `update` shells out to `cargo install cargo-cgp` (the same tool that installed it), and where that
@@ -436,43 +434,35 @@ a nightly date to get started).
 
 ## Open decisions and risks to resolve
 
-Some choices in this plan are recommendations rather than settled facts, and a few known risks need a
-concrete answer in code. Both are collected here so the implementation resolves them deliberately
-rather than discovering them late.
+One design choice is still open, one release-process requirement is not yet enforced, and a few
+limitations are deliberate; they are collected here so they are handled knowingly rather than
+discovered late.
 
-- **Versioning scheme.** Whether to adopt `rustc_plugin`'s nightly-as-prerelease-label convention for
-  crates.io releases, or keep a plain semver and carry the nightly only in `PINNED_TOOLCHAIN`. This
-  choice also decides how `update` must filter versions when picking the latest (see
-  [Updating](#updating-with-cargo-cgp-update)).
-- **Co-locating the driver with the front-end.** `setup` installs the driver with `cargo install`,
-  which drops binaries in `<root>/bin`, but the front-end's sibling lookup expects the driver *next
-  to* the front-end. `setup` must derive the right `--root` from the front-end's own `current_exe`
-  (for the usual `~/.cargo/bin/cargo-cgp`, that root is `~/.cargo`), and decide what to do when the
-  front-end sits somewhere that does not fit cargo's `<root>/bin` convention.
-- **Idempotent `setup`.** `setup` is re-run by `update` and pointed to by the preflight, so it must be
-  safe to run when the toolchain and a matching driver are already present. In particular it must
-  treat cargo's "already installed" outcome for `cargo-cgp-driver@<version>` as success, or pass
-  `--force`, rather than reporting it as an error.
-- **Atomic two-crate publishing.** The exact-version preflight and `setup`'s
+- **Versioning scheme (open).** Whether to adopt `rustc_plugin`'s nightly-as-prerelease-label
+  convention for crates.io releases, or keep a plain semver and carry the nightly only in
+  `PINNED_TOOLCHAIN`. `update`'s `semver` comparison already orders either scheme correctly; the
+  choice is about release ergonomics, not code.
+- **Atomic two-crate publishing (not yet enforced).** The exact-version preflight and `setup`'s
   `cargo-cgp-driver@<version>` both assume both crates are published to crates.io at the same version
-  on every release. The release process must publish the pair atomically; a release that ships
-  `cargo-cgp` without a matching `cargo-cgp-driver` leaves `setup` unable to find the driver version it
-  asks for. (`[workspace.package]` keeps the versions equal *in the source tree* but does not itself
-  guarantee both are *published*.)
-- **Version discovery vs. registry configuration.** Reading the crates.io sparse index directly
-  bypasses a user's registry configuration — a source-replacement mirror or a private registry — that
-  `cargo install` itself honors, and a locked-down network may block `index.crates.io` outright.
-  `update` should either resolve the latest version through cargo's own configured registry (for
-  example `cargo info`, on cargo ≥ 1.82) or document that automatic version discovery targets only the
-  default crates.io.
-- **`--force` on the update reinstall.** Since `update` has already confirmed a strictly newer version
-  exists, whether its `cargo install cargo-cgp` should pass `--force` (unconditional) or rely on
-  cargo's upgrade-when-newer behavior is a small correctness choice to settle.
-- **rustup is assumed throughout.** The design manages toolchains entirely through rustup —
-  `RUSTUP_TOOLCHAIN`, `rustup toolchain install`, `cargo +<toolchain>`. A machine whose Rust comes from
-  a distro package, Nix, or another manager has no rustup to drive, so it is out of scope for automatic
-  provisioning; `setup` should detect a missing rustup and say so plainly rather than failing
-  obscurely.
+  on every release. `[workspace.package]` keeps the versions equal *in the source tree*, but nothing
+  yet guarantees both are *published* together — a release that ships `cargo-cgp` without a matching
+  `cargo-cgp-driver` leaves `setup` unable to find the driver version it asks for. The release
+  automation must publish the pair atomically.
+- **Driver co-location falls back when the front-end is not in a `bin` directory (limitation).**
+  `setup` derives `--root` from the front-end's `current_exe` so the driver lands beside it (for the
+  usual `~/.cargo/bin/cargo-cgp`, root `~/.cargo`). When the front-end sits somewhere that does not fit
+  cargo's `<root>/bin` convention, `setup` warns and installs the driver to cargo's default location
+  instead of guessing — which may not co-locate them. This is fine for the ordinary `cargo install`
+  path and left as a rough edge for unusual layouts.
+- **`setup` idempotency rests on cargo's "already installed" being success (assumption).** Re-running
+  `setup` (as `update` does) relies on `rustup toolchain install` being a no-op when already satisfied
+  and on `cargo install cargo-cgp-driver@<version>` exiting successfully when that version is already
+  present. Both hold today; if a future cargo made "already installed" an error, `setup` would need a
+  guard.
+- **rustup is assumed throughout (limitation).** Toolchains are managed entirely through rustup —
+  `RUSTUP_TOOLCHAIN`, `rustup toolchain install`. A machine whose Rust comes from a distro package,
+  Nix, or another manager has no rustup to drive, so it is out of scope for automatic provisioning;
+  `setup` reports a missing rustup plainly rather than failing obscurely.
 
 ## Further reading
 
@@ -494,63 +484,61 @@ implementing the piece each one covers.
 - [Replacing a running executable on Windows (rustup#1186)](https://github.com/rust-lang/rustup/issues/1186)
   documents the file-lock that makes `cargo install` fail when it targets the running `cargo-cgp`,
   which is why `cargo cgp update` falls back to printing the manual commands there.
-- [The crates.io sparse index](https://index.crates.io/) and the
-  [crates.io data-access / User-Agent policy](https://crates.io/data-access) describe how `update`
-  reads the latest published version and the header every crates.io request must carry.
 
 ## Tests
 
-Distribution is not yet implemented, so no test pins the behavior above; this section will list them
-as the pieces land. The shape to expect mirrors the existing split between fast unit tests over pure
-logic and the UI suite over end-to-end behavior:
+The pieces are unit-tested over their pure logic, keeping the process-spawning at the edges, and the
+UI suite exercises the managed/unmanaged wiring end to end.
 
-- A unit test that the build-time `PINNED_TOOLCHAIN` constant equals the channel in
-  [`rust-toolchain.toml`](../../rust-toolchain.toml), guarding the single-source-of-truth link.
-- A unit test over the preflight's *decision* logic — a driver present or absent, its reported
-  `tool_version` matching or not, its `built_against_rustc` matching the installed pinned rustc or not
-  — fed hand-built version records, so the pass/fail/which-message verdict is pinned without spawning a
-  real driver or `rustc`.
-- A unit test that the driver's `--version` line parses into the fields the preflight expects
-  (`tool_version`, `pinned_toolchain`, `built_against_rustc`), guarding the format contract between the
-  two binaries.
-- A unit test over `update`'s version logic on a hand-built version list (mixed yanked and
-  non-yanked): that it picks the highest non-yanked version by semver, and then that "latest newer",
-  "equal", and "older" each yield the right update-or-skip verdict — pinning the "already up to date"
-  and refuse-to-downgrade decisions without a network call.
-- Continued reliance on the [UI snapshot suite](testing.md) as the standing proof that the driver runs
-  as the compiler, now exercising the `CARGO_CGP_DRIVER` and skip-management escape hatches it depends
-  on.
+- [`crates/cargo-cgp/tests/preflight.rs`](../../crates/cargo-cgp/tests/preflight.rs) — parses the
+  driver's `--version` output (accepting the real shape, rejecting a foreign first line and missing
+  fields); the [`evaluate`](../../crates/cargo-cgp/src/check/preflight.rs) verdict on a matching
+  driver, a version mismatch, and a rustc mismatch; and a check that the baked-in `PINNED_TOOLCHAIN`
+  equals the channel in [`rust-toolchain.toml`](../../rust-toolchain.toml).
+- [`crates/cargo-cgp/tests/update.rs`](../../crates/cargo-cgp/tests/update.rs) — `parse_latest_version`
+  over representative `cargo search` output (finding the exact crate, not a lookalike), and `is_newer`
+  across newer/equal/older/prerelease/invalid, pinning the "already up to date" and refuse-to-downgrade
+  decisions without a network call.
+- [`crates/cargo-cgp/tests/command.rs`](../../crates/cargo-cgp/tests/command.rs) — `forwards_target_dir`
+  detects an explicit `--target-dir` (spaced or `=`) so the default is not injected over it.
+- [`crates/cargo-cgp/tests/dispatch.rs`](../../crates/cargo-cgp/tests/dispatch.rs) — the
+  side-effect-free dispatch error paths (unknown and missing subcommand).
+- The [UI snapshot suite](testing.md) is the standing end-to-end proof that the driver runs as the
+  compiler; it drives the built binaries with `CARGO_CGP_NO_MANAGE` set, so the check runs unmanaged
+  against the toolchain `cargo test` already selected. The managed path (preflight + toolchain forcing)
+  is not covered by the suite, since installing a provisioned driver is out of scope for the
+  source-tree test loop.
 
 ## Source
 
-Distribution touches the front-end's `config` and `check` modules and adds a provisioning path; the
-files below are where the code will live, alongside the pieces that already exist. This section will
-be filled in with links as the modules are written.
+The front-end holds the provisioning and management; the driver adds the version query; each crate
+has a build script that bakes in the pinned toolchain.
 
-- [`crates/cargo-cgp/src/config.rs`](../../crates/cargo-cgp/src/config.rs) — the home for
-  `PINNED_TOOLCHAIN` and the new environment-variable names (`CARGO_CGP_DRIVER`, the skip-management
-  flag, `CARGO_CGP_TOOLCHAIN`), passed into the functions that use them.
-- [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — where the
-  forced `RUSTUP_TOOLCHAIN` is set on the wrapped `cargo check`, joining the existing sysroot and
-  dynamic-library-path setup, and where the default `target/cgp` target directory is injected — unless
-  the forwarded arguments pass an explicit `--target-dir` (or `CARGO_TARGET_DIR` is set) — keeping the
-  check from contending with the project's normal builds and with Rust Analyzer.
+- [`crates/cargo-cgp/src/config.rs`](../../crates/cargo-cgp/src/config.rs) — the well-known names:
+  `PINNED_TOOLCHAIN` and `TOOL_VERSION` (baked in), the environment variables (`CARGO_CGP_DRIVER`,
+  `CARGO_CGP_NO_MANAGE`, `CARGO_CGP_TOOLCHAIN`, `RUSTUP_TOOLCHAIN`), the `target/cgp` default, and the
+  crate names.
+- [`crates/cargo-cgp/build.rs`](../../crates/cargo-cgp/build.rs) — derives `PINNED_TOOLCHAIN` from
+  [`rust-toolchain.toml`](../../rust-toolchain.toml), mirroring how `rustc_plugin` derives `CHANNEL`.
+- [`crates/cargo-cgp/src/run.rs`](../../crates/cargo-cgp/src/run.rs) — dispatches `check`, `setup`, and
+  `update`.
+- [`crates/cargo-cgp/src/toolchain.rs`](../../crates/cargo-cgp/src/toolchain.rs) — resolves the
+  effective pinned toolchain and queries its `rustc --version` through rustup.
+- [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — runs the
+  preflight (when managed), forces `RUSTUP_TOOLCHAIN`, wires the driver and sysroot, and injects the
+  `target/cgp` default unless the caller set the target directory.
+- [`crates/cargo-cgp/src/check/preflight.rs`](../../crates/cargo-cgp/src/check/preflight.rs) — verifies
+  the toolchain is installed and the driver runs and matches (the pure `evaluate` plus the
+  `--version`-parsing and IO), returning the discovered sysroot.
 - [`crates/cargo-cgp/src/check/driver_path.rs`](../../crates/cargo-cgp/src/check/driver_path.rs) — the
-  sibling lookup the `CARGO_CGP_DRIVER` override will extend.
-- A new front-end `setup` command module — not yet written — that does all the provisioning (install
-  the pinned toolchain with `rustup`, then `cargo +<pinned> install cargo-cgp-driver@<version>`), and a
-  read-only preflight in the `check` path that verifies the driver is present, its `tool_version`
-  matches, and its `built_against_rustc` matches the installed pinned rustc, erroring toward `setup` on
-  any failure.
-- A new front-end `update` command module — not yet written — that reads the latest published version
-  from the crates.io sparse index and skips when it is not newer than the current version, otherwise
-  reinstalls the front-end via `cargo install cargo-cgp` and execs the newly installed
-  `cargo-cgp setup`, printing the manual `cargo install` + `cargo cgp setup` commands when cargo cannot
-  overwrite the running binary (Windows).
-- A `--version` flag on [`cargo-cgp-driver`](../../crates/cargo-cgp-driver) — not yet written — that,
-  when invoked directly (not in wrapper mode), prints the version line carrying `tool_version`,
-  `pinned_toolchain`, and `built_against_rustc` that the preflight reads.
-- A build script on both crates — not yet written — that derives `PINNED_TOOLCHAIN` from
-  [`rust-toolchain.toml`](../../rust-toolchain.toml) (mirroring how `rustc_plugin` derives `CHANNEL`)
-  and, on the driver, records `built_against_rustc` by querying the compiling `$RUSTC --version
-  --verbose`.
+  `CARGO_CGP_DRIVER` override and the sibling lookup.
+- [`crates/cargo-cgp/src/check/dylib.rs`](../../crates/cargo-cgp/src/check/dylib.rs) — the OS
+  dynamic-library search path, shared by the check and the preflight's load test.
+- [`crates/cargo-cgp/src/setup.rs`](../../crates/cargo-cgp/src/setup.rs) — installs the pinned
+  toolchain with `rustup` and the driver with `cargo install`, co-located via `--root`.
+- [`crates/cargo-cgp/src/update.rs`](../../crates/cargo-cgp/src/update.rs) — finds the latest version
+  with `cargo search`, skips when not newer, else reinstalls and hands off to the new `setup`.
+- [`crates/cargo-cgp-driver/src/version.rs`](../../crates/cargo-cgp-driver/src/version.rs) and
+  [`run.rs`](../../crates/cargo-cgp-driver/src/run.rs) — the `--version` query (answered only in
+  non-wrapper mode), and [`build.rs`](../../crates/cargo-cgp-driver/build.rs), which bakes in
+  `PINNED_TOOLCHAIN` and the `built_against_rustc` identity from the compiling `$RUSTC --version`.

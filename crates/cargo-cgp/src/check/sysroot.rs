@@ -5,16 +5,25 @@ use std::process::Command;
 
 use anyhow::{Context, bail};
 
-/// Query the active toolchain's sysroot by running `rustc --print sysroot`.
+use crate::config::RUSTUP_TOOLCHAIN_ENV;
+
+/// Query a toolchain's sysroot by running `rustc --print sysroot`.
 ///
 /// The driver links `rustc_driver` dynamically, so at runtime it needs both the sysroot
 /// libraries on the dynamic-linker path and an explicit `--sysroot` (rustc cannot infer
 /// one from the driver's own out-of-tree location). We resolve the sysroot once here and
 /// hand it to the driver rather than making the driver shell out again.
 ///
-/// `rustc` is taken as a parameter so the caller controls which compiler is queried.
-pub fn sysroot(rustc: &str) -> anyhow::Result<PathBuf> {
-    let output = Command::new(rustc)
+/// `rustc` is the compiler to query. When `toolchain` is `Some`, `RUSTUP_TOOLCHAIN` is
+/// forced to it so the *pinned* sysroot is returned regardless of the project's own
+/// toolchain; when `None` (unmanaged mode), the ambient toolchain's sysroot is used.
+pub fn sysroot(rustc: &str, toolchain: Option<&str>) -> anyhow::Result<PathBuf> {
+    let mut command = Command::new(rustc);
+    if let Some(toolchain) = toolchain {
+        command.env(RUSTUP_TOOLCHAIN_ENV, toolchain);
+    }
+
+    let output = command
         .arg("--print")
         .arg("sysroot")
         .output()

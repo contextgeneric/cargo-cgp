@@ -13,3 +13,6 @@ pub mod args;
 pub mod check;
 pub mod config;
 pub mod run;
+pub mod setup;
+pub mod toolchain;
+pub mod update;

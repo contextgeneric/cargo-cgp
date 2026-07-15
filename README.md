@@ -29,29 +29,45 @@ each workspace-crate compilation, which is what surfaces the otherwise-hidden de
 
 Because the driver links the compiler's internal libraries, it must be built with a nightly
 toolchain that carries the `rustc-dev` component. That toolchain is pinned in
-[`rust-toolchain.toml`](rust-toolchain.toml) and installs automatically the first time you build. It
-is unrelated to the toolchain your own project uses — `cargo-cgp` only wraps whichever compiler
-cargo already selects for the project being checked.
+[`rust-toolchain.toml`](rust-toolchain.toml) and installs automatically the first time you build.
+`cargo-cgp` forces that same pinned nightly for the check it runs — so the sysroot and the compiler
+the driver embeds always match — while leaving your project's own toolchain untouched for its ordinary
+builds. Distribution, provisioning, and how the tool keeps the two binaries in lockstep are documented
+in [docs/implementation/distribution.md](docs/implementation/distribution.md).
 
 For the full internal picture — the argument handling, the environment contract between the two
 executables, how the driver reaches the compiler API, a comparison with Clippy, and links to the
 authoritative Cargo and rustc references — see
 [docs/implementation/executable-structure.md](docs/implementation/executable-structure.md).
 
+## Installing
+
+`cargo-cgp` is installed through cargo in two steps: install the front-end, then let it provision the
+pinned toolchain and the driver.
+
+```sh
+cargo install cargo-cgp      # installs the front-end (builds on any toolchain)
+cargo cgp setup              # installs the pinned nightly + driver, in lockstep
+```
+
+`cargo cgp update` upgrades the tool later: it reinstalls the front-end when a newer version is
+published and re-runs `setup` for the matching driver. The full design is in
+[docs/implementation/distribution.md](docs/implementation/distribution.md).
+
 ## Building and running
 
-Build both binaries from the workspace root:
+For development on cargo-cgp itself, build both binaries from the workspace root:
 
 ```sh
 cargo build
 ```
 
-To run the tool against another project during development, put the built binaries on your `PATH`
-(they must sit in the same directory, since `cargo-cgp` locates the driver as its sibling) and run
-the subcommand from that project:
+To run the freshly built tool against another project without provisioning, point it at the built
+driver and skip the management preflight (running under the pinned toolchain the workspace selects):
 
 ```sh
-cargo cgp check
+CARGO_CGP_NO_MANAGE=1 CARGO_CGP_DRIVER=$PWD/target/debug/cargo-cgp-driver \
+  ./target/debug/cargo-cgp check
 ```
 
 Any arguments after `check` are forwarded verbatim to `cargo check`, so `cargo cgp check -v` or

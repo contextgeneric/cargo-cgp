@@ -43,3 +43,4 @@ pub mod config;
 pub mod emitter;
 pub mod resolve;
 pub mod run;
+pub mod version;

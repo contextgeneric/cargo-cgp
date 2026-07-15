@@ -43,9 +43,11 @@ cargo-cgp check --workspace   →  cargo-cgp       check --workspace   (invoked 
 
 [`args::strip_subcommand`](../../crates/cargo-cgp/src/args.rs) drops the program name and a *leading*
 `cgp` token if present, leaving `["check", ...]` in both cases, and
-[`run::dispatch`](../../crates/cargo-cgp/src/run.rs) routes on the first remaining word. The only
-subcommand today is `check`; anything after it is forwarded verbatim to `cargo check`, so
-`cargo cgp check -v` and `cargo cgp check --workspace` behave as expected.
+[`run::dispatch`](../../crates/cargo-cgp/src/run.rs) routes on the first remaining word. Three
+subcommands exist: `check` (below), `setup` (provision the pinned toolchain and driver), and `update`
+(upgrade the tool) — the latter two are covered in [Distribution](distribution.md). Anything after
+`check` is forwarded verbatim to `cargo check`, so `cargo cgp check -v` and `cargo cgp check
+--workspace` behave as expected.
 
 [`check::run_check`](../../crates/cargo-cgp/src/check/command.rs) then builds and runs the wrapped
 command. It sets `RUSTC_WORKSPACE_WRAPPER` to the driver's path — located by
@@ -90,8 +92,14 @@ to do so.
 
 The front-end and the driver are separate processes, so what one must tell the other travels through
 the environment. Two pieces of state cross that boundary, and both exist because the driver lives
-*outside* any toolchain — in `target/debug`, not in the toolchain's `bin` directory — so the
-compiler cannot infer from the driver's own location things it normally would.
+*outside* any toolchain — in `target/debug` or `~/.cargo/bin`, not in the toolchain's `bin`
+directory — so the compiler cannot infer from the driver's own location things it normally would.
+
+Underneath both, the front-end forces `RUSTUP_TOOLCHAIN` to the pinned nightly for the wrapped
+`cargo check`, so the sysroot it discovers and the `librustc_driver` the driver loads both belong to
+the nightly the driver embeds, whatever toolchain the project itself pins. That forcing, and the
+preflight that precedes it, are part of [Distribution](distribution.md#the-pinned-toolchain-is-an-internal-detail);
+this section covers the two pieces of state the forcing then makes coherent.
 
 The front-end passes the **sysroot** through `CARGO_CGP_SYSROOT`. It discovers the value by running
 `rustc --print sysroot` ([`check::sysroot`](../../crates/cargo-cgp/src/check/sysroot.rs)) and the
@@ -179,15 +187,26 @@ The front-end's modules are listed here; the driver's are in the
 [driver deep dive](driver.md#source).
 
 - [`crates/cargo-cgp/src/run.rs`](../../crates/cargo-cgp/src/run.rs) — front-end entrypoint and
-  subcommand dispatch.
+  subcommand dispatch (`check`, `setup`, `update`).
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs) — process-argument
   normalization.
 - [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — builds and
-  runs the wrapped `cargo check`, sets the environment contract, forwards cargo's output, and
-  propagates the exit code.
+  runs the wrapped `cargo check`, runs the preflight and forces the toolchain (when managed), sets the
+  environment contract and the isolated target directory, forwards cargo's output, and propagates the
+  exit code.
 - [`crates/cargo-cgp/src/check/driver_path.rs`](../../crates/cargo-cgp/src/check/driver_path.rs) —
-  locates the sibling driver executable.
+  locates the driver via the `CARGO_CGP_DRIVER` override or as a sibling.
+- [`crates/cargo-cgp/src/check/preflight.rs`](../../crates/cargo-cgp/src/check/preflight.rs) — the
+  read-only pre-check of the driver and toolchain (see [Distribution](distribution.md)).
 - [`crates/cargo-cgp/src/check/sysroot.rs`](../../crates/cargo-cgp/src/check/sysroot.rs) — discovers
-  the toolchain sysroot.
+  the toolchain sysroot, optionally under a forced toolchain.
+- [`crates/cargo-cgp/src/check/dylib.rs`](../../crates/cargo-cgp/src/check/dylib.rs) — the OS
+  dynamic-library search path.
+- [`crates/cargo-cgp/src/toolchain.rs`](../../crates/cargo-cgp/src/toolchain.rs),
+  [`setup.rs`](../../crates/cargo-cgp/src/setup.rs),
+  [`update.rs`](../../crates/cargo-cgp/src/update.rs) — toolchain resolution and the `setup`/`update`
+  subcommands (see [Distribution](distribution.md)).
 - [`crates/cargo-cgp/src/config.rs`](../../crates/cargo-cgp/src/config.rs) — the front-end's shared
-  names.
+  names, including the baked-in `PINNED_TOOLCHAIN` and the management environment variables.
+- [`crates/cargo-cgp/build.rs`](../../crates/cargo-cgp/build.rs) — bakes `PINNED_TOOLCHAIN` in from
+  `rust-toolchain.toml`.

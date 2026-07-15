@@ -26,6 +26,10 @@ keywords     = ["cgp"]
 
 [workspace.dependencies]
 anyhow = { version = "1" }
+# Semantic-version parsing/comparison, used by `cargo cgp update` to decide whether the
+# latest published version is newer than the running one. A small, TLS-free crate that keeps
+# the lean front-end from pulling in an HTTP client.
+semver = { version = "1" }
 # The rustc-free error-processing library the driver drives. An ordinary crate that does
 # not touch `rustc_private`, so it builds and its tests run on any toolchain.
 cargo-cgp-error-processing = { path = "crates/cargo-cgp-error-processing" }

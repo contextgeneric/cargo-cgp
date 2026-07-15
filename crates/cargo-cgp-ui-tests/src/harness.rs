@@ -117,12 +117,19 @@ pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path) -> String {
 /// the given arguments. Re-copying bumps the file's mtime, which forces cargo to
 /// recompile and re-emit diagnostics even when the same fixture was just built by another
 /// pass.
+///
+/// `CARGO_CGP_NO_MANAGE` turns off the front-end's provisioning preflight and toolchain
+/// forcing: the harness drives the freshly built driver under the toolchain `cargo test`
+/// already selected, so there is nothing to verify or install. Without it, `cargo cgp
+/// check` would try to confirm a provisioned driver that the source-tree test loop never
+/// installs.
 fn run_cargo_cgp(harness_crate: &Path, fixture: &Path, args: &[&str]) -> std::process::Output {
     fs::copy(fixture, harness_crate.join("src/main.rs"))
         .unwrap_or_else(|e| panic!("copying fixture {}: {e}", fixture.display()));
 
     Command::new(cargo_cgp_bin())
         .current_dir(harness_crate)
+        .env("CARGO_CGP_NO_MANAGE", "1")
         .args(args)
         .output()
         .expect("running cargo-cgp on a fixture")

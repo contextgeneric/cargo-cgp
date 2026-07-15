@@ -164,15 +164,24 @@ that only repeats the code.
 
 ### Module map
 
-The front-end (`crates/cargo-cgp/src`) is organized around dispatch and the `check` command.
-`run.rs` is the entrypoint that normalizes arguments and dispatches on the subcommand; `args.rs`
-strips the cargo-inserted `cgp` token so the same entrypoint serves both `cargo cgp check` and a
-direct `cargo-cgp check`; `config.rs` holds the shared well-known names. The `check/` directory
-holds the command itself: `command.rs` builds and runs the wrapped `cargo check` with the driver
-wired in as the workspace rustc wrapper, inheriting cargo's stdio so its output streams through
-untouched (the driver does every diagnostic transform, so the front-end captures and processes
-nothing); `driver_path.rs` locates the sibling driver executable; and `sysroot.rs` discovers the
-toolchain sysroot.
+The front-end (`crates/cargo-cgp/src`) is organized around dispatch and three subcommands.
+`run.rs` is the entrypoint that normalizes arguments and dispatches on the subcommand (`check`,
+`setup`, `update`); `args.rs` strips the cargo-inserted `cgp` token so the same entrypoint serves both
+`cargo cgp check` and a direct `cargo-cgp check`; `config.rs` holds the shared well-known names,
+including the build-time-baked `PINNED_TOOLCHAIN` (from `build.rs`) and the management environment
+variables; `toolchain.rs` resolves the effective pinned toolchain and queries its `rustc`. The
+`check/` directory holds the check command: `command.rs` runs the [preflight](docs/implementation/distribution.md)
+and forces `RUSTUP_TOOLCHAIN` to the pinned nightly (unless `CARGO_CGP_NO_MANAGE` is set), builds and
+runs the wrapped `cargo check` with the driver wired in as the workspace rustc wrapper, injects an
+isolated `target/cgp` directory, and inherits cargo's stdio so its output streams through untouched
+(the driver does every diagnostic transform, so the front-end captures and processes nothing);
+`driver_path.rs` locates the driver (via the `CARGO_CGP_DRIVER` override or as a sibling); `sysroot.rs`
+discovers the toolchain sysroot; `dylib.rs` builds the dynamic-library search path; and `preflight.rs`
+verifies a matching driver and the pinned toolchain before a check, directing the user to
+`cargo cgp setup` on any failure. `setup.rs` and `update.rs` are the provisioning and upgrade
+subcommands. The distribution design — the pinned-toolchain forcing, the preflight version handshake,
+and the `setup`/`update` flow — is documented in
+[Distribution](docs/implementation/distribution.md).
 
 The driver (`crates/cargo-cgp-driver/src`) is organized around the compiler wrapping and the
 diagnostic transform. `run.rs` is the entrypoint that runs the compiler through `rustc_driver`;

@@ -3,9 +3,10 @@
 use std::env;
 use std::process::ExitCode;
 
-use crate::args::rustc_args;
+use crate::args::{is_wrapper_mode, rustc_args};
 use crate::callbacks::CgpCallbacks;
 use crate::config::{NEXT_SOLVER_FLAG, SYSROOT_ENV, SYSROOT_FLAG, VERBOSE_FLAG};
+use crate::version::{version_string, wants_version};
 
 /// Run the compiler in-process over the wrapper's arguments and return the exit code.
 ///
@@ -15,9 +16,19 @@ use crate::config::{NEXT_SOLVER_FLAG, SYSROOT_ENV, SYSROOT_FLAG, VERBOSE_FLAG};
 /// compiler and turns a compiler-signalled failure into the process exit code, matching
 /// what plain `rustc` would return.
 pub fn run() -> ExitCode {
+    let raw: Vec<String> = env::args().collect();
+
+    // A direct `cargo-cgp-driver --version` (not cargo's wrapper invocation) is the
+    // front-end preflight's version handshake: answer it here, before touching the
+    // compiler. In wrapper mode the flag belongs to the real compiler, so we fall through.
+    if !is_wrapper_mode(&raw) && wants_version(&raw) {
+        println!("{}", version_string());
+        return ExitCode::SUCCESS;
+    }
+
     let sysroot = env::var(SYSROOT_ENV).ok();
     let args = rustc_args(
-        env::args(),
+        raw,
         sysroot,
         SYSROOT_FLAG,
         &[NEXT_SOLVER_FLAG, VERBOSE_FLAG],
