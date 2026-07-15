@@ -264,20 +264,30 @@ toolchain and needs no pinned nightly), then execs the freshly installed `cargo-
 brings the driver and toolchain up to the new version. The heavy `rustc-dev` work stays deferred to
 the new `setup`, exactly where it belongs.
 
-Before touching anything, `update` finds out whether there is a newer version to move to and skips out
-early when there is not. It asks cargo for the published versions by running `cargo search cargo-cgp`,
-takes the version cargo lists for the exact crate name, and compares it against the front-end's own
-baked-in version with `semver`. If the latest is **not strictly newer**, `update` prints "already up
+Before touching anything, `update` finds out whether there is a newer version to move to **in the
+running version's channel** and skips out early when there is not. It reads the crates.io sparse index
+for the front-end crate (`https://index.crates.io/ca/rg/cargo-cgp`, one JSON line per published
+version), enumerates every non-yanked version, and picks the highest one whose pre-release-ness matches
+the running version's — a stable install considers only stable candidates, a pre-release install only
+pre-releases. If that highest in-channel version is **not strictly newer**, `update` prints "already up
 to date (v<current>)" and exits without invoking `cargo install`, rustup, or `setup`; only a strictly
-newer version triggers the reinstall. Using `cargo search` rather than fetching the crates.io sparse
-index directly is a deliberate choice: it honors the user's own registry configuration (a mirror or a
-private registry) the way the eventual `cargo install` will, and it keeps the lean front-end free of
-an HTTP/TLS dependency. The trade-off is that `cargo search`'s output is a human format rather than a
-stable API, so `update` parses it defensively and errors clearly if it cannot find the crate. The
-versioning scheme the release process settles on (see
-[Open decisions and risks](#open-decisions-and-risks-to-resolve)) governs the comparison — the
-`semver` parse orders a prerelease below its release, so a nightly carried as a prerelease label would
-compare correctly without special handling.
+newer one triggers the reinstall.
+
+Preserving the channel is why `update` enumerates all versions rather than asking cargo for the single
+"latest". Both `cargo search` and `cargo info` report only a crate's *max version*, which **includes
+pre-releases** — so if a pre-release higher than the latest stable is published, a stable install could
+neither see the latest stable through them nor safely take the pre-release. Reading the index directly
+gives every version, so the channel filter can pick the right one: `v0.1.0 → v0.1.1`, never
+`v0.1.2-alpha`; and `v0.1.0-alpha → v0.1.1-alpha`. The comparison is `semver`, which orders a
+pre-release below its release, so the "highest in channel" and "strictly newer" tests are both exact.
+
+The index is read over HTTP with the widely-used `ureq` (rustls TLS) and `serde_json`, kept to the
+front-end's `update` path alone — the check path and the driver link neither. The sparse-index access
+follows the shape of the `crates-index` crate but is written directly over those two rather than taking
+on that dependency. One limitation follows from reading `index.crates.io` directly: unlike the eventual
+`cargo install`, it does not consult a user's configured registry mirror or private registry, so
+automatic version discovery targets the default crates.io (see
+[Open decisions and risks](#open-decisions-and-risks-to-resolve)).
 
 Installation and update both go **through cargo** — there is no self-replace mechanism to maintain.
 `update` shells out to `cargo install cargo-cgp` (the same tool that installed it), and where that
@@ -463,6 +473,11 @@ discovered late.
   `RUSTUP_TOOLCHAIN`, `rustup toolchain install`. A machine whose Rust comes from a distro package,
   Nix, or another manager has no rustup to drive, so it is out of scope for automatic provisioning;
   `setup` reports a missing rustup plainly rather than failing obscurely.
+- **`update` version discovery targets the default crates.io (limitation).** It reads
+  `index.crates.io` directly, so unlike the `cargo install` that follows it, it does not consult a
+  user's configured registry mirror or source replacement. A locked-down network that blocks
+  `index.crates.io` will make `update`'s check fail (with a clear error); the manual
+  `cargo install cargo-cgp` + `cargo cgp setup` path still works through the configured registry.
 
 ## Further reading
 
@@ -484,6 +499,10 @@ implementing the piece each one covers.
 - [Replacing a running executable on Windows (rustup#1186)](https://github.com/rust-lang/rustup/issues/1186)
   documents the file-lock that makes `cargo install` fail when it targets the running `cargo-cgp`,
   which is why `cargo cgp update` falls back to printing the manual commands there.
+- [The crates.io sparse index](https://index.crates.io/) and the
+  [`crates-index` crate](https://crates.io/crates/crates-index) — the index `update` reads to
+  enumerate versions, and the reference implementation for the sparse-index path convention and the
+  `vers`/`yanked` fields (used as a reference, not a dependency).
 
 ## Tests
 
@@ -495,10 +514,11 @@ UI suite exercises the managed/unmanaged wiring end to end.
   fields); the [`evaluate`](../../crates/cargo-cgp/src/check/preflight.rs) verdict on a matching
   driver, a version mismatch, and a rustc mismatch; and a check that the baked-in `PINNED_TOOLCHAIN`
   equals the channel in [`rust-toolchain.toml`](../../rust-toolchain.toml).
-- [`crates/cargo-cgp/tests/update.rs`](../../crates/cargo-cgp/tests/update.rs) — `parse_latest_version`
-  over representative `cargo search` output (finding the exact crate, not a lookalike), and `is_newer`
-  across newer/equal/older/prerelease/invalid, pinning the "already up to date" and refuse-to-downgrade
-  decisions without a network call.
+- [`crates/cargo-cgp/tests/update.rs`](../../crates/cargo-cgp/tests/update.rs) — `sparse_index_path`
+  over the registry's dir convention; `parse_versions` skipping yanked and unparseable lines; and the
+  channel-preserving `select_update` — a stable install taking the highest stable and *never* a
+  pre-release, a pre-release install taking the highest pre-release, and no-newer/downgrade yielding
+  `None` — all without a network call.
 - [`crates/cargo-cgp/tests/command.rs`](../../crates/cargo-cgp/tests/command.rs) — `forwards_target_dir`
   detects an explicit `--target-dir` (spaced or `=`) so the default is not injected over it.
 - [`crates/cargo-cgp/tests/dispatch.rs`](../../crates/cargo-cgp/tests/dispatch.rs) — the
@@ -536,8 +556,9 @@ has a build script that bakes in the pinned toolchain.
   dynamic-library search path, shared by the check and the preflight's load test.
 - [`crates/cargo-cgp/src/setup.rs`](../../crates/cargo-cgp/src/setup.rs) — installs the pinned
   toolchain with `rustup` and the driver with `cargo install`, co-located via `--root`.
-- [`crates/cargo-cgp/src/update.rs`](../../crates/cargo-cgp/src/update.rs) — finds the latest version
-  with `cargo search`, skips when not newer, else reinstalls and hands off to the new `setup`.
+- [`crates/cargo-cgp/src/update.rs`](../../crates/cargo-cgp/src/update.rs) — reads the crates.io sparse
+  index (`ureq` + `serde_json`), picks the highest in-channel version, skips when not newer, else
+  reinstalls and hands off to the new `setup`.
 - [`crates/cargo-cgp-driver/src/version.rs`](../../crates/cargo-cgp-driver/src/version.rs) and
   [`run.rs`](../../crates/cargo-cgp-driver/src/run.rs) — the `--version` query (answered only in
   non-wrapper mode), and [`build.rs`](../../crates/cargo-cgp-driver/build.rs), which bakes in

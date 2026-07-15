@@ -27,9 +27,16 @@ keywords     = ["cgp"]
 [workspace.dependencies]
 anyhow = { version = "1" }
 # Semantic-version parsing/comparison, used by `cargo cgp update` to decide whether the
-# latest published version is newer than the running one. A small, TLS-free crate that keeps
-# the lean front-end from pulling in an HTTP client.
+# latest published version is newer than the running one, and to keep updates on the same
+# pre-release channel.
 semver = { version = "1" }
+# Blocking HTTP client, used by `cargo cgp update` to read the crates.io sparse index (all
+# published versions) so it can pick the highest version in the running crate's channel.
+# rustls TLS keeps it self-contained. Only the front-end's `update` path links it — the
+# check path and the driver do not. (ureq is a widely used, dependency-light client.)
+ureq = { version = "3" }
+# JSON parsing of the sparse-index lines. Ubiquitous and dependency-light.
+serde_json = { version = "1" }
 # The rustc-free error-processing library the driver drives. An ordinary crate that does
 # not touch `rustc_private`, so it builds and its tests run on any toolchain.
 cargo-cgp-error-processing = { path = "crates/cargo-cgp-error-processing" }
