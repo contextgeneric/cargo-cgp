@@ -59,6 +59,14 @@ pub fn mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
         .find(|leaf| matches!(leaf, Leaf::FieldTypeMismatch { .. }))
 }
 
+/// The statement that a context carries no delegate entry for a key — a component marker for a
+/// plain missing wiring, or a redirect path for an unterminated namespace lookup. Shared by the
+/// root-cause lead here and the terminal dependency-tree node the driver renders, so the two never
+/// drift: a missing delegate entry reads the same whether it heads the note or ends the chain.
+pub fn missing_delegate_entry(context: &str, key: &str) -> String {
+    format!("context `{context}` does not contain any delegate entry for `{key}`")
+}
+
 /// The one root-cause lead line for a leaf — what the note names before the dependency chain.
 /// A genuinely missing field is said plainly (without a `context` qualifier, since `HasField`
 /// can land on any struct); a present-but-underived field is worded as the unimplemented
@@ -71,13 +79,8 @@ fn root_cause_lead(leaf: &Leaf) -> String {
             owner,
             issue: FieldIssue::Missing,
         } => format!("missing field `{name}` on `{owner}`"),
-        Leaf::MissingWiring { component, owner } => {
-            format!("missing wiring for `{component}` on `{owner}`")
-        }
-        Leaf::MissingRedirectWiring { path, context } => format!(
-            "the provider trait implementation is forwarded to `{path}` in `{context}`, \
-             but `{context}` contains no delegate entry for `{path}`"
-        ),
+        Leaf::MissingWiring { component, owner } => missing_delegate_entry(owner, component),
+        Leaf::MissingRedirectWiring { path, context } => missing_delegate_entry(context, path),
         Leaf::Field { name, owner, .. } => {
             format!(
                 "accessor trait `HasField` with field `{name}` is not implemented for `{owner}`"

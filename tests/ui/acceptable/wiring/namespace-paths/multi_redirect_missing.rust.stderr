@@ -1,0 +1,102 @@
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<6, Chars<'m', _>>, _>>: Greeter<_>` is not satisfied
+  --> src/main.rs:38:9
+   |
+38 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `Greeter<App>` is not implemented for `RedirectLookup<App, PathCons<Symbol<6, Chars<'m', Chars<'i', _>>>, _>>`
+   |
+help: the trait `Greeter<__Context__>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied requirement introduced here: `<App as DelegateComponent<PathCons<Symbol<6, cgp::prelude::Chars<'m', cgp::prelude::Chars<'i', cgp::prelude::Chars<'d', cgp::prelude::Chars<'d', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', Nil>>>>>>>, Nil>>>::Delegate: Greeter<App>`
+note: required for `RedirectLookup<App, PathCons<Symbol<5, Chars<'s', Chars<'t', _>>>, _>>` to implement `IsProviderFor<GreeterComponent, App>`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:36:1
+   |
+36 | / check_components! {
+37 | |     App {
+38 | |         GreeterComponent,
+39 | |     }
+40 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, Chars<'e', _>>, _>>: Greeter<_>` is not satisfied
+  --> src/main.rs:38:9
+   |
+38 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `Greeter<App>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<'e', Chars<'n', _>>>, _>>`
+   |
+help: the trait `Greeter<__Context__>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied requirement introduced here: `App: DelegateComponent<PathCons<Symbol<3, cgp::prelude::Chars<'e', cgp::prelude::Chars<'n', cgp::prelude::Chars<'d', Nil>>>>, Nil>>`
+note: required for `RedirectLookup<App, PathCons<Symbol<6, Chars<'m', Chars<'i', _>>>, _>>` to implement `IsProviderFor<GreeterComponent, App>`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `RedirectLookup<App, PathCons<Symbol<5, Chars<'s', Chars<'t', _>>>, _>>` to implement `IsProviderFor<GreeterComponent, App>`
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:36:1
+   |
+36 | / check_components! {
+37 | |     App {
+38 | |         GreeterComponent,
+39 | |     }
+40 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `PathCons<Symbol<3, Chars<'e', Chars<'n', _>>>, _>: MyNamespace<_>` is not satisfied
+  --> src/main.rs:38:9
+   |
+38 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `MyNamespace<App>` is not implemented for `PathCons<Symbol<3, Chars<'e', Chars<'n', Chars<'d', Nil>>>>, Nil>`
+   |
+help: the following other types implement trait `MyNamespace<__Table__>`
+  --> src/main.rs:15:10
+   |
+15 |         @start.GreeterComponent =>
+   |          ^^^^^^^^^^^^^^^^^^^^^^ `PathCons<Symbol<5, Chars<'s', Chars<'t', Chars<'a', _>>>>, _>`
+16 |             @middle,
+17 |         @middle =>
+   |          ^^^^^^ `PathCons<Symbol<6, Chars<'m', Chars<'i', Chars<'d', _>>>>, _>`
+note: required for `App` to implement `DelegateComponent<PathCons<Symbol<3, Chars<'e', Chars<'n', _>>>, _>>`
+  --> src/main.rs:30:1
+   |
+30 | / delegate_components! {
+31 | |     App {
+   | |     ^^^
+32 | |         namespace MyNamespace;
+33 | |     }
+34 | | }
+   | |_^
+note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<'e', Chars<'n', _>>>, _>>` to implement `IsProviderFor<GreeterComponent, App>`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: 2 redundant requirements hidden
+   = note: required for `RedirectLookup<App, PathCons<Symbol<5, Chars<'s', Chars<'t', _>>>, _>>` to implement `IsProviderFor<GreeterComponent, App>`
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:36:1
+   |
+36 | / check_components! {
+37 | |     App {
+38 | |         GreeterComponent,
+39 | |     }
+40 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

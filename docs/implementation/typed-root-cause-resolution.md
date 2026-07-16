@@ -54,16 +54,19 @@ accessor trait \`HasField\` with field \`name\` is not implemented for \`Person\
 [`missing_has_field_derive` fixture](../../tests/ui/acceptable/fields/missing_has_field_derive.rs), the
 present-but-underived case a plain "missing field" would misdescribe). A component the context does
 not wire at all — an unmet `DelegateComponent<Marker>` on the context — is the wiring counterpart of a
-missing field, reading as `root cause: missing wiring for \`BarProviderComponent\` on \`App\`` and
-naming the component marker the programmer writes to fix it
+missing field, reading as `root cause: context \`App\` does not contain any delegate entry for
+\`BarProviderComponent\`` and naming the component marker the programmer writes to fix it
 ([`basic_missing_wiring`](../../tests/ui/acceptable/wiring/missing-wiring/basic_missing_wiring.rs)). A
 namespace redirect that resolves to nothing — a `RedirectLookup<Ctx, Path>` whose `Path` the context
 does not terminate, surfacing as an unmet namespace-lookup bound (`Path: DefaultNamespace<Ctx>`, or a
-user `cgp_namespace!` trait) — is the path-keyed counterpart, reading as `root cause: the provider
-trait implementation is forwarded to \`Path!(@app.finance.types.QuantityTypeProviderComponent)\` in
-\`App\`, but \`App\` contains no delegate entry for that path`, naming the path the programmer must
-wire ([`unregistered_prefix_path`](../../tests/ui/acceptable/resolution/unregistered_prefix_path.rs),
-[`qualified_prefix_path`](../../tests/ui/acceptable/wiring/namespace-paths/qualified_prefix_path.rs)).
+user `cgp_namespace!` trait) — is the path-keyed counterpart, reading the **same** way with the path
+as the key (`root cause: context \`App\` does not contain any delegate entry for
+\`Path!(@app.finance.types.QuantityTypeProviderComponent)\``); its dependency chain renders each
+`RedirectLookup` hop as `redirect lookup to \`Path\` in \`App\`` and ends on that same
+missing-delegate statement, so a multi-layer redirect reads as its successive hops down to the
+unterminated path ([`unregistered_prefix_path`](../../tests/ui/acceptable/resolution/unregistered_prefix_path.rs),
+[`qualified_prefix_path`](../../tests/ui/acceptable/wiring/namespace-paths/qualified_prefix_path.rs),
+[`multi_redirect_missing`](../../tests/ui/acceptable/wiring/namespace-paths/multi_redirect_missing.rs)).
 Any other leaf restates its
 bound — `root cause: the trait bound \`f64: std::cmp::Eq\` is not satisfied` — except when the kept
 main message already states that very bound, where the lead would only repeat the header and the note
@@ -333,11 +336,13 @@ says what it needs to without altering the header's shape.
   field by inspecting the struct and its `Deref` chain, a field-type mismatch with `field_type` reading
   the actual field type off the struct by `DefId`, a missing wiring naming the unwired component
   marker, a missing *redirect* wiring naming the unterminated namespace path, or a bound), `label.rs`
-  (folding each chain into a `DependencyTree` with each wiring trait replaced by its human form —
-  dropping the namespace-lookup plumbing node like the `DelegateComponent` one — generic parameters
-  reattached),
-  and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition, the `Symbol!` field-name decode, and
-  `is_namespace_lookup_trait` recognizing a namespace trait by its single-`Delegate`-associated-type
+  (folding each chain into a `DependencyTree` with each wiring trait replaced by its human form — a
+  `RedirectLookup` provider as `redirect lookup to \`Path\` in \`Ctx\``, an on-context
+  `DelegateComponent` or a terminal namespace lookup as the shared `missing_delegate_entry`
+  statement, and the `DelegateComponent` whose key is itself a redirect `PathCons` dropped as
+  plumbing — generic parameters reattached),
+  and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition, the `Symbol!` field-name decode,
+  `is_path_cons`, and `is_namespace_lookup_trait` recognizing a namespace trait by its single-`Delegate`-associated-type
   fingerprint rather than by name).
   A sibling `conflict.rs` handles the duplicate-key coherence conflict (`E0119`) rather than a check
   failure — a separate transform documented in

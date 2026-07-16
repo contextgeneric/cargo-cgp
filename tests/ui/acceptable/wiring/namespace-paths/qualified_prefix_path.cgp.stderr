@@ -4,9 +4,10 @@ error[E0277]: [CGP-E002] the provider trait `QuantityTypeProvider` with context 
 39 |         QuantityTypeProviderComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: the provider trait implementation is forwarded to `Path!(@app.finance.types.QuantityTypeProviderComponent)` in `App`, but `App` contains no delegate entry for `Path!(@app.finance.types.QuantityTypeProviderComponent)`
+   = note: root cause: context `App` does not contain any delegate entry for `Path!(@app.finance.types.QuantityTypeProviderComponent)`
            this is required through the dependency chain:
                consumer trait impl `HasQuantityType` for context `App`
-               └── provider trait impl `QuantityTypeProvider` with context `App` for provider `RedirectLookup<App, Path!(@app.finance.types.QuantityTypeProviderComponent)>`
+               └── redirect lookup to `Path!(@app.finance.types.QuantityTypeProviderComponent)` in `App`
+                   └── context `App` does not contain any delegate entry for `Path!(@app.finance.types.QuantityTypeProviderComponent)`
 
 For more information about this error, try `rustc --explain E0277`.

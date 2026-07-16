@@ -122,7 +122,7 @@ fn plans_a_missing_wiring_check_failure() {
     assert_eq!(
         plan.notes,
         vec![String::from(
-            "root cause: missing wiring for `BarProviderComponent` on `App`\n\
+            "root cause: context `App` does not contain any delegate entry for `BarProviderComponent`\n\
              this is required through the dependency chain:\n\
              \x20   consumer trait impl `CanUseFoo` for context `App`\n\
              \x20   └── trait impl `CanUseBar` for `App`"
@@ -132,13 +132,17 @@ fn plans_a_missing_wiring_check_failure() {
 
 #[test]
 fn plans_a_missing_redirect_wiring_check_failure() {
-    // A namespace redirect that resolves to nothing: the checked consumer over the provider whose
-    // `RedirectLookup` forwards to a path the context does not terminate.
+    // A namespace redirect that resolves to nothing: the checked consumer over a redirect-lookup
+    // hop whose path the context does not terminate. The redirect node reads as its redirection and
+    // the terminal states the missing delegate entry, in the same form a plain missing wiring uses.
     let tree = DependencyTree::node(
         "consumer trait impl `HasQuantityType` for context `App`",
-        vec![DependencyTree::leaf(
-            "provider trait impl `QuantityTypeProvider` with context `App` for provider \
-             `RedirectLookup<App, Path!(@app.finance.types.QuantityTypeProviderComponent)>`",
+        vec![DependencyTree::node(
+            "redirect lookup to `Path!(@app.finance.types.QuantityTypeProviderComponent)` in `App`",
+            vec![DependencyTree::leaf(
+                "context `App` does not contain any delegate entry for \
+                 `Path!(@app.finance.types.QuantityTypeProviderComponent)`",
+            )],
         )],
     );
     let resolved = Resolved {
@@ -154,18 +158,19 @@ fn plans_a_missing_redirect_wiring_check_failure() {
     };
     let plan = plan_resolved(DiagKind::Check, None, &resolved, &empty_names());
 
-    // A redirect wiring, like a missing wiring, carries no `help` — the note names the fix.
+    // A redirect wiring, like a missing wiring, carries no `help` — the note names the fix. Its lead
+    // is the same `missing_delegate_entry` phrasing as a plain missing wiring, keyed by the path.
     assert!(plan.helps.is_empty());
     assert_eq!(
         plan.notes,
         vec![String::from(
-            "root cause: the provider trait implementation is forwarded to \
-             `Path!(@app.finance.types.QuantityTypeProviderComponent)` in `App`, but `App` \
-             contains no delegate entry for `Path!(@app.finance.types.QuantityTypeProviderComponent)`\n\
+            "root cause: context `App` does not contain any delegate entry for \
+             `Path!(@app.finance.types.QuantityTypeProviderComponent)`\n\
              this is required through the dependency chain:\n\
              \x20   consumer trait impl `HasQuantityType` for context `App`\n\
-             \x20   └── provider trait impl `QuantityTypeProvider` with context `App` for provider \
-             `RedirectLookup<App, Path!(@app.finance.types.QuantityTypeProviderComponent)>`"
+             \x20   └── redirect lookup to `Path!(@app.finance.types.QuantityTypeProviderComponent)` in `App`\n\
+             \x20       └── context `App` does not contain any delegate entry for \
+             `Path!(@app.finance.types.QuantityTypeProviderComponent)`"
         )]
     );
 }

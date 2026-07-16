@@ -5,7 +5,7 @@
 //!
 //! The dependency chain is therefore a single node — the `CanUseFoo` consumer the
 //! missing wiring would provide — with the same `[CGP-E001]` header and a
-//! `root cause: missing wiring for \`FooProviderComponent\` on \`App\`` note. It pins
+//! `root cause: context \`App\` does not contain any delegate entry for \`FooProviderComponent\`` note. It pins
 //! that the resolver reports a bare unwired component, not only one reached through a
 //! provider's impl-side dependency (that transitive case is basic_missing_wiring.rs).
 //!

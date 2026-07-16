@@ -4,10 +4,11 @@ error[E0277]: [CGP-E002] the provider trait `BarProvider` with context `App` is 
 43 |         FooProviderComponent,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: missing wiring for `BarProviderComponent` on `CommonProvider`
+   = note: root cause: context `CommonProvider` does not contain any delegate entry for `BarProviderComponent`
            this is required through the dependency chain:
                consumer trait impl `CanUseFoo` for context `CommonProvider`
                └── provider trait impl `FooProvider` with context `CommonProvider` for provider `DoFooWithBar`
                    └── trait impl `CanUseBar` for `CommonProvider`
+                       └── context `CommonProvider` does not contain any delegate entry for `BarProviderComponent`
 
 For more information about this error, try `rustc --explain E0277`.

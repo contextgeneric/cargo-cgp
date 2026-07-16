@@ -1,0 +1,15 @@
+error[E0277]: [CGP-E002] the provider trait `Greeter` with context `App` is not implemented for provider `RedirectLookup<App, Path!(@end)>`
+  --> src/main.rs:38:9
+   |
+38 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: context `App` does not contain any delegate entry for `Path!(@end)`
+           this is required through the dependency chain:
+               consumer trait impl `CanGreet` for context `App`
+               └── redirect lookup to `Path!(@start.GreeterComponent)` in `App`
+                   └── redirect lookup to `Path!(@middle)` in `App`
+                       └── redirect lookup to `Path!(@end)` in `App`
+                           └── context `App` does not contain any delegate entry for `Path!(@end)`
+
+For more information about this error, try `rustc --explain E0277`.

@@ -56,6 +56,14 @@ pub(crate) fn is_namespace_lookup_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
         && tcx.item_name(first.def_id).as_str() == "Delegate"
 }
 
+/// Whether `ty` is a CGP `PathCons` — the spine of a `Path!` redirect path. Anchored to
+/// `cgp_base_types` by `DefId`, so a same-named type elsewhere is never mistaken for it. Used to
+/// tell a `DelegateComponent` key that is a redirect *path* (plumbing behind a namespace lookup)
+/// from a real component-marker key.
+pub(crate) fn is_path_cons(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(def, _) if is_cgp_item(tcx, def.did(), "PathCons", CGP_BASE_TYPES_CRATE))
+}
+
 /// Decode a CGP `Symbol!` type into its string, by walking the `Chars<'c', Tail>` spine and
 /// reading each `char` const argument until `Nil`. Anchored to `cgp_base_types`, and returns
 /// `None` for any type that is not a well-formed `Symbol`.

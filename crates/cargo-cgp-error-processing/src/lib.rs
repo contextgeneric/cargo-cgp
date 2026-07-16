@@ -28,8 +28,8 @@ pub mod tree;
 
 pub use diagnosis::{
     Cause, DiagKind, DiagnosisPlan, FieldIssue, Leaf, Resolved, WiringConflict, WiringKey,
-    cause_note, consumer_header, derive_help_messages, field_mismatch_header, plan_resolved,
-    plan_wiring_conflict, wiring_conflict_help,
+    cause_note, consumer_header, derive_help_messages, field_mismatch_header,
+    missing_delegate_entry, plan_resolved, plan_wiring_conflict, wiring_conflict_help,
 };
 pub use postprocess::{
     CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_path, resugar_symbol,
