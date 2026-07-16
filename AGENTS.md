@@ -308,6 +308,70 @@ are in the usage reference:
 for a code change with `nix build` first, or just re-run `nix run`, which rebuilds only when a source
 file in the flake's narrowed input actually changed.
 
+## Improving error messages against real-world CGP code
+
+The project's core loop is to feed `cargo-cgp` real CGP code that fails to compile and improve how it
+presents the error. The work is *driven* from outside this repository — you are given the path to a
+Rust project whose CGP code does not compile — but every change *lands* inside this repository, and it
+lands as a **test fixture before any code**. This section codifies that loop; follow it whenever a
+task points you at such a project.
+
+Read these first, every time, before touching anything — the loop assumes their contents. They fall
+into three groups: how the tool is run and its output read, how the tool builds that output, and what
+the upstream error classes are.
+
+- **Using the tool** — [Usage](docs/reference/usage.md) (running the check, and reading its output and
+  `[CGP-Exxx]` codes), [Troubleshooting](docs/reference/troubleshooting.md) (when the tool itself will
+  not run), and the [error-code catalog](docs/error-code.md) (what each code already means).
+- **How the output is produced** — [Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md)
+  (the resolver that turns a wiring failure into its root-cause tree — the main lever for a better
+  message), [The driver](docs/implementation/driver.md) and [Error processing](docs/implementation/error-processing.md)
+  (the emitter and the rustc-free wording/plan/tree it drives), [The error pipeline](docs/implementation/error-pipeline.md)
+  (how the stages fit together), [rustc diagnostic internals](docs/implementation/rustc-diagnostic-internals.md)
+  (where the compiler hides the information a good message needs), and [Testing](docs/implementation/testing.md)
+  (the UI snapshot suite and its bless workflow, the mechanism the loop runs on).
+- **The problem domain** — the upstream [CGP error catalog](../cgp/docs/errors/README.md) (which error
+  classes hide the root cause and where the cause sits), and the **`/cgp` skill**, invoked as always
+  when reasoning about CGP constructs.
+
+The loop then runs in order, and the ordering is the point — the fixture is written and confirmed to
+reproduce the problem *before* the tool is changed, and the fixture is confirmed improved *before* the
+target project is re-checked.
+
+1. **Reproduce the failure in the target project.** Go to the given directory and run the check
+   through the local Nix build, per
+   [Checking a CGP project elsewhere with Nix](#checking-a-cgp-project-elsewhere-with-nix):
+   `nix run /path/to/this/repo -- check` from the project's directory. Capture the exact message the
+   tool prints.
+2. **Learn the real root cause from the project's own diff.** The target project is set up with
+   **uncommitted git changes that deliberately comment out the code triggering the error**, so its
+   `git diff` / `git status` shows precisely what was removed and therefore what the true cause is.
+   Read that diff to know what the ideal message *should* say. Treat the target project as read-only,
+   like `../cgp`: never commit, revert, or otherwise change it — its uncommitted state is the
+   diagnostic aid, not something to tidy.
+3. **Judge the gap.** Compare the tool's actual output against that known root cause and decide how the
+   message should improve — what it buries, misnames, or omits.
+4. **Reproduce it as a simplified UI fixture — do not fix the tool yet.** Before changing any
+   `cargo-cgp` code, distill the failure into the smallest self-contained CGP program that provokes the
+   same *class* of bad message, and add it as a `<name>.rs` fixture under
+   [`tests/ui/`](tests/README.md) — in the sub-directory matching the tool's *current* output quality
+   (`usability/` for a message that carries the cause but buries it, and the concept sub-directory that
+   fits). Bless it (`cargo test -p cargo-cgp-ui-tests --test ui -- --bless`) and confirm the committed
+   `.cgp.stderr` shows the same shortcoming you saw on the real project. A change with no fixture that
+   reproduces its motivation does not belong in the tool.
+5. **Change the tool, and verify the fixture first.** Make the improvement (usually in the
+   [resolver](docs/implementation/typed-root-cause-resolution.md) or the rustc-free
+   [wording](docs/implementation/error-processing.md)), then re-run the UI suite and confirm the
+   fixture's `.cgp.stderr` improved as intended — and that no other snapshot regressed — **before** you
+   go back to the target project. The simplified fixture, not the real project, is the fast feedback
+   loop.
+6. **Re-check the target project.** Only once the fixture is green and improved, re-run the Nix check on
+   the target project and confirm the real-world message improved the same way. If it did not, the
+   fixture did not capture the real cause — return to step 4 with a fixture that does.
+7. **Graduate the fixture if it earned it.** A fixture whose output now clears the usability bar moves
+   from `usability/` into `acceptable/` (a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr` triple,
+   no re-bless), recording that this class of error is now presented well.
+
 ## Committing changes
 
 Git commits are made **only when the user explicitly asks for one**, and each such request authorizes
