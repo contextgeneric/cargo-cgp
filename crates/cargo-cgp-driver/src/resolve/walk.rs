@@ -6,7 +6,7 @@
 //! folding each into a [`Cause`] with its rendered dependency tree.
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
-use cargo_cgp_error_processing::{Cause, Resolved};
+use cargo_cgp_error_processing::{Cause, Resolved, root_cause_lead};
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_infer::traits::Obligation;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized, Upcast as _};
@@ -38,7 +38,13 @@ pub(crate) fn resolve_leaves<'tcx>(
 
     let mut causes: Vec<Cause> = Vec::new();
     for path in collect_leaf_paths(tcx, top, context, &[], 0) {
-        let leaf_ref = path.preds.last()?.skip_binder().trait_ref;
+        // Split off the terminal (leaf) predicate: the chain above it becomes the tree's inner
+        // nodes, and the leaf itself is re-stated as the tree's final leaf below, so the chain
+        // always bottoms out at the root cause rather than one step before it.
+        let Some((leaf_pred, chain)) = path.preds.split_last() else {
+            continue;
+        };
+        let leaf_ref = leaf_pred.skip_binder().trait_ref;
         // A path that bottoms out on pure wiring plumbing (a routing dead-end) is not a root
         // cause — a real cause is found down another branch — so drop it rather than report it.
         if !is_reportable_leaf(tcx, leaf_ref, context) {
@@ -49,11 +55,13 @@ pub(crate) fn resolve_leaves<'tcx>(
         if causes.iter().any(|c| c.key() == leaf.key()) {
             continue;
         }
-        let labels: Vec<String> = path
-            .preds
+        let mut labels: Vec<String> = chain
             .iter()
             .filter_map(|pred| label_for(tcx, *pred, context, names))
             .collect();
+        // Repeat the root cause as the terminal leaf node, so the tree ends on it — the same shape
+        // whether the leaf is a missing field, an unmet bound, a missing wiring, or a redirect.
+        labels.push(root_cause_lead(&leaf));
         if let Some(tree) = spine(labels) {
             causes.push(Cause { leaf, tree });
         }

@@ -29,11 +29,12 @@ pub mod tree;
 pub use diagnosis::{
     Cause, DiagKind, DiagnosisPlan, FieldIssue, Leaf, Resolved, WiringConflict, WiringKey,
     cause_note, consumer_header, derive_help_messages, field_mismatch_header,
-    missing_delegate_entry, plan_resolved, plan_wiring_conflict, wiring_conflict_help,
+    missing_delegate_entry, plan_resolved, plan_wiring_conflict, root_cause_lead,
+    wiring_conflict_help,
 };
 pub use postprocess::{
     CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_path, resugar_symbol,
-    rewrite_missing_fields, strip_cgp_prefixes,
+    rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
 };
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use tree::{DependencyTree, render_dependency_tree};

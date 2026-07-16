@@ -53,11 +53,12 @@ impl<E> CgpEmitter<E> {
     /// obligation-chain rename, since a CGP error code belongs on a main message and never on
     /// a sub-message. A message that is not a wiring form is left untouched, and the name map
     /// is forced only when some message is actually rewritten.
-    fn rewrite(&self, diag: &mut DiagInner) {
-        rewrite_messages(&mut diag.messages, &self.names, rewrite_message);
+    fn rewrite(&self, diag: &mut DiagInner) -> bool {
+        let mut changed = rewrite_messages(&mut diag.messages, &self.names, rewrite_message);
         for child in &mut diag.children {
-            rewrite_messages(&mut child.messages, &self.names, rewrite_required_for);
+            changed |= rewrite_messages(&mut child.messages, &self.names, rewrite_required_for);
         }
+        changed
     }
 
     /// Post-process a diagnostic after transforming it — the final cleanup pass, over every
@@ -66,13 +67,16 @@ impl<E> CgpEmitter<E> {
     /// context implements `HasField` for any field is a fact of the whole diagnostic (the
     /// "similar impl" landmark can sit far from the clause), so it is decided once up front and
     /// passed into each per-message rewrite.
-    fn postprocess(&self, diag: &mut DiagInner) {
+    /// `bare_paths` distinguishes a rewritten diagnostic from a resugaring fallback: a message the
+    /// tool constructed (a wiring-conflict rewrite or a typed resolution) shows a bare `@…` path,
+    /// while an un-rewritten fallback keeps the `Path!(@…)` macro form.
+    fn postprocess(&self, diag: &mut DiagInner, bare_paths: bool) {
         let has_field_impls = mentions_hasfield_impls(diag);
-        postprocess_messages(&mut diag.messages, has_field_impls);
-        postprocess_multispan(&mut diag.span, has_field_impls);
+        postprocess_messages(&mut diag.messages, has_field_impls, bare_paths);
+        postprocess_multispan(&mut diag.span, has_field_impls, bare_paths);
         for child in &mut diag.children {
-            postprocess_messages(&mut child.messages, has_field_impls);
-            postprocess_multispan(&mut child.span, has_field_impls);
+            postprocess_messages(&mut child.messages, has_field_impls, bare_paths);
+            postprocess_multispan(&mut child.span, has_field_impls, bare_paths);
         }
     }
 
@@ -180,7 +184,8 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     if let Some(help) = wiring_conflict_help(&conflict) {
                         diag.children.push(subdiag(Level::Help, help));
                     }
-                    self.postprocess(&mut diag);
+                    // A rewritten diagnostic: bare `@…` paths.
+                    self.postprocess(&mut diag, true);
                     self.inner.emit_diagnostic(diag);
                     return;
                 }
@@ -188,13 +193,16 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
         }
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
         // resolver declines, the wiring-message rename runs as the first fallback pass.
-        if let Some((resolved, span)) = self.try_resolve(&diag) {
+        let rewritten = if let Some((resolved, span)) = self.try_resolve(&diag) {
             self.transform_resolved(&mut diag, &resolved, span);
+            true
         } else {
-            self.rewrite(&mut diag);
-        }
-        // Post-process the result either way, so no raw CGP construct leaks.
-        self.postprocess(&mut diag);
+            self.rewrite(&mut diag)
+        };
+        // Post-process the result either way, so no raw CGP construct leaks. A typed resolution
+        // or a text rewrite constructs the message, so its paths render bare (`@…`); a diagnostic
+        // the tool left untouched keeps the `Path!(@…)` resugaring form.
+        self.postprocess(&mut diag, rewritten);
         self.inner.emit_diagnostic(diag);
     }
 

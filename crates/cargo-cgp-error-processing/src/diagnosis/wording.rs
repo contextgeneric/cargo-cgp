@@ -67,12 +67,13 @@ pub fn missing_delegate_entry(context: &str, key: &str) -> String {
     format!("context `{context}` does not contain any delegate entry for `{key}`")
 }
 
-/// The one root-cause lead line for a leaf — what the note names before the dependency chain.
-/// A genuinely missing field is said plainly (without a `context` qualifier, since `HasField`
-/// can land on any struct); a present-but-underived field is worded as the unimplemented
-/// accessor, with the fix (the derive) carried by a separate `help`; a component the context
-/// does not wire names the missing component; any other leaf restates its unmet bound.
-fn root_cause_lead(leaf: &Leaf) -> String {
+/// The one root-cause statement for a leaf — what the note names before the dependency chain,
+/// and (repeated) the tree's terminal leaf the driver appends so the chain visibly bottoms out at
+/// the root cause. A genuinely missing field is said plainly (without a `context` qualifier, since
+/// `HasField` can land on any struct); a present-but-underived field is worded as the unimplemented
+/// accessor, with the fix (the derive) carried by a separate `help`; a missing wiring (plain or a
+/// redirect) names the missing delegate entry; any other leaf restates its unmet bound.
+pub fn root_cause_lead(leaf: &Leaf) -> String {
     match leaf {
         Leaf::Field {
             name,

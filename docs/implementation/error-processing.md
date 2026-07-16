@@ -90,16 +90,26 @@ first, then passes the answer into each per-message rewrite.
 ## The post-processing transforms
 
 Post-processing is a chain of transforms applied in order, so the output of one feeds the next, and
-the order matters. Prefix stripping runs first so the later transforms match the bare CGP names
+the order matters. Module-path stripping runs first so the later transforms match the bare names
 (`Symbol`, `Chars`, …) rather than their fully-qualified forms; `Symbol!` resugaring runs before
 `Path!` resugaring (which reads the already-resugared `Symbol!("…")` segments) and before the field
-rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Four transforms exist today:
+rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Five transforms exist today:
 
+- **[`strip_module_paths`](../../crates/cargo-cgp-error-processing/src/postprocess/strip_modules.rs)**
+  collapses every `a::b::C` identifier run to its bare final segment, so a fully-qualified
+  `contexts::app::MockApp` becomes `MockApp`, `interfaces::types::QuantityTypeProviderComponent`
+  becomes `QuantityTypeProviderComponent`, and `f64: std::cmp::Eq` becomes `f64: Eq` — the module
+  qualifiers are noise a CGP diagnostic reads better without. It scans by byte for the ASCII
+  identifier run but copies every other character whole by its UTF-8 width, so multi-byte text (a
+  rendered tree's `└──`) is never split; it skips string literals and leaves a turbofish, an
+  associated-type `>::Assoc` tail, and a lone identifier alone. It subsumes `strip_cgp_prefixes`
+  (a `cgp::prelude::Chars` is just one such run), which still runs after it for the specific CGP
+  re-export list.
 - **[`strip_cgp_prefixes`](../../crates/cargo-cgp-error-processing/src/postprocess/strip_prefixes.rs)**
   removes the CGP module paths rustc prints in front of CGP type names — `cgp::prelude::Chars` becomes
   `Chars`. The prefixes it strips are a constant list, `CGP_PREFIXES` (`cgp::prelude::`,
-  `cgp::macro_prelude::`, `cgp::cgp_core::`, `cgp::cgp_extra::`), kept as a list precisely so more
-  re-export paths can be added as they turn up.
+  `cgp::macro_prelude::`, `cgp::cgp_core::`, `cgp::cgp_extra::`); with `strip_module_paths` now running
+  first this is largely redundant, kept as the explicit CGP-specific fallback.
 - **[`resugar_symbol`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_symbol.rs)**
   reverses a `Symbol!` expansion back to its surface form: `Symbol<2, Chars<'x', Chars<'y', Nil>>>`
   becomes `Symbol!("xy")`. It parses the spine and rewrites it **only on an exact structural match** —
@@ -110,7 +120,12 @@ rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Four tran
   resugaring transform, not just this one.
 - **[`resugar_path`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_path.rs)**
   reverses a `Path!` expansion back to its surface form:
-  `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` becomes `Path!(@app.GreeterComponent)`.
+  `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` becomes `@app.GreeterComponent`. Its
+  `wrap` parameter chooses the shape: in a **rewritten** diagnostic (the tool constructed the message)
+  it renders the bare `@app.GreeterComponent`, since it reads as a path the message names; in the
+  **resugaring fallback** (an un-rewritten message showing a raw type in source form) it wraps it as
+  the `Path!(@app.GreeterComponent)` macro form. The emitter passes `wrap` accordingly — bare on a
+  rewrite (a wiring-conflict or typed resolution), wrapped on a diagnostic it left untouched.
   It walks the right-nested `PathCons`/`Nil` spine and rewrites it **only on an exact,
   round-trippable match**, mirroring how `Path!` classifies each segment forward: a `Symbol!("name")`
   head becomes the bare segment `name` only when `name` is a lowercase, non-primitive identifier
@@ -229,9 +244,11 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
 ## Source
 
 - [`crates/cargo-cgp-error-processing/src/postprocess/`](../../crates/cargo-cgp-error-processing/src/postprocess) —
-  the post-processing transforms: `mod.rs` (re-exports), `chain.rs` (the `postprocess_message` chain),
-  `strip_prefixes.rs` (`strip_cgp_prefixes` and the `CGP_PREFIXES` constant), `resugar_symbol.rs` (the
-  exact-match `Symbol!` parser), `resugar_path.rs` (the `PathCons` → `Path!` resugarer), and
+  the post-processing transforms: `mod.rs` (re-exports), `chain.rs` (the `postprocess_message` chain,
+  threading the `bare_paths` flag), `strip_modules.rs` (`strip_module_paths`, the UTF-8-safe
+  module-qualifier collapse), `strip_prefixes.rs` (`strip_cgp_prefixes` and the `CGP_PREFIXES`
+  constant), `resugar_symbol.rs` (the exact-match `Symbol!` parser), `resugar_path.rs` (the
+  `PathCons` → `@…`/`Path!(@…)` resugarer, the form chosen by its `wrap` parameter), and
   `missing_field.rs` (`rewrite_missing_fields`, `context_has_hasfield_impls`, and the
   single-field-vs-missing-derive classification).
 - [`crates/cargo-cgp-error-processing/src/rewrite/`](../../crates/cargo-cgp-error-processing/src/rewrite) —

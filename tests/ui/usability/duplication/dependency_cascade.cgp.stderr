@@ -13,7 +13,7 @@ error[E0277]: [CGP-E002] the provider trait `Foo` with context `App` is not impl
                            └── trait impl `CanFoo` for `App`
                                └── provider trait impl `Foo` with context `App` for provider `ProvideFoo`
                                    └── trait impl `HasName` for `App`
-                                       └── field trait impl `HasField` with field `name` for `App`
+                                       └── missing field `name` on `App`
 
 error[E0277]: [CGP-E001] the consumer trait `CanBar` is not implemented for context `App`
   --> src/main.rs:85:9
@@ -28,7 +28,7 @@ error[E0277]: [CGP-E001] the consumer trait `CanBar` is not implemented for cont
                    └── trait impl `CanFoo` for `App`
                        └── provider trait impl `Foo` with context `App` for provider `ProvideFoo`
                            └── trait impl `HasName` for `App`
-                               └── field trait impl `HasField` with field `name` for `App`
+                               └── missing field `name` on `App`
 
 error[E0277]: [CGP-E001] the consumer trait `CanFoo` is not implemented for context `App`
   --> src/main.rs:86:9
@@ -41,6 +41,6 @@ error[E0277]: [CGP-E001] the consumer trait `CanFoo` is not implemented for cont
                consumer trait impl `CanFoo` for context `App`
                └── provider trait impl `Foo` with context `App` for provider `ProvideFoo`
                    └── trait impl `HasName` for `App`
-                       └── field trait impl `HasField` with field `name` for `App`
+                       └── missing field `name` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

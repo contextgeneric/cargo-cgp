@@ -117,22 +117,29 @@ pub(crate) fn rewrite_messages<S>(
     messages: &mut [(DiagMessage, S)],
     names: &ComponentNameMap,
     rewrite: fn(&str, &ComponentNameMap) -> Option<String>,
-) {
+) -> bool {
+    let mut changed = false;
     for (message, _) in messages.iter_mut() {
         if let DiagMessage::Str(text) = message
             && let Some(rewritten) = rewrite(text, names)
         {
             *message = DiagMessage::Str(Cow::Owned(rewritten));
+            changed = true;
         }
     }
+    changed
 }
 
 /// Post-process each plain-string message in place through [`postprocess_message`], leaving
 /// its style and any Fluent message untouched.
-pub(crate) fn postprocess_messages<S>(messages: &mut [(DiagMessage, S)], has_field_impls: bool) {
+pub(crate) fn postprocess_messages<S>(
+    messages: &mut [(DiagMessage, S)],
+    has_field_impls: bool,
+    bare_paths: bool,
+) {
     for (message, _) in messages.iter_mut() {
         if let DiagMessage::Str(text) = message
-            && let Some(rewritten) = postprocess_message(text, has_field_impls)
+            && let Some(rewritten) = postprocess_message(text, has_field_impls, bare_paths)
         {
             *message = DiagMessage::Str(Cow::Owned(rewritten));
         }
@@ -144,7 +151,7 @@ pub(crate) fn postprocess_messages<S>(messages: &mut [(DiagMessage, S)], has_fie
 /// changes, so an unaffected diagnostic keeps its exact `MultiSpan`; the primary spans are
 /// re-pushed in order (rather than through `from_spans`, which sorts them) so the rendering
 /// order is preserved.
-pub(crate) fn postprocess_multispan(span: &mut MultiSpan, has_field_impls: bool) {
+pub(crate) fn postprocess_multispan(span: &mut MultiSpan, has_field_impls: bool, bare_paths: bool) {
     let labels: Vec<(Span, DiagMessage)> = span.span_labels_raw().to_vec();
     if labels.is_empty() {
         return;
@@ -155,7 +162,7 @@ pub(crate) fn postprocess_multispan(span: &mut MultiSpan, has_field_impls: bool)
         .into_iter()
         .map(|(span, message)| {
             if let DiagMessage::Str(text) = &message
-                && let Some(rewritten) = postprocess_message(text, has_field_impls)
+                && let Some(rewritten) = postprocess_message(text, has_field_impls, bare_paths)
             {
                 changed = true;
                 (span, DiagMessage::Str(Cow::Owned(rewritten)))

@@ -42,7 +42,12 @@ header, labels, and caret untouched
 
 **The sub-messages are replaced either way.** rustc's obligation-chain notes, supplementary help, and
 structured suggestions are discarded, and each recovered root cause becomes one `= note:` opening with
-a `root cause:` lead naming its leaf, followed by the dependency chain rendered as a tree. The lead is
+a `root cause:` lead naming its leaf, followed by the dependency chain rendered as a tree. The chain
+**repeats the root cause as its terminal leaf**, so it always bottoms out *at* the cause rather than
+one step before it — the same shape whether the leaf is a missing field, an unmet bound, a missing
+wiring, or a redirect. Every path in these rewritten messages renders as a bare `@app.GreeterComponent`
+(the `Path!(@…)` macro form is reserved for the resugaring fallback), and module qualifiers are
+stripped throughout, so `contexts::app::MockApp` reads as `MockApp`. The lead is
 worded by *why* the leaf is unmet, which the resolver decides by inspecting the actual struct a
 `HasField` bound lands on (detailed under
 [How the root cause is recovered](#how-the-root-cause-is-recovered)): a genuinely absent field reads as
@@ -61,14 +66,15 @@ namespace redirect that resolves to nothing — a `RedirectLookup<Ctx, Path>` wh
 does not terminate, surfacing as an unmet namespace-lookup bound (`Path: DefaultNamespace<Ctx>`, or a
 user `cgp_namespace!` trait) — is the path-keyed counterpart, reading the **same** way with the path
 as the key (`root cause: context \`App\` does not contain any delegate entry for
-\`Path!(@app.finance.types.QuantityTypeProviderComponent)\``); its dependency chain renders each
-`RedirectLookup` hop as `redirect lookup to \`Path\` in \`App\`` and ends on that same
+\`@app.finance.types.QuantityTypeProviderComponent\``); its dependency chain renders each
+`RedirectLookup` hop as `redirect lookup to \`@…\` in \`App\`` and ends on that same
 missing-delegate statement, so a multi-layer redirect reads as its successive hops down to the
 unterminated path ([`unregistered_prefix_path`](../../tests/ui/acceptable/resolution/unregistered_prefix_path.rs),
 [`qualified_prefix_path`](../../tests/ui/acceptable/wiring/namespace-paths/qualified_prefix_path.rs),
 [`multi_redirect_missing`](../../tests/ui/acceptable/wiring/namespace-paths/multi_redirect_missing.rs)).
 Any other leaf restates its
-bound — `root cause: the trait bound \`f64: std::cmp::Eq\` is not satisfied` — except when the kept
+bound — `root cause: the trait bound \`f64: Eq\` is not satisfied` (module qualifiers stripped) —
+except when the kept
 main message already states that very bound, where the lead would only repeat the header and the note
 carries the chain alone
 ([`ordinary_bound_unsatisfied`](../../tests/ui/acceptable/resolution/ordinary_bound_unsatisfied.rs)).
@@ -331,18 +337,19 @@ says what it needs to without altering the header's shape.
   recovering the context ADT from the diagnostic's spans and its wired components from
   `DelegateComponent` impls), `walk.rs` (walking the cause chain down to each terminal leaf — the
   descendable-vocabulary rule, the plumbing-leaf drop, `is_reportable_leaf` keeping an unmet
-  `DelegateComponent` only when it lands on the context, and `has_field_projection_mismatch` finding an
-  unmet `HasField` projection where the trait clauses all hold), `classify.rs` (classifying a leaf as a
+  `DelegateComponent` only when it lands on the context, `has_field_projection_mismatch` finding an
+  unmet `HasField` projection where the trait clauses all hold, and — after building the inner
+  labels from the chain *above* the leaf — appending `root_cause_lead` as the tree's terminal, so the
+  chain ends on the root cause), `classify.rs` (classifying a leaf as a
   field by inspecting the struct and its `Deref` chain, a field-type mismatch with `field_type` reading
   the actual field type off the struct by `DefId`, a missing wiring naming the unwired component
   marker, a missing *redirect* wiring naming the unterminated namespace path, or a bound), `label.rs`
-  (folding each chain into a `DependencyTree` with each wiring trait replaced by its human form — a
-  `RedirectLookup` provider as `redirect lookup to \`Path\` in \`Ctx\``, an on-context
-  `DelegateComponent` or a terminal namespace lookup as the shared `missing_delegate_entry`
-  statement, and the `DelegateComponent` whose key is itself a redirect `PathCons` dropped as
-  plumbing — generic parameters reattached),
+  (folding the inner chain into a `DependencyTree` with each wiring trait replaced by its human form —
+  a `RedirectLookup` provider as `redirect lookup to \`@…\` in \`Ctx\``, and the `DelegateComponent`
+  table lookup and namespace lookup dropped as plumbing since the caller re-states the leaf — generic
+  parameters reattached),
   and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition, the `Symbol!` field-name decode,
-  `is_path_cons`, and `is_namespace_lookup_trait` recognizing a namespace trait by its single-`Delegate`-associated-type
+  and `is_namespace_lookup_trait` recognizing a namespace trait by its single-`Delegate`-associated-type
   fingerprint rather than by name).
   A sibling `conflict.rs` handles the duplicate-key coherence conflict (`E0119`) rather than a check
   failure — a separate transform documented in
@@ -390,9 +397,10 @@ full-path resolution names each one's own traits with no cross-over), `generic_a
 three-parameter component → the parameters reattached to the consumer and provider labels), and
 `ordinary_bound_unsatisfied` (a non-field `f64: Eq` bound, whose rustc header is kept over a lead-less
 chain note), and `unregistered_prefix_path`/`qualified_prefix_path` (an unwired namespace redirect
-behind an `IsProviderFor` header, rewritten to the `CGP-E002` form over a `root cause:` note that names
-the forwarded path and the context with no delegate entry for it — the latter with the path segment
-module-qualified, so it also pins the `resugar_path` fold to `Path!(@…)`). The missing-wiring
+behind an `IsProviderFor` header, rewritten to the `CGP-E002` form over a `root cause:` note whose
+chain is the redirect hop(s) down to a terminal naming the context with no delegate entry for the
+bare `@…` path — the latter defined across sub-modules, pinning that a module-qualified path still
+folds to a clean `@…`; and `multi_redirect_missing` pins a chain of several hops). The missing-wiring
 leaf is pinned by the [`acceptable/wiring/missing-wiring/`](../../tests/ui/acceptable/wiring/missing-wiring)
 fixtures: `basic_missing_wiring` (a provider's `#[uses]` dependency on an unwired component → a
 `missing wiring` note over the transitive chain), `direct_missing_wiring` (a `check_components!` entry

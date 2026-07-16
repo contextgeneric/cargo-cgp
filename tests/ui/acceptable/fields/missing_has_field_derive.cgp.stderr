@@ -10,6 +10,6 @@ error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for co
                consumer trait impl `CanGreet` for context `Person`
                └── provider trait impl `Greeter` with context `Person` for provider `GreetHello`
                    └── trait impl `HasName` for `Person`
-                       └── field trait impl `HasField` with field `name` for `Person`
+                       └── accessor trait `HasField` with field `name` is not implemented for `Person`
 
 For more information about this error, try `rustc --explain E0277`.

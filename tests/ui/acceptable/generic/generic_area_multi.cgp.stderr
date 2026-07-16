@@ -9,6 +9,6 @@ error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea<u32, u64, bool>` i
                consumer trait impl `CanCalculateArea<u32, u64, bool>` for context `Rectangle`
                └── provider trait impl `AreaCalculator<u32, u64, bool>` with context `Rectangle` for provider `RectangleArea`
                    └── trait impl `HasWidth` for `Rectangle`
-                       └── field trait impl `HasField` with field `width` for `Rectangle`
+                       └── missing field `width` on `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

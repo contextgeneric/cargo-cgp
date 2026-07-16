@@ -10,6 +10,6 @@ error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemente
                └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<BaseArea>`
                    └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `BaseArea`
                        └── trait impl `HasBaseArea` for `Rectangle`
-                           └── field trait impl `HasField` with field `base_area` for `Rectangle`
+                           └── missing field `base_area` on `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

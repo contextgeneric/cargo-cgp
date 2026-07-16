@@ -7,9 +7,9 @@ error[E0277]: [CGP-E001] the consumer trait `CanMeasureA` is not implemented for
    = note: root cause: missing field `width_a` on `App`
            this is required through the dependency chain:
                consumer trait impl `CanMeasureA` for context `App`
-               └── provider trait impl `MeasurerA` with context `App` for provider `shapes_a::MeasureWidthA`
+               └── provider trait impl `MeasurerA` with context `App` for provider `MeasureWidthA`
                    └── trait impl `HasWidthA` for `App`
-                       └── field trait impl `HasField` with field `width_a` for `App`
+                       └── missing field `width_a` on `App`
 
 error[E0277]: [CGP-E001] the consumer trait `CanMeasureB` is not implemented for context `App`
   --> src/main.rs:87:9
@@ -20,8 +20,8 @@ error[E0277]: [CGP-E001] the consumer trait `CanMeasureB` is not implemented for
    = note: root cause: missing field `width_b` on `App`
            this is required through the dependency chain:
                consumer trait impl `CanMeasureB` for context `App`
-               └── provider trait impl `MeasurerB` with context `App` for provider `shapes_b::MeasureWidthB`
+               └── provider trait impl `MeasurerB` with context `App` for provider `MeasureWidthB`
                    └── trait impl `HasWidthB` for `App`
-                       └── field trait impl `HasField` with field `width_b` for `App`
+                       └── missing field `width_b` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

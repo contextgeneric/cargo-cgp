@@ -7,6 +7,6 @@ error[E0119]: [CGP-E007] component `ErrorTypeProviderComponent` on `App` is redi
 29 |         ErrorTypeProviderComponent: UseType<String>,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
    |
-   = help: wire the provider `UseType<std::string::String>` with the key `@cgp.core.error.ErrorTypeProviderComponent`
+   = help: wire the provider `UseType<String>` with the key `@cgp.core.error.ErrorTypeProviderComponent`
 
 For more information about this error, try `rustc --explain E0119`.

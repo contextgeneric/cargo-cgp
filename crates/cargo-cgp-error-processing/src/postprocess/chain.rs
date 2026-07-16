@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use crate::postprocess::missing_field::rewrite_missing_fields;
 use crate::postprocess::resugar_path::resugar_path;
 use crate::postprocess::resugar_symbol::resugar_symbol;
+use crate::postprocess::strip_modules::strip_module_paths;
 use crate::postprocess::strip_prefixes::strip_cgp_prefixes;
 
 /// Run the post-processing chain over one message string: strip CGP path prefixes, resugar
@@ -18,15 +19,24 @@ use crate::postprocess::strip_prefixes::strip_cgp_prefixes;
 /// context implements `HasField` for any field), which the caller computes once with
 /// [`context_has_hasfield_impls`](super::context_has_hasfield_impls) across every message
 /// before rewriting each.
-pub fn postprocess_message(text: &str, has_field_impls: bool) -> Option<String> {
+///
+/// `bare_paths` chooses the `Path!` form: a rewritten diagnostic (the tool constructed the message)
+/// shows a bare `@…` path, while an un-rewritten resugaring fallback shows the `Path!(@…)` macro
+/// form — so the caller passes `true` on the fallback and `false` on a rewrite.
+pub fn postprocess_message(text: &str, has_field_impls: bool, bare_paths: bool) -> Option<String> {
     let mut current: Cow<str> = Cow::Borrowed(text);
+    // Strip module qualifiers first (subsuming the CGP-prefix strip), so the resugaring stages
+    // below match the bare `Symbol`/`Chars`/`PathCons` names and the output carries no module noise.
+    if let Some(stripped) = strip_module_paths(&current) {
+        current = Cow::Owned(stripped);
+    }
     if let Some(stripped) = strip_cgp_prefixes(&current) {
         current = Cow::Owned(stripped);
     }
     if let Some(resugared) = resugar_symbol(&current) {
         current = Cow::Owned(resugared);
     }
-    if let Some(resugared) = resugar_path(&current) {
+    if let Some(resugared) = resugar_path(&current, !bare_paths) {
         current = Cow::Owned(resugared);
     }
     if let Some(rewritten) = rewrite_missing_fields(&current, has_field_impls) {

@@ -31,11 +31,16 @@
 //! Runs after [`resugar_symbol`](super::resugar_symbol), so a symbol segment is already in its
 //! `Symbol!("…")` surface form by the time this matches it.
 
-/// Rewrite every well-formed `PathCons<…>` spine in `text` to its `Path!(@…)` surface form,
-/// returning the rewritten text when any was rewritten (and `None` otherwise). A `PathCons<`
-/// that does not parse as an exact, round-trippable path is emitted unchanged and scanning
-/// resumes after it.
-pub fn resugar_path(text: &str) -> Option<String> {
+/// Rewrite every well-formed `PathCons<…>` spine in `text` to its surface path form, returning
+/// the rewritten text when any was rewritten (and `None` otherwise). A `PathCons<` that does not
+/// parse as an exact, round-trippable path is emitted unchanged and scanning resumes after it.
+///
+/// `wrap` chooses the form. A **rewrite** — a message the tool constructs, such as a typed
+/// resolution note or a coded header — wants the bare `@app.GreeterComponent`, since it reads as a
+/// path the message names, not a macro call. The **resugaring fallback** — an un-rewritten message
+/// where a raw type is being shown back in source form — wants the `Path!(@app.GreeterComponent)`
+/// macro form. So `wrap` is `false` in the rewrite paths and `true` in the fallback.
+pub fn resugar_path(text: &str, wrap: bool) -> Option<String> {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     let mut changed = false;
@@ -43,7 +48,7 @@ pub fn resugar_path(text: &str) -> Option<String> {
     while let Some(index) = rest.find("PathCons<") {
         out.push_str(&rest[..index]);
         let candidate = &rest[index..];
-        match parse_path(candidate) {
+        match parse_path(candidate, wrap) {
             Some((rendered, consumed)) => {
                 out.push_str(&rendered);
                 rest = &candidate[consumed..];
@@ -64,7 +69,7 @@ pub fn resugar_path(text: &str) -> Option<String> {
 /// render it as `Path!(@…)`, returning that and the bytes consumed. `None` on any spine that
 /// is not `PathCons` all the way down to a `Nil` or an open `_` tail, or whose segments do
 /// not round-trip through `Path!`. An open `_` tail renders as a trailing `.*` wildcard.
-fn parse_path(input: &str) -> Option<(String, usize)> {
+fn parse_path(input: &str, wrap: bool) -> Option<(String, usize)> {
     let after_open = input.strip_prefix("PathCons<")?;
     let (head, tail, inner_len) = scan_head_tail(after_open)?;
     let consumed = "PathCons<".len() + inner_len;
@@ -98,7 +103,9 @@ fn parse_path(input: &str) -> Option<(String, usize)> {
         tail = tail_tail.trim();
     }
 
-    let mut rendered = String::from("Path!(@");
+    // A rewrite shows the bare `@…` path; the resugaring fallback wraps it as the `Path!(@…)`
+    // macro form.
+    let mut rendered = String::from(if wrap { "Path!(@" } else { "@" });
     for (index, segment) in segments.iter().enumerate() {
         if index > 0 {
             rendered.push('.');
@@ -110,7 +117,9 @@ fn parse_path(input: &str) -> Option<(String, usize)> {
     if open_tailed {
         rendered.push_str(".*");
     }
-    rendered.push(')');
+    if wrap {
+        rendered.push(')');
+    }
     Some((rendered, consumed))
 }
 

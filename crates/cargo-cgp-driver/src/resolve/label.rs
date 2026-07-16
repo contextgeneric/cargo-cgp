@@ -5,9 +5,9 @@
 //! [`DependencyTree`] spine that the [wording](cargo_cgp_error_processing::diagnosis) renders as
 //! `cargo tree`-style text.
 
+use cargo_cgp_error_processing::ComponentTraitNames;
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::tree::DependencyTree;
-use cargo_cgp_error_processing::{ComponentTraitNames, missing_delegate_entry};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{
@@ -15,7 +15,7 @@ use crate::config::{
     HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT, REDIRECT_LOOKUP_TYPE,
 };
 use crate::resolve::cgp_item::{
-    decode_symbol, is_cgp_item, is_namespace_lookup_trait, is_path_cons, is_provider_trait,
+    decode_symbol, is_cgp_item, is_namespace_lookup_trait, is_provider_trait,
 };
 
 /// The human-readable label for one predicate in a dependency path, replacing each CGP wiring
@@ -26,16 +26,14 @@ use crate::resolve::cgp_item::{
 ///
 /// A `RedirectLookup<Ctx, Path>` provider is not a real provider impl but a namespace/`open`
 /// redirection, so its `IsProviderFor` node reads as `redirect lookup to \`Path\` in \`Ctx\``; a
-/// chain of them reads as its successive hops. The terminal of such a chain — an unmet namespace
-/// lookup — and an unmet `DelegateComponent<Marker>` on the context both read as
-/// `context \`Ctx\` does not contain any delegate entry for \`key\``, the shared
-/// [`missing_delegate_entry`] form (the redirect key is the path, the plain key the marker).
+/// chain of them reads as its successive hops. The missing-delegate leaf such a chain bottoms out
+/// on is not rendered here — the caller ([`resolve_leaves`](super::walk::resolve_leaves)) re-states
+/// the root cause as the tree's terminal leaf.
 ///
-/// The steps that carry no information for a reader are dropped so the chain stays legible: an
-/// `IsProviderFor` for the *context itself* (the delegation routing, as opposed to the real
-/// provider), a provider trait applied directly (which every `IsProviderFor` node already stands
-/// for), and a `DelegateComponent` on any type *other* than the context (a provider that delegates
-/// directly).
+/// The steps that carry no information for a reader return `None` and are dropped so the chain
+/// stays legible: an `IsProviderFor` for the *context itself* (the delegation routing, as opposed
+/// to the real provider), the `DelegateComponent` table lookup, a namespace lookup, and a provider
+/// trait applied directly (which every `IsProviderFor` node already stands for).
 pub(crate) fn label_for<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitPredicate<'tcx>,
@@ -80,33 +78,14 @@ pub(crate) fn label_for<'tcx>(
             "field trait impl `HasField` with field `{field}` for `{}`",
             trait_ref.self_ty()
         ))
-    } else if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE) {
-        // A `DelegateComponent<Marker>` unmet **on the context** is the terminal of a missing-wiring
-        // chain: state the missing entry, in the same form the redirect terminal uses. On any other
-        // `Self` it is routing plumbing (a provider that delegates directly), dropped.
-        if tcx.erase_and_anonymize_regions(trait_ref.self_ty()) != context {
-            return None;
-        }
-        let marker = trait_ref.args.type_at(1);
-        // A `DelegateComponent` whose key is a redirect *path* (`PathCons`) is the plumbing behind a
-        // namespace lookup, so drop it — the namespace-lookup terminal states the same missing entry
-        // with the readable `Path!(@…)`. Only a real component-marker key is a missing-wiring leaf.
-        if is_path_cons(tcx, marker) {
-            return None;
-        }
-        Some(missing_delegate_entry(
-            &context.to_string(),
-            &marker_name(tcx, marker),
-        ))
-    } else if is_namespace_lookup_trait(tcx, did) {
-        // A namespace lookup trait unmet at the terminal (`Path: DefaultNamespace<Ctx>`) is the end
-        // of a redirect chain: the `Self` is the unterminated path, and the context carries no
-        // delegate entry for it — stated in the same form as the `DelegateComponent` terminal above.
-        Some(missing_delegate_entry(
-            &context.to_string(),
-            &trait_ref.self_ty().to_string(),
-        ))
-    } else if is_provider_trait(tcx, did) {
+    } else if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+        || is_namespace_lookup_trait(tcx, did)
+        || is_provider_trait(tcx, did)
+    {
+        // Plumbing that carries no information for a reader: the `DelegateComponent` table lookup,
+        // a namespace lookup, and a provider trait an `IsProviderFor` node already stands for. The
+        // missing-delegate leaf a wiring chain bottoms out on is re-stated as the tree's terminal
+        // by the caller (`resolve_leaves`), so dropping these here keeps the chain legible.
         None
     } else {
         Some(format!(
@@ -125,15 +104,6 @@ fn redirect_path<'tcx>(tcx: TyCtxt<'tcx>, provider: Ty<'tcx>) -> Option<Ty<'tcx>
         return None;
     };
     is_cgp_item(tcx, def.did(), REDIRECT_LOOKUP_TYPE, CGP_COMPONENT_CRATE).then(|| args.type_at(1))
-}
-
-/// The plain item name of a component marker (`BarProviderComponent`) — the key a programmer writes
-/// in a `delegate_components!` entry — or the marker's printed form when it is not an ADT.
-fn marker_name(tcx: TyCtxt<'_>, marker: Ty<'_>) -> String {
-    match marker.kind() {
-        ty::Adt(def, _) => tcx.item_name(def.did()).to_string(),
-        _ => marker.to_string(),
-    }
 }
 
 /// Fold a path's rendered labels into a single-spine dependency tree, root first.

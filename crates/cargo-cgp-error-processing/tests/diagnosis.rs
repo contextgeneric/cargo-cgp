@@ -138,10 +138,10 @@ fn plans_a_missing_redirect_wiring_check_failure() {
     let tree = DependencyTree::node(
         "consumer trait impl `HasQuantityType` for context `App`",
         vec![DependencyTree::node(
-            "redirect lookup to `Path!(@app.finance.types.QuantityTypeProviderComponent)` in `App`",
+            "redirect lookup to `@app.finance.types.QuantityTypeProviderComponent` in `App`",
             vec![DependencyTree::leaf(
                 "context `App` does not contain any delegate entry for \
-                 `Path!(@app.finance.types.QuantityTypeProviderComponent)`",
+                 `@app.finance.types.QuantityTypeProviderComponent`",
             )],
         )],
     );
@@ -150,7 +150,7 @@ fn plans_a_missing_redirect_wiring_check_failure() {
         consumers: vec!["HasQuantityType".to_owned()],
         causes: vec![Cause {
             leaf: Leaf::MissingRedirectWiring {
-                path: "Path!(@app.finance.types.QuantityTypeProviderComponent)".to_owned(),
+                path: "@app.finance.types.QuantityTypeProviderComponent".to_owned(),
                 context: "App".to_owned(),
             },
             tree,
@@ -165,12 +165,12 @@ fn plans_a_missing_redirect_wiring_check_failure() {
         plan.notes,
         vec![String::from(
             "root cause: context `App` does not contain any delegate entry for \
-             `Path!(@app.finance.types.QuantityTypeProviderComponent)`\n\
+             `@app.finance.types.QuantityTypeProviderComponent`\n\
              this is required through the dependency chain:\n\
              \x20   consumer trait impl `HasQuantityType` for context `App`\n\
-             \x20   └── redirect lookup to `Path!(@app.finance.types.QuantityTypeProviderComponent)` in `App`\n\
+             \x20   └── redirect lookup to `@app.finance.types.QuantityTypeProviderComponent` in `App`\n\
              \x20       └── context `App` does not contain any delegate entry for \
-             `Path!(@app.finance.types.QuantityTypeProviderComponent)`"
+             `@app.finance.types.QuantityTypeProviderComponent`"
         )]
     );
 }

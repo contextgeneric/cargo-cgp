@@ -14,10 +14,12 @@ mod chain;
 mod missing_field;
 mod resugar_path;
 mod resugar_symbol;
+mod strip_modules;
 mod strip_prefixes;
 
 pub use chain::*;
 pub use missing_field::*;
 pub use resugar_path::*;
 pub use resugar_symbol::*;
+pub use strip_modules::*;
 pub use strip_prefixes::*;

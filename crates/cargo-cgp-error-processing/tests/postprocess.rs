@@ -5,8 +5,78 @@
 
 use cargo_cgp_error_processing::{
     context_has_hasfield_impls, postprocess_message, resugar_path, resugar_symbol,
-    rewrite_missing_fields, strip_cgp_prefixes,
+    rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
 };
+
+#[test]
+fn resugars_a_path_bare_without_the_macro_wrapper() {
+    // With `wrap = false` (the rewrite form), a path shows as a bare `@…` rather than the
+    // `Path!(@…)` macro form the resugaring fallback uses.
+    assert_eq!(
+        resugar_path(
+            "RedirectLookup<App, PathCons<Symbol!(\"app\"), PathCons<GreeterComponent, Nil>>>",
+            false,
+        )
+        .as_deref(),
+        Some("RedirectLookup<App, @app.GreeterComponent>"),
+    );
+}
+
+#[test]
+fn resugars_an_open_tailed_path_bare() {
+    assert_eq!(
+        resugar_path(
+            "PathCons<Symbol!(\"foo\"), PathCons<Symbol!(\"bar\"), _>>",
+            false
+        )
+        .as_deref(),
+        Some("@foo.bar.*"),
+    );
+}
+
+#[test]
+fn strips_module_paths_to_the_final_segment() {
+    assert_eq!(
+        strip_module_paths(
+            "the trait `interfaces::api::ApiHandler` is not implemented for `contexts::app::MockApp`"
+        )
+        .as_deref(),
+        Some("the trait `ApiHandler` is not implemented for `MockApp`"),
+    );
+}
+
+#[test]
+fn strip_module_paths_keeps_generics_and_bare_names() {
+    // A qualified type inside generics is collapsed to its tail; a bare name and a primitive are
+    // left alone; a turbofish and an associated-type `>::Assoc` tail are not identifier runs.
+    assert_eq!(
+        strip_module_paths("std::option::Option<[u8]>").as_deref(),
+        Some("Option<[u8]>"),
+    );
+    assert_eq!(strip_module_paths("Rectangle"), None);
+    assert_eq!(strip_module_paths("f64"), None);
+    assert_eq!(
+        strip_module_paths("<Foo as a::b::Trait>::Value").as_deref(),
+        Some("<Foo as Trait>::Value"),
+    );
+}
+
+#[test]
+fn strip_module_paths_skips_string_literals() {
+    // A `::` inside a quoted literal is not a module path.
+    assert_eq!(strip_module_paths("Symbol!(\"a::b\")"), None);
+}
+
+#[test]
+fn strip_module_paths_preserves_multibyte_box_drawing() {
+    // The dependency tree's `└──` characters are multi-byte UTF-8; stripping a module path on the
+    // same line must copy them whole, never split them into invalid bytes.
+    assert_eq!(
+        strip_module_paths("    └── the trait bound `f64: std::cmp::Eq` is not satisfied")
+            .as_deref(),
+        Some("    └── the trait bound `f64: Eq` is not satisfied"),
+    );
+}
 
 #[test]
 fn strips_known_cgp_prefixes() {
@@ -78,7 +148,8 @@ fn resugars_a_symbol_and_type_path() {
     // already `Symbol!("app")`.
     assert_eq!(
         resugar_path(
-            "RedirectLookup<App, PathCons<Symbol!(\"app\"), PathCons<GreeterComponent, Nil>>>"
+            "RedirectLookup<App, PathCons<Symbol!(\"app\"), PathCons<GreeterComponent, Nil>>>",
+            true
         )
         .as_deref(),
         Some("RedirectLookup<App, Path!(@app.GreeterComponent)>"),
@@ -88,7 +159,7 @@ fn resugars_a_symbol_and_type_path() {
 #[test]
 fn resugars_a_single_segment_path() {
     assert_eq!(
-        resugar_path("PathCons<MyFooComponent, Nil>").as_deref(),
+        resugar_path("PathCons<MyFooComponent, Nil>", true).as_deref(),
         Some("Path!(@MyFooComponent)"),
     );
 }
@@ -102,7 +173,8 @@ fn resugars_a_module_qualified_type_segment_by_its_tail() {
     assert_eq!(
         resugar_path(
             "PathCons<Symbol!(\"app\"), PathCons<Symbol!(\"finance\"), \
-             PathCons<finance::QuantityTypeProviderComponent, Nil>>>"
+             PathCons<finance::QuantityTypeProviderComponent, Nil>>>",
+            true
         )
         .as_deref(),
         Some("Path!(@app.finance.QuantityTypeProviderComponent)"),
@@ -113,20 +185,20 @@ fn resugars_a_module_qualified_type_segment_by_its_tail() {
 fn resugar_path_skips_a_qualified_segment_with_a_lowercase_tail() {
     // A qualified tail that is lowercase and non-primitive is not a type `Path!` would keep;
     // it would have been a `Symbol`, so the segment does not round-trip and the path declines.
-    assert_eq!(resugar_path("PathCons<foo::bar, Nil>"), None);
+    assert_eq!(resugar_path("PathCons<foo::bar, Nil>", true), None);
 }
 
 #[test]
 fn resugar_path_skips_a_qualified_segment_with_generics() {
     // A `::`-path whose tail carries generics is not a plain identifier, so it declines.
-    assert_eq!(resugar_path("PathCons<foo::Bar<T>, Nil>"), None);
+    assert_eq!(resugar_path("PathCons<foo::Bar<T>, Nil>", true), None);
 }
 
 #[test]
 fn resugars_a_primitive_segment_as_a_type() {
     // A primitive segment is kept as the named type by `Path!`, so it round-trips bare.
     assert_eq!(
-        resugar_path("PathCons<u32, Nil>").as_deref(),
+        resugar_path("PathCons<u32, Nil>", true).as_deref(),
         Some("Path!(@u32)"),
     );
 }
@@ -137,7 +209,11 @@ fn resugars_an_open_tailed_path_as_a_wildcard() {
     // `_`. It resugars to a trailing `.*` wildcard segment — the form seen in the
     // conflicting-wiring E0119 blocks over a duplicated `@`-path key.
     assert_eq!(
-        resugar_path("PathCons<Symbol!(\"foo\"), PathCons<Symbol!(\"bar\"), _>>").as_deref(),
+        resugar_path(
+            "PathCons<Symbol!(\"foo\"), PathCons<Symbol!(\"bar\"), _>>",
+            true
+        )
+        .as_deref(),
         Some("Path!(@foo.bar.*)"),
     );
 }
@@ -145,7 +221,7 @@ fn resugars_an_open_tailed_path_as_a_wildcard() {
 #[test]
 fn resugars_a_single_segment_open_tailed_path() {
     assert_eq!(
-        resugar_path("PathCons<Symbol!(\"foo\"), _>").as_deref(),
+        resugar_path("PathCons<Symbol!(\"foo\"), _>", true).as_deref(),
         Some("Path!(@foo.*)"),
     );
 }
@@ -154,20 +230,20 @@ fn resugars_a_single_segment_open_tailed_path() {
 fn resugar_path_skips_a_non_nil_terminated_spine() {
     // A tail that is neither `Nil`, another `PathCons`, nor the open `_` placeholder is not a
     // path spine — a concrete type like `App` is a genuine mismatch, not an open tail.
-    assert_eq!(resugar_path("PathCons<GreeterComponent, App>"), None);
+    assert_eq!(resugar_path("PathCons<GreeterComponent, App>", true), None);
 }
 
 #[test]
 fn resugar_path_skips_an_uppercase_symbol_segment() {
     // `Path!` would never encode `Foo` (capitalized) as a `Symbol`, so a `Symbol!("Foo")`
     // head did not come from a path and must not be resugared to a lowercase-style segment.
-    assert_eq!(resugar_path("PathCons<Symbol!(\"Foo\"), Nil>"), None);
+    assert_eq!(resugar_path("PathCons<Symbol!(\"Foo\"), Nil>", true), None);
 }
 
 #[test]
 fn resugar_path_leaves_plain_text_alone() {
     assert_eq!(
-        resugar_path("the trait bound `Foo: Bar` is not satisfied"),
+        resugar_path("the trait bound `Foo: Bar` is not satisfied", true),
         None
     );
 }
@@ -178,7 +254,7 @@ fn postprocess_message_resugars_an_expanded_path() {
     // resugared to a symbol and then folded into a `Path!`.
     let text = "PathCons<Symbol<3, Chars<'a', Chars<'p', Chars<'p', Nil>>>>, PathCons<GreeterComponent, Nil>>";
     assert_eq!(
-        postprocess_message(text, false).as_deref(),
+        postprocess_message(text, false, false).as_deref(),
         Some("Path!(@app.GreeterComponent)"),
     );
 }
@@ -190,7 +266,7 @@ fn postprocess_message_resugars_an_open_tailed_path() {
     // Stripped, resugared to symbols, then folded into a wildcard `Path!`.
     let text = "PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'f', cgp::prelude::Chars<'o', cgp::prelude::Chars<'o', Nil>>>>, PathCons<Symbol<3, Chars<'b', Chars<'a', Chars<'r', Nil>>>>, _>>";
     assert_eq!(
-        postprocess_message(text, false).as_deref(),
+        postprocess_message(text, false, false).as_deref(),
         Some("Path!(@foo.bar.*)"),
     );
 }
@@ -255,7 +331,7 @@ fn postprocess_message_chains_the_transforms() {
     // stripped, resugared, then rewritten as a missing derive in one pass.
     let text = "the trait `HasField<cgp::prelude::Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', Chars<'h', Nil>>>>>>>` is not implemented for `Rectangle`";
     assert_eq!(
-        postprocess_message(text, false).as_deref(),
+        postprocess_message(text, false, false).as_deref(),
         Some("`#[derive(HasField)]` is required to access field `width` on `Rectangle`"),
     );
 }
@@ -263,7 +339,7 @@ fn postprocess_message_chains_the_transforms() {
 #[test]
 fn postprocess_message_leaves_plain_rust_alone() {
     assert_eq!(
-        postprocess_message("the trait bound `Foo: Bar` is not satisfied", false),
+        postprocess_message("the trait bound `Foo: Bar` is not satisfied", false, false),
         None,
     );
 }
