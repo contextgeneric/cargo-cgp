@@ -4,8 +4,8 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
 73 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<12, cgp::prelude::Chars<'s', cgp::prelude::Chars<'c', cgp::prelude::Chars<'a', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'f', cgp::prelude::Chars<'a', cgp::prelude::Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', Nil>>>>>>>>>>>>>>` is not implemented for `Rectangle`
-      but trait `HasField<Symbol<9, cgp::prelude::Chars<'b', cgp::prelude::Chars<'a', cgp::prelude::Chars<'s', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'a', cgp::prelude::Chars<'r', cgp::prelude::Chars<'e', cgp::prelude::Chars<'a', Nil>>>>>>>>>>>` is implemented for it
+help: the trait `HasField<Symbol<12, Chars<'s', Chars<'c', Chars<'a', Chars<'l', Chars<'e', Chars<'_', Chars<'f', Chars<'a', Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', Nil>>>>>>>>>>>>>>` is not implemented for `Rectangle`
+      but trait `HasField<Symbol<9, Chars<'b', Chars<'a', Chars<'s', Chars<'e', Chars<'_', Chars<'a', Chars<'r', Chars<'e', Chars<'a', Nil>>>>>>>>>>>` is implemented for it
   --> src/main.rs:56:10
    |
 56 | #[derive(HasField)]

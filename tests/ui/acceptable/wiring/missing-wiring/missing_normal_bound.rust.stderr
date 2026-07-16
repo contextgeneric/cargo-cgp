@@ -9,9 +9,11 @@ help: the trait `BarProvider<App>` is not implemented for `DoBar`
    |
 13 | #[cgp_impl(new DoBar)]
    |                ^^^^^
-help: the trait `BarProvider<__Context__>` is implemented for `DoBar`
+help: the trait `BarProvider<__Context__>` is conditionally implemented for `DoBar`
   --> src/main.rs:15:1
    |
+14 |   #[uses(Clone)]
+   |          ----- unsatisfied requirement introduced here: `App: Clone`
 15 | / impl BarProvider {
 16 | |     fn bar(&self) {}
 17 | | }

@@ -1,8 +1,8 @@
-error[E0271]: type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<'h', ...>>>>::Value == f64`
+error[E0271]: type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<'h', _>>>>::Value == f64`
   --> src/main.rs:55:9
    |
 55 |         AreaCalculatorComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<'h', ...>>>>::Value == f64`
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<'h', _>>>>::Value == f64`
    |
 note: expected this to be `f64`
   --> src/main.rs:44:17

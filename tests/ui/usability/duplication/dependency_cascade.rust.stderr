@@ -9,9 +9,14 @@ help: the trait `Bar<App>` is not implemented for `ProvideBar`
    |
 50 | #[cgp_impl(new ProvideBar)]
    |                ^^^^^^^^^^
-help: the trait `Bar<__Context__>` is implemented for `ProvideBar`
+help: the trait `Bar<__Context__>` is conditionally implemented for `ProvideBar`
   --> src/main.rs:52:1
    |
+51 |   #[uses(CanFoo)]
+   |          ------
+   |          |
+   |          unsatisfied requirement introduced here: `App: CanFoo`
+   |          unsatisfied requirement introduced here: `App: CanFoo`
 52 | / impl Bar {
 53 | |     fn bar(&self) {
 54 | |         self.foo();
@@ -61,13 +66,15 @@ help: the trait `Foo<App>` is not implemented for `ProvideFoo`
    |
 40 | #[cgp_impl(new ProvideFoo)]
    |                ^^^^^^^^^^
-help: the trait `Foo<__Context__>` is implemented for `ProvideFoo`
+help: the trait `Foo<__Context__>` is conditionally implemented for `ProvideFoo`
   --> src/main.rs:41:1
    |
 41 | / impl Foo
 42 | | where
 43 | |     Self: HasName,
-   | |__________________^
+   | |___________-------^
+   |             |
+   |             unsatisfied requirement introduced here: `App: HasName`
 note: required for `App` to implement `Foo<App>`
   --> src/main.rs:25:1
    |
@@ -122,8 +129,8 @@ error[E0277]: the trait bound `App: CanUseComponent<BazComponent>` is not satisf
 84 |         BazComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `App`
-      but trait `HasField<Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'g', cgp::prelude::Chars<'e', Nil>>>>>` is implemented for it
+help: the trait `HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `App`
+      but trait `HasField<Symbol<3, Chars<'a', Chars<'g', Chars<'e', Nil>>>>>` is implemented for it
   --> src/main.rs:66:10
    |
 66 | #[derive(HasField)]
@@ -197,13 +204,15 @@ help: the trait `Foo<App>` is not implemented for `ProvideFoo`
    |
 40 | #[cgp_impl(new ProvideFoo)]
    |                ^^^^^^^^^^
-help: the trait `Foo<__Context__>` is implemented for `ProvideFoo`
+help: the trait `Foo<__Context__>` is conditionally implemented for `ProvideFoo`
   --> src/main.rs:41:1
    |
 41 | / impl Foo
 42 | | where
 43 | |     Self: HasName,
-   | |__________________^
+   | |___________-------^
+   |             |
+   |             unsatisfied requirement introduced here: `App: HasName`
 note: required for `App` to implement `Foo<App>`
   --> src/main.rs:25:1
    |
@@ -242,8 +251,8 @@ error[E0277]: the trait bound `App: CanUseComponent<BarComponent>` is not satisf
 85 |         BarComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `App`
-      but trait `HasField<Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'g', cgp::prelude::Chars<'e', Nil>>>>>` is implemented for it
+help: the trait `HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `App`
+      but trait `HasField<Symbol<3, Chars<'a', Chars<'g', Chars<'e', Nil>>>>>` is implemented for it
   --> src/main.rs:66:10
    |
 66 | #[derive(HasField)]
@@ -298,8 +307,8 @@ error[E0277]: the trait bound `App: CanUseComponent<FooComponent>` is not satisf
 86 |         FooComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `App`
-      but trait `HasField<Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'g', cgp::prelude::Chars<'e', Nil>>>>>` is implemented for it
+help: the trait `HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `App`
+      but trait `HasField<Symbol<3, Chars<'a', Chars<'g', Chars<'e', Nil>>>>>` is implemented for it
   --> src/main.rs:66:10
    |
 66 | #[derive(HasField)]

@@ -15,8 +15,8 @@ help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
 57 | #[derive(HasField)]
    |          ^^^^^^^^
    |          |
-   |          `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', Chars<'s', Nil>>>>>>`
-   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', ...>>>>>>`
+   |          `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', Chars<'s', _>>>>>>`
+   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', _>>>>>>`
 note: required for `Rectangle` to implement `HasRectangleFields`
   --> src/main.rs:25:1
    |
@@ -56,13 +56,15 @@ help: the trait `AreaCalculator<Rectangle>` is not implemented for `RectangleAre
    |
 37 | #[cgp_impl(new RectangleArea)]
    |                ^^^^^^^^^^^^^
-help: the trait `AreaCalculator<__Context__>` is implemented for `RectangleArea`
+help: the trait `AreaCalculator<__Context__>` is conditionally implemented for `RectangleArea`
   --> src/main.rs:38:1
    |
 38 | / impl AreaCalculator
 39 | | where
 40 | |     Self: HasRectangleFields,
-   | |_____________________________^
+   | |___________------------------^
+   |             |
+   |             unsatisfied requirement introduced here: `Rectangle: HasRectangleFields`
 note: required for `Rectangle` to implement `AreaCalculator<Rectangle>`
   --> src/main.rs:15:1
    |
@@ -113,8 +115,8 @@ help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
 57 | #[derive(HasField)]
    |          ^^^^^^^^
    |          |
-   |          `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', Chars<'s', Nil>>>>>>`
-   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', ...>>>>>>`
+   |          `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', Chars<'s', _>>>>>>`
+   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', _>>>>>>`
 note: required for `Rectangle` to implement `HasRectangleFields`
   --> src/main.rs:25:1
    |

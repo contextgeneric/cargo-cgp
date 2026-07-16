@@ -9,6 +9,6 @@
 # the toolchain used to build this tool. A project being checked keeps its own
 # toolchain — cargo-cgp only wraps the compiler cargo already selects for it.
 [toolchain]
-channel    = "nightly-2026-07-02"
+channel    = "nightly-2026-07-16"
 components = ["rustc-dev", "llvm-tools"]
 profile    = "minimal"

@@ -4,8 +4,8 @@ error[E0277]: the trait bound `Person: CanUseComponent<GreeterComponent>` is not
 55 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `Person`
-      but trait `HasField<Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'g', cgp::prelude::Chars<'e', Nil>>>>>` is implemented for it
+help: the trait `HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `Person`
+      but trait `HasField<Symbol<3, Chars<'a', Chars<'g', Chars<'e', Nil>>>>>` is implemented for it
   --> src/main.rs:41:10
    |
 41 | #[derive(HasField)]

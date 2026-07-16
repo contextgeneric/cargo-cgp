@@ -9,13 +9,15 @@ help: the trait `AreaCalculator<Rectangle>` is not implemented for `BaseArea`
    |
 38 | #[cgp_impl(new BaseArea)]
    |                ^^^^^^^^
-help: the trait `AreaCalculator<__Context__>` is implemented for `BaseArea`
+help: the trait `AreaCalculator<__Context__>` is conditionally implemented for `BaseArea`
   --> src/main.rs:39:1
    |
 39 | / impl AreaCalculator
 40 | | where
 41 | |     Self: HasBaseArea,
-   | |______________________^
+   | |___________-----------^
+   |             |
+   |             unsatisfied requirement introduced here: `Rectangle: HasBaseArea`
 note: required for `ScaledArea<BaseArea>` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
   --> src/main.rs:48:1
    |
@@ -39,8 +41,8 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
 75 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<9, cgp::prelude::Chars<'b', cgp::prelude::Chars<'a', cgp::prelude::Chars<'s', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'a', cgp::prelude::Chars<'r', cgp::prelude::Chars<'e', cgp::prelude::Chars<'a', Nil>>>>>>>>>>>` is not implemented for `Rectangle`
-      but trait `HasField<Symbol<12, cgp::prelude::Chars<'s', cgp::prelude::Chars<'c', cgp::prelude::Chars<'a', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'f', cgp::prelude::Chars<'a', cgp::prelude::Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', Nil>>>>>>>>>>>>>>` is implemented for it
+help: the trait `HasField<Symbol<9, Chars<'b', Chars<'a', Chars<'s', Chars<'e', Chars<'_', Chars<'a', Chars<'r', Chars<'e', Chars<'a', Nil>>>>>>>>>>>` is not implemented for `Rectangle`
+      but trait `HasField<Symbol<12, Chars<'s', Chars<'c', Chars<'a', Chars<'l', Chars<'e', Chars<'_', Chars<'f', Chars<'a', Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', Nil>>>>>>>>>>>>>>` is implemented for it
   --> src/main.rs:59:10
    |
 59 | #[derive(HasField)]

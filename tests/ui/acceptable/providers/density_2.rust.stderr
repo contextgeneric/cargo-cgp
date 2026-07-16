@@ -9,14 +9,17 @@ help: the trait `AreaCalculator<Rectangle>` is not implemented for `ScaledArea<R
    |
 48 | #[cgp_impl(new ScaledArea<InnerCalculator>)]
    |                ^^^^^^^^^^
-help: the trait `AreaCalculator<__Context__>` is implemented for `ScaledArea<InnerCalculator>`
+help: the trait `AreaCalculator<__Context__>` is conditionally implemented for `ScaledArea<InnerCalculator>`
   --> src/main.rs:49:1
    |
 49 | / impl<InnerCalculator> AreaCalculator
 50 | | where
 51 | |     Self: HasScaleFactor,
+   | |           -------------- unsatisfied requirement introduced here: `Rectangle: HasScaleFactor`
 52 | |     InnerCalculator: AreaCalculator<Self>,
-   | |__________________________________________^
+   | |______________________--------------------^
+   |                        |
+   |                        unsatisfied requirement introduced here: `RectangleArea: AreaCalculator<Rectangle>`
 note: required for `Rectangle` to implement `AreaCalculator<Rectangle>`
   --> src/main.rs:16:1
    |
@@ -60,13 +63,15 @@ help: the trait `AreaCalculator<Rectangle>` is not implemented for `RectangleAre
    |
 33 | #[cgp_impl(new RectangleArea)]
    |                ^^^^^^^^^^^^^
-help: the trait `AreaCalculator<__Context__>` is implemented for `RectangleArea`
+help: the trait `AreaCalculator<__Context__>` is conditionally implemented for `RectangleArea`
   --> src/main.rs:34:1
    |
 34 | / impl AreaCalculator
 35 | | where
 36 | |     Self: HasRectangleFields,
-   | |_____________________________^
+   | |___________------------------^
+   |             |
+   |             unsatisfied requirement introduced here: `Rectangle: HasRectangleFields`
 note: required for `ScaledArea<RectangleArea>` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
   --> src/main.rs:48:1
    |
@@ -120,8 +125,8 @@ help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
 74 | #[derive(HasField)]
    |          ^^^^^^^^
    |          |
-   |          `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', Chars<'s', Nil>>>>>>`
-   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', ...>>>>>>`
+   |          `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', Chars<'s', _>>>>>>`
+   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', _>>>>>>`
 note: required for `Rectangle` to implement `HasScaleFactor`
   --> src/main.rs:43:1
    |
