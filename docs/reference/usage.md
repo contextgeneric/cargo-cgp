@@ -118,9 +118,97 @@ setups. They are summarized here; the full contract is in
 - `CARGO_TARGET_DIR` / `--target-dir` — choose the check's target directory instead of the default
   `target/cgp`.
 
+## Calling the driver directly (debugging)
+
+You normally never invoke `cargo-cgp-driver` yourself — the front-end wires it in as cargo's rustc
+wrapper, and cargo calls it once per workspace crate. But when `cargo cgp check` misbehaves, calling
+the driver directly is how you tell a front-end wiring problem apart from a driver or compiler one,
+because it takes cargo and the front-end out of the loop.
+
+Start with the version query, which doubles as a load test:
+
+```sh
+cargo-cgp-driver --version   # or -V
+```
+
+The driver links `librustc_driver` dynamically and loads it before printing, so this is the quickest
+confirmation that the binary can run at all. On success it prints three lines — its own version, the
+`pinned-toolchain:` it targets, and the `built-against-rustc:` compiler it was actually built with:
+
+```text
+cargo-cgp-driver 0.1.0
+pinned-toolchain: nightly-2026-07-16
+built-against-rustc: rustc 1.99.0-nightly (d0babd8b6 2026-07-15)
+```
+
+A failure *before* that output — typically `error while loading shared libraries:
+librustc_driver-<hash>.so: cannot open shared object file` — means the loader cannot find the
+compiler library, either because the dynamic-library path is not set or because the driver was built
+against a different nightly than the one installed. A Nix-built driver has that path baked into its
+wrapper, so `--version` works as-is; a from-source driver needs the pinned toolchain's `lib` directory
+on the loader path, which is what the front-end normally sets for it (`DYLD_FALLBACK_LIBRARY_PATH` on
+macOS, `LD_LIBRARY_PATH` elsewhere):
+
+```sh
+SYSROOT=$(rustc --print sysroot)                        # run under the pinned toolchain
+LD_LIBRARY_PATH=$SYSROOT/lib cargo-cgp-driver --version
+```
+
+When the driver comes from the [Nix flake](installation.md#installing-with-nix), run it through the
+flake instead, which needs no library-path setup at all — the flake bakes that path into the driver's
+wrapper. Bring the tool onto `PATH` in a throwaway shell (preferring a local checkout, as everywhere)
+and call the driver there:
+
+```sh
+nix shell /path/to/the/local/cargo-cgp -c cargo-cgp-driver --version
+```
+
+or build the package once and run the binary out of the result:
+
+```sh
+nix build /path/to/the/local/cargo-cgp   # then:
+./result/bin/cargo-cgp-driver --version
+```
+
+There is no `nix run` app for the driver — it is a second binary of the same package as the front-end,
+so it is reached through `nix shell` or the built `result/bin`, not `nix run …#cargo-cgp-driver`. The
+baked-in library path covers the load test above; to replay a full *compilation* with the Nix driver
+you still supply the sysroot (`CARGO_CGP_SYSROOT`) as in the reproduction below, and for that case
+running the whole check through the flake (`nix run … -- check -v`, above) is usually easier.
+
+To debug an actual compilation, reproduce the exact command cargo hands the driver rather than
+building one by hand. Run the failing check verbosely and cargo prints each driver invocation in full:
+
+```sh
+cargo cgp check -v
+```
+
+Each `Running …` line — showing a full `cargo-cgp-driver … rustc --crate-name …` command — is a
+complete, replayable invocation. (If none prints, the crate was cached; touch a source file or clean `target/cgp` to force a
+recompile.) Copy one and run it directly, with the two environment values the front-end passes
+reconstructed — the sysroot, which the driver reads from `CARGO_CGP_SYSROOT` to inject `--sysroot`,
+and the library path above:
+
+```sh
+SYSROOT=$(rustc --print sysroot)
+LD_LIBRARY_PATH=$SYSROOT/lib CARGO_CGP_SYSROOT=$SYSROOT \
+  cargo-cgp-driver /path/to/rustc --crate-name … <the rest of the printed args>
+```
+
+Run this way the driver behaves exactly as it does under cargo — it drops the leading `rustc` path
+(that leading path is what puts it in "wrapper mode"), injects `--sysroot`, `-Znext-solver=globally`,
+and `--verbose`, then runs the real compiler in-process — but now in isolation, where you can add
+`RUST_BACKTRACE=1`, extra `-Z` flags, or a debugger to watch the transform. Dropping the leading
+`rustc` path instead runs the driver in its *direct* mode, the mode `--version` uses; the
+wrapper-mode form above is the one to copy from `-v` output. How the driver prepares its argument
+vector and reaches the compiler is documented in
+[The driver](../implementation/driver.md#preparing-the-argument-vector).
+
 ## Further reading
 
 - [Installation](installation.md) — installing and updating the tool.
 - [CGP error codes](../error-code.md) — the catalog of the `[CGP-Exxx]` codes in the output.
 - [Distribution](../implementation/distribution.md) — the design behind the check's toolchain
   forcing, the isolated target directory, and the Rust Analyzer integration.
+- [The driver](../implementation/driver.md) — how the driver wraps rustc and transforms diagnostics,
+  for when direct invocation surfaces a driver-side problem.

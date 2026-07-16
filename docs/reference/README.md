@@ -41,7 +41,14 @@ Analyzer check backend and running it against a project outside this repository 
 preferring a local `cargo-cgp` checkout over a published release — along with the environment
 variables that override its default behavior.
 
-The tool is at an early stage, so both documents describe what exists now and note plainly where a
+When a run goes wrong, [troubleshooting.md](troubleshooting.md) is the diagnostic companion to the
+other two. Because the tool is two binaries plus a pinned compiler in separate locations, a failure
+can sit at any of several seams — the front-end not finding the driver, the driver not loading the
+compiler library, a toolchain or version mismatch, or the check being run in the wrong place — and
+the document pairs the exact error message each failure prints with its cause and fix, so an agent can
+match a symptom and act rather than guess.
+
+The tool is at an early stage, so the documents describe what exists now and note plainly where a
 path is intended but not yet available. For the reasoning *behind* the behavior these documents
 describe — why the toolchain is pinned, how the two binaries stay in lockstep, how the driver reaches
 the compiler — follow the links into the [implementation/](../implementation/README.md) category,
@@ -63,3 +70,9 @@ document, register it here in the same change.
   transformed output and its `[CGP-Exxx]` codes, using the tool as a Rust Analyzer check backend,
   running it on a project outside this repository through Nix (preferring a local checkout), and the
   environment variables that override its behavior.
+- [Troubleshooting](troubleshooting.md) — how to diagnose a `cargo-cgp` that will not run. Covers
+  isolating the failing seam (the driver `--version` load test, `cargo cgp check -v`) and the common
+  failures with the exact error each prints — command and cargo-project errors, the front-end failing
+  to find the driver, the driver failing to load `librustc_driver` (unset library path or a toolchain
+  mismatch), the managed preflight's toolchain/driver/version verdicts, and a missing rustup — plus a
+  symptom-to-section index.
