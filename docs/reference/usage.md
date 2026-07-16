@@ -18,7 +18,19 @@ cargo cgp check
 Every argument after `check` is forwarded verbatim to `cargo check`, so the flags you already use
 work unchanged — `cargo cgp check --workspace`, `cargo cgp check -p my-crate`, `cargo cgp check -v`.
 The command also runs directly as `cargo-cgp check` when you have not installed it as a cargo
-subcommand.
+subcommand. For a summary of the available commands, run `cargo cgp --help` (or `cargo cgp` with no
+subcommand at all, which prints the same overview).
+
+cargo-cgp does not interpret those forwarded flags itself — it appends them to `cargo check` and lets
+cargo own them. Three consequences follow. Every `cargo check` flag works exactly as it does under a
+plain `cargo check`, since that is literally what runs. **cargo**, not cargo-cgp, validates them, so an
+unknown flag produces cargo's own error (`error: unexpected argument '--nope' found`), not a cargo-cgp
+message. And `cargo cgp check --help` prints `cargo check`'s own help and exits *without* running a
+check — the flag is forwarded like any other, so what you see is cargo's flag list under a
+`Usage: cargo check [OPTIONS]` banner, and the driver never runs. The one flag cargo-cgp inspects is
+`--target-dir`, which it looks for only to decide whether to inject its own default (below); every
+other flag it passes through untouched. (The pinned toolchain and the injected diagnostic flags in the
+next paragraph are applied *around* this forwarding, not by altering the flags you pass.)
 
 A check differs from a plain `cargo check` in three deliberate ways, all handled for you. It compiles
 your workspace under the tool's own **pinned nightly** rather than your project's toolchain, so the
@@ -132,8 +144,10 @@ cargo-cgp-driver --version   # or -V
 ```
 
 The driver links `librustc_driver` dynamically and loads it before printing, so this is the quickest
-confirmation that the binary can run at all. On success it prints three lines — its own version, the
-`pinned-toolchain:` it targets, and the `built-against-rustc:` compiler it was actually built with:
+confirmation that the binary can run at all. (`cargo-cgp-driver --help`, `-h`, or a bare invocation
+with no arguments prints a short description of the driver and these same flags instead.) On success
+`--version` prints three lines — its own version, the `pinned-toolchain:` it targets, and the
+`built-against-rustc:` compiler it was actually built with:
 
 ```text
 cargo-cgp-driver 0.1.0

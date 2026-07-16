@@ -18,6 +18,13 @@ fn unknown_subcommand_errors() {
 }
 
 #[test]
-fn missing_subcommand_errors() {
-    assert!(dispatch(&[]).is_err());
+fn no_subcommand_shows_help() {
+    // A bare `cargo cgp` prints the help and succeeds rather than erroring.
+    assert_eq!(dispatch(&[]).unwrap(), 0);
+}
+
+#[test]
+fn help_flag_shows_help() {
+    assert_eq!(dispatch(&args(&["--help"])).unwrap(), 0);
+    assert_eq!(dispatch(&args(&["-h"])).unwrap(), 0);
 }

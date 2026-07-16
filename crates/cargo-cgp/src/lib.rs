@@ -12,6 +12,7 @@
 pub mod args;
 pub mod check;
 pub mod config;
+pub mod help;
 pub mod run;
 pub mod setup;
 pub mod toolchain;

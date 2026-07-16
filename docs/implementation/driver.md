@@ -30,6 +30,13 @@ called by the thin [`bin/cargo-cgp-driver.rs`](../../crates/cargo-cgp-driver/bin
 wrapper; it reads the sysroot from the environment, prepares the argument vector, and runs the
 compiler.
 
+A *direct* (non-wrapper) invocation is handled before any of that: `--help`/`-h` or no arguments
+prints the driver's help ([`help`](../../crates/cargo-cgp-driver/src/help.rs)) and `--version`/`-V`
+prints its version handshake ([`version`](../../crates/cargo-cgp-driver/src/version.rs)), then the
+driver exits. These are gated on *not* being in wrapper mode, because in wrapper mode the same flags
+belong to the real compiler cargo is probing — so cargo's `rustc --version`/`--help` still reach the
+compiler untouched.
+
 ## Preparing the argument vector
 
 Before handing control to the compiler, [`args::rustc_args`](../../crates/cargo-cgp-driver/src/args.rs)

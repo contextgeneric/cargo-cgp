@@ -41,6 +41,7 @@ pub mod callbacks;
 pub mod component_map;
 pub mod config;
 pub mod emitter;
+pub mod help;
 pub mod resolve;
 pub mod run;
 pub mod version;

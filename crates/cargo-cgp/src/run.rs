@@ -7,6 +7,7 @@ use anyhow::bail;
 use crate::args::strip_subcommand;
 use crate::check::run_check;
 use crate::config::CARGO_SUBCOMMAND;
+use crate::help::{help_text, is_help_flag};
 use crate::setup::run_setup;
 use crate::update::run_update;
 
@@ -20,8 +21,19 @@ pub fn run() -> anyhow::Result<i32> {
 
 /// Route already-normalized arguments (`["check", ...]`) to a subcommand handler. Split
 /// out from [`run`] so dispatch can be tested without touching the real environment.
+///
+/// A leading `--help`/`-h`, or no subcommand at all, prints the [`help_text`] and succeeds,
+/// so a bare `cargo cgp` is a friendly overview rather than an error.
 pub fn dispatch(args: &[String]) -> anyhow::Result<i32> {
     match args.split_first() {
+        None => {
+            println!("{}", help_text());
+            Ok(0)
+        }
+        Some((flag, _)) if is_help_flag(flag) => {
+            println!("{}", help_text());
+            Ok(0)
+        }
         Some((subcommand, rest)) if subcommand == "check" => run_check(rest),
         Some((subcommand, rest)) if subcommand == "setup" => run_setup(rest),
         Some((subcommand, rest)) if subcommand == "update" => run_update(rest),
@@ -30,6 +42,5 @@ pub fn dispatch(args: &[String]) -> anyhow::Result<i32> {
                 "unknown cargo-cgp subcommand `{subcommand}` (expected `check`, `setup`, or `update`)"
             )
         }
-        None => bail!("missing subcommand (expected `cargo-cgp check`, `setup`, or `update`)"),
     }
 }

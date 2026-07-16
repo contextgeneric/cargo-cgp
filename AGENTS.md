@@ -166,7 +166,8 @@ that only repeats the code.
 
 The front-end (`crates/cargo-cgp/src`) is organized around dispatch and three subcommands.
 `run.rs` is the entrypoint that normalizes arguments and dispatches on the subcommand (`check`,
-`setup`, `update`); `args.rs` strips the cargo-inserted `cgp` token so the same entrypoint serves both
+`setup`, `update`), printing `help.rs`'s help text for a leading `--help`/`-h` or no subcommand;
+`args.rs` strips the cargo-inserted `cgp` token so the same entrypoint serves both
 `cargo cgp check` and a direct `cargo-cgp check`; `config.rs` holds the shared well-known names,
 including the build-time-baked `PINNED_TOOLCHAIN` (from `build.rs`) and the management environment
 variables; `toolchain.rs` resolves the effective pinned toolchain and queries its `rustc`. The
@@ -184,9 +185,10 @@ and the `setup`/`update` flow — is documented in
 [Distribution](docs/implementation/distribution.md).
 
 The driver (`crates/cargo-cgp-driver/src`) is organized around the compiler wrapping and the
-diagnostic transform. `run.rs` is the entrypoint that runs the compiler through `rustc_driver`;
-`args.rs` turns the wrapper's process arguments into a rustc argument vector (dropping the injected
-`rustc` path and injecting `--sysroot`); `callbacks.rs` holds the `Callbacks` implementation, whose
+diagnostic transform. `run.rs` is the entrypoint that runs the compiler through `rustc_driver`,
+answering a direct (non-wrapper) `--help`/`-h`/no-args from `help.rs` and `--version`/`-V` from
+`version.rs` before compiling; `args.rs` turns the wrapper's process arguments into a rustc argument
+vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds the `Callbacks` implementation, whose
 `config` hook installs the diagnostic-transforming emitter; `config.rs` holds the shared names and
 the injected flags. The transform is split across two directories. `emitter/` is the `CgpEmitter<E>`
 seam: `install.rs` rebuilds whichever inner emitter the compiler's default would build — a

@@ -47,7 +47,9 @@ cargo-cgp check --workspace   →  cargo-cgp       check --workspace   (invoked 
 subcommands exist: `check` (below), `setup` (provision the pinned toolchain and driver), and `update`
 (upgrade the tool) — the latter two are covered in [Distribution](distribution.md). Anything after
 `check` is forwarded verbatim to `cargo check`, so `cargo cgp check -v` and `cargo cgp check
---workspace` behave as expected.
+--workspace` behave as expected. A leading `--help`/`-h`, or no subcommand at all, prints the
+front-end help text ([`help::help_text`](../../crates/cargo-cgp/src/help.rs)) and exits successfully,
+so a bare `cargo cgp` is a friendly overview rather than an error.
 
 [`check::run_check`](../../crates/cargo-cgp/src/check/command.rs) then builds and runs the wrapped
 command. It sets `RUSTC_WORKSPACE_WRAPPER` to the driver's path — located by
