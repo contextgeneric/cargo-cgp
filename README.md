@@ -42,17 +42,19 @@ authoritative Cargo and rustc references — see
 
 ## Installing
 
-`cargo-cgp` is installed through cargo in two steps: install the front-end, then let it provision the
-pinned toolchain and the driver.
+The intended install is through cargo in two steps — install the front-end, then let it provision the
+pinned toolchain and the driver — with `cargo cgp update` to upgrade later:
 
 ```sh
 cargo install cargo-cgp      # installs the front-end (builds on any toolchain)
 cargo cgp setup              # installs the pinned nightly + driver, in lockstep
 ```
 
-`cargo cgp update` upgrades the tool later: it reinstalls the front-end when a newer version is
-published and re-runs `setup` for the matching driver. The full design is in
-[docs/implementation/distribution.md](docs/implementation/distribution.md).
+The current two-binary design is not yet published to crates.io, so today you install from the
+[Nix flake](docs/reference/installation.md#installing-with-nix) or
+[from source](docs/reference/installation.md#installing-from-source). Full instructions for every
+path, and updating, are in [docs/reference/installation.md](docs/reference/installation.md); the
+design behind them is in [docs/implementation/distribution.md](docs/implementation/distribution.md).
 
 ## Building and running
 
@@ -72,7 +74,8 @@ CARGO_CGP_NO_MANAGE=1 CARGO_CGP_DRIVER=$PWD/target/debug/cargo-cgp-driver \
 
 Any arguments after `check` are forwarded verbatim to `cargo check`, so `cargo cgp check -v` or
 `cargo cgp check --workspace` work as expected. The command can also be run directly as
-`cargo-cgp check`.
+`cargo-cgp check`. How to use the command, read its output, and wire it into an editor is in
+[docs/reference/usage.md](docs/reference/usage.md).
 
 ## Testing
 

@@ -288,27 +288,23 @@ test setup changes.
 
 ### Checking a CGP project elsewhere with Nix
 
-To see the tool's real output on CGP source *outside* this repository, run the local build through
-Nix rather than provisioning a nightly by hand. The [`flake.nix`](flake.nix) builds both binaries
-against the pinned nightly and wraps them to run unmanaged (see
-[Distribution](docs/implementation/distribution.md#installing-with-nix)), so an agent can check any
-CGP cargo project on a machine that has only Nix, with no rustup or toolchain of its own. Run the
-default app from the **target project's** directory, pointing the flake reference at this repository:
+To exercise the tool's real output on CGP source *outside* this repository, run the local build
+through Nix rather than provisioning a nightly by hand. From the **target project's** directory,
+point the flake reference at this repository:
 
 ```sh
 cd /path/to/the/cgp/project          # a cargo package/workspace that uses `cgp`
 nix run /path/to/cargo-cgp -- check   # == `cargo cgp check`, args after `--` go to `cargo check`
 ```
 
-The first run builds (or reuses the cached) `cargo-cgp` and `cargo-cgp-driver` under the pinned
-nightly, then runs `cargo cgp check` in the current directory. Because the flake forces that nightly
-and runs unmanaged, the target project needs no toolchain of its own, and the check builds into
-`target/cgp` so the project's own `target/` is left untouched. This is the fastest way to exercise the
-transformed diagnostics on a real CGP file — for example a
-[compile-fail fixture](../cgp/docs/errors/README.md) dropped into a throwaway cargo package — without
-touching the checked project's setup. Rebuild the tool for a code change with `nix build` first, or
-just re-run `nix run`, which rebuilds only when a source file listed in the flake's narrowed input
-actually changed.
+The full instructions — preferring a local checkout over the published flake, the other Nix entry
+points, why no rustup or project toolchain is needed, and how the check isolates its `target/cgp` —
+are in the usage reference:
+[Usage](docs/reference/usage.md#running-on-a-project-outside-this-repository) and
+[Installation](docs/reference/installation.md#installing-with-nix). A good input is a
+[compile-fail fixture](../cgp/docs/errors/README.md) dropped into a throwaway cargo package. Rebuild
+for a code change with `nix build` first, or just re-run `nix run`, which rebuilds only when a source
+file in the flake's narrowed input actually changed.
 
 ## Committing changes
 

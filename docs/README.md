@@ -31,13 +31,17 @@ The knowledge base is divided into top-level categories, and it will grow to hol
 does. Each category answers a different question, so a reader picks the one that matches their need
 rather than reading in sequence.
 
-There are two categories. The [implementation/](implementation/README.md) directory documents
-the *internals* of the tool — how each executable is built, how they cooperate, and how the driver
-reaches the compiler — for an agent reviewing, debugging, or extending the source. Its
+There are three categories. The [reference/](reference/README.md) directory is the *usage* guide —
+how to install, update, and use the tool — for an agent running or explaining `cargo-cgp` rather than
+changing it (it is agent-internal, like the rest of `docs/`; documentation for human end users is
+kept separate); its [index](reference/README.md#index) lists every reference document. The
+[implementation/](implementation/README.md) directory documents the *internals* of the tool — how
+each executable is built, how they cooperate, and how the driver reaches the compiler — for an agent
+reviewing, debugging, or extending the source. Its
 [catalog](implementation/README.md#catalog) indexes every implementation document and tracks which
 parts of the tool are covered.
 
-The [issues/](issues/README.md) directory is the second category, and it tracks *work* rather than
+The [issues/](issues/README.md) directory is the third category, and it tracks *work* rather than
 describing the tool: the problems `cargo-cgp` is meant to solve but does not yet, foremost the CGP
 error classes it does not yet handle. Every issue is backed by a fixture under
 [`tests/ui/`](../tests/ui) that reproduces it — a class with no reproducing fixture counts as
@@ -54,9 +58,9 @@ recognized CGP error class — what each code means, what triggers it, and how t
 record of the rewrites that carry no code. It is user-facing where the two directories are
 internals-facing, so it lives at the top level rather than inside a category.
 
-As the tool grows a user-facing surface and more moving parts, expect further categories to appear
-alongside `implementation/` — a user guide to running the tool, and a fuller reference for the CGP
-error classes it learns to recognize (drawing on the upstream
-[CGP error catalog](../../cgp/docs/errors/README.md)). Add a category by creating its directory with
-a `README.md` and registering it here in the same change; add a standalone document (like
-`error-code.md`) by registering it here too.
+As the tool grows more moving parts, expect further categories and documents to appear. The
+`reference/` category will grow a fuller reference for the CGP error classes the tool learns to
+recognize (drawing on the upstream [CGP error catalog](../../cgp/docs/errors/README.md)) alongside
+its installation and usage guides. Add a category by creating its directory with a `README.md` and
+registering it here in the same change; add a standalone document (like `error-code.md`) by
+registering it here too.
