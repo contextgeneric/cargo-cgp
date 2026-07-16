@@ -286,6 +286,47 @@ directly, and the comparison with Clippy — is documented in
 [Testing](docs/implementation/testing.md); read it before adding tests, and keep it in sync when the
 test setup changes.
 
+### Checking a CGP project elsewhere with Nix
+
+To see the tool's real output on CGP source *outside* this repository, run the local build through
+Nix rather than provisioning a nightly by hand. The [`flake.nix`](flake.nix) builds both binaries
+against the pinned nightly and wraps them to run unmanaged (see
+[Distribution](docs/implementation/distribution.md#installing-with-nix)), so an agent can check any
+CGP cargo project on a machine that has only Nix, with no rustup or toolchain of its own. Run the
+default app from the **target project's** directory, pointing the flake reference at this repository:
+
+```sh
+cd /path/to/the/cgp/project          # a cargo package/workspace that uses `cgp`
+nix run /path/to/cargo-cgp -- check   # == `cargo cgp check`, args after `--` go to `cargo check`
+```
+
+The first run builds (or reuses the cached) `cargo-cgp` and `cargo-cgp-driver` under the pinned
+nightly, then runs `cargo cgp check` in the current directory. Because the flake forces that nightly
+and runs unmanaged, the target project needs no toolchain of its own, and the check builds into
+`target/cgp` so the project's own `target/` is left untouched. This is the fastest way to exercise the
+transformed diagnostics on a real CGP file — for example a
+[compile-fail fixture](../cgp/docs/errors/README.md) dropped into a throwaway cargo package — without
+touching the checked project's setup. Rebuild the tool for a code change with `nix build` first, or
+just re-run `nix run`, which rebuilds only when a source file listed in the flake's narrowed input
+actually changed.
+
+## Committing changes
+
+Git commits are made **only when the user explicitly asks for one**, and each such request authorizes
+exactly one commit of the changes then in the working tree — nothing more. These rules are absolute
+and override any general default:
+
+- **Never commit unless explicitly asked.** Do not commit as a side effect of finishing a task,
+  passing tests, or "wrapping up." If the work is done and the user has not asked to commit, leave the
+  changes uncommitted and say so.
+- **A commit request is one-shot, never a standing mode.** A prompt such as "commit the changes"
+  means *commit the current changes, this once*. It does **not** mean "commit automatically from now
+  on." Treating a single commit request as a switch that turns on automatic committing is a serious
+  misreading — the two are entirely different instructions and must never be conflated. After
+  fulfilling a commit request, return to requiring an explicit ask for the next one.
+- **Always commit on the current branch.** Commit onto whatever branch is checked out; do not create
+  or switch branches, even when that branch is `main`/the default.
+
 ## Ask when in doubt
 
 When something should be settled before the next step — an ambiguous intended behaviour, a design
