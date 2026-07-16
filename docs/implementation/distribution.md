@@ -46,7 +46,7 @@ This is the failure the current docs warn about, and the plan's job is to make t
 
 Two widespread misconceptions are worth clearing up before the design, because both make the problem
 sound worse than it is. **Updating the host's nightly does not break the driver.** The pin is a
-*dated* nightly (`nightly-2026-07-02`), which rustup treats as an immutable, distinct toolchain; a
+*dated* nightly (`nightly-2026-07-16`), which rustup treats as an immutable, distinct toolchain; a
 `rustup update` refreshes the rolling `stable`/`beta`/`nightly` channels and leaves a dated nightly
 untouched. The driver keeps working until *cargo-cgp itself* ships a new version that bumps the pin.
 **And the project being checked does not need to use nightly at all.** A user's crate can pin stable,
@@ -379,6 +379,73 @@ fixed diagnostic nightly under `-Znext-solver`, the check compiles against a com
 not choose, which is the accepted trade-off recorded above. What Nix does *not* provide is the
 lockstep-and-`update` machinery — a Nix user upgrades the tool by updating the flake input, not
 through `cargo cgp update` — so the crates.io version handshake is simply not part of this path.
+
+## Bumping the pinned nightly
+
+The pinned nightly lives in exactly one place, and every consumer derives its value from there rather
+than repeating it. The `channel` field of [`rust-toolchain.toml`](../../rust-toolchain.toml) is that
+single source of truth, so **the version bump itself is a one-line edit** — change the date on that
+`channel` line (and only touch the `components`/`profile` lines if a component was renamed upstream).
+Everything that needs the version reads it back from that file:
+
+- Both crates' build scripts parse the `channel` at build time into the baked-in
+  `PINNED_TOOLCHAIN` constant — [`cargo-cgp/build.rs`](../../crates/cargo-cgp/build.rs) and
+  [`cargo-cgp-driver/build.rs`](../../crates/cargo-cgp-driver/build.rs) both expose it as
+  `CARGO_CGP_PINNED_TOOLCHAIN`, which `config.rs` and the driver's `version.rs` read with `env!`. No
+  Rust source names the date.
+- The driver's `built-against-rustc` identity is captured automatically: its build script runs
+  `$RUSTC --version` on whatever compiler cargo hands it, so the value reflects the toolchain that
+  *actually* compiled the driver, with nothing to edit.
+- The Nix flake reads the same file through `fromRustupToolchainFile ./rust-toolchain.toml` (see
+  [Installing with Nix](#installing-with-nix)), so the flake picks up the new channel and components
+  with no separate edit — subject to the one Nix follow-up below.
+
+Two automated guards mean the sync cannot silently rot. The `rust_matches_toolchain_file` test in
+[`preflight.rs`](../../crates/cargo-cgp/tests/preflight.rs) asserts the baked-in `PINNED_TOOLCHAIN`
+equals the channel it re-reads from `rust-toolchain.toml`, so a build whose constant drifted from the
+file fails the test. (The dated string elsewhere in that same test file is fixed *sample* `--version`
+output feeding the parser test — it is both the input and the expected value, not the live pin, so it
+neither tracks the real toolchain nor needs updating on a bump.) And because `cargo-cgp` and
+`cargo-cgp-driver` share one version through `[workspace.package]`, the crates.io version handshake is
+about the *tool* version, not the nightly, and is unaffected by a toolchain bump.
+
+What is *not* automatic still has to happen in the same change, because a new compiler changes both
+the code that links it and the diagnostics it prints. Three follow-ups round out a bump:
+
+- **Fix the driver against `rustc_private` API changes.** The `rustc_driver`/`rustc_interface` API is
+  unstable and shifts between nightlies, so the driver may not compile against the new one until its
+  code is updated — this is why the pin is bumped deliberately, and it is the whole reason the
+  toolchain is welded to an exact date (see [The driver](driver.md#accessing-the-rust-compiler-api)).
+- **Re-bless the UI snapshots.** The `.cgp.stderr`/`.rust.stderr` snapshots are recorded under the
+  pinned toolchain, and a new rustc can reword a diagnostic or move a span, so a bump can fail the UI
+  suite until the snapshots are regenerated with
+  `cargo test -p cargo-cgp-ui-tests --test ui -- --bless` and the diffs reviewed (see
+  [Testing](testing.md)).
+- **Provision the new toolchain for the tool's own build.** On a rustup machine, `rustup` installs the
+  new dated nightly with its `rustc-dev`/`llvm-tools` components on first build of the toolchain file;
+  under Nix, refresh the flake as below. A released tool then reaches its users through the
+  `setup`/`update` flow, which installs whatever nightly the new release pins.
+
+### Updating the Nix packages for a new nightly
+
+Bumping the `channel` is necessary but not always sufficient for the flake, because the flake's
+toolchain comes from `rust-overlay`, and `rust-overlay` only knows the nightlies its own pinned
+revision carries manifests for. A date newer than the `rust-overlay` revision locked in
+[`flake.lock`](../../flake.lock) will make `fromRustupToolchainFile` fail to find the manifest, so a
+forward bump needs the overlay refreshed alongside it:
+
+- Run `nix flake update rust-overlay` (or `nix flake update` to refresh every input, including
+  `nixpkgs`) after editing `rust-toolchain.toml`, so the locked overlay is new enough to resolve the
+  new nightly's manifest. Commit the updated `flake.lock` in the same change as the `channel` edit, so
+  the two stay consistent.
+- Rebuild to confirm and to refresh the cache: `nix build .#` compiles both binaries under the new
+  toolchain, and `nix flake check` evaluates the outputs. Because the source input is narrowed to the
+  crate sources and `rust-toolchain.toml` (see [Installing with Nix](#installing-with-nix)), the
+  `channel` edit alone changes the input hash and triggers exactly this rebuild.
+
+A Nix user consuming the flake as an input performs the mirror of this: they run
+`nix flake update cargo-cgp` in their own flake to pull the release that carries the new pin, which is
+how a Nix consumer "upgrades the tool" in place of `cargo cgp update`.
 
 ## Loading the compiler at runtime
 
