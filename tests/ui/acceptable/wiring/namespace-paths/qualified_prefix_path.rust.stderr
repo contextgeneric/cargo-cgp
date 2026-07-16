@@ -1,0 +1,44 @@
+error[E0277]: the trait bound `PathCons<Symbol<3, Chars<'a', Chars<'p', _>>>, _>: DefaultNamespace<_>` is not satisfied
+  --> src/main.rs:39:9
+   |
+39 |         QuantityTypeProviderComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `cgp::prelude::DefaultNamespace<App>` is not implemented for `PathCons<Symbol<3, Chars<'a', Chars<'p', Chars<'p', Nil>>>>, _>`
+   |
+   = help: the following other types implement trait `cgp::prelude::DefaultNamespace<Components>`:
+             AsyncComputerComponent
+             AsyncComputerRefComponent
+             ComputerComponent
+             ComputerRefComponent
+             ErrorRaiserComponent
+             ErrorTypeProviderComponent
+             ErrorWrapperComponent
+             HandlerComponent
+           and 5 others
+note: required for `App` to implement `DelegateComponent<PathCons<Symbol<3, Chars<'a', Chars<'p', _>>>, _>>`
+  --> src/main.rs:31:1
+   |
+31 | / delegate_components! {
+32 | |     App {
+   | |     ^^^
+33 | |         namespace DefaultNamespace;
+34 | |     }
+35 | | }
+   | |_^
+note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<'a', Chars<'p', _>>>, _>>` to implement `IsProviderFor<finance::QuantityTypeProviderComponent, App>`
+  --> src/main.rs:22:5
+   |
+22 |     #[cgp_type]
+   |     ^^^^^^^^^^^
+   = note: required for `App` to implement `CanUseComponent<finance::QuantityTypeProviderComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:37:1
+   |
+37 | / check_components! {
+38 | |     App {
+39 | |         QuantityTypeProviderComponent,
+40 | |     }
+41 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

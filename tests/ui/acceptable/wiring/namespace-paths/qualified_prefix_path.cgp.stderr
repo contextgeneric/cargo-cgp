@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E002] the provider trait `QuantityTypeProvider` with context `App` is not implemented for provider `RedirectLookup<App, Path!(@app.finance.types.QuantityTypeProviderComponent)>`
+  --> src/main.rs:39:9
+   |
+39 |         QuantityTypeProviderComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: the trait bound `Path!(@app.finance.types.QuantityTypeProviderComponent): DefaultNamespace<App>` is not satisfied
+           this is required through the dependency chain:
+               consumer trait impl `HasQuantityType` for context `App`
+               └── provider trait impl `QuantityTypeProvider` with context `App` for provider `RedirectLookup<App, Path!(@app.finance.types.QuantityTypeProviderComponent)>`
+                   └── trait impl `DefaultNamespace` for `Path!(@app.finance.types.QuantityTypeProviderComponent)`
+
+For more information about this error, try `rustc --explain E0277`.

@@ -94,6 +94,35 @@ fn resugars_a_single_segment_path() {
 }
 
 #[test]
+fn resugars_a_module_qualified_type_segment_by_its_tail() {
+    // In a multi-module crate rustc prints a component defined in a sub-module qualified, e.g.
+    // `finance::QuantityTypeProviderComponent`. `Path!` writes only the bare name, so the
+    // segment resugars to its final component and the whole path stays readable rather than a
+    // raw `PathCons<…>` spine.
+    assert_eq!(
+        resugar_path(
+            "PathCons<Symbol!(\"app\"), PathCons<Symbol!(\"finance\"), \
+             PathCons<finance::QuantityTypeProviderComponent, Nil>>>"
+        )
+        .as_deref(),
+        Some("Path!(@app.finance.QuantityTypeProviderComponent)"),
+    );
+}
+
+#[test]
+fn resugar_path_skips_a_qualified_segment_with_a_lowercase_tail() {
+    // A qualified tail that is lowercase and non-primitive is not a type `Path!` would keep;
+    // it would have been a `Symbol`, so the segment does not round-trip and the path declines.
+    assert_eq!(resugar_path("PathCons<foo::bar, Nil>"), None);
+}
+
+#[test]
+fn resugar_path_skips_a_qualified_segment_with_generics() {
+    // A `::`-path whose tail carries generics is not a plain identifier, so it declines.
+    assert_eq!(resugar_path("PathCons<foo::Bar<T>, Nil>"), None);
+}
+
+#[test]
 fn resugars_a_primitive_segment_as_a_type() {
     // A primitive segment is kept as the named type by `Path!`, so it round-trips bare.
     assert_eq!(
