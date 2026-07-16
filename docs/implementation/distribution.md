@@ -338,6 +338,48 @@ These variables belong in the shared `config` modules alongside the existing wel
 (`CARGO_CGP_SYSROOT` and the rest), passed into the functions that use them rather than read
 ad hoc, per the [code organization conventions](../../AGENTS.md#code-organization-conventions).
 
+## Installing with Nix
+
+A [`flake.nix`](../../flake.nix) at the repository root packages the tool for Nix, and it is the
+supported answer for the one machine the rustup-based flow above cannot serve: a Nix user has no
+rustup to install a toolchain or force one, so `setup`, the preflight, and `update` have nothing to
+drive. The flake sidesteps all of them. Nix itself supplies the pinned nightly and builds both
+binaries against it, so provisioning is a build-time fact rather than a runtime handshake, and the
+front-end runs in the unmanaged mode the [escape hatches](#escape-hatches-for-local-development)
+already provide.
+
+Nix reconstructs by hand what a nightly bump would otherwise coordinate through crates.io. The
+toolchain comes from [`oxalica/rust-overlay`](https://github.com/oxalica/rust-overlay), whose
+`fromRustupToolchainFile` reads the same [`rust-toolchain.toml`](../../rust-toolchain.toml) the
+`build.rs` scripts read — channel plus the `rustc-dev` and `llvm-tools` components — so the Nix
+toolchain cannot drift from the pinned one. That toolchain is passed to `makeRustPlatform`, and
+`buildRustPackage` compiles the front-end and the driver together under it, exactly as `setup`'s
+`cargo +<pinned> install` does, so the driver embeds the same compiler whose sysroot and
+`librustc_driver` it will later be handed.
+
+Two `wrapProgram` wrappers replace the environment rustup would have arranged. The front-end wrapper
+sets `CARGO_CGP_NO_MANAGE` so the front-end skips the preflight and toolchain forcing, sets `RUSTC`
+to the toolchain's `rustc`, and prepends the toolchain to `PATH`; the wrapped `cargo check` then
+compiles under the same nightly the driver embeds, and the front-end's existing
+`rustc --print sysroot` discovery returns that toolchain's sysroot — whose `lib` holds the matching
+`librustc_driver`, which the front-end prepends to the driver's dynamic-library path just as it does
+on a managed machine. The driver wrapper adds that same `lib` directory to the driver's own runtime
+search path, so the driver loads `librustc_driver` even when invoked directly rather than only
+through the front-end. Both binaries land in one `bin/` directory, so the front-end's
+[sibling lookup](../../crates/cargo-cgp/src/check/driver_path.rs) finds the driver with no override.
+
+The flake's source input is deliberately narrowed with `lib.fileset` to the crate sources, the
+manifests, the lockfile, and `rust-toolchain.toml` — everything the build reads and nothing else. The
+churny, build-irrelevant trees at the repository root (`docs/`, the `tests/ui` fixtures, `README.md`,
+`AGENTS.md`) are excluded, so editing them leaves the derivation's input hash unchanged and the built
+binaries cached; only a real source change triggers a rebuild.
+
+Running the check under Nix inherits the same caveat as the managed path: because the tool forces a
+fixed diagnostic nightly under `-Znext-solver`, the check compiles against a compiler the project did
+not choose, which is the accepted trade-off recorded above. What Nix does *not* provide is the
+lockstep-and-`update` machinery — a Nix user upgrades the tool by updating the flake input, not
+through `cargo cgp update` — so the crates.io version handshake is simply not part of this path.
+
 ## Loading the compiler at runtime
 
 At runtime the driver must load the pinned nightly's `librustc_driver`, and the plan keeps the
@@ -469,10 +511,12 @@ discovered late.
   and on `cargo install cargo-cgp-driver@<version>` exiting successfully when that version is already
   present. Both hold today; if a future cargo made "already installed" an error, `setup` would need a
   guard.
-- **rustup is assumed throughout (limitation).** Toolchains are managed entirely through rustup —
-  `RUSTUP_TOOLCHAIN`, `rustup toolchain install`. A machine whose Rust comes from a distro package,
-  Nix, or another manager has no rustup to drive, so it is out of scope for automatic provisioning;
-  `setup` reports a missing rustup plainly rather than failing obscurely.
+- **rustup is assumed by the managed path (limitation).** The `setup`/`update`/preflight flow manages
+  toolchains entirely through rustup — `RUSTUP_TOOLCHAIN`, `rustup toolchain install`. A machine whose
+  Rust comes from a distro package or another manager has no rustup to drive, so it is out of scope for
+  automatic provisioning; `setup` reports a missing rustup plainly rather than failing obscurely. Nix
+  is the exception rather than a gap: it is served by the [`flake.nix`](#installing-with-nix), which
+  provisions the toolchain at build time and runs the front-end unmanaged.
 - **`update` version discovery targets the default crates.io (limitation).** It reads
   `index.crates.io` directly, so unlike the `cargo install` that follows it, it does not consult a
   user's configured registry mirror or source replacement. A locked-down network that blocks
@@ -563,3 +607,7 @@ has a build script that bakes in the pinned toolchain.
   [`run.rs`](../../crates/cargo-cgp-driver/src/run.rs) — the `--version` query (answered only in
   non-wrapper mode), and [`build.rs`](../../crates/cargo-cgp-driver/build.rs), which bakes in
   `PINNED_TOOLCHAIN` and the `built_against_rustc` identity from the compiling `$RUSTC --version`.
+- [`flake.nix`](../../flake.nix) — the Nix package: builds both binaries under the pinned nightly from
+  `rust-overlay` (read from `rust-toolchain.toml`), wraps the front-end for unmanaged mode and the
+  driver for `librustc_driver` loading, and narrows the source input to the build-relevant paths (see
+  [Installing with Nix](#installing-with-nix)).
