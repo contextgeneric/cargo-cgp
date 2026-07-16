@@ -69,6 +69,22 @@ pub enum Leaf {
         /// The context that must wire the component, e.g. `App`.
         owner: String,
     },
+    /// A namespace redirect whose target path has no delegate entry. A `RedirectLookup<Ctx, Path>`
+    /// provider resolves a component by forwarding the lookup to `Path` inside `Ctx`'s wiring
+    /// (through the namespace lookup trait every joined namespace supplies), but nothing — no direct
+    /// entry, no namespace default, no `#[default_impl]` — terminates that path with a provider, so
+    /// the redirect resolves to nothing. Parallel to [`Leaf::MissingWiring`], but keyed by a redirect
+    /// *path* rather than a bare component marker: the fix is to add a wiring entry for the path (on
+    /// the context, or in the namespace it joins).
+    MissingRedirectWiring {
+        /// The redirect path with no terminating entry, e.g.
+        /// `Path!(@app.finance.types.QuantityTypeProviderComponent)` (resugared from its `PathCons`
+        /// spine when the emitter post-processes the note).
+        path: String,
+        /// The context the lookup is forwarded inside, e.g. `MockApp` — the table that carries no
+        /// delegate entry for the path.
+        context: String,
+    },
     /// Any other terminal unmet bound — an ordinary trait bound (`f64: Eq`), an unmet abstract
     /// type, and so on. The emitter keeps rustc's own header for these and only replaces the
     /// sub-notes with the dependency tree.
@@ -86,6 +102,7 @@ impl Leaf {
         match self {
             Leaf::Field { name, .. } | Leaf::FieldTypeMismatch { name, .. } => name,
             Leaf::MissingWiring { component, .. } => component,
+            Leaf::MissingRedirectWiring { path, .. } => path,
             Leaf::Bound { summary } => summary,
         }
     }

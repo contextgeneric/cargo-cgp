@@ -1,13 +1,12 @@
 error[E0277]: [CGP-E002] the provider trait `Greeter` with context `App` is not implemented for provider `RedirectLookup<App, Path!(@app.GreeterComponent)>`
-  --> src/main.rs:48:9
+  --> src/main.rs:50:9
    |
-48 |         GreeterComponent,
+50 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: root cause: the trait bound `Path!(@app.GreeterComponent): DefaultNamespace<App>` is not satisfied
+   = note: root cause: the provider trait implementation is forwarded to `Path!(@app.GreeterComponent)` in `App`, but `App` contains no delegate entry for `Path!(@app.GreeterComponent)`
            this is required through the dependency chain:
                consumer trait impl `CanGreet` for context `App`
                └── provider trait impl `Greeter` with context `App` for provider `RedirectLookup<App, Path!(@app.GreeterComponent)>`
-                   └── trait impl `DefaultNamespace` for `Path!(@app.GreeterComponent)`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -15,7 +15,7 @@ use crate::config::{
     CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT,
     HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT,
 };
-use crate::resolve::cgp_item::{decode_symbol, is_cgp_item};
+use crate::resolve::cgp_item::{decode_symbol, is_cgp_item, is_namespace_lookup_trait};
 
 /// Bound on how far the `Deref` chain is followed when looking for a field, so a cyclic `Deref`
 /// (`A: Deref<Target = B>`, `B: Deref<Target = A>`) cannot make the search loop.
@@ -26,8 +26,10 @@ const MAX_DEREF: u32 = 16;
 /// [`Leaf::FieldTypeMismatch`], its actual field type queried from the struct; a plain `HasField`
 /// becomes a [`Leaf::Field`] (inspecting the struct so the emitter can tell missing from
 /// underived); an unmet `DelegateComponent<Marker>` — a component the context does not wire —
-/// becomes a [`Leaf::MissingWiring`] naming that component marker; any other bound becomes a
-/// [`Leaf::Bound`] restating it as `self: Trait`.
+/// becomes a [`Leaf::MissingWiring`] naming that component marker; an unmet namespace lookup
+/// (`Path: DefaultNamespace<Ctx>` or a user `cgp_namespace!` trait) — a `RedirectLookup` whose path
+/// the context does not terminate — becomes a [`Leaf::MissingRedirectWiring`] naming the path; any
+/// other bound becomes a [`Leaf::Bound`] restating it as `self: Trait`.
 pub(crate) fn classify_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
@@ -48,6 +50,23 @@ pub(crate) fn classify_leaf<'tcx>(
                 .erase_and_anonymize_regions(leaf_ref.self_ty())
                 .to_string(),
         };
+    }
+    if is_namespace_lookup_trait(tcx, leaf_ref.def_id) {
+        // A namespace lookup trait (`DefaultNamespace`, a user `cgp_namespace!` trait, …) unmet at
+        // the terminal: a `RedirectLookup` forwarded the lookup to this path inside the context's
+        // wiring, but nothing terminates it. The `Self` type is the redirect path (its `PathCons`
+        // spine resugars to `Path!(@…)` when the note is post-processed) and the trait's last type
+        // argument is the context whose table carries no entry for it.
+        let path = tcx
+            .erase_and_anonymize_regions(leaf_ref.self_ty())
+            .to_string();
+        let context = leaf_ref
+            .args
+            .types()
+            .last()
+            .map(|ctx| tcx.erase_and_anonymize_regions(ctx).to_string())
+            .unwrap_or_else(|| path.clone());
+        return Leaf::MissingRedirectWiring { path, context };
     }
     if is_cgp_item(tcx, leaf_ref.def_id, HAS_FIELD_TRAIT, CGP_FIELD_CRATE)
         && let Some(name) = decode_symbol(tcx, leaf_ref.args.type_at(1))

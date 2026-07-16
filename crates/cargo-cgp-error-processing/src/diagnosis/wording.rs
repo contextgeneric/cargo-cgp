@@ -74,6 +74,10 @@ fn root_cause_lead(leaf: &Leaf) -> String {
         Leaf::MissingWiring { component, owner } => {
             format!("missing wiring for `{component}` on `{owner}`")
         }
+        Leaf::MissingRedirectWiring { path, context } => format!(
+            "the provider trait implementation is forwarded to `{path}` in `{context}`, \
+             but `{context}` contains no delegate entry for `{path}`"
+        ),
         Leaf::Field { name, owner, .. } => {
             format!(
                 "accessor trait `HasField` with field `{name}` is not implemented for `{owner}`"

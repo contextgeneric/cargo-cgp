@@ -14,7 +14,9 @@ use crate::config::{
     CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT,
     HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT,
 };
-use crate::resolve::cgp_item::{decode_symbol, is_cgp_item, is_provider_trait};
+use crate::resolve::cgp_item::{
+    decode_symbol, is_cgp_item, is_namespace_lookup_trait, is_provider_trait,
+};
 
 /// The human-readable label for one predicate in a dependency path, replacing each CGP wiring
 /// trait with the concept it stands for: `CanUseComponent` with the consumer-trait impl,
@@ -66,7 +68,11 @@ pub(crate) fn label_for<'tcx>(
         ))
     } else if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         || is_provider_trait(tcx, did)
+        || is_namespace_lookup_trait(tcx, did)
     {
+        // A namespace lookup trait node (the failed `Path: DefaultNamespace<Ctx>` redirect) is pure
+        // plumbing here — its `MissingRedirectWiring` leaf lead already names the path and context —
+        // so drop it from the tree, as the `DelegateComponent` wiring node is dropped.
         None
     } else {
         Some(format!(

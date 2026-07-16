@@ -131,6 +131,46 @@ fn plans_a_missing_wiring_check_failure() {
 }
 
 #[test]
+fn plans_a_missing_redirect_wiring_check_failure() {
+    // A namespace redirect that resolves to nothing: the checked consumer over the provider whose
+    // `RedirectLookup` forwards to a path the context does not terminate.
+    let tree = DependencyTree::node(
+        "consumer trait impl `HasQuantityType` for context `App`",
+        vec![DependencyTree::leaf(
+            "provider trait impl `QuantityTypeProvider` with context `App` for provider \
+             `RedirectLookup<App, Path!(@app.finance.types.QuantityTypeProviderComponent)>`",
+        )],
+    );
+    let resolved = Resolved {
+        context: "App".to_owned(),
+        consumers: vec!["HasQuantityType".to_owned()],
+        causes: vec![Cause {
+            leaf: Leaf::MissingRedirectWiring {
+                path: "Path!(@app.finance.types.QuantityTypeProviderComponent)".to_owned(),
+                context: "App".to_owned(),
+            },
+            tree,
+        }],
+    };
+    let plan = plan_resolved(DiagKind::Check, None, &resolved, &empty_names());
+
+    // A redirect wiring, like a missing wiring, carries no `help` — the note names the fix.
+    assert!(plan.helps.is_empty());
+    assert_eq!(
+        plan.notes,
+        vec![String::from(
+            "root cause: the provider trait implementation is forwarded to \
+             `Path!(@app.finance.types.QuantityTypeProviderComponent)` in `App`, but `App` \
+             contains no delegate entry for `Path!(@app.finance.types.QuantityTypeProviderComponent)`\n\
+             this is required through the dependency chain:\n\
+             \x20   consumer trait impl `HasQuantityType` for context `App`\n\
+             \x20   └── provider trait impl `QuantityTypeProvider` with context `App` for provider \
+             `RedirectLookup<App, Path!(@app.finance.types.QuantityTypeProviderComponent)>`"
+        )]
+    );
+}
+
+#[test]
 fn plans_a_missing_derive_with_a_help() {
     let resolved = Resolved {
         context: "Rectangle".to_owned(),

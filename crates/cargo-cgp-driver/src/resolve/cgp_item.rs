@@ -36,6 +36,26 @@ pub(crate) fn is_provider_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         .any(|tp| is_cgp_item(tcx, tp.def_id(), IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE))
 }
 
+/// Whether `def_id` is a **namespace lookup trait** — the fingerprint every `cgp_namespace!`
+/// (and the built-in `DefaultNamespace`/`DefaultImpls*`) generates: a trait whose *only*
+/// associated item is a type named `Delegate`, resolving a key to its delegate provider. These are
+/// recognized by that structural signature rather than by name or crate, because a user's own
+/// namespace trait (`MockNamespace`) lives in the user crate and shares no `DefId` with CGP's, yet
+/// must not be mistaken for a regular Rust trait: a failing namespace-lookup bound means the
+/// redirect path is unwired, not that some ordinary bound is unmet.
+pub(crate) fn is_namespace_lookup_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    if !tcx.is_trait(def_id) {
+        return false;
+    }
+    let mut items = tcx.associated_items(def_id).in_definition_order();
+    let Some(first) = items.next() else {
+        return false;
+    };
+    items.next().is_none()
+        && first.kind.tag() == ty::AssocTag::Type
+        && tcx.item_name(first.def_id).as_str() == "Delegate"
+}
+
 /// Decode a CGP `Symbol!` type into its string, by walking the `Chars<'c', Tail>` spine and
 /// reading each `char` const argument until `Nil`. Anchored to `cgp_base_types`, and returns
 /// `None` for any type that is not a well-formed `Symbol`.

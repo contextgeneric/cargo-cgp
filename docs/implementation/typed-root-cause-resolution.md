@@ -56,14 +56,19 @@ present-but-underived case a plain "missing field" would misdescribe). A compone
 not wire at all — an unmet `DelegateComponent<Marker>` on the context — is the wiring counterpart of a
 missing field, reading as `root cause: missing wiring for \`BarProviderComponent\` on \`App\`` and
 naming the component marker the programmer writes to fix it
-([`basic_missing_wiring`](../../tests/ui/acceptable/wiring/missing-wiring/basic_missing_wiring.rs)).
+([`basic_missing_wiring`](../../tests/ui/acceptable/wiring/missing-wiring/basic_missing_wiring.rs)). A
+namespace redirect that resolves to nothing — a `RedirectLookup<Ctx, Path>` whose `Path` the context
+does not terminate, surfacing as an unmet namespace-lookup bound (`Path: DefaultNamespace<Ctx>`, or a
+user `cgp_namespace!` trait) — is the path-keyed counterpart, reading as `root cause: the provider
+trait implementation is forwarded to \`Path!(@app.finance.types.QuantityTypeProviderComponent)\` in
+\`App\`, but \`App\` contains no delegate entry for that path`, naming the path the programmer must
+wire ([`unregistered_prefix_path`](../../tests/ui/acceptable/resolution/unregistered_prefix_path.rs),
+[`qualified_prefix_path`](../../tests/ui/acceptable/wiring/namespace-paths/qualified_prefix_path.rs)).
 Any other leaf restates its
 bound — `root cause: the trait bound \`f64: std::cmp::Eq\` is not satisfied` — except when the kept
 main message already states that very bound, where the lead would only repeat the header and the note
 carries the chain alone
-([`ordinary_bound_unsatisfied`](../../tests/ui/acceptable/resolution/ordinary_bound_unsatisfied.rs) versus
-[`unregistered_prefix_path`](../../tests/ui/acceptable/resolution/unregistered_prefix_path.rs), whose
-rewritten `CGP-E002` header names the `RedirectLookup` step, not the `DefaultNamespace` leaf).
+([`ordinary_bound_unsatisfied`](../../tests/ui/acceptable/resolution/ordinary_bound_unsatisfied.rs)).
 
 **A use-site failure is handled the same way, once its obligation is recovered.** CGP wiring is lazy,
 so a broken provider dependency often surfaces not at a check but where the consumer method is *called*
@@ -171,7 +176,11 @@ capability traits) — and treats everything else as a leaf. An unmet `HasField`
 unmet `DelegateComponent<Marker>` **on the context** is the missing-wiring leaf: the context does not
 delegate that component to any provider, so the wiring is absent (that a `DelegateComponent` on any
 *other* type — a provider struct that implements its provider trait directly rather than delegating —
-is instead a dead-end is covered below). An
+is instead a dead-end is covered below). An unmet **namespace-lookup bound** — recognized not by name
+but by the trait's fingerprint, a single `Delegate` associated type (`DefaultNamespace`, the
+`DefaultImpls*` traits, and every user `cgp_namespace!` trait all share it, so a same-named user
+namespace is caught without a `DefId` anchor) — is the missing-redirect-wiring leaf: a `RedirectLookup`
+forwarded the lookup to a path the context's table does not terminate. An
 ordinary bound on a *foreign* type (`f64: Eq`) is a terminal leaf too, and crucially the descent stops
 there rather than walking into whatever unrelated `std` blanket impl happens to match its `Self` (an
 `impl<F: FnPtr> Eq for F` would otherwise fabricate a misleading `f64: FnPtr` step). Two further rules
@@ -293,8 +302,9 @@ declines. The use-site path builds each `CanUseComponent<Marker, ()>` with an **
 so a generic component whose real parameters matter is not re-checked there (only the check path
 recovers those). It renders only leaves it can trust: a `HasField` field (missing, underived, or —
 via its projection — present with the wrong type), a component the context does not wire (an unmet
-`DelegateComponent` on the context), an ordinary bound on a foreign type, or a terminal
-capability bound — but it still *declines* an associated-type projection mismatch that is **not** a
+`DelegateComponent` on the context), a namespace redirect the context does not terminate (an unmet
+namespace-lookup bound whose `Self` is the redirect path), an ordinary bound on a foreign type, or a
+terminal capability bound — but it still *declines* an associated-type projection mismatch that is **not** a
 `HasField` one (the projection form it cannot word), and drops pure wiring-plumbing dead-ends (an
 unmet `CanUseComponent`/`IsProviderFor`, or a `DelegateComponent` on a *provider* rather than the
 context), so a diagnostic whose only recoverable leaf is one of those falls back. And it uses an **empty parameter
@@ -322,9 +332,13 @@ says what it needs to without altering the header's shape.
   unmet `HasField` projection where the trait clauses all hold), `classify.rs` (classifying a leaf as a
   field by inspecting the struct and its `Deref` chain, a field-type mismatch with `field_type` reading
   the actual field type off the struct by `DefId`, a missing wiring naming the unwired component
-  marker, or a bound), `label.rs` (folding each chain into a
-  `DependencyTree` with each wiring trait replaced by its human form, generic parameters reattached),
-  and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition and the `Symbol!` field-name decode).
+  marker, a missing *redirect* wiring naming the unterminated namespace path, or a bound), `label.rs`
+  (folding each chain into a `DependencyTree` with each wiring trait replaced by its human form —
+  dropping the namespace-lookup plumbing node like the `DelegateComponent` one — generic parameters
+  reattached),
+  and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition, the `Symbol!` field-name decode, and
+  `is_namespace_lookup_trait` recognizing a namespace trait by its single-`Delegate`-associated-type
+  fingerprint rather than by name).
   A sibling `conflict.rs` handles the duplicate-key coherence conflict (`E0119`) rather than a check
   failure — a separate transform documented in
   [The driver](driver.md#reshaping-a-duplicate-key-conflict), not part of this resolution.
@@ -369,9 +383,11 @@ error reports its own struct's actual type, proving the field query is `DefId`-a
 a marker name in different modules, with distinct consumer *and* provider trait names, both checked →
 full-path resolution names each one's own traits with no cross-over), `generic_area_multi` (a
 three-parameter component → the parameters reattached to the consumer and provider labels), and
-`ordinary_bound_unsatisfied`/`unregistered_prefix_path` (non-field leaves — an `f64: Eq` bound, whose
-rustc header is kept over a lead-less chain note, and an unregistered `DefaultNamespace` behind an
-`IsProviderFor` header, rewritten to the `CGP-E002` form over a `root cause:` note). The missing-wiring
+`ordinary_bound_unsatisfied` (a non-field `f64: Eq` bound, whose rustc header is kept over a lead-less
+chain note), and `unregistered_prefix_path`/`qualified_prefix_path` (an unwired namespace redirect
+behind an `IsProviderFor` header, rewritten to the `CGP-E002` form over a `root cause:` note that names
+the forwarded path and the context with no delegate entry for it — the latter with the path segment
+module-qualified, so it also pins the `resugar_path` fold to `Path!(@…)`). The missing-wiring
 leaf is pinned by the [`acceptable/wiring/missing-wiring/`](../../tests/ui/acceptable/wiring/missing-wiring)
 fixtures: `basic_missing_wiring` (a provider's `#[uses]` dependency on an unwired component → a
 `missing wiring` note over the transitive chain), `direct_missing_wiring` (a `check_components!` entry
