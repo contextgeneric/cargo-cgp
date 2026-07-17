@@ -328,6 +328,24 @@ the crate has errors (the resolver document explains why). Whichever of the two 
 diagnostic, it then passes through the rustc-free [post-processing](error-processing.md) cleanup, so
 the type names either transform embeds are stripped of CGP path prefixes and resugared.
 
+A final gate de-duplicates the transformed diagnostics *across* the compilation, because CGP wiring is
+lazy and so one mistake surfaces the same error at many sites. A missing dependency is reported at the
+`check_components!` entry, again at every hand-written `impl` that references the broken consumer, and
+again at each call — the transfer example's single un-wired password type produced eighteen identical
+root-cause trees this way. The emitter keeps a set of the CGP diagnostics it has already emitted,
+keyed by a **span-independent signature**, and suppresses any later diagnostic whose signature it has
+seen. A resolved diagnostic is keyed by its recovered cause — the context, the failing consumer
+trait(s), and each root-cause leaf, via the rustc-free `cause_signature` — so the *same* consumer's
+failure re-reported at several spans collapses to one, while two *distinct* consumers that happen to
+share a cause keep separate signatures and are each still shown (no capability's failure is ever
+hidden). A diagnostic the resolver declined but the text rewrite still transformed is keyed by its
+rendered message text instead (`message_signature`), so the fallback re-reports coalesce too. Only the
+tool's own transformed diagnostics are de-duplicated; an untouched `rustc` error always passes
+through. The count stays honest because cargo re-counts the diagnostics the emitter actually
+produces — a suppressed re-report drops out of its "N errors" summary as well — so the visible block
+count and the summary agree. This is the [one-mistake-many-errors](../issues/usability.md) usability
+class the per-diagnostic resolver could not address on its own.
+
 ### Reshaping a duplicate-key conflict
 
 The emitter's fourth transform runs *before* the other two and handles a different failure kind: the
@@ -465,8 +483,10 @@ will likely grow toward it:
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the generic
   `CgpEmitter<E>`, split behind a re-exporting `mod.rs`: `install.rs` rebuilds the compiler's default
   emitter for the active format (a `JsonEmitter` or an `AnnotateSnippetEmitter`) and wraps it,
-  `cgp_emitter.rs` holds the `CgpEmitter<E>` type (holding the `ComponentNameMap`) and its
-  transform/post-process orchestration, and `edit.rs` holds the `DiagInner`-editing helpers.
+  `cgp_emitter.rs` holds the `CgpEmitter<E>` type (holding the `ComponentNameMap` and the `seen`
+  cross-diagnostic de-duplication set) and its transform/post-process/de-duplicate orchestration, and
+  `edit.rs` holds the `DiagInner`-editing helpers (including `message_signature`, the span-independent
+  text key for de-duplicating a declined-but-rewritten diagnostic).
 - [`crates/cargo-cgp-driver/src/component_map.rs`](../../crates/cargo-cgp-driver/src/component_map.rs)
   — builds the component-marker → trait-names map by inverting the `IsProviderFor` supertrait
   (anchored by `DefId` identity to the `cgp_component` crate) and the consumer-blanket-impl links, and

@@ -53,6 +53,28 @@ pub(crate) fn subdiag(level: Level, message: String) -> Subdiag {
     }
 }
 
+/// A span-independent signature of a diagnostic's rendered text — its main message plus each
+/// child's message, in order. Used to de-duplicate a text-rewritten CGP diagnostic the typed
+/// resolver *declined*: the same rewritten wiring error re-reported at another span renders the
+/// same text, so the emitter shows the first and suppresses the rest. It deliberately ignores
+/// spans and labels, since those are exactly what differ between the duplicates.
+pub(crate) fn message_signature(diag: &DiagInner) -> String {
+    let mut parts: Vec<&str> = Vec::new();
+    for (message, _) in &diag.messages {
+        if let DiagMessage::Str(text) = message {
+            parts.push(text);
+        }
+    }
+    for child in &diag.children {
+        for (message, _) in &child.messages {
+            if let DiagMessage::Str(text) = message {
+                parts.push(text);
+            }
+        }
+    }
+    parts.join("\u{1f}")
+}
+
 /// Every span a diagnostic carries — its primary and labelled spans plus each child's — the pool
 /// the use-site resolver searches for one that lands on the failing context's type definition.
 pub(crate) fn diagnostic_spans(diag: &DiagInner) -> Vec<Span> {

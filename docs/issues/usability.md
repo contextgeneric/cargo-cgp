@@ -30,14 +30,29 @@ remains below are the classes the resolver does not yet reshape.
 
 ## One mistake reported as many errors
 
-The tool does not deduplicate a single cause that surfaces at several wiring sites, so one mistake
-produces several full error blocks. [`density_3`](../../tests/ui/usability/duplication/density_3.rs)
-checks two components against one missing `height` field and gets *two* complete `E0277` cascades;
+The emitter now de-duplicates *the same failing consumer* re-reported at several sites, which was the
+dominant form of this class. CGP wiring is lazy, so one missing dependency surfaces at the
+`check_components!` entry, at every hand-written `impl` that references the broken consumer, and at
+each call — the transfer example's single un-wired password type produced eighteen identical
+root-cause trees. The emitter keeps a span-independent signature of each transformed CGP diagnostic
+(the recovered cause for a resolved one, the rendered text for a declined-but-rewritten one) and shows
+only the first occurrence, so those eighteen collapse to two (one per endpoint) and cargo's re-count
+keeps the "N errors" summary honest. The cross-site behavior is pinned by
+[`cross_site_dedup`](../../tests/ui/acceptable/duplication/cross_site_dedup.rs) (a check entry, a
+wrapper `impl`, and its forwarding call for one missing field → one block) and
+[`manual_supertrait_impl`](../../tests/ui/acceptable/use-site/manual_supertrait_impl.rs) (an impl
+header and its call → one). See [The driver](../implementation/driver.md) for the mechanism.
+
+What remains is coalescing *different* consumers that share one cause. The signature includes the
+consumer deliberately — so a distinct capability's failure is never hidden — which means two
+components failing for the same underlying mistake still produce two blocks:
+[`density_3`](../../tests/ui/usability/duplication/density_3.rs) checks two components against one
+missing `height` field and still gets two blocks, and
 [`dependency_cascade`](../../tests/ui/usability/duplication/dependency_cascade.rs) chains three
-providers and gets three. The error count reflects the depth of the wiring graph, not the number of
-mistakes. This is a cross-diagnostic transform the per-diagnostic resolver cannot do on its own: it
-needs the emitter to buffer the compilation's diagnostics and coalesce every block whose recovered
-cause is the same unmet bound into one headline that reports the count of affected components.
+providers and gets three. Collapsing these into a single headline that *lists the affected
+components* — rather than dropping all but one — needs the emitter to buffer the compilation's
+diagnostics before emitting, so it can name every affected consumer in the one surviving block; that
+buffering step is the open work here.
 
 ## One missing derive reported field by field
 

@@ -195,7 +195,9 @@ seam: `install.rs` rebuilds whichever inner emitter the compiler's default would
 `JsonEmitter` or an `AnnotateSnippetEmitter` — and wraps it, `cgp_emitter.rs` is the wrapper type and
 its `emit_diagnostic` orchestration (first recognize a duplicate-key `E0119` conflict — suppressing
 the redundant `IsProviderFor` half, rewriting the `DelegateComponent` half; else try the typed
-resolver, else the text rewrite; then always post-process), and `edit.rs` holds the
+resolver, else the text rewrite; then always post-process; then cross-diagnostic de-duplicate — drop a
+transformed diagnostic whose span-independent signature was already emitted, so one mistake re-reported
+at many wiring sites is shown once), and `edit.rs` holds the
 `DiagInner`-editing helpers. `resolve/` is the typed root-cause resolver: `anchor.rs` recovers the
 failing obligation from a `check_components!` entry, a hand-written `impl Trait for Context` block
 the failure surfaces inside (reconstructing the obligation from the impl's CGP consumer supertrait,

@@ -472,9 +472,10 @@ over the `f64: Eq` root-cause note). The impl-site path is pinned by `manual_sup
 same directory (a wrapper trait carrying a *generic* CGP consumer supertrait, implemented directly on
 the context — the transfer example's `CanHandleApiSend` shape — failing both at the impl header
 `E0277` and its forwarding-call `E0599`, each resolved to the same tree with the concrete component
-parameter preserved, and both under the `CGP-E001` consumer header: the impl-header `E0277`, whose
-rustc main message names the consumer bound directly, is promoted to that coded header rather than
-left as the raw bound, matching its `E0599` sibling). The leaf wording — a missing field, a
+parameter preserved and under the `CGP-E001` consumer header. Because both recover the same consumer
+and cause, the emitter's [cross-diagnostic de-duplication](driver.md) then collapses them to a single
+block — so the fixture also pins that the impl-header `E0277` (whose rustc main message names the
+consumer bound directly) is promoted to the coded header rather than left as the raw bound). The leaf wording — a missing field, a
 present-but-underived one, a `Deref`-target one, and a missing wiring — is unit-tested over hand-built `Resolved` values
 in [`cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs),
 and the renderer itself in

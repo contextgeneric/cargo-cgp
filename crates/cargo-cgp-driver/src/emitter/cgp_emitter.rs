@@ -1,12 +1,13 @@
 //! The wrapping [`Emitter`] that transforms CGP diagnostics before delegating.
 
+use std::collections::HashSet;
 use std::path::Path;
 
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for,
 };
 use cargo_cgp_error_processing::{
-    Resolved, plan_resolved, plan_wiring_conflict, wiring_conflict_help,
+    Resolved, cause_signature, plan_resolved, plan_wiring_conflict, wiring_conflict_help,
 };
 use rustc_errors::codes::{E0119, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
@@ -18,7 +19,8 @@ use rustc_span::source_map::SourceMap;
 use crate::component_map::build_name_map_from_tls;
 use crate::emitter::edit::{
     diag_kind, diagnostic_spans, main_message_text, mentions_hasfield_impls, mentions_wiring,
-    postprocess_messages, postprocess_multispan, replace_header, rewrite_messages, subdiag,
+    message_signature, postprocess_messages, postprocess_multispan, replace_header,
+    rewrite_messages, subdiag,
 };
 use crate::resolve::{self, ConflictAction, ConflictTrait};
 
@@ -37,6 +39,12 @@ pub struct CgpEmitter<E> {
     /// `IsProviderFor` supertraits, the blanket impls) and stores owned `String`s, not
     /// compiler handles.
     names: ComponentNameMap,
+    /// The signatures of the CGP diagnostics already emitted this compilation, so a wiring
+    /// mistake that surfaces at many sites is shown once and its identical re-reports are
+    /// suppressed (see [`emit_diagnostic`](CgpEmitter::emit_diagnostic)). Keyed by recovered
+    /// root cause for a resolved diagnostic and by rendered text for a declined-but-rewritten
+    /// one — both span-independent, since the span is exactly what differs between the copies.
+    seen: HashSet<String>,
 }
 
 impl<E> CgpEmitter<E> {
@@ -44,6 +52,7 @@ impl<E> CgpEmitter<E> {
         Self {
             inner,
             names: ComponentNameMap::new(build_name_map_from_tls),
+            seen: HashSet::new(),
         }
     }
 
@@ -197,17 +206,36 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             }
         }
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
-        // resolver declines, the wiring-message rename runs as the first fallback pass.
-        let rewritten = if let Some((resolved, span)) = self.try_resolve(&diag) {
+        // resolver declines, the wiring-message rename runs as the first fallback pass. A resolved
+        // failure also yields its span-independent cause signature, for the de-duplication below.
+        let (rewritten, cause_sig) = if let Some((resolved, span)) = self.try_resolve(&diag) {
+            let sig = cause_signature(&resolved);
             self.transform_resolved(&mut diag, &resolved, span);
-            true
+            (true, Some(sig))
         } else {
-            self.rewrite(&mut diag)
+            (self.rewrite(&mut diag), None)
         };
         // Post-process the result either way, so no raw CGP construct leaks. A typed resolution
         // or a text rewrite constructs the message, so its paths render bare (`@…`); a diagnostic
         // the tool left untouched keeps the `Path!(@…)` resugaring form.
         self.postprocess(&mut diag, rewritten);
+        // Cross-diagnostic de-duplication. CGP wiring is lazy, so one mistake surfaces as the same
+        // error at many sites — the `check_components!` entry, every hand-written `impl` that
+        // references the broken component, and each call. A transformed diagnostic whose recovered
+        // cause (or, for a declined one, whose rewritten text) was already emitted this compilation
+        // is such a re-report, so it is suppressed and only the first occurrence is shown. Only the
+        // tool's own transformed diagnostics are de-duplicated; an untouched `rustc` error always
+        // passes through. cargo re-counts the diagnostics the emitter produces, so a suppressed
+        // re-report drops out of its "N errors" summary as well, keeping the count consistent.
+        if rewritten {
+            let signature = match cause_sig {
+                Some(cause) => format!("cause\u{1f}{cause}"),
+                None => format!("text\u{1f}{}", message_signature(&diag)),
+            };
+            if !self.seen.insert(signature) {
+                return;
+            }
+        }
         self.inner.emit_diagnostic(diag);
     }
 

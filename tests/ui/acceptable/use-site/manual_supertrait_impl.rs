@@ -12,9 +12,9 @@
 //! `Send`) the component cannot express. Here `App` wires `AreaCalculatorComponent` for
 //! `Rectangle` through `ScaleArea`, which depends on the unwired `scale_factor` field; the
 //! unsatisfied `App: CanCalculateArea<Rectangle>` supertrait then fails *inside* the
-//! `impl CanCalculateAreaChecked<Rectangle> for App` block — reported both at the impl header
-//! (`E0277`) and at the forwarding `self.area(..)` call in its body (`E0599`), each over the
-//! same `missing field \`scale_factor\`` root-cause tree.
+//! `impl CanCalculateAreaChecked<Rectangle> for App` block — at the impl header (`E0277`) and
+//! at the forwarding `self.area(..)` call (`E0599`). Both recover the same consumer trait and
+//! `missing field \`scale_factor\`` cause, so the emitter de-duplicates them to one block.
 //!
 //! See docs/implementation/typed-root-cause-resolution.md (the impl-site path).
 

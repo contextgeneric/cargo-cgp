@@ -9,8 +9,9 @@ use std::collections::HashMap;
 use cargo_cgp_error_processing::diagnosis::{mismatch_leaf, quoted_list};
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
-    Cause, DependencyTree, DiagKind, FieldIssue, Leaf, Resolved, cause_note, consumer_header,
-    derive_help_messages, field_mismatch_header, plan_resolved, render_dependency_tree,
+    Cause, DependencyTree, DiagKind, FieldIssue, Leaf, Resolved, cause_note, cause_signature,
+    consumer_header, derive_help_messages, field_mismatch_header, plan_resolved,
+    render_dependency_tree,
 };
 
 /// A two-node dependency spine: the checked consumer over the missing field leaf.
@@ -327,6 +328,91 @@ fn keeps_an_ordinary_bound_header_and_drops_the_repeated_lead() {
             render_dependency_tree(&tree())
         )]
     );
+}
+
+#[test]
+fn promotes_a_mid_chain_symptom_bound_to_the_consumer_header() {
+    // rustc opened the diagnostic on a getter bound (`LoginRequest: HasCredential<App>`) that is a
+    // symptom, not the recovered root cause (a missing wiring). It is not a recovered leaf, so the
+    // header should be replaced with the `CGP-E001` consumer form rather than kept as the symptom.
+    let resolved = Resolved {
+        context: "App".to_owned(),
+        consumers: vec!["CanAuthenticate<LoginRequest>".to_owned()],
+        causes: vec![Cause {
+            leaf: Leaf::MissingWiring {
+                component: "CredentialTypeProviderComponent".to_owned(),
+                owner: "App".to_owned(),
+            },
+            tree: tree(),
+        }],
+    };
+    let plan = plan_resolved(
+        DiagKind::Check,
+        Some("the trait bound `LoginRequest: HasCredential<App>` is not satisfied"),
+        &resolved,
+        &empty_names(),
+    );
+    assert_eq!(
+        plan.header.as_deref(),
+        Some(
+            "[CGP-E001] the consumer trait `CanAuthenticate<LoginRequest>` is not implemented for context `App`"
+        )
+    );
+}
+
+#[test]
+fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
+    let missing_name = || Cause {
+        leaf: Leaf::Field {
+            name: "name".to_owned(),
+            owner: "App".to_owned(),
+            issue: FieldIssue::Missing,
+        },
+        tree: tree(),
+    };
+    // Same context, consumer, and cause reached at two sites — a re-report — shares a signature,
+    // even though the dependency trees differ (the tree is not part of the signature).
+    let at_check = Resolved {
+        context: "App".to_owned(),
+        consumers: vec!["CanGreet".to_owned()],
+        causes: vec![missing_name()],
+    };
+    let at_call = Resolved {
+        context: "App".to_owned(),
+        consumers: vec!["CanGreet".to_owned()],
+        causes: vec![Cause {
+            leaf: Leaf::Field {
+                name: "name".to_owned(),
+                owner: "App".to_owned(),
+                issue: FieldIssue::Missing,
+            },
+            tree: DependencyTree::leaf("a different chain"),
+        }],
+    };
+    assert_eq!(cause_signature(&at_check), cause_signature(&at_call));
+
+    // A different consumer is a distinct failure — never merged, so no capability is hidden.
+    let other_consumer = Resolved {
+        context: "App".to_owned(),
+        consumers: vec!["CanShout".to_owned()],
+        causes: vec![missing_name()],
+    };
+    assert_ne!(cause_signature(&at_check), cause_signature(&other_consumer));
+
+    // A different cause is a distinct fix — never merged.
+    let other_cause = Resolved {
+        context: "App".to_owned(),
+        consumers: vec!["CanGreet".to_owned()],
+        causes: vec![Cause {
+            leaf: Leaf::Field {
+                name: "age".to_owned(),
+                owner: "App".to_owned(),
+                issue: FieldIssue::Missing,
+            },
+            tree: tree(),
+        }],
+    };
+    assert_ne!(cause_signature(&at_check), cause_signature(&other_cause));
 }
 
 #[test]

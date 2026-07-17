@@ -21,8 +21,13 @@ are split into concept sub-directories so no directory grows crowded:
 - [`generic/`](generic) — components generic over a type parameter, with the parameters reattached to
   the consumer and provider names.
 - [`resolution/`](resolution) — resolver edge pins: an ordinary non-CGP bound kept uncoded, same-named
-  components in different modules, a CGP error beside an untouched ordinary one, and an unregistered
-  namespace path.
+  components in different modules, a CGP error beside an untouched ordinary one, an unregistered
+  namespace path, and a getter on a foreign request type resolved to the context's missing wiring
+  rather than the opaque getter bound (`foreign_getter_missing_wiring`).
+- [`duplication/`](duplication) — one wiring mistake re-reported at many sites collapsed to one block
+  by the emitter's cross-diagnostic de-duplication (`cross_site_dedup`: a check entry, a wrapper impl,
+  and its forwarding call for one missing field → a single error, the un-deduplicated cascade kept in
+  the `.rust.stderr` baseline).
 - [`use-site/`](use-site) — a broken dependency reached by a direct consumer-method call (`E0599`),
   recovered from the use site with the misleading method-syntax advice dropped.
 - [`wiring/`](wiring) — coherence conflicts whose output is already clear: a duplicate component
