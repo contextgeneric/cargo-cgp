@@ -197,7 +197,9 @@ its `emit_diagnostic` orchestration (first recognize a duplicate-key `E0119` con
 the redundant `IsProviderFor` half, rewriting the `DelegateComponent` half; else try the typed
 resolver, else the text rewrite; then always post-process), and `edit.rs` holds the
 `DiagInner`-editing helpers. `resolve/` is the typed root-cause resolver: `anchor.rs` recovers the
-failing obligation from a `check_components!` entry or the use site of a broken consumer-method call
+failing obligation from a `check_components!` entry, a hand-written `impl Trait for Context` block
+the failure surfaces inside (reconstructing the obligation from the impl's CGP consumer supertrait,
+concrete parameters preserved), or the use site of a broken consumer-method call
 (`E0599`), `walk.rs` descends the wiring to each terminal leaf, `classify.rs` turns a leaf into the
 rustc-free model by inspecting the struct it lands on, `label.rs` renders each path predicate as a
 tree label, `conflict.rs` classifies a duplicate-key `E0119` by reading the two conflicting

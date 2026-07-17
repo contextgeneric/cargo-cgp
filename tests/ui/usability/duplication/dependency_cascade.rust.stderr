@@ -129,8 +129,8 @@ error[E0277]: the trait bound `App: CanUseComponent<BazComponent>` is not satisf
 84 |         BazComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `App`
-      but trait `HasField<Symbol<3, Chars<'a', Chars<'g', Chars<'e', Nil>>>>>` is implemented for it
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
   --> src/main.rs:66:10
    |
 66 | #[derive(HasField)]
@@ -251,8 +251,8 @@ error[E0277]: the trait bound `App: CanUseComponent<BarComponent>` is not satisf
 85 |         BarComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `App`
-      but trait `HasField<Symbol<3, Chars<'a', Chars<'g', Chars<'e', Nil>>>>>` is implemented for it
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
   --> src/main.rs:66:10
    |
 66 | #[derive(HasField)]
@@ -307,8 +307,8 @@ error[E0277]: the trait bound `App: CanUseComponent<FooComponent>` is not satisf
 86 |         FooComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, Chars<'n', Chars<'a', Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `App`
-      but trait `HasField<Symbol<3, Chars<'a', Chars<'g', Chars<'e', Nil>>>>>` is implemented for it
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
   --> src/main.rs:66:10
    |
 66 | #[derive(HasField)]

@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
 71 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<12, cgp::prelude::Chars<'s', cgp::prelude::Chars<'c', cgp::prelude::Chars<'a', cgp::prelude::Chars<'l', cgp::prelude::Chars<'e', cgp::prelude::Chars<'_', cgp::prelude::Chars<'f', cgp::prelude::Chars<'a', cgp::prelude::Chars<'c', cgp::prelude::Chars<'t', cgp::prelude::Chars<'o', cgp::prelude::Chars<'r', Nil>>>>>>>>>>>>>>` is not implemented for `Rectangle`
+help: the trait `cgp::prelude::HasField<Symbol<12, cgp::prelude::Chars<..>>>` is not implemented for `Rectangle`
   --> src/main.rs:55:1
    |
 55 | pub struct Rectangle {
@@ -15,8 +15,8 @@ help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
 54 | #[derive(HasField)]
    |          ^^^^^^^^
    |          |
-   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', _>>>>>>`
-   |          `HasField<Symbol<6, Chars<'h', Chars<'e', Chars<'i', Chars<'g', _>>>>>>`
+   |          `HasField<Symbol<5, Chars<..>>>`
+   |          `HasField<Symbol<6, Chars<..>>>`
 note: required for `Rectangle` to implement `HasScaleFactor`
   --> src/main.rs:38:1
    |

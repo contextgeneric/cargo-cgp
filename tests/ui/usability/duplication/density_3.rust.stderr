@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
 78 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<6, cgp::prelude::Chars<'h', cgp::prelude::Chars<'e', cgp::prelude::Chars<'i', cgp::prelude::Chars<'g', cgp::prelude::Chars<'h', cgp::prelude::Chars<'t', Nil>>>>>>>>` is not implemented for `Rectangle`
+help: the trait `cgp::prelude::HasField<Symbol<6, cgp::prelude::Chars<..>>>` is not implemented for `Rectangle`
   --> src/main.rs:58:1
    |
 58 | pub struct Rectangle {
@@ -15,8 +15,8 @@ help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
 57 | #[derive(HasField)]
    |          ^^^^^^^^
    |          |
-   |          `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', Chars<'s', Nil>>>>>>`
-   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', _>>>>>>`
+   |          `HasField<Symbol<4, Chars<..>>>`
+   |          `HasField<Symbol<5, Chars<..>>>`
 note: required for `Rectangle` to implement `HasRectangleFields`
   --> src/main.rs:25:1
    |
@@ -104,7 +104,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<DensityCalculatorCompo
 79 |         DensityCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<6, cgp::prelude::Chars<'h', cgp::prelude::Chars<'e', cgp::prelude::Chars<'i', cgp::prelude::Chars<'g', cgp::prelude::Chars<'h', cgp::prelude::Chars<'t', Nil>>>>>>>>` is not implemented for `Rectangle`
+help: the trait `cgp::prelude::HasField<Symbol<6, cgp::prelude::Chars<..>>>` is not implemented for `Rectangle`
   --> src/main.rs:58:1
    |
 58 | pub struct Rectangle {
@@ -115,8 +115,8 @@ help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
 57 | #[derive(HasField)]
    |          ^^^^^^^^
    |          |
-   |          `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', Chars<'s', Nil>>>>>>`
-   |          `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', _>>>>>>`
+   |          `HasField<Symbol<4, Chars<..>>>`
+   |          `HasField<Symbol<5, Chars<..>>>`
 note: required for `Rectangle` to implement `HasRectangleFields`
   --> src/main.rs:25:1
    |

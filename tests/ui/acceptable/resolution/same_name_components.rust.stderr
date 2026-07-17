@@ -4,8 +4,8 @@ error[E0277]: the trait bound `App: CanUseComponent<shapes_a::MeasurerComponent>
 86 |         shapes_a::MeasurerComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<7, Chars<'w', Chars<'i', Chars<'d', Chars<'t', Chars<'h', cgp::prelude::Chars<'_', cgp::prelude::Chars<'a', Nil>>>>>>>>>` is not implemented for `App`
-      but trait `HasField<Symbol<5, Chars<'o', Chars<'t', Chars<'h', Chars<'e', Chars<'r', Nil>>>>>>>` is implemented for it
+help: the trait `HasField<Symbol<7, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
   --> src/main.rs:72:10
    |
 72 | #[derive(HasField)]
@@ -44,8 +44,8 @@ error[E0277]: the trait bound `App: CanUseComponent<shapes_b::MeasurerComponent>
 87 |         shapes_b::MeasurerComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<7, Chars<'w', Chars<'i', Chars<'d', Chars<'t', Chars<'h', cgp::prelude::Chars<'_', cgp::prelude::Chars<'b', Nil>>>>>>>>>` is not implemented for `App`
-      but trait `HasField<Symbol<5, Chars<'o', Chars<'t', Chars<'h', Chars<'e', Chars<'r', Nil>>>>>>>` is implemented for it
+help: the trait `HasField<Symbol<7, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
   --> src/main.rs:72:10
    |
 72 | #[derive(HasField)]

@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', Nil>>>>, PathCons<GreeterComponent, Nil>>, _, _>` for type `App`
+error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<GreeterComponent, Nil>>, _, _>` for type `App`
   --> src/main.rs:57:10
    |
 55 |         namespace AppNamespace;
@@ -7,10 +7,10 @@ error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbo
 57 |         @app.GreeterComponent: GreetBye,
    |          ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
    |
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `GreetHello`
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', cgp::prelude::Nil>>>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `GreetBye`
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `GreetHello`
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<GreeterComponent, cgp::prelude::Nil>>, _, _>` for type `GreetBye`
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol<3, cgp::prelude::Chars<'a', cgp::prelude::Chars<'p', cgp::prelude::Chars<'p', Nil>>>>, PathCons<GreeterComponent, Nil>>>` for type `App`
+error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<GreeterComponent, Nil>>>` for type `App`
   --> src/main.rs:57:10
    |
 55 |         namespace AppNamespace;

@@ -8,7 +8,8 @@
 //! `docs/implementation/typed-root-cause-resolution.md` for the design.
 //!
 //! The pipeline is split by stage: [`anchor`] recovers the starting obligation (from a check
-//! entry or a use site), [`walk`] descends the dependency graph to each terminal leaf, [`classify`]
+//! entry, a hand-written impl on the context, or a use site), [`walk`] descends the dependency
+//! graph to each terminal leaf, [`classify`]
 //! turns a leaf into a [`Leaf`](cargo_cgp_error_processing::Leaf) by inspecting the struct it lands
 //! on, [`label`] renders each path predicate as a tree label, and [`cgp_item`] holds the
 //! DefId-anchored CGP-trait recognition every stage relies on.
@@ -24,5 +25,5 @@ mod conflict;
 mod label;
 mod walk;
 
-pub use anchor::{resolve_check_failure, resolve_use_site};
+pub use anchor::{resolve_check_failure, resolve_impl_site, resolve_use_site};
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};

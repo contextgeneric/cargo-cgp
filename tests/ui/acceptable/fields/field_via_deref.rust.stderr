@@ -4,7 +4,7 @@ error[E0277]: the trait bound `App: CanUseComponent<GreeterComponent>` is not sa
 66 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `App`
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:46:1
    |
 46 | pub struct App {

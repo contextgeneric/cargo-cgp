@@ -1,8 +1,8 @@
-error[E0277]: the trait bound `PathCons<Symbol<3, Chars<'a', Chars<'p', _>>>, _>: DefaultNamespace<_>` is not satisfied
+error[E0277]: the trait bound `PathCons<Symbol<3, Chars<..>>, _>: DefaultNamespace<_>` is not satisfied
   --> src/main.rs:39:9
    |
 39 |         QuantityTypeProviderComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `cgp::prelude::DefaultNamespace<App>` is not implemented for `PathCons<Symbol<3, Chars<'a', Chars<'p', Chars<'p', Nil>>>>, _>`
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `cgp::prelude::DefaultNamespace<App>` is not implemented for `PathCons<Symbol<3, Chars<..>>, _>`
    |
    = help: the following other types implement trait `cgp::prelude::DefaultNamespace<Components>`:
              AsyncComputerComponent
@@ -14,7 +14,7 @@ error[E0277]: the trait bound `PathCons<Symbol<3, Chars<'a', Chars<'p', _>>>, _>
              ErrorWrapperComponent
              HandlerComponent
            and 5 others
-note: required for `App` to implement `DelegateComponent<PathCons<Symbol<3, Chars<'a', Chars<'p', _>>>, _>>`
+note: required for `App` to implement `DelegateComponent<PathCons<Symbol<3, Chars<..>>, _>>`
   --> src/main.rs:31:1
    |
 31 | / delegate_components! {
@@ -24,7 +24,7 @@ note: required for `App` to implement `DelegateComponent<PathCons<Symbol<3, Char
 34 | |     }
 35 | | }
    | |_^
-note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<'a', Chars<'p', _>>>, _>>` to implement `IsProviderFor<finance::QuantityTypeProviderComponent, App>`
+note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<finance::QuantityTypeProviderComponent, App>`
   --> src/main.rs:22:5
    |
 22 |     #[cgp_type]

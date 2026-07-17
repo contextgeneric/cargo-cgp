@@ -124,11 +124,16 @@ impl<E> CgpEmitter<E> {
         let primary_span = diag.span.primary_span()?;
         let resolved = rustc_middle::ty::tls::with_opt(|tcx| {
             let tcx = tcx?;
+            let spans = diagnostic_spans(diag);
             // Prefer the check-entry anchor (an obligation recovered from the check impl at the
-            // caret). Failing that — a use-site failure such as a consumer-method call, whose
-            // obligation no check impl carries — recover the context from the diagnostic's spans.
+            // caret). Failing that, the impl-site anchor recovers the exact failing obligation —
+            // with its concrete component parameters — from a hand-written `impl … for Context`
+            // block the failure surfaces inside, which is more precise than the use-site re-check.
+            // Failing both — a use-site failure such as a consumer-method call, whose obligation no
+            // check impl carries — recover the context from the diagnostic's spans.
             resolve::resolve_check_failure(tcx, primary_span, &self.names)
-                .or_else(|| resolve::resolve_use_site(tcx, &diagnostic_spans(diag), &self.names))
+                .or_else(|| resolve::resolve_impl_site(tcx, &spans, &self.names))
+                .or_else(|| resolve::resolve_use_site(tcx, &spans, &self.names))
         })?;
         Some((resolved, primary_span))
     }
