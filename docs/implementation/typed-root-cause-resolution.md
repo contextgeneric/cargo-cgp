@@ -17,12 +17,19 @@ the sub-notes with one `root cause:` note per leaf. It realizes the compiler-sta
 ## What it transforms, and what it leaves alone
 
 The resolver considers **any diagnostic that names a CGP wiring or field trait**
-(`CanUseComponent`, `IsProviderFor`, or `HasField`) and **every method `E0599`** — no longer only an
-`E0277`. It recovers a starting obligation three ways: from a `check_components!` entry when the caret
-sits on one; from a hand-written *`impl Trait for Context` block* the failure surfaces inside (below);
-and otherwise from the *use site* of a broken consumer-method call (below). Any of the three walks the
-wiring obligations down to the terminal unmet bound(s) they rest on, and the diagnostic is then
-transformed in two independent halves.
+(`CanUseComponent`, `IsProviderFor`, or `HasField`) and **every `E0599`, `E0271`, and `E0277`** — not
+only wiring-worded ones. This breadth is deliberate: a failure that names *no* CGP construct can still
+be a consequence of a CGP component failing — a hand-written `Send`-recovery wrapper whose `async fn`
+forwards to a wired method fails with an `E0271` opaque-future mismatch, a downstream trait bound needs
+a method the context cannot supply — and the resolver traces the dependency chain to find out, treating
+the error as CGP-related exactly when a CGP component failure sits in that chain. It recovers a starting
+obligation three ways: from a `check_components!` entry when the caret sits on one; from a hand-written
+*`impl Trait for Context` block* the failure surfaces inside (below) — which anchors the manual-wrapper
+cascade, since its raw `E0271`/`E0277` land inside such a block whose supertrait is a CGP consumer
+trait; and otherwise from the *use site* of a broken consumer-method call (below). Any of the three
+walks the wiring obligations down to the terminal unmet bound(s) they rest on, and the diagnostic is
+then transformed in two independent halves. A diagnostic whose chain reaches no CGP cause declines and
+passes through untouched.
 
 **The main message is rewritten — and stamped with its [CGP error code](../error-code.md) — only when
 it is an identified CGP class.** An unsatisfied `CanUseComponent` bound is a
@@ -185,10 +192,17 @@ hold is the wiring failure; the resolver reconstructs the `Ctx: CanUseComponent<
 obligation it stands for — recovering the marker through the consumer's blanket impl and the
 provider trait's `IsProviderFor` supertrait (the per-consumer form of the inversion
 [`component_map`](error-processing.md) performs), and grouping the consumer trait's extra arguments
-into `Params` exactly as CGP does (none as `()`, one bare, several as a tuple). Because the
-reconstructed obligation is identical to the one a `check_components!` entry carries — **with the
-concrete component parameter preserved** (`CanCalculateArea<Rectangle>`, not the `()` the use-site
-re-check would substitute) — the walk yields an identical root-cause tree. This anchor is tried
+into `Params` exactly as CGP does (none as `()`, one bare, several as a tuple), **with the concrete
+component parameter preserved** (`CanCalculateArea<Rectangle>`, not the `()` the use-site re-check
+would substitute). The walk of that reconstructed obligation is then **headed by the impl's own
+trait** — the wrapper the programmer wrote (`CanHandleApiSend<Api>`) — so the tree reads
+`CanHandleApiSend → CanHandleApi → …` and points at their code, rather than dropping the wrapper and
+starting at the CGP supertrait. The wrapper heads the diagnostic too, and its header wording depends
+on the wrapper's own **fingerprint**: a wrapper that is itself a CGP consumer trait (a blanket impl
+routing to a provider trait) reads `[CGP-E001] the consumer trait …`, while a plain wrapper such as
+`CanHandleApiSend` — with only a concrete impl — reads `[CGP-E009] the trait …`. Because the wrapper
+is a distinct trait from the CGP supertrait it reduces to, its error is reported on its own rather
+than de-duplicating into the `check_components!` entry for that supertrait. This anchor is tried
 *before* the use-site one, so its precise obligation wins over the parameterless re-check. It fires
 only for an impl on a *local* struct or enum (an `impl … for Router<Arc<App>>` on a foreign type, or
 an impl on a provider struct, carries no consumer supertrait on a context and is skipped).
@@ -328,7 +342,11 @@ diagnostic's own rustc code to a rustc-free
 recognizes the class — the `CGP-E001` consumer form worded from the resolution's context and consumer
 trait(s) (pluralized when a use-site failure spans several components), the `CGP-E002` provider form
 from the text rewrite, or the `CGP-E003` field-type-mismatch form worded from the mismatch leaf when the
-kind is a field mismatch the resolver traced to a `HasField` projection. It keeps rustc's own header
+kind is a field mismatch the resolver traced to a `HasField` projection. A field-mismatch-coded
+(`E0271`) failure the resolver traced to a *non*-mismatch cause instead — a manual `Send`-recovery
+wrapper's opaque-future error, whose `type mismatch resolving …` message is unreadable — takes the
+`CGP-E001` consumer form, since it is really the consumer trait failing to be implemented. It keeps
+rustc's own header
 (yields `None`) only when the main message restates a **genuine recovered leaf** — an ordinary bound
 such as `f64: Eq` the solver descended to, which is itself the root cause. When rustc instead descended
 to a *mid-chain symptom* — an ordinary bound that is not one of the recovered leaves (a getter bound on
@@ -391,7 +409,9 @@ says what it needs to without altering the header's shape.
   resolution, split by stage behind a re-exporting `mod.rs` and building the rustc-free `Resolved`
   model: `anchor.rs` (`resolve_check_failure` finding the check impl by span, `resolve_impl_site`
   recovering the context and the exact failing obligation from the enclosing hand-written `impl Trait
-  for Context` block's CGP consumer supertrait, and `resolve_use_site` recovering the context ADT from
+  for Context` block's CGP consumer supertrait, then heading the tree and the header with the impl's
+  own wrapper trait — `[CGP-E001]` or `[CGP-E009]` by the wrapper's blanket-impl fingerprint — and
+  `resolve_use_site` recovering the context ADT from
   the diagnostic's spans and its wired components from `DelegateComponent` impls), `walk.rs` (walking the cause chain down to each terminal leaf — the
   descendable-vocabulary rule, the plumbing-leaf drop, the foreign-getter descent that follows a
   non-context getter bound's blanket impl into just its context-side dependencies, `is_reportable_leaf`
@@ -414,12 +434,15 @@ says what it needs to without altering the header's shape.
   failure — a separate transform documented in
   [The driver](driver.md#reshaping-a-duplicate-key-conflict), not part of this resolution.
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the
-  `try_resolve` seam (gated by a cheap `mentions_wiring` scan, or a method `E0599`) that tries the
-  check anchor, then the impl-site anchor, then the use-site anchor, and the `transform_resolved`
+  `try_resolve` seam (gated by a cheap `mentions_wiring` scan, or an `E0599`/`E0271`/`E0277` code, so a
+  raw cascade with no CGP wording is still traced) that tries the check anchor, then the impl-site
+  anchor, then the use-site anchor, and the `transform_resolved`
   mutation it feeds: it maps the
   diagnostic's rustc code to a `DiagKind` (`edit::diag_kind`), calls the rustc-free `plan_resolved`
   for the rewritten header and the help/note strings, and applies that plan to the `DiagInner`,
-  falling back to the in-place text rewrite when resolution returns `None`.
+  falling back to the in-place text rewrite when resolution returns `None`. A final cross-diagnostic
+  de-duplication (keyed on the recovered cause, the rendered text, or the coded header) then suppresses
+  a transformed diagnostic that re-reports a failure already shown.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
   — the rustc-free model and wording the resolution feeds: `leaf.rs` and `resolved.rs` (the `Leaf`,
   `FieldIssue`, `Cause`, and `Resolved` types the resolver builds), `wording.rs` (the
@@ -481,10 +504,13 @@ over the `f64: Eq` root-cause note). The impl-site path is pinned by `manual_sup
 same directory (a wrapper trait carrying a *generic* CGP consumer supertrait, implemented directly on
 the context — the transfer example's `CanHandleApiSend` shape — failing both at the impl header
 `E0277` and its forwarding-call `E0599`, each resolved to the same tree with the concrete component
-parameter preserved and under the `CGP-E001` consumer header. Because both recover the same consumer
-and cause, the emitter's [cross-diagnostic de-duplication](driver.md) then collapses them to a single
-block — so the fixture also pins that the impl-header `E0277` (whose rustc main message names the
-consumer bound directly) is promoted to the coded header rather than left as the raw bound). The leaf wording — a missing field, a
+parameter preserved. Both recover the same cause and collapse to a single block headed
+`[CGP-E009] the trait \`CanCalculateAreaChecked<Rectangle>\`` — the wrapper being a plain trait, not a
+CGP consumer — over a tree that leads with the wrapper and descends through its `CanCalculateArea`
+supertrait to the missing field). The `CGP-E009` wrapper header and the raw `E0271` trace are pinned
+by [`traced_send_wrapper`](../../tests/ui/acceptable/duplication/traced_send_wrapper.rs) (an async
+`Send`-recovery wrapper whose opaque-future `E0271` names no CGP construct, traced to the wrapper-headed
+tree). The leaf wording — a missing field, a
 present-but-underived one, a `Deref`-target one, and a missing wiring — is unit-tested over hand-built `Resolved` values
 in [`cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs),
 and the renderer itself in

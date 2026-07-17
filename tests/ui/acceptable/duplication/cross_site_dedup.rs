@@ -1,15 +1,14 @@
-//! Acceptable: one wiring mistake, reported once. CGP wiring is lazy, so a single missing
-//! dependency surfaces wherever the consumer trait is used. Here `App` lacks the `name` field
-//! `GreetHello` needs, and that one mistake would otherwise produce three separate errors: the
-//! `check_components!` entry, the hand-written `CanGreetSend` impl header (the transfer example's
-//! `CanHandleApiSend` shape — a wrapper supertrait implemented directly on the context), and its
-//! forwarding `self.greet()` call. All three recover the same consumer trait (`CanGreet`) and the
-//! same root cause (missing field `name` on `App`), so the emitter de-duplicates them by recovered
-//! cause and shows only the first. The committed `.rust.stderr` baseline shows the full
-//! un-deduplicated cascade for contrast.
-//!
-//! Two distinct consumers that happened to share a cause would *not* merge (the signature includes
-//! the consumer), so no distinct capability's failure is ever hidden.
+//! Acceptable: one wiring mistake, its re-reports collapsed per failing trait, each error headed by
+//! the code the programmer wrote. CGP wiring is lazy, so the single missing `name` field `GreetHello`
+//! needs fans out across the `check_components!` entry and the hand-written `CanGreetSend` impl (both
+//! its header and its forwarding `self.greet()` call) — the transfer example's `Send`-recovery shape.
+//! The tool collapses the re-reports of each failing trait to one block: the check entry becomes a
+//! `[CGP-E001]` `CanGreet` consumer-trait error, and the `CanGreetSend` impl (header and call) a
+//! single `[CGP-E009]` error. A wrapper is a plain trait, not a CGP consumer, so its header reads
+//! "the trait", and its tree is headed by `CanGreetSend` (the code the programmer wrote), descending
+//! through its `CanGreet` supertrait to the missing field rather than hiding the wrapper. The two
+//! blocks stay distinct because they are distinct traits; no re-report repeats. The `.rust.stderr`
+//! baseline shows the full cascade for contrast.
 
 use cgp::prelude::*;
 

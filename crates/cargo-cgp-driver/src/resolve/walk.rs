@@ -85,6 +85,9 @@ pub(crate) fn resolve_leaves<'tcx>(
     Some(Resolved {
         context: context.to_string(),
         consumers: vec![consumer],
+        // The walk starts from a `CanUseComponent` obligation, so the consumer is a CGP consumer
+        // trait (the impl-site anchor overrides this when the failing trait is a plain wrapper).
+        consumers_are_cgp: true,
         causes,
     })
 }

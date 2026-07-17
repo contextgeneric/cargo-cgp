@@ -71,6 +71,14 @@ pub const REDIRECT_COLLISION: &str = "CGP-E007";
 /// `CGP-E008` — the same key is redirected more than once (two `open`s, or two `=>` mappings).
 pub const DUPLICATE_REDIRECT: &str = "CGP-E008";
 
+/// `CGP-E009` — a hand-written trait implemented directly on a context is not implemented, because a
+/// CGP component it depends on fails. Unlike [`CONSUMER_TRAIT_UNIMPLEMENTED`], the failing trait is
+/// *not* a CGP consumer trait — it is a plain wrapper the programmer wrote (the transfer example's
+/// `CanHandleApiSend`, which adds a `Send` bound over a CGP consumer supertrait) — so the message
+/// says "the trait", not "the consumer trait". The root cause is a CGP failure the resolver traced
+/// through the wrapper's supertrait, shown in the `root cause:` note.
+pub const WRAPPER_TRAIT_UNIMPLEMENTED: &str = "CGP-E009";
+
 // The `CGP-E1xx` family codes the entries of a `root cause:` note's dependency tree, one code per
 // distinct rendering template. `CGP-E101`–`CGP-E105` are the inner chain nodes (a wiring hop);
 // `CGP-E106`–`CGP-E109` are the terminal root-cause leaves. An entry that passes a non-CGP message

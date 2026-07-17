@@ -50,11 +50,13 @@ implied.
 ## Codes
 
 The catalog today holds the classes the driver's emitter recognizes in a main message, in two
-groups. The **check-failure** codes `CGP-E001`–`CGP-E003` come from the typed resolver; each carries
-the root cause in the accompanying `note`s — one per recovered cause, each opening `root cause: …`
-over its dependency chain (see
+groups. The **check-failure** codes `CGP-E001`–`CGP-E003` and `CGP-E009` come from the typed
+resolver; each carries the root cause in the accompanying `note`s — one per recovered cause, each
+opening `root cause: …` over its dependency chain (see
 [Typed root-cause resolution](implementation/typed-root-cause-resolution.md)) — except `CGP-E003`,
-whose main message already states its cause in full and so carries the chain alone. The **structural
+whose main message already states its cause in full and so carries the chain alone. (`CGP-E009` is
+the check-failure code for a hand-written wrapper trait rather than a CGP consumer; it is grouped
+with `CGP-E001`–`CGP-E003` below.) The **structural
 wiring-conflict** codes `CGP-E004`–`CGP-E008` are different in kind: they come from the duplicate-key
 conflict classifier, carry no root-cause note, and instead keep rustc's two carets, which already
 point at the two colliding entries. They are five separate codes because each rewrites the `E0119`
@@ -143,6 +145,25 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
 - **`CGP-E008` — duplicate redirect.** `` [CGP-E008] duplicate redirect for <component> on
   `<Context>` … `` (naming one redirect target, or both when they differ) — the same key redirected
   more than once. **Fix:** keep a single redirect.
+
+### `CGP-E009` — wrapper trait not implemented
+
+- **Message:** `` [CGP-E009] the trait `<Wrapper>` is not implemented for context `<Context>` ``.
+- **Means:** a hand-written trait implemented directly on the context — *not* a CGP consumer trait,
+  but a plain wrapper the programmer wrote (the transfer example's `CanHandleApiSend`, which adds a
+  `Send` bound over a CGP consumer supertrait) — cannot be implemented, because a CGP component it
+  depends on fails. It is the [`CGP-E001`](#cgp-e001--consumer-trait-not-implemented) case for a
+  trait that is not itself a CGP component, so it reads "the trait", not "the consumer trait".
+- **Triggered by:** a failure surfaced *inside* a `impl Wrapper for Context` block (its header, a
+  method signature, or a forwarding call) — often as a raw `E0271`/`E0277`/`E0599` that names no CGP
+  construct — which the resolver anchors on the enclosing impl and traces through the wrapper's CGP
+  consumer supertrait to the root cause. Whether the impl's trait is a CGP consumer or a plain
+  wrapper is decided by its **fingerprint**: a CGP consumer carries a blanket impl routing to a
+  provider trait, a wrapper has only its concrete impl.
+- **Fix:** follow the `root cause:` note to the CGP dependency the wrapper's supertrait needs. The
+  dependency tree leads with the wrapper itself, then its CGP supertrait, down to the cause.
+- **Upstream class:** [check-trait failure](../../cgp/docs/errors/checks/check-trait-failure.md)
+  (reached through a hand-written wrapper trait).
 
 ## Dependency-tree entry codes (`CGP-E1xx`)
 

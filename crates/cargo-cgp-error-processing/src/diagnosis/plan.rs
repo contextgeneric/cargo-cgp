@@ -105,6 +105,14 @@ fn categorized_header(
     if resolved.consumers.is_empty() {
         return None;
     }
+    // A field-mismatch-coded (`E0271`) failure that the resolver traced to a *non*-mismatch cause —
+    // a missing field or wiring reached through an opaque-future or associated-type projection, as a
+    // manual `Send`-recovery wrapper's forwarding `async fn` produces — is a consequence of the
+    // consumer failing, not a field-type mismatch. Its rustc message (`type mismatch resolving …`)
+    // is opaque, so name the consumer trait that could not be implemented instead.
+    if kind == DiagKind::FieldMismatch {
+        return Some(consumer_header(resolved));
+    }
     if let Some(text) = main_message {
         if let Some(parsed) = parse_trait_bound(text) {
             if parsed.trait_name == "CanUseComponent" {

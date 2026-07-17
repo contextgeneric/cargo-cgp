@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `App`
-  --> src/main.rs:46:9
+  --> src/main.rs:45:9
    |
-46 |         GreeterComponent,
+45 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E106] missing field `name` on `App`
@@ -10,6 +10,20 @@ error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for co
                └── [CGP-E102] provider trait impl `Greeter` with context `App` for provider `GreetHello`
                    └── [CGP-E105] trait impl `HasName` for `App`
                        └── [CGP-E106] missing field `name` on `App`
+
+error[E0277]: [CGP-E009] the trait `CanGreetSend` is not implemented for context `App`
+  --> src/main.rs:56:23
+   |
+56 | impl CanGreetSend for App {
+   |                       ^^^
+   |
+   = note: root cause: [CGP-E106] missing field `name` on `App`
+           this is required through the dependency chain:
+               [CGP-E105] trait impl `CanGreetSend` for `App`
+               └── [CGP-E101] consumer trait impl `CanGreet` for context `App`
+                   └── [CGP-E102] provider trait impl `Greeter` with context `App` for provider `GreetHello`
+                       └── [CGP-E105] trait impl `HasName` for `App`
+                           └── [CGP-E106] missing field `name` on `App`
 
 Some errors have detailed explanations: E0277, E0599.
 For more information about an error, try `rustc --explain E0277`.

@@ -9,10 +9,13 @@
 //! consumer-method `E0599` (by recovering the context ADT from the diagnostic's spans and
 //! re-checking the parameterless form of every component that context wires).
 
+use cargo_cgp_error_processing::code::DEP_TRAIT_IMPL;
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
+use cargo_cgp_error_processing::tree::DependencyTree;
 use cargo_cgp_error_processing::{Cause, Resolved};
 use rustc_hir::ItemKind;
 use rustc_hir::def::DefKind;
+use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, Upcast as _};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -73,9 +76,13 @@ pub fn resolve_check_failure(
 /// *exact* failing obligation from the impl's CGP consumer supertrait, so a generic component
 /// carries its concrete parameter (`CanCalculateArea<Rectangle>`, not the `()` form the use-site
 /// re-check would substitute). It reconstructs the `Ctx: CanUseComponent<Marker, Params>`
-/// obligation that supertrait stands for and walks it exactly as a check entry would, yielding an
-/// identical root-cause tree. `None` when no enclosing impl on a local context carries an unmet,
-/// reconstructable CGP consumer supertrait.
+/// obligation that supertrait stands for and walks it exactly as a check entry would. The recovered
+/// tree is then headed by the impl's *own* trait — the wrapper the programmer wrote — so the
+/// diagnostic points at their code and the CGP consumer it reduces to follows beneath: the failure
+/// reads `CanHandleApiSend → CanHandleApi → …`, not `CanHandleApi → …` with the wrapper dropped.
+/// Because the wrapper is a distinct trait from that supertrait, its error stands on its own rather
+/// than de-duplicating into the `check_components!` entry. `None` when no enclosing impl on a local
+/// context carries an unmet, reconstructable CGP consumer supertrait.
 pub fn resolve_impl_site(
     tcx: TyCtxt<'_>,
     spans: &[Span],
@@ -95,7 +102,14 @@ pub fn resolve_impl_site(
         }
 
         let mut causes: Vec<Cause> = Vec::new();
-        let mut consumers: Vec<String> = Vec::new();
+        // The error the programmer actually wrote is the impl's *own* trait — the wrapper (e.g.
+        // `CanHandleApiSend<Api>`), not the CGP consumer supertrait it reduces to. That original
+        // obligation heads the dependency tree and names the diagnostic, so the reader sees the
+        // failure at their own code; the CGP consumer it depends on follows as the next node. Being
+        // a distinct trait from that supertrait, the wrapper's error is reported on its own rather
+        // than de-duplicated into the `check_components!` entry for the supertrait.
+        let wrapper = trait_ref.print_only_trait_path().to_string();
+        let wrapper_node = format!("[{DEP_TRAIT_IMPL}] trait impl `{wrapper}` for `{context}`");
         // Each supertrait the impl's trait carries, instantiated for this impl's `Self`. A CGP
         // consumer trait among them that does not hold is the wiring failure the impl surfaces.
         for &(clause, _) in tcx
@@ -118,22 +132,28 @@ pub fn resolve_impl_site(
             let Some(resolved) = resolve_leaves(tcx, top, names) else {
                 continue;
             };
-            for consumer in resolved.consumers {
-                if !consumers.contains(&consumer) {
-                    consumers.push(consumer);
-                }
-            }
             for cause in resolved.causes {
                 if !causes.iter().any(|c| c.key() == cause.key()) {
-                    causes.push(cause);
+                    // Prepend the original wrapper obligation as the tree's top node, above the CGP
+                    // consumer chain the walk recovered.
+                    causes.push(Cause {
+                        leaf: cause.leaf,
+                        tree: DependencyTree::node(wrapper_node.clone(), vec![cause.tree]),
+                    });
                 }
             }
         }
 
         if !causes.is_empty() {
+            // Whether the impl's own trait is a CGP *consumer* trait or a plain wrapper, decided by
+            // its fingerprint: a consumer trait carries a blanket impl routing to a provider trait
+            // (`consumer_provider_trait`), while a hand-written wrapper like `CanHandleApiSend` has
+            // only its concrete impl. This picks `the consumer trait` vs `the trait` in the header.
+            let consumers_are_cgp = consumer_provider_trait(tcx, trait_ref.def_id).is_some();
             return Some(Resolved {
                 context: context.to_string(),
-                consumers,
+                consumers: vec![wrapper],
+                consumers_are_cgp,
                 causes,
             });
         }
@@ -185,6 +205,8 @@ pub fn resolve_use_site(
             return Some(Resolved {
                 context: tcx.erase_and_anonymize_regions(context).to_string(),
                 consumers,
+                // A use-site failure recovers CGP consumer traits from the context's wired markers.
+                consumers_are_cgp: true,
                 causes,
             });
         }

@@ -10,6 +10,7 @@
 use crate::code::{
     CONSUMER_TRAIT_UNIMPLEMENTED, DEP_FIELD_TYPE_MISMATCH, DEP_MISSING_DELEGATE_ENTRY,
     DEP_MISSING_FIELD, DEP_UNIMPLEMENTED_ACCESSOR, FIELD_TYPE_MISMATCH, ROOT_CAUSE_ORDINARY_BOUND,
+    WRAPPER_TRAIT_UNIMPLEMENTED,
 };
 use crate::diagnosis::leaf::{FieldIssue, Leaf};
 use crate::diagnosis::resolved::{Cause, Resolved};
@@ -26,20 +27,28 @@ pub fn quoted_list(items: &[String]) -> String {
     }
 }
 
-/// The `[CGP-E001]` main message for a resolved failure: the consumer trait(s) the context
-/// fails to implement, taken from the typed resolution — which keys each component marker by
-/// its full path — so two same-named components in different modules can never be confused.
+/// The main message for a resolved failure: the trait(s) the context fails to implement, taken
+/// from the typed resolution — which keys each component marker by its full path — so two same-named
+/// components in different modules can never be confused. A CGP consumer trait reads as `the consumer
+/// trait …` (`CGP-E001`); a hand-written wrapper trait implemented on the context (not a CGP
+/// consumer) reads as `the trait …` (`CGP-E009`), chosen by [`Resolved::consumers_are_cgp`].
 pub fn consumer_header(resolved: &Resolved) -> String {
     let (noun, verb) = if resolved.consumers.len() == 1 {
         ("trait", "is")
     } else {
         ("traits", "are")
     };
-    format!(
-        "[{CONSUMER_TRAIT_UNIMPLEMENTED}] the consumer {noun} {list} {verb} not implemented for context `{context}`",
-        list = quoted_list(&resolved.consumers),
-        context = resolved.context,
-    )
+    let list = quoted_list(&resolved.consumers);
+    let context = &resolved.context;
+    if resolved.consumers_are_cgp {
+        format!(
+            "[{CONSUMER_TRAIT_UNIMPLEMENTED}] the consumer {noun} {list} {verb} not implemented for context `{context}`"
+        )
+    } else {
+        format!(
+            "[{WRAPPER_TRAIT_UNIMPLEMENTED}] the {noun} {list} {verb} not implemented for context `{context}`"
+        )
+    }
 }
 
 /// The `[CGP-E003]` main message for a field-type mismatch: the field the wiring reads carries

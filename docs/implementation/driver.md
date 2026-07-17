@@ -328,6 +328,17 @@ the crate has errors (the resolver document explains why). Whichever of the two 
 diagnostic, it then passes through the rustc-free [post-processing](error-processing.md) cleanup, so
 the type names either transform embeds are stripped of CGP path prefixes and resugared.
 
+The resolver is not limited to diagnostics worded in CGP terms. A failure that *never names a CGP
+construct* can still be a consequence of a CGP component failing — a hand-written `Send`-recovery
+wrapper whose `async fn` forwards to a wired method fails with an `E0271` opaque-future mismatch, a
+downstream trait bound needs a method the context cannot supply — so the emitter offers the resolver
+every method `E0599`, `E0271`, and `E0277` (not only the ones mentioning a wiring trait). The resolver
+anchors such an error on the enclosing hand-written `impl` (whose supertrait is a CGP consumer trait)
+and traces the dependency chain from there; if the chain reaches a CGP root cause it renders the tree,
+and if it does not it declines and the error passes through untouched. A traced `E0271` whose cause is
+*not* a field-type mismatch (its opaque `type mismatch resolving …` message being unreadable) is given
+the `[CGP-E001]` consumer header, since it is really the consumer trait failing to be implemented.
+
 A final gate de-duplicates the transformed diagnostics *across* the compilation, because CGP wiring is
 lazy and so one mistake surfaces the same error at many sites. A missing dependency is reported at the
 `check_components!` entry, again at every hand-written `impl` that references the broken consumer, and
@@ -339,12 +350,16 @@ trait(s), and each root-cause leaf, via the rustc-free `cause_signature` — so 
 failure re-reported at several spans collapses to one, while two *distinct* consumers that happen to
 share a cause keep separate signatures and are each still shown (no capability's failure is ever
 hidden). A diagnostic the resolver declined but the text rewrite still transformed is keyed by its
-rendered message text instead (`message_signature`), so the fallback re-reports coalesce too. Only the
-tool's own transformed diagnostics are de-duplicated; an untouched `rustc` error always passes
-through. The count stays honest because cargo re-counts the diagnostics the emitter actually
-produces — a suppressed re-report drops out of its "N errors" summary as well — so the visible block
-count and the summary agree. This is the [one-mistake-many-errors](../issues/usability.md) usability
-class the per-diagnostic resolver could not address on its own.
+rendered message text instead (`message_signature`), so the fallback re-reports coalesce too. A third
+key is the **coded main-message header**: a failure the resolver declined but still rewrote (falling
+back to raw `IsProviderFor` scaffolding) carries the *same* `[CGP-Exxx]` header as the resolved tree of
+the same failure, so keying on the header collapses that declined fallback into the resolved
+occurrence even though their bodies differ. Only the tool's own transformed diagnostics are
+de-duplicated; an untouched `rustc` error always passes through. The count stays honest because cargo
+re-counts the diagnostics the emitter actually produces — a suppressed re-report drops out of its "N
+errors" summary as well — so the visible block count and the summary agree. This is the
+[one-mistake-many-errors](../issues/usability.md) usability class the per-diagnostic resolver could not
+address on its own.
 
 ### Reshaping a duplicate-key conflict
 

@@ -31,10 +31,16 @@ impl Cause {
 pub struct Resolved {
     /// The checked context type, e.g. `Rectangle`.
     pub context: String,
-    /// The consumer trait(s) the context fails to implement, with a generic component's extra
-    /// parameters reattached (e.g. `CanCalculateArea<f64>`) — one per failing component, in
-    /// first-seen order. The emitter words a rewritten main message around these.
+    /// The trait(s) the context fails to implement, with a generic component's extra parameters
+    /// reattached (e.g. `CanCalculateArea<f64>`) — one per failing component, in first-seen order.
+    /// The emitter words a rewritten main message around these.
     pub consumers: Vec<String>,
+    /// Whether [`consumers`](Resolved::consumers) are CGP *consumer* traits (from a
+    /// `check_components!` entry or a consumer-method call) rather than a hand-written wrapper trait
+    /// implemented on the context. It selects the header wording: `the consumer trait` (`CGP-E001`)
+    /// when `true`, `the trait` (`CGP-E009`) when `false` — since a wrapper such as
+    /// `CanHandleApiSend` is a plain trait the programmer wrote, not a CGP consumer.
+    pub consumers_are_cgp: bool,
     /// One entry per distinct root cause, in first-seen order.
     pub causes: Vec<Cause>,
 }

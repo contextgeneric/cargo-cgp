@@ -1,16 +1,17 @@
-error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea<Rectangle>` is not implemented for context `App`
-  --> src/main.rs:63:45
+error[E0277]: [CGP-E009] the trait `CanCalculateAreaChecked<Rectangle>` is not implemented for context `App`
+  --> src/main.rs:66:45
    |
-63 | impl CanCalculateAreaChecked<Rectangle> for App {
+66 | impl CanCalculateAreaChecked<Rectangle> for App {
    |                                             ^^^
    |
    = note: root cause: [CGP-E106] missing field `scale_factor` on `App`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanCalculateArea<Rectangle>` for context `App`
-               └── [CGP-E104] redirect lookup to `@AreaCalculatorComponent` in `App`
-                   └── [CGP-E102] provider trait impl `AreaCalculator<Rectangle>` with context `App` for provider `ScaleArea`
-                       └── [CGP-E105] trait impl `HasScaleFactor` for `App`
-                           └── [CGP-E106] missing field `scale_factor` on `App`
+               [CGP-E105] trait impl `CanCalculateAreaChecked<Rectangle>` for `App`
+               └── [CGP-E101] consumer trait impl `CanCalculateArea<Rectangle>` for context `App`
+                   └── [CGP-E104] redirect lookup to `@AreaCalculatorComponent` in `App`
+                       └── [CGP-E102] provider trait impl `AreaCalculator<Rectangle>` with context `App` for provider `ScaleArea`
+                           └── [CGP-E105] trait impl `HasScaleFactor` for `App`
+                               └── [CGP-E106] missing field `scale_factor` on `App`
 
 Some errors have detailed explanations: E0277, E0599.
 For more information about an error, try `rustc --explain E0277`.

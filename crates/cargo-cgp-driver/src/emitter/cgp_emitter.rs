@@ -9,7 +9,7 @@ use cargo_cgp_error_processing::rewrite::{
 use cargo_cgp_error_processing::{
     Resolved, cause_signature, plan_resolved, plan_wiring_conflict, wiring_conflict_help,
 };
-use rustc_errors::codes::{E0119, E0599};
+use rustc_errors::codes::{E0119, E0271, E0277, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
 use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Suggestions};
@@ -120,14 +120,16 @@ impl<E> CgpEmitter<E> {
         })
     }
 
-    /// Resolve `diag`'s CGP wiring failure to its root-cause dependency tree(s), or `None` when
-    /// this is not a resolvable wiring diagnostic (so the caller falls back to the in-place text
-    /// rewrite). A candidate is any diagnostic whose messages mention a CGP wiring trait, plus
-    /// every method `E0599`; [`resolve`] does the typed work and yields `None` for everything it
-    /// cannot fully resolve. Returns the primary span alongside the resolution so the
-    /// field-replacement path can re-aim the caret at the entry.
+    /// Resolve `diag`'s failure to its root-cause dependency tree(s), or `None` when the resolver
+    /// cannot trace it to a CGP component failure (so the caller falls back to the in-place text
+    /// rewrite). A candidate is any diagnostic that mentions a CGP wiring trait, plus every method
+    /// `E0599`, `E0271`, and `E0277` — because a failure *not* worded in CGP terms can still be a
+    /// consequence of a CGP component failing (a manual `impl` that forwards to a wired method, a
+    /// downstream trait bound that needs it), and [`resolve`] traces the dependency chain to find
+    /// out. It yields `None` for everything whose chain does not reach a CGP cause. Returns the
+    /// primary span alongside the resolution so the caret can be re-aimed at the entry.
     fn try_resolve(&self, diag: &DiagInner) -> Option<(Resolved, Span)> {
-        if !mentions_wiring(diag) && diag.code != Some(E0599) {
+        if !mentions_wiring(diag) && !matches!(diag.code, Some(E0599) | Some(E0271) | Some(E0277)) {
             return None;
         }
         let primary_span = diag.span.primary_span()?;
@@ -232,8 +234,25 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                 Some(cause) => format!("cause\u{1f}{cause}"),
                 None => format!("text\u{1f}{}", message_signature(&diag)),
             };
-            if !self.seen.insert(signature) {
+            // A second key on the coded main-message header (a `[CGP-E0xx]` code): a failure the
+            // resolver declined but still rewrote falls back to raw `IsProviderFor` scaffolding, yet
+            // carries the *same* coded header as the resolved tree of the same failure — so it is a
+            // re-report even though its body differs from that tree. Keying on the header collapses
+            // it into the resolved occurrence. Restricted to `[CGP-E0` (a main-message code), so a
+            // kept rustc header is never a de-duplication key.
+            let header_sig = main_message_text(&diag)
+                .filter(|header| header.starts_with("[CGP-E0"))
+                .map(|header| format!("header\u{1f}{header}"));
+            let already_seen = self.seen.contains(&signature)
+                || header_sig
+                    .as_ref()
+                    .is_some_and(|header| self.seen.contains(header));
+            if already_seen {
                 return;
+            }
+            self.seen.insert(signature);
+            if let Some(header) = header_sig {
+                self.seen.insert(header);
             }
         }
         self.inner.emit_diagnostic(diag);
