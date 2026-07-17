@@ -115,11 +115,15 @@ struct LeafPath<'tcx> {
 /// path's `mismatch`, so the caller renders a [`FieldTypeMismatch`](cargo_cgp_error_processing::Leaf::FieldTypeMismatch).
 /// A branch with no such projection yields nothing, so the resolver declines it to the fallback.
 ///
-/// The descent stops at any ordinary bound on a foreign type (a bound whose `Self` is not the
-/// context and whose trait is not CGP wiring), treating it as the terminal leaf. That bound *is*
-/// the root cause a reader wants (`f64: Eq`); descending it would wander into whatever unrelated
-/// `std` blanket impl happens to match its `Self` (e.g. `impl<F: FnPtr> Eq for F`) and fabricate a
-/// misleading chain.
+/// A bound on a foreign type (whose `Self` is not the context and whose trait is not CGP wiring)
+/// is normally the terminal leaf — that bound *is* the root cause a reader wants (`f64: Eq`), and
+/// descending it blindly would wander into whatever unrelated `std` blanket impl happens to match
+/// its `Self` (e.g. `impl<F: FnPtr> Eq for F`) and fabricate a misleading chain. The one exception
+/// is a foreign bound satisfied by an impl that itself depends on the *context* — a request
+/// struct's `HasBasicAuthHeader<Ctx>` getter, whose `#[cgp_auto_getter]` blanket impl requires
+/// `Ctx: HasPasswordType`: there the descent follows only the impl's context-side dependencies (so
+/// the real cause on the context surfaces and de-duplicates with the same cause reached elsewhere),
+/// and never its foreign dependencies (which keeps the `f64: Eq` guarantee intact).
 fn collect_leaf_paths<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitPredicate<'tcx>,
@@ -141,13 +145,7 @@ fn collect_leaf_paths<'tcx>(
         }];
     }
 
-    if !is_descendable(tcx, pred, context) {
-        // An ordinary bound on a foreign type — the root-cause leaf. Do not walk into `std` impls.
-        return vec![LeafPath {
-            preds: path,
-            mismatch: None,
-        }];
-    }
+    let descendable = is_descendable(tcx, pred, context);
 
     let Some(children) = impl_where_obligations(tcx, pred) else {
         // No impl satisfies `pred` at all — `pred` is itself the terminal root-cause bound.
@@ -161,6 +159,38 @@ fn collect_leaf_paths<'tcx>(
         .into_iter()
         .filter(|nested| !holds(tcx, *nested))
         .collect();
+
+    if !descendable {
+        // A foreign-type bound — its `Self` is not the context and its trait is not CGP wiring —
+        // is normally the terminal root cause, and the descent must not walk into whatever `std`
+        // blanket impl happens to satisfy it (an `impl<F: FnPtr> Eq for F` would fabricate a
+        // misleading `f64: FnPtr` step). But a CGP getter or capability trait applied to a
+        // *non-context* type — a request struct's `HasBasicAuthHeader<Ctx>`, whose
+        // `#[cgp_auto_getter]` blanket impl requires `Ctx: HasPasswordType` — is often unmet only
+        // because a dependency *on the context* is unmet. So look into that blanket impl and
+        // descend into just its context-side dependencies, which reveals the real cause (and lets
+        // it de-duplicate with the same cause reached down another branch). The context-side
+        // filter is what keeps the `f64: Eq` guarantee: a foreign `f64: FnPtr` step is not
+        // context-side, so it is never followed and the bound stays the leaf. It also skips the
+        // getter's own `Ctx::Assoc`-typed `HasField` clause on the request (present, but a
+        // projection mismatch), which a plain descent would misreport as a missing field.
+        let context_side: Vec<_> = unmet
+            .into_iter()
+            .filter(|nested| is_descendable(tcx, *nested, context))
+            .collect();
+        if context_side.is_empty() {
+            return vec![LeafPath {
+                preds: path,
+                mismatch: None,
+            }];
+        }
+        let mut paths = Vec::new();
+        for nested in context_side {
+            paths.extend(collect_leaf_paths(tcx, nested, context, &path, depth + 1));
+        }
+        return paths;
+    }
+
     if unmet.is_empty() {
         // Matched an impl, yet every trait-clause `where`-obligation holds: the fault is a
         // projection the trait-clause walk cannot see. Surface the one form we can pin down — a

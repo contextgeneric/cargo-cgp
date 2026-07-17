@@ -1,8 +1,8 @@
-error[E0277]: the trait bound `App: CanCalculateArea<Rectangle>` is not satisfied
+error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea<Rectangle>` is not implemented for context `App`
   --> src/main.rs:63:45
    |
 63 | impl CanCalculateAreaChecked<Rectangle> for App {
-   |                                             ^^^ unsatisfied trait bound
+   |                                             ^^^
    |
    = note: root cause: missing field `scale_factor` on `App`
            this is required through the dependency chain:

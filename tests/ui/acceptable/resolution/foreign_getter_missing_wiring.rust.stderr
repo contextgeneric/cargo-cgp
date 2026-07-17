@@ -1,0 +1,94 @@
+error[E0277]: the trait bound `App: CanUseComponent<AuthenticatorComponent, LoginRequest>` is not satisfied
+  --> src/main.rs:83:9
+   |
+83 |         AuthenticatorComponent: LoginRequest,
+   |         ^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `DelegateComponent<CredentialTypeProviderComponent>` is not implemented for `App`
+      but trait `DelegateComponent<AuthenticatorComponent>` is implemented for it
+  --> src/main.rs:77:9
+   |
+77 |         AuthenticatorComponent: RequireCredential<AcceptAll>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `AuthenticatorComponent`, found `CredentialTypeProviderComponent`
+note: required for `App` to implement `CredentialTypeProvider<App>`
+  --> src/main.rs:19:1
+   |
+19 | #[cgp_type]
+   | ^^^^^^^^^^^
+note: required for `LoginRequest` to implement `HasCredential<App>`
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+28 | pub trait HasCredential<App>
+   |           ^^^^^^^^^^^^^^^^^^
+note: required for `RequireCredential<AcceptAll>` to implement `IsProviderFor<AuthenticatorComponent, App, LoginRequest>`
+  --> src/main.rs:53:1
+   |
+53 | #[cgp_impl(new RequireCredential<InAuth>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+58 |     Request: HasCredential<Self>,
+   |              ------------------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<AuthenticatorComponent, LoginRequest>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:81:1
+   |
+81 | / check_components! {
+82 | |     App {
+83 | |         AuthenticatorComponent: LoginRequest,
+84 | |     }
+85 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_type` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: CanUseComponent<AuthenticatorComponent, LoginRequest>` is not satisfied
+  --> src/main.rs:83:9
+   |
+83 |         AuthenticatorComponent: LoginRequest,
+   |         ^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<CredentialTypeProviderComponent, App>` is not implemented for `App`
+  --> src/main.rs:73:1
+   |
+73 | pub struct App;
+   | ^^^^^^^^^^^^^^
+help: the trait `IsProviderFor<AuthenticatorComponent, __Context__, __Params__>` is implemented for `App`
+  --> src/main.rs:77:9
+   |
+77 |         AuthenticatorComponent: RequireCredential<AcceptAll>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CredentialTypeProvider<App>`
+  --> src/main.rs:19:1
+   |
+19 | #[cgp_type]
+   | ^^^^^^^^^^^
+note: required for `LoginRequest` to implement `HasCredential<App>`
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+28 | pub trait HasCredential<App>
+   |           ^^^^^^^^^^^^^^^^^^
+note: required for `RequireCredential<AcceptAll>` to implement `IsProviderFor<AuthenticatorComponent, App, LoginRequest>`
+  --> src/main.rs:53:1
+   |
+53 | #[cgp_impl(new RequireCredential<InAuth>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+58 |     Request: HasCredential<Self>,
+   |              ------------------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<AuthenticatorComponent, LoginRequest>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:81:1
+   |
+81 | / check_components! {
+82 | |     App {
+83 | |         AuthenticatorComponent: LoginRequest,
+84 | |     }
+85 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_type` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

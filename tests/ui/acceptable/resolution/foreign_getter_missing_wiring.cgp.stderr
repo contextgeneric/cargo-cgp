@@ -1,0 +1,15 @@
+error[E0277]: [CGP-E001] the consumer trait `CanAuthenticate<LoginRequest>` is not implemented for context `App`
+  --> src/main.rs:83:9
+   |
+83 |         AuthenticatorComponent: LoginRequest,
+   |         ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: context `App` does not contain any delegate entry for `CredentialTypeProviderComponent`
+           this is required through the dependency chain:
+               consumer trait impl `CanAuthenticate<LoginRequest>` for context `App`
+               └── provider trait impl `Authenticator<LoginRequest>` with context `App` for provider `RequireCredential<AcceptAll>`
+                   └── trait impl `HasCredential` for `LoginRequest`
+                       └── trait impl `HasCredentialType` for `App`
+                           └── context `App` does not contain any delegate entry for `CredentialTypeProviderComponent`
+
+For more information about this error, try `rustc --explain E0277`.

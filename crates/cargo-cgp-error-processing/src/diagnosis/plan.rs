@@ -106,17 +106,43 @@ fn categorized_header(
         return None;
     }
     if let Some(text) = main_message {
-        if let Some(parsed) = parse_trait_bound(text)
-            && parsed.trait_name == "CanUseComponent"
-        {
-            return Some(consumer_header(resolved));
+        if let Some(parsed) = parse_trait_bound(text) {
+            if parsed.trait_name == "CanUseComponent" {
+                return Some(consumer_header(resolved));
+            }
+            // rustc opened the diagnostic on a bound that restates a genuine recovered leaf — an
+            // ordinary bound such as `f64: Eq` the solver descended to *is* the root cause — so
+            // keep rustc's header, which already names that cause. (The matching note then drops
+            // its `root cause:` lead so it does not repeat the header.)
+            if bound_is_leaf(resolved, parsed.bound) {
+                return None;
+            }
         }
         if let Some(rewritten) = rewrite_trait_bound(text, names) {
             return Some(rewritten);
+        }
+        // The main message is a trait bound, but not a recognized CGP wiring bound and not a
+        // recovered leaf: rustc descended to a mid-chain *symptom* (a getter bound on a request,
+        // say, whose real cause is a missing wiring one level down). Naming the consumer trait the
+        // context fails to implement is truer than leaking that symptom bound as the headline.
+        if parse_trait_bound(text).is_some() {
+            return Some(consumer_header(resolved));
         }
     }
     if kind == DiagKind::MethodNotFound {
         return Some(consumer_header(resolved));
     }
     None
+}
+
+/// Whether `bound` — the whole `Self: Trait<…>` restatement rustc's main message opened with —
+/// matches a recovered [`Leaf::Bound`] root cause. When it does, rustc's header already names the
+/// genuine root cause and should be kept; when it does not, the header is a mid-chain symptom the
+/// solver stopped on. Compared against the same [`Leaf::Bound::summary`] the note wording uses, so
+/// the two stay in step.
+fn bound_is_leaf(resolved: &Resolved, bound: &str) -> bool {
+    resolved
+        .causes
+        .iter()
+        .any(|cause| matches!(&cause.leaf, Leaf::Bound { summary } if summary == bound))
 }

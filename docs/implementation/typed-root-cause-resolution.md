@@ -37,9 +37,13 @@ provider form via the text rewrite; and a field-type mismatch — an `E0271` the
 expected type read from the failing projection and the actual type queried from the struct. The
 rewrite restates the same fact readably — the caret is re-aimed at the failing entry alone, and the
 diagnostic's own Rust code (`E0277`, `E0599`, `E0271`) is kept. A main message that is *not* a CGP
-class — an ordinary bound (`f64: Eq`) the next-gen solver already descended to — stays rustc's own,
-header, labels, and caret untouched
+class — an ordinary bound (`f64: Eq`) the next-gen solver descended to *that is itself a recovered
+root cause* — stays rustc's own, header, labels, and caret untouched
 ([`ordinary_bound_unsatisfied`](../../tests/ui/acceptable/resolution/ordinary_bound_unsatisfied.rs)).
+But when the solver descended to an ordinary bound that is *not* one of the recovered leaves — a
+mid-chain symptom, such as a getter bound on a request whose real cause is a missing wiring a level
+down — the `CGP-E001` consumer header is truer than that symptom and replaces it
+([`foreign_getter_missing_wiring`](../../tests/ui/acceptable/resolution/foreign_getter_missing_wiring.rs)).
 
 **The sub-messages are replaced either way.** rustc's obligation-chain notes, supplementary help, and
 structured suggestions are discarded, and each recovered root cause becomes one `= note:` opening with
@@ -213,9 +217,19 @@ but by the trait's fingerprint, a single `Delegate` associated type (`DefaultNam
 `DefaultImpls*` traits, and every user `cgp_namespace!` trait all share it, so a same-named user
 namespace is caught without a `DefId` anchor) — is the missing-redirect-wiring leaf: a `RedirectLookup`
 forwarded the lookup to a path the context's table does not terminate. An
-ordinary bound on a *foreign* type (`f64: Eq`) is a terminal leaf too, and crucially the descent stops
-there rather than walking into whatever unrelated `std` blanket impl happens to match its `Self` (an
-`impl<F: FnPtr> Eq for F` would otherwise fabricate a misleading `f64: FnPtr` step). Two further rules
+ordinary bound on a *foreign* type (`f64: Eq`) is a terminal leaf too, and crucially the descent does
+not blindly walk into whatever unrelated `std` blanket impl happens to match its `Self` (an
+`impl<F: FnPtr> Eq for F` would otherwise fabricate a misleading `f64: FnPtr` step). The one foreign
+bound it *does* descend is a getter or capability trait applied to a non-context type whose satisfying
+impl depends on the **context** — a request struct's `HasBasicAuthHeader<Ctx>`, whose
+`#[cgp_auto_getter]` blanket impl requires `Ctx: HasPasswordType`. There the walk looks into that
+blanket impl and follows only its context-side dependencies, so the real cause on the context
+surfaces (and de-duplicates with the same cause reached down another branch) instead of the opaque
+`Request: HasBasicAuthHeader<Ctx>` bound being reported as a second, misleading root cause. Following
+only the context-side dependencies is what preserves the `f64: Eq` guarantee — a foreign `f64: FnPtr`
+step is not context-side, so it is never followed — and it skips the getter's own `Ctx::Assoc`-typed
+`HasField` clause on the request, which is present but a projection mismatch a plain descent would
+misreport as a missing field. Two further rules
 handle the remaining cases. An obligation whose satisfying impl's trait-clause `where`-obligations
 **all hold**, yet is itself unmet, is failing for a projection/associated-type mismatch the
 trait-clause walk cannot see. The resolver looks among that impl's own predicates for the one form it
@@ -306,8 +320,13 @@ diagnostic's own rustc code to a rustc-free
 recognizes the class — the `CGP-E001` consumer form worded from the resolution's context and consumer
 trait(s) (pluralized when a use-site failure spans several components), the `CGP-E002` provider form
 from the text rewrite, or the `CGP-E003` field-type-mismatch form worded from the mismatch leaf when the
-kind is a field mismatch the resolver traced to a `HasField` projection — and yields `None` for an
-unrecognized main message. `transform_resolved` then only mutates rustc's own `DiagInner`: when the
+kind is a field mismatch the resolver traced to a `HasField` projection. It keeps rustc's own header
+(yields `None`) only when the main message restates a **genuine recovered leaf** — an ordinary bound
+such as `f64: Eq` the solver descended to, which is itself the root cause. When rustc instead descended
+to a *mid-chain symptom* — an ordinary bound that is not one of the recovered leaves (a getter bound on
+a request whose real cause is a missing wiring one level down) — the consumer `CGP-E001` header is
+truer than that symptom, so it wins over keeping rustc's; a main message that is neither a trait bound
+nor a resolved class (an unrelated `E0308`) still yields `None`. `transform_resolved` then only mutates rustc's own `DiagInner`: when the
 plan carries a header it replaces the main message and collapses the span to the primary caret, since
 the original labels restate the replaced message; an unrecognized (`None`) header leaves the header,
 labels, and caret alone. Either way it replaces the children with the plan's `help`s (one per distinct
@@ -366,9 +385,10 @@ says what it needs to without altering the header's shape.
   recovering the context and the exact failing obligation from the enclosing hand-written `impl Trait
   for Context` block's CGP consumer supertrait, and `resolve_use_site` recovering the context ADT from
   the diagnostic's spans and its wired components from `DelegateComponent` impls), `walk.rs` (walking the cause chain down to each terminal leaf — the
-  descendable-vocabulary rule, the plumbing-leaf drop, `is_reportable_leaf` keeping an unmet
-  `DelegateComponent` only when it lands on the context, `has_field_projection_mismatch` finding an
-  unmet `HasField` projection where the trait clauses all hold, and — after building the inner
+  descendable-vocabulary rule, the plumbing-leaf drop, the foreign-getter descent that follows a
+  non-context getter bound's blanket impl into just its context-side dependencies, `is_reportable_leaf`
+  keeping an unmet `DelegateComponent` only when it lands on the context, `has_field_projection_mismatch`
+  finding an unmet `HasField` projection where the trait clauses all hold, and — after building the inner
   labels from the chain *above* the leaf — appending `root_cause_lead` as the tree's terminal, so the
   chain ends on the root cause), `classify.rs` (classifying a leaf as a
   field by inspecting the struct and its `Deref` chain, a field-type mismatch with `field_type` reading
@@ -427,7 +447,12 @@ a marker name in different modules, with distinct consumer *and* provider trait 
 full-path resolution names each one's own traits with no cross-over), `generic_area_multi` (a
 three-parameter component → the parameters reattached to the consumer and provider labels), and
 `ordinary_bound_unsatisfied` (a non-field `f64: Eq` bound, whose rustc header is kept over a lead-less
-chain note), and `unregistered_prefix_path`/`qualified_prefix_path` (an unwired namespace redirect
+chain note), `foreign_getter_missing_wiring` (a `#[cgp_auto_getter]` getter on a *request* type,
+depending on the context's abstract type, wrapped in a higher-order provider — the transfer example's
+`UseBasicAuth` shape — so the failure surfaces as the opaque `Request: HasCredential<App>` bound; the
+walk descends that getter's blanket impl into its context-side dependency and the misleading second
+root cause collapses into the one missing-wiring cause, under a promoted `CGP-E001` header), and
+`unregistered_prefix_path`/`qualified_prefix_path` (an unwired namespace redirect
 behind an `IsProviderFor` header, rewritten to the `CGP-E002` form over a `root cause:` note whose
 chain is the redirect hop(s) down to a terminal naming the context with no delegate entry for the
 bare `@…` path — the latter defined across sub-modules, pinning that a module-qualified path still
@@ -447,7 +472,9 @@ over the `f64: Eq` root-cause note). The impl-site path is pinned by `manual_sup
 same directory (a wrapper trait carrying a *generic* CGP consumer supertrait, implemented directly on
 the context — the transfer example's `CanHandleApiSend` shape — failing both at the impl header
 `E0277` and its forwarding-call `E0599`, each resolved to the same tree with the concrete component
-parameter preserved). The leaf wording — a missing field, a
+parameter preserved, and both under the `CGP-E001` consumer header: the impl-header `E0277`, whose
+rustc main message names the consumer bound directly, is promoted to that coded header rather than
+left as the raw bound, matching its `E0599` sibling). The leaf wording — a missing field, a
 present-but-underived one, a `Deref`-target one, and a missing wiring — is unit-tested over hand-built `Resolved` values
 in [`cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs),
 and the renderer itself in
