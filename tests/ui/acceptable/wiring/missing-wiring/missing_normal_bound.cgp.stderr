@@ -4,12 +4,12 @@ error[E0277]: [CGP-E001] the consumer trait `CanUseFoo` is not implemented for c
 35 |         FooProviderComponent: DoFooWithBar,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: the trait bound `App: Clone` is not satisfied
+   = note: root cause: [CGP-E201] the trait bound `App: Clone` is not satisfied
            this is required through the dependency chain:
-               consumer trait impl `CanUseFoo` for context `App`
-               └── provider trait impl `FooProvider` with context `App` for provider `DoFooWithBar`
-                   └── trait impl `CanUseBar` for `App`
-                       └── provider trait impl `BarProvider` with context `App` for provider `DoBar`
+               [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
+               └── [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBar`
+                   └── [CGP-E105] trait impl `CanUseBar` for `App`
+                       └── [CGP-E102] provider trait impl `BarProvider` with context `App` for provider `DoBar`
                            └── the trait bound `App: Clone` is not satisfied
 
 error[E0277]: [CGP-E001] the consumer trait `CanUseBar` is not implemented for context `App`
@@ -18,10 +18,10 @@ error[E0277]: [CGP-E001] the consumer trait `CanUseBar` is not implemented for c
 36 |         BarProviderComponent: DoBar,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: the trait bound `App: Clone` is not satisfied
+   = note: root cause: [CGP-E201] the trait bound `App: Clone` is not satisfied
            this is required through the dependency chain:
-               consumer trait impl `CanUseBar` for context `App`
-               └── provider trait impl `BarProvider` with context `App` for provider `DoBar`
+               [CGP-E101] consumer trait impl `CanUseBar` for context `App`
+               └── [CGP-E102] provider trait impl `BarProvider` with context `App` for provider `DoBar`
                    └── the trait bound `App: Clone` is not satisfied
 
 For more information about this error, try `rustc --explain E0277`.

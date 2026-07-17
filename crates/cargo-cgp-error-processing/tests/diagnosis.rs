@@ -10,8 +10,8 @@ use cargo_cgp_error_processing::diagnosis::{mismatch_leaf, quoted_list};
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
     Cause, DependencyTree, DiagKind, FieldIssue, Leaf, Resolved, cause_note, cause_signature,
-    consumer_header, derive_help_messages, field_mismatch_header, plan_resolved,
-    render_dependency_tree,
+    consumer_header, dependency_tree_leaf, derive_help_messages, field_mismatch_header,
+    plan_resolved, render_dependency_tree, root_cause_code,
 };
 
 /// A two-node dependency spine: the checked consumer over the missing field leaf.
@@ -79,7 +79,7 @@ fn plans_a_missing_field_check_failure() {
     assert_eq!(
         plan.notes,
         vec![String::from(
-            "root cause: missing field `height` on `Rectangle`\n\
+            "root cause: [CGP-E106] missing field `height` on `Rectangle`\n\
              this is required through the dependency chain:\n\
              \x20   consumer trait impl `CanCalculateArea` for context `Rectangle`\n\
              \x20   └── field trait impl `HasField` with field `height` for `Rectangle`"
@@ -123,7 +123,7 @@ fn plans_a_missing_wiring_check_failure() {
     assert_eq!(
         plan.notes,
         vec![String::from(
-            "root cause: context `App` does not contain any delegate entry for `BarProviderComponent`\n\
+            "root cause: [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`\n\
              this is required through the dependency chain:\n\
              \x20   consumer trait impl `CanUseFoo` for context `App`\n\
              \x20   └── trait impl `CanUseBar` for `App`"
@@ -165,7 +165,7 @@ fn plans_a_missing_redirect_wiring_check_failure() {
     assert_eq!(
         plan.notes,
         vec![String::from(
-            "root cause: context `App` does not contain any delegate entry for \
+            "root cause: [CGP-E107] context `App` does not contain any delegate entry for \
              `@app.finance.types.QuantityTypeProviderComponent`\n\
              this is required through the dependency chain:\n\
              \x20   consumer trait impl `HasQuantityType` for context `App`\n\
@@ -204,7 +204,7 @@ fn plans_a_missing_derive_with_a_help() {
         vec!["make sure that `#[derive(HasField)]` is used for `Rectangle`".to_owned()]
     );
     assert!(plan.notes[0].starts_with(
-        "root cause: accessor trait `HasField` with field `height` is not implemented for `Rectangle`"
+        "root cause: [CGP-E108] accessor trait `HasField` with field `height` is not implemented for `Rectangle`"
     ));
 }
 
@@ -361,6 +361,67 @@ fn promotes_a_mid_chain_symptom_bound_to_the_consumer_header() {
 }
 
 #[test]
+fn dependency_tree_leaf_codes_rewritten_leaves_and_passes_bounds_through() {
+    // Each rewritten root-cause leaf carries its own `CGP-E1xx` code as a tree entry…
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::Field {
+            name: "name".to_owned(),
+            owner: "App".to_owned(),
+            issue: FieldIssue::Missing,
+        }),
+        "[CGP-E106] missing field `name` on `App`"
+    );
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::MissingWiring {
+            component: "BarProviderComponent".to_owned(),
+            owner: "App".to_owned(),
+        }),
+        "[CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`"
+    );
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::Field {
+            name: "name".to_owned(),
+            owner: "Person".to_owned(),
+            issue: FieldIssue::Present,
+        }),
+        "[CGP-E108] accessor trait `HasField` with field `name` is not implemented for `Person`"
+    );
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::FieldTypeMismatch {
+            name: "height".to_owned(),
+            owner: "Rectangle".to_owned(),
+            expected: "f64".to_owned(),
+            actual: "i32".to_owned(),
+        }),
+        "[CGP-E109] field `height` on `Rectangle` has type `i32`, but `f64` is required"
+    );
+    // …but a pass-through ordinary bound keeps rustc's phrasing with no code.
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::Bound {
+            summary: "f64: Eq".to_owned(),
+        }),
+        "the trait bound `f64: Eq` is not satisfied"
+    );
+
+    // The `root cause:` lead reuses the leaf's code, and falls back to the `CGP-E2xx` root-cause
+    // code only where the leaf is the uncoded pass-through bound.
+    assert_eq!(
+        root_cause_code(&Leaf::Field {
+            name: "name".to_owned(),
+            owner: "App".to_owned(),
+            issue: FieldIssue::Missing,
+        }),
+        "CGP-E106"
+    );
+    assert_eq!(
+        root_cause_code(&Leaf::Bound {
+            summary: "f64: Eq".to_owned(),
+        }),
+        "CGP-E201"
+    );
+}
+
+#[test]
 fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
     let missing_name = || Cause {
         leaf: Leaf::Field {
@@ -476,7 +537,8 @@ fn wording_helpers_format_directly() {
 
     let cause = missing_field_cause();
     assert!(
-        cause_note(&cause, None).starts_with("root cause: missing field `height` on `Rectangle`")
+        cause_note(&cause, None)
+            .starts_with("root cause: [CGP-E106] missing field `height` on `Rectangle`")
     );
     assert!(derive_help_messages(std::slice::from_ref(&cause)).is_empty());
 }

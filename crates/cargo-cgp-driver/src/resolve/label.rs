@@ -6,6 +6,10 @@
 //! `cargo tree`-style text.
 
 use cargo_cgp_error_processing::ComponentTraitNames;
+use cargo_cgp_error_processing::code::{
+    DEP_CONSUMER_TRAIT_IMPL, DEP_FIELD_TRAIT_IMPL, DEP_PROVIDER_TRAIT_IMPL, DEP_REDIRECT_LOOKUP,
+    DEP_TRAIT_IMPL,
+};
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::tree::DependencyTree;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -49,7 +53,7 @@ pub(crate) fn label_for<'tcx>(
         // generic component's consumer trait reads as written (`CanCalculateArea<u32, u64, bool>`).
         let generics = render_params(trait_ref.args.type_at(2));
         Some(format!(
-            "consumer trait impl `{consumer}{generics}` for context `{}`",
+            "[{DEP_CONSUMER_TRAIT_IMPL}] consumer trait impl `{consumer}{generics}` for context `{}`",
             trait_ref.self_ty()
         ))
     } else if is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE) {
@@ -61,7 +65,9 @@ pub(crate) fn label_for<'tcx>(
         // show it as the redirection it performs rather than as a provider-trait impl, so a
         // chain of redirects reads as its successive hops.
         if let Some(path) = redirect_path(tcx, trait_ref.self_ty()) {
-            return Some(format!("redirect lookup to `{path}` in `{context}`"));
+            return Some(format!(
+                "[{DEP_REDIRECT_LOOKUP}] redirect lookup to `{path}` in `{context}`"
+            ));
         }
         let provider = trait_ref.self_ty().to_string();
         let provider_trait = marker_role(tcx, trait_ref.args.type_at(1), names, |n| n.provider);
@@ -70,12 +76,12 @@ pub(crate) fn label_for<'tcx>(
         let provider_context = trait_ref.args.type_at(2);
         let generics = render_params(trait_ref.args.type_at(3));
         Some(format!(
-            "provider trait impl `{provider_trait}{generics}` with context `{provider_context}` for provider `{provider}`"
+            "[{DEP_PROVIDER_TRAIT_IMPL}] provider trait impl `{provider_trait}{generics}` with context `{provider_context}` for provider `{provider}`"
         ))
     } else if is_cgp_item(tcx, did, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
         let field = decode_symbol(tcx, trait_ref.args.type_at(1))?;
         Some(format!(
-            "field trait impl `HasField` with field `{field}` for `{}`",
+            "[{DEP_FIELD_TRAIT_IMPL}] field trait impl `HasField` with field `{field}` for `{}`",
             trait_ref.self_ty()
         ))
     } else if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
@@ -89,7 +95,7 @@ pub(crate) fn label_for<'tcx>(
         None
     } else {
         Some(format!(
-            "trait impl `{}` for `{}`",
+            "[{DEP_TRAIT_IMPL}] trait impl `{}` for `{}`",
             tcx.item_name(did),
             trait_ref.self_ty()
         ))

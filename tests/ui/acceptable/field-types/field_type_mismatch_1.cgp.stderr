@@ -5,8 +5,8 @@ error[E0271]: [CGP-E003] expected a `height` field of type `f64` on `Rectangle`,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this is required through the dependency chain:
-           consumer trait impl `CanCalculateArea` for context `Rectangle`
-           └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-               └── field `height` on `Rectangle` has type `i32`, but `f64` is required
+           [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+           └── [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+               └── [CGP-E109] field `height` on `Rectangle` has type `i32`, but `f64` is required
 
 For more information about this error, try `rustc --explain E0271`.

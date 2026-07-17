@@ -47,7 +47,10 @@ down — the `CGP-E001` consumer header is truer than that symptom and replaces 
 
 **The sub-messages are replaced either way.** rustc's obligation-chain notes, supplementary help, and
 structured suggestions are discarded, and each recovered root cause becomes one `= note:` opening with
-a `root cause:` lead naming its leaf, followed by the dependency chain rendered as a tree. The chain
+a `root cause:` lead naming its leaf, followed by the dependency chain rendered as a tree. Both the
+lead and every tree entry carry a [`CGP-E1xx`/`CGP-E2xx` code](../error-code.md) — the wording
+examples below omit the prefix for brevity, but each `root cause:` lead reads `root cause: [CGP-E1xx]
+…` in the real output. The chain
 **repeats the root cause as its terminal leaf**, so it always bottoms out *at* the cause rather than
 one step before it — the same shape whether the leaf is a missing field, an unmet bound, a missing
 wiring, or a redirect. Every path in these rewritten messages renders as a bare `@app.GreeterComponent`
@@ -306,7 +309,12 @@ than its bare name, so two components that share a name in different modules res
 names instead of one clobbering the other. Pure plumbing that carries no information — the
 `DelegateComponent` table, the routing `IsProviderFor` for the *context itself* (as opposed to the real
 provider), and a bare provider-trait obligation that an `IsProviderFor` node already stands for — is
-dropped, so the chain stays legible without losing a real dependency step. Each cleaned path folds into
+dropped, so the chain stays legible without losing a real dependency step. Each rendered entry is
+stamped with its own [`CGP-E1xx` code](../error-code.md) — one per template, so `consumer trait impl`
+(`CGP-E101`), `provider trait impl` (`CGP-E102`), `redirect lookup` (`CGP-E104`), and the general
+`trait impl \`Trait\` for \`Type\`` (`CGP-E105`) each carry a distinct tag; a terminal leaf takes a
+leaf code (`CGP-E106`–`CGP-E109`) via `dependency_tree_leaf`, except a pass-through ordinary bound
+(`the trait bound \`f64: Eq\` is not satisfied`), which stays uncoded. Each cleaned path folds into
 a [`DependencyTree`](error-processing.md) spine, rendered as `cargo tree`-style indented text by the
 [`termtree`](https://crates.io/crates/termtree) crate (a tiny, dependency-free renderer) hosted in the
 rustc-free `cargo-cgp-error-processing` crate so the rendering is unit-tested on any toolchain.
@@ -389,13 +397,14 @@ says what it needs to without altering the header's shape.
   non-context getter bound's blanket impl into just its context-side dependencies, `is_reportable_leaf`
   keeping an unmet `DelegateComponent` only when it lands on the context, `has_field_projection_mismatch`
   finding an unmet `HasField` projection where the trait clauses all hold, and — after building the inner
-  labels from the chain *above* the leaf — appending `root_cause_lead` as the tree's terminal, so the
-  chain ends on the root cause), `classify.rs` (classifying a leaf as a
+  labels from the chain *above* the leaf — appending the coded `dependency_tree_leaf` as the tree's
+  terminal, so the chain ends on the root cause), `classify.rs` (classifying a leaf as a
   field by inspecting the struct and its `Deref` chain, a field-type mismatch with `field_type` reading
   the actual field type off the struct by `DefId`, a missing wiring naming the unwired component
   marker, a missing *redirect* wiring naming the unterminated namespace path, or a bound), `label.rs`
-  (folding the inner chain into a `DependencyTree` with each wiring trait replaced by its human form —
-  a `RedirectLookup` provider as `redirect lookup to \`@…\` in \`Ctx\``, and the `DelegateComponent`
+  (folding the inner chain into a `DependencyTree` with each wiring trait replaced by its human form
+  and stamped with its per-template `CGP-E1xx` code — a `RedirectLookup` provider as
+  `[CGP-E104] redirect lookup to \`@…\` in \`Ctx\``, and the `DelegateComponent`
   table lookup and namespace lookup dropped as plumbing since the caller re-states the leaf — generic
   parameters reattached),
   and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition, the `Symbol!` field-name decode,

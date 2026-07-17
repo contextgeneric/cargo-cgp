@@ -1,17 +1,27 @@
-//! The CGP error codes stamped on rewritten main messages.
+//! The CGP error codes stamped on rewritten main messages and dependency-tree entries.
 //!
-//! A CGP error code names one recognized class of CGP mistake. It is attached only when two
-//! things are both true: `cargo-cgp` *rewrote* the diagnostic's main message, and that main
-//! message was *identified* as a CGP error class (a check-trait failure through
-//! `CanUseComponent`, say). The code rides inside the message text as a `[CGP-E001]` prefix —
-//! `error[E0277]: [CGP-E001] the consumer trait …` — so the diagnostic's own Rust code
-//! (`E0277`, `E0599`) is always kept: the error is still fundamentally rustc's, only restated,
-//! and `rustc --explain` stays meaningful.
+//! A CGP error code names one recognized class of CGP mistake. It rides inside the message text
+//! as a `[CGP-Exxx]` prefix — `error[E0277]: [CGP-E001] the consumer trait …` — so the
+//! diagnostic's own Rust code (`E0277`, `E0599`) is always kept: the error is still
+//! fundamentally rustc's, only restated, and `rustc --explain` stays meaningful.
 //!
-//! Sub-messages carry no code, even when they are rewritten: renamed obligation notes,
-//! resugared `Symbol!`s, and root-cause notes are supporting detail of the one classified
-//! error, not classifications of their own. An unrecognized main message is never coded, no
-//! matter how much of the rest of the diagnostic was cleaned up.
+//! The three-digit space is split by *what* the code classifies. The **`CGP-E0xx`** range is for
+//! **main messages** — the diagnostic's headline. A main-message code is attached only when
+//! `cargo-cgp` both *rewrote* the main message and *identified* it as a CGP error class (a
+//! check-trait failure through `CanUseComponent`, say); an unrecognized main message is never
+//! coded, no matter how much of the rest of the diagnostic was cleaned up. The **`CGP-E1xx`**
+//! range is for **dependency-tree entries** — each node of the `root cause:` note's `cargo
+//! tree`, one code per distinct rendering template, so `consumer trait impl \`C\` for context
+//! \`Ctx\`` and `provider trait impl \`P\` …` carry different codes. A tree entry that merely
+//! *passes through* a non-CGP message (the ordinary-bound restatement `the trait bound \`f64:
+//! Eq\` is not satisfied`) carries no code; a tree entry the tool *rewrote* into its own
+//! template — including the general `trait impl \`Trait\` for \`Type\`` — does. The **`CGP-E2xx`**
+//! range is for **the `root cause:` note lead**: it reuses the code of the terminal leaf it names
+//! (so a missing-field root cause reads `[CGP-E106]`), and takes a fresh `CGP-E2xx` code only where
+//! the leaf itself is an uncoded pass-through bound and so has no code to reuse.
+//!
+//! Renamed obligation notes and resugared `Symbol!`s are supporting detail, not classifications
+//! of their own, and stay uncoded.
 //!
 //! The scheme is the letters `CGP-E` followed by three digits, deliberately unlike rustc's
 //! `E0277`, so the two namespaces never blur. The catalog of what each code means and how to
@@ -60,3 +70,54 @@ pub const REDIRECT_COLLISION: &str = "CGP-E007";
 
 /// `CGP-E008` — the same key is redirected more than once (two `open`s, or two `=>` mappings).
 pub const DUPLICATE_REDIRECT: &str = "CGP-E008";
+
+// The `CGP-E1xx` family codes the entries of a `root cause:` note's dependency tree, one code per
+// distinct rendering template. `CGP-E101`–`CGP-E105` are the inner chain nodes (a wiring hop);
+// `CGP-E106`–`CGP-E109` are the terminal root-cause leaves. An entry that passes a non-CGP message
+// through unchanged (the `the trait bound … is not satisfied` restatement) carries no code.
+
+/// `CGP-E101` — a dependency-chain hop through a context's *consumer* trait impl:
+/// `consumer trait impl \`Trait\` for context \`Ctx\``.
+pub const DEP_CONSUMER_TRAIT_IMPL: &str = "CGP-E101";
+
+/// `CGP-E102` — a dependency-chain hop through a *provider* trait impl:
+/// `provider trait impl \`Trait\` with context \`Ctx\` for provider \`Provider\``.
+pub const DEP_PROVIDER_TRAIT_IMPL: &str = "CGP-E102";
+
+/// `CGP-E103` — a dependency-chain hop through a `HasField` accessor impl:
+/// `field trait impl \`HasField\` with field \`f\` for \`T\``.
+pub const DEP_FIELD_TRAIT_IMPL: &str = "CGP-E103";
+
+/// `CGP-E104` — a dependency-chain hop through a namespace/`open` redirect:
+/// `redirect lookup to \`@…\` in \`Ctx\``.
+pub const DEP_REDIRECT_LOOKUP: &str = "CGP-E104";
+
+/// `CGP-E105` — a dependency-chain hop through any other trait, rendered in the general
+/// `trait impl \`Trait\` for \`Type\`` form (a user capability trait, or an ordinary bound
+/// restated as an impl).
+pub const DEP_TRAIT_IMPL: &str = "CGP-E105";
+
+/// `CGP-E106` — a root-cause leaf: a context field the wiring reads is genuinely absent
+/// (`missing field \`f\` on \`T\``).
+pub const DEP_MISSING_FIELD: &str = "CGP-E106";
+
+/// `CGP-E107` — a root-cause leaf: the context wires no provider for a component (or terminates
+/// no namespace path), `context \`Ctx\` does not contain any delegate entry for \`key\``.
+pub const DEP_MISSING_DELEGATE_ENTRY: &str = "CGP-E107";
+
+/// `CGP-E108` — a root-cause leaf: a field the struct carries but has not derived `HasField` for,
+/// `accessor trait \`HasField\` with field \`f\` is not implemented for \`T\``.
+pub const DEP_UNIMPLEMENTED_ACCESSOR: &str = "CGP-E108";
+
+/// `CGP-E109` — a root-cause leaf: a field present with the wrong type,
+/// `field \`f\` on \`T\` has type \`A\`, but \`B\` is required`.
+pub const DEP_FIELD_TYPE_MISMATCH: &str = "CGP-E109";
+
+// The `CGP-E2xx` range codes the `root cause:` note lead. It reuses the terminal leaf's `CGP-E1xx`
+// code where the leaf has one; the constants here cover only the leads that need a code of their
+// own because the leaf they name is an uncoded pass-through.
+
+/// `CGP-E201` — the `root cause:` lead for a leaf that is an ordinary (non-CGP) trait bound: the
+/// leaf itself passes through uncoded (`the trait bound \`f64: Eq\` is not satisfied`), but the
+/// lead still names a classified root cause, so it takes this code.
+pub const ROOT_CAUSE_ORDINARY_BOUND: &str = "CGP-E201";

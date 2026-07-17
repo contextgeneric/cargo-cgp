@@ -6,7 +6,7 @@
 //! folding each into a [`Cause`] with its rendered dependency tree.
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
-use cargo_cgp_error_processing::{Cause, Resolved, root_cause_lead};
+use cargo_cgp_error_processing::{Cause, Resolved, dependency_tree_leaf};
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_infer::traits::Obligation;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized, Upcast as _};
@@ -60,8 +60,9 @@ pub(crate) fn resolve_leaves<'tcx>(
             .filter_map(|pred| label_for(tcx, *pred, context, names))
             .collect();
         // Repeat the root cause as the terminal leaf node, so the tree ends on it — the same shape
-        // whether the leaf is a missing field, an unmet bound, a missing wiring, or a redirect.
-        labels.push(root_cause_lead(&leaf));
+        // whether the leaf is a missing field, an unmet bound, a missing wiring, or a redirect. As
+        // a tree entry it carries its own `CGP-E1xx` code (except a pass-through non-CGP bound).
+        labels.push(dependency_tree_leaf(&leaf));
         if let Some(tree) = spine(labels) {
             causes.push(Cause { leaf, tree });
         }

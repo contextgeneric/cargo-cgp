@@ -4,10 +4,10 @@ error[E0599]: [CGP-E001] the consumer trait `CanCompareScalars` is not implement
 54 |     let _ = app.scalars_equal(&1.0, &2.0);
    |                 ^^^^^^^^^^^^^
    |
-   = note: root cause: the trait bound `f64: Eq` is not satisfied
+   = note: root cause: [CGP-E201] the trait bound `f64: Eq` is not satisfied
            this is required through the dependency chain:
-               consumer trait impl `CanCompareScalars` for context `App`
-               └── provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`
+               [CGP-E101] consumer trait impl `CanCompareScalars` for context `App`
+               └── [CGP-E102] provider trait impl `ScalarEquality` with context `App` for provider `CompareScalars`
                    └── the trait bound `f64: Eq` is not satisfied
 
 For more information about this error, try `rustc --explain E0599`.

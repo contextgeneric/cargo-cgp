@@ -28,9 +28,9 @@ pub mod tree;
 
 pub use diagnosis::{
     Cause, DiagKind, DiagnosisPlan, FieldIssue, Leaf, Resolved, WiringConflict, WiringKey,
-    cause_note, cause_signature, consumer_header, derive_help_messages, field_mismatch_header,
-    missing_delegate_entry, plan_resolved, plan_wiring_conflict, root_cause_lead,
-    wiring_conflict_help,
+    cause_note, cause_signature, consumer_header, dependency_leaf_code, dependency_tree_leaf,
+    derive_help_messages, field_mismatch_header, missing_delegate_entry, plan_resolved,
+    plan_wiring_conflict, root_cause_code, root_cause_lead, wiring_conflict_help,
 };
 pub use postprocess::{
     CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_path, resugar_symbol,

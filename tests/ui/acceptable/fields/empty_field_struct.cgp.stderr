@@ -4,17 +4,17 @@ error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemente
 59 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: missing field `height` on `Rectangle`
+   = note: root cause: [CGP-E106] missing field `height` on `Rectangle`
            this is required through the dependency chain:
-               consumer trait impl `CanCalculateArea` for context `Rectangle`
-               └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-                   └── trait impl `HasRectangleFields` for `Rectangle`
-                       └── missing field `height` on `Rectangle`
-   = note: root cause: missing field `width` on `Rectangle`
+               [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+               └── [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+                   └── [CGP-E105] trait impl `HasRectangleFields` for `Rectangle`
+                       └── [CGP-E106] missing field `height` on `Rectangle`
+   = note: root cause: [CGP-E106] missing field `width` on `Rectangle`
            this is required through the dependency chain:
-               consumer trait impl `CanCalculateArea` for context `Rectangle`
-               └── provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-                   └── trait impl `HasRectangleFields` for `Rectangle`
-                       └── missing field `width` on `Rectangle`
+               [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+               └── [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+                   └── [CGP-E105] trait impl `HasRectangleFields` for `Rectangle`
+                       └── [CGP-E106] missing field `width` on `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

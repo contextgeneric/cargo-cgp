@@ -1,10 +1,17 @@
 # CGP Error Codes
 
-`cargo-cgp` assigns a stable error code to every main message it rewrites into a CGP-specific one,
-and this document is the catalog of those codes. A code names one recognized class of CGP mistake —
-what the message means, what triggers it, and how to fix it — so that a reader who sees a code in
-the tool's output can look it up here, and so that the tool's own tests and future JSON output can
-refer to a class by a short, stable identifier rather than by its prose.
+`cargo-cgp` assigns a stable error code to every main message it rewrites into a CGP-specific one and
+to every entry of the dependency tree it renders, and this document is the catalog of those codes. A
+code names one recognized class of CGP mistake or one dependency-chain step — what it means, what
+triggers it, and how to fix it — so that a reader who sees a code in the tool's output can look it up
+here, and so that the tool's own tests and future JSON output can refer to a class by a short, stable
+identifier rather than by its prose.
+
+The three-digit space is split by *what* a code classifies. The **`CGP-E0xx`** range names **main
+messages** — the diagnostic's headline. The **`CGP-E1xx`** range names **dependency-tree entries** —
+each node of a `root cause:` note's `cargo tree`, one code per distinct rendering template. Keeping
+the ranges apart lets a reader tell at a glance whether a code tags the error's headline or one hop of
+the chain beneath it.
 
 ## The scheme, and why it looks unlike a Rust code
 
@@ -137,6 +144,67 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
   `<Context>` … `` (naming one redirect target, or both when they differ) — the same key redirected
   more than once. **Fix:** keep a single redirect.
 
+## Dependency-tree entry codes (`CGP-E1xx`)
+
+The `CGP-E1xx` range codes the entries of a `root cause:` note's dependency tree — one code per
+distinct rendering template, so a reader can name a chain step (and a downstream tool can key on it)
+just as with a main message. The code rides at the start of each tree entry:
+
+```text
+= note: root cause: [CGP-E106] missing field `name` on `App`
+        this is required through the dependency chain:
+            [CGP-E101] consumer trait impl `CanGreet` for context `App`
+            └── [CGP-E102] provider trait impl `Greeter` with context `App` for provider `GreetHello`
+                └── [CGP-E105] trait impl `HasName` for `App`
+                    └── [CGP-E106] missing field `name` on `App`
+```
+
+A tree entry that merely *passes a non-CGP message through* in rustc's own phrasing — the
+ordinary-bound restatement `` the trait bound `f64: Eq` is not satisfied `` — is uncoded, while an
+entry the tool *rewrote* into its own template (including the general `` trait impl `Trait` for
+`Type` ``) is coded. The `root cause:` note lead — the summary above the tree — carries a code of its
+own, from the separate `CGP-E2xx` range (see below).
+
+The codes divide into the inner chain-node templates and the terminal root-cause leaves.
+
+- **`CGP-E101` — consumer trait impl.** `` consumer trait impl `<Trait>` for context `<Ctx>` `` — a
+  hop through the context's own consumer-trait impl (a `CanUseComponent` step).
+- **`CGP-E102` — provider trait impl.** `` provider trait impl `<Trait>` with context `<Ctx>` for
+  provider `<Provider>` `` — a hop through a provider's provider-trait impl (an `IsProviderFor` step).
+- **`CGP-E103` — field trait impl.** `` field trait impl `HasField` with field `<f>` for `<T>` `` — a
+  hop through a `HasField` accessor impl that is *not* the terminal leaf (rare: a `HasField` bound is
+  almost always the chain's terminal, coded `CGP-E106`/`CGP-E108`/`CGP-E109` instead).
+- **`CGP-E104` — redirect lookup.** `` redirect lookup to `@…` in `<Ctx>` `` — a hop through a
+  namespace or `open` `RedirectLookup`.
+- **`CGP-E105` — trait impl (general).** `` trait impl `<Trait>` for `<Type>` `` — a hop through any
+  other trait: a user capability trait, or an ordinary bound restated as an impl. This is the
+  "rewritten non-CGP" form that is coded even though the trait itself may not be a CGP construct.
+- **`CGP-E106` — missing field (leaf).** `` missing field `<f>` on `<T>` `` — the chain bottoms out
+  on a context field that is genuinely absent.
+- **`CGP-E107` — missing delegate entry (leaf).** `` context `<Ctx>` does not contain any delegate
+  entry for `<key>` `` — the context wires no provider for a component, or terminates no namespace
+  path (the `<key>` is a component marker or an `@`-path).
+- **`CGP-E108` — unimplemented accessor (leaf).** `` accessor trait `HasField` with field `<f>` is not
+  implemented for `<T>` `` — the struct carries the field but has not derived `HasField` for it (the
+  fix, a `#[derive(HasField)]`, rides in a separate `help`).
+- **`CGP-E109` — field type mismatch (leaf).** `` field `<f>` on `<T>` has type `<actual>`, but
+  `<expected>` is required `` — the field is present and derived but has the wrong type (the leaf face
+  of the `CGP-E003` main message).
+
+## Root-cause lead codes (`CGP-E2xx`)
+
+The `root cause:` line that heads a note — the plain-sentence summary above the dependency tree —
+also carries a code. It **reuses the terminal leaf's `CGP-E1xx` code** where the leaf has one, so the
+lead and the tree's terminal show the same code (`` root cause: [CGP-E106] missing field `name` on
+`App` `` over a tree that ends in `` [CGP-E106] missing field `name` on `App` ``). The `CGP-E2xx`
+range exists for the one case that needs a code of its own: a leaf that is an uncoded pass-through
+bound, whose lead still names a classified root cause.
+
+- **`CGP-E201` — ordinary-bound root cause.** `` root cause: the trait bound `<S: Trait>` is not
+  satisfied `` — the failure bottoms out on an ordinary (non-CGP) trait bound. The terminal tree
+  entry passes the bound through uncoded, but the `root cause:` lead takes this code so every root
+  cause the tool states is tagged.
+
 ## Uncoded rewrites
 
 These rewrites improve a diagnostic's readability without classifying its main message, so they
@@ -188,6 +256,16 @@ check-failure form by [`plan_resolved`](../crates/cargo-cgp-error-processing/src
 `categorized_header` (fed from the resolved failure), and the `CGP-E004`–`CGP-E008` conflict forms by
 [`plan_wiring_conflict`](../crates/cargo-cgp-error-processing/src/diagnosis/wiring.rs) (fed from the
 conflict the driver's `resolve::conflict` classifier recovers, one code per `WiringConflict` shape).
-When a new class of main message is recognized and rewritten, assign it the next `CGP-E` number, add
-the constant, and register the class here in the same change. When a rewrite does not classify the main
-message, add it to [uncoded rewrites](#uncoded-rewrites) instead — do not spend a code on it.
+The `CGP-E1xx` dependency-tree entry codes are stamped at tree-construction time: the inner chain
+nodes by the driver's [`resolve::label`](../crates/cargo-cgp-driver/src/resolve/label.rs) (which
+chooses a template from the trait kind and prefixes its code), and the terminal leaf by the rustc-free
+[`dependency_tree_leaf`](../crates/cargo-cgp-error-processing/src/diagnosis/wording.rs) (which prefixes
+`dependency_leaf_code`, or leaves a pass-through bound bare). The `CGP-E2xx` root-cause lead code is
+stamped by [`cause_note`](../crates/cargo-cgp-error-processing/src/diagnosis/wording.rs) via
+`root_cause_code`, which reuses `dependency_leaf_code` and only falls back to a `CGP-E2xx` constant for
+an uncoded leaf. When a new main-message class is recognized, or a new tree-entry or root-cause
+template is added, assign it the next number in the matching range (`CGP-E0xx` for a headline,
+`CGP-E1xx` for a tree entry, `CGP-E2xx` for a root-cause lead the leaf codes cannot cover), add the
+constant, and register it here in the same change. When a rewrite does not classify its message — a
+kept rustc header, or a pass-through tree entry — add it to [uncoded rewrites](#uncoded-rewrites)
+instead, or leave the tree entry bare — do not spend a code on it.

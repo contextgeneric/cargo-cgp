@@ -4,10 +4,10 @@ error[E0277]: [CGP-E002] the provider trait `Greeter` with context `App` is not 
 50 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: root cause: context `App` does not contain any delegate entry for `@app.GreeterComponent`
+   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@app.GreeterComponent`
            this is required through the dependency chain:
-               consumer trait impl `CanGreet` for context `App`
-               └── redirect lookup to `@app.GreeterComponent` in `App`
-                   └── context `App` does not contain any delegate entry for `@app.GreeterComponent`
+               [CGP-E101] consumer trait impl `CanGreet` for context `App`
+               └── [CGP-E104] redirect lookup to `@app.GreeterComponent` in `App`
+                   └── [CGP-E107] context `App` does not contain any delegate entry for `@app.GreeterComponent`
 
 For more information about this error, try `rustc --explain E0277`.
