@@ -1,0 +1,10 @@
+error[E0599]: no variant named `Fields` found for enum `Choice`
+  --> src/main.rs:31:13
+   |
+23 | pub enum Choice {
+   | --------------- variant `Fields` not found here
+...
+31 |     Choice::Fields: Sized,
+   |             ^^^^^^ variant not found in `Choice`
+
+For more information about this error, try `rustc --explain E0599`.

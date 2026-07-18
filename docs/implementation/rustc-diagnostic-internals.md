@@ -10,6 +10,15 @@ fact that matters. This document maps the compiler code responsible, so the next
 suppression point, decide whether to defeat it, and confirm it against the source rather than
 rediscovering it.
 
+This document has a second subject that the same foothold forces on the tool. Because the driver
+reaches the live `TyCtxt` and re-runs compiler code — the trait solver, and the queries it pulls in —
+from *inside* `emit_diagnostic`, it runs that code in a place rustc never expected arbitrary compiler
+work to run. Doing so can **panic the compiler**, and the panics are not hypothetical: two distinct
+ones have already been hit and fixed. The information-dropping map below is what the tool must defeat;
+the [panic hazards](#panic-hazards-running-compiler-code-inside-the-emitter) section near the end is
+what it must *avoid*, and it is the more dangerous half — an elision produces a worse message, but a
+re-entrancy panic aborts the whole compilation.
+
 Every path here points into the read-only Rust checkout at
 [`../external/rust`](../../../external/rust), pinned to the same nightly the driver embeds (see
 [Toolchain and `rustc_private`](../../AGENTS.md#toolchain-and-rustc_private)). These are unstable
@@ -148,6 +157,88 @@ a solver that does descend to the leaf bound. That mechanism, and why it is a se
 it is mentioned here only so the two are not confused. The rule of thumb: if the cause is *present but
 compressed* in the text, it is a printing elision and `--verbose` is the lever; if the cause is *absent*
 because the solver stopped short, it is a solver problem and `-Znext-solver` is the lever.
+
+## Panic hazards: running compiler code inside the emitter
+
+The driver runs its typed root-cause resolver from inside a diagnostic emitter, and that placement is
+the source of every panic risk the tool has hit. rustc calls the emitter to *render* a finished
+diagnostic; it does not expect the emitter to turn around and drive the trait solver, force queries,
+or relate types. The resolver does exactly that (it re-runs the failing obligation through a fresh
+`InferCtxt`), so it lives in territory rustc's invariants do not cover, and it must respect a few of
+those invariants by hand or the whole compilation aborts. This section collects the hazards so the
+next agent recognizes them before adding a new compiler interaction to the resolver; the per-feature
+detail lives in [Typed root-cause resolution](typed-root-cause-resolution.md) and
+[The driver](driver.md), and this is the index to it.
+
+### Re-entering the diagnostic context (`lock was already held`)
+
+**The `DiagCtxt` is guarded by a non-reentrant lock, and the emitter runs with that lock held, so any
+compiler operation the resolver triggers that *emits a diagnostic* re-enters the lock and aborts the
+compiler.** `DiagCtxt::emit_diagnostic` in
+[`rustc_errors/src/lib.rs`](../../../external/rust/compiler/rustc_errors/src/lib.rs) is
+`self.inner.borrow_mut()` — a plain `Lock`, single-entry, which panics with `lock was already held`
+on re-entry rather than blocking. rustc holds that borrow across the whole emitter call, so a nested
+emission from within the resolver is fatal. There is no escape valve: `make_silent` and `set_emitter`
+would swap in a no-op emitter, but they *also* take `inner.borrow_mut()`, so they cannot even be
+called while the lock is held, and swapping the emitter would not matter anyway — the panic is the
+borrow, not the emitter behind it.
+
+The trap is indirect, because the resolver does not emit diagnostics itself. It forces a **query**,
+and the query emits. Two query paths are known to do this. Forcing `predicates_of` on an impl whose
+`where`-clause has a type that fails to lower makes `gather_explicit_predicates_of` →
+`lower_ty` → `resolve_type_relative_path` report a resolution error (an `E0599` such as `no variant
+named …`) the first time it is computed; if the resolver forces that query while a diagnostic is being
+emitted, the query's own emission re-enters the lock. Forcing `tcx.typeck` is worse: it is a body-level
+query that *replays its cached diagnostics* when forced, so forcing it from the emitter re-emits every
+error in that body.
+
+The rule that keeps the resolver safe follows from *when* these queries are still uncached. A query
+that already ran during analysis is cached, and forcing it from the emitter just returns the cached
+value without re-emitting — which is why the resolver can freely solve obligations against providers
+that type-checking already visited. The danger is only a query computed for the *first time* during
+emission, which happens when the diagnostic being emitted was itself produced *during* that query —
+i.e. during the collection / type-lowering phase, not the later trait-solving phase. So the resolver
+**declines diagnostics from the collection phase**: a resolution-class `E0599` (`no variant named …`,
+`no associated item …`) is emitted mid-`predicates_of`, so `try_resolve` filters it out before running
+the solver, keeping only the method-bounds `E0599` (which is reported during method resolution, after
+collection). The same reasoning bans forcing `tcx.typeck` from the emitter outright. `E0271`/`E0277`
+are trait-solving failures reported after collection, so the queries their resolution forces are
+already cached and they are safe to trace. The gate that encodes this is in
+[Typed root-cause resolution](typed-root-cause-resolution.md); the `tcx.typeck` ban is why one
+use-site shape is deliberately out of reach, documented there under the resolver's boundaries.
+
+### Feeding escaping bound variables to inference (`has_escaping_bound_vars`)
+
+**Relating a term that carries an escaping bound variable trips an assertion in rustc's generalizer,
+so any term the resolver hands to `ocx.eq` (or any inference relation) must have its binders
+instantiated first.** `InferCtxt::generalize` in
+[`rustc_infer/src/infer/relate/generalize.rs`](../../../external/rust/compiler/rustc_infer/src/infer/relate/generalize.rs)
+asserts `!source_term.has_escaping_bound_vars()`. The natural mistake is to reach a `ty::TraitRef` out
+of a `ty::PolyTraitPredicate` with `skip_binder()` and relate it: for a higher-ranked obligation such
+as `Self: for<'a> CanSerializeValue<&'a Value>` — the shape a recursive provider like
+`SerializeIterator` carries — `skip_binder()` leaves the `'a` bound variable escaping, and the relation
+panics mid-emit. The fix is to instantiate the binder before relating, with placeholders via
+`InferCtxt::enter_forall_and_leak_universe` (rigid placeholder regions, which also let a *nested*
+higher-ranked hop's projection normalize) rather than `skip_binder()`. Whenever a new resolver stage
+relates a type reached through a `Binder`, it must instantiate first.
+
+### Contaminating one inference context with another's variables
+
+**A stray inference or region variable from one `InferCtxt` panics another, so every predicate the
+resolver moves between contexts must be instantiated, normalized, and region-erased at the boundary.**
+The resolver builds a fresh `InferCtxt`/`ObligationCtxt` per impl it tests, and a variable minted in one
+must never appear in another. This is not a distinct compiler bug so much as a discipline the resolver
+keeps: it region-erases predicates before they cross into a fresh context, and drops a predicate still
+carrying non-region inference variables rather than re-checking it. The mechanics — the
+`fresh_args_for_item`-plus-unification impl match, the normalize-and-erase step — are in
+[Typed root-cause resolution](typed-root-cause-resolution.md); the note here is only that the erase is
+load-bearing, not cosmetic.
+
+The through-line is that **the resolver's one safe compiler interaction is the trait solver on a fresh
+`InferCtxt`**, proven re-entrant-safe against a diagnostic being emitted mid-solve, and everything else
+— forcing a global query that can emit, relating an un-instantiated binder, leaking a variable across
+contexts — must be avoided or carefully neutralized. A new compiler interaction added to the resolver
+should be checked against all three hazards before it is trusted.
 
 ## Finding these again, and going further
 

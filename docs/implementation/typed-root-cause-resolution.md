@@ -17,8 +17,9 @@ the sub-notes with one `root cause:` note per leaf. It realizes the compiler-sta
 ## What it transforms, and what it leaves alone
 
 The resolver considers **any diagnostic that names a CGP wiring or field trait**
-(`CanUseComponent`, `IsProviderFor`, or `HasField`) and **every `E0599`, `E0271`, and `E0277`** — not
-only wiring-worded ones. This breadth is deliberate: a failure that names *no* CGP construct can still
+(`CanUseComponent`, `IsProviderFor`, or `HasField`), **every `E0271` and `E0277`**, and a
+**method-bounds `E0599`** (the "the method `…` exists … but its trait bounds were not satisfied"
+shape) — not only wiring-worded ones. This breadth is deliberate: a failure that names *no* CGP construct can still
 be a consequence of a CGP component failing — a hand-written `Send`-recovery wrapper whose `async fn`
 forwards to a wired method fails with an `E0271` opaque-future mismatch, a downstream trait bound needs
 a method the context cannot supply — and the resolver traces the dependency chain to find out, treating
@@ -33,6 +34,16 @@ site* of a broken consumer-method call (below). Any of the four
 walks the wiring obligations down to the terminal unmet bound(s) they rest on, and the diagnostic is
 then transformed in two independent halves. A diagnostic whose chain reaches no CGP cause declines and
 passes through untouched.
+
+The `E0599` arm is restricted to the method-bounds shape for a reason beyond relevance — a
+*resolution*-class `E0599` (`no variant named …`, `no associated item …`) is emitted while type
+lowering is mid-flight, so running the resolver's trait solver on it re-enters the diagnostic context
+and aborts the compiler. Declining such an `E0599` before any solving is both crash-safe and correct,
+since the resolver has nothing to say about a name-resolution error; `E0271`/`E0277` are trait-solving
+failures reported after collection and do not hit the hazard. This is the re-entrant-emission panic
+catalogued in
+[rustc diagnostic internals](rustc-diagnostic-internals.md#re-entering-the-diagnostic-context-lock-was-already-held),
+which explains why the phase a diagnostic is emitted in decides whether the solver may run on it.
 
 **The main message is rewritten — and stamped with its [CGP error code](../error-code.md) — only when
 it is an identified CGP class.** An unsatisfied `CanUseComponent` bound is a
@@ -166,6 +177,12 @@ diagnostic that is itself being emitted mid-solve*. Building a fresh `InferCtxt`
 and solving a concrete obligation there turns out to work cleanly, and that re-entrancy is the
 load-bearing assumption of the whole design — it was proven on `base_area_1` before any of the
 machinery was built.
+
+Running compiler code from this position is the source of every panic the tool has hit, so the
+constraints it imposes — never force a query that emits, instantiate a binder before relating it,
+keep each fresh `InferCtxt`'s variables to itself — are catalogued together in
+[rustc diagnostic internals](rustc-diagnostic-internals.md#panic-hazards-running-compiler-code-inside-the-emitter).
+The boundaries below note where a hazard puts a case out of reach.
 
 ## How the root cause is recovered
 
@@ -354,13 +371,14 @@ conjunction at its first unmet bound, so a provider that needs two absent fields
 one. Second, finding the satisfying impl uses the `fresh_args_for_item`-plus-unification dance rather
 than `SelectionContext`, which asserts against the next-generation solver the driver runs under; each
 matched impl's predicates are instantiated, normalized, and region-erased before they cross into the
-fresh inference context that checks whether they hold, since a stray inference or region variable from
-one context panics another. The obligation being matched crosses the same way: its own binder is
+fresh inference context that checks whether they hold (the cross-context contamination hazard in
+[rustc diagnostic internals](rustc-diagnostic-internals.md#contaminating-one-inference-context-with-anothers-variables)).
+The obligation being matched crosses the same way: its own binder is
 instantiated with **placeholders** (via `enter_forall_and_leak_universe`) before it is related to a
-candidate impl. A **higher-ranked** obligation — `Self: for<'a> CanSerializeValue<&'a Value>`, the
-shape a recursive provider such as `cgp-serde`'s `SerializeIterator` carries — would otherwise reach
-the relation through `skip_binder()` with its `'a` bound variable still escaping, tripping the
-generalizer's `!source_term.has_escaping_bound_vars()` assertion and panicking rustc mid-emit.
+candidate impl, never reached through a bare `skip_binder()` — a **higher-ranked** obligation
+(`Self: for<'a> CanSerializeValue<&'a Value>`, the shape a recursive provider such as `cgp-serde`'s
+`SerializeIterator` carries) would otherwise relate a term with an escaping bound variable and hit the
+[generalizer panic](rustc-diagnostic-internals.md#feeding-escaping-bound-variables-to-inference-has_escaping_bound_vars).
 Placeholders rather than fresh inference variables are what let a *nested* higher-ranked hop resolve
 instead of declining: a projection through the bound lifetime (`<&'a Value as IntoIterator>::Item`)
 normalizes deterministically against a rigid placeholder region but stalls against an unconstrained
@@ -517,11 +535,12 @@ context that cannot deserialize `Payload`, which fails as a type mismatch on the
 `TryComputer::Output` (`cgp-serde`'s arena test hits exactly this). Its caret sits on the method call,
 naming no context-definition span, so the use-site anchor finds nothing; and recovering the obligation
 would need the compiler's **typeck results** (to resolve the method and read the receiver's type),
-which the resolver *cannot* obtain. `tcx.typeck` is a body-level query that replays its cached
-diagnostics when forced, and forcing it from inside `emit_diagnostic` — where the `DiagCtxt` is already
-borrowed — re-enters that borrow and panics. Only the fresh-`InferCtxt` trait solver is safe to
-re-enter mid-emit (see [Why it runs in the emitter](#why-it-runs-in-the-emitter)); a full query is not,
-and there is no hook between typeck and the fatal error to precompute the result. So this failure falls
+which the resolver *cannot* obtain. `tcx.typeck` replays its cached diagnostics when forced, so forcing
+it from the emitter re-enters the diagnostic context and panics — the same re-entrant-emission hazard
+that bans forcing an emitting query, catalogued in
+[rustc diagnostic internals](rustc-diagnostic-internals.md#re-entering-the-diagnostic-context-lock-was-already-held);
+only the fresh-`InferCtxt` trait solver is safe to re-enter mid-emit, a full query is not, and there is
+no hook between typeck and the fatal error to precompute the result. So this failure falls
 through to rustc's own output — usually redundant with the `check_components!` failure for the same
 capability, which the resolver *does* reshape. The impl-site path recovers the concrete component
 parameter from the supertrait, and the use-site path recovers it too for an **`open`-dispatched**
@@ -599,8 +618,9 @@ says what it needs to without altering the header's shape.
   failure — a separate transform documented in
   [The driver](driver.md#reshaping-a-duplicate-key-conflict), not part of this resolution.
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the
-  `try_resolve` seam (gated by a cheap `mentions_wiring` scan, or an `E0599`/`E0271`/`E0277` code, so a
-  raw cascade with no CGP wording is still traced) that tries the check anchor, then the impl-site
+  `try_resolve` seam (gated by a cheap `mentions_wiring` scan, an `E0271`/`E0277` code, or a
+  method-bounds `E0599` — a resolution-class `E0599` is excluded so the solver is never run on an
+  error emitted mid-`predicates_of`, which would re-enter the `DiagCtxt` lock) that tries the check anchor, then the impl-site
   anchor, then the wrapper-chain anchor, then the use-site anchor, and the `transform_resolved`
   mutation it feeds: it maps the
   diagnostic's rustc code to a `DiagKind` (`edit::diag_kind`), calls the rustc-free `plan_resolved`
@@ -631,7 +651,9 @@ transformed output, while the fixtures it declines keep their fallback snapshots
 transform and the decline boundary. Several fixtures pin the harder cases: `parallel_branches` (two
 independent missing fields → two sub-errors), `deep_nesting` (a stack of higher-order providers nested
 four deep → one long spine), `dependency_cascade` (a chain of providers each depending on the next),
-`mixed_rust_error` (a CGP tree beside an untouched ordinary `E0308`), `missing_has_field_derive` (a
+`mixed_rust_error` (a CGP tree beside an untouched ordinary `E0308`), `enum_hasfields_lock` (a
+resolution-class `E0599` — `Choice::Fields` on an enum — emitted mid-`predicates_of`, which the
+resolver must decline rather than run its solver on and re-enter the `DiagCtxt` lock), `missing_has_field_derive` (a
 field the struct carries but has not derived → the unimplemented-accessor header plus the derive
 `help`), `field_via_deref` (a field on a `Deref` target that does not derive `HasField` → the `help`
 pointed at the target), `field_type_mismatch` and `field_type_mismatch_1` (a matching field name with

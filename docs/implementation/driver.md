@@ -429,7 +429,10 @@ will likely grow toward it:
 - **Driver front-matter.** Clippy's driver installs a logger (`init_rustc_env_logger`) and an ICE
   hook (`install_ice_hook`) with a bug-report URL, and handles `--version`, `--help`, and a
   `--rustc` passthrough. `cargo-cgp` installs none of these yet; a panic in the driver therefore
-  surfaces as a plain panic rather than a formatted ICE report.
+  surfaces as a plain panic rather than a formatted ICE report. The panics most within the tool's
+  power to cause come from the emitter re-running compiler code, and the ways to avoid them are
+  catalogued in
+  [rustc diagnostic internals](rustc-diagnostic-internals.md#panic-hazards-running-compiler-code-inside-the-emitter).
 - **Info-query handling.** Clippy detects cargo's info queries (`-vV`, `--print`) and its
   `--cap-lints=allow` / `--no-deps` cases to *skip* running its lints for them. The driver already
   skips *flag injection* for `-vV` and `--print` (above), and its emitter rewrite is a no-op on the

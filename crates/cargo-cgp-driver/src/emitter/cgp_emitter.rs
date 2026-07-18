@@ -122,14 +122,32 @@ impl<E> CgpEmitter<E> {
 
     /// Resolve `diag`'s failure to its root-cause dependency tree(s), or `None` when the resolver
     /// cannot trace it to a CGP component failure (so the caller falls back to the in-place text
-    /// rewrite). A candidate is any diagnostic that mentions a CGP wiring trait, plus every method
-    /// `E0599`, `E0271`, and `E0277` — because a failure *not* worded in CGP terms can still be a
-    /// consequence of a CGP component failing (a manual `impl` that forwards to a wired method, a
+    /// rewrite). A candidate is any diagnostic that mentions a CGP wiring trait, plus every `E0271`,
+    /// `E0277`, and *method-bounds* `E0599` — because a failure *not* worded in CGP terms can still
+    /// be a consequence of a CGP component failing (a manual `impl` that forwards to a wired method, a
     /// downstream trait bound that needs it), and [`resolve`] traces the dependency chain to find
     /// out. It yields `None` for everything whose chain does not reach a CGP cause. Returns the
     /// primary span alongside the resolution so the caret can be re-aimed at the entry.
+    ///
+    /// The `E0599` arm is narrowed to the "the method `…` exists … but its trait bounds were not
+    /// satisfied" shape — the consumer-method call the use-site anchor handles. A *resolution*-class
+    /// `E0599` (`no variant named …`, `no associated item …`) is not a wiring failure and, worse, is
+    /// emitted *during* type lowering / `predicates_of`, while that query is mid-flight: running the
+    /// resolver's trait solver on it re-forces an emitting query and re-enters the already-held
+    /// `DiagCtxt` lock, aborting the compiler (`lock was already held`). Declining such an `E0599`
+    /// before any solving both keeps the tool from crashing and is correct, since the resolver has
+    /// nothing to say about a name-resolution error. (`E0271`/`E0277` are trait-solving failures
+    /// reported after collection, where the queries the solver forces are already cached.)
     fn try_resolve(&self, diag: &DiagInner) -> Option<(Resolved, Span)> {
-        if !mentions_wiring(diag) && !matches!(diag.code, Some(E0599) | Some(E0271) | Some(E0277)) {
+        // A method-bounds `E0599` (not a resolution-class one) is the only `E0599` the resolver
+        // handles; see the re-entrancy note above.
+        let e0599_method_bounds = diag.code == Some(E0599)
+            && main_message_text(diag)
+                .is_some_and(|message| message.contains("trait bounds were not satisfied"));
+        if !mentions_wiring(diag)
+            && !matches!(diag.code, Some(E0271) | Some(E0277))
+            && !e0599_method_bounds
+        {
             return None;
         }
         let primary_span = diag.span.primary_span()?;

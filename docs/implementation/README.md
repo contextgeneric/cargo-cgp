@@ -45,10 +45,13 @@ same change.
   that turns it into the header, help, and note text, and the dependency-tree renderer, all driven by
   the driver's emitter and unit-tested without a compiler.
 - [rustc diagnostic internals](rustc-diagnostic-internals.md) — a map of the compiler code that
-  builds CGP diagnostics and, crucially, where it *suppresses* information: the type/const printer, the
+  builds CGP diagnostics and where it *suppresses* information: the type/const printer, the
   trait-error reporters, the two verbosity switches (`--verbose` versus `-Zverbose-internals`), and the
-  specific elision points the driver's `--verbose` injection defeats. Read it when a diagnostic is
-  dropping a cause the tool needs.
+  specific elision points the driver's `--verbose` injection defeats. Also catalogs the **panic
+  hazards** of re-running compiler code inside the emitter — re-entering the `DiagCtxt` lock, relating
+  an un-instantiated binder, leaking inference variables across contexts — and how the resolver avoids
+  each. Read it when a diagnostic is dropping a cause the tool needs, or before adding a compiler
+  interaction that could crash the driver.
 - [Testing](testing.md) — how the tool is tested: tests over the argument handling, and the UI
   snapshot suite — a custom Rust test harness (like Clippy's `compile-test`) that compiles fixtures
   under `tests/ui/` through the tool and diffs committed `.cgp.stderr` snapshots — its bless workflow,
