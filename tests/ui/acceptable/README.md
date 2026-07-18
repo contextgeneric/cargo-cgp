@@ -36,7 +36,12 @@ are split into concept sub-directories so no directory grows crowded:
 - [`use-site/`](use-site) — a broken dependency reached by a direct consumer-method call (`E0599`),
   recovered from the use site with the misleading method-syntax advice dropped — including
   `namespace_join_use_site`, whose namespace-joined context is anchored on the consumer trait the
-  diagnostic names and walked through the namespace to its root cause.
+  diagnostic names and walked through the namespace to its root cause, and the two shapes resolved by
+  [the call-site anchor](../../../docs/implementation/typed-root-cause-resolution.md#recovering-from-the-call-expression-itself):
+  `cascade_after_use_site` (an unconditionally-dispatched `E0277` re-read from the failing call into
+  one root-cause block, its await-site re-report de-duplicated and its `?`-operator cascade
+  suppressed) and `generic_consumer_use_site` (the dispatch parameter recovered from a plain written
+  value argument).
 - [`use-type/`](use-type) — an unsatisfiable `#[use_type]` abstract-type import, recovered into a
   `[CGP-E001]` missing-wiring tree (`use_type_foreign_unsatisfied`, `use_type_nested_unsatisfied`)
   by the same consumer-trait anchor, rather than leaking generated `__…__` placeholder names.

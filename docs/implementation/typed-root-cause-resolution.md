@@ -332,7 +332,7 @@ on is always a real consumer-trait obligation** `Ctx: ConsumerTrait<Params…>` 
 
 ### Anchoring the starting obligation
 
-The resolver recovers the obligation the compiler failed to prove in one of five ways, tried in order;
+The resolver recovers the obligation the compiler failed to prove in one of six ways, tried in order;
 the first that succeeds wins. Each produces the same thing — the real consumer-trait obligation
 `Ctx: ConsumerTrait<Params…>` to seed the walk — but recovers it from a different failure shape.
 
@@ -471,7 +471,7 @@ out on `__Key__: Sized` noise; skipping it means this anchor yields nothing for 
 next anchor. The [`open_dispatch_use_site`](../../tests/ui/acceptable/use-site/open_dispatch_use_site.rs)
 fixture pins the path re-check.
 
-**From a use site, by consumer trait.** The final anchor closes the namespace-joined gap the previous
+**From a use site, by consumer trait.** The next anchor closes the namespace-joined gap the previous
 one leaves. When a use-site failure names a **local, non-generic CGP consumer trait** in the diagnostic
 — an `E0599` note such as `` `CanGreet` defines an item `greet` `` points its span at the trait
 definition — `resolve_use_site_consumer` recovers that consumer trait and the context ADT from the
@@ -485,8 +485,234 @@ not carry — and it reaches not only namespace-joined method calls
 ([`namespace_join_use_site`](../../tests/ui/acceptable/use-site/namespace_join_use_site.rs)) but any
 failure that names a local consumer and its context in its spans, including a manual supertrait bound in
 a trait definition or `where` clause (the `use_type_*_unsatisfied` fixtures under
-[`acceptable/use-type/`](../../tests/ui/acceptable/use-type)). It is tried last, so a directly-wired
+[`acceptable/use-type/`](../../tests/ui/acceptable/use-type)). A directly-wired
 context keeps the more precise per-component recovery.
+
+**From the call expression itself.** The final anchor, `resolve_call_site`, handles the use-site
+failure whose spans touch *nothing* the other anchors can read: the wiring matches the called
+component unconditionally, so the method is *found*, the failure is an `E0277` rather than an
+`E0599`, and its spans never leave the call. The anchor re-reads the failing call expression from
+HIR — the context from the method's *receiver*, the component's parameters by *unifying the call's
+written argument types against the method's own declared signature*, and every parameter the call
+leaves to inference seeded as a rigid placeholder the walk resolves around. It is the one anchor
+whose recovery works from the code the programmer wrote rather than from the diagnostic's spans, and
+its rationale, mechanics, and worked example have their own section:
+[Recovering from the call expression itself](#recovering-from-the-call-expression-itself).
+
+### Recovering from the call expression itself
+
+The call-site anchor exists for the use-site failure that leaves *no usable span at all*, and its
+design follows from working out what can still be known once the spans are gone. This section builds
+the failure shape from a small self-contained program, shows why every span-matching anchor
+declines on it, and then develops each recovery step with the reasoning behind it.
+
+#### The failure shape: wiring that matches unconditionally
+
+The shape arises whenever a context's wiring answers a whole *family* of component parameters with
+one generic entry, so that resolving the method always finds a provider and only that provider's
+deeper dependencies fail. The natural home of this pattern is the
+[handler family](../../../cgp/docs/concepts/handlers.md) — an advanced corner of CGP whose
+`CanHandle<Code, Input>` consumer turns an `Input` value into an output, with a phantom `Code`
+*type* selecting which computation runs, so one context can host many computations and wire each
+`Code` differently.
+Nothing below is specific to handlers, though: any consumer whose wiring matches unconditionally and
+fails only in its dependencies produces the same shape.
+
+The following program (condensed from the
+[`cascade_after_use_site`](../../tests/ui/acceptable/use-site/cascade_after_use_site.rs) fixture)
+wires every pipeline program `Prog<Steps>` — whatever its `Steps` — to a `PipeHandlers` composition
+of those steps. The first step reads the context's `name` field, which `App` does not have; that
+missing field is the root cause the anchor must recover:
+
+```rust
+/// A program is a *type*: a pipeline of steps, selected by the phantom `Code` tag.
+pub struct Prog<Steps>(pub PhantomData<Steps>);
+
+#[cgp_auto_getter]
+pub trait HasName {
+    fn name(&self) -> &str;
+}
+
+/// First pipeline step: read the context's `name` field — the dependency `App` cannot meet.
+#[async_trait]
+#[cgp_impl(new HandleName)]
+#[use_type(HasErrorType.Error)]
+impl<Code, Input> Handler<Code, Input>
+where
+    Self: HasName,
+    Input: Send,
+{
+    type Output = String;
+
+    async fn handle(&self, _tag: PhantomData<Code>, _input: Input) -> Result<String, Error> {
+        Ok(self.name().to_owned())
+    }
+}
+
+// A second step, `HandleShout`, uppercases the `String` the first step produces. It is
+// defined the same way, its dependencies all hold, and it plays no part in the failure.
+
+cgp_namespace! {
+    new MyNamespace: DefaultNamespace {
+        @cgp.core.error.ErrorTypeProviderComponent:
+            UseType<String>,
+
+        // One generic entry serves *every* program: any `Prog<Steps>` runs as the pipeline of
+        // its steps. This is what makes the wiring match unconditionally.
+        @cgp.extra.handler.HandlerComponent.<Steps> Prog<Steps>:
+            PipeHandlers<Steps>,
+    }
+}
+
+#[derive(HasField)]
+pub struct App {
+    // No `name` field.
+}
+
+delegate_components! {
+    App {
+        namespace MyNamespace;
+    }
+}
+
+async fn run_app(app: &App) -> Result<(), String> {
+    app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+        .await?;
+    Ok(())
+}
+```
+
+Because the `<Steps> Prog<Steps>` entry matches *any* program, rustc's method probe succeeds —
+`handle` exists for `App` — and only later does the provider's transitive `Self: HasName` bound
+fail. So the failure arrives as an `E0277` on the call, not the `E0599` "method not found" a
+directly-missing method produces, and that difference disarms every span-matching anchor. There is
+no `check_components!` entry, so no check impl's span matches the caret. The call sits in a plain
+`fn`, not inside an `impl` block, so the impl-site and wrapper-chain anchors find no enclosing impl.
+An `E0599` would have carried a "method not found for this struct" span on `App`'s definition — the
+handle the by-component use-site anchor grabs — but this `E0277` points only at the call. And the
+consumer trait `CanHandle` is foreign and generic, so the by-consumer anchor, restricted to local
+consumers whose only generic is `Self`, is out too. Before this anchor existed, the diagnostic fell
+to the text rewrite, which reported the failure *three times* (once per rustc re-report at the call
+and its `.await`) under `[CGP-E002]` headers naming `PipeHandlers<…>` and `ComposeHandlers<…>` — the
+dispatch plumbing — as the failing "provider", with the missing `name` field appearing nowhere.
+
+#### What the call still knows
+
+The spans are useless, but the call expression itself contains almost everything the walk's seed
+obligation `App: CanHandle<Code, Input>` needs — provided it is read from HIR alone.
+`tcx.typeck`, the query that would answer every question at once, replays its cached diagnostics
+when forced and so aborts the compiler from inside the emitter (the re-entrancy hazard in
+[rustc diagnostic internals](rustc-diagnostic-internals.md#re-entering-the-diagnostic-context-lock-was-already-held));
+HIR, by contrast, is fully built long before analysis, and the only queries this recovery touches
+(`type_of`, `fn_sig`, `generics_of` on items the failing code already named) are cached by the very
+type-checking that produced the diagnostic.
+
+**The receiver names the context.** A consumer trait is implemented on the context, so in a
+consumer-method call the receiver *is* the context by construction — no guessing is involved, only
+reading the receiver's type without typeck. The anchor follows the receiver expression
+syntactically: a path to a binding leads to a `let` (typed by its annotation, or by a struct-literal
+initializer) or to a fn parameter (typed by the enclosing signature — the fixture's `app: &App`); a
+struct literal, unit-struct value, const, or static names its type directly; a call to a
+non-generic fn takes the callee's declared return type; references are peeled along the way. A
+receiver whose type genuinely needs inference — a method call's result, a field access — declines,
+as does a generic context, whose type arguments are exactly what the missing typeck results would
+have supplied. The consumer-trait candidates come from the method *name*: every CGP consumer trait
+(recognized structurally, in any crate) that declares a `self` method of that name is tried in
+turn.
+
+#### Parameters by signature unification, not by convention
+
+Recovering the component's parameters — the `Code` and `Input` in `CanHandle<Code, Input>` — is
+where a design choice had to be made, and the choice is to assume **no calling convention at all**.
+
+The tempting shortcut is a convention: in the handler family, the first argument is a
+`PhantomData<Code>` tag, so "read the first argument's turbofish" would recover the `Code` here. But
+CGP does not prescribe how a consumer method relates its arguments to its trait parameters — the
+`PhantomData` tag is one family's idiom, not a rule. A consumer someone else defines may carry its
+parameter in an ordinary value argument (`fn format_pair(&self, value: T)`), in a differently-shaped
+tag type, spread across several arguments, or nowhere recoverable. Hard-coding any one shape would
+quietly privilege one library's style and fail on every other.
+
+What *is* always true is that the method's own declared signature records exactly where each trait
+parameter appears among its inputs — that is the very information type inference consumes at a real
+call. So the anchor runs a miniature of the same process the compiler would: it mints a fresh
+inference variable for every parameter of the method's item, pins `Self` to the receiver's context,
+and unifies each argument whose type the call *writes* syntactically against the corresponding
+declared input. Whatever those unifications pin down, through the signature's own use of the trait's
+generics, is recovered. The two fixture shapes show the same mechanism serving both idioms:
+
+- In the program above, the argument `PhantomData::<Prog<Product![HandleName, HandleShout]>>` is
+  unified with the declared input `_tag: PhantomData<Code>`, which binds
+  `Code = Prog<Product![HandleName, HandleShout]>`.
+- In [`generic_consumer_use_site`](../../tests/ui/acceptable/use-site/generic_consumer_use_site.rs),
+  a consumer `CanFormatPair<T>` with the plain value method `fn format_pair(&self, value: T)` is
+  called as `app.format_pair((1_u32, 2_u64))`; the written tuple type `(u32, u64)` is unified with
+  the declared `value: T`, which binds `T = (u32, u64)`. No tag argument exists, and none is needed.
+
+An argument's type counts as *written* when it is determined by the expression's own syntax: a
+unit-struct or unit-variant value with its written path arguments, a struct literal, a reference or
+tuple of written expressions, a literal whose type is definite (`"…"`, `true`, `'c'`, suffixed
+numerics), or a call to a non-generic fn (its declared return type). Each written type is lowered by
+a deliberately small syntactic HIR-type lowering — paths to ADTs and aliases through the cached
+`type_of`, defaulted parameters filled in, lifetimes erased — that declines anything beyond it
+rather than guess.
+
+#### Unknown parameters become rigid placeholders
+
+What the call does not write, the anchor does not invent. The fixture's second argument is
+`Vec::new()`: its element type was never resolved (the trait resolution failing is precisely why),
+and no syntactic reading can supply it. Each parameter left unconstrained after unification is
+folded into a rigid **placeholder** type — rigid so it unifies with nothing concrete and can cross
+between the walk's fresh inference contexts, unlike an inference variable.
+
+The walk then treats a placeholder as an *unknown*, in both directions. It **descends through**
+bounds that mention one, because a parameter-dependent bound can still lead to parameter-independent
+dependencies deeper down — in the example, `HandleName`'s `Self: HasName` does not mention the
+input at all, so the missing `name` field is reachable whatever the input turns out to be. But it
+**never reports** a leaf that still carries one: a bound like `Input: Send` with an unknown `Input`
+is unknowable, and reporting `_: Send` would fabricate a requirement the programmer cannot act on.
+Only a root cause that holds *whatever the unknown parameter is* survives; a failure whose every
+leaf depends on the unknown declines to the fallback exactly as before
+([`generic_consumer_unwritten_arg`](../../tests/ui/usability/use-site/generic_consumer_unwritten_arg.rs)
+pins that boundary — the same `CanFormatPair` call with the tuple passed through a plain variable,
+whose type the call no longer writes). In the rendered output a placeholder prints as the `_` the
+programmer would write.
+
+Put together, the example's failure — three plumbing-worded blocks with no cause — becomes one
+block, led by the cause:
+
+```text
+error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog<Product![HandleName, HandleShout]>, _>` is not implemented for context `App`
+  --> src/main.rs:93:16
+   |
+93 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E106] missing field `name` on `App`
+           this is required through the dependency chain:
+               [CGP-E101] consumer trait impl `CanHandle<Prog<Product![HandleName, HandleShout]>, _>` for context `App`
+               └── [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
+                   └── [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `PipeHandlers<Product![HandleName, HandleShout]>`
+                       └── [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `ComposeHandlers<HandleName, HandleShout>`
+                           └── [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `HandleName`
+                               └── [CGP-E105] trait impl `HasName` for `App`
+                                   └── [CGP-E106] missing field `name` on `App`
+```
+
+The re-report rustc raises where the result is awaited resolves to the same cause and de-duplicates
+away, and the `?`-operator cascade the call used to trail stays suppressed. A resolution from this
+anchor is also planned as a use-site failure whatever its rustc code, so the header names the
+consumer trait the call needs — never the dispatch plumbing rustc's own headline stopped on (see
+[Emitting the transformed diagnostic](#emitting-the-transformed-diagnostic)).
+
+#### Why a wrong guess cannot fabricate an error
+
+The anchor recovers from *guesses* — a method name can match several consumer traits, a receiver
+binding can be misread — so every seed is gated on reality before anything is reported. The anchor
+is tried last, after every span-matching recovery; a candidate obligation that actually *holds* is
+skipped; and one that fails but whose walk reaches no reportable, placeholder-free leaf declines to
+the fallback. A mis-guessed consumer or context therefore produces either nothing or a genuine
+failing obligation of the context the programmer named — never an invented diagnostic.
 
 ### Walking the dependency graph downward
 
@@ -687,7 +913,11 @@ own rustc code to a rustc-free [`DiagKind`](../../crates/cargo-cgp-error-process
 (`E0271` a field mismatch, `E0599` a use-site method, everything else a plain check) and hands that,
 the main-message text, the `Resolved`, and the name map to `plan_resolved`, which returns a
 `DiagnosisPlan`: the rewritten header (or `None` to keep rustc's), the derive `help`s, and one note per
-cause.
+cause. One mapping is by *anchor* rather than by code: a resolution the call-site anchor produced
+plans as a use-site failure whatever its rustc code (a genuine `E0271` field mismatch excepted), so
+its header names the consumer trait the call needs rather than whichever provider bound rustc's
+headline stopped on — at a call that is dispatch plumbing (`PipeHandlers`, `ComposeHandlers`) the
+programmer never asserted on, where the `[CGP-E002]` provider form would leak internals.
 
 `plan_resolved`'s `categorized_header` is what picks the headline class described earlier — the
 `CGP-E001` consumer form (worded from the resolution's context and consumer trait(s), pluralized when a
@@ -720,22 +950,25 @@ failure already shown.
 
 ## Boundaries and open ends
 
-The resolver is deliberately bounded, and a few edges are worth recording. Because it anchors the five
+The resolver is deliberately bounded, and a few edges are worth recording. Because it anchors the six
 ways above, a wiring failure that is *none* of them still declines. The consumer-trait use-site anchor
 widened the reach considerably — a manual supertrait bound in a trait definition or `where` clause, and
 a namespace-joined use-site call, both now resolve whenever a local CGP consumer trait and its context
 appear in the diagnostic's spans (the once-declining `use_type_foreign_unsatisfied`,
 `use_type_nested_unsatisfied`, and `namespace_join_use_site` fixtures, now under
-[`acceptable/`](../../tests/ui/acceptable)). What still declines is a failure that names no local
-consumer to anchor on: a caret only on a *provider* struct's own impl (whose `Self` is the provider,
-reaching no consumer on a context), a generic component's trait definition, or a use-site failure on a
-*foreign* generic consumer whose context and dispatch parameters are unrecoverable — the
-shell-scripting DSL's `hello_name`, an `E0277` on `app.handle(PhantomData::<Program>, Vec::new())` whose
-`Code` and `Input` come only from the call and whose combinator plumbing the text rewrite then exposes
-([`cascade_after_use_site`](../../tests/ui/usability/use-site/cascade_after_use_site.rs) pins the
-class). The wrapper-chain descent is itself bounded — it follows only real impl `where`-clauses, reports
-a cause only at a genuine CGP consumer on a local context, and stops at a recursion bound — so it cannot
-fabricate a chain from an unrelated bound.
+[`acceptable/`](../../tests/ui/acceptable)) — and the
+[call-site anchor](#recovering-from-the-call-expression-itself) closed the once-declining
+*foreign generic consumer* gap, the unconditionally-matching dispatch shape
+([`cascade_after_use_site`](../../tests/ui/acceptable/use-site/cascade_after_use_site.rs), also now
+under `acceptable/`). What still declines is a failure none of the recoveries reach: a caret only on a
+*provider* struct's own impl (whose `Self` is the provider, reaching no consumer on a context), a
+generic component's trait definition, a call whose *receiver's type* is not syntactically recoverable
+(a method call's result or a field access, `self.app.handle(…)` — typing those needs the typeck
+results the emitter can never force), or a written type beyond the call-site anchor's small hand
+lowering. The wrapper-chain descent is itself bounded — it follows only real impl `where`-clauses,
+reports a cause only at a genuine CGP consumer on a local context, and stops at a recursion bound —
+and every call-site seed is gated on actually failing, so neither can fabricate a chain from an
+unrelated bound.
 
 One use-site shape is out of reach for a hard reason worth recording: a **consumer-method call whose
 failure is an `E0271`, not an `E0599`** — `app.deserialize_json_string::<Payload>(…)` on a context that
@@ -752,14 +985,18 @@ rustc's output, usually redundant with the `check_components!` failure for the s
 the resolver *does* reshape.
 
 A few parameter-recovery limits remain. The impl-site path recovers a generic component's concrete
-parameter from the supertrait, and the by-component use-site path recovers it for an `open`-dispatched
-component from the `PathCons<Component, Value>` redirect key; what neither use-site path recovers is the
-parameter of a **non-dispatched generic component** — the by-component path re-checks its bare marker
-with an empty `()` slot, and the by-consumer path only fires for a consumer whose sole generic is
-`Self`. Such a failure declines to the fallback and keeps rustc's misleading method-syntax advice
-([`generic_consumer_use_site`](../../tests/ui/usability/use-site/generic_consumer_use_site.rs) pins the
-class, and the [usability issue](../issues/usability.md) records the plausible recovery: re-check the
-wired delegate's *implemented* parameter values instead of the meaningless `()` form). And the walk
+parameter from the supertrait, the by-component use-site path recovers it for an `open`-dispatched
+component from the `PathCons<Component, Value>` redirect key, and the call-site path recovers every
+parameter the call *writes*, seeding the rest as unknowns; what no path recovers is a parameter
+whose only carrier is an argument the call does **not** type syntactically — a plain variable, an
+unsuffixed literal — where the by-component path re-checks its bare marker with an empty `()` slot,
+the by-consumer path only fires for a consumer whose sole generic is `Self`, and the call-site
+seed's unknown makes every root cause parameter-dependent. Such a failure declines to the fallback
+and keeps rustc's misleading method-syntax advice
+([`generic_consumer_unwritten_arg`](../../tests/ui/usability/use-site/generic_consumer_unwritten_arg.rs)
+pins the class, and the [usability issue](../issues/usability.md) records the plausible recovery:
+re-check the wired delegate's *implemented* parameter values instead of the meaningless `()` form).
+And the walk
 uses an **empty parameter environment** throughout, which suits the concrete check
 impls the fixtures exercise but will need the impl's own environment to extend cleanly to checks that
 carry generic parameters. The resolver renders only leaves it can trust — a `HasField` field (missing,
@@ -780,7 +1017,8 @@ separate header brand; the inline code is the only marking.
   resolution, split by stage behind a re-exporting `mod.rs` and building the rustc-free `Resolved`
   model. Every anchor feeds the walk the real consumer obligation `Ctx: ConsumerTrait<Params…>`, never
   a `CanUseComponent` wrapper.
-  - `anchor.rs` holds the five anchors and the shared `consumer_obligation` they build the seed with —
+  - `anchor.rs` holds five of the six anchors and the shared `consumer_obligation` they build the seed
+    with —
     the `Params`-slot ungrouping decided by the consumer's own generics (a single tuple-typed
     parameter kept whole, a lifetime restored from `Life<'a>` via `life_region`, any mismatch
     declining rather than handing the solver a malformed trait ref): `resolve_check_failure` (matches
@@ -800,6 +1038,15 @@ separate header brand; the inline code is the only marking.
     blanket `__Key__` key); and `resolve_use_site_consumer` (recovers a local, non-generic CGP consumer
     trait from the diagnostic's spans and walks `Ctx: Consumer` directly — the anchor that reaches a
     namespace-joined context).
+  - `call_site.rs` holds the sixth anchor, `resolve_call_site` — the HIR re-read of the failing call:
+    `method_calls_at` (the calls at, or inside an expression at, the diagnostic's spans — the latter
+    for the await-desugar wrappers), `receiver_context`/`local_binding_context` (the receiver's type
+    from its binding, annotation, parameter, literal, or constructor-call signature),
+    `seed_from_call` (the signature unification: fresh variables for the method's item, `Self`
+    pinned to the context, each written argument type unified with its declared input, the trait's
+    parameters read back with `unknowns_to_placeholders` folding what stayed unresolved),
+    `expr_written_ty` (the argument shapes whose types the call writes) over
+    `lower_hir_ty`/`instantiate_written` (the small syntactic type lowering over cached `type_of`).
   - `walk.rs` walks the cause chain to each terminal leaf: `resolve_leaves`/`collect_leaf_paths`, the
     descendable-vocabulary rule (`is_descendable` — provider traits, `DelegateComponent`, and context
     obligations, *not* `IsProviderFor`/`CanUseComponent`), the `is_workaround_plumbing` drop of a
@@ -808,7 +1055,8 @@ separate header brand; the inline code is the only marking.
     (`enter_forall_and_leak_universe`), the plumbing-leaf drop, the foreign-getter descent into just
     context-side dependencies plus a same-trait list recursion, `impl_where_obligations` preferring a
     concrete-`Self` impl over the delegation blanket and solving satisfiable clauses first,
-    `is_reportable_leaf` keeping an unmet `DelegateComponent` only on the context, and
+    `is_reportable_leaf` keeping an unmet `DelegateComponent` only on the context, the drop of a leaf
+    still carrying a call-site placeholder (an unknowable `_: Send` is never reported), and
     `has_field_projection_mismatch`/`impl_field_projection_mismatch` finding an unmet `HasField`
     projection on the concrete-`Self` impl (deferring the blanket).
   - `classify.rs` classifies a leaf (a field by inspecting the struct and its `Deref` chain, a
@@ -827,8 +1075,9 @@ separate header brand; the inline code is the only marking.
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the `try_resolve`
   seam (gated by a cheap `mentions_wiring` scan, an `E0271`/`E0277` code, or a method-bounds `E0599`,
   with a resolution-class `E0599` excluded so the solver never runs on an error emitted
-  mid-`predicates_of`) that tries the five anchors in turn, and the `transform_resolved` mutation it
-  feeds — mapping the rustc code to a `DiagKind`, calling `plan_resolved`, and applying the plan to the
+  mid-`predicates_of`) that tries the six anchors in turn, and the `transform_resolved` mutation it
+  feeds — mapping the rustc code to a `DiagKind` (overridden to the use-site kind for a call-anchored
+  resolution), calling `plan_resolved`, and applying the plan to the
   `DiagInner`, falling back to the in-place text rewrite when resolution returns `None`. A final
   cross-diagnostic de-duplication suppresses a re-report of a failure already shown.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
@@ -847,12 +1096,13 @@ separate header brand; the inline code is the only marking.
 The resolver is exercised end to end by the UI snapshot suite. The fixtures it reshapes live under
 [`tests/ui/acceptable/`](../../tests/ui/acceptable) — the `fields/`, `field-types/`, `providers/`,
 `generic/`, `resolution/`, `wiring/`, `use-site/`, and `use-type/` subgroups, carrying `.cgp.stderr`
-snapshots of the transformed output. The failures it still declines — a use-site `E0277` on a foreign
-generic consumer, and a use-site `E0599` on a *local* generic consumer whose dispatch parameter no
-span recovers — keep their fallback snapshots under
-[`tests/ui/usability/use-site/`](../../tests/ui/usability/use-site) (`cascade_after_use_site`,
-`generic_consumer_use_site`), so the two sides together pin both the transform and the decline
-boundary. [Testing](testing.md) describes the suite
+snapshots of the transformed output. The failure it still declines — a use-site `E0599` on a generic
+consumer whose dispatch parameter rides in an argument the call does not type syntactically — keeps
+its fallback snapshot under [`tests/ui/usability/use-site/`](../../tests/ui/usability/use-site)
+(`generic_consumer_unwritten_arg`), so the two sides together pin both the transform and the decline
+boundary; [`usability/verbosity/`](../../tests/ui/usability/verbosity) (`deep_dispatch_chain`) pins
+the *presentation* residue of a resolved deep dispatch chain, whose every node restates the full
+program type. [Testing](testing.md) describes the suite
 and its bless workflow. The fixtures group by what they pin.
 
 Each **leaf class** has fixtures for its field, wiring, and redirect shapes:
@@ -923,6 +1173,13 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
 - `namespace_join_use_site` — a use-site `E0599` on a namespace-joined context, anchored on the
   `CanGreet` consumer trait from the diagnostic and walked through the namespace's `RedirectLookup` to
   the missing field, with the blanket `__Key__` forwarding skipped.
+- `cascade_after_use_site` — the unconditionally-dispatched `E0277` of the
+  [call-site anchor](#recovering-from-the-call-expression-itself)'s worked example, resolved into one
+  `[CGP-E001]` block whose await-site re-report de-duplicates and whose `?`-operator cascade stays
+  suppressed.
+- `generic_consumer_use_site` — the same anchor's value-argument case: the dispatch parameter
+  recovered by signature unification from a written tuple, no tag argument involved, with the
+  misleading method-syntax advice dropped.
 - `use_type_foreign_unsatisfied` and `use_type_nested_unsatisfied` — an unsatisfiable `#[use_type]`
   abstract-type import in a trait definition, recovered by the consumer-trait anchor into a
   `[CGP-E001]` missing-wiring tree instead of leaking generated `__…__` placeholder names.

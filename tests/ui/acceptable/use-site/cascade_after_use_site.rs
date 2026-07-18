@@ -1,22 +1,25 @@
-//! Usability: a use-site wiring failure whose downstream `?`-operator cascade
-//! pollutes the log with unreadable projected types.
+//! A use-site `E0277` on a `Code`-dispatched handler pipeline, resolved from the
+//! call expression itself.
 //!
-//! `App` runs a `MyProgram` program through the async, `Code`-dispatched `Handler`
-//! component, dispatched to a `PipeHandlers` composition (the same combinator
-//! plumbing a real DSL context produces). The first stage, `HandleName`, reads the
-//! context's `name` field, but `App` has none, so awaiting `app.handle(..)` at a
-//! use site fails. Because the composition matches the `Code` unconditionally the
-//! method is *found* (its trait bound is only conditionally satisfied), so the
-//! failure is an `E0277`, not an `E0599`, and its span never lands on `App`'s type
-//! definition — so the typed resolver cannot anchor the context and declines to the
-//! text rewrite, which exposes the internal `PipeHandlers`/`ComposeHandlers`
-//! plumbing.
+//! `App` runs a program through the async, `Code`-dispatched `Handler` component,
+//! dispatched to a `PipeHandlers` composition (the same combinator plumbing a real
+//! DSL context produces). The first stage, `HandleName`, reads the context's `name`
+//! field, but `App` has none, so awaiting `app.handle(..)` at a use site fails.
+//! Because the composition matches the `Code` unconditionally the method is *found*
+//! (its trait bound is only conditionally satisfied), so the failure is an `E0277`,
+//! not an `E0599`, and its spans never land on `App`'s type definition — no
+//! span-matching anchor applies. The call-site anchor recovers it from the failing
+//! call instead: the context from the receiver's binding, the `Code` from the
+//! `PhantomData` tag argument the method's own signature declares, and the inferred
+//! input as an unknown the walk resolves around — reaching the missing `name` field
+//! and rendering the full combinator chain, with the header naming the consumer
+//! trait the call needs rather than the `PipeHandlers`/`ComposeHandlers` plumbing.
 //!
-//! The pollution this fixture pins is the *cascade*: once `handle`'s return type is
-//! unresolvable, the trailing `?` produces `the ? operator ...` / `Try` /
-//! `FromResidual` errors that dump the giant `<App as CanHandle<..>>::Output`
-//! projection and add nothing over the wiring failure already reported at the same
-//! span. See docs/issues/usability.md.
+//! One block remains of what used to be four: the re-report rustc raises where the
+//! result is awaited resolves to the same cause and de-duplicates away, and the
+//! trailing `?`-operator `Try`/`FromResidual` cascade — which restates the failure
+//! and dumps the unresolved `<App as CanHandle<..>>::Output` projection — is
+//! suppressed by the span-overlap gate.
 
 use core::marker::PhantomData;
 

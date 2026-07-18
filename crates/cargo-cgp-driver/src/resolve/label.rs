@@ -157,6 +157,11 @@ pub(crate) fn trait_generics<'tcx>(
 /// or enum it represents. `Struct!`/`Enum!` are not (yet) real CGP macros — like `Path!`'s `.*`
 /// wildcard, they are a presentation form chosen for readability, not something that parses back.
 pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
+    // The call-site anchor's stand-in for a parameter the call leaves to inference: render it as
+    // the `_` the programmer would write, never rustc's internal placeholder form.
+    if let ty::Placeholder(_) = ty.kind() {
+        return "_".to_owned();
+    }
     if let Some(elems) = cgp_spine(
         tcx,
         ty,

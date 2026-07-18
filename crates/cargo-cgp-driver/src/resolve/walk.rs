@@ -58,6 +58,15 @@ pub(crate) fn resolve_leaves<'tcx>(
             continue;
         };
         let leaf_ref = leaf_pred.skip_binder().trait_ref;
+        // A leaf still carrying one of the seed's unknown-parameter placeholders (the call-site
+        // anchor's stand-in for a call's inferred input) is a bound on a type the recovery could
+        // not know; reporting it would fabricate a requirement (`_: Send`) the programmer cannot
+        // act on, so only a placeholder-free leaf — a dependency that fails whatever the unknown
+        // parameter is — is kept. Placeholder *regions* never reach here: a higher-ranked hop's
+        // leaked placeholders are erased with the rest of a child's regions.
+        if leaf_pred.has_placeholders() {
+            continue;
+        }
         // A path that bottoms out on pure wiring plumbing (a routing dead-end) is not a root
         // cause — a real cause is found down another branch — so drop it rather than report it.
         if !is_reportable_leaf(tcx, leaf_ref, context) {

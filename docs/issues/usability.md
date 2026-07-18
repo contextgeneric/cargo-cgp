@@ -54,61 +54,46 @@ components* — rather than dropping all but one — needs the emitter to buffer
 diagnostics before emitting, so it can name every affected consumer in the one surviving block; that
 buffering step is the open work here.
 
-## A use-site failure still exposes combinator plumbing, though its `?` cascade is now gone
+## A resolved dispatch chain repeats the full program type at every node
 
-A consumer-method call whose wiring fails *and whose result is consumed with `?`* is the one use-site
-shape the typed resolver cannot reshape, and it is the class the shell-scripting DSL's `hello_name`
-example hits. When a context joins a namespace and calls an async, `Code`-dispatched handler
-(`app.handle(PhantomData::<Program>, input).await?`), the top provider — a `PipeHandlers` composition
-wired to a generic `Code` family — matches unconditionally, so the method is *found* and the failure
-is an `E0277`, not the `E0599` the [use-site anchor](../implementation/typed-root-cause-resolution.md)
-handles. An `E0277` at a call carries no span on the context's type definition, and its `Input` is an
-unresolved inference variable (`Vec<_>`), so all five anchors decline and the diagnostic falls to the
-text rewrite — which stamps a `[CGP-E002]` header naming the internal `PipeHandlers`/`ComposeHandlers`
-plumbing as the "provider" and keeps rustc's impl-candidate `help` block. The root cause (a missing
-field the buried handler reads) is never surfaced. [`cascade_after_use_site`](../../tests/ui/usability/use-site/cascade_after_use_site.rs)
-reproduces the class with core CGP handlers alone.
+The use-site failure that used to expose combinator plumbing now *resolves*, through the
+[call-site anchor](../implementation/typed-root-cause-resolution.md#recovering-from-the-call-expression-itself):
+what used to be several `[CGP-E002]`-plumbing blocks with no cause is now one `[CGP-E001]` block led
+by the root cause (the graduated
+[`cascade_after_use_site`](../../tests/ui/acceptable/use-site/cascade_after_use_site.rs) pins the
+class, its `?`-operator cascade still suppressed and its await-site re-report de-duplicated).
 
-What the emitter *does* now suppress is the **downstream `?`-operator cascade** this shape used to
-trail. Once the `handle` bound fails, the type of `expr?` is unresolvable, so rustc adds one or two
-`Try` / `FromResidual` errors on the same expression that restate the wiring failure and dump the
-giant `<Ctx as CanHandle<…>>::Output` projection — pure noise over the wiring error already shown. The
-emitter records the span of every CGP failure it recognizes and drops a later `?`-operator error whose
-span overlaps one (see [The driver](../implementation/driver.md)), so `hello_name` dropped from five
-errors to three and the fixture from four to two. A `?` error with no CGP failure on its expression is
-untouched.
+What remains is how that success *reads* on a program-sized `Code` type. Every `Handler` node of the
+recovered chain restates the entire `Prog<Product![…]>` code type, and every namespace or dispatch
+level adds a `redirect lookup` hop, so a realistic DSL context (the
+[shell-scripting DSL](../../../cgp/docs/examples/shell-scripting-dsl.md)'s dynamic-argument example)
+yields a tree of ~30 nodes whose lines differ only in the provider column — the cause leads, but the
+chain buries the wiring path a reader might actually want in sheer repetition.
+[`deep_dispatch_chain`](../../tests/ui/usability/verbosity/deep_dispatch_chain.rs) distills the
+shape. The open work is presentation: elide a code parameter that is unchanged from the node above
+(`Handler<…, _>` on first appearance, `Handler<…>` or an ellipsis after), or fold a
+redirect-hop/provider pair that adds no branching into one line, so a deep chain reads as its
+handful of meaningful steps.
 
-What remains is the plumbing exposure itself. Reshaping it into a root-cause tree is out of reach
-without the failing obligation, which an `E0277` use site does not carry and which `tcx.typeck` cannot
-be forced to recompute from the emitter (it re-enters the `DiagCtxt` lock — the same barrier that puts
-the [`E0271` use-site case](../implementation/typed-root-cause-resolution.md) out of reach). Short of
-recovery, the text rewrite should at least follow the combinator "provider" through to the consumer
-trait and drop the impl-candidate `help`, the way the resolver already reframes a `RedirectLookup`
-provider to the `[CGP-E001]` consumer form. The *`E0599`* sibling of this shape — a namespace-joined
-context whose consumer trait is local and recovered from rustc's receiver span — is *not* a gap: the
-resolver anchors on that consumer trait and walks it through the namespace to the root cause (see
-[`namespace_join_use_site`](../../tests/ui/acceptable/use-site/namespace_join_use_site.rs), now in
-`acceptable/`); only the `E0277` shape above, where the context cannot be anchored at all, still
-declines.
+## A use-site failure whose arguments write no types keeps rustc's misleading method advice
 
-## A generic consumer's use-site failure keeps rustc's misleading method advice
-
-A *generic* consumer that fails at a direct call declines both use-site anchors, because neither can
-recover the component's dispatch parameter from the diagnostic. The by-component anchor re-checks a
-wired marker's bare form with an empty `()` parameter slot, which matches no real wiring for a generic
-component; the by-consumer anchor is deliberately restricted to a consumer whose only generic is
-`Self`, since the parameter at the call site (`App: CanFormatPair<_>` in rustc's own note) is an
-inference variable no span recovers.
-[`generic_consumer_use_site`](../../tests/ui/usability/use-site/generic_consumer_use_site.rs) pins the
-class: the declined `E0599` keeps rustc's method-probe framing, whose "this is an associated function,
-not a method" caret and "use associated function syntax instead" suggestion — both artifacts of CGP's
-`self`-less provider methods, and the second actively wrong — outrank the real
+A generic consumer that fails at a direct call now resolves whenever the call *writes* the dispatch
+parameter's type somewhere the
+[call-site anchor](../implementation/typed-root-cause-resolution.md#recovering-from-the-call-expression-itself)'s
+signature unification can read it (the graduated
+[`generic_consumer_use_site`](../../tests/ui/acceptable/use-site/generic_consumer_use_site.rs) pins
+the value-argument case). What still declines — the anchor's documented boundary — is a call whose
+parameter-carrying argument the call does not type syntactically, a plain variable or an unsuffixed
+literal, since typing it would need the typeck results the emitter can never force.
+[`generic_consumer_unwritten_arg`](../../tests/ui/usability/use-site/generic_consumer_unwritten_arg.rs)
+pins the class: the declined `E0599` keeps rustc's method-probe framing, whose "this is an associated
+function, not a method" caret and "use associated function syntax instead" suggestion — both
+artifacts of CGP's `self`-less provider methods, and the second actively wrong — outrank the real
 `HasField<Symbol!("separator")>` cause buried in the first note. (The same failure at a
-`check_components!` entry resolves cleanly, including for a single tuple-typed parameter; only the
-call-site shape lacks the parameter.) The plausible recovery is to re-check the wired delegate's
-*implemented* parameter values — the provider's concrete impls name them — instead of the meaningless
-`()` form; short of that, the fallback should at least drop the method-syntax advice the way the
-resolver already does for the shapes it reshapes.
+`check_components!` entry resolves cleanly.) The plausible recovery is to re-check the wired
+delegate's *implemented* parameter values — the provider's concrete impls name them — instead of the
+meaningless `()` form; short of that, the fallback should at least drop the method-syntax advice the
+way the resolver already does for the shapes it reshapes.
 
 ## One missing derive reported field by field
 
@@ -176,8 +161,8 @@ Taken together, these issues define the tool's presentation target for the class
 reshape: deduplicate one cause down to a single headline whether it fans out across diagnostics (the
 cascade) or within one (the missing derive); recover the untransformed lowering class into a coded,
 root-cause-first diagnostic, or at least strip the generated `__…__` names and misleading suggestions
-it leaks; surface the use-site shapes whose parameters are not yet recoverable — the `E0277`
-combinator-plumbing exposure and the generic consumer's misleading method advice; and coalesce the
+it leaks; surface the generic consumer's use-site failure once its value-carried parameter becomes
+recoverable; compact the deep dispatch chains the call-site anchor now resolves; and coalesce the
 coherence conflicts that still fan out — the
 duplicate provider *name*, the `E0207` unconstrained generic, and the `E0275` `UseContext` cycle —
 and name the wiring mistake behind each code, the way the duplicate delegate-key `E0119` is now

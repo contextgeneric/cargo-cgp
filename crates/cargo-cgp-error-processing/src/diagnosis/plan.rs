@@ -23,7 +23,8 @@ pub enum DiagKind {
     Check,
     /// A field-type mismatch — rustc's `E0271`, traced to a `HasField` projection.
     FieldMismatch,
-    /// A consumer-method call failure — rustc's `E0599`, recovered at the use site.
+    /// A consumer-method call failure recovered at the use site — rustc's `E0599`, or an `E0277`
+    /// whose obligation the resolver re-read from the call expression itself.
     MethodNotFound,
 }
 
@@ -137,6 +138,15 @@ fn categorized_header(
             if bound_is_leaf(resolved, parsed.bound) {
                 return None;
             }
+        }
+        // A failure recovered at the use site reports the consumer trait the *call* needs. rustc's
+        // own headline names whichever provider bound its solver stopped on — at a use site that is
+        // usually dispatch plumbing (`PipeHandlers`, `ComposeHandlers`) the programmer never
+        // asserted on, so the provider-form rewrite below would leak internals the call never
+        // mentions. (A provider-side headline the programmer *did* assert — a `#[check_providers]`
+        // layer — arrives as a `Check`, not a use-site kind, and keeps the provider form.)
+        if kind == DiagKind::MethodNotFound {
+            return Some(consumer_header(resolved));
         }
         if let Some(rewritten) = rewrite_trait_bound(text, names) {
             return Some(rewritten);

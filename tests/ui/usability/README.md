@@ -18,14 +18,17 @@ class in [the usability issue document](../../../docs/issues/usability.md):
 - [`lowering/`](lowering) — a macro lowered accepted input into ill-formed Rust, and the error lands
   on the macro attribute without naming the real cause: an unsized generated type (`option_slice`) or
   a cyclic `#[use_type]` routing (`use_type_cyclic_context`).
-- [`use-site/`](use-site) — a use-site failure the resolver cannot anchor: `cascade_after_use_site`
-  calls a *foreign*, generic `Code`-dispatched handler whose result is consumed with `?`, so its
-  `E0277` declines to the text rewrite and exposes the combinator plumbing (its `?`-operator
-  `Try`/`FromResidual` cascade is now suppressed; the plumbing exposure is what remains), and
-  `generic_consumer_use_site` calls a *local* generic consumer whose dispatch parameter no span
-  recovers, so its `E0599` keeps rustc's misleading method-syntax advice ahead of the buried cause.
-  (The namespace-joined `E0599` and `#[use_type]` shapes that used to live here now resolve and have
-  moved to [`../acceptable/`](../acceptable).)
+- [`use-site/`](use-site) — a use-site failure the resolver cannot anchor:
+  `generic_consumer_unwritten_arg` calls a *local* generic consumer whose dispatch parameter rides in
+  a plain variable argument — an argument the call does not type syntactically, so no anchor can read
+  it — and its `E0599` keeps rustc's misleading method-syntax advice ahead of the buried cause. (The
+  namespace-joined `E0599`, the `#[use_type]` shapes, the `Code`-dispatched `E0277`, and the
+  written-value-argument case that used to live here now resolve and have moved to
+  [`../acceptable/`](../acceptable).)
+- [`verbosity/`](verbosity) — output that is *correct but overwhelming*: `deep_dispatch_chain` is a
+  resolved `Code`-dispatched failure whose dependency chain restates the full program type at every
+  `Handler` node and renders every redirect hop, so a DSL-sized program yields a tree of dozens of
+  near-identical lines around one short root cause.
 - [`wiring/`](wiring) — the structural coherence conflicts (`E0119`/`E0207`/`E0275`) that still pass
   through with only light post-processing. The duplicate delegate-key `E0119` is now reshaped into a
   coded `[CGP-E004]`–`[CGP-E008]` headline and has moved to [`../acceptable/wiring`](../acceptable/wiring); what remains

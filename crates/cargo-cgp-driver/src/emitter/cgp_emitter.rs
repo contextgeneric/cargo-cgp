@@ -7,7 +7,7 @@ use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for,
 };
 use cargo_cgp_error_processing::{
-    Resolved, cause_signature, plan_resolved, plan_wiring_conflict, wiring_conflict_help,
+    DiagKind, Resolved, cause_signature, plan_resolved, plan_wiring_conflict, wiring_conflict_help,
 };
 use rustc_errors::codes::{E0119, E0271, E0277, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
@@ -166,7 +166,7 @@ impl<E> CgpEmitter<E> {
     /// before any solving both keeps the tool from crashing and is correct, since the resolver has
     /// nothing to say about a name-resolution error. (`E0271`/`E0277` are trait-solving failures
     /// reported after collection, where the queries the solver forces are already cached.)
-    fn try_resolve(&self, diag: &DiagInner) -> Option<(Resolved, Span)> {
+    fn try_resolve(&self, diag: &DiagInner) -> Option<(Resolved, Span, bool)> {
         // A method-bounds `E0599` (not a resolution-class one) is the only `E0599` the resolver
         // handles; see the re-entrancy note above.
         let e0599_method_bounds = diag.code == Some(E0599)
@@ -179,7 +179,7 @@ impl<E> CgpEmitter<E> {
             return None;
         }
         let primary_span = diag.span.primary_span()?;
-        let resolved = rustc_middle::ty::tls::with_opt(|tcx| {
+        let (resolved, at_call) = rustc_middle::ty::tls::with_opt(|tcx| {
             let tcx = tcx?;
             let spans = diagnostic_spans(diag);
             // Prefer the check-entry anchor (an obligation recovered from the check impl at the
@@ -191,7 +191,7 @@ impl<E> CgpEmitter<E> {
             // failure sits several `where`-clause hops down. Failing all — a use-site failure such
             // as a consumer-method call, whose obligation no check impl carries — recover the
             // context from the diagnostic's spans.
-            resolve::resolve_check_failure(tcx, primary_span)
+            let resolved = resolve::resolve_check_failure(tcx, primary_span)
                 .or_else(|| resolve::resolve_impl_site(tcx, &spans))
                 .or_else(|| resolve::resolve_wrapper_chain(tcx, &spans))
                 .or_else(|| resolve::resolve_use_site(tcx, &spans))
@@ -199,22 +199,39 @@ impl<E> CgpEmitter<E> {
                 // `DelegateComponent` impls, so the per-component re-check above finds nothing;
                 // anchoring on the consumer trait the diagnostic names and walking through the
                 // namespace recovers it.
-                .or_else(|| resolve::resolve_use_site_consumer(tcx, &spans))
+                .or_else(|| resolve::resolve_use_site_consumer(tcx, &spans));
+            if let Some(resolved) = resolved {
+                return Some((resolved, false));
+            }
+            // The last resort re-reads the failing *call expression* itself — the anchor for a
+            // consumer-method `E0277` whose spans never touch the context's definition (a
+            // `Code`-dispatched handler pipeline that matches unconditionally). A resolution from
+            // here is flagged, so the header is worded from the consumer the call needs rather
+            // than from whichever provider bound rustc's headline stopped on.
+            Some((resolve::resolve_call_site(tcx, &spans)?, true))
         })?;
-        Some((resolved, primary_span))
+        Some((resolved, primary_span, at_call))
     }
 
     /// Transform a resolved wiring failure in place from the rustc-free [`plan_resolved`]: replace
     /// the main message when the plan carries a coded header (re-aiming the caret at the failing
     /// entry), then replace the sub-messages with the plan's derive `help`s and one root-cause
-    /// note per cause, dropping rustc's own suggestions.
-    fn transform_resolved(&self, diag: &mut DiagInner, resolved: &Resolved, span: Span) {
-        let plan = plan_resolved(
-            diag_kind(diag),
-            main_message_text(diag),
-            resolved,
-            &self.names,
-        );
+    /// note per cause, dropping rustc's own suggestions. A resolution anchored at the call
+    /// expression (`at_call`) plans as a use-site failure whatever its rustc code, so its header
+    /// names the consumer the call needs — except a genuine field-type mismatch, whose `E0271`
+    /// class words the more specific `[CGP-E003]` form.
+    fn transform_resolved(
+        &self,
+        diag: &mut DiagInner,
+        resolved: &Resolved,
+        span: Span,
+        at_call: bool,
+    ) {
+        let kind = match diag_kind(diag) {
+            kind if at_call && kind != DiagKind::FieldMismatch => DiagKind::MethodNotFound,
+            kind => kind,
+        };
+        let plan = plan_resolved(kind, main_message_text(diag), resolved, &self.names);
 
         if let Some(header) = plan.header {
             diag.messages = vec![(DiagMessage::Str(header.into()), Style::NoStyle)];
@@ -266,13 +283,14 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
         // resolver declines, the wiring-message rename runs as the first fallback pass. A resolved
         // failure also yields its span-independent cause signature, for the de-duplication below.
-        let (rewritten, cause_sig) = if let Some((resolved, span)) = self.try_resolve(&diag) {
-            let sig = cause_signature(&resolved);
-            self.transform_resolved(&mut diag, &resolved, span);
-            (true, Some(sig))
-        } else {
-            (self.rewrite(&mut diag), None)
-        };
+        let (rewritten, cause_sig) =
+            if let Some((resolved, span, at_call)) = self.try_resolve(&diag) {
+                let sig = cause_signature(&resolved);
+                self.transform_resolved(&mut diag, &resolved, span, at_call);
+                (true, Some(sig))
+            } else {
+                (self.rewrite(&mut diag), None)
+            };
         // Post-process the result either way, so no raw CGP construct leaks. A typed resolution
         // or a text rewrite constructs the message, so its paths render bare (`@…`); a diagnostic
         // the tool left untouched keeps the `Path!(@…)` resugaring form.

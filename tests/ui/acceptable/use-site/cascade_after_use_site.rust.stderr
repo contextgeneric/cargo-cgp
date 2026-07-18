@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `ComposeHandlers<HandleName, HandleShout>: Handler<App, Prog<_>, _>` is not satisfied
-  --> src/main.rs:90:16
+  --> src/main.rs:93:16
    |
-90 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+93 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
    |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |         |
    |         required by a bound introduced by this call
@@ -24,9 +24,9 @@ help: the trait `Handler<Context, Code, Input>` is conditionally implemented for
    = note: required for `App` to implement `CanHandle<Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>`
 
 error[E0277]: the trait bound `ComposeHandlers<HandleName, HandleShout>: Handler<App, Prog<_>, _>` is not satisfied
-  --> src/main.rs:90:9
+  --> src/main.rs:93:9
    |
-90 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+93 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
    |         ^^^^^^ unsatisfied trait bound
    |
    = help: the trait `Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>` is not implemented for `ComposeHandlers<HandleName, HandleShout>`
@@ -47,28 +47,28 @@ help: the trait `Handler<Context, Code, Input>` is conditionally implemented for
    = note: required for `App` to implement `CanHandle<Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>`
 
 error[E0277]: the trait bound `HandleName: Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>` is not satisfied
-  --> src/main.rs:90:16
+  --> src/main.rs:93:16
    |
-90 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+93 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
    |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |         |
    |         required by a bound introduced by this call
    |
 help: the trait `Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>` is not implemented for `HandleName`
-  --> src/main.rs:39:16
+  --> src/main.rs:42:16
    |
-39 | #[cgp_impl(new HandleName)]
+42 | #[cgp_impl(new HandleName)]
    |                ^^^^^^^^^^
 help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `HandleName`
-  --> src/main.rs:41:1
+  --> src/main.rs:44:1
    |
-41 | / impl<Code, Input> Handler<Code, Input>
-42 | | where
-43 | |     Self: HasName,
+44 | / impl<Code, Input> Handler<Code, Input>
+45 | | where
+46 | |     Self: HasName,
    | |           ------- unsatisfied requirement introduced here: `App: HasName`
-44 | |     Input: Send,
+47 | |     Input: Send,
 ...  |
-51 | | }
+54 | | }
    | |_^
    = note: required for `ComposeHandlers<HandleName, HandleShout>` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _)>`
    = note: 3 redundant requirements hidden
@@ -77,26 +77,26 @@ help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented
    = note: required for `App` to implement `CanHandle<Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>`
 
 error[E0277]: the trait bound `HandleName: Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>` is not satisfied
-  --> src/main.rs:90:9
+  --> src/main.rs:93:9
    |
-90 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+93 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
    |         ^^^^^^ unsatisfied trait bound
    |
 help: the trait `Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>` is not implemented for `HandleName`
-  --> src/main.rs:39:16
+  --> src/main.rs:42:16
    |
-39 | #[cgp_impl(new HandleName)]
+42 | #[cgp_impl(new HandleName)]
    |                ^^^^^^^^^^
 help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `HandleName`
-  --> src/main.rs:41:1
+  --> src/main.rs:44:1
    |
-41 | / impl<Code, Input> Handler<Code, Input>
-42 | | where
-43 | |     Self: HasName,
+44 | / impl<Code, Input> Handler<Code, Input>
+45 | | where
+46 | |     Self: HasName,
    | |           ------- unsatisfied requirement introduced here: `App: HasName`
-44 | |     Input: Send,
+47 | |     Input: Send,
 ...  |
-51 | | }
+54 | | }
    | |_^
    = note: required for `ComposeHandlers<HandleName, HandleShout>` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _)>`
    = note: 3 redundant requirements hidden
@@ -105,30 +105,30 @@ help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented
    = note: required for `App` to implement `CanHandle<Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>`
 
 error[E0277]: the trait bound `App: CanHandle<Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>` is not satisfied
-  --> src/main.rs:90:16
+  --> src/main.rs:93:16
    |
-90 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+93 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:79:1
+  --> src/main.rs:82:1
    |
-79 | pub struct App {
+82 | pub struct App {
    | ^^^^^^^^^^^^^^
 note: required for `App` to implement `HasName`
-  --> src/main.rs:31:1
+  --> src/main.rs:34:1
    |
-31 | #[cgp_auto_getter]
+34 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-32 | pub trait HasName {
+35 | pub trait HasName {
    |           ^^^^^^^
 note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _)>`
-  --> src/main.rs:39:1
+  --> src/main.rs:42:1
    |
-39 | #[cgp_impl(new HandleName)]
+42 | #[cgp_impl(new HandleName)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-43 |     Self: HasName,
+46 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
    = note: 4 redundant requirements hidden
    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _)>`
@@ -137,9 +137,9 @@ note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, Ap
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
-  --> src/main.rs:90:5
+  --> src/main.rs:93:5
    |
-90 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+93 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, Vec<_>>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
@@ -173,9 +173,9 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `ComposeHandlers<HandleName, HandleShout>: Handler<App, Prog<_>, _>` is not satisfied
-  --> src/main.rs:90:5
+  --> src/main.rs:93:5
    |
-90 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+93 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, Vec<_>>` is not implemented for `ComposeHandlers<HandleName, HandleShout>`
@@ -207,26 +207,26 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
 
 error[E0277]: the trait bound `HandleName: Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, Vec<_>>` is not satisfied
-  --> src/main.rs:90:5
+  --> src/main.rs:93:5
    |
-90 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+93 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, Vec<_>>` is not implemented for `HandleName`
-  --> src/main.rs:39:16
+  --> src/main.rs:42:16
    |
-39 | #[cgp_impl(new HandleName)]
+42 | #[cgp_impl(new HandleName)]
    |                ^^^^^^^^^^
 help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `HandleName`
-  --> src/main.rs:41:1
+  --> src/main.rs:44:1
    |
-41 | / impl<Code, Input> Handler<Code, Input>
-42 | | where
-43 | |     Self: HasName,
+44 | / impl<Code, Input> Handler<Code, Input>
+45 | | where
+46 | |     Self: HasName,
    | |           ------- unsatisfied requirement introduced here: `App: HasName`
-44 | |     Input: Send,
+47 | |     Input: Send,
 ...  |
-51 | | }
+54 | | }
    | |_^
    = note: required for `ComposeHandlers<HandleName, HandleShout>` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<HandleName, _>>, _)>`
    = note: 3 redundant requirements hidden
@@ -245,9 +245,9 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
 
 error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
-  --> src/main.rs:91:10
+  --> src/main.rs:94:10
    |
-91 |         .await?;
+94 |         .await?;
    |          ^^^^^ unsatisfied trait bound
    |
    = help: the trait `Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, Vec<_>>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
@@ -281,9 +281,9 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `ComposeHandlers<HandleName, HandleShout>: Handler<App, Prog<_>, _>` is not satisfied
-  --> src/main.rs:91:10
+  --> src/main.rs:94:10
    |
-91 |         .await?;
+94 |         .await?;
    |          ^^^^^ unsatisfied trait bound
    |
    = help: the trait `Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, Vec<_>>` is not implemented for `ComposeHandlers<HandleName, HandleShout>`
@@ -315,26 +315,26 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
 
 error[E0277]: the trait bound `HandleName: Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, Vec<_>>` is not satisfied
-  --> src/main.rs:91:10
+  --> src/main.rs:94:10
    |
-91 |         .await?;
+94 |         .await?;
    |          ^^^^^ unsatisfied trait bound
    |
 help: the trait `Handler<App, Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, Vec<_>>` is not implemented for `HandleName`
-  --> src/main.rs:39:16
+  --> src/main.rs:42:16
    |
-39 | #[cgp_impl(new HandleName)]
+42 | #[cgp_impl(new HandleName)]
    |                ^^^^^^^^^^
 help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `HandleName`
-  --> src/main.rs:41:1
+  --> src/main.rs:44:1
    |
-41 | / impl<Code, Input> Handler<Code, Input>
-42 | | where
-43 | |     Self: HasName,
+44 | / impl<Code, Input> Handler<Code, Input>
+45 | | where
+46 | |     Self: HasName,
    | |           ------- unsatisfied requirement introduced here: `App: HasName`
-44 | |     Input: Send,
+47 | |     Input: Send,
 ...  |
-51 | | }
+54 | | }
    | |_^
    = note: required for `ComposeHandlers<HandleName, HandleShout>` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<HandleName, _>>, _)>`
    = note: 3 redundant requirements hidden

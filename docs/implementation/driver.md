@@ -375,9 +375,12 @@ diagnostic that both looks like a `?`-operator error (`is_question_mark_cascade`
 wiring failure before its cascade, so the span is always recorded in time. The scope is deliberately
 tight — only a `?` error sitting on an expression where a CGP wiring error was already shown is dropped,
 never a `?` misuse elsewhere — which is what makes suppressing an otherwise-untouched `rustc` error
-sound. This removes the two projection-dumping cascade blocks the shell-scripting DSL's `hello_name`
-use-site failure trailed (taking it from five errors to three); the pinning fixture is
-[`cascade_after_use_site`](../../tests/ui/usability/use-site/cascade_after_use_site.rs).
+sound. This removed the two projection-dumping cascade blocks a `Code`-dispatched use-site failure
+used to trail (the
+[call-site anchor](typed-root-cause-resolution.md#recovering-from-the-call-expression-itself) has
+since taken the failure itself from three fallback blocks to one resolved block); the pinning
+fixture is
+[`cascade_after_use_site`](../../tests/ui/acceptable/use-site/cascade_after_use_site.rs).
 
 ### Reshaping a duplicate-key conflict
 

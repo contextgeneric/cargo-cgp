@@ -9,8 +9,9 @@
 //!
 //! The pipeline is split by stage: [`anchor`] recovers the starting obligation (from a check
 //! entry, a hand-written impl on the context, a foreign wrapper whose `where`-clause chain reaches
-//! the context, or a use site), [`walk`] descends the dependency
-//! graph to each terminal leaf, [`classify`]
+//! the context, or a use site) with [`call_site`] as the last resort (re-reading the failing call
+//! expression itself, the unknowable parameters seeded as placeholders), [`walk`] descends the
+//! dependency graph to each terminal leaf, [`classify`]
 //! turns a leaf into a [`Leaf`](cargo_cgp_error_processing::Leaf) by inspecting the struct it lands
 //! on, [`label`] renders each path predicate as a tree label, and [`cgp_item`] holds the
 //! DefId-anchored CGP-trait recognition every stage relies on.
@@ -20,6 +21,7 @@
 //! and words which keys collide.
 
 mod anchor;
+mod call_site;
 mod cgp_item;
 mod classify;
 mod conflict;
@@ -30,4 +32,5 @@ pub use anchor::{
     resolve_check_failure, resolve_impl_site, resolve_use_site, resolve_use_site_consumer,
     resolve_wrapper_chain,
 };
+pub use call_site::resolve_call_site;
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};

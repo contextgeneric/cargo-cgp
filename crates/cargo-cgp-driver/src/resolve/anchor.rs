@@ -12,7 +12,9 @@
 //! consumer-method `E0599` (by recovering the context ADT from the diagnostic's spans and
 //! re-checking the parameterless form of every component that context wires); and
 //! [`resolve_use_site_consumer`] anchors on the consumer trait the diagnostic names, which is what
-//! reaches a namespace-joined context.
+//! reaches a namespace-joined context. A sixth anchor lives in its own module,
+//! [`call_site`](crate::resolve::call_site): the last resort that re-reads the failing call
+//! expression itself.
 
 use cargo_cgp_error_processing::code::DEP_TRAIT_IMPL;
 use cargo_cgp_error_processing::tree::DependencyTree;
