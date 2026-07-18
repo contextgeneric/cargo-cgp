@@ -118,6 +118,18 @@ fn categorized_header(
             if parsed.trait_name == "CanUseComponent" {
                 return Some(consumer_header(resolved));
             }
+            // An `IsProviderFor` bound whose subject is a `RedirectLookup` names only redirect
+            // plumbing — the lookup resolved to *no* provider at all (the wiring is missing), so
+            // there is no real provider to report. Naming `RedirectLookup<Ctx, @Path>` as the
+            // "provider" leaks a type the programmer never wrote and stops at the redirect rather
+            // than following through it. The resolution already recovered the consumer the redirect
+            // stands for and the missing-wiring cause beneath it, so word the header from that
+            // consumer instead — the same `[CGP-E001]` form the use-site path uses. (A real wired
+            // provider whose dependency fails — `SerializeIterator`, say — keeps the provider form
+            // below, since it names something the programmer chose.)
+            if parsed.trait_name == "IsProviderFor" && subject_is_redirect_lookup(parsed.subject) {
+                return Some(consumer_header(resolved));
+            }
             // rustc opened the diagnostic on a bound that restates a genuine recovered leaf — an
             // ordinary bound such as `f64: Eq` the solver descended to *is* the root cause — so
             // keep rustc's header, which already names that cause. (The matching note then drops
@@ -141,6 +153,29 @@ fn categorized_header(
         return Some(consumer_header(resolved));
     }
     None
+}
+
+/// Whether a trait bound's subject (self type) is CGP's `RedirectLookup` provider — the redirect
+/// plumbing an `open`/namespace lookup routes through. Strips a leading `for<…>` higher-ranked
+/// binder (a higher-ranked obligation prints as `for<'a> RedirectLookup<…>`), then the type's own
+/// generic arguments and any module path, so it matches on the bare head segment.
+fn subject_is_redirect_lookup(subject: &str) -> bool {
+    let subject = subject.trim();
+    // Drop a leading `for<'a, …>` binder; its `>` is the first one, since a lifetime list carries
+    // no nested `<`.
+    let ty = subject
+        .strip_prefix("for<")
+        .and_then(|rest| rest.split_once('>'))
+        .map(|(_, rest)| rest.trim())
+        .unwrap_or(subject);
+    ty.split('<')
+        .next()
+        .unwrap_or("")
+        .rsplit("::")
+        .next()
+        .unwrap_or("")
+        .trim()
+        == "RedirectLookup"
 }
 
 /// Whether `bound` — the whole `Self: Trait<…>` restatement rustc's main message opened with —

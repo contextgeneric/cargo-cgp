@@ -41,7 +41,13 @@ it is an identified CGP class.** An unsatisfied `CanUseComponent` bound is a
 worded from the typed resolution (whose full-path marker keys make the consumer name exact even for
 same-named components); a consumer-method `E0599`, whose text names no wiring trait, gets the same
 `CGP-E001` form from the resolution; an unsatisfied `IsProviderFor` bound becomes the `[CGP-E002]`
-provider form via the text rewrite; and a field-type mismatch — an `E0271` the resolver traced to a
+provider form via the text rewrite — **except** when its provider is a `RedirectLookup`, which is
+redirect plumbing rather than a provider the programmer wrote (the lookup resolved to *no* provider,
+so the wiring is simply missing): there the header follows through the redirect to the recovered
+consumer and takes the `[CGP-E001]` consumer form, so a check for a component wired only through an
+`open`/namespace redirect reads `the consumer trait \`CanGreet\` is not implemented for context
+\`App\`` rather than exposing `RedirectLookup<App, @…>` as the "provider" (a real wired provider
+whose dependency fails, such as `SerializeIterator`, keeps the provider form). A field-type mismatch — an `E0271` the resolver traced to a
 `HasField` projection — becomes the `[CGP-E003]` field form
 `[CGP-E003] expected a \`height\` field of type \`f64\` on \`Rectangle\`, but found \`i32\``, the
 expected type read from the failing projection and the actual type queried from the struct. The
@@ -443,8 +449,10 @@ diagnostic's own rustc code to a rustc-free
 `Resolved`, and the name map to `plan_resolved`, which returns a `DiagnosisPlan`: the rewritten header
 (or `None`), the derive `help`s, and one note per cause. `plan_resolved`'s `categorized_header` is what
 recognizes the class — the `CGP-E001` consumer form worded from the resolution's context and consumer
-trait(s) (pluralized when a use-site failure spans several components), the `CGP-E002` provider form
-from the text rewrite, or the `CGP-E003` field-type-mismatch form worded from the mismatch leaf when the
+trait(s) (pluralized when a use-site failure spans several components, and also used for an
+`IsProviderFor` bound whose provider is a `RedirectLookup`, since that names only redirect plumbing),
+the `CGP-E002` provider form from the text rewrite for a real wired provider, or the `CGP-E003`
+field-type-mismatch form worded from the mismatch leaf when the
 kind is a field mismatch the resolver traced to a `HasField` projection. A field-mismatch-coded
 (`E0271`) failure the resolver traced to a *non*-mismatch cause instead — a manual `Send`-recovery
 wrapper's opaque-future error, whose `type mismatch resolving …` message is unreadable — takes the

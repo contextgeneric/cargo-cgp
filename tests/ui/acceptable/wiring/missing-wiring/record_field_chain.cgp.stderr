@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] the provider trait `ValueBuilder<Inner>` with context `App` is not implemented for provider `RedirectLookup<App, @ValueBuilderComponent>`
+error[E0277]: [CGP-E001] the consumer trait `CanBuildValue<Outer>` is not implemented for context `App`
    --> src/main.rs:120:9
     |
 120 |         ValueBuilderComponent: [

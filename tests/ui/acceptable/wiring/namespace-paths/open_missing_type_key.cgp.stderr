@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] the provider trait `ItemEncoder<Vec<u8>>` with context `App` is not implemented for provider `RedirectLookup<App, @ItemEncoderComponent>`
+error[E0277]: [CGP-E001] the consumer trait `CanEncodeItem<Vec<u8>>` is not implemented for context `App`
   --> src/main.rs:52:13
    |
 52 |             Vec<u8>,

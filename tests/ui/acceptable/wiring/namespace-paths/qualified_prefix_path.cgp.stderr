@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] the provider trait `QuantityTypeProvider` with context `App` is not implemented for provider `RedirectLookup<App, @app.finance.types.QuantityTypeProviderComponent>`
+error[E0277]: [CGP-E001] the consumer trait `HasQuantityType` is not implemented for context `App`
   --> src/main.rs:39:9
    |
 39 |         QuantityTypeProviderComponent,

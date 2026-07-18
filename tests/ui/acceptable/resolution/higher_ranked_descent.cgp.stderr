@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] the provider trait `ItemEncoder<&'a u64>` with context `App` is not implemented for provider `for<'a> RedirectLookup<App, @ItemEncoderComponent>`
+error[E0277]: [CGP-E001] the consumer trait `CanEncodeItem<Seq<u64>>` is not implemented for context `App`
   --> src/main.rs:54:9
    |
 54 |         ItemEncoderComponent: [Seq<u64>],

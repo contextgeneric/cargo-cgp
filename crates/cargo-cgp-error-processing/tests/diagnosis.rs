@@ -516,20 +516,58 @@ fn plans_a_provider_header_via_text_rewrite() {
             tree: tree(),
         }],
     };
+    // A *real* wired provider (not the `RedirectLookup` plumbing) keeps the provider form, since it
+    // names something the programmer chose.
     let plan = plan_resolved(
         DiagKind::Check,
-        Some(
-            "the trait bound `RedirectLookup<App, Nil>: IsProviderFor<FooComponent, App>` is not satisfied",
-        ),
+        Some("the trait bound `FooProvider: IsProviderFor<FooComponent, App>` is not satisfied"),
         &resolved,
         &ComponentNameMap::new(foo_names),
     );
     assert_eq!(
         plan.header.as_deref(),
         Some(
-            "[CGP-E002] the provider trait `Fooer` with context `App` is not implemented for provider `RedirectLookup<App, Nil>`"
+            "[CGP-E002] the provider trait `Fooer` with context `App` is not implemented for provider `FooProvider`"
         )
     );
+}
+
+#[test]
+fn redirect_lookup_provider_follows_through_to_consumer_header() {
+    let resolved = Resolved {
+        context: "App".to_owned(),
+        consumers: vec!["CanFoo".to_owned()],
+        consumers_are_cgp: true,
+        subject_is_context: true,
+        causes: vec![Cause {
+            leaf: Leaf::Bound {
+                summary: "App: DefaultNamespace".to_owned(),
+            },
+            tree: tree(),
+        }],
+    };
+    // An `IsProviderFor` bound whose subject is a `RedirectLookup` names only redirect plumbing —
+    // the lookup resolved to no provider — so the header follows through to the consumer trait
+    // rather than reporting `RedirectLookup<…>` as the provider. A leading `for<'a>` binder (a
+    // higher-ranked obligation) is stripped before the check.
+    for subject in [
+        "RedirectLookup<App, Nil>",
+        "for<'a> RedirectLookup<App, Nil>",
+    ] {
+        let plan = plan_resolved(
+            DiagKind::Check,
+            Some(&format!(
+                "the trait bound `{subject}: IsProviderFor<FooComponent, App>` is not satisfied"
+            )),
+            &resolved,
+            &ComponentNameMap::new(foo_names),
+        );
+        assert_eq!(
+            plan.header.as_deref(),
+            Some("[CGP-E001] the consumer trait `CanFoo` is not implemented for context `App`"),
+            "subject `{subject}` should follow through the redirect to the consumer header",
+        );
+    }
 }
 
 #[test]

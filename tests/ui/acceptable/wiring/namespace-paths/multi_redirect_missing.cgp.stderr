@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] the provider trait `Greeter` with context `App` is not implemented for provider `RedirectLookup<App, @end>`
+error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `App`
   --> src/main.rs:38:9
    |
 38 |         GreeterComponent,
