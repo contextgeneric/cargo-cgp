@@ -410,12 +410,20 @@ An **`open`-dispatch redirect path** — `PathCons<Component, PathCons<Value, �
 `@Component.Value:` entry emits — is instead decomposed, and the real dispatch value re-checked as
 `Ctx: CanUseComponent<Component, Value>`; re-checking the raw `PathCons` key as if it were a marker
 would report the internal `PathCons` spine as a bogus consumer trait bottoming out on `T: Sized` noise,
-exactly the machinery the tool exists to hide. Two entries are skipped: a bare marker that is *also*
+exactly the machinery the tool exists to hide. Three entries are skipped: a bare marker that is *also*
 `open`-dispatched (its `()` re-check would report a spurious `@Component.()` redirect, while its real
-values are covered by the path entries), and a generic catch-all whose recovered value still carries a
+values are covered by the path entries); a generic catch-all whose recovered value still carries a
 free type parameter (`<'a, T> &'a T: SerializeDeref` yields `&T`, whose re-check produces only
-`T: Sized`). The [`open_dispatch_use_site`](../../tests/ui/acceptable/use-site/open_dispatch_use_site.rs)
-fixture pins this.
+`T: Sized`); and a **blanket-forwarding key** — a bare type parameter (`__Key__`), the impl a
+`namespace …;` join emits (`impl<__Key__> DelegateComponent<__Key__> for Ctx`) to forward *every*
+lookup to the namespace. That key names no concrete component, and re-checking a free parameter as one
+bottoms out on the same `__Key__: Sized` noise under a bogus `` the consumer trait `__Key__` `` header;
+since a namespace-joined context's concrete wiring lives in the namespace, out of this per-context view,
+skipping it means a pure namespace join yields no target and the resolver declines rather than fabricate
+a cause. The [`open_dispatch_use_site`](../../tests/ui/acceptable/use-site/open_dispatch_use_site.rs)
+fixture pins the path re-check, and
+[`namespace_join_use_site`](../../tests/ui/usability/use-site/namespace_join_use_site.rs) the
+blanket-key skip.
 
 ### Walking the dependency graph downward
 
@@ -681,8 +689,8 @@ separate header brand; the inline code is the only marking.
   named plainly with `subject_is_context = false`), and `resolve_use_site` (recovering the context ADT
   from the diagnostic's spans and its wired components from `DelegateComponent` impls via
   `delegated_check_targets`, which recovers the real dispatch parameter from an `open`-dispatch
-  `PathCons` key through `open_dispatch_target` and skips a raw path key, a redundant bare marker, or a
-  free-parameter catch-all).
+  `PathCons` key through `open_dispatch_target` and skips a raw path key, a redundant bare marker, a
+  free-parameter catch-all, or a `namespace …;`-join blanket-forwarding param key).
   `walk.rs` walks the cause chain to each terminal leaf: the descendable-vocabulary rule, the cycle guard
   and `MAX_DEPTH` backstop, the placeholder instantiation of a higher-ranked obligation's binder
   (`enter_forall_and_leak_universe`), the plumbing-leaf drop, the foreign-getter descent into just

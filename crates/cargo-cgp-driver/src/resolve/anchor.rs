@@ -534,7 +534,7 @@ fn context_candidates_from_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec
 
 /// The `(marker, params)` pairs a use-site failure re-checks as `Ctx: CanUseComponent<marker,
 /// params>`, read from the context's `DelegateComponent<Key>` impls. A `DelegateComponent` key is
-/// one of two shapes, and each yields a different re-check:
+/// one of three shapes, and each yields a different re-check:
 ///
 /// - A **bare component marker** (`ItemEncoderComponent`) re-checks with the unit parameter `()`,
 ///   the parameterless form an ordinary component's use-site failure exercises — *unless* the same
@@ -546,6 +546,14 @@ fn context_candidates_from_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec
 ///   parameter is recovered from the path, re-checking `CanUseComponent<Component, Value>` so the
 ///   failure is traced with the value the context actually wired (a longer, non-two-segment path is
 ///   skipped rather than mis-rendered).
+/// - A **blanket-forwarding key** — a bare type parameter (`__Key__`) — is the impl a `namespace …;`
+///   join emits (`impl<__Key__> DelegateComponent<__Key__> for Ctx`), which forwards *every* lookup
+///   to the namespace rather than naming a concrete component. It is not a real wired key, and
+///   re-checking a free parameter bottoms out on `__Key__: Sized` noise under a bogus `__Key__`
+///   consumer-trait header, so it is skipped (as the generic-catch-all `open` value is). The
+///   context's concrete wiring lives in the namespace, out of this per-context view, so a
+///   pure namespace join yields no target and the use-site resolver declines rather than fabricate a
+///   cause.
 fn delegated_check_targets<'tcx>(
     tcx: TyCtxt<'tcx>,
     context: Ty<'tcx>,
@@ -591,7 +599,11 @@ fn delegated_check_targets<'tcx>(
             if !value.has_param() {
                 targets.push((comp, value));
             }
-        } else if !is_path_cons(tcx, key) && !dispatched.contains(&key) {
+        } else if !is_path_cons(tcx, key) && !dispatched.contains(&key) && !key.has_param() {
+            // A bare marker with no free parameter is a concrete wired component. A key that *is*
+            // (or contains) a free parameter is the `namespace …;` blanket forwarding (`__Key__`),
+            // not a real component, so it is dropped rather than re-checked into `__Key__: Sized`
+            // noise.
             targets.push((key, tcx.types.unit));
         }
     }

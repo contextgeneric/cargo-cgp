@@ -86,6 +86,20 @@ recovery, the text rewrite should at least follow the combinator "provider" thro
 trait and drop the impl-candidate `help`, the way the resolver already reframes a `RedirectLookup`
 provider to the `[CGP-E001]` consumer form.
 
+The sibling case is a namespace-joined context whose use-site failure is an `E0599` rather than an
+`E0277`, so the resolver *does* find the context (from rustc's receiver-type span) but cannot see its
+wiring: a `namespace …;` join gives the context only a blanket `DelegateComponent<__Key__>` forwarding,
+whose key is a bare type parameter. Re-checking that parameter as a component used to fabricate a
+garbage `` the consumer trait `__Key__` `` header over `__Key__: Sized` noise; the resolver now skips a
+blanket-forwarding param key (see [Typed root-cause resolution](../implementation/typed-root-cause-resolution.md))
+and declines to rustc's own `E0599`, which — thanks to the next-solver — already names the missing
+`HasField` bound. [`namespace_join_use_site`](../../tests/ui/usability/use-site/namespace_join_use_site.rs)
+pins it. What remains is the same misleading "use associated function syntax instead" advice the other
+declined use-site failures carry, plus the deeper gap that the resolver still cannot recover a
+namespace-joined context's concrete wiring (it lives in the namespace, not the per-context view) to
+present the root-cause tree the equivalent directly-wired case
+([`unsatisfied_dependency`](../../tests/ui/acceptable/use-site/unsatisfied_dependency.rs)) already gets.
+
 ## One missing derive reported field by field
 
 A struct missing its `#[derive(HasField)]` has no `HasField` impl for *any* field, so the resolver
