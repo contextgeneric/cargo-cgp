@@ -361,6 +361,21 @@ errors" summary as well — so the visible block count and the summary agree. Th
 [one-mistake-many-errors](../issues/usability.md) usability class the per-diagnostic resolver could not
 address on its own.
 
+The same span-keyed gate also drops a **downstream `?`-operator cascade** of a wiring failure. When a
+consumer-method call fails and its result is consumed with `?` (`app.handle(…).await?`), the type of
+`expr?` becomes unresolvable, so rustc adds a `Try` / `FromResidual` error on the same expression that
+merely restates the wiring failure and dumps the unresolved `<Ctx as Consumer<…>>::Output` projection.
+The emitter records the primary span of every CGP failure it recognizes (`cgp_spans`, populated before
+de-duplication so even a dropped re-report still anchors its cascade) and suppresses a later, *untouched*
+diagnostic that both looks like a `?`-operator error (`is_question_mark_cascade`, matching rustc's stable
+"the `` ? `` operator can only …" wording) and whose span overlaps a recorded failure. rustc emits the
+wiring failure before its cascade, so the span is always recorded in time. The scope is deliberately
+tight — only a `?` error sitting on an expression where a CGP wiring error was already shown is dropped,
+never a `?` misuse elsewhere — which is what makes suppressing an otherwise-untouched `rustc` error
+sound. This removes the two projection-dumping cascade blocks the shell-scripting DSL's `hello_name`
+use-site failure trailed (taking it from five errors to three); the pinning fixture is
+[`cascade_after_use_site`](../../tests/ui/usability/use-site/cascade_after_use_site.rs).
+
 ### Reshaping a duplicate-key conflict
 
 The emitter's fourth transform runs *before* the other two and handles a different failure kind: the
@@ -501,10 +516,12 @@ will likely grow toward it:
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the generic
   `CgpEmitter<E>`, split behind a re-exporting `mod.rs`: `install.rs` rebuilds the compiler's default
   emitter for the active format (a `JsonEmitter` or an `AnnotateSnippetEmitter`) and wraps it,
-  `cgp_emitter.rs` holds the `CgpEmitter<E>` type (holding the `ComponentNameMap` and the `seen`
-  cross-diagnostic de-duplication set) and its transform/post-process/de-duplicate orchestration, and
+  `cgp_emitter.rs` holds the `CgpEmitter<E>` type (holding the `ComponentNameMap`, the `seen`
+  cross-diagnostic de-duplication set, and the `cgp_spans` list of recognized-failure spans that anchors
+  the `?`-operator cascade suppression) and its transform/post-process/de-duplicate orchestration, and
   `edit.rs` holds the `DiagInner`-editing helpers (including `message_signature`, the span-independent
-  text key for de-duplicating a declined-but-rewritten diagnostic).
+  text key for de-duplicating a declined-but-rewritten diagnostic, and `is_question_mark_cascade`, the
+  `Try`/`FromResidual`-shape recognizer for the cascade drop).
 - [`crates/cargo-cgp-driver/src/component_map.rs`](../../crates/cargo-cgp-driver/src/component_map.rs)
   — builds the component-marker → trait-names map by inverting the `IsProviderFor` supertrait
   (anchored by `DefId` identity to the `cgp_component` crate) and the consumer-blanket-impl links, and

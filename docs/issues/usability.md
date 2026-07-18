@@ -54,6 +54,38 @@ components* — rather than dropping all but one — needs the emitter to buffer
 diagnostics before emitting, so it can name every affected consumer in the one surviving block; that
 buffering step is the open work here.
 
+## A use-site failure still exposes combinator plumbing, though its `?` cascade is now gone
+
+A consumer-method call whose wiring fails *and whose result is consumed with `?`* is the one use-site
+shape the typed resolver cannot reshape, and it is the class the shell-scripting DSL's `hello_name`
+example hits. When a context joins a namespace and calls an async, `Code`-dispatched handler
+(`app.handle(PhantomData::<Program>, input).await?`), the top provider — a `PipeHandlers` composition
+wired to a generic `Code` family — matches unconditionally, so the method is *found* and the failure
+is an `E0277`, not the `E0599` the [use-site anchor](../implementation/typed-root-cause-resolution.md)
+handles. An `E0277` at a call carries no span on the context's type definition, and its `Input` is an
+unresolved inference variable (`Vec<_>`), so all four anchors decline and the diagnostic falls to the
+text rewrite — which stamps a `[CGP-E002]` header naming the internal `PipeHandlers`/`ComposeHandlers`
+plumbing as the "provider" and keeps rustc's impl-candidate `help` block. The root cause (a missing
+field the buried handler reads) is never surfaced. [`cascade_after_use_site`](../../tests/ui/usability/use-site/cascade_after_use_site.rs)
+reproduces the class with core CGP handlers alone.
+
+What the emitter *does* now suppress is the **downstream `?`-operator cascade** this shape used to
+trail. Once the `handle` bound fails, the type of `expr?` is unresolvable, so rustc adds one or two
+`Try` / `FromResidual` errors on the same expression that restate the wiring failure and dump the
+giant `<Ctx as CanHandle<…>>::Output` projection — pure noise over the wiring error already shown. The
+emitter records the span of every CGP failure it recognizes and drops a later `?`-operator error whose
+span overlaps one (see [The driver](../implementation/driver.md)), so `hello_name` dropped from five
+errors to three and the fixture from four to two. A `?` error with no CGP failure on its expression is
+untouched.
+
+What remains is the plumbing exposure itself. Reshaping it into a root-cause tree is out of reach
+without the failing obligation, which an `E0277` use site does not carry and which `tcx.typeck` cannot
+be forced to recompute from the emitter (it re-enters the `DiagCtxt` lock — the same barrier that puts
+the [`E0271` use-site case](../implementation/typed-root-cause-resolution.md) out of reach). Short of
+recovery, the text rewrite should at least follow the combinator "provider" through to the consumer
+trait and drop the impl-candidate `help`, the way the resolver already reframes a `RedirectLookup`
+provider to the `[CGP-E001]` consumer form.
+
 ## One missing derive reported field by field
 
 A struct missing its `#[derive(HasField)]` has no `HasField` impl for *any* field, so the resolver

@@ -75,6 +75,17 @@ pub(crate) fn message_signature(diag: &DiagInner) -> String {
     parts.join("\u{1f}")
 }
 
+/// Whether `diag` is a downstream `?`-operator cascade — the `Try` / `FromResidual` error rustc
+/// emits when the `?` in `expr?` is applied to a value whose type it could not resolve because an
+/// earlier trait bound on that same expression failed. Recognized by rustc's stable wording, which
+/// both shapes share ("the `?` operator can only be …"). On its own this is not enough to suppress
+/// — a genuine `?` misuse reads the same — so the emitter pairs it with a span check: the cascade is
+/// dropped only when it sits on an expression where a CGP wiring failure was already reported, where
+/// it merely restates that failure in `Try` terms while dumping the unresolved projected type.
+pub(crate) fn is_question_mark_cascade(diag: &DiagInner) -> bool {
+    main_message_text(diag).is_some_and(|message| message.contains("`?` operator"))
+}
+
 /// Every span a diagnostic carries — its primary and labelled spans plus each child's — the pool
 /// the use-site resolver searches for one that lands on the failing context's type definition.
 pub(crate) fn diagnostic_spans(diag: &DiagInner) -> Vec<Span> {

@@ -21,6 +21,10 @@ class in [the usability issue document](../../../docs/issues/usability.md):
 - [`lowering/`](lowering) — a macro lowered accepted input into ill-formed Rust, and the error lands
   on the macro attribute without naming the real cause: an unsized generated type (`option_slice`) or
   a cyclic `#[use_type]` routing (`use_type_cyclic_context`).
+- [`use-site/`](use-site) — a consumer-method call whose wiring fails as an `E0277` (its result
+  consumed with `?`), which the resolver cannot anchor, so it declines to the text rewrite and exposes
+  the combinator plumbing (`cascade_after_use_site`). The `?`-operator `Try`/`FromResidual` cascade
+  this shape used to trail is now suppressed; the plumbing exposure is what remains.
 - [`wiring/`](wiring) — the structural coherence conflicts (`E0119`/`E0207`/`E0275`) that still pass
   through with only light post-processing. The duplicate delegate-key `E0119` is now reshaped into a
   coded `[CGP-E004]`–`[CGP-E008]` headline and has moved to [`../acceptable/wiring`](../acceptable/wiring); what remains

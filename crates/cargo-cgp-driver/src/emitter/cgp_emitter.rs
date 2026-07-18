@@ -18,9 +18,9 @@ use rustc_span::source_map::SourceMap;
 
 use crate::component_map::build_name_map_from_tls;
 use crate::emitter::edit::{
-    diag_kind, diagnostic_spans, main_message_text, mentions_hasfield_impls, mentions_wiring,
-    message_signature, postprocess_messages, postprocess_multispan, replace_header,
-    rewrite_messages, subdiag,
+    diag_kind, diagnostic_spans, is_question_mark_cascade, main_message_text,
+    mentions_hasfield_impls, mentions_wiring, message_signature, postprocess_messages,
+    postprocess_multispan, replace_header, rewrite_messages, subdiag,
 };
 use crate::resolve::{self, ConflictAction, ConflictTrait};
 
@@ -45,6 +45,14 @@ pub struct CgpEmitter<E> {
     /// root cause for a resolved diagnostic and by rendered text for a declined-but-rewritten
     /// one — both span-independent, since the span is exactly what differs between the copies.
     seen: HashSet<String>,
+    /// The primary spans of every CGP wiring failure this emitter has recognized this
+    /// compilation. Used to drop a downstream `?`-operator cascade
+    /// ([`is_question_mark_cascade`]) that lands on the same expression: once a wiring bound on
+    /// `expr` fails, the type of `expr?` cannot be resolved, so rustc adds a `Try`/`FromResidual`
+    /// error at the same span that restates the wiring failure and dumps the unresolved projected
+    /// type — noise over the CGP error already shown. rustc emits the wiring failure before its
+    /// cascade, so the span is recorded by the time the cascade arrives.
+    cgp_spans: Vec<Span>,
 }
 
 impl<E> CgpEmitter<E> {
@@ -53,7 +61,27 @@ impl<E> CgpEmitter<E> {
             inner,
             names: ComponentNameMap::new(build_name_map_from_tls),
             seen: HashSet::new(),
+            cgp_spans: Vec::new(),
         }
+    }
+
+    /// Record the primary spans of a recognized CGP wiring failure, so a later `?`-operator
+    /// cascade on the same expression can be suppressed. Called for every diagnostic the emitter
+    /// transforms, before de-duplication, so even a re-report that is itself dropped still anchors
+    /// its cascade.
+    fn record_cgp_spans(&mut self, diag: &DiagInner) {
+        self.cgp_spans
+            .extend(diag.span.primary_spans().iter().copied());
+    }
+
+    /// Whether `diag` sits on an expression where a CGP wiring failure was already reported — a
+    /// primary span overlapping one recorded in [`cgp_spans`](Self::cgp_spans). Paired with
+    /// [`is_question_mark_cascade`] to drop the `?`-operator errors that cascade from that failure.
+    fn overlaps_cgp_failure(&self, diag: &DiagInner) -> bool {
+        diag.span
+            .primary_spans()
+            .iter()
+            .any(|span| self.cgp_spans.iter().any(|seen| seen.overlaps(*span)))
     }
 
     /// Rewrite every recognized CGP wiring message in `diag`, in place — the first fallback
@@ -224,6 +252,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     }
                     // A rewritten diagnostic: bare `@…` paths.
                     self.postprocess(&mut diag, true);
+                    self.record_cgp_spans(&diag);
                     self.inner.emit_diagnostic(diag);
                     return;
                 }
@@ -243,6 +272,18 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
         // or a text rewrite constructs the message, so its paths render bare (`@…`); a diagnostic
         // the tool left untouched keeps the `Path!(@…)` resugaring form.
         self.postprocess(&mut diag, rewritten);
+        if rewritten {
+            // Remember where this wiring failure landed, so a `?`-operator cascade on the same
+            // expression can be dropped below. Recorded before de-duplication, so a re-report that
+            // is itself suppressed still anchors its cascade.
+            self.record_cgp_spans(&diag);
+        } else if is_question_mark_cascade(&diag) && self.overlaps_cgp_failure(&diag) {
+            // A downstream `?`-operator cascade of a CGP wiring failure already reported at this
+            // expression: it restates the failure in `Try` terms and dumps the unresolved projected
+            // type, adding nothing. Drop it (cargo re-counts emitted diagnostics, so the "N errors"
+            // summary stays honest). A `?` error with no CGP failure on its expression is untouched.
+            return;
+        }
         // Cross-diagnostic de-duplication. CGP wiring is lazy, so one mistake surfaces as the same
         // error at many sites — the `check_components!` entry, every hand-written `impl` that
         // references the broken component, and each call. A transformed diagnostic whose recovered
