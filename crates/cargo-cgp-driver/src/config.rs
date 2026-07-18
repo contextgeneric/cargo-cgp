@@ -96,6 +96,13 @@ pub const EITHER_TYPE: &str = "Either";
 /// `Either` spine — the sum counterpart of [`NIL_TYPE`].
 pub const VOID_TYPE: &str = "Void";
 
+/// The name of the type-level named-field cell (defined by [`CGP_FIELD_CRATE`]): `Field<Tag, Value>`
+/// pairs a `Symbol!` name tag with a value type. When every element of a resugared `Product!`/`Sum!`
+/// list is a `Field`, the dependency-tree renderer resugars the whole list to the record/variant
+/// surface form `Struct! { name: Type, … }` / `Enum! { Name(Type), … }`. Anchored by `DefId` to
+/// `cgp-field`.
+pub const FIELD_TYPE: &str = "Field";
+
 /// The stable `--verbose` flag, injected into every workspace-crate compilation to stop
 /// the diagnostic machinery from *eliding* the parts of a type it deems uninteresting.
 ///

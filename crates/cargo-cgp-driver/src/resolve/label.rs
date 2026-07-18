@@ -16,8 +16,8 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{
     CAN_USE_COMPONENT_TRAIT, CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, CONS_TYPE,
-    DELEGATE_COMPONENT_TRAIT, EITHER_TYPE, HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT, NIL_TYPE,
-    REDIRECT_LOOKUP_TYPE, VOID_TYPE,
+    DELEGATE_COMPONENT_TRAIT, EITHER_TYPE, FIELD_TYPE, HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT,
+    NIL_TYPE, REDIRECT_LOOKUP_TYPE, VOID_TYPE,
 };
 use crate::resolve::cgp_item::{
     decode_symbol, is_cgp_item, is_namespace_lookup_trait, is_provider_trait,
@@ -111,6 +111,12 @@ pub(crate) fn label_for<'tcx>(
 /// same-named type from another crate is never resugared. Each element is rendered recursively, so a
 /// nested list (a `Sum!` inside a `Product!`, say) is resugared too; a non-spine type falls back to
 /// its ordinary printed form (whose inner `Symbol!`/`Path!` the post-processing then resugars).
+///
+/// A list whose elements are *all* named fields — `Field<Symbol!("name"), Type>` — resugars one step
+/// further to the record/variant surface form the shape describes: a product to `Struct! { name:
+/// Type, … }` and a sum to `Enum! { Name(Type), … }`, so a `HasFields` field list reads as the struct
+/// or enum it represents. `Struct!`/`Enum!` are not (yet) real CGP macros — like `Path!`'s `.*`
+/// wildcard, they are a presentation form chosen for readability, not something that parses back.
 pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     if let Some(elems) = cgp_spine(
         tcx,
@@ -120,6 +126,14 @@ pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         NIL_TYPE,
         CGP_BASE_TYPES_CRATE,
     ) {
+        if let Some(fields) = named_fields(tcx, &elems) {
+            let body = fields
+                .iter()
+                .map(|(name, value)| format!("{name}: {value}"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            return format!("Struct! {{ {body} }}");
+        }
         return format!("Product![{}]", render_ty_list(tcx, &elems));
     }
     if let Some(elems) = cgp_spine(
@@ -130,9 +144,39 @@ pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         VOID_TYPE,
         CGP_FIELD_CRATE,
     ) {
+        if let Some(fields) = named_fields(tcx, &elems) {
+            let body = fields
+                .iter()
+                .map(|(name, value)| format!("{name}({value})"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            return format!("Enum! {{ {body} }}");
+        }
         return format!("Sum![{}]", render_ty_list(tcx, &elems));
     }
     ty.to_string()
+}
+
+/// Interpret every element of a resugared list as a named field `Field<Symbol!("name"), Value>`,
+/// returning each `(name, rendered value)` pair — or `None` if *any* element is not such a field, so
+/// the caller keeps the plain `Product!`/`Sum!` form. The `Field` cell is anchored by `DefId` to
+/// `cgp-field`, its name decoded from the `Symbol!` tag, and its value rendered recursively so a
+/// nested record/variant resugars in turn.
+fn named_fields<'tcx>(tcx: TyCtxt<'tcx>, elems: &[Ty<'tcx>]) -> Option<Vec<(String, String)>> {
+    elems
+        .iter()
+        .map(|elem| {
+            let ty::Adt(def, args) = elem.kind() else {
+                return None;
+            };
+            if !is_cgp_item(tcx, def.did(), FIELD_TYPE, CGP_FIELD_CRATE) {
+                return None;
+            }
+            // `Field<Tag, Value>` — the tag is a `Symbol!` name, the value its type.
+            let name = decode_symbol(tcx, args.type_at(0))?;
+            Some((name, render_ty(tcx, args.type_at(1))))
+        })
+        .collect()
 }
 
 /// Render a spine's collected element types as a comma-separated list, each recursively through

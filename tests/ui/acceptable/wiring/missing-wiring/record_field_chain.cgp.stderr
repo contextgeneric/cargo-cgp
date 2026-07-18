@@ -9,8 +9,8 @@ error[E0277]: [CGP-E001] the consumer trait `CanBuildValue<Outer>` is not implem
                 [CGP-E101] consumer trait impl `CanBuildValue<Outer>` for context `App`
                 └── [CGP-E104] redirect lookup to `@ValueBuilderComponent` in `App`
                     └── [CGP-E102] provider trait impl `ValueBuilder<Outer>` with context `App` for provider `BuildRecord`
-                        └── [CGP-E105] trait impl `BuildFields` for `Product![Field<Symbol!("id"), u64>, Field<Symbol!("inner"), Inner>]`
-                            └── [CGP-E105] trait impl `BuildFields` for `Product![Field<Symbol!("inner"), Inner>]`
+                        └── [CGP-E105] trait impl `BuildFields` for `Struct! { id: u64, inner: Inner }`
+                            └── [CGP-E105] trait impl `BuildFields` for `Struct! { inner: Inner }`
                                 └── [CGP-E105] trait impl `CanBuildValue` for `App`
                                     └── [CGP-E104] redirect lookup to `@ValueBuilderComponent` in `App`
                                         └── [CGP-E107] context `App` does not contain any delegate entry for `@ValueBuilderComponent.Inner`

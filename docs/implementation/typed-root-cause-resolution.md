@@ -430,7 +430,13 @@ as the flat list the programmer wrote rather than a deeply right-nested spine �
 terminator anchored by `DefId` to the CGP crate that defines it (`Cons`/`Nil` in `cgp-base-types`,
 `Either`/`Void` in `cgp-field`), so a same-named type from another crate is never resugared, and the
 elements rendered recursively so a nested list resugars in turn (with the `Symbol!`/`Path!` inside
-each element left for the post-processing to resugar). A **generic**
+each element left for the post-processing to resugar). A list whose elements are *all* named fields
+`Field<Symbol!("name"), Type>` (the `DefId`-anchored `cgp-field` cell) resugars one step further to
+the record or variant it describes: a product to `Struct! { name: Type, … }` and a sum to `Enum! {
+Name(Type), … }`, so a `HasFields` field list — a whole `EncryptedMessage` record, say — reads as
+`Struct! { message_id: u64, date: DateTime<Utc>, … }` rather than a chain of `Field` cells.
+`Struct!`/`Enum!` are not (yet) real CGP macros; like `Path!`'s `.*` wildcard they are a
+readability-only form, chosen because it reads as the struct or enum the type stands for. A **generic**
 component's parameters are reattached to its consumer and provider labels from the `Params` slot of
 `CanUseComponent`/`IsProviderFor` — a single one bare, several unwrapped from their tuple — so the
 trait reads as written (`CanCalculateArea<u32, u64, bool>`, `AreaCalculator<u32, u64, bool>`). The
@@ -584,7 +590,8 @@ says what it needs to without altering the header's shape.
   `[CGP-E104] redirect lookup to \`@…\` in \`Ctx\``, and the `DelegateComponent`
   table lookup and namespace lookup dropped as plumbing since the caller re-states the leaf — generic
   parameters reattached, and `render_ty` resugaring a `DefId`-anchored `Cons`/`Nil` or `Either`/`Void`
-  self type back to `Product![…]`/`Sum![…]`),
+  self type back to `Product![…]`/`Sum![…]`, or — when every element is a `Field` — to
+  `Struct! { … }`/`Enum! { … }`),
   and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition, the `Symbol!` field-name decode,
   and `is_namespace_lookup_trait` recognizing a namespace trait by its single-`Delegate`-associated-type
   fingerprint rather than by name).
@@ -665,9 +672,12 @@ provider needing two unwired components → two `missing wiring` notes, one per 
 the missing wiring for one field's value type is reached only by preferring the provider's concrete
 impl over the delegation blanket, solving the provider's associated-type-determined `Builder`
 parameter, and following the same-trait list recursion into the tail; its tree entries also pin the
-`Cons`/`Nil` → `Product![…]` resugaring), and `sum_variant_chain` (the sum counterpart: a variant
-visitor over a `Sum![u64, f64]` = `Either<u64, Either<f64, Void>>` spine, pinning both the same-trait
-recursion over a sum and the `Either`/`Void` → `Sum![…]` resugaring). The use-site path
+`Cons`/`Nil` → `Struct! { … }` resugaring, since every element is a `Field`), `sum_variant_chain` (the
+sum counterpart: a variant visitor over a `Sum![u64, f64]` = `Either<u64, Either<f64, Void>>` spine of
+*bare* types, pinning both the same-trait recursion over a sum and the `Either`/`Void` → `Sum![…]`
+resugaring left as a plain list because the elements are not fields), and `enum_variant_chain` (a sum
+of *named* variants `Sum![Field<Symbol!("Rect"), u64>, …]`, pinning the `Enum! { Rect(u64), … }`
+resugaring — the sum counterpart of the `Struct! { … }` form). The use-site path
 is pinned by the [`acceptable/use-site/`](../../tests/ui/acceptable/use-site)
 fixtures: `missing_dependency` and `unsatisfied_dependency` (a consumer-method `E0599` → the
 `CGP-E001` header, the misleading method-syntax advice dropped, and a `missing field` root-cause note),
