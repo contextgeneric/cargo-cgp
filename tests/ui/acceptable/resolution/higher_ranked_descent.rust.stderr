@@ -1,0 +1,140 @@
+error[E0277]: the trait bound `EncodeSeq: ItemEncoder<App, Seq<u64>>` is not satisfied
+  --> src/main.rs:54:9
+   |
+54 |         ItemEncoderComponent: [Seq<u64>],
+   |         ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `ItemEncoder<App, Seq<u64>>` is not implemented for `EncodeSeq`
+  --> src/main.rs:32:16
+   |
+32 | #[cgp_impl(new EncodeSeq)]
+   |                ^^^^^^^^^
+help: the trait `ItemEncoder<__Context__, Seq<Value>>` is conditionally implemented for `EncodeSeq`
+  --> src/main.rs:33:1
+   |
+33 | / impl<Value> ItemEncoder<Seq<Value>>
+34 | | where
+35 | |     Self: for<'a> CanEncodeItem<&'a Value>,
+   | |___________--------------------------------^
+   |             |
+   |             unsatisfied requirement introduced here: `for<'a> App: CanEncodeItem<&'a u64>`
+   |             unsatisfied requirement introduced here: `for<'a> App: CanEncodeItem<&'a u64>`
+note: required for `RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>` to implement `IsProviderFor<ItemEncoderComponent, App, Seq<u64>>`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_component(ItemEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `App` to implement `CanUseComponent<ItemEncoderComponent, Seq<u64>>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:52:1
+   |
+52 | / check_components! {
+53 | |     App {
+54 | |         ItemEncoderComponent: [Seq<u64>],
+55 | |     }
+56 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `for<'a> RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>: ItemEncoder<App, &'a u64>` is not satisfied
+  --> src/main.rs:54:9
+   |
+54 |         ItemEncoderComponent: [Seq<u64>],
+   |         ^^^^^^^^^^^^^^^^^^^^ the trait `for<'a> ItemEncoder<App, &'a u64>` is not implemented for `RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>`
+   |
+help: the trait `ItemEncoder<__Context__, Value>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_component(ItemEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied requirement introduced here: `for<'a> App: DelegateComponent<<PathCons<ItemEncoderComponent, Nil> as ConcatPath<PathCons<&'a u64, Nil>>>::Output>`
+note: required for `App` to implement `for<'a> ItemEncoder<App, &'a u64>`
+  --> src/main.rs:25:1
+   |
+25 |   #[cgp_component(ItemEncoder)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 | | pub trait CanEncodeItem<Value> {
+   | |______________________________^
+note: required for `App` to implement `for<'a> CanEncodeItem<&'a u64>`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_component(ItemEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 | pub trait CanEncodeItem<Value> {
+   |           ^^^^^^^^^^^^^^^^^^^^
+note: required for `EncodeSeq` to implement `IsProviderFor<ItemEncoderComponent, App, Seq<u64>>`
+  --> src/main.rs:32:1
+   |
+32 | #[cgp_impl(new EncodeSeq)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+35 |     Self: for<'a> CanEncodeItem<&'a Value>,
+   |           -------------------------------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>` to implement `IsProviderFor<ItemEncoderComponent, App, Seq<u64>>`
+   = note: required for `App` to implement `CanUseComponent<ItemEncoderComponent, Seq<u64>>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:52:1
+   |
+52 | / check_components! {
+53 | |     App {
+54 | |         ItemEncoderComponent: [Seq<u64>],
+55 | |     }
+56 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: CanUseComponent<ItemEncoderComponent, Seq<u64>>` is not satisfied
+  --> src/main.rs:54:9
+   |
+54 |         ItemEncoderComponent: [Seq<u64>],
+   |         ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `for<'a> DelegateComponent<PathCons<ItemEncoderComponent, PathCons<&'a u64, Nil>>>` is not implemented for `App`
+  --> src/main.rs:42:1
+   |
+42 | pub struct App;
+   | ^^^^^^^^^^^^^^
+help: `App` implements trait `DelegateComponent<Key>`
+  --> src/main.rs:46:14
+   |
+46 |         open ItemEncoderComponent;
+   |              ^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<ItemEncoderComponent>`
+47 |
+48 |         @ItemEncoderComponent.Seq<u64>: EncodeSeq,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<PathCons<ItemEncoderComponent, PathCons<Seq<u64>, __Wildcard__>>>`
+note: required for `RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>` to implement `for<'a> IsProviderFor<ItemEncoderComponent, App, &'a u64>`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_component(ItemEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `App` to implement `for<'a> IsProviderFor<ItemEncoderComponent, App, &'a u64>`
+note: required for `App` to implement `for<'a> ItemEncoder<App, &'a u64>`
+  --> src/main.rs:25:1
+   |
+25 |   #[cgp_component(ItemEncoder)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 | | pub trait CanEncodeItem<Value> {
+   | |______________________________^
+note: required for `App` to implement `for<'a> CanEncodeItem<&'a u64>`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_component(ItemEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 | pub trait CanEncodeItem<Value> {
+   |           ^^^^^^^^^^^^^^^^^^^^
+   = note: 2 redundant requirements hidden
+   = note: required for `RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>` to implement `IsProviderFor<ItemEncoderComponent, App, Seq<u64>>`
+   = note: required for `App` to implement `CanUseComponent<ItemEncoderComponent, Seq<u64>>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:52:1
+   |
+52 | / check_components! {
+53 | |     App {
+54 | |         ItemEncoderComponent: [Seq<u64>],
+55 | |     }
+56 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

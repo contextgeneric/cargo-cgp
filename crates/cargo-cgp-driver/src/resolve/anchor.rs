@@ -18,7 +18,7 @@ use cargo_cgp_error_processing::tree::DependencyTree;
 use cargo_cgp_error_processing::{Cause, Resolved};
 use rustc_hir::ItemKind;
 use rustc_hir::def::DefKind;
-use rustc_infer::infer::TyCtxtInferExt as _;
+use rustc_infer::infer::{BoundRegionConversionTime, TyCtxtInferExt as _};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{
     self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode, Unnormalized, Upcast as _,
@@ -311,11 +311,20 @@ fn wrapper_chain_children<'tcx>(
     obligation: ty::PolyTraitPredicate<'tcx>,
 ) -> Option<Vec<ty::PolyTraitPredicate<'tcx>>> {
     let param_env = ty::ParamEnv::empty();
-    let obligation_ref = obligation.skip_binder().trait_ref;
 
     for impl_did in tcx.all_impls(obligation.def_id()) {
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
+
+        // Instantiate any higher-ranked binder with fresh inference vars before relating, so a
+        // `for<'a>` bound in the wrapper chain does not feed an escaping bound var into `ocx.eq` and
+        // panic rustc's generalizer (see [`impl_where_obligations`](crate::resolve::walk)). A no-op
+        // for a binder-free obligation.
+        let obligation_ref = infcx.instantiate_binder_with_fresh_vars(
+            DUMMY_SP,
+            BoundRegionConversionTime::HigherRankedType,
+            obligation.map_bound(|p| p.trait_ref),
+        );
 
         let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
         let impl_ref = tcx

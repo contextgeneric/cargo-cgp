@@ -337,7 +337,13 @@ one. Second, finding the satisfying impl uses the `fresh_args_for_item`-plus-uni
 than `SelectionContext`, which asserts against the next-generation solver the driver runs under; each
 matched impl's predicates are instantiated, normalized, and region-erased before they cross into the
 fresh inference context that checks whether they hold, since a stray inference or region variable from
-one context panics another.
+one context panics another. The obligation being matched crosses the same way: its own binder is
+instantiated with fresh inference variables (via `instantiate_binder_with_fresh_vars`) before it is
+related to a candidate impl. A **higher-ranked** obligation — `Self: for<'a> CanSerializeValue<&'a
+Value>`, the shape a recursive provider such as `cgp-serde`'s `SerializeIterator` carries — would
+otherwise reach the relation through `skip_binder()` with its `'a` bound variable still escaping,
+tripping the generalizer's `!source_term.has_escaping_bound_vars()` assertion and panicking rustc mid-emit.
+The instantiation is a no-op for an ordinary binder-free obligation, so only the higher-ranked case changes.
 
 **Decode the field name.** The `HasField` leaf carries the field name as a type-level `Symbol!`, a
 nested `Chars<'h', Chars<'e', …>>` spine. The resolver decodes it structurally — walking the spine and
@@ -587,7 +593,12 @@ root cause collapses into the one missing-wiring cause, under a promoted `CGP-E0
 behind an `IsProviderFor` header, rewritten to the `CGP-E002` form over a `root cause:` note whose
 chain is the redirect hop(s) down to a terminal naming the context with no delegate entry for the
 bare `@…` path — the latter defined across sub-modules, pinning that a module-qualified path still
-folds to a clean `@…`; and `multi_redirect_missing` pins a chain of several hops). The missing-wiring
+folds to a clean `@…`; and `multi_redirect_missing` pins a chain of several hops), and
+`higher_ranked_descent` (a recursive provider with a higher-ranked `Self: for<'a>
+CanEncodeItem<&'a Value>` dependency — the `cgp-serde` `SerializeIterator` shape — whose descent used
+to feed an escaping bound variable into the solver and panic rustc; the walk now instantiates the
+obligation's binder with fresh inference variables and bottoms out cleanly on the missing redirect
+wiring). The missing-wiring
 leaf is pinned by the [`acceptable/wiring/missing-wiring/`](../../tests/ui/acceptable/wiring/missing-wiring)
 fixtures: `basic_missing_wiring` (a provider's `#[uses]` dependency on an unwired component → a
 `missing wiring` note over the transitive chain), `direct_missing_wiring` (a `check_components!` entry

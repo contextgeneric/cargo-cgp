@@ -1,0 +1,16 @@
+error[E0277]: [CGP-E002] the provider trait `ItemEncoder<&'a u64>` with context `App` is not implemented for provider `for<'a> RedirectLookup<App, @ItemEncoderComponent>`
+  --> src/main.rs:54:9
+   |
+54 |         ItemEncoderComponent: [Seq<u64>],
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@ItemEncoderComponent.&u64`
+           this is required through the dependency chain:
+               [CGP-E101] consumer trait impl `CanEncodeItem<Seq<u64>>` for context `App`
+               └── [CGP-E104] redirect lookup to `@ItemEncoderComponent` in `App`
+                   └── [CGP-E102] provider trait impl `ItemEncoder<Seq<u64>>` with context `App` for provider `EncodeSeq`
+                       └── [CGP-E105] trait impl `CanEncodeItem` for `App`
+                           └── [CGP-E104] redirect lookup to `@ItemEncoderComponent` in `App`
+                               └── [CGP-E107] context `App` does not contain any delegate entry for `@ItemEncoderComponent.&u64`
+
+For more information about this error, try `rustc --explain E0277`.

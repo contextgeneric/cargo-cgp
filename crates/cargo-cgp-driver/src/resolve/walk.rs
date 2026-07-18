@@ -7,7 +7,7 @@
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{Cause, Resolved, dependency_tree_leaf};
-use rustc_infer::infer::TyCtxtInferExt;
+use rustc_infer::infer::{BoundRegionConversionTime, TyCtxtInferExt};
 use rustc_infer::traits::Obligation;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized, Upcast as _};
 use rustc_span::DUMMY_SP;
@@ -250,11 +250,19 @@ fn has_field_projection_mismatch<'tcx>(
     pred: ty::PolyTraitPredicate<'tcx>,
 ) -> Option<(ty::TraitRef<'tcx>, Ty<'tcx>)> {
     let param_env = ty::ParamEnv::empty();
-    let obligation_ref = pred.skip_binder().trait_ref;
 
     for impl_did in tcx.all_impls(pred.def_id()) {
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
+
+        // Instantiate any higher-ranked binder with fresh inference vars before relating, for the
+        // same reason as [`impl_where_obligations`]: a `skip_binder()`'d escaping bound var fed into
+        // `ocx.eq` panics rustc's generalizer. A no-op for a binder-free predicate.
+        let obligation_ref = infcx.instantiate_binder_with_fresh_vars(
+            DUMMY_SP,
+            BoundRegionConversionTime::HigherRankedType,
+            pred.map_bound(|p| p.trait_ref),
+        );
 
         let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
         let impl_ref = tcx
@@ -351,7 +359,6 @@ pub(crate) fn impl_where_obligations<'tcx>(
     obligation: ty::PolyTraitPredicate<'tcx>,
 ) -> Option<Vec<ty::PolyTraitPredicate<'tcx>>> {
     let param_env = ty::ParamEnv::empty();
-    let obligation_ref = obligation.skip_binder().trait_ref;
 
     // A blanket (param-`Self`) match is held back as a fallback and used only if no concrete-`Self`
     // impl matches, so a leaf provider's specific impl wins over the delegation blanket.
@@ -360,6 +367,19 @@ pub(crate) fn impl_where_obligations<'tcx>(
     for impl_did in tcx.all_impls(obligation.def_id()) {
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
+
+        // Instantiate the obligation's binder with fresh inference vars in *this* infcx before it is
+        // related. A higher-ranked obligation — `Self: for<'a> CanSerializeValue<&'a Value>`, the
+        // shape a recursive provider like `SerializeIterator` carries — would otherwise reach `ocx.eq`
+        // through `skip_binder()` with the `'a` bound var still escaping, tripping the inference
+        // generalizer's `!source_term.has_escaping_bound_vars()` assertion and panicking rustc. The
+        // fast path in `instantiate_binder_with_fresh_vars` makes this a no-op for an ordinary
+        // (binder-free) obligation, so only the higher-ranked case changes.
+        let obligation_ref = infcx.instantiate_binder_with_fresh_vars(
+            DUMMY_SP,
+            BoundRegionConversionTime::HigherRankedType,
+            obligation.map_bound(|p| p.trait_ref),
+        );
 
         let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
         let impl_ref = tcx
