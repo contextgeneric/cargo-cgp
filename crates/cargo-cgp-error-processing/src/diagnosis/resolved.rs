@@ -29,7 +29,10 @@ impl Cause {
 /// contexts they were read from.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Resolved {
-    /// The checked context type, e.g. `Rectangle`.
+    /// The type the failing trait(s) are (not) implemented for — the header subject. Usually the
+    /// checked context itself (`Rectangle`), but for a wrapper implemented on a *foreign* type that
+    /// merely holds the context (`Router<Arc<MockApp>>`), it is that foreign type, and
+    /// [`subject_is_context`](Resolved::subject_is_context) is then `false`.
     pub context: String,
     /// The trait(s) the context fails to implement, with a generic component's extra parameters
     /// reattached (e.g. `CanCalculateArea<f64>`) — one per failing component, in first-seen order.
@@ -41,6 +44,12 @@ pub struct Resolved {
     /// when `true`, `the trait` (`CGP-E009`) when `false` — since a wrapper such as
     /// `CanHandleApiSend` is a plain trait the programmer wrote, not a CGP consumer.
     pub consumers_are_cgp: bool,
+    /// Whether [`context`](Resolved::context) is the checked CGP context itself (`true`, the usual
+    /// case) or a foreign wrapper type the failing trait is implemented for that merely holds the
+    /// context (`false`) — as `Router<Arc<MockApp>>` does for a routing trait. It selects whether the
+    /// header calls the subject a `context` or names it plainly, so a foreign wrapper is not
+    /// mislabelled a context.
+    pub subject_is_context: bool,
     /// One entry per distinct root cause, in first-seen order.
     pub causes: Vec<Cause>,
 }

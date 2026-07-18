@@ -140,10 +140,14 @@ impl<E> CgpEmitter<E> {
             // caret). Failing that, the impl-site anchor recovers the exact failing obligation —
             // with its concrete component parameters — from a hand-written `impl … for Context`
             // block the failure surfaces inside, which is more precise than the use-site re-check.
-            // Failing both — a use-site failure such as a consumer-method call, whose obligation no
-            // check impl carries — recover the context from the diagnostic's spans.
+            // Failing that, the wrapper-chain anchor handles a wrapper implemented on a *foreign*
+            // type holding the context (`impl … for Router<Arc<MockApp>>`), whose CGP consumer
+            // failure sits several `where`-clause hops down. Failing all — a use-site failure such
+            // as a consumer-method call, whose obligation no check impl carries — recover the
+            // context from the diagnostic's spans.
             resolve::resolve_check_failure(tcx, primary_span, &self.names)
                 .or_else(|| resolve::resolve_impl_site(tcx, &spans, &self.names))
+                .or_else(|| resolve::resolve_wrapper_chain(tcx, &spans, &self.names))
                 .or_else(|| resolve::resolve_use_site(tcx, &spans, &self.names))
         })?;
         Some((resolved, primary_span))

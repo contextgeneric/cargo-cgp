@@ -59,6 +59,7 @@ fn plans_a_missing_field_check_failure() {
         context: "Rectangle".to_owned(),
         consumers: vec!["CanCalculateArea".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![missing_field_cause()],
     };
     let plan = plan_resolved(
@@ -100,6 +101,7 @@ fn plans_a_missing_wiring_check_failure() {
         context: "App".to_owned(),
         consumers: vec!["CanUseFoo".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![Cause {
             leaf: Leaf::MissingWiring {
                 component: "BarProviderComponent".to_owned(),
@@ -152,6 +154,7 @@ fn plans_a_missing_redirect_wiring_check_failure() {
         context: "App".to_owned(),
         consumers: vec!["HasQuantityType".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![Cause {
             leaf: Leaf::MissingRedirectWiring {
                 path: "@app.finance.types.QuantityTypeProviderComponent".to_owned(),
@@ -185,6 +188,7 @@ fn plans_a_missing_derive_with_a_help() {
         context: "Rectangle".to_owned(),
         consumers: vec!["CanCalculateArea".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![Cause {
             leaf: Leaf::Field {
                 name: "height".to_owned(),
@@ -218,6 +222,7 @@ fn a_deref_target_help_points_at_the_target() {
         context: "App".to_owned(),
         consumers: vec!["CanGreet".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![Cause {
             leaf: Leaf::Field {
                 name: "name".to_owned(),
@@ -251,6 +256,7 @@ fn plans_a_field_type_mismatch() {
         context: "Rectangle".to_owned(),
         consumers: vec!["CanCalculateArea".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![mismatch.clone()],
     };
     let plan = plan_resolved(
@@ -284,6 +290,7 @@ fn plans_a_use_site_method_failure() {
         context: "Person".to_owned(),
         consumers: vec!["CanGreet".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![Cause {
             leaf: Leaf::Field {
                 name: "name".to_owned(),
@@ -313,6 +320,7 @@ fn keeps_an_ordinary_bound_header_and_drops_the_repeated_lead() {
         context: "Rectangle".to_owned(),
         consumers: vec!["CanCalculateArea".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![Cause {
             leaf: Leaf::Bound {
                 summary: "f64: std::cmp::Eq".to_owned(),
@@ -347,6 +355,7 @@ fn promotes_a_mid_chain_symptom_bound_to_the_consumer_header() {
         context: "App".to_owned(),
         consumers: vec!["CanAuthenticate<LoginRequest>".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![Cause {
             leaf: Leaf::MissingWiring {
                 component: "CredentialTypeProviderComponent".to_owned(),
@@ -446,12 +455,14 @@ fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
         context: "App".to_owned(),
         consumers: vec!["CanGreet".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![missing_name()],
     };
     let at_call = Resolved {
         context: "App".to_owned(),
         consumers: vec!["CanGreet".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![Cause {
             leaf: Leaf::Field {
                 name: "name".to_owned(),
@@ -468,6 +479,7 @@ fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
         context: "App".to_owned(),
         consumers: vec!["CanShout".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![missing_name()],
     };
     assert_ne!(cause_signature(&at_check), cause_signature(&other_consumer));
@@ -477,6 +489,7 @@ fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
         context: "App".to_owned(),
         consumers: vec!["CanGreet".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![Cause {
             leaf: Leaf::Field {
                 name: "age".to_owned(),
@@ -495,6 +508,7 @@ fn plans_a_provider_header_via_text_rewrite() {
         context: "App".to_owned(),
         consumers: vec!["CanFoo".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![Cause {
             leaf: Leaf::Bound {
                 summary: "App: DefaultNamespace".to_owned(),
@@ -524,6 +538,7 @@ fn consumer_header_pluralizes_across_components() {
         context: "App".to_owned(),
         consumers: vec!["CanFoo".to_owned(), "CanBar".to_owned()],
         consumers_are_cgp: true,
+        subject_is_context: true,
         causes: vec![missing_field_cause()],
     };
     assert_eq!(
@@ -540,11 +555,30 @@ fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
         context: "MockApp".to_owned(),
         consumers: vec!["CanHandleApiSend<QueryBalanceApi>".to_owned()],
         consumers_are_cgp: false,
+        subject_is_context: true,
         causes: vec![missing_field_cause()],
     };
     assert_eq!(
         consumer_header(&resolved),
         "[CGP-E009] the trait `CanHandleApiSend<QueryBalanceApi>` is not implemented for context `MockApp`"
+    );
+}
+
+#[test]
+fn wrapper_header_names_a_foreign_subject_plainly() {
+    // A routing wrapper implemented on a *foreign* type holding the context (`Router<Arc<MockApp>>`)
+    // is named plainly — never mislabelled a "context" — while the traced cause on the real context
+    // follows in the dependency tree.
+    let resolved = Resolved {
+        context: "Router<Arc<MockApp>>".to_owned(),
+        consumers: vec!["CanAddApiRoutes".to_owned()],
+        consumers_are_cgp: false,
+        subject_is_context: false,
+        causes: vec![missing_field_cause()],
+    };
+    assert_eq!(
+        consumer_header(&resolved),
+        "[CGP-E009] the trait `CanAddApiRoutes` is not implemented for `Router<Arc<MockApp>>`"
     );
 }
 

@@ -1,0 +1,31 @@
+error[E0271]: [CGP-E009] the trait `CanHandleApiSend<GreetApi>` is not implemented for context `App`
+  --> src/main.rs:80:10
+   |
+80 |     ) -> impl Future<Output = Self::Response> + Send {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E106] missing field `name` on `App`
+           this is required through the dependency chain:
+               [CGP-E105] trait impl `CanHandleApiSend<GreetApi>` for `App`
+               └── [CGP-E101] consumer trait impl `CanHandleApi<GreetApi>` for context `App`
+                   └── [CGP-E102] provider trait impl `ApiHandler<GreetApi>` with context `App` for provider `HandleGreet`
+                       └── [CGP-E105] trait impl `HasName` for `App`
+                           └── [CGP-E106] missing field `name` on `App`
+
+error[E0277]: [CGP-E009] the trait `CanAddAppRoutes` is not implemented for `Box<App>`
+   --> src/main.rs:105:26
+    |
+105 | impl CanAddAppRoutes for Box<App> {}
+    |                          ^^^^^^^^
+    |
+    = note: root cause: [CGP-E106] missing field `name` on `App`
+            this is required through the dependency chain:
+                [CGP-E105] trait impl `CanAddAppRoutes` for `Box<App>`
+                └── [CGP-E105] trait impl `CanAddRoute<App, GreetApi>` for `Box<App>`
+                    └── [CGP-E101] consumer trait impl `CanHandleApi<GreetApi>` for context `App`
+                        └── [CGP-E102] provider trait impl `ApiHandler<GreetApi>` with context `App` for provider `HandleGreet`
+                            └── [CGP-E105] trait impl `HasName` for `App`
+                                └── [CGP-E106] missing field `name` on `App`
+
+Some errors have detailed explanations: E0271, E0277, E0599.
+For more information about an error, try `rustc --explain E0271`.

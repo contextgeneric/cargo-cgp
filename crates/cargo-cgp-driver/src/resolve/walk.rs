@@ -88,6 +88,8 @@ pub(crate) fn resolve_leaves<'tcx>(
         // The walk starts from a `CanUseComponent` obligation, so the consumer is a CGP consumer
         // trait (the impl-site anchor overrides this when the failing trait is a plain wrapper).
         consumers_are_cgp: true,
+        // The subject is the checked context itself.
+        subject_is_context: true,
         causes,
     })
 }
@@ -320,7 +322,7 @@ fn is_descendable<'tcx>(
 /// ref (the next-solver-safe `fresh_args_for_item` + `eq` dance `SelectionContext` is unavailable
 /// for), then instantiating and normalizing that impl's predicates. `Some(vec![])` means an impl
 /// matched but carries no trait-clause `where` obligations.
-fn impl_where_obligations<'tcx>(
+pub(crate) fn impl_where_obligations<'tcx>(
     tcx: TyCtxt<'tcx>,
     obligation: ty::PolyTraitPredicate<'tcx>,
 ) -> Option<Vec<ty::PolyTraitPredicate<'tcx>>> {

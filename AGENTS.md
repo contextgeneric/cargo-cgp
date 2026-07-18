@@ -201,7 +201,10 @@ at many wiring sites is shown once), and `edit.rs` holds the
 `DiagInner`-editing helpers. `resolve/` is the typed root-cause resolver: `anchor.rs` recovers the
 failing obligation from a `check_components!` entry, a hand-written `impl Trait for Context` block
 the failure surfaces inside (reconstructing the obligation from the impl's CGP consumer supertrait,
-concrete parameters preserved), or the use site of a broken consumer-method call
+concrete parameters preserved), a hand-written `impl Trait for Foreign` block whose `Self` is a
+foreign wrapper holding the context (descending its supertrait's `where`-clause hops — through a
+projection bound's base trait — to a CGP consumer on the context, the routing-glue case), or the use
+site of a broken consumer-method call
 (`E0599`), `walk.rs` descends the wiring to each terminal leaf, `classify.rs` turns a leaf into the
 rustc-free model by inspecting the struct it lands on, `label.rs` renders each path predicate as a
 tree label, `conflict.rs` classifies a duplicate-key `E0119` by reading the two conflicting

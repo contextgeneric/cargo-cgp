@@ -30,8 +30,10 @@ pub fn quoted_list(items: &[String]) -> String {
 /// The main message for a resolved failure: the trait(s) the context fails to implement, taken
 /// from the typed resolution — which keys each component marker by its full path — so two same-named
 /// components in different modules can never be confused. A CGP consumer trait reads as `the consumer
-/// trait …` (`CGP-E001`); a hand-written wrapper trait implemented on the context (not a CGP
-/// consumer) reads as `the trait …` (`CGP-E009`), chosen by [`Resolved::consumers_are_cgp`].
+/// trait …` (`CGP-E001`); a hand-written wrapper trait (not a CGP consumer) reads as `the trait …`
+/// (`CGP-E009`), chosen by [`Resolved::consumers_are_cgp`]. The subject is named `context \`X\`` when
+/// it is the checked context, or plainly `` `X` `` when it is a foreign wrapper type that merely
+/// holds the context (`Router<Arc<MockApp>>`), chosen by [`Resolved::subject_is_context`].
 pub fn consumer_header(resolved: &Resolved) -> String {
     let (noun, verb) = if resolved.consumers.len() == 1 {
         ("trait", "is")
@@ -39,14 +41,20 @@ pub fn consumer_header(resolved: &Resolved) -> String {
         ("traits", "are")
     };
     let list = quoted_list(&resolved.consumers);
-    let context = &resolved.context;
+    // A foreign wrapper subject (`subject_is_context == false`) is named plainly, so it is not
+    // mislabelled a context.
+    let subject = if resolved.subject_is_context {
+        format!("context `{}`", resolved.context)
+    } else {
+        format!("`{}`", resolved.context)
+    };
     if resolved.consumers_are_cgp {
         format!(
-            "[{CONSUMER_TRAIT_UNIMPLEMENTED}] the consumer {noun} {list} {verb} not implemented for context `{context}`"
+            "[{CONSUMER_TRAIT_UNIMPLEMENTED}] the consumer {noun} {list} {verb} not implemented for {subject}"
         )
     } else {
         format!(
-            "[{WRAPPER_TRAIT_UNIMPLEMENTED}] the {noun} {list} {verb} not implemented for context `{context}`"
+            "[{WRAPPER_TRAIT_UNIMPLEMENTED}] the {noun} {list} {verb} not implemented for {subject}"
         )
     }
 }

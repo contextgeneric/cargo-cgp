@@ -23,10 +23,13 @@ be a consequence of a CGP component failing — a hand-written `Send`-recovery w
 forwards to a wired method fails with an `E0271` opaque-future mismatch, a downstream trait bound needs
 a method the context cannot supply — and the resolver traces the dependency chain to find out, treating
 the error as CGP-related exactly when a CGP component failure sits in that chain. It recovers a starting
-obligation three ways: from a `check_components!` entry when the caret sits on one; from a hand-written
+obligation four ways: from a `check_components!` entry when the caret sits on one; from a hand-written
 *`impl Trait for Context` block* the failure surfaces inside (below) — which anchors the manual-wrapper
 cascade, since its raw `E0271`/`E0277` land inside such a block whose supertrait is a CGP consumer
-trait; and otherwise from the *use site* of a broken consumer-method call (below). Any of the three
+trait; from a hand-written `impl Trait for Foreign` block *whose `Self` is a foreign type holding the
+context* (below) — the routing-glue case, where the CGP consumer sits several ordinary-trait
+`where`-clause hops beneath the impl rather than in a direct supertrait; and otherwise from the *use
+site* of a broken consumer-method call (below). Any of the four
 walks the wiring obligations down to the terminal unmet bound(s) they rest on, and the diagnostic is
 then transformed in two independent halves. A diagnostic whose chain reaches no CGP cause declines and
 passes through untouched.
@@ -203,9 +206,43 @@ routing to a provider trait) reads `[CGP-E001] the consumer trait …`, while a 
 `CanHandleApiSend` — with only a concrete impl — reads `[CGP-E009] the trait …`. Because the wrapper
 is a distinct trait from the CGP supertrait it reduces to, its error is reported on its own rather
 than de-duplicating into the `check_components!` entry for that supertrait. This anchor is tried
-*before* the use-site one, so its precise obligation wins over the parameterless re-check. It fires
-only for an impl on a *local* struct or enum (an `impl … for Router<Arc<App>>` on a foreign type, or
-an impl on a provider struct, carries no consumer supertrait on a context and is skipped).
+*before* the wrapper-chain and use-site ones, so its precise obligation wins over the parameterless
+re-check. It fires only for an impl on a *local* struct or enum (an `impl … for Router<Arc<App>>` on a
+foreign type, or an impl on a provider struct, carries no consumer supertrait on a context and is
+skipped — the foreign case is the wrapper-chain anchor's, next).
+
+**Or recover it through a foreign wrapper chain.** The routing glue often puts the wiring failure one
+level further out still: a hand-written `impl Trait for Foreign` block whose `Self` is a *foreign*
+type holding the context, where the CGP consumer sits several ordinary-trait `where`-clause hops below
+the impl rather than in a direct supertrait. The transfer example's `impl CanAddApiRoutes for
+Router<Arc<MockApp>>` is the case — its supertrait `Router<Arc<MockApp>>: CanAddMainApiRoutes<MockApp>`
+descends through `CanAddRoute<MockApp, …>` to `MockApp: CanHandleApi<…>`, with the real context
+`MockApp` appearing only as a type *argument* of each hop, never as the impl's `Self`. Neither the
+impl-site anchor (whose `Self` must be a local context) nor the use-site anchor (whose context comes
+from a struct-definition span the caret never touches) can recover it, so before my addition it fell
+back to raw `rustc` output.
+
+`resolve_wrapper_chain` handles it by *descending* the impl's own unmet supertrait through the
+ordinary trait obligations beneath it — each impl's `where`-clause bounds — until one lands on a CGP
+consumer whose `Self` is a local context (`MockApp: CanHandleApi<QueryBalanceApi>`), the handoff it
+walks exactly as a check entry would. Every ordinary hop between the impl and that handoff becomes a
+`trait impl` node, so the tree reads from the code the programmer wrote down to the root cause:
+`CanAddApiRoutes → CanAddMainApiRoutes → CanAddRoute → CanHandleApi → …`. Two subtleties make the
+descent work. First, it **re-evaluates each obligation with the trait solver** rather than trusting
+rustc's cascade-suppressed diagnostic: the direct `MockApp: CanHandleApiSend<…>` bound is *assumed to
+hold* off its own ill-formed impl (an existing impl satisfies the obligation even though its supertrait
+does not), so the descent instead reaches the consumer through the **base trait of a projection
+`where`-clause** — the `App::Request: FromRequestParts` / `Ctx::Response: Send` bound over the broken
+`CanHandleApi`, whose base `Ctx: CanHandleApi<…>` is what genuinely fails. Reading that base needs the
+impl's predicates *un-normalized* (the ordinary walk normalizes the projection into an inference
+variable it then drops). Second, the tree and header are **headed by the impl's own trait**
+(`CanAddApiRoutes`), fingerprinted for the `[CGP-E001]`/`[CGP-E009]` wording exactly as the impl-site
+anchor does — but because that `Self` is a foreign wrapper rather than the context, the header names it
+**plainly** (`the trait \`CanAddApiRoutes\` is not implemented for \`Router<Arc<MockApp>>\``, no
+`context` qualifier), carried by the `Resolved::subject_is_context` flag. Only a genuine CGP consumer
+is ever reported as a cause, so a descent that wanders into unrelated `where`-clauses contributes
+nothing rather than fabricating one. This anchor is tried *after* the impl-site anchor (which claims
+the local-`Self` case) and *before* the use-site one.
 
 **Or recover it at a use site.** When no check impl matches the caret — a consumer-method `E0599` —
 `resolve_use_site` recovers the obligation instead from the diagnostic's spans. It scans every local
@@ -371,16 +408,20 @@ rustc's note-continuation indentation aligning each tree's box-drawing under its
 ## Boundaries and open ends
 
 The resolver is deliberately bounded, and a few of its edges are worth recording. It recovers a
-starting obligation three ways — a `check_components!` entry by **exact span match** (the check macro
+starting obligation four ways — a `check_components!` entry by **exact span match** (the check macro
 re-spans the context type onto the entry), a hand-written `impl Trait for Context` block by finding
 the enclosing impl whose `Self` is a local context and reconstructing the failing consumer
-supertrait's obligation, and a use-site `E0599` by finding the context ADT from the diagnostic's
-spans — so a wiring failure that is *none* of the three still declines. Two shapes still find nothing
-to anchor on: a manual supertrait bound written as a free `where` clause or a trait definition
-(`use_type_foreign_unsatisfied`/`use_type_nested_unsatisfied`, where no `impl` on a context encloses
+supertrait's obligation, a hand-written `impl Trait for Foreign` block whose `Self` is a foreign
+wrapper by descending its supertrait chain to a CGP consumer on the context, and a use-site `E0599` by
+finding the context ADT from the diagnostic's spans — so a wiring failure that is *none* of the four
+still declines. Two shapes still find nothing to anchor on: a manual supertrait bound written as a free
+`where` clause or a trait definition
+(`use_type_foreign_unsatisfied`/`use_type_nested_unsatisfied`, where no `impl` encloses
 the caret), and a failure whose only caret sits on a *provider* struct's own impl (its `Self` is the
-provider, which carries no consumer supertrait on a context) or inside the generic component's trait
-definition. The impl-site path recovers the concrete component parameter from the supertrait, but the
+provider, whose supertrait chain reaches no consumer on a context) or inside the generic component's
+trait definition. The wrapper-chain descent is itself bounded — it follows only real impl
+`where`-clauses, reports a cause only at a genuine CGP consumer on a local context, and stops at a
+recursion bound — so it cannot fabricate a chain from an unrelated bound. The impl-site path recovers the concrete component parameter from the supertrait, but the
 use-site path still builds each `CanUseComponent<Marker, ()>` with an **empty `Params` slot**, so a
 generic component whose real parameters matter is not re-checked *there* (the check and impl-site
 paths recover those). It renders only leaves it can trust: a `HasField` field (missing, underived, or —
@@ -410,7 +451,13 @@ says what it needs to without altering the header's shape.
   model: `anchor.rs` (`resolve_check_failure` finding the check impl by span, `resolve_impl_site`
   recovering the context and the exact failing obligation from the enclosing hand-written `impl Trait
   for Context` block's CGP consumer supertrait, then heading the tree and the header with the impl's
-  own wrapper trait — `[CGP-E001]` or `[CGP-E009]` by the wrapper's blanket-impl fingerprint — and
+  own wrapper trait — `[CGP-E001]` or `[CGP-E009]` by the wrapper's blanket-impl fingerprint — via the
+  shared `wrapper_consumer_causes`; `resolve_wrapper_chain` handling the same shape when the impl's
+  `Self` is a *foreign* wrapper holding the context, by descending the impl's supertrait through each
+  hop's `where`-clauses — `wrapper_chain_children` reading them un-normalized so an associated-type
+  bound descends to its base trait — until `consumer_handoff_causes` reaches a CGP consumer on the
+  context, then heading the tree with the chain of hops and the header with the impl's own trait named
+  plainly (`subject_is_context = false`); and
   `resolve_use_site` recovering the context ADT from
   the diagnostic's spans and its wired components from `DelegateComponent` impls), `walk.rs` (walking the cause chain down to each terminal leaf — the
   descendable-vocabulary rule, the plumbing-leaf drop, the foreign-getter descent that follows a
@@ -436,7 +483,7 @@ says what it needs to without altering the header's shape.
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the
   `try_resolve` seam (gated by a cheap `mentions_wiring` scan, or an `E0599`/`E0271`/`E0277` code, so a
   raw cascade with no CGP wording is still traced) that tries the check anchor, then the impl-site
-  anchor, then the use-site anchor, and the `transform_resolved`
+  anchor, then the wrapper-chain anchor, then the use-site anchor, and the `transform_resolved`
   mutation it feeds: it maps the
   diagnostic's rustc code to a `DiagKind` (`edit::diag_kind`), calls the rustc-free `plan_resolved`
   for the rewritten header and the help/note strings, and applies that plan to the `DiagInner`,
@@ -510,7 +557,14 @@ CGP consumer — over a tree that leads with the wrapper and descends through it
 supertrait to the missing field). The `CGP-E009` wrapper header and the raw `E0271` trace are pinned
 by [`traced_send_wrapper`](../../tests/ui/acceptable/duplication/traced_send_wrapper.rs) (an async
 `Send`-recovery wrapper whose opaque-future `E0271` names no CGP construct, traced to the wrapper-headed
-tree). The leaf wording — a missing field, a
+tree). The wrapper-chain path is pinned by
+[`foreign_wrapper_chain`](../../tests/ui/acceptable/duplication/foreign_wrapper_chain.rs) (a routing
+trait implemented for the foreign `Box<App>` whose `where`-clause chain reaches a CGP consumer two hops
+down — the transfer example's `impl CanAddApiRoutes for Router<Arc<MockApp>>` shape — with the real
+cause reached through a projection bound's base trait, since the direct wrapper bound is assumed to
+hold off its ill-formed impl; the `[CGP-E009]` header names the foreign `Box<App>` plainly and the tree
+leads with the impl's own `CanAddAppRoutes` trait down through `CanAddRoute` to the missing field). The
+leaf wording — a missing field, a
 present-but-underived one, a `Deref`-target one, and a missing wiring — is unit-tested over hand-built `Resolved` values
 in [`cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs),
 and the renderer itself in
