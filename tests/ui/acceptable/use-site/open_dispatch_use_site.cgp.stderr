@@ -1,0 +1,16 @@
+error[E0599]: [CGP-E001] the consumer trait `CanEncodeItem<Seq<u64>>` is not implemented for context `App`
+  --> src/main.rs:50:17
+   |
+50 |     let _ = app.encode_item(&Seq(vec![1u64]));
+   |                 ^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@ItemEncoderComponent.u64`
+           this is required through the dependency chain:
+               [CGP-E101] consumer trait impl `CanEncodeItem<Seq<u64>>` for context `App`
+               └── [CGP-E104] redirect lookup to `@ItemEncoderComponent` in `App`
+                   └── [CGP-E102] provider trait impl `ItemEncoder<Seq<u64>>` with context `App` for provider `EncodeSeq`
+                       └── [CGP-E105] trait impl `CanEncodeItem` for `App`
+                           └── [CGP-E104] redirect lookup to `@ItemEncoderComponent` in `App`
+                               └── [CGP-E107] context `App` does not contain any delegate entry for `@ItemEncoderComponent.u64`
+
+For more information about this error, try `rustc --explain E0599`.

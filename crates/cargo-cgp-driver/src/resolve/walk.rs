@@ -7,7 +7,7 @@
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{Cause, Resolved, dependency_tree_leaf};
-use rustc_infer::infer::{BoundRegionConversionTime, TyCtxtInferExt};
+use rustc_infer::infer::TyCtxtInferExt;
 use rustc_infer::traits::Obligation;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized, Upcast as _};
 use rustc_span::DUMMY_SP;
@@ -23,8 +23,15 @@ use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, marker_role, render_params, spine};
 
 /// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or
-/// cyclic wiring cannot make it loop. Real dependency chains are far shorter than this.
-const MAX_DEPTH: u32 = 32;
+/// cyclic wiring cannot make it loop. Each logical wiring hop expands to several walk frames — a
+/// `CanUseComponent`, its `IsProviderFor` plumbing, a `RedirectLookup`, the provider's own
+/// `IsProviderFor`, then the next consumer — so a deeply nested data type (e.g. `cgp-serde`'s
+/// `MessagesArchive`, a `Vec<Vec<record>>` threaded through iterator/deref/record providers) reaches
+/// its root cause only tens of frames down. The bound is set well above that so a genuine chain
+/// resolves rather than declining to the raw fallback, but not so high that a *divergent* wiring —
+/// one whose obligations keep growing without ever exactly repeating, which the cycle guard cannot
+/// catch — grinds through the trait solver at every frame for a long time before giving up.
+const MAX_DEPTH: u32 = 256;
 
 /// Walk the dependency graph of `top` (`Ctx: CanUseComponent<Marker, Params>`) and, for each
 /// distinct terminal unmet bound it bottoms out on, return that leaf with its rendered dependency
@@ -145,6 +152,20 @@ fn collect_leaf_paths<'tcx>(
         return Vec::new();
     }
 
+    // Cycle guard: if this exact obligation already appears among its own ancestors, the wiring
+    // loops (a `UseContext` cycle routes `Ctx: CanUseComponent<C>` straight back to itself), so this
+    // branch carries no new root cause — stop rather than descend the loop. This is what lets
+    // [`MAX_DEPTH`] be a high backstop for genuinely deep chains without a cycle spinning down to it
+    // (and overflowing the recursion's stack): a real cycle bottoms out here, at its first repeat,
+    // not at the depth cap. Regions are erased so a loop that only differs by lifetime is still seen.
+    let erased = tcx.erase_and_anonymize_regions(pred);
+    if prefix
+        .iter()
+        .any(|ancestor| tcx.erase_and_anonymize_regions(*ancestor) == erased)
+    {
+        return Vec::new();
+    }
+
     let mut path = prefix.to_vec();
     path.push(pred);
 
@@ -255,14 +276,10 @@ fn has_field_projection_mismatch<'tcx>(
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
 
-        // Instantiate any higher-ranked binder with fresh inference vars before relating, for the
-        // same reason as [`impl_where_obligations`]: a `skip_binder()`'d escaping bound var fed into
+        // Instantiate any higher-ranked binder with placeholders before relating, for the same
+        // reason as [`impl_where_obligations`]: a `skip_binder()`'d escaping bound var fed into
         // `ocx.eq` panics rustc's generalizer. A no-op for a binder-free predicate.
-        let obligation_ref = infcx.instantiate_binder_with_fresh_vars(
-            DUMMY_SP,
-            BoundRegionConversionTime::HigherRankedType,
-            pred.map_bound(|p| p.trait_ref),
-        );
+        let obligation_ref = infcx.enter_forall_and_leak_universe(pred.map_bound(|p| p.trait_ref));
 
         let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
         let impl_ref = tcx
@@ -368,18 +385,18 @@ pub(crate) fn impl_where_obligations<'tcx>(
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
 
-        // Instantiate the obligation's binder with fresh inference vars in *this* infcx before it is
+        // Instantiate the obligation's binder with placeholders in *this* infcx before it is
         // related. A higher-ranked obligation — `Self: for<'a> CanSerializeValue<&'a Value>`, the
         // shape a recursive provider like `SerializeIterator` carries — would otherwise reach `ocx.eq`
         // through `skip_binder()` with the `'a` bound var still escaping, tripping the inference
-        // generalizer's `!source_term.has_escaping_bound_vars()` assertion and panicking rustc. The
-        // fast path in `instantiate_binder_with_fresh_vars` makes this a no-op for an ordinary
+        // generalizer's `!source_term.has_escaping_bound_vars()` assertion and panicking rustc.
+        // Placeholders (rigid, universal regions) rather than fresh inference vars are what let a
+        // *nested* higher-ranked hop resolve: a projection through the bound lifetime (`<&'a Value as
+        // IntoIterator>::Item`) normalizes deterministically against a placeholder region but stalls
+        // against an unconstrained inference region. The fast path makes this a no-op for an ordinary
         // (binder-free) obligation, so only the higher-ranked case changes.
-        let obligation_ref = infcx.instantiate_binder_with_fresh_vars(
-            DUMMY_SP,
-            BoundRegionConversionTime::HigherRankedType,
-            obligation.map_bound(|p| p.trait_ref),
-        );
+        let obligation_ref =
+            infcx.enter_forall_and_leak_universe(obligation.map_bound(|p| p.trait_ref));
 
         let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
         let impl_ref = tcx

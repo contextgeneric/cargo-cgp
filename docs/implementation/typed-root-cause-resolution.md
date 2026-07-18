@@ -255,11 +255,23 @@ the local-`Self` case) and *before* the use-site one.
 **Or recover it at a use site.** When no check impl matches the caret — a consumer-method `E0599` —
 `resolve_use_site` recovers the obligation instead from the diagnostic's spans. It scans every local
 struct/enum whose definition span contains one of the diagnostic's spans (the receiver's type is one
-such), and for each candidate reads the `DelegateComponent<Marker>` impls that context carries — the
-components it wires — building a fresh `Ctx: CanUseComponent<Marker, ()>` per marker and keeping the
-ones that do not hold. A diagnostic span can also land on a *provider* struct, so a candidate that
-wires no failing component is discarded, which selects the real context. From there the walk is
-identical.
+such), and for each candidate reads the `DelegateComponent<Key>` impls that context carries — the
+components it wires — re-checking each and keeping the ones that do not hold. A diagnostic span can
+also land on a *provider* struct, so a candidate that wires no failing component is discarded, which
+selects the real context. From there the walk is identical.
+
+A `DelegateComponent` key is one of two shapes, and each is re-checked differently — the distinction
+matters for an `open`-dispatched context, whose per-value entries are redirect *paths*, not markers.
+A **bare component marker** is re-checked as `Ctx: CanUseComponent<Marker, ()>`, the parameterless
+form. An **`open`-dispatch redirect path** — `PathCons<Component, PathCons<Value, …>>`, the key an
+`@Component.Value:` entry emits — is instead decomposed, and the real dispatch value re-checked as
+`Ctx: CanUseComponent<Component, Value>`; re-checking the raw `PathCons` key as if it were a marker
+would report the internal `PathCons` spine as a bogus consumer trait and bottom out on `T: Sized`
+noise, exactly the machinery the tool exists to hide. Two entries are skipped: a bare marker that is
+*also* `open`-dispatched (its `()` re-check would report a spurious `@Component.()` redirect, while
+its real values are covered by the path entries), and a generic catch-all path whose recovered value
+still carries a free type parameter (`<'a, T> &'a T: SerializeDeref` → `&T`, whose re-check yields
+only `T: Sized`). This is [`open_dispatch_use_site`](../../tests/ui/acceptable/use-site/open_dispatch_use_site.rs).
 
 **Walk the dependency graph downward.** From that obligation the resolver walks *down* the wiring's
 trait obligations, because the tree shows the transitive path to each root cause, not only the root.
@@ -338,12 +350,28 @@ than `SelectionContext`, which asserts against the next-generation solver the dr
 matched impl's predicates are instantiated, normalized, and region-erased before they cross into the
 fresh inference context that checks whether they hold, since a stray inference or region variable from
 one context panics another. The obligation being matched crosses the same way: its own binder is
-instantiated with fresh inference variables (via `instantiate_binder_with_fresh_vars`) before it is
-related to a candidate impl. A **higher-ranked** obligation — `Self: for<'a> CanSerializeValue<&'a
-Value>`, the shape a recursive provider such as `cgp-serde`'s `SerializeIterator` carries — would
-otherwise reach the relation through `skip_binder()` with its `'a` bound variable still escaping,
-tripping the generalizer's `!source_term.has_escaping_bound_vars()` assertion and panicking rustc mid-emit.
-The instantiation is a no-op for an ordinary binder-free obligation, so only the higher-ranked case changes.
+instantiated with **placeholders** (via `enter_forall_and_leak_universe`) before it is related to a
+candidate impl. A **higher-ranked** obligation — `Self: for<'a> CanSerializeValue<&'a Value>`, the
+shape a recursive provider such as `cgp-serde`'s `SerializeIterator` carries — would otherwise reach
+the relation through `skip_binder()` with its `'a` bound variable still escaping, tripping the
+generalizer's `!source_term.has_escaping_bound_vars()` assertion and panicking rustc mid-emit.
+Placeholders rather than fresh inference variables are what let a *nested* higher-ranked hop resolve
+instead of declining: a projection through the bound lifetime (`<&'a Value as IntoIterator>::Item`)
+normalizes deterministically against a rigid placeholder region but stalls against an unconstrained
+inference region. The instantiation is a no-op for an ordinary binder-free obligation, so only the
+higher-ranked case changes.
+
+Two safeguards keep the descent bounded. A **cycle guard** stops a branch as soon as an obligation
+reappears among its own ancestors — a `UseContext` loop routes `Ctx: CanUseComponent<C>` straight
+back to itself — so a cyclic wiring bottoms out at its first repeat rather than spinning. That guard
+handles the common loop; the depth cap `MAX_DEPTH` is the backstop for what it cannot catch — a
+*divergent* wiring whose obligations keep growing without ever exactly repeating. The cap is set well
+above a genuine chain's depth — each logical wiring hop expands to a `CanUseComponent`, its
+`IsProviderFor` plumbing, a `RedirectLookup`, the provider's `IsProviderFor`, then the next consumer,
+so a nested data type like `MessagesArchive` reaches its root cause only tens of frames down — so a
+legitimate chain resolves rather than declining to the raw fallback. It is *not* set arbitrarily
+high, though: because the walk re-runs the trait solver at every frame, a divergent wiring grinds
+until the cap, so the cap also bounds that worst case to a tolerable amount of work.
 
 **Decode the field name.** The `HasField` leaf carries the field name as a type-level `Symbol!`, a
 nested `Chars<'h', Chars<'e', …>>` spine. The resolver decodes it structurally — walking the spine and
@@ -473,10 +501,12 @@ borrowed — re-enters that borrow and panics. Only the fresh-`InferCtxt` trait 
 re-enter mid-emit (see [Why it runs in the emitter](#why-it-runs-in-the-emitter)); a full query is not,
 and there is no hook between typeck and the fatal error to precompute the result. So this failure falls
 through to rustc's own output — usually redundant with the `check_components!` failure for the same
-capability, which the resolver *does* reshape. The impl-site path recovers the concrete component parameter from the supertrait, but the
-use-site path still builds each `CanUseComponent<Marker, ()>` with an **empty `Params` slot**, so a
-generic component whose real parameters matter is not re-checked *there* (the check and impl-site
-paths recover those). It renders only leaves it can trust: a `HasField` field (missing, underived, or —
+capability, which the resolver *does* reshape. The impl-site path recovers the concrete component
+parameter from the supertrait, and the use-site path recovers it too for an **`open`-dispatched**
+component — from the `PathCons<Component, Value>` redirect key the context wires — so a per-value
+failure is re-checked with its real `Value`. What the use-site path still cannot recover is the
+parameter of a **non-dispatched generic component** whose bare marker it re-checks with an empty
+`()` slot (the check and impl-site paths recover those). It renders only leaves it can trust: a `HasField` field (missing, underived, or —
 via its projection — present with the wrong type), a component the context does not wire (an unmet
 `DelegateComponent` on the context), a namespace redirect the context does not terminate (an unmet
 namespace-lookup bound whose `Self` is the redirect path), an ordinary bound on a foreign type, or a
@@ -511,13 +541,19 @@ says what it needs to without altering the header's shape.
   context, then heading the tree with the chain of hops and the header with the impl's own trait named
   plainly (`subject_is_context = false`); and
   `resolve_use_site` recovering the context ADT from
-  the diagnostic's spans and its wired components from `DelegateComponent` impls), `walk.rs` (walking the cause chain down to each terminal leaf — the
-  descendable-vocabulary rule, the plumbing-leaf drop, the foreign-getter descent that follows a
-  non-context getter bound's blanket impl into just its context-side dependencies plus a *same-trait*
-  list recursion (a `HandleMapEntry` tail), `impl_where_obligations` preferring a concrete-`Self` impl
-  over the delegation blanket and solving the matched impl's satisfiable clauses first so an
-  associated-type-determined parameter (a record builder) binds before its sibling clause is read,
-  `is_reportable_leaf`
+  the diagnostic's spans and its wired components from `DelegateComponent` impls — via
+  `delegated_check_targets`, which recovers the real dispatch parameter from an `open`-dispatch
+  `PathCons` key through `open_dispatch_target` and skips a raw path key, a redundant bare marker, or
+  a free-parameter catch-all), `walk.rs` (walking the cause chain down to each terminal leaf — the
+  descendable-vocabulary rule, the cycle guard that stops a branch when an obligation repeats among
+  its ancestors and the `MAX_DEPTH` backstop, the placeholder instantiation of a higher-ranked
+  obligation's binder (`enter_forall_and_leak_universe`) that both avoids the escaping-bound-var panic
+  and lets a nested higher-ranked hop resolve, the plumbing-leaf drop, the foreign-getter descent that
+  follows a non-context getter bound's blanket impl into just its context-side dependencies plus a
+  *same-trait* list recursion (a `HandleMapEntry` tail), `impl_where_obligations` preferring a
+  concrete-`Self` impl over the delegation blanket and solving the matched impl's satisfiable clauses
+  first so an associated-type-determined parameter (a record builder) binds before its sibling clause
+  is read, `is_reportable_leaf`
   keeping an unmet `DelegateComponent` only when it lands on the context, `has_field_projection_mismatch`
   finding an unmet `HasField` projection where the trait clauses all hold, and — after building the inner
   labels from the chain *above* the leaf — appending the coded `dependency_tree_leaf` as the tree's
@@ -597,8 +633,11 @@ folds to a clean `@…`; and `multi_redirect_missing` pins a chain of several ho
 `higher_ranked_descent` (a recursive provider with a higher-ranked `Self: for<'a>
 CanEncodeItem<&'a Value>` dependency — the `cgp-serde` `SerializeIterator` shape — whose descent used
 to feed an escaping bound variable into the solver and panic rustc; the walk now instantiates the
-obligation's binder with fresh inference variables and bottoms out cleanly on the missing redirect
-wiring). The missing-wiring
+obligation's binder with placeholders and bottoms out cleanly on the missing redirect wiring), and
+`nested_higher_ranked_descent` (the same shape nested *twice* through the record field-list machinery
+— the `MessagesArchive` shape, `Vec<Vec<record>>` over iterator/deref/record providers — which used
+to decline to the raw fallback because the rigid-placeholder normalization was missing and the depth
+cap was too low, and now resolves through to the unwired leaf). The missing-wiring
 leaf is pinned by the [`acceptable/wiring/missing-wiring/`](../../tests/ui/acceptable/wiring/missing-wiring)
 fixtures: `basic_missing_wiring` (a provider's `#[uses]` dependency on an unwired component → a
 `missing wiring` note over the transitive chain), `direct_missing_wiring` (a `check_components!` entry
@@ -614,8 +653,12 @@ fixtures: `missing_dependency` and `unsatisfied_dependency` (a consumer-method `
 `CGP-E001` header, the misleading method-syntax advice dropped, and a `missing field` root-cause note),
 `missing_wiring` (a use-site `E0599` whose provider needs an unwired component → the `CGP-E001` header
 over a `missing wiring` note),
-and `ordinary_bound_unsatisfied` (a use-site `f64: Eq` → the `CGP-E001` header, code kept `E0599`,
-over the `f64: Eq` root-cause note). The impl-site path is pinned by `manual_supertrait_impl` in the
+`ordinary_bound_unsatisfied` (a use-site `f64: Eq` → the `CGP-E001` header, code kept `E0599`,
+over the `f64: Eq` root-cause note),
+and `open_dispatch_use_site` (a use-site failure on an `open`-dispatched context → the dispatch value
+recovered from the redirect key so the header names `CanEncodeItem<Seq<u64>>` and the note reaches the
+real `@ItemEncoderComponent.u64` wiring, rather than reporting the internal `PathCons` key as a bogus
+consumer trait). The impl-site path is pinned by `manual_supertrait_impl` in the
 same directory (a wrapper trait carrying a *generic* CGP consumer supertrait, implemented directly on
 the context — the transfer example's `CanHandleApiSend` shape — failing both at the impl header
 `E0277` and its forwarding-call `E0599`, each resolved to the same tree with the concrete component

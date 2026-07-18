@@ -74,6 +74,12 @@ pub const CGP_BASE_TYPES_CRATE: &str = "cgp_base_types";
 /// whole path rather than reading only its ADT item name (`PathCons`).
 pub const PATH_CONS_TYPE: &str = "PathCons";
 
+/// The name of the type-level empty-path/empty-list terminator (defined by
+/// [`CGP_BASE_TYPES_CRATE`]) that closes a `PathCons` spine. The use-site resolver reads it to
+/// recognize a simple two-segment `open`-dispatch key `PathCons<Component, PathCons<Value, Nil>>`,
+/// so it can recover the real dispatch parameter `Value` rather than re-checking the raw path.
+pub const NIL_TYPE: &str = "Nil";
+
 /// The stable `--verbose` flag, injected into every workspace-crate compilation to stop
 /// the diagnostic machinery from *eliding* the parts of a type it deems uninteresting.
 ///

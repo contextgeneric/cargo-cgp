@@ -18,7 +18,7 @@ use cargo_cgp_error_processing::tree::DependencyTree;
 use cargo_cgp_error_processing::{Cause, Resolved};
 use rustc_hir::ItemKind;
 use rustc_hir::def::DefKind;
-use rustc_infer::infer::{BoundRegionConversionTime, TyCtxtInferExt as _};
+use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{
     self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode, Unnormalized, Upcast as _,
@@ -28,7 +28,8 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::config::{
-    CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT,
+    CAN_USE_COMPONENT_TRAIT, CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT,
+    IS_PROVIDER_FOR_TRAIT, NIL_TYPE, PATH_CONS_TYPE,
 };
 use crate::resolve::cgp_item::{find_cgp_trait, is_cgp_item, is_provider_trait};
 use crate::resolve::walk::{holds, resolve_leaves};
@@ -316,15 +317,12 @@ fn wrapper_chain_children<'tcx>(
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
 
-        // Instantiate any higher-ranked binder with fresh inference vars before relating, so a
-        // `for<'a>` bound in the wrapper chain does not feed an escaping bound var into `ocx.eq` and
-        // panic rustc's generalizer (see [`impl_where_obligations`](crate::resolve::walk)). A no-op
-        // for a binder-free obligation.
-        let obligation_ref = infcx.instantiate_binder_with_fresh_vars(
-            DUMMY_SP,
-            BoundRegionConversionTime::HigherRankedType,
-            obligation.map_bound(|p| p.trait_ref),
-        );
+        // Instantiate any higher-ranked binder with placeholders before relating, so a `for<'a>`
+        // bound in the wrapper chain does not feed an escaping bound var into `ocx.eq` and panic
+        // rustc's generalizer (see [`impl_where_obligations`](crate::resolve::walk)). A no-op for a
+        // binder-free obligation.
+        let obligation_ref =
+            infcx.enter_forall_and_leak_universe(obligation.map_bound(|p| p.trait_ref));
 
         let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
         let impl_ref = tcx
@@ -473,10 +471,12 @@ pub fn resolve_use_site(
     for context in context_candidates_from_spans(tcx, spans) {
         let mut causes: Vec<Cause> = Vec::new();
         let mut consumers: Vec<String> = Vec::new();
-        for marker in delegated_markers(tcx, context) {
-            // `Ctx: CanUseComponent<Marker, ()>` — the parameterless form, which suits the
-            // components a use-site failure exercises; a component whose `()` form holds is skipped.
-            let trait_ref = ty::TraitRef::new(tcx, can_use_did, [context, marker, tcx.types.unit]);
+        for (marker, params) in delegated_check_targets(tcx, context) {
+            // `Ctx: CanUseComponent<Marker, Params>` — `Params` is `()` for an ordinary
+            // (non-dispatched) component, or the recovered dispatch value for an `open`-dispatched
+            // one (so the real parameter, not a meaningless unit, drives the re-check); a component
+            // whose form holds is skipped.
+            let trait_ref = ty::TraitRef::new(tcx, can_use_did, [context, marker, params]);
             let top: ty::PolyTraitPredicate<'_> = ty::Binder::dummy(trait_ref).upcast(tcx);
             if holds(tcx, top) {
                 continue;
@@ -532,31 +532,114 @@ fn context_candidates_from_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec
     candidates
 }
 
-/// The component markers a context wires, read from its `DelegateComponent<Marker>` impls — the
-/// components whose use-site failure the resolver re-checks.
-fn delegated_markers<'tcx>(tcx: TyCtxt<'tcx>, context: Ty<'tcx>) -> Vec<Ty<'tcx>> {
+/// The `(marker, params)` pairs a use-site failure re-checks as `Ctx: CanUseComponent<marker,
+/// params>`, read from the context's `DelegateComponent<Key>` impls. A `DelegateComponent` key is
+/// one of two shapes, and each yields a different re-check:
+///
+/// - A **bare component marker** (`ItemEncoderComponent`) re-checks with the unit parameter `()`,
+///   the parameterless form an ordinary component's use-site failure exercises — *unless* the same
+///   component is `open`-dispatched (below), in which case its `()` form is meaningless (there is no
+///   unit-keyed value) and would report a spurious `@Component.()` redirect, so it is skipped.
+/// - An **`open`-dispatch redirect path** (`PathCons<ItemEncoderComponent, PathCons<Value, Nil>>`,
+///   emitted by an `@Component.Value:` entry) is *not* a component marker — re-checking it as one
+///   reports the internal `PathCons` spine as a bogus consumer trait. Instead the real dispatch
+///   parameter is recovered from the path, re-checking `CanUseComponent<Component, Value>` so the
+///   failure is traced with the value the context actually wired (a longer, non-two-segment path is
+///   skipped rather than mis-rendered).
+fn delegated_check_targets<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    context: Ty<'tcx>,
+) -> Vec<(Ty<'tcx>, Ty<'tcx>)> {
     let Some(delegate_did) = find_cgp_trait(tcx, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
     else {
         return Vec::new();
     };
     let context = tcx.erase_and_anonymize_regions(context);
 
-    let mut markers = Vec::new();
-    for impl_did in tcx.all_impls(delegate_did) {
-        let impl_self = tcx.type_of(impl_did).instantiate_identity().skip_norm_wip();
-        if tcx.erase_and_anonymize_regions(impl_self) != context {
-            continue;
+    let keys: Vec<Ty<'tcx>> = tcx
+        .all_impls(delegate_did)
+        .filter(|&impl_did| {
+            let impl_self = tcx.type_of(impl_did).instantiate_identity().skip_norm_wip();
+            tcx.erase_and_anonymize_regions(impl_self) == context
+        })
+        // `DelegateComponent<Key>` — args are `[Self, Key]`.
+        .map(|impl_did| {
+            let key = tcx
+                .impl_trait_ref(impl_did)
+                .instantiate_identity()
+                .skip_norm_wip()
+                .args
+                .type_at(1);
+            tcx.erase_and_anonymize_regions(key)
+        })
+        .collect();
+
+    // The components reached through an `open`-dispatch redirect, so a bare marker for one of them
+    // is not also re-checked with the spurious `()` parameter.
+    let dispatched: Vec<Ty<'tcx>> = keys
+        .iter()
+        .filter_map(|&key| open_dispatch_target(tcx, key).map(|(comp, _)| comp))
+        .collect();
+
+    let mut targets = Vec::new();
+    for &key in &keys {
+        if let Some((comp, value)) = open_dispatch_target(tcx, key) {
+            // A generic catch-all open entry (`<'a, T> &'a T: SerializeDeref`) keeps a free type
+            // parameter in its recovered value; re-checking `CanUseComponent<Comp, &T>` bottoms out
+            // on `T: Sized` noise rather than a real gap, and every concrete value the entry serves
+            // is re-checked through its own entry, so skip it.
+            if !value.has_param() {
+                targets.push((comp, value));
+            }
+        } else if !is_path_cons(tcx, key) && !dispatched.contains(&key) {
+            targets.push((key, tcx.types.unit));
         }
-        // `DelegateComponent<Marker>` — args are `[Self, Marker]`.
-        let marker = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate_identity()
-            .skip_norm_wip()
-            .args
-            .type_at(1);
-        markers.push(tcx.erase_and_anonymize_regions(marker));
     }
-    markers
+    targets
+}
+
+/// Recover the `(component, value)` an `open`-dispatch redirect key stands for — the two-segment
+/// path an `@Component.Value:` wiring entry emits — so a use-site re-check can use the real dispatch
+/// value rather than the raw path. The key is `PathCons<Component, PathCons<Value, Tail>>`, where
+/// `Tail` is the `Nil` terminator or the generic wildcard the macro leaves for prefix matching; both
+/// mark a two-segment key. `None` when `key` is not such a path — a bare marker, or a genuine
+/// three-plus-segment namespace route (whose `Tail` is a further `PathCons`), which the caller skips
+/// rather than mis-render.
+fn open_dispatch_target<'tcx>(tcx: TyCtxt<'tcx>, key: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    let comp_rest = path_cons_parts(tcx, key)?;
+    let value_rest = path_cons_parts(tcx, comp_rest.1)?;
+    if !is_path_terminator(tcx, value_rest.1) {
+        return None;
+    }
+    Some((comp_rest.0, value_rest.0))
+}
+
+/// Whether `ty` ends a `PathCons` spine at the second segment: either CGP's `Nil` terminator or the
+/// generic wildcard parameter the `open` expansion leaves as the tail (so the entry prefix-matches).
+/// A further `PathCons` here means the path has a third segment, so it is not a two-segment key.
+fn is_path_terminator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    is_nil(tcx, ty) || matches!(ty.kind(), ty::Param(_))
+}
+
+/// The `(head, tail)` of a `PathCons<Head, Tail>` type, or `None` when `ty` is not a `PathCons`.
+fn path_cons_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    match ty.kind() {
+        ty::Adt(def, args) if is_cgp_item(tcx, def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE) => {
+            Some((args.type_at(0), args.type_at(1)))
+        }
+        _ => None,
+    }
+}
+
+/// Whether `ty` is CGP's type-level path/list terminator `Nil`.
+fn is_nil(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(def, _) if is_cgp_item(tcx, def.did(), NIL_TYPE, CGP_BASE_TYPES_CRATE))
+}
+
+/// Whether `ty` is CGP's type-level path spine `PathCons<…>` — an `open`/namespace redirect key, as
+/// opposed to a bare component marker.
+fn is_path_cons(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(def, _) if is_cgp_item(tcx, def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE))
 }
 
 /// The local trait-impl blocks (`impl Trait for Ty { … }`) whose source span contains one of the
