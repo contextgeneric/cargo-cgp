@@ -17,9 +17,14 @@ are split into concept sub-directories so no directory grows crowded:
 - [`field-types/`](field-types) — a field present but of the wrong type (the `[CGP-E003]` mismatch),
   read through a getter, an implicit argument, and across modules.
 - [`providers/`](providers) — higher-order, nested, and transitive provider chains (the scaled,
-  higher-order, deep-nesting, and density cases), where the tree pinpoints the failing layer.
+  higher-order, deep-nesting, and density cases), where the tree pinpoints the failing layer —
+  including a `#[check_providers(...)]` per-layer assertion resolved to the failing layer's root
+  cause (`check_providers_layer`).
 - [`generic/`](generic) — components generic over a type parameter, with the parameters reattached to
-  the consumer and provider names.
+  the consumer and provider names; the params-slot ungrouping is pinned by a component carrying a
+  *lifetime* parameter (`lifetime_component`, whose `Life<'a>` lift is restored to a region rather
+  than leaked as a type) and one whose single parameter is itself a *tuple* type
+  (`tuple_param_component`, kept whole rather than spread into two parameters).
 - [`resolution/`](resolution) — resolver edge pins: an ordinary non-CGP bound kept uncoded, same-named
   components in different modules, a CGP error beside an untouched ordinary one, an unregistered
   namespace path, and a getter on a foreign request type resolved to the context's missing wiring

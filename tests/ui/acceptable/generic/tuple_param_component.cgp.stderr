@@ -1,0 +1,14 @@
+error[E0277]: [CGP-E001] the consumer trait `CanFormatPair<(u32, u64)>` is not implemented for context `App`
+  --> src/main.rs:44:9
+   |
+44 |         PairFormatterComponent: (u32, u64),
+   |         ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E106] missing field `separator` on `App`
+           this is required through the dependency chain:
+               [CGP-E101] consumer trait impl `CanFormatPair<(u32, u64)>` for context `App`
+               └── [CGP-E102] provider trait impl `PairFormatter<(u32, u64)>` with context `App` for provider `FormatWithSeparator`
+                   └── [CGP-E105] trait impl `HasSeparator` for `App`
+                       └── [CGP-E106] missing field `separator` on `App`
+
+For more information about this error, try `rustc --explain E0277`.

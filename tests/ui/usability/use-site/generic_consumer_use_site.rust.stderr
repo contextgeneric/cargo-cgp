@@ -1,0 +1,44 @@
+error[E0599]: the method `format_pair` exists for struct `App`, but its trait bounds were not satisfied
+  --> src/main.rs:48:17
+   |
+35 | pub struct App {
+   | -------------- method `format_pair` not found for this struct because it doesn't satisfy `App: CanFormatPair<_>` or `App: PairFormatter<App, _>`
+...
+48 |     let _ = app.format_pair((1_u32, 2_u64));
+   |                 ^^^^^^^^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `PairFormatter`
+  --> src/main.rs:16:5
+   |
+16 |     fn format_pair(&self, value: T) -> String;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: trait bound `App: PairFormatter<App, _>` was not satisfied
+  --> src/main.rs:14:17
+   |
+14 |   #[cgp_component(PairFormatter)]
+   |  _----------------^--------------
+15 | | pub trait CanFormatPair<T> {
+   | |           ---------------^
+   | |__________________________|
+   |                            unsatisfied trait bound introduced here
+note: the trait `PairFormatter` must be implemented
+  --> src/main.rs:15:1
+   |
+15 | / pub trait CanFormatPair<T> {
+16 | |     fn format_pair(&self, value: T) -> String;
+17 | | }
+   | |_^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `CanFormatPair` defines an item `format_pair`, perhaps you need to implement it
+  --> src/main.rs:15:1
+   |
+15 | pub trait CanFormatPair<T> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: use associated function syntax instead
+   |
+48 -     let _ = app.format_pair((1_u32, 2_u64));
+48 +     let _ = App::format_pair((1_u32, 2_u64));
+   |
+
+For more information about this error, try `rustc --explain E0599`.

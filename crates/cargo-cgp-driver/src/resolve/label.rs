@@ -83,14 +83,21 @@ pub(crate) fn label_for<'tcx>(
             ));
         }
         // `Provider: ProviderTrait<Ctx, Params…>` — trait name, context, provider, and the
-        // component's extra parameters all read straight off the obligation, no marker or map.
-        let provider_context = render_ty(tcx, trait_ref.args.type_at(1));
-        let generics = trait_generics(tcx, trait_ref, 2);
-        return Some(format!(
-            "[{DEP_PROVIDER_TRAIT_IMPL}] provider trait impl `{}{generics}` with context `{provider_context}` for provider `{}`",
-            tcx.item_name(did),
-            render_ty(tcx, self_ty)
-        ));
+        // component's extra parameters all read straight off the obligation, no marker or map. The
+        // context is the first type argument after `Self`, indexed by *type* position because a
+        // component's lifetime parameters sort ahead of the context in the argument list
+        // (`ReferenceGetter<'a, Ctx, T>`); indexing by argument position would land on the region
+        // and abort the compiler. A trait with no such argument is not a shape `#[cgp_component]`
+        // emits, so it falls through to the plain label.
+        if let Some(provider_context) = trait_ref.args.types().nth(1) {
+            let generics = trait_generics(tcx, trait_ref, 2);
+            return Some(format!(
+                "[{DEP_PROVIDER_TRAIT_IMPL}] provider trait impl `{}{generics}` with context `{}` for provider `{}`",
+                tcx.item_name(did),
+                render_ty(tcx, provider_context),
+                render_ty(tcx, self_ty)
+            ));
+        }
     }
 
     if is_consumer_trait(tcx, did) && self_ty == context {

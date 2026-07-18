@@ -1,0 +1,40 @@
+error[E0277]: the trait bound `App<'a>: CanUseComponent<ReferenceGetterComponent, (cgp::prelude::Life<'a>, str)>` is not satisfied
+  --> src/main.rs:47:9
+   |
+47 |         ReferenceGetterComponent: (Life<'a>, str),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App<'a>`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for `App<'_>`
+  --> src/main.rs:33:10
+   |
+33 | #[derive(HasField)]
+   |          ^^^^^^^^
+note: required for `App<'a>` to implement `HasName`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+18 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `GetReference` to implement `IsProviderFor<ReferenceGetterComponent, App<'a>, (cgp::prelude::Life<'a>, str)>`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_impl(new GetReference)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+25 |     Self: HasName,
+   |           ------- unsatisfied trait bound introduced here
+   = note: required for `App<'a>` to implement `CanUseComponent<ReferenceGetterComponent, (cgp::prelude::Life<'a>, str)>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:45:1
+   |
+45 | / check_components! {
+46 | |     <'a> App<'a> {
+47 | |         ReferenceGetterComponent: (Life<'a>, str),
+48 | |     }
+49 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

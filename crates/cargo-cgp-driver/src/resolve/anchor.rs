@@ -1,6 +1,6 @@
 //! Recovering the starting obligation of a check failure.
 //!
-//! Four entry points recover the obligation differently, then feed the same
+//! Five entry points recover the obligation differently, then feed the same
 //! [walk](crate::resolve::walk): [`resolve_check_failure`] anchors on a `check_components!` entry
 //! (by matching the failing diagnostic's caret to the check impl's `Self`-type span);
 //! [`resolve_impl_site`] handles a wiring failure surfaced *inside a hand-written `impl Trait for
@@ -8,9 +8,11 @@
 //! parameters — from the impl's CGP consumer supertrait); [`resolve_wrapper_chain`] handles the same
 //! shape when the impl's `Self` is a *foreign* wrapper holding the context (by descending its
 //! supertrait's ordinary `where`-clause hops to a CGP consumer on the context, the routing-glue
-//! case); and [`resolve_use_site`] handles a
+//! case); [`resolve_use_site`] handles a
 //! consumer-method `E0599` (by recovering the context ADT from the diagnostic's spans and
-//! re-checking the parameterless form of every component that context wires).
+//! re-checking the parameterless form of every component that context wires); and
+//! [`resolve_use_site_consumer`] anchors on the consumer trait the diagnostic names, which is what
+//! reaches a namespace-joined context.
 
 use cargo_cgp_error_processing::code::DEP_TRAIT_IMPL;
 use cargo_cgp_error_processing::tree::DependencyTree;
@@ -27,8 +29,8 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::config::{
-    CAN_USE_COMPONENT_TRAIT, CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT,
-    NIL_TYPE, PATH_CONS_TYPE,
+    CAN_USE_COMPONENT_TRAIT, CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE,
+    DELEGATE_COMPONENT_TRAIT, LIFE_TYPE, NIL_TYPE, PATH_CONS_TYPE,
 };
 use crate::resolve::cgp_item::{
     consumer_provider_trait, find_cgp_trait, is_cgp_item, marker_to_consumer,
@@ -78,10 +80,10 @@ pub fn resolve_check_failure(tcx: TyCtxt<'_>, primary_span: Span) -> Option<Reso
 
 /// Turn a `Ctx: CanUseComponent<Marker, Params>` assertion into the real consumer obligation
 /// `Ctx: ConsumerTrait<Params…>` it stands for: the marker is mapped to its consumer trait
-/// (`IsProviderFor`-free, via [`marker_to_consumer`]) and the `Params` slot is spread back into the
-/// consumer's own type arguments. This is what lets the check and use-site anchors feed the walk a
+/// (`IsProviderFor`-free, via [`marker_to_consumer`]) and the `Params` slot is ungrouped back into
+/// the consumer's own arguments. This is what lets the check and use-site anchors feed the walk a
 /// real consumer obligation instead of the `CanUseComponent` wrapper. `None` when the marker keys
-/// no known consumer trait.
+/// no known consumer trait, or the slot does not match the consumer's parameters.
 fn can_use_to_consumer_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     can_use: ty::PolyTraitPredicate<'tcx>,
@@ -92,25 +94,62 @@ fn can_use_to_consumer_obligation<'tcx>(
     let marker = trait_ref.args.type_at(1);
     let params = trait_ref.args.type_at(2);
     let (consumer_did, _) = marker_to_consumer(tcx, marker)?;
-    Some(consumer_obligation(tcx, context, consumer_did, params))
+    consumer_obligation(tcx, context, consumer_did, params)
 }
 
-/// Build `Ctx: ConsumerTrait<Params…>` from a consumer trait and the component's `Params` slot,
-/// spreading the slot back exactly as CGP groups it: the unit `()` yields no extra arguments, a
-/// tuple its elements, and any other type a single argument.
+/// Build `Ctx: ConsumerTrait<Params…>` from a consumer trait and the component's `Params` slot.
+///
+/// The slot groups a component's extra parameters as all-types data — none as the unit `()`, one
+/// bare, several as a tuple, and a lifetime lifted into `Life<'a>` — but the consumer trait itself
+/// wants its arguments back in their declared kinds and arity. So the slot is ungrouped against the
+/// trait's *own* generics rather than by its shape alone: the parameter count decides whether a
+/// tuple is *the* single (tuple-typed) parameter or several parameters to spread, and a lifetime
+/// parameter takes its region back out of the `Life<'a>` lift. Building the trait ref from the
+/// slot's shape alone would hand the solver a malformed obligation — spreading a single tuple-typed
+/// parameter into two, or a `Life<'a>` *type* where a region belongs, the latter aborting the
+/// compiler when the solver relates it. `None` when the slot cannot be matched to the trait's
+/// parameters, so the caller declines to the fallback instead.
 fn consumer_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     context: Ty<'tcx>,
     consumer_did: DefId,
     params: Ty<'tcx>,
-) -> ty::PolyTraitPredicate<'tcx> {
+) -> Option<ty::PolyTraitPredicate<'tcx>> {
+    // `own_params` opens with the implicit `Self`; the rest are the component's parameters.
+    let expected = &tcx.generics_of(consumer_did).own_params[1..];
+
+    let supplied: Vec<Ty<'tcx>> = match (expected.len(), params.kind()) {
+        (0, _) if params.is_unit() => Vec::new(),
+        // A single parameter is grouped bare — even when it is itself a tuple type, which is why
+        // the parameter count is consulted before the slot's shape.
+        (1, _) => vec![params],
+        (n, ty::Tuple(elems)) if elems.len() == n => elems.iter().collect(),
+        _ => return None,
+    };
+
     let mut args: Vec<ty::GenericArg<'tcx>> = vec![context.into()];
-    match params.kind() {
-        ty::Tuple(elems) => args.extend(elems.iter().map(ty::GenericArg::from)),
-        _ => args.push(params.into()),
+    for (param, ty) in std::iter::zip(expected, supplied) {
+        match param.kind {
+            ty::GenericParamDefKind::Type { .. } => args.push(ty.into()),
+            ty::GenericParamDefKind::Lifetime => args.push(life_region(tcx, ty)?.into()),
+            // `#[cgp_component]` rejects const parameters, so a const here is not a CGP consumer.
+            ty::GenericParamDefKind::Const { .. } => return None,
+        }
     }
     let trait_ref = ty::TraitRef::new(tcx, consumer_did, args);
-    ty::Binder::dummy(trait_ref).upcast(tcx)
+    Some(ty::Binder::dummy(trait_ref).upcast(tcx))
+}
+
+/// The region inside CGP's lifetime lift `Life<'a>`, or `None` when `ty` is not the genuine
+/// `cgp_field::Life`.
+fn life_region<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<ty::Region<'tcx>> {
+    let ty::Adt(def, args) = ty.kind() else {
+        return None;
+    };
+    if !is_cgp_item(tcx, def.did(), LIFE_TYPE, CGP_FIELD_CRATE) {
+        return None;
+    }
+    args.regions().next()
 }
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait
@@ -506,7 +545,9 @@ pub fn resolve_use_site(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
             let Some((consumer_did, _)) = marker_to_consumer(tcx, marker) else {
                 continue;
             };
-            let top = consumer_obligation(tcx, context, consumer_did, params);
+            let Some(top) = consumer_obligation(tcx, context, consumer_did, params) else {
+                continue;
+            };
             if holds(tcx, top) {
                 continue;
             }
@@ -566,7 +607,9 @@ pub fn resolve_use_site_consumer(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Reso
             if !is_local_adt(context) {
                 continue;
             }
-            let top = consumer_obligation(tcx, context, consumer_did, tcx.types.unit);
+            let Some(top) = consumer_obligation(tcx, context, consumer_did, tcx.types.unit) else {
+                continue;
+            };
             if holds(tcx, top) {
                 continue;
             }
@@ -625,9 +668,9 @@ fn context_candidates_from_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec
     candidates
 }
 
-/// The `(marker, params)` pairs a use-site failure re-checks as `Ctx: CanUseComponent<marker,
-/// params>`, read from the context's `DelegateComponent<Key>` impls. A `DelegateComponent` key is
-/// one of three shapes, and each yields a different re-check:
+/// The `(marker, params)` pairs a use-site failure re-checks — each mapped to its real consumer
+/// obligation `Ctx: Consumer<params…>` — read from the context's `DelegateComponent<Key>` impls. A
+/// `DelegateComponent` key is one of three shapes, and each yields a different re-check:
 ///
 /// - A **bare component marker** (`ItemEncoderComponent`) re-checks with the unit parameter `()`,
 ///   the parameterless form an ordinary component's use-site failure exercises — *unless* the same

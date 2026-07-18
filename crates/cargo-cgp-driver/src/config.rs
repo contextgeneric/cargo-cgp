@@ -96,6 +96,13 @@ pub const EITHER_TYPE: &str = "Either";
 /// `Either` spine — the sum counterpart of [`NIL_TYPE`].
 pub const VOID_TYPE: &str = "Void";
 
+/// The name of the type-level lifetime lift (defined by [`CGP_FIELD_CRATE`]): `Life<'a>` stands in
+/// for the lifetime `'a` wherever a component's parameters must all be types — the `Params` slot of
+/// `CanUseComponent`/`IsProviderFor` and a `check_components!` entry. The resolver reads the region
+/// back out of it when it rebuilds a real consumer obligation, whose trait wants the lifetime in a
+/// region slot, not a type standing in for one.
+pub const LIFE_TYPE: &str = "Life";
+
 /// The name of the type-level named-field cell (defined by [`CGP_FIELD_CRATE`]): `Field<Tag, Value>`
 /// pairs a `Symbol!` name tag with a value type. When every element of a resugared `Product!`/`Sum!`
 /// list is a `Field`, the dependency-tree renderer resugars the whole list to the record/variant

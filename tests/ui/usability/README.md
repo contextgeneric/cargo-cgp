@@ -18,12 +18,14 @@ class in [the usability issue document](../../../docs/issues/usability.md):
 - [`lowering/`](lowering) — a macro lowered accepted input into ill-formed Rust, and the error lands
   on the macro attribute without naming the real cause: an unsized generated type (`option_slice`) or
   a cyclic `#[use_type]` routing (`use_type_cyclic_context`).
-- [`use-site/`](use-site) — a use-site `E0277` the resolver cannot anchor: `cascade_after_use_site`
-  calls a *foreign*, generic `Code`-dispatched handler whose result is consumed with `?`, so it
-  declines to the text rewrite and exposes the combinator plumbing. Its `?`-operator
-  `Try`/`FromResidual` cascade is now suppressed; the plumbing exposure is what remains. (The
-  namespace-joined `E0599` and `#[use_type]` shapes that used to live here now resolve and have moved
-  to [`../acceptable/`](../acceptable).)
+- [`use-site/`](use-site) — a use-site failure the resolver cannot anchor: `cascade_after_use_site`
+  calls a *foreign*, generic `Code`-dispatched handler whose result is consumed with `?`, so its
+  `E0277` declines to the text rewrite and exposes the combinator plumbing (its `?`-operator
+  `Try`/`FromResidual` cascade is now suppressed; the plumbing exposure is what remains), and
+  `generic_consumer_use_site` calls a *local* generic consumer whose dispatch parameter no span
+  recovers, so its `E0599` keeps rustc's misleading method-syntax advice ahead of the buried cause.
+  (The namespace-joined `E0599` and `#[use_type]` shapes that used to live here now resolve and have
+  moved to [`../acceptable/`](../acceptable).)
 - [`wiring/`](wiring) — the structural coherence conflicts (`E0119`/`E0207`/`E0275`) that still pass
   through with only light post-processing. The duplicate delegate-key `E0119` is now reshaped into a
   coded `[CGP-E004]`–`[CGP-E008]` headline and has moved to [`../acceptable/wiring`](../acceptable/wiring); what remains

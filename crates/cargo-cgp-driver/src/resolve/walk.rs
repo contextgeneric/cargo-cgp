@@ -24,8 +24,8 @@ use crate::resolve::label::{label_for, spine, trait_generics};
 
 /// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or
 /// cyclic wiring cannot make it loop. Each logical wiring hop expands to several walk frames — a
-/// `CanUseComponent`, its `IsProviderFor` plumbing, a `RedirectLookup`, the provider's own
-/// `IsProviderFor`, then the next consumer — so a deeply nested data type (e.g. `cgp-serde`'s
+/// consumer obligation, the delegation-routing provider obligation, a `RedirectLookup`, the real
+/// provider obligation, then the next consumer — so a deeply nested data type (e.g. `cgp-serde`'s
 /// `MessagesArchive`, a `Vec<Vec<record>>` threaded through iterator/deref/record providers) reaches
 /// its root cause only tens of frames down. The bound is set well above that so a genuine chain
 /// resolves rather than declining to the raw fallback, but not so high that a *divergent* wiring —
@@ -42,7 +42,12 @@ pub(crate) fn resolve_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
     top: ty::PolyTraitPredicate<'tcx>,
 ) -> Option<Resolved> {
-    let context = tcx.erase_and_anonymize_regions(top.skip_binder().self_ty());
+    // Erase the seed's free regions up front, exactly as every descendant obligation is erased by
+    // [`impl_where_obligations`]. A lifetime-parameterized check entry (`(Life<'a>, str)`) seeds an
+    // obligation carrying the check impl's own `'a`, and leaving it unerased would make the seed the
+    // one chain entry whose `self_ty == context` comparisons fail, mislabeling the consumer node.
+    let top = tcx.erase_and_anonymize_regions(top);
+    let context = top.skip_binder().self_ty();
 
     let mut causes: Vec<Cause> = Vec::new();
     for path in collect_leaf_paths(tcx, top, context, &[], 0) {
@@ -94,8 +99,8 @@ pub(crate) fn resolve_leaves<'tcx>(
     Some(Resolved {
         context: context.to_string(),
         consumers: vec![consumer],
-        // The walk starts from a `CanUseComponent` obligation, so the consumer is a CGP consumer
-        // trait (the impl-site anchor overrides this when the failing trait is a plain wrapper).
+        // Every anchor seeds the walk with a real CGP consumer obligation (the impl-site anchor
+        // overrides this when the failing trait is a plain wrapper).
         consumers_are_cgp: true,
         // The subject is the checked context itself.
         subject_is_context: true,
@@ -287,20 +292,12 @@ fn has_field_projection_mismatch<'tcx>(
     // matching the blanket first would wrongly report no mismatch. But a getter trait's *only* impl
     // is itself a blanket (`impl<C: HasField<..>> HasName for C`), and that one *does* carry the
     // projection — so a blanket is deferred, not skipped outright.
-    let mut blanket: Option<DefId> = None;
-    for impl_did in tcx.all_impls(pred.def_id()) {
-        if matches!(
-            tcx.impl_trait_ref(impl_did).skip_binder().self_ty().kind(),
-            ty::Param(_)
-        ) {
-            blanket.get_or_insert(impl_did);
-            continue;
-        }
+    for impl_did in impls_concrete_first(tcx, pred.def_id()) {
         if let Some(result) = impl_field_projection_mismatch(tcx, pred, impl_did) {
             return result;
         }
     }
-    blanket.and_then(|impl_did| impl_field_projection_mismatch(tcx, pred, impl_did))?
+    None
 }
 
 /// Test one impl for [`has_field_projection_mismatch`]: `None` when the impl does not unify with
@@ -374,16 +371,6 @@ fn impl_field_projection_mismatch<'tcx>(
     Some(None)
 }
 
-/// Whether the descent should walk *into* `pred`'s dependencies, rather than treat `pred` as a
-/// terminal leaf. It descends any **provider trait** (a `ProvideFoo: Foo<App>` bound routes on to
-/// the provider's own real `where` bounds), the `DelegateComponent` table lookup, and any
-/// obligation on the context itself (its consumer, getter, and capability traits). It stops at
-/// everything else — an ordinary bound like `f64: Eq`, whose `Self` is a foreign type, is a leaf.
-///
-/// It deliberately does *not* descend `CanUseComponent`/`IsProviderFor`: the resolver reads a
-/// provider's bounds from the provider trait's own impl, not from the `IsProviderFor` marker's
-/// copy of them, so an `IsProviderFor` obligation is left as a (dropped) plumbing leaf while the
-/// real provider-trait obligation beside it carries the cause.
 /// Whether `pred` is the check-trait scaffolding — `CanUseComponent` or `IsProviderFor` — the walk
 /// resolves *around* rather than through. These sit beside the real consumer/provider-trait
 /// obligation in every generated blanket impl and carry only the delegation check
@@ -396,6 +383,16 @@ fn is_workaround_plumbing<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitPredicate<
         || is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
 }
 
+/// Whether the descent should walk *into* `pred`'s dependencies, rather than treat `pred` as a
+/// terminal leaf. It descends any **provider trait** (a `ProvideFoo: Foo<App>` bound routes on to
+/// the provider's own real `where` bounds), the `DelegateComponent` table lookup, and any
+/// obligation on the context itself (its consumer, getter, and capability traits). It stops at
+/// everything else — an ordinary bound like `f64: Eq`, whose `Self` is a foreign type, is a leaf.
+///
+/// It deliberately does *not* descend `CanUseComponent`/`IsProviderFor`: the resolver reads a
+/// provider's bounds from the provider trait's own impl, not from the `IsProviderFor` marker's
+/// copy of them, so those obligations are dropped as [workaround plumbing](is_workaround_plumbing)
+/// while the real provider-trait obligation beside them carries the cause.
 fn is_descendable<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitPredicate<'tcx>,
@@ -430,11 +427,7 @@ pub(crate) fn impl_where_obligations<'tcx>(
 ) -> Option<Vec<ty::PolyTraitPredicate<'tcx>>> {
     let param_env = ty::ParamEnv::empty();
 
-    // A blanket (param-`Self`) match is held back as a fallback and used only if no concrete-`Self`
-    // impl matches, so a leaf provider's specific impl wins over the delegation blanket.
-    let mut blanket_fallback: Option<Vec<ty::PolyTraitPredicate<'tcx>>> = None;
-
-    for impl_did in tcx.all_impls(obligation.def_id()) {
+    for impl_did in impls_concrete_first(tcx, obligation.def_id()) {
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
 
@@ -510,15 +503,24 @@ pub(crate) fn impl_where_obligations<'tcx>(
             }
         }
 
-        // Prefer a concrete-`Self` impl; hold a blanket (param-`Self`) match as the fallback.
-        let declared_self = tcx.impl_trait_ref(impl_did).skip_binder().self_ty();
-        if matches!(declared_self.kind(), ty::Param(_)) {
-            blanket_fallback.get_or_insert(obligations);
-        } else {
-            return Some(obligations);
-        }
+        return Some(obligations);
     }
-    blanket_fallback
+    None
+}
+
+/// Every impl of `trait_did`, with the concrete-`Self` impls ahead of the blanket (param-`Self`)
+/// ones, so a caller that takes the first *unifying* impl prefers the specific impl over the
+/// delegation blanket — the ordering [`impl_where_obligations`] and
+/// [`has_field_projection_mismatch`] both rely on.
+fn impls_concrete_first(tcx: TyCtxt<'_>, trait_did: DefId) -> Vec<DefId> {
+    let (blanket, concrete): (Vec<DefId>, Vec<DefId>) =
+        tcx.all_impls(trait_did).partition(|&did| {
+            matches!(
+                tcx.impl_trait_ref(did).skip_binder().self_ty().kind(),
+                ty::Param(_)
+            )
+        });
+    concrete.into_iter().chain(blanket).collect()
 }
 
 /// Whether `pred` already holds — a dependency that is satisfied and so is not descended into.

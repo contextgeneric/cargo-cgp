@@ -344,10 +344,19 @@ failing diagnostic's primary span. `resolve_check_failure` walks the crate's che
 a `cgp_component::CanUseComponent` supertrait) and picks the impl whose `Self` span matches the caret —
 tying *this* diagnostic to *this* entry without reading either one's text. It reads the entry's
 `CanUseComponent<Marker, Params>` assertion only to learn *which* component the check names: it maps
-the marker to its consumer trait (`marker_to_consumer`) and spreads the `Params` slot back into the
-consumer's own type arguments (`can_use_to_consumer_obligation`), yielding the real obligation, e.g.
-`Rectangle: CanCalculateArea`. `CanUseComponent` is the user's own check assertion, legitimately read
-here to find the component; it is the marker map, not the walk, that then routes to the consumer.
+the marker to its consumer trait (`marker_to_consumer`) and ungroups the `Params` slot back into the
+consumer's own arguments (`can_use_to_consumer_obligation` over `consumer_obligation`), yielding the
+real obligation, e.g. `Rectangle: CanCalculateArea`. The ungrouping is decided by the consumer's own
+generics, not by the slot's shape: the slot carries the parameters as all-types data (none as `()`,
+one bare, several as a tuple, a lifetime lifted into `Life<'a>`), so the trait's parameter count
+decides whether a tuple is *the* single tuple-typed parameter or several to spread, and a lifetime
+parameter takes its region back out of the `Life<'a>` lift. Trusting the slot's shape instead would
+hand the solver a malformed obligation — a `Life<'a>` *type* where a region belongs aborts the
+compiler when related — so any mismatch declines to the fallback rather than build one (the
+[`lifetime_component`](../../tests/ui/acceptable/generic/lifetime_component.rs) and
+[`tuple_param_component`](../../tests/ui/acceptable/generic/tuple_param_component.rs) fixtures pin the
+two shapes). `CanUseComponent` is the user's own check assertion, legitimately read here to find the
+component; it is the marker map, not the walk, that then routes to the consumer.
 
 **From a hand-written `impl Trait for Context` block.** A wiring failure often surfaces inside an impl
 the programmer wrote rather than at a check entry — the money-transfer example's per-endpoint wrapper,
@@ -437,7 +446,12 @@ diagnostic span can also land on a *provider* struct, so a candidate that wires 
 discarded, which selects the real context. The transformed error is the same `[CGP-E001]` consumer form
 over a root-cause note, and the misleading "this is an associated function… use associated function
 syntax instead" advice — which the method probe emits for CGP's `self`-less provider methods — is
-dropped with the rest of rustc's sub-notes.
+dropped with the rest of rustc's sub-notes. The anchor is not limited to method calls: any failure
+whose spans land on the context's struct definition reaches it, which is how a
+**`#[check_providers(...)]` per-layer assertion** — whose `IsProviderFor`-supertraited check impl no
+other anchor matches — still resolves to the failing layer's root cause, because rustc's "not
+implemented for `Rectangle`" note spans the struct
+([`check_providers_layer`](../../tests/ui/acceptable/providers/check_providers_layer.rs)).
 
 A `DelegateComponent` key comes in three shapes, and each is handled differently — the distinction
 matters for an `open`-dispatched context, whose per-value entries are redirect *paths*, not markers. A
@@ -640,7 +654,11 @@ user's own capability or getter trait — or a terminal ordinary bound — rende
   its successive hops.
 - **Generic parameters are reattached.** A generic component's parameters are read from the trait
   obligation's own type arguments — the consumer's arguments after `Self`, the provider's after the
-  leading context — so the trait reads as written (`CanCalculateArea<u32, u64, bool>`).
+  leading context — so the trait reads as written (`CanCalculateArea<u32, u64, bool>`). The context
+  and the parameters are indexed by *type* position, because a component's lifetime parameters sort
+  ahead of the context in a provider trait's argument list (`ReferenceGetter<'a, Ctx, T>`): indexing
+  by raw argument position would land on the region and abort the compiler, while the type-position
+  read skips lifetimes in the label the way ordinary Rust elision does (`ReferenceGetter<str>`).
 - **Type-level spines are resugared.** A rendered label's `Self` type has its `Cons<A, Cons<B, Nil>>`
   product spine read back as `Product![A, B]` and its `Either<A, Either<B, Void>>` sum spine as
   `Sum![A, B]`, so a field- or variant-list handler (the modular-serialization example's
@@ -738,7 +756,11 @@ parameter from the supertrait, and the by-component use-site path recovers it fo
 component from the `PathCons<Component, Value>` redirect key; what neither use-site path recovers is the
 parameter of a **non-dispatched generic component** — the by-component path re-checks its bare marker
 with an empty `()` slot, and the by-consumer path only fires for a consumer whose sole generic is
-`Self`. And the walk uses an **empty parameter environment** throughout, which suits the concrete check
+`Self`. Such a failure declines to the fallback and keeps rustc's misleading method-syntax advice
+([`generic_consumer_use_site`](../../tests/ui/usability/use-site/generic_consumer_use_site.rs) pins the
+class, and the [usability issue](../issues/usability.md) records the plausible recovery: re-check the
+wired delegate's *implemented* parameter values instead of the meaningless `()` form). And the walk
+uses an **empty parameter environment** throughout, which suits the concrete check
 impls the fixtures exercise but will need the impl's own environment to extend cleanly to checks that
 carry generic parameters. The resolver renders only leaves it can trust — a `HasField` field (missing,
 underived, or type-mismatched), a missing wiring, a namespace redirect the context does not terminate,
@@ -758,8 +780,12 @@ separate header brand; the inline code is the only marking.
   resolution, split by stage behind a re-exporting `mod.rs` and building the rustc-free `Resolved`
   model. Every anchor feeds the walk the real consumer obligation `Ctx: ConsumerTrait<Params…>`, never
   a `CanUseComponent` wrapper.
-  - `anchor.rs` holds the five anchors: `resolve_check_failure` (matches the check impl by span, then
-    `can_use_to_consumer_obligation` maps its `CanUseComponent<Marker, Params>` assertion through
+  - `anchor.rs` holds the five anchors and the shared `consumer_obligation` they build the seed with —
+    the `Params`-slot ungrouping decided by the consumer's own generics (a single tuple-typed
+    parameter kept whole, a lifetime restored from `Life<'a>` via `life_region`, any mismatch
+    declining rather than handing the solver a malformed trait ref): `resolve_check_failure` (matches
+    the check impl by span, then `can_use_to_consumer_obligation` maps its
+    `CanUseComponent<Marker, Params>` assertion through
     `marker_to_consumer` to the consumer obligation); `resolve_impl_site` (recovers the context and the
     consumer supertrait from an enclosing `impl Trait for Context` block, heading the tree with the
     impl's own wrapper trait — `[CGP-E001]` or `[CGP-E009]` by its blanket-impl fingerprint — through
@@ -821,10 +847,12 @@ separate header brand; the inline code is the only marking.
 The resolver is exercised end to end by the UI snapshot suite. The fixtures it reshapes live under
 [`tests/ui/acceptable/`](../../tests/ui/acceptable) — the `fields/`, `field-types/`, `providers/`,
 `generic/`, `resolution/`, `wiring/`, `use-site/`, and `use-type/` subgroups, carrying `.cgp.stderr`
-snapshots of the transformed output. The failure it still declines — a use-site `E0277` on a foreign
-generic consumer — keeps its fallback snapshot under
-[`tests/ui/usability/use-site/`](../../tests/ui/usability/use-site) (`cascade_after_use_site`), so the
-two together pin both the transform and the decline boundary. [Testing](testing.md) describes the suite
+snapshots of the transformed output. The failures it still declines — a use-site `E0277` on a foreign
+generic consumer, and a use-site `E0599` on a *local* generic consumer whose dispatch parameter no
+span recovers — keep their fallback snapshots under
+[`tests/ui/usability/use-site/`](../../tests/ui/usability/use-site) (`cascade_after_use_site`,
+`generic_consumer_use_site`), so the two sides together pin both the transform and the decline
+boundary. [Testing](testing.md) describes the suite
 and its bless workflow. The fixtures group by what they pin.
 
 Each **leaf class** has fixtures for its field, wiring, and redirect shapes:
@@ -860,6 +888,15 @@ Several fixtures pin the **harder mechanics**:
   own traits (off their `DefId`s) with no cross-over.
 - `generic_area_multi` — a three-parameter component, its parameters reattached to the labels from the
   obligation's own arguments.
+- `lifetime_component` — a component carrying a *lifetime* parameter (`(Life<'a>, str)` in its check
+  entry), the lifetime restored from its `Life<'a>` lift to a region when the consumer obligation is
+  rebuilt, and the provider label's context read by type position past the leading lifetime.
+- `tuple_param_component` — a component whose single parameter is itself a *tuple* type, kept whole
+  (`CanFormatPair<(u32, u64)>`) rather than spread into two parameters by the params-slot ungrouping.
+- `check_providers_layer` (under [`acceptable/providers/`](../../tests/ui/acceptable/providers)) — a
+  `#[check_providers(...)]` per-layer assertion, whose `IsProviderFor`-supertraited check impl no
+  anchor matches directly, resolved through the use-site anchor instead (rustc's "not implemented for
+  `Rectangle`" note spans the context's struct definition) into the failing layer's root-cause tree.
 - `ordinary_bound_unsatisfied` — a non-field `f64: Eq` bound whose rustc header is kept over a lead-less
   chain note.
 - `foreign_getter_missing_wiring` — the money-transfer `UseBasicAuth` shape, where the walk descends a

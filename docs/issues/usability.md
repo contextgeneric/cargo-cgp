@@ -63,7 +63,7 @@ example hits. When a context joins a namespace and calls an async, `Code`-dispat
 wired to a generic `Code` family — matches unconditionally, so the method is *found* and the failure
 is an `E0277`, not the `E0599` the [use-site anchor](../implementation/typed-root-cause-resolution.md)
 handles. An `E0277` at a call carries no span on the context's type definition, and its `Input` is an
-unresolved inference variable (`Vec<_>`), so all four anchors decline and the diagnostic falls to the
+unresolved inference variable (`Vec<_>`), so all five anchors decline and the diagnostic falls to the
 text rewrite — which stamps a `[CGP-E002]` header naming the internal `PipeHandlers`/`ComposeHandlers`
 plumbing as the "provider" and keeps rustc's impl-candidate `help` block. The root cause (a missing
 field the buried handler reads) is never surfaced. [`cascade_after_use_site`](../../tests/ui/usability/use-site/cascade_after_use_site.rs)
@@ -90,6 +90,25 @@ resolver anchors on that consumer trait and walks it through the namespace to th
 [`namespace_join_use_site`](../../tests/ui/acceptable/use-site/namespace_join_use_site.rs), now in
 `acceptable/`); only the `E0277` shape above, where the context cannot be anchored at all, still
 declines.
+
+## A generic consumer's use-site failure keeps rustc's misleading method advice
+
+A *generic* consumer that fails at a direct call declines both use-site anchors, because neither can
+recover the component's dispatch parameter from the diagnostic. The by-component anchor re-checks a
+wired marker's bare form with an empty `()` parameter slot, which matches no real wiring for a generic
+component; the by-consumer anchor is deliberately restricted to a consumer whose only generic is
+`Self`, since the parameter at the call site (`App: CanFormatPair<_>` in rustc's own note) is an
+inference variable no span recovers.
+[`generic_consumer_use_site`](../../tests/ui/usability/use-site/generic_consumer_use_site.rs) pins the
+class: the declined `E0599` keeps rustc's method-probe framing, whose "this is an associated function,
+not a method" caret and "use associated function syntax instead" suggestion — both artifacts of CGP's
+`self`-less provider methods, and the second actively wrong — outrank the real
+`HasField<Symbol!("separator")>` cause buried in the first note. (The same failure at a
+`check_components!` entry resolves cleanly, including for a single tuple-typed parameter; only the
+call-site shape lacks the parameter.) The plausible recovery is to re-check the wired delegate's
+*implemented* parameter values — the provider's concrete impls name them — instead of the meaningless
+`()` form; short of that, the fallback should at least drop the method-syntax advice the way the
+resolver already does for the shapes it reshapes.
 
 ## One missing derive reported field by field
 
@@ -157,8 +176,9 @@ Taken together, these issues define the tool's presentation target for the class
 reshape: deduplicate one cause down to a single headline whether it fans out across diagnostics (the
 cascade) or within one (the missing derive); recover the untransformed lowering class into a coded,
 root-cause-first diagnostic, or at least strip the generated `__…__` names and misleading suggestions
-it leaks; surface the use-site `E0277` combinator-plumbing shape once its obligation becomes
-recoverable; and coalesce the coherence conflicts that still fan out — the
+it leaks; surface the use-site shapes whose parameters are not yet recoverable — the `E0277`
+combinator-plumbing exposure and the generic consumer's misleading method advice; and coalesce the
+coherence conflicts that still fan out — the
 duplicate provider *name*, the `E0207` unconstrained generic, and the `E0275` `UseContext` cycle —
 and name the wiring mistake behind each code, the way the duplicate delegate-key `E0119` is now
 reshaped into the `[CGP-E004]`–`[CGP-E008]` family. The bar is the same one

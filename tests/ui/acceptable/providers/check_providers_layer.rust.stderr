@@ -1,0 +1,47 @@
+error[E0277]: the trait bound `Rectangle: HasField<Symbol<12, Chars<..>>>` is not satisfied
+  --> src/main.rs:68:9
+   |
+68 |         ScaledArea<RectangleArea>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<12, cgp::prelude::Chars<..>>>` is not implemented for `Rectangle`
+  --> src/main.rs:51:1
+   |
+51 | pub struct Rectangle {
+   | ^^^^^^^^^^^^^^^^^^^^
+help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
+  --> src/main.rs:50:10
+   |
+50 | #[derive(HasField)]
+   |          ^^^^^^^^
+   |          |
+   |          `HasField<Symbol<5, Chars<..>>>`
+   |          `HasField<Symbol<6, Chars<..>>>`
+note: required for `Rectangle` to implement `HasScaleFactor`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+25 | pub trait HasScaleFactor {
+   |           ^^^^^^^^^^^^^^
+note: required for `ScaledArea<RectangleArea>` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:39:1
+   |
+39 | #[cgp_impl(new ScaledArea<InnerCalculator>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+43 |     Self: HasScaleFactor,
+   |           -------------- unsatisfied trait bound introduced here
+note: required by a bound in `CheckRectangleProviders`
+  --> src/main.rs:64:1
+   |
+64 | / check_components! {
+65 | |     #[check_trait(CheckRectangleProviders)]
+66 | |     #[check_providers(
+67 | |         RectangleArea,
+...  |
+73 | | }
+   | |_^ required by this bound in `CheckRectangleProviders`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

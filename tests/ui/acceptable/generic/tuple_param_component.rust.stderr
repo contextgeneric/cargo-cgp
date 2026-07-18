@@ -1,0 +1,40 @@
+error[E0277]: the trait bound `App: CanUseComponent<PairFormatterComponent, (u32, u64)>` is not satisfied
+  --> src/main.rs:44:9
+   |
+44 |         PairFormatterComponent: (u32, u64),
+   |         ^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<9, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
+  --> src/main.rs:30:10
+   |
+30 | #[derive(HasField)]
+   |          ^^^^^^^^
+note: required for `App` to implement `HasSeparator`
+  --> src/main.rs:15:1
+   |
+15 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+16 | pub trait HasSeparator {
+   |           ^^^^^^^^^^^^
+note: required for `FormatWithSeparator` to implement `IsProviderFor<PairFormatterComponent, App, (u32, u64)>`
+  --> src/main.rs:20:1
+   |
+20 | #[cgp_impl(new FormatWithSeparator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+23 |     Self: HasSeparator,
+   |           ------------ unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<PairFormatterComponent, (u32, u64)>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:42:1
+   |
+42 | / check_components! {
+43 | |     App {
+44 | |         PairFormatterComponent: (u32, u64),
+45 | |     }
+46 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
