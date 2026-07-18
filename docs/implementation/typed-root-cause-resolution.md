@@ -4,10 +4,22 @@ The driver's most valuable transformation turns a CGP check-failure diagnostic i
 root-cause-first error by *asking the compiler* what really failed rather than parsing rustc's text.
 When a context is wired wrong, the compiler reports the failure against generated types the
 programmer never wrote, and the one fact that matters — a missing field, an unwired component — is
-buried under `IsProviderFor`/`CanUseComponent` scaffolding or dropped entirely. The resolver
-re-runs the failing obligation through the trait solver, walks the wiring down to the actual root
-cause, and re-renders the whole diagnostic as a `cargo tree`-style dependency chain with a single
-coded headline.
+buried under `IsProviderFor`/`CanUseComponent` scaffolding or dropped entirely. The resolver re-runs
+the failing obligation through the trait solver, walks the wiring down to the actual root cause, and
+re-renders the whole diagnostic as a `cargo tree`-style dependency chain with a single coded
+headline.
+
+The resolver reads the failure from the **real consumer and provider trait obligations**, never from
+the `CanUseComponent`/`IsProviderFor` scaffolding. Those two traits exist only so that plain rustc
+can surface a wiring failure at all (see [check traits](../../../cgp/docs/concepts/check-traits.md)):
+`IsProviderFor` is generated to carry a *copy* of a provider's `where` bounds precisely so the
+compiler names the missing one. cargo-cgp does not need that copy — it re-runs the trait solver on
+the real provider impl, whose own `where` clause holds the same bounds — so it treats `IsProviderFor`
+and `CanUseComponent` as plumbing to resolve *around*, reading the actual traits instead. This is a
+deliberate constraint, not an accident of implementation: cargo-cgp aims to make `IsProviderFor`
+*removable*, so its dependency resolution must not lean on it. (The text-rewrite fallback for
+diagnostics the resolver declines still recognizes `IsProviderFor`/`CanUseComponent` in rustc's
+rendered output; that is a separate concern, covered in [The driver](driver.md).)
 
 This is the second, deeper transformation the driver's emitter performs, and it builds on the first.
 [Naming the traits behind a component marker](driver.md#naming-the-traits-behind-a-component-marker)
@@ -91,17 +103,22 @@ error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemente
 Every element of that output is reconstructed from the compiler, not read from rustc's message: the
 headline names the *consumer trait* the reader called (`CanCalculateArea`) and the context that
 cannot implement it; the `root cause:` note names the actual mistake in one sentence; and the tree
-shows the transitive path from the check entry down to the missing field, with each wiring trait
-replaced by the concept it stands for. The `[CGP-Exxx]` codes are catalogued in
-[error-code.md](../error-code.md). The rest of this document explains how each piece is produced.
+shows the transitive path from the check entry down to the missing field, with each node named
+straight off the trait it stands for. Read the chain as the real obligation chain the walk descended:
+`Rectangle: CanCalculateArea` (the consumer) needs `RectangleArea: AreaCalculator<Rectangle>` (the
+wired provider), which needs `Rectangle: HasRectangleFields` (the getter), which needs the `height`
+field. No `IsProviderFor` node appears because the walk never went through one. The `[CGP-Exxx]` codes
+are catalogued in [error-code.md](../error-code.md). The rest of this document explains how each piece
+is produced.
 
 ## When the resolver engages, and when it declines
 
 The resolver treats a diagnostic as a candidate whenever it plausibly stems from a CGP component
 failure, then either traces it to a root cause or steps aside. Concretely, a diagnostic is a
 candidate when it **names a CGP wiring or field trait** (`CanUseComponent`, `IsProviderFor`, or
-`HasField`), or carries code **`E0271`**, **`E0277`**, or a **method-bounds `E0599`** — the "the
-method `…` exists … but its trait bounds were not satisfied" shape. The breadth past the
+`HasField` — matched in rustc's rendered text, the one place these still serve as a *signal* that the
+diagnostic is CGP-related), or carries code **`E0271`**, **`E0277`**, or a **method-bounds `E0599`** —
+the "the method `…` exists … but its trait bounds were not satisfied" shape. The breadth past the
 wiring-worded cases is deliberate, because a failure that names no CGP construct can still be one a
 CGP component caused: a hand-written `Send`-recovery wrapper's `async fn` fails with an `E0271`
 opaque-future mismatch, a downstream bound needs a method the context cannot supply. The resolver
@@ -123,70 +140,35 @@ A candidate the resolver accepts is transformed in two independent halves — th
 the root-cause notes — described next. A candidate it declines keeps rustc's diagnostic, cleaned only
 by the fallback [post-processing](error-processing.md).
 
-## Resolving through the consumer and provider traits, not `IsProviderFor`
-
-The resolver walks the **real consumer and provider trait obligations**, never `CanUseComponent` or
-`IsProviderFor`. Those two are check-trait scaffolding CGP generates only so that plain `rustc` can
-surface a wiring failure at all (see [check traits](../../../cgp/docs/concepts/check-traits.md)):
-`IsProviderFor` carries a *copy* of a provider's `where` bounds precisely so the compiler reports the
-missing one. cargo-cgp does not need that copy — it re-runs the trait solver on the real provider
-impl, whose own `where` clause holds the same bounds — so the resolver treats `IsProviderFor` and
-`CanUseComponent` as plumbing and reads the actual traits instead. This is a deliberate constraint:
-cargo-cgp aims to make `IsProviderFor` *removable*, so its dependency resolution must not lean on it.
-
-Concretely, every stage reads the real traits and takes its names straight off their `DefId`s:
-
-- **Trait recognition is structural, not `IsProviderFor`-based.** A provider trait is identified by
-  the delegation blanket `#[cgp_component]` generates — `impl<Ctx, P> ProviderTrait<Ctx> for P where
-  P: DelegateComponent<Marker>, …` — whose `Self` is a bare parameter bounded by `DelegateComponent`
-  (`is_provider_trait` / `provider_blanket_marker` in `cgp_item.rs`), and a consumer trait by its
-  blanket routing to such a provider (`consumer_provider_trait`). The marker→consumer inversion the
-  check and use-site anchors need reads the provider blanket's `DelegateComponent<Marker>` bound
-  (`marker_to_consumer`), not an `IsProviderFor<Marker, …>` supertrait.
-- **The seed is the consumer obligation.** Each anchor feeds the walk `Ctx: ConsumerTrait<Params…>`
-  (its parameters spread), not `Ctx: CanUseComponent<Marker, Params>`. A check entry maps its
-  `CanUseComponent` assertion's marker to that consumer (`can_use_to_consumer_obligation`); an
-  impl-site or wrapper anchor already holds the consumer supertrait and seeds it directly.
-- **The walk descends the real chain.** `Ctx: Consumer` → `Ctx: Provider<Ctx>` (the delegation
-  routing, dropped from the tree) → the delegate's real `Provider: ProviderTrait<Ctx>` → that
-  provider impl's own `where` bounds → the leaf. An `IsProviderFor`/`CanUseComponent` obligation that
-  appears *beside* the real one in a generated blanket is dropped as a dependency
-  (`is_workaround_plumbing`), so the cause is reached only through the real provider impl.
-- **Labels read `DefId`s.** A consumer node names the consumer trait's own `DefId`; a provider node
-  names the provider trait's `DefId`, the provider struct (the obligation's `Self`), and the context;
-  the component's extra parameters come from the obligation's own type arguments. No component-marker
-  lookup and no [`ComponentNameMap`](error-processing.md) are involved in the typed tree — that map,
-  built by inverting `IsProviderFor`, remains only for the *text-rewrite fallback* on declined
-  diagnostics, which is where recognizing `IsProviderFor`/`CanUseComponent` in rustc's rendered output
-  still earns its keep.
-
-The sections below describe each stage; where an older passage frames a step in terms of
-`CanUseComponent`/`IsProviderFor`, read it as the plumbing the walk now resolves *around*.
-
 ## The two halves of a transformed diagnostic
 
 ### The coded headline
 
 The main message is rewritten into a coded CGP class only when the resolution identifies one; the
-Rust error code (`E0277`, `E0599`, `E0271`) is always kept. Three classes cover the cases:
+Rust error code (`E0277`, `E0599`, `E0271`) is always kept. Four classes cover the cases:
 
-- **`[CGP-E001]`, the consumer form**, for an unsatisfied `CanUseComponent` bound — a
+- **`[CGP-E001]`, the consumer form**, for a context that cannot implement a consumer trait — a
   [check-trait failure](../../../cgp/docs/errors/checks/check-trait-failure.md). It names the consumer
   trait and the context, as in the worked example's headline
-  `the consumer trait \`CanCalculateArea\` is not implemented for context \`Rectangle\``. Because the
-  consumer name is resolved from the marker's full
-  `DefId` path rather than its printed text, it is exact even when two components share a name in
-  different modules. A consumer-method `E0599` (whose text names no wiring trait) and a
+  `the consumer trait \`CanCalculateArea\` is not implemented for context \`Rectangle\``. The consumer
+  name comes straight off the consumer trait's `DefId`, so it is exact even when two components share a
+  name in different modules. A consumer-method `E0599` (whose text names no wiring trait) and a
   `RedirectLookup`-provider failure (below) also take this form.
-- **`[CGP-E002]`, the provider form**, for an unsatisfied `IsProviderFor` bound, worded by the text
-  rewrite as `the provider trait \`X\` with context \`Ctx\` for provider \`P\``. It fires when a real,
-  wired provider's own dependency fails — `SerializeIterator`, say, in the modular-serialization
-  example. The one exception is when the "provider" in the bound is a **`RedirectLookup`**: that is
-  redirect plumbing the programmer never wrote (the lookup resolved to *no* provider, so the wiring is
-  simply missing), so the header follows the redirect through to the recovered consumer and takes the
-  `[CGP-E001]` form instead of exposing `RedirectLookup<App, @…>` as a provider.
+- **`[CGP-E002]`, the provider form**, for a rustc header that opens on an unsatisfied `IsProviderFor`
+  bound — worded by the text rewrite as
+  `the provider trait \`X\` with context \`Ctx\` for provider \`P\``. It fires when a real, wired
+  provider's own dependency fails and rustc's own headline names
+  that provider's `IsProviderFor` (a `#[check_providers]` layer, say). The one exception is when the
+  "provider" in the bound is a **`RedirectLookup`**: that is redirect plumbing the programmer never
+  wrote (the lookup resolved to *no* provider, so the wiring is simply missing), so the header follows
+  the redirect through to the recovered consumer and takes the `[CGP-E001]` form instead of exposing
+  `RedirectLookup<App, @…>` as a provider.
 - **`[CGP-E003]`, the field-type-mismatch form**, for an `E0271` the resolver traced to a `HasField`
   projection — a field whose name matches but whose type does not.
+- **`[CGP-E009]`, the plain-trait form**, for a hand-written wrapper trait that is *not* itself a CGP
+  consumer (it has only a concrete impl, no consumer blanket) — `CanHandleApiSend`, say. It reads
+  `the trait \`…\` is not implemented for \`…\``, distinguished from `[CGP-E001]` by the wrapper's
+  fingerprint (see [the impl-site and wrapper-chain anchors](#anchoring-the-starting-obligation)).
 
 The field-type-mismatch class is worth showing, because its headline is unusually specific. Reusing
 the area example but giving `Rectangle` a `height` of the wrong type:
@@ -266,9 +248,13 @@ The `root cause:` lead is worded by *why* the leaf is unmet, and there are four 
              this is required through the dependency chain:
                  [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
                  └── [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBar`
-                     └── [CGP-E105] trait impl `CanUseBar` for `App`
+                     └── [CGP-E101] consumer trait impl `CanUseBar` for context `App`
                          └── [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`
   ```
+
+  Note the nested `CanUseBar` node: because the walk descends the real capability the provider
+  `#[uses]`, an intermediate consumer trait reads as `consumer trait impl` (`CGP-E101`), not the
+  generic `trait impl` (`CGP-E105`) a plain getter or bound gets.
 
 - A **missing redirect wiring** — a namespace/`open` redirect that resolves to nothing — is the
   path-keyed counterpart of a missing wiring, reading the *same* way but with the path as the key
@@ -277,21 +263,21 @@ The `root cause:` lead is worded by *why* the leaf is unmet, and there are four 
   multi-layer redirect reads as its successive hops down to the unterminated path. This leaf surfaces
   two ways that render identically: when the context *joins a namespace*, the unterminated redirect is
   an unmet namespace-lookup bound (`Path: DefaultNamespace<Ctx>`, or a user `cgp_namespace!` trait);
-  when it dispatches a component with a bare
-  `open` statement, the redirect looks the path up in the context's own table, so the failure is an
-  unmet `DelegateComponent<PathCons<…>>` on the context — told apart from a plain missing component
-  (whose key is a bare marker) by the `PathCons` key, and rendered as the whole path rather than its
-  flattened item name. The [`unregistered_prefix_path`](../../tests/ui/acceptable/resolution/unregistered_prefix_path.rs),
+  when it dispatches a component with a bare `open` statement, the redirect looks the path up in the
+  context's own table, so the failure is an unmet `DelegateComponent<PathCons<…>>` on the context —
+  told apart from a plain missing component (whose key is a bare marker) by the `PathCons` key, and
+  rendered as the whole path rather than its flattened item name. The
+  [`unregistered_prefix_path`](../../tests/ui/acceptable/resolution/unregistered_prefix_path.rs),
   [`qualified_prefix_path`](../../tests/ui/acceptable/wiring/namespace-paths/qualified_prefix_path.rs),
   [`multi_redirect_missing`](../../tests/ui/acceptable/wiring/namespace-paths/multi_redirect_missing.rs),
   and [`open_missing_type_key`](../../tests/ui/acceptable/wiring/namespace-paths/open_missing_type_key.rs)
   fixtures pin the variants.
 
-Any other leaf simply restates its bound — `root cause: the trait bound \`f64: Eq\` is not satisfied`,
-module qualifiers stripped — except when the kept headline already states that very bound, where the
-lead is dropped and the note carries the chain alone. A field-type mismatch likewise drops the lead,
-since its `[CGP-E003]` headline already states the mismatch in full (as the `E0271` example above
-shows).
+A field-type mismatch is a fifth leaf, but its own `[CGP-E003]` headline already states it in full (as
+the `E0271` example above shows), so its note drops the `root cause:` lead and carries the chain
+alone. Any other leaf simply restates its bound —
+`root cause: the trait bound \`f64: Eq\` is not satisfied`, module qualifiers stripped — except when
+the kept headline already states that very bound, where the lead is likewise dropped.
 
 ## Why it runs in the emitter
 
@@ -326,34 +312,42 @@ stage files `anchor`, `walk`, `classify`, `label`, and `cgp_item` behind a re-ex
 fills the rustc-free `Cause`/`Leaf`/`FieldIssue`/`Resolved` types with owned `String`s, so the wording
 that consumes them needs no compiler. Every stage is anchored by `DefId` to the CGP crate that defines
 the trait or type it matches, so a same-named item from an unrelated crate can never drive a
-replacement — the same discipline
-[`component_map`](../../crates/cargo-cgp-driver/src/component_map.rs) uses for `IsProviderFor`. The
-stages run in order: anchor the starting obligation, walk it down to the leaves, decode and classify
-each leaf, render the chain, and emit.
+replacement. The stages run in order: anchor the starting obligation, walk it down to the leaves,
+decode and classify each leaf, render the chain, and emit.
+
+Two facts hold across every stage, and everything below assumes them. **The obligation the walk works
+on is always a real consumer-trait obligation** `Ctx: ConsumerTrait<Params…>` — never a
+`CanUseComponent` wrapper — and **the traits are recognized structurally, without `IsProviderFor`**:
+
+- A **provider trait** is identified by the delegation blanket `#[cgp_component]` generates —
+  `impl<Ctx, P> ProviderTrait<Ctx> for P where P: DelegateComponent<Marker>, …` — whose `Self` is a
+  bare type parameter bounded by `DelegateComponent` (`is_provider_trait` / `provider_blanket_marker`
+  in `cgp_item.rs`). That same blanket's `DelegateComponent<Marker>` bound also yields the component
+  marker when an anchor needs it, in place of reading the `IsProviderFor<Marker, …>` supertrait.
+- A **consumer trait** is identified by its blanket impl `impl<C> Consumer for C where C: Provider<C>`
+  routing to such a provider (`consumer_provider_trait` / `is_consumer_trait`).
+- The **marker → consumer** inversion the check and use-site anchors need (`marker_to_consumer`) is the
+  composition of those two: the provider trait whose blanket keys on the marker, then the consumer
+  whose blanket routes to that provider.
 
 ### Anchoring the starting obligation
 
-The resolver recovers the obligation the compiler failed to prove in one of five ways, tried in
-order; the first that succeeds wins. Whichever fires, the obligation it feeds the walk is the real
-**consumer trait** obligation `Ctx: ConsumerTrait<Params…>` (see [Resolving through the consumer and
-provider traits](#resolving-through-the-consumer-and-provider-traits-not-isproviderfor)) — a check
-entry and a use-site marker are mapped to it via `marker_to_consumer`, while the impl-site,
-wrapper-chain, and consumer-trait anchors already hold the consumer trait directly. The fifth is the
-**consumer-trait use-site anchor** (`resolve_use_site_consumer`): when a use-site failure names a
-local, non-generic CGP consumer trait in the diagnostic (a note like `` `CanGreet` defines an item
-`greet` ``), it seeds `Ctx: CanGreet` and walks it through the context's namespace — the anchor that
-reaches a namespace-joined context, whose wiring is not in its own `DelegateComponent` impls.
+The resolver recovers the obligation the compiler failed to prove in one of five ways, tried in order;
+the first that succeeds wins. Each produces the same thing — the real consumer-trait obligation
+`Ctx: ConsumerTrait<Params…>` to seed the walk — but recovers it from a different failure shape.
 
 **From a `check_components!` entry, by span.** A `check_components!` entry expands to a concrete impl
 of a generated check trait — `impl __CheckRectangle<AreaCalculatorComponent, ()> for Rectangle {}` —
 whose check trait carries `CanUseComponent<Marker, Params>` as a supertrait. The macro re-spans the
 context type in that impl onto the entry the user wrote, so the impl's `Self`-type span equals the
-failing diagnostic's primary span. The resolver walks the crate's check traits (those with a
-`cgp_component::CanUseComponent` supertrait) and picks the impl whose `Self` span matches the caret —
-tying *this* diagnostic to *this* entry without reading either one's text. It then instantiates the
-generic supertrait `Self: CanUseComponent<__Component__, __Params__>` with the matched impl's trait
-reference, substituting the concrete types back in to yield the real obligation, e.g.
-`Rectangle: CanUseComponent<AreaCalculatorComponent, ()>`.
+failing diagnostic's primary span. `resolve_check_failure` walks the crate's check traits (those with
+a `cgp_component::CanUseComponent` supertrait) and picks the impl whose `Self` span matches the caret —
+tying *this* diagnostic to *this* entry without reading either one's text. It reads the entry's
+`CanUseComponent<Marker, Params>` assertion only to learn *which* component the check names: it maps
+the marker to its consumer trait (`marker_to_consumer`) and spreads the `Params` slot back into the
+consumer's own type arguments (`can_use_to_consumer_obligation`), yielding the real obligation, e.g.
+`Rectangle: CanCalculateArea`. `CanUseComponent` is the user's own check assertion, legitimately read
+here to find the component; it is the marker map, not the walk, that then routes to the consumer.
 
 **From a hand-written `impl Trait for Context` block.** A wiring failure often surfaces inside an impl
 the programmer wrote rather than at a check entry — the money-transfer example's per-endpoint wrapper,
@@ -380,26 +374,21 @@ type definition, so the use-site anchor cannot recover the context from a struct
 `resolve_impl_site` handles it: it finds the enclosing trait impl whose *full* HIR span (not
 `def_span`, which for an impl covers only the header) contains a diagnostic span, takes its `Self` type
 as the context, and instantiates the impl's supertraits for that `Self`. A supertrait that is a CGP
-consumer trait and does not hold is the wiring failure; the resolver reconstructs the
-`Ctx: CanUseComponent<Marker, Params>` obligation it stands for, recovering the marker through the consumer's
-blanket impl and the provider trait's `IsProviderFor` supertrait (the per-consumer form of the
-inversion [`component_map`](error-processing.md) performs) and grouping the consumer's extra arguments
-into `Params` exactly as CGP does — none as `()`, one bare, several as a tuple — **with the concrete
-component parameter preserved** (`CanHandleApi<QueryBalanceApi>`, not the `()` the use-site re-check
-would substitute).
+consumer trait on that context and does not hold **is** the obligation to walk — the resolver seeds it
+directly (`wrapper_consumer_causes`), with its concrete component parameter intact
+(`CanHandleApi<QueryBalanceApi>`, not the `()` a parameterless re-check would substitute), so no marker
+detour is needed.
 
 The tree and headline are then **headed by the impl's own trait** — the wrapper the programmer wrote —
 so the failure reads `CanHandleApiSend → CanHandleApi → …` and points at their code rather than
 dropping the wrapper. The headline wording turns on the wrapper's **fingerprint**: a wrapper that is
-itself a CGP consumer trait (a blanket impl routing to a provider trait) reads
+itself a CGP consumer trait (has a consumer blanket routing to a provider) reads
 `[CGP-E001] the consumer trait …`, while a plain wrapper such as `CanHandleApiSend` — with only a
 concrete impl — reads `[CGP-E009] the trait …`. Because the wrapper is a distinct trait from the CGP
-supertrait it reduces
-to, its error is reported on its own rather than de-duplicating into the `check_components!` entry for
-that supertrait. This anchor is tried *before* the wrapper-chain and use-site ones, so its precise
-obligation wins over a parameterless re-check, and it fires only for an impl on a *local* struct or
-enum — an impl on a foreign type or a provider struct carries no consumer supertrait on a context and
-is skipped.
+supertrait it reduces to, its error is reported on its own rather than de-duplicating into the
+`check_components!` entry for that supertrait. This anchor is tried *before* the wrapper-chain and
+use-site ones, and it fires only for an impl on a *local* struct or enum — an impl on a foreign type or
+a provider struct carries no consumer supertrait on a context and is skipped.
 
 **From a foreign wrapper chain.** The routing glue can put the failure one level further out: a
 hand-written `impl Trait for Foreign` block whose `Self` is a foreign type holding the context, where
@@ -407,32 +396,31 @@ the CGP consumer sits several ordinary-trait `where`-clause hops beneath the imp
 example's routing layer is the case — `impl CanAddApiRoutes for Router<Arc<MockApp>>`, whose supertrait
 descends through `CanAddMainApiRoutes<MockApp>` and `CanAddRoute<MockApp, …>` before reaching
 `MockApp: CanHandleApi<…>`, with the real context `MockApp` appearing only as a type *argument* of each
-hop and never as the impl's `Self`. Neither the impl-site anchor (whose `Self` must be a local context) nor the
-use-site anchor (whose context comes from a struct-definition span the caret never touches) can recover
-it.
+hop and never as the impl's `Self`. Neither the impl-site anchor (whose `Self` must be a local context)
+nor the use-site anchor (whose context comes from a struct-definition span the caret never touches) can
+recover it.
 
 `resolve_wrapper_chain` descends the impl's own unmet supertrait through the ordinary trait obligations
 beneath it — each impl's `where`-clause bounds — until one lands on a CGP consumer whose `Self` is a
-local context, the handoff it then walks exactly as a check entry would. Every ordinary hop becomes a
-`trait impl` node, so the tree reads from the code the programmer wrote down to the root cause. Two
-subtleties make the descent work. First, it **re-evaluates each obligation with the trait solver**
-rather than trusting rustc's cascade-suppressed diagnostic: the direct `MockApp: CanHandleApiSend<…>`
-bound is *assumed to hold* off its own ill-formed impl, so the descent reaches the consumer instead
-through the **base trait of a projection `where`-clause** (a `Ctx::Response: Send` bound over the
-broken `CanHandleApi`, whose base `Ctx: CanHandleApi<…>` is what genuinely fails), which requires
-reading the impl's predicates *un-normalized* so the projection's base survives. Second, the tree and
-headline are headed by the impl's own trait, fingerprinted for the `[CGP-E001]`/`[CGP-E009]` wording as
-the impl-site anchor does — but because `Self` is a foreign wrapper rather than the context, the
-headline names it **plainly**
+local context, the handoff (`consumer_handoff_causes`) it then seeds and walks directly. Every ordinary
+hop becomes a `trait impl` node, so the tree reads from the code the programmer wrote down to the root
+cause. Two subtleties make the descent work. First, it **re-evaluates each obligation with the trait
+solver** rather than trusting rustc's cascade-suppressed diagnostic: the direct
+`MockApp: CanHandleApiSend<…>` bound is *assumed to hold* off its own ill-formed impl, so the descent
+reaches the consumer instead through the **base trait of a projection `where`-clause** (a
+`Ctx::Response: Send` bound over the broken `CanHandleApi`, whose base `Ctx: CanHandleApi<…>` is what
+genuinely fails), which requires reading the impl's predicates *un-normalized* so the projection's base
+survives. Second, the tree and headline are headed by the impl's own trait, fingerprinted for the
+`[CGP-E001]`/`[CGP-E009]` wording as the impl-site anchor does — but because `Self` is a foreign
+wrapper rather than the context, the headline names it **plainly**
 (`the trait \`CanAddApiRoutes\` is not implemented for \`Router<Arc<MockApp>>\``, with no `context`
 qualifier), carried by the `Resolved::subject_is_context` flag. Only a genuine CGP consumer is ever
-reported as a cause, so a descent into unrelated
-`where`-clauses contributes nothing. This anchor is tried after the impl-site anchor and before the
-use-site one.
+reported as a cause, so a descent into unrelated `where`-clauses contributes nothing. This anchor is
+tried after the impl-site anchor and before the use-site ones.
 
-**From a use site.** When no impl matches the caret, the failure is a consumer-method call — CGP
-wiring is lazy, so a broken dependency often surfaces where the method is *called* rather than at a
-check:
+**From a use site, by wired component.** When no impl matches the caret, the failure is often a
+consumer-method call — CGP wiring is lazy, so a broken dependency surfaces where the method is *called*
+rather than at a check:
 
 ```rust
 let person = Person { /* … */ };
@@ -443,65 +431,91 @@ This is an `E0599` "the method `greet` exists … but its trait bounds were not 
 impl to anchor on. `resolve_use_site` recovers the context from the diagnostic's own spans instead: it
 scans every local struct/enum whose definition span contains one of the diagnostic's spans (the
 receiver's type is one such — the "method not found for this struct" span lands on `Person`'s
-definition) and, for each candidate, reads the `DelegateComponent<Key>` impls that context wires,
-re-checks each, and keeps the ones that do not hold. A diagnostic span can also land on a *provider*
-struct, so a candidate that wires no failing component is discarded, which selects the real context.
-The transformed error is the same `[CGP-E001]` consumer form over a root-cause note, and the
-misleading "this is an associated function… use associated function syntax instead" advice — which the
-method probe emits for CGP's `self`-less provider methods — is dropped with the rest of rustc's
-sub-notes.
+definition) and, for each candidate, reads the `DelegateComponent<Key>` impls that context wires, maps
+each key to its consumer trait, seeds that consumer obligation, and keeps the ones that do not hold. A
+diagnostic span can also land on a *provider* struct, so a candidate that wires no failing component is
+discarded, which selects the real context. The transformed error is the same `[CGP-E001]` consumer form
+over a root-cause note, and the misleading "this is an associated function… use associated function
+syntax instead" advice — which the method probe emits for CGP's `self`-less provider methods — is
+dropped with the rest of rustc's sub-notes.
 
-A `DelegateComponent` key comes in two shapes, and each is re-checked differently — the distinction
+A `DelegateComponent` key comes in three shapes, and each is handled differently — the distinction
 matters for an `open`-dispatched context, whose per-value entries are redirect *paths*, not markers. A
-**bare component marker** is re-checked as `Ctx: CanUseComponent<Marker, ()>`, the parameterless form.
-An **`open`-dispatch redirect path** — `PathCons<Component, PathCons<Value, …>>`, the key an
-`@Component.Value:` entry emits — is instead decomposed, and the real dispatch value re-checked as
-`Ctx: CanUseComponent<Component, Value>`; re-checking the raw `PathCons` key as if it were a marker
-would report the internal `PathCons` spine as a bogus consumer trait bottoming out on `T: Sized` noise,
-exactly the machinery the tool exists to hide. Three entries are skipped: a bare marker that is *also*
-`open`-dispatched (its `()` re-check would report a spurious `@Component.()` redirect, while its real
-values are covered by the path entries); a generic catch-all whose recovered value still carries a
-free type parameter (`<'a, T> &'a T: SerializeDeref` yields `&T`, whose re-check produces only
+**bare component marker** maps to `Ctx: Consumer` (its parameterless form). An **`open`-dispatch
+redirect path** — `PathCons<Component, PathCons<Value, …>>`, the key an `@Component.Value:` entry emits
+— is decomposed, and the real dispatch value re-checked as `Ctx: Consumer<Value>`, so the failure is
+traced with the value the context actually wired (re-checking the raw `PathCons` key would report the
+internal spine as a bogus consumer bottoming out on `T: Sized` noise). Three keys are skipped: a bare
+marker that is *also* `open`-dispatched (its `()` form would report a spurious `@Component.()` redirect,
+while its real values are covered by the path entries); a generic catch-all whose recovered value still
+carries a free type parameter (`<'a, T> &'a T: SerializeDeref` yields `&T`, whose re-check produces only
 `T: Sized`); and a **blanket-forwarding key** — a bare type parameter (`__Key__`), the impl a
-`namespace …;` join emits (`impl<__Key__> DelegateComponent<__Key__> for Ctx`) to forward *every*
-lookup to the namespace. That key names no concrete component, and re-checking a free parameter as one
-bottoms out on the same `__Key__: Sized` noise under a bogus `` the consumer trait `__Key__` `` header;
-since a namespace-joined context's concrete wiring lives in the namespace, out of this per-context view,
-skipping it means a pure namespace join yields no target and the resolver declines rather than fabricate
-a cause. The [`open_dispatch_use_site`](../../tests/ui/acceptable/use-site/open_dispatch_use_site.rs)
-fixture pins the path re-check, and
-[`namespace_join_use_site`](../../tests/ui/usability/use-site/namespace_join_use_site.rs) the
-blanket-key skip.
+`namespace …;` join emits (`impl<__Key__> DelegateComponent<__Key__> for Ctx`) to forward *every* lookup
+to the namespace. That key names no concrete component, and re-checking a free parameter as one bottoms
+out on `__Key__: Sized` noise; skipping it means this anchor yields nothing for a pure namespace join
+(whose concrete wiring lives in the namespace, not the context's own impls), leaving that case to the
+next anchor. The [`open_dispatch_use_site`](../../tests/ui/acceptable/use-site/open_dispatch_use_site.rs)
+fixture pins the path re-check.
+
+**From a use site, by consumer trait.** The final anchor closes the namespace-joined gap the previous
+one leaves. When a use-site failure names a **local, non-generic CGP consumer trait** in the diagnostic
+— an `E0599` note such as `` `CanGreet` defines an item `greet` `` points its span at the trait
+definition — `resolve_use_site_consumer` recovers that consumer trait and the context ADT from the
+diagnostic's spans and seeds `Ctx: CanGreet` directly, no marker involved. The walk then descends
+through the context's joined namespace to the real provider and its missing dependency: a namespace
+join gives the context only a blanket `DelegateComponent<__Key__>` forwarding, so its concrete wiring
+is invisible to the per-component anchor above, but the trait solver resolves the delegate *through*
+the namespace's `RedirectLookup` when the walk normalizes it. This anchor is restricted to a consumer
+whose only generic is `Self` — so the obligation forms without the component parameters a use site does
+not carry — and it reaches not only namespace-joined method calls
+([`namespace_join_use_site`](../../tests/ui/acceptable/use-site/namespace_join_use_site.rs)) but any
+failure that names a local consumer and its context in its spans, including a manual supertrait bound in
+a trait definition or `where` clause (the `use_type_*_unsatisfied` fixtures under
+[`acceptable/use-type/`](../../tests/ui/acceptable/use-type)). It is tried last, so a directly-wired
+context keeps the more precise per-component recovery.
 
 ### Walking the dependency graph downward
 
-From the anchored obligation the resolver walks *down* the wiring's trait obligations, because the tree
-shows the transitive path to each root cause, not only the root. For a failing obligation it finds the
-impl that would satisfy it, takes that impl's `where`-clause obligations as its direct dependencies,
-and recurses into just the ones that do **not** already hold — a satisfied dependency (an already
-present field, a wired provider that checks out) is pruned. Following *every* unmet dependency, not
-only the first, is what surfaces independent causes as **separate** paths: the next-generation solver
-short-circuits a conjunction at its first unmet bound, so a provider needing two absent fields would
-otherwise hide one.
+From the anchored consumer obligation the resolver walks *down* the wiring's trait obligations, because
+the tree shows the transitive path to each root cause, not only the root. For a failing obligation it
+finds the impl that would satisfy it, takes that impl's `where`-clause obligations as its direct
+dependencies, and recurses into just the ones that do **not** already hold — a satisfied dependency (an
+already present field, a wired provider that checks out) is pruned. Following *every* unmet dependency,
+not only the first, is what surfaces independent causes as **separate** paths: the next-generation
+solver short-circuits a conjunction at its first unmet bound, so a provider needing two absent fields
+would otherwise hide one.
+
+The descended chain is the real one: `Ctx: Consumer` → `Ctx: Provider<Ctx>` (the delegation routing,
+whose label the tree drops) → the delegate's `Provider: ProviderTrait<Ctx>` (the real wired provider)
+→ that provider impl's own `where` bounds → the leaf. The provider's bounds are read from its *own*
+concrete impl, which is why `IsProviderFor` is never needed: it carried a copy of exactly these bounds
+only for rustc's benefit. An `IsProviderFor` or `CanUseComponent` obligation that appears *beside* the
+real one in a generated blanket (the provider blanket bounds `P: IsProviderFor<…>` right next to
+`P::Delegate: ProviderTrait<…>`) is dropped from a node's dependencies by `is_workaround_plumbing`
+before recursion, so the walk follows the real provider obligation rather than the marker's copied
+bounds — and would keep working unchanged if `IsProviderFor` were removed from the generated code
+entirely.
 
 Finding *which* impl satisfies an obligation is two subtleties deep past a flat wiring. First, a
 provider obligation such as `DeserializeRecordFields: ValueDeserializer<…>` unifies with *two* impls:
 the provider's own `#[cgp_provider]` impl and the CGP delegation blanket
-`impl<P: DelegateComponent> ValueDeserializer<…> for P`. Only the concrete-`Self` impl's
-`where`-clauses lead to the real cause —
-the blanket's lead to a `DeserializeRecordFields: DelegateComponent` dead-end, since a leaf provider
-does not delegate — so a **concrete-`Self` impl is preferred** over a param-`Self` blanket, the blanket
-used only when it is the sole match (as for an obligation whose `Self` *is* the context). Second, an
-impl may carry a **parameter fixed only by an associated-type `where`-clause** — a record
-deserializer's `Builder`, pinned by `Record: HasOptionalBuilder<Builder = Builder>` — that stays a free
-inference variable after the trait ref unifies. The walk registers and **solves the impl's satisfiable
-clauses first**, binding such a parameter, so the sibling clause that carries it (the branch to the
-cause) is not dropped as inference-laden.
+`impl<P: DelegateComponent> ValueDeserializer<…> for P`. Only the concrete-`Self` impl's `where`-clauses
+lead to the real cause — the blanket's lead to a `DeserializeRecordFields: DelegateComponent`
+dead-end, since a leaf provider does not delegate — so a **concrete-`Self` impl is preferred** over a
+param-`Self` blanket, the blanket used only when it is the sole match (as for an obligation whose `Self`
+*is* the context). Second, an impl may carry a **parameter fixed only by an associated-type
+`where`-clause** — a record deserializer's `Builder`, pinned by
+`Record: HasOptionalBuilder<Builder = Builder>` — that stays a free inference variable after the trait
+ref unifies. The walk registers and **solves the impl's satisfiable clauses first**, binding such a
+parameter, so the sibling clause that carries it (the branch to the cause) is not dropped as
+inference-laden.
 
 A branch ends at a **terminal leaf**, and which obligations count as terminal is what keeps the tree
-honest. The descent follows only the CGP wiring vocabulary — `CanUseComponent`, `IsProviderFor`,
-`DelegateComponent`, any provider trait, and any obligation whose `Self` is the context (its getter and
-capability traits) — and treats everything else as a leaf:
+honest. The descent follows only the CGP wiring vocabulary — any provider trait (a
+`ProvideFoo: Foo<App>` bound routes on to the provider's own dependencies), `DelegateComponent`, and
+any obligation whose `Self` is the context (its consumer, getter, and capability traits) — and treats
+everything else as a leaf. It deliberately does *not* follow `IsProviderFor`/`CanUseComponent`, which
+are dropped as plumbing above. The leaf shapes are:
 
 - An unmet **`HasField`** is the field leaf.
 - An unmet **`DelegateComponent<Marker>` on the context** is the missing-wiring leaf: the context
@@ -527,27 +541,30 @@ what preserves the `f64: Eq` guarantee — a foreign `f64: FnPtr` step is not co
 followed — and it also skips the getter's own `Ctx::Assoc`-typed `HasField` clause on the request,
 which is present but a projection mismatch a plain descent would misreport as a missing field. The
 second is a **same-trait recursion over a type-level list**: a record's field list
-`Cons<Field<.., V0>, Cons<Field<.., V1>, Nil>>: HandleMapEntry<.., Ctx, ..>` handles its head field
-here but its later fields through the **tail** `Cons<.., Nil>: HandleMapEntry<..>`, a same-trait bound
-on another foreign list
-node. Following a same-trait recursion lets the walk reach the field whose dependency is the real cause;
-following only the *same* trait keeps the `f64: Eq` guarantee, since a foreign leaf's `impl` dependency
-is a *different* trait.
+`Cons<Field<.., V0>, Cons<Field<.., V1>, Nil>>: HandleMapEntry<.., Ctx, ..>` handles its head field here
+but its later fields through the **tail** `Cons<.., Nil>: HandleMapEntry<..>`, a same-trait bound on
+another foreign list node. Following a same-trait recursion lets the walk reach the field whose
+dependency is the real cause; following only the *same* trait keeps the `f64: Eq` guarantee, since a
+foreign leaf's `impl` dependency is a *different* trait.
 
 Two further rules finish the terminal cases. An obligation whose satisfying impl's trait-clause
 `where`-obligations **all hold**, yet is itself unmet, is failing for a projection/associated-type
 mismatch the trait-clause walk cannot see; the resolver looks among that impl's own predicates for the
 one form it can pin down — an unmet `HasField` projection
 (`<Ctx as HasField<Symbol!("f")>>::Value == T`), a field present with the wrong type — and completes
-the branch with that field's `HasField` trait
-ref, tagging the path with the expected type so the leaf renders as a field-type mismatch (the `E0271`
-case shown earlier); a branch with no such projection yields nothing and declines to the fallback.
-Finally, a branch that bottoms out on **pure wiring plumbing** — an unmet `CanUseComponent` or
-`IsProviderFor`, or a `DelegateComponent` on a type *other* than the context — is a routing dead-end
-and is dropped, since the real cause is found down another branch. A `DelegateComponent` on the context
-is the one exception, never plumbing but the missing-wiring leaf itself: a delegation that *holds* is
-pruned before it can be a leaf, so the only way one bottoms out unmet on the context is that the context
-genuinely does not wire it.
+the branch with that field's `HasField` trait ref, tagging the path with the expected type so the leaf
+renders as a field-type mismatch (the `E0271`
+case shown earlier). This projection search *also* prefers the concrete-`Self` impl over the delegation
+blanket (`has_field_projection_mismatch` / `impl_field_projection_mismatch`): the projection lives on
+the provider's own impl, and matching the blanket first — which carries no projection — would wrongly
+report no mismatch; but a getter trait whose *only* impl is a blanket
+(`impl<C: HasField<..>> HasName for C`) still has its projection read from that blanket, so a blanket is
+deferred, not skipped outright. A branch with no such projection yields nothing and declines to the
+fallback. Finally, a branch that bottoms out on **pure wiring plumbing** — a `DelegateComponent` on a
+type *other* than the context — is a routing dead-end and is dropped, since the real cause is found down
+another branch. A `DelegateComponent` on the context is the one exception, never plumbing but the
+missing-wiring leaf itself: a delegation that *holds* is pruned before it can be a leaf, so the only way
+one bottoms out unmet on the context is that the context genuinely does not wire it.
 
 The walk crosses inference-context boundaries carefully, because a stray variable from one `InferCtxt`
 panics another. It finds the satisfying impl with the `fresh_args_for_item`-plus-unification dance
@@ -570,14 +587,14 @@ region. The instantiation is a no-op for an ordinary binder-free obligation, so 
 case changes.
 
 Two safeguards keep the descent bounded. A **cycle guard** stops a branch as soon as an obligation
-reappears among its own ancestors — a `UseContext` loop routes `Ctx: CanUseComponent<C>` straight back
-to itself — so a cyclic wiring bottoms out at its first repeat rather than spinning. The depth cap
-`MAX_DEPTH` is the backstop for what the guard cannot catch: a *divergent* wiring whose obligations keep
-growing without ever exactly repeating. The cap is set well above a genuine chain's depth — each logical
-hop expands to a `CanUseComponent`, its `IsProviderFor` plumbing, a `RedirectLookup`, the provider's
-`IsProviderFor`, then the next consumer, so a deeply nested data type reaches its root cause only tens
-of frames down — but not arbitrarily high, because the walk re-runs the solver at every frame, so the
-cap also bounds a divergent wiring's worst-case work.
+reappears among its own ancestors — a `UseContext` loop routes `Ctx: Consumer` straight back to itself
+— so a cyclic wiring bottoms out at its first repeat rather than spinning. The depth cap `MAX_DEPTH` is
+the backstop for what the guard cannot catch: a *divergent* wiring whose obligations keep growing
+without ever exactly repeating. The cap is set well above a genuine chain's depth — each logical hop
+expands to a consumer obligation, the delegation-routing provider obligation, a `RedirectLookup`, the
+real provider obligation, then the next consumer, so a deeply nested data type reaches its root cause
+only tens of frames down — but not arbitrarily high, because the walk re-runs the solver at every
+frame, so the cap also bounds a divergent wiring's worst-case work.
 
 ### Decoding, classifying, and rendering a leaf
 
@@ -605,13 +622,25 @@ non-field leaf carries no struct, so it is simply restated as `self: Trait` (`f6
 its note lead and for de-duplicating a leaf reached by several paths.
 
 **Render each root cause.** A root-cause path is a list of typed predicates, and rendering it is where
-every CGP wiring trait becomes the concept it stands for, so the reader never meets a raw `IsProviderFor`
-or `Symbol`. `CanUseComponent<Marker>` becomes the consumer-trait impl
-(`consumer trait impl \`CanCalculateArea\` for context \`Rectangle\``), an `IsProviderFor` becomes the
-provider-trait impl naming its provider trait, context, and provider struct, and `HasField` becomes
-the field-trait impl; a user's own capability trait — or a terminal ordinary bound — renders as
+each real trait obligation becomes the concept it stands for — with every name read straight off the
+obligation, no component marker and no [`ComponentNameMap`](error-processing.md) in the loop. A
+consumer-trait obligation `Ctx: Consumer<Params…>` (its `Self` the context) becomes the consumer-trait
+impl (`consumer trait impl \`CanCalculateArea\` for context \`Rectangle\``), named by the consumer
+trait's own `DefId`; a provider-trait obligation `Provider: ProviderTrait<Ctx, Params…>` becomes the
+provider-trait impl, naming the provider trait's `DefId`, the context (the trait's leading argument),
+and the provider struct (the obligation's `Self`); a `HasField` becomes the field-trait impl; and a
+user's own capability or getter trait — or a terminal ordinary bound — renders as
 `trait impl \`Trait\` for \`Self\``. Several details make the labels read well:
 
+- **Plumbing is dropped.** A provider-trait obligation *for the context itself* (the delegation
+  routing, as opposed to the real provider), the `DelegateComponent` table lookup, a namespace lookup,
+  and any residual `CanUseComponent`/`IsProviderFor` obligation carry no information and return no
+  label, keeping the chain legible without losing a real step. A `RedirectLookup<Ctx, Path>` provider,
+  by contrast, renders as `redirect lookup to \`@Path\` in \`Ctx\``, so a chain of redirects reads as
+  its successive hops.
+- **Generic parameters are reattached.** A generic component's parameters are read from the trait
+  obligation's own type arguments — the consumer's arguments after `Self`, the provider's after the
+  leading context — so the trait reads as written (`CanCalculateArea<u32, u64, bool>`).
 - **Type-level spines are resugared.** A rendered label's `Self` type has its `Cons<A, Cons<B, Nil>>`
   product spine read back as `Product![A, B]` and its `Either<A, Either<B, Void>>` sum spine as
   `Sum![A, B]`, so a field- or variant-list handler (the modular-serialization example's
@@ -620,22 +649,10 @@ the field-trait impl; a user's own capability trait — or a terminal ordinary b
   the record or variant it describes — a product to `Struct! { name: Type, … }`, a sum to
   `Enum! { Name(Type), … }` — so a `HasFields` field list reads as
   `Struct! { message_id: u64, date: DateTime<Utc>, … }` rather than a chain of `Field` cells.
-  `Struct!`/`Enum!` are not real CGP macros;
-  like `Path!`'s `.*` wildcard they are a readability-only form. Each cell is anchored by `DefId` to the
-  CGP crate that defines it (`Cons`/`Nil` in `cgp-base-types`, `Either`/`Void`/`Field` in `cgp-field`),
-  so a same-named type from another crate is never resugared, and elements are rendered recursively so a
-  nested list resugars in turn.
-- **Generic parameters are reattached.** A generic component's parameters are read from the `Params`
-  slot of `CanUseComponent`/`IsProviderFor` — a single one bare, several unwrapped from their tuple — so
-  the trait reads as written (`CanCalculateArea<u32, u64, bool>`).
-- **Names resolve by full path.** The marker-to-trait-name lookups go through the same
-  [`ComponentNameMap`](error-processing.md) the trait-renaming rewrite uses, but keyed by each marker's
-  full `def_path_str` rather than its bare name, so two components sharing a name in different modules
-  resolve to their own trait names.
-- **Plumbing is dropped.** The `DelegateComponent` table lookup, the routing `IsProviderFor` for the
-  *context itself* (as opposed to the real provider), and a bare provider-trait obligation an
-  `IsProviderFor` node already stands for carry no information and are dropped, keeping the chain legible
-  without losing a real step.
+  `Struct!`/`Enum!` are not real CGP macros; like `Path!`'s `.*` wildcard they are a readability-only
+  form. Each cell is anchored by `DefId` to the CGP crate that defines it (`Cons`/`Nil` in
+  `cgp-base-types`, `Either`/`Void`/`Field` in `cgp-field`), so a same-named type from another crate is
+  never resugared, and elements are rendered recursively so a nested list resugars in turn.
 
 Each rendered entry is stamped with its own [`CGP-E1xx` code](../error-code.md) — one per template, so
 `consumer trait impl` (`CGP-E101`), `provider trait impl` (`CGP-E102`), `redirect lookup` (`CGP-E104`),
@@ -657,13 +674,17 @@ cause.
 `plan_resolved`'s `categorized_header` is what picks the headline class described earlier — the
 `CGP-E001` consumer form (worded from the resolution's context and consumer trait(s), pluralized when a
 use-site failure spans several components, and also used for an `IsProviderFor` bound whose provider is
-a `RedirectLookup`), the `CGP-E002` provider form from the text rewrite for a real wired provider, or
-the `CGP-E003` field-type-mismatch form. One extra case routes here: a field-mismatch-coded (`E0271`)
-failure the resolver traced to a *non*-mismatch cause — a manual `Send`-recovery wrapper's opaque-future
-error, whose `type mismatch resolving …` message is unreadable — takes the `CGP-E001` consumer form,
-since it is really the consumer trait failing to be implemented. The header is `None` (rustc's kept)
-only when the main message restates a genuine recovered leaf; a mid-chain symptom is replaced by the
-consumer header, and an unrelated non-CGP message is kept.
+a `RedirectLookup`), the `CGP-E002` provider form from the text rewrite when rustc's own header names a
+real wired provider's `IsProviderFor`, the `CGP-E003` field-type-mismatch form, or the `CGP-E009` plain
+wrapper form. One extra case routes here: a field-mismatch-coded (`E0271`) failure the resolver traced
+to a *non*-mismatch cause — a manual `Send`-recovery wrapper's opaque-future error, whose
+`type mismatch resolving …` message is unreadable — takes the `CGP-E001` consumer form, since it is
+really the consumer trait failing to be implemented. The header is `None` (rustc's kept) only when the
+main message restates a genuine recovered leaf; a mid-chain symptom is replaced by the consumer header,
+and an unrelated non-CGP message is kept. (This is the one place the `[CGP-E002]` provider wording still
+routes through the text rewrite and its `ComponentNameMap`, because the *header* it rewrites is rustc's
+own `IsProviderFor`-worded main message; the resolved *tree* beneath it is built entirely from the real
+traits.)
 
 `transform_resolved` then mutates rustc's `DiagInner`: with a header it replaces the main message and
 collapses the span to the primary caret (the original labels restate the replaced message), and with
@@ -683,45 +704,48 @@ failure already shown.
 
 The resolver is deliberately bounded, and a few edges are worth recording. Because it anchors the five
 ways above, a wiring failure that is *none* of them still declines. The consumer-trait use-site anchor
-widened this reach considerably — a manual supertrait bound written in a trait definition or a free
-`where` clause now resolves whenever a local CGP consumer trait and its context both appear in the
-diagnostic's spans (the once-declining `use_type_foreign_unsatisfied` and `use_type_nested_unsatisfied`
-fixtures, now under [`acceptable/use-type/`](../../tests/ui/acceptable/use-type), and the
-namespace-joined [`namespace_join_use_site`](../../tests/ui/acceptable/use-site/namespace_join_use_site.rs)).
-What still declines is a failure that names no local consumer to anchor on: a caret only on a
-*provider* struct's own impl (whose `Self` is the provider, reaching no consumer on a context), a
-generic component's trait definition, or a use-site `E0277` on a *foreign* generic consumer whose
-context is an unresolved inference-laden call (the shell-scripting DSL's `hello_name`, whose combinator
-plumbing the text rewrite then exposes). The wrapper-chain descent is itself bounded — it follows only
-real impl `where`-clauses, reports a cause only at a genuine CGP consumer on a local context, and stops
-at a recursion bound — so it cannot fabricate a chain from an unrelated bound.
+widened the reach considerably — a manual supertrait bound in a trait definition or `where` clause, and
+a namespace-joined use-site call, both now resolve whenever a local CGP consumer trait and its context
+appear in the diagnostic's spans (the once-declining `use_type_foreign_unsatisfied`,
+`use_type_nested_unsatisfied`, and `namespace_join_use_site` fixtures, now under
+[`acceptable/`](../../tests/ui/acceptable)). What still declines is a failure that names no local
+consumer to anchor on: a caret only on a *provider* struct's own impl (whose `Self` is the provider,
+reaching no consumer on a context), a generic component's trait definition, or a use-site failure on a
+*foreign* generic consumer whose context and dispatch parameters are unrecoverable — the
+shell-scripting DSL's `hello_name`, an `E0277` on `app.handle(PhantomData::<Program>, Vec::new())` whose
+`Code` and `Input` come only from the call and whose combinator plumbing the text rewrite then exposes
+([`cascade_after_use_site`](../../tests/ui/usability/use-site/cascade_after_use_site.rs) pins the
+class). The wrapper-chain descent is itself bounded — it follows only real impl `where`-clauses, reports
+a cause only at a genuine CGP consumer on a local context, and stops at a recursion bound — so it cannot
+fabricate a chain from an unrelated bound.
 
 One use-site shape is out of reach for a hard reason worth recording: a **consumer-method call whose
 failure is an `E0271`, not an `E0599`** — `app.deserialize_json_string::<Payload>(…)` on a context that
 cannot deserialize `Payload`, which fails as a type mismatch on the capability's output (the
 modular-serialization arena test hits this). Its caret sits on the method call, naming no
-context-definition span, so the use-site anchor finds nothing; and recovering the obligation would need
-the compiler's **typeck results**, which the resolver cannot obtain. `tcx.typeck` replays its cached
-diagnostics when forced, so forcing it from the emitter re-enters the diagnostic context and panics —
-the re-entrant-emission hazard in
+context-definition span, so neither use-site anchor finds a context; and recovering the obligation would
+need the compiler's **typeck results**, which the resolver cannot obtain. `tcx.typeck` replays its
+cached diagnostics when forced, so forcing it from the emitter re-enters the diagnostic context and
+panics — the re-entrant-emission hazard in
 [rustc diagnostic internals](rustc-diagnostic-internals.md#re-entering-the-diagnostic-context-lock-was-already-held).
 Only the fresh-`InferCtxt` trait solver is safe to re-enter mid-emit; a full query is not, and there is
 no hook between typeck and the fatal error to precompute the result. So this failure falls through to
-rustc's output, usually redundant with the `check_components!` failure for the same capability, which the
-resolver *does* reshape.
+rustc's output, usually redundant with the `check_components!` failure for the same capability, which
+the resolver *does* reshape.
 
 A few parameter-recovery limits remain. The impl-site path recovers a generic component's concrete
-parameter from the supertrait, and the use-site path recovers it for an `open`-dispatched component from
-the `PathCons<Component, Value>` redirect key; what the use-site path cannot recover is the parameter of
-a **non-dispatched generic component**, whose bare marker it re-checks with an empty `()` slot. And the
-walk uses an **empty parameter environment** throughout, which suits the concrete check impls the
-fixtures exercise but will need the impl's own environment to extend cleanly to checks that carry generic
-parameters. The resolver renders only leaves it can trust — a `HasField` field (missing, underived, or
-type-mismatched), a missing wiring, a namespace redirect the context does not terminate, an ordinary
-foreign bound, or a terminal capability bound — and declines an associated-type projection mismatch that
-is *not* a `HasField` one, dropping pure wiring-plumbing dead-ends, so a diagnostic whose only
-recoverable leaf is one of those falls back. Parallel branches, deep nesting, and non-field leaves, by
-contrast, are all handled.
+parameter from the supertrait, and the by-component use-site path recovers it for an `open`-dispatched
+component from the `PathCons<Component, Value>` redirect key; what neither use-site path recovers is the
+parameter of a **non-dispatched generic component** — the by-component path re-checks its bare marker
+with an empty `()` slot, and the by-consumer path only fires for a consumer whose sole generic is
+`Self`. And the walk uses an **empty parameter environment** throughout, which suits the concrete check
+impls the fixtures exercise but will need the impl's own environment to extend cleanly to checks that
+carry generic parameters. The resolver renders only leaves it can trust — a `HasField` field (missing,
+underived, or type-mismatched), a missing wiring, a namespace redirect the context does not terminate,
+an ordinary foreign bound, or a terminal capability bound — and declines an associated-type projection
+mismatch that is *not* a `HasField` one, dropping pure wiring-plumbing dead-ends, so a diagnostic whose
+only recoverable leaf is one of those falls back. Parallel branches, deep nesting, and non-field leaves,
+by contrast, are all handled.
 
 How a transformed diagnostic is *marked* as CGP is settled by the [error-code scheme](../error-code.md):
 a rewritten, classified main message carries its `[CGP-Exxx]` code inline, and everything else — a kept
@@ -731,62 +755,61 @@ separate header brand; the inline code is the only marking.
 ## Source
 
 - [`crates/cargo-cgp-driver/src/resolve/`](../../crates/cargo-cgp-driver/src/resolve) — the typed
-  resolution, split by stage behind a re-exporting `mod.rs` and building the rustc-free `Resolved` model.
-  `anchor.rs` holds the five anchors, each feeding the walk the real consumer obligation `Ctx:
-  ConsumerTrait<Params…>` (never a `CanUseComponent` wrapper): `resolve_check_failure` (matching the
-  check impl by span, then `can_use_to_consumer_obligation` mapping its `CanUseComponent<Marker,
-  Params>` assertion through `marker_to_consumer` to the consumer obligation),
-  `resolve_impl_site` (recovering the context and the exact obligation from an enclosing
-  `impl Trait for Context` block's CGP consumer supertrait, heading the tree and header with the impl's own wrapper trait
-  — `[CGP-E001]` or `[CGP-E009]` by the wrapper's blanket-impl fingerprint — through the shared
-  `wrapper_consumer_causes`, which now seeds the consumer supertrait directly),
-  `resolve_wrapper_chain` (the foreign-wrapper case, descending each hop's
-  `where`-clauses via `wrapper_chain_children` reading them un-normalized so an associated-type bound
-  descends to its base trait, until `consumer_handoff_causes` reaches a CGP consumer on the context,
-  named plainly with `subject_is_context = false`), `resolve_use_site` (recovering the context ADT
-  from the diagnostic's spans and its wired components from `DelegateComponent` impls via
-  `delegated_check_targets`, mapping each marker to its consumer with `marker_to_consumer`, and
-  recovering the real dispatch parameter from an `open`-dispatch `PathCons` key through
-  `open_dispatch_target` while skipping a raw path key, a redundant bare marker, a free-parameter
-  catch-all, or a `namespace …;`-join blanket-forwarding param key), and `resolve_use_site_consumer`
-  (recovering a local, non-generic CGP consumer trait from the diagnostic's spans and walking
-  `Ctx: Consumer` directly — the anchor that reaches a namespace-joined context).
-  `walk.rs` walks the cause chain to each terminal leaf: the descendable-vocabulary rule (real
-  consumer/provider traits, `DelegateComponent`, and context obligations — *not* `IsProviderFor`),
-  the `is_workaround_plumbing` drop of a `CanUseComponent`/`IsProviderFor` dependency beside the real
-  obligation, the cycle guard
-  and `MAX_DEPTH` backstop, the placeholder instantiation of a higher-ranked obligation's binder
-  (`enter_forall_and_leak_universe`), the plumbing-leaf drop, the foreign-getter descent into just
-  context-side dependencies plus a same-trait list recursion, `impl_where_obligations` preferring a
-  concrete-`Self` impl over the delegation blanket and solving satisfiable clauses first,
-  `is_reportable_leaf` keeping an unmet `DelegateComponent` only on the context,
-  `has_field_projection_mismatch` finding an unmet `HasField` projection on the concrete-`Self` impl
-  (`impl_field_projection_mismatch`, deferring the blanket), and the appended coded
-  `dependency_tree_leaf` terminal.
-  `classify.rs` classifies a leaf (a field by inspecting the struct and its `Deref` chain, a field-type
-  mismatch with `field_type` reading the actual type by `DefId`, a missing wiring, a missing redirect
-  wiring told apart by `is_path_cons`, or a bound).
-  `label.rs` folds the inner chain into a `DependencyTree` with each wiring trait replaced by its human
-  form and its `CGP-E1xx` code, and `render_ty` resugaring a `DefId`-anchored `Cons`/`Nil` or
-  `Either`/`Void` self type to `Product![…]`/`Sum![…]`, or — when every element is a `Field` — to
-  `Struct! { … }`/`Enum! { … }`.
-  `cgp_item.rs` holds the `DefId`-anchored CGP-trait recognition, the `Symbol!` field-name decode, and
-  `is_namespace_lookup_trait` (by the single-`Delegate`-associated-type fingerprint). A sibling
-  `conflict.rs` handles the duplicate-key `E0119` conflict — a separate transform documented in
-  [The driver](driver.md#reshaping-a-duplicate-key-conflict).
+  resolution, split by stage behind a re-exporting `mod.rs` and building the rustc-free `Resolved`
+  model. Every anchor feeds the walk the real consumer obligation `Ctx: ConsumerTrait<Params…>`, never
+  a `CanUseComponent` wrapper.
+  - `anchor.rs` holds the five anchors: `resolve_check_failure` (matches the check impl by span, then
+    `can_use_to_consumer_obligation` maps its `CanUseComponent<Marker, Params>` assertion through
+    `marker_to_consumer` to the consumer obligation); `resolve_impl_site` (recovers the context and the
+    consumer supertrait from an enclosing `impl Trait for Context` block, heading the tree with the
+    impl's own wrapper trait — `[CGP-E001]` or `[CGP-E009]` by its blanket-impl fingerprint — through
+    the shared `wrapper_consumer_causes`, which seeds the supertrait directly); `resolve_wrapper_chain`
+    (the foreign-wrapper case, descending each hop's `where`-clauses via `wrapper_chain_children` read
+    un-normalized so an associated-type bound descends to its base trait, until `consumer_handoff_causes`
+    reaches a CGP consumer on the context, named plainly with `subject_is_context = false`);
+    `resolve_use_site` (recovers the context ADT from the diagnostic's spans and its wired components
+    from `DelegateComponent` impls via `delegated_check_targets`, mapping each marker to its consumer
+    and recovering an `open`-dispatch value from a `PathCons` key through `open_dispatch_target`, while
+    skipping a raw path key, a redundant bare marker, a free-parameter catch-all, and a `namespace …;`
+    blanket `__Key__` key); and `resolve_use_site_consumer` (recovers a local, non-generic CGP consumer
+    trait from the diagnostic's spans and walks `Ctx: Consumer` directly — the anchor that reaches a
+    namespace-joined context).
+  - `walk.rs` walks the cause chain to each terminal leaf: `resolve_leaves`/`collect_leaf_paths`, the
+    descendable-vocabulary rule (`is_descendable` — provider traits, `DelegateComponent`, and context
+    obligations, *not* `IsProviderFor`/`CanUseComponent`), the `is_workaround_plumbing` drop of a
+    `CanUseComponent`/`IsProviderFor` dependency beside the real obligation, the cycle guard and
+    `MAX_DEPTH` backstop, the placeholder instantiation of a higher-ranked binder
+    (`enter_forall_and_leak_universe`), the plumbing-leaf drop, the foreign-getter descent into just
+    context-side dependencies plus a same-trait list recursion, `impl_where_obligations` preferring a
+    concrete-`Self` impl over the delegation blanket and solving satisfiable clauses first,
+    `is_reportable_leaf` keeping an unmet `DelegateComponent` only on the context, and
+    `has_field_projection_mismatch`/`impl_field_projection_mismatch` finding an unmet `HasField`
+    projection on the concrete-`Self` impl (deferring the blanket).
+  - `classify.rs` classifies a leaf (a field by inspecting the struct and its `Deref` chain, a
+    field-type mismatch with `field_type` reading the actual type by `DefId`, a missing wiring, a
+    missing redirect wiring told apart by `is_path_cons`, or a bound).
+  - `label.rs` folds the inner chain into a `DependencyTree`, naming each consumer/provider node off its
+    trait `DefId` and the obligation's arguments (`trait_generics`) and dropping the plumbing, with
+    `render_ty` resugaring a `DefId`-anchored `Cons`/`Nil` or `Either`/`Void` self type to
+    `Product![…]`/`Sum![…]`, or — when every element is a `Field` — to `Struct! { … }`/`Enum! { … }`.
+  - `cgp_item.rs` holds the structural, `IsProviderFor`-free trait recognition — `is_provider_trait` /
+    `provider_blanket_marker` (the `DelegateComponent`-bounded provider blanket), `consumer_provider_trait`
+    / `is_consumer_trait`, and `marker_to_consumer` — plus the `Symbol!` field-name decode and
+    `is_namespace_lookup_trait` (by the single-`Delegate`-associated-type fingerprint). A sibling
+    `conflict.rs` handles the duplicate-key `E0119` conflict — a separate transform documented in
+    [The driver](driver.md#reshaping-a-duplicate-key-conflict).
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the `try_resolve`
-  seam (gated by a cheap `mentions_wiring` scan, an `E0271`/`E0277` code, or a method-bounds `E0599`, with
-  a resolution-class `E0599` excluded so the solver never runs on an error emitted mid-`predicates_of`)
-  that tries the check, impl-site, wrapper-chain, and use-site anchors in turn, and the
-  `transform_resolved` mutation it feeds — mapping the rustc code to a `DiagKind`, calling `plan_resolved`,
-  and applying the plan to the `DiagInner`, falling back to the in-place text rewrite when resolution
-  returns `None`. A final cross-diagnostic de-duplication suppresses a re-report of a failure already
-  shown.
+  seam (gated by a cheap `mentions_wiring` scan, an `E0271`/`E0277` code, or a method-bounds `E0599`,
+  with a resolution-class `E0599` excluded so the solver never runs on an error emitted
+  mid-`predicates_of`) that tries the five anchors in turn, and the `transform_resolved` mutation it
+  feeds — mapping the rustc code to a `DiagKind`, calling `plan_resolved`, and applying the plan to the
+  `DiagInner`, falling back to the in-place text rewrite when resolution returns `None`. A final
+  cross-diagnostic de-duplication suppresses a re-report of a failure already shown.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
   — the rustc-free model and wording: `leaf.rs`/`resolved.rs` (the `Leaf`, `FieldIssue`, `Cause`, and
   `Resolved` types), `wording.rs` (the coded headers, `root cause:` notes, and derive `help`s), and
-  `plan.rs` (`DiagKind`, `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`), unit-tested
-  in [`tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs).
+  `plan.rs` (`DiagKind`, `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`),
+  unit-tested in [`tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs).
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs) —
   the `DependencyTree` type and its `cargo tree`-style renderer over `termtree`, unit-tested in
   [`tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).
@@ -798,12 +821,11 @@ separate header brand; the inline code is the only marking.
 The resolver is exercised end to end by the UI snapshot suite. The fixtures it reshapes live under
 [`tests/ui/acceptable/`](../../tests/ui/acceptable) — the `fields/`, `field-types/`, `providers/`,
 `generic/`, `resolution/`, `wiring/`, `use-site/`, and `use-type/` subgroups, carrying `.cgp.stderr`
-snapshots of the transformed output — including the `use-type/` and `use-site/namespace_join_use_site`
-cases the consumer-trait anchor newly reaches. The failure it still declines — a use-site `E0277` on a
-foreign generic consumer — keeps its fallback snapshot under
+snapshots of the transformed output. The failure it still declines — a use-site `E0277` on a foreign
+generic consumer — keeps its fallback snapshot under
 [`tests/ui/usability/use-site/`](../../tests/ui/usability/use-site) (`cascade_after_use_site`), so the
-two together pin both the transform and the decline boundary. [Testing](testing.md) describes the
-suite and its bless workflow. The fixtures group by what they pin.
+two together pin both the transform and the decline boundary. [Testing](testing.md) describes the suite
+and its bless workflow. The fixtures group by what they pin.
 
 Each **leaf class** has fixtures for its field, wiring, and redirect shapes:
 
@@ -831,11 +853,13 @@ Several fixtures pin the **harder mechanics**:
 
 - `parallel_branches` — two independent missing fields, two sub-errors.
 - `deep_nesting` — higher-order providers nested four deep, one long spine.
-- `dependency_cascade` — a chain of providers each depending on the next.
+- `dependency_cascade` — a chain of providers each depending on the next, its intermediate consumers
+  each a `[CGP-E101]` node.
 - `mixed_rust_error` — a CGP tree beside an untouched `E0308`.
 - `same_name_components` — two components sharing a marker name in different modules, resolved to their
-  own traits with no cross-over.
-- `generic_area_multi` — a three-parameter component, its parameters reattached to the labels.
+  own traits (off their `DefId`s) with no cross-over.
+- `generic_area_multi` — a three-parameter component, its parameters reattached to the labels from the
+  obligation's own arguments.
 - `ordinary_bound_unsatisfied` — a non-field `f64: Eq` bound whose rustc header is kept over a lead-less
   chain note.
 - `foreign_getter_missing_wiring` — the money-transfer `UseBasicAuth` shape, where the walk descends a
@@ -849,8 +873,8 @@ Several fixtures pin the **harder mechanics**:
 - `enum_hasfields_lock` — a resolution-class `E0599` emitted mid-`predicates_of`, which the resolver
   must decline rather than run its solver on and re-enter the `DiagCtxt` lock.
 
-The **use-site path** is pinned by the [`acceptable/use-site/`](../../tests/ui/acceptable/use-site)
-fixtures:
+The **use-site paths** are pinned by the [`acceptable/use-site/`](../../tests/ui/acceptable/use-site)
+and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
 
 - `missing_dependency` and `unsatisfied_dependency` — a consumer-method `E0599` giving the `CGP-E001`
   header with the method-syntax advice dropped over a `missing field` note.
@@ -859,6 +883,12 @@ fixtures:
 - `open_dispatch_use_site` — the dispatch value recovered from the redirect key, so the header names
   `CanEncodeItem<Seq<u64>>` and the note reaches the real `@ItemEncoderComponent.u64` wiring rather than
   reporting the internal `PathCons` key as a bogus consumer trait.
+- `namespace_join_use_site` — a use-site `E0599` on a namespace-joined context, anchored on the
+  `CanGreet` consumer trait from the diagnostic and walked through the namespace's `RedirectLookup` to
+  the missing field, with the blanket `__Key__` forwarding skipped.
+- `use_type_foreign_unsatisfied` and `use_type_nested_unsatisfied` — an unsatisfiable `#[use_type]`
+  abstract-type import in a trait definition, recovered by the consumer-trait anchor into a
+  `[CGP-E001]` missing-wiring tree instead of leaking generated `__…__` placeholder names.
 
 The **impl-site and wrapper-chain paths** are pinned by:
 
@@ -881,12 +911,14 @@ independently of the compiler:
 
 ## Further reading
 
-- [The driver](driver.md) — the emitter seam this resolver extends, and the trait-renaming rewrite it
-  falls back to.
+- [The driver](driver.md) — the emitter seam this resolver extends, and the trait-renaming text rewrite
+  it falls back to (which still recognizes `IsProviderFor`/`CanUseComponent` in rustc's output).
 - [Error processing](error-processing.md) — the rustc-free crate that holds the `Resolved` model, the
   wording, and the fallback post-processing.
-- [rustc diagnostic internals](rustc-diagnostic-internals.md) — where rustc drops information the resolver
-  must recover, and the panic hazards of running compiler code inside the emitter.
+- [Check traits](../../../cgp/docs/concepts/check-traits.md) — why `IsProviderFor`/`CanUseComponent`
+  exist, the workaround this resolver is designed to make removable.
+- [rustc diagnostic internals](rustc-diagnostic-internals.md) — where rustc drops information the
+  resolver must recover, and the panic hazards of running compiler code inside the emitter.
 - [The error pipeline](error-pipeline.md) — where this driver-side transformation sits among the
   pipeline's stages.
 - [CGP check-trait failure](../../../cgp/docs/errors/checks/check-trait-failure.md) — the upstream error
