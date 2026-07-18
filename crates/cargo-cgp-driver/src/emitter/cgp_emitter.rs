@@ -191,10 +191,15 @@ impl<E> CgpEmitter<E> {
             // failure sits several `where`-clause hops down. Failing all — a use-site failure such
             // as a consumer-method call, whose obligation no check impl carries — recover the
             // context from the diagnostic's spans.
-            resolve::resolve_check_failure(tcx, primary_span, &self.names)
-                .or_else(|| resolve::resolve_impl_site(tcx, &spans, &self.names))
-                .or_else(|| resolve::resolve_wrapper_chain(tcx, &spans, &self.names))
-                .or_else(|| resolve::resolve_use_site(tcx, &spans, &self.names))
+            resolve::resolve_check_failure(tcx, primary_span)
+                .or_else(|| resolve::resolve_impl_site(tcx, &spans))
+                .or_else(|| resolve::resolve_wrapper_chain(tcx, &spans))
+                .or_else(|| resolve::resolve_use_site(tcx, &spans))
+                // A namespace-joined context's wiring lives in the namespace, not its own
+                // `DelegateComponent` impls, so the per-component re-check above finds nothing;
+                // anchoring on the consumer trait the diagnostic names and walking through the
+                // namespace recovers it.
+                .or_else(|| resolve::resolve_use_site_consumer(tcx, &spans))
         })?;
         Some((resolved, primary_span))
     }

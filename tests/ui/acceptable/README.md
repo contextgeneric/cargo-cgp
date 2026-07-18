@@ -29,7 +29,12 @@ are split into concept sub-directories so no directory grows crowded:
   and its forwarding call for one missing field → a single error, the un-deduplicated cascade kept in
   the `.rust.stderr` baseline).
 - [`use-site/`](use-site) — a broken dependency reached by a direct consumer-method call (`E0599`),
-  recovered from the use site with the misleading method-syntax advice dropped.
+  recovered from the use site with the misleading method-syntax advice dropped — including
+  `namespace_join_use_site`, whose namespace-joined context is anchored on the consumer trait the
+  diagnostic names and walked through the namespace to its root cause.
+- [`use-type/`](use-type) — an unsatisfiable `#[use_type]` abstract-type import, recovered into a
+  `[CGP-E001]` missing-wiring tree (`use_type_foreign_unsatisfied`, `use_type_nested_unsatisfied`)
+  by the same consumer-trait anchor, rather than leaking generated `__…__` placeholder names.
 - [`wiring/`](wiring) — coherence conflicts whose output is already clear: a duplicate component
   name, a duplicate default impl on user types, and an inherited-override conflict at the top level,
   plus the duplicate delegate-key `E0119` reshaped into a coded `[CGP-E004]`–`[CGP-E008]` headline (the redundant

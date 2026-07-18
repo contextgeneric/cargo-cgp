@@ -11,7 +11,7 @@ error[E0277]: [CGP-E001] the consumer trait `CanEncodeVariant<Choice>` is not im
                    └── [CGP-E102] provider trait impl `VariantEncoder<Choice>` with context `App` for provider `EncodeChoice`
                        └── [CGP-E105] trait impl `EncodeVariants` for `Enum! { Rect(u64), Circle(f64) }`
                            └── [CGP-E105] trait impl `EncodeVariants` for `Enum! { Circle(f64) }`
-                               └── [CGP-E105] trait impl `CanEncodeVariant` for `App`
+                               └── [CGP-E101] consumer trait impl `CanEncodeVariant<f64>` for context `App`
                                    └── [CGP-E104] redirect lookup to `@VariantEncoderComponent` in `App`
                                        └── [CGP-E107] context `App` does not contain any delegate entry for `@VariantEncoderComponent.f64`
 

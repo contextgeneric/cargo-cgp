@@ -10,27 +10,27 @@ error[E0277]: [CGP-E001] the consumer trait `CanEncodeValue<Outer>` is not imple
                 └── [CGP-E104] redirect lookup to `@ValueEncoderComponent` in `App`
                     └── [CGP-E102] provider trait impl `ValueEncoder<Outer>` with context `App` for provider `EncodeRecord`
                         └── [CGP-E105] trait impl `EncodeFields` for `Struct! { mids: Vec<Mid> }`
-                            └── [CGP-E105] trait impl `CanEncodeValue` for `App`
+                            └── [CGP-E101] consumer trait impl `CanEncodeValue<Vec<Mid>>` for context `App`
                                 └── [CGP-E104] redirect lookup to `@ValueEncoderComponent` in `App`
                                     └── [CGP-E102] provider trait impl `ValueEncoder<Vec<Mid>>` with context `App` for provider `EncodeIterator`
-                                        └── [CGP-E105] trait impl `CanEncodeValue` for `App`
+                                        └── [CGP-E101] consumer trait impl `CanEncodeValue<&Mid>` for context `App`
                                             └── [CGP-E104] redirect lookup to `@ValueEncoderComponent` in `App`
                                                 └── [CGP-E102] provider trait impl `ValueEncoder<&Mid>` with context `App` for provider `EncodeDeref`
-                                                    └── [CGP-E105] trait impl `CanEncodeValue` for `App`
+                                                    └── [CGP-E101] consumer trait impl `CanEncodeValue<Mid>` for context `App`
                                                         └── [CGP-E104] redirect lookup to `@ValueEncoderComponent` in `App`
                                                             └── [CGP-E102] provider trait impl `ValueEncoder<Mid>` with context `App` for provider `EncodeRecord`
                                                                 └── [CGP-E105] trait impl `EncodeFields` for `Struct! { inners: Vec<Inner> }`
-                                                                    └── [CGP-E105] trait impl `CanEncodeValue` for `App`
+                                                                    └── [CGP-E101] consumer trait impl `CanEncodeValue<Vec<Inner>>` for context `App`
                                                                         └── [CGP-E104] redirect lookup to `@ValueEncoderComponent` in `App`
                                                                             └── [CGP-E102] provider trait impl `ValueEncoder<Vec<Inner>>` with context `App` for provider `EncodeIterator`
-                                                                                └── [CGP-E105] trait impl `CanEncodeValue` for `App`
+                                                                                └── [CGP-E101] consumer trait impl `CanEncodeValue<&Inner>` for context `App`
                                                                                     └── [CGP-E104] redirect lookup to `@ValueEncoderComponent` in `App`
                                                                                         └── [CGP-E102] provider trait impl `ValueEncoder<&Inner>` with context `App` for provider `EncodeDeref`
-                                                                                            └── [CGP-E105] trait impl `CanEncodeValue` for `App`
+                                                                                            └── [CGP-E101] consumer trait impl `CanEncodeValue<Inner>` for context `App`
                                                                                                 └── [CGP-E104] redirect lookup to `@ValueEncoderComponent` in `App`
                                                                                                     └── [CGP-E102] provider trait impl `ValueEncoder<Inner>` with context `App` for provider `EncodeRecord`
                                                                                                         └── [CGP-E105] trait impl `EncodeFields` for `Struct! { value: u64 }`
-                                                                                                            └── [CGP-E105] trait impl `CanEncodeValue` for `App`
+                                                                                                            └── [CGP-E101] consumer trait impl `CanEncodeValue<u64>` for context `App`
                                                                                                                 └── [CGP-E104] redirect lookup to `@ValueEncoderComponent` in `App`
                                                                                                                     └── [CGP-E107] context `App` does not contain any delegate entry for `@ValueEncoderComponent.u64`
 

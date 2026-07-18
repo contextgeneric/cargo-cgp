@@ -5,12 +5,12 @@
 //! context itself — and collects every root→leaf path that bottoms out on a terminal unmet bound,
 //! folding each into a [`Cause`] with its rendered dependency tree.
 
-use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{Cause, Resolved, dependency_tree_leaf};
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_infer::traits::Obligation;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized, Upcast as _};
 use rustc_span::DUMMY_SP;
+use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
@@ -20,7 +20,7 @@ use crate::config::{
 };
 use crate::resolve::cgp_item::{is_cgp_item, is_provider_trait};
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
-use crate::resolve::label::{label_for, marker_role, render_params, spine};
+use crate::resolve::label::{label_for, spine, trait_generics};
 
 /// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or
 /// cyclic wiring cannot make it loop. Each logical wiring hop expands to several walk frames — a
@@ -33,13 +33,14 @@ use crate::resolve::label::{label_for, marker_role, render_params, spine};
 /// catch — grinds through the trait solver at every frame for a long time before giving up.
 const MAX_DEPTH: u32 = 256;
 
-/// Walk the dependency graph of `top` (`Ctx: CanUseComponent<Marker, Params>`) and, for each
+/// Walk the dependency graph of `top` — the **real consumer-trait obligation** `Ctx:
+/// ConsumerTrait<Params…>` the failure stands for, not a `CanUseComponent` wrapper — and, for each
 /// distinct terminal unmet bound it bottoms out on, return that leaf with its rendered dependency
-/// chain. `None` when no branch reaches a resolvable leaf.
+/// chain. The walk descends the consumer trait to its provider trait and on to the provider's real
+/// `where` bounds, never through `IsProviderFor`. `None` when no branch reaches a resolvable leaf.
 pub(crate) fn resolve_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
     top: ty::PolyTraitPredicate<'tcx>,
-    names: &ComponentNameMap,
 ) -> Option<Resolved> {
     let context = tcx.erase_and_anonymize_regions(top.skip_binder().self_ty());
 
@@ -64,7 +65,7 @@ pub(crate) fn resolve_leaves<'tcx>(
         }
         let mut labels: Vec<String> = chain
             .iter()
-            .filter_map(|pred| label_for(tcx, *pred, context, names))
+            .filter_map(|pred| label_for(tcx, *pred, context))
             .collect();
         // Repeat the root cause as the terminal leaf node, so the tree ends on it — the same shape
         // whether the leaf is a missing field, an unmet bound, a missing wiring, or a redirect. As
@@ -79,14 +80,15 @@ pub(crate) fn resolve_leaves<'tcx>(
         return None;
     }
 
-    // The consumer trait the failing `CanUseComponent` obligation stands for, with the
-    // component's extra parameters reattached — resolved from the marker's typed `DefId` path,
-    // so two same-named components in different modules cannot be confused.
+    // The consumer trait is the seed obligation's own trait, named straight off its `DefId` with
+    // its parameters reattached from the obligation's arguments — no marker, no name map, no
+    // `IsProviderFor`. The `DefId` is exact, so two same-named components in different modules
+    // cannot be confused.
     let top_ref = top.skip_binder().trait_ref;
     let consumer = format!(
         "{}{}",
-        marker_role(tcx, top_ref.args.type_at(1), names, |n| n.consumer),
-        render_params(tcx, top_ref.args.type_at(2))
+        tcx.item_name(top_ref.def_id),
+        trait_generics(tcx, top_ref, 1)
     );
 
     Some(Resolved {
@@ -189,6 +191,14 @@ fn collect_leaf_paths<'tcx>(
     let unmet: Vec<_> = children
         .into_iter()
         .filter(|nested| !holds(tcx, *nested))
+        // Drop the check-trait scaffolding wherever it appears as a dependency: the generated
+        // blanket impls carry a `CanUseComponent`/`IsProviderFor` bound *beside* the real consumer
+        // or provider-trait obligation, and only the latter is walked — the `IsProviderFor` bound
+        // just re-states the provider's `where` clause, which the real provider impl already
+        // carries. Following it would route the cause through `IsProviderFor` (and let its copy of
+        // the bounds win the per-leaf de-duplication over the real provider chain), which is exactly
+        // the dependency on `IsProviderFor` cargo-cgp is shedding.
+        .filter(|nested| !is_workaround_plumbing(tcx, *nested))
         .collect();
 
     if !descendable {
@@ -270,77 +280,122 @@ fn has_field_projection_mismatch<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitPredicate<'tcx>,
 ) -> Option<(ty::TraitRef<'tcx>, Ty<'tcx>)> {
-    let param_env = ty::ParamEnv::empty();
-
+    // Prefer a concrete-`Self` impl, falling back to a blanket, exactly as
+    // [`impl_where_obligations`] does. For a provider trait both the concrete provider impl (which
+    // carries the `HasField` projection) and the delegation blanket (`impl<.., P> Provider<..> for
+    // P`, which does not) unify with the obligation, and only the concrete one is authoritative —
+    // matching the blanket first would wrongly report no mismatch. But a getter trait's *only* impl
+    // is itself a blanket (`impl<C: HasField<..>> HasName for C`), and that one *does* carry the
+    // projection — so a blanket is deferred, not skipped outright.
+    let mut blanket: Option<DefId> = None;
     for impl_did in tcx.all_impls(pred.def_id()) {
-        let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
-        let ocx = ObligationCtxt::new(&infcx);
-
-        // Instantiate any higher-ranked binder with placeholders before relating, for the same
-        // reason as [`impl_where_obligations`]: a `skip_binder()`'d escaping bound var fed into
-        // `ocx.eq` panics rustc's generalizer. A no-op for a binder-free predicate.
-        let obligation_ref = infcx.enter_forall_and_leak_universe(pred.map_bound(|p| p.trait_ref));
-
-        let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
-        let impl_ref = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate(tcx, impl_args)
-            .skip_norm_wip();
-        let impl_ref = ocx.normalize(
-            &ObligationCause::dummy(),
-            param_env,
-            Unnormalized::new_wip(impl_ref),
-        );
-        if ocx
-            .eq(
-                &ObligationCause::dummy(),
-                param_env,
-                obligation_ref,
-                impl_ref,
-            )
-            .is_err()
-        {
+        if matches!(
+            tcx.impl_trait_ref(impl_did).skip_binder().self_ty().kind(),
+            ty::Param(_)
+        ) {
+            blanket.get_or_insert(impl_did);
             continue;
         }
-
-        for (predicate, _) in tcx.predicates_of(impl_did).instantiate(tcx, impl_args) {
-            // Keep the projection un-normalized so its `<.. as HasField<..>>::Value` alias
-            // survives; `skip_norm_wip` unwraps without normalizing, unlike the `ocx.normalize`
-            // the trait-clause walk uses.
-            let clause = infcx.resolve_vars_if_possible(predicate.skip_norm_wip());
-            // An unconstrained impl parameter leaves inference vars behind; such a projection
-            // cannot be re-checked in a fresh context, so skip it (regions are erased below).
-            if clause.has_non_region_infer() {
-                continue;
-            }
-            let Some(proj) = tcx
-                .erase_and_anonymize_regions(clause)
-                .as_projection_clause()
-            else {
-                continue;
-            };
-            let field_ref = proj.skip_binder().projection_term.trait_ref(tcx);
-            if !is_cgp_item(tcx, field_ref.def_id, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
-                continue;
-            }
-            if holds_projection(tcx, proj) {
-                continue;
-            }
-            let expected = proj.skip_binder().term.as_type()?;
-            return Some((field_ref, expected));
+        if let Some(result) = impl_field_projection_mismatch(tcx, pred, impl_did) {
+            return result;
         }
-        // Matched the impl but found no unmet `HasField` projection on it.
+    }
+    blanket.and_then(|impl_did| impl_field_projection_mismatch(tcx, pred, impl_did))?
+}
+
+/// Test one impl for [`has_field_projection_mismatch`]: `None` when the impl does not unify with
+/// `pred`, `Some(None)` when it unifies but carries no unmet `HasField` projection, and
+/// `Some(Some((field_ref, expected)))` for the field-present-with-wrong-type mismatch it does carry.
+fn impl_field_projection_mismatch<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    pred: ty::PolyTraitPredicate<'tcx>,
+    impl_did: DefId,
+) -> Option<Option<(ty::TraitRef<'tcx>, Ty<'tcx>)>> {
+    let param_env = ty::ParamEnv::empty();
+    let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
+    let ocx = ObligationCtxt::new(&infcx);
+
+    // Instantiate any higher-ranked binder with placeholders before relating, for the same reason
+    // as [`impl_where_obligations`]: a `skip_binder()`'d escaping bound var fed into `ocx.eq` panics
+    // rustc's generalizer. A no-op for a binder-free predicate.
+    let obligation_ref = infcx.enter_forall_and_leak_universe(pred.map_bound(|p| p.trait_ref));
+
+    let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
+    let impl_ref = tcx
+        .impl_trait_ref(impl_did)
+        .instantiate(tcx, impl_args)
+        .skip_norm_wip();
+    let impl_ref = ocx.normalize(
+        &ObligationCause::dummy(),
+        param_env,
+        Unnormalized::new_wip(impl_ref),
+    );
+    if ocx
+        .eq(
+            &ObligationCause::dummy(),
+            param_env,
+            obligation_ref,
+            impl_ref,
+        )
+        .is_err()
+    {
         return None;
     }
-    None
+
+    for (predicate, _) in tcx.predicates_of(impl_did).instantiate(tcx, impl_args) {
+        // Keep the projection un-normalized so its `<.. as HasField<..>>::Value` alias
+        // survives; `skip_norm_wip` unwraps without normalizing, unlike the `ocx.normalize`
+        // the trait-clause walk uses.
+        let clause = infcx.resolve_vars_if_possible(predicate.skip_norm_wip());
+        // An unconstrained impl parameter leaves inference vars behind; such a projection
+        // cannot be re-checked in a fresh context, so skip it (regions are erased below).
+        if clause.has_non_region_infer() {
+            continue;
+        }
+        let Some(proj) = tcx
+            .erase_and_anonymize_regions(clause)
+            .as_projection_clause()
+        else {
+            continue;
+        };
+        let field_ref = proj.skip_binder().projection_term.trait_ref(tcx);
+        if !is_cgp_item(tcx, field_ref.def_id, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
+            continue;
+        }
+        if holds_projection(tcx, proj) {
+            continue;
+        }
+        let Some(expected) = proj.skip_binder().term.as_type() else {
+            continue;
+        };
+        return Some(Some((field_ref, expected)));
+    }
+    // Unified with the impl but found no unmet `HasField` projection on it.
+    Some(None)
 }
 
 /// Whether the descent should walk *into* `pred`'s dependencies, rather than treat `pred` as a
-/// terminal leaf. It descends the CGP wiring vocabulary (`CanUseComponent`, `IsProviderFor`,
-/// `DelegateComponent`), any provider trait (a `ProvideFoo: Foo<App>` bound routes on to the
-/// provider's own dependencies), and any obligation on the context itself (its getter and
-/// capability traits). It stops at everything else — an ordinary bound like `f64: Eq`, whose `Self`
-/// is a foreign type, is a leaf, not a step to descend.
+/// terminal leaf. It descends any **provider trait** (a `ProvideFoo: Foo<App>` bound routes on to
+/// the provider's own real `where` bounds), the `DelegateComponent` table lookup, and any
+/// obligation on the context itself (its consumer, getter, and capability traits). It stops at
+/// everything else — an ordinary bound like `f64: Eq`, whose `Self` is a foreign type, is a leaf.
+///
+/// It deliberately does *not* descend `CanUseComponent`/`IsProviderFor`: the resolver reads a
+/// provider's bounds from the provider trait's own impl, not from the `IsProviderFor` marker's
+/// copy of them, so an `IsProviderFor` obligation is left as a (dropped) plumbing leaf while the
+/// real provider-trait obligation beside it carries the cause.
+/// Whether `pred` is the check-trait scaffolding — `CanUseComponent` or `IsProviderFor` — the walk
+/// resolves *around* rather than through. These sit beside the real consumer/provider-trait
+/// obligation in every generated blanket impl and carry only the delegation check
+/// (`CanUseComponent`) or a copy of the provider's `where` clause (`IsProviderFor`), both redundant
+/// with the real obligation the walk follows instead. Dropping them as dependencies is what keeps
+/// the resolution independent of `IsProviderFor`.
+fn is_workaround_plumbing<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitPredicate<'tcx>) -> bool {
+    let did = pred.skip_binder().trait_ref.def_id;
+    is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
+        || is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+}
+
 fn is_descendable<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitPredicate<'tcx>,
@@ -349,8 +404,6 @@ fn is_descendable<'tcx>(
     let trait_ref = pred.skip_binder().trait_ref;
     let did = trait_ref.def_id;
     tcx.erase_and_anonymize_regions(trait_ref.self_ty()) == context
-        || is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
-        || is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
         || is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         || is_provider_trait(tcx, did)
 }

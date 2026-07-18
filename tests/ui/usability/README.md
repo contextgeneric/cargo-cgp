@@ -15,18 +15,15 @@ class in [the usability issue document](../../../docs/issues/usability.md):
 - [`duplication/`](duplication) — one mistake reported as many errors: a single cause that fans out
   across several top-level error blocks (`density_3`, `dependency_cascade`), or a single missing
   `#[derive(HasField)]` reported field by field (`base_area_2`).
-- [`use-type/`](use-type) — a `#[use_type]` abstract-type dependency the resolver does not recognize,
-  so it falls through untransformed and leaks generated `__…__` placeholder names (and, in the nested
-  case, a misleading `trivial_bounds` suggestion).
 - [`lowering/`](lowering) — a macro lowered accepted input into ill-formed Rust, and the error lands
   on the macro attribute without naming the real cause: an unsized generated type (`option_slice`) or
   a cyclic `#[use_type]` routing (`use_type_cyclic_context`).
-- [`use-site/`](use-site) — consumer-method calls the resolver cannot fully anchor. `cascade_after_use_site`
-  is an `E0277` (result consumed with `?`) that declines to the text rewrite and exposes the combinator
-  plumbing; its `?`-operator `Try`/`FromResidual` cascade is now suppressed, and the plumbing exposure is
-  what remains. `namespace_join_use_site` is an `E0599` on a namespace-joined context; the resolver used to
-  mis-recover it through the namespace's blanket `__Key__` forwarding and print garbage, and now skips that
-  key and declines to a truthful raw `E0599` (whose "use associated function syntax" advice is the residual).
+- [`use-site/`](use-site) — a use-site `E0277` the resolver cannot anchor: `cascade_after_use_site`
+  calls a *foreign*, generic `Code`-dispatched handler whose result is consumed with `?`, so it
+  declines to the text rewrite and exposes the combinator plumbing. Its `?`-operator
+  `Try`/`FromResidual` cascade is now suppressed; the plumbing exposure is what remains. (The
+  namespace-joined `E0599` and `#[use_type]` shapes that used to live here now resolve and have moved
+  to [`../acceptable/`](../acceptable).)
 - [`wiring/`](wiring) — the structural coherence conflicts (`E0119`/`E0207`/`E0275`) that still pass
   through with only light post-processing. The duplicate delegate-key `E0119` is now reshaped into a
   coded `[CGP-E004]`–`[CGP-E008]` headline and has moved to [`../acceptable/wiring`](../acceptable/wiring); what remains

@@ -8,7 +8,7 @@
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
-use crate::config::{CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, IS_PROVIDER_FOR_TRAIT};
+use crate::config::{CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 
 /// Whether `def_id` is a trait/type named `name` defined by crate `krate` — the DefId anchor
 /// that keeps a same-named item from an unrelated crate from driving resolution, exactly as
@@ -24,16 +24,101 @@ pub(crate) fn find_cgp_trait(tcx: TyCtxt<'_>, name: &str, krate: &str) -> Option
         .find(|&did| is_cgp_item(tcx, did, name, krate))
 }
 
-/// Whether `def_id` is a CGP *provider* trait — one carrying an `IsProviderFor` supertrait. A
-/// bare provider-trait obligation (`Ctx: SomeProvider<Ctx>`) is redundant with the
-/// `IsProviderFor` node that stands for the same step, so the tree drops it; and the descent
-/// treats a provider-trait bound as a step to walk into rather than a leaf.
+/// Whether `def_id` is a CGP *provider* trait, recognized **structurally** — by the provider
+/// blanket impl `#[cgp_component]` generates, `impl<Ctx, P> ProviderTrait<Ctx> for P where P:
+/// DelegateComponent<Marker>, …`, whose `Self` is a bare type parameter bounded by
+/// `DelegateComponent`. This deliberately avoids the trait's `IsProviderFor` supertrait: the typed
+/// resolver must not depend on `IsProviderFor`, which cargo-cgp aims to make obsolete, so it reads
+/// the delegation-blanket shape instead — the same information without the workaround marker.
+///
+/// The descent treats a provider-trait bound as a step to walk into (its concrete impl carries the
+/// provider's real `where` bounds), and a provider-trait obligation *for the context itself* is
+/// routing that the tree drops.
 pub(crate) fn is_provider_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    tcx.explicit_super_predicates_of(def_id)
-        .skip_binder()
-        .iter()
-        .filter_map(|(clause, _)| clause.as_trait_clause())
-        .any(|tp| is_cgp_item(tcx, tp.def_id(), IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE))
+    provider_blanket_marker(tcx, def_id).is_some()
+}
+
+/// The component marker a provider trait keys on, read from its provider blanket's `P:
+/// DelegateComponent<Marker>` bound — the `IsProviderFor`-free replacement for reading the marker
+/// off the `IsProviderFor<Marker, …>` supertrait. `None` when `def_id` has no such blanket (so it
+/// is not a provider trait). Also serves as the provider-trait recognizer ([`is_provider_trait`]).
+pub(crate) fn provider_blanket_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
+    for &impl_did in tcx.trait_impls_of(def_id).blanket_impls() {
+        let self_ty = tcx.type_of(impl_did).skip_binder();
+        if !matches!(self_ty.kind(), ty::Param(_)) {
+            continue;
+        }
+        for &(clause, _) in tcx.predicates_of(impl_did).predicates {
+            let Some(tp) = clause.as_trait_clause() else {
+                continue;
+            };
+            let trait_ref = tp.skip_binder().trait_ref;
+            // The provider blanket bounds its own `Self` param on `DelegateComponent<Marker>`; the
+            // marker is that bound's second argument.
+            if trait_ref.self_ty() == self_ty
+                && is_cgp_item(
+                    tcx,
+                    trait_ref.def_id,
+                    DELEGATE_COMPONENT_TRAIT,
+                    CGP_COMPONENT_CRATE,
+                )
+            {
+                return trait_ref.args.get(1).and_then(|arg| arg.as_type());
+            }
+        }
+    }
+    None
+}
+
+/// The provider trait a consumer trait pairs with, found through the consumer's blanket impl
+/// `impl<C> Consumer for C where C: Provider<C>`: the `where`-bound whose self type is the impl's
+/// own self and whose trait is a [provider trait](is_provider_trait) is that provider. `None` when
+/// `def_id` is not a CGP consumer trait — so [`is_consumer_trait`] is exactly this returning `Some`.
+/// This is `IsProviderFor`-free: it reads only the consumer↔provider blanket link.
+pub(crate) fn consumer_provider_trait(tcx: TyCtxt<'_>, consumer_did: DefId) -> Option<DefId> {
+    for &impl_did in tcx.trait_impls_of(consumer_did).blanket_impls() {
+        let impl_self = tcx.type_of(impl_did).skip_binder();
+        for &(clause, _) in tcx.predicates_of(impl_did).predicates {
+            let Some(tp) = clause.as_trait_clause() else {
+                continue;
+            };
+            let trait_ref = tp.skip_binder().trait_ref;
+            if trait_ref.self_ty() == impl_self && is_provider_trait(tcx, trait_ref.def_id) {
+                return Some(trait_ref.def_id);
+            }
+        }
+    }
+    None
+}
+
+/// Whether `def_id` is a CGP *consumer* trait — one whose blanket impl routes its own context to a
+/// provider trait ([`consumer_provider_trait`]). `IsProviderFor`-free, like the rest of the typed
+/// resolver's trait recognition.
+pub(crate) fn is_consumer_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    consumer_provider_trait(tcx, def_id).is_some()
+}
+
+/// Recover the `(consumer trait, provider trait)` a component marker keys — the `IsProviderFor`-free
+/// inversion the anchors use to turn a `check_components!` / use-site `CanUseComponent<Marker, …>`
+/// entry into the real consumer obligation to walk. The provider trait is the one whose provider
+/// blanket bounds on `DelegateComponent<marker>` ([`provider_blanket_marker`]); the consumer is the
+/// one whose blanket routes to that provider ([`consumer_provider_trait`]). `None` when `marker` is
+/// not an ADT, or no provider/consumer pair keys on it.
+pub(crate) fn marker_to_consumer(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<(DefId, DefId)> {
+    let ty::Adt(marker_def, _) = marker.kind() else {
+        return None;
+    };
+    let marker_did = marker_def.did();
+    let provider_did = tcx.all_traits_including_private().find(|&trait_did| {
+        matches!(
+            provider_blanket_marker(tcx, trait_did).and_then(|marker| marker.ty_adt_def()),
+            Some(def) if def.did() == marker_did,
+        )
+    })?;
+    let consumer_did = tcx
+        .all_traits_including_private()
+        .find(|&trait_did| consumer_provider_trait(tcx, trait_did) == Some(provider_did))?;
+    Some((consumer_did, provider_did))
 }
 
 /// Whether `def_id` is a **namespace lookup trait** — the fingerprint every `cgp_namespace!`

@@ -5,12 +5,10 @@
 //! [`DependencyTree`] spine that the [wording](cargo_cgp_error_processing::diagnosis) renders as
 //! `cargo tree`-style text.
 
-use cargo_cgp_error_processing::ComponentTraitNames;
 use cargo_cgp_error_processing::code::{
     DEP_CONSUMER_TRAIT_IMPL, DEP_FIELD_TRAIT_IMPL, DEP_PROVIDER_TRAIT_IMPL, DEP_REDIRECT_LOOKUP,
     DEP_TRAIT_IMPL,
 };
-use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::tree::DependencyTree;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
@@ -20,86 +18,120 @@ use crate::config::{
     NIL_TYPE, REDIRECT_LOOKUP_TYPE, VOID_TYPE,
 };
 use crate::resolve::cgp_item::{
-    decode_symbol, is_cgp_item, is_namespace_lookup_trait, is_provider_trait,
+    decode_symbol, is_cgp_item, is_consumer_trait, is_namespace_lookup_trait, is_provider_trait,
 };
 
 /// The human-readable label for one predicate in a dependency path, replacing each CGP wiring
-/// trait with the concept it stands for: `CanUseComponent` with the consumer-trait impl,
-/// `IsProviderFor` with the provider-trait impl (its provider trait, context, and provider struct),
-/// `HasField` with the field-trait impl (the field and the struct that must carry it). Any other
-/// trait — a user's own consumer or getter capability — is shown as a trait impl for its self type.
+/// trait with the concept it stands for. Crucially it reads the **real** consumer and provider
+/// trait obligations that the walk descends — `Ctx: ConsumerTrait<…>` and `Provider:
+/// ProviderTrait<Ctx, …>` — and takes every name straight off the trait `DefId` and the
+/// obligation's own type arguments. It does *not* read `CanUseComponent`/`IsProviderFor`: those
+/// are the check-trait scaffolding cargo-cgp treats as removable, and the resolver never depends on
+/// them for a name.
 ///
-/// A `RedirectLookup<Ctx, Path>` provider is not a real provider impl but a namespace/`open`
-/// redirection, so its `IsProviderFor` node reads as `redirect lookup to \`Path\` in \`Ctx\``; a
-/// chain of them reads as its successive hops. The missing-delegate leaf such a chain bottoms out
-/// on is not rendered here — the caller ([`resolve_leaves`](super::walk::resolve_leaves)) re-states
-/// the root cause as the tree's terminal leaf.
+/// - A consumer-trait obligation on the context becomes the consumer-trait impl.
+/// - A provider-trait obligation whose `Self` is a real provider becomes the provider-trait impl
+///   (its trait, context, provider struct, and the component's extra parameters). A
+///   `RedirectLookup<Ctx, Path>` provider is a namespace/`open` redirection hop instead, so a chain
+///   of them reads as its successive hops.
+/// - `HasField` becomes the field-trait impl (the field and the struct that must carry it).
+/// - Any other trait — a user's own capability or getter — is shown as a trait impl for its self.
 ///
-/// The steps that carry no information for a reader return `None` and are dropped so the chain
-/// stays legible: an `IsProviderFor` for the *context itself* (the delegation routing, as opposed
-/// to the real provider), the `DelegateComponent` table lookup, a namespace lookup, and a provider
-/// trait applied directly (which every `IsProviderFor` node already stands for).
+/// The steps that carry no information for a reader return `None` and are dropped: the
+/// `CanUseComponent`/`IsProviderFor` scaffolding, a provider-trait obligation *for the context
+/// itself* (delegation routing), the `DelegateComponent` table lookup, and a namespace lookup. The
+/// missing-delegate leaf a wiring chain bottoms out on is not rendered here — the caller
+/// ([`resolve_leaves`](super::walk::resolve_leaves)) re-states the root cause as the terminal leaf.
 pub(crate) fn label_for<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitPredicate<'tcx>,
     context: Ty<'tcx>,
-    names: &ComponentNameMap,
 ) -> Option<String> {
     let trait_ref = pred.skip_binder().trait_ref;
     let did = trait_ref.def_id;
+    let self_ty = trait_ref.self_ty();
 
-    if is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE) {
-        let consumer = marker_role(tcx, trait_ref.args.type_at(1), names, |n| n.consumer);
-        // `CanUseComponent<Marker, Params>` — the component's extra parameters, reattached so a
-        // generic component's consumer trait reads as written (`CanCalculateArea<u32, u64, bool>`).
-        let generics = render_params(tcx, trait_ref.args.type_at(2));
-        Some(format!(
-            "[{DEP_CONSUMER_TRAIT_IMPL}] consumer trait impl `{consumer}{generics}` for context `{}`",
-            render_ty(tcx, trait_ref.self_ty())
-        ))
-    } else if is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE) {
-        // Drop the routing `IsProviderFor` for the context itself; keep the real providers.
-        if trait_ref.self_ty() == context {
+    // The check-trait scaffolding and table plumbing carry nothing for the reader; the real
+    // consumer/provider obligations beside them do. Dropping these is also what keeps the resolver
+    // off `IsProviderFor`: it is never read for a name, only recognized here to be discarded.
+    if is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+        || is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
+        || is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+        || is_namespace_lookup_trait(tcx, did)
+    {
+        return None;
+    }
+
+    if is_cgp_item(tcx, did, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
+        let field = decode_symbol(tcx, trait_ref.args.type_at(1))?;
+        return Some(format!(
+            "[{DEP_FIELD_TRAIT_IMPL}] field trait impl `HasField` with field `{field}` for `{}`",
+            render_ty(tcx, self_ty)
+        ));
+    }
+
+    if is_provider_trait(tcx, did) {
+        // A provider-trait obligation for the context itself is delegation routing, dropped.
+        if self_ty == context {
             return None;
         }
-        // A `RedirectLookup<Ctx, Path>` is not a real provider but a namespace/`open` redirect;
-        // show it as the redirection it performs rather than as a provider-trait impl, so a
-        // chain of redirects reads as its successive hops.
-        if let Some(path) = redirect_path(tcx, trait_ref.self_ty()) {
+        // A `RedirectLookup<Ctx, Path>` provider is a namespace/`open` redirection hop, not a real
+        // provider impl, so a chain of them reads as its successive hops.
+        if let Some(path) = redirect_path(tcx, self_ty) {
             return Some(format!(
                 "[{DEP_REDIRECT_LOOKUP}] redirect lookup to `{path}` in `{context}`"
             ));
         }
-        let provider = render_ty(tcx, trait_ref.self_ty());
-        let provider_trait = marker_role(tcx, trait_ref.args.type_at(1), names, |n| n.provider);
-        // `IsProviderFor<Provider, Marker, Context, Params>` — the third argument is the context,
-        // the fourth the component's extra parameters (reattached to the provider trait).
-        let provider_context = render_ty(tcx, trait_ref.args.type_at(2));
-        let generics = render_params(tcx, trait_ref.args.type_at(3));
-        Some(format!(
-            "[{DEP_PROVIDER_TRAIT_IMPL}] provider trait impl `{provider_trait}{generics}` with context `{provider_context}` for provider `{provider}`"
-        ))
-    } else if is_cgp_item(tcx, did, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
-        let field = decode_symbol(tcx, trait_ref.args.type_at(1))?;
-        Some(format!(
-            "[{DEP_FIELD_TRAIT_IMPL}] field trait impl `HasField` with field `{field}` for `{}`",
-            render_ty(tcx, trait_ref.self_ty())
-        ))
-    } else if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
-        || is_namespace_lookup_trait(tcx, did)
-        || is_provider_trait(tcx, did)
-    {
-        // Plumbing that carries no information for a reader: the `DelegateComponent` table lookup,
-        // a namespace lookup, and a provider trait an `IsProviderFor` node already stands for. The
-        // missing-delegate leaf a wiring chain bottoms out on is re-stated as the tree's terminal
-        // by the caller (`resolve_leaves`), so dropping these here keeps the chain legible.
-        None
-    } else {
-        Some(format!(
-            "[{DEP_TRAIT_IMPL}] trait impl `{}` for `{}`",
+        // `Provider: ProviderTrait<Ctx, Params…>` — trait name, context, provider, and the
+        // component's extra parameters all read straight off the obligation, no marker or map.
+        let provider_context = render_ty(tcx, trait_ref.args.type_at(1));
+        let generics = trait_generics(tcx, trait_ref, 2);
+        return Some(format!(
+            "[{DEP_PROVIDER_TRAIT_IMPL}] provider trait impl `{}{generics}` with context `{provider_context}` for provider `{}`",
             tcx.item_name(did),
-            render_ty(tcx, trait_ref.self_ty())
-        ))
+            render_ty(tcx, self_ty)
+        ));
+    }
+
+    if is_consumer_trait(tcx, did) && self_ty == context {
+        // `Ctx: ConsumerTrait<Params…>` — the consumer name and its parameters read directly.
+        let generics = trait_generics(tcx, trait_ref, 1);
+        return Some(format!(
+            "[{DEP_CONSUMER_TRAIT_IMPL}] consumer trait impl `{}{generics}` for context `{}`",
+            tcx.item_name(did),
+            render_ty(tcx, self_ty)
+        ));
+    }
+
+    // A user's own capability/getter trait, or a terminal ordinary bound.
+    Some(format!(
+        "[{DEP_TRAIT_IMPL}] trait impl `{}` for `{}`",
+        tcx.item_name(did),
+        render_ty(tcx, self_ty)
+    ))
+}
+
+/// Render a trait obligation's type arguments after `skip` leading ones as a generic list —
+/// `<u32, u64>` — or the empty string when there are none. For a consumer obligation `Ctx:
+/// C<A, B>` the arguments are spread (skip the `Self`=`Ctx`), and for a provider obligation `P:
+/// T<Ctx, A, B>` likewise (skip `Self` and the leading context), so the component's extra
+/// parameters reattach to the trait exactly as written — read straight off the obligation rather
+/// than from a `CanUseComponent`/`IsProviderFor` params tuple.
+pub(crate) fn trait_generics<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    trait_ref: ty::TraitRef<'tcx>,
+    skip: usize,
+) -> String {
+    let params: Vec<String> = trait_ref
+        .args
+        .types()
+        .skip(skip)
+        .map(|ty| render_ty(tcx, ty))
+        .collect();
+    if params.is_empty() {
+        String::new()
+    } else {
+        format!("<{}>", params.join(", "))
     }
 }
 
@@ -255,42 +287,4 @@ pub(crate) fn spine(labels: Vec<String>) -> Option<DependencyTree> {
         node = DependencyTree::node(label, vec![node]);
     }
     Some(node)
-}
-
-/// Render a component's extra type parameters as a trait generic list — `<u32, u64, bool>`, or the
-/// empty string when there are none. CGP groups the parameters into the `Params` slot of
-/// `CanUseComponent`/`IsProviderFor`: none as the unit `()`, a single one bare, several as a tuple,
-/// so a tuple is unwrapped and a bare parameter reattached directly.
-pub(crate) fn render_params<'tcx>(tcx: TyCtxt<'tcx>, params: Ty<'tcx>) -> String {
-    match params.kind() {
-        ty::Tuple(elems) if elems.is_empty() => String::new(),
-        ty::Tuple(elems) => format!(
-            "<{}>",
-            elems
-                .iter()
-                .map(|elem| render_ty(tcx, elem))
-                .collect::<Vec<_>>()
-                .join(", ")
-        ),
-        _ => format!("<{}>", render_ty(tcx, params)),
-    }
-}
-
-/// Resolve a component marker type to its consumer or provider trait name through the name map,
-/// keyed by the marker's *full path* so two same-named markers in different modules never collide.
-/// Falls back to the marker's bare item name when the component is not in the map, and to the
-/// marker's printed form when it is not an ADT at all.
-pub(crate) fn marker_role(
-    tcx: TyCtxt<'_>,
-    marker: Ty<'_>,
-    names: &ComponentNameMap,
-    role: impl Fn(ComponentTraitNames) -> String,
-) -> String {
-    let ty::Adt(def, _) = marker.kind() else {
-        return marker.to_string();
-    };
-    match names.get_by_path(&tcx.def_path_str(def.did())) {
-        Some(entry) => role(entry),
-        None => tcx.item_name(def.did()).to_string(),
-    }
 }

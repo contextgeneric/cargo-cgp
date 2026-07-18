@@ -13,7 +13,6 @@
 //! re-checking the parameterless form of every component that context wires).
 
 use cargo_cgp_error_processing::code::DEP_TRAIT_IMPL;
-use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::tree::DependencyTree;
 use cargo_cgp_error_processing::{Cause, Resolved};
 use rustc_hir::ItemKind;
@@ -29,20 +28,22 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::config::{
     CAN_USE_COMPONENT_TRAIT, CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT,
-    IS_PROVIDER_FOR_TRAIT, NIL_TYPE, PATH_CONS_TYPE,
+    NIL_TYPE, PATH_CONS_TYPE,
 };
-use crate::resolve::cgp_item::{find_cgp_trait, is_cgp_item, is_provider_trait};
+use crate::resolve::cgp_item::{
+    consumer_provider_trait, find_cgp_trait, is_cgp_item, marker_to_consumer,
+};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve the root cause(s) of the check failure whose diagnostic caret sits at `primary_span`,
-/// or `None` if this is not a resolvable `CanUseComponent` check failure (in which case the
-/// caller leaves the original diagnostic to the text-rewrite fallback). `names` supplies the
-/// consumer/provider trait names the dependency tree renders CGP markers as.
-pub fn resolve_check_failure(
-    tcx: TyCtxt<'_>,
-    primary_span: Span,
-    names: &ComponentNameMap,
-) -> Option<Resolved> {
+/// or `None` if this is not a resolvable `check_components!` failure (in which case the caller
+/// leaves the original diagnostic to the text-rewrite fallback).
+///
+/// The check impl's supertrait is the user's own `CanUseComponent<Marker, Params>` assertion, which
+/// this reads to learn *which* component the entry checks — but it then walks the real consumer
+/// obligation `Ctx: ConsumerTrait<Params…>` that marker stands for, never the `CanUseComponent` /
+/// `IsProviderFor` scaffolding, so the resolution does not depend on `IsProviderFor`.
+pub fn resolve_check_failure(tcx: TyCtxt<'_>, primary_span: Span) -> Option<Resolved> {
     for trait_did in tcx.all_traits_including_private() {
         let Some(super_clause) = can_use_component_supertrait(tcx, trait_did) else {
             continue;
@@ -61,15 +62,55 @@ pub fn resolve_check_failure(
                 .skip_norm_wip();
             let concrete = super_clause.instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref));
 
-            let Some(top) = concrete.as_trait_clause() else {
+            let Some(can_use) = concrete.as_trait_clause() else {
                 continue;
             };
-            if let Some(resolved) = resolve_leaves(tcx, top, names) {
+            let Some(top) = can_use_to_consumer_obligation(tcx, can_use) else {
+                continue;
+            };
+            if let Some(resolved) = resolve_leaves(tcx, top) {
                 return Some(resolved);
             }
         }
     }
     None
+}
+
+/// Turn a `Ctx: CanUseComponent<Marker, Params>` assertion into the real consumer obligation
+/// `Ctx: ConsumerTrait<Params…>` it stands for: the marker is mapped to its consumer trait
+/// (`IsProviderFor`-free, via [`marker_to_consumer`]) and the `Params` slot is spread back into the
+/// consumer's own type arguments. This is what lets the check and use-site anchors feed the walk a
+/// real consumer obligation instead of the `CanUseComponent` wrapper. `None` when the marker keys
+/// no known consumer trait.
+fn can_use_to_consumer_obligation<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    can_use: ty::PolyTraitPredicate<'tcx>,
+) -> Option<ty::PolyTraitPredicate<'tcx>> {
+    let trait_ref = can_use.skip_binder().trait_ref;
+    // `CanUseComponent<Marker, Params>` — args are `[Ctx, Marker, Params]`.
+    let context = trait_ref.self_ty();
+    let marker = trait_ref.args.type_at(1);
+    let params = trait_ref.args.type_at(2);
+    let (consumer_did, _) = marker_to_consumer(tcx, marker)?;
+    Some(consumer_obligation(tcx, context, consumer_did, params))
+}
+
+/// Build `Ctx: ConsumerTrait<Params…>` from a consumer trait and the component's `Params` slot,
+/// spreading the slot back exactly as CGP groups it: the unit `()` yields no extra arguments, a
+/// tuple its elements, and any other type a single argument.
+fn consumer_obligation<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    context: Ty<'tcx>,
+    consumer_did: DefId,
+    params: Ty<'tcx>,
+) -> ty::PolyTraitPredicate<'tcx> {
+    let mut args: Vec<ty::GenericArg<'tcx>> = vec![context.into()];
+    match params.kind() {
+        ty::Tuple(elems) => args.extend(elems.iter().map(ty::GenericArg::from)),
+        _ => args.push(params.into()),
+    }
+    let trait_ref = ty::TraitRef::new(tcx, consumer_did, args);
+    ty::Binder::dummy(trait_ref).upcast(tcx)
 }
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait
@@ -91,11 +132,7 @@ pub fn resolve_check_failure(
 /// Because the wrapper is a distinct trait from that supertrait, its error stands on its own rather
 /// than de-duplicating into the `check_components!` entry. `None` when no enclosing impl on a local
 /// context carries an unmet, reconstructable CGP consumer supertrait.
-pub fn resolve_impl_site(
-    tcx: TyCtxt<'_>,
-    spans: &[Span],
-    names: &ComponentNameMap,
-) -> Option<Resolved> {
+pub fn resolve_impl_site(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
     for impl_did in enclosing_trait_impls(tcx, spans) {
         // Safe because `enclosing_trait_impls` keeps only `of_trait` impls.
         let trait_ref = tcx
@@ -118,7 +155,7 @@ pub fn resolve_impl_site(
         // a distinct trait from that supertrait, the wrapper's error is reported on its own rather
         // than de-duplicated into the `check_components!` entry for the supertrait.
         let obligation: ty::PolyTraitPredicate<'_> = ty::Binder::dummy(trait_ref).upcast(tcx);
-        if let Some((consumers_are_cgp, causes)) = wrapper_consumer_causes(tcx, obligation, names) {
+        if let Some((consumers_are_cgp, causes)) = wrapper_consumer_causes(tcx, obligation) {
             return Some(Resolved {
                 context: context.to_string(),
                 consumers: vec![trait_ref.print_only_trait_path().to_string()],
@@ -150,11 +187,7 @@ pub fn resolve_impl_site(
 /// than trusting rustc's cascade-suppressed diagnostic, it recovers the cause even where rustc's own
 /// error names only the outermost unsatisfied bound. `None` when no enclosing impl's supertrait
 /// chain reaches a CGP consumer on a local context.
-pub fn resolve_wrapper_chain(
-    tcx: TyCtxt<'_>,
-    spans: &[Span],
-    names: &ComponentNameMap,
-) -> Option<Resolved> {
+pub fn resolve_wrapper_chain(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
     for impl_did in enclosing_trait_impls(tcx, spans) {
         let trait_ref = tcx
             .impl_trait_ref(impl_did)
@@ -180,7 +213,7 @@ pub fn resolve_wrapper_chain(
             if holds(tcx, sup) {
                 continue;
             }
-            collect_wrapper_chain_causes(tcx, sup, names, &[], 0, &mut causes);
+            collect_wrapper_chain_causes(tcx, sup, &[], 0, &mut causes);
         }
 
         if !causes.is_empty() {
@@ -229,7 +262,6 @@ const MAX_WRAPPER_DEPTH: u32 = 32;
 fn collect_wrapper_chain_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     obligation: ty::PolyTraitPredicate<'tcx>,
-    names: &ComponentNameMap,
     chain: &[String],
     depth: u32,
     out: &mut Vec<Cause>,
@@ -240,7 +272,7 @@ fn collect_wrapper_chain_causes<'tcx>(
 
     // The handoff: `obligation` is a CGP consumer on a local context. Recover its cause tree and
     // prepend the chain of ordinary hops that led here.
-    if let Some(causes) = consumer_handoff_causes(tcx, obligation, names) {
+    if let Some(causes) = consumer_handoff_causes(tcx, obligation) {
         for cause in causes {
             if out.iter().any(|c| c.key() == cause.key()) {
                 continue;
@@ -270,7 +302,7 @@ fn collect_wrapper_chain_causes<'tcx>(
         if holds(tcx, child) {
             continue;
         }
-        collect_wrapper_chain_causes(tcx, child, names, &next_chain, depth + 1, out);
+        collect_wrapper_chain_causes(tcx, child, &next_chain, depth + 1, out);
     }
 }
 
@@ -284,7 +316,6 @@ fn collect_wrapper_chain_causes<'tcx>(
 fn consumer_handoff_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     obligation: ty::PolyTraitPredicate<'tcx>,
-    names: &ComponentNameMap,
 ) -> Option<Vec<Cause>> {
     let trait_ref = obligation.skip_binder().trait_ref;
     let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
@@ -294,8 +325,9 @@ fn consumer_handoff_causes<'tcx>(
     // A CGP consumer trait pairs with a provider trait through its blanket impl; a plain trait does
     // not, so it is not a handoff.
     consumer_provider_trait(tcx, trait_ref.def_id)?;
-    let top = consumer_can_use_obligation(tcx, context, obligation)?;
-    let resolved = resolve_leaves(tcx, top, names)?;
+    // `obligation` *is* the consumer obligation the walk wants — walk it directly, no
+    // `CanUseComponent`/`IsProviderFor` detour.
+    let resolved = resolve_leaves(tcx, obligation)?;
     Some(resolved.causes)
 }
 
@@ -396,7 +428,6 @@ fn wrap_with_chain(chain: &[String], inner: DependencyTree) -> DependencyTree {
 fn wrapper_consumer_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     obligation: ty::PolyTraitPredicate<'tcx>,
-    names: &ComponentNameMap,
 ) -> Option<(bool, Vec<Cause>)> {
     let trait_ref = obligation.skip_binder().trait_ref;
     let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
@@ -423,10 +454,12 @@ fn wrapper_consumer_causes<'tcx>(
         if holds(tcx, sup) {
             continue;
         }
-        let Some(top) = consumer_can_use_obligation(tcx, context, sup) else {
+        // Only a CGP consumer supertrait is the wiring failure the wrapper surfaces; a plain
+        // supertrait such as `Send` is not. Walk the consumer obligation directly.
+        if consumer_provider_trait(tcx, sup.skip_binder().trait_ref.def_id).is_none() {
             continue;
-        };
-        let Some(resolved) = resolve_leaves(tcx, top, names) else {
+        }
+        let Some(resolved) = resolve_leaves(tcx, sup) else {
             continue;
         };
         for cause in resolved.causes {
@@ -459,29 +492,25 @@ fn wrapper_consumer_causes<'tcx>(
 /// and every component that context wires (through its `DelegateComponent` impls) is re-checked;
 /// each one that cannot be used contributes its dependency tree. `None` when no context is found
 /// or no wired component fails resolvably.
-pub fn resolve_use_site(
-    tcx: TyCtxt<'_>,
-    spans: &[Span],
-    names: &ComponentNameMap,
-) -> Option<Resolved> {
-    let can_use_did = find_cgp_trait(tcx, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)?;
-
+pub fn resolve_use_site(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
     // A diagnostic span can land on a provider struct as well as the real context (both are local
     // ADTs), so try each candidate and keep the first that actually wires a failing component.
     for context in context_candidates_from_spans(tcx, spans) {
         let mut causes: Vec<Cause> = Vec::new();
         let mut consumers: Vec<String> = Vec::new();
         for (marker, params) in delegated_check_targets(tcx, context) {
-            // `Ctx: CanUseComponent<Marker, Params>` — `Params` is `()` for an ordinary
-            // (non-dispatched) component, or the recovered dispatch value for an `open`-dispatched
-            // one (so the real parameter, not a meaningless unit, drives the re-check); a component
-            // whose form holds is skipped.
-            let trait_ref = ty::TraitRef::new(tcx, can_use_did, [context, marker, params]);
-            let top: ty::PolyTraitPredicate<'_> = ty::Binder::dummy(trait_ref).upcast(tcx);
+            // Map the wired marker to its consumer trait and walk the real obligation
+            // `Ctx: Consumer<params…>`, not a `CanUseComponent`/`IsProviderFor` wrapper. `params`
+            // is `()` for an ordinary (non-dispatched) component, or the recovered dispatch value
+            // for an `open`-dispatched one; a component whose form holds is skipped.
+            let Some((consumer_did, _)) = marker_to_consumer(tcx, marker) else {
+                continue;
+            };
+            let top = consumer_obligation(tcx, context, consumer_did, params);
             if holds(tcx, top) {
                 continue;
             }
-            if let Some(resolved) = resolve_leaves(tcx, top, names) {
+            if let Some(resolved) = resolve_leaves(tcx, top) {
                 for consumer in resolved.consumers {
                     if !consumers.contains(&consumer) {
                         consumers.push(consumer);
@@ -507,6 +536,70 @@ pub fn resolve_use_site(
         }
     }
     None
+}
+
+/// Resolve a use-site failure by anchoring on the **consumer trait** the diagnostic names, rather
+/// than on the components the context wires. A consumer-method call names its consumer trait in a
+/// note (`` `CanGreet` defines an item `greet` ``), whose span points at the trait definition; when
+/// that trait is a local, non-generic CGP consumer, this recovers it and walks the real obligation
+/// `Ctx: Consumer` directly — no marker, no `CanUseComponent`/`IsProviderFor` detour.
+///
+/// This is what reaches a **namespace-joined** context, whose concrete wiring lives in the joined
+/// namespace and not in its own `DelegateComponent` impls. [`resolve_use_site`]'s per-component
+/// re-check finds only the namespace's blanket forwarding key (a bare parameter, skipped) and yields
+/// nothing; the walk started here instead descends `Ctx: Consumer → Provider: ProviderTrait<Ctx, …>`
+/// and lets the delegate normalize *through* the namespace on its own, so no per-context enumeration
+/// of the namespace's wiring is needed. It is deliberately tried after [`resolve_use_site`], so a
+/// directly-wired context keeps its existing recovery.
+///
+/// Restricted to a consumer whose only generic is `Self`, so `Ctx: Consumer` forms without the
+/// component parameters a use site does not carry — a generic consumer (`CanHandle<Code, Input>`) is
+/// left to decline. `None` when the diagnostic names no local CGP consumer trait, or none of the
+/// candidate contexts fails one resolvably.
+pub fn resolve_use_site_consumer(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
+    for consumer_did in local_cgp_consumer_traits_from_spans(tcx, spans) {
+        // `count() == 1` is `Self` alone, so the obligation is simply `Ctx: Consumer` (no params).
+        if tcx.generics_of(consumer_did).count() != 1 {
+            continue;
+        }
+        for context in context_candidates_from_spans(tcx, spans) {
+            if !is_local_adt(context) {
+                continue;
+            }
+            let top = consumer_obligation(tcx, context, consumer_did, tcx.types.unit);
+            if holds(tcx, top) {
+                continue;
+            }
+            if let Some(resolved) = resolve_leaves(tcx, top) {
+                return Some(resolved);
+            }
+        }
+    }
+    None
+}
+
+/// The local CGP consumer traits the diagnostic's spans reference — the trait a consumer-method
+/// `E0599` names in its "`Trait` defines an item …" note. A trait is a candidate when it is defined
+/// in this crate, its definition span contains one of the diagnostic's spans, and it is a CGP
+/// consumer (it pairs with a provider trait through its blanket impl, via [`consumer_provider_trait`]);
+/// the generated provider trait, getter traits, and non-CGP traits carry no such pairing and are
+/// filtered out.
+fn local_cgp_consumer_traits_from_spans(tcx: TyCtxt<'_>, spans: &[Span]) -> Vec<DefId> {
+    let mut traits = Vec::new();
+    for local in tcx.hir_crate_items(()).definitions() {
+        let did = local.to_def_id();
+        if !matches!(tcx.def_kind(did), DefKind::Trait) {
+            continue;
+        }
+        if consumer_provider_trait(tcx, did).is_none() {
+            continue;
+        }
+        let def_span = tcx.def_span(did);
+        if spans.iter().any(|&span| def_span.contains(span)) {
+            traits.push(did);
+        }
+    }
+    traits
 }
 
 /// The candidate context types of a use-site failure: every local struct or enum whose definition
@@ -678,76 +771,6 @@ fn enclosing_trait_impls(tcx: TyCtxt<'_>, spans: &[Span]) -> Vec<DefId> {
 /// whose wiring the resolver re-checks as a context.
 fn is_local_adt(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(def, _) if def.did().is_local())
-}
-
-/// Reconstruct the `Ctx: CanUseComponent<Marker, Params>` obligation a CGP consumer-trait bound
-/// (`Ctx: CanCalculateArea<Rectangle>`) stands for, so it can be walked exactly as a
-/// `check_components!` entry is — with the component's concrete parameters preserved. Returns
-/// `None` when `consumer` is not a recognizable CGP consumer trait (its blanket impl does not bound
-/// its own context on a provider trait, or that provider trait carries no `IsProviderFor` marker),
-/// so a plain supertrait such as `Send` is skipped rather than mis-walked.
-fn consumer_can_use_obligation<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    context: Ty<'tcx>,
-    consumer: ty::PolyTraitPredicate<'tcx>,
-) -> Option<ty::PolyTraitPredicate<'tcx>> {
-    let can_use_did = find_cgp_trait(tcx, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)?;
-    let consumer_ref = consumer.skip_binder().trait_ref;
-    let provider_did = consumer_provider_trait(tcx, consumer_ref.def_id)?;
-    let marker = provider_marker(tcx, provider_did)?;
-
-    // The component's extra parameters are grouped into the `Params` slot exactly as CGP groups
-    // them: none as the unit `()`, a single one bare, several as a tuple.
-    let extra: Vec<Ty<'tcx>> = consumer_ref.args.types().skip(1).collect();
-    let params = match extra.as_slice() {
-        [] => tcx.types.unit,
-        [single] => *single,
-        many => Ty::new_tup(tcx, many),
-    };
-
-    let trait_ref = ty::TraitRef::new(tcx, can_use_did, [context, marker, params]);
-    Some(ty::Binder::dummy(trait_ref).upcast(tcx))
-}
-
-/// The provider trait a consumer trait pairs with, found through the consumer's blanket impl
-/// `impl<C> Consumer for C where C: Provider<C>`: the `where`-bound whose self type is the impl's
-/// own self is the provider trait. This is the per-consumer form of the inversion
-/// [`component_map`](crate::component_map) performs across the whole trait graph.
-fn consumer_provider_trait(tcx: TyCtxt<'_>, consumer_did: DefId) -> Option<DefId> {
-    for &impl_did in tcx.trait_impls_of(consumer_did).blanket_impls() {
-        let impl_self = tcx.type_of(impl_did).skip_binder();
-        for &(clause, _) in tcx.predicates_of(impl_did).predicates {
-            let Some(tp) = clause.as_trait_clause() else {
-                continue;
-            };
-            let trait_ref = tp.skip_binder().trait_ref;
-            if trait_ref.self_ty() == impl_self && is_provider_trait(tcx, trait_ref.def_id) {
-                return Some(trait_ref.def_id);
-            }
-        }
-    }
-    None
-}
-
-/// The component marker a provider trait keys, read from the `IsProviderFor<Marker, …>` supertrait
-/// every provider trait carries — the same second-argument marker
-/// [`component_map`](crate::component_map) reads. Anchored by DefId to `cgp_component`.
-fn provider_marker<'tcx>(tcx: TyCtxt<'tcx>, provider_did: DefId) -> Option<Ty<'tcx>> {
-    for &(clause, _) in tcx.explicit_super_predicates_of(provider_did).skip_binder() {
-        let Some(tp) = clause.as_trait_clause() else {
-            continue;
-        };
-        let trait_ref = tp.skip_binder().trait_ref;
-        if is_cgp_item(
-            tcx,
-            trait_ref.def_id,
-            IS_PROVIDER_FOR_TRAIT,
-            CGP_COMPONENT_CRATE,
-        ) {
-            return trait_ref.args.get(1).and_then(|arg| arg.as_type());
-        }
-    }
-    None
 }
 
 /// The `CanUseComponent<..>` supertrait clause of `trait_did`, if it carries one — the marker

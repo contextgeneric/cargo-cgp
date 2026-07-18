@@ -260,12 +260,15 @@ the map is provably rooted in real CGP provider traits. The defining crate name 
 [`config`](../../crates/cargo-cgp-driver/src/config.rs) as `CGP_COMPONENT_CRATE`.
 
 Each entry is **keyed by the marker's full path** (`def_path_str`), not its bare name, so two distinct
-structs sharing a marker name in different modules occupy separate entries. The two consumers of the
-map reach it by their two available keys. The driver's typed resolver holds a marker's `DefId`, so it
-looks the entry up by that same full path — an exact, collision-free match. The string rewrite below
-has only the marker *name* rendered into the diagnostic text, where no `DefId` and rarely a full path
-survives, so it matches a key by its last path segment; that is ambiguous only when two markers share a
-name, a residual the text form cannot close but the full-path key removes for the typed path.
+structs sharing a marker name in different modules occupy separate entries. The map's sole consumer is
+now the **text-rewrite fallback** below, which has only the marker *name* rendered into the diagnostic
+text — where no `DefId` and rarely a full path survives — so it matches a key by its last path segment;
+that is ambiguous only when two markers share a name, an unavoidable residual of working from rendered
+text. (The [typed root-cause resolver](typed-root-cause-resolution.md) once looked the map up by a
+marker's full-path `DefId`, but no longer uses it at all: it reads consumer and provider names straight
+off the real trait `DefId`s it walks, part of resolving without depending on `IsProviderFor` — the very
+supertrait this map is built by inverting. The map therefore serves only the declined-diagnostic text
+path, where recognizing `IsProviderFor`/`CanUseComponent` in rustc's output is still essential.)
 
 The walk is expensive — it visits every trait and its blanket impls — so it runs at most once,
 wrapped in a [`ComponentNameMap`](../../crates/cargo-cgp-error-processing/src/rewrite/names.rs): a

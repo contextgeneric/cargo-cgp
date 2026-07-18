@@ -8,9 +8,9 @@ error[E0277]: [CGP-E002] the provider trait `Foo` with context `App` is not impl
            this is required through the dependency chain:
                [CGP-E101] consumer trait impl `CanBaz` for context `App`
                └── [CGP-E102] provider trait impl `Baz` with context `App` for provider `ProvideBaz`
-                   └── [CGP-E105] trait impl `CanBar` for `App`
+                   └── [CGP-E101] consumer trait impl `CanBar` for context `App`
                        └── [CGP-E102] provider trait impl `Bar` with context `App` for provider `ProvideBar`
-                           └── [CGP-E105] trait impl `CanFoo` for `App`
+                           └── [CGP-E101] consumer trait impl `CanFoo` for context `App`
                                └── [CGP-E102] provider trait impl `Foo` with context `App` for provider `ProvideFoo`
                                    └── [CGP-E105] trait impl `HasName` for `App`
                                        └── [CGP-E106] missing field `name` on `App`
@@ -25,7 +25,7 @@ error[E0277]: [CGP-E001] the consumer trait `CanBar` is not implemented for cont
            this is required through the dependency chain:
                [CGP-E101] consumer trait impl `CanBar` for context `App`
                └── [CGP-E102] provider trait impl `Bar` with context `App` for provider `ProvideBar`
-                   └── [CGP-E105] trait impl `CanFoo` for `App`
+                   └── [CGP-E101] consumer trait impl `CanFoo` for context `App`
                        └── [CGP-E102] provider trait impl `Foo` with context `App` for provider `ProvideFoo`
                            └── [CGP-E105] trait impl `HasName` for `App`
                                └── [CGP-E106] missing field `name` on `App`

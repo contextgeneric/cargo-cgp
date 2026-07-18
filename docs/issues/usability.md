@@ -84,21 +84,12 @@ be forced to recompute from the emitter (it re-enters the `DiagCtxt` lock — th
 the [`E0271` use-site case](../implementation/typed-root-cause-resolution.md) out of reach). Short of
 recovery, the text rewrite should at least follow the combinator "provider" through to the consumer
 trait and drop the impl-candidate `help`, the way the resolver already reframes a `RedirectLookup`
-provider to the `[CGP-E001]` consumer form.
-
-The sibling case is a namespace-joined context whose use-site failure is an `E0599` rather than an
-`E0277`, so the resolver *does* find the context (from rustc's receiver-type span) but cannot see its
-wiring: a `namespace …;` join gives the context only a blanket `DelegateComponent<__Key__>` forwarding,
-whose key is a bare type parameter. Re-checking that parameter as a component used to fabricate a
-garbage `` the consumer trait `__Key__` `` header over `__Key__: Sized` noise; the resolver now skips a
-blanket-forwarding param key (see [Typed root-cause resolution](../implementation/typed-root-cause-resolution.md))
-and declines to rustc's own `E0599`, which — thanks to the next-solver — already names the missing
-`HasField` bound. [`namespace_join_use_site`](../../tests/ui/usability/use-site/namespace_join_use_site.rs)
-pins it. What remains is the same misleading "use associated function syntax instead" advice the other
-declined use-site failures carry, plus the deeper gap that the resolver still cannot recover a
-namespace-joined context's concrete wiring (it lives in the namespace, not the per-context view) to
-present the root-cause tree the equivalent directly-wired case
-([`unsatisfied_dependency`](../../tests/ui/acceptable/use-site/unsatisfied_dependency.rs)) already gets.
+provider to the `[CGP-E001]` consumer form. The *`E0599`* sibling of this shape — a namespace-joined
+context whose consumer trait is local and recovered from rustc's receiver span — is *not* a gap: the
+resolver anchors on that consumer trait and walks it through the namespace to the root cause (see
+[`namespace_join_use_site`](../../tests/ui/acceptable/use-site/namespace_join_use_site.rs), now in
+`acceptable/`); only the `E0277` shape above, where the context cannot be anchored at all, still
+declines.
 
 ## One missing derive reported field by field
 
@@ -115,20 +106,6 @@ fields are genuinely absent (`empty_field_struct`, `parallel_branches`, both now
 fixes — so the coalescing must key on the derive being present-but-empty, not merely on there being
 more than one field cause.
 
-## Abstract-type imports fail untransformed and leak generated names
-
-A `#[use_type]` abstract-type dependency that cannot be satisfied is not recognized by the resolver,
-so it falls through untransformed — no `[CGP-Exxx]` code, no root-cause note — and rustc's "the
-following other types implement …" help then exposes the generated placeholder identifiers
-`__Context__`, `__Components__`, `__Path__`, and `__Provider__` that the user never wrote.
-[`use_type_foreign_unsatisfied`](../../tests/ui/usability/use-type/use_type_foreign_unsatisfied.rs)
-shows the placeholder leak, and
-[`use_type_nested_unsatisfied`](../../tests/ui/usability/use-type/use_type_nested_unsatisfied.rs)
-adds a second error block for the one cause and a misleading `add #![feature(trivial_bounds)]`
-suggestion — a rustc heuristic that is wrong for a wiring error, the same kind of misdirection the
-resolver already strips from the consumer-call case. At minimum the post-processing should strip the
-`__…__` placeholders the way it strips the CGP path prefixes; better, the resolver should learn to
-recover this class into a coded root-cause note.
 
 ## Some wiring coherence conflicts still fan out or expose internal traits
 
@@ -178,9 +155,10 @@ class and naming the offending construct is the work here.
 
 Taken together, these issues define the tool's presentation target for the classes it does not yet
 reshape: deduplicate one cause down to a single headline whether it fans out across diagnostics (the
-cascade) or within one (the missing derive); recover the untransformed `#[use_type]` and lowering
-classes into coded, root-cause-first diagnostics, or at least strip the generated `__…__` names and
-misleading suggestions they leak; and coalesce the coherence conflicts that still fan out — the
+cascade) or within one (the missing derive); recover the untransformed lowering class into a coded,
+root-cause-first diagnostic, or at least strip the generated `__…__` names and misleading suggestions
+it leaks; surface the use-site `E0277` combinator-plumbing shape once its obligation becomes
+recoverable; and coalesce the coherence conflicts that still fan out — the
 duplicate provider *name*, the `E0207` unconstrained generic, and the `E0275` `UseContext` cycle —
 and name the wiring mistake behind each code, the way the duplicate delegate-key `E0119` is now
 reshaped into the `[CGP-E004]`–`[CGP-E008]` family. The bar is the same one

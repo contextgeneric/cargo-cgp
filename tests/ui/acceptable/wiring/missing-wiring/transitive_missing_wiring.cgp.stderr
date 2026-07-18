@@ -8,7 +8,7 @@ error[E0277]: [CGP-E002] the provider trait `BarProvider` with context `App` is 
            this is required through the dependency chain:
                [CGP-E101] consumer trait impl `CanUseFoo` for context `CommonProvider`
                └── [CGP-E102] provider trait impl `FooProvider` with context `CommonProvider` for provider `DoFooWithBar`
-                   └── [CGP-E105] trait impl `CanUseBar` for `CommonProvider`
+                   └── [CGP-E101] consumer trait impl `CanUseBar` for context `CommonProvider`
                        └── [CGP-E107] context `CommonProvider` does not contain any delegate entry for `BarProviderComponent`
 
 For more information about this error, try `rustc --explain E0277`.
