@@ -124,12 +124,16 @@ struct LeafPath<'tcx> {
 /// A bound on a foreign type (whose `Self` is not the context and whose trait is not CGP wiring)
 /// is normally the terminal leaf — that bound *is* the root cause a reader wants (`f64: Eq`), and
 /// descending it blindly would wander into whatever unrelated `std` blanket impl happens to match
-/// its `Self` (e.g. `impl<F: FnPtr> Eq for F`) and fabricate a misleading chain. The one exception
-/// is a foreign bound satisfied by an impl that itself depends on the *context* — a request
+/// its `Self` (e.g. `impl<F: FnPtr> Eq for F`) and fabricate a misleading chain. Two foreign bounds
+/// are the exception. One is satisfied by an impl that itself depends on the *context* — a request
 /// struct's `HasBasicAuthHeader<Ctx>` getter, whose `#[cgp_auto_getter]` blanket impl requires
 /// `Ctx: HasPasswordType`: there the descent follows only the impl's context-side dependencies (so
-/// the real cause on the context surfaces and de-duplicates with the same cause reached elsewhere),
-/// and never its foreign dependencies (which keeps the `f64: Eq` guarantee intact).
+/// the real cause on the context surfaces and de-duplicates with the same cause reached elsewhere).
+/// The other is a **same-trait recursion over a type-level list** — a record's `Cons<Field<..>, ..>:
+/// HandleMapEntry<..>` whose tail is another `Cons<.., Nil>: HandleMapEntry<..>` — which the descent
+/// follows into so a field deep in the list whose value type is unwired is still reached. Following
+/// only context-side deps *and* the same trait keeps the `f64: Eq` guarantee intact: a foreign
+/// `f64: FnPtr` step is neither, so it is never followed and the bound stays the leaf.
 fn collect_leaf_paths<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitPredicate<'tcx>,
@@ -180,18 +184,28 @@ fn collect_leaf_paths<'tcx>(
         // context-side, so it is never followed and the bound stays the leaf. It also skips the
         // getter's own `Ctx::Assoc`-typed `HasField` clause on the request (present, but a
         // projection mismatch), which a plain descent would misreport as a missing field.
-        let context_side: Vec<_> = unmet
+        //
+        // A foreign trait that recurses over a type-level list also reaches the context only
+        // deeper: a record's `Cons<Field<.., V0>, Cons<Field<.., V1>, Nil>>: HandleMapEntry<.., Ctx,
+        // ..>` handles its head field's `Ctx: CanDeserializeValue<V0>` here but its later fields
+        // through the **tail** `Cons<.., Nil>: HandleMapEntry<..>` — a same-trait bound on another
+        // foreign list node. So a same-trait recursion is followed alongside the context-side deps,
+        // which lets the walk reach the field whose dependency is the real cause. Following only the
+        // *same* trait keeps the `f64: Eq` guarantee: a foreign leaf's `impl` dep is a *different*
+        // trait (`f64: FnPtr`), so it is never mistaken for a structural recursion.
+        let this_trait = pred.def_id();
+        let followable: Vec<_> = unmet
             .into_iter()
-            .filter(|nested| is_descendable(tcx, *nested, context))
+            .filter(|nested| is_descendable(tcx, *nested, context) || nested.def_id() == this_trait)
             .collect();
-        if context_side.is_empty() {
+        if followable.is_empty() {
             return vec![LeafPath {
                 preds: path,
                 mismatch: None,
             }];
         }
         let mut paths = Vec::new();
-        for nested in context_side {
+        for nested in followable {
             paths.extend(collect_leaf_paths(tcx, nested, context, &path, depth + 1));
         }
         return paths;
@@ -322,12 +336,26 @@ fn is_descendable<'tcx>(
 /// ref (the next-solver-safe `fresh_args_for_item` + `eq` dance `SelectionContext` is unavailable
 /// for), then instantiating and normalizing that impl's predicates. `Some(vec![])` means an impl
 /// matched but carries no trait-clause `where` obligations.
+///
+/// A **concrete-`Self`** impl (one whose declared `Self` is a struct/enum, like the `#[cgp_provider]`
+/// impl `impl ValueDeserializer<…> for DeserializeRecordFields`) is preferred over a **blanket** one
+/// (whose `Self` is a bare type parameter, like the CGP delegation blanket `impl<P: DelegateComponent>
+/// ValueDeserializer<…> for P`). Both unify with a provider obligation such as
+/// `DeserializeRecordFields: ValueDeserializer<…>`, but only the specific impl's `where`-clauses lead
+/// to the real cause; the blanket's lead to a `DeserializeRecordFields: DelegateComponent` dead-end,
+/// since a leaf provider does not delegate. A blanket impl is used only when no concrete-`Self` one
+/// matches — the usual case for an obligation whose `Self` *is* the context (`App: CanUseComponent<…>`
+/// has only the blanket).
 pub(crate) fn impl_where_obligations<'tcx>(
     tcx: TyCtxt<'tcx>,
     obligation: ty::PolyTraitPredicate<'tcx>,
 ) -> Option<Vec<ty::PolyTraitPredicate<'tcx>>> {
     let param_env = ty::ParamEnv::empty();
     let obligation_ref = obligation.skip_binder().trait_ref;
+
+    // A blanket (param-`Self`) match is held back as a fallback and used only if no concrete-`Self`
+    // impl matches, so a leaf provider's specific impl wins over the delegation blanket.
+    let mut blanket_fallback: Option<Vec<ty::PolyTraitPredicate<'tcx>>> = None;
 
     for impl_did in tcx.all_impls(obligation.def_id()) {
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
@@ -355,13 +383,35 @@ pub(crate) fn impl_where_obligations<'tcx>(
             continue;
         }
 
+        let raw: Vec<Unnormalized<ty::Clause<'tcx>>> = tcx
+            .predicates_of(impl_did)
+            .instantiate(tcx, impl_args)
+            .into_iter()
+            .map(|(clause, _)| clause)
+            .collect();
+        // Register every predicate so the solver can propagate the constraints that *do* hold onto
+        // the impl's otherwise-free parameters, before any single one is read. A record deserializer's
+        // `Record: HasOptionalBuilder<Builder = Builder>` clause pins the free `Builder` param to the
+        // concrete builder type; without solving it first, the sibling `Record::Fields:
+        // HandleMapEntry<.., Builder>` clause — the branch that leads to the real cause — carries
+        // `Builder` as a stray inference var and is dropped as inference-laden below.
+        for &clause in &raw {
+            ocx.register_obligation(Obligation::new(
+                tcx,
+                ObligationCause::dummy(),
+                param_env,
+                clause.skip_norm_wip(),
+            ));
+        }
+        let _ = ocx.try_evaluate_obligations();
+
         let mut obligations = Vec::new();
-        for (predicate, _) in tcx.predicates_of(impl_did).instantiate(tcx, impl_args) {
+        for clause in raw {
             let clause: ty::Clause<'tcx> =
-                ocx.normalize(&ObligationCause::dummy(), param_env, predicate);
+                ocx.normalize(&ObligationCause::dummy(), param_env, clause);
             let clause = infcx.resolve_vars_if_possible(clause);
-            // A predicate that still carries inference vars (an unconstrained impl parameter)
-            // cannot be re-evaluated in a fresh context; region vars are simply erased.
+            // A predicate that still carries inference vars (a genuinely unconstrained impl
+            // parameter) cannot be re-evaluated in a fresh context; region vars are simply erased.
             if clause.has_non_region_infer() {
                 continue;
             }
@@ -369,9 +419,16 @@ pub(crate) fn impl_where_obligations<'tcx>(
                 obligations.push(tp);
             }
         }
-        return Some(obligations);
+
+        // Prefer a concrete-`Self` impl; hold a blanket (param-`Self`) match as the fallback.
+        let declared_self = tcx.impl_trait_ref(impl_did).skip_binder().self_ty();
+        if matches!(declared_self.kind(), ty::Param(_)) {
+            blanket_fallback.get_or_insert(obligations);
+        } else {
+            return Some(obligations);
+        }
     }
-    None
+    blanket_fallback
 }
 
 /// Whether `pred` already holds — a dependency that is satisfied and so is not descended into.

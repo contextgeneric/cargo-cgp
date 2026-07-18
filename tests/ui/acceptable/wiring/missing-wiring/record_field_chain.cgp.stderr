@@ -1,0 +1,18 @@
+error[E0277]: [CGP-E002] the provider trait `ValueBuilder<Inner>` with context `App` is not implemented for provider `RedirectLookup<App, @ValueBuilderComponent>`
+   --> src/main.rs:120:9
+    |
+120 |         ValueBuilderComponent: [
+    |         ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@ValueBuilderComponent.Inner`
+            this is required through the dependency chain:
+                [CGP-E101] consumer trait impl `CanBuildValue<Outer>` for context `App`
+                └── [CGP-E104] redirect lookup to `@ValueBuilderComponent` in `App`
+                    └── [CGP-E102] provider trait impl `ValueBuilder<Outer>` with context `App` for provider `BuildRecord`
+                        └── [CGP-E105] trait impl `BuildFields` for `Cons<Field<Symbol!("id"), u64>, Cons<Field<Symbol!("inner"), Inner>, Nil>>`
+                            └── [CGP-E105] trait impl `BuildFields` for `Cons<Field<Symbol!("inner"), Inner>, Nil>`
+                                └── [CGP-E105] trait impl `CanBuildValue` for `App`
+                                    └── [CGP-E104] redirect lookup to `@ValueBuilderComponent` in `App`
+                                        └── [CGP-E107] context `App` does not contain any delegate entry for `@ValueBuilderComponent.Inner`
+
+For more information about this error, try `rustc --explain E0277`.

@@ -267,6 +267,19 @@ For a failing obligation it finds the impl that would satisfy it and takes that 
 obligations as its direct dependencies, then recurses into just the ones that do **not** already hold —
 a satisfied dependency (an already-present field, a wired provider that checks out) is pruned.
 
+Finding *which* impl would satisfy the obligation is two subtleties deep for anything past a flat
+wiring. First, a provider obligation (`DeserializeRecordFields: ValueDeserializer<…>`) unifies with
+*two* impls: the provider's own `#[cgp_provider]` impl and the CGP delegation blanket
+`impl<P: DelegateComponent> ValueDeserializer<…> for P`. Only the concrete-`Self` impl's `where`-clauses
+lead to the real cause — the blanket's lead to a `DeserializeRecordFields: DelegateComponent` dead-end,
+since a leaf provider does not delegate — so a **concrete-`Self` impl is preferred** over a param-`Self`
+blanket, the blanket used only when it is the sole match (as for an obligation whose `Self` *is* the
+context). Second, an impl may carry a **parameter fixed only by an associated-type `where`-clause** — a
+record deserializer's `Builder`, pinned by `Record: HasOptionalBuilder<Builder = Builder>` — that stays
+a free inference variable after the trait ref unifies. The walk registers and **solves the impl's
+satisfiable clauses first**, binding such a parameter, so the sibling clause that carries it (`Record::
+Fields: HandleMapEntry<…, Builder>` — the branch to the cause) is not dropped as inference-laden.
+
 A branch ends at a **terminal leaf**, and which obligations count as terminal is what keeps the tree
 honest. The descent follows only the CGP wiring vocabulary — `CanUseComponent`, `IsProviderFor`,
 `DelegateComponent`, any provider trait, and any obligation whose `Self` is the context (its getter and
@@ -294,7 +307,15 @@ surfaces (and de-duplicates with the same cause reached down another branch) ins
 only the context-side dependencies is what preserves the `f64: Eq` guarantee — a foreign `f64: FnPtr`
 step is not context-side, so it is never followed — and it skips the getter's own `Ctx::Assoc`-typed
 `HasField` clause on the request, which is present but a projection mismatch a plain descent would
-misreport as a missing field. Two further rules
+misreport as a missing field. A foreign bound is followed one further way, for the **same reason** but a
+different shape: a trait that recurses over a type-level list reaches the context only *deeper*. A
+record's field list `Cons<Field<.., V0>, Cons<Field<.., V1>, Nil>>: HandleMapEntry<.., Ctx, ..>` handles
+its head field's `Ctx: CanDeserializeValue<V0>` at this node but its later fields through the **tail**
+`Cons<.., Nil>: HandleMapEntry<..>` — a *same-trait* bound on another foreign list node. So the descent
+follows a same-trait recursion alongside the context-side deps, which lets it reach the field whose
+dependency is the unwired cause; following only the *same* trait keeps the `f64: Eq` guarantee intact,
+since a foreign leaf's `impl` dependency (`f64: FnPtr`) is a *different* trait and so never mistaken for
+a list recursion. Two further rules
 handle the remaining cases. An obligation whose satisfying impl's trait-clause `where`-obligations
 **all hold**, yet is itself unmet, is failing for a projection/associated-type mismatch the
 trait-clause walk cannot see. The resolver looks among that impl's own predicates for the one form it
@@ -432,7 +453,21 @@ the caret), and a failure whose only caret sits on a *provider* struct's own imp
 provider, whose supertrait chain reaches no consumer on a context) or inside the generic component's
 trait definition. The wrapper-chain descent is itself bounded — it follows only real impl
 `where`-clauses, reports a cause only at a genuine CGP consumer on a local context, and stops at a
-recursion bound — so it cannot fabricate a chain from an unrelated bound. The impl-site path recovers the concrete component parameter from the supertrait, but the
+recursion bound — so it cannot fabricate a chain from an unrelated bound.
+
+One more use-site shape is out of reach for a hard reason worth recording: a **consumer-method call
+whose failure is an `E0271`, not an `E0599`** — `app.deserialize_json_string::<Payload>(…)` on a
+context that cannot deserialize `Payload`, which fails as a type mismatch on the capability's
+`TryComputer::Output` (`cgp-serde`'s arena test hits exactly this). Its caret sits on the method call,
+naming no context-definition span, so the use-site anchor finds nothing; and recovering the obligation
+would need the compiler's **typeck results** (to resolve the method and read the receiver's type),
+which the resolver *cannot* obtain. `tcx.typeck` is a body-level query that replays its cached
+diagnostics when forced, and forcing it from inside `emit_diagnostic` — where the `DiagCtxt` is already
+borrowed — re-enters that borrow and panics. Only the fresh-`InferCtxt` trait solver is safe to
+re-enter mid-emit (see [Why it runs in the emitter](#why-it-runs-in-the-emitter)); a full query is not,
+and there is no hook between typeck and the fatal error to precompute the result. So this failure falls
+through to rustc's own output — usually redundant with the `check_components!` failure for the same
+capability, which the resolver *does* reshape. The impl-site path recovers the concrete component parameter from the supertrait, but the
 use-site path still builds each `CanUseComponent<Marker, ()>` with an **empty `Params` slot**, so a
 generic component whose real parameters matter is not re-checked *there* (the check and impl-site
 paths recover those). It renders only leaves it can trust: a `HasField` field (missing, underived, or —
@@ -472,7 +507,11 @@ says what it needs to without altering the header's shape.
   `resolve_use_site` recovering the context ADT from
   the diagnostic's spans and its wired components from `DelegateComponent` impls), `walk.rs` (walking the cause chain down to each terminal leaf — the
   descendable-vocabulary rule, the plumbing-leaf drop, the foreign-getter descent that follows a
-  non-context getter bound's blanket impl into just its context-side dependencies, `is_reportable_leaf`
+  non-context getter bound's blanket impl into just its context-side dependencies plus a *same-trait*
+  list recursion (a `HandleMapEntry` tail), `impl_where_obligations` preferring a concrete-`Self` impl
+  over the delegation blanket and solving the matched impl's satisfiable clauses first so an
+  associated-type-determined parameter (a record builder) binds before its sibling clause is read,
+  `is_reportable_leaf`
   keeping an unmet `DelegateComponent` only when it lands on the context, `has_field_projection_mismatch`
   finding an unmet `HasField` projection where the trait clauses all hold, and — after building the inner
   labels from the chain *above* the leaf — appending the coded `dependency_tree_leaf` as the tree's
@@ -552,8 +591,13 @@ folds to a clean `@…`; and `multi_redirect_missing` pins a chain of several ho
 leaf is pinned by the [`acceptable/wiring/missing-wiring/`](../../tests/ui/acceptable/wiring/missing-wiring)
 fixtures: `basic_missing_wiring` (a provider's `#[uses]` dependency on an unwired component → a
 `missing wiring` note over the transitive chain), `direct_missing_wiring` (a `check_components!` entry
-for a component the context wires nowhere → a single-node chain), and `parallel_missing_wiring` (a
-provider needing two unwired components → two `missing wiring` notes, one per component). The use-site path
+for a component the context wires nowhere → a single-node chain), `parallel_missing_wiring` (a
+provider needing two unwired components → two `missing wiring` notes, one per component), and
+`record_field_chain` (a record provider that builds each field through the context over a recursive
+`Cons`/`Nil` field-list handler — the `cgp-serde` `DeserializeRecordFields`/`HandleMapEntry` shape — so
+the missing wiring for one field's value type is reached only by preferring the provider's concrete
+impl over the delegation blanket, solving the provider's associated-type-determined `Builder`
+parameter, and following the same-trait list recursion into the tail). The use-site path
 is pinned by the [`acceptable/use-site/`](../../tests/ui/acceptable/use-site)
 fixtures: `missing_dependency` and `unsatisfied_dependency` (a consumer-method `E0599` → the
 `CGP-E001` header, the misleading method-syntax advice dropped, and a `missing field` root-cause note),

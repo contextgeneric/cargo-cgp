@@ -1,0 +1,168 @@
+error[E0277]: the trait bound `BuildRecord: ValueBuilder<App, Outer>` is not satisfied
+   --> src/main.rs:120:9
+    |
+120 |         ValueBuilderComponent: [
+    |         ^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+help: the trait `ValueBuilder<App, Outer>` is not implemented for `BuildRecord`
+   --> src/main.rs:75:16
+    |
+ 75 | #[cgp_impl(new BuildRecord)]
+    |                ^^^^^^^^^^^
+help: the trait `ValueBuilder<__Context__, Value>` is conditionally implemented for `BuildRecord`
+   --> src/main.rs:76:1
+    |
+ 76 | / impl<Value, Builder> ValueBuilder<Value>
+ 77 | | where
+ 78 | |     Value: HasFields + HasRecordBuilder<RecordBuilder = Builder>,
+ 79 | |     Value::Fields: BuildFields<Self, Builder>,
+    | |____________________--------------------------^
+    |                      |
+    |                      unsatisfied requirement introduced here: `<Outer as cgp::prelude::HasFields>::Fields: BuildFields<App, ()>`
+    |                      unsatisfied requirement introduced here: `<Outer as cgp::prelude::HasFields>::Fields: BuildFields<App, ()>`
+note: required for `RedirectLookup<App, PathCons<ValueBuilderComponent, cgp::prelude::Nil>>` to implement `IsProviderFor<ValueBuilderComponent, App, Outer>`
+   --> src/main.rs:31:1
+    |
+ 31 | #[cgp_component(ValueBuilder)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: required for `App` to implement `CanUseComponent<ValueBuilderComponent, Outer>`
+note: required by a bound in `__CheckApp`
+   --> src/main.rs:118:1
+    |
+118 | / check_components! {
+119 | |     App {
+120 | |         ValueBuilderComponent: [
+121 | |             Outer,
+...   |
+124 | | }
+    | |_^ required by this bound in `__CheckApp`
+    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: ValueBuilder<_, _>` is not satisfied
+   --> src/main.rs:120:9
+    |
+120 |         ValueBuilderComponent: [
+    |         ^^^^^^^^^^^^^^^^^^^^^ the trait `ValueBuilder<App, Inner>` is not implemented for `RedirectLookup<App, PathCons<ValueBuilderComponent, cgp::prelude::Nil>>`
+    |
+help: the trait `ValueBuilder<__Context__, Value>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+   --> src/main.rs:31:1
+    |
+ 31 | #[cgp_component(ValueBuilder)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied requirement introduced here: `App: DelegateComponent<<PathCons<ValueBuilderComponent, cgp::prelude::Nil> as ConcatPath<PathCons<Inner, cgp::prelude::Nil>>>::Output>`
+note: required for `App` to implement `ValueBuilder<App, Inner>`
+   --> src/main.rs:31:1
+    |
+ 31 |   #[cgp_component(ValueBuilder)]
+    |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 32 | | pub trait CanBuildValue<Value> {
+    | |______________________________^
+note: required for `App` to implement `CanBuildValue<Inner>`
+   --> src/main.rs:31:1
+    |
+ 31 | #[cgp_component(ValueBuilder)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 32 | pub trait CanBuildValue<Value> {
+    |           ^^^^^^^^^^^^^^^^^^^^
+note: required for `Cons<Field<Symbol<5, Chars<..>>, _>, _>` to implement `BuildFields<App, ()>`
+   --> src/main.rs:56:42
+    |
+ 56 | impl<Context, Tag, Value, Tail, Builder> BuildFields<Context, Builder>
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 57 |     for Cons<Field<Tag, Value>, Tail>
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 58 | where
+ 59 |     Context: CanBuildValue<Value>,
+    |              -------------------- unsatisfied trait bound introduced here
+    = note: 1 redundant requirement hidden
+    = note: required for `Cons<Field<Symbol<2, Chars<..>>, u64>, Cons<_, _>>` to implement `BuildFields<App, ()>`
+note: required for `BuildRecord` to implement `IsProviderFor<ValueBuilderComponent, App, Outer>`
+   --> src/main.rs:75:1
+    |
+ 75 | #[cgp_impl(new BuildRecord)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 79 |     Value::Fields: BuildFields<Self, Builder>,
+    |                    -------------------------- unsatisfied trait bound introduced here
+    = note: 1 redundant requirement hidden
+    = note: required for `RedirectLookup<App, PathCons<ValueBuilderComponent, cgp::prelude::Nil>>` to implement `IsProviderFor<ValueBuilderComponent, App, Outer>`
+    = note: required for `App` to implement `CanUseComponent<ValueBuilderComponent, Outer>`
+note: required by a bound in `__CheckApp`
+   --> src/main.rs:118:1
+    |
+118 | / check_components! {
+119 | |     App {
+120 | |         ValueBuilderComponent: [
+121 | |             Outer,
+...   |
+124 | | }
+    | |_^ required by this bound in `__CheckApp`
+    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: CanUseComponent<ValueBuilderComponent, Outer>` is not satisfied
+   --> src/main.rs:120:9
+    |
+120 |         ValueBuilderComponent: [
+    |         ^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+help: the trait `DelegateComponent<PathCons<ValueBuilderComponent, PathCons<Inner, cgp::prelude::Nil>>>` is not implemented for `App`
+   --> src/main.rs:105:1
+    |
+105 | pub struct App;
+    | ^^^^^^^^^^^^^^
+help: `App` implements trait `DelegateComponent<Key>`
+   --> src/main.rs:109:14
+    |
+109 |         open ValueBuilderComponent;
+    |              ^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<ValueBuilderComponent>`
+110 |
+111 |         @ValueBuilderComponent.u64: BuildU64,
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<PathCons<ValueBuilderComponent, PathCons<u64, __Wildcard__>>>`
+112 |         @ValueBuilderComponent.Outer: BuildRecord,
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<PathCons<ValueBuilderComponent, PathCons<Outer, __Wildcard__>>>`
+note: required for `RedirectLookup<App, PathCons<ValueBuilderComponent, cgp::prelude::Nil>>` to implement `IsProviderFor<ValueBuilderComponent, App, Inner>`
+   --> src/main.rs:31:1
+    |
+ 31 | #[cgp_component(ValueBuilder)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: 1 redundant requirement hidden
+    = note: required for `App` to implement `IsProviderFor<ValueBuilderComponent, App, Inner>`
+note: required for `App` to implement `ValueBuilder<App, Inner>`
+   --> src/main.rs:31:1
+    |
+ 31 |   #[cgp_component(ValueBuilder)]
+    |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 32 | | pub trait CanBuildValue<Value> {
+    | |______________________________^
+note: required for `App` to implement `CanBuildValue<Inner>`
+   --> src/main.rs:31:1
+    |
+ 31 | #[cgp_component(ValueBuilder)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 32 | pub trait CanBuildValue<Value> {
+    |           ^^^^^^^^^^^^^^^^^^^^
+note: required for `Cons<Field<Symbol<5, Chars<..>>, _>, _>` to implement `BuildFields<App, ()>`
+   --> src/main.rs:56:42
+    |
+ 56 | impl<Context, Tag, Value, Tail, Builder> BuildFields<Context, Builder>
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 57 |     for Cons<Field<Tag, Value>, Tail>
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 58 | where
+ 59 |     Context: CanBuildValue<Value>,
+    |              -------------------- unsatisfied trait bound introduced here
+    = note: 3 redundant requirements hidden
+    = note: required for `RedirectLookup<App, PathCons<ValueBuilderComponent, cgp::prelude::Nil>>` to implement `IsProviderFor<ValueBuilderComponent, App, Outer>`
+    = note: required for `App` to implement `CanUseComponent<ValueBuilderComponent, Outer>`
+note: required by a bound in `__CheckApp`
+   --> src/main.rs:118:1
+    |
+118 | / check_components! {
+119 | |     App {
+120 | |         ValueBuilderComponent: [
+121 | |             Outer,
+...   |
+124 | | }
+    | |_^ required by this bound in `__CheckApp`
+    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
