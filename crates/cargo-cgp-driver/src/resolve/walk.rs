@@ -86,7 +86,7 @@ pub(crate) fn resolve_leaves<'tcx>(
     let consumer = format!(
         "{}{}",
         marker_role(tcx, top_ref.args.type_at(1), names, |n| n.consumer),
-        render_params(top_ref.args.type_at(2))
+        render_params(tcx, top_ref.args.type_at(2))
     );
 
     Some(Resolved {

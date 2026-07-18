@@ -78,7 +78,23 @@ pub const PATH_CONS_TYPE: &str = "PathCons";
 /// [`CGP_BASE_TYPES_CRATE`]) that closes a `PathCons` spine. The use-site resolver reads it to
 /// recognize a simple two-segment `open`-dispatch key `PathCons<Component, PathCons<Value, Nil>>`,
 /// so it can recover the real dispatch parameter `Value` rather than re-checking the raw path.
+/// It is also the terminator of a `Product!` / `Cons` list, which the tree renderer resugars.
 pub const NIL_TYPE: &str = "Nil";
+
+/// The name of the type-level product-list cell (defined by [`CGP_BASE_TYPES_CRATE`]): a `Product!`
+/// expands to a right-nested `Cons<Head, Tail>` spine ended by [`NIL_TYPE`]. The dependency-tree
+/// renderer resugars such a spine back to `Product![…]`, anchored by `DefId` to this crate so a
+/// same-named type is never resugared.
+pub const CONS_TYPE: &str = "Cons";
+
+/// The name of the type-level sum-list cell (defined by [`CGP_FIELD_CRATE`]): a `Sum!` expands to a
+/// right-nested `Either<Head, Tail>` spine ended by [`VOID_TYPE`]. The dependency-tree renderer
+/// resugars such a spine back to `Sum![…]`, anchored by `DefId` to `cgp-field`.
+pub const EITHER_TYPE: &str = "Either";
+
+/// The name of the type-level empty-sum terminator (defined by [`CGP_FIELD_CRATE`]) that closes an
+/// `Either` spine — the sum counterpart of [`NIL_TYPE`].
+pub const VOID_TYPE: &str = "Void";
 
 /// The stable `--verbose` flag, injected into every workspace-crate compilation to stop
 /// the diagnostic machinery from *eliding* the parts of a type it deems uninteresting.

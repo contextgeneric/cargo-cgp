@@ -15,8 +15,9 @@ use cargo_cgp_error_processing::tree::DependencyTree;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{
-    CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT,
-    HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT, REDIRECT_LOOKUP_TYPE,
+    CAN_USE_COMPONENT_TRAIT, CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, CONS_TYPE,
+    DELEGATE_COMPONENT_TRAIT, EITHER_TYPE, HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT, NIL_TYPE,
+    REDIRECT_LOOKUP_TYPE, VOID_TYPE,
 };
 use crate::resolve::cgp_item::{
     decode_symbol, is_cgp_item, is_namespace_lookup_trait, is_provider_trait,
@@ -51,10 +52,10 @@ pub(crate) fn label_for<'tcx>(
         let consumer = marker_role(tcx, trait_ref.args.type_at(1), names, |n| n.consumer);
         // `CanUseComponent<Marker, Params>` — the component's extra parameters, reattached so a
         // generic component's consumer trait reads as written (`CanCalculateArea<u32, u64, bool>`).
-        let generics = render_params(trait_ref.args.type_at(2));
+        let generics = render_params(tcx, trait_ref.args.type_at(2));
         Some(format!(
             "[{DEP_CONSUMER_TRAIT_IMPL}] consumer trait impl `{consumer}{generics}` for context `{}`",
-            trait_ref.self_ty()
+            render_ty(tcx, trait_ref.self_ty())
         ))
     } else if is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE) {
         // Drop the routing `IsProviderFor` for the context itself; keep the real providers.
@@ -69,12 +70,12 @@ pub(crate) fn label_for<'tcx>(
                 "[{DEP_REDIRECT_LOOKUP}] redirect lookup to `{path}` in `{context}`"
             ));
         }
-        let provider = trait_ref.self_ty().to_string();
+        let provider = render_ty(tcx, trait_ref.self_ty());
         let provider_trait = marker_role(tcx, trait_ref.args.type_at(1), names, |n| n.provider);
         // `IsProviderFor<Provider, Marker, Context, Params>` — the third argument is the context,
         // the fourth the component's extra parameters (reattached to the provider trait).
-        let provider_context = trait_ref.args.type_at(2);
-        let generics = render_params(trait_ref.args.type_at(3));
+        let provider_context = render_ty(tcx, trait_ref.args.type_at(2));
+        let generics = render_params(tcx, trait_ref.args.type_at(3));
         Some(format!(
             "[{DEP_PROVIDER_TRAIT_IMPL}] provider trait impl `{provider_trait}{generics}` with context `{provider_context}` for provider `{provider}`"
         ))
@@ -82,7 +83,7 @@ pub(crate) fn label_for<'tcx>(
         let field = decode_symbol(tcx, trait_ref.args.type_at(1))?;
         Some(format!(
             "[{DEP_FIELD_TRAIT_IMPL}] field trait impl `HasField` with field `{field}` for `{}`",
-            trait_ref.self_ty()
+            render_ty(tcx, trait_ref.self_ty())
         ))
     } else if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         || is_namespace_lookup_trait(tcx, did)
@@ -97,8 +98,98 @@ pub(crate) fn label_for<'tcx>(
         Some(format!(
             "[{DEP_TRAIT_IMPL}] trait impl `{}` for `{}`",
             tcx.item_name(did),
-            trait_ref.self_ty()
+            render_ty(tcx, trait_ref.self_ty())
         ))
+    }
+}
+
+/// Render a type to its dependency-tree form, resugaring CGP's type-level list and sum spines back
+/// to their surface macros: a `Cons<A, Cons<B, Nil>>` product spine to `Product![A, B]` and an
+/// `Either<A, Either<B, Void>>` sum spine to `Sum![A, B]`, so a reader meets the field/variant list
+/// as written rather than its raw right-nested spine. Every cell is anchored by `DefId` to the CGP
+/// crate that defines it (`Cons`/`Nil` in `cgp-base-types`, `Either`/`Void` in `cgp-field`), so a
+/// same-named type from another crate is never resugared. Each element is rendered recursively, so a
+/// nested list (a `Sum!` inside a `Product!`, say) is resugared too; a non-spine type falls back to
+/// its ordinary printed form (whose inner `Symbol!`/`Path!` the post-processing then resugars).
+pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
+    if let Some(elems) = cgp_spine(
+        tcx,
+        ty,
+        CONS_TYPE,
+        CGP_BASE_TYPES_CRATE,
+        NIL_TYPE,
+        CGP_BASE_TYPES_CRATE,
+    ) {
+        return format!("Product![{}]", render_ty_list(tcx, &elems));
+    }
+    if let Some(elems) = cgp_spine(
+        tcx,
+        ty,
+        EITHER_TYPE,
+        CGP_FIELD_CRATE,
+        VOID_TYPE,
+        CGP_FIELD_CRATE,
+    ) {
+        return format!("Sum![{}]", render_ty_list(tcx, &elems));
+    }
+    ty.to_string()
+}
+
+/// Render a spine's collected element types as a comma-separated list, each recursively through
+/// [`render_ty`] so a nested spine resugars in turn.
+fn render_ty_list<'tcx>(tcx: TyCtxt<'tcx>, elems: &[Ty<'tcx>]) -> String {
+    elems
+        .iter()
+        .map(|elem| render_ty(tcx, *elem))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// The head types of a CGP type-level spine `Cell<Head, Tail>` ended by `Terminator` — the element
+/// list a `Product!`/`Sum!` macro was written with — or `None` when `ty` is not such a spine. The
+/// first cell must be a `Cell` (a bare terminator is not resugared, so an empty list is left as its
+/// terminator type), each `Cell` and the final `Terminator` are checked by `DefId` against the given
+/// CGP crate, and an open-ended spine (a tail that is neither another `Cell` nor the terminator, such
+/// as a generic "rest" parameter) declines so only a fully-terminated list is resugared.
+fn cgp_spine<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    ty: Ty<'tcx>,
+    cell: &str,
+    cell_crate: &str,
+    terminator: &str,
+    terminator_crate: &str,
+) -> Option<Vec<Ty<'tcx>>> {
+    // Require the first node to be a spine cell, so a bare terminator (an empty list) is not
+    // resugared into `Product![]`/`Sum![]` where it more likely reads as its plain type.
+    let ty::Adt(def, _) = ty.kind() else {
+        return None;
+    };
+    if !is_cgp_item(tcx, def.did(), cell, cell_crate) {
+        return None;
+    }
+
+    let mut elems = Vec::new();
+    let mut current = ty;
+    let mut guard = 0;
+    loop {
+        guard += 1;
+        if guard > 4096 {
+            return None;
+        }
+        let ty::Adt(def, args) = current.kind() else {
+            return None;
+        };
+        let did = def.did();
+        if is_cgp_item(tcx, did, cell, cell_crate) {
+            // `Cell<Head, Tail>` — collect the head and continue down the tail.
+            elems.push(args.type_at(0));
+            current = args.type_at(1);
+        } else if is_cgp_item(tcx, did, terminator, terminator_crate) {
+            return Some(elems);
+        } else {
+            // A tail that is neither a further cell nor the terminator: not a closed CGP list.
+            return None;
+        }
     }
 }
 
@@ -126,18 +217,18 @@ pub(crate) fn spine(labels: Vec<String>) -> Option<DependencyTree> {
 /// empty string when there are none. CGP groups the parameters into the `Params` slot of
 /// `CanUseComponent`/`IsProviderFor`: none as the unit `()`, a single one bare, several as a tuple,
 /// so a tuple is unwrapped and a bare parameter reattached directly.
-pub(crate) fn render_params(params: Ty<'_>) -> String {
+pub(crate) fn render_params<'tcx>(tcx: TyCtxt<'tcx>, params: Ty<'tcx>) -> String {
     match params.kind() {
         ty::Tuple(elems) if elems.is_empty() => String::new(),
         ty::Tuple(elems) => format!(
             "<{}>",
             elems
                 .iter()
-                .map(|elem| elem.to_string())
+                .map(|elem| render_ty(tcx, elem))
                 .collect::<Vec<_>>()
                 .join(", ")
         ),
-        _ => format!("<{params}>"),
+        _ => format!("<{}>", render_ty(tcx, params)),
     }
 }
 

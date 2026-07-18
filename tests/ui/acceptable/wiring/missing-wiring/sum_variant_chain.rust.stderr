@@ -1,0 +1,160 @@
+error[E0277]: the trait bound `EncodeChoice: VariantEncoder<App, Choice>` is not satisfied
+  --> src/main.rs:78:9
+   |
+78 |         VariantEncoderComponent: [Choice],
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `VariantEncoder<App, Choice>` is not implemented for `EncodeChoice`
+  --> src/main.rs:53:16
+   |
+53 | #[cgp_impl(new EncodeChoice)]
+   |                ^^^^^^^^^^^^
+help: the trait `VariantEncoder<__Context__, Choice>` is conditionally implemented for `EncodeChoice`
+  --> src/main.rs:54:1
+   |
+54 | / impl VariantEncoder<Choice>
+55 | | where
+56 | |     Sum![u64, f64]: EncodeVariants<Self>,
+   | |_____________________--------------------^
+   |                       |
+   |                       unsatisfied requirement introduced here: `cgp::prelude::Either<u64, cgp::prelude::Either<f64, cgp::prelude::Void>>: EncodeVariants<App>`
+   |                       unsatisfied requirement introduced here: `cgp::prelude::Either<u64, cgp::prelude::Either<f64, cgp::prelude::Void>>: EncodeVariants<App>`
+note: required for `RedirectLookup<App, PathCons<VariantEncoderComponent, Nil>>` to implement `IsProviderFor<VariantEncoderComponent, App, Choice>`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_component(VariantEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `App` to implement `CanUseComponent<VariantEncoderComponent, Choice>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:76:1
+   |
+76 | / check_components! {
+77 | |     App {
+78 | |         VariantEncoderComponent: [Choice],
+79 | |     }
+80 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<VariantEncoderComponent, Nil>>: VariantEncoder<App, f64>` is not satisfied
+  --> src/main.rs:78:9
+   |
+78 |         VariantEncoderComponent: [Choice],
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ the trait `VariantEncoder<App, f64>` is not implemented for `RedirectLookup<App, PathCons<VariantEncoderComponent, Nil>>`
+   |
+help: the trait `VariantEncoder<__Context__, Value>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_component(VariantEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied requirement introduced here: `App: DelegateComponent<<PathCons<VariantEncoderComponent, Nil> as ConcatPath<PathCons<f64, Nil>>>::Output>`
+note: required for `App` to implement `VariantEncoder<App, f64>`
+  --> src/main.rs:17:1
+   |
+17 |   #[cgp_component(VariantEncoder)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | | pub trait CanEncodeVariant<Value> {
+   | |_________________________________^
+note: required for `App` to implement `CanEncodeVariant<f64>`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_component(VariantEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | pub trait CanEncodeVariant<Value> {
+   |           ^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `cgp::prelude::Either<f64, cgp::prelude::Void>` to implement `EncodeVariants<App>`
+  --> src/main.rs:35:27
+   |
+35 | impl<Context, Head, Tail> EncodeVariants<Context> for Either<Head, Tail>
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^     ^^^^^^^^^^^^^^^^^^
+36 | where
+37 |     Context: CanEncodeVariant<Head>,
+   |              ---------------------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `cgp::prelude::Either<u64, cgp::prelude::Either<f64, cgp::prelude::Void>>` to implement `EncodeVariants<App>`
+note: required for `EncodeChoice` to implement `IsProviderFor<VariantEncoderComponent, App, Choice>`
+  --> src/main.rs:53:1
+   |
+53 | #[cgp_impl(new EncodeChoice)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+56 |     Sum![u64, f64]: EncodeVariants<Self>,
+   |                     -------------------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `RedirectLookup<App, PathCons<VariantEncoderComponent, Nil>>` to implement `IsProviderFor<VariantEncoderComponent, App, Choice>`
+   = note: required for `App` to implement `CanUseComponent<VariantEncoderComponent, Choice>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:76:1
+   |
+76 | / check_components! {
+77 | |     App {
+78 | |         VariantEncoderComponent: [Choice],
+79 | |     }
+80 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: CanUseComponent<VariantEncoderComponent, Choice>` is not satisfied
+  --> src/main.rs:78:9
+   |
+78 |         VariantEncoderComponent: [Choice],
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `DelegateComponent<PathCons<VariantEncoderComponent, PathCons<f64, Nil>>>` is not implemented for `App`
+  --> src/main.rs:63:1
+   |
+63 | pub struct App;
+   | ^^^^^^^^^^^^^^
+help: `App` implements trait `DelegateComponent<Key>`
+  --> src/main.rs:67:14
+   |
+67 |         open VariantEncoderComponent;
+   |              ^^^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<VariantEncoderComponent>`
+68 |
+69 |         @VariantEncoderComponent.Choice: EncodeChoice,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<PathCons<VariantEncoderComponent, PathCons<Choice, __Wildcard__>>>`
+70 |         @VariantEncoderComponent.u64: EncodeU64,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<PathCons<VariantEncoderComponent, PathCons<u64, __Wildcard__>>>`
+note: required for `RedirectLookup<App, PathCons<VariantEncoderComponent, Nil>>` to implement `IsProviderFor<VariantEncoderComponent, App, f64>`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_component(VariantEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `App` to implement `IsProviderFor<VariantEncoderComponent, App, f64>`
+note: required for `App` to implement `VariantEncoder<App, f64>`
+  --> src/main.rs:17:1
+   |
+17 |   #[cgp_component(VariantEncoder)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | | pub trait CanEncodeVariant<Value> {
+   | |_________________________________^
+note: required for `App` to implement `CanEncodeVariant<f64>`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_component(VariantEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | pub trait CanEncodeVariant<Value> {
+   |           ^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `cgp::prelude::Either<f64, cgp::prelude::Void>` to implement `EncodeVariants<App>`
+  --> src/main.rs:35:27
+   |
+35 | impl<Context, Head, Tail> EncodeVariants<Context> for Either<Head, Tail>
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^     ^^^^^^^^^^^^^^^^^^
+36 | where
+37 |     Context: CanEncodeVariant<Head>,
+   |              ---------------------- unsatisfied trait bound introduced here
+   = note: 3 redundant requirements hidden
+   = note: required for `RedirectLookup<App, PathCons<VariantEncoderComponent, Nil>>` to implement `IsProviderFor<VariantEncoderComponent, App, Choice>`
+   = note: required for `App` to implement `CanUseComponent<VariantEncoderComponent, Choice>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:76:1
+   |
+76 | / check_components! {
+77 | |     App {
+78 | |         VariantEncoderComponent: [Choice],
+79 | |     }
+80 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

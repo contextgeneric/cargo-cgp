@@ -422,7 +422,15 @@ provider-trait impl naming its provider trait, context, and provider struct (`pr
 \`AreaCalculator\` with context \`Rectangle\` for provider \`RectangleArea\``), and `HasField` becomes
 the field-trait impl (`field trait impl \`HasField\` with field \`height\` for \`Rectangle\``); a user's
 own capability trait — or a terminal ordinary bound — renders as `trait impl \`Trait\` for \`Self\``
-(`trait impl \`HasRectangleFields\` for \`Rectangle\``, `trait impl \`Eq\` for \`f64\``). A **generic**
+(`trait impl \`HasRectangleFields\` for \`Rectangle\``, `trait impl \`Eq\` for \`f64\``). The **`Self`
+type** of a rendered label is itself resugared: a `Cons<A, Cons<B, Nil>>` product spine reads back as
+`Product![A, B]` and an `Either<A, Either<B, Void>>` sum spine as `Sum![A, B]`, so a field- or
+variant-list handler (`cgp-serde`'s `FieldsSerializer` over a record's `Cons` field list, say) reads
+as the flat list the programmer wrote rather than a deeply right-nested spine — each cell and its
+terminator anchored by `DefId` to the CGP crate that defines it (`Cons`/`Nil` in `cgp-base-types`,
+`Either`/`Void` in `cgp-field`), so a same-named type from another crate is never resugared, and the
+elements rendered recursively so a nested list resugars in turn (with the `Symbol!`/`Path!` inside
+each element left for the post-processing to resugar). A **generic**
 component's parameters are reattached to its consumer and provider labels from the `Params` slot of
 `CanUseComponent`/`IsProviderFor` — a single one bare, several unwrapped from their tuple — so the
 trait reads as written (`CanCalculateArea<u32, u64, bool>`, `AreaCalculator<u32, u64, bool>`). The
@@ -575,7 +583,8 @@ says what it needs to without altering the header's shape.
   and stamped with its per-template `CGP-E1xx` code — a `RedirectLookup` provider as
   `[CGP-E104] redirect lookup to \`@…\` in \`Ctx\``, and the `DelegateComponent`
   table lookup and namespace lookup dropped as plumbing since the caller re-states the leaf — generic
-  parameters reattached),
+  parameters reattached, and `render_ty` resugaring a `DefId`-anchored `Cons`/`Nil` or `Either`/`Void`
+  self type back to `Product![…]`/`Sum![…]`),
   and `cgp_item.rs` (the `DefId`-anchored CGP-trait recognition, the `Symbol!` field-name decode,
   and `is_namespace_lookup_trait` recognizing a namespace trait by its single-`Delegate`-associated-type
   fingerprint rather than by name).
@@ -655,7 +664,10 @@ provider needing two unwired components → two `missing wiring` notes, one per 
 `Cons`/`Nil` field-list handler — the `cgp-serde` `DeserializeRecordFields`/`HandleMapEntry` shape — so
 the missing wiring for one field's value type is reached only by preferring the provider's concrete
 impl over the delegation blanket, solving the provider's associated-type-determined `Builder`
-parameter, and following the same-trait list recursion into the tail). The use-site path
+parameter, and following the same-trait list recursion into the tail; its tree entries also pin the
+`Cons`/`Nil` → `Product![…]` resugaring), and `sum_variant_chain` (the sum counterpart: a variant
+visitor over a `Sum![u64, f64]` = `Either<u64, Either<f64, Void>>` spine, pinning both the same-trait
+recursion over a sum and the `Either`/`Void` → `Sum![…]` resugaring). The use-site path
 is pinned by the [`acceptable/use-site/`](../../tests/ui/acceptable/use-site)
 fixtures: `missing_dependency` and `unsatisfied_dependency` (a consumer-method `E0599` → the
 `CGP-E001` header, the misleading method-syntax advice dropped, and a `missing field` root-cause note),
