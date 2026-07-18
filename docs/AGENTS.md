@@ -45,6 +45,30 @@ memory, since the compiler's internals shift between nightlies. Treat them as re
 do not edit them, and do not create a dependency on them. The same holds for the parent `cgp`
 repository at [`../cgp`](../../cgp), which this project reads but never modifies.
 
+## Show the example behind an error message
+
+When a document mentions an error message tied to a specific example, include that example's code in
+the document and explain both what it does and what root cause produces the error. A reader who meets
+a rewritten `[CGP-Exxx]` headline or a raw compiler error should be able to see, in the same
+document, the small program that triggers it — the `delegate_components!` block, the provider impl,
+the `check_components!` entry — rather than reconstruct it from the message alone. Show the snippet,
+say what it is wiring or declaring, and then name the mistake the message is really about: the field
+the context never derives, the component it omits, the redirect that resolves to nothing. The message
+and its cause belong together, because the point of this knowledge base is to explain *why* an error
+reads the way it does, and an error quoted with no example behind it cannot be checked or understood.
+
+## Keep backticks well formed
+
+Malformed backticks are the most common way a document here renders wrong, so treat them carefully
+and re-check them after every edit. Keep the opening and closing backticks of an inline code span on
+the **same line** — never let a line break fall between them, which breaks the span. When a sentence
+with inline code would wrap, wrap it elsewhere or let the line run long; do not split the code span.
+For a fenced code block, put the triple-backtick fences on their own lines with a blank line before
+the opening fence and after the closing one, so the block is recognized rather than folded into the
+surrounding paragraph. **After editing any markdown document, read the text back and confirm every
+backtick is well formed** — each inline span opened and closed on one line, and each fenced block
+delimited by matched triple-backtick lines with the blank lines around them.
+
 ## Registering a document
 
 Every document registers itself in its category's `README.md` catalog in the same change that

@@ -63,7 +63,11 @@ document in the same change. A document describing a design the code no longer h
 none.
 
 When your task involves editing markdown documentation or inline doc comments, **load the
-`/dual-reader-prose` skill** and follow its convention for the prose you write.
+`/dual-reader-prose` skill** and follow its convention for the prose you write. The knowledge base's
+own authoring conventions — including showing the example code behind any error message a document
+discusses, and keeping markdown backticks well formed (inline spans opened and closed on one line,
+fenced blocks delimited by blank-line-separated triple-backtick lines, re-checked after every edit) —
+live in [docs/AGENTS.md](docs/AGENTS.md) and apply to inline doc comments too.
 
 ## Architecture: two binaries, like Clippy
 
