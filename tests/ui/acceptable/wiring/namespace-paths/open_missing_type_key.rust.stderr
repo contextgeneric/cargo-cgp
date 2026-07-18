@@ -1,0 +1,38 @@
+error[E0277]: the trait bound `App: CanUseComponent<ItemEncoderComponent, Vec<u8>>` is not satisfied
+  --> src/main.rs:52:13
+   |
+52 |             Vec<u8>,
+   |             ^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `DelegateComponent<PathCons<ItemEncoderComponent, PathCons<Vec<u8>, Nil>>>` is not implemented for `App`
+  --> src/main.rs:36:1
+   |
+36 | pub struct App;
+   | ^^^^^^^^^^^^^^
+help: `App` implements trait `DelegateComponent<Key>`
+  --> src/main.rs:40:14
+   |
+40 |         open ItemEncoderComponent;
+   |              ^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<ItemEncoderComponent>`
+41 |
+42 |         @ItemEncoderComponent.u64: EncodeDisplay,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<PathCons<ItemEncoderComponent, PathCons<u64, __Wildcard__>>>`
+note: required for `RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>` to implement `IsProviderFor<ItemEncoderComponent, App, Vec<u8>>`
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_component(ItemEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `App` to implement `CanUseComponent<ItemEncoderComponent, Vec<u8>>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:48:1
+   |
+48 | / check_components! {
+49 | |     App {
+50 | |         ItemEncoderComponent: [
+51 | |             u64,
+...  |
+55 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

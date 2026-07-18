@@ -126,12 +126,17 @@ rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Five tran
   **resugaring fallback** (an un-rewritten message showing a raw type in source form) it wraps it as
   the `Path!(@app.GreeterComponent)` macro form. The emitter passes `wrap` accordingly — bare on a
   rewrite (a wiring-conflict or typed resolution), wrapped on a diagnostic it left untouched.
-  It walks the right-nested `PathCons`/`Nil` spine and rewrites it **only on an exact,
-  round-trippable match**, mirroring how `Path!` classifies each segment forward: a `Symbol!("name")`
-  head becomes the bare segment `name` only when `name` is a lowercase, non-primitive identifier
-  `Path!` would encode as a `Symbol`, and a named-type head is kept only when it is a plain identifier
-  `Path!` would leave as a type — capitalized or a primitive. A spine that is not `PathCons`/`Nil` all
-  the way down, or that carries a segment that would not round-trip, is left untouched. One spine that
+  It walks the right-nested `PathCons`/`Nil` spine and rewrites it on a **well-formed match**,
+  mirroring how `Path!` classifies each segment forward: a `Symbol!("name")` head becomes the bare
+  segment `name` only when `name` is a lowercase, non-primitive identifier `Path!` would encode as a
+  `Symbol`, and every other head is rendered back verbatim as its type — a capitalized component
+  marker, a primitive, or a compound value type an `open` statement dispatches on (`Vec<u8>`,
+  `&Coord`), which is exactly what lets an `open`-dispatched redirect path read as
+  `@ItemEncoderComponent.Vec<u8>` rather than a raw spine. Two shapes still decline, leaving the
+  `PathCons` spine untouched: a **module-qualified** segment (a residual `::` the earlier module strip
+  should have removed) folds to its final identifier only when that is a plain type, and a **bare
+  lowercase identifier** — which `Path!` would have made a `Symbol` — is ambiguous as a plain type. A
+  spine that is not `PathCons`/`Nil` all the way down is also left untouched. One spine that
   is *not* `Nil`-terminated is still rewritten: an **open-ended path**, whose spine ends in a generic
   "rest of path" parameter that rustc prints as the placeholder `_` (as in the conflicting-wiring
   `E0119` blocks over a duplicated `@`-path key). Such a tail resugars to a trailing `.*` wildcard

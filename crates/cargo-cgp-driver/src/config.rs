@@ -68,6 +68,12 @@ pub const CGP_FIELD_CRATE: &str = "cgp_field";
 /// from another crate from being mistaken for CGP's.
 pub const CGP_BASE_TYPES_CRATE: &str = "cgp_base_types";
 
+/// The name of the type-level path spine (defined by [`CGP_BASE_TYPES_CRATE`]) that `Path!`/`open`
+/// wiring expands to. An unmet `DelegateComponent` whose key is a `PathCons` is a redirect *path*
+/// the context does not terminate, not a bare component marker, so the leaf classifier renders the
+/// whole path rather than reading only its ADT item name (`PathCons`).
+pub const PATH_CONS_TYPE: &str = "PathCons";
+
 /// The stable `--verbose` flag, injected into every workspace-crate compilation to stop
 /// the diagnostic machinery from *eliding* the parts of a type it deems uninteresting.
 ///

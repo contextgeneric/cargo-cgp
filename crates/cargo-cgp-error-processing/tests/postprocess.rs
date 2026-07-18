@@ -204,6 +204,34 @@ fn resugars_a_primitive_segment_as_a_type() {
 }
 
 #[test]
+fn resugars_an_open_dispatch_path_with_a_generic_value_segment() {
+    // An `open` statement dispatches a component on a *value type* segment that may carry generics
+    // (`Vec<u8>`). `Path!` keeps it verbatim as a type, so it round-trips bare rather than declining
+    // and leaving the raw `PathCons` spine.
+    assert_eq!(
+        resugar_path(
+            "PathCons<ItemEncoderComponent, PathCons<Vec<u8>, Nil>>",
+            true
+        )
+        .as_deref(),
+        Some("Path!(@ItemEncoderComponent.Vec<u8>)"),
+    );
+}
+
+#[test]
+fn resugars_an_open_dispatch_path_with_a_reference_value_segment() {
+    // A borrowed value type (`&Coord`, after region erasure) is likewise kept verbatim.
+    assert_eq!(
+        resugar_path(
+            "PathCons<ValueDeserializerComponent, PathCons<&Coord, Nil>>",
+            false
+        )
+        .as_deref(),
+        Some("@ValueDeserializerComponent.&Coord"),
+    );
+}
+
+#[test]
 fn resugars_an_open_tailed_path_as_a_wildcard() {
     // An open-ended path ends in a generic "rest of path" parameter, which rustc renders as
     // `_`. It resugars to a trailing `.*` wildcard segment — the form seen in the

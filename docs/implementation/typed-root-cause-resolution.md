@@ -81,8 +81,7 @@ missing field, reading as `root cause: context \`App\` does not contain any dele
 \`BarProviderComponent\`` and naming the component marker the programmer writes to fix it
 ([`basic_missing_wiring`](../../tests/ui/acceptable/wiring/missing-wiring/basic_missing_wiring.rs)). A
 namespace redirect that resolves to nothing — a `RedirectLookup<Ctx, Path>` whose `Path` the context
-does not terminate, surfacing as an unmet namespace-lookup bound (`Path: DefaultNamespace<Ctx>`, or a
-user `cgp_namespace!` trait) — is the path-keyed counterpart, reading the **same** way with the path
+does not terminate — is the path-keyed counterpart, reading the **same** way with the path
 as the key (`root cause: context \`App\` does not contain any delegate entry for
 \`@app.finance.types.QuantityTypeProviderComponent\``); its dependency chain renders each
 `RedirectLookup` hop as `redirect lookup to \`@…\` in \`App\`` and ends on that same
@@ -90,6 +89,15 @@ missing-delegate statement, so a multi-layer redirect reads as its successive ho
 unterminated path ([`unregistered_prefix_path`](../../tests/ui/acceptable/resolution/unregistered_prefix_path.rs),
 [`qualified_prefix_path`](../../tests/ui/acceptable/wiring/namespace-paths/qualified_prefix_path.rs),
 [`multi_redirect_missing`](../../tests/ui/acceptable/wiring/namespace-paths/multi_redirect_missing.rs)).
+This leaf surfaces two ways, both rendered identically. When the context *joins a namespace*, the
+unterminated redirect is an unmet **namespace-lookup bound** (`Path: DefaultNamespace<Ctx>`, or a user
+`cgp_namespace!` trait). When it instead dispatches a component with a bare `open` statement, the
+redirect looks the path up in the context's *own* table, so the unterminated redirect is an unmet
+**`DelegateComponent<PathCons<…>>` on the context** — told apart from a plain missing component
+(whose key is a bare marker) by the `PathCons` key, and rendered as the whole path rather than its
+flattened `PathCons` item name
+([`open_missing_type_key`](../../tests/ui/acceptable/wiring/namespace-paths/open_missing_type_key.rs),
+whose `open`-dispatched value key resugars to `@ItemEncoderComponent.Vec<u8>`).
 Any other leaf restates its
 bound — `root cause: the trait bound \`f64: Eq\` is not satisfied` (module qualifiers stripped) —
 except when the kept
@@ -266,7 +274,10 @@ capability traits) — and treats everything else as a leaf. An unmet `HasField`
 unmet `DelegateComponent<Marker>` **on the context** is the missing-wiring leaf: the context does not
 delegate that component to any provider, so the wiring is absent (that a `DelegateComponent` on any
 *other* type — a provider struct that implements its provider trait directly rather than delegating —
-is instead a dead-end is covered below). An unmet **namespace-lookup bound** — recognized not by name
+is instead a dead-end is covered below). When that unmet `DelegateComponent`'s key is a `PathCons`
+path rather than a bare marker — an `open`-dispatched component whose per-value entry the context
+never wired — it is instead the missing-*redirect*-wiring leaf, named by its whole path. An unmet
+**namespace-lookup bound** — recognized not by name
 but by the trait's fingerprint, a single `Delegate` associated type (`DefaultNamespace`, the
 `DefaultImpls*` traits, and every user `cgp_namespace!` trait all share it, so a same-named user
 namespace is caught without a `DefId` anchor) — is the missing-redirect-wiring leaf: a `RedirectLookup`
@@ -468,7 +479,9 @@ says what it needs to without altering the header's shape.
   terminal, so the chain ends on the root cause), `classify.rs` (classifying a leaf as a
   field by inspecting the struct and its `Deref` chain, a field-type mismatch with `field_type` reading
   the actual field type off the struct by `DefId`, a missing wiring naming the unwired component
-  marker, a missing *redirect* wiring naming the unterminated namespace path, or a bound), `label.rs`
+  marker, a missing *redirect* wiring naming the unterminated path — reached either as a namespace
+  lookup or, for an `open`-dispatched component, as a `DelegateComponent<PathCons<…>>` on the context
+  told apart from a bare-marker missing wiring by `is_path_cons` — or a bound), `label.rs`
   (folding the inner chain into a `DependencyTree` with each wiring trait replaced by its human form
   and stamped with its per-template `CGP-E1xx` code — a `RedirectLookup` provider as
   `[CGP-E104] redirect lookup to \`@…\` in \`Ctx\``, and the `DelegateComponent`

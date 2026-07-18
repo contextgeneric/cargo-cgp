@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E002] the provider trait `ItemEncoder<Vec<u8>>` with context `App` is not implemented for provider `RedirectLookup<App, @ItemEncoderComponent>`
+  --> src/main.rs:52:13
+   |
+52 |             Vec<u8>,
+   |             ^^^^^^^
+   |
+   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@ItemEncoderComponent.Vec<u8>`
+           this is required through the dependency chain:
+               [CGP-E101] consumer trait impl `CanEncodeItem<Vec<u8>>` for context `App`
+               └── [CGP-E104] redirect lookup to `@ItemEncoderComponent` in `App`
+                   └── [CGP-E107] context `App` does not contain any delegate entry for `@ItemEncoderComponent.Vec<u8>`
+
+For more information about this error, try `rustc --explain E0277`.

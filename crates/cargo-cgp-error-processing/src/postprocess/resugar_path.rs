@@ -5,18 +5,18 @@
 //! reference). This reverses that spine back to `Path!(@app.GreeterComponent)` in the
 //! diagnostic text.
 //!
-//! Like every resugaring post-processor, it rewrites **only on an exact, round-trippable
-//! match**. `Path!` classifies each segment the same way going forward: a single identifier
-//! whose first character is ASCII-lowercase and that is not a primitive type becomes a
-//! `Symbol`; every other segment (a capitalized type, a primitive) is kept as the named
-//! type. So a `Symbol!("name")` head is resugared to the bare segment `name` only when `name`
-//! is such a lowercase, non-primitive identifier, and a named-type head is kept only when it
-//! is a plain identifier `Path!` would leave as a type — a capitalized name or a primitive. A
-//! `PathCons` whose spine or segments do not fit is left untouched, because rewriting it could
-//! change what it means. A named-type segment may be printed **module-qualified**
-//! (`finance::QuantityTypeProviderComponent`) in a multi-module crate; its final component is
-//! used, since that is the bare name `Path!` writes, while a segment carrying generics or other
-//! non-identifier shape still declines.
+//! Like every resugaring post-processor, it rewrites **only on a well-formed match**. `Path!`
+//! classifies each segment the same way going forward: a single identifier whose first character is
+//! ASCII-lowercase and that is not a primitive type becomes a `Symbol`; every other segment is kept
+//! verbatim as the named type. So a `Symbol!("name")` head is resugared to the bare segment `name`
+//! only when `name` is such a lowercase, non-primitive identifier, and every other segment is
+//! rendered back verbatim as its type — a capitalized component marker (`GreeterComponent`), a
+//! primitive (`u32`), or a compound value type an `open` statement dispatches on (`Vec<u8>`,
+//! `&Coord`, `DateTime<Utc>`). Two shapes still decline, leaving the raw `PathCons` spine rather than
+//! risk mangling it: a **module-qualified** segment — the [module strip](super::strip_modules) runs
+//! first and removes any qualifier, so a residual `::` means the spine is not the bare form `Path!`
+//! writes — and a **bare lowercase identifier**, which `Path!` would have made a `Symbol`, so meeting
+//! one as a plain type is ambiguous.
 //!
 //! A path may also be **open-ended**: instead of terminating in `Nil`, its spine ends in a
 //! generic "rest of path" parameter, which rustc renders as the inference placeholder `_` in
@@ -169,14 +169,17 @@ fn scan_head_tail(s: &str) -> Option<(&str, &str, usize)> {
 
 /// Render one spine segment back to its `Path!` surface form, or `None` when it would not
 /// round-trip. A `Symbol!("name")` becomes the bare `name` when `name` is a lowercase,
-/// non-primitive identifier; a named-type segment is kept as its final identifier when that is
-/// capitalized or a primitive.
+/// non-primitive identifier. Every other segment was kept verbatim as a type by `Path!` going
+/// forward — a capitalized component marker (`GreeterComponent`), a primitive (`u32`), or a compound
+/// value type an `open` statement dispatches on (`Vec<u8>`, `&Coord`, `DateTime<Utc>`) — so it is
+/// rendered verbatim.
 ///
-/// The type segment may arrive **module-qualified** — rustc prints a component defined in a
-/// sub-module as `finance::QuantityTypeProviderComponent`, not the bare name the user wrote in
-/// the `Path!` — so we accept a `::`-path of plain identifiers and render only its final
-/// component, matching how `Path!` writes the segment. This is what keeps a multi-module
-/// project's path readable rather than a raw `PathCons<…>` spine.
+/// Two non-Symbol shapes still decline, so the whole path is left as its raw spine rather than
+/// silently mangled. A **`::`-qualified** segment declines: the [module strip](super::strip_modules)
+/// runs before this stage and removes any qualifier, so a residual `::` (as when this is called
+/// directly, not through the chain) means the spine is not the bare form `Path!` writes. A **bare
+/// lowercase identifier** declines too: `Path!` turns a lowercase identifier into a `Symbol`, so
+/// meeting one as a plain type — rather than inside a `Symbol!(…)` — is ambiguous, not a clean path.
 fn render_segment(segment: &str) -> Option<String> {
     let segment = segment.trim();
     if let Some(name) = symbol_inner(segment) {
@@ -185,15 +188,32 @@ fn render_segment(segment: &str) -> Option<String> {
             && !is_primitive_type(&name);
         return lowercase_ident.then_some(name);
     }
-    let name = type_segment_tail(segment)?;
-    (name.starts_with(|c: char| c.is_ascii_uppercase()) || is_primitive_type(name))
-        .then(|| name.to_owned())
+    // A **module-qualified** segment (`finance::QuantityTypeProviderComponent`) — as rustc prints a
+    // component defined in a sub-module when this is called directly rather than after the module
+    // strip — keeps only its final component, and only when every part is a plain identifier: a
+    // qualified segment whose tail is lowercase (would be a `Symbol`) or carries generics is not the
+    // bare form `Path!` writes, so it declines.
+    if segment.contains("::") {
+        let tail = type_segment_tail(segment)?;
+        return (tail.starts_with(|c: char| c.is_ascii_uppercase()) || is_primitive_type(tail))
+            .then(|| tail.to_owned());
+    }
+    // A bare lowercase identifier would have been a `Symbol`, so as a plain type it is ambiguous.
+    if is_ident(segment)
+        && segment.starts_with(|c: char| c.is_ascii_lowercase())
+        && !is_primitive_type(segment)
+    {
+        return None;
+    }
+    // Everything else — a capitalized component marker, a primitive, or a compound value type
+    // (`Vec<u8>`, `&Coord`) — is kept verbatim as `Path!` kept it going forward.
+    Some(segment.to_owned())
 }
 
-/// The final `::`-separated component of a named-type segment, or `None` unless every
-/// component is a plain identifier. A bare identifier (no `::`) returns itself; a
-/// module-qualified path (`a::b::C`) returns its tail (`C`); anything carrying generics,
-/// references, or other non-identifier shape declines, so only a genuine type name is folded.
+/// The final `::`-separated component of a module-qualified named-type segment, or `None` unless
+/// every component is a plain identifier. `a::b::C` returns its tail (`C`); a component carrying
+/// generics, references, or other non-identifier shape declines, so only a genuine qualified type
+/// name is folded to its tail.
 fn type_segment_tail(segment: &str) -> Option<&str> {
     let mut tail = None;
     for part in segment.split("::") {

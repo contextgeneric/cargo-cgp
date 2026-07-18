@@ -4,16 +4,17 @@
 //! the rustc-free [`Leaf`] the emitter words — inspecting the actual struct a `HasField` bound
 //! lands on (and its `Deref` chain) so a genuinely missing field is told apart from one present
 //! but underived, reading a mismatched field's actual type straight off the struct by
-//! `DefId`, and naming the unwired component marker behind an unmet `DelegateComponent` on the
-//! context (a missing wiring).
+//! `DefId`, and naming the unwired component behind an unmet `DelegateComponent` on the
+//! context (a missing wiring — a bare-marker key, or an `open`-dispatch redirect *path* key whose
+//! whole `PathCons` is named rather than flattened to its item name).
 
 use cargo_cgp_error_processing::{FieldIssue, Leaf};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{
-    CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT,
-    HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT,
+    CAN_USE_COMPONENT_TRAIT, CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE,
+    DELEGATE_COMPONENT_TRAIT, HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT, PATH_CONS_TYPE,
 };
 use crate::resolve::cgp_item::{decode_symbol, is_cgp_item, is_namespace_lookup_trait};
 
@@ -41,14 +42,28 @@ pub(crate) fn classify_leaf<'tcx>(
         DELEGATE_COMPONENT_TRAIT,
         CGP_COMPONENT_CRATE,
     ) {
-        // `DelegateComponent<Marker>` with no satisfying impl: the context does not wire the
+        let key = leaf_ref.args.type_at(1);
+        let owner = tcx
+            .erase_and_anonymize_regions(leaf_ref.self_ty())
+            .to_string();
+        // A `DelegateComponent<PathCons<…>>` key is a redirect *path* an `open` statement or a
+        // namespace routed the lookup along, not a bare component marker — the context's own table
+        // has no entry terminating it. Rendering only its ADT item name would flatten the whole path
+        // to a useless `PathCons`, so it becomes a [`Leaf::MissingRedirectWiring`] naming the full
+        // path (its `PathCons` spine resugars to `@…` when the note is post-processed), parallel to
+        // the namespace-lookup leaf below.
+        if is_path_cons(tcx, key) {
+            return Leaf::MissingRedirectWiring {
+                path: tcx.erase_and_anonymize_regions(key).to_string(),
+                context: owner,
+            };
+        }
+        // A bare `DelegateComponent<Marker>` with no satisfying impl: the context does not wire the
         // component at all. The marker's own item name (`BarProviderComponent`) is what the
         // programmer writes to fix it, so it names the leaf.
         return Leaf::MissingWiring {
-            component: component_marker_name(tcx, leaf_ref.args.type_at(1)),
-            owner: tcx
-                .erase_and_anonymize_regions(leaf_ref.self_ty())
-                .to_string(),
+            component: component_marker_name(tcx, key),
+            owner,
         };
     }
     if is_namespace_lookup_trait(tcx, leaf_ref.def_id) {
@@ -126,6 +141,13 @@ fn component_marker_name<'tcx>(tcx: TyCtxt<'tcx>, marker: Ty<'tcx>) -> String {
         ty::Adt(def, _) => tcx.item_name(def.did()).to_string(),
         _ => marker.to_string(),
     }
+}
+
+/// Whether `ty` is CGP's type-level path spine `PathCons<…>` — the key shape an `open`/namespace
+/// redirect looks up, as opposed to a bare component marker. Anchored by `DefId` to
+/// [`CGP_BASE_TYPES_CRATE`].
+fn is_path_cons(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(def, _) if is_cgp_item(tcx, def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE))
 }
 
 /// Classify why the `HasField` bound on `owner` for `field` is unmet: whether `owner` genuinely
