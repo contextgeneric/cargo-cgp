@@ -92,8 +92,10 @@ first, then passes the answer into each per-message rewrite.
 Post-processing is a chain of transforms applied in order, so the output of one feeds the next, and
 the order matters. Module-path stripping runs first so the later transforms match the bare names
 (`Symbol`, `Chars`, …) rather than their fully-qualified forms; `Symbol!` resugaring runs before
-`Path!` resugaring (which reads the already-resugared `Symbol!("…")` segments) and before the field
-rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Five transforms exist today:
+`Path!` resugaring (which reads the already-resugared `Symbol!("…")` segments), before list resugaring
+(which reads a `Field`'s `Symbol!("…")` tag when naming a struct field or enum variant), and before
+the field rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Six transforms exist
+today:
 
 - **[`strip_module_paths`](../../crates/cargo-cgp-error-processing/src/postprocess/strip_modules.rs)**
   collapses every `a::b::C` identifier run to its bare final segment, so a fully-qualified
@@ -145,6 +147,21 @@ rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Five tran
   only a bare `_` tail triggers it, since `_` is never a concrete segment, and any other non-`Nil` tail
   still declines. It runs after `resugar_symbol`, so its symbol segments are already in `Symbol!("…")`
   form.
+- **[`resugar_lists`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_list.rs)**
+  reverses a `Product!`/`Sum!` expansion back to its surface form: `Cons<u64, Cons<String, Nil>>`
+  becomes `Product![u64, String]` and `Either<A, Either<B, Void>>` becomes `Sum![A, B]`. A spine whose
+  elements are *all* named fields `Field<Symbol!("name"), Type>` folds one step further to the record
+  or variant it describes — a product to `Struct! { name: Type, … }`, a sum to `Enum! { Name(Type), …
+  }` (presentation-only forms, not real CGP macros). This is the **fallback** counterpart of the
+  driver's typed `render_ty`, which resugars the same spines in the dependency tree anchored by
+  `DefId`; this one exists to catch a raw spine in a diagnostic the resolver *declined* and left to
+  rustc's own text, so a fallback message reads the same as a reshaped one. Running on plain text it
+  cannot check the defining crate, so — the caution every resugaring transform shares — it rewrites
+  **only on an exact structural match**: the spine must close on the exact `Nil` (product) or `Void`
+  (sum) terminator, an open-ended or wrong-terminated spine is left untouched, and a `Cons<` that is
+  only the tail of `PathCons<` is not mistaken for a cell. It runs after `resugar_symbol` (so a
+  `Field`'s tag reads as `Symbol!("…")`) and resugars each element recursively, so a nested list folds
+  in turn.
 - **[`rewrite_missing_fields`](../../crates/cargo-cgp-error-processing/src/postprocess/missing_field.rs)**
   turns an unmet `HasField` bound into a field-oriented message. It matches (after the two transforms
   above) `` the trait `HasField<Symbol!("name")>` is not implemented for `Context` `` and distinguishes

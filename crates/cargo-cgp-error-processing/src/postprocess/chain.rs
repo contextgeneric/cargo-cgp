@@ -3,17 +3,20 @@
 use std::borrow::Cow;
 
 use crate::postprocess::missing_field::rewrite_missing_fields;
+use crate::postprocess::resugar_list::resugar_lists;
 use crate::postprocess::resugar_path::resugar_path;
 use crate::postprocess::resugar_symbol::resugar_symbol;
 use crate::postprocess::strip_modules::strip_module_paths;
 use crate::postprocess::strip_prefixes::strip_cgp_prefixes;
 
 /// Run the post-processing chain over one message string: strip CGP path prefixes, resugar
-/// `Symbol!`, resugar `Path!`, then rewrite an unmet `HasField` bound. The order matters —
-/// prefix stripping first so the later stages match the bare CGP names, `Symbol!` resugaring
-/// before `Path!` resugaring (which reads the already-resugared `Symbol!("…")` segments) and
-/// before the field rewrite (which matches the resugared `HasField<Symbol!("…")>` form).
-/// Returns the rewritten text when any stage changed it, `None` otherwise.
+/// `Symbol!`, resugar `Path!`, resugar `Product!`/`Sum!` (and their `Struct!`/`Enum!` forms), then
+/// rewrite an unmet `HasField` bound. The order matters — prefix stripping first so the later stages
+/// match the bare CGP names, `Symbol!` resugaring before `Path!` resugaring (which reads the
+/// already-resugared `Symbol!("…")` segments) and before the list resugaring (which reads a `Field`'s
+/// `Symbol!("…")` tag when naming a struct field or enum variant), and before the field rewrite
+/// (which matches the resugared `HasField<Symbol!("…")>` form). Returns the rewritten text when any
+/// stage changed it, `None` otherwise.
 ///
 /// `has_field_impls` is the whole-diagnostic fact the field rewrite needs (whether the
 /// context implements `HasField` for any field), which the caller computes once with
@@ -37,6 +40,9 @@ pub fn postprocess_message(text: &str, has_field_impls: bool, bare_paths: bool) 
         current = Cow::Owned(resugared);
     }
     if let Some(resugared) = resugar_path(&current, !bare_paths) {
+        current = Cow::Owned(resugared);
+    }
+    if let Some(resugared) = resugar_lists(&current) {
         current = Cow::Owned(resugared);
     }
     if let Some(rewritten) = rewrite_missing_fields(&current, has_field_impls) {

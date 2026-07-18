@@ -221,7 +221,8 @@ The helper library (`crates/cargo-cgp-error-processing/src`) is the rustc-free h
 compiler linkage and driven entirely by the driver's emitter (the front-end no longer touches
 diagnostics), so its logic is unit-tested on any toolchain. `postprocess/` holds the fallback text
 transforms the driver applies to a diagnostic's messages — one module per transform (stripping CGP
-path prefixes, resugaring `Symbol!` and `Path!`, rewriting unmet `HasField` bounds into missing-field
+path prefixes, resugaring `Symbol!` and `Path!`, resugaring `Product!`/`Sum!` lists and their
+`Struct!`/`Enum!` record/variant forms, rewriting unmet `HasField` bounds into missing-field
 messages), each a pure `&str -> Option<String>` function — plus `chain.rs` for the
 `postprocess_message` chain, with `mod.rs` re-exporting only. `rewrite/` is the wiring-message
 rewrite: `message.rs` (the note and header rewrites), `names.rs` (the `ComponentTraitNames` and the

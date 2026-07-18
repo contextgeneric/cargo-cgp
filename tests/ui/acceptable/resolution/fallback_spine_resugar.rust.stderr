@@ -1,0 +1,18 @@
+error[E0277]: the trait bound `Cons<u64, Cons<String, Nil>>: Needs` is not satisfied
+  --> src/main.rs:20:15
+   |
+20 |     require::<Product![u64, String]>();
+   |               ^^^^^^^^^^^^^^^^^^^^^ the trait `Needs` is not implemented for `Cons<u64, Cons<String, Nil>>`
+   |
+help: this trait has no implementations, consider adding one
+  --> src/main.rs:15:1
+   |
+15 | pub trait Needs {}
+   | ^^^^^^^^^^^^^^^
+note: required by a bound in `require`
+  --> src/main.rs:17:15
+   |
+17 | fn require<T: Needs>() {}
+   |               ^^^^^ required by this bound in `require`
+
+For more information about this error, try `rustc --explain E0277`.

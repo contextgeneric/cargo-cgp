@@ -4,9 +4,101 @@
 //! it is driven directly over the case under test — no diagnostic wrapper, no compiler.
 
 use cargo_cgp_error_processing::{
-    context_has_hasfield_impls, postprocess_message, resugar_path, resugar_symbol,
+    context_has_hasfield_impls, postprocess_message, resugar_lists, resugar_path, resugar_symbol,
     rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
 };
+
+#[test]
+fn resugars_a_product_of_bare_types() {
+    assert_eq!(
+        resugar_lists("Cons<u64, Cons<String, Nil>>").as_deref(),
+        Some("Product![u64, String]"),
+    );
+}
+
+#[test]
+fn resugars_a_sum_of_bare_types() {
+    assert_eq!(
+        resugar_lists("Either<u64, Either<f64, Void>>").as_deref(),
+        Some("Sum![u64, f64]"),
+    );
+}
+
+#[test]
+fn resugars_a_product_of_fields_to_a_struct() {
+    assert_eq!(
+        resugar_lists(
+            "Cons<Field<Symbol!(\"width\"), f64>, Cons<Field<Symbol!(\"height\"), f64>, Nil>>"
+        )
+        .as_deref(),
+        Some("Struct! { width: f64, height: f64 }"),
+    );
+}
+
+#[test]
+fn resugars_a_sum_of_fields_to_an_enum() {
+    assert_eq!(
+        resugar_lists(
+            "Either<Field<Symbol!(\"Rect\"), u64>, Either<Field<Symbol!(\"Circle\"), f64>, Void>>"
+        )
+        .as_deref(),
+        Some("Enum! { Rect(u64), Circle(f64) }"),
+    );
+}
+
+#[test]
+fn a_mixed_list_stays_a_plain_product() {
+    // Not every element is a `Field`, so the list keeps its `Product!` form rather than `Struct!`.
+    assert_eq!(
+        resugar_lists("Cons<u64, Cons<Field<Symbol!(\"x\"), u8>, Nil>>").as_deref(),
+        Some("Product![u64, Field<Symbol!(\"x\"), u8>]"),
+    );
+}
+
+#[test]
+fn resugars_a_nested_list() {
+    assert_eq!(
+        resugar_lists("Cons<Either<u8, Void>, Nil>").as_deref(),
+        Some("Product![Sum![u8]]"),
+    );
+}
+
+#[test]
+fn resugars_a_spine_embedded_in_a_message() {
+    assert_eq!(
+        resugar_lists("required for `Cons<u64, Nil>` to implement `Foo`").as_deref(),
+        Some("required for `Product![u64]` to implement `Foo`"),
+    );
+}
+
+#[test]
+fn declines_a_spine_that_does_not_terminate() {
+    // The tail is not the exact `Nil`/`Void` terminator, so the structural match fails and the
+    // text is left alone rather than mis-rewritten.
+    assert_eq!(resugar_lists("Cons<u64, RestOfList>"), None);
+    assert_eq!(resugar_lists("Either<u64, Either<f64, Nil>>"), None);
+}
+
+#[test]
+fn does_not_match_cons_inside_path_cons() {
+    // `PathCons` ends in `Cons`, but its `Cons<` is not a standalone cell, so a `PathCons` spine is
+    // left for the path resugaring rather than being read as a `Product!`.
+    assert_eq!(resugar_lists("PathCons<Foo, Nil>"), None);
+}
+
+#[test]
+fn full_chain_resugars_a_raw_field_spine_to_a_struct() {
+    // End to end: the raw `Symbol` spine is resugared first, then the field list folds to `Struct!`.
+    assert_eq!(
+        postprocess_message(
+            "Cons<Field<Symbol<1, Chars<'x', Nil>>, u64>, Nil>",
+            false,
+            false,
+        )
+        .as_deref(),
+        Some("Struct! { x: u64 }"),
+    );
+}
 
 #[test]
 fn resugars_a_path_bare_without_the_macro_wrapper() {

@@ -33,8 +33,8 @@ pub use diagnosis::{
     plan_wiring_conflict, root_cause_code, root_cause_lead, wiring_conflict_help,
 };
 pub use postprocess::{
-    CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_path, resugar_symbol,
-    rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
+    CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_lists, resugar_path,
+    resugar_symbol, rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
 };
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use tree::{DependencyTree, render_dependency_tree};
