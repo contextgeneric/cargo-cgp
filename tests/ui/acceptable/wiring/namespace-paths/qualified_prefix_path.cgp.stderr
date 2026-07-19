@@ -6,8 +6,8 @@ error[E0277]: [CGP-E001] the consumer trait `HasQuantityType` is not implemented
    |
    = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@app.finance.types.QuantityTypeProviderComponent`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `HasQuantityType` for context `App`
-               └── [CGP-E104] redirect lookup to `@app.finance.types.QuantityTypeProviderComponent` in `App`
-                   └── [CGP-E107] context `App` does not contain any delegate entry for `@app.finance.types.QuantityTypeProviderComponent`
+             [CGP-E101] consumer trait impl `HasQuantityType` for context `App`
+             └─ [CGP-E104] redirect lookup to `@app.finance.types.QuantityTypeProviderComponent` in `App`
+               └─ [CGP-E107] context `App` does not contain any delegate entry for `@app.finance.types.QuantityTypeProviderComponent`
 
 For more information about this error, try `rustc --explain E0277`.

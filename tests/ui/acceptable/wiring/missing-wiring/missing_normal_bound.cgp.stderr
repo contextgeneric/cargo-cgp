@@ -6,11 +6,11 @@ error[E0277]: [CGP-E001] the consumer trait `CanUseFoo` is not implemented for c
    |
    = note: root cause: [CGP-E201] the trait bound `App: Clone` is not satisfied
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
-               └── [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBar`
-                   └── [CGP-E101] consumer trait impl `CanUseBar` for context `App`
-                       └── [CGP-E102] provider trait impl `BarProvider` with context `App` for provider `DoBar`
-                           └── the trait bound `App: Clone` is not satisfied
+             [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
+             └─ [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBar`
+               └─ [CGP-E101] consumer trait impl `CanUseBar` for context `App`
+                 └─ [CGP-E102] provider trait impl `BarProvider` with context `App` for provider `DoBar`
+                   └─ the trait bound `App: Clone` is not satisfied
 
 error[E0277]: [CGP-E001] the consumer trait `CanUseBar` is not implemented for context `App`
   --> src/main.rs:36:9
@@ -20,8 +20,8 @@ error[E0277]: [CGP-E001] the consumer trait `CanUseBar` is not implemented for c
    |
    = note: root cause: [CGP-E201] the trait bound `App: Clone` is not satisfied
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanUseBar` for context `App`
-               └── [CGP-E102] provider trait impl `BarProvider` with context `App` for provider `DoBar`
-                   └── the trait bound `App: Clone` is not satisfied
+             [CGP-E101] consumer trait impl `CanUseBar` for context `App`
+             └─ [CGP-E102] provider trait impl `BarProvider` with context `App` for provider `DoBar`
+               └─ the trait bound `App: Clone` is not satisfied
 
 For more information about this error, try `rustc --explain E0277`.

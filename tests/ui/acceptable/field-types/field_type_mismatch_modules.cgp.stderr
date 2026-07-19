@@ -5,10 +5,10 @@ error[E0271]: [CGP-E003] expected a `height` field of type `f64` on `Rectangle`,
    |             ^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this is required through the dependency chain:
-           [CGP-E101] consumer trait impl `CanCalculateAreaA` for context `Rectangle`
-           └── [CGP-E102] provider trait impl `AreaCalculatorA` with context `Rectangle` for provider `RectangleAreaA`
-               └── [CGP-E105] trait impl `HasRectangleFieldsA` for `Rectangle`
-                   └── [CGP-E109] field `height` on `Rectangle` has type `i32`, but `f64` is required
+             [CGP-E101] consumer trait impl `CanCalculateAreaA` for context `Rectangle`
+             └─ [CGP-E102] provider trait impl `AreaCalculatorA` with context `Rectangle` for provider `RectangleAreaA`
+               └─ [CGP-E105] trait impl `HasRectangleFieldsA` for `Rectangle`
+                 └─ [CGP-E109] field `height` on `Rectangle` has type `i32`, but `f64` is required
 
 error[E0271]: [CGP-E003] expected a `height` field of type `f64` on `Rectangle`, but found `i16`
    --> src/main.rs:103:13
@@ -17,9 +17,9 @@ error[E0271]: [CGP-E003] expected a `height` field of type `f64` on `Rectangle`,
     |             ^^^^^^^^^^^^^^^^^^^^^^^^
     |
     = note: this is required through the dependency chain:
-            [CGP-E101] consumer trait impl `CanCalculateAreaB` for context `Rectangle`
-            └── [CGP-E102] provider trait impl `AreaCalculatorB` with context `Rectangle` for provider `RectangleAreaB`
-                └── [CGP-E105] trait impl `HasRectangleFieldsB` for `Rectangle`
-                    └── [CGP-E109] field `height` on `Rectangle` has type `i16`, but `f64` is required
+              [CGP-E101] consumer trait impl `CanCalculateAreaB` for context `Rectangle`
+              └─ [CGP-E102] provider trait impl `AreaCalculatorB` with context `Rectangle` for provider `RectangleAreaB`
+                └─ [CGP-E105] trait impl `HasRectangleFieldsB` for `Rectangle`
+                  └─ [CGP-E109] field `height` on `Rectangle` has type `i16`, but `f64` is required
 
 For more information about this error, try `rustc --explain E0271`.

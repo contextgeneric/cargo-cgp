@@ -161,12 +161,11 @@ fn strip_module_paths_skips_string_literals() {
 
 #[test]
 fn strip_module_paths_preserves_multibyte_box_drawing() {
-    // The dependency tree's `└──` characters are multi-byte UTF-8; stripping a module path on the
+    // The dependency tree's `└─` characters are multi-byte UTF-8; stripping a module path on the
     // same line must copy them whole, never split them into invalid bytes.
     assert_eq!(
-        strip_module_paths("    └── the trait bound `f64: std::cmp::Eq` is not satisfied")
-            .as_deref(),
-        Some("    └── the trait bound `f64: Eq` is not satisfied"),
+        strip_module_paths("  └─ the trait bound `f64: std::cmp::Eq` is not satisfied").as_deref(),
+        Some("  └─ the trait bound `f64: Eq` is not satisfied"),
     );
 }
 

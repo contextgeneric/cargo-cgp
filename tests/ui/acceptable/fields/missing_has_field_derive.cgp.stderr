@@ -7,9 +7,9 @@ error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for co
    = help: make sure that `#[derive(HasField)]` is used for `Person`
    = note: root cause: [CGP-E108] accessor trait `HasField` with field `name` is not implemented for `Person`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanGreet` for context `Person`
-               └── [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
-                   └── [CGP-E105] trait impl `HasName` for `Person`
-                       └── [CGP-E108] accessor trait `HasField` with field `name` is not implemented for `Person`
+             [CGP-E101] consumer trait impl `CanGreet` for context `Person`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
+               └─ [CGP-E105] trait impl `HasName` for `Person`
+                 └─ [CGP-E108] accessor trait `HasField` with field `name` is not implemented for `Person`
 
 For more information about this error, try `rustc --explain E0277`.

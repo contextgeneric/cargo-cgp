@@ -28,13 +28,13 @@ pub mod tree;
 
 pub use diagnosis::{
     Cause, DiagKind, DiagnosisPlan, FieldIssue, Leaf, Resolved, WiringConflict, WiringKey,
-    cause_note, cause_signature, consumer_header, dependency_leaf_code, dependency_tree_leaf,
-    derive_help_messages, field_mismatch_header, missing_delegate_entry, plan_resolved,
-    plan_wiring_conflict, root_cause_code, root_cause_lead, wiring_conflict_help,
+    cause_note, cause_notes, cause_signature, consumer_header, dependency_leaf_code,
+    dependency_tree_leaf, derive_help_messages, field_mismatch_header, missing_delegate_entry,
+    plan_resolved, plan_wiring_conflict, root_cause_code, root_cause_lead, wiring_conflict_help,
 };
 pub use postprocess::{
     CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_lists, resugar_path,
     resugar_symbol, rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
 };
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
-pub use tree::{DependencyTree, render_dependency_tree};
+pub use tree::{DependencyTree, merge_dependency_forest, render_dependency_tree};

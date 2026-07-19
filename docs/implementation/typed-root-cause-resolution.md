@@ -94,10 +94,10 @@ error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemente
    |
    = note: root cause: [CGP-E106] missing field `height` on `Rectangle`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
-               └── [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-                   └── [CGP-E105] trait impl `HasRectangleFields` for `Rectangle`
-                       └── [CGP-E106] missing field `height` on `Rectangle`
+             [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+             └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+               └─ [CGP-E105] trait impl `HasRectangleFields` for `Rectangle`
+                 └─ [CGP-E106] missing field `height` on `Rectangle`
 ```
 
 Every element of that output is reconstructed from the compiler, not read from rustc's message: the
@@ -197,9 +197,9 @@ expected type from the failing projection and the actual type off the struct:
 ```text
 error[E0271]: [CGP-E003] expected a `height` field of type `f64` on `Rectangle`, but found `i32`
    = note: this is required through the dependency chain:
-           [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
-           └── [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-               └── [CGP-E109] field `height` on `Rectangle` has type `i32`, but `f64` is required
+             [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+             └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+               └─ [CGP-E109] field `height` on `Rectangle` has type `i32`, but `f64` is required
 ```
 
 Two cases keep rustc's own headline rather than a coded one. A main message that already states a
@@ -220,7 +220,18 @@ it always bottoms out *at* the cause rather than one step before it, whatever th
 lead and every tree entry carries a [`CGP-E1xx`/`CGP-E2xx` code](../error-code.md) (the wording below
 omits the prefix for brevity). Paths render as a bare `@app.GreeterComponent` — the `Path!(@…)` macro
 form is reserved for the resugaring fallback — and module qualifiers are stripped throughout, so
-`contexts::app::MockApp` reads as `MockApp`.
+`contexts::app::MockApp` reads as `MockApp`. The chain is indented two spaces under its heading.
+
+When a failure has **several root causes whose chains share a common ancestor** — the usual shape,
+since every cause descends from the one failing obligation the walk seeded — the per-cause notes would
+each restate the whole shared prefix, which for a program-sized context type is enormous. So causes
+sharing a dependency root are fused into **one** note: a `root causes:` heading lists each leaf up
+front (each with its own code, so a reader sees every cause at a glance), and a single **merged tree**
+follows, with `merge_dependency_forest` showing every shared ancestor once and branching where the
+chains diverge, each branch ending at its own leaf. The merge keys sibling nodes by their rendered
+label, so it fuses exactly the nodes the chains reach by the same path and no more; causes that share
+no root stay separate notes (nothing is forced under an ancestor the chains do not actually share). A
+lone cause keeps its singular `root cause:` note.
 
 The `root cause:` lead is worded by *why* the leaf is unmet, and there are four leaf shapes:
 
@@ -246,10 +257,10 @@ The `root cause:` lead is worded by *why* the leaf is unmet, and there are four 
   error[E0277]: [CGP-E001] the consumer trait `CanUseFoo` is not implemented for context `App`
      = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`
              this is required through the dependency chain:
-                 [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
-                 └── [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBar`
-                     └── [CGP-E101] consumer trait impl `CanUseBar` for context `App`
-                         └── [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`
+               [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
+               └─ [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBar`
+                 └─ [CGP-E101] consumer trait impl `CanUseBar` for context `App`
+                   └─ [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`
   ```
 
   Note the nested `CanUseBar` node: because the walk descends the real capability the provider
@@ -722,13 +733,13 @@ error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog<Product![HandleName,
    |
    = note: root cause: [CGP-E106] missing field `name` on `App`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanHandle<Prog<Product![HandleName, HandleShout]>, _>` for context `App`
-               └── [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
-                   └── [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `PipeHandlers<Product![HandleName, HandleShout]>`
-                       └── [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `ComposeHandlers<HandleName, HandleShout>`
-                           └── [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `HandleName`
-                               └── [CGP-E105] trait impl `HasName` for `App`
-                                   └── [CGP-E106] missing field `name` on `App`
+             [CGP-E101] consumer trait impl `CanHandle<Prog<Product![HandleName, HandleShout]>, _>` for context `App`
+             └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
+               └─ [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `PipeHandlers<Product![HandleName, HandleShout]>`
+                 └─ [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `ComposeHandlers<HandleName, HandleShout>`
+                   └─ [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `HandleName`
+                     └─ [CGP-E105] trait impl `HasName` for `App`
+                       └─ [CGP-E106] missing field `name` on `App`
 ```
 
 The re-report rustc raises where the result is awaited resolves to the same cause and de-duplicates
@@ -994,11 +1005,13 @@ traits.)
 collapses the span to the primary caret (the original labels restate the replaced message), and with
 `None` it leaves the header, labels, and caret alone. Either way it replaces the children with the
 plan's `help`s (one per distinct type that must derive `#[derive(HasField)]`, or the `Deref` target; a
-field-type mismatch contributes none) and the plan's notes — one per root cause, each opening with its
-`root cause:` lead over `this is required through the dependency chain:` and the tree beneath (the lead
+field-type mismatch contributes none) and the plan's notes — one per group of root causes that share
+a dependency root, each opening with its `root cause:` lead (or `root causes:` list, when the group
+merged several) over `this is required through the dependency chain:` and the tree beneath (the lead
 omitted when the kept header or the `CGP-E003` header already states the bound). rustc's structured
 suggestions are discarded with its notes, the diagnostic's Rust code is never touched, and a provider
-with two absent dependencies yields two notes. The JSON emitter regenerates every rendered and
+with two absent dependencies sharing its chain yields one note over a merged tree that branches to
+both. The JSON emitter regenerates every rendered and
 structured field from the `DiagInner` for free, with rustc's note-continuation indentation aligning each
 tree's box-drawing under its `= note:`. A final cross-diagnostic de-duplication (keyed on the recovered
 cause, the rendered text, or the coded header) suppresses a transformed diagnostic that re-reports a
@@ -1144,7 +1157,9 @@ separate header brand; the inline code is the only marking.
   cross-diagnostic de-duplication suppresses a re-report of a failure already shown.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
   — the rustc-free model and wording: `leaf.rs`/`resolved.rs` (the `Leaf`, `FieldIssue`, `Cause`, and
-  `Resolved` types), `wording.rs` (the coded headers, `root cause:` notes, and derive `help`s), and
+  `Resolved` types), `wording.rs` (the coded headers, the `root cause:`/`root causes:` notes — the
+  latter merging causes that share a dependency root via `cause_notes` → `merge_dependency_forest` —
+  and derive `help`s), and
   `plan.rs` (`DiagKind`, `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`),
   unit-tested in [`tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs).
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs) —

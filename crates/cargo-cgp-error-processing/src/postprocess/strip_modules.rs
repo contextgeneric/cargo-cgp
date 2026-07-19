@@ -24,7 +24,7 @@ pub fn strip_module_paths(text: &str) -> Option<String> {
     let mut changed = false;
 
     // Identifier runs are pure ASCII, so they are scanned by byte; every other character is copied
-    // whole (by its UTF-8 width) rather than byte-by-byte, so multi-byte text — the `└──`
+    // whole (by its UTF-8 width) rather than byte-by-byte, so multi-byte text — the `└─`
     // box-drawing of a rendered dependency tree, say — is never split into invalid bytes.
     while i < bytes.len() {
         let b = bytes[i];

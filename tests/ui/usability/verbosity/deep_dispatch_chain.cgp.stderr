@@ -6,12 +6,12 @@ error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog<Product![HandleReadN
     |
     = note: root cause: [CGP-E106] missing field `name` on `App`
             this is required through the dependency chain:
-                [CGP-E101] consumer trait impl `CanHandle<Prog<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>, _>` for context `App`
-                └── [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
-                    └── [CGP-E102] provider trait impl `Handler<Prog<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>, _>` with context `App` for provider `PipeHandlers<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>`
-                        └── [CGP-E102] provider trait impl `Handler<Prog<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>, _>` with context `App` for provider `ComposeHandlers<HandleReadName, ComposeHandlers<HandlePass<Politely>, ComposeHandlers<HandlePass<Shout>, HandlePass<Repeat>>>>`
-                            └── [CGP-E102] provider trait impl `Handler<Prog<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>, _>` with context `App` for provider `HandleReadName`
-                                └── [CGP-E105] trait impl `HasName` for `App`
-                                    └── [CGP-E106] missing field `name` on `App`
+              [CGP-E101] consumer trait impl `CanHandle<Prog<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>, _>` for context `App`
+              └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
+                └─ [CGP-E102] provider trait impl `Handler<Prog<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>, _>` with context `App` for provider `PipeHandlers<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>`
+                  └─ [CGP-E102] provider trait impl `Handler<Prog<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>, _>` with context `App` for provider `ComposeHandlers<HandleReadName, ComposeHandlers<HandlePass<Politely>, ComposeHandlers<HandlePass<Shout>, HandlePass<Repeat>>>>`
+                    └─ [CGP-E102] provider trait impl `Handler<Prog<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>, _>` with context `App` for provider `HandleReadName`
+                      └─ [CGP-E105] trait impl `HasName` for `App`
+                        └─ [CGP-E106] missing field `name` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -6,7 +6,7 @@ error[E0277]: [CGP-E001] the consumer trait `CanUseFoo` is not implemented for c
    |
    = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `FooProviderComponent`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
-               └── [CGP-E107] context `App` does not contain any delegate entry for `FooProviderComponent`
+             [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
+             └─ [CGP-E107] context `App` does not contain any delegate entry for `FooProviderComponent`
 
 For more information about this error, try `rustc --explain E0277`.

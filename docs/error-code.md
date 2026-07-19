@@ -174,10 +174,10 @@ just as with a main message. The code rides at the start of each tree entry:
 ```text
 = note: root cause: [CGP-E106] missing field `name` on `App`
         this is required through the dependency chain:
-            [CGP-E101] consumer trait impl `CanGreet` for context `App`
-            └── [CGP-E102] provider trait impl `Greeter` with context `App` for provider `GreetHello`
-                └── [CGP-E105] trait impl `HasName` for `App`
-                    └── [CGP-E106] missing field `name` on `App`
+          [CGP-E101] consumer trait impl `CanGreet` for context `App`
+          └─ [CGP-E102] provider trait impl `Greeter` with context `App` for provider `GreetHello`
+            └─ [CGP-E105] trait impl `HasName` for `App`
+              └─ [CGP-E106] missing field `name` on `App`
 ```
 
 A tree entry that merely *passes a non-CGP message through* in rustc's own phrasing — the

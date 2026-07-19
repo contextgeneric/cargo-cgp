@@ -4,22 +4,18 @@ error[E0277]: [CGP-E001] the consumer trait `CanCalculateDensity` is not impleme
 95 |         DensityCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E106] missing field `scale_factor` on `Rectangle`
+   = note: root causes:
+             - [CGP-E106] missing field `scale_factor` on `Rectangle`
+             - [CGP-E106] missing field `height` on `Rectangle`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanCalculateDensity` for context `Rectangle`
-               └── [CGP-E102] provider trait impl `DensityCalculator` with context `Rectangle` for provider `DensityFromMassField`
-                   └── [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
-                       └── [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<RectangleArea>`
-                           └── [CGP-E105] trait impl `HasScaleFactor` for `Rectangle`
-                               └── [CGP-E106] missing field `scale_factor` on `Rectangle`
-   = note: root cause: [CGP-E106] missing field `height` on `Rectangle`
-           this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanCalculateDensity` for context `Rectangle`
-               └── [CGP-E102] provider trait impl `DensityCalculator` with context `Rectangle` for provider `DensityFromMassField`
-                   └── [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
-                       └── [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<RectangleArea>`
-                           └── [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-                               └── [CGP-E105] trait impl `HasRectangleFields` for `Rectangle`
-                                   └── [CGP-E106] missing field `height` on `Rectangle`
+             [CGP-E101] consumer trait impl `CanCalculateDensity` for context `Rectangle`
+             └─ [CGP-E102] provider trait impl `DensityCalculator` with context `Rectangle` for provider `DensityFromMassField`
+               └─ [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+                 └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<RectangleArea>`
+                   ├─ [CGP-E105] trait impl `HasScaleFactor` for `Rectangle`
+                   │ └─ [CGP-E106] missing field `scale_factor` on `Rectangle`
+                   └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+                     └─ [CGP-E105] trait impl `HasRectangleFields` for `Rectangle`
+                       └─ [CGP-E106] missing field `height` on `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

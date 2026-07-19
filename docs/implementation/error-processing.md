@@ -41,10 +41,12 @@ driver, is what keeps them unit-testable.
   which words the `[CGP-E004]`–`[CGP-E008]` headers (one per conflict shape) the driver's `resolve::conflict` classifier feeds it (see
   [The driver](driver.md#reshaping-a-duplicate-key-conflict)).
 - **The dependency-tree renderer**
-  ([`tree`](../../crates/cargo-cgp-error-processing/src/tree.rs)) is the `DependencyTree` type and its
-  `cargo tree`-style renderer, over the tiny `termtree` crate, that the driver's resolver builds and
-  the diagnosis wording renders to show a check failure's transitive dependency chain. It is
-  documented in [Typed root-cause resolution](typed-root-cause-resolution.md).
+  ([`tree`](../../crates/cargo-cgp-error-processing/src/tree.rs)) is the `DependencyTree` type, its
+  `cargo tree`-style renderer over the tiny `termtree` crate, and `merge_dependency_forest` — the
+  merge that fuses several root-cause chains sharing a common ancestor into one branching tree, so a
+  multi-cause failure shows the shared prefix once. The driver's resolver builds the per-cause chains,
+  and the diagnosis wording merges and renders them. It is documented in
+  [Typed root-cause resolution](typed-root-cause-resolution.md).
 
 A fifth module, [`code`](../../crates/cargo-cgp-error-processing/src/code.rs), holds the `CGP-E`
 error-code constants the rewrite and the diagnosis wording stamp on classified main messages
@@ -103,7 +105,7 @@ today:
   becomes `QuantityTypeProviderComponent`, and `f64: std::cmp::Eq` becomes `f64: Eq` — the module
   qualifiers are noise a CGP diagnostic reads better without. It scans by byte for the ASCII
   identifier run but copies every other character whole by its UTF-8 width, so multi-byte text (a
-  rendered tree's `└──`) is never split; it skips string literals and leaves a turbofish, an
+  rendered tree's `└─`) is never split; it skips string literals and leaves a turbofish, an
   associated-type `>::Assoc` tail, and a lone identifier alone. It subsumes `strip_cgp_prefixes`
   (a `cgp::prelude::Chars` is just one such run), which still runs after it for the specific CGP
   re-export list.
@@ -282,14 +284,17 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis) —
   the rustc-free root-cause model and its wording: `leaf.rs` (`Leaf`/`FieldIssue`), `resolved.rs`
   (`Cause`/`Resolved`), `wording.rs` (the `Resolved`→`String` builders — `consumer_header`,
-  `field_mismatch_header`, `cause_note`, `derive_help_messages`), `plan.rs` (`DiagKind`,
+  `field_mismatch_header`, `cause_notes` — which groups causes sharing a dependency root and words
+  each group as a single `cause_note` or a merged `root causes:` note — `derive_help_messages`),
+  `plan.rs` (`DiagKind`,
   `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`), and `wiring.rs`
   (`WiringConflict`/`WiringKey`, `plan_wiring_conflict` for the `[CGP-E004]`–`[CGP-E008]`
   duplicate-key headers, and `wiring_conflict_help` for the redirect fix). See
   [Typed root-cause resolution](typed-root-cause-resolution.md) and
   [The driver](driver.md#reshaping-a-duplicate-key-conflict).
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs) —
-  the `DependencyTree` type and its `cargo tree`-style renderer.
+  the `DependencyTree` type, its `cargo tree`-style renderer, and `merge_dependency_forest` (fusing
+  root-cause chains that share a common ancestor into one branching tree).
 - [`crates/cargo-cgp-error-processing/src/code.rs`](../../crates/cargo-cgp-error-processing/src/code.rs) —
   the `CGP-E` error-code constants, catalogued in [error-code.md](../error-code.md).
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the

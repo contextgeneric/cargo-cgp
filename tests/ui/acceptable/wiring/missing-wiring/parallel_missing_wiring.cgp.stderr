@@ -4,17 +4,15 @@ error[E0277]: [CGP-E001] the consumer trait `CanUseFoo` is not implemented for c
 45 |         FooProviderComponent: DoFooWithBarBaz,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`
+   = note: root causes:
+             - [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`
+             - [CGP-E107] context `App` does not contain any delegate entry for `BazProviderComponent`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
-               └── [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBarBaz`
-                   └── [CGP-E101] consumer trait impl `CanUseBar` for context `App`
-                       └── [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`
-   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `BazProviderComponent`
-           this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
-               └── [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBarBaz`
-                   └── [CGP-E101] consumer trait impl `CanUseBaz` for context `App`
-                       └── [CGP-E107] context `App` does not contain any delegate entry for `BazProviderComponent`
+             [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
+             └─ [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBarBaz`
+               ├─ [CGP-E101] consumer trait impl `CanUseBar` for context `App`
+               │ └─ [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`
+               └─ [CGP-E101] consumer trait impl `CanUseBaz` for context `App`
+                 └─ [CGP-E107] context `App` does not contain any delegate entry for `BazProviderComponent`
 
 For more information about this error, try `rustc --explain E0277`.

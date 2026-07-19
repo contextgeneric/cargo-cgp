@@ -6,13 +6,13 @@ error[E0277]: [CGP-E001] the consumer trait `CanEncodeVariant<Choice>` is not im
    |
    = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@VariantEncoderComponent.f64`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanEncodeVariant<Choice>` for context `App`
-               └── [CGP-E104] redirect lookup to `@VariantEncoderComponent` in `App`
-                   └── [CGP-E102] provider trait impl `VariantEncoder<Choice>` with context `App` for provider `EncodeChoice`
-                       └── [CGP-E105] trait impl `EncodeVariants` for `Sum![u64, f64]`
-                           └── [CGP-E105] trait impl `EncodeVariants` for `Sum![f64]`
-                               └── [CGP-E101] consumer trait impl `CanEncodeVariant<f64>` for context `App`
-                                   └── [CGP-E104] redirect lookup to `@VariantEncoderComponent` in `App`
-                                       └── [CGP-E107] context `App` does not contain any delegate entry for `@VariantEncoderComponent.f64`
+             [CGP-E101] consumer trait impl `CanEncodeVariant<Choice>` for context `App`
+             └─ [CGP-E104] redirect lookup to `@VariantEncoderComponent` in `App`
+               └─ [CGP-E102] provider trait impl `VariantEncoder<Choice>` with context `App` for provider `EncodeChoice`
+                 └─ [CGP-E105] trait impl `EncodeVariants` for `Sum![u64, f64]`
+                   └─ [CGP-E105] trait impl `EncodeVariants` for `Sum![f64]`
+                     └─ [CGP-E101] consumer trait impl `CanEncodeVariant<f64>` for context `App`
+                       └─ [CGP-E104] redirect lookup to `@VariantEncoderComponent` in `App`
+                         └─ [CGP-E107] context `App` does not contain any delegate entry for `@VariantEncoderComponent.f64`
 
 For more information about this error, try `rustc --explain E0277`.

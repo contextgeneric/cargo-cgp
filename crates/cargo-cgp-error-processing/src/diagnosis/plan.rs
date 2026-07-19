@@ -11,7 +11,7 @@
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
 use crate::diagnosis::wording::{
-    cause_note, consumer_header, derive_help_messages, field_mismatch_header, mismatch_leaf,
+    cause_notes, consumer_header, derive_help_messages, field_mismatch_header, mismatch_leaf,
 };
 use crate::rewrite::{ComponentNameMap, parse_trait_bound, rewrite_trait_bound};
 
@@ -63,11 +63,7 @@ pub fn plan_resolved(
     };
 
     let helps = derive_help_messages(&resolved.causes);
-    let notes = resolved
-        .causes
-        .iter()
-        .map(|cause| cause_note(cause, header_bound.as_deref()))
-        .collect();
+    let notes = cause_notes(&resolved.causes, header_bound.as_deref());
 
     DiagnosisPlan {
         header,

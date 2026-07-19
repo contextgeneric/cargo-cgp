@@ -4,17 +4,15 @@ error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for co
 50 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E106] missing field `first_name` on `Person`
+   = note: root causes:
+             - [CGP-E106] missing field `first_name` on `Person`
+             - [CGP-E106] missing field `last_name` on `Person`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanGreet` for context `Person`
-               └── [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetFullName`
-                   └── [CGP-E105] trait impl `HasFirstName` for `Person`
-                       └── [CGP-E106] missing field `first_name` on `Person`
-   = note: root cause: [CGP-E106] missing field `last_name` on `Person`
-           this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `CanGreet` for context `Person`
-               └── [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetFullName`
-                   └── [CGP-E105] trait impl `HasLastName` for `Person`
-                       └── [CGP-E106] missing field `last_name` on `Person`
+             [CGP-E101] consumer trait impl `CanGreet` for context `Person`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetFullName`
+               ├─ [CGP-E105] trait impl `HasFirstName` for `Person`
+               │ └─ [CGP-E106] missing field `first_name` on `Person`
+               └─ [CGP-E105] trait impl `HasLastName` for `Person`
+                 └─ [CGP-E106] missing field `last_name` on `Person`
 
 For more information about this error, try `rustc --explain E0277`.

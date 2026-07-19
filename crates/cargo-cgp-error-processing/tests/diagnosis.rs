@@ -9,10 +9,20 @@ use std::collections::HashMap;
 use cargo_cgp_error_processing::diagnosis::{mismatch_leaf, quoted_list};
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
-    Cause, DependencyTree, DiagKind, FieldIssue, Leaf, Resolved, cause_note, cause_signature,
-    consumer_header, dependency_tree_leaf, derive_help_messages, field_mismatch_header,
-    plan_resolved, render_dependency_tree, root_cause_code,
+    Cause, DependencyTree, DiagKind, FieldIssue, Leaf, Resolved, cause_note, cause_notes,
+    cause_signature, consumer_header, dependency_tree_leaf, derive_help_messages,
+    field_mismatch_header, plan_resolved, render_dependency_tree, root_cause_code,
 };
+
+/// Indent every line by the two spaces the note wording nests a dependency chain under its
+/// `this is required through the dependency chain:` heading with.
+fn indent2(chain: &str) -> String {
+    chain
+        .lines()
+        .map(|line| format!("  {line}"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
 
 /// A two-node dependency spine: the checked consumer over the missing field leaf.
 fn tree() -> DependencyTree {
@@ -80,11 +90,10 @@ fn plans_a_missing_field_check_failure() {
     assert!(plan.helps.is_empty());
     assert_eq!(
         plan.notes,
-        vec![String::from(
+        vec![format!(
             "root cause: [CGP-E106] missing field `height` on `Rectangle`\n\
-             this is required through the dependency chain:\n\
-             \x20   consumer trait impl `CanCalculateArea` for context `Rectangle`\n\
-             \x20   └── field trait impl `HasField` with field `height` for `Rectangle`"
+             this is required through the dependency chain:\n{}",
+            indent2(&render_dependency_tree(&tree()))
         )]
     );
 }
@@ -107,7 +116,7 @@ fn plans_a_missing_wiring_check_failure() {
                 component: "BarProviderComponent".to_owned(),
                 owner: "App".to_owned(),
             },
-            tree,
+            tree: tree.clone(),
         }],
     };
     let plan = plan_resolved(
@@ -126,11 +135,10 @@ fn plans_a_missing_wiring_check_failure() {
     assert!(plan.helps.is_empty());
     assert_eq!(
         plan.notes,
-        vec![String::from(
+        vec![format!(
             "root cause: [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`\n\
-             this is required through the dependency chain:\n\
-             \x20   consumer trait impl `CanUseFoo` for context `App`\n\
-             \x20   └── trait impl `CanUseBar` for `App`"
+             this is required through the dependency chain:\n{}",
+            indent2(&render_dependency_tree(&tree))
         )]
     );
 }
@@ -160,7 +168,7 @@ fn plans_a_missing_redirect_wiring_check_failure() {
                 path: "@app.finance.types.QuantityTypeProviderComponent".to_owned(),
                 context: "App".to_owned(),
             },
-            tree,
+            tree: tree.clone(),
         }],
     };
     let plan = plan_resolved(DiagKind::Check, None, &resolved, &empty_names());
@@ -170,14 +178,11 @@ fn plans_a_missing_redirect_wiring_check_failure() {
     assert!(plan.helps.is_empty());
     assert_eq!(
         plan.notes,
-        vec![String::from(
+        vec![format!(
             "root cause: [CGP-E107] context `App` does not contain any delegate entry for \
              `@app.finance.types.QuantityTypeProviderComponent`\n\
-             this is required through the dependency chain:\n\
-             \x20   consumer trait impl `HasQuantityType` for context `App`\n\
-             \x20   └── redirect lookup to `@app.finance.types.QuantityTypeProviderComponent` in `App`\n\
-             \x20       └── context `App` does not contain any delegate entry for \
-             `@app.finance.types.QuantityTypeProviderComponent`"
+             this is required through the dependency chain:\n{}",
+            indent2(&render_dependency_tree(&tree))
         )]
     );
 }
@@ -278,7 +283,7 @@ fn plans_a_field_type_mismatch() {
         plan.notes,
         vec![format!(
             "this is required through the dependency chain:\n{}",
-            render_dependency_tree(&tree())
+            indent2(&render_dependency_tree(&tree()))
         )]
     );
     assert_eq!(mismatch_leaf(&resolved), Some(&mismatch.leaf));
@@ -341,7 +346,7 @@ fn keeps_an_ordinary_bound_header_and_drops_the_repeated_lead() {
         plan.notes,
         vec![format!(
             "this is required through the dependency chain:\n{}",
-            render_dependency_tree(&tree())
+            indent2(&render_dependency_tree(&tree()))
         )]
     );
 }
@@ -644,4 +649,60 @@ fn wording_helpers_format_directly() {
             .starts_with("root cause: [CGP-E106] missing field `height` on `Rectangle`")
     );
     assert!(derive_help_messages(std::slice::from_ref(&cause)).is_empty());
+}
+
+/// One field-missing cause whose chain shares a `getter` node with its sibling — the branch point
+/// of the merge test below.
+fn field_cause(getter: &str, field: &str) -> Cause {
+    Cause {
+        leaf: Leaf::Field {
+            name: field.to_owned(),
+            owner: "Person".to_owned(),
+            issue: FieldIssue::Missing,
+        },
+        tree: DependencyTree::node(
+            "consumer trait impl `CanGreet` for context `Person`",
+            vec![DependencyTree::node(
+                "provider trait impl `Greeter` with context `Person` for provider `GreetFullName`",
+                vec![DependencyTree::node(
+                    format!("trait impl `{getter}` for `Person`"),
+                    vec![DependencyTree::leaf(format!(
+                        "[CGP-E106] missing field `{field}` on `Person`"
+                    ))],
+                )],
+            )],
+        ),
+    }
+}
+
+/// Two causes sharing a dependency root collapse into a single `root causes:` note: the shared
+/// prefix appears once, each cause is listed up front, and the merged tree branches to the two
+/// distinct leaves. A lone cause keeps its own `root cause:` note.
+#[test]
+fn merges_two_causes_sharing_a_root_into_one_note() {
+    let causes = vec![
+        field_cause("HasFirstName", "first_name"),
+        field_cause("HasLastName", "last_name"),
+    ];
+
+    let notes = cause_notes(&causes, None);
+    assert_eq!(notes.len(), 1, "the two causes merge into one note");
+    assert_eq!(
+        notes[0],
+        "root causes:\n\
+         \x20 - [CGP-E106] missing field `first_name` on `Person`\n\
+         \x20 - [CGP-E106] missing field `last_name` on `Person`\n\
+         this is required through the dependency chain:\n\
+         \x20 consumer trait impl `CanGreet` for context `Person`\n\
+         \x20 └─ provider trait impl `Greeter` with context `Person` for provider `GreetFullName`\n\
+         \x20   ├─ trait impl `HasFirstName` for `Person`\n\
+         \x20   │ └─ [CGP-E106] missing field `first_name` on `Person`\n\
+         \x20   └─ trait impl `HasLastName` for `Person`\n\
+         \x20     └─ [CGP-E106] missing field `last_name` on `Person`"
+    );
+
+    // A single cause is not merged — it keeps the `root cause:` (singular) form.
+    let single = cause_notes(std::slice::from_ref(&causes[0]), None);
+    assert_eq!(single.len(), 1);
+    assert!(single[0].starts_with("root cause: [CGP-E106] missing field `first_name`"));
 }

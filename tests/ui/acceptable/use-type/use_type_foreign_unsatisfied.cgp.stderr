@@ -6,7 +6,7 @@ error[E0277]: [CGP-E001] the consumer trait `HasScalarType` is not implemented f
    |
    = note: root cause: [CGP-E107] context `NoScalar` does not contain any delegate entry for `ScalarTypeProviderComponent`
            this is required through the dependency chain:
-               [CGP-E101] consumer trait impl `HasScalarType` for context `NoScalar`
-               └── [CGP-E107] context `NoScalar` does not contain any delegate entry for `ScalarTypeProviderComponent`
+             [CGP-E101] consumer trait impl `HasScalarType` for context `NoScalar`
+             └─ [CGP-E107] context `NoScalar` does not contain any delegate entry for `ScalarTypeProviderComponent`
 
 For more information about this error, try `rustc --explain E0277`.

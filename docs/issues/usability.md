@@ -99,12 +99,14 @@ way the resolver already does for the shapes it reshapes.
 
 A struct missing its `#[derive(HasField)]` has no `HasField` impl for *any* field, so the resolver
 recovers each field the providers read as a separate root cause even though the single fix is one
-derive. [`base_area_2`](../../tests/ui/usability/duplication/base_area_2.rs) reports both `height`
-and `width` as distinct `root cause:` notes, each with its own dependency chain, on top of the one
-`help` that already names the fix. The deduplication key here is not the unmet bound — the bounds
-differ (`HasField<Symbol!("height")>` versus `HasField<Symbol!("width")>`), so the same-bound rule
-above cannot catch it — but the shared *fix*: when every recovered cause is an underived field on the
-same struct, they should collapse to one "add the derive" note. The subtlety is that a struct whose
+derive. [`base_area_2`](../../tests/ui/usability/duplication/base_area_2.rs) still reports both
+`height` and `width` as distinct root causes, on top of the one `help` that already names the fix.
+The dependency-tree merge now shows them under one `root causes:` note whose shared prefix appears
+once and branches to the two underived-field leaves — so the presentation is compact — but they
+remain *two* listed causes with one fix. The deduplication key here is not the unmet bound — the
+bounds differ (`HasField<Symbol!("height")>` versus `HasField<Symbol!("width")>`), so the same-bound
+rule above cannot catch it — but the shared *fix*: when every recovered cause is an underived field on
+the same struct, they should collapse to one "add the derive" cause. The subtlety is that a struct whose
 fields are genuinely absent (`empty_field_struct`, `parallel_branches`, both now in
 [`acceptable/fields`](../../tests/ui/acceptable/fields)) correctly stays several causes — several real
 fixes — so the coalescing must key on the derive being present-but-empty, not merely on there being
