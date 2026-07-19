@@ -1,0 +1,62 @@
+error[E0277]: the trait bound `App: FormatName` is not satisfied
+  --> src/main.rs:41:26
+   |
+41 | impl CheckFormatName for App {}
+   |                          ^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<6, Chars<..>>>` is implemented for it
+  --> src/main.rs:34:10
+   |
+34 | #[derive(HasField)]
+   |          ^^^^^^^^
+note: required for `App` to implement `FormatName`
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_fn]
+   | ^^^^^^^^^
+22 | pub fn format_name(&self, #[implicit] name: &str) -> String {
+   |        ^^^^^^^^^^^
+note: required by a bound in `CheckFormatName`
+  --> src/main.rs:40:28
+   |
+40 | pub trait CheckFormatName: FormatName {}
+   |                            ^^^^^^^^^^ required by this bound in `CheckFormatName`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: Greeting` is not satisfied
+  --> src/main.rs:44:24
+   |
+44 | impl CheckGreeting for App {}
+   |                        ^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<6, Chars<..>>>` is implemented for it
+  --> src/main.rs:34:10
+   |
+34 | #[derive(HasField)]
+   |          ^^^^^^^^
+note: required for `App` to implement `FormatName`
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_fn]
+   | ^^^^^^^^^
+22 | pub fn format_name(&self, #[implicit] name: &str) -> String {
+   |        ^^^^^^^^^^^
+note: required for `App` to implement `Greeting`
+  --> src/main.rs:28:1
+   |
+28 | #[cgp_fn]
+   | ^^^^^^^^^
+29 | #[uses(FormatName)]
+   |        ---------- unsatisfied trait bound introduced here
+30 | pub fn greeting(&self) -> String {
+   |        ^^^^^^^^
+note: required by a bound in `CheckGreeting`
+  --> src/main.rs:43:26
+   |
+43 | pub trait CheckGreeting: Greeting {}
+   |                          ^^^^^^^^ required by this bound in `CheckGreeting`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

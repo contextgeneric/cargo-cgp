@@ -98,6 +98,23 @@ pub(crate) fn is_consumer_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     consumer_provider_trait(tcx, def_id).is_some()
 }
 
+/// Whether `def_id` is a **local blanket-impl trait** — a trait defined in the crate under
+/// compilation that carries a blanket impl over a bare context parameter (`impl<Context> Trait for
+/// Context where Self: …`). This is the shape `#[cgp_fn]` and `#[blanket_trait]` generate, and the
+/// hand-written desugaring of them: the trait is available to any context meeting the blanket's
+/// `where` bounds (a `HasField`, another such capability), so a failing `Ctx: Trait` bound has a
+/// recoverable root cause down those bounds even though the trait is not a CGP *component* (it has
+/// no provider trait or `DelegateComponent`). Requiring the trait to be local excludes std blanket
+/// traits such as `Into`, whose blanket lives in another crate, and — together with the auto traits
+/// having no such impl — a plain supertrait like `Send`. A CGP consumer trait also matches (its
+/// consumer blanket is a blanket impl), which is harmless: callers that care about the distinction
+/// test [`consumer_provider_trait`] separately.
+pub(crate) fn is_local_blanket_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    def_id.is_local()
+        && tcx.is_trait(def_id)
+        && !tcx.trait_impls_of(def_id).blanket_impls().is_empty()
+}
+
 /// Recover the `(consumer trait, provider trait)` a component marker keys — the `IsProviderFor`-free
 /// inversion the anchors use to turn a `check_components!` / use-site `CanUseComponent<Marker, …>`
 /// entry into the real consumer obligation to walk. The provider trait is the one whose provider

@@ -35,7 +35,8 @@ use crate::config::{
     DELEGATE_COMPONENT_TRAIT, LIFE_TYPE, NIL_TYPE, PATH_CONS_TYPE,
 };
 use crate::resolve::cgp_item::{
-    consumer_provider_trait, find_cgp_trait, is_cgp_item, marker_to_consumer,
+    consumer_provider_trait, find_cgp_trait, is_cgp_item, is_local_blanket_trait,
+    marker_to_consumer,
 };
 use crate::resolve::walk::{holds, resolve_leaves};
 
@@ -495,9 +496,14 @@ fn wrapper_consumer_causes<'tcx>(
         if holds(tcx, sup) {
             continue;
         }
-        // Only a CGP consumer supertrait is the wiring failure the wrapper surfaces; a plain
-        // supertrait such as `Send` is not. Walk the consumer obligation directly.
-        if consumer_provider_trait(tcx, sup.skip_binder().trait_ref.def_id).is_none() {
+        // Only a CGP capability supertrait is the wiring failure the wrapper surfaces; a plain
+        // supertrait such as `Send` is not. That is either a CGP *component* consumer trait, or a
+        // `#[cgp_fn]` / `#[blanket_trait]` blanket-impl trait (`impl<Context> Trait for Context
+        // where Self: HasField<…>`), whose failing bound has a recoverable cause down the blanket's
+        // `where` clause. Walk the supertrait obligation directly in either case.
+        let sup_did = sup.skip_binder().trait_ref.def_id;
+        if consumer_provider_trait(tcx, sup_did).is_none() && !is_local_blanket_trait(tcx, sup_did)
+        {
             continue;
         }
         let Some(resolved) = resolve_leaves(tcx, sup) else {

@@ -393,11 +393,18 @@ lands on this impl — its header, a method signature, or the forwarding call �
 type definition, so the use-site anchor cannot recover the context from a struct-definition span.
 `resolve_impl_site` handles it: it finds the enclosing trait impl whose *full* HIR span (not
 `def_span`, which for an impl covers only the header) contains a diagnostic span, takes its `Self` type
-as the context, and instantiates the impl's supertraits for that `Self`. A supertrait that is a CGP
-consumer trait on that context and does not hold **is** the obligation to walk — the resolver seeds it
-directly (`wrapper_consumer_causes`), with its concrete component parameter intact
-(`CanHandleApi<QueryBalanceApi>`, not the `()` a parameterless re-check would substitute), so no marker
-detour is needed.
+as the context, and instantiates the impl's supertraits for that `Self`. A supertrait on that context
+that does not hold and is either a CGP consumer trait **or** a `#[cgp_fn]` / `#[blanket_trait]`
+blanket-impl trait (`impl<Context> Trait for Context where Self: HasField<…>`, a local trait with a
+blanket impl but no provider — recognized by `is_local_blanket_trait`) **is** the obligation to walk —
+the resolver seeds it directly (`wrapper_consumer_causes`), with its concrete component parameter
+intact (`CanHandleApi<QueryBalanceApi>`, not the `()` a parameterless re-check would substitute), so no
+marker detour is needed. The blanket-impl case is what reshapes a `#[cgp_fn]` capability check
+(`pub trait CheckGetUser: GetUser {}` + `impl CheckGetUser for App {}`, the tutorial idiom for
+asserting a capability holds) whose real cause is a field the context is missing: the walk descends
+the blanket's `where` clause — `Self: HasField<…>`, or a `#[uses]`-chained sibling capability — to the
+`` missing field `…` `` leaf, in place of rustc's misleading "`#[derive(HasField)]` is required" note.
+A plain supertrait such as `Send` is neither, so it is left alone.
 
 The tree and headline are then **headed by the impl's own trait** — the wrapper the programmer wrote —
 so the failure reads `CanHandleApiSend → CanHandleApi → …` and points at their code rather than
@@ -1134,9 +1141,11 @@ separate header brand; the inline code is the only marking.
     the check impl by span, then `can_use_to_consumer_obligation` maps its
     `CanUseComponent<Marker, Params>` assertion through
     `marker_to_consumer` to the consumer obligation); `resolve_impl_site` (recovers the context and the
-    consumer supertrait from an enclosing `impl Trait for Context` block, heading the tree with the
+    failing supertrait from an enclosing `impl Trait for Context` block, heading the tree with the
     impl's own wrapper trait — `[CGP-E001]` or `[CGP-E009]` by its blanket-impl fingerprint — through
-    the shared `wrapper_consumer_causes`, which seeds the supertrait directly); `resolve_wrapper_chain`
+    the shared `wrapper_consumer_causes`, which seeds the supertrait directly when it is a CGP consumer
+    *or* a `#[cgp_fn]`/`#[blanket_trait]` blanket-impl trait (`is_local_blanket_trait`), the latter
+    reshaping a `#[cgp_fn]` capability check whose cause is a missing field); `resolve_wrapper_chain`
     (the foreign-wrapper case, descending each hop's `where`-clauses via `wrapper_chain_children` read
     un-normalized so an associated-type bound descends to its base trait, until `consumer_handoff_causes`
     reaches a CGP consumer on the context, named plainly with `subject_is_context = false`);
@@ -1346,6 +1355,12 @@ The **impl-site and wrapper-chain paths** are pinned by:
 - `foreign_wrapper_chain` — a routing trait on a foreign `Box<App>` whose `where`-clause chain reaches a
   CGP consumer two hops down, the cause reached through a projection bound's base trait, headed by the
   `[CGP-E009]` foreign-plain form.
+- `cgp_fn_missing_field` (under [`acceptable/fields/`](../../tests/ui/acceptable/fields)) — a
+  `#[cgp_fn]` capability asserted through a wrapper (`pub trait CheckFormatName: FormatName {}` +
+  `impl CheckFormatName for App {}`) whose blanket-impl supertrait is not a CGP component, pinning the
+  `is_local_blanket_trait` extension: the impl-site anchor walks the `#[cgp_fn]` blanket's `where`
+  clause (and a `#[uses]`-chained sibling) to the `` missing field `name` `` cause instead of
+  declining to rustc's misleading `#[derive(HasField)]` note.
 
 Finally, the leaf wording and the tree renderer are unit-tested over hand-built `Resolved` values,
 independently of the compiler:
