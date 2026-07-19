@@ -518,6 +518,25 @@ deeper dependencies fail. The natural home of this pattern is the
 Nothing below is specific to handlers, though: any consumer whose wiring matches unconditionally and
 fails only in its dependencies produces the same shape.
 
+The two combinators that sequence such a pipeline are core CGP providers (from `cgp-handler`, not
+from any example), and the recovered tree renders them by name, so a reader needs their shape. Both
+are documented in full under [handler combinators](../../../cgp/docs/reference/providers/handler_combinators.md):
+
+- **`ComposeHandlers<ProviderA, ProviderB>`** runs two handlers back to back, feeding the *output* of
+  the first as the *input* of the second. So its two dependencies are asymmetric —
+  `ProviderA: Handler<Ctx, Code, Input>` on the pipeline's own input, and
+  `ProviderB: Handler<Ctx, Code, ProviderA::Output>` on whatever the first stage *produces*. That
+  asymmetry is what this section turns on.
+- **`PipeHandlers<Product![A, B, C]>`** generalizes that to a type-level list, folding it right to
+  left into `ComposeHandlers<A, ComposeHandlers<B, C>>` — so a three-stage pipeline threads its input
+  through `A`, then `B`, then `C`, each stage's output type feeding the next stage's input type. A
+  program written with a pipe operator (a step, then another step, then another) desugars to exactly
+  this.
+
+Both are zero-sized dispatch plumbing the programmer never writes by hand — they appear only because a
+pipeline program's wiring expands to them — which is precisely why a diagnostic that stops on one
+names no cause a reader can act on.
+
 The following program (condensed from the
 [`cascade_after_use_site`](../../tests/ui/acceptable/use-site/cascade_after_use_site.rs) fixture)
 wires every pipeline program `Prog<Steps>` — whatever its `Steps` — to a `PipeHandlers` composition
@@ -749,6 +768,24 @@ param-`Self` blanket, the blanket used only when it is the sole match (as for an
 ref unifies. The walk registers and **solves the impl's satisfiable clauses first**, binding such a
 parameter, so the sibling clause that carries it (the branch to the cause) is not dropped as
 inference-laden.
+
+A clause that *still* carries an inference variable after that solving is one the impl match left
+genuinely unconstrained, and the most important case is a **later pipeline stage keyed on an earlier
+stage's unresolved `::Output`**. A `ComposeHandlers<ProviderA, ProviderB>` depends on both
+`ProviderA: Handler<Ctx, Code, Input>` and `ProviderB: Handler<Ctx, Code, ProviderA::Output>`; when
+the walk's own input is a [call-site placeholder](#recovering-from-the-call-expression-itself) that
+`ProviderA` cannot satisfy, `ProviderA::Output` never normalizes and the next-generation solver leaves
+it a fresh inference variable, so the `ProviderB` clause reads as `Handler<Ctx, Code, _>`. Dropping
+that clause as inference-laden would silently discard **every root cause living in a stage past the
+first** — which is exactly what buried a missing field read by a second handler behind three
+`PipeHandlers`/`ComposeHandlers`-plumbing blocks. So rather than drop it, the walk **folds each stray
+inference variable into a rigid placeholder** (the same `unknowns_to_placeholders` the call-site anchor
+seeds unknown call arguments with) and descends the stage anyway. The placeholder is an unknown the
+walk resolves *around*: it reaches `ProviderB`'s context-side dependencies — a `Self: HasField` a
+later handler reads — while the [placeholder-leaf filter](#the-root-cause-notes) keeps any leaf that
+genuinely depends on the unknown input (`_: Send`) from being reported. The fold is a no-op when a
+clause has no such variable — the ordinary concrete-input walk, where each stage's `::Output`
+normalizes to a real type — so only the unknown-input case changes.
 
 A branch ends at a **terminal leaf**, and which obligations count as terminal is what keeps the tree
 honest. The descent follows only the CGP wiring vocabulary — any provider trait (a
@@ -1044,7 +1081,7 @@ separate header brand; the inline code is the only marking.
     from its binding, annotation, parameter, literal, or constructor-call signature),
     `seed_from_call` (the signature unification: fresh variables for the method's item, `Self`
     pinned to the context, each written argument type unified with its declared input, the trait's
-    parameters read back with `unknowns_to_placeholders` folding what stayed unresolved),
+    parameters read back with `walk`'s `unknowns_to_placeholders` folding what stayed unresolved),
     `expr_written_ty` (the argument shapes whose types the call writes) over
     `lower_hir_ty`/`instantiate_written` (the small syntactic type lowering over cached `type_of`).
   - `walk.rs` walks the cause chain to each terminal leaf: `resolve_leaves`/`collect_leaf_paths`, the
@@ -1054,7 +1091,10 @@ separate header brand; the inline code is the only marking.
     `MAX_DEPTH` backstop, the placeholder instantiation of a higher-ranked binder
     (`enter_forall_and_leak_universe`), the plumbing-leaf drop, the foreign-getter descent into just
     context-side dependencies plus a same-trait list recursion, `impl_where_obligations` preferring a
-    concrete-`Self` impl over the delegation blanket and solving satisfiable clauses first,
+    concrete-`Self` impl over the delegation blanket, solving satisfiable clauses first, and folding a
+    still-unresolved clause's stray inference vars into placeholders (`unknowns_to_placeholders`, shared
+    with the call-site anchor) rather than dropping it — so a later pipeline stage keyed on an earlier
+    stage's un-normalized `::Output` is still descended,
     `is_reportable_leaf` keeping an unmet `DelegateComponent` only on the context, the drop of a leaf
     still carrying a call-site placeholder (an unknowable `_: Send` is never reported), and
     `has_field_projection_mismatch`/`impl_field_projection_mismatch` finding an unmet `HasField`
@@ -1177,6 +1217,14 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
   [call-site anchor](#recovering-from-the-call-expression-itself)'s worked example, resolved into one
   `[CGP-E001]` block whose await-site re-report de-duplicates and whose `?`-operator cascade stays
   suppressed.
+- `cascade_later_stage` — the same dispatch shape but with the missing field read by the *second*
+  pipeline stage rather than the first, so the cause sits behind a `ComposeHandlers` stage keyed on the
+  first stage's un-normalized `::Output`. Pins the placeholder-fold of a still-unresolved clause: the
+  walk descends the later stage instead of dropping it as inference-laden, reaching the field the first
+  stage's un-reportable `_: Send` would otherwise have hidden. This is a common real-world shape — a
+  multi-stage pipeline whose later stage reads a field the context has not wired, behind an earlier
+  stage that consumes the pipeline's own input — and the fixture is the self-contained distillation of
+  it.
 - `generic_consumer_use_site` — the same anchor's value-argument case: the dispatch parameter
   recovered by signature unification from a written tuple, no tag argument involved, with the
   misleading method-syntax advice dropped.

@@ -8,7 +8,10 @@
 use cargo_cgp_error_processing::{Cause, Resolved, dependency_tree_leaf};
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_infer::traits::Obligation;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized, Upcast as _};
+use rustc_middle::ty::{
+    self, Ty, TyCtxt, TypeFoldable, TypeFolder, TypeSuperFoldable, TypeVisitableExt, TypingMode,
+    Unnormalized, Upcast as _,
+};
 use rustc_span::DUMMY_SP;
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
@@ -502,11 +505,21 @@ pub(crate) fn impl_where_obligations<'tcx>(
             let clause: ty::Clause<'tcx> =
                 ocx.normalize(&ObligationCause::dummy(), param_env, clause);
             let clause = infcx.resolve_vars_if_possible(clause);
-            // A predicate that still carries inference vars (a genuinely unconstrained impl
-            // parameter) cannot be re-evaluated in a fresh context; region vars are simply erased.
-            if clause.has_non_region_infer() {
-                continue;
-            }
+            // A clause that still carries inference vars after solving is one whose parameter the
+            // impl match left unconstrained — most often a *later pipeline stage keyed on an
+            // earlier stage's unresolved `::Output`* (`ProviderB: Handler<Ctx, Code, ProviderA::
+            // Output>`, where `ProviderA` does not hold because the walk's own input is an unknown,
+            // so its `::Output` never normalizes). Dropping it would hide every root cause living
+            // in a stage past the first. Instead, replace those stray vars with rigid placeholders
+            // so the walk can still descend the stage; the placeholder-leaf filter in
+            // [`resolve_leaves`] keeps any leaf that genuinely depends on the unknown from being
+            // reported, exactly as for the call-site seed's unknown input. A no-op when there are
+            // no such vars (the common concrete-input case), so ordinary walks are unaffected.
+            let clause = if clause.has_non_region_infer() {
+                unknowns_to_placeholders(tcx, clause)
+            } else {
+                clause
+            };
             if let Some(tp) = tcx.erase_and_anonymize_regions(clause).as_trait_clause() {
                 obligations.push(tp);
             }
@@ -515,6 +528,42 @@ pub(crate) fn impl_where_obligations<'tcx>(
         return Some(obligations);
     }
     None
+}
+
+/// Replace every unresolved inference variable in `value` with a rigid placeholder, so it can
+/// cross inference-context boundaries (a placeholder is a rigid type constant, not tied to an
+/// `InferCtxt`). Distinct variables get distinct placeholders and repeated occurrences of one
+/// variable the same one (keyed by the variable's index, the integer and float spaces offset
+/// apart), preserving whatever type equalities unification established. Used both to seed the
+/// [call-site anchor](crate::resolve::call_site)'s unknown call arguments and to keep a
+/// later-pipeline-stage clause walkable in [`impl_where_obligations`].
+pub(crate) fn unknowns_to_placeholders<'tcx, T>(tcx: TyCtxt<'tcx>, value: T) -> T
+where
+    T: TypeFoldable<TyCtxt<'tcx>>,
+{
+    struct Folder<'tcx> {
+        tcx: TyCtxt<'tcx>,
+    }
+    impl<'tcx> TypeFolder<TyCtxt<'tcx>> for Folder<'tcx> {
+        fn cx(&self) -> TyCtxt<'tcx> {
+            self.tcx
+        }
+        fn fold_ty(&mut self, ty: Ty<'tcx>) -> Ty<'tcx> {
+            let var = match *ty.kind() {
+                ty::Infer(ty::TyVar(vid)) => vid.as_u32(),
+                ty::Infer(ty::IntVar(vid)) => (1 << 20) + vid.as_u32(),
+                ty::Infer(ty::FloatVar(vid)) => (1 << 21) + vid.as_u32(),
+                ty::Infer(_) => 1 << 22,
+                _ if !ty.has_infer() => return ty,
+                _ => return ty.super_fold_with(self),
+            };
+            Ty::new_placeholder(
+                self.tcx,
+                ty::PlaceholderType::new_anon(ty::UniverseIndex::ROOT, ty::BoundVar::from_u32(var)),
+            )
+        }
+    }
+    value.fold_with(&mut Folder { tcx })
 }
 
 /// Every impl of `trait_did`, with the concrete-`Self` impls ahead of the blanket (param-`Self`)

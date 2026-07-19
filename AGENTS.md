@@ -328,6 +328,27 @@ Rust project whose CGP code does not compile — but every change *lands* inside
 lands as a **test fixture before any code**. This section codifies that loop; follow it whenever a
 task points you at such a project.
 
+**The tool knows CGP, never any one project — two rules that admit no exceptions.** An example
+project is only a *source of failing input*; the improvement it motivates must generalize to every
+CGP program with the same shape, so:
+
+- **Never hard-code logic for an example's code inside `cargo-cgp`.** The resolver and the wording
+  reason only about *core CGP constructs* — the consumer/provider traits, `DelegateComponent`,
+  `HasField`, the `Symbol!`/`Cons`/`Either` spines, the handler combinators, and the like, all
+  anchored by `DefId` to the `cgp` crates that define them. A fix must never match on a name, type, or
+  module that belongs to the example project (`WebSocket`, `MyApp`, `keyword`, a DSL's own markers):
+  such a rule would silently fail on the next project and is a defect even if it makes today's message
+  perfect. If a failure seems to need example-specific knowledge, the real gap is in how a *core*
+  construct is walked or worded — find and fix that instead.
+- **Never assume the reader knows an example's code in the docs or fixtures.** A knowledge-base
+  document, an inline comment, and a UI fixture must each be self-contained: explain any construct a
+  reader meets in terms of core CGP (linking to the [construct reference](../cgp/docs/reference/README.md)),
+  and reproduce a real failure as a *distilled, self-contained* fixture rather than a reference to the
+  example. Name the originating project at most as a passing illustration the prose does not depend on
+  — never as something the reader must already understand. A core CGP construct that happens to appear
+  in examples (a handler combinator such as `ComposeHandlers`/`PipeHandlers`, say) is fair game, but
+  introduce it as the CGP construct it is, not as "the thing that example uses."
+
 Read these first, every time, before touching anything — the loop assumes their contents. They fall
 into three groups: how the tool is run and its output read, how the tool builds that output, and what
 the upstream error classes are.

@@ -17,16 +17,13 @@ use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{self as hir, Expr, ExprKind, QPath};
 use rustc_infer::infer::TyCtxtInferExt as _;
-use rustc_middle::ty::{
-    self, Ty, TyCtxt, TypeFoldable as _, TypeSuperFoldable as _, TypeVisitableExt as _, TypingMode,
-    Upcast as _,
-};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode, Upcast as _};
 use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::cgp_item::is_consumer_trait;
-use crate::resolve::walk::{holds, resolve_leaves};
+use crate::resolve::walk::{holds, resolve_leaves, unknowns_to_placeholders};
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
 /// from the receiver's binding, the component's parameters by unifying the call's written
@@ -281,36 +278,6 @@ fn seed_from_call<'tcx>(
     // Erase the region variables the fresh args and written references minted, so nothing of this
     // inference context leaks into the walk's.
     Some(tcx.erase_and_anonymize_regions(seed))
-}
-
-/// Replace every unresolved inference variable in `ty` with a rigid placeholder, so the seed can
-/// cross inference-context boundaries. Distinct variables get distinct placeholders and repeated
-/// occurrences of one variable the same one (keyed by the variable's index, the integer and float
-/// spaces offset apart), preserving whatever type equalities the unification established.
-fn unknowns_to_placeholders<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
-    struct Folder<'tcx> {
-        tcx: TyCtxt<'tcx>,
-    }
-    impl<'tcx> ty::TypeFolder<TyCtxt<'tcx>> for Folder<'tcx> {
-        fn cx(&self) -> TyCtxt<'tcx> {
-            self.tcx
-        }
-        fn fold_ty(&mut self, ty: Ty<'tcx>) -> Ty<'tcx> {
-            let var = match *ty.kind() {
-                ty::Infer(ty::TyVar(vid)) => vid.as_u32(),
-                ty::Infer(ty::IntVar(vid)) => (1 << 20) + vid.as_u32(),
-                ty::Infer(ty::FloatVar(vid)) => (1 << 21) + vid.as_u32(),
-                ty::Infer(_) => 1 << 22,
-                _ if !ty.has_infer() => return ty,
-                _ => return ty.super_fold_with(self),
-            };
-            Ty::new_placeholder(
-                self.tcx,
-                ty::PlaceholderType::new_anon(ty::UniverseIndex::ROOT, ty::BoundVar::from_u32(var)),
-            )
-        }
-    }
-    ty.fold_with(&mut Folder { tcx })
 }
 
 /// The type an argument expression *writes*, syntactically — the call-side information the
