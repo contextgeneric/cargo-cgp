@@ -16,7 +16,7 @@ use cargo_cgp_error_processing::Resolved;
 use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{self as hir, Expr, ExprKind, QPath};
-use rustc_infer::infer::TyCtxtInferExt as _;
+use rustc_infer::infer::{InferCtxt, TyCtxtInferExt as _};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode, Upcast as _};
 use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span, Symbol};
@@ -248,7 +248,7 @@ fn seed_from_call<'tcx>(
     // `inputs()[0]` is the `self` receiver ([`consumer_traits_with_method`] requires one), already
     // pinned above, so the call's arguments line up with the declared inputs from position 1.
     for (arg, declared) in std::iter::zip(args, sig.inputs().iter().skip(1)) {
-        if let Some(written) = expr_written_ty(tcx, arg) {
+        if let Some(written) = expr_written_ty(&infcx, arg) {
             // Best effort: a written type that does not unify (a mis-guessed consumer candidate,
             // a coerced argument) just leaves its parameter unknown — the seed is gated on
             // failing, and the walk reports nothing it cannot prove.
@@ -283,12 +283,13 @@ fn seed_from_call<'tcx>(
 /// The type an argument expression *writes*, syntactically — the call-side information the
 /// signature unification consumes. Covered shapes: a unit-struct or unit-variant value path with
 /// its written arguments (`PhantomData::<Program>`, `GetMethod`), a non-generic const, a struct
-/// literal, a reference, a tuple of written expressions, a literal whose type is definite
-/// (`"…"`, suffixed numerics, `true`, `'c'`), and a call to a non-generic fn (its declared return
-/// type). `None` for anything whose type only inference could know — an unsuffixed literal, a
-/// variable, a generic constructor like `Vec::new()` — leaving the corresponding parameter
-/// unknown rather than guessed.
-fn expr_written_ty<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx>> {
+/// literal, a reference, a tuple (its *structure* recovered even when some elements are not
+/// written), a literal whose type is definite (`"…"`, suffixed numerics, `true`, `'c'`), and a call
+/// to a non-generic fn (its declared return type). `None` for anything whose type only inference
+/// could know — an unsuffixed literal, a variable, a generic constructor like `Vec::new()` —
+/// leaving the corresponding parameter unknown rather than guessed.
+fn expr_written_ty<'tcx>(infcx: &InferCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx>> {
+    let tcx = infcx.tcx;
     match expr.kind {
         ExprKind::Path(QPath::Resolved(None, path)) => match path.res {
             // A unit-struct/unit-variant value: its type is the ADT, with whatever arguments the
@@ -317,14 +318,26 @@ fn expr_written_ty<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx
         ExprKind::AddrOf(_, mutbl, inner) => Some(Ty::new_ref(
             tcx,
             tcx.lifetimes.re_erased,
-            expr_written_ty(tcx, inner)?,
+            expr_written_ty(infcx, inner)?,
             mutbl,
         )),
+        // A tuple literal writes its *shape*, whether or not every element's type is written. An
+        // element the call does not type becomes a fresh inference variable (folded into a
+        // placeholder with the rest of the seed by [`unknowns_to_placeholders`]), so the tuple
+        // arity and its written elements are recovered even beside an unknown one. This matters
+        // because providers destructure their input on the tuple shape — `HandleIf`'s
+        // `(InputCond, InputBranch)`, `HandleCompare`'s `(InputA, InputB)` — so collapsing the whole
+        // tuple to one flat unknown (as returning `None` would) leaves such a provider's impl
+        // unmatched and hides a cause sitting inside a *known* branch (a field read by the condition,
+        // say). The recovered structure is real call-side information, not a guess: the leaves it
+        // cannot type stay unknown and are never reported.
         ExprKind::Tup(elems) => {
             let tys: Vec<Ty<'tcx>> = elems
                 .iter()
-                .map(|elem| expr_written_ty(tcx, elem))
-                .collect::<Option<_>>()?;
+                .map(|elem| {
+                    expr_written_ty(infcx, elem).unwrap_or_else(|| infcx.next_ty_var(DUMMY_SP))
+                })
+                .collect();
             Some(Ty::new_tup(tcx, &tys))
         }
         ExprKind::Lit(lit) => lit_ty(tcx, &lit),

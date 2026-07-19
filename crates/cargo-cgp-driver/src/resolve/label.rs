@@ -162,6 +162,19 @@ pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     if let ty::Placeholder(_) = ty.kind() {
         return "_".to_owned();
     }
+    // A tuple can carry such placeholders in its elements — the call-site anchor recovers a written
+    // tuple's *shape* while leaving an unwritten element a placeholder — so render it recursively
+    // rather than through `to_string`, which would print the raw `!N` placeholder form. This is the
+    // one non-spine structural type the anchor puts placeholders inside (a reference or ADT argument
+    // stays all-or-nothing, so it never contains one).
+    if let ty::Tuple(elems) = ty.kind() {
+        let parts: Vec<String> = elems.iter().map(|elem| render_ty(tcx, elem)).collect();
+        return match parts.as_slice() {
+            [] => "()".to_owned(),
+            [one] => format!("({one},)"),
+            _ => format!("({})", parts.join(", ")),
+        };
+    }
     if let Some(elems) = cgp_spine(
         tcx,
         ty,

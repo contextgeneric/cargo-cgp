@@ -1,0 +1,430 @@
+error[E0277]: the trait bound `HandleBranch: Handler<App, Branch<ReadName>, (_, _)>` is not satisfied
+   --> src/main.rs:103:16
+    |
+103 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+    |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |         |
+    |         required by a bound introduced by this call
+    |
+help: the trait `Handler<App, Branch<ReadName>, (_, _)>` is not implemented for `HandleBranch`
+   --> src/main.rs:58:16
+    |
+ 58 | #[cgp_impl(new HandleBranch)]
+    |                ^^^^^^^^^^^^
+help: the trait `Handler<__Context__, Branch<Cond>, (CondInput, Rest)>` is conditionally implemented for `HandleBranch`
+   --> src/main.rs:60:1
+    |
+ 60 | / impl<Cond, CondInput, Rest> Handler<Branch<Cond>, (CondInput, Rest)>
+ 61 | | where
+ 62 | |     Self: CanHandle<Cond, CondInput, Output = String>,
+    | |           -------------------------------------------
+    | |           |                          |
+    | |           |                          unsatisfied requirement introduced here: `<App as CanHandle<ReadName, _>>::Output == String`
+    | |           |                          unsatisfied requirement introduced here: `<App as CanHandle<ReadName, _>>::Output == String`
+    | |           |                          unsatisfied requirement introduced here: `<App as CanHandle<ReadName, _>>::Output == String`
+    | |           |                          unsatisfied requirement introduced here: `<App as CanHandle<ReadName, _>>::Output == String`
+    | |           |                          unsatisfied requirement introduced here: `<App as CanHandle<ReadName, _>>::Output == String`
+    | |           |                          unsatisfied requirement introduced here: `<App as CanHandle<ReadName, _>>::Output == String`
+    | |           unsatisfied requirement introduced here: `App: CanHandle<ReadName, _>`
+    | |           unsatisfied requirement introduced here: `App: CanHandle<ReadName, _>`
+ 63 | |     Rest: Send,
+...   |
+ 74 | | }
+    | |_^
+    = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `Handler<App, Branch<ReadName>, (_, _)>`
+    = note: 1 redundant requirement hidden
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (_, _)>`
+    = note: required for `App` to implement `CanHandle<Branch<ReadName>, (_, _)>`
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
+   --> src/main.rs:103:16
+    |
+103 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+    |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Handler<App, ReadName, _>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+    |         |
+    |         required by a bound introduced by this call
+    |
+help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:1
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _^^^^^^^^^^^^^^^^-^^^^^^^^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________- unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<ReadName, PathCons<_, Nil>>>>::Output>>::Delegate: Handler<App, ReadName, _>`
+    = note: required for `App` to implement `Handler<App, ReadName, _>`
+note: required for `HandleBranch` to implement `IsProviderFor<HandlerComponent, App, (Branch<ReadName>, (_, _))>`
+   --> src/main.rs:58:1
+    |
+ 58 | #[cgp_impl(new HandleBranch)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 62 |     Self: CanHandle<Cond, CondInput, Output = String>,
+    |                                      --------------- unsatisfied trait bound introduced here
+    = note: 3 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (_, _)>`
+    = note: required for `App` to implement `CanHandle<Branch<ReadName>, (_, _)>`
+    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
+   --> src/main.rs:103:9
+    |
+103 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+    |         ^^^^^^ the trait `Handler<App, ReadName, _>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+    |
+help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:1
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _^^^^^^^^^^^^^^^^-^^^^^^^^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________- unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<ReadName, PathCons<_, Nil>>>>::Output>>::Delegate: Handler<App, ReadName, _>`
+    = note: required for `App` to implement `Handler<App, ReadName, _>`
+note: required for `HandleBranch` to implement `IsProviderFor<HandlerComponent, App, (Branch<ReadName>, (_, _))>`
+   --> src/main.rs:58:1
+    |
+ 58 | #[cgp_impl(new HandleBranch)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 62 |     Self: CanHandle<Cond, CondInput, Output = String>,
+    |                                      --------------- unsatisfied trait bound introduced here
+    = note: 3 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (_, _)>`
+    = note: required for `App` to implement `CanHandle<Branch<ReadName>, (_, _)>`
+    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `HandleReadName: Handler<App, ReadName, _>` is not satisfied
+   --> src/main.rs:103:16
+    |
+103 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+    |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |         |
+    |         required by a bound introduced by this call
+    |
+help: the trait `Handler<App, ReadName, _>` is not implemented for `HandleReadName`
+   --> src/main.rs:40:16
+    |
+ 40 | #[cgp_impl(new HandleReadName)]
+    |                ^^^^^^^^^^^^^^
+help: the trait `Handler<__Context__, ReadName, Input>` is conditionally implemented for `HandleReadName`
+   --> src/main.rs:42:1
+    |
+ 42 | / impl<Input> Handler<ReadName, Input>
+ 43 | | where
+ 44 | |     Self: HasName,
+    | |           ------- unsatisfied requirement introduced here: `App: HasName`
+ 45 | |     Input: Send,
+...   |
+ 52 | | }
+    | |_^
+    = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<HandlerComponent, App, (ReadName, _)>`
+    = note: 1 redundant requirement hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (ReadName, _)>`
+    = note: required for `App` to implement `Handler<App, ReadName, _>`
+    = note: 4 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (_, _)>`
+    = note: required for `App` to implement `CanHandle<Branch<ReadName>, (_, _)>`
+
+error[E0277]: the trait bound `HandleReadName: Handler<App, ReadName, _>` is not satisfied
+   --> src/main.rs:103:9
+    |
+103 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+    |         ^^^^^^ unsatisfied trait bound
+    |
+help: the trait `Handler<App, ReadName, _>` is not implemented for `HandleReadName`
+   --> src/main.rs:40:16
+    |
+ 40 | #[cgp_impl(new HandleReadName)]
+    |                ^^^^^^^^^^^^^^
+help: the trait `Handler<__Context__, ReadName, Input>` is conditionally implemented for `HandleReadName`
+   --> src/main.rs:42:1
+    |
+ 42 | / impl<Input> Handler<ReadName, Input>
+ 43 | | where
+ 44 | |     Self: HasName,
+    | |           ------- unsatisfied requirement introduced here: `App: HasName`
+ 45 | |     Input: Send,
+...   |
+ 52 | | }
+    | |_^
+    = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<HandlerComponent, App, (ReadName, _)>`
+    = note: 1 redundant requirement hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (ReadName, _)>`
+    = note: required for `App` to implement `Handler<App, ReadName, _>`
+    = note: 4 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (_, _)>`
+    = note: required for `App` to implement `CanHandle<Branch<ReadName>, (_, _)>`
+
+error[E0277]: the trait bound `App: CanHandle<Branch<ReadName>, (_, _)>` is not satisfied
+   --> src/main.rs:103:16
+    |
+103 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+   --> src/main.rs:90:1
+    |
+ 90 | pub struct App {
+    | ^^^^^^^^^^^^^^
+note: required for `App` to implement `HasName`
+   --> src/main.rs:33:1
+    |
+ 33 | #[cgp_auto_getter]
+    | ^^^^^^^^^^^^^^^^^^
+ 34 | pub trait HasName {
+    |           ^^^^^^^
+note: required for `HandleReadName` to implement `IsProviderFor<HandlerComponent, App, (ReadName, _)>`
+   --> src/main.rs:40:1
+    |
+ 40 | #[cgp_impl(new HandleReadName)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 44 |     Self: HasName,
+    |           ------- unsatisfied trait bound introduced here
+    = note: 2 redundant requirements hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (ReadName, _)>`
+    = note: required for `App` to implement `Handler<App, ReadName, _>`
+    = note: 4 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (_, _)>`
+    = note: required for `App` to implement `CanHandle<Branch<ReadName>, (_, _)>`
+    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
+   --> src/main.rs:103:5
+    |
+103 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+    = help: the trait `Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:1
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _^^^^^^^^^^^^^^^^-^^^^^^^^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________- unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Branch<ReadName>, PathCons<(Vec<_>, Vec<_>), Nil>>>>::Output>>::Delegate: Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>`
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `HandleBranch: Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>` is not satisfied
+   --> src/main.rs:103:5
+    |
+103 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+help: the trait `Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>` is not implemented for `HandleBranch`
+   --> src/main.rs:58:16
+    |
+ 58 | #[cgp_impl(new HandleBranch)]
+    |                ^^^^^^^^^^^^
+help: the trait `Handler<__Context__, Branch<Cond>, (CondInput, Rest)>` is conditionally implemented for `HandleBranch`
+   --> src/main.rs:60:1
+    |
+ 60 | / impl<Cond, CondInput, Rest> Handler<Branch<Cond>, (CondInput, Rest)>
+ 61 | | where
+ 62 | |     Self: CanHandle<Cond, CondInput, Output = String>,
+    | |                                      ---------------
+    | |                                      |
+    | |                                      unsatisfied requirement introduced here: `<App as CanHandle<ReadName, Vec<_>>>::Output == String`
+    | |                                      unsatisfied requirement introduced here: `<App as CanHandle<ReadName, Vec<_>>>::Output == String`
+    | |                                      unsatisfied requirement introduced here: `<App as CanHandle<ReadName, Vec<_>>>::Output == String`
+    | |                                      unsatisfied requirement introduced here: `<App as CanHandle<ReadName, Vec<_>>>::Output == String`
+ 63 | |     Rest: Send,
+...   |
+ 74 | | }
+    | |_^
+    = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<HandlerComponent, App, (Branch<ReadName>, (Vec<_>, Vec<_>))>`
+    = note: 1 redundant requirement hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Branch<ReadName>, (Vec<_>, Vec<_>))>`
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
+   --> src/main.rs:103:5
+    |
+103 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Handler<App, ReadName, Vec<_>>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+    |
+help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:1
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _^^^^^^^^^^^^^^^^-^^^^^^^^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________- unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<ReadName, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, ReadName, Vec<_>>`
+    = note: required for `App` to implement `Handler<App, ReadName, Vec<_>>`
+note: required for `HandleBranch` to implement `IsProviderFor<HandlerComponent, App, (Branch<ReadName>, (Vec<_>, Vec<_>))>`
+   --> src/main.rs:58:1
+    |
+ 58 | #[cgp_impl(new HandleBranch)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 62 |     Self: CanHandle<Cond, CondInput, Output = String>,
+    |                                      --------------- unsatisfied trait bound introduced here
+    = note: 3 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `HandleReadName: Handler<App, ReadName, Vec<_>>` is not satisfied
+   --> src/main.rs:103:5
+    |
+103 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+help: the trait `Handler<App, ReadName, Vec<_>>` is not implemented for `HandleReadName`
+   --> src/main.rs:40:16
+    |
+ 40 | #[cgp_impl(new HandleReadName)]
+    |                ^^^^^^^^^^^^^^
+help: the trait `Handler<__Context__, ReadName, Input>` is conditionally implemented for `HandleReadName`
+   --> src/main.rs:42:1
+    |
+ 42 | / impl<Input> Handler<ReadName, Input>
+ 43 | | where
+ 44 | |     Self: HasName,
+    | |           ------- unsatisfied requirement introduced here: `App: HasName`
+ 45 | |     Input: Send,
+...   |
+ 52 | | }
+    | |_^
+    = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<HandlerComponent, App, (ReadName, Vec<_>)>`
+    = note: 1 redundant requirement hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (ReadName, Vec<_>)>`
+    = note: required for `App` to implement `Handler<App, ReadName, Vec<_>>`
+    = note: 4 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
+   --> src/main.rs:104:10
+    |
+104 |         .await?;
+    |          ^^^^^ unsatisfied trait bound
+    |
+    = help: the trait `Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:1
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _^^^^^^^^^^^^^^^^-^^^^^^^^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________- unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Branch<ReadName>, PathCons<(Vec<_>, Vec<_>), Nil>>>>::Output>>::Delegate: Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>`
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `HandleBranch: Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>` is not satisfied
+   --> src/main.rs:104:10
+    |
+104 |         .await?;
+    |          ^^^^^ unsatisfied trait bound
+    |
+help: the trait `Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>` is not implemented for `HandleBranch`
+   --> src/main.rs:58:16
+    |
+ 58 | #[cgp_impl(new HandleBranch)]
+    |                ^^^^^^^^^^^^
+help: the trait `Handler<__Context__, Branch<Cond>, (CondInput, Rest)>` is conditionally implemented for `HandleBranch`
+   --> src/main.rs:60:1
+    |
+ 60 | / impl<Cond, CondInput, Rest> Handler<Branch<Cond>, (CondInput, Rest)>
+ 61 | | where
+ 62 | |     Self: CanHandle<Cond, CondInput, Output = String>,
+    | |                                      ---------------
+    | |                                      |
+    | |                                      unsatisfied requirement introduced here: `<App as CanHandle<ReadName, Vec<_>>>::Output == String`
+    | |                                      unsatisfied requirement introduced here: `<App as CanHandle<ReadName, Vec<_>>>::Output == String`
+    | |                                      unsatisfied requirement introduced here: `<App as CanHandle<ReadName, Vec<_>>>::Output == String`
+    | |                                      unsatisfied requirement introduced here: `<App as CanHandle<ReadName, Vec<_>>>::Output == String`
+ 63 | |     Rest: Send,
+...   |
+ 74 | | }
+    | |_^
+    = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<HandlerComponent, App, (Branch<ReadName>, (Vec<_>, Vec<_>))>`
+    = note: 1 redundant requirement hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Branch<ReadName>, (Vec<_>, Vec<_>))>`
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (Vec<_>, Vec<_>)>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+
+For more information about this error, try `rustc --explain E0277`.

@@ -669,12 +669,24 @@ generics, is recovered. The two fixture shapes show the same mechanism serving b
   the declared `value: T`, which binds `T = (u32, u64)`. No tag argument exists, and none is needed.
 
 An argument's type counts as *written* when it is determined by the expression's own syntax: a
-unit-struct or unit-variant value with its written path arguments, a struct literal, a reference or
-tuple of written expressions, a literal whose type is definite (`"…"`, `true`, `'c'`, suffixed
-numerics), or a call to a non-generic fn (its declared return type). Each written type is lowered by
-a deliberately small syntactic HIR-type lowering — paths to ADTs and aliases through the cached
-`type_of`, defaulted parameters filled in, lifetimes erased — that declines anything beyond it
-rather than guess.
+unit-struct or unit-variant value with its written path arguments, a struct literal, a reference to a
+written expression, a literal whose type is definite (`"…"`, `true`, `'c'`, suffixed numerics), or a
+call to a non-generic fn (its declared return type). Each written type is lowered by a deliberately
+small syntactic HIR-type lowering — paths to ADTs and aliases through the cached `type_of`, defaulted
+parameters filled in, lifetimes erased — that declines anything beyond it rather than guess.
+
+A **tuple literal** is the one shape read *partially*: its *structure* is recovered even when some
+elements' types are not written, each unwritten element seeded as a fresh inference variable (folded
+into a placeholder with the rest of the seed). This matters because a provider commonly destructures
+its input on a tuple shape — a branching interpreter taking `(condition_input, branch_input)`, a
+comparison taking `(input_a, input_b)` — and its impl matches only against a tuple, never a flat
+unknown. Collapsing a tuple whose every leaf is unwritten (`(Vec::new(), Vec::new())`) to one opaque
+placeholder, as the all-or-nothing reading of the other shapes would, leaves such a provider's impl
+unmatched and hides a cause that sits inside a *written* branch of the input — or, as with the
+field a condition reads, a branch that does not depend on the input at all. The recovered arity and
+its written elements are real call-side information; only the leaves the call does not type stay
+unknown, and those are never reported. The [`call_site_tuple_input`](../../tests/ui/acceptable/use-site/call_site_tuple_input.rs)
+fixture pins the shape.
 
 #### Unknown parameters become rigid placeholders
 
@@ -695,7 +707,8 @@ leaf depends on the unknown declines to the fallback exactly as before
 ([`generic_consumer_unwritten_arg`](../../tests/ui/usability/use-site/generic_consumer_unwritten_arg.rs)
 pins that boundary — the same `CanFormatPair` call with the tuple passed through a plain variable,
 whose type the call no longer writes). In the rendered output a placeholder prints as the `_` the
-programmer would write.
+programmer would write, including one nested inside a recovered tuple (`((_, _), _)`) — the tree
+renderer walks a tuple's elements rather than printing rustc's raw `!N` placeholder form.
 
 Put together, the example's failure — three plumbing-worded blocks with no cause — becomes one
 block, led by the cause:
@@ -1088,7 +1101,8 @@ separate header brand; the inline code is the only marking.
     `seed_from_call` (the signature unification: fresh variables for the method's item, `Self`
     pinned to the context, each written argument type unified with its declared input, the trait's
     parameters read back with `walk`'s `unknowns_to_placeholders` folding what stayed unresolved),
-    `expr_written_ty` (the argument shapes whose types the call writes) over
+    `expr_written_ty` (the argument shapes whose types the call writes — a tuple read partially, its
+    shape recovered with a fresh inference variable per unwritten element) over
     `lower_hir_ty`/`instantiate_written` (the small syntactic type lowering over cached `type_of`).
   - `walk.rs` walks the cause chain to each terminal leaf: `resolve_leaves`/`collect_leaf_paths`, the
     descendable-vocabulary rule (`is_descendable` — provider traits, `DelegateComponent`, and context
@@ -1111,7 +1125,9 @@ separate header brand; the inline code is the only marking.
   - `label.rs` folds the inner chain into a `DependencyTree`, naming each consumer/provider node off its
     trait `DefId` and the obligation's arguments (`trait_generics`) and dropping the plumbing, with
     `render_ty` resugaring a `DefId`-anchored `Cons`/`Nil` or `Either`/`Void` self type to
-    `Product![…]`/`Sum![…]`, or — when every element is a `Field` — to `Struct! { … }`/`Enum! { … }`.
+    `Product![…]`/`Sum![…]`, or — when every element is a `Field` — to `Struct! { … }`/`Enum! { … }`,
+    rendering a call-site placeholder as `_` (recursing into a tuple so a nested placeholder prints
+    `_` rather than the raw `!N` form).
   - `cgp_item.rs` holds the structural, `IsProviderFor`-free trait recognition — `is_provider_trait` /
     `provider_blanket_marker` (the `DelegateComponent`-bounded provider blanket), `consumer_provider_trait`
     / `is_consumer_trait`, and `marker_to_consumer` — plus the `Symbol!` field-name decode and
@@ -1241,6 +1257,13 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
 - `generic_consumer_use_site` — the same anchor's value-argument case: the dispatch parameter
   recovered by signature unification from a written tuple, no tag argument involved, with the
   misleading method-syntax advice dropped.
+- `call_site_tuple_input` — a provider that destructures its input on a tuple shape
+  (`(CondInput, Rest)`), reached by a call whose tuple argument the code does not type
+  (`(Vec::new(), Vec::new())`). Pins the *partial* tuple recovery: the anchor keeps the tuple arity
+  (with each unwritten element a placeholder) so the provider's impl matches and the walk reaches the
+  field a branch reads, where collapsing the tuple to one flat unknown used to leave the impl
+  unmatched and decline. This is the shape a branching/comparison DSL interpreter hits — e.g. a real
+  `If<Compare<…>, …>` program reading an unwired field inside its condition.
 - `use_type_foreign_unsatisfied` and `use_type_nested_unsatisfied` — an unsatisfiable `#[use_type]`
   abstract-type import in a trait definition, recovered by the consumer-trait anchor into a
   `[CGP-E001]` missing-wiring tree instead of leaking generated `__…__` placeholder names.
