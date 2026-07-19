@@ -888,14 +888,28 @@ are dropped as plumbing above. The leaf shapes are:
 - An unmet **`DelegateComponent<Key>` on a *non-context* delegation table** is the missing-dispatch-entry
   leaf (`[CGP-E110]`): the owner is a provider that delegates — an aggregate provider missing a
   component wiring, or a `UseDelegate`/`UseInputDelegate` table missing a branch for the type it
-  dispatches on (a `Code` fragment or an `Input` value's type) — and it wires other keys but not this
-  one. It is told apart from a higher-order-provider dead-end (which is dropped, below) by the owner
-  actually being a delegation table: it carries at least one `DelegateComponent` impl (`is_delegation_table`
-  in `classify.rs`). This is the leaf a handler pipeline bottoms out on when a stage's output type is
-  not one a later stage's input dispatcher handles — the shape the `http_checksum_native` hypershell
-  example produces once a byte-encoding stage is removed and a raw `GenericArray` digest reaches an
-  `AsyncRead` sink's input dispatcher (distilled in
-  [`cascade_nested_projection`](../../tests/ui/acceptable/use-site/cascade_nested_projection.rs)).
+  dispatches on (a `Code` fragment or an `Input` value's type) — and it does not wire this key. It is
+  told apart from a higher-order-provider dead-end (dropped, below) two ways, so it is reported when
+  *either* holds (`is_reportable_leaf` / `is_dispatch_lookup` / `is_delegation_table` in `classify.rs`):
+  - **structurally**, when the obligation is a *dispatch lookup into a separate table* — its owner is a
+    proper part of the parent obligation's `Self`, as `Components` is of `UseDelegate<Components>` /
+    `UseInputDelegate<Components>` (or any custom dispatcher that holds its table as a parameter). Such
+    a `where`-clause is unambiguously a table lookup, so an unmet one is a missing entry *regardless of
+    whether that table wires any other key* — this is what reaches an **empty** dispatch table.
+  - **by owner property** otherwise (the generic-blanket case, where the owner *equals* the parent
+    `Self`): the owner wires at least one other key, i.e. carries a `DelegateComponent` impl. This is
+    the aggregate-provider case, where the blanket keys on the provider itself so no separate-table
+    structure is visible.
+
+  The distinction matters against the dead-end below: a leaf provider reached via the blanket both has
+  owner == parent `Self` (not a dispatch lookup) and wires nothing (not a delegation table), so it is
+  dropped. This is the leaf a handler pipeline bottoms out on when a stage's output type is not one a
+  later stage's input dispatcher handles — the shape the `http_checksum_native` hypershell example
+  produces once a byte-encoding stage is removed and a raw `GenericArray` digest reaches an `AsyncRead`
+  sink's input dispatcher (distilled in
+  [`cascade_nested_projection`](../../tests/ui/acceptable/use-site/cascade_nested_projection.rs), with
+  the empty-table variant in
+  [`empty_dispatch_table`](../../tests/ui/acceptable/use-site/empty_dispatch_table.rs)).
 - An unmet **namespace-lookup bound** is a missing-redirect-wiring leaf too. It is recognized not by
   name but by the trait's *fingerprint* — a single `Delegate` associated type, which `DefaultNamespace`,
   the `DefaultImpls*` traits, and every user `cgp_namespace!` trait share — so a same-named user
@@ -941,15 +955,20 @@ report no mismatch; but a getter trait whose *only* impl is a blanket
 (`impl<C: HasField<..>> HasName for C`) still has its projection read from that blanket, so a blanket is
 deferred, not skipped outright. A branch with no such projection yields nothing and declines to the
 fallback. Finally, a branch that bottoms out on a `DelegateComponent` is kept only when the owner
-genuinely lacks the entry it *should* carry, and dropped as **pure wiring plumbing** otherwise. A
-`DelegateComponent` **on the context** is never plumbing but the missing-wiring leaf itself, and one
-**on a non-context delegation table** — a provider that carries at least one `DelegateComponent` impl,
-so it is an aggregate provider or a `UseDelegate`/`UseInputDelegate` dispatch table — is the
-missing-dispatch-entry leaf: in both, a delegation that *holds* is pruned before it can be a leaf, so
-bottoming out unmet means the owner genuinely does not wire that key. Only a `DelegateComponent` on a
-type that is **neither** — a higher-order provider that implements its provider trait directly and
-delegates nothing — is the routing dead-end that is dropped, since its real cause runs through that
-direct impl down another branch.
+genuinely lacks an entry it *should* carry, and dropped as **pure wiring plumbing** otherwise (a
+delegation that *holds* is pruned before it can be a leaf, so bottoming out unmet always means the key
+is genuinely unwired — the question is only whether that owner is meant to be a table). It is kept in
+three shapes: a `DelegateComponent` **on the context** (the missing-wiring leaf); a **dispatch lookup
+into a separate table**, recognized structurally because the owner is a proper part of the parent
+obligation's `Self` (`Components` inside `UseDelegate<Components>` / `UseInputDelegate<Components>`, or
+any custom dispatcher holding its table as a parameter), which reaches even an *empty* table; and a
+**non-context table reached via the generic blanket** (owner *equals* the parent `Self`), recognized
+because the owner carries at least one `DelegateComponent` impl — the aggregate-provider case. The two
+non-context shapes are both the missing-dispatch-entry leaf. Only a `DelegateComponent` that is
+*none* of these is the routing dead-end that is dropped: a leaf provider reached via the blanket after
+its concrete impl failed to unify (its owner equals the parent `Self`, so it is no dispatch lookup, and
+it wires nothing, so it is no table), whose real cause runs through that direct impl down another
+branch.
 
 The walk crosses inference-context boundaries carefully, because a stray variable from one `InferCtxt`
 panics another. It finds the satisfying impl with the `fresh_args_for_item`-plus-unification dance
@@ -1215,15 +1234,18 @@ separate header brand; the inline code is the only marking.
     pipeline stage keyed on an earlier stage's un-normalized output projection is still descended (and
     reported on when its input concretizes),
     `is_reportable_leaf` keeping an unmet `DelegateComponent` on the context (a missing wiring) or on a
-    non-context delegation table (a missing dispatch entry, via `is_delegation_table` in `classify.rs`)
-    while dropping a higher-order-provider dead-end, the drop of a leaf
+    non-context delegation table (a missing dispatch entry — recognized as a separate-table lookup by
+    `is_dispatch_lookup`, the owner a proper part of the parent obligation's `Self`, or by owner property
+    via `is_delegation_table`, both in `classify.rs`) while dropping a higher-order-provider dead-end,
+    the drop of a leaf
     still carrying a call-site placeholder (an unknowable `_: Send` is never reported), and
     `has_field_projection_mismatch`/`impl_field_projection_mismatch` finding an unmet `HasField`
     projection on the concrete-`Self` impl (deferring the blanket).
   - `classify.rs` classifies a leaf (a field by inspecting the struct and its `Deref` chain, a
     field-type mismatch with `field_type` reading the actual type by `DefId`, a missing wiring on the
-    context, a missing dispatch entry on a non-context delegation table told apart by `is_delegation_table`,
-    a missing redirect wiring told apart by `is_path_cons`, or a bound).
+    context, a missing dispatch entry on a non-context delegation table — a separate-table lookup
+    (`is_dispatch_lookup`) or an owner that wires some key (`is_delegation_table`) — a missing redirect
+    wiring told apart by `is_path_cons`, or a bound), and holds `is_reportable_leaf`.
   - `label.rs` folds the inner chain into a `DependencyTree`, naming each consumer/provider node off its
     trait `DefId` and the obligation's arguments (`trait_generics`) and dropping the plumbing, with
     `render_ty` resugaring a `DefId`-anchored `Cons`/`Nil` or `Either`/`Void` self type to
@@ -1377,6 +1399,11 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
   `DelegateComponent` on the dispatch *table* rather than the context, which the walk used to drop as
   plumbing — declining the whole resolution — and now reports, leading with
   `provider \`SinkHandlers\` does not contain any delegate entry for \`Tagged<Bytes>\`` over the chain.
+- `empty_dispatch_table` — the same missing-dispatch-entry leaf on an **empty** `UseInputDelegate`
+  table, the case the owner-property `is_delegation_table` check cannot see (no `DelegateComponent`
+  impl to find). Pins the structural `is_dispatch_lookup` recognition: the unmet `DelegateComponent`'s
+  owner is a proper part of the parent `UseInputDelegate<EmptySink>` obligation's `Self`, so it is
+  reported regardless of the table wiring any other key.
 - `generic_consumer_use_site` — the same anchor's value-argument case: the dispatch parameter
   recovered by signature unification from a written tuple, no tag argument involved, with the
   misleading method-syntax advice dropped.

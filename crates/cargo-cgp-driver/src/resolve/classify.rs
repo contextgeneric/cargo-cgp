@@ -127,34 +127,69 @@ pub(crate) fn classify_leaf<'tcx>(
 /// Whether a terminal leaf is a real root cause worth reporting, rather than pure wiring plumbing.
 /// A `CanUseComponent` or `IsProviderFor` that bottoms out unmet is a routing dead-end (the real
 /// cause sits down another branch), so it is dropped instead of shown. An unmet `DelegateComponent`
-/// is a real root cause in two shapes:
+/// is a real root cause in three shapes:
 ///
 /// - on the **context** itself, the context does not wire the component (a [`Leaf::MissingWiring`]);
-/// - on a **dispatch table** — a `UseDelegate`/`UseInputDelegate` inner table, recognized because it
-///   wires *some* other key (it has at least one `DelegateComponent` impl) — the table has no entry
-///   for the type it dispatches on (a [`Leaf::MissingDispatchEntry`]).
+/// - as a **dispatch lookup into a separate table** — the recognized-structurally case: the
+///   obligation is `Components: DelegateComponent<Key>` where `Components` is a *proper part* of the
+///   parent obligation's `Self` (as `Components` is of `UseDelegate<Components>` /
+///   `UseInputDelegate<Components>`, or any provider that dispatches through a table it holds as a
+///   parameter). Such a `where`-clause is unambiguously a table lookup — its owner is not the
+///   provider itself — so an unmet one is a missing entry regardless of whether that table wires any
+///   other key (`is_dispatch_lookup`); this is what reaches an *empty* dispatch table, which
+///   `is_delegation_table` cannot see;
+/// - on a **delegation table reached via the generic blanket** — an aggregate provider whose own
+///   table lacks a key, recognized because the owner wires *some* other key
+///   (`is_delegation_table`).
 ///
-/// It is dropped only when it lands on a type that is neither. The case that makes the gate
-/// load-bearing (not just cautious): a **leaf provider** whose concrete impl fixes an input type the
-/// walk cannot match. A pipeline stage like `HandleShout` (`impl Handler<Code, String>`) fed an
-/// *unknown* input — a call-site placeholder an earlier stage's `::Output` never resolved — does not
-/// unify with its concrete impl, so `impl_where_obligations` falls through to the delegation blanket
-/// and produces an unmet `HandleShout: DelegateComponent<HandlerComponent>`. That is a dead-end, not
-/// a missing entry: `HandleShout` is a valid provider, it simply is not a table. It carries no
-/// `DelegateComponent` impl, so `is_delegation_table` returns `false` and it is dropped — where a real
-/// table (which wires *some* key) is kept.
+/// It is dropped only when it is none of these. The case that makes the last gate load-bearing (not
+/// just cautious): a **leaf provider** whose concrete impl fixes an input type the walk cannot match.
+/// A pipeline stage like `HandleShout` (`impl Handler<Code, String>`) fed an *unknown* input — a
+/// call-site placeholder an earlier stage's `::Output` never resolved — does not unify with its
+/// concrete impl, so `impl_where_obligations` falls through to the delegation blanket and produces an
+/// unmet `HandleShout: DelegateComponent<HandlerComponent>`. There the owner *is* the parent's `Self`
+/// (the blanket keys on the provider itself, not a separate table), so `is_dispatch_lookup` is
+/// false, and `HandleShout` wires nothing, so `is_delegation_table` is false too — a dead-end,
+/// correctly dropped, since `HandleShout` is a valid provider and simply is not a table.
+///
+/// `parent_self` is the `Self` type of the obligation one hop above the leaf (the impl whose
+/// `where`-clause produced it), or `None` at the root; it is what tells the separate-table lookup
+/// from the self-keyed blanket.
 pub(crate) fn is_reportable_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
     context: Ty<'tcx>,
+    parent_self: Option<Ty<'tcx>>,
 ) -> bool {
     let did = leaf_ref.def_id;
     if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE) {
         let self_ty = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
-        return self_ty == context || is_delegation_table(tcx, did, self_ty);
+        return self_ty == context
+            || parent_self.is_some_and(|parent| is_dispatch_lookup(tcx, self_ty, parent))
+            || is_delegation_table(tcx, did, self_ty);
     }
     !is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         && !is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
+}
+
+/// Whether an unmet `DelegateComponent` on `owner` is a **dispatch lookup into a separate table**:
+/// `owner` is a *proper subterm* of `parent_self`, the `Self` of the provider impl whose
+/// `where`-clause introduced the lookup. This is the shape every dispatcher provider shares —
+/// `UseDelegate<Components>` / `UseInputDelegate<Components>` and any custom dispatcher hold their
+/// table as a parameter and look a key up in it (`Components: DelegateComponent<Key>`), so the lookup's
+/// owner is *inside* the provider's `Self`, never equal to it. The generic delegation blanket, by
+/// contrast, keys on the provider *itself* (`P: DelegateComponent<Marker>` with `Self = P`), where
+/// owner equals `parent_self` — so this returns `false` for it, leaving the blanket cases to the
+/// context and `is_delegation_table` checks. Recognizing the lookup structurally means an entry-less
+/// table is still reported, where the owner-property heuristic (which needs a wired key to find) would
+/// miss it.
+fn is_dispatch_lookup<'tcx>(tcx: TyCtxt<'tcx>, owner: Ty<'tcx>, parent_self: Ty<'tcx>) -> bool {
+    let parent_self = tcx.erase_and_anonymize_regions(parent_self);
+    parent_self != owner
+        && parent_self
+            .walk()
+            .filter_map(|arg| arg.as_type())
+            .any(|sub| tcx.erase_and_anonymize_regions(sub) == owner)
 }
 
 /// Whether `owner` is a delegation table — a struct that wires at least one key through a

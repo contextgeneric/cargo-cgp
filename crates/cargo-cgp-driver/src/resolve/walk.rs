@@ -72,7 +72,12 @@ pub(crate) fn resolve_leaves<'tcx>(
         }
         // A path that bottoms out on pure wiring plumbing (a routing dead-end) is not a root
         // cause — a real cause is found down another branch — so drop it rather than report it.
-        if !is_reportable_leaf(tcx, leaf_ref, context) {
+        // The obligation one hop above the leaf (its parent in the chain) is the impl whose
+        // `where`-clause produced the leaf; its `Self` tells a `DelegateComponent` dispatch lookup
+        // into a separate table (`Components` inside `UseDelegate<Components>`) from the self-keyed
+        // delegation blanket.
+        let parent_self = chain.last().map(|parent| parent.skip_binder().self_ty());
+        if !is_reportable_leaf(tcx, leaf_ref, context, parent_self) {
             continue;
         }
         let leaf = classify_leaf(tcx, leaf_ref, context, path.mismatch);
