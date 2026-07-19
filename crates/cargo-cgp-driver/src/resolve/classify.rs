@@ -36,6 +36,7 @@ pub(crate) fn classify_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
     context: Ty<'tcx>,
+    parent: Option<ty::TraitRef<'tcx>>,
     mismatch: Option<Ty<'tcx>>,
 ) -> Leaf {
     if is_cgp_item(
@@ -59,13 +60,33 @@ pub(crate) fn classify_leaf<'tcx>(
                 context: owner,
             };
         }
-        // A bare `DelegateComponent<Key>` on a type *other* than the context is a non-context
-        // delegation table missing an entry — an aggregate provider missing a component wiring, or a
-        // `UseDelegate`/`UseInputDelegate` table missing a branch for the type it dispatches on (a
-        // `Code` fragment or an `Input` value's type). The table wires other keys but not this one.
-        // The key is named in full (it may be a dispatched-on type, not just a marker), and the owner
-        // is the table. (`is_reportable_leaf` only lets a real delegation table reach here.)
         if self_ty != context {
+            // A `DelegateComponent<Key>` on a *non-context* type splits two ways (both let through
+            // by `is_reportable_leaf`). If the owner is a delegation table — a separate-table
+            // dispatch lookup (`is_dispatch_lookup`) or an owner that wires some other key
+            // (`owner_has_impl_of` for `DelegateComponent`) — it is an aggregate provider or a
+            // `UseDelegate`/`UseInputDelegate` table missing this entry: a [`Leaf::MissingDispatchEntry`]
+            // naming the table and the key (named in full, since it may be a dispatched-on type).
+            let is_dispatch = parent
+                .is_some_and(|p| is_dispatch_lookup(tcx, self_ty, p.self_ty()))
+                || owner_has_impl_of(tcx, leaf_ref.def_id, self_ty);
+            if is_dispatch {
+                return Leaf::MissingDispatchEntry {
+                    key: tcx.erase_and_anonymize_regions(key).to_string(),
+                    table: owner,
+                };
+            }
+            // Otherwise the owner is not a table at all: a type wired where a provider was expected
+            // that does not implement the provider trait. Name the provider trait from the parent
+            // obligation `owner: ProviderTrait<Ctx>` whose blanket produced this leaf.
+            if let Some(parent) = parent {
+                return Leaf::NotAProvider {
+                    provider: owner,
+                    provider_trait: tcx.item_name(parent.def_id).to_string(),
+                };
+            }
+            // No parent trait to name (a root-level `DelegateComponent`); fall back to the
+            // dispatch-entry wording rather than invent a trait name.
             return Leaf::MissingDispatchEntry {
                 key: tcx.erase_and_anonymize_regions(key).to_string(),
                 table: owner,
@@ -152,21 +173,39 @@ pub(crate) fn classify_leaf<'tcx>(
 /// false, and `HandleShout` wires nothing, so `is_delegation_table` is false too — a dead-end,
 /// correctly dropped, since `HandleShout` is a valid provider and simply is not a table.
 ///
-/// `parent_self` is the `Self` type of the obligation one hop above the leaf (the impl whose
-/// `where`-clause produced it), or `None` at the root; it is what tells the separate-table lookup
-/// from the self-keyed blanket.
+/// A `DelegateComponent` that is *none* of the above splits one more way, by whether the owner is
+/// genuinely a provider for the parent trait at all. It arises via the generic blanket for the
+/// parent provider trait `T` (owner == parent `Self`), reached because no concrete `impl T for
+/// owner` unified. Two sub-cases, told apart by whether such a concrete impl *exists*:
+///
+/// - the owner **has** a concrete impl of `T` that merely did not unify (a leaf provider fed the
+///   wrong input, the `HandleShout` dead-end) — dropped, its real cause runs through that impl;
+/// - the owner has **no** concrete impl of `T` at all — it is genuinely not a provider, wired where
+///   one was expected (`UseBasicAuth<QueryBalanceRequest>`, a request type in a handler slot) —
+///   reported as a [`Leaf::NotAProvider`].
+///
+/// `parent` is the obligation one hop above the leaf (the impl whose `where`-clause produced it), or
+/// `None` at the root: its `Self` tells the separate-table lookup from the self-keyed blanket, and
+/// its trait is the `T` the not-a-provider check and leaf name against.
 pub(crate) fn is_reportable_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
     context: Ty<'tcx>,
-    parent_self: Option<Ty<'tcx>>,
+    parent: Option<ty::TraitRef<'tcx>>,
 ) -> bool {
     let did = leaf_ref.def_id;
     if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE) {
         let self_ty = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
-        return self_ty == context
-            || parent_self.is_some_and(|parent| is_dispatch_lookup(tcx, self_ty, parent))
-            || is_delegation_table(tcx, did, self_ty);
+        if self_ty == context
+            || parent.is_some_and(|p| is_dispatch_lookup(tcx, self_ty, p.self_ty()))
+            || owner_has_impl_of(tcx, did, self_ty)
+        {
+            return true;
+        }
+        // Reached via the generic blanket for the parent provider trait: report only when the owner
+        // has no concrete impl of that trait (a genuine non-provider), never when it has one that
+        // merely failed to unify (a valid provider reached by an input mismatch — a dead-end).
+        return parent.is_some_and(|p| !owner_has_impl_of(tcx, p.def_id, self_ty));
     }
     !is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         && !is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
@@ -192,18 +231,24 @@ fn is_dispatch_lookup<'tcx>(tcx: TyCtxt<'tcx>, owner: Ty<'tcx>, parent_self: Ty<
             .any(|sub| tcx.erase_and_anonymize_regions(sub) == owner)
 }
 
-/// Whether `owner` is a delegation table — a struct that wires at least one key through a
-/// `DelegateComponent` impl (an aggregate provider, or a `UseDelegate`/`UseInputDelegate` inner
-/// table). This tells a table *missing one key* (a real root cause) apart from a leaf provider
-/// reached only via the delegation blanket because its concrete impl did not unify (a routing
-/// dead-end). Having *any* one entry is enough to be recognized as a table — the owner it excludes
-/// is one with zero delegation impls, which is exactly the leaf-provider dead-end. `delegate_did` is
-/// the `DelegateComponent` trait's own `DefId`, taken from the leaf being classified.
-fn is_delegation_table<'tcx>(tcx: TyCtxt<'tcx>, delegate_did: DefId, owner: Ty<'tcx>) -> bool {
+/// Whether `owner`'s ADT appears as the concrete `Self` of any impl of `trait_did`. This backs the
+/// two "is this owner meant to X" checks the `DelegateComponent` classification needs, each keyed on
+/// a different trait:
+///
+/// - with the **`DelegateComponent`** trait: whether `owner` is a *delegation table* — an aggregate
+///   provider or a `UseDelegate`/`UseInputDelegate` inner table wiring at least one key. Any one
+///   entry is enough; the owner it excludes is one with zero delegation impls.
+/// - with the **parent provider trait**: whether `owner` has a *concrete impl of that provider
+///   trait*, which tells a leaf provider reached via the blanket by an input mismatch (has one — a
+///   dead-end) from a genuine non-provider (has none — a [`Leaf::NotAProvider`]).
+///
+/// A blanket impl (whose `Self` is a bare type parameter, like the CGP delegation blanket) is not a
+/// concrete `Self`, so it never counts — only an `impl … for SomeAdt` does.
+fn owner_has_impl_of<'tcx>(tcx: TyCtxt<'tcx>, trait_did: DefId, owner: Ty<'tcx>) -> bool {
     let ty::Adt(owner_def, _) = owner.kind() else {
         return false;
     };
-    tcx.all_impls(delegate_did).any(|impl_did| {
+    tcx.all_impls(trait_did).any(|impl_did| {
         matches!(
             tcx.impl_trait_ref(impl_did).skip_binder().self_ty().kind(),
             ty::Adt(def, _) if def.did() == owner_def.did()

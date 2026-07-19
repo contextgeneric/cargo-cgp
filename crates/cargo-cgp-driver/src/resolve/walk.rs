@@ -75,12 +75,12 @@ pub(crate) fn resolve_leaves<'tcx>(
         // The obligation one hop above the leaf (its parent in the chain) is the impl whose
         // `where`-clause produced the leaf; its `Self` tells a `DelegateComponent` dispatch lookup
         // into a separate table (`Components` inside `UseDelegate<Components>`) from the self-keyed
-        // delegation blanket.
-        let parent_self = chain.last().map(|parent| parent.skip_binder().self_ty());
-        if !is_reportable_leaf(tcx, leaf_ref, context, parent_self) {
+        // delegation blanket, and its trait is the provider trait a non-provider leaf names against.
+        let parent = chain.last().map(|parent| parent.skip_binder().trait_ref);
+        if !is_reportable_leaf(tcx, leaf_ref, context, parent) {
             continue;
         }
-        let leaf = classify_leaf(tcx, leaf_ref, context, path.mismatch);
+        let leaf = classify_leaf(tcx, leaf_ref, context, parent, path.mismatch);
         // One sub-error per distinct leaf: a leaf wanted by several branches is one fix.
         if causes.iter().any(|c| c.key() == leaf.key()) {
             continue;

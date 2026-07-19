@@ -219,6 +219,13 @@ The codes divide into the inner chain-node templates and the terminal root-cause
   The sibling of `CGP-E107` for a provider table rather than the context: the fix is to add the entry
   to *that provider*, or to feed the stage a type the table already covers (the shape a handler
   pipeline hits when a stage's output type is not one a later stage's input dispatcher handles).
+- **`CGP-E111` — not a provider (leaf).** `` the provider trait `<T>` is not implemented for `<X>` ``
+  — the chain bottoms out on a type wired where a *provider* was expected that does not implement the
+  provider trait at all. The mistake is putting a non-provider (often a request or value type) into a
+  provider slot — e.g. `UseBasicAuth<QueryBalanceRequest>` with the endpoint handler omitted, so the
+  request type sits where an `ApiHandler` belongs. Distinct from `CGP-E110`: the owner is not a table
+  missing one entry, so the fix is to use an actual provider (wrap it in the handler), not to add a
+  wiring entry.
 
 ## Root-cause lead codes (`CGP-E2xx`)
 

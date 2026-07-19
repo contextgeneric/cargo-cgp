@@ -86,6 +86,19 @@ pub enum Leaf {
         /// `ToTokioAsyncReadHandlers`.
         table: String,
     },
+    /// A type wired where a *provider* was expected that does not implement the provider trait at
+    /// all. A higher-order provider's inner slot (or any wiring position that expects a provider) is
+    /// filled with a type that has no impl of the provider trait — the `money-transfer-api` mistake
+    /// of wiring `UseBasicAuth<QueryBalanceRequest>`, where the *request* type `QueryBalanceRequest`
+    /// sits where an `ApiHandler` provider belongs. Distinct from [`Leaf::MissingDispatchEntry`]: the
+    /// owner is not a delegation table missing one key, it is simply not a provider — so the fix is to
+    /// use an actual provider (e.g. wrap it in the endpoint handler), not to add a wiring entry.
+    NotAProvider {
+        /// The type wired where a provider was expected, e.g. `QueryBalanceRequest`.
+        provider: String,
+        /// The provider trait it fails to implement, e.g. `ApiHandler`.
+        provider_trait: String,
+    },
     /// A namespace redirect whose target path has no delegate entry. A `RedirectLookup<Ctx, Path>`
     /// provider resolves a component by forwarding the lookup to `Path` inside `Ctx`'s wiring
     /// (through the namespace lookup trait every joined namespace supplies), but nothing — no direct
@@ -120,6 +133,7 @@ impl Leaf {
             Leaf::Field { name, .. } | Leaf::FieldTypeMismatch { name, .. } => name,
             Leaf::MissingWiring { component, .. } => component,
             Leaf::MissingDispatchEntry { key, .. } => key,
+            Leaf::NotAProvider { provider, .. } => provider,
             Leaf::MissingRedirectWiring { path, .. } => path,
             Leaf::Bound { summary } => summary,
         }

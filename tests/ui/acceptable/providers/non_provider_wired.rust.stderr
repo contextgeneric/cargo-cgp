@@ -1,0 +1,77 @@
+error[E0277]: the trait bound `NotAGreeter: IsProviderFor<GreeterComponent, App>` is not satisfied
+  --> src/main.rs:57:9
+   |
+57 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<GreeterComponent, App>` is not implemented for `NotAGreeter`
+  --> src/main.rs:45:1
+   |
+45 | pub struct NotAGreeter;
+   | ^^^^^^^^^^^^^^^^^^^^^^
+   = help: the following other types implement trait `IsProviderFor<Component, Context, Params>`:
+             `App` implements `IsProviderFor<GreeterComponent, __Context__, __Params__>`
+             `BindErr<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
+             `BindErr<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T1, E>)>`
+             `BindOk<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T, E1>)>`
+             `BindOk<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T, E1>)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<ComputerComponent, Context, (Code, Builder)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<HandlerComponent, Context, (Code, Builder)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<TryComputerComponent, Context, (Code, Builder)>`
+           and 203 others
+note: required for `WrapGreeter<NotAGreeter>` to implement `IsProviderFor<GreeterComponent, App>`
+  --> src/main.rs:36:1
+   |
+36 | #[cgp_impl(new WrapGreeter<Inner>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:55:1
+   |
+55 | / check_components! {
+56 | |     App {
+57 | |         GreeterComponent,
+58 | |     }
+59 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `NotAGreeter: DelegateComponent<GreeterComponent>` is not satisfied
+  --> src/main.rs:57:9
+   |
+57 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `DelegateComponent<GreeterComponent>` is not implemented for `NotAGreeter`
+  --> src/main.rs:45:1
+   |
+45 | pub struct NotAGreeter;
+   | ^^^^^^^^^^^^^^^^^^^^^^
+help: the trait `DelegateComponent<GreeterComponent>` is implemented for `App`
+  --> src/main.rs:51:9
+   |
+51 |         GreeterComponent: WrapGreeter<NotAGreeter>,
+   |         ^^^^^^^^^^^^^^^^
+note: required for `NotAGreeter` to implement `Greeter<App>`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `WrapGreeter<NotAGreeter>` to implement `IsProviderFor<GreeterComponent, App>`
+  --> src/main.rs:36:1
+   |
+36 | #[cgp_impl(new WrapGreeter<Inner>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:55:1
+   |
+55 | / check_components! {
+56 | |     App {
+57 | |         GreeterComponent,
+58 | |     }
+59 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

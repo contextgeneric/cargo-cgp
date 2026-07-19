@@ -233,7 +233,7 @@ label, so it fuses exactly the nodes the chains reach by the same path and no mo
 no root stay separate notes (nothing is forced under an ancestor the chains do not actually share). A
 lone cause keeps its singular `root cause:` note.
 
-The `root cause:` lead is worded by *why* the leaf is unmet, and there are five leaf shapes:
+The `root cause:` lead is worded by *why* the leaf is unmet, and there are six leaf shapes:
 
 - A **genuinely absent field** reads as `root cause: missing field \`height\` on \`Rectangle\`` — the
   worked example's leaf. There is no `context` qualifier, since `HasField` can land on any struct.
@@ -299,7 +299,19 @@ The `root cause:` lead is worded by *why* the leaf is unmet, and there are five 
   the shape; [`transitive_missing_wiring`](../../tests/ui/acceptable/wiring/missing-wiring/transitive_missing_wiring.rs)
   the aggregate-provider variant).
 
-A field-type mismatch is a sixth leaf, but its own `[CGP-E003]` headline already states it in full (as
+- A **non-provider** — a type wired where a provider was expected that does not implement the
+  provider trait at all — reads as
+  `root cause: [CGP-E111] the provider trait \`ApiHandler\` is not implemented for \`QueryBalanceRequest\``.
+  The mistake is putting a non-provider (often a request or value type) into a provider slot, as the
+  `money-transfer-api` example does when an endpoint's inner handler is dropped and
+  `UseBasicAuth<QueryBalanceRequest>` leaves the *request* type where an `ApiHandler` belongs. It is
+  the sibling of a missing dispatch entry for a type that is not a table at all: told apart from a
+  valid-provider dead-end (a leaf provider reached via the blanket after an input mismatch, which
+  *has* a concrete impl of the trait) by the owner having **no** concrete impl of the provider trait,
+  and named against that trait rather than a wiring key
+  ([`non_provider_wired`](../../tests/ui/acceptable/providers/non_provider_wired.rs) pins it).
+
+A field-type mismatch is a seventh leaf, but its own `[CGP-E003]` headline already states it in full (as
 the `E0271` example above shows), so its note drops the `root cause:` lead and carries the chain
 alone. Any other leaf simply restates its bound —
 `root cause: the trait bound \`f64: Eq\` is not satisfied`, module qualifiers stripped — except when
@@ -901,15 +913,24 @@ are dropped as plumbing above. The leaf shapes are:
     the aggregate-provider case, where the blanket keys on the provider itself so no separate-table
     structure is visible.
 
-  The distinction matters against the dead-end below: a leaf provider reached via the blanket both has
-  owner == parent `Self` (not a dispatch lookup) and wires nothing (not a delegation table), so it is
-  dropped. This is the leaf a handler pipeline bottoms out on when a stage's output type is not one a
-  later stage's input dispatcher handles — the shape the `http_checksum_native` hypershell example
-  produces once a byte-encoding stage is removed and a raw `GenericArray` digest reaches an `AsyncRead`
-  sink's input dispatcher (distilled in
+  This is the leaf a handler pipeline bottoms out on when a stage's output type is not one a later
+  stage's input dispatcher handles — the shape the `http_checksum_native` hypershell example produces
+  once a byte-encoding stage is removed and a raw `GenericArray` digest reaches an `AsyncRead` sink's
+  input dispatcher (distilled in
   [`cascade_nested_projection`](../../tests/ui/acceptable/use-site/cascade_nested_projection.rs), with
   the empty-table variant in
   [`empty_dispatch_table`](../../tests/ui/acceptable/use-site/empty_dispatch_table.rs)).
+- An unmet **`DelegateComponent<Marker>` on a type that is neither the context nor any table** is the
+  **not-a-provider** leaf (`[CGP-E111]`): a type wired where a provider was expected that does not
+  implement the provider trait at all (`UseBasicAuth<QueryBalanceRequest>`, a request type in a
+  handler slot). It arises via the generic blanket for the parent provider trait `T` (owner == parent
+  `Self`), and is split from the **dead-end** by whether the owner has a *concrete* impl of `T`
+  (`owner_has_impl_of`): a leaf provider reached via the blanket only because its concrete impl did
+  not unify (a pipeline stage fed the wrong input — the `HandleShout` shape) *has* one and is dropped,
+  its real cause running through that impl; a genuine non-provider has *none* and is reported, named
+  against `T` rather than a wiring key ([`non_provider_wired`](../../tests/ui/acceptable/providers/non_provider_wired.rs)
+  pins it; [`cascade_after_use_site`](../../tests/ui/acceptable/use-site/cascade_after_use_site.rs) is
+  the dead-end that must stay dropped).
 - An unmet **namespace-lookup bound** is a missing-redirect-wiring leaf too. It is recognized not by
   name but by the trait's *fingerprint* — a single `Delegate` associated type, which `DefaultNamespace`,
   the `DefaultImpls*` traits, and every user `cgp_namespace!` trait share — so a same-named user
@@ -964,11 +985,14 @@ obligation's `Self` (`Components` inside `UseDelegate<Components>` / `UseInputDe
 any custom dispatcher holding its table as a parameter), which reaches even an *empty* table; and a
 **non-context table reached via the generic blanket** (owner *equals* the parent `Self`), recognized
 because the owner carries at least one `DelegateComponent` impl — the aggregate-provider case. The two
-non-context shapes are both the missing-dispatch-entry leaf. Only a `DelegateComponent` that is
-*none* of these is the routing dead-end that is dropped: a leaf provider reached via the blanket after
-its concrete impl failed to unify (its owner equals the parent `Self`, so it is no dispatch lookup, and
-it wires nothing, so it is no table), whose real cause runs through that direct impl down another
-branch.
+non-context shapes are both the missing-dispatch-entry leaf. A `DelegateComponent` that is *none* of
+these — owner is not the context, not a dispatch lookup, and not a table — splits one final way, by
+whether the owner has a **concrete impl of the parent provider trait** (`owner_has_impl_of` against
+that trait, not `DelegateComponent`): with no such impl it is a genuine non-provider wired where a
+provider was expected (the **not-a-provider** leaf, `[CGP-E111]`); with one, it is a leaf provider
+reached via the blanket only because that impl failed to unify (a pipeline stage fed the wrong input —
+the `HandleShout` shape), the routing dead-end that is dropped, its real cause running through that
+impl down another branch.
 
 The walk crosses inference-context boundaries carefully, because a stray variable from one `InferCtxt`
 panics another. It finds the satisfying impl with the `fresh_args_for_item`-plus-unification dance
@@ -1233,19 +1257,22 @@ separate header brand; the inline code is the only marking.
     (`unknowns_to_placeholders`, shared with the call-site anchor) rather than dropping it, so a later
     pipeline stage keyed on an earlier stage's un-normalized output projection is still descended (and
     reported on when its input concretizes),
-    `is_reportable_leaf` keeping an unmet `DelegateComponent` on the context (a missing wiring) or on a
+    `is_reportable_leaf` keeping an unmet `DelegateComponent` on the context (a missing wiring), on a
     non-context delegation table (a missing dispatch entry — recognized as a separate-table lookup by
-    `is_dispatch_lookup`, the owner a proper part of the parent obligation's `Self`, or by owner property
-    via `is_delegation_table`, both in `classify.rs`) while dropping a higher-order-provider dead-end,
-    the drop of a leaf
+    `is_dispatch_lookup`, the owner a proper part of the parent obligation's `Self`, or by owner
+    property via `owner_has_impl_of` for `DelegateComponent`), or on a non-table type with no concrete
+    impl of the parent provider trait (a not-a-provider, via `owner_has_impl_of` against that trait) —
+    all in `classify.rs` — while dropping a higher-order-provider dead-end (a non-table owner that
+    *does* have a concrete impl of the trait), the drop of a leaf
     still carrying a call-site placeholder (an unknowable `_: Send` is never reported), and
     `has_field_projection_mismatch`/`impl_field_projection_mismatch` finding an unmet `HasField`
     projection on the concrete-`Self` impl (deferring the blanket).
   - `classify.rs` classifies a leaf (a field by inspecting the struct and its `Deref` chain, a
     field-type mismatch with `field_type` reading the actual type by `DefId`, a missing wiring on the
     context, a missing dispatch entry on a non-context delegation table — a separate-table lookup
-    (`is_dispatch_lookup`) or an owner that wires some key (`is_delegation_table`) — a missing redirect
-    wiring told apart by `is_path_cons`, or a bound), and holds `is_reportable_leaf`.
+    (`is_dispatch_lookup`) or an owner that wires some key (`owner_has_impl_of`) — a not-a-provider on
+    a non-table type wired where a provider was expected, a missing redirect wiring told apart by
+    `is_path_cons`, or a bound), and holds `is_reportable_leaf`.
   - `label.rs` folds the inner chain into a `DependencyTree`, naming each consumer/provider node off its
     trait `DefId` and the obligation's arguments (`trait_generics`) and dropping the plumbing, with
     `render_ty` resugaring a `DefId`-anchored `Cons`/`Nil` or `Either`/`Void` self type to
@@ -1400,10 +1427,18 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
   plumbing — declining the whole resolution — and now reports, leading with
   `provider \`SinkHandlers\` does not contain any delegate entry for \`Tagged<Bytes>\`` over the chain.
 - `empty_dispatch_table` — the same missing-dispatch-entry leaf on an **empty** `UseInputDelegate`
-  table, the case the owner-property `is_delegation_table` check cannot see (no `DelegateComponent`
-  impl to find). Pins the structural `is_dispatch_lookup` recognition: the unmet `DelegateComponent`'s
-  owner is a proper part of the parent `UseInputDelegate<EmptySink>` obligation's `Self`, so it is
-  reported regardless of the table wiring any other key.
+  table, the case the owner-property check cannot see (no `DelegateComponent` impl to find). Pins the
+  structural `is_dispatch_lookup` recognition: the unmet `DelegateComponent`'s owner is a proper part
+  of the parent `UseInputDelegate<EmptySink>` obligation's `Self`, so it is reported regardless of the
+  table wiring any other key.
+- `non_provider_wired` (under [`acceptable/providers/`](../../tests/ui/acceptable/providers)) — a type
+  wired where a provider was expected that does not implement the provider trait at all
+  (`WrapGreeter<NotAGreeter>` with `NotAGreeter` an ordinary struct, the `money-transfer-api`
+  `UseBasicAuth<QueryBalanceRequest>` shape). Pins the `[CGP-E111]` not-a-provider leaf and its
+  discriminator against the `cascade_after_use_site` dead-end: `NotAGreeter` has no concrete `Greeter`
+  impl (`owner_has_impl_of` false), so it is reported as `the provider trait \`Greeter\` is not
+  implemented for \`NotAGreeter\`` rather than declining to a `[CGP-E002]` block naming the whole
+  `WrapGreeter<NotAGreeter>` pipeline.
 - `generic_consumer_use_site` — the same anchor's value-argument case: the dispatch parameter
   recovered by signature unification from a written tuple, no tag argument involved, with the
   misleading method-syntax advice dropped.

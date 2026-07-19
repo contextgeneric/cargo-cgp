@@ -188,6 +188,45 @@ fn plans_a_missing_dispatch_entry_check_failure() {
 }
 
 #[test]
+fn plans_a_not_a_provider_check_failure() {
+    // A type wired where a provider was expected that does not implement the provider trait at all
+    // (a request type in a handler slot): the checked consumer over the wrapper provider, bottoming
+    // out on the non-provider. The leaf names the provider trait and the offending type, coded
+    // `[CGP-E111]` — distinct from a missing dispatch entry, since the fix is to use a real provider.
+    let tree = DependencyTree::node(
+        "consumer trait impl `CanHandleApi<QueryBalanceApi>` for context `MockApp`",
+        vec![DependencyTree::leaf(
+            "the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`",
+        )],
+    );
+    let resolved = Resolved {
+        context: "MockApp".to_owned(),
+        consumers: vec!["CanHandleApi<QueryBalanceApi>".to_owned()],
+        consumers_are_cgp: true,
+        subject_is_context: true,
+        causes: vec![Cause {
+            leaf: Leaf::NotAProvider {
+                provider: "QueryBalanceRequest".to_owned(),
+                provider_trait: "ApiHandler".to_owned(),
+            },
+            tree: tree.clone(),
+        }],
+    };
+    let plan = plan_resolved(DiagKind::Check, None, &resolved, &empty_names());
+
+    // A non-provider carries no `help`; the note names the fix.
+    assert!(plan.helps.is_empty());
+    assert_eq!(
+        plan.notes,
+        vec![format!(
+            "root cause: [CGP-E111] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`\n\
+             this is required through the dependency chain:\n{}",
+            indent2(&render_dependency_tree(&tree))
+        )]
+    );
+}
+
+#[test]
 fn plans_a_missing_redirect_wiring_check_failure() {
     // A namespace redirect that resolves to nothing: the checked consumer over a redirect-lookup
     // hop whose path the context does not terminate. The redirect node reads as its redirection and
@@ -468,6 +507,13 @@ fn dependency_tree_leaf_codes_rewritten_leaves_and_passes_bounds_through() {
             table: "SinkHandlers".to_owned(),
         }),
         "[CGP-E110] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`"
+    );
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::NotAProvider {
+            provider: "QueryBalanceRequest".to_owned(),
+            provider_trait: "ApiHandler".to_owned(),
+        }),
+        "[CGP-E111] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`"
     );
     // …but a pass-through ordinary bound keeps rustc's phrasing with no code.
     assert_eq!(

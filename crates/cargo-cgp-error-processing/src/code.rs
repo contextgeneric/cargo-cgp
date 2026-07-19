@@ -129,6 +129,13 @@ pub const DEP_FIELD_TYPE_MISMATCH: &str = "CGP-E109";
 /// table already covers).
 pub const DEP_MISSING_DISPATCH_ENTRY: &str = "CGP-E110";
 
+/// `CGP-E111` — a root-cause leaf: a type wired where a *provider* was expected does not implement
+/// the provider trait at all, `the provider trait \`T\` is not implemented for \`X\``. The mistake is
+/// wiring a non-provider (often a request/value type) into a provider slot — e.g.
+/// `UseBasicAuth<QueryBalanceRequest>` where the endpoint handler is missing — so the fix is to use an
+/// actual provider, not to add a wiring entry (which is [`DEP_MISSING_DISPATCH_ENTRY`]).
+pub const DEP_NOT_A_PROVIDER: &str = "CGP-E111";
+
 // The `CGP-E2xx` range codes the `root cause:` note lead. It reuses the terminal leaf's `CGP-E1xx`
 // code where the leaf has one; the constants here cover only the leads that need a code of their
 // own because the leaf they name is an uncoded pass-through.

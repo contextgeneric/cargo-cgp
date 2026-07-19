@@ -1,0 +1,14 @@
+error[E0277]: [CGP-E002] the provider trait `Greeter` with context `App` is not implemented for provider `NotAGreeter`
+  --> src/main.rs:57:9
+   |
+57 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E111] the provider trait `Greeter` is not implemented for `NotAGreeter`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `App`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `App` for provider `WrapGreeter<NotAGreeter>`
+               └─ [CGP-E102] provider trait impl `Greeter` with context `App` for provider `NotAGreeter`
+                 └─ [CGP-E111] the provider trait `Greeter` is not implemented for `NotAGreeter`
+
+For more information about this error, try `rustc --explain E0277`.
