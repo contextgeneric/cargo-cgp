@@ -211,6 +211,14 @@ The codes divide into the inner chain-node templates and the terminal root-cause
 - **`CGP-E109` — field type mismatch (leaf).** `` field `<f>` on `<T>` has type `<actual>`, but
   `<expected>` is required `` — the field is present and derived but has the wrong type (the leaf face
   of the `CGP-E003` main message).
+- **`CGP-E110` — missing dispatch entry (leaf).** `` provider `<T>` does not contain any delegate
+  entry for `<key>` `` — the chain bottoms out on a *non-context* delegation table missing a key: an
+  [aggregate provider](../../cgp/docs/concepts/aggregate-providers.md) missing a component wiring, or
+  a [`UseDelegate`/`UseInputDelegate`](../../cgp/docs/reference/providers/use_delegate.md) dispatch
+  table missing a branch for the type it dispatches on (a `Code` fragment or an `Input` value's type).
+  The sibling of `CGP-E107` for a provider table rather than the context: the fix is to add the entry
+  to *that provider*, or to feed the stage a type the table already covers (the shape a handler
+  pipeline hits when a stage's output type is not one a later stage's input dispatcher handles).
 
 ## Root-cause lead codes (`CGP-E2xx`)
 

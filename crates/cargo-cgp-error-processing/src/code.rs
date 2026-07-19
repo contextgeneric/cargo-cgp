@@ -121,6 +121,14 @@ pub const DEP_UNIMPLEMENTED_ACCESSOR: &str = "CGP-E108";
 /// `field \`f\` on \`T\` has type \`A\`, but \`B\` is required`.
 pub const DEP_FIELD_TYPE_MISMATCH: &str = "CGP-E109";
 
+/// `CGP-E110` — a root-cause leaf: a non-context delegation table — an aggregate provider, or a
+/// `UseDelegate`/`UseInputDelegate` dispatch table — has no entry for a key it is asked to resolve,
+/// `provider \`T\` does not contain any delegate entry for \`Key\``. Distinct from
+/// [`DEP_MISSING_DELEGATE_ENTRY`] (a component the *context* does not wire): here the owner is a
+/// provider table, so the fix is to add the entry to that provider (or feed the stage a type/key the
+/// table already covers).
+pub const DEP_MISSING_DISPATCH_ENTRY: &str = "CGP-E110";
+
 // The `CGP-E2xx` range codes the `root cause:` note lead. It reuses the terminal leaf's `CGP-E1xx`
 // code where the leaf has one; the constants here cover only the leads that need a code of their
 // own because the leaf they name is an uncoded pass-through.

@@ -9,8 +9,8 @@
 
 use crate::code::{
     CONSUMER_TRAIT_UNIMPLEMENTED, DEP_FIELD_TYPE_MISMATCH, DEP_MISSING_DELEGATE_ENTRY,
-    DEP_MISSING_FIELD, DEP_UNIMPLEMENTED_ACCESSOR, FIELD_TYPE_MISMATCH, ROOT_CAUSE_ORDINARY_BOUND,
-    WRAPPER_TRAIT_UNIMPLEMENTED,
+    DEP_MISSING_DISPATCH_ENTRY, DEP_MISSING_FIELD, DEP_UNIMPLEMENTED_ACCESSOR, FIELD_TYPE_MISMATCH,
+    ROOT_CAUSE_ORDINARY_BOUND, WRAPPER_TRAIT_UNIMPLEMENTED,
 };
 use crate::diagnosis::leaf::{FieldIssue, Leaf};
 use crate::diagnosis::resolved::{Cause, Resolved};
@@ -101,6 +101,9 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
             issue: FieldIssue::Missing,
         } => format!("missing field `{name}` on `{owner}`"),
         Leaf::MissingWiring { component, owner } => missing_delegate_entry(owner, component),
+        Leaf::MissingDispatchEntry { key, table } => {
+            format!("provider `{table}` does not contain any delegate entry for `{key}`")
+        }
         Leaf::MissingRedirectWiring { path, context } => missing_delegate_entry(context, path),
         Leaf::Field { name, owner, .. } => {
             format!(
@@ -160,6 +163,7 @@ pub fn dependency_leaf_code(leaf: &Leaf) -> Option<&'static str> {
         Leaf::MissingWiring { .. } | Leaf::MissingRedirectWiring { .. } => {
             Some(DEP_MISSING_DELEGATE_ENTRY)
         }
+        Leaf::MissingDispatchEntry { .. } => Some(DEP_MISSING_DISPATCH_ENTRY),
         Leaf::FieldTypeMismatch { .. } => Some(DEP_FIELD_TYPE_MISMATCH),
         Leaf::Bound { .. } => None,
     }

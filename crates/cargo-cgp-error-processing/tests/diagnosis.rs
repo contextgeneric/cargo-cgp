@@ -144,6 +144,50 @@ fn plans_a_missing_wiring_check_failure() {
 }
 
 #[test]
+fn plans_a_missing_dispatch_entry_check_failure() {
+    // A dispatch table (a `UseInputDelegate` inner table) missing a branch for the type it
+    // dispatches on: the checked consumer over the provider stage whose input the table cannot
+    // resolve. The leaf names the table and the key, worded as `provider … does not contain any
+    // delegate entry for …` — the non-context sibling of a missing wiring, coded `[CGP-E110]`.
+    let tree = DependencyTree::node(
+        "consumer trait impl `CanHandle<Prog, _>` for context `App`",
+        vec![DependencyTree::leaf(
+            "provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`",
+        )],
+    );
+    let resolved = Resolved {
+        context: "App".to_owned(),
+        consumers: vec!["CanHandle<Prog, _>".to_owned()],
+        consumers_are_cgp: true,
+        subject_is_context: true,
+        causes: vec![Cause {
+            leaf: Leaf::MissingDispatchEntry {
+                key: "Tagged<Bytes>".to_owned(),
+                table: "SinkHandlers".to_owned(),
+            },
+            tree: tree.clone(),
+        }],
+    };
+    let plan = plan_resolved(
+        DiagKind::MethodNotFound,
+        Some("the trait bound `App: CanHandle<Sink, Tagged<Bytes>>` is not satisfied"),
+        &resolved,
+        &empty_names(),
+    );
+
+    // A missing dispatch entry carries no `help`; the note names the fix.
+    assert!(plan.helps.is_empty());
+    assert_eq!(
+        plan.notes,
+        vec![format!(
+            "root cause: [CGP-E110] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`\n\
+             this is required through the dependency chain:\n{}",
+            indent2(&render_dependency_tree(&tree))
+        )]
+    );
+}
+
+#[test]
 fn plans_a_missing_redirect_wiring_check_failure() {
     // A namespace redirect that resolves to nothing: the checked consumer over a redirect-lookup
     // hop whose path the context does not terminate. The redirect node reads as its redirection and
@@ -417,6 +461,13 @@ fn dependency_tree_leaf_codes_rewritten_leaves_and_passes_bounds_through() {
             actual: "i32".to_owned(),
         }),
         "[CGP-E109] field `height` on `Rectangle` has type `i32`, but `f64` is required"
+    );
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::MissingDispatchEntry {
+            key: "Tagged<Bytes>".to_owned(),
+            table: "SinkHandlers".to_owned(),
+        }),
+        "[CGP-E110] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`"
     );
     // …but a pass-through ordinary bound keeps rustc's phrasing with no code.
     assert_eq!(

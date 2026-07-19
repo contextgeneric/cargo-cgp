@@ -69,6 +69,23 @@ pub enum Leaf {
         /// The context that must wire the component, e.g. `App`.
         owner: String,
     },
+    /// A non-context delegation table that has no entry for a key it is asked to resolve. The owner
+    /// is a *provider* that delegates — an [aggregate provider](../../../../cgp/docs/concepts/aggregate-providers.md)
+    /// missing a component wiring, or a
+    /// [`UseDelegate`](../../../../cgp/docs/reference/providers/use_delegate.md) / `UseInputDelegate`
+    /// dispatch table missing a branch for the type it dispatches on (a `Code` fragment or an `Input`
+    /// value's type). Parallel to [`Leaf::MissingWiring`], but the owner is a provider table rather
+    /// than the context: the fix is to add the entry to *that provider's* table (or feed the stage a
+    /// type the table already covers), not to wire a component on the context.
+    MissingDispatchEntry {
+        /// The key with no entry — a component marker (`BarProviderComponent`) for an aggregate
+        /// provider, or a dispatched-on type (`GenericArray<u8, U32>`) for a `UseDelegate` /
+        /// `UseInputDelegate` table.
+        key: String,
+        /// The provider table that lacks the entry, e.g. `CommonProvider` or
+        /// `ToTokioAsyncReadHandlers`.
+        table: String,
+    },
     /// A namespace redirect whose target path has no delegate entry. A `RedirectLookup<Ctx, Path>`
     /// provider resolves a component by forwarding the lookup to `Path` inside `Ctx`'s wiring
     /// (through the namespace lookup trait every joined namespace supplies), but nothing — no direct
@@ -102,6 +119,7 @@ impl Leaf {
         match self {
             Leaf::Field { name, .. } | Leaf::FieldTypeMismatch { name, .. } => name,
             Leaf::MissingWiring { component, .. } => component,
+            Leaf::MissingDispatchEntry { key, .. } => key,
             Leaf::MissingRedirectWiring { path, .. } => path,
             Leaf::Bound { summary } => summary,
         }

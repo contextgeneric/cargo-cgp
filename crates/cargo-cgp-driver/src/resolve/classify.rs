@@ -11,6 +11,7 @@
 use cargo_cgp_error_processing::{FieldIssue, Leaf};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_span::def_id::DefId;
 
 use crate::config::{
     CAN_USE_COMPONENT_TRAIT, CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE,
@@ -34,6 +35,7 @@ const MAX_DEREF: u32 = 16;
 pub(crate) fn classify_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
+    context: Ty<'tcx>,
     mismatch: Option<Ty<'tcx>>,
 ) -> Leaf {
     if is_cgp_item(
@@ -43,9 +45,8 @@ pub(crate) fn classify_leaf<'tcx>(
         CGP_COMPONENT_CRATE,
     ) {
         let key = leaf_ref.args.type_at(1);
-        let owner = tcx
-            .erase_and_anonymize_regions(leaf_ref.self_ty())
-            .to_string();
+        let self_ty = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
+        let owner = self_ty.to_string();
         // A `DelegateComponent<PathCons<…>>` key is a redirect *path* an `open` statement or a
         // namespace routed the lookup along, not a bare component marker — the context's own table
         // has no entry terminating it. Rendering only its ADT item name would flatten the whole path
@@ -58,9 +59,21 @@ pub(crate) fn classify_leaf<'tcx>(
                 context: owner,
             };
         }
-        // A bare `DelegateComponent<Marker>` with no satisfying impl: the context does not wire the
-        // component at all. The marker's own item name (`BarProviderComponent`) is what the
-        // programmer writes to fix it, so it names the leaf.
+        // A bare `DelegateComponent<Key>` on a type *other* than the context is a non-context
+        // delegation table missing an entry — an aggregate provider missing a component wiring, or a
+        // `UseDelegate`/`UseInputDelegate` table missing a branch for the type it dispatches on (a
+        // `Code` fragment or an `Input` value's type). The table wires other keys but not this one.
+        // The key is named in full (it may be a dispatched-on type, not just a marker), and the owner
+        // is the table. (`is_reportable_leaf` only lets a real delegation table reach here.)
+        if self_ty != context {
+            return Leaf::MissingDispatchEntry {
+                key: tcx.erase_and_anonymize_regions(key).to_string(),
+                table: owner,
+            };
+        }
+        // A bare `DelegateComponent<Marker>` on the context with no satisfying impl: the context does
+        // not wire the component at all. The marker's own item name (`BarProviderComponent`) is what
+        // the programmer writes to fix it, so it names the leaf.
         return Leaf::MissingWiring {
             component: component_marker_name(tcx, key),
             owner,
@@ -113,12 +126,23 @@ pub(crate) fn classify_leaf<'tcx>(
 
 /// Whether a terminal leaf is a real root cause worth reporting, rather than pure wiring plumbing.
 /// A `CanUseComponent` or `IsProviderFor` that bottoms out unmet is a routing dead-end (the real
-/// cause sits down another branch), so it is dropped instead of shown. A `DelegateComponent` is a
-/// real root cause — the context does not wire the component (a [`Leaf::MissingWiring`]) — but
-/// *only* when it lands on the `context` itself: an unmet `DelegateComponent` on a provider struct
-/// (a higher-order provider that implements its provider trait directly rather than delegating) is
-/// a dead-end whose real path runs through that direct impl, so it is dropped like the other
-/// wiring traits.
+/// cause sits down another branch), so it is dropped instead of shown. An unmet `DelegateComponent`
+/// is a real root cause in two shapes:
+///
+/// - on the **context** itself, the context does not wire the component (a [`Leaf::MissingWiring`]);
+/// - on a **dispatch table** — a `UseDelegate`/`UseInputDelegate` inner table, recognized because it
+///   wires *some* other key (it has at least one `DelegateComponent` impl) — the table has no entry
+///   for the type it dispatches on (a [`Leaf::MissingDispatchEntry`]).
+///
+/// It is dropped only when it lands on a type that is neither. The case that makes the gate
+/// load-bearing (not just cautious): a **leaf provider** whose concrete impl fixes an input type the
+/// walk cannot match. A pipeline stage like `HandleShout` (`impl Handler<Code, String>`) fed an
+/// *unknown* input — a call-site placeholder an earlier stage's `::Output` never resolved — does not
+/// unify with its concrete impl, so `impl_where_obligations` falls through to the delegation blanket
+/// and produces an unmet `HandleShout: DelegateComponent<HandlerComponent>`. That is a dead-end, not
+/// a missing entry: `HandleShout` is a valid provider, it simply is not a table. It carries no
+/// `DelegateComponent` impl, so `is_delegation_table` returns `false` and it is dropped — where a real
+/// table (which wires *some* key) is kept.
 pub(crate) fn is_reportable_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
@@ -126,10 +150,30 @@ pub(crate) fn is_reportable_leaf<'tcx>(
 ) -> bool {
     let did = leaf_ref.def_id;
     if is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE) {
-        return tcx.erase_and_anonymize_regions(leaf_ref.self_ty()) == context;
+        let self_ty = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
+        return self_ty == context || is_delegation_table(tcx, did, self_ty);
     }
     !is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         && !is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
+}
+
+/// Whether `owner` is a delegation table — a struct that wires at least one key through a
+/// `DelegateComponent` impl (an aggregate provider, or a `UseDelegate`/`UseInputDelegate` inner
+/// table). This tells a table *missing one key* (a real root cause) apart from a leaf provider
+/// reached only via the delegation blanket because its concrete impl did not unify (a routing
+/// dead-end). Having *any* one entry is enough to be recognized as a table — the owner it excludes
+/// is one with zero delegation impls, which is exactly the leaf-provider dead-end. `delegate_did` is
+/// the `DelegateComponent` trait's own `DefId`, taken from the leaf being classified.
+fn is_delegation_table<'tcx>(tcx: TyCtxt<'tcx>, delegate_did: DefId, owner: Ty<'tcx>) -> bool {
+    let ty::Adt(owner_def, _) = owner.kind() else {
+        return false;
+    };
+    tcx.all_impls(delegate_did).any(|impl_did| {
+        matches!(
+            tcx.impl_trait_ref(impl_did).skip_binder().self_ty().kind(),
+            ty::Adt(def, _) if def.did() == owner_def.did()
+        )
+    })
 }
 
 /// The plain item name of a component marker type — `BarProviderComponent` for the

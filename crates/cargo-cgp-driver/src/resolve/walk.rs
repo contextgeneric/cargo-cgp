@@ -75,7 +75,7 @@ pub(crate) fn resolve_leaves<'tcx>(
         if !is_reportable_leaf(tcx, leaf_ref, context) {
             continue;
         }
-        let leaf = classify_leaf(tcx, leaf_ref, path.mismatch);
+        let leaf = classify_leaf(tcx, leaf_ref, context, path.mismatch);
         // One sub-error per distinct leaf: a leaf wanted by several branches is one fix.
         if causes.iter().any(|c| c.key() == leaf.key()) {
             continue;

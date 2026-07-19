@@ -1,0 +1,21 @@
+error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog, _>` is not implemented for context `App`
+   --> src/main.rs:212:16
+    |
+212 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |                ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: root cause: [CGP-E110] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`
+            this is required through the dependency chain:
+              [CGP-E101] consumer trait impl `CanHandle<Prog, _>` for context `App`
+              └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
+                └─ [CGP-E102] provider trait impl `Handler<Prog, _>` with context `App` for provider `PipeHandlers<Product![Call<Fetch>, Call<Digest<Sha>>, Call<Sink>]>`
+                  └─ [CGP-E102] provider trait impl `Handler<Prog, _>` with context `App` for provider `ComposeHandlers<Call<Fetch>, ComposeHandlers<Call<Digest<Sha>>, Call<Sink>>>`
+                    └─ [CGP-E102] provider trait impl `Handler<Prog, ByteStream>` with context `App` for provider `ComposeHandlers<Call<Digest<Sha>>, Call<Sink>>`
+                      └─ [CGP-E102] provider trait impl `Handler<Prog, Tagged<Bytes>>` with context `App` for provider `Call<Sink>`
+                        └─ [CGP-E101] consumer trait impl `CanHandle<Sink, Tagged<Bytes>>` for context `App`
+                          └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
+                            └─ [CGP-E102] provider trait impl `Handler<Sink, Tagged<Bytes>>` with context `App` for provider `HandleSink`
+                              └─ [CGP-E102] provider trait impl `Handler<Sink, Tagged<Bytes>>` with context `App` for provider `UseInputDelegate<SinkHandlers>`
+                                └─ [CGP-E110] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`
+
+For more information about this error, try `rustc --explain E0277`.

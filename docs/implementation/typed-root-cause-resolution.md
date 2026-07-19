@@ -233,7 +233,7 @@ label, so it fuses exactly the nodes the chains reach by the same path and no mo
 no root stay separate notes (nothing is forced under an ancestor the chains do not actually share). A
 lone cause keeps its singular `root cause:` note.
 
-The `root cause:` lead is worded by *why* the leaf is unmet, and there are four leaf shapes:
+The `root cause:` lead is worded by *why* the leaf is unmet, and there are five leaf shapes:
 
 - A **genuinely absent field** reads as `root cause: missing field \`height\` on \`Rectangle\`` — the
   worked example's leaf. There is no `context` qualifier, since `HasField` can land on any struct.
@@ -284,7 +284,22 @@ The `root cause:` lead is worded by *why* the leaf is unmet, and there are four 
   and [`open_missing_type_key`](../../tests/ui/acceptable/wiring/namespace-paths/open_missing_type_key.rs)
   fixtures pin the variants.
 
-A field-type mismatch is a fifth leaf, but its own `[CGP-E003]` headline already states it in full (as
+- A **missing dispatch entry** — a *non-context* delegation table missing a key — is the wiring
+  counterpart for a provider table rather than the context. It reads as
+  `root cause: [CGP-E110] provider \`ToTokioAsyncReadHandlers\` does not contain any delegate entry for \`GenericArray<u8, …>\``
+  and names the table and the key. The owner is either an aggregate provider missing a component
+  wiring or a `UseDelegate`/`UseInputDelegate` dispatch table missing a branch for the type it
+  dispatches on (a `Code` fragment or an `Input` value's type); the two are recognized alike, by the
+  owner carrying at least one `DelegateComponent` impl. This is the leaf a handler pipeline bottoms out
+  on when a stage's output is not a type a later stage's input dispatcher handles — the
+  `http_checksum_native` hypershell shape, where a raw `GenericArray` digest reaches an `AsyncRead`
+  sink's input dispatcher because a byte-encoding stage is missing. The tree shows the offending type
+  flowing into the stage, so a reader sees exactly what reached a stage that cannot handle it
+  ([`cascade_nested_projection`](../../tests/ui/acceptable/use-site/cascade_nested_projection.rs) pins
+  the shape; [`transitive_missing_wiring`](../../tests/ui/acceptable/wiring/missing-wiring/transitive_missing_wiring.rs)
+  the aggregate-provider variant).
+
+A field-type mismatch is a sixth leaf, but its own `[CGP-E003]` headline already states it in full (as
 the `E0271` example above shows), so its note drops the `root cause:` lead and carries the chain
 alone. Any other leaf simply restates its bound —
 `root cause: the trait bound \`f64: Eq\` is not satisfied`, module qualifiers stripped — except when
@@ -870,6 +885,17 @@ are dropped as plumbing above. The leaf shapes are:
   delegates that component to no provider. (When the key is a `PathCons` path rather than a bare
   marker — an `open`-dispatched value the context never wired — it is the missing-*redirect*-wiring
   leaf, named by its whole path.)
+- An unmet **`DelegateComponent<Key>` on a *non-context* delegation table** is the missing-dispatch-entry
+  leaf (`[CGP-E110]`): the owner is a provider that delegates — an aggregate provider missing a
+  component wiring, or a `UseDelegate`/`UseInputDelegate` table missing a branch for the type it
+  dispatches on (a `Code` fragment or an `Input` value's type) — and it wires other keys but not this
+  one. It is told apart from a higher-order-provider dead-end (which is dropped, below) by the owner
+  actually being a delegation table: it carries at least one `DelegateComponent` impl (`is_delegation_table`
+  in `classify.rs`). This is the leaf a handler pipeline bottoms out on when a stage's output type is
+  not one a later stage's input dispatcher handles — the shape the `http_checksum_native` hypershell
+  example produces once a byte-encoding stage is removed and a raw `GenericArray` digest reaches an
+  `AsyncRead` sink's input dispatcher (distilled in
+  [`cascade_nested_projection`](../../tests/ui/acceptable/use-site/cascade_nested_projection.rs)).
 - An unmet **namespace-lookup bound** is a missing-redirect-wiring leaf too. It is recognized not by
   name but by the trait's *fingerprint* — a single `Delegate` associated type, which `DefaultNamespace`,
   the `DefaultImpls*` traits, and every user `cgp_namespace!` trait share — so a same-named user
@@ -914,11 +940,16 @@ the provider's own impl, and matching the blanket first — which carries no pro
 report no mismatch; but a getter trait whose *only* impl is a blanket
 (`impl<C: HasField<..>> HasName for C`) still has its projection read from that blanket, so a blanket is
 deferred, not skipped outright. A branch with no such projection yields nothing and declines to the
-fallback. Finally, a branch that bottoms out on **pure wiring plumbing** — a `DelegateComponent` on a
-type *other* than the context — is a routing dead-end and is dropped, since the real cause is found down
-another branch. A `DelegateComponent` on the context is the one exception, never plumbing but the
-missing-wiring leaf itself: a delegation that *holds* is pruned before it can be a leaf, so the only way
-one bottoms out unmet on the context is that the context genuinely does not wire it.
+fallback. Finally, a branch that bottoms out on a `DelegateComponent` is kept only when the owner
+genuinely lacks the entry it *should* carry, and dropped as **pure wiring plumbing** otherwise. A
+`DelegateComponent` **on the context** is never plumbing but the missing-wiring leaf itself, and one
+**on a non-context delegation table** — a provider that carries at least one `DelegateComponent` impl,
+so it is an aggregate provider or a `UseDelegate`/`UseInputDelegate` dispatch table — is the
+missing-dispatch-entry leaf: in both, a delegation that *holds* is pruned before it can be a leaf, so
+bottoming out unmet means the owner genuinely does not wire that key. Only a `DelegateComponent` on a
+type that is **neither** — a higher-order provider that implements its provider trait directly and
+delegates nothing — is the routing dead-end that is dropped, since its real cause runs through that
+direct impl down another branch.
 
 The walk crosses inference-context boundaries carefully, because a stray variable from one `InferCtxt`
 panics another. It finds the satisfying impl with the `fresh_args_for_item`-plus-unification dance
@@ -1116,7 +1147,8 @@ And the walk
 uses an **empty parameter environment** throughout, which suits the concrete check
 impls the fixtures exercise but will need the impl's own environment to extend cleanly to checks that
 carry generic parameters. The resolver renders only leaves it can trust — a `HasField` field (missing,
-underived, or type-mismatched), a missing wiring, a namespace redirect the context does not terminate,
+underived, or type-mismatched), a missing wiring, a missing dispatch entry on a non-context delegation
+table, a namespace redirect the context does not terminate,
 an ordinary foreign bound, or a terminal capability bound — and declines an associated-type projection
 mismatch that is *not* a `HasField` one, dropping pure wiring-plumbing dead-ends, so a diagnostic whose
 only recoverable leaf is one of those falls back. Parallel branches, deep nesting, and non-field leaves,
@@ -1182,13 +1214,16 @@ separate header brand; the inline code is the only marking.
     (`unknowns_to_placeholders`, shared with the call-site anchor) rather than dropping it, so a later
     pipeline stage keyed on an earlier stage's un-normalized output projection is still descended (and
     reported on when its input concretizes),
-    `is_reportable_leaf` keeping an unmet `DelegateComponent` only on the context, the drop of a leaf
+    `is_reportable_leaf` keeping an unmet `DelegateComponent` on the context (a missing wiring) or on a
+    non-context delegation table (a missing dispatch entry, via `is_delegation_table` in `classify.rs`)
+    while dropping a higher-order-provider dead-end, the drop of a leaf
     still carrying a call-site placeholder (an unknowable `_: Send` is never reported), and
     `has_field_projection_mismatch`/`impl_field_projection_mismatch` finding an unmet `HasField`
     projection on the concrete-`Self` impl (deferring the blanket).
   - `classify.rs` classifies a leaf (a field by inspecting the struct and its `Deref` chain, a
-    field-type mismatch with `field_type` reading the actual type by `DefId`, a missing wiring, a
-    missing redirect wiring told apart by `is_path_cons`, or a bound).
+    field-type mismatch with `field_type` reading the actual type by `DefId`, a missing wiring on the
+    context, a missing dispatch entry on a non-context delegation table told apart by `is_delegation_table`,
+    a missing redirect wiring told apart by `is_path_cons`, or a bound).
   - `label.rs` folds the inner chain into a `DependencyTree`, naming each consumer/provider node off its
     trait `DefId` and the obligation's arguments (`trait_generics`) and dropping the plumbing, with
     `render_ty` resugaring a `DefId`-anchored `Cons`/`Nil` or `Either`/`Void` self type to
@@ -1248,6 +1283,10 @@ Each **leaf class** has fixtures for its field, wiring, and redirect shapes:
 - `basic_missing_wiring` — a `#[uses]` dependency on an unwired component.
 - `direct_missing_wiring` — a checked component wired nowhere (a single-node chain).
 - `parallel_missing_wiring` — two unwired components (two notes).
+- `transitive_missing_wiring` — a component wired through an *aggregate provider* that the aggregate
+  itself does not wire, the `[CGP-E110]` missing-dispatch-entry leaf on a non-context delegation table
+  (`provider \`CommonProvider\` does not contain any delegate entry for \`BarProviderComponent\``), with
+  the whole tree correctly rooted at the checked context.
 - `record_field_chain` — a record provider building each field through the context over a recursive
   `Cons`/`Nil` handler (the modular-serialization `DeserializeRecordFields`/`HandleMapEntry` shape),
   whose tree entries also pin the `Cons`/`Nil` → `Struct! { … }` resugaring.
@@ -1331,6 +1370,13 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
   recovery that reduces the earlier stage's fixed output by re-normalizing the projection with the
   unknown input treated as deferrable, so the later stage's `<output>: AsRef<[u8]>` becomes the
   reported cause.
+- `cascade_nested_projection` — the three-stage variant distilled from the `http_checksum_native`
+  hypershell example, where the later stage's input (an earlier stage's fixed, projection-typed output
+  produced by a nested `PipeHandlers`) reaches an **input dispatcher** (`UseInputDelegate`) that has no
+  entry for it. Pins the `[CGP-E110]` missing-dispatch-entry leaf: the cause is an unmet
+  `DelegateComponent` on the dispatch *table* rather than the context, which the walk used to drop as
+  plumbing — declining the whole resolution — and now reports, leading with
+  `provider \`SinkHandlers\` does not contain any delegate entry for \`Tagged<Bytes>\`` over the chain.
 - `generic_consumer_use_site` — the same anchor's value-argument case: the dispatch parameter
   recovered by signature unification from a written tuple, no tag argument involved, with the
   misleading method-syntax advice dropped.
