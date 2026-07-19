@@ -1,0 +1,269 @@
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
+   --> src/main.rs:133:16
+    |
+133 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |         ------ ^^^^^^^^^^^^^^^^^^^ the trait `Handler<App, Hex, ByteStream>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+    |         |
+    |         required by a bound introduced by this call
+    |
+help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:1
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _^^^^^^^^^^^^^^^^-^^^^^^^^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________- unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Hex, PathCons<ByteStream, Nil>>>>::Output>>::Delegate: Handler<App, Hex, ByteStream>`
+    = note: required for `App` to implement `Handler<App, Hex, ByteStream>`
+    = note: 5 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Prog, _>`
+    = note: required for `App` to implement `CanHandle<Prog, _>`
+    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `HandleHex: Handler<App, Hex, ByteStream>` is not satisfied
+   --> src/main.rs:133:16
+    |
+133 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |         ------ ^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |         |
+    |         required by a bound introduced by this call
+    |
+help: the trait `Handler<App, Hex, ByteStream>` is not implemented for `HandleHex`
+   --> src/main.rs:92:16
+    |
+ 92 | #[cgp_impl(new HandleHex)]
+    |                ^^^^^^^^^
+help: the trait `Handler<__Context__, Hex, Input>` is conditionally implemented for `HandleHex`
+   --> src/main.rs:94:1
+    |
+ 94 | / impl<Input> Handler<Hex, Input>
+ 95 | | where
+ 96 | |     Input: AsRef<[u8]>,
+    | |            ----------- unsatisfied requirement introduced here: `ByteStream: AsRef<[u8]>`
+...   |
+103 | | }
+    | |_^
+    = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<HandlerComponent, App, (Hex, ByteStream)>`
+    = note: 1 redundant requirement hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Hex, ByteStream)>`
+    = note: required for `App` to implement `Handler<App, Hex, ByteStream>`
+    = note: 5 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Prog, _>`
+    = note: required for `App` to implement `CanHandle<Prog, _>`
+
+error[E0277]: the trait bound `ByteStream: AsRef<[u8]>` is not satisfied
+   --> src/main.rs:133:16
+    |
+133 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |         ------ ^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |         |
+    |         required by a bound introduced by this call
+    |
+help: the trait `AsRef<[u8]>` is not implemented for `ByteStream`
+   --> src/main.rs:53:1
+    |
+ 53 | pub struct ByteStream;
+    | ^^^^^^^^^^^^^^^^^^^^^
+note: required for `HandleHex` to implement `IsProviderFor<HandlerComponent, App, (Hex, ByteStream)>`
+   --> src/main.rs:92:1
+    |
+ 92 | #[cgp_impl(new HandleHex)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 96 |     Input: AsRef<[u8]>,
+    |            ----------- unsatisfied trait bound introduced here
+    = note: 2 redundant requirements hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Hex, ByteStream)>`
+    = note: required for `App` to implement `Handler<App, Hex, ByteStream>`
+    = note: 5 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Prog, _>`
+    = note: required for `App` to implement `CanHandle<Prog, _>`
+    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
+   --> src/main.rs:133:5
+    |
+133 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Handler<App, Prog, Vec<_>>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+    |
+help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:1
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _^^^^^^^^^^^^^^^^-^^^^^^^^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |                                -
+    | |                                |
+    | |                                unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    | |                                unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    | |                                unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    | |                                unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    | |________________________________unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    |                                  unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    = note: required for `App` to implement `Handler<App, Prog, Vec<_>>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `ComposeHandlers<Call<Fetch>, Call<Hex>>: Handler<App, Prog, Vec<_>>` is not satisfied
+   --> src/main.rs:133:5
+    |
+133 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Handler<App, Prog, Vec<_>>` is not implemented for `ComposeHandlers<Call<Fetch>, Call<Hex>>`
+    |
+help: the trait `Handler<Context, Code, Input>` is conditionally implemented for `ComposeHandlers<ProviderA, ProviderB>`
+   --> $CGP/crates/extra/cgp-handler/src/providers/compose.rs:65:1
+    |
+ 65 | / impl<Context, Code, Input, ProviderA, ProviderB> Handler<Context, Code, Input>
+ 66 | |     for ComposeHandlers<ProviderA, ProviderB>
+ 67 | | where
+ 68 | |     Context: HasErrorType,
+ 69 | |     ProviderA: Handler<Context, Code, Input>,
+ 70 | |     ProviderB: Handler<Context, Code, ProviderA::Output>,
+    | |________________-----------------------------------------^
+    |                  |
+    |                  unsatisfied requirement introduced here: `Call<Hex>: Handler<App, Prog, <Call<Fetch> as Handler<App, Prog, Vec<_>>>::Output>`
+    = note: required for `PipeHandlers<Cons<Call<Fetch>, Cons<Call<Hex>, Nil>>>` to implement `Handler<App, Prog, Vec<_>>`
+    = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<HandlerComponent, App, (Prog, Vec<_>)>`
+    = note: 2 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Prog, Vec<_>>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
+   --> src/main.rs:133:49
+    |
+133 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |                                                 ^^^^^ the trait `Handler<App, Prog, Vec<_>>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+    |
+help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:1
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _^^^^^^^^^^^^^^^^-^^^^^^^^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |                                -
+    | |                                |
+    | |                                unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    | |                                unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    | |                                unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    | |                                unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    | |________________________________unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    |                                  unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog, Vec<_>>`
+    = note: required for `App` to implement `Handler<App, Prog, Vec<_>>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `ComposeHandlers<Call<Fetch>, Call<Hex>>: Handler<App, Prog, Vec<_>>` is not satisfied
+   --> src/main.rs:133:49
+    |
+133 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |                                                 ^^^^^ the trait `Handler<App, Prog, Vec<_>>` is not implemented for `ComposeHandlers<Call<Fetch>, Call<Hex>>`
+    |
+help: the trait `Handler<Context, Code, Input>` is conditionally implemented for `ComposeHandlers<ProviderA, ProviderB>`
+   --> $CGP/crates/extra/cgp-handler/src/providers/compose.rs:65:1
+    |
+ 65 | / impl<Context, Code, Input, ProviderA, ProviderB> Handler<Context, Code, Input>
+ 66 | |     for ComposeHandlers<ProviderA, ProviderB>
+ 67 | | where
+ 68 | |     Context: HasErrorType,
+ 69 | |     ProviderA: Handler<Context, Code, Input>,
+ 70 | |     ProviderB: Handler<Context, Code, ProviderA::Output>,
+    | |________________-----------------------------------------^
+    |                  |
+    |                  unsatisfied requirement introduced here: `Call<Hex>: Handler<App, Prog, <Call<Fetch> as Handler<App, Prog, Vec<_>>>::Output>`
+    = note: required for `PipeHandlers<Cons<Call<Fetch>, Cons<Call<Hex>, Nil>>>` to implement `Handler<App, Prog, Vec<_>>`
+    = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<HandlerComponent, App, (Prog, Vec<_>)>`
+    = note: 2 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Prog, Vec<_>>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+
+error[E0277]: the trait bound `Call<Hex>: Handler<App, Prog, ByteStream>` is not satisfied
+   --> src/main.rs:133:49
+    |
+133 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |                                                 ^^^^^ unsatisfied trait bound
+    |
+help: the trait `Handler<App, Prog, ByteStream>` is not implemented for `Call<Hex>`
+   --> src/main.rs:59:16
+    |
+ 59 | #[cgp_impl(new Call<InCode>)]
+    |                ^^^^
+help: the trait `Handler<__Context__, OutCode, Input>` is conditionally implemented for `Call<InCode>`
+   --> src/main.rs:60:1
+    |
+ 60 | / impl<OutCode, InCode, Input, Output> Handler<OutCode, Input>
+ 61 | | where
+ 62 | |     Self: CanHandle<InCode, Input, Output = Output>,
+    | |____________________________________---------------_^
+    |                                      |
+    |                                      unsatisfied requirement introduced here: `<App as CanHandle<Hex, ByteStream>>::Output == _`
+    |                                      unsatisfied requirement introduced here: `<App as CanHandle<Hex, ByteStream>>::Output == _`
+    |                                      unsatisfied requirement introduced here: `<App as CanHandle<Hex, ByteStream>>::Output == _`
+    |                                      unsatisfied requirement introduced here: `<App as CanHandle<Hex, ByteStream>>::Output == _`
+    = note: required for `ComposeHandlers<Call<Fetch>, Call<Hex>>` to implement `IsProviderFor<HandlerComponent, App, (Prog, Vec<_>)>`
+    = note: 3 redundant requirements hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Prog, Vec<_>)>`
+    = note: required for `App` to implement `Handler<App, Prog, Vec<_>>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+
+For more information about this error, try `rustc --explain E0277`.

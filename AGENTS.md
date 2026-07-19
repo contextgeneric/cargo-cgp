@@ -341,14 +341,23 @@ CGP program with the same shape, so:
   such a rule would silently fail on the next project and is a defect even if it makes today's message
   perfect. If a failure seems to need example-specific knowledge, the real gap is in how a *core*
   construct is walked or worded — find and fix that instead.
-- **Never assume the reader knows an example's code in the docs or fixtures.** A knowledge-base
-  document, an inline comment, and a UI fixture must each be self-contained: explain any construct a
-  reader meets in terms of core CGP (linking to the [construct reference](../cgp/docs/reference/README.md)),
-  and reproduce a real failure as a *distilled, self-contained* fixture rather than a reference to the
-  example. Name the originating project at most as a passing illustration the prose does not depend on
-  — never as something the reader must already understand. A core CGP construct that happens to appear
-  in examples (a handler combinator such as `ComposeHandlers`/`PipeHandlers`, say) is fair game, but
-  introduce it as the CGP construct it is, not as "the thing that example uses."
+- **Keep every explanation generalized; never frame it around a specific example.** A knowledge-base
+  document, an inline doc comment, and a UI fixture must each be self-contained and framed around the
+  *core CGP concept* it describes — never around any one project that happens to exhibit it. Assume
+  the reader, human or agent, knows core CGP (via the [construct reference](../cgp/docs/reference/README.md)
+  and the `/cgp` skill) but **nothing** about any non-core CGP project. An example may *illustrate* a
+  generalized concept, but only when the prose explains it in core-CGP terms that stand on their own:
+  state the general rule first and present the example as one demonstration of it; never let a
+  mechanism read as if it applied only to that example's own types, names, or domain; and name the
+  originating project at most as a passing aside the explanation does not depend on — never as
+  something the reader must already understand. Prefer generalizing the phrasing over naming any
+  concrete type from an example at all — where a concrete type does appear, choose a self-explaining
+  core-CGP one (a `HasField` field, a `std` bound like `AsRef<[u8]>`) over one whose meaning lives in
+  the example. Reproduce a real failure as a *distilled, self-contained* fixture rather than a
+  reference to the example. A core CGP construct that merely appears in examples (a handler combinator
+  such as `ComposeHandlers`/`PipeHandlers`, say) is fair game, but introduce it as the CGP construct
+  it is — linking the [construct reference](../cgp/docs/reference/README.md) or a concept page such as
+  [handlers](../cgp/docs/concepts/handlers.md) for background — not as "the thing that example uses."
 
 Read these first, every time, before touching anything — the loop assumes their contents. They fall
 into three groups: how the tool is run and its output read, how the tool builds that output, and what

@@ -793,23 +793,63 @@ ref unifies. The walk registers and **solves the impl's satisfiable clauses firs
 parameter, so the sibling clause that carries it (the branch to the cause) is not dropped as
 inference-laden.
 
-A clause that *still* carries an inference variable after that solving is one the impl match left
-genuinely unconstrained, and the most important case is a **later pipeline stage keyed on an earlier
-stage's unresolved `::Output`**. A `ComposeHandlers<ProviderA, ProviderB>` depends on both
-`ProviderA: Handler<Ctx, Code, Input>` and `ProviderB: Handler<Ctx, Code, ProviderA::Output>`; when
-the walk's own input is a [call-site placeholder](#recovering-from-the-call-expression-itself) that
-`ProviderA` cannot satisfy, `ProviderA::Output` never normalizes and the next-generation solver leaves
-it a fresh inference variable, so the `ProviderB` clause reads as `Handler<Ctx, Code, _>`. Dropping
-that clause as inference-laden would silently discard **every root cause living in a stage past the
-first** — which is exactly what buried a missing field read by a second handler behind three
-`PipeHandlers`/`ComposeHandlers`-plumbing blocks. So rather than drop it, the walk **folds each stray
-inference variable into a rigid placeholder** (the same `unknowns_to_placeholders` the call-site anchor
-seeds unknown call arguments with) and descends the stage anyway. The placeholder is an unknown the
-walk resolves *around*: it reaches `ProviderB`'s context-side dependencies — a `Self: HasField` a
-later handler reads — while the [placeholder-leaf filter](#the-root-cause-notes) keeps any leaf that
-genuinely depends on the unknown input (`_: Send`) from being reported. The fold is a no-op when a
-clause has no such variable — the ordinary concrete-input walk, where each stage's `::Output`
-normalizes to a real type — so only the unknown-input case changes.
+A clause the impl match leaves genuinely unconstrained is the subtle case, and the one that matters
+most is a **later stage of a pipeline keyed on an earlier stage's output type**. Two pieces of
+background make it concrete.
+
+An *associated-type projection* is a type written `<T as SomeTrait<…>>::Assoc`: not named directly,
+but computed from a trait impl. The solver *normalizes* it to a real type by selecting the impl of
+`SomeTrait` for `T` and reading off the value that impl declares for `Assoc` — which requires the
+impl to actually apply, i.e. its `where` clauses to hold. CGP's [handler family](../../../cgp/docs/concepts/handlers.md)
+composes computations into pipelines, and a composition provider wires each stage's *input* to the
+previous stage's *output type*, which is exactly such a projection. Its archetype
+`ComposeHandlers<ProviderA, ProviderB>` (introduced under
+[the failure shape](#the-failure-shape-wiring-that-matches-unconditionally)) has two asymmetric
+dependencies: `ProviderA: Handler<Ctx, Code, Input>` on the pipeline's own input, and
+`ProviderB: Handler<Ctx, Code, ProviderA::Output>` on whatever the first stage *produces*. Here
+`ProviderA::Output` is the projection — the handler trait's associated type happens to be named
+`Output`, but nothing below turns on that name.
+
+The problem appears when the pipeline's input is unknown. When the walk's own input is a
+[call-site placeholder](#recovering-from-the-call-expression-itself) — a rigid stand-in for a call
+argument the code did not type — `ProviderA`'s own `where` clause is *false* against it (a rigid
+placeholder satisfies no `Input: Send`-style bound), so the solver rejects `ProviderA`'s impl and
+`ProviderA::Output` cannot normalize. The next-generation solver leaves it a fresh inference variable,
+so the `ProviderB` clause reads as `Handler<Ctx, Code, _>`. Dropping it as inference-laden would
+silently discard **every root cause living in a stage past the first** — a bound a later stage places
+on the value the earlier stage feeds it, which is where a great many real pipeline mistakes sit.
+
+So the walk first tries to **recover** the earlier stage's output rather than give up on it, because
+that output type is very often *fixed* — declared by the provider independently of its input — and
+stalled only because the placeholder falsified an unrelated `where` clause. `resolve_fixed_projections`
+re-normalizes each stalled projection in a fresh `InferCtxt` with the placeholders turned back into
+ordinary inference variables (`placeholders_to_infer`, the inverse of `unknowns_to_placeholders`). An
+inference variable makes the blocking bound *deferrable* rather than false, so the solver commits to
+the sole impl candidate and reads off the associated type it declares. The recovered type is kept only
+when it comes out **fully concrete** — no inference variable or placeholder left, and no longer an
+alias — so an output that genuinely depends on the input never concretizes and falls through to the
+fold below; and since the seed obligation is still gated on actually failing, a recovered concrete
+input can never fabricate a cause. With the earlier stage's output recovered, the later stage's input
+becomes that concrete type and the bound it fails becomes the reported root cause — for example an
+`AsRef<[u8]>` requirement a byte-consuming stage places on a producing stage whose output type is not
+a byte slice, the shape [`cascade_later_stage_input`](../../tests/ui/acceptable/use-site/cascade_later_stage_input.rs)
+pins.
+
+The step is **structural**: it recovers `<T as SomeTrait<…>>::Assoc` for *any* trait and *any*
+associated type, at any argument position and to any depth — a three-stage pipeline nests one stage's
+output projection inside the next — matching on the projection kind alone and never on an
+associated-type name, trait, or `DefId`. `ComposeHandlers`'s `Output` is only the shape that
+motivated it.
+
+When a stalled projection *cannot* be recovered this way — its value genuinely depends on the unknown
+input — the walk falls back to **folding each stray inference variable into a rigid placeholder** (the
+same `unknowns_to_placeholders` the call-site anchor seeds unknown call arguments with) and descends
+the stage anyway. The placeholder is an unknown the walk resolves *around*: it reaches `ProviderB`'s
+context-side dependencies — a `Self: HasField` a later stage reads — while the
+[placeholder-leaf filter](#the-root-cause-notes) keeps any leaf that genuinely depends on the unknown
+input (`_: Send`) from being reported. Both the recovery and the fold are a no-op when a clause
+carries no placeholder — the ordinary concrete-input walk, where each stage's projection normalizes to
+a real type — so only the unknown-input case is affected.
 
 A branch ends at a **terminal leaf**, and which obligations count as terminal is what keeps the tree
 honest. The descent follows only the CGP wiring vocabulary — any provider trait (a
@@ -1124,10 +1164,15 @@ separate header brand; the inline code is the only marking.
     `MAX_DEPTH` backstop, the placeholder instantiation of a higher-ranked binder
     (`enter_forall_and_leak_universe`), the plumbing-leaf drop, the foreign-getter descent into just
     context-side dependencies plus a same-trait list recursion, `impl_where_obligations` preferring a
-    concrete-`Self` impl over the delegation blanket, solving satisfiable clauses first, and folding a
-    still-unresolved clause's stray inference vars into placeholders (`unknowns_to_placeholders`, shared
-    with the call-site anchor) rather than dropping it — so a later pipeline stage keyed on an earlier
-    stage's un-normalized `::Output` is still descended,
+    concrete-`Self` impl over the delegation blanket, solving satisfiable clauses first, recovering a
+    stalled associated-type projection whose value is *fixed* independent of an unknown input by
+    re-normalizing it (structurally, for any trait/associated type) with the placeholders as
+    deferrable inference vars (`resolve_fixed_projections` / `try_project_fixed` /
+    `placeholders_to_infer`, keeping only a fully-concrete result), and — when that recovery does not
+    apply — folding a still-unresolved clause's stray inference vars into placeholders
+    (`unknowns_to_placeholders`, shared with the call-site anchor) rather than dropping it, so a later
+    pipeline stage keyed on an earlier stage's un-normalized output projection is still descended (and
+    reported on when its input concretizes),
     `is_reportable_leaf` keeping an unmet `DelegateComponent` only on the context, the drop of a leaf
     still carrying a call-site placeholder (an unknowable `_: Send` is never reported), and
     `has_field_projection_mismatch`/`impl_field_projection_mismatch` finding an unmet `HasField`
@@ -1269,6 +1314,14 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
   multi-stage pipeline whose later stage reads a field the context has not wired, behind an earlier
   stage that consumes the pipeline's own input — and the fixture is the self-contained distillation of
   it.
+- `cascade_later_stage_input` — the harder variant of the same shape, where the later stage's only
+  cause is a requirement on its **input type** (`Input: AsRef<[u8]>`) and that input is the earlier
+  stage's *fixed* output, threaded through a forwarding handler so it resolves through `CanHandle`.
+  Folding the stalled projection to a placeholder leaves the requirement an unreportable
+  `_: AsRef<[u8]>`; pins the [`resolve_fixed_projections`](#walking-the-dependency-graph-downward)
+  recovery that reduces the earlier stage's fixed output by re-normalizing the projection with the
+  unknown input treated as deferrable, so the later stage's `<output>: AsRef<[u8]>` becomes the
+  reported cause.
 - `generic_consumer_use_site` — the same anchor's value-argument case: the dispatch parameter
   recovered by signature unification from a written tuple, no tag argument involved, with the
   misleading method-syntax advice dropped.

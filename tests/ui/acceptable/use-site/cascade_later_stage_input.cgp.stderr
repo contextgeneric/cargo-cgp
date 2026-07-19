@@ -1,0 +1,19 @@
+error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog, _>` is not implemented for context `App`
+   --> src/main.rs:133:9
+    |
+133 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |         ^^^^^^
+    |
+    = note: root cause: [CGP-E201] the trait bound `ByteStream: AsRef<[u8]>` is not satisfied
+            this is required through the dependency chain:
+              [CGP-E101] consumer trait impl `CanHandle<Prog, _>` for context `App`
+              └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
+                └─ [CGP-E102] provider trait impl `Handler<Prog, _>` with context `App` for provider `PipeHandlers<Product![Call<Fetch>, Call<Hex>]>`
+                  └─ [CGP-E102] provider trait impl `Handler<Prog, _>` with context `App` for provider `ComposeHandlers<Call<Fetch>, Call<Hex>>`
+                    └─ [CGP-E102] provider trait impl `Handler<Prog, ByteStream>` with context `App` for provider `Call<Hex>`
+                      └─ [CGP-E101] consumer trait impl `CanHandle<Hex, ByteStream>` for context `App`
+                        └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
+                          └─ [CGP-E102] provider trait impl `Handler<Hex, ByteStream>` with context `App` for provider `HandleHex`
+                            └─ the trait bound `ByteStream: AsRef<[u8]>` is not satisfied
+
+For more information about this error, try `rustc --explain E0277`.
