@@ -297,9 +297,17 @@ The rewrite itself is a plain string transform, kept in the rustc-free
 [`rewrite`](../../crates/cargo-cgp-error-processing/src/rewrite), the driver's one ordinary
 dependency) so it is unit-tested on any toolchain without a `TyCtxt`. Its
 entry point, `rewrite_message`, dispatches to the `required for … to implement …` note forms
-(`rewrite_required_for`) and the `the trait bound … is not satisfied` header form
-(`rewrite_trait_bound`, which stamps the `[CGP-Exxx]` code); each reads the marker out of the trait's
-generic arguments and looks the names up in the map. The emitter applies the full dispatch only to a
+(`rewrite_required_for`), the `the trait bound … is not satisfied` header form
+(`rewrite_trait_bound`, which stamps the `[CGP-Exxx]` code), and the
+`overflow evaluating the requirement …` header form (`rewrite_wiring_overflow`, which stamps
+`[CGP-E010]` on the `E0275` a wiring cycle produces — a `UseContext` delegation whose only
+consumer-trait impl is that delegation, so the lookup recurses forever); each reads the marker out
+of the trait's generic arguments and looks the names up in the map. When the overflow header is
+rewritten, the emitter also drops the note pointing at the generated `__Check…` trait (the kept
+caret already covers the check entry) and attaches a `help` naming the usual cause and the two
+fixes (`wiring_overflow_help`); the
+[`use_context_cycle`](../../tests/ui/acceptable/wiring/constraints/use_context_cycle.rs) fixture
+pins the reshaped output. The emitter applies the full dispatch only to a
 diagnostic's *main* message and the note rename to its children, since a CGP error code belongs on a
 main message alone. A message whose marker is absent from the map, or any other message, passes
 through untouched. A **generic component** — one whose marker carries extra
@@ -346,9 +354,11 @@ A final gate de-duplicates the transformed diagnostics *across* the compilation,
 lazy and so one mistake surfaces the same error at many sites. A missing dependency is reported at the
 `check_components!` entry, again at every hand-written `impl` that references the broken consumer, and
 again at each call — the transfer example's single un-wired password type produced eighteen identical
-root-cause trees this way. The emitter keeps a set of the CGP diagnostics it has already emitted,
-keyed by a **span-independent signature**, and suppresses any later diagnostic whose signature it has
-seen. A resolved diagnostic is keyed by its recovered cause — the context, the failing consumer
+root-cause trees this way. The emitter records each transformed diagnostic in a
+[`DedupLedger`](../../crates/cargo-cgp-error-processing/src/dedup.rs) — the rustc-free ledger that
+owns the key scheme, so it is unit-tested without a compiler — and suppresses any later diagnostic
+whose **span-independent signature** the ledger has seen. A resolved diagnostic is keyed by its
+recovered cause — the context, the failing consumer
 trait(s), and each root-cause leaf, via the rustc-free `cause_signature` — so the *same* consumer's
 failure re-reported at several spans collapses to one, while two *distinct* consumers that happen to
 share a cause keep separate signatures and are each still shown (no capability's failure is ever
@@ -364,6 +374,19 @@ errors" summary as well — so the visible block count and the summary agree. Th
 [one-mistake-many-errors](../issues/usability.md) usability class the per-diagnostic resolver could not
 address on its own.
 
+A declined consumer-method `E0599` gets one further cleanup before the fallback rewrite runs. rustc's
+method probe, meeting CGP's `self`-less provider methods, frames the failure as a call-syntax mistake
+— a "this is an associated function, not a method" caret label, a "found the following associated
+functions …" note, and a "use associated function syntax instead" suggestion that is actively wrong —
+while the real cause, the unmet wiring bound, sits in a later note. For a method-bounds `E0599` that
+mentions a CGP wiring trait, the emitter strips that method-probe advice
+(`strip_method_probe_advice`, over the phrasings
+[`is_method_probe_advice_text`](../../crates/cargo-cgp-error-processing/src/signals.rs) recognizes),
+so the wiring bound is the first note a reader meets. The
+[`generic_consumer_unwritten_arg`](../../tests/ui/acceptable/use-site/generic_consumer_unwritten_arg.rs)
+fixture — a use-site failure whose dispatch parameter no anchor can recover, so the resolver always
+declines — pins the cleaned output.
+
 The same span-keyed gate also drops a **downstream `?`-operator cascade** of a wiring failure. When a
 consumer-method call fails and its result is consumed with `?` (`app.handle(…).await?`), the type of
 `expr?` becomes unresolvable, so rustc adds a `Try` / `FromResidual` error on the same expression that
@@ -377,7 +400,7 @@ tight — only a `?` error sitting on an expression where a CGP wiring error was
 never a `?` misuse elsewhere — which is what makes suppressing an otherwise-untouched `rustc` error
 sound. This removed the two projection-dumping cascade blocks a `Code`-dispatched use-site failure
 used to trail (the
-[call-site anchor](typed-root-cause-resolution.md#recovering-from-the-call-expression-itself) has
+[call-site anchor](typed-resolution-call-site.md) has
 since taken the failure itself from three fallback blocks to one resolved block); the pinning
 fixture is
 [`cascade_after_use_site`](../../tests/ui/acceptable/use-site/cascade_after_use_site.rs).
@@ -385,8 +408,9 @@ fixture is
 ### Reshaping a duplicate-key conflict
 
 The emitter's fourth transform runs *before* the other two and handles a different failure kind: the
-coherence conflict (`E0119`) a duplicate `delegate_components!` key produces. A duplicate key makes
-the expansion emit two overlapping `DelegateComponent` impls, and because each context-wiring entry
+coherence conflict (`E0119`) a duplicate wiring entry produces. A duplicate `delegate_components!`
+key makes the expansion emit two overlapping `DelegateComponent` impls, and because each
+context-wiring entry
 also generates an `IsProviderFor` forwarding impl, the compiler reports the same conflict *twice* —
 once keyed on `DelegateComponent<…>` and once on `IsProviderFor<…>`, both internal traits the user
 never wrote. The transform recognizes the pair as one logical mistake: it **drops** the redundant
@@ -395,9 +419,22 @@ coded headline that names the colliding key(s), keeping rustc's two carets — "
 here" and "conflicting implementation" — which already point at the two entries. The code is one of
 `[CGP-E004]`–`[CGP-E008]`, chosen by the shape of the collision.
 
+The `IsProviderFor` suppression is gated on its **companion conflict being confirmed**, because
+suppressing a lone `E0119` would leave a failing build with no error at all. Every generated
+`IsProviderFor` impl rides alongside another impl from the same macro invocation — the
+`DelegateComponent` entry impl of a wiring entry, or the provider-trait impl of a `#[cgp_provider]`
+block — and the two conflict exactly when their `IsProviderFor` copies do. So the classifier
+suppresses only when a genuine local `IsProviderFor` impl sits at the caret *and* the two colliding
+sites each carry a local impl of one *common* other trait, whose own `E0119` rustc then reports.
+That confirmation is what extends the suppression beyond delegate pairs to a duplicate provider
+*name* — two `#[cgp_impl(new P)]` blocks, whose `E0428` and provider-trait `E0119` remain while the
+redundant `IsProviderFor` block is dropped
+([`duplicate_provider_name`](../../tests/ui/acceptable/wiring/duplicate-keys/duplicate_provider_name.rs))
+— while an `IsProviderFor` conflict with no common companion is left alone.
+
 Everything is recovered from the compiler, not the error text. rustc aims the `E0119` at
 `tcx.def_span` of the conflicting impl, and the delegate macro re-spans each entry onto its key token,
-so [`resolve::conflict`](../../crates/cargo-cgp-driver/src/resolve/conflict.rs) matches the caret to
+so [`resolve::conflict`](../../crates/cargo-cgp-driver/src/resolve/conflict) matches the caret to
 that `DelegateComponent` impl (by source range, since the two halves of the pair carry the same range
 under different `SyntaxContext`s) and reads the entry off it — its context, its key, and its
 `Delegate`. It does the same for the "first implementation here" impl at the diagnostic's other
@@ -417,10 +454,24 @@ to its bare `@…` path (a generic tail or `for`-loop key collapsing to `.*`), a
 the namespace/table trait that keys it — so the headline names what the programmer wrote. The message wording is decided
 by the rustc-free [`plan_wiring_conflict`](../../crates/cargo-cgp-error-processing/src/diagnosis/wiring.rs)
 (and `wiring_conflict_help` for the redirect fix)
-over the owned `WiringConflict` the classifier fills in, so it is unit-tested without a compiler. The
-transform is anchored to the genuine CGP `DelegateComponent` (by `DefId`, like the rest of the
-resolver), so a same-named trait cannot drive it, and it declines a conflict whose caret sits on no
-CGP `DelegateComponent` impl — a duplicate provider *name*, say — leaving it to the fallback. The
+over the owned `WiringConflict` the classifier fills in, so it is unit-tested without a compiler.
+
+An `E0119` naming *neither* internal trait can still be a wiring conflict: a duplicate entry inside
+a `cgp_namespace!` block conflicts on the user's own namespace trait
+(`conflicting implementations of trait \`MyNamespace<_>\` for type \`PathCons<…>\``). The
+classifier's namespace route recognizes that shape by the impls at the carets — a local impl of a
+[namespace lookup trait](typed-root-cause-resolution.md) (the single-`Delegate` fingerprint) whose
+`Self` is the entry's `@`-path — and words it through the same `WiringConflict` shapes, with the
+namespace trait as the subject: two `=>` entries on one path become a `[CGP-E008]` duplicate
+redirect naming both targets
+([`namespace_duplicate_path_key`](../../tests/ui/acceptable/wiring/namespace-paths/namespace_duplicate_path_key.rs)).
+A namespace conflict whose entry key is not a `PathCons` path (an inherited-override collision on a
+bare marker, say) is deliberately left to the fallback, where rustc's own header already names the
+namespace and the key.
+
+The transform is anchored to the genuine CGP traits (by `DefId`, like the rest of the
+resolver), so a same-named trait cannot drive it, and it declines a conflict whose carets carry
+none of the recognized impls, leaving it to the fallback. The
 blessed snapshots under [`acceptable/wiring/`](../../tests/ui/acceptable/wiring) pin each shape.
 
 ## Comparison with Clippy
@@ -522,12 +573,16 @@ will likely grow toward it:
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the generic
   `CgpEmitter<E>`, split behind a re-exporting `mod.rs`: `install.rs` rebuilds the compiler's default
   emitter for the active format (a `JsonEmitter` or an `AnnotateSnippetEmitter`) and wraps it,
-  `cgp_emitter.rs` holds the `CgpEmitter<E>` type (holding the `ComponentNameMap`, the `seen`
-  cross-diagnostic de-duplication set, and the `cgp_spans` list of recognized-failure spans that anchors
-  the `?`-operator cascade suppression) and its transform/post-process/de-duplicate orchestration, and
+  `cgp_emitter.rs` holds the `CgpEmitter<E>` type (holding the `ComponentNameMap`, the rustc-free
+  `DedupLedger` of already-emitted failures, and the `cgp_spans` list of recognized-failure spans that
+  anchors the `?`-operator cascade suppression) and its transform/post-process/de-duplicate
+  orchestration, and
   `edit.rs` holds the `DiagInner`-editing helpers (including `message_signature`, the span-independent
-  text key for de-duplicating a declined-but-rewritten diagnostic, and `is_question_mark_cascade`, the
-  `Try`/`FromResidual`-shape recognizer for the cascade drop).
+  text key for de-duplicating a declined-but-rewritten diagnostic; `strip_method_probe_advice`, the
+  drop of rustc's associated-function framing on a declined consumer-method `E0599`; and
+  `is_question_mark_cascade`, the `Try`/`FromResidual`-shape recognizer for the cascade drop — the
+  text phrasings all three key on live in the rustc-free
+  [`signals`](../../crates/cargo-cgp-error-processing/src/signals.rs) module).
 - [`crates/cargo-cgp-driver/src/component_map.rs`](../../crates/cargo-cgp-driver/src/component_map.rs)
   — builds the component-marker → trait-names map by inverting the `IsProviderFor` supertrait
   (anchored by `DefId` identity to the `cgp_component` crate) and the consumer-blanket-impl links, and

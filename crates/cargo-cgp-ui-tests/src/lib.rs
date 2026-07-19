@@ -75,7 +75,7 @@ pub fn run(args: Vec<String>) {
 
             if options.print {
                 Report {
-                    text: print_block(&options, crate_dir, fixture, &name),
+                    text: print_block(crate_dir, fixture, &name),
                     failed: false,
                 }
             } else {
@@ -167,7 +167,7 @@ fn report_block(name: &str, outcomes: &[(&str, Outcome)]) -> String {
 }
 
 /// Render a fixture's raw output for interactive inspection — the tool's own stderr.
-fn print_block(_options: &Options, harness_crate: &Path, fixture: &Path, name: &str) -> String {
+fn print_block(harness_crate: &Path, fixture: &Path, name: &str) -> String {
     let body = harness::run_fixture(harness_crate, fixture);
     format!("===== {name} =====\n{body}===== end {name} =====\n")
 }

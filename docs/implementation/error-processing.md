@@ -15,7 +15,7 @@ compiler, no cargo, and no `cargo-cgp` process in the loop.
 
 ## What the crate holds
 
-The crate has four tenants, all driven by the driver's emitter. Grouping them here, apart from the
+The crate has six tenants, all driven by the driver's emitter. Grouping them here, apart from the
 driver, is what keeps them unit-testable.
 
 - **Post-processing** ([`postprocess`](../../crates/cargo-cgp-error-processing/src/postprocess)) is
@@ -27,16 +27,20 @@ driver, is what keeps them unit-testable.
 - **The wiring rewrite** ([`rewrite`](../../crates/cargo-cgp-error-processing/src/rewrite)) is the
   string transform that renames CGP wiring messages, over the
   [`ComponentNameMap`](../../crates/cargo-cgp-error-processing/src/rewrite/names.rs) the driver fills
-  in from the compiler. It is documented where it is used, in
+  in from the compiler. It also rewrites the `E0275` wiring-overflow header into its `[CGP-E010]`
+  form. It is documented where it is used, in
   [The driver](driver.md#naming-the-traits-behind-a-component-marker).
 - **The diagnosis model and its wording**
   ([`diagnosis`](../../crates/cargo-cgp-error-processing/src/diagnosis)) is the rustc-free root-cause
   model — the `Resolved` failure the driver's typed resolver produces, in owned `String` form — and
-  the wording that turns it into diagnostic text. `plan_resolved` composes the rewritten header, the
+  the wording that turns it into diagnostic text. `plan_resolved` coalesces causes that share one fix
+  (`coalesce_underived_fields`) and composes the rewritten header, the
   derive `help`s, and the per-cause `root cause:` notes into a `DiagnosisPlan`, which the emitter only
   maps onto rustc's `DiagInner`; keeping every piece rustc-free is what makes the whole
-  diagnosis-to-text layer unit-testable without a `TyCtxt`. It is documented in
-  [Typed root-cause resolution](typed-root-cause-resolution.md). The same module also holds the
+  diagnosis-to-text layer unit-testable without a `TyCtxt`. The same module holds the pure
+  dependency-tree label constructors and the repeated-generics elision (`labels.rs`), so every label
+  template the driver's tree builder uses lives here. It is documented in
+  [Typed root-cause resolution](typed-root-cause-resolution.md). The module also holds the
   duplicate-key conflict wording (`wiring.rs`): the `WiringConflict` model and `plan_wiring_conflict`,
   which words the `[CGP-E004]`–`[CGP-E008]` headers (one per conflict shape) the driver's `resolve::conflict` classifier feeds it (see
   [The driver](driver.md#reshaping-a-duplicate-key-conflict)).
@@ -47,8 +51,18 @@ driver, is what keeps them unit-testable.
   multi-cause failure shows the shared prefix once. The driver's resolver builds the per-cause chains,
   and the diagnosis wording merges and renders them. It is documented in
   [Typed root-cause resolution](typed-root-cause-resolution.md).
+- **The de-duplication ledger** ([`dedup`](../../crates/cargo-cgp-error-processing/src/dedup.rs)) is
+  the `DedupLedger` the emitter records each transformed diagnostic in, so the re-reports one
+  lazy-wiring mistake produces at many sites are suppressed. The key scheme — the recovered cause,
+  the rendered text, and the coded header — lives with the ledger, documented in
+  [The driver](driver.md#naming-the-traits-behind-a-component-marker).
+- **The text signals** ([`signals`](../../crates/cargo-cgp-error-processing/src/signals.rs)) are the
+  stable rustc phrasings the emitter's candidate checks key on — the wiring-trait mention that makes
+  a diagnostic a resolution candidate, the method-bounds `E0599` shape the resolver may safely run
+  on, the method-probe advice the emitter strips, and the `?`-operator cascade wording — each a pure
+  predicate, so the wording dependence on rustc's phrasing is documented and tested in one place.
 
-A fifth module, [`code`](../../crates/cargo-cgp-error-processing/src/code.rs), holds the `CGP-E`
+A further module, [`code`](../../crates/cargo-cgp-error-processing/src/code.rs), holds the `CGP-E`
 error-code constants the rewrite and the diagnosis wording stamp on classified main messages
 (catalogued in [error-code.md](../error-code.md)). This document covers the post-processing transforms
 in full and points at the other tenants' own documents.
@@ -257,11 +271,22 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   bound (header dropped, lead-less note), a provider header via the text rewrite, and the pluralized
   consumer header.
 - [`crates/cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs) —
-  the dependency-tree renderer (see [Typed root-cause resolution](typed-root-cause-resolution.md#tests)).
+  the dependency-tree renderer and `DependencyTree::from_chain` (see
+  [Typed root-cause resolution](typed-root-cause-resolution.md#tests)).
 - [`crates/cargo-cgp-error-processing/tests/wiring.rs`](../../crates/cargo-cgp-error-processing/tests/wiring.rs) —
   `plan_wiring_conflict` and `wiring_conflict_help` over hand-built `WiringConflict` values: the
   duplicate, overlap (component and path forms), multiple-namespaces, redirect (header plus its help),
   and same-/different-path duplicate-redirect headers.
+- [`crates/cargo-cgp-error-processing/tests/coalesce.rs`](../../crates/cargo-cgp-error-processing/tests/coalesce.rs) —
+  `coalesce_underived_fields` over hand-built causes: the merged group, its lead and single derive
+  help, and the boundaries (a lone underived field, genuinely missing fields, different owners, a
+  group beside a missing field).
+- [`crates/cargo-cgp-error-processing/tests/labels.rs`](../../crates/cargo-cgp-error-processing/tests/labels.rs) —
+  the pure label constructors and their codes, `elide_repeated_generics` (a repeated hop elided, a
+  changing hop kept), and the text signals.
+- [`crates/cargo-cgp-error-processing/tests/dedup.rs`](../../crates/cargo-cgp-error-processing/tests/dedup.rs) —
+  the `DedupLedger` key scheme: a re-reported cause suppressed, distinct causes kept, the text key,
+  the coded-header key collapsing a declined fallback, and a kept rustc header never keying.
 - The [UI snapshot suite](testing.md) exercises the transforms over every fixture's real diagnostics:
   each `.cgp.stderr` is what the driver rendered after applying them.
 
@@ -277,24 +302,32 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   single-field-vs-missing-derive classification).
 - [`crates/cargo-cgp-error-processing/src/rewrite/`](../../crates/cargo-cgp-error-processing/src/rewrite) —
   the wiring-message rewrite and `ComponentNameMap` the driver drives: `mod.rs` (re-exports),
-  `message.rs` (`rewrite_message` and the note/header forms, including the code-stamping
-  `rewrite_trait_bound`), `names.rs` (`ComponentNameMap`/`ComponentTraitNames`), `parse.rs`
+  `message.rs` (`rewrite_message` and the note/header forms — the code-stamping
+  `rewrite_trait_bound` and the `E0275` `rewrite_wiring_overflow` with its `wiring_overflow_help`),
+  `names.rs` (`ComponentNameMap`/`ComponentTraitNames`), `parse.rs`
   (`parse_trait_bound`), and `text.rs` (the segment/generics splitters). See
   [The driver](driver.md#naming-the-traits-behind-a-component-marker).
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis) —
   the rustc-free root-cause model and its wording: `leaf.rs` (`Leaf`/`FieldIssue`), `resolved.rs`
-  (`Cause`/`Resolved`), `wording.rs` (the `Resolved`→`String` builders — `consumer_header`,
-  `field_mismatch_header`, `cause_notes` — which groups causes sharing a dependency root and words
-  each group as a single `cause_note` or a merged `root causes:` note — `derive_help_messages`),
-  `plan.rs` (`DiagKind`,
+  (`Cause`/`Resolved`), the `wording/` directory — `header.rs` (`consumer_header`,
+  `field_mismatch_header`), `lead.rs` (`root_cause_lead` and the leaf codes), `note.rs`
+  (`cause_notes`, which groups causes sharing a dependency root and words each group as a single
+  `cause_note` or a merged `root causes:` note), `help.rs` (`derive_help_messages`), and
+  `signature.rs` (`cause_signature`) — `coalesce.rs` (`coalesce_underived_fields`), `labels.rs` (the
+  pure tree-label constructors and `elide_repeated_generics`), `plan.rs` (`DiagKind`,
   `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`), and `wiring.rs`
   (`WiringConflict`/`WiringKey`, `plan_wiring_conflict` for the `[CGP-E004]`–`[CGP-E008]`
   duplicate-key headers, and `wiring_conflict_help` for the redirect fix). See
   [Typed root-cause resolution](typed-root-cause-resolution.md) and
   [The driver](driver.md#reshaping-a-duplicate-key-conflict).
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs) —
-  the `DependencyTree` type, its `cargo tree`-style renderer, and `merge_dependency_forest` (fusing
-  root-cause chains that share a common ancestor into one branching tree).
+  the `DependencyTree` type (with `from_chain`), its `cargo tree`-style renderer, and
+  `merge_dependency_forest` (fusing root-cause chains that share a common ancestor into one
+  branching tree).
+- [`crates/cargo-cgp-error-processing/src/dedup.rs`](../../crates/cargo-cgp-error-processing/src/dedup.rs) —
+  the `DedupLedger` and its span-independent key scheme.
+- [`crates/cargo-cgp-error-processing/src/signals.rs`](../../crates/cargo-cgp-error-processing/src/signals.rs) —
+  the rustc-phrasing predicates the emitter's candidate checks and cleanups key on.
 - [`crates/cargo-cgp-error-processing/src/code.rs`](../../crates/cargo-cgp-error-processing/src/code.rs) —
   the `CGP-E` error-code constants, catalogued in [error-code.md](../error-code.md).
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the

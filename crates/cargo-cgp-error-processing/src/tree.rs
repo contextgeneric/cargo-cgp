@@ -57,6 +57,17 @@ impl DependencyTree {
             children,
         }
     }
+
+    /// Fold a root-first chain of labels into a single-spine tree — the shape a linear
+    /// dependency path renders as. `None` for an empty chain.
+    pub fn from_chain(labels: Vec<String>) -> Option<Self> {
+        let mut rev = labels.into_iter().rev();
+        let mut node = DependencyTree::leaf(rev.next()?);
+        for label in rev {
+            node = DependencyTree::node(label, vec![node]);
+        }
+        Some(node)
+    }
 }
 
 /// Render a dependency tree as `cargo tree`-style indented text, e.g.

@@ -79,6 +79,13 @@ pub const DUPLICATE_REDIRECT: &str = "CGP-E008";
 /// through the wrapper's supertrait, shown in the `root cause:` note.
 pub const WRAPPER_TRAIT_UNIMPLEMENTED: &str = "CGP-E009";
 
+/// `CGP-E010` — resolving a component's wiring never terminates. Stamped on an `E0275` overflow
+/// whose requirement is a `CanUseComponent` bound: the lookup recurses without bottoming out,
+/// which almost always means the wiring routes the component back to the context itself — a
+/// component delegated to `UseContext` whose only implementation *is* that delegation. The fix is
+/// to wire a real provider, or to implement the consumer trait directly on the context.
+pub const WIRING_OVERFLOW: &str = "CGP-E010";
+
 // The `CGP-E1xx` family codes the entries of a `root cause:` note's dependency tree, one code per
 // distinct rendering template. `CGP-E101`–`CGP-E105` are the inner chain nodes (a wiring hop);
 // `CGP-E106`–`CGP-E109` are the terminal root-cause leaves. An entry that passes a non-CGP message

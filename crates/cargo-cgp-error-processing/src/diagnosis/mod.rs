@@ -7,12 +7,16 @@
 //! `DiagInner`. Keeping every piece here rustc-free is what makes the diagnosis-to-text layer
 //! unit-testable without a `TyCtxt`.
 
+mod coalesce;
+mod labels;
 mod leaf;
 mod plan;
 mod resolved;
 mod wiring;
 mod wording;
 
+pub use coalesce::*;
+pub use labels::*;
 pub use leaf::*;
 pub use plan::*;
 pub use resolved::*;

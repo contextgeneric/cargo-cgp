@@ -22,9 +22,11 @@ compiler-coupled half of the diagnostic transforms. The compiler-free half — t
 post-processing text transforms, the root-cause `diagnosis` model and the wording it turns into
 diagnostic text, and the `ComponentNameMap` — lives in the `cargo-cgp-error-processing` crate (the
 driver's one ordinary dependency), so it can be unit-tested without this crate's `rustc_private`
-linkage. Both compiler-coupled modules are split into a directory of focused files behind a re-exporting
-`mod.rs`: `emitter/` into `install`, `cgp_emitter`, and `edit`, and `resolve/` into `anchor`, `walk`,
-`classify`, `label`, and `cgp_item`.
+linkage. Both compiler-coupled modules are split into directories of focused files behind re-exporting
+`mod.rs` files: `emitter/` into `install`, `cgp_emitter`, and `edit`, and `resolve/` into one
+sub-directory per stage — `anchor/` (one file per span-matching anchor over the shared `seed` and
+`spans`), `call_site/` (the last-resort call re-read), `walk/`, `classify/`, `label/`, and
+`conflict/` — over the shared `cgp_item.rs`.
 
 The driver does **all** of the tool's diagnostic work; the front-end merely forwards cargo's output.
 It affects diagnostics in three ways. First it injects `-Znext-solver=globally`

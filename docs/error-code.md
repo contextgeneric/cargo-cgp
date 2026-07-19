@@ -49,7 +49,7 @@ implied.
 
 ## Codes
 
-The catalog today holds the classes the driver's emitter recognizes in a main message, in two
+The catalog today holds the classes the driver's emitter recognizes in a main message, in three
 groups. The **check-failure** codes `CGP-E001`–`CGP-E003` and `CGP-E009` come from the typed
 resolver; each carries the root cause in the accompanying `note`s — one per recovered cause, each
 opening `root cause: …` over its dependency chain (see
@@ -60,8 +60,10 @@ with `CGP-E001`–`CGP-E003` below.) The **structural
 wiring-conflict** codes `CGP-E004`–`CGP-E008` are different in kind: they come from the duplicate-key
 conflict classifier, carry no root-cause note, and instead keep rustc's two carets, which already
 point at the two colliding entries. They are five separate codes because each rewrites the `E0119`
-into a distinct message form with its own fix. Each entry below gives the rewritten message, the
-mistake behind it, the fix, and the upstream
+into a distinct message form with its own fix. The **wiring-overflow** code `CGP-E010` is a text
+rewrite of the `E0275` a wiring cycle produces, carrying its fix in a `help` rather than a
+root-cause note (a cycle has no terminal leaf to descend to). Each entry below gives the rewritten
+message, the mistake behind it, the fix, and the upstream
 [CGP error catalog](../../cgp/docs/errors/README.md) class it recognizes.
 
 ### `CGP-E001` — consumer trait not implemented
@@ -114,10 +116,13 @@ mistake behind it, the fix, and the upstream
 ### `CGP-E004`–`CGP-E008` — the duplicate-key wiring-conflict family
 
 These five codes all rewrite the same underlying failure — an `E0119` conflicting-implementation
-error on a CGP `DelegateComponent` impl, produced when a `delegate_components!` block wires one key
-(or overlapping keys) more than once. The pair's redundant `IsProviderFor` half is always
-suppressed, and the Rust code stays `E0119`. What differs, and why each has its own code, is the
-shape of the collision — and so the message and the fix. In every case an `@`-path key renders in
+error on a wiring entry's impls, produced when a `delegate_components!` block wires one key (or
+overlapping keys) more than once, or a `cgp_namespace!` block registers one `@`-path twice (whose
+conflict lands on the user's own namespace trait rather than `DelegateComponent`). A generated
+pair's redundant `IsProviderFor` half is always suppressed — including the pair a duplicate
+*provider* definition produces, where the surviving conflict is on the provider trait itself — and
+the Rust code stays `E0119`. What differs, and why each has its own code, is the shape of the
+collision — and so the message and the fix. In every case an `@`-path key renders in
 bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
 [conflicting wiring](../../cgp/docs/errors/wiring/conflicting-wiring.md) with its two namespace faces
 [overlapping namespace forwarding](../../cgp/docs/errors/wiring/namespace-forwarding-conflict.md) and
@@ -144,7 +149,9 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
   provider under the redirected key rather than the bare key.
 - **`CGP-E008` — duplicate redirect.** `` [CGP-E008] duplicate redirect for <component> on
   `<Context>` … `` (naming one redirect target, or both when they differ) — the same key redirected
-  more than once. **Fix:** keep a single redirect.
+  more than once: two `open`s or `=>` mappings on a context, or the same `@`-path registered twice
+  inside one `cgp_namespace!` block (where the subject is the namespace trait rather than a
+  context). **Fix:** keep a single redirect.
 
 ### `CGP-E009` — wrapper trait not implemented
 
@@ -164,6 +171,21 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
   dependency tree leads with the wrapper itself, then its CGP supertrait, down to the cause.
 - **Upstream class:** [check-trait failure](../../cgp/docs/errors/checks/check-trait-failure.md)
   (reached through a hand-written wrapper trait).
+
+### `CGP-E010` — wiring never resolves
+
+- **Message:** `` [CGP-E010] the wiring for the consumer trait `<Consumer>` on context `<Context>`
+  never resolves — the lookup recurses without terminating ``, with a `help` naming the usual
+  cause and the two fixes.
+- **Means:** resolving the component's wiring recurses without bottoming out. This almost always
+  means the wiring routes the component back to the context itself: a component delegated to
+  `UseContext` whose only implementation of the consumer trait *is* that delegation.
+- **Triggered by:** an `E0275` overflow whose requirement is a
+  `Context: CanUseComponent<Marker, …>` bound. The Rust code stays `E0275`; the note pointing at
+  the generated `__Check…` trait is dropped, since the kept caret already covers the check entry.
+- **Fix:** wire the component to a real provider, or implement the consumer trait directly on the
+  context, so the lookup terminates.
+- **Upstream class:** [wiring cycle](../../cgp/docs/errors/wiring/wiring-cycle.md).
 
 ## Dependency-tree entry codes (`CGP-E1xx`)
 
@@ -207,7 +229,10 @@ The codes divide into the inner chain-node templates and the terminal root-cause
   path (the `<key>` is a component marker or an `@`-path).
 - **`CGP-E108` — unimplemented accessor (leaf).** `` accessor trait `HasField` with field `<f>` is not
   implemented for `<T>` `` — the struct carries the field but has not derived `HasField` for it (the
-  fix, a `#[derive(HasField)]`, rides in a separate `help`).
+  fix, a `#[derive(HasField)]`, rides in a separate `help`). Several such fields on *one* struct are
+  one mistake — the derive emits an impl per field — so they coalesce into a single root cause under
+  the same code, `` accessor trait `HasField` is not implemented for the fields `<f>` and `<g>` of
+  `<T>` ``, over one merged tree whose branches still end at the per-field leaves.
 - **`CGP-E109` — field type mismatch (leaf).** `` field `<f>` on `<T>` has type `<actual>`, but
   `<expected>` is required `` — the field is present and derived but has the wrong type (the leaf face
   of the `CGP-E003` main message).
@@ -280,24 +305,36 @@ the context implements `HasField` for nothing);
 [`rewrite_missing_fields`](../crates/cargo-cgp-error-processing/src/postprocess/missing_field.rs)
 owns it.
 
+**Method-probe advice removal** drops rustc's "this is an associated function, not a method"
+framing and "use associated function syntax instead" suggestion from a consumer-method `E0599` the
+resolver declined — both artifacts of CGP's `self`-less provider methods, the second actively
+wrong — so the unmet wiring bound the diagnostic also names leads. It only removes noise, adding no
+classification;
+[`is_method_probe_advice_text`](../crates/cargo-cgp-error-processing/src/signals.rs) recognizes the
+phrasings and the driver's emitter applies the drop.
+
 ## Maintaining this catalog
 
 This catalog is bound by the same synchronization rule as the rest of the knowledge base
 ([docs/AGENTS.md](AGENTS.md)): the codes are defined in the code, so this document must track them.
 The constants live in the [`code`](../crates/cargo-cgp-error-processing/src/code.rs) module of the
 error-processing crate, and are stamped by the main-message rewrites — all rustc-free, in that
-same crate. The text form is stamped by
-[`rewrite_trait_bound`](../crates/cargo-cgp-error-processing/src/rewrite/message.rs), the typed
-check-failure form by [`plan_resolved`](../crates/cargo-cgp-error-processing/src/diagnosis/plan.rs)'s
+same crate. The text forms are stamped by
+[`rewrite_trait_bound` and `rewrite_wiring_overflow`](../crates/cargo-cgp-error-processing/src/rewrite/message.rs),
+the typed check-failure form by
+[`plan_resolved`](../crates/cargo-cgp-error-processing/src/diagnosis/plan.rs)'s
 `categorized_header` (fed from the resolved failure), and the `CGP-E004`–`CGP-E008` conflict forms by
 [`plan_wiring_conflict`](../crates/cargo-cgp-error-processing/src/diagnosis/wiring.rs) (fed from the
 conflict the driver's `resolve::conflict` classifier recovers, one code per `WiringConflict` shape).
 The `CGP-E1xx` dependency-tree entry codes are stamped at tree-construction time: the inner chain
-nodes by the driver's [`resolve::label`](../crates/cargo-cgp-driver/src/resolve/label.rs) (which
-chooses a template from the trait kind and prefixes its code), and the terminal leaf by the rustc-free
-[`dependency_tree_leaf`](../crates/cargo-cgp-error-processing/src/diagnosis/wording.rs) (which prefixes
-`dependency_leaf_code`, or leaves a pass-through bound bare). The `CGP-E2xx` root-cause lead code is
-stamped by [`cause_note`](../crates/cargo-cgp-error-processing/src/diagnosis/wording.rs) via
+nodes by the pure label constructors in
+[`diagnosis/labels.rs`](../crates/cargo-cgp-error-processing/src/diagnosis/labels.rs) (the driver's
+[`resolve::label`](../crates/cargo-cgp-driver/src/resolve/label) chooses the template from the trait
+kind), and the terminal leaf by the rustc-free
+[`dependency_tree_leaf`](../crates/cargo-cgp-error-processing/src/diagnosis/wording/lead.rs) (which
+prefixes `dependency_leaf_code`, or leaves a pass-through bound bare). The `CGP-E2xx` root-cause lead
+code is stamped by
+[`cause_note`](../crates/cargo-cgp-error-processing/src/diagnosis/wording/note.rs) via
 `root_cause_code`, which reuses `dependency_leaf_code` and only falls back to a `CGP-E2xx` constant for
 an uncoded leaf. When a new main-message class is recognized, or a new tree-entry or root-cause
 template is added, assign it the next number in the matching range (`CGP-E0xx` for a headline,

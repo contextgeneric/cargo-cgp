@@ -1,0 +1,39 @@
+error[E0277]: the trait bound `Shape: CanUseComponent<VolumeCalculatorComponent>` is not satisfied
+  --> src/main.rs:54:9
+   |
+54 |         VolumeCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>` is not implemented for `Shape`
+  --> src/main.rs:41:1
+   |
+41 | pub struct Shape {
+   | ^^^^^^^^^^^^^^^^
+note: required for `Shape` to implement `HasShapeFields`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+23 | pub trait HasShapeFields {
+   |           ^^^^^^^^^^^^^^
+note: required for `ShapeVolume` to implement `IsProviderFor<VolumeCalculatorComponent, Shape>`
+  --> src/main.rs:29:1
+   |
+29 | #[cgp_impl(new ShapeVolume)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+32 |     Self: HasShapeFields,
+   |           -------------- unsatisfied trait bound introduced here
+   = note: required for `Shape` to implement `CanUseComponent<VolumeCalculatorComponent>`
+note: required by a bound in `__CheckShape`
+  --> src/main.rs:52:1
+   |
+52 | / check_components! {
+53 | |     Shape {
+54 | |         VolumeCalculatorComponent,
+55 | |     }
+56 | | }
+   | |_^ required by this bound in `__CheckShape`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

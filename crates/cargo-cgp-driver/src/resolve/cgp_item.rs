@@ -8,7 +8,9 @@
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
-use crate::config::{CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
+use crate::config::{
+    CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, NIL_TYPE, PATH_CONS_TYPE,
+};
 
 /// Whether `def_id` is a trait/type named `name` defined by crate `krate` — the DefId anchor
 /// that keeps a same-named item from an unrelated crate from driving resolution, exactly as
@@ -156,6 +158,36 @@ pub(crate) fn is_namespace_lookup_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
     items.next().is_none()
         && first.kind.tag() == ty::AssocTag::Type
         && tcx.item_name(first.def_id).as_str() == "Delegate"
+}
+
+/// Whether `ty` is a struct or enum defined in the crate being compiled — the only kind of type
+/// whose wiring the resolver re-checks as a context.
+pub(crate) fn is_local_adt(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(def, _) if def.did().is_local())
+}
+
+/// Whether `ty` is CGP's type-level path spine `PathCons<…>` — an `open`/namespace redirect key,
+/// as opposed to a bare component marker. Anchored by `DefId` to [`CGP_BASE_TYPES_CRATE`].
+pub(crate) fn is_path_cons(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(def, _) if is_cgp_item(tcx, def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE))
+}
+
+/// The `(head, tail)` of a `PathCons<Head, Tail>` type, or `None` when `ty` is not a `PathCons`.
+pub(crate) fn path_cons_parts<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    ty: Ty<'tcx>,
+) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    match ty.kind() {
+        ty::Adt(def, args) if is_cgp_item(tcx, def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE) => {
+            Some((args.type_at(0), args.type_at(1)))
+        }
+        _ => None,
+    }
+}
+
+/// Whether `ty` is CGP's type-level path/list terminator `Nil`.
+pub(crate) fn is_nil(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(def, _) if is_cgp_item(tcx, def.did(), NIL_TYPE, CGP_BASE_TYPES_CRATE))
 }
 
 /// Decode a CGP `Symbol!` type into its string, by walking the `Chars<'c', Tail>` spine and

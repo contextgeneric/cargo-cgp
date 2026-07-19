@@ -1,0 +1,26 @@
+error[E0428]: the name `GreetHello` is defined multiple times
+  --> src/main.rs:30:16
+   |
+24 | #[cgp_impl(new GreetHello)]
+   |                ---------- previous definition of the type `GreetHello` here
+...
+30 | #[cgp_impl(new GreetHello)]
+   |                ^^^^^^^^^^ `GreetHello` redefined here
+   |
+   = note: `GreetHello` must be defined only once in the type namespace of this module
+
+error[E0119]: conflicting implementations of trait `Greeter<_>` for type `GreetHello`
+  --> src/main.rs:31:1
+   |
+25 | / impl Greeter {
+26 | |     fn greet(&self) {}
+27 | | }
+   | |_- first implementation here
+...
+31 | / impl Greeter {
+32 | |     fn greet(&self) {}
+33 | | }
+   | |_^ conflicting implementation for `GreetHello`
+
+Some errors have detailed explanations: E0119, E0428.
+For more information about an error, try `rustc --explain E0119`.

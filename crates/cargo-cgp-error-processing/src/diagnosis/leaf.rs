@@ -57,6 +57,21 @@ pub enum Leaf {
         /// The type the field actually has, queried from the struct by `DefId`, e.g. `i32`.
         actual: String,
     },
+    /// Several fields of one struct, each present but with no `HasField` implementation — the
+    /// coalesced form of two or more [`Leaf::Field`] causes whose issue is
+    /// [`FieldIssue::Present`] on the same owner. `#[derive(HasField)]` derives an impl for
+    /// *every* field, so several underived fields on one struct are one mistake with one fix
+    /// (the missing derive), and reporting them as separate root causes would overstate the
+    /// work. Built by [`coalesce_underived_fields`](super::coalesce_underived_fields), never by
+    /// the driver's classifier directly; the merged cause's tree still branches to the
+    /// per-field leaves, so each field stays visible in the chain.
+    UnderivedFields {
+        /// The field names with no `HasField` impl, in first-seen order, e.g.
+        /// `["height", "width"]`.
+        names: Vec<String>,
+        /// The struct that carries the fields but not the derive, e.g. `Rectangle`.
+        owner: String,
+    },
     /// A component the wiring needs but the context does not delegate at all — the
     /// `DelegateComponent<Marker>` bound has no impl, so no provider is chosen for it. Parallel
     /// to a genuinely missing field, but the fix is to wire the component rather than add a
@@ -131,6 +146,7 @@ impl Leaf {
     pub fn key(&self) -> &str {
         match self {
             Leaf::Field { name, .. } | Leaf::FieldTypeMismatch { name, .. } => name,
+            Leaf::UnderivedFields { owner, .. } => owner,
             Leaf::MissingWiring { component, .. } => component,
             Leaf::MissingDispatchEntry { key, .. } => key,
             Leaf::NotAProvider { provider, .. } => provider,

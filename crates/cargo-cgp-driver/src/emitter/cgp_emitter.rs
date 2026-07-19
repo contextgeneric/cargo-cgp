@@ -1,15 +1,15 @@
 //! The wrapping [`Emitter`] that transforms CGP diagnostics before delegating.
 
-use std::collections::HashSet;
 use std::path::Path;
 
 use cargo_cgp_error_processing::rewrite::{
-    ComponentNameMap, rewrite_message, rewrite_required_for,
+    ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
 };
 use cargo_cgp_error_processing::{
-    DiagKind, Resolved, cause_signature, plan_resolved, plan_wiring_conflict, wiring_conflict_help,
+    DedupLedger, DiagKind, Resolved, cause_signature, is_method_bounds_text, plan_resolved,
+    plan_wiring_conflict, wiring_conflict_help,
 };
-use rustc_errors::codes::{E0119, E0271, E0277, E0599};
+use rustc_errors::codes::{E0119, E0271, E0275, E0277, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
 use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Suggestions};
@@ -20,7 +20,7 @@ use crate::component_map::build_name_map_from_tls;
 use crate::emitter::edit::{
     diag_kind, diagnostic_spans, is_question_mark_cascade, main_message_text,
     mentions_hasfield_impls, mentions_wiring, message_signature, postprocess_messages,
-    postprocess_multispan, replace_header, rewrite_messages, subdiag,
+    postprocess_multispan, replace_header, rewrite_messages, strip_method_probe_advice, subdiag,
 };
 use crate::resolve::{self, ConflictAction, ConflictTrait};
 
@@ -39,12 +39,12 @@ pub struct CgpEmitter<E> {
     /// `IsProviderFor` supertraits, the blanket impls) and stores owned `String`s, not
     /// compiler handles.
     names: ComponentNameMap,
-    /// The signatures of the CGP diagnostics already emitted this compilation, so a wiring
-    /// mistake that surfaces at many sites is shown once and its identical re-reports are
-    /// suppressed (see [`emit_diagnostic`](CgpEmitter::emit_diagnostic)). Keyed by recovered
-    /// root cause for a resolved diagnostic and by rendered text for a declined-but-rewritten
-    /// one — both span-independent, since the span is exactly what differs between the copies.
-    seen: HashSet<String>,
+    /// The ledger of CGP diagnostics already emitted this compilation, so a wiring mistake that
+    /// surfaces at many sites is shown once and its identical re-reports are suppressed (see
+    /// [`emit_diagnostic`](CgpEmitter::emit_diagnostic)). The keys — the recovered root cause for
+    /// a resolved diagnostic, the rendered text for a declined-but-rewritten one, and the coded
+    /// header — live with the ledger in the rustc-free crate.
+    dedup: DedupLedger,
     /// The primary spans of every CGP wiring failure this emitter has recognized this
     /// compilation. Used to drop a downstream `?`-operator cascade
     /// ([`is_question_mark_cascade`]) that lands on the same expression: once a wiring bound on
@@ -60,7 +60,7 @@ impl<E> CgpEmitter<E> {
         Self {
             inner,
             names: ComponentNameMap::new(build_name_map_from_tls),
-            seen: HashSet::new(),
+            dedup: DedupLedger::new(),
             cgp_spans: Vec::new(),
         }
     }
@@ -117,24 +117,27 @@ impl<E> CgpEmitter<E> {
         }
     }
 
-    /// Recognize `diag` as a duplicate-key wiring conflict — the `E0119` coherence-error pair a
-    /// duplicate `delegate_components!` key produces — returning the action to take, or `None`
-    /// when it is not one. The message text routes within the pair (its `IsProviderFor` half is
-    /// suppressed, its `DelegateComponent` half rewritten); the typed classifier verifies a
-    /// genuine CGP `DelegateComponent` conflict sits at the caret before either fires.
+    /// Recognize `diag` as a duplicate-key wiring conflict — the `E0119` coherence error a
+    /// duplicate `delegate_components!` or `cgp_namespace!` entry produces — returning the action
+    /// to take, or `None` when it is not one. The message text routes the shape (a redundant
+    /// `IsProviderFor` half is suppressed, a `DelegateComponent` half rewritten, and any other
+    /// trait tried as a `cgp_namespace!` conflict); the typed classifier verifies genuine CGP
+    /// impls sit at the caret before anything fires.
     fn wiring_conflict(&self, diag: &DiagInner) -> Option<ConflictAction> {
         if diag.code != Some(E0119) {
             return None;
         }
         let message = main_message_text(diag)?;
         // `IsProviderFor` is checked first: a `DelegateComponent` conflict names only
-        // `DelegateComponent`, while its companion names `IsProviderFor`.
+        // `DelegateComponent`, while its companion names `IsProviderFor`. A message naming
+        // neither can still be a `cgp_namespace!` conflict on the user's own namespace trait,
+        // which the classifier recognizes by the impls at the carets.
         let variant = if message.contains("IsProviderFor") {
             ConflictTrait::IsProviderFor
         } else if message.contains("DelegateComponent") {
             ConflictTrait::Delegate
         } else {
-            return None;
+            ConflictTrait::Other
         };
         let primary_span = diag.span.primary_span()?;
         let label_spans: Vec<Span> = diag
@@ -169,9 +172,8 @@ impl<E> CgpEmitter<E> {
     fn try_resolve(&self, diag: &DiagInner) -> Option<(Resolved, Span, bool)> {
         // A method-bounds `E0599` (not a resolution-class one) is the only `E0599` the resolver
         // handles; see the re-entrancy note above.
-        let e0599_method_bounds = diag.code == Some(E0599)
-            && main_message_text(diag)
-                .is_some_and(|message| message.contains("trait bounds were not satisfied"));
+        let e0599_method_bounds =
+            diag.code == Some(E0599) && main_message_text(diag).is_some_and(is_method_bounds_text);
         if !mentions_wiring(diag)
             && !matches!(diag.code, Some(E0271) | Some(E0277))
             && !e0599_method_bounds
@@ -289,7 +291,35 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                 self.transform_resolved(&mut diag, &resolved, span, at_call);
                 (true, Some(sig))
             } else {
-                (self.rewrite(&mut diag), None)
+                // A CGP consumer-method `E0599` the resolver declined still carries rustc's
+                // method-probe advice — the associated-function framing and the "use associated
+                // function syntax instead" suggestion, both artifacts of the provider's `self`-less
+                // methods, the second actively wrong. Strip that noise so the unmet wiring bound
+                // the diagnostic also names is not outranked by it.
+                if diag.code == Some(E0599)
+                    && main_message_text(&diag).is_some_and(is_method_bounds_text)
+                    && mentions_wiring(&diag)
+                {
+                    strip_method_probe_advice(&mut diag);
+                }
+                let changed = self.rewrite(&mut diag);
+                // A rewritten wiring overflow (`E0275`, now a `[CGP-E010]` header) drops the
+                // note pointing at the generated `__Check…` trait — a name the user never wrote,
+                // whose location the kept caret already covers — and carries the fix in a `help`.
+                if changed && diag.code == Some(E0275) {
+                    diag.children.retain(|child| {
+                        !child.messages.iter().any(|(message, _)| {
+                            matches!(
+                                message,
+                                DiagMessage::Str(text)
+                                    if text.contains("__Check") || text.contains("__CanUse")
+                            )
+                        })
+                    });
+                    diag.children
+                        .push(subdiag(Level::Help, wiring_overflow_help()));
+                }
+                (changed, None)
             };
         // Post-process the result either way, so no raw CGP construct leaks. A typed resolution
         // or a text rewrite constructs the message, so its paths render bare (`@…`); a diagnostic
@@ -309,37 +339,20 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
         }
         // Cross-diagnostic de-duplication. CGP wiring is lazy, so one mistake surfaces as the same
         // error at many sites — the `check_components!` entry, every hand-written `impl` that
-        // references the broken component, and each call. A transformed diagnostic whose recovered
-        // cause (or, for a declined one, whose rewritten text) was already emitted this compilation
-        // is such a re-report, so it is suppressed and only the first occurrence is shown. Only the
-        // tool's own transformed diagnostics are de-duplicated; an untouched `rustc` error always
-        // passes through. cargo re-counts the diagnostics the emitter produces, so a suppressed
-        // re-report drops out of its "N errors" summary as well, keeping the count consistent.
-        if rewritten {
-            let signature = match cause_sig {
-                Some(cause) => format!("cause\u{1f}{cause}"),
-                None => format!("text\u{1f}{}", message_signature(&diag)),
-            };
-            // A second key on the coded main-message header (a `[CGP-E0xx]` code): a failure the
-            // resolver declined but still rewrote falls back to raw `IsProviderFor` scaffolding, yet
-            // carries the *same* coded header as the resolved tree of the same failure — so it is a
-            // re-report even though its body differs from that tree. Keying on the header collapses
-            // it into the resolved occurrence. Restricted to `[CGP-E0` (a main-message code), so a
-            // kept rustc header is never a de-duplication key.
-            let header_sig = main_message_text(&diag)
-                .filter(|header| header.starts_with("[CGP-E0"))
-                .map(|header| format!("header\u{1f}{header}"));
-            let already_seen = self.seen.contains(&signature)
-                || header_sig
-                    .as_ref()
-                    .is_some_and(|header| self.seen.contains(header));
-            if already_seen {
-                return;
-            }
-            self.seen.insert(signature);
-            if let Some(header) = header_sig {
-                self.seen.insert(header);
-            }
+        // references the broken component, and each call. A transformed diagnostic whose signature
+        // the ledger has already recorded is such a re-report, so it is suppressed and only the
+        // first occurrence is shown; the key scheme lives with the [`DedupLedger`]. Only the tool's
+        // own transformed diagnostics are de-duplicated; an untouched `rustc` error always passes
+        // through. cargo re-counts the diagnostics the emitter produces, so a suppressed re-report
+        // drops out of its "N errors" summary as well, keeping the count consistent.
+        if rewritten
+            && self.dedup.check_and_record(
+                cause_sig.as_deref(),
+                || message_signature(&diag),
+                main_message_text(&diag),
+            )
+        {
+            return;
         }
         self.inner.emit_diagnostic(diag);
     }

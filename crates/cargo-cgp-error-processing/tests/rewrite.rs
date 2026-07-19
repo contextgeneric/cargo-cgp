@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, ComponentTraitNames, parse_trait_bound, rewrite_message,
-    rewrite_required_for, rewrite_trait_bound,
+    rewrite_required_for, rewrite_trait_bound, rewrite_wiring_overflow,
 };
 
 /// The fixed map every test's [`ComponentNameMap`] initializes to.
@@ -400,16 +400,8 @@ fn full_path_names() -> HashMap<String, ComponentTraitNames> {
 }
 
 #[test]
-fn resolves_a_full_path_key_by_path_and_by_name() {
+fn resolves_a_full_path_key_by_name() {
     let map = ComponentNameMap::new(full_path_names);
-
-    // The typed resolver's exact lookup: the full path resolves, a bare name does not.
-    assert_eq!(
-        map.get_by_path("my_crate::area::AreaCalculatorComponent")
-            .map(|n| n.provider),
-        Some("AreaCalculator".to_owned())
-    );
-    assert_eq!(map.get_by_path("AreaCalculatorComponent"), None);
 
     // The text rewrite's name lookup matches the full-path key by its last segment, so a note
     // that carries only the unqualified marker still rewrites.
@@ -429,46 +421,29 @@ fn resolves_a_full_path_key_by_path_and_by_name() {
     );
 }
 
-/// Two markers that share a name in different modules must occupy distinct entries, so the typed
-/// resolver's full-path lookup returns each one's own trait names rather than one clobbering the
-/// other — the guarantee the full-path key exists for.
-fn colliding_names() -> HashMap<String, ComponentTraitNames> {
-    let mut map = HashMap::new();
-    map.insert(
-        "my_crate::mod_a::FooComponent".to_owned(),
-        ComponentTraitNames {
-            consumer: "CanFooA".to_owned(),
-            provider: "FooerA".to_owned(),
-        },
+#[test]
+fn rewrites_a_wiring_overflow_into_its_cycle_header() {
+    let out = rewrite_wiring_overflow(
+        "overflow evaluating the requirement `Person: CanUseComponent<AreaCalculatorComponent>`",
+        &name_map(),
     );
-    map.insert(
-        "my_crate::mod_b::FooComponent".to_owned(),
-        ComponentTraitNames {
-            consumer: "CanFooB".to_owned(),
-            provider: "FooerB".to_owned(),
-        },
+    assert_eq!(
+        out.as_deref(),
+        Some(
+            "[CGP-E010] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves — the lookup recurses without terminating"
+        )
     );
-    map
 }
 
 #[test]
-fn same_named_markers_in_different_modules_do_not_collide() {
-    let map = ComponentNameMap::new(colliding_names);
-
-    // Each full path resolves to its own module's trait names — no overlap.
+fn a_non_wiring_overflow_is_left_alone() {
+    // An `E0275` on an ordinary trait is not a wiring cycle, so it keeps rustc's own header.
     assert_eq!(
-        map.get_by_path("my_crate::mod_a::FooComponent"),
-        Some(ComponentTraitNames {
-            consumer: "CanFooA".to_owned(),
-            provider: "FooerA".to_owned(),
-        })
-    );
-    assert_eq!(
-        map.get_by_path("my_crate::mod_b::FooComponent"),
-        Some(ComponentTraitNames {
-            consumer: "CanFooB".to_owned(),
-            provider: "FooerB".to_owned(),
-        })
+        rewrite_wiring_overflow(
+            "overflow evaluating the requirement `Foo: Bar<Baz>`",
+            &name_map(),
+        ),
+        None
     );
 }
 

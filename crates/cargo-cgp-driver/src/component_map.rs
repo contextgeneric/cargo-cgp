@@ -27,11 +27,11 @@
 //!
 //! **Keyed by full path.** Each entry is keyed by the marker's *full path* (`def_path_str`),
 //! not its bare name, so two distinct markers sharing a name in different modules occupy
-//! separate entries instead of one clobbering the other. The driver's typed resolver looks the
-//! entry up by that same full path (via `def_path_str` on the marker's `DefId`), an exact match
-//! with no ambiguity. Only the compiler-free text rewrite, which sees just the unqualified name
-//! rustc printed, still resolves by last segment — a residual, text-only ambiguity the full-path
-//! key removes for the typed path but cannot for a bare printed name.
+//! separate entries instead of one clobbering the other. The map's sole consumer is the
+//! compiler-free text rewrite, which sees just the unqualified name rustc printed and so
+//! resolves a key by its last segment — a residual, text-only ambiguity when two markers share
+//! a name. (The typed resolver does not use the map at all: it reads consumer and provider
+//! names straight off the real trait `DefId`s it walks.)
 
 use std::collections::HashMap;
 
@@ -93,8 +93,7 @@ pub fn build_component_name_map(tcx: TyCtxt<'_>) -> HashMap<String, ComponentTra
                     trait_did,
                     (
                         // Full path, not the bare name, so same-named markers in different
-                        // modules key distinct entries. The typed resolver looks up by the same
-                        // `def_path_str`.
+                        // modules key distinct entries.
                         tcx.def_path_str(marker.did()),
                         tcx.item_name(trait_did).to_string(),
                     ),

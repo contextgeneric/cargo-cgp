@@ -8,7 +8,10 @@
 use std::borrow::Cow;
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
-use cargo_cgp_error_processing::{DiagKind, context_has_hasfield_impls, postprocess_message};
+use cargo_cgp_error_processing::{
+    DiagKind, context_has_hasfield_impls, is_method_probe_advice_text,
+    is_question_mark_cascade_text, mentions_wiring_text, postprocess_message,
+};
 use rustc_errors::codes::{E0271, E0599};
 use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, Suggestions};
 use rustc_span::Span;
@@ -77,13 +80,56 @@ pub(crate) fn message_signature(diag: &DiagInner) -> String {
 
 /// Whether `diag` is a downstream `?`-operator cascade — the `Try` / `FromResidual` error rustc
 /// emits when the `?` in `expr?` is applied to a value whose type it could not resolve because an
-/// earlier trait bound on that same expression failed. Recognized by rustc's stable wording, which
-/// both shapes share ("the `?` operator can only be …"). On its own this is not enough to suppress
+/// earlier trait bound on that same expression failed
+/// ([`is_question_mark_cascade_text`]). On its own this is not enough to suppress
 /// — a genuine `?` misuse reads the same — so the emitter pairs it with a span check: the cascade is
 /// dropped only when it sits on an expression where a CGP wiring failure was already reported, where
 /// it merely restates that failure in `Try` terms while dumping the unresolved projected type.
 pub(crate) fn is_question_mark_cascade(diag: &DiagInner) -> bool {
-    main_message_text(diag).is_some_and(|message| message.contains("`?` operator"))
+    main_message_text(diag).is_some_and(is_question_mark_cascade_text)
+}
+
+/// Strip rustc's method-probe advice from a method-bounds `E0599` the resolver declined: the
+/// "this is an associated function, not a method" caret label, the "found the following
+/// associated functions …" note with its "the candidate is defined in …" follow-up, and the
+/// "use associated function syntax instead" structured suggestion. All are artifacts of CGP's
+/// `self`-less provider methods ([`is_method_probe_advice_text`]) — the probe blames the call
+/// syntax, and the suggestion it offers is actively wrong — while the unmet wiring bound the
+/// diagnostic also names is the real cause, which this leaves in place (with the notes gone, it
+/// is the first thing after the caret).
+pub(crate) fn strip_method_probe_advice(diag: &mut DiagInner) {
+    diag.suggestions = Suggestions::Enabled(Vec::new());
+    diag.children.retain(|child| {
+        !child.messages.iter().any(|(message, _)| {
+            matches!(message, DiagMessage::Str(text) if is_method_probe_advice_text(text))
+        })
+    });
+    strip_multispan_labels(&mut diag.span, is_method_probe_advice_text);
+}
+
+/// Drop the labels of a [`MultiSpan`] whose text matches `drop`, keeping the spans themselves
+/// (an unlabelled primary span still renders its caret). The span is rebuilt only when a label
+/// actually matches, preserving the primary-span order as
+/// [`postprocess_multispan`] does.
+fn strip_multispan_labels(span: &mut MultiSpan, drop: fn(&str) -> bool) {
+    let labels: Vec<(Span, DiagMessage)> = span.span_labels_raw().to_vec();
+    let kept: Vec<(Span, DiagMessage)> = labels
+        .iter()
+        .filter(|(_, message)| !matches!(message, DiagMessage::Str(text) if drop(text)))
+        .cloned()
+        .collect();
+    if kept.len() == labels.len() {
+        return;
+    }
+
+    let mut rebuilt = MultiSpan::new();
+    for primary in span.primary_spans() {
+        rebuilt.push_primary_span(*primary);
+    }
+    for (span, message) in kept {
+        rebuilt.push_span_diag(span, message);
+    }
+    *span = rebuilt;
 }
 
 /// Every span a diagnostic carries — its primary and labelled spans plus each child's — the pool
@@ -98,19 +144,13 @@ pub(crate) fn diagnostic_spans(diag: &DiagInner) -> Vec<Span> {
     spans
 }
 
-/// Whether any of `diag`'s messages — its header or a child's — mentions a CGP wiring trait. This
-/// is the cheap pre-filter that decides whether to attempt the (expensive) typed resolution at all,
-/// so that any wiring diagnostic is considered.
+/// Whether any of `diag`'s messages — its header or a child's — mentions a CGP wiring trait
+/// ([`mentions_wiring_text`]). This is the cheap pre-filter that decides whether to attempt the
+/// (expensive) typed resolution at all, so that any wiring diagnostic is considered.
 pub(crate) fn mentions_wiring(diag: &DiagInner) -> bool {
     fn any(messages: &[(DiagMessage, Style)]) -> bool {
         messages.iter().any(|(message, _)| match message {
-            // `HasField` catches a use-site failure (a consumer-method `E0599`), whose text names
-            // the missing leaf but not `CanUseComponent`/`IsProviderFor`.
-            DiagMessage::Str(text) => {
-                text.contains("CanUseComponent")
-                    || text.contains("IsProviderFor")
-                    || text.contains("HasField")
-            }
+            DiagMessage::Str(text) => mentions_wiring_text(text),
             _ => false,
         })
     }

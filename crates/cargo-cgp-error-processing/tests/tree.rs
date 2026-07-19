@@ -54,6 +54,25 @@ consumer trait impl `CanHandle` for context `App`
     );
 }
 
+/// A root-first chain of labels folds into a single-spine tree; an empty chain is `None`.
+#[test]
+fn from_chain_folds_labels_into_a_spine() {
+    let tree =
+        DependencyTree::from_chain(vec!["root".to_owned(), "mid".to_owned(), "leaf".to_owned()])
+            .expect("a non-empty chain folds");
+    assert_eq!(
+        tree,
+        DependencyTree::node(
+            "root",
+            vec![DependencyTree::node(
+                "mid",
+                vec![DependencyTree::leaf("leaf")]
+            )],
+        )
+    );
+    assert_eq!(DependencyTree::from_chain(Vec::new()), None);
+}
+
 /// A short two-node spine for the merge tests: `root` over the given leaf.
 fn spine(root: &str, mid: &str, leaf: &str) -> DependencyTree {
     DependencyTree::node(

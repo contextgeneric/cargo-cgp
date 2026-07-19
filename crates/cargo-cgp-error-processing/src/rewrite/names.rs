@@ -26,12 +26,12 @@ pub struct ComponentTraitNames {
 /// functions look a marker up only after a message parses as a wiring form, so an ordinary
 /// diagnostic never forces the map.
 ///
-/// The map has two lookup paths for its two callers. The driver's typed resolver holds a
-/// marker's `DefId` and looks it up by [`get_by_path`](Self::get_by_path) — an exact full-path
-/// match that can never confuse two same-named markers from different modules. The text rewrite
-/// has only the marker *name* rustc printed (rarely a full path), so it uses [`get`](Self::get),
-/// which matches a key by its last path segment; that is inherently ambiguous when two markers
-/// share a name, a residual the text form cannot resolve and the typed path avoids.
+/// The map's one consumer is the **text rewrite**, which has only the marker *name* rustc
+/// printed (rarely a full path), so [`get`](Self::get) matches a key by its last path segment;
+/// that is inherently ambiguous when two markers share a name, an unavoidable residual of
+/// working from rendered text. (The typed resolver does not use the map at all: it reads
+/// consumer and provider names straight off the real trait `DefId`s it walks.) The keys stay
+/// full paths so same-named markers in different modules at least occupy distinct entries.
 ///
 /// The initializer is a plain `fn` pointer, not a closure, so this type captures no compiler
 /// state and can live in this rustc-free crate. The driver supplies a `fn` that reads the
@@ -54,17 +54,10 @@ impl ComponentNameMap {
         }
     }
 
-    /// Look up the trait names behind a marker by its full path — the exact, collision-free
-    /// lookup the driver's typed resolver uses. Forces the lazy build on first use.
-    pub fn get_by_path(&self, path: &str) -> Option<ComponentTraitNames> {
-        self.name_map.get(path).cloned()
-    }
-
     /// Look up the trait names behind a marker by its bare name, matching a full-path key by its
     /// last segment — the lookup the text rewrite uses, since rustc prints the marker unqualified.
     /// When two markers share a name (in different modules) the match is arbitrary; the text form
-    /// cannot tell them apart, whereas the typed resolver keys on the full path via
-    /// [`get_by_path`](Self::get_by_path). Forces the lazy build on first use.
+    /// cannot tell them apart. Forces the lazy build on first use.
     pub fn get(&self, name: &str) -> Option<ComponentTraitNames> {
         self.name_map
             .iter()

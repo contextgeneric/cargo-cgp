@@ -34,7 +34,21 @@ same change.
   leaf (a `HasField` field or an ordinary bound), and rendering the transitive dependency chain with
   each wiring trait replaced by its human form. A main message identified as a CGP class is rewritten
   and stamped with its `[CGP-Exxx]` code (the Rust code kept); the sub-notes become one `root cause:`
-  note per leaf over its chain; anything it declines falls back to the text rewrite.
+  note per leaf over its chain; anything it declines falls back to the text rewrite. The document is
+  the pipeline overview — its boundaries and its consolidated tests and source catalogs — over four
+  per-stage documents:
+  - [Typed resolution: anchoring the starting obligation](typed-resolution-anchors.md) — the five
+    span-matching anchors that recover the real consumer obligation from a check entry, a
+    hand-written impl, a foreign wrapper chain, or a use site.
+  - [Typed resolution: the call-site anchor](typed-resolution-call-site.md) — the last-resort HIR
+    re-read of the failing call expression, its signature unification, and the rigid placeholders
+    that stand in for what the call never types.
+  - [Typed resolution: walking to the root cause](typed-resolution-walk.md) — the descent from the
+    seeded obligation to every terminal unmet bound, and the decoding, classification, and label
+    rendering of each leaf.
+  - [Typed resolution: the transformed diagnostic](typed-resolution-output.md) — the coded headline
+    classes, the `root cause:` notes over their merged trees, and the emitter's application of the
+    rustc-free plan.
 - [The error pipeline](error-pipeline.md) — the flow that turns rustc's raw diagnostics into readable
   CGP errors, now entirely inside the driver (configure rustc, transform each diagnostic, render text
   or JSON), with the front-end forwarding cargo's output untouched.

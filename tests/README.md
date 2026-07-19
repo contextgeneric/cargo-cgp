@@ -27,12 +27,14 @@ The categories are:
   coded `[CGP-Exxx]` headline, a plain-language `root cause:` note, a compact dependency tree, and no
   generated-type scaffolding. This is where an error fixture graduates once it clears the usability
   bar. It is split into concept sub-directories — `fields/`, `field-types/`, `providers/`,
-  `generic/`, `resolution/`, `use-site/`, `wiring/`, and `lowering/` — so no directory grows crowded.
+  `generic/`, `resolution/`, `use-site/`, `use-type/`, `verbosity/`, `duplication/`, `lowering/`, and
+  `wiring/{constrained-key,constraints,duplicate-keys,missing-wiring,namespace-paths}/` — so no
+  directory grows crowded.
 - [`ui/usability/`](ui/usability) — errors that carry the root cause but bury it in volume, encoding,
   duplication, or misleading framing (a [usability issue](../docs/issues/usability.md)); the cause is
   present, so the work is re-presentation. It is split into issue-class sub-directories —
-  `duplication/`, `use-type/`, `lowering/`, and `wiring/{duplicate-keys,namespace-paths,constraints}/`
-  — each naming the problem its fixtures expose.
+  `duplication/`, `lowering/`, and `wiring/constraints/` — each naming the problem its fixtures
+  expose.
 - [`ui/ok/`](ui/ok) — the clean-compile baseline: correctly-wired programs that check with empty
   output.
 - `ui/hidden-root-cause/` — errors whose root cause cannot be recovered from the output at all, the
@@ -135,7 +137,6 @@ the `acceptable/` or `usability/` sub-directory that matches the quality of the 
 produces for it — unless it is one of the cross-crate or next-solver-divergent cases above, which are
 recorded there rather than imported. The one edit made on import is disambiguating a name collision:
 `duplicate_path_key` exists under two upstream constructs, so the copies are
-`namespace_duplicate_path_key` (a single raw `E0119`, still under
-[`ui/usability/wiring/namespace-paths/`](ui/usability/wiring/namespace-paths)) and
-`delegate_duplicate_path_key` (reshaped into `[CGP-E004]`, graduated to
-[`ui/acceptable/wiring/namespace-paths/`](ui/acceptable/wiring/namespace-paths)).
+`namespace_duplicate_path_key` (reshaped into `[CGP-E008]`) and `delegate_duplicate_path_key`
+(reshaped into `[CGP-E004]`), both graduated to
+[`ui/acceptable/wiring/namespace-paths/`](ui/acceptable/wiring/namespace-paths).

@@ -8,6 +8,7 @@
 //! [`DiagnosisPlan`] strings into `rustc` sub-diagnostics — so all the wording logic is here,
 //! unit-tested without a compiler, and the emitter is left with only `DiagInner` manipulation.
 
+use crate::diagnosis::coalesce::coalesce_underived_fields;
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
 use crate::diagnosis::wording::{
@@ -44,7 +45,9 @@ pub struct DiagnosisPlan {
 /// Build the [`DiagnosisPlan`] for a resolved failure. The main message is rewritten only when
 /// it is an identified CGP class (see [`categorized_header`]); the sub-messages are replaced
 /// either way. When the kept main message already states the leaf bound, the matching note drops
-/// its `root cause:` lead so it does not repeat the header.
+/// its `root cause:` lead so it does not repeat the header. Causes that share one fix — several
+/// underived fields on one struct — are first coalesced into a single cause
+/// ([`coalesce_underived_fields`]), so the note lists one root cause per required fix.
 pub fn plan_resolved(
     kind: DiagKind,
     main_message: Option<&str>,
@@ -62,8 +65,9 @@ pub fn plan_resolved(
             .map(|parsed| parsed.bound.to_owned())
     };
 
-    let helps = derive_help_messages(&resolved.causes);
-    let notes = cause_notes(&resolved.causes, header_bound.as_deref());
+    let causes = coalesce_underived_fields(&resolved.causes);
+    let helps = derive_help_messages(&causes);
+    let notes = cause_notes(&causes, header_bound.as_deref());
 
     DiagnosisPlan {
         header,

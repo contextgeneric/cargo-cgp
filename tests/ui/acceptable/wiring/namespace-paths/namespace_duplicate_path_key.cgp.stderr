@@ -1,0 +1,9 @@
+error[E0119]: [CGP-E008] duplicate redirect for `@foo.bar.*` on `MyNamespace`: redirected to both `@baz.*` and `@qux.*`
+  --> src/main.rs:22:10
+   |
+21 |         @foo.bar => @baz,
+   |          ------- first implementation here
+22 |         @foo.bar => @qux,
+   |          ^^^^^^^ conflicting implementation for `@foo.bar.*`
+
+For more information about this error, try `rustc --explain E0119`.

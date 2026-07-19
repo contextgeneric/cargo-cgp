@@ -83,7 +83,8 @@ front-end keeps it a small, ordinary binary that builds without loading LLVM. A 
 crate, **`cargo-cgp-error-processing`** (`crates/cargo-cgp-error-processing`), holds the rustc-free
 string-level diagnostic helpers the driver drives — the wiring-message rewrite, the fallback
 post-processing text transforms, the rustc-free root-cause model and the diagnostic-plan wording
-that turns it into text, and the dependency-tree renderer; it links no compiler internals
+that turns it into text, the dependency-tree renderer, the cross-diagnostic de-duplication ledger,
+and the text signals the emitter's candidate checks key on; it links no compiler internals
 either, so it builds and tests on any toolchain (see
 [Error processing](docs/implementation/error-processing.md)).
 
@@ -198,26 +199,31 @@ the injected flags. The transform is split across two directories. `emitter/` is
 seam: `install.rs` rebuilds whichever inner emitter the compiler's default would build — a
 `JsonEmitter` or an `AnnotateSnippetEmitter` — and wraps it, `cgp_emitter.rs` is the wrapper type and
 its `emit_diagnostic` orchestration (first recognize a duplicate-key `E0119` conflict — suppressing
-the redundant `IsProviderFor` half, rewriting the `DelegateComponent` half; else try the typed
-resolver, else the text rewrite; then always post-process; then cross-diagnostic de-duplicate — drop a
+the redundant `IsProviderFor` half, rewriting the wiring half; else try the typed
+resolver, else the text rewrite with its method-probe-advice and overflow cleanups; then always
+post-process; then cross-diagnostic de-duplicate through the rustc-free `DedupLedger` — drop a
 transformed diagnostic whose span-independent signature was already emitted, so one mistake re-reported
 at many wiring sites is shown once), and `edit.rs` holds the
-`DiagInner`-editing helpers. `resolve/` is the typed root-cause resolver: `anchor.rs` recovers the
+`DiagInner`-editing helpers. `resolve/` is the typed root-cause resolver, one sub-directory per
+stage: `anchor/` recovers the
 failing obligation from a `check_components!` entry, a hand-written `impl Trait for Context` block
 the failure surfaces inside (reconstructing the obligation from the impl's CGP consumer supertrait,
 concrete parameters preserved), a hand-written `impl Trait for Foreign` block whose `Self` is a
 foreign wrapper holding the context (descending its supertrait's `where`-clause hops — through a
 projection bound's base trait — to a CGP consumer on the context, the routing-glue case), or the use
-site of a broken consumer-method call
-(`E0599`), `walk.rs` descends the wiring to each terminal leaf, `classify.rs` turns a leaf into the
-rustc-free model by inspecting the struct it lands on, `label.rs` renders each path predicate as a
-tree label, `conflict.rs` classifies a duplicate-key `E0119` by reading the two conflicting
-`DelegateComponent` impls off the compiler (which keys collide, whether either is a `RedirectLookup`),
+site of a broken consumer-method call (`E0599`), with `call_site/` the last-resort re-read of the
+failing call expression itself; `walk/` descends the wiring to each terminal leaf, `classify/` turns
+a leaf into the
+rustc-free model by inspecting the struct it lands on, `label/` renders each path predicate as a
+tree label, `conflict/` classifies a duplicate-key `E0119` by reading the two conflicting wiring
+impls off the compiler (which keys collide, whether either is a `RedirectLookup`),
 and `cgp_item.rs` holds the DefId-anchored CGP-trait recognition every stage relies on (see
-[Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md)).
+[Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md) and its per-stage
+sub-documents).
 `component_map.rs` builds the component-marker → consumer/provider trait-name map by querying the
 trait solver. Everything downstream of the resolver's rustc-free `Resolved` model — the
-header/note/help wording, the diagnostic plan, the wiring rewrite, the post-processing transforms,
+header/note/help wording, the tree-label templates, the diagnostic plan, the wiring rewrite, the
+post-processing transforms, the de-duplication ledger, the text signals,
 and the lazily-built `ComponentNameMap` — lives in the `cargo-cgp-error-processing` crate (the
 driver's one ordinary dependency), so it is unit-tested without the driver's `rustc_private` linkage.
 
@@ -229,18 +235,26 @@ path prefixes, resugaring `Symbol!` and `Path!`, resugaring `Product!`/`Sum!` li
 `Struct!`/`Enum!` record/variant forms, rewriting unmet `HasField` bounds into missing-field
 messages), each a pure `&str -> Option<String>` function — plus `chain.rs` for the
 `postprocess_message` chain, with `mod.rs` re-exporting only. `rewrite/` is the wiring-message
-rewrite: `message.rs` (the note and header rewrites), `names.rs` (the `ComponentTraitNames` and the
+rewrite: `message.rs` (the note, header, and wiring-overflow rewrites), `names.rs` (the
+`ComponentTraitNames` and the
 lazily-built `ComponentNameMap`), `parse.rs` (the trait-bound parse), and `text.rs` (the shared
 splitting utilities). `diagnosis/` is the rustc-free root-cause model and its wording:
 `leaf.rs`/`resolved.rs` (the `Leaf`/`FieldIssue`/`Cause`/`Resolved` types the driver's resolver fills
-in), `wording.rs` (the pure `Resolved`-to-text builders), `plan.rs` (`plan_resolved`, which words
+in), `wording/` (the pure `Resolved`-to-text builders — headers, root-cause leads and their codes,
+notes, derive helps, and the de-duplication `cause_signature`), `coalesce.rs`
+(`coalesce_underived_fields`, merging several underived fields on one struct into one cause),
+`labels.rs` (the tree-label templates and the repeated-generics elision), `plan.rs`
+(`plan_resolved`, which words
 a `Resolved` into the header, help, and note strings the emitter emits, and holds the
 `categorized_header` classification), and `wiring.rs` (the `WiringConflict` model and
 `plan_wiring_conflict`, which words a duplicate-key conflict into its `[CGP-E004]`–`[CGP-E008]` header, one code per conflict shape). `tree.rs` is the `DependencyTree` type, its `cargo tree`-style
 renderer (over the `termtree` crate), and `merge_dependency_forest` (fusing root-cause chains that
-share a common ancestor into one branching tree); `code.rs` holds the `CGP-E` error-code constants stamped on
+share a common ancestor into one branching tree); `dedup.rs` is the `DedupLedger` behind the
+emitter's cross-diagnostic de-duplication; `signals.rs` holds the stable rustc phrasings the
+emitter's candidate checks and cleanups key on; and `code.rs` holds the `CGP-E` error-code constants stamped on
 classified main messages (catalogued in docs/error-code.md). Its tests in `tests/` drive the
-post-processors, the rewrite, the diagnosis plan and wording, and the tree renderer over hand-built
+post-processors, the rewrite, the diagnosis plan and wording, the coalescing, the labels and text
+signals, the de-duplication ledger, and the tree renderer over hand-built
 inputs, so they run on any toolchain.
 
 ## Commands
