@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `Nil: ComposeProviders` is not satisfied
+  --> src/main.rs:34:9
+   |
+34 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `ComposeProviders` is not implemented for `Nil`
+   |
+   = note: this is required through the dependency chain:
+           [CGP-E101] consumer trait impl `CanGreet` for context `App`
+           └── [CGP-E102] provider trait impl `Greeter` with context `App` for provider `PipeHandlers<Nil>`
+               └── the trait bound `Nil: ComposeProviders` is not satisfied
+
+For more information about this error, try `rustc --explain E0277`.

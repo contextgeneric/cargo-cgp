@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `Nil: PickFirst` is not satisfied
+  --> src/main.rs:61:9
+   |
+61 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `PickFirst` is not implemented for `Nil`
+   |
+   = note: this is required through the dependency chain:
+           [CGP-E101] consumer trait impl `CanGreet` for context `App`
+           └── [CGP-E102] provider trait impl `Greeter` with context `App` for provider `PickFirstProvider<Nil>`
+               └── the trait bound `Nil: PickFirst` is not satisfied
+
+For more information about this error, try `rustc --explain E0277`.

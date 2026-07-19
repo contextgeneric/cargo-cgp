@@ -1,0 +1,36 @@
+error[E0277]: the trait bound `Nil: PickFirst` is not satisfied
+  --> src/main.rs:61:9
+   |
+61 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `PickFirst` is not implemented for `Nil`
+   |
+help: the trait `PickFirst` is implemented for `cgp::prelude::Cons<Head, Tail>`
+  --> src/main.rs:38:1
+   |
+38 | impl<Head, Tail> PickFirst for Cons<Head, Tail> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `PickFirstProvider<Nil>` to implement `IsProviderFor<GreeterComponent, App>`
+  --> src/main.rs:42:1
+   |
+42 | / delegate_components! {
+43 | |     <Component, Provider, List: PickFirst<Provider = Provider>>
+   | |                                 ------------------------------ unsatisfied trait bound introduced here
+44 | |     PickFirstProvider<List> {
+   | |     ^^^^^^^^^^^^^^^^^^^^^^^
+45 | |         Component: Provider,
+46 | |     }
+47 | | }
+   | |_^
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:59:1
+   |
+59 | / check_components! {
+60 | |     App {
+61 | |         GreeterComponent,
+62 | |     }
+63 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

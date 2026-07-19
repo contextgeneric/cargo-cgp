@@ -805,7 +805,13 @@ are dropped as plumbing above. The leaf shapes are:
   namespace is caught without a `DefId` anchor.
 - An **ordinary bound on a foreign type** (`f64: Eq`) is a leaf, and the descent must not walk into
   whatever unrelated `std` blanket impl happens to match its `Self` (an `impl<F: FnPtr> Eq for F` would
-  otherwise fabricate a misleading `f64: FnPtr` step).
+  otherwise fabricate a misleading `f64: FnPtr` step). A **constrained `DelegateComponent` key** whose
+  own `where`-clause is unmet surfaces here: when a dispatcher provider's wiring only delegates under a
+  bound — `PipeHandlers<Providers>`'s `delegate_components!` generic list is
+  `Providers: ComposeProviders<Provider = Provider>` — an argument that fails that bound (an empty
+  `PipeHandlers<Product![]>`, whose `Nil` list has no `ComposeProviders` impl) makes the walk descend
+  the delegation impl and bottom out on the unmet composition bound (`Nil: ComposeProviders`), which is
+  the real cause, with the `DelegateComponent` node itself dropped as a plumbing label.
 
 Two foreign bounds are exceptions the descent *does* follow, both for the same reason: they reach the
 context only deeper. The first is a **getter or capability trait on a non-context type whose satisfying
@@ -1189,6 +1195,13 @@ Several fixtures pin the **harder mechanics**:
   `Rectangle`" note spans the context's struct definition) into the failing layer's root-cause tree.
 - `ordinary_bound_unsatisfied` — a non-field `f64: Eq` bound whose rustc header is kept over a lead-less
   chain note.
+- `constrained_delegate_key` and `pipe_handlers_empty` (under
+  [`acceptable/wiring/constrained-key/`](../../tests/ui/acceptable/wiring/constrained-key)) — a
+  delegation whose `DelegateComponent` impl carries a constrained key that is unsatisfied, so the walk
+  descends the delegation impl and bottoms out on its unmet `where`-bound as an ordinary-bound leaf.
+  The first is a self-contained dispatcher (`PickFirstProvider<Product![]>`, whose `Nil` list has no
+  `PickFirst` impl); the second is the canonical core-CGP form, an empty
+  `PipeHandlers<Product![]>` whose `Nil` fails `ComposeProviders`.
 - `foreign_getter_missing_wiring` — the money-transfer `UseBasicAuth` shape, where the walk descends a
   request getter's blanket impl into its context-side dependency and the misleading second root cause
   collapses into the one missing wiring, under a promoted `CGP-E001` header.

@@ -1,0 +1,31 @@
+error[E0277]: the trait bound `Nil: handler::providers::pipe::ComposeProviders` is not satisfied
+  --> src/main.rs:34:9
+   |
+34 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `handler::providers::pipe::ComposeProviders` is not implemented for `Nil`
+   |
+help: the following other types implement trait `handler::providers::pipe::ComposeProviders`
+  --> $CGP/crates/extra/cgp-handler/src/providers/pipe.rs:20:1
+   |
+20 | / impl<ProviderA, ProviderB, RestProviders, OutProviders> ComposeProviders
+21 | |     for Cons<ProviderA, Cons<ProviderB, RestProviders>>
+22 | | where
+23 | |     Cons<ProviderB, RestProviders>: ComposeProviders<Provider = OutProviders>,
+   | |______________________________________________________________________________^ `Cons<ProviderA, Cons<ProviderB, RestProviders>>`
+...
+28 |   impl<Provider> ComposeProviders for Cons<Provider, Nil> {
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cons<Provider, Nil>`
+   = note: required for `PipeHandlers<Nil>` to implement `IsProviderFor<GreeterComponent, App>`
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:32:1
+   |
+32 | / check_components! {
+33 | |     App {
+34 | |         GreeterComponent,
+35 | |     }
+36 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
