@@ -50,11 +50,14 @@ same change.
     classes, the `root cause:` notes over their merged trees, and the emitter's application of the
     rustc-free plan.
 - [Cached dependency resolution](cached-dependency-resolution.md) — the blueprint (ahead of
-  implementation) for a two-stage cache over the typed resolver's walk: a whole-seed cache that
-  memoizes `resolve_leaves` on its region-erased seed, and an interior-node cache that reuses a
-  completed tree's steps, both storing the rustc-free `Resolved` value so they persist across
-  diagnostics. Covers the soundness reasoning — the empty-prefix seed boundary, the cycle-guard
-  cut-taint bit, node-rooted fragments — and why cacheability is a statelessness proof, not just a
+  implementation) for one cache over the typed resolver's walk, keyed at *every* node and consulted at
+  every step, storing each node's owned rustc-free sub-chains so they persist across diagnostics and
+  close both the whole-crate re-report redundancy and the intra-walk diamond. Covers the soundness
+  reasoning — why a node key is not a complete key (the cycle guard makes the walk a function of the
+  ancestor set), the incomplete-subtree flag that keeps a guard-truncated subtree out of the cache, the
+  reachable-set disjointness check that keeps a reuse from forming a cycle, and the key hashed and
+  compared by a `HashStable` fingerprint (of the obligation and its `ParamEnv`) with readable fields
+  alongside for inspecting the store — and why cacheability is a statelessness proof, not just a
   speedup.
 - [The resolve context](resolve-context.md) — the blueprint (ahead of implementation) for a
   per-compilation `ResolveCtx` that hosts the caches, the config, and the compiler access, replacing

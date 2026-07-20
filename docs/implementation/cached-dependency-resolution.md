@@ -1,221 +1,311 @@
 # Cached dependency resolution
 
-The typed root-cause resolver re-walks the same wiring more than once — across the many diagnostics
-one CGP mistake produces, and across the branches of a single walk — so this document specifies a
-two-stage cache that resolves each distinct sub-problem once and reuses the result, without changing
-a single byte of the output.
+The typed root-cause resolver re-walks the same wiring many times — across the diagnostics one CGP
+mistake produces, and across the branches of a single walk — so this document specifies one cache
+that resolves each distinct obligation once and reuses the result everywhere it recurs, without
+changing a byte of the output.
 
 **Status: blueprint ahead of implementation.** Nothing here is built yet. The document records the
 motivation and the design decisions agreed for the work, so a later agent can implement it directly.
-It is a companion to [The resolve context](resolve-context.md), which houses the caches and frames
-them as one instance of a larger goal — a rustc-free, mockable resolution core — and to
+It is a companion to [The resolve context](resolve-context.md), which houses the cache and frames it
+as one instance of a larger goal — a rustc-free, mockable resolution core — and to
 [Typed root-cause resolution](typed-root-cause-resolution.md) and
-[its walk stage](typed-resolution-walk.md), whose `resolve_leaves` descent is the thing being cached.
+[its walk stage](typed-resolution-walk.md), whose `resolve_leaves` / `collect_leaf_paths` descent is
+the thing being cached.
 
 ## Why cache the resolution at all
 
-The cache exists to remove redundant re-resolution, and the redundancy is real and documented. CGP
-wiring is lazy, so one mistake surfaces the same failure at many sites — the `check_components!`
-entry, every hand-written `impl` that references the broken consumer, and each call — and the
+The cache exists to remove redundant re-resolution, and the redundancy is real, documented, and of
+two kinds. The first is across diagnostics: CGP wiring is lazy, so one mistake surfaces the same
+failure at many sites — the `check_components!` entry, every hand-written `impl` that references the
+broken consumer, and each call — and the
 [money-transfer example](../../../cgp/docs/examples/money-transfer-api.md)'s single un-wired password
-type produced eighteen identical root-cause trees this way. Today the emitter resolves *every one of
-those* to completion and only then drops the duplicates through the
-[`DedupLedger`](error-processing.md), so sixteen full walks are computed and thrown away. A second,
-smaller redundancy sits inside a single walk: a capability depended on by several providers (a shared
-getter, `HasErrorType`) is a diamond in the dependency graph, and its subtree is walked once per
-parent.
+type produced eighteen identical root-cause trees this way. Today the emitter resolves every one of
+those to completion and only then drops the duplicates through the
+[`DedupLedger`](error-processing.md), so sixteen full walks are computed and thrown away. The second
+kind sits inside a single walk: a capability depended on by several providers (a shared getter,
+`HasErrorType`) is a diamond in the dependency graph, and its subtree is walked once per parent. The
+unified cache below closes both, because both reduce to the same primitive — resolve each distinct
+obligation once.
 
 The deeper reason to build this, though, is not speed — it is that **a cacheable query is a stateless
 query, and statelessness is the property that makes the resolver possible to reason about and
 eventually to test without a compiler.** A query you can cache is a pure function of its explicit
-typed inputs; a query you cannot cache without extra parameters has hidden state that the extra
-parameters name. So writing the cache is a forcing function: it makes every load-bearing question the
+typed inputs; a query you cannot cache without an extra parameter has hidden state that the extra
+parameter names. So writing the cache is a forcing function: it makes every load-bearing question the
 resolver asks the compiler either provably pure or explicitly stateful, and it draws the line between
 the two. [The resolve context](resolve-context.md) develops that consequence in full; this document
 is the concrete cache the reasoning produces.
 
-## What is cached, and why the value is safe to keep across diagnostics
+## What is cached, and why it is safe to keep across diagnostics
 
 The value cached is the resolver's rustc-free output, and that is what makes the whole scheme sound
-against the compiler's lifetimes. `resolve_leaves` returns
-[`Option<Resolved>`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs), and
-`Resolved` is owned `String`-only data in the compiler-free `cargo-cgp-error-processing` crate — no
-`Ty<'tcx>`, no `DefId`, no compiler handle. So a cached `Resolved` can live for the whole compilation
-on a struct that outlives no single `TyCtxt`, exactly as the existing
+against the compiler's lifetimes. The walk's finished product is owned `String`-only data in the
+compiler-free `cargo-cgp-error-processing` crate — the classified
+[`Leaf`](../../crates/cargo-cgp-error-processing/src/diagnosis/leaf.rs) values and the rendered
+[tree](../../crates/cargo-cgp-error-processing/src/tree.rs) labels that make up a
+[`Resolved`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs) — carrying no
+`Ty<'tcx>`, no `DefId`, no compiler handle. So a cached value can live for the whole compilation on a
+struct that outlives no single `TyCtxt`, exactly as the existing
 [`ComponentNameMap`](driver.md#naming-the-traits-behind-a-component-marker) and
 [`DedupLedger`](driver.md) already do. This is the decisive difference from caching the *intermediate*
 solver work: an `InferCtxt`'s obligations are `'tcx`-interned and cannot be stored past the
 `ty::tls::with` closure that produced them, but the finished tree is owned and can.
 
-Caching the tree carries no staleness risk for the same reason the name map does not. The resolver
-runs at emit time, over compiler state that is frozen — the trait set, the impls, the `predicates_of`,
-the ADT field lists are all fixed once the crate is lowered, and trait solving does not mutate them
-(see [why resolution runs in the emitter](typed-root-cause-resolution.md#why-it-runs-in-the-emitter)
-and the [`after_analysis` unreachability](rustc-diagnostic-internals.md)). A tree resolved once is
+Caching the finished tree carries no staleness risk, for the same reason the name map does not. The
+resolver runs at emit time, over compiler state that is frozen — the trait set, the impls, the
+`predicates_of`, the ADT field lists are all fixed once the crate is lowered, and trait solving does
+not mutate them (see [why resolution runs in the emitter](typed-root-cause-resolution.md#why-it-runs-in-the-emitter)
+and the [`after_analysis` unreachability](rustc-diagnostic-internals.md)). A subtree resolved once is
 therefore valid for the rest of the crate's compilation.
 
-## Stage 1: the whole-seed cache
+## One cache, keyed by node
 
-Stage 1 memoizes `resolve_leaves` keyed on its seed obligation. Every one of the six
-[anchors](typed-resolution-anchors.md) funnels its recovered obligation `Ctx: ConsumerTrait<Params…>`
-into `resolve_leaves`, so wrapping that single function with a memo covers all anchor kinds at once.
-The key is the region-erased seed obligation (`resolve_leaves` already erases it on entry); the value
-is the `Option<Resolved>` it returns.
+The cache memoizes the walk **at every node**, so there is one mechanism and one key space, not a
+special case for whole seeds and another for interior nodes. The resolver's descent is a recursive
+function over trait obligations: `collect_leaf_paths` visits an obligation, descends into the
+`where`-clause obligations of the impl that satisfies it, and bottoms out on terminal leaves. Every
+obligation it visits — a consumer trait, a provider trait, a plain Rust trait, a getter bound — is a
+**node**, and every node is a cache entry keyed on that node's obligation. At each step of the walk
+the resolver looks the node up and short-circuits on a hit; when it misses it computes the subtree,
+converts it to the owned form, and files it under the node's key.
 
-Stage 1 is **output-preserving**: it is pure memoization of a pure function, so a hit returns
-byte-identical `Resolved` and no UI snapshot changes. That is the property to hold onto through
-implementation — the regression guard is that the whole `tests/ui/acceptable/` suite re-blesses to
-*nothing*.
+This retires the "seed versus interior node" vocabulary an earlier draft carried, and with it the
+confusion between a *seed* and a *cache key*. A **seed** is now just a role — the obligation an
+[anchor](typed-resolution-anchors.md) recovers and hands the walk as its **root**, always a real
+consumer obligation `Ctx: ConsumerTrait<Params…>` (or a wrapper trait from the impl-site anchor). The
+seed is the root node of one walk, nothing more; it is keyed and looked up exactly like every other
+node. Both redundancies then close through the same lookup at different depths: the eighteen identical
+trees share a root node, so the first resolves it and the other seventeen hit the cache at the root,
+and the diamond's shared capability is a node reached from two parents, so the second parent hits the
+cache one level down.
 
-Its soundness rests on one fact about where the cache boundary sits. `resolve_leaves` always starts
-its descent with an **empty ancestor prefix**, so the seed is the one point in the whole walk where
-the cycle guard's ancestor set — the hidden parameter that Stage 2 must contend with below — is empty
-and therefore not a hidden input. Caching at the seed is caching at the only boundary where the
-obligation alone is the complete key.
+The stored value is the node's set of **root-cause sub-chains**, each an owned `Leaf` plus the label
+chain from that node down to the leaf. The walk builds this bottom-up, so the sub-chains are stored
+*node-rooted* — a child returns chains that begin at the child's own label, and its parent prepends
+its own label to each. Because the value is already rooted at the node, both uses need it verbatim:
+when the node is a future seed the resolver builds the `Resolved` header from the node and uses the
+sub-chains directly, and when the node is spliced into a larger walk the parent prepends its label and
+continues. There is no separate re-rooting pass. Only *non-terminal* nodes are cached: a terminal
+leaf's owned classification reads its parent obligation, which lives outside a leaf-rooted subtree,
+and a leaf is never reused as a seed and never expensive to re-derive, so caching leaves would buy
+nothing and break the node-alone key. Every non-terminal node's cached sub-chains classify their
+leaves against parents drawn from *within* the subtree, so the value is self-contained.
 
-Two further decisions round out Stage 1. **Negative results are cached**: a seed that declines
-(`None`) declines deterministically, so caching `None` avoids re-walking a declining seed, and the
-anchor chain in `try_resolve` keys each anchor's seed independently. And a **hit-rate ceiling** is
-accepted rather than fought: a [call-site seed](typed-resolution-call-site.md) carries rigid
-placeholders whose identities are minted per anchor, so two different call sites of the same
-unknown-argument capability hash to different keys and will not cross-hit. This is a limitation of
-coverage, never of correctness — distinct placeholders make distinct obligations, so they *should*
-key distinctly.
+## Why a node key is not automatically a complete key
 
-### How Stage 1 relates to the de-duplication ledger
+The walk is **not** a pure function of the node, and this is the one fact the whole soundness argument
+turns on. `collect_leaf_paths(node, prefix)` takes the node *and* the set of its ancestors, because of
+the cycle guard: the guard cuts a branch the moment the current obligation reappears among its
+ancestors, so the leaves below a node are a function of `(node, ancestor-set)`, not of the node alone.
+A cycle reaches the walk when wiring loops — the `UseContext` self-routing shape, normally intercepted
+upstream as the `E0275` overflow the driver rewrites to `[CGP-E010]` — but the cycle guard exists
+precisely so the walk does not *rely* on that interception, and the cache must not reintroduce the
+reliance. Memoizing on the node and consulting it under a different ancestor set can therefore be
+wrong, in two directions:
 
-Stage 1 and the `DedupLedger` partition the work along different axes, and understanding the overlap
-prevents building the wrong thing. The ledger de-duplicates by *recovered cause* — the
-span-independent [`cause_signature`](driver.md) of context, consumer, and leaves — computed **after**
-the walk. Stage 1 keys by *seed* — computed **before** the walk. Same seed always yields the same
-cause, so every Stage 1 hit corresponds to a diagnostic the ledger would then drop: Stage 1 removes
-the *walk* for those re-reports, and the ledger still governs what is *shown*. They compose, and
-neither replaces the other.
+- A subtree computed under a prefix where a descendant looped back to a prefix ancestor was **cut** at
+  that descendant, so it omits whatever lay past the cut. Reuse it under a prefix that lacks that
+  ancestor and the walk **under-reports** — a real root cause silently missing.
+- A subtree computed where no cut occurred, reused under a prefix that *would* cut, **over-reports** a
+  leaf a correct walk would have severed.
 
-The caveat is that Stage 1 catches a strict subset of what the ledger suppresses. Two diagnostics can
-reach the same cause through *different* seeds — the money-transfer wrapper impl seeds a `[CGP-E009]`
-wrapper trait (deliberately its own block) while the check entry seeds the consumer, and the
-`density_3` / `dependency_cascade` shapes reach one field through distinct consumers. Those have
-different keys, so Stage 1 misses them and they still walk in full; the ledger handles the output side
-as before. The big collapsing group — one consumer method checked or called at many sites — does share
-a seed, so Stage 1 lands on it.
+Either way the tree is wrong, and a wrong tree that looks clean is the worst outcome for this tool. So
+the node key is completed with two guards — one at population, one at consultation — and both are
+no-ops in acyclic wiring, which is nearly all wiring, so the clean node-keyed design works for free
+almost always and the machinery earns its keep only where a cycle actually reaches the walk.
 
-## Stage 2: the interior-node cache
+### Population: cache only complete subtrees
 
-Stage 2 caches each *step* of a completed walk, so a later diagnostic whose seed equals an interior
-node of an earlier diagnostic's tree reuses that node's subtree instead of re-walking it. This is a
-strictly larger hit set than Stage 1, which only hits when two whole seeds coincide; a common CGP
-shape makes the difference concrete — a context that checks a high-level component (whose tree
-descends through capability `C`) and also uses `C` directly seeds a second resolution *at* `C`, an
-interior node of the first tree. Crucially Stage 2 saves the walk **even when the outputs do not
-de-duplicate**: if the second diagnostic's cause is a strict sub-cause of the first, the ledger keeps
-both blocks (distinct cause signatures), yet the overlapping subtree need not be walked twice. Stage 2
-captures redundancy the ledger structurally cannot.
+The first guard is that **only a subtree no guard curtailed may be cached.** Two guards can cut a
+subtree short and leave it incomplete: the cycle guard above, and the `MAX_DEPTH` backstop that stops
+a pathological or divergent walk before it overflows the stack. Both truncate silently — a cut branch
+produces no output — and both are position-dependent, because a node sitting deep in one walk has
+fewer frames of depth budget left than the same node walked from a shallow position. A subtree that
+hit either guard is incomplete and must not be stored, or a later reuse would under-report.
 
-The cache is **populated as a post-pass after each full resolution**, not consulted mid-recursion.
-This keeps `resolve_leaves` pure and its cycle guard untouched: the walk builds the tree exactly as it
-does today, and a separate pass files each eligible interior node's subtree under its key. Populating
-at the edge rather than inside the traversal matches the codebase's "side effects at the thin edges"
-discipline and is the right seam — but the *timing* of the write is orthogonal to the soundness of the
-*read*, which is where the real work is.
+The trap that makes this subtle is that **a cut leaves no trace in the finished tree.** When a guard
+cuts a branch it produces no output, and within any surviving path there are never repeats, so any
+after-the-fact test computed from the completed tree always comes back clean even when a branch was
+severed. Eligibility therefore cannot be derived from the output; it must be recorded *during* the
+walk. The walk carries one **incomplete-subtree** flag: whenever the cycle guard cuts on a collision,
+or a branch reaches `MAX_DEPTH`, every node on the stack from that point up to the collision's ancestor
+is flagged, and a flagged node is not cached. That flag is the only fact the output tree cannot
+reconstruct.
 
-### The cycle-guard soundness problem
+A node cached under this rule is therefore **complete**: every branch of its subtree bottomed out on a
+natural terminator — a `HasField` leaf, an impl-less bound, a foreign bound, a projection mismatch —
+and none was cut by budget or cycle. Completeness is what makes the subtree *position-independent along
+the depth axis*: since no branch depended on the remaining depth budget, a fresh walk of the node with
+a larger budget reaches the same terminators and produces the identical subtree. A cache hit can thus
+legitimately return a fuller subtree than a fresh bounded walk from a deep position would — the cache
+does no worse, and sometimes better, than re-walking.
 
-The reason Stage 2 cannot naively key a subtree on its obligation alone is the cycle guard.
-`collect_leaf_paths` cuts a branch the moment the current obligation reappears among its ancestors, so
-the leaves below an obligation `X` are a function of `(X, ancestor-set)`, not of `X` alone. Cache the
-subtree under `X` and reuse it under a different ancestor set, and the result is wrong — not merely
-conservative:
+### Consultation: reuse only where no cycle would form
 
-- Computed under a prefix where one of `X`'s descendants loops back to a prefix ancestor, the guard
-  cut that branch, so the cached subtree **omits** whatever lay past the cut. Reuse it under a prefix
-  that lacks that ancestor and you **under-report** — a real root cause silently missing.
-- Cache it where no cut occurred and reuse it under a prefix that *would* have cut, and you
-  **over-report** a leaf a correct walk would have severed.
+The second guard is that **a cached subtree is reused at a node only when the current ancestor set is
+disjoint from it.** Completeness settles the depth axis but not the cycle axis: a complete subtree of
+node `N` is the true *acyclic* subtree, and reusing it under a prefix that shares an obligation with it
+would splice in a branch the cycle guard should cut. Concretely — node `N` is cached from a walk whose
+path never went through obligation `A`, so `N`'s subtree runs down through a node `D` (where `D`'s
+obligation equals `A`) with no cut, and is cached complete. A later walk descends through `A` and
+reaches `N`; a correct walk cuts at `D` because `A` is now an ancestor, but reusing `N`'s cached
+subtree splices the full path through `D` back in and over-reports.
 
-Either way the tree is wrong, and a wrong tree that looks clean is the worst outcome for this tool.
-The failure is confined to cyclic wiring reaching the walk — the `UseContext` self-routing shape,
-normally intercepted upstream as the `E0275` overflow the driver rewrites to `[CGP-E010]` — but the
-cycle guard exists precisely so the walk does not *rely* on that interception, and Stage 2 must not
-reintroduce the reliance.
-
-### The invisible-cut trap, and the one bit that fixes it
-
-The trap that makes this subtle is that **an ancestor-cut leaves no trace in the finished tree.** When
-the guard cuts a branch it produces no output, and within any surviving path there are never repeats,
-so any after-the-fact test computed from the completed tree — intersecting a node's subtree
-obligations against its ancestors — always comes back empty and *looks* safe even when a branch was
-severed. Deriving eligibility purely from the output tree is therefore unsound: it would cache a node
-whose subtree was silently cut and under-report on reuse.
-
-The fix is small and is the one piece that cannot be deferred to the post-pass: **the cycle guard must
-flag, during the walk, every node on the stack from the colliding ancestor down as "cut-tainted."**
-That flag is the only fact the output tree cannot reconstruct. The post-pass then caches only
-*untainted* interior nodes — a node whose subtree provably never depended on an ancestor, so its
-stored form equals what an empty-prefix `resolve_leaves` of that node would produce. Cyclic and
-near-cyclic regions simply go uncached, which is correct and, because cycles are rare, cheap.
-
-### Reuse only at seed boundaries, and re-rooting the fragment
-
-Two rules make reuse sound and faithful. First, **reuse is restricted to seed boundaries** — a new
-diagnostic's anchored seed, which has an empty prefix by construction — so there are no ancestors to
-conflict with an untainted cached subtree. (Consulting the interior cache *mid-walk* would reintroduce
-the ancestor-set question and is out of scope; Stage 2 is a cross-diagnostic cache keyed at seeds,
-sharing storage with Stage 1.) Second, the cached value must be a **node-rooted `Resolved`** — its
-header names that node as the subject and its trees start there, i.e. exactly the `Resolved` an
-empty-prefix walk of the node yields, not a raw slice of the parent tree whose labels are relative to
-the original root. Producing it is cheap: re-run only the *rendering* half over the node's sub-paths —
-`label_for`, `elide_repeated_generics`, and the `Resolved` assembly, all compiler-free — while
-skipping the expensive impl-selection-and-`holds` descent that Stage 2 exists to avoid. This means the
-post-pass must retain each eligible node's sub-paths (the predicate chains below it), not only the
-rendered strings, so it can re-root them.
+The fix is to store, alongside each cached subtree, the set of obligation fingerprints it reaches —
+its **reachable set** — and to reuse the entry only when none of the current ancestors is in it. The
+ordinary cycle guard already declines when the node itself is an ancestor; the reachable-set check
+extends that to a *descendant* being an ancestor, which is the only remaining way reuse could form a
+cycle. In acyclic wiring an ancestor can never appear in any subtree — it would be a repeat, hence a
+cycle — so the check always passes and the hit rate is full, diamonds included. The check engages, and
+declines a reuse, only when a genuine multi-node cycle reaches the walk, which is exactly where relying
+on the node-alone key would be unsound.
 
 ## The cache key
 
-The key for both stages must make different seeds provably unable to collide, because a wrong result
-now comes from a key collision rather than from the walk. Because the resolver walks `Ty<'tcx>` today,
-the key to build now is **a stable fingerprint of the region-erased obligation**. rustc's own query and
-incremental caches key this way: `Ty`, `GenericArgs`, and `TraitRef` implement `HashStable`, and
-`tcx.with_stable_hashing_context(|hcx| …)` yields a 128-bit `Fingerprint` that is `Copy` and
-lifetime-free, so it can live on the emitter/context across diagnostics. At 128 bits the collision
-probability is negligible to the standard rustc trusts for its own memoization. A raw
-`(DefId, GenericArgsRef<'tcx>)` key does **not** work: `DefId` is lifetime-free but
-`GenericArgsRef<'tcx>` is an interned `'tcx` reference that cannot be stored past its `TyCtxt`.
+The key is **a small struct hashed and compared by a single `HashStable` fingerprint, carrying
+readable fields alongside purely so the cache store can be inspected.** Its identity — the only thing
+`Hash` and `Eq` read — is a 128-bit `Fingerprint` of the region-erased obligation together with its
+`ParamEnv`; the remaining fields render the obligation as text and never affect a lookup. This splits
+the two jobs a key does — being a correct identity, and being legible — so each is served by the tool
+best suited to it, and it rests on the completeness principle [the resolve context](resolve-context.md)
+is built on: the identity *is* the node's input, so every input the walk's output depends on must be
+in it.
 
-The one case where the key would change is if the deferred
-[resolve-context](resolve-context.md#deferred-the-cgp-component-abstraction) work later moves the walk
-onto an owned type model: the seed would then be owned data and structural equality could key it
-directly, with no fingerprint. That is a possible future, not a decision to make now — build the
-fingerprint key, and revisit only if that refactor lands.
+The fingerprint is the identity because rustc supplies its encoding, and that encoding is both total
+and faithful in ways a hand-written one would struggle to be. `HashStable` walks the whole structure
+of a `Ty` / `GenericArgs` / `TraitRef` — every `TyKind`, including the exotic ones — and encodes each
+`DefId` by its stable path identity rather than its name. Encoding by path identity is the one property
+the key cannot do without: two same-named types in different modules share a name but not a
+`DefPathHash`, and the `same_name_components` fixture pins the resolver on telling them apart. A
+name-based *string* could not be the identity for exactly this reason, which is why "why not just
+serialize the type to a string?" resolves to "because the faithful serializer already exists as
+`HashStable`, and reusing it is safer than rebuilding it." The fingerprint is also `Copy` and
+lifetime-free, so it lives on the store past any `TyCtxt`, where the interned `Ty<'tcx>` it summarizes
+cannot. Its one cost is the one rustc itself accepts: a 128-bit collision is not *impossible*, and if
+one ever occurred the result is a wrong message on an already-failing build — acceptable where a
+miscompile would not be, and the standard rustc trusts for its own query and incremental caches.
 
-Either way the placeholder caveat from Stage 1 holds: a call-site seed's placeholder identities are
-part of the obligation and part of the key, so those seeds do not cross-hit — a coverage ceiling, not
-a soundness gap.
+Because the fingerprint carries all the correctness, **the remaining fields are free to be readable
+rather than injective.** They exist so a maintainer investigating a hit or a miss can dump the cache
+store and see, in plain text, which obligations were resolved and which were not — the context, the
+consumer or provider trait, its parameters — without decoding a wall of fingerprints. Since they never
+feed `Hash` or `Eq`, they may render ambiguous short names, resugared spines, whatever reads best; two
+entries that happen to display alike are still distinct entries under their distinct fingerprints. This
+is the payoff of splitting the key: nothing hand-written has to be total or injective, so the hazard of
+a hand-rolled serializer silently merging two shapes — a *deterministic* wrong hit, worse than the
+fingerprint's astronomically unlikely one — never arises.
 
-## Where the caches live
+A draft of the struct makes the split concrete. `Hash` and `Eq` are hand-written on the fingerprint
+alone rather than derived, because deriving would fold the debug fields into equality and defeat the
+whole arrangement, while `Debug` is derived so the store can be dumped:
 
-Both stages share one store, and it lives on the [resolve context](resolve-context.md) — the
+```rust
+/// Cache key for a resolved node. Identity is the fingerprint; the rest is for humans.
+#[derive(Clone, Debug)]
+struct NodeKey {
+    /// The sole basis for `Hash`/`Eq`: a `HashStable` fingerprint of the region-erased
+    /// obligation together with its `ParamEnv`. `Copy` and lifetime-free, so it outlives
+    /// any `TyCtxt`.
+    fingerprint: Fingerprint,
+    /// Debug-only, never read by `Hash`/`Eq`: the obligation rendered as text, e.g.
+    /// `Rectangle: AreaCalculator<Circle>`, and the environment once it is non-empty.
+    obligation: String,
+    param_env: String,
+}
+
+impl PartialEq for NodeKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.fingerprint == other.fingerprint
+    }
+}
+impl Eq for NodeKey {}
+
+impl std::hash::Hash for NodeKey {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.fingerprint.hash(state);
+    }
+}
+```
+
+The parameter environment is the second, and folding it in now is cheap insurance against a latent
+unsoundness. The walk currently solves every obligation in an **empty** `ParamEnv`, which is a
+constant and therefore not a hidden input — the reason the obligation alone has sufficed as a key in
+the draft. But the walk stage records that extending to checks carrying generic parameters will need
+the impl's *own* environment (see [walking to the root cause](typed-resolution-walk.md)), and the
+moment that lands the `ParamEnv` becomes a real input: two identical obligations under different
+environments would collide. `ParamEnv` is `HashStable`, so it hashes into the fingerprint alongside the
+obligation. Fold it in from the start, empty — an empty environment contributes a fixed, empty
+increment at negligible cost — so the key is already complete before the walk ever gains a non-empty
+one, rather than depending on a future agent to remember to add it exactly when the walk changes and
+its omission would be silent.
+
+One coverage ceiling rides on the key and is a limitation of hit rate, never of correctness. A
+[call-site seed](typed-resolution-call-site.md) carries rigid placeholders whose identities are part
+of the region-erased obligation and thus part of the fingerprint, so two different call sites of the same unknown-argument
+capability key distinctly and do not cross-hit. This is correct — distinct placeholders make distinct
+obligations — and even a coincidental cross-hit would be output-preserving, since both walks resolve
+the unknown identically; the ceiling is only that the cache misses where it harmlessly could hit.
+
+Keying by fingerprint is the pragmatic choice for as long as the walk runs on `Ty<'tcx>`. The deferred
+[resolve-context](resolve-context.md#deferred-the-cgp-component-abstraction) work would move the walk
+onto an owned type model, at which point the node is owned data and structural equality could key it
+directly — the readable fields would become the identity and the fingerprint would fall away. That is a
+possible future, not a decision to make now; build the fingerprint-keyed struct, and revisit only if
+that refactor lands.
+
+## How the cache relates to the de-duplication ledger
+
+The cache and the `DedupLedger` act on different axes and compose without overlap, and seeing the
+split prevents building the wrong thing. The ledger de-duplicates by *recovered cause* — the
+span-independent [`cause_signature`](driver.md) of context, consumer, and leaves — computed **after**
+the walk, to decide what is *shown*. The cache keys by *node obligation* — computed **before and
+during** the walk — to decide what is *resolved*. They are complementary: the cache removes the
+redundant walking, and the ledger still governs the redundant showing.
+
+The cache reaches a strictly larger redundancy than the ledger, which is why both are needed. Two
+diagnostics can reach the same shown cause through *different* seeds — the money-transfer wrapper impl
+seeds a `[CGP-E009]` wrapper trait (deliberately its own block) while the check entry seeds the
+consumer, and the `density_3` / `dependency_cascade` shapes reach one field through distinct consumers.
+The ledger collapses or keeps those on the output side as before. The cache, meanwhile, saves the walk
+whenever any node recurs — even when the outputs do *not* de-duplicate, as when a later diagnostic's
+cause is a strict sub-cause of an earlier one: the ledger keeps both blocks (distinct signatures), yet
+the overlapping subtree is walked once. That overlap is redundancy the ledger structurally cannot see.
+
+## Where the cache lives
+
+The cache is one store, and it lives on the [resolve context](resolve-context.md) — the
 per-compilation struct that also holds the compiler-query access and the config constants. Interior
 mutability (a `RefCell` around the map) matches how `DedupLedger` is already carried on `CgpEmitter`,
 and the store is created once per driver invocation over one crate, with no cross-session incremental
 database that could change underneath it. Until the resolve context exists, the store may sit directly
 on `CgpEmitter` beside `dedup`; folding it into the context is part of that document's refactor.
 
+The borrow discipline is worth stating because this codebase is acutely sensitive to re-entrancy — the
+whole of [rustc diagnostic internals](rustc-diagnostic-internals.md) is about a lock that panics on
+re-entry. The memo must never hold the `RefCell` borrow across the compute: check the cache and release
+the borrow, compute on a miss with no borrow held, then take the borrow again to insert. This is safe
+because the memoized descent never re-enters its own borrow — the recursion is `collect_leaf_paths`
+calling itself, and the cache read and write bracket each call rather than spanning it — so the memo
+boundary is clean even though the resolver runs inside a diagnostic being emitted.
+
 ## Sequencing and relation to diagnostic buffering
 
-Build Stage 1 first, in full, and only add Stage 2 if a profile shows sub-obligation re-walks
-dominating the residual after Stage 1 is in. Stage 1 is simple, sound, and output-preserving; Stage 2
-adds the cut-taint bit and the re-rooting machinery for a second-order win. Instrument `resolve_leaves`
-call counts, distinct-seed counts, and would-be hit rates against a real error-heavy project before
-committing to Stage 2 — the tool runs only on failing builds, so the bar for the extra machinery is
-whether the residual is real.
+Build the cache as one piece rather than in stages, because it is one mechanism. The node key, the two
+guards, and the owned value are not separable features that ship independently; a node cache without
+the consultation check is unsound the moment a cycle reaches the walk, and the whole-crate win and the
+diamond win are the same lookup at different depths. The pragmatic call is not *what* to build but
+*whether* the cyclic-safety machinery — the reachable set per entry and the disjointness check — earns
+its cost on real inputs; since it is a no-op in acyclic wiring, the honest way to answer is to
+instrument node-lookup counts, distinct-node counts, and would-be hit rates against an error-heavy
+project, confirm the residual is real, and keep the reachable-set guard regardless because dropping it
+would reintroduce the reliance on upstream cycle interception the resolver refuses.
 
-Both stages are complementary to the diagnostic-buffering work the
-[usability issues](../issues/usability.md) anticipate, not in competition with it. Buffering would
-decide *what* to emit — coalescing even different-consumer-same-cause blocks into one listing — while
-a memoized `resolve_leaves` is the "resolve each unique seed exactly once" primitive a buffered
-emitter would want underneath it. So this cache is a building block for that later work, not throwaway
-if it lands.
+The cache is complementary to the diagnostic-buffering work the [usability issues](../issues/usability.md)
+anticipate, not in competition with it. Buffering would decide *what* to emit — coalescing even
+different-consumer-same-cause blocks into one listing — while a node-memoized walk is the "resolve each
+unique obligation exactly once" primitive a buffered emitter would want underneath it. So this cache is
+a building block for that later work, not throwaway if it lands.
 
 ## Comparison with Clippy
 
@@ -223,44 +313,53 @@ Clippy has no analog to this cache, because it has no analog to the work being c
 passes run only on code that type-checks (the same `after_analysis` gate that forces cargo-cgp's
 resolver into the emitter), so Clippy never re-runs the trait solver from inside diagnostic emission
 and never resolves the same failure at many sites. Where Clippy relies on the compiler's own query
-memoization for repeated `TyCtxt` lookups, cargo-cgp inherits that same memoization for its Class-A
-schema queries (see [The resolve context](resolve-context.md)) — this cache adds the layer rustc does
-*not* provide: memoizing the resolver's own composite walk, whose result is the rustc-free `Resolved`
-tree. There is no Clippy code to follow here; the design is particular to reshaping errors rather than
-adding them.
+memoization for repeated `TyCtxt` lookups, cargo-cgp inherits that same memoization for its schema
+queries (see [The resolve context](resolve-context.md)) — this cache adds the layer rustc does *not*
+provide: memoizing the resolver's own composite walk, whose result is the rustc-free tree. There is no
+Clippy code to follow here; the design is particular to reshaping errors rather than adding them.
 
 ## Tests (planned)
 
 The tests below do not exist yet; they are the coverage the implementation should add.
 
 - **Output-preservation regression guard** — the existing `tests/ui/acceptable/` snapshot suite must
-  re-bless to nothing after either stage lands. This is the primary correctness check: the caches are
-  pure memoization, so any snapshot change is a bug.
-- **Determinism** — a unit test (or a repeated no-bless UI run) confirming `resolve_leaves` yields the
-  same `Resolved` for the same seed, which is the purity the cache assumes; the resolver's placeholder
-  canonicalization is what this pins.
-- **Stage 1 hit accounting** — an instrumented run over an error-heavy fixture (the money-transfer
-  shape) asserting that the eighteen-tree case computes the walk once per distinct seed, not once per
+  re-bless to nothing after the cache lands. This is the primary correctness check: the cache is pure
+  memoization, so any snapshot change is a bug.
+- **Determinism** — a unit test (or a repeated no-bless UI run) confirming the walk yields the same
+  owned sub-chains for the same node, which is the purity the cache assumes; the resolver's placeholder
+  canonicalization, and the branch order that decides which tree a de-duplicated cause keeps, are what
+  this pins.
+- **Whole-crate hit accounting** — an instrumented run over an error-heavy fixture (the money-transfer
+  shape) asserting that the eighteen-tree case computes the walk once per distinct node, not once per
   site.
-- **Stage 2 soundness under a cut** — a fixture whose wiring makes the cycle guard cut a branch on one
-  path and not another for the same interior node, asserting the cut-tainted node is not cached and the
-  later resolution still reports the full cause (guarding the invisible-cut trap directly).
+- **Diamond reuse** — a fixture whose wiring routes several providers through one shared capability,
+  asserting the shared subtree is walked once and spliced into each parent.
+- **Soundness under a cut** — a fixture whose cyclic wiring makes the guard cut a branch on one path
+  and not another for the same node, asserting the incomplete-subtree node is not cached and a later
+  resolution still reports the full cause (guarding the invisible-cut trap directly).
+- **Soundness under reuse** — a fixture with a genuine multi-node cycle where a complete subtree cached
+  from one path is reached under an ancestor set that intersects it, asserting the reachable-set check
+  declines the reuse and the walk cuts correctly.
 
 ## Source (existing and planned)
 
 Existing modules the cache attaches to:
 
 - [`crates/cargo-cgp-driver/src/resolve/walk/leaves.rs`](../../crates/cargo-cgp-driver/src/resolve/walk/leaves.rs)
-  — `resolve_leaves` (Stage 1's memo boundary) and `collect_leaf_paths` (whose cycle guard gains the
-  cut-taint flag for Stage 2).
+  — `resolve_leaves` (the root lookup) and `collect_leaf_paths` (the per-node memo boundary, whose
+  cycle guard and `MAX_DEPTH` backstop gain the incomplete-subtree flag).
 - [`crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs`](../../crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs)
   — `try_resolve` / `transform_resolved`, and the `DedupLedger` the cache composes with; the interim
   home of the cache store before the resolve context exists.
-- [`crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs)
-  — the owned `Resolved` value the cache stores.
+- [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
+  — the owned `Leaf` and `Resolved` values, and the label rendering, that the cache stores.
 
 Planned additions:
 
-- A cache store (both stages, one map) on the [resolve context](resolve-context.md), keyed per the
-  key decision above, with the re-rooting helper for Stage 2's node-rooted fragments.
-- The cut-taint annotation threaded through `collect_leaf_paths` and consumed by the Stage 2 post-pass.
+- A cache store on the [resolve context](resolve-context.md), keyed per the key decision above (the
+  `NodeKey` struct, hashed and compared by a `HashStable` fingerprint of the region-erased obligation
+  and its `ParamEnv`, with readable debug fields alongside and hand-written `Hash`/`Eq` on the
+  fingerprint), whose value is a node's owned root-cause sub-chains together with its
+  reachable-fingerprint set.
+- The incomplete-subtree flag threaded through `collect_leaf_paths`, and the reachable-set
+  disjointness check at each cache consultation.

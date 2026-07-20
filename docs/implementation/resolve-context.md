@@ -102,9 +102,11 @@ value and the mock's answer must be stable modulo those placeholder identities.
 **Class C — genuinely stateful or contextual.** Two different kinds of state live here, and they
 belong in two different places. The first is the **cycle-guarded subtree**: `collect_leaf_paths` in
 [`walk/leaves.rs`](../../crates/cargo-cgp-driver/src/resolve/walk/leaves.rs) carries the ancestor
-`prefix` as a real parameter — the non-cacheable parameter that
-[Stage 2 of the cache](cached-dependency-resolution.md#stage-2-the-interior-node-cache) must handle
-with a cut-taint flag. But this is *not a compiler query*; it is the resolver's own traversal state,
+`prefix` as a real parameter — the ancestor-set input that makes the walk a function of
+`(node, ancestor-set)` rather than the node alone, which the
+[cache](cached-dependency-resolution.md#why-a-node-key-is-not-automatically-a-complete-key) handles
+with an incomplete-subtree flag at population and a reachable-set disjointness check at consultation.
+But this is *not a compiler query*; it is the resolver's own traversal state,
 so it stays in the rustc-free core and is tested directly, never entering the compiler interface. The
 second is the **anchoring**: the anchors in
 [`anchor/`](../../crates/cargo-cgp-driver/src/resolve/anchor) and
@@ -164,10 +166,12 @@ The rough shape is two structs, one per lifetime class:
 // resolution in the compilation. Interior mutability so it is reachable both from the
 // `&self` emitter methods and from inside a `ty::tls::with` closure.
 struct ResolveCache {
-    // Both cache stages share one map. The key is tcx-free — a `StableHash` fingerprint
-    // of the region-erased seed/node, or an owned structural key under the owned-IR route
-    // — and the value is the owned, rustc-free `Resolved` (`None` records a decline).
-    trees: RefCell<HashMap<CacheKey, Option<Resolved>>>,
+    // One map, keyed at every node. The key is tcx-free — hashed and compared by a
+    // `HashStable` fingerprint of the region-erased obligation and its `ParamEnv`, with
+    // readable debug fields alongside for inspecting the store — and the value is the
+    // node's owned, rustc-free root-cause sub-chains together with its reachable-fingerprint
+    // set (see the cache document).
+    nodes: RefCell<HashMap<NodeKey, CachedNode>>,
 }
 
 // The crate/trait-name anchors from `config.rs`, carried for the query methods.
@@ -211,10 +215,10 @@ Second, **the load-bearing difficulty is the type vocabulary, not the operation 
 operations traffic in `Ty<'tcx>`, `DefId`, `TraitRef<'tcx>`, and `GenericArgs<'tcx>`, and those types
 cannot be inhabited without a live `TyCtxt` — a rustc-free stand-in cannot construct a `Ty<'tcx>` — so
 the later components must be defined over an *abstracted* vocabulary (an owned model, or CGP abstract
-types) rather than over rustc's types directly. That same choice decides the
-[cache key](cached-dependency-resolution.md#the-cache-key): while the resolver walks `Ty<'tcx>` the key
-is a `StableHash` fingerprint, and only if the later work moves the walk onto an owned model does the
-key become an owned structural value. Until then, build the cache with the fingerprint key.
+types) rather than over rustc's types directly. That same choice relates to the
+[cache key](cached-dependency-resolution.md#the-cache-key), which keys each obligation by a `StableHash`
+fingerprint (carrying readable fields alongside for debugging); moving the walk itself onto an owned
+model would let structural equality on owned types replace the fingerprint as the key's identity.
 
 Third, **a stand-in validates the resolver's logic, not rustc's behavior.** For the Class A schema
 operations a hand-built graph is a faithful substitute. For the Class B solver operations it is a
