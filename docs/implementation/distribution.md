@@ -392,7 +392,15 @@ Everything that needs the version reads it back from that file:
   `PINNED_TOOLCHAIN` constant — [`cargo-cgp/build.rs`](../../crates/cargo-cgp/build.rs) and
   [`cargo-cgp-driver/build.rs`](../../crates/cargo-cgp-driver/build.rs) both expose it as
   `CARGO_CGP_PINNED_TOOLCHAIN`, which `config.rs` and the driver's `version.rs` read with `env!`. No
-  Rust source names the date.
+  Rust source names the date. Each build script *searches upward* from its manifest directory for the
+  first `rust-toolchain.toml`, rather than hardcoding the workspace-relative path, because the
+  workspace file is not part of a package tarball: when a published crate is built from crates.io (a
+  plain `cargo install cargo-cgp`, or the `cargo install cargo-cgp-driver` that `setup` runs) there is
+  no workspace above it. To keep the value available there, each publishable crate carries a
+  `rust-toolchain.toml` symlink to the workspace file — one physical file, so the single-source-of-truth
+  property holds — which cargo dereferences into a real file in the tarball, and which the upward search
+  then finds in the crate root. A crate's bundled `rust-toolchain.toml` does not affect the installing
+  user's own toolchain, since [`cargo install` ignores it](https://github.com/rust-lang/cargo/issues/11036).
 - The driver's `built-against-rustc` identity is captured automatically: its build script runs
   `$RUSTC --version` on whatever compiler cargo hands it, so the value reflects the toolchain that
   *actually* compiled the driver, with nothing to edit.

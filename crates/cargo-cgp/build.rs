@@ -8,7 +8,7 @@
 use std::path::PathBuf;
 
 fn main() {
-    let toolchain_file = workspace_root().join("rust-toolchain.toml");
+    let toolchain_file = find_toolchain_file();
     println!("cargo::rerun-if-changed={}", toolchain_file.display());
 
     let text = std::fs::read_to_string(&toolchain_file)
@@ -19,9 +19,24 @@ fn main() {
     println!("cargo::rustc-env=CARGO_CGP_PINNED_TOOLCHAIN={channel}");
 }
 
-/// The workspace root, two levels up from this crate (`crates/cargo-cgp`).
-fn workspace_root() -> PathBuf {
-    PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR")).join("../..")
+/// Locate the `rust-toolchain.toml` that pins the channel. A source checkout keeps the one
+/// canonical file at the workspace root; a published crate ships its own copy in the crate
+/// root (see the crate's `rust-toolchain.toml`), because the workspace file is not part of
+/// the package tarball. Walking up from the manifest directory takes the first match, so the
+/// same build script serves both layouts — including the isolated verification build cargo
+/// runs under `target/package/` during `cargo publish`.
+fn find_toolchain_file() -> PathBuf {
+    let start = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
+    for dir in start.ancestors() {
+        let candidate = dir.join("rust-toolchain.toml");
+        if candidate.exists() {
+            return candidate;
+        }
+    }
+    panic!(
+        "could not find rust-toolchain.toml at or above {}",
+        start.display()
+    );
 }
 
 /// Extract the `channel = "..."` value from a `rust-toolchain.toml`, ignoring comments.
