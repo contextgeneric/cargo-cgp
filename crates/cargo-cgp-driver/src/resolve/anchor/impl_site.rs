@@ -8,7 +8,9 @@ use rustc_span::Span;
 
 use crate::resolve::anchor::enclosing_trait_impls;
 use crate::resolve::cache::ResolveCache;
-use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt, is_local_blanket_trait};
+use crate::resolve::cgp_item::{
+    consumer_provider_trait, is_local_adt, is_local_blanket_trait, is_provider_trait,
+};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait
@@ -42,6 +44,15 @@ pub fn resolve_impl_site(
             .impl_trait_ref(impl_did)
             .instantiate_identity()
             .skip_norm_wip();
+        // A provider-trait impl (`impl Runner<Ctx> for RunViaInner`) has a *provider* struct as its
+        // `Self`, not a context, and its only supertrait is `IsProviderFor` — so recovering through it
+        // would reach a consumer only via the `IsProviderFor` workaround this resolver sheds. A caret
+        // on a provider's own impl is a documented decline; skip it here (and in
+        // [`resolve_wrapper_chain`](super::resolve_wrapper_chain)) so a later anchor recovers the
+        // failure from the context instead.
+        if is_provider_trait(tcx, trait_ref.def_id) {
+            continue;
+        }
         let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
         // Only a local struct/enum is a context whose wiring we can re-check; skip an impl on a
         // foreign type (e.g. `impl … for Router<Arc<App>>`) or a type parameter. Such a foreign

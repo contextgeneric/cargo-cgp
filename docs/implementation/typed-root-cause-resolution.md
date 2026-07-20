@@ -236,7 +236,9 @@ appear in the diagnostic's spans (the once-declining `use_type_foreign_unsatisfi
 *foreign generic consumer* gap, the unconditionally-matching dispatch shape
 ([`cascade_after_use_site`](../../tests/ui/acceptable/use-site/cascade_after_use_site.rs), also now
 under `acceptable/`). What still declines is a failure none of the recoveries reach: a caret only on a
-*provider* struct's own impl (whose `Self` is the provider, reaching no consumer on a context), a
+*provider* struct's own impl — whose `Self` is the provider and whose only supertrait is
+`IsProviderFor`, so the impl-site and wrapper-chain anchors skip it rather than route a cause through
+that workaround (and leak the provider trait's `__Context__` and an `IsProviderFor` hop) — a
 generic component's trait definition, a call whose *receiver's type* is not syntactically recoverable
 (a method call's result or a field access, `self.app.handle(…)` — typing those needs the typeck
 results the emitter can never force), or a written type beyond the call-site anchor's small hand

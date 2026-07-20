@@ -12,7 +12,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::anchor::enclosing_trait_impls;
 use crate::resolve::cache::ResolveCache;
-use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt};
+use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt, is_provider_trait};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait for
@@ -43,6 +43,13 @@ pub fn resolve_wrapper_chain(
             .impl_trait_ref(impl_did)
             .instantiate_identity()
             .skip_norm_wip();
+        // A provider-trait impl's `Self` is a provider struct, and its supertrait is `IsProviderFor`,
+        // so descending it would route the cause through that workaround — leaking `IsProviderFor` and
+        // the provider trait's own `__Context__` parameter into the tree. A caret on a provider's own
+        // impl is a documented decline (mirrored in [`resolve_impl_site`](super::resolve_impl_site)).
+        if is_provider_trait(tcx, trait_ref.def_id) {
+            continue;
+        }
         let self_ty = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
         // The direct-supertrait, local-`Self` case is `resolve_impl_site`'s (tried first); here we
         // handle the rest, where the CGP consumer is reached only through `where`-clause hops.

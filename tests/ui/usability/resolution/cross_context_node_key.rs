@@ -14,17 +14,19 @@
 //!
 //! What remains problematic is the presentation around that node, and it is why this fixture is a
 //! usability case rather than an acceptable one:
-//!   - The failure that anchors on `RunViaInner`'s own `where` clause resolves through the impl-site
-//!     anchor onto the *provider* impl, so its dependency tree leaks the reserved `__Context__`
-//!     placeholder and an `IsProviderFor` hop — internals the resolver otherwise never prints. The
-//!     documented resolver boundary is that a caret on a provider struct's own impl should decline;
-//!     this concrete-context `where` clause slips past it.
+//!   - The failure that anchors on `RunViaInner`'s own `where` clause now *declines* — the impl-site
+//!     and wrapper-chain anchors skip an enclosing provider impl (a caret on a provider struct's own
+//!     impl is a documented decline), so the resolver no longer fabricates a tree that leaks the
+//!     reserved `__Context__` placeholder and an `IsProviderFor` hop. But declining leaves rustc's
+//!     own verbose block for that bound; recovering it as the plain `Inner: CanCompute` obligation
+//!     (which would de-duplicate into `Inner`'s own block below) is the remaining work.
 //!   - `Outer`'s own tree descends past `Inner: CanCompute` into `Inner`'s provider chain and bottoms
 //!     out on `[CGP-E201] Inner: HasName` (an ordinary bound) with a spurious `for provider \`Inner\``
-//!     hop, rather than the decoded `[CGP-E106] missing field \`name\`` the sibling blocks show.
+//!     hop, rather than the decoded `[CGP-E106] missing field \`name\`` the sibling blocks show — the
+//!     walk treats a getter on a *foreign* local context as an opaque bound rather than decoding its
+//!     field.
 //!
-//! Recovering these — declining the provider-impl anchor and decoding the foreign-context field leaf
-//! — is the work here. See docs/implementation/cached-dependency-resolution.md (the cache key) and
+//! See docs/implementation/cached-dependency-resolution.md (the cache key) and
 //! docs/implementation/typed-root-cause-resolution.md (the provider-impl anchor boundary).
 
 use cgp::prelude::*;

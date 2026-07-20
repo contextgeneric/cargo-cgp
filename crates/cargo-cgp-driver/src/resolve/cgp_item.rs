@@ -166,6 +166,29 @@ pub(crate) fn is_local_adt(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(def, _) if def.did().is_local())
 }
 
+/// Whether `ty` is a *provider* struct — the concrete `Self` of some provider-trait impl — rather
+/// than a context. A provider is never a context, so a use-site recovery must not treat one as the
+/// failing context even when it merely shares a diagnostic span (rustc names the provider in a
+/// "required for … to implement …" note, whose span can fall inside the provider's own definition).
+/// The delegation blanket `impl<Ctx, P> ProviderTrait<Ctx> for P` has a *type parameter* `Self`, not
+/// an ADT, so it never matches here.
+pub(crate) fn is_provider_struct(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    let ty::Adt(def, _) = ty.kind() else {
+        return false;
+    };
+    let adt_did = def.did();
+    tcx.all_local_trait_impls(())
+        .iter()
+        .filter(|(trait_did, _)| is_provider_trait(tcx, **trait_did))
+        .flat_map(|(_, impls)| impls.iter())
+        .any(|&impl_did| {
+            matches!(
+                tcx.impl_trait_ref(impl_did.to_def_id()).skip_binder().self_ty().kind(),
+                ty::Adt(self_def, _) if self_def.did() == adt_did,
+            )
+        })
+}
+
 /// Whether `ty` is CGP's type-level path spine `PathCons<…>` — an `open`/namespace redirect key,
 /// as opposed to a bare component marker. Anchored by `DefId` to [`CGP_BASE_TYPES_CRATE`].
 pub(crate) fn is_path_cons(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
