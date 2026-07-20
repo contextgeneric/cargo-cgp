@@ -39,7 +39,7 @@ ureq = { version = "3" }
 serde_json = { version = "1" }
 # The rustc-free error-processing library the driver drives. An ordinary crate that does
 # not touch `rustc_private`, so it builds and its tests run on any toolchain.
-cargo-cgp-error-processing = { path = "crates/cargo-cgp-error-processing" }
+cargo-cgp-error-processing = { version = "0.1.0-alpha", path = "crates/cargo-cgp-error-processing" }
 # Renders the transitive dependency chain of a resolved check failure as a `cargo tree`-style
 # tree in the replacement diagnostic. Tiny and dependency-free, so it does not weigh down the
 # rustc-free error-processing crate that hosts the pure renderer.
