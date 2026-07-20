@@ -2,9 +2,11 @@
 
 use cargo_cgp_error_processing::tree::DependencyTree;
 use cargo_cgp_error_processing::{Cause, Resolved, dependency_tree_leaf, elide_repeated_generics};
+use rustc_data_structures::fingerprint::Fingerprint;
+use rustc_data_structures::fx::FxHashSet;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
 
-use crate::resolve::cache::{NodeKey, ResolveCache};
+use crate::resolve::cache::{NodeKey, ResolveCache, SubCause, SubResult, pred_fingerprint};
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, trait_generics};
 use crate::resolve::walk::{
@@ -29,9 +31,10 @@ const MAX_DEPTH: u32 = 256;
 /// chain. The walk descends the consumer trait to its provider trait and on to the provider's real
 /// `where` bounds, never through `IsProviderFor`. `None` when no branch reaches a resolvable leaf.
 ///
-/// Memoized on the region-erased seed and its context through `cache`: one CGP mistake surfaces the
-/// same failure at many sites, each seeding this walk with the same obligation, so the walk runs
-/// once and its owned result is reused. See `docs/implementation/cached-dependency-resolution.md`.
+/// The descent is memoized at **every node** through `cache`: one CGP mistake surfaces the same
+/// failure at many sites (all seeding the same obligation), and a shared capability is a diamond
+/// reached from several parents, so each distinct obligation is resolved once and reused. See
+/// `docs/implementation/cached-dependency-resolution.md`.
 pub(crate) fn resolve_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
@@ -43,71 +46,34 @@ pub(crate) fn resolve_leaves<'tcx>(
     // one chain entry whose `self_ty == context` comparisons fail, mislabeling the consumer node.
     let top = tcx.erase_and_anonymize_regions(top);
     let context = top.skip_binder().self_ty();
-
-    // The context is part of the key because the rendering compares node self-types against it. The
-    // borrow is released before `compute_leaves` runs, so the memo never holds it across the compute.
-    let key = NodeKey::new(tcx, top, context);
-    if let Some(hit) = cache.get(&key) {
-        return hit;
-    }
-    let result = compute_leaves(tcx, top, context);
-    cache.insert(key, result.clone());
-    result
+    compute_leaves(tcx, cache, top, context)
 }
 
-/// The uncached core of [`resolve_leaves`]: walk the already region-erased seed `top` under root
-/// `context` and fold each root→leaf path into a [`Cause`].
+/// Fold the root node's owned sub-causes into a [`Resolved`]: de-duplicate by leaf (one sub-error per
+/// distinct root cause, first occurrence kept), elide repeated generics on each chain, and render the
+/// tree. `top` is already region-erased and `context` is its self type.
 fn compute_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
+    cache: &ResolveCache,
     top: ty::PolyTraitPredicate<'tcx>,
     context: Ty<'tcx>,
 ) -> Option<Resolved> {
+    let sub = resolve_node(tcx, cache, top, None, context, &[], 0);
+
     let mut causes: Vec<Cause> = Vec::new();
-    for path in collect_leaf_paths(tcx, top, context, &[], 0) {
-        // Split off the terminal (leaf) predicate: the chain above it becomes the tree's inner
-        // nodes, and the leaf itself is re-stated as the tree's final leaf below, so the chain
-        // always bottoms out at the root cause rather than one step before it.
-        let Some((leaf_pred, chain)) = path.preds.split_last() else {
-            continue;
-        };
-        let leaf_ref = leaf_pred.skip_binder().trait_ref;
-        // A leaf still carrying one of the seed's unknown-parameter placeholders (the call-site
-        // anchor's stand-in for a call's inferred input) is a bound on a type the recovery could
-        // not know; reporting it would fabricate a requirement (`_: Send`) the programmer cannot
-        // act on, so only a placeholder-free leaf — a dependency that fails whatever the unknown
-        // parameter is — is kept. Placeholder *regions* never reach here: a higher-ranked hop's
-        // leaked placeholders are erased with the rest of a child's regions.
-        if leaf_pred.has_placeholders() {
-            continue;
-        }
-        // A path that bottoms out on pure wiring plumbing (a routing dead-end) is not a root
-        // cause — a real cause is found down another branch — so drop it rather than report it.
-        // The obligation one hop above the leaf (its parent in the chain) is the impl whose
-        // `where`-clause produced the leaf; its `Self` tells a `DelegateComponent` dispatch lookup
-        // into a separate table (`Components` inside `UseDelegate<Components>`) from the self-keyed
-        // delegation blanket, and its trait is the provider trait a non-provider leaf names against.
-        let parent = chain.last().map(|parent| parent.skip_binder().trait_ref);
-        if !is_reportable_leaf(tcx, leaf_ref, context, parent) {
-            continue;
-        }
-        let leaf = classify_leaf(tcx, leaf_ref, context, parent, path.mismatch);
+    for sc in sub.causes {
         // One sub-error per distinct leaf: a leaf wanted by several branches is one fix.
-        if causes.iter().any(|c| c.key() == leaf.key()) {
+        if causes.iter().any(|c| c.key() == sc.leaf.key()) {
             continue;
         }
-        let mut labels: Vec<String> = chain
-            .iter()
-            .filter_map(|pred| label_for(tcx, *pred, context))
-            .collect();
-        // Repeat the root cause as the terminal leaf node, so the tree ends on it — the same shape
-        // whether the leaf is a missing field, an unmet bound, a missing wiring, or a redirect. As
-        // a tree entry it carries its own `CGP-E1xx` code (except a pass-through non-CGP bound).
-        labels.push(dependency_tree_leaf(&leaf));
         // A dispatch chain's plumbing hops all restate the same program-sized trait parameters;
         // elide a hop that exactly repeats its predecessor so the chain reads as its steps.
-        let labels = elide_repeated_generics(labels);
+        let labels = elide_repeated_generics(sc.labels);
         if let Some(tree) = DependencyTree::from_chain(labels) {
-            causes.push(Cause { leaf, tree });
+            causes.push(Cause {
+                leaf: sc.leaf,
+                tree,
+            });
         }
     }
 
@@ -138,90 +104,72 @@ fn compute_leaves<'tcx>(
     })
 }
 
-/// One collected root→leaf path: the chain of trait predicates from the top down to (and
-/// including) the leaf, plus — when the leaf is a field-type mismatch — the type the failing
-/// projection required. A `mismatch` of `Some(expected)` means the last predicate is a `HasField`
-/// bound that *holds* as a trait, and the real fault is the associated-type projection `Value ==
-/// expected`; `None` means an ordinary unmet-bound leaf.
-struct LeafPath<'tcx> {
-    preds: Vec<ty::PolyTraitPredicate<'tcx>>,
-    mismatch: Option<Ty<'tcx>>,
-}
-
-/// Collect every root→leaf path that bottoms out on a terminal unmet bound, by descending the
-/// failing obligation's dependency graph. `pred` is a failing obligation and `prefix` is the path
-/// of predicates above it. A `HasField` completes a path directly; any other obligation contributes
-/// the `where`-clause obligations of the impl that would satisfy it, recursing into just the ones
-/// that do not already hold. An obligation with **no** satisfying impl is itself a terminal leaf
-/// (an ordinary bound like `f64: Eq`). Following *every* unmet dependency (not one) is what surfaces
-/// independent causes as separate paths. Bounded by [`MAX_DEPTH`].
-///
-/// One case does not descend by trait clauses: an unmet obligation whose satisfying impl's
-/// trait-clause `where`-obligations all *hold*. The obligation is then unmet for a reason the
-/// trait-clause walk cannot see — a projection/associated-type mismatch. The resolver looks for one
-/// specific, reportable form: a `HasField` projection (`<Ctx as HasField<Symbol!(..)>>::Value ==
-/// T`) among the impl's own predicates that does not hold — a field present with the wrong type. It
-/// completes the path with that field's `HasField` trait ref and records the expected type as the
-/// path's `mismatch`, so the caller renders a
-/// [`FieldTypeMismatch`](cargo_cgp_error_processing::Leaf::FieldTypeMismatch). A branch with no
-/// such projection yields nothing, so the resolver declines it to the fallback.
-///
-/// A bound on a foreign type (whose `Self` is not the context and whose trait is not CGP wiring)
-/// is normally the terminal leaf — that bound *is* the root cause a reader wants (`f64: Eq`), and
-/// descending it blindly would wander into whatever unrelated `std` blanket impl happens to match
-/// its `Self` (e.g. `impl<F: FnPtr> Eq for F`) and fabricate a misleading chain. Two foreign bounds
-/// are the exception. One is satisfied by an impl that itself depends on the *context* — a request
-/// struct's `HasBasicAuthHeader<Ctx>` getter, whose `#[cgp_auto_getter]` blanket impl requires
-/// `Ctx: HasPasswordType`: there the descent follows only the impl's context-side dependencies (so
-/// the real cause on the context surfaces and de-duplicates with the same cause reached elsewhere).
-/// The other is a **same-trait recursion over a type-level list** — a record's `Cons<Field<..>, ..>:
-/// HandleMapEntry<..>` whose tail is another `Cons<.., Nil>: HandleMapEntry<..>` — which the descent
-/// follows into so a field deep in the list whose value type is unwired is still reached. Following
-/// only context-side deps *and* the same trait keeps the `f64: Eq` guarantee intact: a foreign
-/// `f64: FnPtr` step is neither, so it is never followed and the bound stays the leaf.
-fn collect_leaf_paths<'tcx>(
+/// Resolve one node of the dependency graph to its owned, node-rooted sub-causes, memoized in
+/// `cache`. `pred` is the (already region-erased) failing obligation, `parent` the trait of the
+/// obligation directly above it (needed only to classify a terminal leaf), `context` the root
+/// context, and `prefix` the chain of ancestors above `pred` (for the cycle guard and the reuse
+/// disjointness check). A `HasField`, or an obligation with no satisfying impl, or a foreign bound
+/// with nothing context-side to follow, is a terminal leaf; anything else descends into the unmet
+/// `where`-obligations of the impl that would satisfy it. Only complete (untainted) non-terminal
+/// nodes are cached.
+fn resolve_node<'tcx>(
     tcx: TyCtxt<'tcx>,
+    cache: &ResolveCache,
     pred: ty::PolyTraitPredicate<'tcx>,
+    parent: Option<ty::TraitRef<'tcx>>,
     context: Ty<'tcx>,
     prefix: &[ty::PolyTraitPredicate<'tcx>],
     depth: u32,
-) -> Vec<LeafPath<'tcx>> {
+) -> SubResult {
+    // Depth cap: a divergent wiring the cycle guard cannot catch (obligations that keep growing
+    // without repeating) is cut here. The cut flags the subtree incomplete so it is never cached.
     if depth > MAX_DEPTH {
-        return Vec::new();
+        return SubResult::cut();
     }
 
     // Cycle guard: if this exact obligation already appears among its own ancestors, the wiring
     // loops (a `UseContext` cycle routes `Ctx: CanUseComponent<C>` straight back to itself), so this
-    // branch carries no new root cause — stop rather than descend the loop. This is what lets
-    // [`MAX_DEPTH`] be a high backstop for genuinely deep chains without a cycle spinning down to it
-    // (and overflowing the recursion's stack): a real cycle bottoms out here, at its first repeat,
-    // not at the depth cap. Regions are erased so a loop that only differs by lifetime is still seen.
+    // branch carries no new root cause — stop rather than descend the loop. Regions are erased so a
+    // loop that only differs by lifetime is still seen. The cut flags the subtree incomplete, which
+    // propagates up so no ancestor whose result depended on the cut is cached.
     let erased = tcx.erase_and_anonymize_regions(pred);
     if prefix
         .iter()
         .any(|ancestor| tcx.erase_and_anonymize_regions(*ancestor) == erased)
     {
-        return Vec::new();
+        return SubResult::cut();
     }
 
-    let mut path = prefix.to_vec();
-    path.push(pred);
-
-    if is_has_field(tcx, pred) {
-        return vec![LeafPath {
-            preds: path,
-            mismatch: None,
-        }];
+    // Interior-cache consult. Only complete non-terminal nodes are ever stored, so this hits only a
+    // fully-explored subtree; reuse it only when no current ancestor lies inside it, since otherwise
+    // splicing it would keep a branch a fresh walk's cycle guard would cut here.
+    let key = NodeKey::new(tcx, erased, context);
+    if let Some(cached) = cache.get(&key) {
+        let reusable = prefix.iter().all(|ancestor| {
+            !cached.reachable.contains(&pred_fingerprint(
+                tcx,
+                tcx.erase_and_anonymize_regions(*ancestor),
+            ))
+        });
+        if reusable {
+            return cached;
+        }
     }
 
-    let descendable = is_descendable(tcx, pred, context);
+    let self_fp = pred_fingerprint(tcx, erased);
+    let leaf_ref = erased.skip_binder().trait_ref;
 
-    let Some(children) = impl_where_obligations(tcx, pred) else {
+    // A `HasField` completes a path directly — a terminal leaf, not cached (its classification can
+    // read its parent, which lies outside a leaf-rooted subtree, and it is cheap to re-derive).
+    if is_has_field(tcx, erased) {
+        return terminal_result(tcx, erased, leaf_ref, parent, context, self_fp);
+    }
+
+    let descendable = is_descendable(tcx, erased, context);
+
+    let Some(children) = impl_where_obligations(tcx, erased) else {
         // No impl satisfies `pred` at all — `pred` is itself the terminal root-cause bound.
-        return vec![LeafPath {
-            preds: path,
-            mismatch: None,
-        }];
+        return terminal_result(tcx, erased, leaf_ref, parent, context, self_fp);
     };
 
     let unmet: Vec<_> = children
@@ -230,74 +178,165 @@ fn collect_leaf_paths<'tcx>(
         // Drop the check-trait scaffolding wherever it appears as a dependency: the generated
         // blanket impls carry a `CanUseComponent`/`IsProviderFor` bound *beside* the real consumer
         // or provider-trait obligation, and only the latter is walked — the `IsProviderFor` bound
-        // just re-states the provider's `where` clause, which the real provider impl already
-        // carries. Following it would route the cause through `IsProviderFor` (and let its copy of
-        // the bounds win the per-leaf de-duplication over the real provider chain), which is exactly
-        // the dependency on `IsProviderFor` cargo-cgp is shedding.
+        // just re-states the provider's `where` clause, which the real provider impl already carries.
         .filter(|nested| !is_workaround_plumbing(tcx, *nested))
         .collect();
 
-    if !descendable {
-        // A foreign-type bound — its `Self` is not the context and its trait is not CGP wiring —
-        // is normally the terminal root cause, and the descent must not walk into whatever `std`
-        // blanket impl happens to satisfy it (an `impl<F: FnPtr> Eq for F` would fabricate a
-        // misleading `f64: FnPtr` step). But a CGP getter or capability trait applied to a
-        // *non-context* type — a request struct's `HasBasicAuthHeader<Ctx>`, whose
-        // `#[cgp_auto_getter]` blanket impl requires `Ctx: HasPasswordType` — is often unmet only
-        // because a dependency *on the context* is unmet. So look into that blanket impl and
-        // descend into just its context-side dependencies, which reveals the real cause (and lets
-        // it de-duplicate with the same cause reached down another branch). The context-side
-        // filter is what keeps the `f64: Eq` guarantee: a foreign `f64: FnPtr` step is not
-        // context-side, so it is never followed and the bound stays the leaf. It also skips the
-        // getter's own `Ctx::Assoc`-typed `HasField` clause on the request (present, but a
-        // projection mismatch), which a plain descent would misreport as a missing field.
-        //
-        // A foreign trait that recurses over a type-level list also reaches the context only
-        // deeper: a record's `Cons<Field<.., V0>, Cons<Field<.., V1>, Nil>>: HandleMapEntry<.., Ctx,
-        // ..>` handles its head field's `Ctx: CanDeserializeValue<V0>` here but its later fields
-        // through the **tail** `Cons<.., Nil>: HandleMapEntry<..>` — a same-trait bound on another
-        // foreign list node. So a same-trait recursion is followed alongside the context-side deps,
-        // which lets the walk reach the field whose dependency is the real cause. Following only the
-        // *same* trait keeps the `f64: Eq` guarantee: a foreign leaf's `impl` dep is a *different*
-        // trait (`f64: FnPtr`), so it is never mistaken for a structural recursion.
-        let this_trait = pred.def_id();
+    // Decide the children to descend, or return a terminal / projection result directly.
+    let children: Vec<ty::PolyTraitPredicate<'tcx>> = if !descendable {
+        // A foreign-type bound is normally the terminal root cause, and the descent must not wander
+        // into whatever `std` blanket impl happens to satisfy it. Two exceptions are followed: a CGP
+        // getter/capability on a non-context type whose blanket impl depends on the *context* (so the
+        // real cause surfaces and de-duplicates), and a same-trait recursion over a type-level list
+        // (a record's `Cons<..>: HandleMapEntry<..>` whose tail is another `Cons<.., Nil>: …`). A
+        // foreign `f64: FnPtr` step is neither, so the bound stays the leaf.
+        let this_trait = erased.def_id();
         let followable: Vec<_> = unmet
             .into_iter()
             .filter(|nested| is_descendable(tcx, *nested, context) || nested.def_id() == this_trait)
             .collect();
         if followable.is_empty() {
-            return vec![LeafPath {
-                preds: path,
-                mismatch: None,
-            }];
+            return terminal_result(tcx, erased, leaf_ref, parent, context, self_fp);
         }
-        let mut paths = Vec::new();
-        for nested in followable {
-            paths.extend(collect_leaf_paths(tcx, nested, context, &path, depth + 1));
-        }
-        return paths;
-    }
-
-    if unmet.is_empty() {
-        // Matched an impl, yet every trait-clause `where`-obligation holds: the fault is a
-        // projection the trait-clause walk cannot see. Surface the one form we can pin down — a
-        // `HasField::Value` mismatch (a field present with the wrong type) — and decline anything
-        // else to the fallback.
-        return match has_field_projection_mismatch(tcx, pred) {
+        followable
+    } else if unmet.is_empty() {
+        // Matched an impl, yet every trait-clause `where`-obligation holds: the fault is a projection
+        // the trait-clause walk cannot see. Surface the one form we can pin down — a `HasField::Value`
+        // mismatch (a field present with the wrong type) — and decline anything else. Either way the
+        // node matched an impl, so it is a complete non-terminal and is cached.
+        let result = match has_field_projection_mismatch(tcx, erased) {
             Some((field_ref, expected)) => {
-                path.push(ty::Binder::dummy(field_ref).upcast(tcx));
-                vec![LeafPath {
-                    preds: path,
-                    mismatch: Some(expected),
-                }]
+                projection_result(tcx, erased, leaf_ref, context, field_ref, expected, self_fp)
             }
-            None => Vec::new(),
+            None => SubResult::empty(self_fp),
         };
-    }
+        return cache_if_complete(cache, key, result);
+    } else {
+        unmet
+    };
 
-    let mut paths = Vec::new();
-    for nested in unmet {
-        paths.extend(collect_leaf_paths(tcx, nested, context, &path, depth + 1));
+    // Non-terminal: merge the children's subtrees, prepending this node's label to each sub-chain.
+    let node_label = label_for(tcx, erased, context);
+    let child_prefix: Vec<_> = prefix
+        .iter()
+        .copied()
+        .chain(std::iter::once(erased))
+        .collect();
+    let mut causes: Vec<SubCause> = Vec::new();
+    let mut reachable: FxHashSet<Fingerprint> = FxHashSet::default();
+    reachable.insert(self_fp);
+    let mut incomplete = false;
+    for child in children {
+        let sub = resolve_node(
+            tcx,
+            cache,
+            child,
+            Some(leaf_ref),
+            context,
+            &child_prefix,
+            depth + 1,
+        );
+        incomplete |= sub.incomplete;
+        reachable.extend(sub.reachable);
+        for mut sc in sub.causes {
+            if let Some(label) = &node_label {
+                // Prepend this node's label so the stored sub-chain is rooted at this node.
+                sc.labels.insert(0, label.clone());
+            }
+            causes.push(sc);
+        }
     }
-    paths
+    cache_if_complete(
+        cache,
+        key,
+        SubResult {
+            causes,
+            reachable,
+            incomplete,
+        },
+    )
+}
+
+/// Store `result` under `key` when it is complete (untainted by a cycle or depth cut), and return
+/// it. An incomplete subtree is never cached, so a later reuse can never under-report a branch a
+/// guard curtailed.
+fn cache_if_complete(cache: &ResolveCache, key: NodeKey, result: SubResult) -> SubResult {
+    if !result.incomplete {
+        cache.insert(key, result.clone());
+    }
+    result
+}
+
+/// Build the sub-result for a terminal leaf `leaf_ref` (a `HasField`, an impl-less bound, or a
+/// foreign bound with nothing to follow). Drops a leaf still carrying a call-site placeholder (an
+/// unknowable `_: Send`) and a non-reportable plumbing dead-end, in both cases as a complete
+/// no-cause result. Not cached — the classification reads `parent`, which lies outside the leaf.
+fn terminal_result<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    erased: ty::PolyTraitPredicate<'tcx>,
+    leaf_ref: ty::TraitRef<'tcx>,
+    parent: Option<ty::TraitRef<'tcx>>,
+    context: Ty<'tcx>,
+    self_fp: Fingerprint,
+) -> SubResult {
+    // A leaf still carrying one of the seed's unknown-parameter placeholders (the call-site anchor's
+    // stand-in for a call's inferred input) is a bound on a type the recovery could not know, so it
+    // is dropped rather than reported as a fabricated `_: Send`.
+    if erased.has_placeholders() {
+        return SubResult::empty(self_fp);
+    }
+    // A path that bottoms out on pure wiring plumbing (a routing dead-end) is not a root cause.
+    if !is_reportable_leaf(tcx, leaf_ref, context, parent) {
+        return SubResult::empty(self_fp);
+    }
+    let leaf = classify_leaf(tcx, leaf_ref, context, parent, None);
+    let label = dependency_tree_leaf(&leaf);
+    let mut reachable = FxHashSet::default();
+    reachable.insert(self_fp);
+    SubResult {
+        causes: vec![SubCause {
+            leaf,
+            labels: vec![label],
+        }],
+        reachable,
+        incomplete: false,
+    }
+}
+
+/// Build the sub-result for a field-type mismatch: the impl matched with every trait-clause holding,
+/// but a `HasField::Value` projection is wrong. The node itself becomes a chain hop (its label) and
+/// the field's `HasField` ref is the terminal leaf, carrying the expected type. `parent_ref` (the
+/// node's own trait) is the field leaf's parent.
+fn projection_result<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    erased: ty::PolyTraitPredicate<'tcx>,
+    parent_ref: ty::TraitRef<'tcx>,
+    context: Ty<'tcx>,
+    field_ref: ty::TraitRef<'tcx>,
+    expected: Ty<'tcx>,
+    self_fp: Fingerprint,
+) -> SubResult {
+    let leaf_poly: ty::PolyTraitPredicate<'tcx> = ty::Binder::dummy(field_ref).upcast(tcx);
+    if leaf_poly.has_placeholders() {
+        return SubResult::empty(self_fp);
+    }
+    let parent = Some(parent_ref);
+    if !is_reportable_leaf(tcx, field_ref, context, parent) {
+        return SubResult::empty(self_fp);
+    }
+    let leaf = classify_leaf(tcx, field_ref, context, parent, Some(expected));
+    let leaf_label = dependency_tree_leaf(&leaf);
+    let mut labels = Vec::new();
+    if let Some(node_label) = label_for(tcx, erased, context) {
+        labels.push(node_label);
+    }
+    labels.push(leaf_label);
+    let mut reachable = FxHashSet::default();
+    reachable.insert(self_fp);
+    reachable.insert(pred_fingerprint(tcx, leaf_poly));
+    SubResult {
+        causes: vec![SubCause { leaf, labels }],
+        reachable,
+        incomplete: false,
+    }
 }

@@ -376,9 +376,10 @@ separate header brand; the inline code is the only marking.
     shared `PathCons`/`Nil`/local-ADT recognizers. A sibling
     [`conflict/`](../../crates/cargo-cgp-driver/src/resolve/conflict) handles the duplicate-key
     `E0119` conflict — a separate transform documented in
-    [The driver](driver.md#reshaping-a-duplicate-key-conflict). A sibling `cache.rs` memoizes
-    `resolve_leaves` on its region-erased seed and context, so a wiring failure re-reported at many
-    sites is walked once (see [Cached dependency resolution](cached-dependency-resolution.md)).
+    [The driver](driver.md#reshaping-a-duplicate-key-conflict). A sibling `cache.rs` memoizes the
+    walk at every node — keyed on the region-erased obligation and context — so a wiring failure
+    re-reported at many sites, or a shared capability, is walked once (see
+    [Cached dependency resolution](cached-dependency-resolution.md)).
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the `try_resolve`
   seam (gated by a cheap `mentions_wiring` scan, an `E0271`/`E0277` code, or a method-bounds `E0599`,
   with a resolution-class `E0599` excluded so the solver never runs on an error emitted

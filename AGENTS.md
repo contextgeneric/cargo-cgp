@@ -219,9 +219,9 @@ tree label, `conflict/` classifies a duplicate-key `E0119` by reading the two co
 impls off the compiler (which keys collide, whether either is a `RedirectLookup`),
 and `cgp_item.rs` holds the DefId-anchored CGP-trait recognition every stage relies on (see
 [Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md) and its per-stage
-sub-documents). `cache.rs` memoizes the walk on its region-erased seed and context so a mistake
-re-reported at many sites is resolved once (see
-[Cached dependency resolution](docs/implementation/cached-dependency-resolution.md)).
+sub-documents). `cache.rs` memoizes the walk at every node — keyed on the region-erased obligation and context —
+so a mistake re-reported at many sites, or a capability depended on by many providers, is resolved
+once (see [Cached dependency resolution](docs/implementation/cached-dependency-resolution.md)).
 `component_map.rs` builds the component-marker → consumer/provider trait-name map by querying the
 trait solver. Everything downstream of the resolver's rustc-free `Resolved` model — the
 header/note/help wording, the tree-label templates, the diagnostic plan, the wiring rewrite, the

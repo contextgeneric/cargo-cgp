@@ -20,7 +20,11 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// placeholder-free root cause is found.
 ///
 /// Tried last: a failure any span-matching anchor can recover keeps its more precise recovery.
-pub fn resolve_call_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -> Option<Resolved> {
+pub fn resolve_call_site(
+    tcx: TyCtxt<'_>,
+    cache: &ResolveCache,
+    spans: &[Span],
+) -> Option<Resolved> {
     for call in method_calls_at(tcx, spans) {
         let Some(context) = receiver_context(tcx, call.receiver) else {
             continue;

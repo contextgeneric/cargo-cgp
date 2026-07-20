@@ -31,7 +31,11 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// Because the wrapper is a distinct trait from that supertrait, its error stands on its own rather
 /// than de-duplicating into the `check_components!` entry. `None` when no enclosing impl on a local
 /// context carries an unmet, reconstructable CGP consumer supertrait.
-pub fn resolve_impl_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -> Option<Resolved> {
+pub fn resolve_impl_site(
+    tcx: TyCtxt<'_>,
+    cache: &ResolveCache,
+    spans: &[Span],
+) -> Option<Resolved> {
     for impl_did in enclosing_trait_impls(tcx, spans) {
         // Safe because `enclosing_trait_impls` keeps only `of_trait` impls.
         let trait_ref = tcx

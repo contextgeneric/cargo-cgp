@@ -5,14 +5,13 @@ mistake produces, and across the branches of a single walk — so this document 
 that resolves each distinct obligation once and reuses the result everywhere it recurs, without
 changing a byte of the output.
 
-**Status: partially implemented.** The cache is consulted at each walk's **root** today —
-`resolve_leaves` is memoized on the region-erased seed and its context — which captures the dominant
-cross-site redundancy (the eighteen-tree case), and is verified output-preserving against the whole
-`tests/ui/acceptable/` suite. The extension to **every interior node** — the mid-walk consultation
-that also closes the intra-walk diamond, with the incomplete-subtree flag at population and the
-reachable-set disjointness check at consultation — remains a blueprint ahead of implementation. This
-document records the full design so the remainder can be built directly against it; the sections below
-describe the whole mechanism, and note where the interior-node part is not yet built.
+**Status: implemented.** The cache is consulted at **every node**: `resolve_node` memoizes each
+interior node on its region-erased obligation and root context, with the incomplete-subtree flag at
+population and the reachable-set disjointness check at consultation, and `resolve_leaves` folds the
+root node's owned sub-result into the diagnostic. It is verified output-preserving against the whole
+`tests/ui/acceptable/` suite. What is not yet added is dedicated test coverage for the cyclic-soundness
+paths — the incomplete-subtree cut and the reuse disjointness check — which the existing acyclic
+fixtures exercise only incidentally (see [Tests](#tests)).
 
 It is a companion to [The resolve context](resolve-context.md), which houses the cache and frames it
 as one instance of a larger goal — a rustc-free, mockable resolution core — and to
@@ -313,19 +312,16 @@ boundary is clean even though the resolver runs inside a diagnostic being emitte
 
 ## Sequencing and relation to diagnostic buffering
 
-The one split that is sound is **root consultation versus interior consultation**, and it is the split
-the implementation follows. Consulting only at a walk's root — memoizing `resolve_leaves` on the seed —
-needs neither guard: the seed has an empty ancestor prefix, so the cycle question never arises, and it
-is always resolved at full depth, so the incomplete-subtree flag never bites. That layer is therefore a
-sound standalone increment, and it is the one built today; it captures the dominant cross-site win on
-its own. The *interior*-node consultation is what must be built as one piece — the node key's context
-field, the incomplete-subtree flag, and the reachable-set disjointness check are not separable, because
-consulting a cached subtree mid-walk without them is unsound the moment a cycle reaches the walk. The
-pragmatic call for that piece is not *what* to build but *whether* it earns its cost: the diamond win
-it adds is a no-op in acyclic wiring, so the honest way to answer is to instrument node-lookup counts,
-distinct-node counts, and would-be hit rates against an error-heavy project, confirm the residual is
-real, and keep the reachable-set guard regardless because dropping it would reintroduce the reliance on
-upstream cycle interception the resolver refuses.
+The cache was built in two increments, and the split between them is the one that is sound to make.
+Root consultation — memoizing at a walk's seed — needs neither guard: the seed has an empty ancestor
+prefix, so the cycle question never arises, and it is always resolved at full depth, so the
+incomplete-subtree flag never bites. It landed first as a sound standalone step that captures the
+dominant cross-site win. Interior consultation — consulting at every node — is the piece that must go
+in as a whole, because the node key's context field, the incomplete-subtree flag, and the reachable-set
+disjointness check are not separable: consulting a cached subtree mid-walk without them is unsound the
+moment a cycle reaches the walk. Both are now in. The reachable-set guard stays even though its cost is
+a no-op in acyclic wiring, because dropping it would reintroduce the reliance on upstream cycle
+interception the resolver refuses.
 
 The cache is complementary to the diagnostic-buffering work the [usability issues](../issues/usability.md)
 anticipate, not in competition with it. Buffering would decide *what* to emit — coalescing even
@@ -344,13 +340,19 @@ queries (see [The resolve context](resolve-context.md)) — this cache adds the 
 provide: memoizing the resolver's own composite walk, whose result is the rustc-free tree. There is no
 Clippy code to follow here; the design is particular to reshaping errors rather than adding them.
 
-## Tests (planned)
+## Tests
 
-The tests below do not exist yet; they are the coverage the implementation should add.
+The primary guard is met; the rest is coverage still to add.
 
-- **Output-preservation regression guard** — the existing `tests/ui/acceptable/` snapshot suite must
-  re-bless to nothing after the cache lands. This is the primary correctness check: the cache is pure
-  memoization, so any snapshot change is a bug.
+- **Output-preservation regression guard** (met) — the existing `tests/ui/acceptable/` snapshot suite
+  passes with no re-bless after the cache landed, both the root and the interior layer. This is the
+  primary correctness check: the cache is pure memoization, so any snapshot change would be a bug. It
+  also exercises the incidental paths — the cross-site re-report reuse (`cross_site_dedup`,
+  `manual_supertrait_impl`) and, where a cycle reaches the walk, the incomplete-subtree cut
+  (`use_context_cycle`).
+
+The tests below do not exist yet; they are the coverage still to add.
+
 - **Determinism** — a unit test (or a repeated no-bless UI run) confirming the walk yields the same
   owned sub-chains for the same node, which is the purity the cache assumes; the resolver's placeholder
   canonicalization, and the branch order that decides which tree a de-duplicated cause keeps, are what
@@ -367,29 +369,24 @@ The tests below do not exist yet; they are the coverage the implementation shoul
   from one path is reached under an ancestor set that intersects it, asserting the reachable-set check
   declines the reuse and the walk cuts correctly.
 
-## Source (existing and planned)
-
-Implemented — the root-consultation layer:
+## Source
 
 - [`crates/cargo-cgp-driver/src/resolve/cache.rs`](../../crates/cargo-cgp-driver/src/resolve/cache.rs)
   — the `NodeKey` (a `StableHash` `Fingerprint` of the region-erased obligation and its context for
-  `Hash`/`Eq`, with readable debug fields and a derived `Debug`) and the `ResolveCache` store (a
-  `RefCell<HashMap>` of owned `Option<Resolved>`).
+  `Hash`/`Eq`, with readable debug fields and a derived `Debug`), the owned `SubCause` / `SubResult`
+  values (the node-rooted sub-chains, the reachable-fingerprint set, and the incomplete flag), the
+  `pred_fingerprint` helper for reachable entries, and the `ResolveCache` store (a `RefCell<HashMap>`
+  of `SubResult`).
 - [`crates/cargo-cgp-driver/src/resolve/walk/leaves.rs`](../../crates/cargo-cgp-driver/src/resolve/walk/leaves.rs)
-  — `resolve_leaves` memoizes on the seed key and delegates to the uncached `compute_leaves`;
-  `collect_leaf_paths` is unchanged, and gains the incomplete-subtree flag only when interior
-  consultation is built.
+  — `resolve_node` memoizes each node: it consults the cache (reusing a complete subtree only when the
+  current ancestor prefix is disjoint from its reachable set), descends into terminal / projection /
+  merge branches building owned node-rooted sub-chains, flags a cycle or depth cut incomplete, and
+  caches every complete non-terminal node. `resolve_leaves` erases the seed and delegates to
+  `compute_leaves`, which folds the root node's `SubResult` into a `Resolved` (de-duplicate, elide,
+  render).
 - [`crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs`](../../crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs)
   — `try_resolve` threads `&self.resolve_cache` through the six anchors to `resolve_leaves`; the
   `ResolveCache` lives on `CgpEmitter` beside `dedup` (moving it onto the resolve context is that
   document's refactor). The `DedupLedger` it composes with is here too.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
   — the owned `Leaf` and `Resolved` values, and the label rendering, that the cache stores.
-
-Planned additions — the interior-node layer:
-
-- Threading the cache into `collect_leaf_paths`, which returns owned node-rooted sub-chains so an
-  interior node can be cached and reused (moving the classification and label rendering inline).
-- The incomplete-subtree flag (cycle cut and `MAX_DEPTH`) threaded through `collect_leaf_paths`, the
-  reachable-fingerprint set stored per entry, and the reachable-set disjointness check at each
-  interior consultation.
