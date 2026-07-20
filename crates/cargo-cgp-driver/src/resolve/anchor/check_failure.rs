@@ -7,6 +7,7 @@ use rustc_span::def_id::DefId;
 
 use crate::config::{CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE};
 use crate::resolve::anchor::{consumer_obligation, impl_self_ty_span};
+use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{is_cgp_item, marker_to_consumer};
 use crate::resolve::walk::resolve_leaves;
 
@@ -18,7 +19,11 @@ use crate::resolve::walk::resolve_leaves;
 /// this reads to learn *which* component the entry checks — but it then walks the real consumer
 /// obligation `Ctx: ConsumerTrait<Params…>` that marker stands for, never the `CanUseComponent` /
 /// `IsProviderFor` scaffolding, so the resolution does not depend on `IsProviderFor`.
-pub fn resolve_check_failure(tcx: TyCtxt<'_>, primary_span: Span) -> Option<Resolved> {
+pub fn resolve_check_failure(
+    tcx: TyCtxt<'_>,
+    cache: &ResolveCache,
+    primary_span: Span,
+) -> Option<Resolved> {
     for trait_did in tcx.all_traits_including_private() {
         let Some(super_clause) = can_use_component_supertrait(tcx, trait_did) else {
             continue;
@@ -43,7 +48,7 @@ pub fn resolve_check_failure(tcx: TyCtxt<'_>, primary_span: Span) -> Option<Reso
             let Some(top) = can_use_to_consumer_obligation(tcx, can_use) else {
                 continue;
             };
-            if let Some(resolved) = resolve_leaves(tcx, top) {
+            if let Some(resolved) = resolve_leaves(tcx, cache, top) {
                 return Some(resolved);
             }
         }

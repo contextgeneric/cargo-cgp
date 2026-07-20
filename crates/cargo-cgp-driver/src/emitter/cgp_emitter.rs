@@ -22,7 +22,7 @@ use crate::emitter::edit::{
     mentions_hasfield_impls, mentions_wiring, message_signature, postprocess_messages,
     postprocess_multispan, replace_header, rewrite_messages, strip_method_probe_advice, subdiag,
 };
-use crate::resolve::{self, ConflictAction, ConflictTrait};
+use crate::resolve::{self, ConflictAction, ConflictTrait, ResolveCache};
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
 /// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
@@ -45,6 +45,12 @@ pub struct CgpEmitter<E> {
     /// a resolved diagnostic, the rendered text for a declined-but-rewritten one, and the coded
     /// header — live with the ledger in the rustc-free crate.
     dedup: DedupLedger,
+    /// Memoization of the typed resolver's walk, so a wiring mistake re-reported at many sites is
+    /// resolved once and reused rather than re-walked per diagnostic (see
+    /// [`ResolveCache`] and `docs/implementation/cached-dependency-resolution.md`). Keyed on the
+    /// region-erased seed obligation and its context, valued by the owned `Resolved`, so entries
+    /// persist for the whole compilation like [`names`](Self::names) and [`dedup`](Self::dedup).
+    resolve_cache: ResolveCache,
     /// The primary spans of every CGP wiring failure this emitter has recognized this
     /// compilation. Used to drop a downstream `?`-operator cascade
     /// ([`is_question_mark_cascade`]) that lands on the same expression: once a wiring bound on
@@ -61,6 +67,7 @@ impl<E> CgpEmitter<E> {
             inner,
             names: ComponentNameMap::new(build_name_map_from_tls),
             dedup: DedupLedger::new(),
+            resolve_cache: ResolveCache::new(),
             cgp_spans: Vec::new(),
         }
     }
@@ -181,6 +188,7 @@ impl<E> CgpEmitter<E> {
             return None;
         }
         let primary_span = diag.span.primary_span()?;
+        let cache = &self.resolve_cache;
         let (resolved, at_call) = rustc_middle::ty::tls::with_opt(|tcx| {
             let tcx = tcx?;
             let spans = diagnostic_spans(diag);
@@ -193,15 +201,15 @@ impl<E> CgpEmitter<E> {
             // failure sits several `where`-clause hops down. Failing all — a use-site failure such
             // as a consumer-method call, whose obligation no check impl carries — recover the
             // context from the diagnostic's spans.
-            let resolved = resolve::resolve_check_failure(tcx, primary_span)
-                .or_else(|| resolve::resolve_impl_site(tcx, &spans))
-                .or_else(|| resolve::resolve_wrapper_chain(tcx, &spans))
-                .or_else(|| resolve::resolve_use_site(tcx, &spans))
+            let resolved = resolve::resolve_check_failure(tcx, cache, primary_span)
+                .or_else(|| resolve::resolve_impl_site(tcx, cache, &spans))
+                .or_else(|| resolve::resolve_wrapper_chain(tcx, cache, &spans))
+                .or_else(|| resolve::resolve_use_site(tcx, cache, &spans))
                 // A namespace-joined context's wiring lives in the namespace, not its own
                 // `DelegateComponent` impls, so the per-component re-check above finds nothing;
                 // anchoring on the consumer trait the diagnostic names and walking through the
                 // namespace recovers it.
-                .or_else(|| resolve::resolve_use_site_consumer(tcx, &spans));
+                .or_else(|| resolve::resolve_use_site_consumer(tcx, cache, &spans));
             if let Some(resolved) = resolved {
                 return Some((resolved, false));
             }
@@ -210,7 +218,7 @@ impl<E> CgpEmitter<E> {
             // `Code`-dispatched handler pipeline that matches unconditionally). A resolution from
             // here is flagged, so the header is worded from the consumer the call needs rather
             // than from whichever provider bound rustc's headline stopped on.
-            Some((resolve::resolve_call_site(tcx, &spans)?, true))
+            Some((resolve::resolve_call_site(tcx, cache, &spans)?, true))
         })?;
         Some((resolved, primary_span, at_call))
     }

@@ -7,6 +7,7 @@ use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
+use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{receiver_context, seed_from_call};
 use crate::resolve::cgp_item::{is_consumer_trait, is_local_adt};
 use crate::resolve::walk::{holds, resolve_leaves};
@@ -19,7 +20,7 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// placeholder-free root cause is found.
 ///
 /// Tried last: a failure any span-matching anchor can recover keeps its more precise recovery.
-pub fn resolve_call_site(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
+pub fn resolve_call_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -> Option<Resolved> {
     for call in method_calls_at(tcx, spans) {
         let Some(context) = receiver_context(tcx, call.receiver) else {
             continue;
@@ -38,7 +39,7 @@ pub fn resolve_call_site(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
             if holds(tcx, top) {
                 continue;
             }
-            if let Some(resolved) = resolve_leaves(tcx, top) {
+            if let Some(resolved) = resolve_leaves(tcx, cache, top) {
                 return Some(resolved);
             }
         }

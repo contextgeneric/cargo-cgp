@@ -11,6 +11,7 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::anchor::enclosing_trait_impls;
+use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt};
 use crate::resolve::walk::{holds, resolve_leaves};
 
@@ -32,7 +33,11 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// obligation with the trait solver rather than trusting rustc's cascade-suppressed diagnostic, it
 /// recovers the cause even where rustc's own error names only the outermost unsatisfied bound.
 /// `None` when no enclosing impl's supertrait chain reaches a CGP consumer on a local context.
-pub fn resolve_wrapper_chain(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
+pub fn resolve_wrapper_chain(
+    tcx: TyCtxt<'_>,
+    cache: &ResolveCache,
+    spans: &[Span],
+) -> Option<Resolved> {
     for impl_did in enclosing_trait_impls(tcx, spans) {
         let trait_ref = tcx
             .impl_trait_ref(impl_did)
@@ -58,7 +63,7 @@ pub fn resolve_wrapper_chain(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved
             if holds(tcx, sup) {
                 continue;
             }
-            collect_wrapper_chain_causes(tcx, sup, &[], 0, &mut causes);
+            collect_wrapper_chain_causes(tcx, cache, sup, &[], 0, &mut causes);
         }
 
         if !causes.is_empty() {
@@ -106,6 +111,7 @@ const MAX_WRAPPER_DEPTH: u32 = 32;
 /// so a wandering descent cannot fabricate a cause.
 fn collect_wrapper_chain_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
+    cache: &ResolveCache,
     obligation: ty::PolyTraitPredicate<'tcx>,
     chain: &[String],
     depth: u32,
@@ -117,7 +123,7 @@ fn collect_wrapper_chain_causes<'tcx>(
 
     // The handoff: `obligation` is a CGP consumer on a local context. Recover its cause tree and
     // prepend the chain of ordinary hops that led here.
-    if let Some(causes) = consumer_handoff_causes(tcx, obligation) {
+    if let Some(causes) = consumer_handoff_causes(tcx, cache, obligation) {
         for cause in causes {
             if out.iter().any(|c| c.key() == cause.key()) {
                 continue;
@@ -147,7 +153,7 @@ fn collect_wrapper_chain_causes<'tcx>(
         if holds(tcx, child) {
             continue;
         }
-        collect_wrapper_chain_causes(tcx, child, &next_chain, depth + 1, out);
+        collect_wrapper_chain_causes(tcx, cache, child, &next_chain, depth + 1, out);
     }
 }
 
@@ -160,6 +166,7 @@ fn collect_wrapper_chain_causes<'tcx>(
 /// consumer — so the descent keeps walking rather than stopping on an ordinary bound.
 fn consumer_handoff_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
+    cache: &ResolveCache,
     obligation: ty::PolyTraitPredicate<'tcx>,
 ) -> Option<Vec<Cause>> {
     let trait_ref = obligation.skip_binder().trait_ref;
@@ -170,7 +177,7 @@ fn consumer_handoff_causes<'tcx>(
     // A CGP consumer trait pairs with a provider trait through its blanket impl; a plain trait does
     // not, so it is not a handoff.
     consumer_provider_trait(tcx, trait_ref.def_id)?;
-    let resolved = resolve_leaves(tcx, obligation)?;
+    let resolved = resolve_leaves(tcx, cache, obligation)?;
     Some(resolved.causes)
 }
 

@@ -21,6 +21,7 @@
 //! and words which keys collide.
 
 mod anchor;
+mod cache;
 mod call_site;
 mod cgp_item;
 mod classify;
@@ -32,5 +33,6 @@ pub use anchor::{
     resolve_check_failure, resolve_impl_site, resolve_use_site, resolve_use_site_consumer,
     resolve_wrapper_chain,
 };
+pub use cache::ResolveCache;
 pub use call_site::resolve_call_site;
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};

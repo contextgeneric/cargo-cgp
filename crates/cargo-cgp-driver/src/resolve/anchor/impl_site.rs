@@ -7,6 +7,7 @@ use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 use rustc_span::Span;
 
 use crate::resolve::anchor::enclosing_trait_impls;
+use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt, is_local_blanket_trait};
 use crate::resolve::walk::{holds, resolve_leaves};
 
@@ -30,7 +31,7 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// Because the wrapper is a distinct trait from that supertrait, its error stands on its own rather
 /// than de-duplicating into the `check_components!` entry. `None` when no enclosing impl on a local
 /// context carries an unmet, reconstructable CGP consumer supertrait.
-pub fn resolve_impl_site(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
+pub fn resolve_impl_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -> Option<Resolved> {
     for impl_did in enclosing_trait_impls(tcx, spans) {
         // Safe because `enclosing_trait_impls` keeps only `of_trait` impls.
         let trait_ref = tcx
@@ -53,7 +54,7 @@ pub fn resolve_impl_site(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
         // a distinct trait from that supertrait, the wrapper's error is reported on its own rather
         // than de-duplicated into the `check_components!` entry for the supertrait.
         let obligation: ty::PolyTraitPredicate<'_> = ty::Binder::dummy(trait_ref).upcast(tcx);
-        if let Some((consumers_are_cgp, causes)) = wrapper_consumer_causes(tcx, obligation) {
+        if let Some((consumers_are_cgp, causes)) = wrapper_consumer_causes(tcx, cache, obligation) {
             return Some(Resolved {
                 context: context.to_string(),
                 consumers: vec![trait_ref.print_only_trait_path().to_string()],
@@ -74,6 +75,7 @@ pub fn resolve_impl_site(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
 /// `Send`, or a wrapper on a foreign type, is skipped rather than mis-recovered.
 fn wrapper_consumer_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
+    cache: &ResolveCache,
     obligation: ty::PolyTraitPredicate<'tcx>,
 ) -> Option<(bool, Vec<Cause>)> {
     let trait_ref = obligation.skip_binder().trait_ref;
@@ -111,7 +113,7 @@ fn wrapper_consumer_causes<'tcx>(
         {
             continue;
         }
-        let Some(resolved) = resolve_leaves(tcx, sup) else {
+        let Some(resolved) = resolve_leaves(tcx, cache, sup) else {
             continue;
         };
         for cause in resolved.causes {

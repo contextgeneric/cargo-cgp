@@ -7,6 +7,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::resolve::anchor::{consumer_obligation, context_candidates_from_spans};
+use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt};
 use crate::resolve::walk::{holds, resolve_leaves};
 
@@ -29,7 +30,11 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// component parameters a use site does not carry — a generic consumer (`CanHandle<Code, Input>`) is
 /// left to decline. `None` when the diagnostic names no local CGP consumer trait, or none of the
 /// candidate contexts fails one resolvably.
-pub fn resolve_use_site_consumer(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Resolved> {
+pub fn resolve_use_site_consumer(
+    tcx: TyCtxt<'_>,
+    cache: &ResolveCache,
+    spans: &[Span],
+) -> Option<Resolved> {
     for consumer_did in local_cgp_consumer_traits_from_spans(tcx, spans) {
         // `count() == 1` is `Self` alone, so the obligation is simply `Ctx: Consumer` (no params).
         if tcx.generics_of(consumer_did).count() != 1 {
@@ -45,7 +50,7 @@ pub fn resolve_use_site_consumer(tcx: TyCtxt<'_>, spans: &[Span]) -> Option<Reso
             if holds(tcx, top) {
                 continue;
             }
-            if let Some(resolved) = resolve_leaves(tcx, top) {
+            if let Some(resolved) = resolve_leaves(tcx, cache, top) {
                 return Some(resolved);
             }
         }

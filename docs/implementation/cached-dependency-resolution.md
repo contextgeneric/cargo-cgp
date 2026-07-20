@@ -5,8 +5,15 @@ mistake produces, and across the branches of a single walk — so this document 
 that resolves each distinct obligation once and reuses the result everywhere it recurs, without
 changing a byte of the output.
 
-**Status: blueprint ahead of implementation.** Nothing here is built yet. The document records the
-motivation and the design decisions agreed for the work, so a later agent can implement it directly.
+**Status: partially implemented.** The cache is consulted at each walk's **root** today —
+`resolve_leaves` is memoized on the region-erased seed and its context — which captures the dominant
+cross-site redundancy (the eighteen-tree case), and is verified output-preserving against the whole
+`tests/ui/acceptable/` suite. The extension to **every interior node** — the mid-walk consultation
+that also closes the intra-walk diamond, with the incomplete-subtree flag at population and the
+reachable-set disjointness check at consultation — remains a blueprint ahead of implementation. This
+document records the full design so the remainder can be built directly against it; the sections below
+describe the whole mechanism, and note where the interior-node part is not yet built.
+
 It is a companion to [The resolve context](resolve-context.md), which houses the cache and frames it
 as one instance of a larger goal — a rustc-free, mockable resolution core — and to
 [Typed root-cause resolution](typed-root-cause-resolution.md) and
@@ -165,8 +172,8 @@ on the node-alone key would be unsound.
 
 The key is **a small struct hashed and compared by a single `HashStable` fingerprint, carrying
 readable fields alongside purely so the cache store can be inspected.** Its identity — the only thing
-`Hash` and `Eq` read — is a 128-bit `Fingerprint` of the region-erased obligation together with its
-`ParamEnv`; the remaining fields render the obligation as text and never affect a lookup. This splits
+`Hash` and `Eq` read — is a 128-bit `Fingerprint` of the region-erased obligation, the root context,
+and the `ParamEnv`; the remaining fields render the obligation as text and never affect a lookup. This splits
 the two jobs a key does — being a correct identity, and being legible — so each is served by the tool
 best suited to it, and it rests on the completeness principle [the resolve context](resolve-context.md)
 is built on: the identity *is* the node's input, so every input the walk's output depends on must be
@@ -205,12 +212,14 @@ whole arrangement, while `Debug` is derived so the store can be dumped:
 #[derive(Clone, Debug)]
 struct NodeKey {
     /// The sole basis for `Hash`/`Eq`: a `HashStable` fingerprint of the region-erased
-    /// obligation together with its `ParamEnv`. `Copy` and lifetime-free, so it outlives
-    /// any `TyCtxt`.
+    /// obligation, the root context, and the `ParamEnv`. `Copy` and lifetime-free, so it
+    /// outlives any `TyCtxt`.
     fingerprint: Fingerprint,
-    /// Debug-only, never read by `Hash`/`Eq`: the obligation rendered as text, e.g.
-    /// `Rectangle: AreaCalculator<Circle>`, and the environment once it is non-empty.
+    /// Debug-only, never read by `Hash`/`Eq`: the obligation and root context rendered as
+    /// text, e.g. `Rectangle: AreaCalculator<Circle>` under `Rectangle`, and the
+    /// environment once it is non-empty.
     obligation: String,
+    context: String,
     param_env: String,
 }
 
@@ -228,7 +237,20 @@ impl std::hash::Hash for NodeKey {
 }
 ```
 
-The parameter environment is the second, and folding it in now is cheap insurance against a latent
+The root context is the second input, because the resolver's rendering is not a function of the node's
+obligation alone. `label_for` and `classify_leaf` both compare a node's `self_ty` against the *root*
+context: a consumer obligation `Ctx: Consumer` renders as a consumer impl only when `Ctx` is that
+context, and an unmet `DelegateComponent` classifies as a missing wiring — rather than a dispatch entry
+or a not-a-provider — only when its owner is that context. The context is threaded unchanged from the
+seed's `self_ty`, so it never varies *within* a tree; but an interior node with the same obligation
+reached under a *different* root context — the cross-context CGP pattern, where one context's wiring
+depends on an obligation about another — renders differently, so reusing a subtree cached under one
+context beneath another would mislabel it. Keying on the context alongside the obligation makes that a
+cache miss, which is correct: the same obligation under a different context is a different rendering.
+For a seed the context is the obligation's own `self_ty` and adds nothing; it earns its place only once
+interior nodes are cached across trees.
+
+The parameter environment is the third, and folding it in now is cheap insurance against a latent
 unsoundness. The walk currently solves every obligation in an **empty** `ParamEnv`, which is a
 constant and therefore not a hidden input — the reason the obligation alone has sufficed as a key in
 the draft. But the walk stage records that extending to checks carrying generic parameters will need
@@ -291,15 +313,19 @@ boundary is clean even though the resolver runs inside a diagnostic being emitte
 
 ## Sequencing and relation to diagnostic buffering
 
-Build the cache as one piece rather than in stages, because it is one mechanism. The node key, the two
-guards, and the owned value are not separable features that ship independently; a node cache without
-the consultation check is unsound the moment a cycle reaches the walk, and the whole-crate win and the
-diamond win are the same lookup at different depths. The pragmatic call is not *what* to build but
-*whether* the cyclic-safety machinery — the reachable set per entry and the disjointness check — earns
-its cost on real inputs; since it is a no-op in acyclic wiring, the honest way to answer is to
-instrument node-lookup counts, distinct-node counts, and would-be hit rates against an error-heavy
-project, confirm the residual is real, and keep the reachable-set guard regardless because dropping it
-would reintroduce the reliance on upstream cycle interception the resolver refuses.
+The one split that is sound is **root consultation versus interior consultation**, and it is the split
+the implementation follows. Consulting only at a walk's root — memoizing `resolve_leaves` on the seed —
+needs neither guard: the seed has an empty ancestor prefix, so the cycle question never arises, and it
+is always resolved at full depth, so the incomplete-subtree flag never bites. That layer is therefore a
+sound standalone increment, and it is the one built today; it captures the dominant cross-site win on
+its own. The *interior*-node consultation is what must be built as one piece — the node key's context
+field, the incomplete-subtree flag, and the reachable-set disjointness check are not separable, because
+consulting a cached subtree mid-walk without them is unsound the moment a cycle reaches the walk. The
+pragmatic call for that piece is not *what* to build but *whether* it earns its cost: the diamond win
+it adds is a no-op in acyclic wiring, so the honest way to answer is to instrument node-lookup counts,
+distinct-node counts, and would-be hit rates against an error-heavy project, confirm the residual is
+real, and keep the reachable-set guard regardless because dropping it would reintroduce the reliance on
+upstream cycle interception the resolver refuses.
 
 The cache is complementary to the diagnostic-buffering work the [usability issues](../issues/usability.md)
 anticipate, not in competition with it. Buffering would decide *what* to emit — coalescing even
@@ -343,23 +369,27 @@ The tests below do not exist yet; they are the coverage the implementation shoul
 
 ## Source (existing and planned)
 
-Existing modules the cache attaches to:
+Implemented — the root-consultation layer:
 
+- [`crates/cargo-cgp-driver/src/resolve/cache.rs`](../../crates/cargo-cgp-driver/src/resolve/cache.rs)
+  — the `NodeKey` (a `StableHash` `Fingerprint` of the region-erased obligation and its context for
+  `Hash`/`Eq`, with readable debug fields and a derived `Debug`) and the `ResolveCache` store (a
+  `RefCell<HashMap>` of owned `Option<Resolved>`).
 - [`crates/cargo-cgp-driver/src/resolve/walk/leaves.rs`](../../crates/cargo-cgp-driver/src/resolve/walk/leaves.rs)
-  — `resolve_leaves` (the root lookup) and `collect_leaf_paths` (the per-node memo boundary, whose
-  cycle guard and `MAX_DEPTH` backstop gain the incomplete-subtree flag).
+  — `resolve_leaves` memoizes on the seed key and delegates to the uncached `compute_leaves`;
+  `collect_leaf_paths` is unchanged, and gains the incomplete-subtree flag only when interior
+  consultation is built.
 - [`crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs`](../../crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs)
-  — `try_resolve` / `transform_resolved`, and the `DedupLedger` the cache composes with; the interim
-  home of the cache store before the resolve context exists.
+  — `try_resolve` threads `&self.resolve_cache` through the six anchors to `resolve_leaves`; the
+  `ResolveCache` lives on `CgpEmitter` beside `dedup` (moving it onto the resolve context is that
+  document's refactor). The `DedupLedger` it composes with is here too.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
   — the owned `Leaf` and `Resolved` values, and the label rendering, that the cache stores.
 
-Planned additions:
+Planned additions — the interior-node layer:
 
-- A cache store on the [resolve context](resolve-context.md), keyed per the key decision above (the
-  `NodeKey` struct, hashed and compared by a `HashStable` fingerprint of the region-erased obligation
-  and its `ParamEnv`, with readable debug fields alongside and hand-written `Hash`/`Eq` on the
-  fingerprint), whose value is a node's owned root-cause sub-chains together with its
-  reachable-fingerprint set.
-- The incomplete-subtree flag threaded through `collect_leaf_paths`, and the reachable-set
-  disjointness check at each cache consultation.
+- Threading the cache into `collect_leaf_paths`, which returns owned node-rooted sub-chains so an
+  interior node can be cached and reused (moving the classification and label rendering inline).
+- The incomplete-subtree flag (cycle cut and `MAX_DEPTH`) threaded through `collect_leaf_paths`, the
+  reachable-fingerprint set stored per entry, and the reachable-set disjointness check at each
+  interior consultation.

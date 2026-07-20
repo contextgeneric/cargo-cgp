@@ -4,6 +4,7 @@ use cargo_cgp_error_processing::tree::DependencyTree;
 use cargo_cgp_error_processing::{Cause, Resolved, dependency_tree_leaf, elide_repeated_generics};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
 
+use crate::resolve::cache::{NodeKey, ResolveCache};
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, trait_generics};
 use crate::resolve::walk::{
@@ -27,8 +28,13 @@ const MAX_DEPTH: u32 = 256;
 /// distinct terminal unmet bound it bottoms out on, return that leaf with its rendered dependency
 /// chain. The walk descends the consumer trait to its provider trait and on to the provider's real
 /// `where` bounds, never through `IsProviderFor`. `None` when no branch reaches a resolvable leaf.
+///
+/// Memoized on the region-erased seed and its context through `cache`: one CGP mistake surfaces the
+/// same failure at many sites, each seeding this walk with the same obligation, so the walk runs
+/// once and its owned result is reused. See `docs/implementation/cached-dependency-resolution.md`.
 pub(crate) fn resolve_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
+    cache: &ResolveCache,
     top: ty::PolyTraitPredicate<'tcx>,
 ) -> Option<Resolved> {
     // Erase the seed's free regions up front, exactly as every descendant obligation is erased by
@@ -38,6 +44,24 @@ pub(crate) fn resolve_leaves<'tcx>(
     let top = tcx.erase_and_anonymize_regions(top);
     let context = top.skip_binder().self_ty();
 
+    // The context is part of the key because the rendering compares node self-types against it. The
+    // borrow is released before `compute_leaves` runs, so the memo never holds it across the compute.
+    let key = NodeKey::new(tcx, top, context);
+    if let Some(hit) = cache.get(&key) {
+        return hit;
+    }
+    let result = compute_leaves(tcx, top, context);
+    cache.insert(key, result.clone());
+    result
+}
+
+/// The uncached core of [`resolve_leaves`]: walk the already region-erased seed `top` under root
+/// `context` and fold each root→leaf path into a [`Cause`].
+fn compute_leaves<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    top: ty::PolyTraitPredicate<'tcx>,
+    context: Ty<'tcx>,
+) -> Option<Resolved> {
     let mut causes: Vec<Cause> = Vec::new();
     for path in collect_leaf_paths(tcx, top, context, &[], 0) {
         // Split off the terminal (leaf) predicate: the chain above it becomes the tree's inner
