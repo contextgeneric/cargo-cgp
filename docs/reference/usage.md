@@ -150,7 +150,7 @@ with no arguments prints a short description of the driver and these same flags 
 `built-against-rustc:` compiler it was actually built with:
 
 ```text
-cargo-cgp-driver 0.1.0
+cargo-cgp-driver 0.1.0-alpha
 pinned-toolchain: nightly-2026-07-16
 built-against-rustc: rustc 1.99.0-nightly (d0babd8b6 2026-07-15)
 ```

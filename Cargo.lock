@@ -28,7 +28,7 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
 name = "cargo-cgp"
-version = "0.1.0"
+version = "0.1.0-alpha"
 dependencies = [
  "anyhow",
  "semver",
@@ -38,21 +38,21 @@ dependencies = [
 
 [[package]]
 name = "cargo-cgp-driver"
-version = "0.1.0"
+version = "0.1.0-alpha"
 dependencies = [
  "cargo-cgp-error-processing",
 ]
 
 [[package]]
 name = "cargo-cgp-error-processing"
-version = "0.1.0"
+version = "0.1.0-alpha"
 dependencies = [
  "termtree",
 ]
 
 [[package]]
 name = "cargo-cgp-ui-tests"
-version = "0.1.0"
+version = "0.1.0-alpha"
 
 [[package]]
 name = "cc"

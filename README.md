@@ -1,112 +1,219 @@
 # cargo-cgp
 
-`cargo-cgp` is a cargo subcommand that will make [Context-Generic Programming
-(CGP)](https://github.com/contextgeneric/cgp) compiler errors readable. CGP macros expand to
-ordinary Rust, so a small mistake in wiring can surface as a wall of errors that name generated
-types the programmer never wrote, often with the real cause buried or suppressed. The goal of this
-tool is to post-process those diagnostics into a compact, root-cause-first form — much as Clippy
-layers its own analysis on top of `rustc`.
+[Context-Generic Programming (CGP)](https://github.com/contextgeneric/cgp) is a language extension
+for Rust, with pluggable trait implementations at compile-time. It is an ordinary library on the
+stable toolchain that lets one trait have many interchangeable implementations and lets each type
+choose which one it uses — you write that choice as *wiring* in one place, and the compiler resolves
+it statically, so there is no runtime cost.
 
-This repository is at an early stage. Today it ships one command, `cargo cgp check`, which compiles
-your workspace through a custom `rustc` wrapper built on the `rustc_driver` API. That wrapper already
-does one useful thing: it turns on the **next-generation trait solver**, which surfaces CGP
-dependency errors the default solver hides. When a provider needs, say, a `name` field the context
-lacks, the default compiler reports only that a method's bounds went unsatisfied and never names the
-missing field; under the next-gen solver the same mistake reports the real missing bound
-(`HasField<Symbol!("name")>`) and even CGP's own "add `#[derive(HasField)]`" hint. Beyond that the
-output still matches `cargo check` — but the `rustc_driver` foothold is the hook future versions will
-use to read and rewrite CGP diagnostics further.
+`cargo-cgp` is a cargo subcommand that makes CGP's compiler errors readable. It stands in for
+`cargo check`, compiling your workspace through a `rustc` wrapper that recognizes CGP wiring errors
+and re-presents them with the root cause first — much as Clippy layers its own analysis on top of
+`rustc`.
 
-## How it works
+> **This is a pre-release (`v0.1.0-alpha`).** The tool works and is useful today, but its surface is
+> small and still changing. See [Status](#status) for what it does now.
 
-`cargo-cgp` follows the same two-binary design as Clippy. The `cargo-cgp` binary is the cargo
-subcommand you invoke; it runs `cargo check` with the environment variable
-`RUSTC_WORKSPACE_WRAPPER` pointed at the second binary, `cargo-cgp-driver`. Cargo then calls
-`cargo-cgp-driver` in place of `rustc` for each crate in your workspace, while leaving dependencies
-to compile with the normal compiler. The driver runs the real compiler in-process through
-`rustc_driver`, so it sees everything `rustc` sees — and it injects `-Znext-solver=globally` into
-each workspace-crate compilation, which is what surfaces the otherwise-hidden dependency errors.
+## What cargo-cgp solves
 
-Because the driver links the compiler's internal libraries, it must be built with a nightly
-toolchain that carries the `rustc-dev` component. That toolchain is pinned in
-[`rust-toolchain.toml`](rust-toolchain.toml) and installs automatically the first time you build.
-`cargo-cgp` forces that same pinned nightly for the check it runs — so the sysroot and the compiler
-the driver embeds always match — while leaving your project's own toolchain untouched for its ordinary
-builds. Distribution, provisioning, and how the tool keeps the two binaries in lockstep are documented
-in [docs/implementation/distribution.md](docs/implementation/distribution.md).
+A CGP macro expands to ordinary Rust, so the compiler type-checks the *generated* code, not the code
+you wrote. When a provider needs a value its context does not supply, the mistake surfaces as an
+error about types you never typed — buried under machinery names like `IsProviderFor` and
+`CanUseComponent`, with the actual missing field written as a nested `Symbol<6, Chars<..>>` spine, or
+hidden from the output entirely. `cargo-cgp` reads those diagnostics inside the compiler and rewrites
+them into a compact form that names the real cause and the dependency chain that leads to it.
 
-For the full internal picture — the argument handling, the environment contract between the two
-executables, how the driver reaches the compiler API, a comparison with Clippy, and links to the
-authoritative Cargo and rustc references — see
-[docs/implementation/executable-structure.md](docs/implementation/executable-structure.md).
+The difference is easiest to see on a small program with one deliberate mistake. Here a provider
+computes a rectangle's area from `width` and `height` fields, but the `Rectangle` context is missing
+its `height`:
+
+```rust
+use cgp::prelude::*;
+
+#[cgp_component(AreaCalculator)]
+pub trait CanCalculateArea {
+    fn area(&self) -> f64;
+}
+
+#[cgp_impl(new RectangleArea)]
+impl AreaCalculator {
+    fn area(&self, #[implicit] width: f64, #[implicit] height: f64) -> f64 {
+        width * height
+    }
+}
+
+#[derive(HasField)]
+pub struct Rectangle {
+    pub width: f64,
+    // the `height` field the provider needs is missing:
+    // pub height: f64,
+}
+
+delegate_components! {
+    Rectangle {
+        AreaCalculatorComponent: RectangleArea,
+    }
+}
+
+check_components! {
+    Rectangle {
+        AreaCalculatorComponent,
+    }
+}
+```
+
+Plain `cargo check` reports this roughly as an unsatisfied bound on a generated check trait, and
+leaves you to decode which field is missing from a `Symbol<..>` spine and a chain of `IsProviderFor`
+notes:
+
+```text
+error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
+  |
+  |         AreaCalculatorComponent,
+  |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+  |
+help: the trait `HasField<Symbol<6, Chars<..>>>` is not implemented for `Rectangle`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
+note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+note: required by a bound in `__CheckRectangle`
+   ...
+```
+
+`cargo cgp check` rewrites the same failure to name the missing field outright and show the
+dependency chain that requires it, tagged with `[CGP-Exxx]` codes you can look up:
+
+```text
+error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`
+  |
+  |         AreaCalculatorComponent,
+  |         ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: root cause: [CGP-E106] missing field `height` on `Rectangle`
+          this is required through the dependency chain:
+            [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+            └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+              └─ [CGP-E106] missing field `height` on `Rectangle`
+```
+
+The Rust error code (`E0277`) is always kept, so `rustc --explain` still works; the `[CGP-Exxx]`
+codes ride inside the message and are catalogued in
+[docs/error-code.md](docs/error-code.md).
 
 ## Installing
 
-The intended install is through cargo in two steps — install the front-end, then let it provision the
-pinned toolchain and the driver — with `cargo cgp update` to upgrade later:
+`cargo-cgp` is two binaries — the `cargo-cgp` front-end you invoke and a `cargo-cgp-driver` that
+links the compiler internals — plus the exact nightly toolchain the driver is built against. There
+are two ways to install the set, depending on how your machine manages Rust: with cargo if you have
+rustup, or with Nix. Either way, the tool supplies its own compiler for the check, so your own
+project keeps whatever toolchain it already uses.
+
+### With Nix
+
+The flake at the repository root builds both binaries against the pinned nightly and wraps them so
+they run without rustup. To install the tool onto your `PATH` so `cargo cgp check` works like any
+other cargo subcommand, install the pre-release tag from the profile:
+
+```sh
+nix profile install github:contextgeneric/cargo-cgp/v0.1.0-alpha
+```
+
+### With cargo
+
+The cargo path installs the small front-end first, then lets it provision the pinned nightly and the
+matching driver in a second step:
 
 ```sh
 cargo install cargo-cgp      # installs the front-end (builds on any toolchain)
 cargo cgp setup              # installs the pinned nightly + driver, in lockstep
 ```
 
-The current two-binary design is not yet published to crates.io, so today you install from the
-[Nix flake](docs/reference/installation.md#installing-with-nix) or
-[from source](docs/reference/installation.md#installing-from-source). Full instructions for every
-path, and updating, are in [docs/reference/installation.md](docs/reference/installation.md); the
-design behind them is in [docs/implementation/distribution.md](docs/implementation/distribution.md).
+The first command builds the front-end under whatever toolchain you already have; `cargo cgp setup`
+then provisions the pinned nightly and builds the matching driver against it, in lockstep. Later,
+`cargo cgp update` upgrades the tool. Full instructions for every path, including installing from a
+source checkout, are in
+[docs/reference/installation.md](docs/reference/installation.md).
 
-## Building and running
+## Running it without installing
 
-For development on cargo-cgp itself, build both binaries from the workspace root:
-
-```sh
-cargo build
-```
-
-To run the freshly built tool against another project without provisioning, point it at the built
-driver and skip the management preflight (running under the pinned toolchain the workspace selects):
+To try the tool on a project without adding anything to your `PATH`, run the flake's default app from
+that project's directory, pinning the pre-release tag:
 
 ```sh
-CARGO_CGP_NO_MANAGE=1 CARGO_CGP_DRIVER=$PWD/target/debug/cargo-cgp-driver \
-  ./target/debug/cargo-cgp check
+cd /path/to/your/project     # a cargo package or workspace that uses `cgp`
+nix run github:contextgeneric/cargo-cgp/v0.1.0-alpha -- check
 ```
 
-Any arguments after `check` are forwarded verbatim to `cargo check`, so `cargo cgp check -v` or
-`cargo cgp check --workspace` work as expected. The command can also be run directly as
-`cargo-cgp check`. How to use the command, read its output, and wire it into an editor is in
-[docs/reference/usage.md](docs/reference/usage.md).
+This builds (or reuses a cached) `cargo-cgp` and `cargo-cgp-driver` under the pinned nightly and runs
+`cargo cgp check` in the current directory, with everything after `--` forwarded to the check. It
+needs no rustup and leaves the project's own toolchain and `target/` untouched, which makes it
+convenient for CI or a one-off trial. To pin the tool as an input in another project's own flake, add
+`inputs.cargo-cgp.url = "github:contextgeneric/cargo-cgp/v0.1.0-alpha";` and take its
+`packages.default`.
 
-## Testing
+## Uninstalling
 
-The common commands, run from the workspace root:
+How you uninstall matches how you installed.
+
+If you installed with **Nix**, remove it from your profile:
 
 ```sh
-cargo test                          # all tests: the tool crates' argument tests and the UI suite
-cargo fmt --all -- --check          # formatting (uses nightly rustfmt settings)
-cargo clippy --all-targets -- -D warnings   # lints
-
-# The UI snapshot suite is part of `cargo test`. To work with it directly:
-cargo test -p cargo-cgp-ui-tests                             # just the suite
-cargo test -p cargo-cgp-ui-tests --test ui -- hidden         # filter by path substring
-cargo test -p cargo-cgp-ui-tests --test ui -- --bless        # regenerate snapshots
+nix profile remove cargo-cgp
 ```
 
-The UI suite compiles example CGP programs through cargo-cgp and diffs the tool's output against
-committed `.stderr` snapshots (see [docs/implementation/testing.md](docs/implementation/testing.md)).
-Because it runs as part of `cargo test`, the test run builds the driver, expects a sibling `cgp`
-checkout at `../cgp`, and uses the pinned nightly toolchain — so snapshots are reproducible only
-under that toolchain, and a bump can require a re-bless.
+If you installed with **cargo**, uninstall both binaries:
 
-## Status and roadmap
+```sh
+cargo uninstall cargo-cgp cargo-cgp-driver
+```
 
-The current release wraps `cargo check` with a `rustc_driver`-based driver and uses it for a first
-real win — enabling the next-gen trait solver to un-hide CGP dependency errors — plus the project
-structure and documentation to grow it. The next steps are to read the compiler's diagnostics inside
-the driver's callbacks, recognize the CGP error classes catalogued in the upstream
-[CGP error catalog](https://github.com/contextgeneric/cgp/tree/main/docs/errors), and re-present
-them with the root cause first. Contributors and agents should start from
-[AGENTS.md](AGENTS.md), which maps the code and records the conventions this project follows.
+The pinned nightly toolchain that `cargo cgp setup` installed is left in place, since other tools may
+depend on it. Remove it by hand if nothing else needs it (its name is printed by
+`cargo-cgp-driver --version`):
+
+```sh
+rustup toolchain uninstall <pinned-nightly>
+```
+
+## Editor integration (Rust Analyzer)
+
+Rust Analyzer can run `cargo cgp check` as its on-save check backend, so the rewritten CGP errors
+appear inline in your editor. Because the command is two words and must emit JSON, wire it through
+`check.overrideCommand` (not `check.command`) with `--message-format=json`:
+
+```jsonc
+"rust-analyzer.check.overrideCommand": [
+  "cargo", "cgp", "check", "--workspace", "--all-targets", "--message-format=json"
+]
+```
+
+The check builds into an isolated `target/cgp` directory, so it will not contend with your normal
+builds or Rust Analyzer's own project loading. The full integration notes are in
+[docs/reference/usage.md](docs/reference/usage.md#editor-integration-rust-analyzer).
+
+## Status
+
+This is an early pre-release. Today the tool ships one command, `cargo cgp check`, which stands in for
+`cargo check` and does two things for CGP code: it turns on the **next-generation trait solver**,
+which surfaces the CGP dependency errors the default solver hides, and it **rewrites the wiring errors
+it recognizes** into the root-cause-first form shown above. Errors it does not yet recognize pass
+through unchanged. The set of recognized error classes will grow over the pre-release series.
+
+## Learn more
+
+The `docs/` directory is a knowledge base covering both how to use the tool and how it is built:
+
+- [docs/reference/usage.md](docs/reference/usage.md) — running the check, reading its output, and
+  editor integration.
+- [docs/reference/installation.md](docs/reference/installation.md) — every install, update, and
+  uninstall path.
+- [docs/error-code.md](docs/error-code.md) — the catalog of the `[CGP-Exxx]` codes in the output.
+- [docs/reference/troubleshooting.md](docs/reference/troubleshooting.md) — what to do when the tool
+  itself will not run.
+- [docs/README.md](docs/README.md) — the rest of the knowledge base, including the implementation
+  internals (the two-binary design, the driver, and how the diagnostics are transformed).
+
+Contributors and agents should start from [AGENTS.md](AGENTS.md), which maps the code and records the
+conventions this project follows.
 
 ## License
 

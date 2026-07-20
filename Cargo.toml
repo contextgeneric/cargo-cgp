@@ -16,7 +16,7 @@ members  = [
 # workspace: shared package metadata lives in `[workspace.package]` and each
 # crate references it with `{ workspace = true }`.
 [workspace.package]
-version      = "0.1.0"
+version      = "0.1.0-alpha"
 edition      = "2024"
 rust-version = "1.96"
 license      = "MIT"

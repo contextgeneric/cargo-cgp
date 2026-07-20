@@ -67,7 +67,7 @@
 
         cargo-cgp = rustPlatform.buildRustPackage {
           pname = "cargo-cgp";
-          version = "0.1.0";
+          version = "0.1.0-alpha";
           inherit src;
           cargoLock.lockFile = ./Cargo.lock;
 

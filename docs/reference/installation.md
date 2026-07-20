@@ -27,13 +27,10 @@ adopt the pinned nightly — it keeps whatever toolchain it already uses for its
 
 ## Current availability
 
-Only the Nix and from-source paths work today. The current two-binary design is not yet published to
-crates.io: `cargo-cgp-driver` is unpublished, and the `cargo-cgp` on crates.io is an old `0.0.1`
-prototype unrelated to the current tool. Until both crates are published together at a matching
-version — one of the [open release items](../implementation/distribution.md#open-decisions-and-risks-to-resolve) —
-`cargo install cargo-cgp` and `cargo cgp setup` will not produce a working install. Install from the
-Nix flake or from a source checkout in the meantime. The cargo path is documented below because it is
-the intended primary distribution and the machinery for it is already in the tool.
+The tool is published at `v0.1.0-alpha`, and all three paths work: both crates are on crates.io at
+that matching version, so `cargo install cargo-cgp` followed by `cargo cgp setup` produces a working
+install; the Nix flake builds the same pair from the tagged source; and a source checkout builds it
+directly. The cargo path is the intended primary distribution for a machine with rustup.
 
 ## Installing with Nix
 
@@ -50,18 +47,24 @@ nix profile install github:contextgeneric/cargo-cgp
 ```
 
 This puts both `cargo-cgp` and `cargo-cgp-driver` in your Nix profile, side by side as the front-end
-requires. To run the tool once without installing it — for example in CI or to try it on a project —
-run the flake's default app from the project directory instead:
+requires. Append a released tag to pin an exact pre-release rather than the default branch — for the
+current pre-release, `nix profile install github:contextgeneric/cargo-cgp/v0.1.0-alpha` — which is
+the form to prefer for a reproducible install. To run the tool once without installing it — for
+example in CI or to try it on a project — run the flake's default app from the project directory
+instead:
 
 ```sh
 cd /path/to/your/project     # a cargo package or workspace that uses `cgp`
-nix run github:contextgeneric/cargo-cgp -- check
+nix run github:contextgeneric/cargo-cgp/v0.1.0-alpha -- check
 ```
+
+The `/v0.1.0-alpha` suffix pins the flake to that Git tag; drop it (`github:contextgeneric/cargo-cgp`)
+to track the default branch instead.
 
 To pin the tool in another project's own flake, add it as an input and take its `packages.default`:
 
 ```nix
-inputs.cargo-cgp.url = "github:contextgeneric/cargo-cgp";
+inputs.cargo-cgp.url = "github:contextgeneric/cargo-cgp/v0.1.0-alpha";
 # then, in a devShell or CI derivation:
 #   packages = [ cargo-cgp.packages.${system}.default ];
 ```
@@ -69,9 +72,7 @@ inputs.cargo-cgp.url = "github:contextgeneric/cargo-cgp";
 ## Installing with cargo
 
 The cargo path installs the small front-end first and then provisions everything heavyweight in a
-second step, so the first command is one you can type from memory with no nightly date in it. (See
-[Current availability](#current-availability): this path needs the crates published, which has not
-happened yet.)
+second step, so the first command is one you can type from memory with no nightly date in it.
 
 ```sh
 cargo install cargo-cgp      # installs the front-end; builds on any toolchain
@@ -113,6 +114,32 @@ CARGO_CGP_NO_MANAGE=1 CARGO_CGP_DRIVER=$PWD/target/debug/cargo-cgp-driver \
 
 For most from-source use the [Nix flake](#installing-with-nix) is easier, since it wires these
 environment overrides for you.
+
+## Uninstalling
+
+How you uninstall matches how you installed, and there is no dedicated `cargo cgp uninstall`
+subcommand — you remove the binaries with the same package manager that placed them.
+
+On the **Nix path**, remove the tool from your profile:
+
+```sh
+nix profile remove cargo-cgp
+```
+
+On the **cargo path**, uninstall both binaries together, since `setup` installed the driver
+alongside the front-end:
+
+```sh
+cargo uninstall cargo-cgp cargo-cgp-driver
+```
+
+Neither path removes the pinned nightly toolchain that `setup` provisioned, because another tool may
+still depend on that dated nightly. Remove it by hand only when nothing else needs it; its name is
+the `pinned-toolchain:` line of `cargo-cgp-driver --version`:
+
+```sh
+rustup toolchain uninstall <pinned-nightly>
+```
 
 ## Updating
 
