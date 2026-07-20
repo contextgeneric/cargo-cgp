@@ -1,0 +1,16 @@
+# Auxiliary crate for the UI suite (downstream consumer of `cgp-test-crate-a`).
+# The harness materializes both aux crates as siblings under `target/ui-harness/aux/`
+# and replaces `__CGP_CRATE_DIR__` with the resolved sibling `cgp` checkout path, so
+# the `../cgp-test-crate-a` path dependency resolves. The empty `[workspace]` table
+# detaches it from the cargo-cgp workspace above `target/`.
+[package]
+name    = "cgp-test-crate-b"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+cgp              = { path = "__CGP_CRATE_DIR__" }
+cgp-test-crate-a = { path = "../cgp-test-crate-a" }
+
+[workspace]

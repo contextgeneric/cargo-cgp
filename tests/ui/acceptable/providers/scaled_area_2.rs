@@ -9,7 +9,7 @@
 //! recoverable, so this is a usability problem: name the layer at fault.
 //!
 //! Exposes issues in docs/issues/usability.md. CGP error class:
-//! ../../../../cgp/docs/errors/checks/higher-order-provider-layer.md.
+//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/higher-order-provider-layer.md.
 
 use cgp::prelude::*;
 

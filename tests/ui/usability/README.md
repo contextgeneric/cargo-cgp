@@ -28,13 +28,14 @@ class in [the usability issue document](../../../docs/issues/usability.md):
   provider name's redundant `IsProviderFor` half suppressed, and the `UseContext` cycle into
   `[CGP-E010]` (all under [`../acceptable/wiring/`](../acceptable/wiring)).
 
-## Origins and the imported mirror
+## Origins
 
-Each sub-directory mixes hand-curated fixtures with verbatim copies of the upstream CGP compile-fail
-suite. The full account of the two origins, the four upstream fixtures deliberately not imported, and
-the re-sync workflow lives in the [top-level tests README](../../README.md); most of the imported
-mirror now sits under [`../acceptable/`](../acceptable), since every reproducible class carries its
-cause and most are presented well. When a fixture here is fixed, delete its issue from
+Each sub-directory mixes hand-curated fixtures with cases migrated from `cgp`'s former compile-fail
+suite (since removed and now maintained here). The full account of the two origins, the cross-crate
+cases reproduced through auxiliary crates, and the one class with no snapshot lives in the
+[top-level tests README](../../README.md); most of the migrated cases now sit under
+[`../acceptable/`](../acceptable), since every reproducible class carries its cause and most are
+presented well. When a fixture here is fixed, delete its issue from
 [docs/issues/usability.md](../../../docs/issues/usability.md) and move its
 `.rs`/`.cgp.stderr`/`.rust.stderr` triple into the matching `../acceptable/` concept sub-directory (no
 re-bless is needed — a snapshot is independent of the fixture's directory).

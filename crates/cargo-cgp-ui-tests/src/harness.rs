@@ -58,6 +58,30 @@ fn ensure_worker_crate(index: usize) -> PathBuf {
     let dir = worker_crate_dir(index);
     fs::create_dir_all(dir.join("src")).expect("creating the throwaway crate");
 
+    write_manifest(&dir, &[]);
+
+    let main = dir.join("src/main.rs");
+    if !main.exists() {
+        fs::write(&main, "fn main() {}\n").expect("seeding the throwaway main.rs");
+    }
+
+    dir
+}
+
+/// Write the worker crate's `Cargo.toml`: a `cgp` path dependency plus a path
+/// dependency on each auxiliary crate the current fixture declared (see
+/// [`crate::aux`]). The empty `[workspace]` table stops cargo from folding the
+/// crate into the cargo-cgp workspace above it.
+///
+/// Rewritten per fixture, because which auxiliary crates are needed varies by
+/// fixture — but only when the content actually changes, so a run of ordinary
+/// (no-aux) fixtures leaves the manifest untouched and never disturbs cargo's
+/// fingerprints for the cached `cgp` build.
+pub fn write_manifest(harness_crate: &Path, aux: &[(&str, &Path)]) {
+    let mut deps = format!("cgp = {{ path = \"{}\" }}\n", cgp_crate_dir().display());
+    for (name, dir) in aux {
+        deps.push_str(&format!("{name} = {{ path = \"{}\" }}\n", dir.display()));
+    }
     let manifest = format!(
         "[package]\n\
          name    = \"ui\"\n\
@@ -66,19 +90,15 @@ fn ensure_worker_crate(index: usize) -> PathBuf {
          publish = false\n\
          \n\
          [dependencies]\n\
-         cgp = {{ path = \"{}\" }}\n\
+         {deps}\
          \n\
          [workspace]\n",
-        cgp_crate_dir().display(),
     );
-    fs::write(dir.join("Cargo.toml"), manifest).expect("writing the throwaway manifest");
 
-    let main = dir.join("src/main.rs");
-    if !main.exists() {
-        fs::write(&main, "fn main() {}\n").expect("seeding the throwaway main.rs");
+    let path = harness_crate.join("Cargo.toml");
+    if fs::read_to_string(&path).ok().as_deref() != Some(manifest.as_str()) {
+        fs::write(&path, manifest).expect("writing the throwaway manifest");
     }
-
-    dir
 }
 
 /// Compile one fixture through `cargo-cgp check` and return the tool's rendered

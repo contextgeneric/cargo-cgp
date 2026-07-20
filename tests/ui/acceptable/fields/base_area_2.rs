@@ -11,7 +11,7 @@
 //! `missing_has_field_derive`, `underived_and_missing_field`, and `parallel_branches`.
 //!
 //! CGP error class:
-//! ../../../../../cgp/docs/errors/checks/check-trait-failure.md (derive-missing variant).
+//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md (derive-missing variant).
 
 use cgp::prelude::*;
 

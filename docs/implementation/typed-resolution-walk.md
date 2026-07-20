@@ -49,7 +49,7 @@ background make it concrete.
 An *associated-type projection* is a type written `<T as SomeTrait<…>>::Assoc`: not named directly,
 but computed from a trait impl. The solver *normalizes* it to a real type by selecting the impl of
 `SomeTrait` for `T` and reading off the value that impl declares for `Assoc` — which requires the
-impl to actually apply, i.e. its `where` clauses to hold. CGP's [handler family](../../../cgp/docs/concepts/handlers.md)
+impl to actually apply, i.e. its `where` clauses to hold. CGP's [handler family](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/handlers.md)
 composes computations into pipelines, and a composition provider wires each stage's *input* to the
 previous stage's *output type*, which is exactly such a projection. Its archetype
 `ComposeHandlers<ProviderA, ProviderB>` (introduced under

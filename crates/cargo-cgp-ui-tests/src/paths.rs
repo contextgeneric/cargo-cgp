@@ -22,6 +22,20 @@ pub fn fixtures_dir() -> PathBuf {
     workspace_root().join("tests/ui")
 }
 
+/// The stored auxiliary-crate sources a fixture can depend on via a
+/// `//@aux-build:` directive (`crates/cargo-cgp-ui-tests/auxiliary`). Each holds a
+/// `src/` tree and a manifest template whose `cgp` path is filled in at build time.
+pub fn auxiliary_src_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("auxiliary")
+}
+
+/// Where auxiliary crates are materialized for a run (`target/ui-harness/aux`),
+/// as siblings so an aux crate's `../other-aux` path dependency resolves. Computed
+/// without creating it.
+pub fn aux_build_root() -> PathBuf {
+    harness_crate_root().join("aux")
+}
+
 /// The cgp facade crate, assumed to live in a sibling `cgp` checkout at `../cgp`.
 pub fn cgp_crate_dir() -> PathBuf {
     workspace_root()

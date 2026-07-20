@@ -17,7 +17,7 @@
 //! behavior; see docs/implementation/error-processing.md.
 //!
 //! Exposes issues in docs/issues/usability.md. CGP error class:
-//! ../../../../../cgp/docs/errors/checks/check-trait-failure.md (derive-missing variant).
+//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md (derive-missing variant).
 
 use cgp::prelude::*;
 

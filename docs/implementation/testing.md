@@ -51,11 +51,13 @@ kind of failure the tool resolves — `fields/` and `field-types/` for missing a
 `providers/` for provider dependency chains, `generic/` for generic components, `resolution/` for the
 non-field and boundary cases the resolver still reshapes, `use-site/` for consumer-method call
 failures, and `lowering/` and `wiring/` for the remaining classes. `usability/` is split by the kind
-of issue that remains — `duplication/`, `use-type/`, `lowering/`, and `wiring/` (itself split into
-`constraints/`, `duplicate-keys/`, and `namespace-paths/`). Alongside the hand-curated examples the
-tree includes a verbatim mirror of the upstream CGP compile-fail suite (one fixture per reproducible
-error class), giving the tool a snapshot of its own transformed output for the whole
-[error catalog](../../../cgp/docs/errors/README.md). The
+of issue that remains — `duplication/`, `lowering/`, and `wiring/` (itself split into `constraints/`
+and `orphan/`, the latter the cross-crate orphan-rule cases cargo-cgp does not yet reshape).
+Alongside the hand-curated
+examples the tree includes the fixtures migrated from `cgp`'s former compile-fail suite (one per
+post-codegen error class), giving the tool a snapshot of its own transformed output for the whole
+[error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) — now
+maintained here rather than mirrored, since that suite has been removed. The
 [usability fixtures README](../../tests/ui/usability/README.md) records the class-by-class findings.
 
 The suite pins *both* halves of that transformation, so the tool's contribution is legible on the
@@ -98,8 +100,9 @@ and testable, split into focused modules: `options` (argument parsing), `paths` 
 workspace, fixtures, cgp checkout, and built binaries), `fixtures` (discovery), `harness` (building
 the binaries and compiling a fixture in a worker crate, through `cargo-cgp` or plain `cargo`),
 `passes` (the two per-fixture passes), `runner` (scheduling fixtures across the worker pool),
-`normalize` (rewriting volatile paths and dropping content-free lines out of the output), and
-`snapshot` (compare, bless, diff).
+`aux` (materializing the auxiliary crates a fixture depends on — below), `normalize` (rewriting
+volatile paths and dropping content-free lines out of the output), and `snapshot` (compare, bless,
+diff).
 
 The harness crate is a full workspace member, so `cargo test` runs the whole suite alongside the
 argument tests. It shells out to `cargo` and `cargo-cgp` and carries no non-std dependencies of its
@@ -118,6 +121,20 @@ workspace above it in `target/`. In a full run the cgp-stderr pass runs the tool
 rust-stderr pass runs plain `cargo check` once, so the fixture is compiled twice; re-copying it
 before each run bumps its mtime, which forces cargo to recompile and re-emit diagnostics rather than
 serve a cached build with none.
+
+A cross-crate scenario — the orphan rule, cross-crate coherence — cannot live in one crate, so a
+fixture may pull in **auxiliary crates** with a header directive (`//@aux-build: cgp-test-crate-a`),
+the same mechanism Clippy's `aux-build` provides. The `aux` module materializes every stored
+auxiliary crate once, up front: it copies the crate's source from
+[`crates/cargo-cgp-ui-tests/auxiliary/`](../../crates/cargo-cgp-ui-tests/auxiliary) into
+`target/ui-harness/aux/` and generates its manifest there, substituting the resolved sibling-`cgp`
+path (the same path the worker crates use) for the placeholder the stored manifest carries. When a
+fixture declares an auxiliary crate, the harness rewrites the worker crate's manifest to add it as a
+path dependency before both passes run; a transitive auxiliary dependency (one aux crate's
+`../other-aux` path) resolves through the shared materialized sibling. Because a worker's manifest is
+rewritten only when its dependency set actually changes, a run of ordinary (no-aux) fixtures never
+disturbs the cached `cgp` build. This is what lets the three cross-crate orphan-rule fixtures and the
+positive `ok/cross_crate_wiring.rs` reproduce failures a single crate cannot.
 
 The rust-stderr pass builds in a *separate* target directory from the `cargo-cgp` pass —
 `target-rust/` beside the worker crate's default `target/`. The reason is cargo's fingerprinting:
@@ -239,8 +256,8 @@ These are the snapshot harnesses this suite's design draws on; both compile each
 committed snapshot with a bless step, the workflow reproduced here.
 
 - [`ui_test`](https://github.com/oli-obk/ui_test) — the UI-test library Clippy's harness is built on.
-- [`trybuild`](https://docs.rs/trybuild) — the compile-fail snapshot harness the parent `cgp` project
-  uses for its post-codegen failures.
+- [`trybuild`](https://docs.rs/trybuild) — the compile-fail snapshot harness `cgp` formerly used for
+  its post-codegen failures, before those cases were migrated into this suite.
 
 ## Tests
 

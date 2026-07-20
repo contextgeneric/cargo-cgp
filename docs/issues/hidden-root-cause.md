@@ -23,13 +23,14 @@ fixture counts as resolved — this document keeps no open entry; it records the
 below so a future agent recognizes them, and states what a genuinely new case would have to look like
 to belong here.
 
-This is not merely the absence of a *known* case: the whole upstream CGP compile-fail suite has been
-run through cargo-cgp and snapshotted under [`tests/ui/`](../../tests/ui) (across the `acceptable/`
-and `usability/` categories), and every reproducible class carries its root cause in the tool's
-output — so the catalog's own hidden class (an unsatisfied dependency reached by a consumer-method
-call) surfaces here too, and nothing across the catalog lands in this category. The one upstream fixture that produces no usable diagnostic under cargo-cgp,
-`inheritance_cycle`, does so because the next-gen solver *accepts* it (a missing error, tracked as a
-solver caveat in [The driver](../implementation/driver.md#choosing-the-trait-solver)), not
+This is not merely the absence of a *known* case: every post-codegen compile-fail class CGP produces —
+the cases migrated from `cgp`'s former compile-fail suite into [`tests/ui/`](../../tests/ui), across the
+`acceptable/` and `usability/` categories — has been run through cargo-cgp and snapshotted, and every
+reproducible class carries its root cause in the tool's output. So the CGP error catalog's own hidden
+class (an unsatisfied dependency reached by a consumer-method call) surfaces here too, and nothing
+across the catalog lands in this category. The one class that produces no usable diagnostic under
+cargo-cgp, `inheritance_cycle`, does so because the next-gen solver *accepts* it (a missing error,
+tracked as a solver caveat in [The driver](../implementation/driver.md#choosing-the-trait-solver)), not
 because a cause is suppressed.
 
 The two archetypes are defeated by *different* levers, and the distinction is the useful one to carry
@@ -75,7 +76,7 @@ Should a wiring mistake be found whose cause survives *both* levers — the next
 not compute it, and `--verbose` still does not print it — it belongs here, with a fixture under a
 recreated [`tests/ui/hidden-root-cause/`](../../tests/ui) directory that proves the cause is
 unrecoverable from the text. The upstream catalog's
-[hidden-versus-surfaced axis](../../../cgp/docs/errors/README.md#the-central-axis-hidden-versus-surfaced)
+[hidden-versus-surfaced axis](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md#the-central-axis-hidden-versus-surfaced)
 is the same distinction from the CGP side and is the reference for judging which classes carry their
 cause and which suppress it.
 

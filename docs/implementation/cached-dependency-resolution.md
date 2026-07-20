@@ -26,7 +26,7 @@ The cache exists to remove redundant re-resolution, and the redundancy is real, 
 two kinds. The first is across diagnostics: CGP wiring is lazy, so one mistake surfaces the same
 failure at many sites — the `check_components!` entry, every hand-written `impl` that references the
 broken consumer, and each call — and the
-[money-transfer example](../../../cgp/docs/examples/money-transfer-api.md)'s single un-wired password
+[money-transfer example](https://github.com/contextgeneric/cgp/blob/main/docs/examples/money-transfer-api.md)'s single un-wired password
 type produced eighteen identical root-cause trees this way. Today the emitter resolves every one of
 those to completion and only then drops the duplicates through the
 [`DedupLedger`](error-processing.md), so sixteen full walks are computed and thrown away. The second

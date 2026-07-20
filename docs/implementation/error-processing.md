@@ -188,7 +188,7 @@ today:
   carries a CGP error code: the clause it rewrites sits in a sub-message, and codes classify only a
   rewritten *main* message (see [error-code.md](../error-code.md)). The tell that separates the two
   cases is rustc's "similar impl" landmark, which the CGP
-  [check-trait-failure catalog entry](../../../cgp/docs/errors/checks/check-trait-failure.md) documents:
+  [check-trait-failure catalog entry](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md) documents:
   its presence — either inline (`but trait `HasField<…>` is implemented for it`, one other field) or as
   a separate `` `Context` implements trait `HasField<…>` `` note (several other fields) — means a single
   missing field; its absence means the missing derive.
@@ -339,5 +339,5 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
 - [The error pipeline](error-pipeline.md) — the surrounding stages: how rustc is configured to emit
   better diagnostics, how each diagnostic is transformed, and how the result is rendered.
 - [The driver](driver.md) — the emitter that drives these transforms, and the wiring rewrite in full.
-- [CGP error catalog](../../../cgp/docs/errors/README.md) — the error classes the transforms must
+- [CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) — the error classes the transforms must
   learn to recognize, and where each class hides or surfaces its root cause.

@@ -85,9 +85,9 @@ pub enum Leaf {
         owner: String,
     },
     /// A non-context delegation table that has no entry for a key it is asked to resolve. The owner
-    /// is a *provider* that delegates — an [aggregate provider](../../../../cgp/docs/concepts/aggregate-providers.md)
+    /// is a *provider* that delegates — an [aggregate provider](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/aggregate-providers.md)
     /// missing a component wiring, or a
-    /// [`UseDelegate`](../../../../cgp/docs/reference/providers/use_delegate.md) / `UseInputDelegate`
+    /// [`UseDelegate`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/providers/use_delegate.md) / `UseInputDelegate`
     /// dispatch table missing a branch for the type it dispatches on (a `Code` fragment or an `Input`
     /// value's type). Parallel to [`Leaf::MissingWiring`], but the owner is a provider table rather
     /// than the context: the fix is to add the entry to *that provider's* table (or feed the stage a

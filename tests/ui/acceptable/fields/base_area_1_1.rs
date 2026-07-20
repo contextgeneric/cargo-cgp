@@ -16,7 +16,7 @@
 //! still applies to the untransformed baseline.
 //!
 //! Exposes issues in docs/issues/usability.md. CGP error class:
-//! ../../../../../cgp/docs/errors/checks/check-trait-failure.md.
+//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md.
 
 use cgp::prelude::*;
 

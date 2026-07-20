@@ -15,7 +15,7 @@ declines on it, and then develops each recovery step with the reasoning behind i
 The shape arises whenever a context's wiring answers a whole *family* of component parameters with
 one generic entry, so that resolving the method always finds a provider and only that provider's
 deeper dependencies fail. The natural home of this pattern is the
-[handler family](../../../cgp/docs/concepts/handlers.md) — an advanced corner of CGP whose
+[handler family](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/handlers.md) — an advanced corner of CGP whose
 `CanHandle<Code, Input>` consumer turns an `Input` value into an output, with a phantom `Code`
 *type* selecting which computation runs, so one context can host many computations and wire each
 `Code` differently.
@@ -24,7 +24,7 @@ fails only in its dependencies produces the same shape.
 
 The two combinators that sequence such a pipeline are core CGP providers (from `cgp-handler`, not
 from any example), and the recovered tree renders them by name, so a reader needs their shape. Both
-are documented in full under [handler combinators](../../../cgp/docs/reference/providers/handler_combinators.md):
+are documented in full under [handler combinators](https://github.com/contextgeneric/cgp/blob/main/docs/reference/providers/handler_combinators.md):
 
 - **`ComposeHandlers<ProviderA, ProviderB>`** runs two handlers back to back, feeding the *output* of
   the first as the *input* of the second. So its two dependencies are asymmetric —

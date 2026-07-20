@@ -69,11 +69,12 @@ are split into concept sub-directories so no directory grows crowded:
 - [`lowering/`](lowering) — a macro-lowering error rustc already states well on its own
   (`use_type_unknown_assoc`, whose typo and fix rustc names).
 
-## Origins and the imported mirror
+## Origins
 
-Most of these fixtures are verbatim copies of the upstream CGP compile-fail suite; the rest are the
-hand-curated worked examples and typed-resolver pins the knowledge base references. The full account
-of the two origins, the four upstream fixtures deliberately not imported, and the re-sync workflow
-lives in the [top-level tests README](../../README.md). Refresh an imported fixture by re-copying it
-from upstream over its current location and re-blessing; a new upstream fixture goes into whichever
-concept sub-directory matches the quality of the output cargo-cgp produces for it.
+Most of these fixtures were migrated from `cgp`'s former compile-fail suite (since removed); the rest
+are the hand-curated worked examples and typed-resolver pins the knowledge base references. The full
+account of the two origins, the cross-crate cases reproduced through auxiliary crates, and the one
+class with no snapshot lives in the [top-level tests README](../../README.md). These fixtures are
+maintained here now — there is no upstream to re-sync from: edit one like any other and re-bless, and
+put a new case in whichever concept sub-directory matches the quality of the output cargo-cgp produces
+for it.

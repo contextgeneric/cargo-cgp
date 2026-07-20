@@ -104,8 +104,9 @@ codes ride inside the message and are catalogued in
 `cargo-cgp` is two binaries — the `cargo-cgp` front-end you invoke and a `cargo-cgp-driver` that
 links the compiler internals — plus the exact nightly toolchain the driver is built against. There
 are two ways to install the set, depending on how your machine manages Rust: with cargo if you have
-rustup, or with Nix. Either way, the tool supplies its own compiler for the check, so your own
-project keeps whatever toolchain it already uses.
+rustup, or with Nix. cargo-cgp requires that exact nightly, which `cargo cgp setup` installs (or the
+Nix flake builds against), and forces it only for its own check, so your own project keeps whatever
+toolchain it already uses.
 
 ### With Nix
 

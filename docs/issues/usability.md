@@ -111,15 +111,33 @@ cause, since nothing in the output states "cycle" (its counterpart
 `acceptable/` precisely because rustc already names the typo and its fix). Recognizing the lowering
 class and naming the offending construct is the work here.
 
+## Orphan-rule violations pass through unreshaped
+
+When a crate registers a generated impl into a *foreign* namespace with no local type — a
+`#[default_impl]` for a foreign component, or a `cgp_namespace!` re-open of one — Rust's orphan rule
+rejects it with `E0210`, and cargo-cgp passes that error through unchanged
+([`default_impl_foreign_component`](../../tests/ui/usability/wiring/orphan/default_impl_foreign_component.rs),
+[`default_impl_foreign_prefix_path`](../../tests/ui/usability/wiring/orphan/default_impl_foreign_prefix_path.rs),
+and [`reopen_foreign_namespace`](../../tests/ui/usability/wiring/orphan/reopen_foreign_namespace.rs),
+each built against the `cgp-test-crate-a` auxiliary crate). The cause is present — `E0210` names the
+uncovered machinery parameter (`__Components__` or `__Table__`) and points at the generated impl — but
+it is worded in CGP's internal vocabulary rather than the user's: nothing in the output says, in so
+many words, that the mistake is registering into a namespace the crate does not own, or that the fix is
+to own either the namespace or the component key. Reshaping it into a CGP-level explanation is the work
+here. The class is documented on the CGP side in the
+[orphan-rule catalog entry](https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/orphan-rule.md).
+
 ## What good presentation looks like
 
 Taken together, these issues define the tool's presentation target for the classes it does not yet
 reshape: coalesce *different* consumers that share one cause into a single headline that lists the
 affected components (the cascade class, which needs diagnostic buffering); collapse the `E0207`
-unconstrained-generic pair so only the fix that matches the mistake survives; and recover the
+unconstrained-generic pair so only the fix that matches the mistake survives; recover the
 untransformed lowering class into a coded, root-cause-first diagnostic, or at least name the
-offending construct instead of the macro attribute. The bar is the one the check-trait-failure
-family already meets: lead with the cause as one plain sentence, name the decoded construct, give a
-short dependency path, and never let a misleading `rustc` heuristic outrank the real cause. The
-[upstream tooling notes](../../../cgp/docs/errors/checks/check-trait-failure.md#notes-for-tooling)
-describe the same extraction from the CGP side and are the reference to build against.
+offending construct instead of the macro attribute; and reword the orphan-rule pass-through in CGP
+terms — naming the foreign namespace and the key the crate would need — instead of leaving rustc's
+`__Components__`/`__Table__` framing. The bar is the one the check-trait-failure family already meets:
+lead with the cause as one plain sentence, name the decoded construct, give a short dependency path,
+and never let a misleading `rustc` heuristic outrank the real cause. The
+[CGP-side tooling notes](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md#how-cargo-cgp-presents-it)
+describe the same extraction from the catalog side and are the reference to build against.

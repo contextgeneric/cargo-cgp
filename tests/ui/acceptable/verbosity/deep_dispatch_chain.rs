@@ -12,7 +12,7 @@
 //! near-identical lines.
 //!
 //! CGP error class:
-//! ../../../../../cgp/docs/errors/checks/check-trait-failure.md (use-site face).
+//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md (use-site face).
 
 use core::marker::PhantomData;
 

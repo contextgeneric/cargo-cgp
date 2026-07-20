@@ -9,7 +9,7 @@
 //! field beside it, untouched. Pins that boundary.
 //!
 //! CGP error class:
-//! ../../../../../cgp/docs/errors/checks/check-trait-failure.md (derive-missing and
+//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md (derive-missing and
 //! missing-field variants together).
 
 use cgp::prelude::*;

@@ -50,8 +50,8 @@ sound worse than it is. **Updating the host's nightly does not break the driver.
 `rustup update` refreshes the rolling `stable`/`beta`/`nightly` channels and leaves a dated nightly
 untouched. The driver keeps working until *cargo-cgp itself* ships a new version that bumps the pin.
 **And the project being checked does not need to use nightly at all.** A user's crate can pin stable,
-or nothing; `cargo-cgp` supplies its own compiler for the check and leaves the project's real builds
-alone. The design below is what makes that true.
+or nothing; `cargo-cgp` forces the pinned nightly it provisions for the check and leaves the project's
+real builds alone. The design below is what makes that true.
 
 ## How similar tools solve it
 

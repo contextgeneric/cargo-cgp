@@ -15,13 +15,15 @@ reader can see happen, not problems we imagine. When an issue is fixed, delete i
 fixture to the passing category (below); the git history records the evolution, and a stale "fixed"
 note is worse than none.
 
-Two things are out of scope. First, the tool changes almost nothing about the errors a user sees
-today: `cargo cgp check` compiles the workspace through a `rustc_driver` wrapper that injects
-`-Znext-solver=globally` — which does real work, surfacing the CGP dependency bounds the default
-solver hides — but otherwise its output still matches `cargo check`. The larger payoff, reading and
-rewriting CGP diagnostics through the tool's compiler-internal foothold, is what these issues track.
-Second, this catalog is only about the diagnostics CGP produces; a plain Rust or Cargo error that has
-nothing to do with CGP is not `cargo-cgp`'s problem to reformat and is not recorded here.
+Two things are out of scope. First, the classes the tool **already** handles well: `cargo cgp check`
+compiles the workspace through a `rustc_driver` wrapper that both injects `-Znext-solver=globally` —
+surfacing the CGP dependency bounds the default solver hides — and rewrites the CGP error classes it
+recognizes into a root-cause-first form stamped with `[CGP-Exxx]` codes. Those resolved classes are
+recorded as `acceptable/` fixtures (and in the CGP error catalog), not as issues here; this directory
+tracks only what the tool does *not* yet do well — a cause it cannot recover, or one it recovers but
+presents poorly. Second, this catalog is only about the diagnostics CGP produces; a plain Rust or
+Cargo error that has nothing to do with CGP is not `cargo-cgp`'s problem to reformat and is not
+recorded here.
 
 ## Organization
 
@@ -48,7 +50,7 @@ the same categories, so a fixture's directory names the kind of problem it expos
 The dividing line is a single test: if no amount of downstream processing of the text could
 reconstruct the root cause, the issue is a hidden root cause; if a sufficiently careful reader or
 tool could, it is a usability issue. Both draw their evidence from the fixtures and read them against
-the upstream [CGP error catalog](../../../cgp/docs/errors/README.md), which maps every error class
+the upstream [CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md), which maps every error class
 CGP produces and, class by class, whether the root cause is present in the output or suppressed.
 
 Two further categories hold the fixtures that are *not* open problems, and neither has a matching

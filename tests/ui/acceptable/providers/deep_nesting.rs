@@ -6,7 +6,7 @@
 //! innermost `RectangleArea` layer fails — through all three `ScaledArea` layers. The dependency
 //! note should show the full nesting as one spine.
 //!
-//! CGP error class: ../../../../../cgp/docs/errors/checks/higher-order-provider-layer.md.
+//! CGP error class: https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/higher-order-provider-layer.md.
 
 use cgp::prelude::*;
 

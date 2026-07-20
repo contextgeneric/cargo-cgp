@@ -9,7 +9,7 @@
 //! short path (Density → Area → missing `height`) and drop the scaffolding.
 //!
 //! Exposes issues in docs/issues/usability.md. CGP error class:
-//! ../../../../cgp/docs/errors/checks/verbose-cascade.md.
+//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/verbose-cascade.md.
 
 use cgp::prelude::*;
 

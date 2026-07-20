@@ -15,7 +15,7 @@
 //! diagnostic names is the first note a reader meets.
 //!
 //! CGP error class:
-//! ../../../../../cgp/docs/errors/checks/check-trait-failure.md (use-site face).
+//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md (use-site face).
 
 use cgp::prelude::*;
 

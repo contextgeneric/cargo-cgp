@@ -11,7 +11,7 @@
 //! associated function syntax instead", misleading for a wiring error, wrapped
 //! around the real note.
 //!
-//! CGP error class: ../../../../cgp/docs/errors/hidden/unsatisfied-dependency.md.
+//! CGP error class: https://github.com/contextgeneric/cgp/blob/main/docs/errors/hidden/unsatisfied-dependency.md.
 //! Exposes issues in docs/issues/usability.md.
 
 use cgp::prelude::*;

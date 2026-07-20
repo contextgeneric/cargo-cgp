@@ -13,7 +13,7 @@ The main message is rewritten into a coded CGP class only when the resolution id
 Rust error code (`E0277`, `E0599`, `E0271`) is always kept. Four classes cover the cases:
 
 - **`[CGP-E001]`, the consumer form**, for a context that cannot implement a consumer trait — a
-  [check-trait failure](../../../cgp/docs/errors/checks/check-trait-failure.md). It names the consumer
+  [check-trait failure](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md). It names the consumer
   trait and the context, as in the worked example's headline
   `the consumer trait \`CanCalculateArea\` is not implemented for context \`Rectangle\``. The consumer
   name comes straight off the consumer trait's `DefId`, so it is exact even when two components share a

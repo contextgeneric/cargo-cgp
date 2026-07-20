@@ -64,7 +64,7 @@ into a distinct message form with its own fix. The **wiring-overflow** code `CGP
 rewrite of the `E0275` a wiring cycle produces, carrying its fix in a `help` rather than a
 root-cause note (a cycle has no terminal leaf to descend to). Each entry below gives the rewritten
 message, the mistake behind it, the fix, and the upstream
-[CGP error catalog](../../cgp/docs/errors/README.md) class it recognizes.
+[CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) class it recognizes.
 
 ### `CGP-E001` — consumer trait not implemented
 
@@ -79,7 +79,7 @@ message, the mistake behind it, the fix, and the upstream
   assigned (`E0277` at a check, `E0599` at a call site).
 - **Fix:** follow the `root cause:` note(s): add the missing field or derive, wire the missing
   component, or satisfy the ordinary bound the chain bottoms out on.
-- **Upstream class:** [check-trait failure](../../cgp/docs/errors/checks/check-trait-failure.md).
+- **Upstream class:** [check-trait failure](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md).
 
 ### `CGP-E002` — provider trait not implemented
 
@@ -91,7 +91,7 @@ message, the mistake behind it, the fix, and the upstream
   `#[check_providers(...)]` assertion, or a wiring step (such as a namespace `RedirectLookup`)
   whose provider-side failure rustc chose as the primary error.
 - **Fix:** follow the `root cause:` note(s) to the dependency the provider is missing.
-- **Upstream class:** [check-trait failure](../../cgp/docs/errors/checks/check-trait-failure.md)
+- **Upstream class:** [check-trait failure](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md)
   (its provider-side face).
 
 ### `CGP-E003` — field has the wrong type
@@ -110,7 +110,7 @@ message, the mistake behind it, the fix, and the upstream
 - **Fix:** change the field's type on the struct to the expected type (or change the provider to
   accept the actual type). The accompanying `note` shows the dependency chain the field is read
   through.
-- **Upstream class:** [check-trait failure](../../cgp/docs/errors/checks/check-trait-failure.md)
+- **Upstream class:** [check-trait failure](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md)
   (its projection-mismatch face).
 
 ### `CGP-E004`–`CGP-E008` — the duplicate-key wiring-conflict family
@@ -124,9 +124,9 @@ pair's redundant `IsProviderFor` half is always suppressed — including the pai
 the Rust code stays `E0119`. What differs, and why each has its own code, is the shape of the
 collision — and so the message and the fix. In every case an `@`-path key renders in
 bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
-[conflicting wiring](../../cgp/docs/errors/wiring/conflicting-wiring.md) with its two namespace faces
-[overlapping namespace forwarding](../../cgp/docs/errors/wiring/namespace-forwarding-conflict.md) and
-[namespace override conflict](../../cgp/docs/errors/wiring/namespace-override-conflict.md).
+[conflicting wiring](https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/conflicting-wiring.md) with its two namespace faces
+[overlapping namespace forwarding](https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/namespace-forwarding-conflict.md) and
+[namespace override conflict](https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/namespace-override-conflict.md).
 
 - **`CGP-E004` — duplicate wiring.** `` [CGP-E004] duplicate wiring for <key> on `<Context>` `` — the
   same key (a component marker, or an `@`-path) mapped twice. **Fix:** remove one of the two entries
@@ -169,7 +169,7 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
   provider trait, a wrapper has only its concrete impl.
 - **Fix:** follow the `root cause:` note to the CGP dependency the wrapper's supertrait needs. The
   dependency tree leads with the wrapper itself, then its CGP supertrait, down to the cause.
-- **Upstream class:** [check-trait failure](../../cgp/docs/errors/checks/check-trait-failure.md)
+- **Upstream class:** [check-trait failure](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md)
   (reached through a hand-written wrapper trait).
 
 ### `CGP-E010` — wiring never resolves
@@ -185,7 +185,7 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
   the generated `__Check…` trait is dropped, since the kept caret already covers the check entry.
 - **Fix:** wire the component to a real provider, or implement the consumer trait directly on the
   context, so the lookup terminates.
-- **Upstream class:** [wiring cycle](../../cgp/docs/errors/wiring/wiring-cycle.md).
+- **Upstream class:** [wiring cycle](https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/wiring-cycle.md).
 
 ## Dependency-tree entry codes (`CGP-E1xx`)
 
@@ -238,8 +238,8 @@ The codes divide into the inner chain-node templates and the terminal root-cause
   of the `CGP-E003` main message).
 - **`CGP-E110` — missing dispatch entry (leaf).** `` provider `<T>` does not contain any delegate
   entry for `<key>` `` — the chain bottoms out on a *non-context* delegation table missing a key: an
-  [aggregate provider](../../cgp/docs/concepts/aggregate-providers.md) missing a component wiring, or
-  a [`UseDelegate`/`UseInputDelegate`](../../cgp/docs/reference/providers/use_delegate.md) dispatch
+  [aggregate provider](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/aggregate-providers.md) missing a component wiring, or
+  a [`UseDelegate`/`UseInputDelegate`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/providers/use_delegate.md) dispatch
   table missing a branch for the type it dispatches on (a `Code` fragment or an `Input` value's type).
   The sibling of `CGP-E107` for a provider table rather than the context: the fix is to add the entry
   to *that provider*, or to feed the stage a type the table already covers (the shape a handler

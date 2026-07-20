@@ -8,7 +8,7 @@
 //! and reporting the count of affected components.
 //!
 //! Exposes issues in docs/issues/usability.md. CGP error class:
-//! ../../../../cgp/docs/errors/checks/verbose-cascade.md.
+//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/verbose-cascade.md.
 
 use cgp::prelude::*;
 

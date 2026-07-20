@@ -2,9 +2,12 @@
 
 This directory holds the UI test fixtures for `cargo-cgp`: small, standalone CGP source files, each
 compiled through the tool and compared against a committed snapshot of its output. It is modeled on
-Clippy's `tests/ui/` and, like the parent project's
-[`cgp-compile-fail-tests`](../../cgp/crates/tests/cgp-compile-fail-tests), pairs each `.rs` fixture
-with a blessed expected-output file.
+Clippy's `tests/ui/`, pairing each `.rs` fixture with a blessed expected-output file. These fixtures
+are the canonical reproductions of CGP's post-codegen error classes: those cases were migrated here
+from `cgp`'s former `cgp-compile-fail-tests` suite (since removed), so `cargo-cgp` — the tool that
+rewrites those errors — owns the snapshots of what a reader actually sees. `cgp`'s
+[error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) links each
+error class to the fixture here that pins it.
 
 For how the fixtures fit into the project's overall testing approach — the argument tests, the
 harness mechanics, the toolchain caveat, and the comparison with Clippy — see the
@@ -57,13 +60,12 @@ regression pins the knowledge base references — the check-trait-failure family
 `mixed_rust_error`, `empty_field_struct`, and the missing-wiring family `basic_missing_wiring`,
 `direct_missing_wiring`, `parallel_missing_wiring`, and the use-site `missing_wiring`), each catalogued under
 [Typed root-cause resolution](../docs/implementation/typed-root-cause-resolution.md#tests). The rest
-are a **verbatim mirror** of the upstream CGP compile-fail suite (the `acceptable/` fixtures under
-[`cgp-compile-fail-tests`](../../cgp/crates/tests/cgp-compile-fail-tests/tests)), imported so
-cargo-cgp has a snapshot of its own transformed output for every error class a single-crate harness
-can reproduce. An imported `.rs` is an unchanged copy of its upstream counterpart (header included, so
-its `//!` comment refers into the `cgp` checkout); its `.cgp.stderr` is cargo-cgp's output — not the
-upstream `trybuild` snapshot — and its `.rust.stderr` is what plain `cargo check` prints for the same
-copy.
+were **migrated from `cgp`'s former compile-fail suite** — one fixture per post-codegen error class
+CGP produces — and are now maintained here directly rather than mirrored from anywhere. A migrated
+fixture's `.cgp.stderr` is cargo-cgp's own transformed output, and its `.rust.stderr` is what plain
+`cargo check` prints for the same source; its `//!` header names the
+[CGP error class](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) it
+reproduces.
 
 **No reproducible class hides its root cause.** Every imported case carries the concrete cause in
 cargo-cgp's output, so each is either an `acceptable/` case (the cause is presented well) or a
@@ -73,22 +75,40 @@ but its bounds were not satisfied"), yet under cargo-cgp's next-gen solver the l
 and the resolver leads with it, so those fixtures sit in
 [`ui/acceptable/use-site/`](ui/acceptable/use-site).
 
-## Four upstream fixtures are intentionally not imported
+## Cross-crate fixtures and the one class with no snapshot
 
-The harness compiles each fixture as one standalone crate depending only on `cgp`, and that boundary
-makes four upstream fixtures impossible to reproduce faithfully, so they are left out rather than
-committed with a misleading snapshot:
+Most fixtures are one standalone crate depending only on `cgp`, but a cross-crate scenario — the
+orphan rule, cross-crate coherence — exists only *between* crates, so the harness supports
+**auxiliary crates**. A fixture opts in with a header directive naming a companion crate:
 
-- **The three cross-crate orphan-rule fixtures** — `default_impl_foreign_component`,
-  `default_impl_foreign_prefix_path`, and `reopen_foreign_namespace` — each `use cgp_test_crate_a`, a
-  sibling crate in the `cgp` workspace that supplies a *foreign* namespace and component so the
-  orphan-rule violation (`E0210`/`E0117`) can arise. The harness cannot provide that crate, so the
-  fixtures would fail with a bogus `E0432 unresolved import` and the intended error is never reached.
-- **`inheritance_cycle`** — two namespaces that inherit from each other. Upstream, plain `rustc`
-  rejects it eagerly with an `E0275` overflow; under cargo-cgp's next-gen solver it **compiles clean**,
-  so there is no error to snapshot. This is a *missing* error, not a suppressed cause — the "reverse"
-  of the next-solver compatibility caveat noted in
-  [The driver](../docs/implementation/driver.md#choosing-the-trait-solver).
+```rust
+//@aux-build: cgp-test-crate-a
+```
+
+The named crate's source lives under
+[`crates/cargo-cgp-ui-tests/auxiliary/`](../crates/cargo-cgp-ui-tests/auxiliary); the harness
+materializes it against the sibling `cgp` checkout (generating its manifest so its `cgp` path
+resolves) and adds it as a path dependency of the throwaway crate before compiling. Two aux crates
+carry the cross-crate CGP surface, migrated from `cgp`: `cgp-test-crate-a` (upstream — a foreign
+namespace, component, and getter) and `cgp-test-crate-b` (downstream — the orphan-*safe* wirings
+against it). They back two kinds of fixture:
+
+- **The three orphan-rule failures** — `default_impl_foreign_component`,
+  `default_impl_foreign_prefix_path`, and `reopen_foreign_namespace`, in
+  [`ui/usability/wiring/orphan/`](ui/usability/wiring/orphan) — each `//@aux-build: cgp-test-crate-a`
+  so the `E0210` orphan violation can arise against a foreign namespace. They sit in `usability/`
+  because cargo-cgp does not yet reshape `E0210` into a CGP-level explanation (a gap to close later),
+  not because the cause is missing.
+- **The positive counterpart** — [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs) builds
+  `cgp-test-crate-b` (and transitively `cgp-test-crate-a`) to confirm every orphan-*safe* cross-crate
+  impl compiles cleanly.
+
+One upstream class has **no snapshot at all**: `inheritance_cycle`, two namespaces that inherit from
+each other. Plain `rustc` rejects it eagerly with an `E0275` overflow, but under cargo-cgp's next-gen
+solver it **compiles clean**, so there is no error to reproduce. This is a *missing* error, not a
+suppressed cause — the "reverse" of the next-solver compatibility caveat noted in
+[The driver](../docs/implementation/driver.md#choosing-the-trait-solver) — and it is recorded here
+rather than committed as a misleading empty snapshot.
 
 ## Running
 
@@ -123,20 +143,21 @@ Drop a new `<name>.rs` into the category sub-directory under `ui/` its output be
 group in `acceptable/` if the tool presents its cause well, the issue-class group in `usability/` if
 the cause is buried, or `ok/` for a clean compile. Give it a `fn main`, since the harness compiles it
 as a binary, and open it with a `//!` comment stating what the scenario demonstrates, which
-[CGP error class](../../cgp/docs/errors/README.md) it reproduces, and — for a problem case — the
-[issue](../docs/issues/README.md) it exposes. `cgp` is available to every fixture, so a fixture may
-`use cgp::prelude::*;` with no setup. Then run `cargo test -p cargo-cgp-ui-tests --test ui -- --bless`
-(which writes both snapshots) and review them before committing.
+[CGP error class](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) it
+reproduces, and — for a problem case — the [issue](../docs/issues/README.md) it exposes. `cgp` is
+available to every fixture, so a fixture may `use cgp::prelude::*;` with no setup; for a cross-crate
+scenario, add a `//@aux-build: <crate>` directive (see above). Then run
+`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes both snapshots) and review them
+before committing.
 
-## Keeping the imported mirror in sync
+## Maintaining the migrated fixtures
 
-The imported `.rs` files are verbatim copies, so refreshing an existing one is a re-copy from upstream
-over its current location (find it by name under `acceptable/` or `usability/`) followed by a re-bless
-(`cargo test -p cargo-cgp-ui-tests --test ui -- --bless`). When upstream adds a fixture, add it under
-the `acceptable/` or `usability/` sub-directory that matches the quality of the output cargo-cgp
-produces for it — unless it is one of the cross-crate or next-solver-divergent cases above, which are
-recorded there rather than imported. The one edit made on import is disambiguating a name collision:
-`duplicate_path_key` exists under two upstream constructs, so the copies are
-`namespace_duplicate_path_key` (reshaped into `[CGP-E008]`) and `delegate_duplicate_path_key`
-(reshaped into `[CGP-E004]`), both graduated to
+These fixtures are owned by `cargo-cgp` — there is no upstream suite to re-copy from (the migration
+was one-way, and `cgp`'s `cgp-compile-fail-tests` has been removed). Change a fixture like any other:
+edit the `.rs` and re-bless. When `cgp` changes a construct in a way that alters one of these error
+classes, the [sync rule](../AGENTS.md#the-two-projects-cgp-and-cargo-cgp) applies in both directions —
+update the fixture here and the class doc in `cgp`'s error catalog together. One historical note: two
+fixtures were renamed on migration to avoid a collision, since `duplicate_path_key` existed under two
+CGP constructs — `namespace_duplicate_path_key` (reshaped into `[CGP-E008]`) and
+`delegate_duplicate_path_key` (reshaped into `[CGP-E004]`), both in
 [`ui/acceptable/wiring/namespace-paths/`](ui/acceptable/wiring/namespace-paths).

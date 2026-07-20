@@ -51,7 +51,7 @@ documented in full in
 compiler-free helpers are [Error processing](../../docs/implementation/error-processing.md). When a
 new module needs a further compiler crate, add its `extern crate rustc_*;` line to
 [`lib.rs`](src/lib.rs), and consult the
-[CGP error catalog](../../../cgp/docs/errors/README.md) for the error classes to recognize.
+[CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) for the error classes to recognize.
 
 Two `rustc_private` constraints are non-negotiable and easy to break: the
 `#![feature(rustc_private)]` gate must stay on **both** [`lib.rs`](src/lib.rs) and the binary

@@ -6,7 +6,7 @@ and for coding agents — it is **not** end-user documentation; the separate gui
 readers live outside `docs/`. Its concern is *using* the tool, in contrast to the sibling
 [implementation/](../implementation/README.md) category, which documents how the tool is built and
 maintained for an agent changing its source. That usage-versus-internals split mirrors the one in the
-parent project, whose [CGP construct reference](../../../cgp/docs/reference/README.md) documents how
+parent project, whose [CGP construct reference](https://github.com/contextgeneric/cgp/blob/main/docs/reference/README.md) documents how
 to *use* each CGP construct while its implementation directory documents how each is *built* — here
 the subject is the `cargo-cgp` command line rather than a set of macros. Each document is
 self-contained, so read the one that matches your need rather than reading in order.

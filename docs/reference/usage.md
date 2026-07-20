@@ -7,6 +7,14 @@ which errors it surfaces and how it words them. This document covers running the
 output, using it from an editor, and the switches that change its behavior. For installing the tool,
 see [Installation](installation.md).
 
+cargo-cgp is **optional**, and its one job is developer-time readability. `check` is the only command
+that compiles your code — it re-checks it under the pinned nightly solely to reshape the diagnostics —
+and there is no `cargo cgp build`, `run`, or `test` (`setup` and `update` only provision the tool).
+CGP is an ordinary library that builds on any **stable Rust ≥ 1.89**, so plain `cargo check`,
+`cargo build`, `cargo run`, and `cargo test` all work on a CGP project unchanged. Use `cargo cgp check`
+when you hit or expect a wiring error and want it readable; use plain `cargo check` when you do not;
+and always build, run, and test with ordinary cargo.
+
 ## Running a check
 
 Run the command from anywhere inside a cargo package or workspace that uses `cgp`:

@@ -22,8 +22,9 @@ provision the pinned nightly and the driver for you. Use the **Nix path** if Nix
 builds both binaries against the pinned nightly and needs no rustup at all. A third option, building
 **from source**, is for developing the tool itself or running a checkout directly.
 
-The tool supplies its own compiler for the check either way, so your own project is never asked to
-adopt the pinned nightly — it keeps whatever toolchain it already uses for its ordinary builds.
+cargo-cgp requires the pinned nightly, which `cargo cgp setup` installs (or the Nix flake builds
+against), and forces it only for the check, so your own project is never asked to adopt it and keeps
+whatever toolchain it already uses for its ordinary builds.
 
 ## Current availability
 

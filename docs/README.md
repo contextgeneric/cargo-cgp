@@ -60,7 +60,7 @@ internals-facing, so it lives at the top level rather than inside a category.
 
 As the tool grows more moving parts, expect further categories and documents to appear. The
 `reference/` category will grow a fuller reference for the CGP error classes the tool learns to
-recognize (drawing on the upstream [CGP error catalog](../../cgp/docs/errors/README.md)) alongside
+recognize (drawing on the upstream [CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md)) alongside
 its installation and usage guides. Add a category by creating its directory with a `README.md` and
 registering it here in the same change; add a standalone document (like `error-code.md`) by
 registering it here too.

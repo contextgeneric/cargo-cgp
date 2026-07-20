@@ -11,7 +11,7 @@ headline.
 
 The resolver reads the failure from the **real consumer and provider trait obligations**, never from
 the `CanUseComponent`/`IsProviderFor` scaffolding. Those two traits exist only so that plain rustc
-can surface a wiring failure at all (see [check traits](../../../cgp/docs/concepts/check-traits.md)):
+can surface a wiring failure at all (see [check traits](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/check-traits.md)):
 `IsProviderFor` is generated to carry a *copy* of a provider's `where` bounds precisely so the
 compiler names the missing one. cargo-cgp does not need that copy — it re-runs the trait solver on
 the real provider impl, whose own `where` clause holds the same bounds — so it treats `IsProviderFor`
@@ -32,7 +32,7 @@ model — the wording, the tree — is unit-tested without a compiler.
 ## A worked example
 
 The clearest way in is one failure end to end, from the [area-calculation
-example](../../../cgp/docs/examples/area-calculation.md). A `Rectangle` computes its area through a
+example](https://github.com/contextgeneric/cgp/blob/main/docs/examples/area-calculation.md). A `Rectangle` computes its area through a
 wired `RectangleArea` provider that reads the rectangle's fields, but the struct is missing one of
 them:
 
@@ -596,11 +596,11 @@ independently of the compiler:
   it falls back to (which still recognizes `IsProviderFor`/`CanUseComponent` in rustc's output).
 - [Error processing](error-processing.md) — the rustc-free crate that holds the `Resolved` model, the
   wording, and the fallback post-processing.
-- [Check traits](../../../cgp/docs/concepts/check-traits.md) — why `IsProviderFor`/`CanUseComponent`
+- [Check traits](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/check-traits.md) — why `IsProviderFor`/`CanUseComponent`
   exist, the workaround this resolver is designed to make removable.
 - [rustc diagnostic internals](rustc-diagnostic-internals.md) — where rustc drops information the
   resolver must recover, and the panic hazards of running compiler code inside the emitter.
 - [The error pipeline](error-pipeline.md) — where this driver-side transformation sits among the
   pipeline's stages.
-- [CGP check-trait failure](../../../cgp/docs/errors/checks/check-trait-failure.md) — the upstream error
+- [CGP check-trait failure](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md) — the upstream error
   class the resolver reshapes.

@@ -31,7 +31,7 @@ A CGP macro expands to ordinary Rust, so most CGP mistakes are caught not by the
 compiler type-checking the generated code, where the diagnostic is shaped by CGP's machinery in ways
 that make it hard to read: a single mistake can cascade across generated types the programmer never
 wrote, and the real cause is often buried or hidden entirely. The [CGP error
-catalog](../../../cgp/docs/errors/README.md) maps those classes — which hide the root cause, which
+catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) maps those classes — which hide the root cause, which
 surface it, and where the cause sits. `cargo-cgp`'s job is to take rustc's output for those classes
 and re-present it with the cause first; this document maps the stages that do so, and
 [The driver](driver.md) is the running account of the transformations themselves.

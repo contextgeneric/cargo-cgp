@@ -9,6 +9,7 @@
 //! entrypoint. Fixtures are checked in parallel across a pool of workers (see [`runner`]).
 //! See the [testing document](../../docs/implementation/testing.md).
 
+pub mod aux;
 pub mod fixtures;
 pub mod harness;
 pub mod normalize;
@@ -52,6 +53,9 @@ pub fn run(args: Vec<String>) {
     // crates (and the built binaries) first.
     harness::build_binaries();
     let workers: Vec<PathBuf> = harness::ensure_worker_crates(jobs);
+    // Auxiliary crates a fixture can depend on via a `//@aux-build:` directive are
+    // materialized once, up front, and shared read-only across workers.
+    let aux_crates = aux::materialize_all();
 
     if !options.print {
         eprintln!(
@@ -72,6 +76,11 @@ pub fn run(args: Vec<String>) {
                 .unwrap_or(fixture)
                 .display()
                 .to_string();
+
+            // Point the worker crate at whatever auxiliary crates this fixture declares
+            // (usually none) before either pass copies the fixture in and compiles it.
+            let fixture_aux = aux::required(fixture, &aux_crates);
+            harness::write_manifest(crate_dir, &fixture_aux);
 
             if options.print {
                 Report {
