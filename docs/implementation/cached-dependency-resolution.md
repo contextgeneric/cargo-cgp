@@ -349,7 +349,16 @@ The primary guard is met; the rest is coverage still to add.
   primary correctness check: the cache is pure memoization, so any snapshot change would be a bug. It
   also exercises the incidental paths — the cross-site re-report reuse (`cross_site_dedup`,
   `manual_supertrait_impl`) and, where a cycle reaches the walk, the incomplete-subtree cut
-  (`use_context_cycle`).
+  (`use_context_cycle`, a self-cycle that declines).
+- **Cycle cut in a resolving walk** (met) —
+  [`acceptable/wiring/constraints/mutual_cycle_with_cause`](../../tests/ui/acceptable/wiring/constraints/mutual_cycle_with_cause.rs)
+  wires a two-component mutual cycle (`ProviderA` depends on `CanB`, `ProviderB` back on `CanA`)
+  alongside a genuinely missing field. The walk descends the `CanA → CanB → CanA` loop, the cycle
+  guard cuts it (flagging that subtree incomplete), and the missing-field cause down the other branch
+  is still reported as a clean `[CGP-E106]` tree — where rustc's raw error surfaces the cycle as
+  repeated `App: CanA` requirements and buries the field. This is the first cyclic fixture that
+  *resolves* rather than declining, so it pins the cut and the incomplete-flag propagation on a
+  live tree.
 
 The tests below do not exist yet; they are the coverage still to add.
 
@@ -362,12 +371,16 @@ The tests below do not exist yet; they are the coverage still to add.
   site.
 - **Diamond reuse** — a fixture whose wiring routes several providers through one shared capability,
   asserting the shared subtree is walked once and spliced into each parent.
-- **Soundness under a cut** — a fixture whose cyclic wiring makes the guard cut a branch on one path
-  and not another for the same node, asserting the incomplete-subtree node is not cached and a later
-  resolution still reports the full cause (guarding the invisible-cut trap directly).
-- **Soundness under reuse** — a fixture with a genuine multi-node cycle where a complete subtree cached
-  from one path is reached under an ancestor set that intersects it, asserting the reachable-set check
-  declines the reuse and the walk cuts correctly.
+- **Soundness under a cut / under reuse** — the two guards (the incomplete-subtree taint and the
+  reachable-set disjointness check) are exercised by the fixtures above but not *isolated* by one that
+  would fail if either guard were removed. Such a fixture is hard to construct as a UI snapshot, for a
+  structural reason worth recording: within a single walk an ancestor-induced cut never loses a cause
+  (the ancestor's own causes were already reported where it was first visited), so a broken taint
+  changes the output only when a node cut under one diagnostic's ancestor set is *reused* under
+  another's where that ancestor is absent — an exotic cross-diagnostic multi-node cycle. Verifying such
+  a fixture actually catches the bug also means temporarily removing the guard to watch it fail, which
+  the snapshot suite alone cannot express. The honest coverage is the output-preservation guard plus
+  the cycle-cut fixture above; a targeted guard-removal test is left as future work.
 
 ## Source
 

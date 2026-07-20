@@ -1,0 +1,168 @@
+error[E0277]: the trait bound `DoB: ProviderB<App>` is not satisfied
+  --> src/main.rs:52:9
+   |
+52 |         ProviderAComponent,
+   |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `ProviderB<App>` is not implemented for `DoB`
+  --> src/main.rs:32:16
+   |
+32 | #[cgp_impl(new DoB)]
+   |                ^^^
+help: the trait `ProviderB<__Context__>` is conditionally implemented for `DoB`
+  --> src/main.rs:34:1
+   |
+33 |   #[uses(CanA)]
+   |          ----
+   |          |
+   |          unsatisfied requirement introduced here: `App: CanA`
+   |          unsatisfied requirement introduced here: `App: CanA`
+   |          unsatisfied requirement introduced here: `App: CanA`
+34 | / impl ProviderB {
+35 | |     fn b(&self) {
+36 | |         self.a();
+37 | |     }
+38 | | }
+   | |_^
+note: required for `App` to implement `ProviderB<App>`
+  --> src/main.rs:13:1
+   |
+13 | #[cgp_component(ProviderB)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanB`
+  --> src/main.rs:13:1
+   |
+13 | #[cgp_component(ProviderB)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | pub trait CanB {
+   |           ^^^^
+note: required for `DoA` to implement `IsProviderFor<ProviderAComponent, App>`
+  --> src/main.rs:23:1
+   |
+23 | #[cgp_impl(new DoA)]
+   | ^^^^^^^^^^^^^^^^^^^^
+24 | #[uses(CanB, HasWidth)]
+   |        ---- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<ProviderAComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:50:1
+   |
+50 | / check_components! {
+51 | |     App {
+52 | |         ProviderAComponent,
+53 | |     }
+54 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: CanUseComponent<ProviderAComponent>` is not satisfied
+  --> src/main.rs:52:9
+   |
+52 |         ProviderAComponent,
+   |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>` is not implemented for `App`
+  --> src/main.rs:41:1
+   |
+41 | pub struct App {}
+   | ^^^^^^^^^^^^^^
+note: required for `App` to implement `HasWidth`
+  --> src/main.rs:18:1
+   |
+18 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+19 | pub trait HasWidth {
+   |           ^^^^^^^^
+note: required for `DoA` to implement `IsProviderFor<ProviderAComponent, App>`
+  --> src/main.rs:23:1
+   |
+23 | #[cgp_impl(new DoA)]
+   | ^^^^^^^^^^^^^^^^^^^^
+24 | #[uses(CanB, HasWidth)]
+   |              -------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<ProviderAComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:50:1
+   |
+50 | / check_components! {
+51 | |     App {
+52 | |         ProviderAComponent,
+53 | |     }
+54 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `DoA: ProviderA<App>` is not satisfied
+  --> src/main.rs:52:9
+   |
+52 |         ProviderAComponent,
+   |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `ProviderA<App>` is not implemented for `DoA`
+  --> src/main.rs:23:16
+   |
+23 | #[cgp_impl(new DoA)]
+   |                ^^^
+help: the trait `ProviderA<__Context__>` is conditionally implemented for `DoA`
+  --> src/main.rs:25:1
+   |
+24 |   #[uses(CanB, HasWidth)]
+   |          ----  -------- unsatisfied requirement introduced here: `App: HasWidth`
+   |          |
+   |          unsatisfied requirement introduced here: `App: CanB`
+   |          unsatisfied requirement introduced here: `App: CanB`
+25 | / impl ProviderA {
+26 | |     fn a(&self) {
+27 | |         let _ = self.width();
+28 | |         self.b();
+29 | |     }
+30 | | }
+   | |_^
+note: required for `App` to implement `ProviderA<App>`
+  --> src/main.rs:8:1
+   |
+ 8 | #[cgp_component(ProviderA)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanA`
+  --> src/main.rs:8:1
+   |
+ 8 | #[cgp_component(ProviderA)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 | pub trait CanA {
+   |           ^^^^
+note: required for `DoB` to implement `IsProviderFor<ProviderBComponent, App>`
+  --> src/main.rs:32:1
+   |
+32 | #[cgp_impl(new DoB)]
+   | ^^^^^^^^^^^^^^^^^^^^
+33 | #[uses(CanA)]
+   |        ---- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `App` to implement `IsProviderFor<ProviderBComponent, App>`
+note: required for `App` to implement `ProviderB<App>`
+  --> src/main.rs:13:1
+   |
+13 | #[cgp_component(ProviderB)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanB`
+  --> src/main.rs:13:1
+   |
+13 | #[cgp_component(ProviderB)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | pub trait CanB {
+   |           ^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `DoA` to implement `IsProviderFor<ProviderAComponent, App>`
+   = note: required for `App` to implement `CanUseComponent<ProviderAComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:50:1
+   |
+50 | / check_components! {
+51 | |     App {
+52 | |         ProviderAComponent,
+53 | |     }
+54 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

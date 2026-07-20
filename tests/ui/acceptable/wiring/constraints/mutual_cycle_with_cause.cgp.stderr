@@ -1,0 +1,14 @@
+error[E0277]: [CGP-E002] the provider trait `ProviderA` with context `App` is not implemented for provider `DoA`
+  --> src/main.rs:52:9
+   |
+52 |         ProviderAComponent,
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E106] missing field `width` on `App`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanA` for context `App`
+             └─ [CGP-E102] provider trait impl `ProviderA` with context `App` for provider `DoA`
+               └─ [CGP-E105] trait impl `HasWidth` for `App`
+                 └─ [CGP-E106] missing field `width` on `App`
+
+For more information about this error, try `rustc --explain E0277`.
