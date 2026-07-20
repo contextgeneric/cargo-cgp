@@ -49,6 +49,20 @@ same change.
   - [Typed resolution: the transformed diagnostic](typed-resolution-output.md) — the coded headline
     classes, the `root cause:` notes over their merged trees, and the emitter's application of the
     rustc-free plan.
+- [Cached dependency resolution](cached-dependency-resolution.md) — the blueprint (ahead of
+  implementation) for a two-stage cache over the typed resolver's walk: a whole-seed cache that
+  memoizes `resolve_leaves` on its region-erased seed, and an interior-node cache that reuses a
+  completed tree's steps, both storing the rustc-free `Resolved` value so they persist across
+  diagnostics. Covers the soundness reasoning — the empty-prefix seed boundary, the cycle-guard
+  cut-taint bit, node-rooted fragments — and why cacheability is a statelessness proof, not just a
+  speedup.
+- [The resolve context](resolve-context.md) — the blueprint (ahead of implementation) for a
+  per-compilation `ResolveCtx` that hosts the caches, the config, and the compiler access, replacing
+  the bare `TyCtxt` threaded through the resolver. Develops the cacheable-is-stateless-is-mockable
+  equivalence, the Class A/B/C query taxonomy, the lifetime split (a long-lived owned cache store plus
+  a per-resolution `'tcx`-scoped context), and the anchoring edge that stays rustc-coupled. The
+  eventual CGP-component abstraction and its separate rustc-free stand-in context are recorded as
+  deferred later work, not designed here.
 - [The error pipeline](error-pipeline.md) — the flow that turns rustc's raw diagnostics into readable
   CGP errors, now entirely inside the driver (configure rustc, transform each diagnostic, render text
   or JSON), with the front-end forwarding cargo's output untouched.
