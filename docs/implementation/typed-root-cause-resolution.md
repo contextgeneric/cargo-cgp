@@ -235,10 +235,15 @@ appear in the diagnostic's spans (the once-declining `use_type_foreign_unsatisfi
 [call-site anchor](typed-resolution-call-site.md) closed the once-declining
 *foreign generic consumer* gap, the unconditionally-matching dispatch shape
 ([`cascade_after_use_site`](../../tests/ui/acceptable/use-site/cascade_after_use_site.rs), also now
-under `acceptable/`). What still declines is a failure none of the recoveries reach: a caret only on a
-*provider* struct's own impl — whose `Self` is the provider and whose only supertrait is
-`IsProviderFor`, so the impl-site and wrapper-chain anchors skip it rather than route a cause through
-that workaround (and leak the provider trait's `__Context__` and an `IsProviderFor` hop) — a
+under `acceptable/`). A caret on a *provider* struct's own impl is handled narrowly rather than fully:
+the impl-site and wrapper-chain anchors skip the provider impl's *supertrait* recovery — whose only
+supertrait is `IsProviderFor`, so routing a cause through it would leak the provider trait's
+`__Context__` and an `IsProviderFor` hop — but the impl-site anchor does recover a *cross-context*
+dependency named directly in the provider's own `where` clause (`where Inner: CanCompute`, a concrete
+local context), walking it as that consumer obligation so it de-duplicates into the context's own
+check ([`cross_context_node_key`](../../tests/ui/acceptable/resolution/cross_context_node_key.rs)); a
+provider impl carrying no such recoverable bound still declines. What else still declines is a failure
+none of the recoveries reach: a
 generic component's trait definition, a call whose *receiver's type* is not syntactically recoverable
 (a method call's result or a field access, `self.app.handle(…)` — typing those needs the typeck
 results the emitter can never force), or a written type beyond the call-site anchor's small hand

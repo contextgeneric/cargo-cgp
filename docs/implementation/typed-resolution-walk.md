@@ -100,6 +100,16 @@ input (`_: Send`) from being reported. Both the recovery and the fold are a no-o
 carries no placeholder — the ordinary concrete-input walk, where each stage's projection normalizes to
 a real type — so only the unknown-input case is affected.
 
+One descent step is not about the root context at all. A **cross-context** consumer obligation — one
+whose `Self` is a *different* local context (`Inner: CanCompute` reached while resolving `Outer`, the
+shape where one context's wiring depends on a concrete other context) — is re-rooted at that context
+before it is walked: the node and everything below it are labeled and classified against `Inner`, not
+`Outer`. So it reads as a consumer node `for context Inner`, its delegation-routing hop is recognized
+as routing and dropped, and its getter leaf decodes to a missing field rather than an opaque foreign
+bound. Re-rooting also keys the node identically to `Inner`'s own walk, so the two share the
+[cache](cached-dependency-resolution.md). Without it, the descent would carry the outer root context
+down and mislabel the whole foreign-context subtree.
+
 A branch ends at a **terminal leaf**, and which obligations count as terminal is what keeps the tree
 honest. The descent follows only the CGP wiring vocabulary — any provider trait (a
 `ProvideFoo: Foo<App>` bound routes on to the provider's own dependencies), `DelegateComponent`, and

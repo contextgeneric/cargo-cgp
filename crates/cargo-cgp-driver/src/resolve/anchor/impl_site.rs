@@ -45,12 +45,16 @@ pub fn resolve_impl_site(
             .instantiate_identity()
             .skip_norm_wip();
         // A provider-trait impl (`impl Runner<Ctx> for RunViaInner`) has a *provider* struct as its
-        // `Self`, not a context, and its only supertrait is `IsProviderFor` — so recovering through it
-        // would reach a consumer only via the `IsProviderFor` workaround this resolver sheds. A caret
-        // on a provider's own impl is a documented decline; skip it here (and in
-        // [`resolve_wrapper_chain`](super::resolve_wrapper_chain)) so a later anchor recovers the
-        // failure from the context instead.
+        // `Self`, not a context, and its only supertrait is `IsProviderFor` — so the supertrait
+        // recovery below would reach a consumer only via the `IsProviderFor` workaround this resolver
+        // sheds (leaking `IsProviderFor` and the trait's `__Context__` into the tree). Skip that. But
+        // the provider's own `where` clause can name a cross-context dependency on a *concrete* local
+        // context (`where Inner: CanCompute`); such a bound failing is a real wiring failure, so
+        // recover it as the consumer obligation it is — de-duplicating into that context's own check.
         if is_provider_trait(tcx, trait_ref.def_id) {
+            if let Some(resolved) = cross_context_where_bound(tcx, cache, impl_did) {
+                return Some(resolved);
+            }
             continue;
         }
         let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
@@ -78,6 +82,40 @@ pub fn resolve_impl_site(
                 subject_is_context: true,
                 causes,
             });
+        }
+    }
+    None
+}
+
+/// Recover a cross-context dependency named directly in a provider impl's own `where` clause: an
+/// unmet `Ctx: Consumer` bound whose `Ctx` is a *concrete* local context and whose trait is a CGP
+/// consumer (`where Inner: CanCompute`). Such a bound is a real wiring failure the provider imposes
+/// on another context; walked as the consumer obligation it is, it yields that context's own
+/// root-cause tree — the same `Resolved` the context's `check_components!` entry produces, so the two
+/// de-duplicate. `None` when the impl's `where` clause carries no such bound. A normal provider's
+/// dependencies bind the *generic* context (`Ctx: HasName`, `Self` a type parameter), whose `self_ty`
+/// is not a local ADT, so this fires only on the cross-context shape.
+fn cross_context_where_bound<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    cache: &ResolveCache,
+    impl_did: rustc_span::def_id::DefId,
+) -> Option<Resolved> {
+    for &(clause, _) in tcx.predicates_of(impl_did).predicates {
+        let Some(bound) = clause.as_trait_clause() else {
+            continue;
+        };
+        let trait_ref = bound.skip_binder().trait_ref;
+        if !is_local_adt(trait_ref.self_ty()) {
+            continue;
+        }
+        if consumer_provider_trait(tcx, trait_ref.def_id).is_none() {
+            continue;
+        }
+        if holds(tcx, bound) {
+            continue;
+        }
+        if let Some(resolved) = resolve_leaves(tcx, cache, bound) {
+            return Some(resolved);
         }
     }
     None

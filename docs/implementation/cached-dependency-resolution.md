@@ -259,11 +259,12 @@ context beneath another would mislabel it. Keying on the context alongside the o
 cache miss, which is correct: the same obligation under a different context is a different rendering.
 For a seed the context is the obligation's own `self_ty` and adds nothing; it earns its place only once
 interior nodes are cached across trees. The
-[`cross_context_node_key`](../../tests/ui/usability/resolution/cross_context_node_key.rs) fixture is
-the cross-context shape that exercises this — the shared `Inner: CanCompute` node renders as a
-consumer impl under `Inner` but a plain trait bound under `Outer`, so the context field is what keeps
-the two apart. (It lives under `usability/` because the surrounding presentation is still rough, not
-because the key is wrong; the per-context rendering it pins is correct.)
+[`cross_context_node_key`](../../tests/ui/acceptable/resolution/cross_context_node_key.rs) fixture is
+the cross-context shape that exercises this — `Outer`'s walk re-roots the shared `Inner: CanCompute`
+node at `Inner` (so it keys identically to `Inner`'s own walk and shares that cached subtree),
+rendering it as a consumer impl for context `Inner`, while `Inner`'s own tree renders the same node
+the same way; the context field is what keeps a subtree cached under one root context from being
+reused under another where it would mislabel.
 
 The parameter environment is the third, and folding it in now is cheap insurance against a latent
 unsoundness. The walk currently solves every obligation in an **empty** `ParamEnv`, which is a

@@ -1,233 +1,233 @@
 error[E0277]: the trait bound `DoCompute: Computer<Inner>` is not satisfied
-  --> src/main.rs:63:5
+  --> src/main.rs:56:5
    |
-63 |     Inner: CanCompute,
+56 |     Inner: CanCompute,
    |     ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `Computer<Inner>` is not implemented for `DoCompute`
-  --> src/main.rs:44:16
+  --> src/main.rs:37:16
    |
-44 | #[cgp_impl(new DoCompute)]
+37 | #[cgp_impl(new DoCompute)]
    |                ^^^^^^^^^
 help: the trait `Computer<__Context__>` is conditionally implemented for `DoCompute`
-  --> src/main.rs:46:1
+  --> src/main.rs:39:1
    |
-45 |   #[uses(HasName)]
+38 |   #[uses(HasName)]
    |          ------- unsatisfied requirement introduced here: `Inner: HasName`
-46 | / impl Computer {
-47 | |     fn compute(&self) {
-48 | |         let _ = self.name();
-49 | |     }
-50 | | }
+39 | / impl Computer {
+40 | |     fn compute(&self) {
+41 | |         let _ = self.name();
+42 | |     }
+43 | | }
    | |_^
 note: required for `Inner` to implement `Computer<Inner>`
-  --> src/main.rs:39:1
+  --> src/main.rs:32:1
    |
-39 | #[cgp_component(Computer)]
+32 | #[cgp_component(Computer)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `Inner` to implement `CanCompute`
-  --> src/main.rs:39:1
+  --> src/main.rs:32:1
    |
-39 | #[cgp_component(Computer)]
+32 | #[cgp_component(Computer)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
-40 | pub trait CanCompute {
+33 | pub trait CanCompute {
    |           ^^^^^^^^^^
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
    |
-32 + #![feature(trivial_bounds)]
+25 + #![feature(trivial_bounds)]
    |
 
 error[E0277]: the trait bound `Inner: CanCompute` is not satisfied
-  --> src/main.rs:63:5
+  --> src/main.rs:56:5
    |
-63 |     Inner: CanCompute,
+56 |     Inner: CanCompute,
    |     ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `Inner`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:68:10
+  --> src/main.rs:61:10
    |
-68 | #[derive(HasField)]
+61 | #[derive(HasField)]
    |          ^^^^^^^^
 note: required for `Inner` to implement `HasName`
-  --> src/main.rs:34:1
+  --> src/main.rs:27:1
    |
-34 | #[cgp_auto_getter]
+27 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-35 | pub trait HasName {
+28 | pub trait HasName {
    |           ^^^^^^^
 note: required for `DoCompute` to implement `IsProviderFor<ComputerComponent, Inner>`
-  --> src/main.rs:44:1
+  --> src/main.rs:37:1
    |
-44 | #[cgp_impl(new DoCompute)]
+37 | #[cgp_impl(new DoCompute)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
-45 | #[uses(HasName)]
+38 | #[uses(HasName)]
    |        ------- unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
    = note: required for `Inner` to implement `IsProviderFor<ComputerComponent, Inner>`
 note: required for `Inner` to implement `Computer<Inner>`
-  --> src/main.rs:39:1
+  --> src/main.rs:32:1
    |
-39 | #[cgp_component(Computer)]
+32 | #[cgp_component(Computer)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `Inner` to implement `CanCompute`
-  --> src/main.rs:39:1
+  --> src/main.rs:32:1
    |
-39 | #[cgp_component(Computer)]
+32 | #[cgp_component(Computer)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
-40 | pub trait CanCompute {
+33 | pub trait CanCompute {
    |           ^^^^^^^^^^
    = note: this error originates in the derive macro `HasField` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
    |
-32 + #![feature(trivial_bounds)]
+25 + #![feature(trivial_bounds)]
    |
 
 error[E0277]: the trait bound `Inner: CanUseComponent<ComputerComponent>` is not satisfied
-  --> src/main.rs:92:9
+  --> src/main.rs:85:9
    |
-92 |         ComputerComponent,
+85 |         ComputerComponent,
    |         ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `Inner`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:68:10
+  --> src/main.rs:61:10
    |
-68 | #[derive(HasField)]
+61 | #[derive(HasField)]
    |          ^^^^^^^^
 note: required for `Inner` to implement `HasName`
-  --> src/main.rs:34:1
+  --> src/main.rs:27:1
    |
-34 | #[cgp_auto_getter]
+27 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-35 | pub trait HasName {
+28 | pub trait HasName {
    |           ^^^^^^^
 note: required for `DoCompute` to implement `IsProviderFor<ComputerComponent, Inner>`
-  --> src/main.rs:44:1
+  --> src/main.rs:37:1
    |
-44 | #[cgp_impl(new DoCompute)]
+37 | #[cgp_impl(new DoCompute)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
-45 | #[uses(HasName)]
+38 | #[uses(HasName)]
    |        ------- unsatisfied trait bound introduced here
    = note: required for `Inner` to implement `CanUseComponent<ComputerComponent>`
 note: required by a bound in `__CheckInner`
-  --> src/main.rs:90:1
+  --> src/main.rs:83:1
    |
-90 | / check_components! {
-91 | |     Inner {
-92 | |         ComputerComponent,
-93 | |     }
-94 | | }
+83 | / check_components! {
+84 | |     Inner {
+85 | |         ComputerComponent,
+86 | |     }
+87 | | }
    | |_^ required by this bound in `__CheckInner`
    = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `DoCompute: Computer<Inner>` is not satisfied
-   --> src/main.rs:98:9
-    |
- 98 |         RunnerComponent,
-    |         ^^^^^^^^^^^^^^^ unsatisfied trait bound
-    |
+  --> src/main.rs:91:9
+   |
+91 |         RunnerComponent,
+   |         ^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
 help: the trait `Computer<Inner>` is not implemented for `DoCompute`
-   --> src/main.rs:44:16
-    |
- 44 | #[cgp_impl(new DoCompute)]
-    |                ^^^^^^^^^
+  --> src/main.rs:37:16
+   |
+37 | #[cgp_impl(new DoCompute)]
+   |                ^^^^^^^^^
 help: the trait `Computer<__Context__>` is conditionally implemented for `DoCompute`
-   --> src/main.rs:46:1
-    |
- 45 |   #[uses(HasName)]
-    |          ------- unsatisfied requirement introduced here: `Inner: HasName`
- 46 | / impl Computer {
- 47 | |     fn compute(&self) {
- 48 | |         let _ = self.name();
- 49 | |     }
- 50 | | }
-    | |_^
+  --> src/main.rs:39:1
+   |
+38 |   #[uses(HasName)]
+   |          ------- unsatisfied requirement introduced here: `Inner: HasName`
+39 | / impl Computer {
+40 | |     fn compute(&self) {
+41 | |         let _ = self.name();
+42 | |     }
+43 | | }
+   | |_^
 note: required for `Inner` to implement `Computer<Inner>`
-   --> src/main.rs:39:1
-    |
- 39 | #[cgp_component(Computer)]
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  --> src/main.rs:32:1
+   |
+32 | #[cgp_component(Computer)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `Inner` to implement `CanCompute`
-   --> src/main.rs:39:1
-    |
- 39 | #[cgp_component(Computer)]
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
- 40 | pub trait CanCompute {
-    |           ^^^^^^^^^^
+  --> src/main.rs:32:1
+   |
+32 | #[cgp_component(Computer)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+33 | pub trait CanCompute {
+   |           ^^^^^^^^^^
 note: required for `RunViaInner` to implement `IsProviderFor<RunnerComponent, Outer>`
-   --> src/main.rs:60:1
-    |
- 60 | #[cgp_impl(new RunViaInner)]
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  --> src/main.rs:53:1
+   |
+53 | #[cgp_impl(new RunViaInner)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
- 63 |     Inner: CanCompute,
-    |            ---------- unsatisfied trait bound introduced here
-    = note: required for `Outer` to implement `CanUseComponent<RunnerComponent>`
+56 |     Inner: CanCompute,
+   |            ---------- unsatisfied trait bound introduced here
+   = note: required for `Outer` to implement `CanUseComponent<RunnerComponent>`
 note: required by a bound in `__CheckOuter`
-   --> src/main.rs:96:1
-    |
- 96 | / check_components! {
- 97 | |     Outer {
- 98 | |         RunnerComponent,
- 99 | |     }
-100 | | }
-    | |_^ required by this bound in `__CheckOuter`
-    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+  --> src/main.rs:89:1
+   |
+89 | / check_components! {
+90 | |     Outer {
+91 | |         RunnerComponent,
+92 | |     }
+93 | | }
+   | |_^ required by this bound in `__CheckOuter`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `Inner: HasField<Symbol<4, Chars<..>>>` is not satisfied
-   --> src/main.rs:98:9
-    |
- 98 |         RunnerComponent,
-    |         ^^^^^^^^^^^^^^^ unsatisfied trait bound
-    |
+  --> src/main.rs:91:9
+   |
+91 |         RunnerComponent,
+   |         ^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `Inner`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-   --> src/main.rs:68:10
-    |
- 68 | #[derive(HasField)]
-    |          ^^^^^^^^
+  --> src/main.rs:61:10
+   |
+61 | #[derive(HasField)]
+   |          ^^^^^^^^
 note: required for `Inner` to implement `HasName`
-   --> src/main.rs:34:1
-    |
- 34 | #[cgp_auto_getter]
-    | ^^^^^^^^^^^^^^^^^^
- 35 | pub trait HasName {
-    |           ^^^^^^^
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+28 | pub trait HasName {
+   |           ^^^^^^^
 note: required for `DoCompute` to implement `IsProviderFor<ComputerComponent, Inner>`
-   --> src/main.rs:44:1
-    |
- 44 | #[cgp_impl(new DoCompute)]
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
- 45 | #[uses(HasName)]
-    |        ------- unsatisfied trait bound introduced here
-    = note: 1 redundant requirement hidden
-    = note: required for `Inner` to implement `IsProviderFor<ComputerComponent, Inner>`
+  --> src/main.rs:37:1
+   |
+37 | #[cgp_impl(new DoCompute)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+38 | #[uses(HasName)]
+   |        ------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `Inner` to implement `IsProviderFor<ComputerComponent, Inner>`
 note: required for `Inner` to implement `Computer<Inner>`
-   --> src/main.rs:39:1
-    |
- 39 | #[cgp_component(Computer)]
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  --> src/main.rs:32:1
+   |
+32 | #[cgp_component(Computer)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `Inner` to implement `CanCompute`
-   --> src/main.rs:39:1
-    |
- 39 | #[cgp_component(Computer)]
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
- 40 | pub trait CanCompute {
-    |           ^^^^^^^^^^
-    = note: 1 redundant requirement hidden
-    = note: required for `RunViaInner` to implement `IsProviderFor<RunnerComponent, Outer>`
-    = note: required for `Outer` to implement `CanUseComponent<RunnerComponent>`
+  --> src/main.rs:32:1
+   |
+32 | #[cgp_component(Computer)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+33 | pub trait CanCompute {
+   |           ^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `RunViaInner` to implement `IsProviderFor<RunnerComponent, Outer>`
+   = note: required for `Outer` to implement `CanUseComponent<RunnerComponent>`
 note: required by a bound in `__CheckOuter`
-   --> src/main.rs:96:1
-    |
- 96 | / check_components! {
- 97 | |     Outer {
- 98 | |         RunnerComponent,
- 99 | |     }
-100 | | }
-    | |_^ required by this bound in `__CheckOuter`
-    = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+  --> src/main.rs:89:1
+   |
+89 | / check_components! {
+90 | |     Outer {
+91 | |         RunnerComponent,
+92 | |     }
+93 | | }
+   | |_^ required by this bound in `__CheckOuter`
+   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

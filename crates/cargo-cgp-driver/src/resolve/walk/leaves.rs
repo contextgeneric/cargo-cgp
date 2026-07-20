@@ -7,6 +7,7 @@ use rustc_data_structures::fx::FxHashSet;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
 
 use crate::resolve::cache::{NodeKey, ResolveCache, SubCause, SubResult, pred_fingerprint};
+use crate::resolve::cgp_item::{is_consumer_trait, is_local_adt};
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, trait_generics};
 use crate::resolve::walk::{
@@ -139,6 +140,23 @@ fn resolve_node<'tcx>(
     {
         return SubResult::cut();
     }
+
+    // Cross-context handoff: a consumer obligation whose `Self` is a *different* local context is the
+    // cross-context dependency shape — one context's wiring depends on a concrete other context. Re-root
+    // the subtree at that context, so its nodes are labeled and classified against the context they are
+    // actually about: a consumer node reads `for context Inner` (not a plain foreign bound), its
+    // delegation-routing hop is recognized as routing and dropped, and its getter leaf decodes to a
+    // missing field rather than an opaque bound. Re-rooting also keys this node identically to that
+    // context's own walk, so the two share the cache. This only fires cross-context; in single-context
+    // wiring every consumer obligation is already on the root context.
+    let context = if erased.skip_binder().self_ty() != context
+        && is_local_adt(erased.skip_binder().self_ty())
+        && is_consumer_trait(tcx, erased.skip_binder().trait_ref.def_id)
+    {
+        erased.skip_binder().self_ty()
+    } else {
+        context
+    };
 
     // Interior-cache consult. Only complete non-terminal nodes are ever stored, so this hits only a
     // fully-explored subtree; reuse it only when no current ancestor lies inside it, since otherwise
