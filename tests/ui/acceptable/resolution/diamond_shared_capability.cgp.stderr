@@ -1,0 +1,18 @@
+error[E0277]: [CGP-E002] the provider trait `SharedProvider` with context `App` is not implemented for provider `ProvideShared`
+  --> src/main.rs:93:9
+   |
+93 |         TopProviderComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E106] missing field `name` on `App`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanTop` for context `App`
+             └─ [CGP-E102] provider trait impl `TopProvider` with context `App` for provider `ProvideTop`
+               └─ [CGP-E101] consumer trait impl `CanLeft` for context `App`
+                 └─ [CGP-E102] provider trait impl `LeftProvider` with context `App` for provider `ProvideLeft`
+                   └─ [CGP-E101] consumer trait impl `CanShared` for context `App`
+                     └─ [CGP-E102] provider trait impl `SharedProvider` with context `App` for provider `ProvideShared`
+                       └─ [CGP-E105] trait impl `HasName` for `App`
+                         └─ [CGP-E106] missing field `name` on `App`
+
+For more information about this error, try `rustc --explain E0277`.

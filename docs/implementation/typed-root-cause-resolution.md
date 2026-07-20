@@ -330,11 +330,11 @@ separate header brand; the inline code is the only marking.
     `lower.rs` (`lower_hir_ty`/`instantiate_written`, the small syntactic type lowering over cached
     `type_of`).
   - [`walk/`](../../crates/cargo-cgp-driver/src/resolve/walk) walks the cause chain to each terminal
-    leaf. `leaves.rs` drives the recursion (`resolve_leaves`/`collect_leaf_paths`, the cycle guard
-    and `MAX_DEPTH` backstop, the foreign-getter descent into just context-side dependencies plus a
-    same-trait list recursion, the drop of a leaf still carrying a call-site placeholder — an
-    unknowable `_: Send` is never reported — and the repeated-generics elision applied to the
-    collected labels). `vocabulary.rs` decides what the descent walks into (`is_descendable` —
+    leaf. `leaves.rs` drives the recursion (`resolve_leaves` erasing the seed, `resolve_node` the
+    per-node memoized descent with the cycle guard and `MAX_DEPTH` backstop, the foreign-getter descent
+    into just context-side dependencies plus a same-trait list recursion, the drop of a leaf still
+    carrying a call-site placeholder — an unknowable `_: Send` is never reported — and `compute_leaves`
+    applying the repeated-generics elision to the collected labels). `vocabulary.rs` decides what the descent walks into (`is_descendable` —
     provider traits, `DelegateComponent`, and context obligations, *not*
     `IsProviderFor`/`CanUseComponent` — and the `is_workaround_plumbing` drop of a
     `CanUseComponent`/`IsProviderFor` dependency beside the real obligation). `impl_match.rs` finds

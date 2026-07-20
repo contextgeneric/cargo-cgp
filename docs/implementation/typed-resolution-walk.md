@@ -239,6 +239,11 @@ real provider obligation, then the next consumer, so a deeply nested data type r
 only tens of frames down — but not arbitrarily high, because the walk re-runs the solver at every
 frame, so the cap also bounds a divergent wiring's worst-case work.
 
+The descent is memoized at every node, so a distinct obligation reached from many sites or many
+branches is resolved once and reused; the cycle guard and `MAX_DEPTH` cut above are what decide whether
+a subtree is complete enough to cache. That mechanism — the node key, the incomplete-subtree flag, and
+the reachable-set reuse check — is [Cached dependency resolution](cached-dependency-resolution.md).
+
 ## Decoding, classifying, and rendering a leaf
 
 **Decode the field name.** A `HasField` leaf carries the field name as a type-level `Symbol!`, a nested

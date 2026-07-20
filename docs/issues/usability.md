@@ -104,14 +104,36 @@ cause, since nothing in the output states "cycle" (its counterpart
 `acceptable/` precisely because rustc already names the typo and its fix). Recognizing the lowering
 class and naming the offending construct is the work here.
 
+## A cross-context dependency leaks internals and under-decodes its leaf
+
+A **cross-context dependency** — one context's wiring depending on a *concrete* other context, so
+the same obligation appears in two contexts' dependency trees — is resolved well in one respect and
+poorly in two. [`cross_context_node_key`](../../tests/ui/usability/resolution/cross_context_node_key.rs)
+wires an `Outer` whose provider carries a `where Inner: CanCompute` clause on a second context `Inner`
+that lacks the field its own provider needs. The part that already works is the reason the resolution
+cache keys each node on its root context: the shared `Inner: CanCompute` node renders as a
+consumer-trait impl in `Inner`'s own tree but as a plain trait bound in `Outer`'s, so neither tree
+borrows the other's context-specific labels.
+
+Two presentation problems remain. First, the failure that anchors on the provider impl's own `where`
+clause resolves through the impl-site anchor onto that *provider* impl, so its tree leaks the reserved
+`__Context__` placeholder and an `IsProviderFor` hop — internals every other transformed diagnostic
+suppresses. The [documented resolver boundary](../implementation/typed-root-cause-resolution.md#boundaries-and-open-ends)
+is that a caret on a provider struct's own impl should decline; a concrete-context `where` clause
+slips past it. Second, `Outer`'s tree descends past the foreign-context node and bottoms out on an
+ordinary `[CGP-E201] Inner: HasName` bound with a spurious `for provider Inner` hop, rather than the
+decoded `[CGP-E106] missing field` the sibling blocks show. Declining the provider-impl anchor and
+decoding the foreign-context field leaf are the work here.
+
 ## What good presentation looks like
 
 Taken together, these issues define the tool's presentation target for the classes it does not yet
 reshape: coalesce *different* consumers that share one cause into a single headline that lists the
 affected components (the cascade class, which needs diagnostic buffering); collapse the `E0207`
-unconstrained-generic pair so only the fix that matches the mistake survives; and recover the
+unconstrained-generic pair so only the fix that matches the mistake survives; recover the
 untransformed lowering class into a coded, root-cause-first diagnostic, or at least name the
-offending construct instead of the macro attribute. The bar is the one the check-trait-failure
+offending construct instead of the macro attribute; and keep the cross-context dependency's tree free
+of `__Context__`/`IsProviderFor` internals while decoding its foreign-context field leaf. The bar is the one the check-trait-failure
 family already meets: lead with the cause as one plain sentence, name the decoded construct, give a
 short dependency path, and never let a misleading `rustc` heuristic outrank the real cause. The
 [upstream tooling notes](../../../cgp/docs/errors/checks/check-trait-failure.md#notes-for-tooling)

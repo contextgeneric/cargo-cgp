@@ -100,7 +100,7 @@ result boundary and mockable by a table. The obligation to discharge here is **c
 value and the mock's answer must be stable modulo those placeholder identities.
 
 **Class C — genuinely stateful or contextual.** Two different kinds of state live here, and they
-belong in two different places. The first is the **cycle-guarded subtree**: `collect_leaf_paths` in
+belong in two different places. The first is the **cycle-guarded subtree**: `resolve_node` in
 [`walk/leaves.rs`](../../crates/cargo-cgp-driver/src/resolve/walk/leaves.rs) carries the ancestor
 `prefix` as a real parameter — the ancestor-set input that makes the walk a function of
 `(node, ancestor-set)` rather than the node alone, which the

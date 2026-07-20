@@ -48,14 +48,8 @@ impl SubResult {
         Self {
             causes: Vec::new(),
             reachable: FxHashSet::default(),
-            incomplete: false,
+            incomplete: true,
         }
-        .with_incomplete()
-    }
-
-    fn with_incomplete(mut self) -> Self {
-        self.incomplete = true;
-        self
     }
 
     /// A complete node that reaches no reportable cause (an impl matched with nothing to report).

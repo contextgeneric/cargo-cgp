@@ -9,14 +9,15 @@ changing a byte of the output.
 interior node on its region-erased obligation and root context, with the incomplete-subtree flag at
 population and the reachable-set disjointness check at consultation, and `resolve_leaves` folds the
 root node's owned sub-result into the diagnostic. It is verified output-preserving against the whole
-`tests/ui/acceptable/` suite. What is not yet added is dedicated test coverage for the cyclic-soundness
-paths — the incomplete-subtree cut and the reuse disjointness check — which the existing acyclic
-fixtures exercise only incidentally (see [Tests](#tests)).
+`tests/ui/acceptable/` suite, with a dedicated diamond fixture pinning interior reuse and a mutual-cycle
+fixture pinning the incomplete-subtree cut on a resolving walk. What is still not isolated by a test is
+the reuse disjointness check, whose failure mode is an exotic cross-diagnostic multi-node cycle the
+snapshot suite cannot express on its own (see [Tests](#tests)).
 
 It is a companion to [The resolve context](resolve-context.md), which houses the cache and frames it
 as one instance of a larger goal — a rustc-free, mockable resolution core — and to
 [Typed root-cause resolution](typed-root-cause-resolution.md) and
-[its walk stage](typed-resolution-walk.md), whose `resolve_leaves` / `collect_leaf_paths` descent is
+[its walk stage](typed-resolution-walk.md), whose `resolve_leaves` / `resolve_node` descent is
 the thing being cached.
 
 ## Why cache the resolution at all
@@ -69,7 +70,7 @@ therefore valid for the rest of the crate's compilation.
 
 The cache memoizes the walk **at every node**, so there is one mechanism and one key space, not a
 special case for whole seeds and another for interior nodes. The resolver's descent is a recursive
-function over trait obligations: `collect_leaf_paths` visits an obligation, descends into the
+function over trait obligations: `resolve_node` visits an obligation, descends into the
 `where`-clause obligations of the impl that satisfies it, and bottoms out on terminal leaves. Every
 obligation it visits — a consumer trait, a provider trait, a plain Rust trait, a getter bound — is a
 **node**, and every node is a cache entry keyed on that node's obligation. At each step of the walk
@@ -101,9 +102,10 @@ leaves against parents drawn from *within* the subtree, so the value is self-con
 ## Why a node key is not automatically a complete key
 
 The walk is **not** a pure function of the node, and this is the one fact the whole soundness argument
-turns on. `collect_leaf_paths(node, prefix)` takes the node *and* the set of its ancestors, because of
-the cycle guard: the guard cuts a branch the moment the current obligation reappears among its
-ancestors, so the leaves below a node are a function of `(node, ancestor-set)`, not of the node alone.
+turns on. `resolve_node(node, …, prefix, …)` takes the node *and* the set of its ancestors (the
+`prefix`), because of the cycle guard: the guard cuts a branch the moment the current obligation
+reappears among its ancestors, so the leaves below a node are a function of `(node, ancestor-set)`,
+not of the node alone.
 A cycle reaches the walk when wiring loops — the `UseContext` self-routing shape, normally intercepted
 upstream as the `E0275` overflow the driver rewrites to `[CGP-E010]` — but the cycle guard exists
 precisely so the walk does not *rely* on that interception, and the cache must not reintroduce the
@@ -134,10 +136,19 @@ The trap that makes this subtle is that **a cut leaves no trace in the finished 
 cuts a branch it produces no output, and within any surviving path there are never repeats, so any
 after-the-fact test computed from the completed tree always comes back clean even when a branch was
 severed. Eligibility therefore cannot be derived from the output; it must be recorded *during* the
-walk. The walk carries one **incomplete-subtree** flag: whenever the cycle guard cuts on a collision,
-or a branch reaches `MAX_DEPTH`, every node on the stack from that point up to the collision's ancestor
-is flagged, and a flagged node is not cached. That flag is the only fact the output tree cannot
-reconstruct.
+walk. The walk carries one **incomplete-subtree** flag on each node's sub-result: whenever the cycle
+guard cuts on a collision, or a branch reaches `MAX_DEPTH`, the cut sub-result is flagged, and the flag
+rides up through each parent to the root (`incomplete |= child.incomplete`), so every ancestor whose
+result folded in the cut is flagged too. A flagged node is not cached. That flag is the only fact the
+output tree cannot reconstruct.
+
+Propagating the flag all the way to the root is a deliberate over-approximation. The tightest correct
+rule would stop at the cycle's entry ancestor, since an ancestor *above* that entry contains the cycle
+wholly within its own subtree — the loop is then intrinsic and position-independent, so that ancestor
+is in fact safely cacheable. Distinguishing that case would mean threading the collision's depth back
+up the recursion, and the payoff is only a few extra cache entries in the rare crate where a cycle
+reaches the walk at all. So the walk takes the simpler path and never caches a curtailed ancestor;
+never caching too much only costs a re-walk, never a wrong tree.
 
 A node cached under this rule is therefore **complete**: every branch of its subtree bottomed out on a
 natural terminator — a `HasField` leaf, an impl-less bound, a foreign bound, a projection mismatch —
@@ -247,7 +258,12 @@ depends on an obligation about another — renders differently, so reusing a sub
 context beneath another would mislabel it. Keying on the context alongside the obligation makes that a
 cache miss, which is correct: the same obligation under a different context is a different rendering.
 For a seed the context is the obligation's own `self_ty` and adds nothing; it earns its place only once
-interior nodes are cached across trees.
+interior nodes are cached across trees. The
+[`cross_context_node_key`](../../tests/ui/usability/resolution/cross_context_node_key.rs) fixture is
+the cross-context shape that exercises this — the shared `Inner: CanCompute` node renders as a
+consumer impl under `Inner` but a plain trait bound under `Outer`, so the context field is what keeps
+the two apart. (It lives under `usability/` because the surrounding presentation is still rough, not
+because the key is wrong; the per-context rendering it pins is correct.)
 
 The parameter environment is the third, and folding it in now is cheap insurance against a latent
 unsoundness. The walk currently solves every obligation in an **empty** `ParamEnv`, which is a
@@ -306,7 +322,7 @@ The borrow discipline is worth stating because this codebase is acutely sensitiv
 whole of [rustc diagnostic internals](rustc-diagnostic-internals.md) is about a lock that panics on
 re-entry. The memo must never hold the `RefCell` borrow across the compute: check the cache and release
 the borrow, compute on a miss with no borrow held, then take the borrow again to insert. This is safe
-because the memoized descent never re-enters its own borrow — the recursion is `collect_leaf_paths`
+because the memoized descent never re-enters its own borrow — the recursion is `resolve_node`
 calling itself, and the cache read and write bracket each call rather than spanning it — so the memo
 boundary is clean even though the resolver runs inside a diagnostic being emitted.
 
@@ -359,6 +375,15 @@ The primary guard is met; the rest is coverage still to add.
   repeated `App: CanA` requirements and buries the field. This is the first cyclic fixture that
   *resolves* rather than declining, so it pins the cut and the incomplete-flag propagation on a
   live tree.
+- **Diamond reuse** (met) —
+  [`acceptable/resolution/diamond_shared_capability`](../../tests/ui/acceptable/resolution/diamond_shared_capability.rs)
+  routes two independent branches — `CanTop` depends on both `CanLeft` and `CanRight` — through one
+  shared `CanShared` capability whose provider needs a `name` field the context lacks. The walk
+  descends `App: CanShared` twice (once per branch), so the interior node is resolved under the first
+  branch and consulted from the cache under the second; the two identical missing-field causes
+  de-duplicate to one, and the tree shown is the first branch's. It pins that an interior cache hit is
+  output-preserving on a minimal, purpose-built diamond rather than only incidentally through the
+  serialization fixtures.
 
 The tests below do not exist yet; they are the coverage still to add.
 
@@ -369,8 +394,6 @@ The tests below do not exist yet; they are the coverage still to add.
 - **Whole-crate hit accounting** — an instrumented run over an error-heavy fixture (the money-transfer
   shape) asserting that the eighteen-tree case computes the walk once per distinct node, not once per
   site.
-- **Diamond reuse** — a fixture whose wiring routes several providers through one shared capability,
-  asserting the shared subtree is walked once and spliced into each parent.
 - **Soundness under a cut / under reuse** — the two guards (the incomplete-subtree taint and the
   reachable-set disjointness check) are exercised by the fixtures above but not *isolated* by one that
   would fail if either guard were removed. Such a fixture is hard to construct as a UI snapshot, for a

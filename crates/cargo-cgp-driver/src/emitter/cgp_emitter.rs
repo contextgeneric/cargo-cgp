@@ -47,9 +47,10 @@ pub struct CgpEmitter<E> {
     dedup: DedupLedger,
     /// Memoization of the typed resolver's walk, so a wiring mistake re-reported at many sites is
     /// resolved once and reused rather than re-walked per diagnostic (see
-    /// [`ResolveCache`] and `docs/implementation/cached-dependency-resolution.md`). Keyed on the
-    /// region-erased seed obligation and its context, valued by the owned `Resolved`, so entries
-    /// persist for the whole compilation like [`names`](Self::names) and [`dedup`](Self::dedup).
+    /// [`ResolveCache`] and `docs/implementation/cached-dependency-resolution.md`). Keyed at
+    /// **every node** on the region-erased obligation and its context, valued by that node's owned
+    /// rustc-free sub-result, so entries persist for the whole compilation like
+    /// [`names`](Self::names) and [`dedup`](Self::dedup).
     resolve_cache: ResolveCache,
     /// The primary spans of every CGP wiring failure this emitter has recognized this
     /// compilation. Used to drop a downstream `?`-operator cascade
