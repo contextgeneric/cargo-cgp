@@ -89,8 +89,11 @@ their fixtures now live under `acceptable/`:
   `#[uses(…)]`, so the method cannot resolve on the generated `__Context__` generic — is reshaped
   from rustc's vague `E0599` (which names `__Context__` and points at a transitive `HasField` bound,
   the wrong fix) into a `[CGP-E012]` header naming the capability, with the `#[uses(…)]` fix in a
-  `help`, and the `[T]: Sized` cascade the unresolved return type trails dropped
+  `help`
   ([`undeclared_uses_capability`](../../tests/ui/acceptable/lowering/undeclared_uses_capability.rs)).
+  Any `[T]: Sized` cascade the unresolved return type trails is left as rustc wrote it — those errors
+  can land off the failing expression, where suppressing them reliably would risk hiding an unrelated
+  error.
 
 What remains below are the classes the tool does not yet reshape.
 

@@ -115,8 +115,10 @@ capability used in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses
 the generated `__Context__` generic — is reshaped into a `[CGP-E012]` header naming the capability,
 with the `#[uses(…)]` fix in a `help` (recovered by
 [`resolve::detect_undeclared_capability`](../../crates/cargo-cgp-driver/src/resolve/undeclared.rs) and
-worded by the rustc-free `plan_undeclared_capability`), the `[T]: Sized` cascade it trails dropped by
-the same-line suppression. Otherwise the deepest transform, the
+worded by the rustc-free `plan_undeclared_capability`). Any `[T]: Sized` cascade it trails is left as
+rustc wrote it — those errors can land off the failing expression, where suppressing them reliably
+would risk hiding an unrelated error. Otherwise the
+deepest transform, the
 [typed root-cause resolution](typed-root-cause-resolution.md), *replaces* a
 resolvable wiring failure with a root-cause-first diagnostic, covered in its own document; failing
 that, the in-place [trait-renaming rewrite](#naming-the-traits-behind-a-component-marker) described

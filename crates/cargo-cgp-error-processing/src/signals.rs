@@ -58,13 +58,3 @@ pub fn mentions_orphan_param_text(text: &str) -> bool {
 pub fn is_question_mark_cascade_text(text: &str) -> bool {
     text.contains("`?` operator")
 }
-
-/// Whether a main message is an unsized-type error — rustc's "the size for values of type `…`
-/// cannot be known at compilation time". Like [`is_question_mark_cascade_text`] this is not enough
-/// to suppress on its own (a genuine unsized-type mistake reads the same), so the emitter pairs it
-/// with a span check: when such an error sits on an expression where a CGP wiring failure was
-/// already reported, it is a cascade of that failure — the failed method/trait resolution left the
-/// expression's type unresolved, and thus unsized — and is dropped.
-pub fn is_unsized_cascade_text(text: &str) -> bool {
-    text.contains("cannot be known at compilation time")
-}

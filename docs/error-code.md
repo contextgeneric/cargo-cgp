@@ -235,8 +235,11 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
   bounds were not satisfied", whose note points at a transitive `HasField` bound. The resolver
   confirms it structurally: the failing call sits in a generated blanket impl whose `Self` is a bare
   type parameter, the called method belongs to a CGP capability trait, and that trait is not among
-  the impl's `where` bounds. The Rust code stays `E0599`. The `[T]: Sized` cascade the unresolved
-  return type trails (in an `async` body especially) is dropped as noise.
+  the impl's `where` bounds. The Rust code stays `E0599`. Any `[T]: Sized` cascade the unresolved
+  return type trails (in an `async` body especially) is left as rustc wrote it: those errors can
+  land off the failing expression — on the binding pattern, or a later statement the unresolved type
+  flows into — where suppressing them reliably would need type information the emitter cannot obtain
+  without risking the suppression of an unrelated error.
 - **Fix (in the `help`):** add the capability to the definition's `#[uses(…)]` list (or a
   hand-written `where Self: <Trait>` bound), so it becomes a bound on the generated context.
 - **Upstream class:** the post-codegen face of a missing impl-side dependency; closest to the

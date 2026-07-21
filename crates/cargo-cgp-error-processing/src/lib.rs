@@ -49,6 +49,6 @@ pub use postprocess::{
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use signals::{
     is_method_bounds_text, is_method_probe_advice_text, is_question_mark_cascade_text,
-    is_unsized_cascade_text, mentions_orphan_param_text, mentions_wiring_text,
+    mentions_orphan_param_text, mentions_wiring_text,
 };
 pub use tree::{DependencyTree, merge_dependency_forest, render_dependency_tree};
