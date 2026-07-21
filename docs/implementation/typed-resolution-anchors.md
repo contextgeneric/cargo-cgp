@@ -169,9 +169,13 @@ a trait definition or `where` clause (the `use_type_*_unsatisfied` fixtures unde
 context keeps the more precise per-component recovery.
 
 **From the call expression itself.** The final anchor, `resolve_call_site`, handles the use-site
-failure whose spans touch *nothing* the other anchors can read: the wiring matches the called
-component unconditionally, so the method is *found*, the failure is an `E0277` rather than an
-`E0599`, and its spans never leave the call. The anchor re-reads the failing call expression from
+failure whose spans touch *nothing* the other anchors can read. Two shapes reach it. In the first,
+a context's wiring matches the called component unconditionally, so the method is *found*, the
+failure is an `E0277` rather than an `E0599`, and its spans never leave the call. In the second, the
+called method belongs to a `#[cgp_fn]`/`#[blanket_trait]` **capability trait** rather than a CGP
+consumer — a local blanket-impl trait that is not a component, so the by-consumer anchor (restricted
+to CGP consumers) declines its `E0599`; the anchor finds it by method name and heads the result
+`[CGP-E009] the trait …`. Either way it re-reads the failing call expression from
 HIR — the context from the method's *receiver*, the component's parameters by *unifying the call's
 written argument types against the method's own declared signature*, and every parameter the call
 leaves to inference seeded as a rigid placeholder the walk resolves around. It is the one anchor

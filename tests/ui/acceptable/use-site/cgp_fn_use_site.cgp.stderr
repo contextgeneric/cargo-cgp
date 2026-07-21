@@ -1,0 +1,13 @@
+error[E0599]: [CGP-E009] the trait `Describe` is not implemented for context `App`
+  --> src/main.rs:57:9
+   |
+57 |     app.describe()
+   |         ^^^^^^^^
+   |
+   = note: root cause: [CGP-E106] missing field `name` on `App`
+           this is required through the dependency chain:
+             [CGP-E105] trait impl `Describe` for `App`
+             └─ [CGP-E105] trait impl `GetName` for `App`
+               └─ [CGP-E106] missing field `name` on `App`
+
+For more information about this error, try `rustc --explain E0599`.

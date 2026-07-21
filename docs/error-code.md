@@ -158,21 +158,29 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
 ### `CGP-E009` — wrapper trait not implemented
 
 - **Message:** `` [CGP-E009] the trait `<Wrapper>` is not implemented for context `<Context>` ``.
-- **Means:** a hand-written trait implemented directly on the context — *not* a CGP consumer trait,
-  but a plain wrapper the programmer wrote (the transfer example's `CanHandleApiSend`, which adds a
-  `Send` bound over a CGP consumer supertrait) — cannot be implemented, because a CGP component it
-  depends on fails. It is the [`CGP-E001`](#cgp-e001--consumer-trait-not-implemented) case for a
-  trait that is not itself a CGP component, so it reads "the trait", not "the consumer trait".
+- **Means:** a trait that is *not* a CGP consumer trait — so it reads "the trait", not "the consumer
+  trait" — cannot be implemented for the context, because a CGP component it depends on fails. Two
+  shapes reach this code: a plain **wrapper trait** the programmer wrote (the transfer example's
+  `CanHandleApiSend`, which adds a `Send` bound over a CGP consumer supertrait), and a `#[cgp_fn]` /
+  `#[blanket_trait]` **capability trait** (`impl<Context> Describe for Context where Self: …`), which
+  is a first-class core-CGP capability consumed like a consumer trait but is not a CGP *component*
+  (it has no provider trait or `DelegateComponent`). Either way it is the
+  [`CGP-E001`](#cgp-e001--consumer-trait-not-implemented) case for a trait that is not itself a CGP
+  component.
 - **Triggered by:** a failure surfaced *inside* a `impl Wrapper for Context` block (its header, a
   method signature, or a forwarding call) — often as a raw `E0271`/`E0277`/`E0599` that names no CGP
   construct — which the resolver anchors on the enclosing impl and traces through the wrapper's CGP
-  consumer supertrait to the root cause. Whether the impl's trait is a CGP consumer or a plain
-  wrapper is decided by its **fingerprint**: a CGP consumer carries a blanket impl routing to a
-  provider trait, a wrapper has only its concrete impl.
-- **Fix:** follow the `root cause:` note to the CGP dependency the wrapper's supertrait needs. The
-  dependency tree leads with the wrapper itself, then its CGP supertrait, down to the cause.
+  consumer supertrait to the root cause; **or** a direct call to a `#[cgp_fn]` / `#[blanket_trait]`
+  capability method (`app.describe()`) whose context cannot satisfy the capability, an `E0599` the
+  [call-site anchor](implementation/typed-resolution-call-site.md) recovers from the call
+  expression. Whether the failing trait is a CGP consumer or one of these non-component traits is
+  decided by its **fingerprint**: a CGP consumer carries a blanket impl routing to a provider trait,
+  while a wrapper has only its concrete impl and a `#[cgp_fn]` capability has a blanket impl over the
+  bare context with no provider.
+- **Fix:** follow the `root cause:` note to the CGP dependency the trait needs. The dependency tree
+  leads with the trait itself, then the capabilities it composes, down to the cause.
 - **Upstream class:** [check-trait failure](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md)
-  (reached through a hand-written wrapper trait).
+  (reached through a hand-written wrapper or a `#[cgp_fn]` capability trait).
 
 ### `CGP-E010` — wiring never resolves
 

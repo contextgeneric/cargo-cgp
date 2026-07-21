@@ -139,9 +139,18 @@ struct literal, unit-struct value, const, or static names its type directly; a c
 non-generic fn takes the callee's declared return type; references are peeled along the way. A
 receiver whose type genuinely needs inference — a method call's result, a field access — declines,
 as does a generic context, whose type arguments are exactly what the missing typeck results would
-have supplied. The consumer-trait candidates come from the method *name*: every CGP consumer trait
-(recognized structurally, in any crate) that declares a `self` method of that name is tried in
-turn.
+have supplied. The trait candidates come from the method *name*, and are of two kinds: every CGP
+**consumer trait** (recognized structurally, in any crate) declaring a `self` method of that name,
+tried first so a directly-wired consumer keeps its precise recovery; then every local `#[cgp_fn]` /
+`#[blanket_trait]` **capability trait** declaring such a method — a blanket-impl trait that is not a
+CGP component (no provider trait, no `DelegateComponent`), consumed like a consumer (`app.describe()`)
+and seeding the same walkable obligation `Ctx: Describe` whose `Self` is the context. A capability
+trait is not a CGP component, so its result is headed `[CGP-E009] the trait …` rather than
+`[CGP-E001] the consumer trait …` — the same wording the impl-site anchor gives such a trait reached
+through a wrapper — by clearing the `Resolved::consumers_are_cgp` flag the walk sets. This is what
+recovers a direct call to a `#[cgp_fn]` capability the context cannot satisfy: an `E0599` whose real
+cause (a field one composed capability reads) rustc buries in a mid-stack note under its method-probe
+candidate list ([`cgp_fn_use_site`](../../tests/ui/acceptable/use-site/cgp_fn_use_site.rs)).
 
 ## Parameters by signature unification, not by convention
 
@@ -255,9 +264,10 @@ failing obligation of the context the programmer named — never an invented dia
 The anchor's fixtures live under
 [`tests/ui/acceptable/use-site/`](../../tests/ui/acceptable/use-site) — `cascade_after_use_site`
 (the worked example above), `generic_consumer_use_site` (the value-argument case),
-`call_site_tuple_input` (the partial tuple recovery), and the `cascade_later_stage*` shapes whose
-pipeline stages the walk then descends — with the decline boundary pinned by
-`generic_consumer_unwritten_arg`. The consolidated catalog lives in the parent document's
+`call_site_tuple_input` (the partial tuple recovery), `cgp_fn_use_site` (the `#[cgp_fn]` capability
+call recovered as a `[CGP-E009]` block), and the `cascade_later_stage*` shapes whose pipeline stages
+the walk then descends — with the decline boundary pinned by `generic_consumer_unwritten_arg`. The
+consolidated catalog lives in the parent document's
 [Tests](typed-root-cause-resolution.md#tests) section.
 
 ## Source

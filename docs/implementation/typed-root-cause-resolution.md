@@ -326,8 +326,9 @@ separate header brand; the inline code is the only marking.
   - [`call_site/`](../../crates/cargo-cgp-driver/src/resolve/call_site) holds the sixth anchor,
     `resolve_call_site` — the HIR re-read of the failing call, one stage per file:
     `find_call.rs` (`method_calls_at`, the calls at, or inside an expression at, the diagnostic's
-    spans — the latter for the await-desugar wrappers — and the candidate consumer traits by method
-    name), `receiver.rs` (`receiver_context`/`local_binding_context`, the receiver's type from its
+    spans — the latter for the await-desugar wrappers — and `traits_with_method`, the candidate
+    consumer traits *and* local `#[cgp_fn]`/`#[blanket_trait]` capability traits by method name, the
+    latter headed `[CGP-E009]` by clearing `consumers_are_cgp`), `receiver.rs` (`receiver_context`/`local_binding_context`, the receiver's type from its
     binding, annotation, parameter, literal, or constructor-call signature), `seed.rs`
     (`seed_from_call`, the signature unification: fresh variables for the method's item, `Self`
     pinned to the context, each written argument type unified with its declared input, the trait's
@@ -559,6 +560,14 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
   field a branch reads, where collapsing the tuple to one flat unknown used to leave the impl
   unmatched and decline. This is the shape a branching/comparison DSL interpreter hits — e.g. a real
   `If<Compare<…>, …>` program reading an unwired field inside its condition.
+- `cgp_fn_use_site` — a direct call to a `#[cgp_fn]` capability method (`app.describe()`) whose
+  context is missing a field one composed capability reads. Pins the call-site anchor's
+  *capability-trait* candidate: the called `Describe` is a `#[cgp_fn]`/`#[blanket_trait]` blanket-impl
+  trait, not a CGP consumer, so no span-matching anchor recovers it; the anchor finds it by method
+  name, walks `App: Describe` to the missing field, and heads the block `[CGP-E009] the trait …`
+  (clearing `consumers_are_cgp`) rather than declining to rustc's `E0599` with the cause buried under
+  a method-probe candidate list. The use-site counterpart of the impl-site
+  [`cgp_fn_missing_field`](../../tests/ui/acceptable/fields/cgp_fn_missing_field.rs).
 - `use_type_foreign_unsatisfied` and `use_type_nested_unsatisfied` — an unsatisfiable `#[use_type]`
   abstract-type import in a trait definition, recovered by the consumer-trait anchor into a
   `[CGP-E001]` missing-wiring tree instead of leaking generated `__…__` placeholder names.

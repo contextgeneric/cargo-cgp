@@ -1,0 +1,34 @@
+error[E0599]: the method `describe` exists for reference `&App`, but its trait bounds were not satisfied
+  --> src/main.rs:57:9
+   |
+50 | pub struct App {
+   | -------------- doesn't satisfy `App: Describe` or `App: GetName`
+...
+57 |     app.describe()
+   |         ^^^^^^^^ method cannot be called on `&App` due to unsatisfied trait bounds
+   |
+note: the following trait bounds were not satisfied:
+      `&App: GetName`
+      `App: GetName`
+  --> src/main.rs:44:8
+   |
+43 | #[cgp_fn]
+   | ---------
+44 | #[uses(GetName, GetCount)]
+   |        ^^^^^^^ unsatisfied trait bound introduced here
+45 | pub fn describe(&self) -> String {
+   |        --------
+note: the trait `GetName` must be implemented
+  --> src/main.rs:30:1
+   |
+30 | #[cgp_fn]
+   | ^^^^^^^^^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `Describe` defines an item `describe`, perhaps you need to implement it
+  --> src/main.rs:43:1
+   |
+43 | #[cgp_fn]
+   | ^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0599`.
