@@ -6,10 +6,11 @@ use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
 };
 use cargo_cgp_error_processing::{
-    DedupLedger, DiagKind, Resolved, cause_signature, is_method_bounds_text, plan_resolved,
+    DedupLedger, DiagKind, OrphanConflict, Resolved, cause_signature, is_method_bounds_text,
+    mentions_orphan_param_text, orphan_conflict_help, plan_orphan_conflict, plan_resolved,
     plan_wiring_conflict, wiring_conflict_help,
 };
-use rustc_errors::codes::{E0119, E0271, E0275, E0277, E0599};
+use rustc_errors::codes::{E0117, E0119, E0210, E0271, E0275, E0277, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
 use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Suggestions};
@@ -159,6 +160,26 @@ impl<E> CgpEmitter<E> {
         })
     }
 
+    /// Recognize `diag` as an orphan-rule namespace registration — the `E0210` (or its sibling
+    /// `E0117`) the orphan rule produces when a crate registers wiring into a *foreign* namespace
+    /// keyed on a *foreign* key, so the generated `impl Namespace<_> for Key` has no local type.
+    /// Returns the recovered conflict, or `None` when it is not one. A cheap text pre-filter — the
+    /// machinery parameter (`__Components__` / `__Table__`) the `E0210` message names — gates the
+    /// impl scan; the rarer `E0117`, whose message names no parameter, is left to the typed
+    /// classifier alone, which confirms a foreign namespace trait sits at the caret before firing.
+    fn orphan_conflict(&self, diag: &DiagInner) -> Option<OrphanConflict> {
+        if !matches!(diag.code, Some(E0210) | Some(E0117)) {
+            return None;
+        }
+        if diag.code == Some(E0210)
+            && !main_message_text(diag).is_some_and(mentions_orphan_param_text)
+        {
+            return None;
+        }
+        let primary_span = diag.span.primary_span()?;
+        rustc_middle::ty::tls::with_opt(|tcx| resolve::classify_orphan_conflict(tcx?, primary_span))
+    }
+
     /// Resolve `diag`'s failure to its root-cause dependency tree(s), or `None` when the resolver
     /// cannot trace it to a CGP component failure (so the caller falls back to the in-place text
     /// rewrite). A candidate is any diagnostic that mentions a CGP wiring trait, plus every `E0271`,
@@ -290,6 +311,26 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     return;
                 }
             }
+        }
+        // An orphan-rule namespace registration (E0210/E0117): a crate registering wiring into a
+        // foreign namespace keyed on a foreign key. Reword the raw coherence error — which names
+        // the machinery parameter and frames a CGP wiring decision as a bare coherence rule — into
+        // a `[CGP-E011]` header naming the namespace and key, re-aiming the caret at the offending
+        // macro alone (its "uncovered type parameter" label no longer applies), and carrying the
+        // ownership-based fix in a `help`.
+        if let Some(conflict) = self.orphan_conflict(&diag)
+            && let Some(primary_span) = diag.span.primary_span()
+        {
+            replace_header(&mut diag, plan_orphan_conflict(&conflict));
+            diag.span = MultiSpan::from_span(primary_span);
+            diag.children
+                .push(subdiag(Level::Help, orphan_conflict_help(&conflict)));
+            // A rewritten diagnostic: bare `@…` paths (a path key renders without the `Path!`
+            // wrapper).
+            self.postprocess(&mut diag, true);
+            self.record_cgp_spans(&diag);
+            self.inner.emit_diagnostic(diag);
+            return;
         }
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
         // resolver declines, the wiring-message rename runs as the first fallback pass. A resolved

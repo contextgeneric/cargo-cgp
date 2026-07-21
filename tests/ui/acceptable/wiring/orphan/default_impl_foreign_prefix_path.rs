@@ -8,11 +8,12 @@
 //! keyed on a *prefix path* can therefore only be written in the crate that owns
 //! the namespace.
 //!
-//! cargo-cgp does not yet reshape the orphan class: it passes rustc's `E0210`
-//! through unchanged, without explaining in CGP terms that the mistake is
-//! registering a *prefixed* foreign component's default into a foreign namespace.
-//! That CGP-level re-presentation is the usability gap this fixture tracks.
-//! Bare-marker sibling: `default_impl_foreign_component.rs`.
+//! cargo-cgp reshapes the orphan class into a `[CGP-E011]` header naming the
+//! foreign namespace (`AppNamespace`) and the foreign *path* key
+//! (`@app.AnnouncerComponent`, resugared from the `PathCons<Symbol<…>>` spine)
+//! instead of the machinery parameter `__Components__`, with the ownership-based
+//! fix in a `help`. The path key is what distinguishes this from its bare-marker
+//! sibling `default_impl_foreign_component.rs`.
 //!
 //! CGP error class:
 //! <https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/orphan-rule.md>.

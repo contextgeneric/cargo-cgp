@@ -239,7 +239,8 @@ the injected flags. The transform is split across two directories. `emitter/` is
 seam: `install.rs` rebuilds whichever inner emitter the compiler's default would build — a
 `JsonEmitter` or an `AnnotateSnippetEmitter` — and wraps it, `cgp_emitter.rs` is the wrapper type and
 its `emit_diagnostic` orchestration (first recognize a duplicate-key `E0119` conflict — suppressing
-the redundant `IsProviderFor` half, rewriting the wiring half; else try the typed
+the redundant `IsProviderFor` half, rewriting the wiring half — or an orphan-rule `E0210`/`E0117`
+namespace registration, reworded into its `[CGP-E011]` header; else try the typed
 resolver, else the text rewrite with its method-probe-advice and overflow cleanups; then always
 post-process; then cross-diagnostic de-duplicate through the rustc-free `DedupLedger` — drop a
 transformed diagnostic whose span-independent signature was already emitted, so one mistake re-reported
@@ -256,7 +257,9 @@ failing call expression itself; `walk/` descends the wiring to each terminal lea
 a leaf into the
 rustc-free model by inspecting the struct it lands on, `label/` renders each path predicate as a
 tree label, `conflict/` classifies a duplicate-key `E0119` by reading the two conflicting wiring
-impls off the compiler (which keys collide, whether either is a `RedirectLookup`),
+impls off the compiler (which keys collide, whether either is a `RedirectLookup`), `orphan.rs`
+classifies an orphan-rule `E0210`/`E0117` by reading the offending namespace-registration impl off
+the compiler (which foreign namespace and key it names, whether a re-open or a registration),
 and `cgp_item.rs` holds the DefId-anchored CGP-trait recognition every stage relies on (see
 [Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md) and its per-stage
 sub-documents). `cache.rs` memoizes the walk at every node — keyed on the region-erased obligation and context —
@@ -288,8 +291,8 @@ notes, derive helps, and the de-duplication `cause_signature`), `coalesce.rs`
 `labels.rs` (the tree-label templates and the repeated-generics elision), `plan.rs`
 (`plan_resolved`, which words
 a `Resolved` into the header, help, and note strings the emitter emits, and holds the
-`categorized_header` classification), and `wiring.rs` (the `WiringConflict` model and
-`plan_wiring_conflict`, which words a duplicate-key conflict into its `[CGP-E004]`–`[CGP-E008]` header, one code per conflict shape). `tree.rs` is the `DependencyTree` type, its `cargo tree`-style
+`categorized_header` classification), `wiring.rs` (the `WiringConflict` model and
+`plan_wiring_conflict`, which words a duplicate-key conflict into its `[CGP-E004]`–`[CGP-E008]` header, one code per conflict shape), and `orphan.rs` (the `OrphanConflict` model and `plan_orphan_conflict`/`orphan_conflict_help`, which word an orphan-rule namespace registration into its `[CGP-E011]` header and ownership fix). `tree.rs` is the `DependencyTree` type, its `cargo tree`-style
 renderer (over the `termtree` crate), and `merge_dependency_forest` (fusing root-cause chains that
 share a common ancestor into one branching tree); `dedup.rs` is the `DedupLedger` behind the
 emitter's cross-diagnostic de-duplication; `signals.rs` holds the stable rustc phrasings the

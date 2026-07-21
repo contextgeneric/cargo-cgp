@@ -106,16 +106,18 @@ that changes how the compiler *produces* diagnostics, needing no diagnostic pars
 **custom emitter** that acts on diagnostics the compiler has already *built*, using facts only the
 live compiler holds; this is far more involved than a flag, because it links the compiler's internal
 API to reach the `TyCtxt`. That emitter is where the whole diagnostic layer now lives — the front-end
-merely forwards what the driver renders — and it carries four transformations. First, a
-duplicate-key coherence conflict (`E0119`) is recognized as one logical mistake and
-[reshaped into its coded `[CGP-E004]`–`[CGP-E008]` form](#reshaping-a-duplicate-key-conflict), described below. Otherwise
-the deepest transform, the [typed root-cause resolution](typed-root-cause-resolution.md), *replaces* a
+merely forwards what the driver renders — and it carries five transformations. Two of them handle a
+coherence-class error as one logical mistake: a duplicate-key conflict (`E0119`) is
+[reshaped into its coded `[CGP-E004]`–`[CGP-E008]` form](#reshaping-a-duplicate-key-conflict), and an
+orphan-rule namespace registration (`E0210`/`E0117`) is
+[reshaped into its `[CGP-E011]` form](#reshaping-an-orphan-rule-namespace-registration), both described
+below. Otherwise the deepest transform, the [typed root-cause resolution](typed-root-cause-resolution.md), *replaces* a
 resolvable wiring failure with a root-cause-first diagnostic, covered in its own document; failing
 that, the in-place [trait-renaming rewrite](#naming-the-traits-behind-a-component-marker) described
 below renames the CGP wiring notes; and finally every diagnostic passes through the
 [post-processing](error-processing.md) transforms — stripping CGP path prefixes, resugaring `Symbol!`
 and `Path!`, rewording an unmet `HasField` bound — so no raw CGP construct leaks. The sections that follow detail
-the two levers, the rename, and the conflict reshape; the replacement and the post-processing build on
+the two levers, the rename, and the two coherence reshapes; the replacement and the post-processing build on
 the rename's `TyCtxt` access and rustc-free helpers, and are documented separately.
 
 The emitter is also what *renders* the diagnostics, the way vanilla `rustc` would. The wrapper type
@@ -473,6 +475,42 @@ The transform is anchored to the genuine CGP traits (by `DefId`, like the rest o
 resolver), so a same-named trait cannot drive it, and it declines a conflict whose carets carry
 none of the recognized impls, leaving it to the fallback. The
 blessed snapshots under [`acceptable/wiring/`](../../tests/ui/acceptable/wiring) pin each shape.
+
+### Reshaping an orphan-rule namespace registration
+
+The emitter's fifth transform handles the other coherence-class error, the orphan-rule violation
+(`E0210`, or its sibling `E0117`) a namespace registration produces when the crate owns neither end.
+Registering wiring into a namespace lowers to `impl<Param> Namespace<Param> for Key`, and Rust's
+orphan rule accepts a foreign-trait impl only when a local type covers its parameters. When *both*
+the namespace trait and the key are foreign — a downstream crate registering into an upstream
+namespace it does not own, keyed on an upstream component it does not own either — nothing is local,
+and the compiler rejects it, naming the machinery parameter (`__Components__` from a
+`#[default_impl]`/`#[prefix]`, `__Table__` from a `cgp_namespace!` re-open) and framing a CGP wiring
+decision as a bare coherence rule. The transform **rewrites** that headline into the coded
+`[CGP-E011]` form, naming the foreign namespace and the key the programmer wrote, re-aims the caret at
+the offending macro alone (dropping the "uncovered type parameter" label, which no longer applies),
+and adds a `help` carrying the ownership-based fix the raw error never states.
+
+Everything is recovered from the compiler, not the error text — the reverse of relying on the
+`__Components__`/`__Table__` names the message happens to print. A cheap text pre-filter
+([`mentions_orphan_param_text`](../../crates/cargo-cgp-error-processing/src/signals.rs)) gates the
+scan on the `E0210` naming such a machinery parameter, then
+[`resolve::orphan`](../../crates/cargo-cgp-driver/src/resolve/orphan.rs) finds the offending impl: a
+local impl of a *foreign* [namespace lookup trait](typed-root-cause-resolution.md) (the
+single-`Delegate` fingerprint, so a downstream crate's own namespace trait is recognized like CGP's
+built-in `DefaultNamespace`) for a *foreign* key. Because rustc emits an `E0210`/`E0117` *only* for a
+genuine orphan, matching the caret to that impl (by source range) is the whole confirmation; a lone
+candidate is used even when the range match misses, and any ambiguity declines to the fallback. The
+key renders to its surface form off the types — a component marker to its name, a `PathCons<…>` to its
+bare `@…` path — through the same `describe_key` the conflict classifier uses, and the trigger (which
+fix to word) is read from the impl's own machinery parameter name (`__Table__` for a re-open,
+`__Components__` for a registration), a reliable `DefId`-independent discriminator. The message wording
+is decided by the rustc-free
+[`plan_orphan_conflict`](../../crates/cargo-cgp-error-processing/src/diagnosis/orphan.rs) (and
+`orphan_conflict_help` for the fix) over the owned `OrphanConflict` the classifier fills in, so it is
+unit-tested without a compiler. The blessed snapshots under
+[`acceptable/wiring/orphan/`](../../tests/ui/acceptable/wiring/orphan) pin the component-key,
+path-key, and re-open shapes.
 
 ## Comparison with Clippy
 

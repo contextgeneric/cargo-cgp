@@ -1,0 +1,10 @@
+error[E0210]: [CGP-E011] cannot register the foreign path `@app.AnnouncerComponent` into the foreign namespace `AppNamespace`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_impl(new AnnounceQuietly)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: own one end of the wiring: key it on a component defined in this crate, or register it from the crate that defines `AppNamespace`
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0210`.

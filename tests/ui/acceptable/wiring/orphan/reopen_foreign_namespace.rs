@@ -8,12 +8,14 @@
 //! local namespace that *inherits* it (`new Local: AppNamespace { .. }`), which is
 //! orphan-safe because the emitted impls are for the local trait.
 //!
-//! cargo-cgp does not yet reshape the orphan class: it passes rustc's `E0210`
-//! through unchanged, so the message names the machinery parameter `__Table__`
-//! without explaining in CGP terms that the mistake is re-opening a *foreign*
-//! namespace. That CGP-level re-presentation is the usability gap this fixture
-//! tracks. This is the `cgp_namespace!` trigger of the orphan class, alongside the
-//! `#[default_impl]` triggers in the sibling fixtures.
+//! cargo-cgp reshapes the orphan class into a `[CGP-E011]` header naming the
+//! foreign namespace (`AppNamespace`) and the foreign key (`GreeterComponent`)
+//! instead of the machinery parameter `__Table__`. Because the trigger is a
+//! `cgp_namespace!` re-open rather than a `#[default_impl]` registration — told
+//! apart by the impl's `__Table__` parameter — the `help` gives the re-open fix:
+//! define a new local namespace that *inherits* the foreign one. This is the
+//! `cgp_namespace!` trigger of the orphan class, alongside the `#[default_impl]`
+//! triggers in the sibling fixtures.
 //!
 //! CGP error class:
 //! <https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/orphan-rule.md>.

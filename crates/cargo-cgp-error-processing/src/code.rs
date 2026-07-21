@@ -86,6 +86,14 @@ pub const WRAPPER_TRAIT_UNIMPLEMENTED: &str = "CGP-E009";
 /// to wire a real provider, or to implement the consumer trait directly on the context.
 pub const WIRING_OVERFLOW: &str = "CGP-E010";
 
+/// `CGP-E011` — a namespace registration the orphan rule rejects. Stamped on an `E0210` (or its
+/// sibling `E0117`) whose generated impl is a foreign namespace trait implemented for a foreign
+/// key: a `#[default_impl]` / `#[prefix]` registering a foreign component into a foreign namespace,
+/// or a `cgp_namespace!` block re-opening one. The rewritten message names the foreign namespace
+/// and key instead of the machinery parameter (`__Components__` / `__Table__`), and the fix — own
+/// one end of the wiring — rides in a `help`.
+pub const ORPHAN_FOREIGN_NAMESPACE: &str = "CGP-E011";
+
 // The `CGP-E1xx` family codes the entries of a `root cause:` note's dependency tree, one code per
 // distinct rendering template. `CGP-E101`–`CGP-E105` are the inner chain nodes (a wiring hop);
 // `CGP-E106`–`CGP-E109` are the terminal root-cause leaves. An entry that passes a non-CGP message

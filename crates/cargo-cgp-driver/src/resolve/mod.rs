@@ -18,7 +18,9 @@
 //!
 //! A separate [`conflict`] stage handles the duplicate-key coherence conflict (`E0119`) rather
 //! than a check failure: it reads the two conflicting `DelegateComponent` impls off the compiler
-//! and words which keys collide.
+//! and words which keys collide. A sibling [`orphan`] stage handles the orphan-rule coherence
+//! conflict (`E0210`/`E0117`) the same way: it reads the offending namespace-registration impl off
+//! the compiler and words which foreign namespace and key it names.
 
 mod anchor;
 mod cache;
@@ -27,6 +29,7 @@ mod cgp_item;
 mod classify;
 mod conflict;
 mod label;
+mod orphan;
 mod walk;
 
 pub use anchor::{
@@ -36,3 +39,4 @@ pub use anchor::{
 pub use cache::ResolveCache;
 pub use call_site::resolve_call_site;
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
+pub use orphan::classify_orphan_conflict;

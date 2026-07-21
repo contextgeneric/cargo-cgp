@@ -50,9 +50,10 @@ Within each category the fixtures are sorted into kind subdirectories. `acceptab
 kind of failure the tool resolves — `fields/` and `field-types/` for missing and mistyped fields,
 `providers/` for provider dependency chains, `generic/` for generic components, `resolution/` for the
 non-field and boundary cases the resolver still reshapes, `use-site/` for consumer-method call
-failures, and `lowering/` and `wiring/` for the remaining classes. `usability/` is split by the kind
-of issue that remains — `duplication/`, `lowering/`, and `wiring/` (itself split into `constraints/`
-and `orphan/`, the latter the cross-crate orphan-rule cases cargo-cgp does not yet reshape).
+failures, and `lowering/` and `wiring/` for the remaining classes (`wiring/orphan/` holding the
+cross-crate orphan-rule cases the tool now reshapes into `[CGP-E011]`). `usability/` is split by the
+kind of issue that remains — `duplication/`, `lowering/`, and `wiring/` (currently just
+`constraints/`).
 Alongside the hand-curated
 examples the tree includes the fixtures migrated from `cgp`'s former compile-fail suite (one per
 post-codegen error class), giving the tool a snapshot of its own transformed output for the whole

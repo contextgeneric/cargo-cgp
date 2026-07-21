@@ -7,11 +7,11 @@
 //! per-component default needs the crate to own *either* the namespace or the
 //! component key; owning neither, this crate cannot.
 //!
-//! cargo-cgp does not yet reshape the orphan class: it passes rustc's `E0210`
-//! through unchanged, so the message names the machinery parameter `__Components__`
-//! and points at the generated impl without explaining, in CGP terms, that the
-//! mistake is registering a default into a *foreign* namespace. That CGP-level
-//! re-presentation is the usability gap this fixture tracks. This is the
+//! cargo-cgp reshapes the orphan class into a `[CGP-E011]` header naming the
+//! foreign namespace (`AppNamespace`) and the foreign key (`GreeterComponent`)
+//! instead of the machinery parameter `__Components__`, and carries the
+//! ownership-based fix in a `help` — own one end of the wiring, by keying it on a
+//! local component or registering it from the namespace's own crate. This is the
 //! bare-marker sibling of `default_impl_foreign_prefix_path.rs`; the orphan-*safe*
 //! counterpart is the positive `ok/cross_crate_wiring.rs` fixture.
 //!

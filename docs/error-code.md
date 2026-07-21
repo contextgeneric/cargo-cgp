@@ -49,7 +49,7 @@ implied.
 
 ## Codes
 
-The catalog today holds the classes the driver's emitter recognizes in a main message, in three
+The catalog today holds the classes the driver's emitter recognizes in a main message, in four
 groups. The **check-failure** codes `CGP-E001`–`CGP-E003` and `CGP-E009` come from the typed
 resolver; each carries the root cause in the accompanying `note`s — one per recovered cause, each
 opening `root cause: …` over its dependency chain (see
@@ -60,9 +60,11 @@ with `CGP-E001`–`CGP-E003` below.) The **structural
 wiring-conflict** codes `CGP-E004`–`CGP-E008` are different in kind: they come from the duplicate-key
 conflict classifier, carry no root-cause note, and instead keep rustc's two carets, which already
 point at the two colliding entries. They are five separate codes because each rewrites the `E0119`
-into a distinct message form with its own fix. The **wiring-overflow** code `CGP-E010` is a text
-rewrite of the `E0275` a wiring cycle produces, carrying its fix in a `help` rather than a
-root-cause note (a cycle has no terminal leaf to descend to). Each entry below gives the rewritten
+into a distinct message form with its own fix. The **coherence-reshape** codes `CGP-E010` and
+`CGP-E011` each rewrite a whole-program coherence error into a CGP-framed one carrying its fix in a
+`help`: `CGP-E010` a wiring cycle's `E0275` (a cycle has no terminal leaf to descend to), and
+`CGP-E011` an orphan-rule namespace registration's `E0210`/`E0117` (recovered from the offending impl
+off the compiler, like the `E0119` family). Each entry below gives the rewritten
 message, the mistake behind it, the fix, and the upstream
 [CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) class it recognizes.
 
@@ -186,6 +188,26 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
 - **Fix:** wire the component to a real provider, or implement the consumer trait directly on the
   context, so the lookup terminates.
 - **Upstream class:** [wiring cycle](https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/wiring-cycle.md).
+
+### `CGP-E011` — orphan-rule namespace registration
+
+- **Message:** `` [CGP-E011] cannot register the foreign <key> into the foreign namespace
+  `<Namespace>` `` — where `<key>` is `` component `<Marker>` `` or `` path `@…` `` — with a `help`
+  naming the ownership-based fix.
+- **Means:** the crate is registering wiring into a namespace it does not own, keyed on a component
+  (or `@`-path) it does not own either. A registration lowers to `impl Namespace<_> for Key`, and
+  Rust's orphan rule rejects a foreign-trait impl with no local type covering it, so with *both* the
+  namespace and the key foreign the impl is an orphan.
+- **Triggered by:** an `E0210` (or its sibling `E0117`) whose generated impl is a foreign
+  [namespace lookup trait](https://github.com/contextgeneric/cgp/blob/main/docs/reference/traits/default_namespace.md)
+  implemented for a foreign key — a `#[default_impl(… in Namespace)]` or `#[prefix(… in Namespace)]`
+  registration (naming `__Components__`), or a `cgp_namespace!` block re-opening a foreign namespace
+  (naming `__Table__`). The Rust code stays `E0210`/`E0117`.
+- **Fix (in the `help`):** own one end of the wiring. For a registration, key it on a component your
+  crate defines, or register it from the crate that defines the namespace. For a `cgp_namespace!`
+  re-open, define a new local namespace that *inherits* the foreign one
+  (`cgp_namespace! { new MyNamespace: <Namespace> { … } }`) rather than extending it in place.
+- **Upstream class:** [orphan-rule violation](https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/orphan-rule.md).
 
 ## Dependency-tree entry codes (`CGP-E1xx`)
 
@@ -325,7 +347,10 @@ the typed check-failure form by
 [`plan_resolved`](../crates/cargo-cgp-error-processing/src/diagnosis/plan.rs)'s
 `categorized_header` (fed from the resolved failure), and the `CGP-E004`–`CGP-E008` conflict forms by
 [`plan_wiring_conflict`](../crates/cargo-cgp-error-processing/src/diagnosis/wiring.rs) (fed from the
-conflict the driver's `resolve::conflict` classifier recovers, one code per `WiringConflict` shape).
+conflict the driver's `resolve::conflict` classifier recovers, one code per `WiringConflict` shape),
+and the `CGP-E011` orphan form by
+[`plan_orphan_conflict`](../crates/cargo-cgp-error-processing/src/diagnosis/orphan.rs) (fed from the
+`OrphanConflict` the driver's `resolve::orphan` classifier recovers).
 The `CGP-E1xx` dependency-tree entry codes are stamped at tree-construction time: the inner chain
 nodes by the pure label constructors in
 [`diagnosis/labels.rs`](../crates/cargo-cgp-error-processing/src/diagnosis/labels.rs) (the driver's

@@ -10,6 +10,7 @@
 mod coalesce;
 mod labels;
 mod leaf;
+mod orphan;
 mod plan;
 mod resolved;
 mod wiring;
@@ -18,6 +19,7 @@ mod wording;
 pub use coalesce::*;
 pub use labels::*;
 pub use leaf::*;
+pub use orphan::*;
 pub use plan::*;
 pub use resolved::*;
 pub use wiring::*;

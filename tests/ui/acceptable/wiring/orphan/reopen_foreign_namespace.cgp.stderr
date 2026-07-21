@@ -1,0 +1,14 @@
+error[E0210]: [CGP-E011] cannot register the foreign component `GreeterComponent` into the foreign namespace `AppNamespace`
+  --> src/main.rs:28:1
+   |
+28 | / cgp_namespace! {
+29 | |     AppNamespace {
+30 | |         GreeterComponent => @foo,
+31 | |     }
+32 | | }
+   | |_^
+   |
+   = help: to extend a foreign namespace, define a new local namespace that inherits it: `cgp_namespace! { new MyNamespace: AppNamespace { … } }`
+   = note: this error originates in the macro `cgp_namespace` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0210`.

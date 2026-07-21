@@ -38,6 +38,17 @@ pub fn is_method_probe_advice_text(text: &str) -> bool {
         || text.starts_with("the candidates are defined in")
 }
 
+/// Whether a main message is the orphan-rule `E0210` naming a CGP machinery type parameter —
+/// "type parameter `__Components__` must be used as an argument to some local type". The
+/// double-underscore parameter (`__Components__` from a `#[default_impl]`/`#[prefix]` registration,
+/// `__Table__` from a `cgp_namespace!` re-open) is a reserved identifier the CGP macros emit, so its
+/// presence in this coherence error is the cheap pre-filter that makes the diagnostic a
+/// namespace-orphan candidate. It is a *signal*, not a classification: the typed classifier still
+/// confirms a foreign namespace trait is implemented for a foreign key before anything is rewritten.
+pub fn mentions_orphan_param_text(text: &str) -> bool {
+    text.contains("must be used as an argument to some local type") && text.contains("`__")
+}
+
 /// Whether a main message is a `?`-operator error — the `Try`/`FromResidual` shape rustc emits
 /// when `expr?` is applied to a value whose type it could not resolve because an earlier trait
 /// bound on that same expression failed. Both `Try` shapes share rustc's stable "the `?` operator

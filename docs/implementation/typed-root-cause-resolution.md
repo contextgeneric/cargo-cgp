@@ -382,7 +382,9 @@ separate header brand; the inline code is the only marking.
     `is_namespace_lookup_trait` (by the single-`Delegate`-associated-type fingerprint), and the
     shared `PathCons`/`Nil`/local-ADT recognizers. A sibling
     [`conflict/`](../../crates/cargo-cgp-driver/src/resolve/conflict) handles the duplicate-key
-    `E0119` conflict — a separate transform documented in
+    `E0119` conflict, and a sibling
+    [`orphan.rs`](../../crates/cargo-cgp-driver/src/resolve/orphan.rs) the orphan-rule
+    `E0210`/`E0117` namespace registration — both separate coherence-class transforms documented in
     [The driver](driver.md#reshaping-a-duplicate-key-conflict). A sibling `cache.rs` memoizes the
     walk at every node — keyed on the region-erased obligation and context — so a wiring failure
     re-reported at many sites, or a shared capability, is walked once (see

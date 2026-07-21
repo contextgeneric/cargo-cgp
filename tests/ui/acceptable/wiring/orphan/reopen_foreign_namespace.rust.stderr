@@ -1,11 +1,11 @@
 error[E0210]: type parameter `__Table__` must be used as an argument to some local type (e.g., `MyStruct<__Table__>`)
-  --> src/main.rs:26:1
+  --> src/main.rs:28:1
    |
-26 | / cgp_namespace! {
-27 | |     AppNamespace {
-28 | |         GreeterComponent => @foo,
-29 | |     }
-30 | | }
+28 | / cgp_namespace! {
+29 | |     AppNamespace {
+30 | |         GreeterComponent => @foo,
+31 | |     }
+32 | | }
    | |_^ uncovered type parameter
    |
    = note: implementing a foreign trait is only possible if at least one of the types for which it is implemented is local
