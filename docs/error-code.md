@@ -49,7 +49,7 @@ implied.
 
 ## Codes
 
-The catalog today holds the classes the driver's emitter recognizes in a main message, in four
+The catalog today holds the classes the driver's emitter recognizes in a main message, in five
 groups. The **check-failure** codes `CGP-E001`–`CGP-E003` and `CGP-E009` come from the typed
 resolver; each carries the root cause in the accompanying `note`s — one per recovered cause, each
 opening `root cause: …` over its dependency chain (see
@@ -64,7 +64,10 @@ into a distinct message form with its own fix. The **coherence-reshape** codes `
 `CGP-E011` each rewrite a whole-program coherence error into a CGP-framed one carrying its fix in a
 `help`: `CGP-E010` a wiring cycle's `E0275` (a cycle has no terminal leaf to descend to), and
 `CGP-E011` an orphan-rule namespace registration's `E0210`/`E0117` (recovered from the offending impl
-off the compiler, like the `E0119` family). Each entry below gives the rewritten
+off the compiler, like the `E0119` family). The fifth group is the lone **lowering** code
+`CGP-E012`: a capability used in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]`,
+recovered off the compiler from the generated blanket impl the failing call sits in and reworded with
+its `#[uses(…)]` fix in a `help`. Each entry below gives the rewritten
 message, the mistake behind it, the fix, and the upstream
 [CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) class it recognizes.
 
@@ -217,6 +220,28 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
   re-open, define a new local namespace that *inherits* the foreign one
   (`cgp_namespace! { new MyNamespace: <Namespace> { … } }`) rather than extending it in place.
 - **Upstream class:** [orphan-rule violation](https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/orphan-rule.md).
+
+### `CGP-E012` — capability used but not declared
+
+- **Message:** `` [CGP-E012] the capability `<Trait>` is used but not declared as a dependency ``,
+  with a `help` naming the fix: `` declare it as a dependency with `#[uses(<Trait>)]` ``.
+- **Means:** a `#[cgp_fn]`/`#[cgp_impl]` body calls a CGP capability (a consumer trait, or a
+  `#[cgp_fn]`/`#[blanket_trait]` capability) on `self`, but the enclosing definition never declared
+  it. The macro lowers the body into a blanket impl over a generated generic context —
+  `impl<__Context__> Describe for __Context__ where __Context__: GetName` — so a capability the body
+  uses must be a `where` bound on `__Context__`, added with `#[uses(…)]`. Omitted, the method cannot
+  resolve on `__Context__`. This also covers a forgotten CGP *consumer* trait used the same way.
+- **Triggered by:** an `E0599` "the method `…` exists for reference `&__Context__`, but its trait
+  bounds were not satisfied", whose note points at a transitive `HasField` bound. The resolver
+  confirms it structurally: the failing call sits in a generated blanket impl whose `Self` is a bare
+  type parameter, the called method belongs to a CGP capability trait, and that trait is not among
+  the impl's `where` bounds. The Rust code stays `E0599`. The `[T]: Sized` cascade the unresolved
+  return type trails (in an `async` body especially) is dropped as noise.
+- **Fix (in the `help`):** add the capability to the definition's `#[uses(…)]` list (or a
+  hand-written `where Self: <Trait>` bound), so it becomes a bound on the generated context.
+- **Upstream class:** the post-codegen face of a missing impl-side dependency; closest to the
+  [hidden unsatisfied-dependency](https://github.com/contextgeneric/cgp/blob/main/docs/errors/hidden/unsatisfied-dependency.md)
+  class, but here the fix is declaring the dependency rather than satisfying it.
 
 ## Dependency-tree entry codes (`CGP-E1xx`)
 

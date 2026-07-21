@@ -94,6 +94,15 @@ pub const WIRING_OVERFLOW: &str = "CGP-E010";
 /// one end of the wiring — rides in a `help`.
 pub const ORPHAN_FOREIGN_NAMESPACE: &str = "CGP-E011";
 
+/// `CGP-E012` — a CGP capability is called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared as a
+/// dependency. The macro lowers the body into a blanket impl over a generated generic context
+/// (`impl<__Context__> Describe for __Context__ where __Context__: GetName`), and a capability the
+/// body calls on `self` must be a `where` bound on that context — declared with `#[uses(…)]`. When
+/// it is omitted, rustc reports a vague `E0599` on `&__Context__` pointing at a transitive
+/// `HasField` bound; the rewritten message names the capability instead, and the fix — add it to
+/// `#[uses(…)]` — rides in a `help`. The Rust code stays `E0599`.
+pub const UNDECLARED_CAPABILITY: &str = "CGP-E012";
+
 // The `CGP-E1xx` family codes the entries of a `root cause:` note's dependency tree, one code per
 // distinct rendering template. `CGP-E101`–`CGP-E105` are the inner chain nodes (a wiring hop);
 // `CGP-E106`–`CGP-E109` are the terminal root-cause leaves. An entry that passes a non-CGP message

@@ -10,7 +10,8 @@ use std::borrow::Cow;
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{
     DiagKind, context_has_hasfield_impls, is_method_probe_advice_text,
-    is_question_mark_cascade_text, mentions_wiring_text, postprocess_message,
+    is_question_mark_cascade_text, is_unsized_cascade_text, mentions_wiring_text,
+    postprocess_message,
 };
 use rustc_errors::codes::{E0271, E0599};
 use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, Suggestions};
@@ -87,6 +88,14 @@ pub(crate) fn message_signature(diag: &DiagInner) -> String {
 /// it merely restates that failure in `Try` terms while dumping the unresolved projected type.
 pub(crate) fn is_question_mark_cascade(diag: &DiagInner) -> bool {
     main_message_text(diag).is_some_and(is_question_mark_cascade_text)
+}
+
+/// Whether `diag` is an unsized-type error ([`is_unsized_cascade_text`]). Paired with the same span
+/// check as [`is_question_mark_cascade`]: when an expression whose type a CGP failure left
+/// unresolved is bound to a `let` (or fed to `?`), rustc adds `[T]: Sized` errors that restate
+/// nothing — dropped only when they overlap a reported CGP failure.
+pub(crate) fn is_unsized_cascade(diag: &DiagInner) -> bool {
+    main_message_text(diag).is_some_and(is_unsized_cascade_text)
 }
 
 /// Strip rustc's method-probe advice from a method-bounds `E0599` the resolver declined: the

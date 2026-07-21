@@ -67,10 +67,10 @@ pub fn resolve_call_site(
 
 /// One method call found at the diagnostic's spans: the method name, the receiver expression,
 /// and the call's argument expressions.
-struct MethodCall<'tcx> {
-    method: Symbol,
-    receiver: &'tcx Expr<'tcx>,
-    args: &'tcx [Expr<'tcx>],
+pub(crate) struct MethodCall<'tcx> {
+    pub(crate) method: Symbol,
+    pub(crate) receiver: &'tcx Expr<'tcx>,
+    pub(crate) args: &'tcx [Expr<'tcx>],
 }
 
 /// Every method-call expression in a local body at one of the diagnostic's spans. A use-site
@@ -79,7 +79,7 @@ struct MethodCall<'tcx> {
 /// expressions contain the call without the call's own span overlapping. So a method call is
 /// collected when its own span overlaps a diagnostic span *or* it sits inside any expression
 /// whose span does; each match is a candidate the caller tries (and gates on actually failing).
-fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<MethodCall<'tcx>> {
+pub(crate) fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<MethodCall<'tcx>> {
     let mut finder = CallFinder {
         spans,
         within_match: false,
@@ -131,7 +131,7 @@ impl<'tcx> Visitor<'tcx> for CallFinder<'_, 'tcx> {
 /// Restricting the second kind to *local* traits excludes foreign blanket traits (`Into`, `From`);
 /// the `self`-method requirement and the failing-obligation gate in [`resolve_call_site`] keep a
 /// wrong guess from fabricating a diagnostic.
-fn traits_with_method(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId, DefId, bool)> {
+pub(crate) fn traits_with_method(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId, DefId, bool)> {
     let mut consumers = Vec::new();
     let mut capabilities = Vec::new();
     for trait_did in tcx.all_traits_including_private() {

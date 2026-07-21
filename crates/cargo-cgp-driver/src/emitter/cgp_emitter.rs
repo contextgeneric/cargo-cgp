@@ -7,10 +7,11 @@ use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
 };
 use cargo_cgp_error_processing::{
-    DedupLedger, DiagKind, OrphanConflict, Resolved, cause_notes, cause_only_signature,
-    cause_signature, coalesce_underived_fields, consumer_header, derive_help_messages,
-    is_method_bounds_text, mentions_orphan_param_text, orphan_conflict_help, plan_orphan_conflict,
-    plan_resolved, plan_wiring_conflict, wiring_conflict_help,
+    DedupLedger, DiagKind, OrphanConflict, Resolved, UndeclaredCapability, cause_notes,
+    cause_only_signature, cause_signature, coalesce_underived_fields, consumer_header,
+    derive_help_messages, is_method_bounds_text, mentions_orphan_param_text, orphan_conflict_help,
+    plan_orphan_conflict, plan_resolved, plan_undeclared_capability, plan_wiring_conflict,
+    undeclared_capability_help, wiring_conflict_help,
 };
 use rustc_errors::codes::{E0117, E0119, E0210, E0271, E0275, E0277, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
@@ -21,7 +22,7 @@ use rustc_span::source_map::SourceMap;
 
 use crate::component_map::build_name_map_from_tls;
 use crate::emitter::edit::{
-    diag_kind, diagnostic_spans, is_question_mark_cascade, main_message_text,
+    diag_kind, diagnostic_spans, is_question_mark_cascade, is_unsized_cascade, main_message_text,
     mentions_hasfield_impls, mentions_wiring, message_signature, postprocess_messages,
     postprocess_multispan, replace_header, rewrite_messages, strip_method_probe_advice, subdiag,
 };
@@ -317,6 +318,44 @@ impl<E: Emitter> CgpEmitter<E> {
         rustc_middle::ty::tls::with_opt(|tcx| resolve::classify_orphan_conflict(tcx?, primary_span))
     }
 
+    /// Recognize `diag` as an undeclared-capability failure — a CGP capability called in a
+    /// `#[cgp_fn]`/`#[cgp_impl]` body without being declared via `#[uses(…)]`, so its method cannot
+    /// resolve on the generated `__Context__` generic. Returns the capability to declare, or `None`
+    /// when it is not one. Gated to the method-bounds `E0599` shape, then confirmed structurally by
+    /// [`resolve::detect_undeclared_capability`] (a generated blanket impl with a bare-parameter
+    /// `Self`, a capability-trait method call, and no matching `where` bound).
+    fn undeclared_capability(&self, diag: &DiagInner) -> Option<UndeclaredCapability> {
+        if diag.code != Some(E0599) || !main_message_text(diag).is_some_and(is_method_bounds_text) {
+            return None;
+        }
+        let primary_span = diag.span.primary_span()?;
+        let spans = diagnostic_spans(diag);
+        rustc_middle::ty::tls::with_opt(|tcx| {
+            resolve::detect_undeclared_capability(tcx?, primary_span, &spans)
+        })
+    }
+
+    /// Whether a primary span of `diag` sits on a source line that a recorded CGP failure also sits
+    /// on. Used to drop the `[T]: Sized` cascade an undeclared-capability failure trails across its
+    /// whole `let … = …;` line — the cascade errors land on the binding pattern and the trailing
+    /// `?`, not only on the call sub-expression, so a span *overlap* check misses them while a
+    /// same-line check (via the source map) catches them all. Scoped to unsized cascades already, so
+    /// a same-line coincidence cannot suppress an unrelated error.
+    fn on_recorded_cgp_line(&self, diag: &DiagInner) -> bool {
+        let Some(source_map) = self.source_map() else {
+            return false;
+        };
+        let line_of = |span: Span| {
+            let loc = source_map.lookup_char_pos(span.lo());
+            (loc.file.name.clone(), loc.line)
+        };
+        let cgp_lines: Vec<_> = self.cgp_spans.iter().map(|&span| line_of(span)).collect();
+        diag.span
+            .primary_spans()
+            .iter()
+            .any(|&span| cgp_lines.contains(&line_of(span)))
+    }
+
     /// Resolve `diag`'s failure to its root-cause dependency tree(s), or `None` when the resolver
     /// cannot trace it to a CGP component failure (so the caller falls back to the in-place text
     /// rewrite). A candidate is any diagnostic that mentions a CGP wiring trait, plus every `E0271`,
@@ -485,6 +524,26 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             self.buffer.push(BufEntry::Plain(diag));
             return;
         }
+        // A capability called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]`:
+        // its method cannot resolve on the generated `__Context__` generic, and rustc reports a
+        // vague `E0599` pointing at a transitive `HasField` bound. Reword it to name the capability
+        // and carry the `#[uses(…)]` fix in a `help`, keeping the caret on the failing call. Recording
+        // the span drops the unsized-`[u8]` cascade the failed method resolution trails on the same
+        // expression.
+        if let Some(undeclared) = self.undeclared_capability(&diag)
+            && let Some(primary_span) = diag.span.primary_span()
+        {
+            replace_header(&mut diag, plan_undeclared_capability(&undeclared));
+            diag.span = MultiSpan::from_span(primary_span);
+            diag.children.push(subdiag(
+                Level::Help,
+                undeclared_capability_help(&undeclared),
+            ));
+            self.postprocess(&mut diag, true);
+            self.record_cgp_spans(&diag);
+            self.buffer.push(BufEntry::Plain(diag));
+            return;
+        }
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
         // resolver declines, the wiring-message rename runs as the first fallback pass. A resolved
         // failure also yields its span-independent cause signature, for the de-duplication below.
@@ -536,11 +595,17 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             // expression can be dropped below. Recorded before de-duplication, so a re-report that
             // is itself suppressed still anchors its cascade.
             self.record_cgp_spans(&diag);
-        } else if is_question_mark_cascade(&diag) && self.overlaps_cgp_failure(&diag) {
-            // A downstream `?`-operator cascade of a CGP wiring failure already reported at this
-            // expression: it restates the failure in `Try` terms and dumps the unresolved projected
-            // type, adding nothing. Drop it (cargo re-counts emitted diagnostics, so the "N errors"
-            // summary stays honest). A `?` error with no CGP failure on its expression is untouched.
+        } else if (is_question_mark_cascade(&diag) && self.overlaps_cgp_failure(&diag))
+            || (is_unsized_cascade(&diag) && self.on_recorded_cgp_line(&diag))
+        {
+            // A downstream cascade of a CGP wiring failure already reported at this expression: a
+            // `?`-operator error restating the failure in `Try` terms (dropped when it overlaps the
+            // failure span), or a `[T]: Sized` error from the expression's type being left
+            // unresolved by the failed method/trait resolution (dropped when it lands on the same
+            // source line, since these spread across the `let … = …;` binding and trailing `?`).
+            // Either adds nothing over the CGP error already shown, so drop it (cargo re-counts
+            // emitted diagnostics, so the "N errors" summary stays honest). A cascade with no CGP
+            // failure on its expression is untouched.
             return;
         }
         // Cross-diagnostic de-duplication. CGP wiring is lazy, so one mistake surfaces as the same

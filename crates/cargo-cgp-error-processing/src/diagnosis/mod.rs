@@ -13,6 +13,7 @@ mod leaf;
 mod orphan;
 mod plan;
 mod resolved;
+mod undeclared;
 mod wiring;
 mod wording;
 
@@ -22,5 +23,6 @@ pub use leaf::*;
 pub use orphan::*;
 pub use plan::*;
 pub use resolved::*;
+pub use undeclared::*;
 pub use wiring::*;
 pub use wording::*;

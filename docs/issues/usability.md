@@ -84,6 +84,13 @@ their fixtures now live under `acceptable/`:
   `height`), [`dependency_cascade`](../../tests/ui/acceptable/duplication/dependency_cascade.rs)
   (three chained providers), and `missing_normal_bound` (two consumers sharing an `App: Clone` bound)
   each collapse to one block, and cargo's re-count keeps the "N errors" summary honest.
+- A **capability used but not declared** — a `#[cgp_fn]`/`#[cgp_impl]` body that calls a CGP
+  capability (a consumer or `#[cgp_fn]`/`#[blanket_trait]` trait) on `self` without declaring it via
+  `#[uses(…)]`, so the method cannot resolve on the generated `__Context__` generic — is reshaped
+  from rustc's vague `E0599` (which names `__Context__` and points at a transitive `HasField` bound,
+  the wrong fix) into a `[CGP-E012]` header naming the capability, with the `#[uses(…)]` fix in a
+  `help`, and the `[T]: Sized` cascade the unresolved return type trails dropped
+  ([`undeclared_uses_capability`](../../tests/ui/acceptable/lowering/undeclared_uses_capability.rs)).
 
 What remains below are the classes the tool does not yet reshape.
 

@@ -1,0 +1,9 @@
+error[E0599]: [CGP-E012] the capability `GetCount` is used but not declared as a dependency
+  --> src/main.rs:44:46
+   |
+44 |     format!("{} ({})", self.get_name(), self.get_count())
+   |                                              ^^^^^^^^^
+   |
+   = help: declare it as a dependency with `#[uses(GetCount)]`
+
+For more information about this error, try `rustc --explain E0599`.

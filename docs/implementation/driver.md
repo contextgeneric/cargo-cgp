@@ -106,12 +106,18 @@ that changes how the compiler *produces* diagnostics, needing no diagnostic pars
 **custom emitter** that acts on diagnostics the compiler has already *built*, using facts only the
 live compiler holds; this is far more involved than a flag, because it links the compiler's internal
 API to reach the `TyCtxt`. That emitter is where the whole diagnostic layer now lives — the front-end
-merely forwards what the driver renders — and it carries five transformations. Two of them handle a
-coherence-class error as one logical mistake: a duplicate-key conflict (`E0119`) is
-[reshaped into its coded `[CGP-E004]`–`[CGP-E008]` form](#reshaping-a-duplicate-key-conflict), and an
+merely forwards what the driver renders — and it carries six transformations. Three of them reshape a
+specific compiler error into one coded CGP form: a duplicate-key conflict (`E0119`) is
+[reshaped into its coded `[CGP-E004]`–`[CGP-E008]` form](#reshaping-a-duplicate-key-conflict), an
 orphan-rule namespace registration (`E0210`/`E0117`) is
-[reshaped into its `[CGP-E011]` form](#reshaping-an-orphan-rule-namespace-registration), both described
-below. Otherwise the deepest transform, the [typed root-cause resolution](typed-root-cause-resolution.md), *replaces* a
+[reshaped into its `[CGP-E011]` form](#reshaping-an-orphan-rule-namespace-registration), and a
+capability used in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]` — an `E0599` on
+the generated `__Context__` generic — is reshaped into a `[CGP-E012]` header naming the capability,
+with the `#[uses(…)]` fix in a `help` (recovered by
+[`resolve::detect_undeclared_capability`](../../crates/cargo-cgp-driver/src/resolve/undeclared.rs) and
+worded by the rustc-free `plan_undeclared_capability`), the `[T]: Sized` cascade it trails dropped by
+the same-line suppression. Otherwise the deepest transform, the
+[typed root-cause resolution](typed-root-cause-resolution.md), *replaces* a
 resolvable wiring failure with a root-cause-first diagnostic, covered in its own document; failing
 that, the in-place [trait-renaming rewrite](#naming-the-traits-behind-a-component-marker) described
 below renames the CGP wiring notes; and finally every diagnostic passes through the
