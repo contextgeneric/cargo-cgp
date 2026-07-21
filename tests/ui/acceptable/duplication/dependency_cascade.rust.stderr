@@ -131,10 +131,10 @@ error[E0277]: the trait bound `App: CanUseComponent<BazComponent>` is not satisf
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:66:10
+  --> src/main.rs:68:9
    |
-66 | #[derive(HasField)]
-   |          ^^^^^^^^
+68 |     pub age: u8,
+   |         ^^^
 note: required for `App` to implement `HasName`
   --> src/main.rs:20:1
    |
@@ -191,7 +191,7 @@ note: required by a bound in `__CheckApp`
 ...  |
 88 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `ProvideFoo: Foo<App>` is not satisfied
   --> src/main.rs:85:9
@@ -253,10 +253,10 @@ error[E0277]: the trait bound `App: CanUseComponent<BarComponent>` is not satisf
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:66:10
+  --> src/main.rs:68:9
    |
-66 | #[derive(HasField)]
-   |          ^^^^^^^^
+68 |     pub age: u8,
+   |         ^^^
 note: required for `App` to implement `HasName`
   --> src/main.rs:20:1
    |
@@ -299,7 +299,7 @@ note: required by a bound in `__CheckApp`
 ...  |
 88 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: CanUseComponent<FooComponent>` is not satisfied
   --> src/main.rs:86:9
@@ -309,10 +309,10 @@ error[E0277]: the trait bound `App: CanUseComponent<FooComponent>` is not satisf
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:66:10
+  --> src/main.rs:68:9
    |
-66 | #[derive(HasField)]
-   |          ^^^^^^^^
+68 |     pub age: u8,
+   |         ^^^
 note: required for `App` to implement `HasName`
   --> src/main.rs:20:1
    |
@@ -339,6 +339,6 @@ note: required by a bound in `__CheckApp`
 ...  |
 88 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

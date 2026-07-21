@@ -10,13 +10,12 @@ help: the trait `cgp::prelude::HasField<Symbol<12, cgp::prelude::Chars<..>>>` is
 51 | pub struct Rectangle {
    | ^^^^^^^^^^^^^^^^^^^^
 help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
-  --> src/main.rs:50:10
+  --> src/main.rs:53:9
    |
-50 | #[derive(HasField)]
-   |          ^^^^^^^^
-   |          |
-   |          `HasField<Symbol<5, Chars<..>>>`
-   |          `HasField<Symbol<6, Chars<..>>>`
+53 |     pub width: f64,
+   |         ^^^^^ `HasField<Symbol<5, Chars<..>>>`
+54 |     pub height: f64,
+   |         ^^^^^^ `HasField<Symbol<6, Chars<..>>>`
 note: required for `Rectangle` to implement `HasScaleFactor`
   --> src/main.rs:24:1
    |
@@ -42,6 +41,6 @@ note: required by a bound in `CheckRectangleProviders`
 ...  |
 73 | | }
    | |_^ required by this bound in `CheckRectangleProviders`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

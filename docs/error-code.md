@@ -170,10 +170,11 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
 - **Triggered by:** a failure surfaced *inside* a `impl Wrapper for Context` block (its header, a
   method signature, or a forwarding call) — often as a raw `E0271`/`E0277`/`E0599` that names no CGP
   construct — which the resolver anchors on the enclosing impl and traces through the wrapper's CGP
-  consumer supertrait to the root cause; **or** a direct call to a `#[cgp_fn]` / `#[blanket_trait]`
-  capability method (`app.describe()`) whose context cannot satisfy the capability, an `E0599` the
+  consumer supertrait to the root cause; **or** a `#[cgp_fn]` / `#[blanket_trait]` capability the
+  context cannot satisfy, reached either by a direct method call (`app.describe()`, an `E0599` the
   [call-site anchor](implementation/typed-resolution-call-site.md) recovers from the call
-  expression. Whether the failing trait is a CGP consumer or one of these non-component traits is
+  expression) or through a `where` bound (`fn f<C: Describe>(…)`, an `E0277` the by-capability
+  use-site anchor recovers). Whether the failing trait is a CGP consumer or one of these non-component traits is
   decided by its **fingerprint**: a CGP consumer carries a blanket impl routing to a provider trait,
   while a wrapper has only its concrete impl and a `#[cgp_fn]` capability has a blanket impl over the
   bare context with no provider.

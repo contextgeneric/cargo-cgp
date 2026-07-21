@@ -1,8 +1,10 @@
 //! Reading the context type off the call's receiver expression.
 
 use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
+use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{self as hir, Expr, ExprKind, QPath};
 use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_span::Span;
 
 use crate::resolve::call_site::{call_output_ty, item_ty, lower_hir_ty, peel_hir_refs};
 
@@ -42,6 +44,42 @@ pub(crate) fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Op
         }
         _ => None,
     }
+}
+
+/// The context types recovered from the *expressions* at the diagnostic's spans, by reading each
+/// overlapping expression's type syntactically ([`receiver_context`]). This reaches a use-site
+/// failure whose context is *not* on any struct-definition span but is the **value whose type
+/// fails** — the argument of a call bounded on a capability (`greet_all(app)`), where the context
+/// comes from `app`'s binding rather than from a span on `App`'s definition (rustc puts its "not
+/// implemented for `App`" span on the `#[derive(HasField)]` attribute, outside the struct item).
+/// Every kind of expression `receiver_context` understands contributes; the caller filters to local
+/// ADTs and gates each on actually failing the capability, so an unrelated overlapping expression
+/// (the enclosing call, whose "context" would be its return type) contributes nothing.
+pub(crate) fn contexts_at_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Ty<'tcx>> {
+    struct ContextFinder<'a, 'tcx> {
+        tcx: TyCtxt<'tcx>,
+        spans: &'a [Span],
+        found: Vec<Ty<'tcx>>,
+    }
+    impl<'tcx> Visitor<'tcx> for ContextFinder<'_, 'tcx> {
+        fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+            if self.spans.iter().any(|span| span.overlaps(expr.span))
+                && let Some(ty) = receiver_context(self.tcx, expr)
+            {
+                self.found.push(ty);
+            }
+            intravisit::walk_expr(self, expr);
+        }
+    }
+    let mut finder = ContextFinder {
+        tcx,
+        spans,
+        found: Vec::new(),
+    };
+    for owner in tcx.hir_body_owners() {
+        finder.visit_expr(tcx.hir_body_owned_by(owner).value);
+    }
+    finder.found
 }
 
 /// The type of the binding a receiver path resolves to. A `let` with a type annotation supplies

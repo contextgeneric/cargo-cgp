@@ -6,10 +6,10 @@ error[E0277]: the trait bound `Person: CanUseComponent<GreeterComponent>` is not
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `Person`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:41:10
+  --> src/main.rs:43:9
    |
-41 | #[derive(HasField)]
-   |          ^^^^^^^^
+43 |     pub age: u8,
+   |         ^^^
 note: required for `Person` to implement `HasName`
   --> src/main.rs:26:1
    |
@@ -35,6 +35,6 @@ note: required by a bound in `__CheckPerson`
 56 | |     }
 57 | | }
    | |_^ required by this bound in `__CheckPerson`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

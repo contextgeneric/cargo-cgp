@@ -1,0 +1,12 @@
+error[E0277]: [CGP-E009] the trait `GetName` is not implemented for context `App`
+  --> src/main.rs:50:15
+   |
+50 |     greet_all(app)
+   |               ^^^
+   |
+   = note: root cause: [CGP-E106] missing field `name` on `App`
+           this is required through the dependency chain:
+             [CGP-E105] trait impl `GetName` for `App`
+             └─ [CGP-E106] missing field `name` on `App`
+
+For more information about this error, try `rustc --explain E0277`.

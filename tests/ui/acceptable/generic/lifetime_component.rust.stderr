@@ -6,10 +6,10 @@ error[E0277]: the trait bound `App<'a>: CanUseComponent<ReferenceGetterComponent
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App<'a>`
       but trait `HasField<Symbol<5, Chars<..>>>` is implemented for `App<'_>`
-  --> src/main.rs:33:10
+  --> src/main.rs:36:9
    |
-33 | #[derive(HasField)]
-   |          ^^^^^^^^
+36 |     pub value: &'a str,
+   |         ^^^^^
 note: required for `App<'a>` to implement `HasName`
   --> src/main.rs:17:1
    |
@@ -35,6 +35,6 @@ note: required by a bound in `__CheckApp`
 48 | |     }
 49 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

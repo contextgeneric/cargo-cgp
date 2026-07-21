@@ -3,11 +3,12 @@
 This document covers the first stage of the driver's
 [typed root-cause resolution](typed-root-cause-resolution.md): recovering, from a failing
 diagnostic, the **real consumer-trait obligation** `Ctx: ConsumerTrait<Params…>` that seeds the
-[walk](typed-resolution-walk.md). Six anchors recover it from six failure shapes, tried in order; the
-first that succeeds wins, and each produces the same thing — the consumer obligation — from a
-different shape. Five are described here; the sixth — the last-resort re-read of the failing call
-expression — has [its own document](typed-resolution-call-site.md), and how the recovered causes
-are worded and emitted is [the transformed diagnostic](typed-resolution-output.md).
+[walk](typed-resolution-walk.md). Seven anchors recover it from seven failure shapes, tried in order;
+the first that succeeds wins, and each produces the same thing — the consumer obligation — from a
+different shape. Six are described here; the remaining one — the re-read of the failing call
+expression, tried sixth — has [its own document](typed-resolution-call-site.md), and how the
+recovered causes are worded and emitted is
+[the transformed diagnostic](typed-resolution-output.md).
 
 **From a `check_components!` entry, by span.** A `check_components!` entry expands to a concrete impl
 of a generated check trait — `impl __CheckRectangle<AreaCalculatorComponent, ()> for Rectangle {}` —
@@ -168,7 +169,7 @@ a trait definition or `where` clause (the `use_type_*_unsatisfied` fixtures unde
 [`acceptable/use-type/`](../../tests/ui/acceptable/use-type)). A directly-wired
 context keeps the more precise per-component recovery.
 
-**From the call expression itself.** The final anchor, `resolve_call_site`, handles the use-site
+**From the call expression itself.** The sixth anchor, `resolve_call_site`, handles the use-site
 failure whose spans touch *nothing* the other anchors can read. Two shapes reach it. In the first,
 a context's wiring matches the called component unconditionally, so the method is *found*, the
 failure is an `E0277` rather than an `E0599`, and its spans never leave the call. In the second, the
@@ -183,6 +184,23 @@ whose recovery works from the code the programmer wrote rather than from the dia
 its rationale, mechanics, and worked example have their own document:
 [Typed resolution: the call-site anchor](typed-resolution-call-site.md).
 
+**From a use site, by capability trait.** The seventh and last anchor, `resolve_use_site_capability`,
+is the by-consumer anchor's counterpart for a `#[cgp_fn]`/`#[blanket_trait]` **capability trait** — a
+local blanket-impl trait that is not a CGP component. It reaches the shape a capability required
+through a `where` **bound** or supertrait produces (`fn greet_all<Context: GetName>(…)` called with a
+context missing the field): an `E0277` naming the capability, with no method call on a concrete
+context for the call-site anchor to read. It recovers the capability trait from the diagnostic's
+spans (as the by-consumer anchor recovers a consumer), and the context from the **failing expression
+itself** — the call argument whose type fails (`app`, read off its binding by the call-site anchor's
+`contexts_at_spans`) — because rustc puts its "not implemented for `App`" span on the context's
+`#[derive(HasField)]` attribute, *outside* the struct's item span, so no struct-definition span
+carries it. The walk then descends `Ctx: Capability` to the cause, and the result is headed
+`[CGP-E009] the trait …` (not `[CGP-E001] the consumer trait …`) since a capability trait is not a
+component. It is gated to the `E0277` shape and tried **after** the call-site anchor deliberately: an
+`E0599` method call belongs to the call-site anchor, and a *generic-consumer* method call whose deep
+capability bound is unrecoverable (`generic_consumer_unwritten_arg`) must stay declined rather than
+latch onto that transitive capability.
+
 ## Tests
 
 Every anchor is pinned end to end by the UI snapshot suite; the consolidated fixture catalog, with
@@ -194,9 +212,12 @@ groups anchored here.
 ## Source
 
 - [`crates/cargo-cgp-driver/src/resolve/anchor/`](../../crates/cargo-cgp-driver/src/resolve/anchor)
-  — one file per anchor (`check_failure.rs`, `impl_site.rs`, `wrapper_chain.rs`, `use_site.rs`,
-  `use_site_consumer.rs`) over the shared `seed.rs` (the consumer-obligation builder) and
-  `spans.rs` (the local items a diagnostic's spans land on).
+  — one file per anchor (`check_failure.rs`, `impl_site.rs`, `wrapper_chain.rs`, `use_site.rs`, and
+  `use_site_consumer.rs`, which holds both the by-consumer `resolve_use_site_consumer` and its
+  by-capability sibling `resolve_use_site_capability` over one shared helper) over the shared
+  `seed.rs` (the consumer-obligation builder) and `spans.rs` (the local items a diagnostic's spans
+  land on). The by-capability anchor recovers its context from the failing expression through the
+  call-site anchor's `contexts_at_spans`.
 - [`crates/cargo-cgp-driver/src/resolve/cgp_item.rs`](../../crates/cargo-cgp-driver/src/resolve/cgp_item.rs)
   — the DefId-anchored, `IsProviderFor`-free trait recognition every anchor relies on.
 

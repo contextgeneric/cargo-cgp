@@ -1,4 +1,4 @@
-//! The by-consumer use-site anchor: walking the consumer trait the diagnostic names.
+//! The by-consumer and by-capability use-site anchors: walking a trait the diagnostic names.
 
 use cargo_cgp_error_processing::Resolved;
 use rustc_hir::def::DefKind;
@@ -8,7 +8,8 @@ use rustc_span::def_id::DefId;
 
 use crate::resolve::anchor::{consumer_obligation, context_candidates_from_spans};
 use crate::resolve::cache::ResolveCache;
-use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt};
+use crate::resolve::call_site::contexts_at_spans;
+use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt, is_local_blanket_trait};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by anchoring on the **consumer trait** the diagnostic names, rather
@@ -35,22 +36,78 @@ pub fn resolve_use_site_consumer(
     cache: &ResolveCache,
     spans: &[Span],
 ) -> Option<Resolved> {
-    for consumer_did in local_cgp_consumer_traits_from_spans(tcx, spans) {
-        // `count() == 1` is `Self` alone, so the obligation is simply `Ctx: Consumer` (no params).
-        if tcx.generics_of(consumer_did).count() != 1 {
+    resolve_from_named_trait(tcx, cache, spans, TraitKind::CgpConsumer)
+}
+
+/// Resolve a use-site failure by anchoring on a `#[cgp_fn]` / `#[blanket_trait]` **capability
+/// trait** the diagnostic names — the counterpart of [`resolve_use_site_consumer`] for a trait that
+/// is not a CGP *component* (a local blanket-impl trait with no provider trait or
+/// `DelegateComponent`). Its obligation `Ctx: Capability` is walkable exactly as a consumer's is,
+/// since its `Self` is the context; the result is headed `[CGP-E009] the trait …` rather than
+/// `[CGP-E001] the consumer trait …` by clearing [`Resolved::consumers_are_cgp`].
+///
+/// This reaches the shape a capability required through a `where` **bound** or supertrait produces —
+/// `fn greet_all<Context: GetName>(…)` called with a context missing the field — where the failure
+/// is an `E0277` on the call with no method call on a concrete context to read. It is tried **after**
+/// the [call-site anchor](crate::resolve::call_site): a *direct* method call
+/// (`app.describe()`) anchors on the called method there, so its tree leads with the capability the
+/// programmer actually invoked rather than with whichever sub-capability the diagnostic happens to
+/// name in its spans. `None` when the diagnostic names no local capability trait, or none of the
+/// candidate contexts fails one resolvably.
+pub fn resolve_use_site_capability(
+    tcx: TyCtxt<'_>,
+    cache: &ResolveCache,
+    spans: &[Span],
+) -> Option<Resolved> {
+    resolve_from_named_trait(tcx, cache, spans, TraitKind::Capability)
+}
+
+/// Which local trait an anchor recovers from the diagnostic's spans.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TraitKind {
+    /// A CGP consumer trait — walked as-is, headed `[CGP-E001] the consumer trait …`.
+    CgpConsumer,
+    /// A `#[cgp_fn]`/`#[blanket_trait]` capability trait that is not a CGP component — headed
+    /// `[CGP-E009] the trait …`.
+    Capability,
+}
+
+/// Recover the context and the named trait of `kind` from the diagnostic's spans, seed `Ctx: Trait`,
+/// and walk it — the shared body of the two anchors above. A [`TraitKind::Capability`] result has
+/// its `consumers_are_cgp` flag cleared, since such a trait is not a CGP component.
+fn resolve_from_named_trait(
+    tcx: TyCtxt<'_>,
+    cache: &ResolveCache,
+    spans: &[Span],
+    kind: TraitKind,
+) -> Option<Resolved> {
+    // The failing context, from a struct-definition span (an `E0599` "method not found for this
+    // struct"). For the capability path this is unioned with the *expression* whose type fails (a
+    // `where`-bound `E0277` on a call argument, whose context sits on no struct-definition span —
+    // see [`contexts_at_spans`]); the consumer path keeps its existing struct-span recovery alone.
+    let mut contexts = context_candidates_from_spans(tcx, spans);
+    if kind == TraitKind::Capability {
+        contexts.extend(contexts_at_spans(tcx, spans));
+    }
+    for trait_did in local_traits_from_spans(tcx, spans, kind) {
+        // `count() == 1` is `Self` alone, so the obligation is simply `Ctx: Trait` (no params).
+        if tcx.generics_of(trait_did).count() != 1 {
             continue;
         }
-        for context in context_candidates_from_spans(tcx, spans) {
+        for &context in &contexts {
             if !is_local_adt(context) {
                 continue;
             }
-            let Some(top) = consumer_obligation(tcx, context, consumer_did, tcx.types.unit) else {
+            let Some(top) = consumer_obligation(tcx, context, trait_did, tcx.types.unit) else {
                 continue;
             };
             if holds(tcx, top) {
                 continue;
             }
-            if let Some(resolved) = resolve_leaves(tcx, cache, top) {
+            if let Some(mut resolved) = resolve_leaves(tcx, cache, top) {
+                if kind == TraitKind::Capability {
+                    resolved.consumers_are_cgp = false;
+                }
                 return Some(resolved);
             }
         }
@@ -58,20 +115,27 @@ pub fn resolve_use_site_consumer(
     None
 }
 
-/// The local CGP consumer traits the diagnostic's spans reference — the trait a consumer-method
-/// `E0599` names in its "`Trait` defines an item …" note. A trait is a candidate when it is defined
-/// in this crate, its definition span contains one of the diagnostic's spans, and it is a CGP
-/// consumer (it pairs with a provider trait through its blanket impl, via [`consumer_provider_trait`]);
-/// the generated provider trait, getter traits, and non-CGP traits carry no such pairing and are
-/// filtered out.
-fn local_cgp_consumer_traits_from_spans(tcx: TyCtxt<'_>, spans: &[Span]) -> Vec<DefId> {
+/// The local traits of `kind` the diagnostic's spans reference — a trait a use-site `E0599`/`E0277`
+/// names in a `` `Trait` defines an item … `` note or a `required for … to implement `Trait`` note,
+/// whose span points at the trait definition. A trait qualifies when it is defined in this crate and
+/// its definition span contains one of the diagnostic's spans, and either it is a CGP consumer
+/// ([`TraitKind::CgpConsumer`], paired with a provider via [`consumer_provider_trait`]) or a local
+/// non-consumer blanket-impl trait ([`TraitKind::Capability`], the `#[cgp_fn]`/`#[blanket_trait]`
+/// shape). The generated provider and getter traits and plain non-CGP traits carry neither pairing
+/// nor a local blanket impl of the required shape and are filtered out.
+fn local_traits_from_spans(tcx: TyCtxt<'_>, spans: &[Span], kind: TraitKind) -> Vec<DefId> {
     let mut traits = Vec::new();
     for local in tcx.hir_crate_items(()).definitions() {
         let did = local.to_def_id();
         if !matches!(tcx.def_kind(did), DefKind::Trait) {
             continue;
         }
-        if consumer_provider_trait(tcx, did).is_none() {
+        let is_consumer = consumer_provider_trait(tcx, did).is_some();
+        let matches = match kind {
+            TraitKind::CgpConsumer => is_consumer,
+            TraitKind::Capability => !is_consumer && is_local_blanket_trait(tcx, did),
+        };
+        if !matches {
             continue;
         }
         let def_span = tcx.def_span(did);

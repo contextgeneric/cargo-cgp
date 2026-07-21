@@ -46,10 +46,10 @@ error[E0277]: the trait bound `Inner: CanCompute` is not satisfied
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `Inner`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:61:10
+  --> src/main.rs:63:9
    |
-61 | #[derive(HasField)]
-   |          ^^^^^^^^
+63 |     pub age: u8,
+   |         ^^^
 note: required for `Inner` to implement `HasName`
   --> src/main.rs:27:1
    |
@@ -78,7 +78,7 @@ note: required for `Inner` to implement `CanCompute`
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
 33 | pub trait CanCompute {
    |           ^^^^^^^^^^
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
    |
 25 + #![feature(trivial_bounds)]
@@ -92,10 +92,10 @@ error[E0277]: the trait bound `Inner: CanUseComponent<ComputerComponent>` is not
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `Inner`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:61:10
+  --> src/main.rs:63:9
    |
-61 | #[derive(HasField)]
-   |          ^^^^^^^^
+63 |     pub age: u8,
+   |         ^^^
 note: required for `Inner` to implement `HasName`
   --> src/main.rs:27:1
    |
@@ -120,7 +120,7 @@ note: required by a bound in `__CheckInner`
 86 | |     }
 87 | | }
    | |_^ required by this bound in `__CheckInner`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `DoCompute: Computer<Inner>` is not satisfied
   --> src/main.rs:91:9
@@ -184,10 +184,10 @@ error[E0277]: the trait bound `Inner: HasField<Symbol<4, Chars<..>>>` is not sat
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `Inner`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:61:10
+  --> src/main.rs:63:9
    |
-61 | #[derive(HasField)]
-   |          ^^^^^^^^
+63 |     pub age: u8,
+   |         ^^^
 note: required for `Inner` to implement `HasName`
   --> src/main.rs:27:1
    |
@@ -228,6 +228,6 @@ note: required by a bound in `__CheckOuter`
 92 | |     }
 93 | | }
    | |_^ required by this bound in `__CheckOuter`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

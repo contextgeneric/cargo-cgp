@@ -195,21 +195,26 @@ on is always a real consumer-trait obligation** `Ctx: ConsumerTrait<Params…>` 
   whose blanket routes to that provider.
 
 **[Anchoring the starting obligation](typed-resolution-anchors.md)** recovers the obligation the
-compiler failed to prove, one of six ways tried in order. A `check_components!` entry is matched by
+compiler failed to prove, one of seven ways tried in order. A `check_components!` entry is matched by
 its caret to the check impl and its `CanUseComponent<Marker, Params>` assertion mapped to the real
 consumer obligation; a failure inside a hand-written `impl Trait for Context` block is recovered
 from the impl's CGP consumer supertrait, and one inside an `impl … for Foreign` wrapper by
 descending its supertrait's `where`-clause hops to a consumer on the context; a consumer-method
 `E0599` is recovered from the context's own wired components, or from the consumer trait the
-diagnostic names (the anchor that reaches a namespace-joined context).
+diagnostic names (the anchor that reaches a namespace-joined context); and a `#[cgp_fn]` /
+`#[blanket_trait]` **capability trait** required through a `where` bound (an `E0277`) is recovered
+from the capability trait the diagnostic names and the context read off the failing expression.
 
-**[The call-site anchor](typed-resolution-call-site.md)** is the last resort, for the use-site
-failure whose spans touch nothing the other anchors can read — a wiring that matches the called
-component unconditionally, so the failure is an `E0277` on the call itself. It re-reads the failing
-call expression from HIR alone: the receiver carries the context, the component's parameters come
-from unifying the call's *written* argument types against the method's own declared signature, and
-every parameter the call leaves to inference is seeded as a rigid placeholder the walk resolves
-around but never reports on.
+**[The call-site anchor](typed-resolution-call-site.md)** is tried sixth, for the use-site
+failure whose spans touch nothing the span-matching anchors can read — a wiring that matches the
+called component unconditionally (an `E0277` on the call itself), or a call to a `#[cgp_fn]`
+capability method. It re-reads the failing call expression from HIR alone: the receiver carries the
+context, the component's parameters come from unifying the call's *written* argument types against
+the method's own declared signature, and every parameter the call leaves to inference is seeded as a
+rigid placeholder the walk resolves around but never reports on. The seventh and last anchor,
+`resolve_use_site_capability`, is the by-consumer anchor's counterpart for a capability trait
+required as a *bound* rather than *called* — gated to `E0277` and tried after the call-site anchor,
+so a method call leads with the capability the programmer invoked.
 
 **[Walking to the root cause](typed-resolution-walk.md)** descends the seeded obligation's
 dependency graph — following only the CGP wiring vocabulary and obligations on the context itself,
@@ -300,8 +305,8 @@ separate header brand; the inline code is the only marking.
   resolution, split by stage into sub-directories behind re-exporting `mod.rs` files and building the
   rustc-free `Resolved` model. Every anchor feeds the walk the real consumer obligation
   `Ctx: ConsumerTrait<Params…>`, never a `CanUseComponent` wrapper.
-  - [`anchor/`](../../crates/cargo-cgp-driver/src/resolve/anchor) holds five of the six anchors, one
-    file each, plus their two shared ingredients: `seed.rs` (`consumer_obligation`, the `Params`-slot
+  - [`anchor/`](../../crates/cargo-cgp-driver/src/resolve/anchor) holds six of the seven anchors,
+    plus their two shared ingredients: `seed.rs` (`consumer_obligation`, the `Params`-slot
     ungrouping decided by the consumer's own generics — a single tuple-typed parameter kept whole, a
     lifetime restored from `Life<'a>` via `life_region`, any mismatch declining rather than handing
     the solver a malformed trait ref) and `spans.rs` (the local impls and struct definitions a
@@ -322,14 +327,20 @@ separate header brand; the inline code is the only marking.
     `open_dispatch_target`, while skipping a raw path key, a redundant bare marker, a free-parameter
     catch-all, and a `namespace …;` blanket `__Key__` key. `use_site_consumer.rs` recovers a local,
     non-generic CGP consumer trait from the diagnostic's spans and walks `Ctx: Consumer` directly —
-    the anchor that reaches a namespace-joined context.
+    the anchor that reaches a namespace-joined context — and its by-capability sibling
+    `resolve_use_site_capability` (seventh, gated to `E0277`, tried after the call-site anchor) does
+    the same for a local `#[cgp_fn]`/`#[blanket_trait]` capability trait required as a bound, reading
+    the context off the failing expression via the call-site anchor's `contexts_at_spans` and heading
+    the result `[CGP-E009]` by clearing `consumers_are_cgp`.
   - [`call_site/`](../../crates/cargo-cgp-driver/src/resolve/call_site) holds the sixth anchor,
     `resolve_call_site` — the HIR re-read of the failing call, one stage per file:
     `find_call.rs` (`method_calls_at`, the calls at, or inside an expression at, the diagnostic's
     spans — the latter for the await-desugar wrappers — and `traits_with_method`, the candidate
     consumer traits *and* local `#[cgp_fn]`/`#[blanket_trait]` capability traits by method name, the
     latter headed `[CGP-E009]` by clearing `consumers_are_cgp`), `receiver.rs` (`receiver_context`/`local_binding_context`, the receiver's type from its
-    binding, annotation, parameter, literal, or constructor-call signature), `seed.rs`
+    binding, annotation, parameter, literal, or constructor-call signature, plus `contexts_at_spans`,
+    the same reading applied to every expression at the diagnostic's spans — the by-capability
+    anchor's context source), `seed.rs`
     (`seed_from_call`, the signature unification: fresh variables for the method's item, `Self`
     pinned to the context, each written argument type unified with its declared input, the trait's
     parameters read back with `walk`'s `unknowns_to_placeholders` folding what stayed unresolved),
@@ -393,7 +404,8 @@ separate header brand; the inline code is the only marking.
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the `try_resolve`
   seam (gated by a cheap `mentions_wiring` scan, an `E0271`/`E0277` code, or a method-bounds `E0599`,
   with a resolution-class `E0599` excluded so the solver never runs on an error emitted
-  mid-`predicates_of`) that tries the six anchors in turn, and the `transform_resolved` mutation it
+  mid-`predicates_of`) that tries the seven anchors in turn (the by-capability anchor last, gated to
+  `E0277`), and the `transform_resolved` mutation it
   feeds — mapping the rustc code to a `DiagKind` (overridden to the use-site kind for a call-anchored
   resolution), calling `plan_resolved`, and applying the plan to the
   `DiagInner`, falling back to the in-place text rewrite when resolution returns `None`. A final
@@ -568,6 +580,15 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
   (clearing `consumers_are_cgp`) rather than declining to rustc's `E0599` with the cause buried under
   a method-probe candidate list. The use-site counterpart of the impl-site
   [`cgp_fn_missing_field`](../../tests/ui/acceptable/fields/cgp_fn_missing_field.rs).
+- `cgp_fn_where_bound` — the same `#[cgp_fn]` capability required through a `where` **bound**
+  (`fn greet_all<Context: GetName>(…)`) rather than called, so the failure is an `E0277` on the call
+  with no method call to read. Pins the by-capability anchor (`resolve_use_site_capability`): it
+  recovers `GetName` from the diagnostic's spans and the context `App` from the failing expression
+  (rustc puts the "not implemented for `App`" span on the `#[derive(HasField)]` attribute, outside
+  `App`'s item span), heading `[CGP-E009]` over the missing-field tree — where raw rustc mangles the
+  field name to an unreadable `Symbol<4, Chars<..>>` in a `help`. Its decline-boundary sibling is
+  [`generic_consumer_unwritten_arg`](../../tests/ui/acceptable/use-site/generic_consumer_unwritten_arg.rs),
+  an `E0599` whose deep capability bound stays declined because the anchor is gated to `E0277`.
 - `use_type_foreign_unsatisfied` and `use_type_nested_unsatisfied` — an unsatisfiable `#[use_type]`
   abstract-type import in a trait definition, recovered by the consumer-trait anchor into a
   `[CGP-E001]` missing-wiring tree instead of leaking generated `__…__` placeholder names.

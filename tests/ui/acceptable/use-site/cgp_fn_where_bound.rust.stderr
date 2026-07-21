@@ -1,0 +1,30 @@
+error[E0277]: the trait bound `App: GetName` is not satisfied
+  --> src/main.rs:50:15
+   |
+50 |     greet_all(app)
+   |               ^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<6, Chars<..>>>` is implemented for it
+  --> src/main.rs:46:9
+   |
+46 |     pub locale: String,
+   |         ^^^^^^
+note: required for `App` to implement `GetName`
+  --> src/main.rs:29:1
+   |
+29 | #[cgp_fn]
+   | ^^^^^^^^^
+30 | pub fn get_name(&self, #[implicit] name: &str) -> String {
+   |        ^^^^^^^^
+note: required by a bound in `greet_all`
+  --> src/main.rs:38:14
+   |
+36 | fn greet_all<Context>(context: &Context) -> String
+   |    --------- required by a bound in this function
+37 | where
+38 |     Context: GetName,
+   |              ^^^^^^^ required by this bound in `greet_all`
+   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

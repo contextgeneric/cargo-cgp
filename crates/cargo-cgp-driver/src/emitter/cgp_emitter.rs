@@ -372,12 +372,28 @@ impl<E: Emitter> CgpEmitter<E> {
             if let Some(resolved) = resolved {
                 return Some((resolved, false));
             }
-            // The last resort re-reads the failing *call expression* itself — the anchor for a
+            // The next resort re-reads the failing *call expression* itself — the anchor for a
             // consumer-method `E0277` whose spans never touch the context's definition (a
-            // `Code`-dispatched handler pipeline that matches unconditionally). A resolution from
-            // here is flagged, so the header is worded from the consumer the call needs rather
-            // than from whichever provider bound rustc's headline stopped on.
-            Some((resolve::resolve_call_site(tcx, cache, &spans)?, true))
+            // `Code`-dispatched handler pipeline that matches unconditionally), and for a direct
+            // call to a `#[cgp_fn]` capability method. A resolution from here is flagged, so the
+            // header is worded from the trait the call needs rather than from whichever provider
+            // bound rustc's headline stopped on.
+            if let Some(resolved) = resolve::resolve_call_site(tcx, cache, &spans) {
+                return Some((resolved, true));
+            }
+            // Last: a `#[cgp_fn]` / `#[blanket_trait]` capability trait the diagnostic names in its
+            // spans, required through a `where` bound or supertrait rather than a direct call. This
+            // is gated to `E0277` — a capability *used as a bound* — deliberately: an `E0599` method
+            // call is the call-site anchor's domain, and a *generic consumer* method call whose deep
+            // capability bound is a note (not the failure the diagnostic is about) must stay declined
+            // when its dispatch parameter is unrecoverable, rather than latch onto that transitive
+            // capability (see `generic_consumer_unwritten_arg`).
+            if diag.code == Some(E0277)
+                && let Some(resolved) = resolve::resolve_use_site_capability(tcx, cache, &spans)
+            {
+                return Some((resolved, false));
+            }
+            None
         })?;
         Some((resolved, primary_span, at_call))
     }

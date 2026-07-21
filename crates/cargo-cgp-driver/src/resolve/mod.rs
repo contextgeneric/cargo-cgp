@@ -33,8 +33,8 @@ mod orphan;
 mod walk;
 
 pub use anchor::{
-    resolve_check_failure, resolve_impl_site, resolve_use_site, resolve_use_site_consumer,
-    resolve_wrapper_chain,
+    resolve_check_failure, resolve_impl_site, resolve_use_site, resolve_use_site_capability,
+    resolve_use_site_consumer, resolve_wrapper_chain,
 };
 pub use cache::ResolveCache;
 pub use call_site::resolve_call_site;

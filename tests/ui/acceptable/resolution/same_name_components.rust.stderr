@@ -6,10 +6,10 @@ error[E0277]: the trait bound `App: CanUseComponent<shapes_a::MeasurerComponent>
    |
 help: the trait `HasField<Symbol<7, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
-  --> src/main.rs:72:10
+  --> src/main.rs:74:9
    |
-72 | #[derive(HasField)]
-   |          ^^^^^^^^
+74 |     pub other: f64,
+   |         ^^^^^
 note: required for `App` to implement `HasWidthA`
   --> src/main.rs:28:5
    |
@@ -36,7 +36,7 @@ note: required by a bound in `__CheckApp`
 88 | |     }
 89 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: CanUseComponent<shapes_b::MeasurerComponent>` is not satisfied
   --> src/main.rs:87:9
@@ -46,10 +46,10 @@ error[E0277]: the trait bound `App: CanUseComponent<shapes_b::MeasurerComponent>
    |
 help: the trait `HasField<Symbol<7, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
-  --> src/main.rs:72:10
+  --> src/main.rs:74:9
    |
-72 | #[derive(HasField)]
-   |          ^^^^^^^^
+74 |     pub other: f64,
+   |         ^^^^^
 note: required for `App` to implement `HasWidthB`
   --> src/main.rs:55:5
    |
@@ -76,6 +76,6 @@ note: required by a bound in `__CheckApp`
 88 | |     }
 89 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

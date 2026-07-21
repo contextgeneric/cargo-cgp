@@ -43,10 +43,10 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
    |
 help: the trait `HasField<Symbol<9, Chars<..>>>` is not implemented for `Rectangle`
       but trait `HasField<Symbol<12, Chars<..>>>` is implemented for it
-  --> src/main.rs:59:10
+  --> src/main.rs:61:9
    |
-59 | #[derive(HasField)]
-   |          ^^^^^^^^
+61 |     pub scale_factor: f64,
+   |         ^^^^^^^^^^^^
 note: required for `Rectangle` to implement `HasBaseArea`
   --> src/main.rs:28:1
    |
@@ -74,6 +74,6 @@ note: required by a bound in `__CheckRectangle`
 76 | |     }
 77 | | }
    | |_^ required by this bound in `__CheckRectangle`
-   = note: this error originates in the derive macro `HasField` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

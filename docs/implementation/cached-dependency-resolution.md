@@ -422,7 +422,7 @@ The tests below do not exist yet; they are the coverage still to add.
   `compute_leaves`, which folds the root node's `SubResult` into a `Resolved` (de-duplicate, elide,
   render).
 - [`crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs`](../../crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs)
-  — `try_resolve` threads `&self.resolve_cache` through the six anchors to `resolve_leaves`; the
+  — `try_resolve` threads `&self.resolve_cache` through the seven anchors to `resolve_leaves`; the
   `ResolveCache` lives on `CgpEmitter` beside `dedup` (moving it onto the resolve context is that
   document's refactor). The `DedupLedger` it composes with is here too.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
