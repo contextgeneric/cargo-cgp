@@ -56,11 +56,18 @@ driver, is what keeps them unit-testable.
   lazy-wiring mistake produces at many sites are suppressed. The key scheme — the recovered cause,
   the rendered text, and the coded header — lives with the ledger, documented in
   [The driver](driver.md#naming-the-traits-behind-a-component-marker).
+- **The signature keys** ([`signature`](../../crates/cargo-cgp-error-processing/src/diagnosis/wording/signature.rs))
+  are the two span-independent keys the emitter groups failures on: `cause_signature` (context,
+  failing consumer trait(s), and each root-cause leaf) identifies *the same* failure across its
+  re-reports for de-duplication, and `cause_only_signature` (the same with the consumer dropped)
+  groups *different* consumers that share one root cause for the emitter's coalescing into one
+  headline. Both are pure functions over the `Resolved` model.
 - **The text signals** ([`signals`](../../crates/cargo-cgp-error-processing/src/signals.rs)) are the
   stable rustc phrasings the emitter's candidate checks key on — the wiring-trait mention that makes
   a diagnostic a resolution candidate, the method-bounds `E0599` shape the resolver may safely run
-  on, the method-probe advice the emitter strips, and the `?`-operator cascade wording — each a pure
-  predicate, so the wording dependence on rustc's phrasing is documented and tested in one place.
+  on, the method-probe advice the emitter strips, the orphan-parameter `E0210` shape, and the
+  `?`-operator cascade wording — each a pure predicate, so the wording dependence on rustc's phrasing
+  is documented and tested in one place.
 
 A further module, [`code`](../../crates/cargo-cgp-error-processing/src/code.rs), holds the `CGP-E`
 error-code constants the rewrite and the diagnosis wording stamp on classified main messages

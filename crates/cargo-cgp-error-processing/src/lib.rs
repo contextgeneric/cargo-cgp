@@ -34,12 +34,12 @@ pub mod tree;
 pub use dedup::DedupLedger;
 pub use diagnosis::{
     Cause, DiagKind, DiagnosisPlan, FieldIssue, Leaf, OrphanConflict, OrphanTrigger, Resolved,
-    WiringConflict, WiringKey, cause_note, cause_notes, cause_signature, coalesce_underived_fields,
-    consumer_header, consumer_impl_label, dependency_leaf_code, dependency_tree_leaf,
-    derive_help_messages, elide_repeated_generics, field_impl_label, field_mismatch_header,
-    missing_delegate_entry, orphan_conflict_help, plan_orphan_conflict, plan_resolved,
-    plan_wiring_conflict, provider_impl_label, redirect_label, root_cause_code, root_cause_lead,
-    trait_impl_label, wiring_conflict_help,
+    WiringConflict, WiringKey, cause_note, cause_notes, cause_only_signature, cause_signature,
+    coalesce_underived_fields, consumer_header, consumer_impl_label, dependency_leaf_code,
+    dependency_tree_leaf, derive_help_messages, elide_repeated_generics, field_impl_label,
+    field_mismatch_header, missing_delegate_entry, orphan_conflict_help, plan_orphan_conflict,
+    plan_resolved, plan_wiring_conflict, provider_impl_label, redirect_label, root_cause_code,
+    root_cause_lead, trait_impl_label, wiring_conflict_help,
 };
 pub use postprocess::{
     CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_lists, resugar_path,

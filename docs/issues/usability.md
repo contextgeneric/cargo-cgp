@@ -68,34 +68,24 @@ their fixtures now live under `acceptable/`:
   ([`default_impl_foreign_prefix_path`](../../tests/ui/acceptable/wiring/orphan/default_impl_foreign_prefix_path.rs)),
   and a `cgp_namespace!` re-open whose `__Table__` trigger selects the inherit-a-new-namespace fix
   ([`reopen_foreign_namespace`](../../tests/ui/acceptable/wiring/orphan/reopen_foreign_namespace.rs)).
+- **One mistake reported as many errors** is collapsed on both axes. CGP wiring is lazy, so one
+  missing dependency surfaces at the `check_components!` entry, at every hand-written `impl` that
+  references the broken consumer, and at each call. The *same* consumer re-reported at many sites
+  de-duplicates to one block, keyed on a span-independent cause signature — the transfer example's
+  single un-wired password type collapses from eighteen identical trees to two
+  ([`cross_site_dedup`](../../tests/ui/acceptable/duplication/cross_site_dedup.rs),
+  [`manual_supertrait_impl`](../../tests/ui/acceptable/use-site/manual_supertrait_impl.rs)). And
+  *different* consumers that share one root cause coalesce into a single `[CGP-E001]` headline
+  listing every affected consumer trait, with a caret per failing entry and the shared cause shown
+  once. The emitter holds each compilation's diagnostics in arrival order and flushes them at `Drop`
+  — the only point after every diagnostic has arrived — grouping consumer failures by a
+  consumer-independent cause signature, so
+  [`density_3`](../../tests/ui/acceptable/duplication/density_3.rs) (two components, one missing
+  `height`), [`dependency_cascade`](../../tests/ui/acceptable/duplication/dependency_cascade.rs)
+  (three chained providers), and `missing_normal_bound` (two consumers sharing an `App: Clone` bound)
+  each collapse to one block, and cargo's re-count keeps the "N errors" summary honest.
 
 What remains below are the classes the tool does not yet reshape.
-
-## One mistake reported as many errors
-
-The emitter de-duplicates *the same failing consumer* re-reported at several sites, which was the
-dominant form of this class. CGP wiring is lazy, so one missing dependency surfaces at the
-`check_components!` entry, at every hand-written `impl` that references the broken consumer, and
-at each call — the transfer example's single un-wired password type produced eighteen identical
-root-cause trees. The emitter keeps a span-independent signature of each transformed CGP diagnostic
-(the recovered cause for a resolved one, the rendered text for a declined-but-rewritten one) and shows
-only the first occurrence, so those eighteen collapse to two (one per endpoint) and cargo's re-count
-keeps the "N errors" summary honest. The cross-site behavior is pinned by
-[`cross_site_dedup`](../../tests/ui/acceptable/duplication/cross_site_dedup.rs) (a check entry, a
-wrapper `impl`, and its forwarding call for one missing field → one block) and
-[`manual_supertrait_impl`](../../tests/ui/acceptable/use-site/manual_supertrait_impl.rs) (an impl
-header and its call → one). See [The driver](../implementation/driver.md) for the mechanism.
-
-What remains is coalescing *different* consumers that share one cause. The signature includes the
-consumer deliberately — so a distinct capability's failure is never hidden — which means two
-components failing for the same underlying mistake still produce two blocks:
-[`density_3`](../../tests/ui/usability/duplication/density_3.rs) checks two components against one
-missing `height` field and still gets two blocks, and
-[`dependency_cascade`](../../tests/ui/usability/duplication/dependency_cascade.rs) chains three
-providers and gets three. Collapsing these into a single headline that *lists the affected
-components* — rather than dropping all but one — needs the emitter to buffer the compilation's
-diagnostics before emitting, so it can name every affected consumer in the one surviving block; that
-buffering step is the open work here.
 
 ## An unconstrained per-entry generic emits two contradictory errors
 
@@ -126,11 +116,9 @@ class and naming the offending construct is the work here.
 ## What good presentation looks like
 
 Taken together, these issues define the tool's presentation target for the classes it does not yet
-reshape: coalesce *different* consumers that share one cause into a single headline that lists the
-affected components (the cascade class, which needs diagnostic buffering); collapse the `E0207`
-unconstrained-generic pair so only the fix that matches the mistake survives; and recover the
-untransformed lowering class into a coded, root-cause-first diagnostic, or at least name the
-offending construct instead of the macro attribute. The bar is the one the check-trait-failure family already meets:
+reshape: collapse the `E0207` unconstrained-generic pair so only the fix that matches the mistake
+survives; and recover the untransformed lowering class into a coded, root-cause-first diagnostic, or
+at least name the offending construct instead of the macro attribute. The bar is the one the check-trait-failure family already meets:
 lead with the cause as one plain sentence, name the decoded construct, give a short dependency path,
 and never let a misleading `rustc` heuristic outrank the real cause. The
 [CGP-side tooling notes](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md#how-cargo-cgp-presents-it)

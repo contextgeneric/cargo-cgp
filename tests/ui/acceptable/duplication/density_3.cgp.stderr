@@ -1,0 +1,16 @@
+error[E0277]: [CGP-E001] the consumer traits `CanCalculateArea` and `CanCalculateDensity` are not implemented for context `Rectangle`
+  --> src/main.rs:80:9
+   |
+80 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+81 |         DensityCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E106] missing field `height` on `Rectangle`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+             └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+               └─ [CGP-E105] trait impl `HasRectangleFields` for `Rectangle`
+                 └─ [CGP-E106] missing field `height` on `Rectangle`
+
+For more information about this error, try `rustc --explain E0277`.

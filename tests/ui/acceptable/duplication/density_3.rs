@@ -1,13 +1,15 @@
-//! Usability: one root cause reported as many errors.
+//! One root cause reported once, listing every affected component.
 //!
-//! Both `AreaCalculatorComponent` and `DensityCalculatorComponent` are checked, and
-//! the single missing `height` field produces two full `E0277` cascades — the error
-//! count reflects the depth of the wiring graph, not the number of mistakes. The
-//! cause is present in both, so this is a usability problem: the tool should
-//! deduplicate, coalescing every block with the same unmet bound into one headline
-//! and reporting the count of affected components.
+//! Both `AreaCalculatorComponent` and `DensityCalculatorComponent` are checked, and a
+//! single missing `height` field breaks both. Left to rustc that is two full `E0277`
+//! blocks — an error count reflecting the depth of the wiring graph, not the number of
+//! mistakes. cargo-cgp coalesces the two: they share one root cause, so they collapse
+//! into a single `[CGP-E001]` headline naming both consumer traits, with one caret per
+//! failing check entry and the shared root cause shown once. This is the *different
+//! consumers, one cause* coalescing — distinct from the same-consumer de-duplication
+//! `duplication/cross_site_dedup.rs` pins.
 //!
-//! Exposes issues in docs/issues/usability.md. CGP error class:
+//! CGP error class:
 //! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/verbose-cascade.md.
 
 use cgp::prelude::*;

@@ -14,18 +14,27 @@ use crate::diagnosis::wording::lead::root_cause_lead;
 pub fn cause_signature(resolved: &Resolved) -> String {
     let mut consumers = resolved.consumers.clone();
     consumers.sort();
+    // `\u{1f}` (unit separator) cannot occur in a type or trait name, so joining on it makes the
+    // signature unambiguous without escaping.
+    format!(
+        "{}\u{1f}{}",
+        consumers.join("\u{1e}"),
+        cause_only_signature(resolved)
+    )
+}
+
+/// A span- *and* consumer-independent signature identifying *the same root cause* across the
+/// several consumers one mistake breaks. It is [`cause_signature`] with the failing consumer
+/// trait(s) dropped, so two *different* consumers that bottom out on the same cause — a missing
+/// field several components read, a dependency chain many providers share — carry an equal
+/// signature. The emitter groups buffered failures by this key and coalesces each group into one
+/// headline that lists every affected consumer, rather than emitting one block per consumer.
+pub fn cause_only_signature(resolved: &Resolved) -> String {
     let mut leads: Vec<String> = resolved
         .causes
         .iter()
         .map(|cause| root_cause_lead(&cause.leaf))
         .collect();
     leads.sort();
-    // `\u{1f}` (unit separator) cannot occur in a type or trait name, so joining on it makes the
-    // signature unambiguous without escaping.
-    format!(
-        "{}\u{1f}{}\u{1f}{}",
-        resolved.context,
-        consumers.join("\u{1e}"),
-        leads.join("\u{1e}"),
-    )
+    format!("{}\u{1f}{}", resolved.context, leads.join("\u{1e}"))
 }

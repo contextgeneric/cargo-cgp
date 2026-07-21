@@ -1,17 +1,17 @@
-//! Acceptable failure: one missing field surfaces at every provider that
-//! transitively depends on it, so a check of three chained components reports three
-//! separate failures for a single root cause. `ProvideFoo` needs the `name` field,
-//! `ProvideBar` depends on `CanFoo`, and `ProvideBaz` depends on `CanBar`; wiring all
-//! three onto an `App` without a `name` field is accepted, and checking all three
-//! forces a cascade of `E0277` blocks — six, not three, because the deeper components
-//! also emit intermediate provider-bound failures (`ProvideBar: Bar<App>`,
-//! `ProvideFoo: Foo<App>`) beside their `CanUseComponent` failure. Each
-//! `CanUseComponent<..>` block does reach the concrete root cause in its `help:` note
-//! (`HasField<Symbol!("name")>` not implemented for `App`); the intermediate blocks
-//! name only an inner provider trait. Checked top-down (`Baz`, `Bar`, `Foo`), the last
-//! block is `Foo`'s clean root-cause block. The count reflects the depth of the
-//! dependency graph, not the number of mistakes — fixing the one field collapses the
-//! whole cascade. This is the check doing its job, not a macro defect.
+//! One root cause reported once across a chain of dependent components.
+//!
+//! `ProvideFoo` needs the `name` field, `ProvideBar` depends on `CanFoo`, and
+//! `ProvideBaz` depends on `CanBar`; wiring all three onto an `App` without a `name`
+//! field and checking all three would, left to rustc, cascade into a block per
+//! component — more than three, since the deeper providers also emit intermediate
+//! provider-bound failures. cargo-cgp coalesces them: the three consumer failures
+//! share the one missing-`name` root cause, so they collapse into a single
+//! `[CGP-E001]` headline naming `CanBaz`, `CanBar`, and `CanFoo`, a caret at each check
+//! entry, and one representative dependency chain down to the missing field (the
+//! first-checked `CanBaz`, whose chain is the deepest and subsumes the others). Fixing
+//! the one field clears the whole cascade. One entry surfaces to rustc as a
+//! provider-side bound, but coalescing words the group uniformly as consumer traits,
+//! since a `check_components!` entry failing *is* the consumer trait failing.
 //!
 //! See docs/errors/checks/verbose-cascade.md.
 

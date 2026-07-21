@@ -1,14 +1,16 @@
 //! The wrapping [`Emitter`] that transforms CGP diagnostics before delegating.
 
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
 };
 use cargo_cgp_error_processing::{
-    DedupLedger, DiagKind, OrphanConflict, Resolved, cause_signature, is_method_bounds_text,
-    mentions_orphan_param_text, orphan_conflict_help, plan_orphan_conflict, plan_resolved,
-    plan_wiring_conflict, wiring_conflict_help,
+    DedupLedger, DiagKind, OrphanConflict, Resolved, cause_notes, cause_only_signature,
+    cause_signature, coalesce_underived_fields, consumer_header, derive_help_messages,
+    is_method_bounds_text, mentions_orphan_param_text, orphan_conflict_help, plan_orphan_conflict,
+    plan_resolved, plan_wiring_conflict, wiring_conflict_help,
 };
 use rustc_errors::codes::{E0117, E0119, E0210, E0271, E0275, E0277, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
@@ -29,7 +31,7 @@ use crate::resolve::{self, ConflictAction, ConflictTrait, ResolveCache};
 /// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
 /// compiler's default would build for the active error format — a `JsonEmitter` or an
 /// `AnnotateSnippetEmitter` — and render like vanilla `rustc` in either.
-pub struct CgpEmitter<E> {
+pub struct CgpEmitter<E: Emitter> {
     inner: E,
     /// The component-marker → trait-names map. A [`ComponentNameMap`] owns the laziness: its
     /// `fn`-pointer initializer ([`build_name_map_from_tls`]) runs the expensive
@@ -61,9 +63,39 @@ pub struct CgpEmitter<E> {
     /// type — noise over the CGP error already shown. rustc emits the wiring failure before its
     /// cascade, so the span is recorded by the time the cascade arrives.
     cgp_spans: Vec<Span>,
+    /// Every diagnostic this emitter keeps, in arrival order, held until [`Drop`] so that separate
+    /// failures sharing one root cause can be coalesced into a single block. The compiler streams
+    /// diagnostics one at a time with no "end of compilation" hook, so listing every consumer a
+    /// mistake breaks in one headline is only possible once they have all arrived — which is why
+    /// the buffer is flushed from `Drop` (the inner emitter is still alive then), not eagerly. A
+    /// [`BufEntry::Coalescible`] failure joins the group of its cause-only signature; everything
+    /// else — an untouched `rustc` error, a conflict, a declined fallback — is a
+    /// [`BufEntry::Plain`] emitted verbatim at its original position, so ordering is preserved.
+    buffer: Vec<BufEntry>,
 }
 
-impl<E> CgpEmitter<E> {
+/// One buffered diagnostic awaiting the [`Drop`]-time flush.
+enum BufEntry {
+    /// Emitted verbatim at its arrival position.
+    Plain(DiagInner),
+    /// A consumer-trait failure that coalesces with others of the same `sig` (its
+    /// [`cause_only_signature`]): a group of one emits `diag` unchanged, a group of several emits a
+    /// single merged block naming every affected consumer at the position of the first.
+    Coalescible {
+        sig: String,
+        resolved: Resolved,
+        diag: DiagInner,
+    },
+}
+
+/// Whether a resolution is a *consumer-trait* failure on the checked context itself — the only shape
+/// that coalesces. A field-type mismatch, a provider-side check, or a foreign-wrapper failure is
+/// left to emit on its own.
+fn is_consumer_shaped(resolved: &Resolved) -> bool {
+    resolved.consumers_are_cgp && resolved.subject_is_context && !resolved.consumers.is_empty()
+}
+
+impl<E: Emitter> CgpEmitter<E> {
     pub fn new(inner: E) -> Self {
         Self {
             inner,
@@ -71,6 +103,111 @@ impl<E> CgpEmitter<E> {
             dedup: DedupLedger::new(),
             resolve_cache: ResolveCache::new(),
             cgp_spans: Vec::new(),
+            buffer: Vec::new(),
+        }
+    }
+
+    /// Build the one merged block for a coalesced group of several consumer failures sharing a root
+    /// cause: a `[CGP-E001]` header listing every affected consumer trait, a caret at each failing
+    /// entry, and the root-cause note/help from the first member (all members share the cause, so
+    /// one representative chain suffices). The single-consumer header rustc's per-entry rendering
+    /// produced — even a provider-side `[CGP-E002]` one — is dropped in favour of the consumer form,
+    /// since a `check_components!` entry failing *is* the consumer trait failing.
+    fn merged_diag(&self, resolveds: &[&Resolved], diags: &[&DiagInner]) -> DiagInner {
+        let first = resolveds[0];
+        let mut consumers: Vec<String> = Vec::new();
+        for resolved in resolveds {
+            for consumer in &resolved.consumers {
+                if !consumers.contains(consumer) {
+                    consumers.push(consumer.clone());
+                }
+            }
+        }
+        let merged = Resolved {
+            context: first.context.clone(),
+            consumers,
+            consumers_are_cgp: true,
+            subject_is_context: true,
+            causes: first.causes.clone(),
+        };
+
+        let causes = coalesce_underived_fields(&merged.causes);
+        let mut children: Vec<_> = derive_help_messages(&causes)
+            .into_iter()
+            .map(|help| subdiag(Level::Help, help))
+            .collect();
+        children.extend(
+            cause_notes(&causes, None)
+                .into_iter()
+                .map(|note| subdiag(Level::Note, note)),
+        );
+
+        let mut diag = diags[0].clone();
+        diag.messages = vec![(
+            DiagMessage::Str(consumer_header(&merged).into()),
+            Style::NoStyle,
+        )];
+        // One caret per failing entry, in arrival (check) order.
+        let mut span = MultiSpan::new();
+        for member in diags {
+            if let Some(primary) = member.span.primary_span() {
+                span.push_primary_span(primary);
+            }
+        }
+        diag.span = span;
+        diag.children = children;
+        diag.suggestions = Suggestions::Enabled(Vec::new());
+        // The header, notes, and helps are freshly built, so post-process them (resugar `Symbol!`,
+        // strip CGP prefixes) as the streaming path does for a rewritten diagnostic.
+        self.postprocess(&mut diag, true);
+        diag
+    }
+
+    /// Flush the buffer to the inner emitter, coalescing each group of [`BufEntry::Coalescible`]
+    /// failures that share a cause-only signature into one block at the position of its first
+    /// member. Called only from [`Drop`], where the inner emitter is still alive.
+    fn flush(&mut self) {
+        let buffer = std::mem::take(&mut self.buffer);
+
+        // Group the coalescible members by signature, keeping their arrival order.
+        let mut groups: HashMap<&str, Vec<usize>> = HashMap::new();
+        for (index, entry) in buffer.iter().enumerate() {
+            if let BufEntry::Coalescible { sig, .. } = entry {
+                groups.entry(sig).or_default().push(index);
+            }
+        }
+
+        let mut emitted: HashSet<&str> = HashSet::new();
+        let mut to_emit: Vec<DiagInner> = Vec::new();
+        for entry in &buffer {
+            match entry {
+                BufEntry::Plain(diag) => to_emit.push(diag.clone()),
+                BufEntry::Coalescible { sig, .. } => {
+                    if !emitted.insert(sig.as_str()) {
+                        continue;
+                    }
+                    let members = &groups[sig.as_str()];
+                    if members.len() == 1 {
+                        let BufEntry::Coalescible { diag, .. } = &buffer[members[0]] else {
+                            unreachable!("indices came from the coalescible entries");
+                        };
+                        to_emit.push(diag.clone());
+                    } else {
+                        let (resolveds, diags): (Vec<&Resolved>, Vec<&DiagInner>) = members
+                            .iter()
+                            .map(|&index| match &buffer[index] {
+                                BufEntry::Coalescible { resolved, diag, .. } => (resolved, diag),
+                                _ => unreachable!("indices came from the coalescible entries"),
+                            })
+                            .unzip();
+                        to_emit.push(self.merged_diag(&resolveds, &diags));
+                    }
+                }
+            }
+        }
+
+        for diag in to_emit {
+            self.inner.emit_diagnostic(diag);
         }
     }
 
@@ -307,7 +444,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     // A rewritten diagnostic: bare `@…` paths.
                     self.postprocess(&mut diag, true);
                     self.record_cgp_spans(&diag);
-                    self.inner.emit_diagnostic(diag);
+                    self.buffer.push(BufEntry::Plain(diag));
                     return;
                 }
             }
@@ -329,17 +466,20 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             // wrapper).
             self.postprocess(&mut diag, true);
             self.record_cgp_spans(&diag);
-            self.inner.emit_diagnostic(diag);
+            self.buffer.push(BufEntry::Plain(diag));
             return;
         }
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
         // resolver declines, the wiring-message rename runs as the first fallback pass. A resolved
         // failure also yields its span-independent cause signature, for the de-duplication below.
-        let (rewritten, cause_sig) =
+        let (rewritten, cause_sig, coalescible) =
             if let Some((resolved, span, at_call)) = self.try_resolve(&diag) {
                 let sig = cause_signature(&resolved);
                 self.transform_resolved(&mut diag, &resolved, span, at_call);
-                (true, Some(sig))
+                // A consumer-trait failure joins its cause-only group for coalescing at flush; any
+                // other shape (a field mismatch, a provider check) emits on its own.
+                let coalescible = is_consumer_shaped(&resolved).then_some(resolved);
+                (true, Some(sig), coalescible)
             } else {
                 // A CGP consumer-method `E0599` the resolver declined still carries rustc's
                 // method-probe advice — the associated-function framing and the "use associated
@@ -369,7 +509,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     diag.children
                         .push(subdiag(Level::Help, wiring_overflow_help()));
                 }
-                (changed, None)
+                (changed, None, None)
             };
         // Post-process the result either way, so no raw CGP construct leaks. A typed resolution
         // or a text rewrite constructs the message, so its paths render bare (`@…`); a diagnostic
@@ -404,7 +544,20 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
         {
             return;
         }
-        self.inner.emit_diagnostic(diag);
+        // Buffer rather than emit now: a consumer failure joins its cause-only group (coalesced at
+        // flush), everything else is emitted verbatim in place. The flush happens in `Drop`, the
+        // only point after every diagnostic has arrived.
+        match coalescible {
+            Some(resolved) => {
+                let sig = cause_only_signature(&resolved);
+                self.buffer.push(BufEntry::Coalescible {
+                    sig,
+                    resolved,
+                    diag,
+                });
+            }
+            None => self.buffer.push(BufEntry::Plain(diag)),
+        }
     }
 
     fn source_map(&self) -> Option<&SourceMap> {
@@ -433,5 +586,17 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
 
     fn supports_color(&self) -> bool {
         self.inner.supports_color()
+    }
+}
+
+impl<E: Emitter> Drop for CgpEmitter<E> {
+    /// Flush the buffered diagnostics when the compiler drops the emitter. This runs during the
+    /// `DiagCtxt`'s own teardown, *after* every diagnostic has been handed to `emit_diagnostic` but
+    /// while the inner emitter (a field of `self`, dropped only after this returns) is still alive —
+    /// the one place a "list every affected consumer" block can be built, since the `Emitter` trait
+    /// offers no end-of-compilation hook. Diagnostics were counted by the `DiagCtxt` as they
+    /// arrived, so deferring their *rendering* to here does not change the error count.
+    fn drop(&mut self) {
+        self.flush();
     }
 }

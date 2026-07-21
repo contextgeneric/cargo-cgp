@@ -244,7 +244,10 @@ namespace registration, reworded into its `[CGP-E011]` header; else try the type
 resolver, else the text rewrite with its method-probe-advice and overflow cleanups; then always
 post-process; then cross-diagnostic de-duplicate through the rustc-free `DedupLedger` — drop a
 transformed diagnostic whose span-independent signature was already emitted, so one mistake re-reported
-at many wiring sites is shown once), and `edit.rs` holds the
+at many wiring sites is shown once; then, rather than emit, hold every diagnostic in an arrival-ordered
+buffer flushed from `Drop` — the only point after all diagnostics have arrived — where consumer
+failures sharing a `cause_only_signature` coalesce into one `[CGP-E001]` headline listing every
+affected consumer, and everything else emits verbatim in place), and `edit.rs` holds the
 `DiagInner`-editing helpers. `resolve/` is the typed root-cause resolver, one sub-directory per
 stage: `anchor/` recovers the
 failing obligation from a `check_components!` entry, a hand-written `impl Trait for Context` block
@@ -286,7 +289,8 @@ lazily-built `ComponentNameMap`), `parse.rs` (the trait-bound parse), and `text.
 splitting utilities). `diagnosis/` is the rustc-free root-cause model and its wording:
 `leaf.rs`/`resolved.rs` (the `Leaf`/`FieldIssue`/`Cause`/`Resolved` types the driver's resolver fills
 in), `wording/` (the pure `Resolved`-to-text builders — headers, root-cause leads and their codes,
-notes, derive helps, and the de-duplication `cause_signature`), `coalesce.rs`
+notes, derive helps, the de-duplication `cause_signature`, and the consumer-independent
+`cause_only_signature` the emitter coalesces different consumers on), `coalesce.rs`
 (`coalesce_underived_fields`, merging several underived fields on one struct into one cause),
 `labels.rs` (the tree-label templates and the repeated-generics elision), `plan.rs`
 (`plan_resolved`, which words

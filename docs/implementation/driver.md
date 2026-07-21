@@ -363,8 +363,8 @@ whose **span-independent signature** the ledger has seen. A resolved diagnostic 
 recovered cause — the context, the failing consumer
 trait(s), and each root-cause leaf, via the rustc-free `cause_signature` — so the *same* consumer's
 failure re-reported at several spans collapses to one, while two *distinct* consumers that happen to
-share a cause keep separate signatures and are each still shown (no capability's failure is ever
-hidden). A diagnostic the resolver declined but the text rewrite still transformed is keyed by its
+share a cause keep separate signatures, so each survives de-duplication (no capability's failure is
+ever hidden) to be *coalesced* at flush, described next. A diagnostic the resolver declined but the text rewrite still transformed is keyed by its
 rendered message text instead (`message_signature`), so the fallback re-reports coalesce too. A third
 key is the **coded main-message header**: a failure the resolver declined but still rewrote (falling
 back to raw `IsProviderFor` scaffolding) carries the *same* `[CGP-Exxx]` header as the resolved tree of
@@ -375,6 +375,34 @@ re-counts the diagnostics the emitter actually produces — a suppressed re-repo
 errors" summary as well — so the visible block count and the summary agree. This is the
 [one-mistake-many-errors](../issues/usability.md) usability class the per-diagnostic resolver could not
 address on its own.
+
+De-duplication collapses the *same* consumer's re-reports; a second gate, **coalescing**, collapses
+*different* consumers that share one root cause into a single block — the transfer example's one
+missing field breaks several endpoints, and a chain of dependent components fails top to bottom for
+the one field the innermost provider needs. Listing every affected consumer in one headline is only
+possible once they have all arrived, and the `Emitter` trait has no end-of-compilation hook, so the
+emitter does not emit as it goes: it **holds every diagnostic in an arrival-ordered buffer** and
+flushes it from its `Drop`. `Drop` runs during the `DiagCtxt`'s own teardown, after every diagnostic
+has been handed to the emitter but while the inner emitter — a field of the wrapper, dropped only
+afterward — is still alive to render; the diagnostics were counted by the `DiagCtxt` as they arrived,
+so deferring their *rendering* to `Drop` leaves the error count untouched. At flush, each buffered
+consumer-trait failure (`is_consumer_shaped` — a CGP consumer on the checked context, not a field
+mismatch, provider check, or foreign wrapper) is grouped by a **consumer-independent** signature: the
+rustc-free `cause_only_signature`, which is `cause_signature` with the failing consumer dropped, so
+failures differing only in which consumer they break group together. A group of one emits its own
+per-entry block unchanged; a group of several emits **one merged block** — a `[CGP-E001]` header
+listing every affected consumer trait (`consumer_header` over a synthesized `Resolved` whose
+`consumers` is the union), a caret at each failing entry, and the root-cause note and derive `help`
+from the first member, since all members share the cause and one representative chain suffices. A
+member rustc happened to surface provider-side (a `[CGP-E002]` header as a lone diagnostic) is worded
+uniformly as a consumer in the merged block, since a `check_components!` entry failing *is* the
+consumer trait failing. Everything not consumer-shaped — an untouched `rustc` error, a conflict, an
+orphan reshape, a field-type mismatch — is buffered as a plain entry and emitted verbatim at its
+arrival position, so global ordering (a CGP block beside an unrelated `E0308`, say) is preserved. The
+[`density_3`](../../tests/ui/acceptable/duplication/density_3.rs) (two components, one missing field),
+[`dependency_cascade`](../../tests/ui/acceptable/duplication/dependency_cascade.rs) (three chained
+providers), and [`missing_normal_bound`](../../tests/ui/acceptable/wiring/missing-wiring/missing_normal_bound.rs)
+(two consumers sharing an `App: Clone` bound) fixtures pin the merged blocks.
 
 A declined consumer-method `E0599` gets one further cleanup before the fallback rewrite runs. rustc's
 method probe, meeting CGP's `self`-less provider methods, frames the failure as a call-syntax mistake
@@ -612,9 +640,11 @@ will likely grow toward it:
   `CgpEmitter<E>`, split behind a re-exporting `mod.rs`: `install.rs` rebuilds the compiler's default
   emitter for the active format (a `JsonEmitter` or an `AnnotateSnippetEmitter`) and wraps it,
   `cgp_emitter.rs` holds the `CgpEmitter<E>` type (holding the `ComponentNameMap`, the rustc-free
-  `DedupLedger` of already-emitted failures, and the `cgp_spans` list of recognized-failure spans that
-  anchors the `?`-operator cascade suppression) and its transform/post-process/de-duplicate
-  orchestration, and
+  `DedupLedger` of already-emitted failures, the `cgp_spans` list of recognized-failure spans that
+  anchors the `?`-operator cascade suppression, and the arrival-ordered `buffer` of `BufEntry`s
+  flushed from `Drop` — `Plain` verbatim in place, `Coalescible` grouped by `cause_only_signature`
+  and merged into one consumer header per group by `merged_diag`) and its
+  transform/post-process/de-duplicate/coalesce orchestration, and
   `edit.rs` holds the `DiagInner`-editing helpers (including `message_signature`, the span-independent
   text key for de-duplicating a declined-but-rewritten diagnostic; `strip_method_probe_advice`, the
   drop of rustc's associated-function framing on a declined consumer-method `E0599`; and

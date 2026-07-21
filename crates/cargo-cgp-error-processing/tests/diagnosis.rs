@@ -10,8 +10,9 @@ use cargo_cgp_error_processing::diagnosis::{mismatch_leaf, quoted_list};
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
     Cause, DependencyTree, DiagKind, FieldIssue, Leaf, Resolved, cause_note, cause_notes,
-    cause_signature, consumer_header, dependency_tree_leaf, derive_help_messages,
-    field_mismatch_header, plan_resolved, render_dependency_tree, root_cause_code,
+    cause_only_signature, cause_signature, consumer_header, dependency_tree_leaf,
+    derive_help_messages, field_mismatch_header, plan_resolved, render_dependency_tree,
+    root_cause_code,
 };
 
 /// Indent every line by the two spaces the note wording nests a dependency chain under its
@@ -602,6 +603,17 @@ fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
         }],
     };
     assert_ne!(cause_signature(&at_check), cause_signature(&other_cause));
+
+    // The cause-only signature drops the consumer, so two *different* consumers that share one
+    // cause group together (for coalescing) while a different cause still separates them.
+    assert_eq!(
+        cause_only_signature(&at_check),
+        cause_only_signature(&other_consumer),
+    );
+    assert_ne!(
+        cause_only_signature(&at_check),
+        cause_only_signature(&other_cause),
+    );
 }
 
 #[test]
