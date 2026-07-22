@@ -2,17 +2,19 @@
 //!
 //! These exercise the wording and planning that used to live inside the driver's emitter, where
 //! it could only be pinned end-to-end by a UI snapshot. Moving it into this crate makes each case
-//! a plain unit test over a hand-built [`Resolved`], with no compiler in the loop.
+//! a plain unit test over a hand-built [`Resolved`], with no compiler in the loop. The dependency
+//! chain each note carries is built by the [`DependencyGraph`] from structured node paths; the
+//! graph's own rendering is pinned separately in `graph.rs`, so here the focus is the note
+//! assembly (lead, heading, indentation, singular vs plural) around it.
 
 use std::collections::HashMap;
 
 use cargo_cgp_error_processing::diagnosis::{mismatch_leaf, quoted_list};
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
-    Cause, DependencyTree, DiagKind, FieldIssue, Leaf, Resolved, cause_note, cause_notes,
-    cause_only_signature, cause_signature, consumer_header, dependency_tree_leaf,
-    derive_help_messages, field_mismatch_header, plan_resolved, render_dependency_tree,
-    root_cause_code,
+    Cause, ChainNode, DepNode, DependencyGraph, DiagKind, FieldIssue, Leaf, Resolved, cause_note,
+    cause_notes, cause_only_signature, cause_signature, consumer_header, dependency_tree_leaf,
+    derive_help_messages, field_mismatch_header, plan_resolved, root_cause_code,
 };
 
 /// Indent every line by the two spaces the note wording nests a dependency chain under its
@@ -25,14 +27,66 @@ fn indent2(chain: &str) -> String {
         .join("\n")
 }
 
-/// A two-node dependency spine: the checked consumer over the missing field leaf.
-fn tree() -> DependencyTree {
-    DependencyTree::node(
-        "consumer trait impl `CanCalculateArea` for context `Rectangle`",
-        vec![DependencyTree::leaf(
-            "field trait impl `HasField` with field `height` for `Rectangle`",
-        )],
-    )
+/// A consumer-trait-impl hop node.
+fn consumer(trait_ref: &str, context: &str) -> ChainNode {
+    ChainNode::Hop(DepNode::Consumer {
+        trait_ref: trait_ref.to_owned(),
+        context: context.to_owned(),
+    })
+}
+
+/// A provider-trait-impl hop node.
+fn provider(trait_ref: &str, context: &str, provider: &str) -> ChainNode {
+    ChainNode::Hop(DepNode::Provider {
+        trait_ref: trait_ref.to_owned(),
+        context: context.to_owned(),
+        provider: provider.to_owned(),
+    })
+}
+
+/// A general `trait impl` hop node.
+fn trait_hop(trait_ref: &str, self_ty: &str) -> ChainNode {
+    ChainNode::Hop(DepNode::Trait {
+        trait_ref: trait_ref.to_owned(),
+        self_ty: self_ty.to_owned(),
+    })
+}
+
+/// A redirect-lookup hop node (no dispatched key).
+fn redirect(path: &str, context: &str) -> ChainNode {
+    ChainNode::Hop(DepNode::Redirect {
+        path: path.to_owned(),
+        context: context.to_owned(),
+        key: String::new(),
+    })
+}
+
+/// The rendered dependency chain for a single path — the graph over just that path.
+fn render_path(path: &[ChainNode]) -> String {
+    DependencyGraph::from_paths(&[path.to_vec()]).render()
+}
+
+/// A cause with one path down to `leaf` (the terminal node is `leaf` itself).
+fn one_path(leaf: Leaf, hops: Vec<ChainNode>) -> Cause {
+    let mut path = hops;
+    path.push(ChainNode::Leaf(leaf.clone()));
+    Cause {
+        leaf,
+        paths: vec![path],
+    }
+}
+
+/// A `Resolved` for the common case — CGP consumer traits failing on the context itself, so both
+/// `consumers_are_cgp` and `subject_is_context` are `true`. The wrapper-header tests that vary
+/// those flags build `Resolved` explicitly instead.
+fn cgp_resolved(context: &str, consumers: &[&str], causes: Vec<Cause>) -> Resolved {
+    Resolved {
+        context: context.to_owned(),
+        consumers: consumers.iter().map(|c| (*c).to_owned()).collect(),
+        consumers_are_cgp: true,
+        subject_is_context: true,
+        causes,
+    }
 }
 
 /// An empty name map — the categorized-header paths worded from the resolution never consult it.
@@ -53,26 +107,26 @@ fn foo_names() -> HashMap<String, ComponentTraitNames> {
     map
 }
 
-fn missing_field_cause() -> Cause {
-    Cause {
-        leaf: Leaf::Field {
-            name: "height".to_owned(),
-            owner: "Rectangle".to_owned(),
-            issue: FieldIssue::Missing,
-        },
-        tree: tree(),
+fn missing_field_leaf() -> Leaf {
+    Leaf::Field {
+        name: "height".to_owned(),
+        owner: "Rectangle".to_owned(),
+        issue: FieldIssue::Missing,
     }
+}
+
+fn missing_field_cause() -> Cause {
+    one_path(
+        missing_field_leaf(),
+        vec![consumer("CanCalculateArea", "Rectangle")],
+    )
 }
 
 #[test]
 fn plans_a_missing_field_check_failure() {
-    let resolved = Resolved {
-        context: "Rectangle".to_owned(),
-        consumers: vec!["CanCalculateArea".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![missing_field_cause()],
-    };
+    let cause = missing_field_cause();
+    let path = cause.paths[0].clone();
+    let resolved = cgp_resolved("Rectangle", &["CanCalculateArea"], vec![cause]);
     let plan = plan_resolved(
         DiagKind::Check,
         Some(
@@ -94,32 +148,20 @@ fn plans_a_missing_field_check_failure() {
         vec![format!(
             "root cause: [CGP-E106] missing field `height` on `Rectangle`\n\
              this is required through the dependency chain:\n{}",
-            indent2(&render_dependency_tree(&tree()))
+            indent2(&render_path(&path))
         )]
     );
 }
 
 #[test]
 fn plans_a_missing_wiring_check_failure() {
-    // A two-node spine: the checked consumer over the `CanUseBar` capability the unwired
-    // component would supply.
-    let tree = DependencyTree::node(
-        "consumer trait impl `CanUseFoo` for context `App`",
-        vec![DependencyTree::leaf("trait impl `CanUseBar` for `App`")],
-    );
-    let resolved = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanUseFoo".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::MissingWiring {
-                component: "BarProviderComponent".to_owned(),
-                owner: "App".to_owned(),
-            },
-            tree: tree.clone(),
-        }],
+    let leaf = Leaf::MissingWiring {
+        component: "BarProviderComponent".to_owned(),
+        owner: "App".to_owned(),
     };
+    let cause = one_path(leaf, vec![consumer("CanUseFoo", "App")]);
+    let path = cause.paths[0].clone();
+    let resolved = cgp_resolved("App", &["CanUseFoo"], vec![cause]);
     let plan = plan_resolved(
         DiagKind::Check,
         Some("the trait bound `App: CanUseComponent<FooProviderComponent>` is not satisfied"),
@@ -131,44 +173,27 @@ fn plans_a_missing_wiring_check_failure() {
         plan.header.as_deref(),
         Some("[CGP-E001] the consumer trait `CanUseFoo` is not implemented for context `App`")
     );
-    // A missing wiring, like a genuinely missing field, carries no `help` — the note names the
-    // fix.
+    // A missing wiring, like a genuinely missing field, carries no `help` — the note names the fix.
     assert!(plan.helps.is_empty());
     assert_eq!(
         plan.notes,
         vec![format!(
             "root cause: [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`\n\
              this is required through the dependency chain:\n{}",
-            indent2(&render_dependency_tree(&tree))
+            indent2(&render_path(&path))
         )]
     );
 }
 
 #[test]
 fn plans_a_missing_dispatch_entry_check_failure() {
-    // A dispatch table (a `UseInputDelegate` inner table) missing a branch for the type it
-    // dispatches on: the checked consumer over the provider stage whose input the table cannot
-    // resolve. The leaf names the table and the key, worded as `provider … does not contain any
-    // delegate entry for …` — the non-context sibling of a missing wiring, coded `[CGP-E110]`.
-    let tree = DependencyTree::node(
-        "consumer trait impl `CanHandle<Prog, _>` for context `App`",
-        vec![DependencyTree::leaf(
-            "provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`",
-        )],
-    );
-    let resolved = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanHandle<Prog, _>".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::MissingDispatchEntry {
-                key: "Tagged<Bytes>".to_owned(),
-                table: "SinkHandlers".to_owned(),
-            },
-            tree: tree.clone(),
-        }],
+    let leaf = Leaf::MissingDispatchEntry {
+        key: "Tagged<Bytes>".to_owned(),
+        table: "SinkHandlers".to_owned(),
     };
+    let cause = one_path(leaf, vec![consumer("CanHandle<Prog, _>", "App")]);
+    let path = cause.paths[0].clone();
+    let resolved = cgp_resolved("App", &["CanHandle<Prog, _>"], vec![cause]);
     let plan = plan_resolved(
         DiagKind::MethodNotFound,
         Some("the trait bound `App: CanHandle<Sink, Tagged<Bytes>>` is not satisfied"),
@@ -176,89 +201,59 @@ fn plans_a_missing_dispatch_entry_check_failure() {
         &empty_names(),
     );
 
-    // A missing dispatch entry carries no `help`; the note names the fix.
     assert!(plan.helps.is_empty());
     assert_eq!(
         plan.notes,
         vec![format!(
             "root cause: [CGP-E110] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`\n\
              this is required through the dependency chain:\n{}",
-            indent2(&render_dependency_tree(&tree))
+            indent2(&render_path(&path))
         )]
     );
 }
 
 #[test]
 fn plans_a_not_a_provider_check_failure() {
-    // A type wired where a provider was expected that does not implement the provider trait at all
-    // (a request type in a handler slot): the checked consumer over the wrapper provider, bottoming
-    // out on the non-provider. The leaf names the provider trait and the offending type, coded
-    // `[CGP-E111]` — distinct from a missing dispatch entry, since the fix is to use a real provider.
-    let tree = DependencyTree::node(
-        "consumer trait impl `CanHandleApi<QueryBalanceApi>` for context `MockApp`",
-        vec![DependencyTree::leaf(
-            "the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`",
-        )],
-    );
-    let resolved = Resolved {
-        context: "MockApp".to_owned(),
-        consumers: vec!["CanHandleApi<QueryBalanceApi>".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::NotAProvider {
-                provider: "QueryBalanceRequest".to_owned(),
-                provider_trait: "ApiHandler".to_owned(),
-            },
-            tree: tree.clone(),
-        }],
+    let leaf = Leaf::NotAProvider {
+        provider: "QueryBalanceRequest".to_owned(),
+        provider_trait: "ApiHandler".to_owned(),
     };
+    let cause = one_path(
+        leaf,
+        vec![consumer("CanHandleApi<QueryBalanceApi>", "MockApp")],
+    );
+    let path = cause.paths[0].clone();
+    let resolved = cgp_resolved("MockApp", &["CanHandleApi<QueryBalanceApi>"], vec![cause]);
     let plan = plan_resolved(DiagKind::Check, None, &resolved, &empty_names());
 
-    // A non-provider carries no `help`; the note names the fix.
     assert!(plan.helps.is_empty());
     assert_eq!(
         plan.notes,
         vec![format!(
             "root cause: [CGP-E111] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`\n\
              this is required through the dependency chain:\n{}",
-            indent2(&render_dependency_tree(&tree))
+            indent2(&render_path(&path))
         )]
     );
 }
 
 #[test]
 fn plans_a_missing_redirect_wiring_check_failure() {
-    // A namespace redirect that resolves to nothing: the checked consumer over a redirect-lookup
-    // hop whose path the context does not terminate. The redirect node reads as its redirection and
-    // the terminal states the missing delegate entry, in the same form a plain missing wiring uses.
-    let tree = DependencyTree::node(
-        "consumer trait impl `HasQuantityType` for context `App`",
-        vec![DependencyTree::node(
-            "redirect lookup to `@app.finance.types.QuantityTypeProviderComponent` in `App`",
-            vec![DependencyTree::leaf(
-                "context `App` does not contain any delegate entry for \
-                 `@app.finance.types.QuantityTypeProviderComponent`",
-            )],
-        )],
-    );
-    let resolved = Resolved {
+    let leaf = Leaf::MissingRedirectWiring {
+        path: "@app.finance.types.QuantityTypeProviderComponent".to_owned(),
         context: "App".to_owned(),
-        consumers: vec!["HasQuantityType".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::MissingRedirectWiring {
-                path: "@app.finance.types.QuantityTypeProviderComponent".to_owned(),
-                context: "App".to_owned(),
-            },
-            tree: tree.clone(),
-        }],
     };
+    let cause = one_path(
+        leaf,
+        vec![
+            consumer("HasQuantityType", "App"),
+            redirect("@app.finance.types.QuantityTypeProviderComponent", "App"),
+        ],
+    );
+    let path = cause.paths[0].clone();
+    let resolved = cgp_resolved("App", &["HasQuantityType"], vec![cause]);
     let plan = plan_resolved(DiagKind::Check, None, &resolved, &empty_names());
 
-    // A redirect wiring, like a missing wiring, carries no `help` — the note names the fix. Its lead
-    // is the same `missing_delegate_entry` phrasing as a plain missing wiring, keyed by the path.
     assert!(plan.helps.is_empty());
     assert_eq!(
         plan.notes,
@@ -266,27 +261,26 @@ fn plans_a_missing_redirect_wiring_check_failure() {
             "root cause: [CGP-E107] context `App` does not contain any delegate entry for \
              `@app.finance.types.QuantityTypeProviderComponent`\n\
              this is required through the dependency chain:\n{}",
-            indent2(&render_dependency_tree(&tree))
+            indent2(&render_path(&path))
         )]
     );
 }
 
 #[test]
 fn plans_a_missing_derive_with_a_help() {
-    let resolved = Resolved {
-        context: "Rectangle".to_owned(),
-        consumers: vec!["CanCalculateArea".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::Field {
-                name: "height".to_owned(),
-                owner: "Rectangle".to_owned(),
-                issue: FieldIssue::Present,
-            },
-            tree: tree(),
-        }],
+    let leaf = Leaf::Field {
+        name: "height".to_owned(),
+        owner: "Rectangle".to_owned(),
+        issue: FieldIssue::Present,
     };
+    let resolved = cgp_resolved(
+        "Rectangle",
+        &["CanCalculateArea"],
+        vec![one_path(
+            leaf,
+            vec![consumer("CanCalculateArea", "Rectangle")],
+        )],
+    );
     let plan = plan_resolved(
         DiagKind::Check,
         Some(
@@ -307,22 +301,18 @@ fn plans_a_missing_derive_with_a_help() {
 
 #[test]
 fn a_deref_target_help_points_at_the_target() {
-    let resolved = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanGreet".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::Field {
-                name: "name".to_owned(),
-                owner: "App".to_owned(),
-                issue: FieldIssue::PresentViaDeref {
-                    target: "AppFields".to_owned(),
-                },
-            },
-            tree: tree(),
-        }],
+    let leaf = Leaf::Field {
+        name: "name".to_owned(),
+        owner: "App".to_owned(),
+        issue: FieldIssue::PresentViaDeref {
+            target: "AppFields".to_owned(),
+        },
     };
+    let resolved = cgp_resolved(
+        "App",
+        &["CanGreet"],
+        vec![one_path(leaf, vec![consumer("CanGreet", "App")])],
+    );
     let plan = plan_resolved(DiagKind::Check, None, &resolved, &empty_names());
     assert_eq!(
         plan.helps,
@@ -332,22 +322,18 @@ fn a_deref_target_help_points_at_the_target() {
 
 #[test]
 fn plans_a_field_type_mismatch() {
-    let mismatch = Cause {
-        leaf: Leaf::FieldTypeMismatch {
-            name: "height".to_owned(),
-            owner: "Rectangle".to_owned(),
-            expected: "f64".to_owned(),
-            actual: "i32".to_owned(),
-        },
-        tree: tree(),
+    let leaf = Leaf::FieldTypeMismatch {
+        name: "height".to_owned(),
+        owner: "Rectangle".to_owned(),
+        expected: "f64".to_owned(),
+        actual: "i32".to_owned(),
     };
-    let resolved = Resolved {
-        context: "Rectangle".to_owned(),
-        consumers: vec!["CanCalculateArea".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![mismatch.clone()],
-    };
+    let cause = one_path(
+        leaf.clone(),
+        vec![consumer("CanCalculateArea", "Rectangle")],
+    );
+    let path = cause.paths[0].clone();
+    let resolved = cgp_resolved("Rectangle", &["CanCalculateArea"], vec![cause]);
     let plan = plan_resolved(
         DiagKind::FieldMismatch,
         Some(
@@ -367,28 +353,24 @@ fn plans_a_field_type_mismatch() {
         plan.notes,
         vec![format!(
             "this is required through the dependency chain:\n{}",
-            indent2(&render_dependency_tree(&tree()))
+            indent2(&render_path(&path))
         )]
     );
-    assert_eq!(mismatch_leaf(&resolved), Some(&mismatch.leaf));
+    assert_eq!(mismatch_leaf(&resolved), Some(&leaf));
 }
 
 #[test]
 fn plans_a_use_site_method_failure() {
-    let resolved = Resolved {
-        context: "Person".to_owned(),
-        consumers: vec!["CanGreet".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::Field {
-                name: "name".to_owned(),
-                owner: "Person".to_owned(),
-                issue: FieldIssue::Missing,
-            },
-            tree: tree(),
-        }],
+    let leaf = Leaf::Field {
+        name: "name".to_owned(),
+        owner: "Person".to_owned(),
+        issue: FieldIssue::Missing,
     };
+    let resolved = cgp_resolved(
+        "Person",
+        &["CanGreet"],
+        vec![one_path(leaf, vec![consumer("CanGreet", "Person")])],
+    );
     // A consumer-method `E0599` names no wiring trait, yet the header is still worded from the
     // resolution.
     let plan = plan_resolved(
@@ -405,18 +387,12 @@ fn plans_a_use_site_method_failure() {
 
 #[test]
 fn keeps_an_ordinary_bound_header_and_drops_the_repeated_lead() {
-    let resolved = Resolved {
-        context: "Rectangle".to_owned(),
-        consumers: vec!["CanCalculateArea".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::Bound {
-                summary: "f64: std::cmp::Eq".to_owned(),
-            },
-            tree: tree(),
-        }],
+    let leaf = Leaf::Bound {
+        summary: "f64: std::cmp::Eq".to_owned(),
     };
+    let cause = one_path(leaf, vec![consumer("CanCalculateArea", "Rectangle")]);
+    let path = cause.paths[0].clone();
+    let resolved = cgp_resolved("Rectangle", &["CanCalculateArea"], vec![cause]);
     let plan = plan_resolved(
         DiagKind::Check,
         Some("the trait bound `f64: std::cmp::Eq` is not satisfied"),
@@ -430,7 +406,7 @@ fn keeps_an_ordinary_bound_header_and_drops_the_repeated_lead() {
         plan.notes,
         vec![format!(
             "this is required through the dependency chain:\n{}",
-            indent2(&render_dependency_tree(&tree()))
+            indent2(&render_path(&path))
         )]
     );
 }
@@ -440,19 +416,18 @@ fn promotes_a_mid_chain_symptom_bound_to_the_consumer_header() {
     // rustc opened the diagnostic on a getter bound (`LoginRequest: HasCredential<App>`) that is a
     // symptom, not the recovered root cause (a missing wiring). It is not a recovered leaf, so the
     // header should be replaced with the `CGP-E001` consumer form rather than kept as the symptom.
-    let resolved = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanAuthenticate<LoginRequest>".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::MissingWiring {
-                component: "CredentialTypeProviderComponent".to_owned(),
-                owner: "App".to_owned(),
-            },
-            tree: tree(),
-        }],
+    let leaf = Leaf::MissingWiring {
+        component: "CredentialTypeProviderComponent".to_owned(),
+        owner: "App".to_owned(),
     };
+    let resolved = cgp_resolved(
+        "App",
+        &["CanAuthenticate<LoginRequest>"],
+        vec![one_path(
+            leaf,
+            vec![consumer("CanAuthenticate<LoginRequest>", "App")],
+        )],
+    );
     let plan = plan_resolved(
         DiagKind::Check,
         Some("the trait bound `LoginRequest: HasCredential<App>` is not satisfied"),
@@ -544,64 +519,50 @@ fn dependency_tree_leaf_codes_rewritten_leaves_and_passes_bounds_through() {
 
 #[test]
 fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
-    let missing_name = || Cause {
-        leaf: Leaf::Field {
-            name: "name".to_owned(),
-            owner: "App".to_owned(),
-            issue: FieldIssue::Missing,
-        },
-        tree: tree(),
-    };
-    // Same context, consumer, and cause reached at two sites — a re-report — shares a signature,
-    // even though the dependency trees differ (the tree is not part of the signature).
-    let at_check = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanGreet".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![missing_name()],
-    };
-    let at_call = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanGreet".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::Field {
+    let missing_name = || {
+        one_path(
+            Leaf::Field {
                 name: "name".to_owned(),
                 owner: "App".to_owned(),
                 issue: FieldIssue::Missing,
             },
-            tree: DependencyTree::leaf("a different chain"),
-        }],
+            vec![consumer("CanGreet", "App")],
+        )
     };
+    // Same context, consumer, and cause reached at two sites — a re-report — shares a signature,
+    // even though the dependency paths differ (the path is not part of the signature).
+    let at_check = cgp_resolved("App", &["CanGreet"], vec![missing_name()]);
+    let at_call = cgp_resolved(
+        "App",
+        &["CanGreet"],
+        vec![one_path(
+            Leaf::Field {
+                name: "name".to_owned(),
+                owner: "App".to_owned(),
+                issue: FieldIssue::Missing,
+            },
+            vec![consumer("CanGreet", "App"), trait_hop("Different", "App")],
+        )],
+    );
     assert_eq!(cause_signature(&at_check), cause_signature(&at_call));
 
     // A different consumer is a distinct failure — never merged, so no capability is hidden.
-    let other_consumer = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanShout".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![missing_name()],
-    };
+    let other_consumer = cgp_resolved("App", &["CanShout"], vec![missing_name()]);
     assert_ne!(cause_signature(&at_check), cause_signature(&other_consumer));
 
     // A different cause is a distinct fix — never merged.
-    let other_cause = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanGreet".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::Field {
+    let other_cause = cgp_resolved(
+        "App",
+        &["CanGreet"],
+        vec![one_path(
+            Leaf::Field {
                 name: "age".to_owned(),
                 owner: "App".to_owned(),
                 issue: FieldIssue::Missing,
             },
-            tree: tree(),
-        }],
-    };
+            vec![consumer("CanGreet", "App")],
+        )],
+    );
     assert_ne!(cause_signature(&at_check), cause_signature(&other_cause));
 
     // The cause-only signature drops the consumer, so two *different* consumers that share one
@@ -618,18 +579,16 @@ fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
 
 #[test]
 fn plans_a_provider_header_via_text_rewrite() {
-    let resolved = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanFoo".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::Bound {
+    let resolved = cgp_resolved(
+        "App",
+        &["CanFoo"],
+        vec![one_path(
+            Leaf::Bound {
                 summary: "App: DefaultNamespace".to_owned(),
             },
-            tree: tree(),
-        }],
-    };
+            vec![consumer("CanFoo", "App")],
+        )],
+    );
     // A *real* wired provider (not the `RedirectLookup` plumbing) keeps the provider form, since it
     // names something the programmer chose.
     let plan = plan_resolved(
@@ -648,18 +607,16 @@ fn plans_a_provider_header_via_text_rewrite() {
 
 #[test]
 fn redirect_lookup_provider_follows_through_to_consumer_header() {
-    let resolved = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanFoo".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![Cause {
-            leaf: Leaf::Bound {
+    let resolved = cgp_resolved(
+        "App",
+        &["CanFoo"],
+        vec![one_path(
+            Leaf::Bound {
                 summary: "App: DefaultNamespace".to_owned(),
             },
-            tree: tree(),
-        }],
-    };
+            vec![consumer("CanFoo", "App")],
+        )],
+    );
     // An `IsProviderFor` bound whose subject is a `RedirectLookup` names only redirect plumbing —
     // the lookup resolved to no provider — so the header follows through to the consumer trait
     // rather than reporting `RedirectLookup<…>` as the provider. A leading `for<'a>` binder (a
@@ -686,13 +643,7 @@ fn redirect_lookup_provider_follows_through_to_consumer_header() {
 
 #[test]
 fn consumer_header_pluralizes_across_components() {
-    let resolved = Resolved {
-        context: "App".to_owned(),
-        consumers: vec!["CanFoo".to_owned(), "CanBar".to_owned()],
-        consumers_are_cgp: true,
-        subject_is_context: true,
-        causes: vec![missing_field_cause()],
-    };
+    let resolved = cgp_resolved("App", &["CanFoo", "CanBar"], vec![missing_field_cause()]);
     assert_eq!(
         consumer_header(&resolved),
         "[CGP-E001] the consumer traits `CanFoo` and `CanBar` are not implemented for context `App`"
@@ -760,32 +711,25 @@ fn wording_helpers_format_directly() {
     assert!(derive_help_messages(std::slice::from_ref(&cause)).is_empty());
 }
 
-/// One field-missing cause whose chain shares a `getter` node with its sibling — the branch point
-/// of the merge test below.
+/// One field-missing cause whose path shares a `getter` hop's prefix with its sibling — the branch
+/// point of the merge test below.
 fn field_cause(getter: &str, field: &str) -> Cause {
-    Cause {
-        leaf: Leaf::Field {
+    one_path(
+        Leaf::Field {
             name: field.to_owned(),
             owner: "Person".to_owned(),
             issue: FieldIssue::Missing,
         },
-        tree: DependencyTree::node(
-            "consumer trait impl `CanGreet` for context `Person`",
-            vec![DependencyTree::node(
-                "provider trait impl `Greeter` with context `Person` for provider `GreetFullName`",
-                vec![DependencyTree::node(
-                    format!("trait impl `{getter}` for `Person`"),
-                    vec![DependencyTree::leaf(format!(
-                        "[CGP-E106] missing field `{field}` on `Person`"
-                    ))],
-                )],
-            )],
-        ),
-    }
+        vec![
+            consumer("CanGreet", "Person"),
+            provider("Greeter", "Person", "GreetFullName"),
+            trait_hop(getter, "Person"),
+        ],
+    )
 }
 
-/// Two causes sharing a dependency root collapse into a single `root causes:` note: the shared
-/// prefix appears once, each cause is listed up front, and the merged tree branches to the two
+/// Two causes sharing a dependency prefix collapse into a single `root causes:` note: the shared
+/// prefix appears once, each cause is listed up front, and the merged graph branches to the two
 /// distinct leaves. A lone cause keeps its own `root cause:` note.
 #[test]
 fn merges_two_causes_sharing_a_root_into_one_note() {
@@ -802,11 +746,11 @@ fn merges_two_causes_sharing_a_root_into_one_note() {
          \x20 - [CGP-E106] missing field `first_name` on `Person`\n\
          \x20 - [CGP-E106] missing field `last_name` on `Person`\n\
          this is required through the dependency chain:\n\
-         \x20 consumer trait impl `CanGreet` for context `Person`\n\
-         \x20 └─ provider trait impl `Greeter` with context `Person` for provider `GreetFullName`\n\
-         \x20   ├─ trait impl `HasFirstName` for `Person`\n\
+         \x20 [CGP-E101] consumer trait impl `CanGreet` for context `Person`\n\
+         \x20 └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetFullName`\n\
+         \x20   ├─ [CGP-E105] trait impl `HasFirstName` for `Person`\n\
          \x20   │ └─ [CGP-E106] missing field `first_name` on `Person`\n\
-         \x20   └─ trait impl `HasLastName` for `Person`\n\
+         \x20   └─ [CGP-E105] trait impl `HasLastName` for `Person`\n\
          \x20     └─ [CGP-E106] missing field `last_name` on `Person`"
     );
 
@@ -814,4 +758,48 @@ fn merges_two_causes_sharing_a_root_into_one_note() {
     let single = cause_notes(std::slice::from_ref(&causes[0]), None);
     assert_eq!(single.len(), 1);
     assert!(single[0].starts_with("root cause: [CGP-E106] missing field `first_name`"));
+}
+
+/// Two causes reached through *independent* consumer chains that share no node still collapse into
+/// one note (the `parallel_consumers` shape), not two: the `root causes:` heading lists each distinct
+/// leaf, and the graph renders each root chain stacked. This is the behavior the graph adds over the
+/// old shared-prefix-only merge, which would have emitted two separate notes here.
+#[test]
+fn independent_root_causes_render_as_one_note_with_stacked_chains() {
+    let causes = vec![
+        one_path(
+            Leaf::Field {
+                name: "height".to_owned(),
+                owner: "App".to_owned(),
+                issue: FieldIssue::Missing,
+            },
+            vec![consumer("CanCalculateArea", "App")],
+        ),
+        one_path(
+            Leaf::Field {
+                name: "width".to_owned(),
+                owner: "App".to_owned(),
+                issue: FieldIssue::Missing,
+            },
+            vec![consumer("CanReportWidth", "App")],
+        ),
+    ];
+
+    let notes = cause_notes(&causes, None);
+    assert_eq!(
+        notes.len(),
+        1,
+        "independent causes still merge into one note"
+    );
+    assert_eq!(
+        notes[0],
+        "root causes:\n\
+         \x20 - [CGP-E106] missing field `height` on `App`\n\
+         \x20 - [CGP-E106] missing field `width` on `App`\n\
+         this is required through the dependency chain:\n\
+         \x20 [CGP-E101] consumer trait impl `CanCalculateArea` for context `App`\n\
+         \x20 └─ [CGP-E106] missing field `height` on `App`\n\
+         \x20 [CGP-E101] consumer trait impl `CanReportWidth` for context `App`\n\
+         \x20 └─ [CGP-E106] missing field `width` on `App`"
+    );
 }

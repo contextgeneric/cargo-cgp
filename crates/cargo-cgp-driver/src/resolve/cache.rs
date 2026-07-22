@@ -16,19 +16,19 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
-use cargo_cgp_error_processing::Leaf;
+use cargo_cgp_error_processing::{ChainNode, Leaf};
 use rustc_data_structures::fingerprint::Fingerprint;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_data_structures::stable_hash::{StableHash, StableHasher};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
-/// One root-cause sub-chain of a node's subtree: the classified leaf and the label chain from this
-/// node down to it (node-rooted — the node's own label first, the leaf's label last), so a parent
-/// reuses it by prepending its own label and the root turns it into a `Cause`.
+/// One root-cause sub-chain of a node's subtree: the classified leaf and the node chain from this
+/// node down to it (node-rooted — this node's own hop first, the terminal leaf node last), so a
+/// parent reuses it by prepending its own hop and the root groups it into a `Cause` by leaf.
 #[derive(Clone)]
 pub(crate) struct SubCause {
     pub(crate) leaf: Leaf,
-    pub(crate) labels: Vec<String>,
+    pub(crate) path: Vec<ChainNode>,
 }
 
 /// The owned result of resolving one node's subtree: its sub-causes, the fingerprints of every

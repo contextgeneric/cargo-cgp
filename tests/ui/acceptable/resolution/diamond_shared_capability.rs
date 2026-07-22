@@ -6,13 +6,17 @@
 //! per-node [resolution cache](../../../../docs/implementation/cached-dependency-resolution.md)
 //! resolves once and reuses.
 //!
-//! Because both branches bottom out on the *same* missing field, the per-leaf de-duplication keeps
-//! a single root cause, and the tree shown is the first branch that reached it (`CanLeft`). The
-//! point of the fixture is that the shared `CanShared` subtree renders identically whichever branch
-//! reaches it first, so a cache hit on the second branch is output-preserving — the whole-suite
-//! guard the cache soundness rests on, made explicit on a minimal diamond.
+//! Because both branches bottom out on the *same* missing field, they are one root cause with two
+//! paths, which the [dependency graph](../../../../docs/implementation/dependency-graph-rendering.md)
+//! renders as a diamond: `CanTop` branches to `CanLeft` and `CanRight`, the shared `CanShared`
+//! subtree is drawn in full under the first (`CanLeft`) and referenced with `(*)` under the second
+//! (`CanRight`), and the missing `name` field is shown once. The point of the fixture is that both
+//! branches appear — neither is dropped — while the shared subtree is not duplicated. It also pins
+//! the cache: `CanShared` renders identically whichever branch reaches it first, so a cache hit on
+//! the second branch is output-preserving.
 //!
-//! See docs/implementation/cached-dependency-resolution.md (diamond reuse).
+//! See docs/implementation/dependency-graph-rendering.md (diamond) and
+//! docs/implementation/cached-dependency-resolution.md (diamond reuse).
 
 use cgp::prelude::*;
 

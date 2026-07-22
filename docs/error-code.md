@@ -273,11 +273,14 @@ The codes divide into the inner chain-node templates and the terminal root-cause
   hop through the context's own consumer-trait impl (a `CanUseComponent` step).
 - **`CGP-E102` — provider trait impl.** `` provider trait impl `<Trait>` with context `<Ctx>` for
   provider `<Provider>` `` — a hop through a provider's provider-trait impl (an `IsProviderFor` step).
-- **`CGP-E103` — field trait impl.** `` field trait impl `HasField` with field `<f>` for `<T>` `` — a
-  hop through a `HasField` accessor impl that is *not* the terminal leaf (rare: a `HasField` bound is
-  almost always the chain's terminal, coded `CGP-E106`/`CGP-E108`/`CGP-E109` instead).
+- **`CGP-E103` — retired.** This code named a mid-chain `HasField` accessor hop, but a `HasField`
+  obligation is always the chain's terminal root-cause leaf (coded `CGP-E106`/`CGP-E108`/`CGP-E109`),
+  never an interior hop, so it was never emitted and has been removed. The number is left unused
+  rather than reassigned, so the other codes stay stable.
 - **`CGP-E104` — redirect lookup.** `` redirect lookup to `@…` in `<Ctx>` `` — a hop through a
-  namespace or `open` `RedirectLookup`.
+  namespace or `open` `RedirectLookup`. Two lookups along the same route for different dispatch keys
+  render this same text but are distinct nodes in the dependency graph (the key is part of a node's
+  identity), so each keeps its own branch and leaf.
 - **`CGP-E105` — trait impl (general).** `` trait impl `<Trait>` for `<Type>` `` — a hop through any
   other trait: a user capability trait, or an ordinary bound restated as an impl. This is the
   "rewritten non-CGP" form that is coded even though the trait itself may not be a CGP construct.
@@ -388,11 +391,10 @@ conflict the driver's `resolve::conflict` classifier recovers, one code per `Wir
 and the `CGP-E011` orphan form by
 [`plan_orphan_conflict`](../crates/cargo-cgp-error-processing/src/diagnosis/orphan.rs) (fed from the
 `OrphanConflict` the driver's `resolve::orphan` classifier recovers).
-The `CGP-E1xx` dependency-tree entry codes are stamped at tree-construction time: the inner chain
-nodes by the pure label constructors in
-[`diagnosis/labels.rs`](../crates/cargo-cgp-error-processing/src/diagnosis/labels.rs) (the driver's
-[`resolve::label`](../crates/cargo-cgp-driver/src/resolve/label) chooses the template from the trait
-kind), and the terminal leaf by the rustc-free
+The `CGP-E1xx` dependency-tree entry codes are stamped when a node renders: the inner chain nodes by
+the structured [`DepNode`](../crates/cargo-cgp-error-processing/src/diagnosis/node.rs) variants (the
+driver's [`resolve::label`](../crates/cargo-cgp-driver/src/resolve/label) picks the variant from the
+trait kind), and the terminal leaf by the rustc-free
 [`dependency_tree_leaf`](../crates/cargo-cgp-error-processing/src/diagnosis/wording/lead.rs) (which
 prefixes `dependency_leaf_code`, or leaves a pass-through bound bare). The `CGP-E2xx` root-cause lead
 code is stamped by

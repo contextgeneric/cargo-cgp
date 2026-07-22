@@ -38,7 +38,8 @@ pub struct DiagnosisPlan {
     pub header: Option<String>,
     /// The `help` messages naming each type that must derive `HasField`.
     pub helps: Vec<String>,
-    /// One `note` message per recovered root cause, each carrying its dependency chain.
+    /// The `root cause:` note — every cause's paths folded into one dependency graph. A single
+    /// element, or none when there are no causes.
     pub notes: Vec<String>,
 }
 

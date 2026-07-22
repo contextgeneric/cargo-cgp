@@ -1,0 +1,207 @@
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>: ValueBuilder<App, Left>` is not satisfied
+  --> src/main.rs:72:9
+   |
+72 |         AssemblerComponent,
+   |         ^^^^^^^^^^^^^^^^^^ the trait `ValueBuilder<App, Left>` is not implemented for `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>`
+   |
+help: the trait `ValueBuilder<App, Left>` is not implemented for `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>`
+      but trait `ValueBuilder<App, u64>` is implemented for it
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_component(ValueBuilder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `u64`, found `Left`
+note: required for `App` to implement `ValueBuilder<App, Left>`
+  --> src/main.rs:24:1
+   |
+24 |   #[cgp_component(ValueBuilder)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | | pub trait CanBuildValue<Value> {
+   | |______________________________^
+note: required for `App` to implement `CanBuildValue<Left>`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_component(ValueBuilder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | pub trait CanBuildValue<Value> {
+   |           ^^^^^^^^^^^^^^^^^^^^
+note: required for `AssembleParts` to implement `IsProviderFor<AssemblerComponent, App>`
+  --> src/main.rs:47:1
+   |
+47 | #[cgp_impl(new AssembleParts)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+48 | #[uses(CanBuildValue<Left>, CanBuildValue<Right>)]
+   |        ------------------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<AssemblerComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:70:1
+   |
+70 | / check_components! {
+71 | |     App {
+72 | |         AssemblerComponent,
+73 | |     }
+74 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>: ValueBuilder<App, Right>` is not satisfied
+  --> src/main.rs:72:9
+   |
+72 |         AssemblerComponent,
+   |         ^^^^^^^^^^^^^^^^^^ the trait `ValueBuilder<App, Right>` is not implemented for `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>`
+   |
+help: the trait `ValueBuilder<App, Right>` is not implemented for `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>`
+      but trait `ValueBuilder<App, u64>` is implemented for it
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_component(ValueBuilder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `u64`, found `Right`
+note: required for `App` to implement `ValueBuilder<App, Right>`
+  --> src/main.rs:24:1
+   |
+24 |   #[cgp_component(ValueBuilder)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | | pub trait CanBuildValue<Value> {
+   | |______________________________^
+note: required for `App` to implement `CanBuildValue<Right>`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_component(ValueBuilder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | pub trait CanBuildValue<Value> {
+   |           ^^^^^^^^^^^^^^^^^^^^
+note: required for `AssembleParts` to implement `IsProviderFor<AssemblerComponent, App>`
+  --> src/main.rs:47:1
+   |
+47 | #[cgp_impl(new AssembleParts)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+48 | #[uses(CanBuildValue<Left>, CanBuildValue<Right>)]
+   |                             -------------------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<AssemblerComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:70:1
+   |
+70 | / check_components! {
+71 | |     App {
+72 | |         AssemblerComponent,
+73 | |     }
+74 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: CanUseComponent<AssemblerComponent>` is not satisfied
+  --> src/main.rs:72:9
+   |
+72 |         AssemblerComponent,
+   |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `DelegateComponent<PathCons<ValueBuilderComponent, PathCons<Left, Nil>>>` is not implemented for `App`
+  --> src/main.rs:56:1
+   |
+56 | pub struct App;
+   | ^^^^^^^^^^^^^^
+help: `App` implements trait `DelegateComponent<Key>`
+  --> src/main.rs:60:14
+   |
+60 |         open ValueBuilderComponent;
+   |              ^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<ValueBuilderComponent>`
+61 |
+62 |         @ValueBuilderComponent.u64: BuildU64,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<PathCons<ValueBuilderComponent, PathCons<u64, __Wildcard__>>>`
+...
+66 |         AssemblerComponent: AssembleParts,
+   |         ^^^^^^^^^^^^^^^^^^ `DelegateComponent<AssemblerComponent>`
+note: required for `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>` to implement `IsProviderFor<ValueBuilderComponent, App, Left>`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_component(ValueBuilder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `App` to implement `IsProviderFor<ValueBuilderComponent, App, Left>`
+note: required for `App` to implement `ValueBuilder<App, Left>`
+  --> src/main.rs:24:1
+   |
+24 |   #[cgp_component(ValueBuilder)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | | pub trait CanBuildValue<Value> {
+   | |______________________________^
+note: required for `App` to implement `CanBuildValue<Left>`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_component(ValueBuilder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | pub trait CanBuildValue<Value> {
+   |           ^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `AssembleParts` to implement `IsProviderFor<AssemblerComponent, App>`
+   = note: required for `App` to implement `CanUseComponent<AssemblerComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:70:1
+   |
+70 | / check_components! {
+71 | |     App {
+72 | |         AssemblerComponent,
+73 | |     }
+74 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: CanUseComponent<AssemblerComponent>` is not satisfied
+  --> src/main.rs:72:9
+   |
+72 |         AssemblerComponent,
+   |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `DelegateComponent<PathCons<ValueBuilderComponent, PathCons<Right, Nil>>>` is not implemented for `App`
+  --> src/main.rs:56:1
+   |
+56 | pub struct App;
+   | ^^^^^^^^^^^^^^
+help: `App` implements trait `DelegateComponent<Key>`
+  --> src/main.rs:60:14
+   |
+60 |         open ValueBuilderComponent;
+   |              ^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<ValueBuilderComponent>`
+61 |
+62 |         @ValueBuilderComponent.u64: BuildU64,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^ `DelegateComponent<PathCons<ValueBuilderComponent, PathCons<u64, __Wildcard__>>>`
+...
+66 |         AssemblerComponent: AssembleParts,
+   |         ^^^^^^^^^^^^^^^^^^ `DelegateComponent<AssemblerComponent>`
+note: required for `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>` to implement `IsProviderFor<ValueBuilderComponent, App, Right>`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_component(ValueBuilder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `App` to implement `IsProviderFor<ValueBuilderComponent, App, Right>`
+note: required for `App` to implement `ValueBuilder<App, Right>`
+  --> src/main.rs:24:1
+   |
+24 |   #[cgp_component(ValueBuilder)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | | pub trait CanBuildValue<Value> {
+   | |______________________________^
+note: required for `App` to implement `CanBuildValue<Right>`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_component(ValueBuilder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | pub trait CanBuildValue<Value> {
+   |           ^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `AssembleParts` to implement `IsProviderFor<AssemblerComponent, App>`
+   = note: required for `App` to implement `CanUseComponent<AssemblerComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:70:1
+   |
+70 | / check_components! {
+71 | |     App {
+72 | |         AssemblerComponent,
+73 | |     }
+74 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

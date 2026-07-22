@@ -1,16 +1,14 @@
 //! The human-readable label each dependency-path predicate renders as.
 
-use cargo_cgp_error_processing::{
-    consumer_impl_label, field_impl_label, provider_impl_label, redirect_label, trait_impl_label,
-};
+use cargo_cgp_error_processing::DepNode;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{
-    CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT,
-    HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT, REDIRECT_LOOKUP_TYPE,
+    CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT,
+    REDIRECT_LOOKUP_TYPE,
 };
 use crate::resolve::cgp_item::{
-    decode_symbol, is_cgp_item, is_consumer_trait, is_namespace_lookup_trait, is_provider_trait,
+    is_cgp_item, is_consumer_trait, is_namespace_lookup_trait, is_provider_trait,
 };
 use crate::resolve::label::render_ty;
 
@@ -40,7 +38,7 @@ pub(crate) fn label_for<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitPredicate<'tcx>,
     context: Ty<'tcx>,
-) -> Option<String> {
+) -> Option<DepNode> {
     let trait_ref = pred.skip_binder().trait_ref;
     let did = trait_ref.def_id;
     let self_ty = trait_ref.self_ty();
@@ -56,10 +54,8 @@ pub(crate) fn label_for<'tcx>(
         return None;
     }
 
-    if is_cgp_item(tcx, did, HAS_FIELD_TRAIT, CGP_FIELD_CRATE) {
-        let field = decode_symbol(tcx, trait_ref.args.type_at(1))?;
-        return Some(field_impl_label(&field, &render_ty(tcx, self_ty)));
-    }
+    // Note: a `HasField` obligation is never labeled here — `resolve_node` classifies it as a
+    // terminal root-cause leaf before `label_for` is reached — so there is no interior HasField hop.
 
     if is_provider_trait(tcx, did) {
         // A provider-trait obligation for the context itself is delegation routing, dropped.
@@ -67,9 +63,16 @@ pub(crate) fn label_for<'tcx>(
             return None;
         }
         // A `RedirectLookup<Ctx, Path>` provider is a namespace/`open` redirection hop, not a real
-        // provider impl, so a chain of them reads as its successive hops.
+        // provider impl, so a chain of them reads as its successive hops. The dispatched key (the
+        // provider trait's own parameters, skipping `Self` = the lookup and the context) is carried
+        // as the node's identity so two lookups along the same route for different keys stay
+        // distinct — it is not rendered, since the key already shows on the child provider node.
         if let Some(path) = redirect_path(tcx, self_ty) {
-            return Some(redirect_label(&path.to_string(), &context.to_string()));
+            return Some(DepNode::Redirect {
+                path: path.to_string(),
+                context: context.to_string(),
+                key: trait_generics(tcx, trait_ref, 2),
+            });
         }
         // `Provider: ProviderTrait<Ctx, Params…>` — trait name, context, provider, and the
         // component's extra parameters all read straight off the obligation, no marker or map. The
@@ -80,28 +83,28 @@ pub(crate) fn label_for<'tcx>(
         // emits, so it falls through to the plain label.
         if let Some(provider_context) = trait_ref.args.types().nth(1) {
             let generics = trait_generics(tcx, trait_ref, 2);
-            return Some(provider_impl_label(
-                &format!("{}{generics}", tcx.item_name(did)),
-                &render_ty(tcx, provider_context),
-                &render_ty(tcx, self_ty),
-            ));
+            return Some(DepNode::Provider {
+                trait_ref: format!("{}{generics}", tcx.item_name(did)),
+                context: render_ty(tcx, provider_context),
+                provider: render_ty(tcx, self_ty),
+            });
         }
     }
 
     if is_consumer_trait(tcx, did) && self_ty == context {
         // `Ctx: ConsumerTrait<Params…>` — the consumer name and its parameters read directly.
         let generics = trait_generics(tcx, trait_ref, 1);
-        return Some(consumer_impl_label(
-            &format!("{}{generics}", tcx.item_name(did)),
-            &render_ty(tcx, self_ty),
-        ));
+        return Some(DepNode::Consumer {
+            trait_ref: format!("{}{generics}", tcx.item_name(did)),
+            context: render_ty(tcx, self_ty),
+        });
     }
 
     // A user's own capability/getter trait, or a terminal ordinary bound.
-    Some(trait_impl_label(
-        &tcx.item_name(did).to_string(),
-        &render_ty(tcx, self_ty),
-    ))
+    Some(DepNode::Trait {
+        trait_ref: tcx.item_name(did).to_string(),
+        self_ty: render_ty(tcx, self_ty),
+    })
 }
 
 /// Render a trait obligation's type arguments after `skip` leading ones as a generic list —

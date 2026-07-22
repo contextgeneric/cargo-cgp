@@ -340,9 +340,9 @@ The same emitter seam hosts a deeper transformation that rebuilds a diagnostic's
 than rewording them, and it is tried *before* the rename. Where the trait-renaming rewrite edits the
 compiler's text in place, the [typed root-cause resolver](typed-root-cause-resolution.md) re-runs the
 failing check obligation through the compiler's `InferCtxt` / `ObligationCtxt` API, descends to each
-terminal leaf, and replaces rustc's cascade of sub-notes with one `root cause:` note per leaf over its
-dependency chain (wording the coded main message from typed data where the text lookup could be
-ambiguous) — falling back to the in-place rename whenever it cannot fully resolve the cause. That kind
+terminal leaf, and replaces rustc's cascade of sub-notes with one `root cause:` note over the
+dependency graph of every leaf (wording the coded main message from typed data where the text lookup
+could be ambiguous) — falling back to the in-place rename whenever it cannot fully resolve the cause. That kind
 of work must happen in the driver, because it needs the live compiler the front-end never sees; it
 happens in the *emitter* specifically because the natural `after_analysis` hook is unreachable once
 the crate has errors (the resolver document explains why). Whichever of the two produced the
@@ -400,8 +400,12 @@ rustc-free `cause_only_signature`, which is `cause_signature` with the failing c
 failures differing only in which consumer they break group together. A group of one emits its own
 per-entry block unchanged; a group of several emits **one merged block** — a `[CGP-E001]` header
 listing every affected consumer trait (`consumer_header` over a synthesized `Resolved` whose
-`consumers` is the union), a caret at each failing entry, and the root-cause note and derive `help`
-from the first member, since all members share the cause and one representative chain suffices. A
+`consumers` is the union), a caret at each failing entry, and one root-cause note built by folding
+every member's paths into a single [dependency graph](dependency-graph-rendering.md). The graph does
+the merging: when one failing consumer transitively depends on another — `CanCalculateDensity` needs
+`CanCalculateArea`, so its chain *contains* the other's — the contained consumer is not a top-level
+root and the block leads with the subsuming chain; when two consumers are independent but share the
+cause, both chains render, converging at the shared node. A
 member rustc happened to surface provider-side (a `[CGP-E002]` header as a lone diagnostic) is worded
 uniformly as a consumer in the merged block, since a `check_components!` entry failing *is* the
 consumer trait failing. Everything not consumer-shaped — an untouched `rustc` error, a conflict, an
@@ -410,7 +414,11 @@ arrival position, so global ordering (a CGP block beside an unrelated `E0308`, s
 [`density_3`](../../tests/ui/acceptable/duplication/density_3.rs) (two components, one missing field),
 [`dependency_cascade`](../../tests/ui/acceptable/duplication/dependency_cascade.rs) (three chained
 providers), and [`missing_normal_bound`](../../tests/ui/acceptable/wiring/missing-wiring/missing_normal_bound.rs)
-(two consumers sharing an `App: Clone` bound) fixtures pin the merged blocks.
+(two consumers sharing an `App: Clone` bound) fixtures pin the merged blocks where one consumer's
+chain *subsumes* another's, so the deepest leads;
+[`parallel_consumers`](../../tests/ui/acceptable/duplication/parallel_consumers.rs) pins the
+complementary shape — two *independent* consumers reaching one cause by equal-depth chains that
+neither subsumes — where the representative is the first check entry deterministically.
 
 A declined consumer-method `E0599` gets one further cleanup before the fallback rewrite runs. rustc's
 method probe, meeting CGP's `self`-less provider methods, frames the failure as a call-syntax mistake

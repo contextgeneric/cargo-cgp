@@ -381,10 +381,10 @@ separate header brand; the inline code is the only marking.
     `DelegateComponent`), or on a non-table type with no concrete impl of the parent provider trait
     (a not-a-provider, via `owner_has_impl_of` against that trait), while dropping a
     higher-order-provider dead-end (a non-table owner that *does* have a concrete impl of the trait).
-  - [`label/`](../../crates/cargo-cgp-driver/src/resolve/label) renders the chain:
-    `predicate_label.rs` names each consumer/provider node off its trait `DefId` and the obligation's
-    arguments (`trait_generics`) through the pure label constructors in the rustc-free
-    `diagnosis::labels`, dropping the plumbing; `render_ty.rs` resugars a `DefId`-anchored
+  - [`label/`](../../crates/cargo-cgp-driver/src/resolve/label) turns each obligation into a
+    structured node: `predicate_label.rs` names each consumer/provider node off its trait `DefId` and
+    the obligation's arguments (`trait_generics`) as a rustc-free `DepNode` variant, dropping the
+    plumbing; `render_ty.rs` resugars a `DefId`-anchored
     `Cons`/`Nil` or `Either`/`Void` self type to `Product![…]`/`Sum![…]`, or — when every element is
     a `Field` — to `Struct! { … }`/`Enum! { … }`, rendering a call-site placeholder as `_` (recursing
     into a tuple so a nested placeholder prints `_` rather than the raw `!N` form).
@@ -411,20 +411,21 @@ separate header brand; the inline code is the only marking.
   `DiagInner`, falling back to the in-place text rewrite when resolution returns `None`. A final
   cross-diagnostic de-duplication suppresses a re-report of a failure already shown.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
-  — the rustc-free model and wording: `leaf.rs`/`resolved.rs` (the `Leaf`, `FieldIssue`, `Cause`, and
-  `Resolved` types), the `wording/` directory (the coded headers, the `root cause:`/`root causes:`
-  notes — the latter merging causes that share a dependency root via `cause_notes` →
-  `merge_dependency_forest` — the leads and their codes, the derive `help`s, and the de-duplication
-  `cause_signature`), `coalesce.rs` (`coalesce_underived_fields`, merging several underived fields on
-  one struct into a single cause), `labels.rs` (the pure tree-label constructors and
-  `elide_repeated_generics`), and
+  — the rustc-free model and wording: `leaf.rs`/`resolved.rs` (the `Leaf`, `FieldIssue`, `Cause`
+  holding a leaf and every path that reaches it, and `Resolved`), `node.rs`/`graph.rs` (the structured
+  `DepNode`/`ChainNode` and the `DependencyGraph` that merges and renders their paths — see
+  [Dependency-graph rendering](dependency-graph-rendering.md)), the `wording/` directory (the coded
+  headers, the `root cause:`/`root causes:` notes — `cause_notes` folding every cause's paths into one
+  graph — the leads and their codes, the derive `help`s, and the de-duplication `cause_signature`),
+  `coalesce.rs` (`coalesce_underived_fields`, merging several underived fields on one struct into a
+  single heading cause), and
   `plan.rs` (`DiagKind`, `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`),
   unit-tested in [`tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs),
   [`tests/coalesce.rs`](../../crates/cargo-cgp-error-processing/tests/coalesce.rs), and
-  [`tests/labels.rs`](../../crates/cargo-cgp-error-processing/tests/labels.rs).
+  [`tests/graph.rs`](../../crates/cargo-cgp-error-processing/tests/graph.rs).
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs) —
-  the `DependencyTree` type (with `from_chain`, folding a chain of labels into a spine) and its
-  `cargo tree`-style renderer over `termtree`, unit-tested in
+  the `DependencyTree` type and its `cargo tree`-style renderer over `termtree`, the target the graph
+  expands into, unit-tested in
   [`tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs).
 - [`crates/cargo-cgp-driver/src/config.rs`](../../crates/cargo-cgp-driver/src/config.rs) — the crate and
   trait-name anchors the resolution matches against.
@@ -454,7 +455,8 @@ Each **leaf class** has fixtures for its field, wiring, and redirect shapes:
   `height` fields, proving the actual-type query is `DefId`-anchored.
 - `basic_missing_wiring` — a `#[uses]` dependency on an unwired component.
 - `direct_missing_wiring` — a checked component wired nowhere (a single-node chain).
-- `parallel_missing_wiring` — two unwired components (two notes).
+- `parallel_missing_wiring` — two unwired components, both dependencies of one provider, so the two
+  missing-wiring causes share a root and render as one branching note with a `root causes:` heading.
 - `transitive_missing_wiring` — a component wired through an *aggregate provider* that the aggregate
   itself does not wire, the `[CGP-E110]` missing-dispatch-entry leaf on a non-context delegation table
   (`provider \`CommonProvider\` does not contain any delegate entry for \`BarProviderComponent\``), with
@@ -468,10 +470,17 @@ Each **leaf class** has fixtures for its field, wiring, and redirect shapes:
 - `unregistered_prefix_path`, `qualified_prefix_path` (a module-qualified path still folding to a clean
   `@…`), `multi_redirect_missing` (several hops), and `open_missing_type_key` — the namespace-redirect
   variants.
+- `redirect_distinct_keys` — two dependencies dispatched along the *same* `open` route for two
+  distinct unwired keys (`Left`, `Right`), each redirect the first on its branch. The two redirect
+  hops render the same label but are different lookups, so the graph keeps them distinct (keyed on the
+  dispatched value): the tree branches to each key's own redirect and missing-wiring leaf rather than
+  collapsing both under one shared redirect (see
+  [Dependency-graph rendering](dependency-graph-rendering.md)).
 
 Several fixtures pin the **harder mechanics**:
 
-- `parallel_branches` — two independent missing fields, two sub-errors.
+- `parallel_branches` — two independent missing fields under one provider, merged into one branching
+  note whose two branches end at the distinct field leaves.
 - `deep_nesting` — higher-order providers nested four deep, one long spine.
 - `dependency_cascade` — a chain of providers each depending on the next, its intermediate consumers
   each a `[CGP-E101]` node.
@@ -499,8 +508,13 @@ Several fixtures pin the **harder mechanics**:
   `PickFirst` impl); the second is the canonical core-CGP form, an empty
   `PipeHandlers<Product![]>` whose `Nil` fails `ComposeProviders`.
 - `foreign_getter_missing_wiring` — the money-transfer `UseBasicAuth` shape, where the walk descends a
-  request getter's blanket impl into its context-side dependency and the misleading second root cause
-  collapses into the one missing wiring, under a promoted `CGP-E001` header.
+  request getter's blanket impl into its context-side dependency; the provider's two dependencies both
+  reach the one missing `HasCredentialType` wiring, so the graph renders them converging on it (the
+  second `(*)`-deduped), under a promoted `CGP-E001` header.
+- `diamond_shared_capability` — `CanTop` depends on both `CanLeft` and `CanRight`, which both depend on
+  the shared `CanShared` (missing `name`). One root cause reached by two paths, rendered as a diamond:
+  the shared subtree drawn in full under the first branch and `(*)`-referenced under the second, both
+  branches visible (see [Dependency-graph rendering](dependency-graph-rendering.md)).
 - `higher_ranked_descent` — a recursive provider with a `Self: for<'a> CanEncodeItem<&'a Value>`
   dependency (the `SerializeIterator` shape) that used to feed an escaping bound variable into the
   solver and panic rustc, now resolved through the placeholder instantiation.
@@ -615,6 +629,9 @@ independently of the compiler:
 
 - [`cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs)
   — the coded headers, the `root cause:` notes, and the derive `help`s.
+- [`cargo-cgp-error-processing/tests/graph.rs`](../../crates/cargo-cgp-error-processing/tests/graph.rs)
+  — the dependency-graph build-and-render (spine, branch, diamond, super-root, within-path repeat) as
+  `insta` inline snapshots.
 - [`cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs) —
   the `cargo tree`-style renderer.
 

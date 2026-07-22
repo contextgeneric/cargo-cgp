@@ -1,7 +1,6 @@
 //! Descending the failing obligation to every terminal root-cause leaf.
 
-use cargo_cgp_error_processing::tree::DependencyTree;
-use cargo_cgp_error_processing::{Cause, Resolved, dependency_tree_leaf, elide_repeated_generics};
+use cargo_cgp_error_processing::{Cause, ChainNode, Resolved};
 use rustc_data_structures::fingerprint::Fingerprint;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
@@ -50,9 +49,11 @@ pub(crate) fn resolve_leaves<'tcx>(
     compute_leaves(tcx, cache, top, context)
 }
 
-/// Fold the root node's owned sub-causes into a [`Resolved`]: de-duplicate by leaf (one sub-error per
-/// distinct root cause, first occurrence kept), elide repeated generics on each chain, and render the
-/// tree. `top` is already region-erased and `context` is its self type.
+/// Fold the root node's owned sub-causes into a [`Resolved`]: group by leaf into one [`Cause`] per
+/// distinct root cause, each holding every path that reaches it (so a shared capability's diamond
+/// survives to the renderer). Repeated-generic elision and merging now happen in the rustc-free
+/// [dependency graph](cargo_cgp_error_processing::DependencyGraph) at render time, not here. `top`
+/// is already region-erased and `context` is its self type.
 fn compute_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
@@ -63,17 +64,14 @@ fn compute_leaves<'tcx>(
 
     let mut causes: Vec<Cause> = Vec::new();
     for sc in sub.causes {
-        // One sub-error per distinct leaf: a leaf wanted by several branches is one fix.
-        if causes.iter().any(|c| c.key() == sc.leaf.key()) {
-            continue;
-        }
-        // A dispatch chain's plumbing hops all restate the same program-sized trait parameters;
-        // elide a hop that exactly repeats its predecessor so the chain reads as its steps.
-        let labels = elide_repeated_generics(sc.labels);
-        if let Some(tree) = DependencyTree::from_chain(labels) {
+        // One cause per distinct leaf; a leaf reached by several paths keeps each path, so the
+        // graph can render the convergence rather than dropping every path but the first.
+        if let Some(existing) = causes.iter_mut().find(|cause| cause.key() == sc.leaf.key()) {
+            existing.paths.push(sc.path);
+        } else {
             causes.push(Cause {
                 leaf: sc.leaf,
-                tree,
+                paths: vec![sc.path],
             });
         }
     }
@@ -233,8 +231,8 @@ fn resolve_node<'tcx>(
         unmet
     };
 
-    // Non-terminal: merge the children's subtrees, prepending this node's label to each sub-chain.
-    let node_label = label_for(tcx, erased, context);
+    // Non-terminal: merge the children's subtrees, prepending this node's hop to each sub-path.
+    let node_hop = label_for(tcx, erased, context);
     let child_prefix: Vec<_> = prefix
         .iter()
         .copied()
@@ -257,9 +255,9 @@ fn resolve_node<'tcx>(
         incomplete |= sub.incomplete;
         reachable.extend(sub.reachable);
         for mut sc in sub.causes {
-            if let Some(label) = &node_label {
-                // Prepend this node's label so the stored sub-chain is rooted at this node.
-                sc.labels.insert(0, label.clone());
+            if let Some(hop) = &node_hop {
+                // Prepend this node's hop so the stored sub-path is rooted at this node.
+                sc.path.insert(0, ChainNode::Hop(hop.clone()));
             }
             causes.push(sc);
         }
@@ -308,13 +306,12 @@ fn terminal_result<'tcx>(
         return SubResult::empty(self_fp);
     }
     let leaf = classify_leaf(tcx, leaf_ref, context, parent, None);
-    let label = dependency_tree_leaf(&leaf);
     let mut reachable = FxHashSet::default();
     reachable.insert(self_fp);
     SubResult {
         causes: vec![SubCause {
+            path: vec![ChainNode::Leaf(leaf.clone())],
             leaf,
-            labels: vec![label],
         }],
         reachable,
         incomplete: false,
@@ -343,17 +340,16 @@ fn projection_result<'tcx>(
         return SubResult::empty(self_fp);
     }
     let leaf = classify_leaf(tcx, field_ref, context, parent, Some(expected));
-    let leaf_label = dependency_tree_leaf(&leaf);
-    let mut labels = Vec::new();
-    if let Some(node_label) = label_for(tcx, erased, context) {
-        labels.push(node_label);
+    let mut path = Vec::new();
+    if let Some(node_hop) = label_for(tcx, erased, context) {
+        path.push(ChainNode::Hop(node_hop));
     }
-    labels.push(leaf_label);
+    path.push(ChainNode::Leaf(leaf.clone()));
     let mut reachable = FxHashSet::default();
     reachable.insert(self_fp);
     reachable.insert(pred_fingerprint(tcx, leaf_poly));
     SubResult {
-        causes: vec![SubCause { leaf, labels }],
+        causes: vec![SubCause { leaf, path }],
         reachable,
         incomplete: false,
     }

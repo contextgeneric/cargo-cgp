@@ -316,21 +316,19 @@ user's own capability or getter trait — or a terminal ordinary bound — rende
   `cgp-base-types`, `Either`/`Void`/`Field` in `cgp-field`), so a same-named type from another crate is
   never resugared, and elements are rendered recursively so a nested list resugars in turn.
 
-Each rendered entry is stamped with its own [`CGP-E1xx` code](../error-code.md) — one per template
-(the templates are the pure constructors in the rustc-free `diagnosis::labels`), so
-`consumer trait impl` (`CGP-E101`), `provider trait impl` (`CGP-E102`), `redirect lookup` (`CGP-E104`),
-and the general `trait impl` (`CGP-E105`) each carry a distinct tag, and a terminal leaf takes a leaf
-code (`CGP-E106`–`CGP-E109`), except a pass-through ordinary bound, which stays uncoded. A chain hop
-whose quoted trait *exactly repeats its predecessor's* has its generic arguments elided
-(`elide_repeated_generics`): a dispatch pipeline's plumbing hops all restate the same program-sized
-`Code` type, so only the first spells it out and the rest read `Handler<…>`, while a hop whose
-parameters genuinely change (a nested data type descending level by level) never matches and keeps
-its full form
-([`deep_dispatch_chain`](../../tests/ui/acceptable/verbosity/deep_dispatch_chain.rs) pins the
-elision). The cleaned
-path folds into a [`DependencyTree`](error-processing.md) spine, rendered as `cargo tree`-style indented
-text by the [`termtree`](https://crates.io/crates/termtree) crate in the rustc-free
-`cargo-cgp-error-processing` crate, so the rendering is unit-tested on any toolchain.
+Each hop is a structured [`DepNode`](error-processing.md) variant — one per template, each stamped
+with its own [`CGP-E1xx` code](../error-code.md) when rendered — so `consumer trait impl`
+(`CGP-E101`), `provider trait impl` (`CGP-E102`), `redirect lookup` (`CGP-E104`), and the general
+`trait impl` (`CGP-E105`) each carry a distinct tag, and a terminal leaf takes a leaf code
+(`CGP-E106`–`CGP-E109`), except a pass-through ordinary bound, which stays uncoded. The walk emits
+one flat path of these nodes per way a cause is reached, and the rustc-free
+[dependency graph](dependency-graph-rendering.md) merges the paths and renders them as `cargo
+tree`-style text — including the generic elision of a hop whose quoted trait *exactly repeats its
+parent's* (a dispatch pipeline's plumbing hops all restate the same program-sized `Code` type, so
+only the first spells it out and the rest read `Handler<…>`,
+[`deep_dispatch_chain`](../../tests/ui/acceptable/verbosity/deep_dispatch_chain.rs) pinning it). All
+of the merge and render is in the rustc-free `cargo-cgp-error-processing` crate, unit-tested on any
+toolchain.
 
 ## Tests
 
@@ -351,8 +349,8 @@ the parent document's [Tests](typed-root-cause-resolution.md#tests) section.
   — `reportable.rs` (root cause versus routing dead-end), `leaf.rs` (the rustc-free `Leaf`), and
   `field.rs` (the struct and `Deref`-chain inspection).
 - [`crates/cargo-cgp-driver/src/resolve/label/`](../../crates/cargo-cgp-driver/src/resolve/label) —
-  `predicate_label.rs` (each hop's label, through the pure constructors in the rustc-free
-  `diagnosis::labels`) and `render_ty.rs` (the type-level spine resugaring).
+  `predicate_label.rs` (each hop as a structured `DepNode`, read off the obligation) and
+  `render_ty.rs` (the type-level spine resugaring).
 
 The per-file map of the whole resolver lives in the parent document's
 [Source](typed-root-cause-resolution.md#source) section.

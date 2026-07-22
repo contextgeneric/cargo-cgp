@@ -87,16 +87,16 @@ omits the prefix for brevity). Paths render as a bare `@app.GreeterComponent` �
 form is reserved for the resugaring fallback — and module qualifiers are stripped throughout, so
 `contexts::app::MockApp` reads as `MockApp`. The chain is indented two spaces under its heading.
 
-When a failure has **several root causes whose chains share a common ancestor** — the usual shape,
-since every cause descends from the one failing obligation the walk seeded — the per-cause notes would
-each restate the whole shared prefix, which for a program-sized context type is enormous. So causes
-sharing a dependency root are fused into **one** note: a `root causes:` heading lists each leaf up
-front (each with its own code, so a reader sees every cause at a glance), and a single **merged tree**
-follows, with `merge_dependency_forest` showing every shared ancestor once and branching where the
-chains diverge, each branch ending at its own leaf. The merge keys sibling nodes by their rendered
-label, so it fuses exactly the nodes the chains reach by the same path and no more; causes that share
-no root stay separate notes (nothing is forced under an ancestor the chains do not actually share). A
-lone cause keeps its singular `root cause:` note.
+A failure with **several root causes** — the usual shape, since every cause descends from the one
+failing obligation the walk seeded — is always rendered as a **single** note, not one per cause: every
+cause's paths are folded into one [dependency graph](dependency-graph-rendering.md), which merges the
+nodes they share by structural identity (a node reached again is `(*)`-referenced) and branches where
+they diverge, each branch ending at its own leaf. The graph fuses exactly the shared dependencies and
+no more, so causes that share a common ancestor collapse the enormous restated prefix a program-sized
+context type would otherwise repeat, while genuinely independent causes render as their own root trees
+stacked in the one note. The heading lists the distinct leaves: a singular `root cause:` lead when they
+all bottom out on the same leaf, or a `root causes:` list — each with its own code, so a reader sees
+every cause at a glance — when they differ.
 
 The `root cause:` lead is worded by *why* the leaf is unmet, and there are six leaf shapes:
 
@@ -196,8 +196,8 @@ The wording is decided rustc-free and only *applied* by the emitter. The emitter
 own rustc code to a rustc-free [`DiagKind`](../../crates/cargo-cgp-error-processing/src/diagnosis/plan.rs)
 (`E0271` a field mismatch, `E0599` a use-site method, everything else a plain check) and hands that,
 the main-message text, the `Resolved`, and the name map to `plan_resolved`, which returns a
-`DiagnosisPlan`: the rewritten header (or `None` to keep rustc's), the derive `help`s, and one note per
-cause. One mapping is by *anchor* rather than by code: a resolution the call-site anchor produced
+`DiagnosisPlan`: the rewritten header (or `None` to keep rustc's), the derive `help`s, and a single
+`root cause:` note folding every cause's paths into one [dependency graph](dependency-graph-rendering.md). One mapping is by *anchor* rather than by code: a resolution the call-site anchor produced
 plans as a use-site failure whatever its rustc code (a genuine `E0271` field mismatch excepted), so
 its header names the consumer trait the call needs rather than whichever provider bound rustc's
 headline stopped on — at a call that is dispatch plumbing (`PipeHandlers`, `ComposeHandlers`) the
@@ -222,10 +222,10 @@ traits.)
 collapses the span to the primary caret (the original labels restate the replaced message), and with
 `None` it leaves the header, labels, and caret alone. Either way it replaces the children with the
 plan's `help`s (one per distinct type that must derive `#[derive(HasField)]`, or the `Deref` target; a
-field-type mismatch contributes none) and the plan's notes — one per group of root causes that share
-a dependency root, each opening with its `root cause:` lead (or `root causes:` list, when the group
-merged several) over `this is required through the dependency chain:` and the tree beneath (the lead
-omitted when the kept header or the `CGP-E003` header already states the bound). rustc's structured
+field-type mismatch contributes none) and the plan's single note — opening with its `root cause:` lead
+(or `root causes:` list, when the causes bottom out on different leaves) over `this is required through
+the dependency chain:` and the graph beneath (the lead omitted when the kept header or the `CGP-E003`
+header already states the bound). rustc's structured
 suggestions are discarded with its notes, the diagnostic's Rust code is never touched, and a provider
 with two absent dependencies sharing its chain yields one note over a merged tree that branches to
 both. The JSON emitter regenerates every rendered and
@@ -241,19 +241,19 @@ The wording is unit-tested rustc-free, over hand-built inputs:
 drives the coded headers, the `root cause:` notes, and the derive `help`s;
 [`tests/coalesce.rs`](../../crates/cargo-cgp-error-processing/tests/coalesce.rs) the
 underived-field coalescing and its boundaries;
-[`tests/labels.rs`](../../crates/cargo-cgp-error-processing/tests/labels.rs) the label templates
-and the repeated-generics elision; and
+[`tests/graph.rs`](../../crates/cargo-cgp-error-processing/tests/graph.rs) the graph build-and-render
+(spine, branch, diamond, super-root, within-path repeat, elision) as `insta` inline snapshots; and
 [`tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs) the `cargo tree`-style
-renderer and the forest merge. The end-to-end fixture catalog lives in the parent document's
+renderer. The end-to-end fixture catalog lives in the parent document's
 [Tests](typed-root-cause-resolution.md#tests) section.
 
 ## Source
 
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis)
-  — the rustc-free model (`leaf.rs`, `resolved.rs`), the wording (`wording/`), the coalescing
-  (`coalesce.rs`), the label constructors and elision (`labels.rs`), and the plan (`plan.rs`).
+  — the rustc-free model (`leaf.rs`, `resolved.rs`), the structured nodes and graph (`node.rs`,
+  `graph.rs`), the wording (`wording/`), the coalescing (`coalesce.rs`), and the plan (`plan.rs`).
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs)
-  — the `DependencyTree`, its renderer, and `merge_dependency_forest`.
+  — the `DependencyTree` and its renderer, the target the graph expands into.
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the
   `try_resolve` seam and the `transform_resolved` mutation that applies the plan.
 

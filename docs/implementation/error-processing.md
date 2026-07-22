@@ -37,20 +37,23 @@ driver, is what keeps them unit-testable.
   (`coalesce_underived_fields`) and composes the rewritten header, the
   derive `help`s, and the per-cause `root cause:` notes into a `DiagnosisPlan`, which the emitter only
   maps onto rustc's `DiagInner`; keeping every piece rustc-free is what makes the whole
-  diagnosis-to-text layer unit-testable without a `TyCtxt`. The same module holds the pure
-  dependency-tree label constructors and the repeated-generics elision (`labels.rs`), so every label
-  template the driver's tree builder uses lives here. It is documented in
-  [Typed root-cause resolution](typed-root-cause-resolution.md). The module also holds the
+  diagnosis-to-text layer unit-testable without a `TyCtxt`. The same module holds the structured
+  dependency-graph nodes and their rendering (`node.rs`) and the graph that merges and renders them
+  (`graph.rs`), so every node template and the whole merge/render live here. It is documented in
+  [Typed root-cause resolution](typed-root-cause-resolution.md) and
+  [Dependency-graph rendering](dependency-graph-rendering.md). The module also holds the
   duplicate-key conflict wording (`wiring.rs`): the `WiringConflict` model and `plan_wiring_conflict`,
   which words the `[CGP-E004]`–`[CGP-E008]` headers (one per conflict shape) the driver's `resolve::conflict` classifier feeds it (see
   [The driver](driver.md#reshaping-a-duplicate-key-conflict)).
 - **The dependency-tree renderer**
-  ([`tree`](../../crates/cargo-cgp-error-processing/src/tree.rs)) is the `DependencyTree` type, its
-  `cargo tree`-style renderer over the tiny `termtree` crate, and `merge_dependency_forest` — the
-  merge that fuses several root-cause chains sharing a common ancestor into one branching tree, so a
-  multi-cause failure shows the shared prefix once. The driver's resolver builds the per-cause chains,
-  and the diagnosis wording merges and renders them. It is documented in
-  [Typed root-cause resolution](typed-root-cause-resolution.md).
+  ([`tree`](../../crates/cargo-cgp-error-processing/src/tree.rs)) is the `DependencyTree` type and its
+  `cargo tree`-style renderer over the tiny `termtree` crate — the render target the
+  [dependency graph](dependency-graph-rendering.md) expands into. The graph itself (in `diagnosis`)
+  does the merging: the driver's resolver hands over one path of structured nodes per way a cause is
+  reached, and the graph fuses the nodes several paths share into a DAG with `(*)`-marked shared
+  subtrees. It is documented in
+  [Typed root-cause resolution](typed-root-cause-resolution.md) and
+  [Dependency-graph rendering](dependency-graph-rendering.md).
 - **The de-duplication ledger** ([`dedup`](../../crates/cargo-cgp-error-processing/src/dedup.rs)) is
   the `DedupLedger` the emitter records each transformed diagnostic in, so the re-reports one
   lazy-wiring mistake produces at many sites are suppressed. The key scheme — the recovered cause,
@@ -278,22 +281,27 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   bound (header dropped, lead-less note), a provider header via the text rewrite, and the pluralized
   consumer header.
 - [`crates/cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs) —
-  the dependency-tree renderer and `DependencyTree::from_chain` (see
-  [Typed root-cause resolution](typed-root-cause-resolution.md#tests)).
+  the `termtree`-backed `render_dependency_tree` (a spine, a branch); building and merging trees is
+  the graph's job, tested in `graph.rs`.
+- [`crates/cargo-cgp-error-processing/tests/graph.rs`](../../crates/cargo-cgp-error-processing/tests/graph.rs) —
+  the `DependencyGraph` build-and-render, as `insta` inline snapshots: a spine, a shared-prefix
+  branch, a subsuming cascade, converging leaves, a diamond, a super-root, a within-path repeat, and
+  the generic elision (see
+  [Dependency-graph rendering](dependency-graph-rendering.md)).
 - [`crates/cargo-cgp-error-processing/tests/wiring.rs`](../../crates/cargo-cgp-error-processing/tests/wiring.rs) —
   `plan_wiring_conflict` and `wiring_conflict_help` over hand-built `WiringConflict` values: the
   duplicate, overlap (component and path forms), multiple-namespaces, redirect (header plus its help),
   and same-/different-path duplicate-redirect headers.
 - [`crates/cargo-cgp-error-processing/tests/coalesce.rs`](../../crates/cargo-cgp-error-processing/tests/coalesce.rs) —
-  `coalesce_underived_fields` over hand-built causes: the merged group, its lead and single derive
-  help, and the boundaries (a lone underived field, genuinely missing fields, different owners, a
-  group beside a missing field).
-- [`crates/cargo-cgp-error-processing/tests/labels.rs`](../../crates/cargo-cgp-error-processing/tests/labels.rs) —
-  the pure label constructors and their codes, `elide_repeated_generics` (a repeated hop elided, a
-  changing hop kept), and the text signals.
+  `coalesce_underived_fields` over hand-built causes: the merged group (keeping every field's path),
+  its lead and single derive help, and the boundaries (a lone underived field, genuinely missing
+  fields, different owners, a group beside a missing field).
 - [`crates/cargo-cgp-error-processing/tests/dedup.rs`](../../crates/cargo-cgp-error-processing/tests/dedup.rs) —
   the `DedupLedger` key scheme: a re-reported cause suppressed, distinct causes kept, the text key,
   the coded-header key collapsing a declined fallback, and a kept rustc header never keying.
+- [`crates/cargo-cgp-error-processing/tests/signals.rs`](../../crates/cargo-cgp-error-processing/tests/signals.rs) —
+  the text signals: the wording each matches and the near-miss it must not (the two `E0599` shapes,
+  the method-probe artifacts, the orphan marker-plus-phrase pair, the `?`-cascade phrasing).
 - The [UI snapshot suite](testing.md) exercises the transforms over every fixture's real diagnostics:
   each `.cgp.stderr` is what the driver rendered after applying them.
 
@@ -316,21 +324,22 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   [The driver](driver.md#naming-the-traits-behind-a-component-marker).
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis) —
   the rustc-free root-cause model and its wording: `leaf.rs` (`Leaf`/`FieldIssue`), `resolved.rs`
-  (`Cause`/`Resolved`), the `wording/` directory — `header.rs` (`consumer_header`,
+  (`Cause`, holding a leaf and every path that reaches it, and `Resolved`), `node.rs` (`DepNode` /
+  `ChainNode`, the structured chain nodes and their rendering) and `graph.rs` (`DependencyGraph`,
+  the DAG build-and-render), the `wording/` directory — `header.rs` (`consumer_header`,
   `field_mismatch_header`), `lead.rs` (`root_cause_lead` and the leaf codes), `note.rs`
-  (`cause_notes`, which groups causes sharing a dependency root and words each group as a single
-  `cause_note` or a merged `root causes:` note), `help.rs` (`derive_help_messages`), and
-  `signature.rs` (`cause_signature`) — `coalesce.rs` (`coalesce_underived_fields`), `labels.rs` (the
-  pure tree-label constructors and `elide_repeated_generics`), `plan.rs` (`DiagKind`,
+  (`cause_notes`, which folds every cause's paths into one graph and words the heading over it),
+  `help.rs` (`derive_help_messages`), and `signature.rs` (`cause_signature`) — `coalesce.rs`
+  (`coalesce_underived_fields`), `plan.rs` (`DiagKind`,
   `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`), and `wiring.rs`
   (`WiringConflict`/`WiringKey`, `plan_wiring_conflict` for the `[CGP-E004]`–`[CGP-E008]`
   duplicate-key headers, and `wiring_conflict_help` for the redirect fix). See
   [Typed root-cause resolution](typed-root-cause-resolution.md) and
   [The driver](driver.md#reshaping-a-duplicate-key-conflict).
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs) —
-  the `DependencyTree` type (with `from_chain`), its `cargo tree`-style renderer, and
-  `merge_dependency_forest` (fusing root-cause chains that share a common ancestor into one
-  branching tree).
+  the `DependencyTree` type and its `cargo tree`-style renderer, the target the
+  [dependency graph](dependency-graph-rendering.md) expands into (the merging lives in the graph, not
+  here).
 - [`crates/cargo-cgp-error-processing/src/dedup.rs`](../../crates/cargo-cgp-error-processing/src/dedup.rs) —
   the `DedupLedger` and its span-independent key scheme.
 - [`crates/cargo-cgp-error-processing/src/signals.rs`](../../crates/cargo-cgp-error-processing/src/signals.rs) —

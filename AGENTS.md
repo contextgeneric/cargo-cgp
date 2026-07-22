@@ -291,20 +291,21 @@ splitting utilities). `diagnosis/` is the rustc-free root-cause model and its wo
 in), `wording/` (the pure `Resolved`-to-text builders — headers, root-cause leads and their codes,
 notes, derive helps, the de-duplication `cause_signature`, and the consumer-independent
 `cause_only_signature` the emitter coalesces different consumers on), `coalesce.rs`
-(`coalesce_underived_fields`, merging several underived fields on one struct into one cause),
-`labels.rs` (the tree-label templates and the repeated-generics elision), `plan.rs`
+(`coalesce_underived_fields`, merging several underived fields on one struct into one heading cause),
+`node.rs`/`graph.rs` (the structured `DepNode`/`ChainNode` chain nodes and the `DependencyGraph` that
+merges every cause's paths into a DAG — shared nodes fused, a reuse `(*)`-referenced — and renders it,
+see [Dependency-graph rendering](docs/implementation/dependency-graph-rendering.md)), `plan.rs`
 (`plan_resolved`, which words
 a `Resolved` into the header, help, and note strings the emitter emits, and holds the
 `categorized_header` classification), `wiring.rs` (the `WiringConflict` model and
-`plan_wiring_conflict`, which words a duplicate-key conflict into its `[CGP-E004]`–`[CGP-E008]` header, one code per conflict shape), and `orphan.rs` (the `OrphanConflict` model and `plan_orphan_conflict`/`orphan_conflict_help`, which word an orphan-rule namespace registration into its `[CGP-E011]` header and ownership fix). `tree.rs` is the `DependencyTree` type, its `cargo tree`-style
-renderer (over the `termtree` crate), and `merge_dependency_forest` (fusing root-cause chains that
-share a common ancestor into one branching tree); `dedup.rs` is the `DedupLedger` behind the
+`plan_wiring_conflict`, which words a duplicate-key conflict into its `[CGP-E004]`–`[CGP-E008]` header, one code per conflict shape), and `orphan.rs` (the `OrphanConflict` model and `plan_orphan_conflict`/`orphan_conflict_help`, which word an orphan-rule namespace registration into its `[CGP-E011]` header and ownership fix). `tree.rs` is the `DependencyTree` type and its `cargo tree`-style
+renderer (over the `termtree` crate), the target the graph expands into; `dedup.rs` is the `DedupLedger` behind the
 emitter's cross-diagnostic de-duplication; `signals.rs` holds the stable rustc phrasings the
 emitter's candidate checks and cleanups key on; and `code.rs` holds the `CGP-E` error-code constants stamped on
 classified main messages (catalogued in docs/error-code.md). Its tests in `tests/` drive the
-post-processors, the rewrite, the diagnosis plan and wording, the coalescing, the labels and text
-signals, the de-duplication ledger, and the tree renderer over hand-built
-inputs, so they run on any toolchain.
+post-processors, the rewrite, the diagnosis plan and wording, the coalescing, the text signals, the
+de-duplication ledger, the tree renderer, and the dependency-graph build-and-render (`insta` inline
+snapshots in `tests/graph.rs`) over hand-built inputs, so they run on any toolchain.
 
 ## Commands
 

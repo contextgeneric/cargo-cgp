@@ -5,16 +5,23 @@
 //! lets the whole diagnosis-to-text layer be unit-tested without a `TyCtxt`.
 
 use crate::diagnosis::leaf::Leaf;
-use crate::tree::DependencyTree;
+use crate::diagnosis::node::ChainNode;
 
-/// One recovered root cause: the leaf the chain bottoms out on and the transitive dependency
-/// chain that leads to it, rendered as a single spine.
+/// One recovered root cause: the leaf it names for the note heading, and every root→leaf path that
+/// reaches it. A leaf reached one way has a single path — the common case; a leaf reached through a
+/// shared capability several providers depend on has several, which the
+/// [dependency graph](crate::DependencyGraph) merges when it renders. Keeping several paths on one
+/// cause preserves the *one cause per distinct leaf* invariant the de-duplication signatures, the
+/// consumer coalescing, and the derive `help`s all rely on. For a coalesced underived-field cause the
+/// heading `leaf` is the merged [`Leaf::UnderivedFields`], while the paths still terminate at the
+/// individual per-field leaves so the graph branches to each.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cause {
-    /// What the chain bottoms out on.
+    /// The leaf the note heading names (its lead, code, and derive `help` come from this).
     pub leaf: Leaf,
-    /// The dependency chain from the checked component down to the leaf.
-    pub tree: DependencyTree,
+    /// Every root→leaf path that reaches this cause, each a full chain of nodes (interior hops then
+    /// the terminal leaf node).
+    pub paths: Vec<Vec<ChainNode>>,
 }
 
 impl Cause {

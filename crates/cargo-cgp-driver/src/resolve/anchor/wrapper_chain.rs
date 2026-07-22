@@ -1,7 +1,6 @@
 //! The foreign-wrapper anchor: descending a `where`-clause chain to a CGP consumer.
 
-use cargo_cgp_error_processing::tree::DependencyTree;
-use cargo_cgp_error_processing::{Cause, Resolved, trait_impl_label};
+use cargo_cgp_error_processing::{Cause, ChainNode, DepNode, Resolved};
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{
@@ -54,7 +53,10 @@ pub fn resolve_wrapper_chain(
         // The direct-supertrait, local-`Self` case is `resolve_impl_site`'s (tried first); here we
         // handle the rest, where the CGP consumer is reached only through `where`-clause hops.
         let wrapper = trait_ref.print_only_trait_path().to_string();
-        let top_node = trait_impl_label(&wrapper, &self_ty.to_string());
+        let top_node = DepNode::Trait {
+            trait_ref: wrapper.clone(),
+            self_ty: self_ty.to_string(),
+        };
 
         // Descend each unmet supertrait of the impl's own trait, collecting a cause per CGP handoff
         // reached beneath it.
@@ -74,10 +76,11 @@ pub fn resolve_wrapper_chain(
         }
 
         if !causes.is_empty() {
-            // Head every cause's tree with the impl's own trait — the code the programmer wrote.
+            // Head every cause's paths with the impl's own trait — the code the programmer wrote.
             for cause in &mut causes {
-                let tree = std::mem::replace(&mut cause.tree, DependencyTree::leaf(String::new()));
-                cause.tree = DependencyTree::node(top_node.clone(), vec![tree]);
+                for path in &mut cause.paths {
+                    path.insert(0, ChainNode::Hop(top_node.clone()));
+                }
             }
             return Some(Resolved {
                 context: self_ty.to_string(),
@@ -120,7 +123,7 @@ fn collect_wrapper_chain_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
     obligation: ty::PolyTraitPredicate<'tcx>,
-    chain: &[String],
+    chain: &[DepNode],
     depth: u32,
     out: &mut Vec<Cause>,
 ) {
@@ -132,13 +135,20 @@ fn collect_wrapper_chain_causes<'tcx>(
     // prepend the chain of ordinary hops that led here.
     if let Some(causes) = consumer_handoff_causes(tcx, cache, obligation) {
         for cause in causes {
-            if out.iter().any(|c| c.key() == cause.key()) {
-                continue;
+            // Prepend the ordinary hops that led here to each path, grouping by leaf so alternative
+            // paths to one cause survive.
+            let wrapped: Vec<Vec<ChainNode>> = cause
+                .paths
+                .into_iter()
+                .map(|path| prepend_chain(chain, path))
+                .collect();
+            match out.iter_mut().find(|c| c.key() == cause.leaf.key()) {
+                Some(existing) => existing.paths.extend(wrapped),
+                None => out.push(Cause {
+                    leaf: cause.leaf,
+                    paths: wrapped,
+                }),
             }
-            out.push(Cause {
-                leaf: cause.leaf,
-                tree: wrap_with_chain(chain, cause.tree),
-            });
         }
         return;
     }
@@ -149,11 +159,12 @@ fn collect_wrapper_chain_causes<'tcx>(
         return;
     };
     let trait_ref = obligation.skip_binder().trait_ref;
-    let node = trait_impl_label(
-        &trait_ref.print_only_trait_path().to_string(),
-        &tcx.erase_and_anonymize_regions(trait_ref.self_ty())
+    let node = DepNode::Trait {
+        trait_ref: trait_ref.print_only_trait_path().to_string(),
+        self_ty: tcx
+            .erase_and_anonymize_regions(trait_ref.self_ty())
             .to_string(),
-    );
+    };
     let mut next_chain = chain.to_vec();
     next_chain.push(node);
     for child in children {
@@ -267,12 +278,11 @@ fn wrapper_chain_children<'tcx>(
     None
 }
 
-/// Nest a top-to-bottom list of tree-node labels above `inner`, so `chain[0]` is the outermost node
-/// and `inner` the innermost child.
-fn wrap_with_chain(chain: &[String], inner: DependencyTree) -> DependencyTree {
-    let mut tree = inner;
-    for label in chain.iter().rev() {
-        tree = DependencyTree::node(label.clone(), vec![tree]);
+/// Prepend a top-to-bottom list of ordinary-hop nodes to `path`, so `chain[0]` becomes the outermost
+/// node above the recovered CGP chain.
+fn prepend_chain(chain: &[DepNode], mut path: Vec<ChainNode>) -> Vec<ChainNode> {
+    for hop in chain.iter().rev() {
+        path.insert(0, ChainNode::Hop(hop.clone()));
     }
-    tree
+    path
 }

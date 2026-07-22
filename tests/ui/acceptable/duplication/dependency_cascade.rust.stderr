@@ -1,343 +1,343 @@
 error[E0277]: the trait bound `ProvideBar: Bar<App>` is not satisfied
-  --> src/main.rs:84:9
+  --> src/main.rs:85:9
    |
-84 |         BazComponent,
+85 |         BazComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `Bar<App>` is not implemented for `ProvideBar`
-  --> src/main.rs:50:16
+  --> src/main.rs:51:16
    |
-50 | #[cgp_impl(new ProvideBar)]
+51 | #[cgp_impl(new ProvideBar)]
    |                ^^^^^^^^^^
 help: the trait `Bar<__Context__>` is conditionally implemented for `ProvideBar`
-  --> src/main.rs:52:1
+  --> src/main.rs:53:1
    |
-51 |   #[uses(CanFoo)]
+52 |   #[uses(CanFoo)]
    |          ------
    |          |
    |          unsatisfied requirement introduced here: `App: CanFoo`
    |          unsatisfied requirement introduced here: `App: CanFoo`
-52 | / impl Bar {
-53 | |     fn bar(&self) {
-54 | |         self.foo();
-55 | |     }
-56 | | }
+53 | / impl Bar {
+54 | |     fn bar(&self) {
+55 | |         self.foo();
+56 | |     }
+57 | | }
    | |_^
 note: required for `App` to implement `Bar<App>`
-  --> src/main.rs:30:1
+  --> src/main.rs:31:1
    |
-30 | #[cgp_component(Bar)]
+31 | #[cgp_component(Bar)]
    | ^^^^^^^^^^^^^^^^^^^^^
 note: required for `App` to implement `CanBar`
-  --> src/main.rs:30:1
+  --> src/main.rs:31:1
    |
-30 | #[cgp_component(Bar)]
+31 | #[cgp_component(Bar)]
    | ^^^^^^^^^^^^^^^^^^^^^
-31 | pub trait CanBar {
+32 | pub trait CanBar {
    |           ^^^^^^
 note: required for `ProvideBaz` to implement `IsProviderFor<BazComponent, App>`
-  --> src/main.rs:58:1
+  --> src/main.rs:59:1
    |
-58 | #[cgp_impl(new ProvideBaz)]
+59 | #[cgp_impl(new ProvideBaz)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-59 | #[uses(CanBar)]
+60 | #[uses(CanBar)]
    |        ------ unsatisfied trait bound introduced here
    = note: required for `App` to implement `CanUseComponent<BazComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:82:1
+  --> src/main.rs:83:1
    |
-82 | / check_components! {
-83 | |     App {
-84 | |         BazComponent,
-85 | |         BarComponent,
+83 | / check_components! {
+84 | |     App {
+85 | |         BazComponent,
+86 | |         BarComponent,
 ...  |
-88 | | }
+89 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `ProvideFoo: Foo<App>` is not satisfied
-  --> src/main.rs:84:9
+  --> src/main.rs:85:9
    |
-84 |         BazComponent,
+85 |         BazComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `Foo<App>` is not implemented for `ProvideFoo`
-  --> src/main.rs:40:16
+  --> src/main.rs:41:16
    |
-40 | #[cgp_impl(new ProvideFoo)]
+41 | #[cgp_impl(new ProvideFoo)]
    |                ^^^^^^^^^^
 help: the trait `Foo<__Context__>` is conditionally implemented for `ProvideFoo`
-  --> src/main.rs:41:1
+  --> src/main.rs:42:1
    |
-41 | / impl Foo
-42 | | where
-43 | |     Self: HasName,
+42 | / impl Foo
+43 | | where
+44 | |     Self: HasName,
    | |___________-------^
    |             |
    |             unsatisfied requirement introduced here: `App: HasName`
 note: required for `App` to implement `Foo<App>`
-  --> src/main.rs:25:1
+  --> src/main.rs:26:1
    |
-25 | #[cgp_component(Foo)]
+26 | #[cgp_component(Foo)]
    | ^^^^^^^^^^^^^^^^^^^^^
 note: required for `App` to implement `CanFoo`
-  --> src/main.rs:25:1
+  --> src/main.rs:26:1
    |
-25 | #[cgp_component(Foo)]
+26 | #[cgp_component(Foo)]
    | ^^^^^^^^^^^^^^^^^^^^^
-26 | pub trait CanFoo {
+27 | pub trait CanFoo {
    |           ^^^^^^
 note: required for `ProvideBar` to implement `IsProviderFor<BarComponent, App>`
-  --> src/main.rs:50:1
+  --> src/main.rs:51:1
    |
-50 | #[cgp_impl(new ProvideBar)]
+51 | #[cgp_impl(new ProvideBar)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-51 | #[uses(CanFoo)]
+52 | #[uses(CanFoo)]
    |        ------ unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
    = note: required for `App` to implement `IsProviderFor<BarComponent, App>`
 note: required for `App` to implement `Bar<App>`
-  --> src/main.rs:30:1
+  --> src/main.rs:31:1
    |
-30 | #[cgp_component(Bar)]
+31 | #[cgp_component(Bar)]
    | ^^^^^^^^^^^^^^^^^^^^^
 note: required for `App` to implement `CanBar`
-  --> src/main.rs:30:1
+  --> src/main.rs:31:1
    |
-30 | #[cgp_component(Bar)]
+31 | #[cgp_component(Bar)]
    | ^^^^^^^^^^^^^^^^^^^^^
-31 | pub trait CanBar {
+32 | pub trait CanBar {
    |           ^^^^^^
    = note: 1 redundant requirement hidden
    = note: required for `ProvideBaz` to implement `IsProviderFor<BazComponent, App>`
    = note: required for `App` to implement `CanUseComponent<BazComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:82:1
+  --> src/main.rs:83:1
    |
-82 | / check_components! {
-83 | |     App {
-84 | |         BazComponent,
-85 | |         BarComponent,
+83 | / check_components! {
+84 | |     App {
+85 | |         BazComponent,
+86 | |         BarComponent,
 ...  |
-88 | | }
+89 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: CanUseComponent<BazComponent>` is not satisfied
-  --> src/main.rs:84:9
+  --> src/main.rs:85:9
    |
-84 |         BazComponent,
+85 |         BazComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:68:9
+  --> src/main.rs:69:9
    |
-68 |     pub age: u8,
+69 |     pub age: u8,
    |         ^^^
 note: required for `App` to implement `HasName`
-  --> src/main.rs:20:1
+  --> src/main.rs:21:1
    |
-20 | #[cgp_auto_getter]
+21 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-21 | pub trait HasName {
+22 | pub trait HasName {
    |           ^^^^^^^
 note: required for `ProvideFoo` to implement `IsProviderFor<FooComponent, App>`
-  --> src/main.rs:40:1
+  --> src/main.rs:41:1
    |
-40 | #[cgp_impl(new ProvideFoo)]
+41 | #[cgp_impl(new ProvideFoo)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-43 |     Self: HasName,
+44 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
    = note: required for `App` to implement `IsProviderFor<FooComponent, App>`
 note: required for `App` to implement `Foo<App>`
-  --> src/main.rs:25:1
+  --> src/main.rs:26:1
    |
-25 | #[cgp_component(Foo)]
+26 | #[cgp_component(Foo)]
    | ^^^^^^^^^^^^^^^^^^^^^
 note: required for `App` to implement `CanFoo`
-  --> src/main.rs:25:1
+  --> src/main.rs:26:1
    |
-25 | #[cgp_component(Foo)]
+26 | #[cgp_component(Foo)]
    | ^^^^^^^^^^^^^^^^^^^^^
-26 | pub trait CanFoo {
+27 | pub trait CanFoo {
    |           ^^^^^^
    = note: 2 redundant requirements hidden
    = note: required for `App` to implement `IsProviderFor<BarComponent, App>`
 note: required for `App` to implement `Bar<App>`
-  --> src/main.rs:30:1
+  --> src/main.rs:31:1
    |
-30 | #[cgp_component(Bar)]
+31 | #[cgp_component(Bar)]
    | ^^^^^^^^^^^^^^^^^^^^^
 note: required for `App` to implement `CanBar`
-  --> src/main.rs:30:1
+  --> src/main.rs:31:1
    |
-30 | #[cgp_component(Bar)]
+31 | #[cgp_component(Bar)]
    | ^^^^^^^^^^^^^^^^^^^^^
-31 | pub trait CanBar {
+32 | pub trait CanBar {
    |           ^^^^^^
    = note: 1 redundant requirement hidden
    = note: required for `ProvideBaz` to implement `IsProviderFor<BazComponent, App>`
    = note: required for `App` to implement `CanUseComponent<BazComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:82:1
+  --> src/main.rs:83:1
    |
-82 | / check_components! {
-83 | |     App {
-84 | |         BazComponent,
-85 | |         BarComponent,
+83 | / check_components! {
+84 | |     App {
+85 | |         BazComponent,
+86 | |         BarComponent,
 ...  |
-88 | | }
+89 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `ProvideFoo: Foo<App>` is not satisfied
-  --> src/main.rs:85:9
+  --> src/main.rs:86:9
    |
-85 |         BarComponent,
+86 |         BarComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `Foo<App>` is not implemented for `ProvideFoo`
-  --> src/main.rs:40:16
+  --> src/main.rs:41:16
    |
-40 | #[cgp_impl(new ProvideFoo)]
+41 | #[cgp_impl(new ProvideFoo)]
    |                ^^^^^^^^^^
 help: the trait `Foo<__Context__>` is conditionally implemented for `ProvideFoo`
-  --> src/main.rs:41:1
+  --> src/main.rs:42:1
    |
-41 | / impl Foo
-42 | | where
-43 | |     Self: HasName,
+42 | / impl Foo
+43 | | where
+44 | |     Self: HasName,
    | |___________-------^
    |             |
    |             unsatisfied requirement introduced here: `App: HasName`
 note: required for `App` to implement `Foo<App>`
-  --> src/main.rs:25:1
+  --> src/main.rs:26:1
    |
-25 | #[cgp_component(Foo)]
+26 | #[cgp_component(Foo)]
    | ^^^^^^^^^^^^^^^^^^^^^
 note: required for `App` to implement `CanFoo`
-  --> src/main.rs:25:1
+  --> src/main.rs:26:1
    |
-25 | #[cgp_component(Foo)]
+26 | #[cgp_component(Foo)]
    | ^^^^^^^^^^^^^^^^^^^^^
-26 | pub trait CanFoo {
+27 | pub trait CanFoo {
    |           ^^^^^^
 note: required for `ProvideBar` to implement `IsProviderFor<BarComponent, App>`
-  --> src/main.rs:50:1
+  --> src/main.rs:51:1
    |
-50 | #[cgp_impl(new ProvideBar)]
+51 | #[cgp_impl(new ProvideBar)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-51 | #[uses(CanFoo)]
+52 | #[uses(CanFoo)]
    |        ------ unsatisfied trait bound introduced here
    = note: required for `App` to implement `CanUseComponent<BarComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:82:1
+  --> src/main.rs:83:1
    |
-82 | / check_components! {
-83 | |     App {
-84 | |         BazComponent,
-85 | |         BarComponent,
+83 | / check_components! {
+84 | |     App {
+85 | |         BazComponent,
+86 | |         BarComponent,
 ...  |
-88 | | }
+89 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: CanUseComponent<BarComponent>` is not satisfied
-  --> src/main.rs:85:9
+  --> src/main.rs:86:9
    |
-85 |         BarComponent,
+86 |         BarComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:68:9
+  --> src/main.rs:69:9
    |
-68 |     pub age: u8,
+69 |     pub age: u8,
    |         ^^^
 note: required for `App` to implement `HasName`
-  --> src/main.rs:20:1
+  --> src/main.rs:21:1
    |
-20 | #[cgp_auto_getter]
+21 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-21 | pub trait HasName {
+22 | pub trait HasName {
    |           ^^^^^^^
 note: required for `ProvideFoo` to implement `IsProviderFor<FooComponent, App>`
-  --> src/main.rs:40:1
+  --> src/main.rs:41:1
    |
-40 | #[cgp_impl(new ProvideFoo)]
+41 | #[cgp_impl(new ProvideFoo)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-43 |     Self: HasName,
+44 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
    = note: required for `App` to implement `IsProviderFor<FooComponent, App>`
 note: required for `App` to implement `Foo<App>`
-  --> src/main.rs:25:1
+  --> src/main.rs:26:1
    |
-25 | #[cgp_component(Foo)]
+26 | #[cgp_component(Foo)]
    | ^^^^^^^^^^^^^^^^^^^^^
 note: required for `App` to implement `CanFoo`
-  --> src/main.rs:25:1
+  --> src/main.rs:26:1
    |
-25 | #[cgp_component(Foo)]
+26 | #[cgp_component(Foo)]
    | ^^^^^^^^^^^^^^^^^^^^^
-26 | pub trait CanFoo {
+27 | pub trait CanFoo {
    |           ^^^^^^
    = note: 1 redundant requirement hidden
    = note: required for `ProvideBar` to implement `IsProviderFor<BarComponent, App>`
    = note: required for `App` to implement `CanUseComponent<BarComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:82:1
+  --> src/main.rs:83:1
    |
-82 | / check_components! {
-83 | |     App {
-84 | |         BazComponent,
-85 | |         BarComponent,
+83 | / check_components! {
+84 | |     App {
+85 | |         BazComponent,
+86 | |         BarComponent,
 ...  |
-88 | | }
+89 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: CanUseComponent<FooComponent>` is not satisfied
-  --> src/main.rs:86:9
+  --> src/main.rs:87:9
    |
-86 |         FooComponent,
+87 |         FooComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
-  --> src/main.rs:68:9
+  --> src/main.rs:69:9
    |
-68 |     pub age: u8,
+69 |     pub age: u8,
    |         ^^^
 note: required for `App` to implement `HasName`
-  --> src/main.rs:20:1
+  --> src/main.rs:21:1
    |
-20 | #[cgp_auto_getter]
+21 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-21 | pub trait HasName {
+22 | pub trait HasName {
    |           ^^^^^^^
 note: required for `ProvideFoo` to implement `IsProviderFor<FooComponent, App>`
-  --> src/main.rs:40:1
+  --> src/main.rs:41:1
    |
-40 | #[cgp_impl(new ProvideFoo)]
+41 | #[cgp_impl(new ProvideFoo)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-43 |     Self: HasName,
+44 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
    = note: required for `App` to implement `CanUseComponent<FooComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:82:1
+  --> src/main.rs:83:1
    |
-82 | / check_components! {
-83 | |     App {
-84 | |         BazComponent,
-85 | |         BarComponent,
+83 | / check_components! {
+84 | |     App {
+85 | |         BazComponent,
+86 | |         BarComponent,
 ...  |
-88 | | }
+89 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

@@ -49,17 +49,18 @@ is the concrete cache the reasoning produces.
 The value cached is the resolver's rustc-free output, and that is what makes the whole scheme sound
 against the compiler's lifetimes. The walk's finished product is owned `String`-only data in the
 compiler-free `cargo-cgp-error-processing` crate — the classified
-[`Leaf`](../../crates/cargo-cgp-error-processing/src/diagnosis/leaf.rs) values and the rendered
-[tree](../../crates/cargo-cgp-error-processing/src/tree.rs) labels that make up a
-[`Resolved`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs) — carrying no
-`Ty<'tcx>`, no `DefId`, no compiler handle. So a cached value can live for the whole compilation on a
-struct that outlives no single `TyCtxt`, exactly as the existing
+[`Leaf`](../../crates/cargo-cgp-error-processing/src/diagnosis/leaf.rs) values and the structured
+[chain-node](../../crates/cargo-cgp-error-processing/src/diagnosis/node.rs) paths that a
+[`Resolved`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs)'s causes hold —
+carrying no `Ty<'tcx>`, no `DefId`, no compiler handle (the paths are merged and rendered into a tree
+later, by the rustc-free [dependency graph](dependency-graph-rendering.md)). So a cached value can
+live for the whole compilation on a struct that outlives no single `TyCtxt`, exactly as the existing
 [`ComponentNameMap`](driver.md#naming-the-traits-behind-a-component-marker) and
 [`DedupLedger`](driver.md) already do. This is the decisive difference from caching the *intermediate*
 solver work: an `InferCtxt`'s obligations are `'tcx`-interned and cannot be stored past the
-`ty::tls::with` closure that produced them, but the finished tree is owned and can.
+`ty::tls::with` closure that produced them, but the finished paths are owned and can.
 
-Caching the finished tree carries no staleness risk, for the same reason the name map does not. The
+Caching the finished paths carries no staleness risk, for the same reason the name map does not. The
 resolver runs at emit time, over compiler state that is frozen — the trait set, the impls, the
 `predicates_of`, the ADT field lists are all fixed once the crate is lowered, and trait solving does
 not mutate them (see [why resolution runs in the emitter](typed-root-cause-resolution.md#why-it-runs-in-the-emitter)

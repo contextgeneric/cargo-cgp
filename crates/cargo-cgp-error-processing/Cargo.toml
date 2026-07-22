@@ -14,6 +14,11 @@ keywords     = { workspace = true }
 # deliberately does *not* depend on `rustc_private`: it operates on plain text and typed
 # tree data the driver hands it, so it builds and its tests run on any toolchain, without
 # the driver's compiler linkage. See `docs/implementation/error-processing.md`.
+
+# The dependency-graph rendering tests pin each rendered tree as an inline snapshot with `insta`.
+[dev-dependencies]
+insta = { workspace = true }
+
 [dependencies]
 # Renders the dependency tree of a resolved check failure. The driver builds the tree data
 # from typed compiler state and this crate turns it into `cargo tree`-style text, kept here so

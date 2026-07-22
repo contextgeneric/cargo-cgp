@@ -1,0 +1,20 @@
+error[E0277]: [CGP-E001] the consumer trait `CanAssemble` is not implemented for context `App`
+  --> src/main.rs:72:9
+   |
+72 |         AssemblerComponent,
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = note: root causes:
+             - [CGP-E107] context `App` does not contain any delegate entry for `@ValueBuilderComponent.Left`
+             - [CGP-E107] context `App` does not contain any delegate entry for `@ValueBuilderComponent.Right`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanAssemble` for context `App`
+             └─ [CGP-E102] provider trait impl `Assembler` with context `App` for provider `AssembleParts`
+               ├─ [CGP-E101] consumer trait impl `CanBuildValue<Left>` for context `App`
+               │ └─ [CGP-E104] redirect lookup to `@ValueBuilderComponent` in `App`
+               │   └─ [CGP-E107] context `App` does not contain any delegate entry for `@ValueBuilderComponent.Left`
+               └─ [CGP-E101] consumer trait impl `CanBuildValue<Right>` for context `App`
+                 └─ [CGP-E104] redirect lookup to `@ValueBuilderComponent` in `App`
+                   └─ [CGP-E107] context `App` does not contain any delegate entry for `@ValueBuilderComponent.Right`
+
+For more information about this error, try `rustc --explain E0277`.

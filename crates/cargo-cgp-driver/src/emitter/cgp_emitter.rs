@@ -7,7 +7,7 @@ use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
 };
 use cargo_cgp_error_processing::{
-    DedupLedger, DiagKind, OrphanConflict, Resolved, UndeclaredCapability, cause_notes,
+    Cause, DedupLedger, DiagKind, OrphanConflict, Resolved, UndeclaredCapability, cause_notes,
     cause_only_signature, cause_signature, coalesce_underived_fields, consumer_header,
     derive_help_messages, is_method_bounds_text, mentions_orphan_param_text, orphan_conflict_help,
     plan_orphan_conflict, plan_resolved, plan_undeclared_capability, plan_wiring_conflict,
@@ -110,10 +110,12 @@ impl<E: Emitter> CgpEmitter<E> {
 
     /// Build the one merged block for a coalesced group of several consumer failures sharing a root
     /// cause: a `[CGP-E001]` header listing every affected consumer trait, a caret at each failing
-    /// entry, and the root-cause note/help from the first member (all members share the cause, so
-    /// one representative chain suffices). The single-consumer header rustc's per-entry rendering
-    /// produced — even a provider-side `[CGP-E002]` one — is dropped in favour of the consumer form,
-    /// since a `check_components!` entry failing *is* the consumer trait failing.
+    /// entry, and one root-cause note built by folding *every* member's causes into a single
+    /// dependency graph — so a consumer whose chain runs through another collapses into it, while
+    /// independent chains to the shared cause render side by side, and no member's chain is dropped.
+    /// The single-consumer header rustc's per-entry rendering produced — even a provider-side
+    /// `[CGP-E002]` one — is dropped in favour of the consumer form, since a `check_components!`
+    /// entry failing *is* the consumer trait failing.
     fn merged_diag(&self, resolveds: &[&Resolved], diags: &[&DiagInner]) -> DiagInner {
         let first = resolveds[0];
         let mut consumers: Vec<String> = Vec::new();
@@ -129,10 +131,19 @@ impl<E: Emitter> CgpEmitter<E> {
             consumers,
             consumers_are_cgp: true,
             subject_is_context: true,
-            causes: first.causes.clone(),
+            // Only the consumers and context matter for the header; the note is built from the
+            // causes below.
+            causes: Vec::new(),
         };
 
-        let causes = coalesce_underived_fields(&merged.causes);
+        // Every cause across the coalesced consumers. The dependency graph then merges what they
+        // share — a consumer whose chain runs through another collapses into it, while independent
+        // chains to one cause render side by side — so no chain is dropped and every consumer appears.
+        let causes: Vec<Cause> = resolveds
+            .iter()
+            .flat_map(|resolved| resolved.causes.iter().cloned())
+            .collect();
+        let causes = coalesce_underived_fields(&causes);
         let mut children: Vec<_> = derive_help_messages(&causes)
             .into_iter()
             .map(|help| subdiag(Level::Help, help))

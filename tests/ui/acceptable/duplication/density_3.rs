@@ -9,6 +9,12 @@
 //! consumers, one cause* coalescing — distinct from the same-consumer de-duplication
 //! `duplication/cross_site_dedup.rs` pins.
 //!
+//! `DensityCalculator` depends on `CanCalculateArea`, so `CanCalculateDensity`'s chain
+//! down to the missing field *contains* `CanCalculateArea`'s whole chain as a subtree.
+//! The merged block leads with that deeper, subsuming chain — showing why the two merged
+//! — even though the shallower `AreaCalculatorComponent` is the first entry checked; the
+//! representative chain is the deepest, not the first to arrive.
+//!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/verbose-cascade.md.
 

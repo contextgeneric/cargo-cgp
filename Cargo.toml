@@ -44,3 +44,6 @@ cargo-cgp-error-processing = { version = "0.1.0-alpha", path = "crates/cargo-cgp
 # tree in the replacement diagnostic. Tiny and dependency-free, so it does not weigh down the
 # rustc-free error-processing crate that hosts the pure renderer.
 termtree = { version = "1" }
+# Inline-snapshot testing for the pure dependency-graph rendering unit tests, so a rendered tree
+# is pinned as a literal in the test source (matching the `cgp` workspace's use of insta).
+insta = { version = "1" }

@@ -8,8 +8,9 @@
 //! unit-testable without a `TyCtxt`.
 
 mod coalesce;
-mod labels;
+mod graph;
 mod leaf;
+mod node;
 mod orphan;
 mod plan;
 mod resolved;
@@ -18,8 +19,9 @@ mod wiring;
 mod wording;
 
 pub use coalesce::*;
-pub use labels::*;
+pub use graph::*;
 pub use leaf::*;
+pub use node::*;
 pub use orphan::*;
 pub use plan::*;
 pub use resolved::*;

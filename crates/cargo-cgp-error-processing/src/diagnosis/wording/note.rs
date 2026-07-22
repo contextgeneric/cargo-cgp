@@ -1,106 +1,103 @@
-//! The `root cause:` note bodies, one per group of causes sharing a dependency root.
+//! The `root cause:` note body, rendered over one dependency graph.
 
+use crate::diagnosis::graph::DependencyGraph;
 use crate::diagnosis::leaf::Leaf;
+use crate::diagnosis::node::ChainNode;
 use crate::diagnosis::resolved::Cause;
 use crate::diagnosis::wording::lead::{root_cause_code, root_cause_lead};
-use crate::tree::{merge_dependency_forest, render_dependency_tree};
 
-/// The one `note` per root-cause group the emitter emits, grouping causes that share a dependency
-/// root so their trees merge into one. Causes whose chains descend from the **same** root obligation
-/// — the usual shape of a multi-root-cause failure, where every chain restates the whole shared
-/// prefix — collapse into a single [`merged_cause_note`] whose common ancestors appear once and whose
-/// branches end at the distinct leaves; a lone cause keeps its own [`cause_note`]. Grouping is by the
-/// tree's root label, so causes that genuinely share no ancestor stay separate notes.
+/// The `root cause:` note(s) for a resolved failure. Every path of every cause is folded into one
+/// [`DependencyGraph`], which merges the nodes they share and renders the whole as a `cargo
+/// tree`-style diagram; the heading then names the distinct root cause(s) above it. The result is a
+/// single note (or none, for no causes), since the graph already fuses what the old per-root grouping
+/// kept apart.
 pub fn cause_notes(causes: &[Cause], header_bound: Option<&str>) -> Vec<String> {
-    let mut groups: Vec<Vec<&Cause>> = Vec::new();
+    if causes.is_empty() {
+        return Vec::new();
+    }
+    let chain = render_causes(causes);
+
+    // The distinct root causes, in first-seen order — a leaf reached by several paths is named once.
+    let mut leaves: Vec<&Leaf> = Vec::new();
     for cause in causes {
-        match groups
-            .iter_mut()
-            .find(|group| group[0].tree.label == cause.tree.label)
-        {
-            Some(group) => group.push(cause),
-            None => groups.push(vec![cause]),
+        if !leaves.iter().any(|leaf| **leaf == cause.leaf) {
+            leaves.push(&cause.leaf);
         }
     }
-    groups
-        .into_iter()
-        .map(|group| match group.as_slice() {
-            [only] => cause_note(only, header_bound),
-            many => merged_cause_note(many),
-        })
-        .collect()
+    let note = match leaves.as_slice() {
+        [only] => leaf_lead(only, header_bound)
+            .map(|lead| format!("{lead}\n{}", chain_heading(&chain)))
+            .unwrap_or_else(|| chain_heading(&chain)),
+        many => {
+            let list = many
+                .iter()
+                .map(|leaf| {
+                    format!(
+                        "  - [{code}] {lead}",
+                        code = root_cause_code(leaf),
+                        lead = root_cause_lead(leaf),
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+            format!("root causes:\n{list}\n{}", chain_heading(&chain))
+        }
+    };
+    vec![note]
 }
 
-/// Indent every line of a rendered dependency chain by two spaces, so it nests under the note's
-/// `this is required through the dependency chain:` heading.
+/// The note body for one cause on its own — its lead over its own paths' graph. Kept for callers and
+/// tests that word a single cause; equivalent to [`cause_notes`] over a one-element slice.
+pub fn cause_note(cause: &Cause, header_bound: Option<&str>) -> String {
+    let chain = render_causes(std::slice::from_ref(cause));
+    match leaf_lead(&cause.leaf, header_bound) {
+        Some(lead) => format!("{lead}\n{}", chain_heading(&chain)),
+        None => chain_heading(&chain),
+    }
+}
+
+/// Render the dependency graph built from every path of every cause.
+fn render_causes(causes: &[Cause]) -> String {
+    let paths: Vec<Vec<ChainNode>> = causes
+        .iter()
+        .flat_map(|cause| cause.paths.iter().cloned())
+        .collect();
+    DependencyGraph::from_paths(&paths).render()
+}
+
+/// The `root cause: [code] lead` line for a single leaf, or `None` when the note should carry the
+/// chain alone — a field-type mismatch (whose `[CGP-E003]` header already states it in full), or an
+/// ordinary bound the kept main message (`header_bound`) already restates.
+fn leaf_lead(leaf: &Leaf, header_bound: Option<&str>) -> Option<String> {
+    if let Leaf::FieldTypeMismatch { .. } = leaf {
+        return None;
+    }
+    if let (Some(bound), Leaf::Bound { summary }) = (header_bound, leaf)
+        && summary == bound
+    {
+        return None;
+    }
+    Some(format!(
+        "root cause: [{code}] {lead}",
+        code = root_cause_code(leaf),
+        lead = root_cause_lead(leaf),
+    ))
+}
+
+/// The `this is required through the dependency chain:` heading with the rendered chain nested two
+/// spaces beneath it.
+fn chain_heading(chain: &str) -> String {
+    format!(
+        "this is required through the dependency chain:\n{}",
+        indent_chain(chain)
+    )
+}
+
+/// Indent every line of a rendered dependency chain by two spaces, so it nests under the heading.
 fn indent_chain(chain: &str) -> String {
     chain
         .lines()
         .map(|line| format!("  {line}"))
         .collect::<Vec<_>>()
         .join("\n")
-}
-
-/// The note body for one root cause: the `root cause:` lead naming the leaf, then the rendered
-/// dependency chain nested beneath its heading. When the diagnostic's kept main message already
-/// states the leaf bound (`header_bound`), the lead would only repeat it, so the note carries
-/// the chain alone — as it also does for a field-type mismatch, whose `[CGP-E003]` header
-/// states the leaf in full.
-pub fn cause_note(cause: &Cause, header_bound: Option<&str>) -> String {
-    let chain = render_dependency_tree(&cause.tree);
-    if let Leaf::FieldTypeMismatch { .. } = &cause.leaf {
-        return format!(
-            "this is required through the dependency chain:\n{}",
-            indent_chain(&chain)
-        );
-    }
-    if let (Some(bound), Leaf::Bound { summary }) = (header_bound, &cause.leaf)
-        && summary == bound
-    {
-        return format!(
-            "this is required through the dependency chain:\n{}",
-            indent_chain(&chain)
-        );
-    }
-    format!(
-        "root cause: [{code}] {lead}\nthis is required through the dependency chain:\n{chain}",
-        code = root_cause_code(&cause.leaf),
-        lead = root_cause_lead(&cause.leaf),
-        chain = indent_chain(&chain),
-    )
-}
-
-/// The note body for several root causes that share a dependency root: a `root causes:` heading
-/// listing each leaf, then the *merged* dependency tree (built by [`merge_dependency_forest`]) whose
-/// shared ancestors appear once and whose branches bottom out at the listed leaves. Because the tree
-/// itself names every leaf at its branch end, the leading list is a summary a reader sees first; it
-/// carries the same `[CGP-Exxx]` code and wording as each leaf's tree terminal.
-fn merged_cause_note(causes: &[&Cause]) -> String {
-    let trees: Vec<_> = causes.iter().map(|cause| cause.tree.clone()).collect();
-    let merged = merge_dependency_forest(&trees);
-    // Grouping in [`cause_notes`] guarantees a shared root, so the merge yields exactly one tree.
-    let chain = match merged.as_slice() {
-        [tree] => render_dependency_tree(tree),
-        // Defensive: unshared roots would leave a forest — render each and stack them.
-        many => many
-            .iter()
-            .map(render_dependency_tree)
-            .collect::<Vec<_>>()
-            .join("\n"),
-    };
-    let list: String = causes
-        .iter()
-        .map(|cause| {
-            format!(
-                "  - [{code}] {lead}",
-                code = root_cause_code(&cause.leaf),
-                lead = root_cause_lead(&cause.leaf),
-            )
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
-    format!(
-        "root causes:\n{list}\nthis is required through the dependency chain:\n{}",
-        indent_chain(&chain),
-    )
 }

@@ -104,9 +104,10 @@ pub const ORPHAN_FOREIGN_NAMESPACE: &str = "CGP-E011";
 pub const UNDECLARED_CAPABILITY: &str = "CGP-E012";
 
 // The `CGP-E1xx` family codes the entries of a `root cause:` note's dependency tree, one code per
-// distinct rendering template. `CGP-E101`–`CGP-E105` are the inner chain nodes (a wiring hop);
-// `CGP-E106`–`CGP-E109` are the terminal root-cause leaves. An entry that passes a non-CGP message
-// through unchanged (the `the trait bound … is not satisfied` restatement) carries no code.
+// distinct rendering template. `CGP-E101`, `CGP-E102`, `CGP-E104`, and `CGP-E105` are the inner chain
+// nodes (a wiring hop — `CGP-E103` is retired, see below); `CGP-E106`–`CGP-E111` are the terminal
+// root-cause leaves. An entry that passes a non-CGP message through unchanged (the `the trait bound …
+// is not satisfied` restatement) carries no code.
 
 /// `CGP-E101` — a dependency-chain hop through a context's *consumer* trait impl:
 /// `consumer trait impl \`Trait\` for context \`Ctx\``.
@@ -116,9 +117,10 @@ pub const DEP_CONSUMER_TRAIT_IMPL: &str = "CGP-E101";
 /// `provider trait impl \`Trait\` with context \`Ctx\` for provider \`Provider\``.
 pub const DEP_PROVIDER_TRAIT_IMPL: &str = "CGP-E102";
 
-/// `CGP-E103` — a dependency-chain hop through a `HasField` accessor impl:
-/// `field trait impl \`HasField\` with field \`f\` for \`T\``.
-pub const DEP_FIELD_TRAIT_IMPL: &str = "CGP-E103";
+// `CGP-E103` is retired: it named a mid-chain `HasField` accessor hop, but a `HasField` obligation is
+// always a terminal root-cause leaf in the walk (coded `CGP-E106`/`CGP-E108`), never an interior hop,
+// so the code was never emitted. The number is left unused rather than reassigned, so the others stay
+// stable.
 
 /// `CGP-E104` — a dependency-chain hop through a namespace/`open` redirect:
 /// `redirect lookup to \`@…\` in \`Ctx\``.

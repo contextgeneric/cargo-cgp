@@ -1,7 +1,6 @@
 //! The impl-site anchor: a wiring failure surfaced inside a hand-written `impl Trait for Context`.
 
-use cargo_cgp_error_processing::tree::DependencyTree;
-use cargo_cgp_error_processing::{Cause, Resolved, trait_impl_label};
+use cargo_cgp_error_processing::{Cause, ChainNode, DepNode, Resolved};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 use rustc_span::Span;
@@ -137,7 +136,10 @@ fn wrapper_consumer_causes<'tcx>(
         return None;
     }
     let wrapper = trait_ref.print_only_trait_path().to_string();
-    let wrapper_node = trait_impl_label(&wrapper, &context.to_string());
+    let wrapper_node = DepNode::Trait {
+        trait_ref: wrapper,
+        self_ty: context.to_string(),
+    };
 
     let mut causes: Vec<Cause> = Vec::new();
     // Each supertrait the wrapper trait carries, instantiated for this `Self`. A CGP consumer trait
@@ -170,13 +172,22 @@ fn wrapper_consumer_causes<'tcx>(
             continue;
         };
         for cause in resolved.causes {
-            if !causes.iter().any(|c| c.key() == cause.key()) {
-                // Prepend the original wrapper obligation as the tree's top node, above the CGP
-                // consumer chain the walk recovered.
-                causes.push(Cause {
+            // Prepend the wrapper hop atop each path, so the recovered CGP chain hangs beneath the
+            // trait the programmer wrote. Group by leaf so alternative paths to one cause survive.
+            let wrapped: Vec<Vec<ChainNode>> = cause
+                .paths
+                .into_iter()
+                .map(|mut path| {
+                    path.insert(0, ChainNode::Hop(wrapper_node.clone()));
+                    path
+                })
+                .collect();
+            match causes.iter_mut().find(|c| c.key() == cause.leaf.key()) {
+                Some(existing) => existing.paths.extend(wrapped),
+                None => causes.push(Cause {
                     leaf: cause.leaf,
-                    tree: DependencyTree::node(wrapper_node.clone(), vec![cause.tree]),
-                });
+                    paths: wrapped,
+                }),
             }
         }
     }

@@ -7,8 +7,9 @@
 //! provider-bound failures. cargo-cgp coalesces them: the three consumer failures
 //! share the one missing-`name` root cause, so they collapse into a single
 //! `[CGP-E001]` headline naming `CanBaz`, `CanBar`, and `CanFoo`, a caret at each check
-//! entry, and one representative dependency chain down to the missing field (the
-//! first-checked `CanBaz`, whose chain is the deepest and subsumes the others). Fixing
+//! entry, and one representative dependency chain down to the missing field (`CanBaz`,
+//! whose chain is the deepest and subsumes the others, chosen regardless of check
+//! order). Fixing
 //! the one field clears the whole cascade. One entry surfaces to rustc as a
 //! provider-side bound, but coalescing words the group uniformly as consumer traits,
 //! since a `check_components!` entry failing *is* the consumer trait failing.

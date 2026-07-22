@@ -57,17 +57,6 @@ impl DependencyTree {
             children,
         }
     }
-
-    /// Fold a root-first chain of labels into a single-spine tree — the shape a linear
-    /// dependency path renders as. `None` for an empty chain.
-    pub fn from_chain(labels: Vec<String>) -> Option<Self> {
-        let mut rev = labels.into_iter().rev();
-        let mut node = DependencyTree::leaf(rev.next()?);
-        for label in rev {
-            node = DependencyTree::node(label, vec![node]);
-        }
-        Some(node)
-    }
 }
 
 /// Render a dependency tree as `cargo tree`-style indented text, e.g.
@@ -96,39 +85,4 @@ fn to_termtree(node: &DependencyTree) -> Tree<String> {
         rendered.push(to_termtree(child));
     }
     rendered
-}
-
-/// Merge a forest of dependency trees into one, sharing every node that several trees reach by the
-/// *same* path of labels: a common ancestor is shown once, and the point where the trees diverge
-/// branches beneath it. This collapses the several root→leaf chains of a multi-root-cause failure —
-/// each a linear spine that repeats the whole shared prefix — into a single tree whose branches end
-/// at their distinct leaves.
-///
-/// Sibling nodes are keyed by their (already-rendered) `label`, and equal-labelled siblings are
-/// fused and their children merged in turn; first-seen order is preserved. Trees whose *roots* carry
-/// different labels stay separate roots in the returned forest — nothing is forced under a shared
-/// parent that the inputs do not actually share — so a caller merges only when the result is a
-/// single tree (a genuine common ancestor) and otherwise keeps the chains apart.
-pub fn merge_dependency_forest(trees: &[DependencyTree]) -> Vec<DependencyTree> {
-    merge_siblings(&trees.iter().collect::<Vec<_>>())
-}
-
-/// Merge a set of sibling nodes: group by label (first-seen order), and for each group emit one node
-/// whose children are the recursively-merged children of every node in the group.
-fn merge_siblings(nodes: &[&DependencyTree]) -> Vec<DependencyTree> {
-    let mut groups: Vec<(&str, Vec<&DependencyTree>)> = Vec::new();
-    for &node in nodes {
-        match groups.iter_mut().find(|(label, _)| *label == node.label) {
-            Some((_, group)) => group.push(node),
-            None => groups.push((&node.label, vec![node])),
-        }
-    }
-    groups
-        .into_iter()
-        .map(|(label, group)| {
-            let children: Vec<&DependencyTree> =
-                group.iter().flat_map(|node| node.children.iter()).collect();
-            DependencyTree::node(label, merge_siblings(&children))
-        })
-        .collect()
 }

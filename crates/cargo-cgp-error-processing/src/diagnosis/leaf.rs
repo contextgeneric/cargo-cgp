@@ -12,7 +12,7 @@
 /// struct that has no `HasField` impl for it. (A field present *with a mismatched type* keeps
 /// its `HasField` trait impl and fails only the associated-type projection, so it never reaches
 /// this classification — it is a [`Leaf::FieldTypeMismatch`] instead.)
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FieldIssue {
     /// No struct in the context's `Deref` chain carries a field of this name: it is genuinely
     /// missing and must be added.
@@ -30,7 +30,7 @@ pub enum FieldIssue {
 }
 
 /// What a resolved dependency chain bottoms out on — the actual root cause the tree leads to.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Leaf {
     /// A `HasField` bound the wiring needs. The emitter renders this as a clean, tree-first
     /// diagnostic of its own, with a lead worded by the [`FieldIssue`] and a derive `help`.

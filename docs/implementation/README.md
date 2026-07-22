@@ -33,8 +33,8 @@ same change.
   `after_analysis` is unreachable once the crate has errors), descending the wiring to each terminal
   leaf (a `HasField` field or an ordinary bound), and rendering the transitive dependency chain with
   each wiring trait replaced by its human form. A main message identified as a CGP class is rewritten
-  and stamped with its `[CGP-Exxx]` code (the Rust code kept); the sub-notes become one `root cause:`
-  note per leaf over its chain; anything it declines falls back to the text rewrite. The document is
+  and stamped with its `[CGP-Exxx]` code (the Rust code kept); the sub-notes become a single `root cause:`
+  note over the dependency graph of every leaf; anything it declines falls back to the text rewrite. The document is
   the pipeline overview — its boundaries and its consolidated tests and source catalogs — over four
   per-stage documents:
   - [Typed resolution: anchoring the starting obligation](typed-resolution-anchors.md) — the five
@@ -47,8 +47,8 @@ same change.
     seeded obligation to every terminal unmet bound, and the decoding, classification, and label
     rendering of each leaf.
   - [Typed resolution: the transformed diagnostic](typed-resolution-output.md) — the coded headline
-    classes, the `root cause:` notes over their merged trees, and the emitter's application of the
-    rustc-free plan.
+    classes, the single `root cause:` note over every leaf's merged dependency graph, and the
+    emitter's application of the rustc-free plan.
 - [Cached dependency resolution](cached-dependency-resolution.md) — the blueprint (ahead of
   implementation) for one cache over the typed resolver's walk, keyed at *every* node and consulted at
   every step, storing each node's owned rustc-free sub-chains so they persist across diagnostics and
@@ -59,6 +59,14 @@ same change.
   compared by a `HashStable` fingerprint (of the obligation and its `ParamEnv`) with readable fields
   alongside for inspecting the store — and why cacheability is a statelessness proof, not just a
   speedup.
+- [Dependency-graph rendering](dependency-graph-rendering.md) — how the `root cause:` note's tree is
+  built as one rustc-free **dependency graph**: the resolver emits structured, per-`CGP-E1xx`-code
+  nodes as flat root→leaf paths, and error-processing merges them by structural identity (cross-path
+  only) into a DAG and renders it `cargo tree`-style with `(*)`-marked shared subtrees. Covers the
+  structured node enum, the root rule (a path head that is also a descendant is not a top-level root,
+  giving subsumption for free), the shared-subtree and converging-leaf rendering, and worked shapes
+  for a diamond and distinct-key redirects — rendering arbitrary merged shapes with all merging and
+  rendering in pure, unit-testable functions.
 - [The resolve context](resolve-context.md) — the blueprint (ahead of implementation) for a
   per-compilation `ResolveCtx` that hosts the caches, the config, and the compiler access, replacing
   the bare `TyCtxt` threaded through the resolver. Develops the cacheable-is-stateless-is-mockable
