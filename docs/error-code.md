@@ -64,10 +64,12 @@ into a distinct message form with its own fix. The **coherence-reshape** codes `
 `CGP-E011` each rewrite a whole-program coherence error into a CGP-framed one carrying its fix in a
 `help`: `CGP-E010` a wiring cycle's `E0275` (a cycle has no terminal leaf to descend to), and
 `CGP-E011` an orphan-rule namespace registration's `E0210`/`E0117` (recovered from the offending impl
-off the compiler, like the `E0119` family). The fifth group is the lone **lowering** code
-`CGP-E012`: a capability used in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]`,
-recovered off the compiler from the generated blanket impl the failing call sits in and reworded with
-its `#[uses(…)]` fix in a `help`. Each entry below gives the rewritten
+off the compiler, like the `E0119` family). The fifth group is the **lowering** codes
+`CGP-E012`–`CGP-E014`, each recovered off the compiler from the generated impl the failing token sits
+in and reworded with its fix in a `help`: `CGP-E012` a capability used in a `#[cgp_fn]`/`#[cgp_impl]`
+body but not declared via `#[uses(…)]`; and `CGP-E013`/`CGP-E014` a `#[cgp_impl]` header naming the
+wrong trait — the component's consumer trait where its provider trait belongs (`CGP-E013`), or a
+trait that is not a CGP component at all (`CGP-E014`). Each entry below gives the rewritten
 message, the mistake behind it, the fix, and the upstream
 [CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) class it recognizes.
 
@@ -245,6 +247,50 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
 - **Upstream class:** the post-codegen face of a missing impl-side dependency; closest to the
   [hidden unsatisfied-dependency](https://github.com/contextgeneric/cgp/blob/main/docs/errors/hidden/unsatisfied-dependency.md)
   class, but here the fix is declaring the dependency rather than satisfying it.
+
+### `CGP-E013` — consumer trait used in a provider impl
+
+- **Message:** `` [CGP-E013] `<Consumer>` is a consumer trait, but a `#[cgp_impl]` provider must
+  implement its provider trait `<Provider>` ``, with a `help` naming the fix: `` change the impl
+  header to target the provider trait: `impl <Provider>` (not `impl <Consumer>`) ``.
+- **Means:** a `#[cgp_impl]` provider impl names the component's *consumer* trait in its header where
+  the *provider* trait belongs. `#[cgp_impl(new P)] impl AreaCalculator { … }` is the idiomatic
+  provider form; writing the consumer trait `CanCalculateArea` there makes the macro generate an
+  inside-out impl of the wrong trait and reference a `CanCalculateAreaComponent` marker that does not
+  exist, so one mistake yields a burst of cryptic errors (`E0425`/`E0107`/`E0186`/`E0207`) plus a
+  downstream check failure, none naming the cause. It generalizes over the component's generic
+  parameters: the macro always inserts the context as the leading generic, so the consumer trait is
+  given one argument too many whatever its arity.
+- **Triggered by:** the `E0107` "trait takes N generic arguments but N+1 supplied" on the impl
+  header, confirmed structurally: an impl carrying the `#[cgp_impl]`-inserted `__Context__` generic,
+  a concrete provider-struct `Self`, and a user-written header trait that is a CGP *consumer* trait
+  (its consumer↔provider fingerprint yields the provider trait to suggest). The sibling
+  macro-lowering errors and the downstream `NotAProvider` check re-report are suppressed. The Rust
+  code stays `E0107`.
+- **Fix (in the `help`):** change the impl header to name the provider trait the component pairs the
+  consumer with.
+- **Upstream class:** a macro-lowering mistake with no upstream error-catalog class of its own — the
+  provider/consumer duality is described in
+  [consumer and provider traits](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/consumer-and-provider-traits.md).
+
+### `CGP-E014` — `#[cgp_impl]` on a non-CGP trait
+
+- **Message:** `` [CGP-E014] `#[cgp_impl]` can only implement a CGP component's provider trait, but
+  `<Trait>` is not a CGP component ``, with a `help`: `` define `<Trait>` as a component with
+  `#[cgp_component]`, or drop `#[cgp_impl]` and write a plain `impl` if it is an ordinary trait ``.
+- **Means:** `#[cgp_impl]` is applied to a trait that is not a CGP component at all — neither a
+  consumer nor a provider trait — so there is no provider trait to implement. Distinct from
+  [`CGP-E013`](#cgp-e013--consumer-trait-used-in-a-provider-impl), where the trait *is* a component
+  and only the wrong half was named: here the fix is to make the trait a component or to abandon
+  `#[cgp_impl]`, not to name a different trait.
+- **Triggered by:** the same `E0107` shape and structural gate as `CGP-E013` (the `__Context__`
+  generic, a concrete `Self`, a user-written header trait), but the header trait's fingerprint is
+  *neither* a consumer nor a provider trait. The Rust code stays `E0107`.
+- **Fix (in the `help`):** annotate the trait with `#[cgp_component]` to make it a component, or use
+  an ordinary `impl` if it was never meant to be one.
+- **Upstream class:** a macro-lowering mistake with no upstream error-catalog class of its own; see
+  [`#[cgp_impl]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/macros/cgp_impl.md)
+  for what the macro requires of its target trait.
 
 ## Dependency-tree entry codes (`CGP-E1xx`)
 

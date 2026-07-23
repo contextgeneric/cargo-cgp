@@ -1,0 +1,85 @@
+error[E0425]: cannot find type `CanCalculateAreaComponent` in this scope
+ --> src/main.rs:8:1
+  |
+3 | #[cgp_component(AreaCalculator)]
+  |                 -------------- similarly named struct `AreaCalculatorComponent` defined here
+...
+8 | #[cgp_impl(new RectangleArea)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: a struct with a similar name exists
+  |
+8 - #[cgp_impl(new RectangleArea)]
+8 + AreaCalculatorComponent
+  |
+
+error[E0107]: trait takes 0 generic arguments but 1 generic argument was supplied
+ --> src/main.rs:9:6
+  |
+8 |   #[cgp_impl(new RectangleArea)]
+  |  _______________________________-
+9 | | impl CanCalculateArea {
+  | |      ^^^^^^^^^^^^^^^-
+  | |______|______________|
+  |        |              help: remove the unnecessary generics
+  |        expected 0 generic arguments
+  |
+note: trait defined here, with 0 generic parameters
+ --> src/main.rs:4:11
+  |
+4 | pub trait CanCalculateArea {
+  |           ^^^^^^^^^^^^^^^^
+
+error[E0186]: method `area` has a `&self` declaration in the trait, but not in the impl
+  --> src/main.rs:10:5
+   |
+ 5 |     fn area(&self) -> f64;
+   |     ---------------------- `&self` used in trait
+...
+10 |     fn area(&self, #[implicit] width: f64, #[implicit] height: f64) -> f64 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&self` in impl
+
+error[E0207]: the type parameter `__Context__` is not constrained by the impl trait, self type, or predicates
+ --> src/main.rs:8:1
+  |
+8 | #[cgp_impl(new RectangleArea)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unconstrained type parameter
+  |
+  = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use the type parameter `__Context__` in the `RectangleArea` type and use it in the type definition
+  |
+8 | #[cgp_impl(new RectangleArea<__Context__>)]
+  |                             +++++++++++++
+
+error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
+  --> src/main.rs:31:9
+   |
+31 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<6, Chars<..>>>` is not implemented for `Rectangle`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
+  --> src/main.rs:17:9
+   |
+17 |     pub width: f64,
+   |         ^^^^^
+note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:8:1
+   |
+ 8 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:29:1
+   |
+29 | / check_components! {
+30 | |     Rectangle {
+31 | |         AreaCalculatorComponent,
+32 | |     }
+33 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0107, E0186, E0207, E0277, E0425.
+For more information about an error, try `rustc --explain E0107`.

@@ -94,6 +94,18 @@ their fixtures now live under `acceptable/`:
   Any `[T]: Sized` cascade the unresolved return type trails is left as rustc wrote it — those errors
   can land off the failing expression, where suppressing them reliably would risk hiding an unrelated
   error.
+- A **`#[cgp_impl]` header naming the wrong trait** — the component's *consumer* trait where its
+  *provider* trait belongs (`#[cgp_impl(new P)] impl CanCalculateArea` instead of `impl AreaCalculator`),
+  or a trait that is not a CGP component at all — is reshaped from the burst of cryptic macro-lowering
+  errors it produces (`E0425` on a `…Component` marker the user never wrote, `E0107`, `E0186`, `E0207`,
+  plus a downstream check failure) into a single `[CGP-E013]`/`[CGP-E014]` error on the misused trait
+  name, naming the fix, with the whole cascade suppressed. The recognition uses the consumer/provider
+  fingerprints, so it generalizes over a component's generic parameters and tells a wrong-half mistake
+  (`[CGP-E013]`, which names the provider trait to use) apart from a non-component trait (`[CGP-E014]`,
+  which has no provider to suggest)
+  ([`consumer_trait_in_provider_impl`](../../tests/ui/acceptable/lowering/consumer_trait_in_provider_impl.rs),
+  [`consumer_trait_in_provider_impl_generic`](../../tests/ui/acceptable/lowering/consumer_trait_in_provider_impl_generic.rs),
+  and [`cgp_impl_on_non_cgp_trait`](../../tests/ui/acceptable/lowering/cgp_impl_on_non_cgp_trait.rs)).
 
 What remains below are the classes the tool does not yet reshape.
 

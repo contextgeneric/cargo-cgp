@@ -1,0 +1,30 @@
+error[E0425]: cannot find type `CanCalculateAreaComponent` in this scope
+  --> src/main.rs:16:1
+   |
+ 5 | #[cgp_component(AreaCalculator)]
+   |                 -------------- similarly named struct `AreaCalculatorComponent` defined here
+...
+16 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: a struct with a similar name exists
+   |
+16 - #[cgp_impl(new RectangleArea)]
+16 + AreaCalculatorComponent
+   |
+
+error[E0107]: trait takes 1 generic argument but 2 generic arguments were supplied
+  --> src/main.rs:17:6
+   |
+17 | impl CanCalculateArea<Rectangle> {
+   |      ^^^^^^^^^^^^^^^^ expected 1 generic argument
+   |
+note: trait defined here, with 1 generic parameter: `Shape`
+  --> src/main.rs:6:11
+   |
+ 6 | pub trait CanCalculateArea<Shape> {
+   |           ^^^^^^^^^^^^^^^^ -----
+
+Some errors have detailed explanations: E0107, E0425.
+For more information about an error, try `rustc --explain E0107`.

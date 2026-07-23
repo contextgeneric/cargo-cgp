@@ -1,0 +1,48 @@
+error[E0425]: cannot find type `GreetComponent` in this scope
+  --> src/main.rs:13:1
+   |
+13 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0107]: trait takes 0 generic arguments but 1 generic argument was supplied
+  --> src/main.rs:14:6
+   |
+13 |   #[cgp_impl(new GreetHello)]
+   |  ____________________________-
+14 | | impl Greet {
+   | |      ^^^^-
+   | |______|___|
+   |        |   help: remove the unnecessary generics
+   |        expected 0 generic arguments
+   |
+note: trait defined here, with 0 generic parameters
+  --> src/main.rs:5:11
+   |
+ 5 | pub trait Greet {
+   |           ^^^^^
+
+error[E0186]: method `greet` has a `&self` declaration in the trait, but not in the impl
+  --> src/main.rs:15:5
+   |
+ 6 |     fn greet(&self);
+   |     ---------------- `&self` used in trait
+...
+15 |     fn greet(&self) {
+   |     ^^^^^^^^^^^^^^^ expected `&self` in impl
+
+error[E0207]: the type parameter `__Context__` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:13:1
+   |
+13 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unconstrained type parameter
+   |
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use the type parameter `__Context__` in the `GreetHello` type and use it in the type definition
+   |
+13 | #[cgp_impl(new GreetHello<__Context__>)]
+   |                          +++++++++++++
+
+Some errors have detailed explanations: E0107, E0186, E0207, E0425.
+For more information about an error, try `rustc --explain E0107`.

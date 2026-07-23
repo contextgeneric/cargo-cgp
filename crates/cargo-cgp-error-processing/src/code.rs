@@ -103,6 +103,23 @@ pub const ORPHAN_FOREIGN_NAMESPACE: &str = "CGP-E011";
 /// `#[uses(…)]` — rides in a `help`. The Rust code stays `E0599`.
 pub const UNDECLARED_CAPABILITY: &str = "CGP-E012";
 
+/// `CGP-E013` — a `#[cgp_impl]` provider impl whose header names the component's *consumer* trait
+/// where the *provider* trait belongs. `#[cgp_impl(new P)] impl AreaCalculator { … }` is the
+/// idiomatic provider form; writing the consumer trait `CanCalculateArea` in that header instead
+/// makes the macro generate an inside-out impl of the wrong trait and reference a
+/// `CanCalculateAreaComponent` marker that does not exist, so one mistake yields a burst of cryptic
+/// errors (E0425/E0107/E0186/E0207) plus a downstream check failure, none naming the cause. The
+/// rewritten message names the consumer trait and the provider trait to use instead, with the header
+/// fix in a `help`. The Rust code stays `E0107`.
+pub const CONSUMER_TRAIT_IN_PROVIDER_IMPL: &str = "CGP-E013";
+
+/// `CGP-E014` — a `#[cgp_impl]` applied to a trait that is not a CGP component at all (neither a
+/// consumer nor a provider trait). `#[cgp_impl]` can only implement a component's provider trait, so
+/// this is either a missing `#[cgp_component]` on the trait's definition or a plain trait that should
+/// be implemented with an ordinary `impl`. Distinct from [`CONSUMER_TRAIT_IN_PROVIDER_IMPL`], where
+/// the trait *is* a component and only the wrong half was named. The Rust code stays `E0107`.
+pub const NON_CGP_TRAIT_IN_CGP_IMPL: &str = "CGP-E014";
+
 // The `CGP-E1xx` family codes the entries of a `root cause:` note's dependency tree, one code per
 // distinct rendering template. `CGP-E101`, `CGP-E102`, `CGP-E104`, and `CGP-E105` are the inner chain
 // nodes (a wiring hop — `CGP-E103` is retired, see below); `CGP-E106`–`CGP-E111` are the terminal

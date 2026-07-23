@@ -25,6 +25,7 @@
 mod anchor;
 mod cache;
 mod call_site;
+mod cgp_impl_misuse;
 mod cgp_item;
 mod classify;
 mod conflict;
@@ -39,6 +40,7 @@ pub use anchor::{
 };
 pub use cache::ResolveCache;
 pub use call_site::resolve_call_site;
+pub use cgp_impl_misuse::{DetectedCgpImplMisuse, detect_cgp_impl_misuses};
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
 pub use orphan::classify_orphan_conflict;
 pub use undeclared::detect_undeclared_capability;

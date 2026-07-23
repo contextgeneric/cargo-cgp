@@ -106,16 +106,19 @@ that changes how the compiler *produces* diagnostics, needing no diagnostic pars
 **custom emitter** that acts on diagnostics the compiler has already *built*, using facts only the
 live compiler holds; this is far more involved than a flag, because it links the compiler's internal
 API to reach the `TyCtxt`. That emitter is where the whole diagnostic layer now lives — the front-end
-merely forwards what the driver renders — and it carries six transformations. Three of them reshape a
+merely forwards what the driver renders — and it carries seven transformations. Four of them reshape a
 specific compiler error into one coded CGP form: a duplicate-key conflict (`E0119`) is
 [reshaped into its coded `[CGP-E004]`–`[CGP-E008]` form](#reshaping-a-duplicate-key-conflict), an
 orphan-rule namespace registration (`E0210`/`E0117`) is
-[reshaped into its `[CGP-E011]` form](#reshaping-an-orphan-rule-namespace-registration), and a
+[reshaped into its `[CGP-E011]` form](#reshaping-an-orphan-rule-namespace-registration), a
 capability used in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]` — an `E0599` on
 the generated `__Context__` generic — is reshaped into a `[CGP-E012]` header naming the capability,
 with the `#[uses(…)]` fix in a `help` (recovered by
 [`resolve::detect_undeclared_capability`](../../crates/cargo-cgp-driver/src/resolve/undeclared.rs) and
-worded by the rustc-free `plan_undeclared_capability`). Any `[T]: Sized` cascade it trails is left as
+worded by the rustc-free `plan_undeclared_capability`), and a `#[cgp_impl]` header naming the wrong
+trait — an `E0107` on the misused trait name — is
+[reshaped into its `[CGP-E013]`/`[CGP-E014]` form](#reshaping-a-cgp_impl-header-trait-mistake). Any
+`[T]: Sized` cascade the undeclared-capability case trails is left as
 rustc wrote it — those errors can land off the failing expression, where suppressing them reliably
 would risk hiding an unrelated error. Otherwise the
 deepest transform, the
@@ -555,6 +558,57 @@ is decided by the rustc-free
 unit-tested without a compiler. The blessed snapshots under
 [`acceptable/wiring/orphan/`](../../tests/ui/acceptable/wiring/orphan) pin the component-key,
 path-key, and re-open shapes.
+
+### Reshaping a `#[cgp_impl]` header-trait mistake
+
+The emitter's last reshape handles a macro-lowering mistake rather than a coherence one: a
+`#[cgp_impl]` provider impl whose header names the wrong trait. `#[cgp_impl(new P)] impl AreaCalculator`
+is the idiomatic provider form — the macro turns the header inside out into
+`impl<__Context__> AreaCalculator<__Context__> for P`, inserting the context as the leading generic.
+Naming the component's *consumer* trait `CanCalculateArea` there instead, or a trait that is not a
+CGP component at all, makes the macro generate an inside-out impl of the wrong trait and reference a
+`…Component` marker that does not exist. One mistake then produces a burst of cryptic errors — `E0425`
+(the missing marker), `E0107` (the wrong trait given one generic argument too many, since the inserted
+context always exceeds a consumer trait's arity), `E0186` (`&self` mismatch), `E0207` (`__Context__`
+unconstrained) — plus a downstream check failure, none naming the real cause. The transform
+**rewrites** the `E0107` — whose caret already sits on the misused trait name — into a `[CGP-E013]`
+(consumer trait) or `[CGP-E014]` (non-CGP trait) header with the fix in a `help`, and **suppresses**
+the rest of the cascade so one clean error remains.
+
+The mistake is recovered off the compiler by
+[`resolve::detect_cgp_impl_misuses`](../../crates/cargo-cgp-driver/src/resolve/cgp_impl_misuse.rs),
+never from error text, using the consumer- and provider-trait fingerprints. Three structural
+conditions select the *user's* `#[cgp_impl]` impl and exclude every blanket and forwarding impl the
+CGP macros generate (which also carry `__Context__`): the impl has the `#[cgp_impl]`-inserted
+`__Context__` generic; its `Self` is a concrete local struct/enum (the provider struct), where the
+generated consumer/provider blanket impls have a bare type-parameter `Self`; and its header trait
+reference is a token the user wrote (not from a macro expansion), where the generated
+`IsProviderFor`/`DelegateComponent` forwarding impls carry a synthesized reference. The header trait
+is then classified by [`consumer_provider_trait`](../../crates/cargo-cgp-driver/src/resolve/cgp_item.rs):
+a consumer trait yields the provider trait to suggest (`[CGP-E013]`), a provider trait is the correct
+target and is skipped, and anything else is a non-CGP trait (`[CGP-E014]`). Detection is triggered
+only by the `E0107` — a type-lowering-phase error, always present for this mistake — because it forces
+HIR and trait-graph queries that would re-enter the `DiagCtxt` lock and abort the compiler if run
+while the earlier-phase `E0425` (emitted mid-name-resolution) is being handled, the
+[re-entrant-emission hazard](rustc-diagnostic-internals.md#re-entering-the-diagnostic-context-lock-was-already-held).
+The sibling `E0425`/`E0186`/`E0207` are suppressed by matching their spans against the impl body and
+the `__Context__` parameter's call-site (a sibling arriving before the `E0107` is purged from the
+buffer at reshape time), the downstream `NotAProvider` check re-report by matching its resolved leaf
+against the offending provider struct, and rustc's trailing `rustc --explain` footer is rebuilt from
+the codes still shown so it does not list the suppressed ones. The message wording is decided by the
+rustc-free
+[`plan_cgp_impl_misuse`](../../crates/cargo-cgp-error-processing/src/diagnosis/cgp_impl_misuse.rs)
+(and `cgp_impl_misuse_help` for the fix) over the owned `CgpImplMisuse` the detector fills in, so it
+is unit-tested without a compiler. The blessed snapshots under
+[`acceptable/lowering/`](../../tests/ui/acceptable/lowering) pin the consumer-trait, generic-component,
+and non-CGP-trait shapes.
+
+The reshape is deliberately specific to `#[cgp_impl]`, keyed on the `__Context__` marker it inserts.
+The lower-level `#[cgp_provider]`/`#[cgp_new_provider]` forms — a hand-spelled inside-out impl with a
+user-named context — are not covered, and cannot be safely: without that reserved marker,
+`impl<Ctx> SomeConsumer<Ctx> for ConcreteType` cannot be told from a legitimate direct impl of a
+generic consumer trait on a context, so recognizing it would risk a false positive on valid code.
+`#[cgp_impl]` is the idiomatic provider form, so this is the case a programmer overwhelmingly hits.
 
 ## Comparison with Clippy
 

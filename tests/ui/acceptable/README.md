@@ -66,8 +66,13 @@ are split into concept sub-directories so no directory grows crowded:
   `constrained-key/` a delegation whose constrained key is unsatisfied. `constraints/` holds the
   `UseContext` cycle, its `E0275` rewritten into a `[CGP-E010]` headline over a `help` naming the
   usual cause.
-- [`lowering/`](lowering) — a macro-lowering error rustc already states well on its own
-  (`use_type_unknown_assoc`, whose typo and fix rustc names).
+- [`lowering/`](lowering) — macro-lowering errors: a case rustc already states well on its own
+  (`use_type_unknown_assoc`, whose typo and fix rustc names), and the ones cargo-cgp reshapes into a
+  coded headline — a `#[uses(…)]`-undeclared capability call (`undeclared_uses_capability`,
+  `[CGP-E012]`), and a `#[cgp_impl]` header naming the wrong trait: the component's consumer trait
+  where its provider trait belongs (`consumer_trait_in_provider_impl` and its generic-component
+  variant, `[CGP-E013]`) or a trait that is not a CGP component at all (`cgp_impl_on_non_cgp_trait`,
+  `[CGP-E014]`).
 
 ## Origins
 
