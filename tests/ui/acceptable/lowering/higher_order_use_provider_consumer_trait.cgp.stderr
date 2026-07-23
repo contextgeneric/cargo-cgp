@@ -1,0 +1,9 @@
+error[E0107]: [CGP-E015] `CanCalculateArea` is a consumer trait and cannot bound an inner provider; a higher-order provider imports its provider trait `AreaCalculator`
+  --> src/main.rs:20:33
+   |
+20 | #[use_provider(InnerCalculator: CanCalculateArea)]
+   |                                 ^^^^^^^^^^^^^^^^
+   |
+   = help: name the provider trait in the bound, idiomatically `#[use_provider(… : AreaCalculator)]` (not the consumer trait `CanCalculateArea`)
+
+For more information about this error, try `rustc --explain E0107`.

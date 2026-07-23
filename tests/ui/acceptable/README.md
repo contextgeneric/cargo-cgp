@@ -68,11 +68,13 @@ are split into concept sub-directories so no directory grows crowded:
   usual cause.
 - [`lowering/`](lowering) — macro-lowering errors: a case rustc already states well on its own
   (`use_type_unknown_assoc`, whose typo and fix rustc names), and the ones cargo-cgp reshapes into a
-  coded headline — a `#[uses(…)]`-undeclared capability call (`undeclared_uses_capability`,
-  `[CGP-E012]`), and a `#[cgp_impl]` header naming the wrong trait: the component's consumer trait
-  where its provider trait belongs (`consumer_trait_in_provider_impl` and its generic-component
-  variant, `[CGP-E013]`) or a trait that is not a CGP component at all (`cgp_impl_on_non_cgp_trait`,
-  `[CGP-E014]`).
+  coded headline. A used-but-undeclared dependency: a `#[uses(…)]`-undeclared capability call
+  (`undeclared_uses_capability`, `[CGP-E012]`), and a higher-order provider calling an inner provider
+  it never imported with `#[use_provider]` (`higher_order_missing_use_provider`, `[CGP-E016]`). A
+  trait named where a provider trait belongs: a `#[cgp_impl]` header naming the component's consumer
+  trait (`consumer_trait_in_provider_impl` and its generic-component variant, `[CGP-E013]`) or a
+  non-component trait (`cgp_impl_on_non_cgp_trait`, `[CGP-E014]`), and a `#[use_provider]` inner bound
+  naming the consumer trait (`higher_order_use_provider_consumer_trait`, `[CGP-E015]`).
 
 ## Origins
 

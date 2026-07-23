@@ -34,11 +34,12 @@ pub mod tree;
 pub use dedup::DedupLedger;
 pub use diagnosis::{
     Cause, CgpImplMisuse, ChainNode, DepNode, DependencyGraph, DiagKind, DiagnosisPlan, FieldIssue,
-    Leaf, OrphanConflict, OrphanTrigger, Resolved, UndeclaredCapability, WiringConflict, WiringKey,
-    cause_note, cause_notes, cause_only_signature, cause_signature, cgp_impl_misuse_help,
-    coalesce_underived_fields, consumer_header, dependency_leaf_code, dependency_tree_leaf,
-    derive_help_messages, field_mismatch_header, missing_delegate_entry, orphan_conflict_help,
-    plan_cgp_impl_misuse, plan_orphan_conflict, plan_resolved, plan_undeclared_capability,
+    Leaf, MissingUseProvider, OrphanConflict, OrphanTrigger, Resolved, UndeclaredCapability,
+    WiringConflict, WiringKey, cause_note, cause_notes, cause_only_signature, cause_signature,
+    cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, dependency_leaf_code,
+    dependency_tree_leaf, derive_help_messages, field_mismatch_header, missing_delegate_entry,
+    missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
+    plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_undeclared_capability,
     plan_wiring_conflict, root_cause_code, root_cause_lead, undeclared_capability_help,
     wiring_conflict_help,
 };
@@ -49,6 +50,6 @@ pub use postprocess::{
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use signals::{
     is_method_bounds_text, is_method_probe_advice_text, is_question_mark_cascade_text,
-    mentions_orphan_param_text, mentions_wiring_text,
+    is_unbounded_type_param_item_text, mentions_orphan_param_text, mentions_wiring_text,
 };
 pub use tree::{DependencyTree, render_dependency_tree};

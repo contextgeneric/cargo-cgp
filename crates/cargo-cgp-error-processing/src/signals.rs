@@ -23,6 +23,19 @@ pub fn is_method_bounds_text(text: &str) -> bool {
     text.contains("trait bounds were not satisfied")
 }
 
+/// Whether a message is rustc's "item on an unbounded type parameter" `E0599` help — "items from
+/// traits can only be used if the type parameter is bounded by the trait". This is the failure a
+/// higher-order provider hits when it calls an inner provider it never imported with
+/// `#[use_provider]`: the inner parameter carries no provider-trait bound, so the
+/// associated-function call cannot resolve. The `E0599`'s main message is a Fluent (non-`Str`)
+/// message, so this signal keys on the help, which *is* a plain string. It is distinctive to this
+/// shape — reported during typeck of the calling body, where the queries the detector forces are
+/// already cached — and absent from the resolution-class `E0599` emitted mid-`predicates_of` (where
+/// running those queries would re-enter the diagnostic context and abort the compiler).
+pub fn is_unbounded_type_param_item_text(text: &str) -> bool {
+    text.contains("the type parameter is bounded by the trait")
+}
+
 /// Whether a message is part of rustc's method-probe advice on a CGP consumer-method failure —
 /// the "this is an associated function, not a method" caret label and the "found the following
 /// associated functions …" note (with its "the candidate is defined in …" follow-up). Both are

@@ -106,7 +106,7 @@ that changes how the compiler *produces* diagnostics, needing no diagnostic pars
 **custom emitter** that acts on diagnostics the compiler has already *built*, using facts only the
 live compiler holds; this is far more involved than a flag, because it links the compiler's internal
 API to reach the `TyCtxt`. That emitter is where the whole diagnostic layer now lives — the front-end
-merely forwards what the driver renders — and it carries seven transformations. Four of them reshape a
+merely forwards what the driver renders — and it carries eight transformations. Five of them reshape a
 specific compiler error into one coded CGP form: a duplicate-key conflict (`E0119`) is
 [reshaped into its coded `[CGP-E004]`–`[CGP-E008]` form](#reshaping-a-duplicate-key-conflict), an
 orphan-rule namespace registration (`E0210`/`E0117`) is
@@ -115,9 +115,14 @@ capability used in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses
 the generated `__Context__` generic — is reshaped into a `[CGP-E012]` header naming the capability,
 with the `#[uses(…)]` fix in a `help` (recovered by
 [`resolve::detect_undeclared_capability`](../../crates/cargo-cgp-driver/src/resolve/undeclared.rs) and
-worded by the rustc-free `plan_undeclared_capability`), and a `#[cgp_impl]` header naming the wrong
-trait — an `E0107` on the misused trait name — is
-[reshaped into its `[CGP-E013]`/`[CGP-E014]` form](#reshaping-a-cgp_impl-header-trait-mistake). Any
+worded by the rustc-free `plan_undeclared_capability`), a `#[cgp_impl]` header — or a higher-order
+provider's inner-provider bound — naming the wrong trait is
+[reshaped into its `[CGP-E013]`/`[CGP-E014]`/`[CGP-E015]` form](#reshaping-a-cgp_impl-provider-definition-mistake),
+and a higher-order provider calling an inner provider it never imported with `#[use_provider]` — an
+`E0599` on an unbounded type parameter — is reshaped into a `[CGP-E016]` header naming the inner
+provider, with the `#[use_provider(…)]` fix in a `help` (recovered by
+[`resolve::detect_missing_use_provider`](../../crates/cargo-cgp-driver/src/resolve/missing_use_provider.rs)).
+Any
 `[T]: Sized` cascade the undeclared-capability case trails is left as
 rustc wrote it — those errors can land off the failing expression, where suppressing them reliably
 would risk hiding an unrelated error. Otherwise the
@@ -559,10 +564,10 @@ unit-tested without a compiler. The blessed snapshots under
 [`acceptable/wiring/orphan/`](../../tests/ui/acceptable/wiring/orphan) pin the component-key,
 path-key, and re-open shapes.
 
-### Reshaping a `#[cgp_impl]` header-trait mistake
+### Reshaping a `#[cgp_impl]` provider-definition mistake
 
-The emitter's last reshape handles a macro-lowering mistake rather than a coherence one: a
-`#[cgp_impl]` provider impl whose header names the wrong trait. `#[cgp_impl(new P)] impl AreaCalculator`
+The emitter's remaining reshapes handle macro-lowering mistakes rather than coherence ones — the ways
+a `#[cgp_impl]` provider names the wrong trait, or forgets to import one. `#[cgp_impl(new P)] impl AreaCalculator`
 is the idiomatic provider form — the macro turns the header inside out into
 `impl<__Context__> AreaCalculator<__Context__> for P`, inserting the context as the leading generic.
 Naming the component's *consumer* trait `CanCalculateArea` there instead, or a trait that is not a
@@ -575,6 +580,13 @@ unconstrained) — plus a downstream check failure, none naming the real cause. 
 (consumer trait) or `[CGP-E014]` (non-CGP trait) header with the fix in a `help`, and **suppresses**
 the rest of the cascade so one clean error remains.
 
+The same reshape covers a higher-order provider's **inner-provider bound** naming the consumer trait,
+typically through `#[use_provider]`, which fills the leading context argument in — so
+`#[use_provider(Inner: CanCalculateArea)]` generates `Inner: CanCalculateArea<Self>`, the consumer
+trait again given one argument too many. That `E0107` on the bound is reshaped into a `[CGP-E015]`
+header, and the `E0308` body cascade the malformed bound trails — told from a user's own type error by
+its mention of the generated `__Context__` — is suppressed alongside it.
+
 The mistake is recovered off the compiler by
 [`resolve::detect_cgp_impl_misuses`](../../crates/cargo-cgp-driver/src/resolve/cgp_impl_misuse.rs),
 never from error text, using the consumer- and provider-trait fingerprints. Three structural
@@ -586,12 +598,14 @@ reference is a token the user wrote (not from a macro expansion), where the gene
 `IsProviderFor`/`DelegateComponent` forwarding impls carry a synthesized reference. The header trait
 is then classified by [`consumer_provider_trait`](../../crates/cargo-cgp-driver/src/resolve/cgp_item.rs):
 a consumer trait yields the provider trait to suggest (`[CGP-E013]`), a provider trait is the correct
-target and is skipped, and anything else is a non-CGP trait (`[CGP-E014]`). Detection is triggered
+target and is skipped, and anything else is a non-CGP trait (`[CGP-E014]`); each of the impl's
+inner-provider `where`-bounds is scanned the same way for a consumer trait (`[CGP-E015]`). Detection
+is triggered
 only by the `E0107` — a type-lowering-phase error, always present for this mistake — because it forces
 HIR and trait-graph queries that would re-enter the `DiagCtxt` lock and abort the compiler if run
 while the earlier-phase `E0425` (emitted mid-name-resolution) is being handled, the
 [re-entrant-emission hazard](rustc-diagnostic-internals.md#re-entering-the-diagnostic-context-lock-was-already-held).
-The sibling `E0425`/`E0186`/`E0207` are suppressed by matching their spans against the impl body and
+The sibling `E0425`/`E0186`/`E0207`/`E0308` are suppressed by matching their spans against the impl body and
 the `__Context__` parameter's call-site (a sibling arriving before the `E0107` is purged from the
 buffer at reshape time), the downstream `NotAProvider` check re-report by matching its resolved leaf
 against the offending provider struct, and rustc's trailing `rustc --explain` footer is rebuilt from
@@ -601,7 +615,7 @@ rustc-free
 (and `cgp_impl_misuse_help` for the fix) over the owned `CgpImplMisuse` the detector fills in, so it
 is unit-tested without a compiler. The blessed snapshots under
 [`acceptable/lowering/`](../../tests/ui/acceptable/lowering) pin the consumer-trait, generic-component,
-and non-CGP-trait shapes.
+non-CGP-trait, and inner-bound shapes.
 
 The reshape is deliberately specific to `#[cgp_impl]`, keyed on the `__Context__` marker it inserts.
 The lower-level `#[cgp_provider]`/`#[cgp_new_provider]` forms — a hand-spelled inside-out impl with a
@@ -609,6 +623,25 @@ user-named context — are not covered, and cannot be safely: without that reser
 `impl<Ctx> SomeConsumer<Ctx> for ConcreteType` cannot be told from a legitimate direct impl of a
 generic consumer trait on a context, so recognizing it would risk a false positive on valid code.
 `#[cgp_impl]` is the idiomatic provider form, so this is the case a programmer overwhelmingly hits.
+
+A last reshape handles the mirror mistake: a higher-order provider that calls an inner provider it
+never imported. The body invokes the inner provider as an associated function —
+`InnerCalculator::area(self)` — which needs the parameter bounded as `InnerCalculator: AreaCalculator<Self>`,
+declared through `#[use_provider(InnerCalculator: AreaCalculator)]`. Forgetting the import leaves the
+parameter unbounded, so rustc reports a vague `E0599` — "no associated function `area` found for type
+parameter `InnerCalculator`" — whose suggestion leaks the generated `__Context__` and offers the
+*consumer* trait as a bound, the wrong fix for a higher-order provider. The transform rewrites it into
+a `[CGP-E016]` header naming the inner provider, with the `#[use_provider(…)]` fix in a `help`,
+recovered by
+[`resolve::detect_missing_use_provider`](../../crates/cargo-cgp-driver/src/resolve/missing_use_provider.rs):
+the failing call is an associated-function call `Param::method(…)` on a generic parameter of an
+enclosing provider-trait impl, the method belongs to a CGP provider trait, and the parameter is not
+already bounded by it. It is gated to the "item on an unbounded type parameter" `E0599` shape —
+reported during typeck of the calling body, where the detector's queries are cached, unlike the
+resolution-class `E0599` emitted mid-`predicates_of` — recognized by its plain-string help
+(`the type parameter is bounded by the trait`), since the `E0599`'s main message is a Fluent
+(non-string) message. Its wording is the rustc-free `plan_missing_use_provider` /
+`missing_use_provider_help` over the owned `MissingUseProvider`.
 
 ## Comparison with Clippy
 

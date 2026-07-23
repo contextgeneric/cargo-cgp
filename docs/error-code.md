@@ -65,12 +65,15 @@ into a distinct message form with its own fix. The **coherence-reshape** codes `
 `help`: `CGP-E010` a wiring cycle's `E0275` (a cycle has no terminal leaf to descend to), and
 `CGP-E011` an orphan-rule namespace registration's `E0210`/`E0117` (recovered from the offending impl
 off the compiler, like the `E0119` family). The fifth group is the **lowering** codes
-`CGP-E012`–`CGP-E014`, each recovered off the compiler from the generated impl the failing token sits
-in and reworded with its fix in a `help`: `CGP-E012` a capability used in a `#[cgp_fn]`/`#[cgp_impl]`
-body but not declared via `#[uses(…)]`; and `CGP-E013`/`CGP-E014` a `#[cgp_impl]` header naming the
-wrong trait — the component's consumer trait where its provider trait belongs (`CGP-E013`), or a
-trait that is not a CGP component at all (`CGP-E014`). Each entry below gives the rewritten
-message, the mistake behind it, the fix, and the upstream
+`CGP-E012`–`CGP-E016`, each recovered off the compiler from the generated impl the failing token sits
+in and reworded with its fix in a `help`. Two concern a used-but-undeclared dependency: `CGP-E012` a
+capability used in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]`, and `CGP-E016`
+an inner provider a higher-order provider calls but never imported via `#[use_provider]`. Three
+concern a trait named where a provider trait belongs: `CGP-E013`/`CGP-E014` a `#[cgp_impl]` header
+naming the component's consumer trait where its provider trait belongs (`CGP-E013`), or a trait that
+is not a CGP component at all (`CGP-E014`); and `CGP-E015` an inner-provider bound (typically
+`#[use_provider]`) naming the consumer trait rather than the provider trait. Each entry below gives
+the rewritten message, the mistake behind it, the fix, and the upstream
 [CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) class it recognizes.
 
 ### `CGP-E001` — consumer trait not implemented
@@ -291,6 +294,52 @@ bare `@a.b.*` notation (no `Path!(…)` wrapper), and the upstream reference is
 - **Upstream class:** a macro-lowering mistake with no upstream error-catalog class of its own; see
   [`#[cgp_impl]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/macros/cgp_impl.md)
   for what the macro requires of its target trait.
+
+### `CGP-E015` — consumer trait in an inner-provider bound
+
+- **Message:** `` [CGP-E015] `<Consumer>` is a consumer trait and cannot bound an inner provider; a
+  higher-order provider imports its provider trait `<Provider>` ``, with a `help`: `` name the
+  provider trait in the bound, idiomatically `#[use_provider(… : <Provider>)]` (not the consumer
+  trait `<Consumer>`) ``.
+- **Means:** a higher-order provider's inner-provider bound names the component's *consumer* trait
+  where its *provider* trait belongs, most often through `#[use_provider]`.
+  [`#[use_provider]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/attributes/use_provider.md)
+  fills the leading context argument in, so `#[use_provider(Inner: CanCalculateArea)]` generates the
+  bound `Inner: CanCalculateArea<Self>` — but the consumer trait takes no context parameter, so it is
+  given one argument too many. It is the inner-bound sibling of
+  [`CGP-E013`](#cgp-e013--consumer-trait-used-in-a-provider-impl) (the same consumer/provider
+  confusion, in the impl header).
+- **Triggered by:** the `E0107` on the consumer trait in the bound, confirmed structurally: an inner
+  bound of a `#[cgp_impl]` provider impl whose trait is a CGP *consumer* trait (its consumer↔provider
+  fingerprint yields the provider trait to suggest). The `E0308` body cascade the malformed bound
+  trails — recognizable by its mention of the generated `__Context__` — is suppressed. The Rust code
+  stays `E0107`.
+- **Fix (in the `help`):** name the provider trait in the bound, idiomatically through
+  `#[use_provider]`.
+- **Upstream class:** a macro-lowering mistake with no upstream error-catalog class of its own — see
+  [higher-order providers](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/higher-order-providers.md).
+
+### `CGP-E016` — inner provider used but not imported
+
+- **Message:** `` [CGP-E016] the inner provider `<Inner>` is used but not imported ``, with a `help`:
+  `` import it with `#[use_provider(<Inner>: <ProviderTrait>)]` ``.
+- **Means:** a higher-order provider's body calls an inner provider as an associated function —
+  `<Inner>::method(self)` — that it never imported, so the inner parameter carries no provider-trait
+  bound and the call cannot resolve. It is the higher-order-provider counterpart of
+  [`CGP-E012`](#cgp-e012--capability-used-but-not-declared): a used-but-undeclared dependency, here an
+  inner provider imported with `#[use_provider]` rather than a `#[uses]` capability.
+- **Triggered by:** an `E0599` "no associated function … found for type parameter `<Inner>`" whose
+  help names the "type parameter is bounded by the trait" shape. The resolver confirms it
+  structurally: the failing call is `Param::method(…)` on a generic parameter of an enclosing
+  provider-trait impl, the method belongs to a CGP provider trait, and the parameter is not bounded
+  by it. rustc's own suggestion leaks the generated `__Context__` and offers the *consumer* trait as
+  a bound (the wrong fix); the rewrite names the inner provider and the `#[use_provider]` fix instead.
+  The Rust code stays `E0599`.
+- **Fix (in the `help`):** import the inner provider with `#[use_provider(<Inner>: <ProviderTrait>)]`,
+  which supplies the leading context argument the provider trait needs.
+- **Upstream class:** a macro-lowering mistake with no upstream error-catalog class of its own — see
+  [higher-order providers](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/higher-order-providers.md)
+  and [`#[use_provider]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/attributes/use_provider.md).
 
 ## Dependency-tree entry codes (`CGP-E1xx`)
 

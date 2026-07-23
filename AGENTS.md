@@ -238,13 +238,15 @@ vector (dropping the injected `rustc` path and injecting `--sysroot`); `callback
 the injected flags. The transform is split across two directories. `emitter/` is the `CgpEmitter<E>`
 seam: `install.rs` rebuilds whichever inner emitter the compiler's default would build — a
 `JsonEmitter` or an `AnnotateSnippetEmitter` — and wraps it, `cgp_emitter.rs` is the wrapper type and
-its `emit_diagnostic` orchestration (first recognize a `#[cgp_impl]` header naming the wrong trait —
-its `E0107` reshaped into a `[CGP-E013]`/`[CGP-E014]` header and the rest of its cascade suppressed —
+its `emit_diagnostic` orchestration (first recognize a `#[cgp_impl]` provider naming the wrong trait
+in its header or an inner-provider bound — its `E0107` reshaped into a
+`[CGP-E013]`/`[CGP-E014]`/`[CGP-E015]` header and the rest of its cascade suppressed —
 or a duplicate-key `E0119` conflict — suppressing
 the redundant `IsProviderFor` half, rewriting the wiring half — or an orphan-rule `E0210`/`E0117`
 namespace registration, reworded into its `[CGP-E011]` header, or a capability used in a
 `#[cgp_fn]`/`#[cgp_impl]` body without a `#[uses(…)]` declaration, reworded into its `[CGP-E012]`
-header; else try the typed
+header, or a higher-order provider calling an inner provider it never imported with `#[use_provider]`,
+reworded into its `[CGP-E016]` header; else try the typed
 resolver, else the text rewrite with its method-probe-advice and overflow cleanups; then always
 post-process; then cross-diagnostic de-duplicate through the rustc-free `DedupLedger` — drop a
 transformed diagnostic whose span-independent signature was already emitted, so one mistake re-reported
@@ -268,8 +270,11 @@ impls off the compiler (which keys collide, whether either is a `RedirectLookup`
 classifies an orphan-rule `E0210`/`E0117` by reading the offending namespace-registration impl off
 the compiler (which foreign namespace and key it names, whether a re-open or a registration),
 `undeclared.rs` recognizes a `#[uses(…)]`-undeclared capability call (its `[CGP-E012]` reshape),
-`cgp_impl_misuse.rs` recognizes a `#[cgp_impl]` header naming the wrong trait — a consumer trait or a
-non-component — off the consumer/provider fingerprints (its `[CGP-E013]`/`[CGP-E014]` reshape),
+`cgp_impl_misuse.rs` recognizes a `#[cgp_impl]` provider naming the wrong trait — a consumer trait or a
+non-component in its header, or a consumer trait in an inner-provider bound — off the consumer/provider
+fingerprints (its `[CGP-E013]`/`[CGP-E014]`/`[CGP-E015]` reshape), `missing_use_provider.rs` recognizes
+a higher-order provider calling an inner provider it never imported with `#[use_provider]` (its
+`[CGP-E016]` reshape),
 and `cgp_item.rs` holds the DefId-anchored CGP-trait recognition every stage relies on (see
 [Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md) and its per-stage
 sub-documents). `cache.rs` memoizes the walk at every node — keyed on the region-erased obligation and context —

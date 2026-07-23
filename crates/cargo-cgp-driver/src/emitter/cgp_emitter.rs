@@ -7,15 +7,16 @@ use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
 };
 use cargo_cgp_error_processing::{
-    Cause, CgpImplMisuse, DedupLedger, DiagKind, Leaf, OrphanConflict, Resolved,
-    UndeclaredCapability, cause_notes, cause_only_signature, cause_signature, cgp_impl_misuse_help,
-    coalesce_underived_fields, consumer_header, derive_help_messages, is_method_bounds_text,
-    mentions_orphan_param_text, orphan_conflict_help, plan_cgp_impl_misuse, plan_orphan_conflict,
-    plan_resolved, plan_undeclared_capability, plan_wiring_conflict, undeclared_capability_help,
-    wiring_conflict_help,
+    Cause, CgpImplMisuse, DedupLedger, DiagKind, Leaf, MissingUseProvider, OrphanConflict,
+    Resolved, UndeclaredCapability, cause_notes, cause_only_signature, cause_signature,
+    cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, derive_help_messages,
+    is_method_bounds_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
+    missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
+    plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_undeclared_capability,
+    plan_wiring_conflict, undeclared_capability_help, wiring_conflict_help,
 };
 use rustc_errors::codes::{
-    E0107, E0117, E0119, E0186, E0207, E0210, E0271, E0275, E0277, E0425, E0599,
+    E0107, E0117, E0119, E0186, E0207, E0210, E0271, E0275, E0277, E0308, E0425, E0599,
 };
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
@@ -118,15 +119,60 @@ enum CgpImplMisuseAction {
     Suppress,
 }
 
-/// Whether `diag` is a sibling macro-lowering error (`E0425`/`E0186`/`E0207`) of a `#[cgp_impl]`
-/// mistake — landing in the impl body (`impl_span`) or at the macro call-site the synthesized tokens
-/// share (`macro_span`, where `E0425`/`E0207` sit, outside the impl body).
+/// Whether `diag` is a sibling macro-lowering error of a `#[cgp_impl]` mistake — landing in the impl
+/// body (`impl_span`) or at the macro call-site the synthesized tokens share (`macro_span`, where
+/// `E0425`/`E0207` sit, outside the impl body). `E0425`/`E0186`/`E0207` are always siblings when they
+/// land there; an `E0308` type-mismatch cascade (from a malformed inner-provider bound) is a sibling
+/// only when it mentions the generated `__Context__`, so a genuine user type error is never dropped.
 fn is_cgp_impl_sibling(diag: &DiagInner, impl_span: Span, macro_span: Span) -> bool {
     let Some(primary) = diag.span.primary_span() else {
         return false;
     };
-    matches!(diag.code, Some(E0425) | Some(E0186) | Some(E0207))
-        && (impl_span.overlaps(primary) || macro_span.overlaps(primary))
+    if !(impl_span.overlaps(primary) || macro_span.overlaps(primary)) {
+        return false;
+    }
+    match diag.code {
+        Some(E0425) | Some(E0186) | Some(E0207) => true,
+        Some(E0308) => mentions_generated_context(diag),
+        _ => false,
+    }
+}
+
+/// Whether any plain-string message of `diag` — its main message, a child's, or a span label —
+/// satisfies `pred`. Used to recognize a diagnostic whose *main* message is a Fluent (non-`Str`)
+/// message but whose help or label carries the signal as plain text.
+fn diag_mentions(diag: &DiagInner, pred: fn(&str) -> bool) -> bool {
+    let in_messages = |messages: &[(DiagMessage, Style)]| {
+        messages
+            .iter()
+            .any(|(message, _)| matches!(message, DiagMessage::Str(text) if pred(text)))
+    };
+    let in_labels = |span: &MultiSpan| {
+        span.span_labels()
+            .into_iter()
+            .any(|label| matches!(label.label, Some(DiagMessage::Str(text)) if pred(&text)))
+    };
+    in_messages(&diag.messages)
+        || in_labels(&diag.span)
+        || diag
+            .children
+            .iter()
+            .any(|child| in_messages(&child.messages) || in_labels(&child.span))
+}
+
+/// Whether any message of `diag` or its children names the generated `__Context__` parameter — the
+/// tell that an `E0308` mismatch is a macro-lowering cascade rather than a user's own type error.
+fn mentions_generated_context(diag: &DiagInner) -> bool {
+    let in_messages = |messages: &[(DiagMessage, Style)]| {
+        messages.iter().any(|(message, _)| {
+            matches!(message, DiagMessage::Str(text) if text.contains("__Context__"))
+        })
+    };
+    in_messages(&diag.messages)
+        || diag
+            .children
+            .iter()
+            .any(|child| in_messages(&child.messages))
 }
 
 /// Whether a buffered entry is a sibling of the impl at `(impl_span, macro_span)` — the shape purged
@@ -392,6 +438,25 @@ impl<E: Emitter> CgpEmitter<E> {
         let spans = diagnostic_spans(diag);
         rustc_middle::ty::tls::with_opt(|tcx| {
             resolve::detect_undeclared_capability(tcx?, primary_span, &spans)
+        })
+    }
+
+    /// Recognize a missing-`#[use_provider]` failure — a higher-order provider calling an inner
+    /// provider (`Inner::method(self)`) it never imported, so the inner parameter is unbounded and
+    /// the associated-function call cannot resolve. Returns the inner provider and the provider trait
+    /// to import it as, or `None`. Gated to the "no associated item for a type parameter" `E0599`
+    /// shape — reported during typeck of the calling body, so the detector's queries are cached and
+    /// safe (unlike the resolution-class `E0599` emitted mid-`predicates_of`) — then confirmed
+    /// structurally by [`resolve::detect_missing_use_provider`].
+    fn missing_use_provider(&self, diag: &DiagInner) -> Option<MissingUseProvider> {
+        // The `E0599`'s main message is a Fluent (non-`Str`) message, so the shape is recognized by
+        // its plain-string help/label instead.
+        if diag.code != Some(E0599) || !diag_mentions(diag, is_unbounded_type_param_item_text) {
+            return None;
+        }
+        let primary_span = diag.span.primary_span()?;
+        rustc_middle::ty::tls::with_opt(|tcx| {
+            resolve::detect_missing_use_provider(tcx?, primary_span)
         })
     }
 
@@ -674,7 +739,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
         // below.
         if matches!(
             diag.code,
-            Some(E0107) | Some(E0425) | Some(E0186) | Some(E0207)
+            Some(E0107) | Some(E0425) | Some(E0186) | Some(E0207) | Some(E0308)
         ) {
             // Detection forces HIR/trait-graph queries, which re-enter the `DiagCtxt` lock and abort
             // the compiler if run while an *early-phase* diagnostic is emitting (name resolution,
@@ -769,6 +834,22 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                 Level::Help,
                 undeclared_capability_help(&undeclared),
             ));
+            self.postprocess(&mut diag, true);
+            self.record_cgp_spans(&diag);
+            self.buffer.push(BufEntry::Plain(diag));
+            return;
+        }
+        // A higher-order provider calling an inner provider it never imported with `#[use_provider]`:
+        // the inner parameter is unbounded, so rustc reports a vague `E0599` that leaks `__Context__`
+        // and suggests the wrong (consumer-trait) bound. Reword it to name the inner provider and
+        // carry the `#[use_provider(…)]` fix in a `help`, keeping the caret on the failing call.
+        if let Some(missing) = self.missing_use_provider(&diag)
+            && let Some(primary_span) = diag.span.primary_span()
+        {
+            replace_header(&mut diag, plan_missing_use_provider(&missing));
+            diag.span = MultiSpan::from_span(primary_span);
+            diag.children
+                .push(subdiag(Level::Help, missing_use_provider_help(&missing)));
             self.postprocess(&mut diag, true);
             self.record_cgp_spans(&diag);
             self.buffer.push(BufEntry::Plain(diag));

@@ -7,7 +7,10 @@
 //! consumer trait named where the provider trait belongs (`[CGP-E013]`, naming the provider to use),
 //! and a trait that is not a CGP component at all (`[CGP-E014]`, with no provider to suggest).
 
-use cargo_cgp_error_processing::{CgpImplMisuse, cgp_impl_misuse_help, plan_cgp_impl_misuse};
+use cargo_cgp_error_processing::{
+    CgpImplMisuse, MissingUseProvider, cgp_impl_misuse_help, missing_use_provider_help,
+    plan_cgp_impl_misuse, plan_missing_use_provider,
+};
 
 #[test]
 fn consumer_trait_names_the_provider_to_use() {
@@ -40,5 +43,39 @@ fn non_cgp_trait_has_no_provider_to_suggest() {
         cgp_impl_misuse_help(&misuse),
         "define `Greet` as a component with `#[cgp_component]`, or drop `#[cgp_impl]` and write a \
          plain `impl` if it is an ordinary trait",
+    );
+}
+
+#[test]
+fn consumer_trait_in_a_provider_bound() {
+    let misuse = CgpImplMisuse::ConsumerProviderBound {
+        consumer: "CanCalculateArea".to_owned(),
+        provider: "AreaCalculator".to_owned(),
+    };
+    assert_eq!(
+        plan_cgp_impl_misuse(&misuse),
+        "[CGP-E015] `CanCalculateArea` is a consumer trait and cannot bound an inner provider; a \
+         higher-order provider imports its provider trait `AreaCalculator`",
+    );
+    assert_eq!(
+        cgp_impl_misuse_help(&misuse),
+        "name the provider trait in the bound, idiomatically `#[use_provider(… : AreaCalculator)]` \
+         (not the consumer trait `CanCalculateArea`)",
+    );
+}
+
+#[test]
+fn inner_provider_not_imported() {
+    let missing = MissingUseProvider {
+        inner: "InnerCalculator".to_owned(),
+        provider_trait: "AreaCalculator".to_owned(),
+    };
+    assert_eq!(
+        plan_missing_use_provider(&missing),
+        "[CGP-E016] the inner provider `InnerCalculator` is used but not imported",
+    );
+    assert_eq!(
+        missing_use_provider_help(&missing),
+        "import it with `#[use_provider(InnerCalculator: AreaCalculator)]`",
     );
 }

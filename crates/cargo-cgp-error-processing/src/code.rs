@@ -120,6 +120,26 @@ pub const CONSUMER_TRAIT_IN_PROVIDER_IMPL: &str = "CGP-E013";
 /// the trait *is* a component and only the wrong half was named. The Rust code stays `E0107`.
 pub const NON_CGP_TRAIT_IN_CGP_IMPL: &str = "CGP-E014";
 
+/// `CGP-E015` — a higher-order provider's inner-provider bound names the component's *consumer* trait
+/// where its *provider* trait belongs, most often through `#[use_provider]`. `#[use_provider]` fills
+/// the leading context argument in for you, so `#[use_provider(Inner: CanCalculateArea)]` generates
+/// the bound `Inner: CanCalculateArea<Self>` — but the consumer trait takes no context parameter, so
+/// it is given one argument too many. Sibling of [`CONSUMER_TRAIT_IN_PROVIDER_IMPL`]: the same
+/// consumer/provider confusion, but in an inner-provider bound rather than the impl header. The
+/// rewritten message names the consumer trait and the provider trait to use instead. The Rust code
+/// stays `E0107`.
+pub const CONSUMER_TRAIT_IN_PROVIDER_BOUND: &str = "CGP-E015";
+
+/// `CGP-E016` — a higher-order provider calls an inner provider (`Inner::method(self)`) that it never
+/// imported with `#[use_provider]`, so the inner provider parameter carries no provider-trait bound
+/// and the associated-function call cannot resolve. rustc reports a vague `E0599` that leaks the
+/// generated `__Context__` placeholder and suggests restricting the parameter with the *consumer*
+/// trait (the wrong fix for a higher-order provider). The rewritten message names the inner provider
+/// and the fix — import it with `#[use_provider(Inner: ProviderTrait)]` — in a `help`. Sibling of
+/// [`UNDECLARED_CAPABILITY`]: a used-but-undeclared dependency, here an inner provider rather than a
+/// `#[uses]` capability. The Rust code stays `E0599`.
+pub const INNER_PROVIDER_NOT_IMPORTED: &str = "CGP-E016";
+
 // The `CGP-E1xx` family codes the entries of a `root cause:` note's dependency tree, one code per
 // distinct rendering template. `CGP-E101`, `CGP-E102`, `CGP-E104`, and `CGP-E105` are the inner chain
 // nodes (a wiring hop — `CGP-E103` is retired, see below); `CGP-E106`–`CGP-E111` are the terminal

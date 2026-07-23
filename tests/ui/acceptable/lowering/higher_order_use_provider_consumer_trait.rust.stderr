@@ -1,0 +1,42 @@
+error[E0107]: trait takes 0 generic arguments but 1 generic argument was supplied
+  --> src/main.rs:20:33
+   |
+19 |   #[cgp_impl(new ScaledArea<InnerCalculator>)]
+   |  _____________________________________________-
+20 | | #[use_provider(InnerCalculator: CanCalculateArea)]
+   | |                                 ^^^^^^^^^^^^^^^-
+   | |_________________________________|______________|
+   |                                   |              help: remove the unnecessary generics
+   |                                   expected 0 generic arguments
+   |
+note: trait defined here, with 0 generic parameters
+  --> src/main.rs:4:11
+   |
+ 4 | pub trait CanCalculateArea {
+   |           ^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> src/main.rs:19:1
+   |
+19 | #[cgp_impl(new ScaledArea<InnerCalculator>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&InnerCalculator`, found `&__Context__`
+20 | #[use_provider(InnerCalculator: CanCalculateArea)]
+21 | impl<InnerCalculator> AreaCalculator {
+   |      --------------- expected type parameter
+22 |     fn area(&self, #[implicit] scale_factor: f64) -> f64 {
+23 |         InnerCalculator::area(self) * scale_factor * scale_factor
+   |         --------------------- arguments to this function are incorrect
+   |
+   = note: expected reference `&InnerCalculator`
+              found reference `&__Context__`
+   = note: a type parameter was expected, but a different one was found; you might be missing a type parameter or trait bound
+   = note: for more information, visit https://doc.rust-lang.org/book/ch10-02-traits.html#traits-as-parameters
+note: method defined here
+  --> src/main.rs:5:8
+   |
+ 5 |     fn area(&self) -> f64;
+   |        ^^^^  ----
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0107, E0308.
+For more information about an error, try `rustc --explain E0107`.

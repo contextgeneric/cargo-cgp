@@ -106,6 +106,16 @@ their fixtures now live under `acceptable/`:
   ([`consumer_trait_in_provider_impl`](../../tests/ui/acceptable/lowering/consumer_trait_in_provider_impl.rs),
   [`consumer_trait_in_provider_impl_generic`](../../tests/ui/acceptable/lowering/consumer_trait_in_provider_impl_generic.rs),
   and [`cgp_impl_on_non_cgp_trait`](../../tests/ui/acceptable/lowering/cgp_impl_on_non_cgp_trait.rs)).
+- A **higher-order provider's `#[use_provider]` mistake** is reshaped the same way. Forgetting to
+  import the inner provider — calling `InnerCalculator::area(self)` without
+  `#[use_provider(InnerCalculator: AreaCalculator)]`, so the parameter is unbounded — is reshaped from
+  rustc's vague `E0599` (which leaks the generated `__Context__` and suggests the wrong consumer-trait
+  bound) into a `[CGP-E016]` error naming the inner provider and the `#[use_provider(…)]` fix
+  ([`higher_order_missing_use_provider`](../../tests/ui/acceptable/lowering/higher_order_missing_use_provider.rs)).
+  Naming the *consumer* trait in the `#[use_provider]` bound — the inner-bound sibling of the header
+  mistake above — is reshaped into a `[CGP-E015]` error pointing at the provider trait to use, with
+  the `E0308` body cascade suppressed
+  ([`higher_order_use_provider_consumer_trait`](../../tests/ui/acceptable/lowering/higher_order_use_provider_consumer_trait.rs)).
 
 What remains below are the classes the tool does not yet reshape.
 
