@@ -425,7 +425,8 @@ separate header brand; the inline code is the only marking.
   graph — the leads and their codes, the derive `help`s, and the de-duplication `cause_signature`),
   `coalesce.rs` (`coalesce_underived_fields`, merging several underived fields on one struct into a
   single heading cause), and
-  `plan.rs` (`DiagKind`, `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`),
+  `plan.rs` (`DiagKind`, `DiagnosisPlan`, the unrendered `PendingNote`, and `plan_resolved` with its
+  `categorized_header`),
   unit-tested in [`tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs),
   [`tests/coalesce.rs`](../../crates/cargo-cgp-error-processing/tests/coalesce.rs), and
   [`tests/graph.rs`](../../crates/cargo-cgp-error-processing/tests/graph.rs).

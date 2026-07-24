@@ -85,7 +85,10 @@ Whatever happens to the headline, the sub-messages are always replaced. rustc's 
 notes, supplementary help, and structured suggestions are discarded, and each recovered root cause
 becomes one `= note:` opening with a `root cause:` lead that names the leaf, followed by the
 dependency chain rendered as a tree. The chain **repeats the root cause as its own terminal leaf**, so
-it always bottoms out *at* the cause rather than one step before it, whatever the leaf's kind. Every
+it always bottoms out *at* the cause rather than one step before it, whatever the leaf's kind — a
+branch elided against an earlier block
+([cross-block elision](dependency-graph-rendering.md#eliding-across-blocks)) keeps that terminus too,
+and a note with no chain at all names the cause in its lead instead. Every
 lead and every tree entry carries a [`CGP-E1xx`/`CGP-E2xx` code](../error-code.md) (the wording below
 omits the prefix for brevity). Paths render as a bare `@app.GreeterComponent` — the `Path!(@…)` macro
 form is reserved for the resugaring fallback — and module qualifiers are stripped throughout, so
@@ -218,8 +221,10 @@ The wording is decided rustc-free and only *applied* by the emitter. The emitter
 own rustc code to a rustc-free [`DiagKind`](../../crates/cargo-cgp-error-processing/src/diagnosis/plan.rs)
 (`E0271` a projection mismatch, `E0599` a use-site method, everything else a plain check) and hands that,
 the main-message text, the `Resolved`, and the name map to `plan_resolved`, which returns a
-`DiagnosisPlan`: the rewritten header (or `None` to keep rustc's), the derive `help`s, and a single
-`root cause:` note folding every cause's paths into one [dependency graph](dependency-graph-rendering.md). One mapping is by *anchor* rather than by code: a resolution the call-site anchor produced
+`DiagnosisPlan`: the rewritten header (or `None` to keep rustc's), the fix `help`s, and the
+`root cause:` note as an unrendered `PendingNote`, which the emitter renders at flush — folding every
+cause's paths into one [dependency graph](dependency-graph-rendering.md) against what the
+compilation's earlier notes already drew. One mapping is by *anchor* rather than by code: a resolution the call-site anchor produced
 plans as a use-site failure whatever its rustc code (a genuine `E0271` field mismatch excepted), so
 its header names the consumer trait the call needs rather than whichever provider bound rustc's
 headline stopped on — at a call that is dispatch plumbing (`PipeHandlers`, `ComposeHandlers`) the

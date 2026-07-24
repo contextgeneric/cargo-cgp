@@ -332,6 +332,16 @@ in the fixtures. This document covers rendering only; the resolver's walk, ancho
 described in [Typed root-cause resolution](typed-root-cause-resolution.md) and changed by this model
 only in the representation they emit.
 
+**A wide convergence repeats `(*)` once per parent, and that is not noise to collapse.** A capability
+many providers share — an abstract type especially, since one binding serves the whole context — is a
+node with many parents, so its reference recurs once under each. It reads at a glance like repetition
+worth folding, and it is not: each `(*)` is the *terminator of a distinct branch* naming a distinct
+consumer, so dropping the repeats would leave those branches dangling with no explanation of why they
+are listed. Reproducing a six-way convergence makes this plain — the weight is the six two-line
+branches, which are genuine information, not the six markers that end them. The length is inherent to
+wiring in which six capabilities really do need one shared thing. What *is* worth collapsing is a
+subtree drawn in another block, which is [the cross-block elision](#eliding-across-blocks) above.
+
 ## Comparison with Clippy
 
 Clippy has no analog to this rendering, because it has no analog to the work behind it. Clippy adds new

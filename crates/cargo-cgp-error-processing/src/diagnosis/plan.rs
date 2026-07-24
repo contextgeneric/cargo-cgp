@@ -8,11 +8,14 @@
 //! [`DiagnosisPlan`] strings into `rustc` sub-diagnostics — so all the wording logic is here,
 //! unit-tested without a compiler, and the emitter is left with only `DiagInner` manipulation.
 
+use std::collections::HashSet;
+
 use crate::diagnosis::coalesce::coalesce_underived_fields;
 use crate::diagnosis::leaf::Leaf;
+use crate::diagnosis::node::ChainNode;
 use crate::diagnosis::resolved::{Cause, Resolved};
 use crate::diagnosis::wording::{
-    assoc_mismatch_header, assoc_mismatch_leaf, cause_notes, consumer_header,
+    assoc_mismatch_header, assoc_mismatch_leaf, cause_notes_seen, consumer_header,
     field_mismatch_header, fix_help_messages, mismatch_leaf,
 };
 use crate::rewrite::{ComponentNameMap, parse_trait_bound, rewrite_trait_bound};
@@ -43,15 +46,32 @@ pub struct DiagnosisPlan {
     /// `HasField`, or an abstract type whose wiring must change (see
     /// [`fix_help_messages`](super::fix_help_messages)).
     pub helps: Vec<String>,
-    /// The `root cause:` note — every cause's paths folded into one dependency graph. A single
-    /// element, or none when there are no causes.
-    pub notes: Vec<String>,
-    /// The inputs [`notes`](Self::notes) was rendered from. A caller that must *defer* rendering —
-    /// the emitter does, so a note can elide the subtrees earlier diagnostics already drew — rebuilds
-    /// it from these through [`cause_notes_seen`](super::cause_notes_seen) and ignores `notes`.
-    pub note_causes: Vec<Cause>,
-    /// The leaf the header states, if any — the second argument the deferred rebuild needs.
-    pub note_header_leaf: Option<Leaf>,
+    /// The `root cause:` note, **not yet rendered** — see [`PendingNote`].
+    pub note: PendingNote,
+}
+
+/// The `root cause:` note as the inputs it renders from, rather than as text.
+///
+/// Rendering is deferred because a note elides against what *other* notes of the same compilation
+/// already drew (see [`DependencyGraph::render_seen`](crate::DependencyGraph::render_seen)), and only
+/// the emitter's flush knows the order they will appear in. Keeping the note in this form rather than
+/// as a rendered string alongside is deliberate: two representations of one note would let the tests
+/// pin one while the emitter shows the other.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PendingNote {
+    /// The coalesced causes, one per distinct root cause.
+    pub causes: Vec<Cause>,
+    /// The leaf the header states, if any, whose lead is then redundant.
+    pub header_leaf: Option<Leaf>,
+}
+
+impl PendingNote {
+    /// Render the note against `seen`, the subtrees the compilation's earlier notes already drew. A
+    /// caller with no such context — a unit test, or any single-diagnostic use — passes a fresh set.
+    /// Yields one note, or none when there are no causes.
+    pub fn render(&self, seen: &mut HashSet<ChainNode>) -> Vec<String> {
+        cause_notes_seen(&self.causes, self.header_leaf.as_ref(), seen)
+    }
 }
 
 /// Build the [`DiagnosisPlan`] for a resolved failure. The main message is rewritten only when
@@ -59,7 +79,9 @@ pub struct DiagnosisPlan {
 /// either way. When the kept main message already states the leaf bound, the matching note drops
 /// its `root cause:` lead so it does not repeat the header. Causes that share one fix — several
 /// underived fields on one struct — are first coalesced into a single cause
-/// ([`coalesce_underived_fields`]), so the note lists one root cause per required fix.
+/// ([`coalesce_underived_fields`]), so the note lists one root cause per required fix. The note is
+/// returned unrendered, as a [`PendingNote`]; the caller renders it once it knows what earlier notes
+/// have drawn.
 pub fn plan_resolved(
     kind: DiagKind,
     main_message: Option<&str>,
@@ -84,15 +106,14 @@ pub fn plan_resolved(
 
     let causes = coalesce_underived_fields(&resolved.causes);
     let helps = fix_help_messages(&causes);
-    let notes = cause_notes(&causes, header_leaf);
-    let header = text;
 
     DiagnosisPlan {
-        header,
+        header: text,
         helps,
-        notes,
-        note_header_leaf: header_leaf.cloned(),
-        note_causes: causes,
+        note: PendingNote {
+            header_leaf: header_leaf.cloned(),
+            causes,
+        },
     }
 }
 

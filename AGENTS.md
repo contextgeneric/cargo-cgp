@@ -468,7 +468,9 @@ target project is re-checked.
    `git diff` / `git status` shows precisely what was removed and therefore what the true cause is.
    Read that diff to know what the ideal message *should* say. Treat the target project as read-only,
    like `../cgp`: never commit, revert, or otherwise change it — its uncommitted state is the
-   diagnostic aid, not something to tidy.
+   diagnostic aid, not something to tidy, and reverting it destroys the reproduction the whole task
+   rests on. Re-check `git status` there before you finish, because losing that state is easy to do
+   by accident and silent when it happens: the check simply starts passing.
 3. **Judge the gap.** Compare the tool's actual output against that known root cause and decide how the
    message should improve — what it buries, misnames, or omits.
 4. **Reproduce it as a simplified UI fixture — do not fix the tool yet.** Before changing any
@@ -488,7 +490,26 @@ target project is re-checked.
 6. **Re-check the target project.** Only once the fixture is green and improved, re-run the Nix check on
    the target project and confirm the real-world message improved the same way. If it did not, the
    fixture did not capture the real cause — return to step 4 with a fixture that does.
-7. **Graduate the fixture if it earned it.** A fixture whose output now clears the usability bar moves
+7. **Confirm the fix the message names actually works.** When the improved message *tells the reader
+   what to change* — a `help` naming a wiring entry, say — that claim is worth testing rather than
+   inferring from the diff: a fix can be necessary without being sufficient, and a `help` that leaves
+   the build failing is worse than none. Test it in a **`git worktree`**, never in the project itself:
+
+   ```sh
+   git -C /path/to/project worktree add ../scratch-verify HEAD
+   git -C /path/to/project diff | git -C ../scratch-verify apply   # reproduce the failing state
+   # apply the change the message names, then run the check from ../scratch-verify
+   git -C /path/to/project worktree remove --force ../scratch-verify
+   ```
+
+   Place the worktree **as a sibling of the project**, as above: a CGP example workspace usually
+   `[patch]`es `cgp` to a relative `../cgp`, which resolves from a sibling and breaks anywhere else.
+   A worktree is the right tool because it cannot write into the original — it registers under the
+   project's `.git` (so remove it when done) but leaves every tracked file untouched. Do **not**
+   improvise a copy with `rsync`/`cp` plus an in-place edit — a stray `sed -i`, an unset variable
+   collapsing a path, or a mistaken argument order will silently write back into the project and
+   revert the very state step 2 depends on, and the only symptom is that the check starts passing.
+8. **Graduate the fixture if it earned it.** A fixture whose output now clears the usability bar moves
    from `usability/` into `acceptable/` (a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr` triple,
    no re-bless), recording that this class of error is now presented well.
 
@@ -499,8 +520,14 @@ exactly one commit of the changes then in the working tree — nothing more. The
 and override any general default:
 
 - **Never commit unless explicitly asked.** Do not commit as a side effect of finishing a task,
-  passing tests, or "wrapping up." If the work is done and the user has not asked to commit, leave the
-  changes uncommitted and say so.
+  passing tests, or "wrapping up." If the work is done and the user has not asked to commit, simply
+  leave the changes uncommitted.
+- **Never bring commits up yourself.** Leaving work uncommitted is the normal, expected state, so it
+  is not news: do not report commit status when finishing a task ("nothing is committed", "these
+  changes sit uncommitted on top of X"), do not ask whether to commit, and do not suggest or hint
+  that committing is the next step. The user tracks this themselves and will say when they want a
+  commit. Answer plainly if they ask about it — the rule is against volunteering it, not against
+  discussing it.
 - **A commit request is one-shot, never a standing mode.** A prompt such as "commit the changes"
   means *commit the current changes, this once*. It does **not** mean "commit automatically from now
   on." Treating a single commit request as a switch that turns on automatic committing is a serious

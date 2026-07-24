@@ -35,8 +35,11 @@ driver, is what keeps them unit-testable.
   model — the `Resolved` failure the driver's typed resolver produces, in owned `String` form — and
   the wording that turns it into diagnostic text. `plan_resolved` coalesces causes that share one fix
   (`coalesce_underived_fields`) and composes the rewritten header, the
-  derive `help`s, and the per-cause `root cause:` notes into a `DiagnosisPlan`, which the emitter only
-  maps onto rustc's `DiagInner`; keeping every piece rustc-free is what makes the whole
+  fix `help`s, and the `root cause:` note into a `DiagnosisPlan`, which the emitter only maps onto
+  rustc's `DiagInner`. The note travels as an unrendered `PendingNote` — the causes and the
+  header-stated leaf — because rendering it needs the emission order only the emitter's flush knows;
+  keeping one representation rather than a rendered string alongside is what stops the tests pinning
+  one note while the emitter shows another. keeping every piece rustc-free is what makes the whole
   diagnosis-to-text layer unit-testable without a `TyCtxt`. The same module holds the structured
   dependency-graph nodes and their rendering (`node.rs`) and the graph that merges and renders them
   (`graph.rs`), so every node template and the whole merge/render live here. It is documented in
@@ -337,7 +340,8 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   through, so a merged block carries the same fixes), and `signature.rs` (`cause_signature`) —
   `coalesce.rs`
   (`coalesce_underived_fields`), `plan.rs` (`DiagKind`,
-  `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`), and `wiring.rs`
+  `DiagnosisPlan`, the unrendered `PendingNote` and its `render`, and `plan_resolved` with its
+  `categorized_header`), and `wiring.rs`
   (`WiringConflict`/`WiringKey`, `plan_wiring_conflict` for the `[CGP-E004]`–`[CGP-E008]`
   duplicate-key headers, and `wiring_conflict_help` for the redirect fix). See
   [Typed root-cause resolution](typed-root-cause-resolution.md) and

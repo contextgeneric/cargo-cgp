@@ -8,7 +8,7 @@ use cargo_cgp_error_processing::rewrite::{
 };
 use cargo_cgp_error_processing::{
     Cause, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider,
-    OrphanConflict, Resolved, UndeclaredCapability, cause_notes_seen, cause_only_signature,
+    OrphanConflict, PendingNote, Resolved, UndeclaredCapability, cause_only_signature,
     cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, consumer_header,
     fix_help_messages, is_method_bounds_text, is_unbounded_type_param_item_text,
     mentions_orphan_param_text, missing_use_provider_help, orphan_conflict_help,
@@ -113,13 +113,6 @@ struct ResolvedEntry {
 /// The subtrees a flush has already drawn, shared across its blocks so a later one `(*)`-elides
 /// what an earlier one showed rather than repeating it.
 type ChainNodeSet = HashSet<ChainNode>;
-
-/// The inputs a deferred `root cause:` note is rendered from at flush — the plan's coalesced causes
-/// and the leaf its header states (whose lead is then redundant).
-struct PendingNote {
-    causes: Vec<Cause>,
-    header_leaf: Option<Leaf>,
-}
 
 /// Whether a resolution is a *consumer-trait* failure on the checked context itself — the only shape
 /// that coalesces. A field-type mismatch, a provider-side check, or a foreign-wrapper failure is
@@ -271,9 +264,13 @@ impl<E: Emitter> CgpEmitter<E> {
             .map(|help| subdiag(Level::Help, help))
             .collect();
         children.extend(
-            cause_notes_seen(&causes, None, seen)
-                .into_iter()
-                .map(|note| subdiag(Level::Note, note)),
+            PendingNote {
+                causes,
+                header_leaf: None,
+            }
+            .render(seen)
+            .into_iter()
+            .map(|note| subdiag(Level::Note, note)),
         );
 
         let mut diag = diags[0].clone();
@@ -756,18 +753,19 @@ impl<E: Emitter> CgpEmitter<E> {
         // that includes the misleading "use associated function syntax instead".
         diag.suggestions = Suggestions::Enabled(vec![]);
 
-        PendingNote {
-            causes: plan.note_causes,
-            header_leaf: plan.note_header_leaf,
-        }
+        plan.note
     }
 
     /// Render a deferred [`PendingNote`] against the `seen` set shared by this flush and append it to
     /// `diag`. The note is post-processed on its own, since the rest of the diagnostic was already
     /// processed when it arrived and re-running the chain over it could compound.
     fn append_note(&self, diag: &mut DiagInner, note: &PendingNote, seen: &mut ChainNodeSet) {
-        for text in cause_notes_seen(&note.causes, note.header_leaf.as_ref(), seen) {
-            let text = postprocess_message(&text, false, true).unwrap_or(text);
+        // A resolver-built note never carries the `` `HasField<…>` is not implemented `` clause the
+        // missing-field reword keys on (see docs/implementation/error-processing.md), so that branch
+        // has nothing to match and the flag it needs is moot here.
+        const HAS_FIELD_IMPLS: bool = false;
+        for text in note.render(seen) {
+            let text = postprocess_message(&text, HAS_FIELD_IMPLS, true).unwrap_or(text);
             diag.children.push(subdiag(Level::Note, text));
         }
     }

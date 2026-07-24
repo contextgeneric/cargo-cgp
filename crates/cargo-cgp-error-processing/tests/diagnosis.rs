@@ -17,6 +17,12 @@ use cargo_cgp_error_processing::{
     derive_help_messages, field_mismatch_header, plan_resolved, root_cause_code,
 };
 
+/// The plan's `root cause:` note as text. The plan carries the note unrendered so the emitter can
+/// elide it against what earlier diagnostics drew; a test has no such context, so it renders alone.
+fn notes(plan: &cargo_cgp_error_processing::DiagnosisPlan) -> Vec<String> {
+    plan.note.render(&mut std::collections::HashSet::new())
+}
+
 /// Indent every line by the two spaces the note wording nests a dependency chain under its
 /// `this is required through the dependency chain:` heading with.
 fn indent2(chain: &str) -> String {
@@ -144,7 +150,7 @@ fn plans_a_missing_field_check_failure() {
     );
     assert!(plan.helps.is_empty());
     assert_eq!(
-        plan.notes,
+        notes(&plan),
         vec![format!(
             "root cause: [CGP-E106] missing field `height` on `Rectangle`\n\
              this is required through the dependency chain:\n{}",
@@ -176,7 +182,7 @@ fn plans_a_missing_wiring_check_failure() {
     // A missing wiring, like a genuinely missing field, carries no `help` — the note names the fix.
     assert!(plan.helps.is_empty());
     assert_eq!(
-        plan.notes,
+        notes(&plan),
         vec![format!(
             "root cause: [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`\n\
              this is required through the dependency chain:\n{}",
@@ -203,7 +209,7 @@ fn plans_a_missing_dispatch_entry_check_failure() {
 
     assert!(plan.helps.is_empty());
     assert_eq!(
-        plan.notes,
+        notes(&plan),
         vec![format!(
             "root cause: [CGP-E110] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`\n\
              this is required through the dependency chain:\n{}",
@@ -228,7 +234,7 @@ fn plans_a_not_a_provider_check_failure() {
 
     assert!(plan.helps.is_empty());
     assert_eq!(
-        plan.notes,
+        notes(&plan),
         vec![format!(
             "root cause: [CGP-E111] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`\n\
              this is required through the dependency chain:\n{}",
@@ -256,7 +262,7 @@ fn plans_a_missing_redirect_wiring_check_failure() {
 
     assert!(plan.helps.is_empty());
     assert_eq!(
-        plan.notes,
+        notes(&plan),
         vec![format!(
             "root cause: [CGP-E107] context `App` does not contain any delegate entry for \
              `@app.finance.types.QuantityTypeProviderComponent`\n\
@@ -294,7 +300,7 @@ fn plans_a_missing_derive_with_a_help() {
         plan.helps,
         vec!["make sure that `#[derive(HasField)]` is used for `Rectangle`".to_owned()]
     );
-    assert!(plan.notes[0].starts_with(
+    assert!(notes(&plan)[0].starts_with(
         "root cause: [CGP-E108] accessor trait `HasField` with field `height` is not implemented for `Rectangle`"
     ));
 }
@@ -350,7 +356,7 @@ fn plans_a_field_type_mismatch() {
     assert!(plan.helps.is_empty());
     // The `[CGP-E003]` header states the leaf, so the note carries the chain alone.
     assert_eq!(
-        plan.notes,
+        notes(&plan),
         vec![format!(
             "this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
@@ -396,7 +402,7 @@ fn plans_an_abstract_type_mismatch() {
     );
     // The `[CGP-E017]` header states the leaf, so the note carries the chain alone.
     assert_eq!(
-        plan.notes,
+        notes(&plan),
         vec![format!(
             "this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
@@ -514,7 +520,7 @@ fn keeps_an_ordinary_bound_header_and_drops_the_repeated_lead() {
     assert_eq!(plan.header, None);
     // …and the note drops its `root cause:` lead, since the kept header already states the bound.
     assert_eq!(
-        plan.notes,
+        notes(&plan),
         vec![format!(
             "this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
