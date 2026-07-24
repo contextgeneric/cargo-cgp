@@ -21,5 +21,6 @@ error[E0277]: [CGP-E009] the trait `CheckGreeting` is not implemented for contex
              [CGP-E105] trait impl `CheckGreeting` for `App`
              └─ [CGP-E105] trait impl `Greeting` for `App`
                └─ [CGP-E105] trait impl `FormatName` for `App` (*)
+                 └─ [CGP-E106] missing field `name` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

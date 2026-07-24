@@ -24,6 +24,7 @@ error[E0277]: [CGP-E001] the consumer trait `CanRun` is not implemented for cont
              [CGP-E101] consumer trait impl `CanRun` for context `Outer`
              └─ [CGP-E102] provider trait impl `Runner` with context `Outer` for provider `RunViaInner`
                ├─ [CGP-E101] consumer trait impl `CanCompute` for context `Inner` (*)
+               │ └─ [CGP-E106] missing field `name` on `Inner`
                └─ [CGP-E105] trait impl `HasName` for `Outer`
                  └─ [CGP-E106] missing field `name` on `Outer`
 

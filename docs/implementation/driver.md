@@ -427,7 +427,9 @@ coalesced ones are merged, and that is what lets the notes elide against one ano
 that does not coalesce still buffers its causes rather than its note — a wrapper trait, a mismatch, a
 provider-side check — because only at flush is the emission order known, and one
 [dependency graph](dependency-graph-rendering.md#eliding-across-blocks) `seen` set threaded through
-the blocks in that order lets a later one `(*)`-truncate at the subtree an earlier one already drew.
+the blocks in that order lets a later one `(*)`-truncate at the subtree an earlier one already drew —
+while still ending at the root cause, since the block it points into is one the reader may not have to
+hand.
 The redundancy this removes is large in real code: CGP wiring is lazy, so one mistake reaches several
 diagnostics that legitimately do *not* de-duplicate, and their chains can share everything below their
 own first few hops. A block whose whole chain was already drawn keeps its lead and drops the chain

@@ -21,6 +21,7 @@ error[E0277]: [CGP-E009] the trait `CanGreetSend` is not implemented for context
            this is required through the dependency chain:
              [CGP-E105] trait impl `CanGreetSend` for `App`
              └─ [CGP-E101] consumer trait impl `CanGreet` for context `App` (*)
+               └─ [CGP-E106] missing field `name` on `App`
 
 Some errors have detailed explanations: E0277, E0599.
 For more information about an error, try `rustc --explain E0277`.

@@ -250,14 +250,25 @@ money-transfer example the second block's 29 nodes were 25 of the first block's 
 routing prefix; eliding the shared remainder takes it from 38 rendered lines to six.
 
 [`render_seen`](../../crates/cargo-cgp-error-processing/src/diagnosis/graph.rs) is `render` against a
-caller-owned `seen`, and two rules keep it honest. **A render consults only what *earlier* renders
-drew**: the nodes it draws itself are collected apart and folded in at the end, because `seen` is
-keyed by node value while a label repeating *within* one path is deliberately a distinct node — a set
-the current render were also filling would mark the second occurrence `(*)` and fold a linear descent
-into a false cycle. Within a render, only the id-keyed `expanded` elides. And **a block that would say
-nothing new drops its chain**: `fully_elided_by` reports every top-level root already drawn, and the
-note then keeps its `root cause:` lead alone rather than heading a lone `(*)` with the promise of a
-chain.
+caller-owned `seen`, and three rules keep it honest.
+
+**An elided branch still bottoms out at the root cause.** A chain exists to lead the reader from what
+they wrote down to the mistake, so stopping one step short of it is the one thing it may never do —
+and a cross-block `(*)` points into *another* block, which a reader may not have to hand. So a branch
+elided across renders keeps the marker on the hop and appends the distinct leaves reachable beneath it
+(`leaves_below`): the intervening hops are elided, the terminus is not. A branch elided *within* one
+render needs no such terminator, and keeps the bare `(*)` it always had, because the subtree it points
+at — root cause included — is right above it in the same note.
+
+**A render consults only what *earlier* renders drew.** The nodes it draws itself are collected apart
+and folded in at the end, because `seen` is keyed by node value while a label repeating *within* one
+path is deliberately a distinct node — a set the current render were also filling would mark the second
+occurrence `(*)` and fold a linear descent into a false cycle. Within a render, only the id-keyed
+`expanded` elides.
+
+**A block that would say nothing new drops its chain.** `fully_elided_by` reports every top-level root
+already drawn, and the note then keeps its `root cause:` lead alone rather than heading a lone `(*)`
+with the promise of a chain. The cause is still named — by the lead instead of by a terminus.
 
 An elided block stays actionable read on its own — its header, its fix `help`, and its `root cause:`
 lead all still name the cause, so what is elided is chain *detail*, never what failed or how to fix
@@ -340,9 +351,10 @@ and the end-to-end behavior is pinned by the UI suite.
   subsuming cascade, converging independent roots on one leaf, a diamond, a super-root, a within-path
   label repeat kept linear, cross-path redirects distinct by key versus merged by key, generic elision
   on an exact repeat and its absence on a differing generic, a cyclic input terminating with a `(*)`
-  mark, and an empty path set rendering empty. The cross-block elision has three of its own: a second
-  graph truncating at what the first drew while keeping its own prefix, a wholly-redundant graph
-  reporting itself `fully_elided_by`, and a leaf-only graph never doing so (a leaf hides no subtree).
+  mark, and an empty path set rendering empty. The cross-block elision has four of its own: a second
+  graph truncating at what the first drew while keeping its own prefix *and still ending at the root
+  cause*, the within-render reference staying bare by contrast, a wholly-redundant graph reporting
+  itself `fully_elided_by`, and a leaf-only graph never doing so (a leaf hides no subtree).
 - [`crates/cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs)
   — the note assembly over the graph: the singular `root cause:` lead, its drop when the header states
   that leaf (either mismatch class, or a kept-header bound) and its retention under a header that does
@@ -363,8 +375,8 @@ and the end-to-end behavior is pinned by the UI suite.
   templates).
 - [`crates/cargo-cgp-error-processing/src/diagnosis/graph.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/graph.rs)
   — `DependencyGraph`, `from_paths` (the cross-path-only merge), the root rule, the `(*)`-dedup
-  renderer with parent-based generic elision, and `render_seen`/`fully_elided_by` (the cross-block
-  elision).
+  renderer with parent-based generic elision, and `render_seen`/`leaves_below`/`fully_elided_by` (the
+  cross-block elision and the terminus it keeps).
 - [`crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs)
   — `Cause { leaf, paths }`, one cause per leaf holding every path that reaches it.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/wording/note.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/wording/note.rs)

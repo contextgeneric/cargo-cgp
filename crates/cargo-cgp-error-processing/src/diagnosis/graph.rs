@@ -168,6 +168,30 @@ impl DependencyGraph {
         rendered
     }
 
+    /// The distinct terminal leaves reachable from `id`, in first-seen order, as render nodes. This
+    /// is what an elided branch bottoms out on, so a chain whose middle was drawn in another note
+    /// still ends at the root cause. Descent is bounded by a visited set, so a cyclic graph — which
+    /// the resolver should never emit, but which the renderer promises to survive — terminates.
+    fn leaves_below(&self, id: usize) -> Vec<DependencyTree> {
+        let mut leaves = Vec::new();
+        let mut visited = vec![false; self.nodes.len()];
+        let mut stack = vec![id];
+        while let Some(current) = stack.pop() {
+            if std::mem::replace(&mut visited[current], true) {
+                continue;
+            }
+            if matches!(self.nodes[current], ChainNode::Leaf(_)) {
+                let rendered = self.nodes[current].render();
+                if !leaves.contains(&rendered) {
+                    leaves.push(rendered);
+                }
+            }
+            // Reversed, so the pop order matches the children's first-seen order.
+            stack.extend(self.children[current].iter().rev().copied());
+        }
+        leaves.into_iter().map(DependencyTree::leaf).collect()
+    }
+
     /// Expand node `id` into a render tree. Its generics are elided when its trait exactly repeats
     /// its parent's (`parent_trait`, the parent's *own* un-elided trait). A node whose subtree was
     /// already drawn — earlier in this render (`expanded`, indexed by id) or by an earlier one
@@ -195,8 +219,16 @@ impl DependencyGraph {
         };
 
         let has_children = !self.children[id].is_empty();
-        if has_children && (expanded[id] || seen.contains(node)) {
+        if has_children && expanded[id] {
+            // Already drawn *in this render*: the subtree, root cause and all, is visible above in
+            // the same note, so the marker alone points at it.
             return DependencyTree::leaf(format!("{label} (*)"));
+        }
+        if has_children && seen.contains(node) {
+            // Drawn by an *earlier* render, in another note the reader may not have to hand. The
+            // intervening hops are elided, but the chain must still bottom out at the cause it leads
+            // to — a chain that stops short of the root cause is the one thing it may never do.
+            return DependencyTree::node(format!("{label} (*)"), self.leaves_below(id));
         }
         expanded[id] = true;
         if has_children {

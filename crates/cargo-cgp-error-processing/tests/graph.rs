@@ -270,14 +270,39 @@ fn a_second_graph_elides_what_the_first_drew() {
       └─ the trait bound `missing` is not satisfied
     ");
 
-    // `Wrapper` is this graph's own hop and renders; `Shared` was drawn above, so its subtree is
-    // referenced rather than repeated.
-    let second =
-        DependencyGraph::from_paths(&[vec![hop("Wrapper"), hop("Shared"), leaf("missing")]]);
+    // `Wrapper` is this graph's own hop and renders; `Shared` was drawn above, so its intervening
+    // hops are referenced rather than repeated — but the chain still bottoms out at the root cause,
+    // which the reader of *this* block would otherwise never see.
+    let second = DependencyGraph::from_paths(&[vec![
+        hop("Wrapper"),
+        hop("Shared"),
+        hop("Deep"),
+        leaf("missing"),
+    ]]);
     assert!(!second.fully_elided_by(&seen), "its own root is unseen");
     insta::assert_snapshot!(second.render_seen(&mut seen), @r"
     [CGP-E105] trait impl `Wrapper` for `Ctx`
     └─ [CGP-E105] trait impl `Shared` for `Ctx` (*)
+      └─ the trait bound `missing` is not satisfied
+    ");
+}
+
+/// A branch elided *within* one render needs no such terminator: the subtree it points at, root
+/// cause included, is right above it in the same note. Only a cross-render elision re-states the
+/// cause, since there the expansion lives in another block.
+#[test]
+fn a_within_render_reference_stays_bare() {
+    let out = render(&[
+        vec![hop("Top"), hop("Left"), hop("Shared"), leaf("missing")],
+        vec![hop("Top"), hop("Right"), hop("Shared"), leaf("missing")],
+    ]);
+    insta::assert_snapshot!(out, @r"
+    [CGP-E105] trait impl `Top` for `Ctx`
+    ├─ [CGP-E105] trait impl `Left` for `Ctx`
+    │ └─ [CGP-E105] trait impl `Shared` for `Ctx`
+    │   └─ the trait bound `missing` is not satisfied
+    └─ [CGP-E105] trait impl `Right` for `Ctx`
+      └─ [CGP-E105] trait impl `Shared` for `Ctx` (*)
     ");
 }
 
