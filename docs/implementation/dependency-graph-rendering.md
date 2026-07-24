@@ -239,6 +239,31 @@ redirect:
       └─ [CGP-E107] context `App` does not contain any delegate entry for `@ValueBuilderComponent.Right`
 ```
 
+## Eliding across blocks
+
+The `(*)` convention reaches past one note: one `seen` set threaded through a compilation's blocks in
+emission order lets a later block truncate at a subtree an earlier one already drew. This exists
+because CGP wiring is lazy, so one mistake surfaces in several diagnostics that legitimately do *not*
+de-duplicate — a hand-written wrapper trait is a distinct trait from the consumer it reduces to, so it
+keeps its own block — and their chains can share everything below their own first few hops. In the
+money-transfer example the second block's 29 nodes were 25 of the first block's plus a four-node
+routing prefix; eliding the shared remainder takes it from 38 rendered lines to six.
+
+[`render_seen`](../../crates/cargo-cgp-error-processing/src/diagnosis/graph.rs) is `render` against a
+caller-owned `seen`, and two rules keep it honest. **A render consults only what *earlier* renders
+drew**: the nodes it draws itself are collected apart and folded in at the end, because `seen` is
+keyed by node value while a label repeating *within* one path is deliberately a distinct node — a set
+the current render were also filling would mark the second occurrence `(*)` and fold a linear descent
+into a false cycle. Within a render, only the id-keyed `expanded` elides. And **a block that would say
+nothing new drops its chain**: `fully_elided_by` reports every top-level root already drawn, and the
+note then keeps its `root cause:` lead alone rather than heading a lone `(*)` with the promise of a
+chain.
+
+An elided block stays actionable read on its own — its header, its fix `help`, and its `root cause:`
+lead all still name the cause, so what is elided is chain *detail*, never what failed or how to fix
+it. That is what makes the elision safe for a consumer that sees one diagnostic at a time, such as an
+editor reading the JSON output.
+
 ## The note over the graph
 
 A `root cause:` note is built from one graph covering every cause in the failure, not one note per
@@ -247,10 +272,9 @@ every path of every cause, folds them into a single `DependencyGraph`, renders i
 `this is required through the dependency chain:` heading, and words the heading above it. The heading
 lists the distinct leaves once, in first-seen order: a singular `root cause: [code] lead` when every
 path bottoms out on the same leaf, or a `root causes:` list when they differ, each entry carrying its
-own code so a reader sees every cause at a glance. The singular lead is dropped when it would only
-repeat something the reader already has — a field-type mismatch, whose `[CGP-E003]` header states the
-leaf in full, or an ordinary bound the kept main message already restates — leaving the graph alone
-under its heading.
+own code so a reader sees every cause at a glance. The singular lead is dropped when the main message
+already states that very leaf — a mismatch header naming the type, or a kept rustc header restating
+the ordinary bound — leaving the graph alone under its heading.
 
 The emitter's coalesced block builds the same graph-backed note rather than assembling a tree of its
 own. When several consumer failures share a cause and coalesce into one `[CGP-E001]` block (see
@@ -316,10 +340,13 @@ and the end-to-end behavior is pinned by the UI suite.
   subsuming cascade, converging independent roots on one leaf, a diamond, a super-root, a within-path
   label repeat kept linear, cross-path redirects distinct by key versus merged by key, generic elision
   on an exact repeat and its absence on a differing generic, a cyclic input terminating with a `(*)`
-  mark, and an empty path set rendering empty.
+  mark, and an empty path set rendering empty. The cross-block elision has three of its own: a second
+  graph truncating at what the first drew while keeping its own prefix, a wholly-redundant graph
+  reporting itself `fully_elided_by`, and a leaf-only graph never doing so (a leaf hides no subtree).
 - [`crates/cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs)
-  — the note assembly over the graph: the singular `root cause:` lead and its drop for a field-type
-  mismatch or a kept-header bound, the `root causes:` list for distinct leaves, the shared-prefix merge
+  — the note assembly over the graph: the singular `root cause:` lead, its drop when the header states
+  that leaf (either mismatch class, or a kept-header bound) and its retention under a header that does
+  not, the `root causes:` list for distinct leaves, the shared-prefix merge
   into one branching note, and independent-root causes folding into one note with stacked chains.
 - [`crates/cargo-cgp-error-processing/tests/coalesce.rs`](../../crates/cargo-cgp-error-processing/tests/coalesce.rs)
   — `coalesce_underived_fields` keeping every field's path while merging the heading into one
@@ -335,8 +362,9 @@ and the end-to-end behavior is pinned by the UI suite.
   — the `DepNode` and `ChainNode` structured nodes and their rendering (the `CGP-E1xx` label
   templates).
 - [`crates/cargo-cgp-error-processing/src/diagnosis/graph.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/graph.rs)
-  — `DependencyGraph`, `from_paths` (the cross-path-only merge), the root rule, and the `(*)`-dedup
-  renderer with parent-based generic elision.
+  — `DependencyGraph`, `from_paths` (the cross-path-only merge), the root rule, the `(*)`-dedup
+  renderer with parent-based generic elision, and `render_seen`/`fully_elided_by` (the cross-block
+  elision).
 - [`crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs)
   — `Cause { leaf, paths }`, one cause per leaf holding every path that reaches it.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/wording/note.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/wording/note.rs)
@@ -351,7 +379,8 @@ and the end-to-end behavior is pinned by the UI suite.
   anchors — emit `DepNode` hop-paths and group by leaf; the cache in
   [`cache.rs`](../../crates/cargo-cgp-driver/src/resolve/cache.rs) stores them.
 - [`crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs`](../../crates/cargo-cgp-driver/src/emitter/cgp_emitter.rs)
-  — the coalesced block whose note is built from the same graph.
+  — the flush that renders every resolution's note against one shared `seen`, and the coalesced block
+  whose note is built from the same graph.
 
 ## Further reading
 

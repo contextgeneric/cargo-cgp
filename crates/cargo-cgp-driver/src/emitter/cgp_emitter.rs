@@ -7,13 +7,14 @@ use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
 };
 use cargo_cgp_error_processing::{
-    Cause, CgpImplMisuse, DedupLedger, DiagKind, Leaf, MissingUseProvider, OrphanConflict,
-    Resolved, UndeclaredCapability, cause_notes, cause_only_signature, cause_signature,
-    cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, fix_help_messages,
-    is_method_bounds_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
-    missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
-    plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_undeclared_capability,
-    plan_wiring_conflict, undeclared_capability_help, wiring_conflict_help,
+    Cause, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider,
+    OrphanConflict, Resolved, UndeclaredCapability, cause_notes_seen, cause_only_signature,
+    cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, consumer_header,
+    fix_help_messages, is_method_bounds_text, is_unbounded_type_param_item_text,
+    mentions_orphan_param_text, missing_use_provider_help, orphan_conflict_help,
+    plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict, plan_resolved,
+    plan_undeclared_capability, plan_wiring_conflict, postprocess_message,
+    undeclared_capability_help, wiring_conflict_help,
 };
 use rustc_errors::codes::{
     E0107, E0117, E0119, E0186, E0207, E0210, E0271, E0275, E0277, E0308, E0425, E0599,
@@ -87,16 +88,37 @@ pub struct CgpEmitter<E: Emitter> {
 
 /// One buffered diagnostic awaiting the [`Drop`]-time flush.
 enum BufEntry {
-    /// Emitted verbatim at its arrival position.
-    Plain(DiagInner),
-    /// A consumer-trait failure that coalesces with others of the same `sig` (its
-    /// [`cause_only_signature`]): a group of one emits `diag` unchanged, a group of several emits a
-    /// single merged block naming every affected consumer at the position of the first.
-    Coalescible {
-        sig: String,
-        resolved: Resolved,
-        diag: DiagInner,
-    },
+    /// Emitted verbatim at its arrival position. Boxed, like the variant below, so the buffer's
+    /// element stays a pointer rather than a whole `DiagInner`.
+    Plain(Box<DiagInner>),
+    /// A typed-resolution failure, whose `root cause:` note is rendered at *flush* rather than on
+    /// arrival: only there is the emission order known, so a note can `(*)`-elide the subtrees an
+    /// earlier block already drew. `diag` therefore carries the header and `help`s but no note yet.
+    ///
+    /// `sig` is `Some` for a consumer-trait failure, which coalesces with others of the same
+    /// [`cause_only_signature`]: a group of one emits `diag` alone, a group of several emits a single
+    /// merged block naming every affected consumer at the position of the first. It is `None` for a
+    /// resolution that never coalesces — a wrapper trait, a mismatch, a provider-side check.
+    Resolved(Box<ResolvedEntry>),
+}
+
+/// The payload of a [`BufEntry::Resolved`].
+struct ResolvedEntry {
+    sig: Option<String>,
+    resolved: Resolved,
+    note: PendingNote,
+    diag: DiagInner,
+}
+
+/// The subtrees a flush has already drawn, shared across its blocks so a later one `(*)`-elides
+/// what an earlier one showed rather than repeating it.
+type ChainNodeSet = HashSet<ChainNode>;
+
+/// The inputs a deferred `root cause:` note is rendered from at flush — the plan's coalesced causes
+/// and the leaf its header states (whose lead is then redundant).
+struct PendingNote {
+    causes: Vec<Cause>,
+    header_leaf: Option<Leaf>,
 }
 
 /// Whether a resolution is a *consumer-trait* failure on the checked context itself — the only shape
@@ -211,7 +233,12 @@ impl<E: Emitter> CgpEmitter<E> {
     /// The single-consumer header rustc's per-entry rendering produced — even a provider-side
     /// `[CGP-E002]` one — is dropped in favour of the consumer form, since a `check_components!`
     /// entry failing *is* the consumer trait failing.
-    fn merged_diag(&self, resolveds: &[&Resolved], diags: &[&DiagInner]) -> DiagInner {
+    fn merged_diag(
+        &self,
+        resolveds: &[&Resolved],
+        diags: &[&DiagInner],
+        seen: &mut ChainNodeSet,
+    ) -> DiagInner {
         let first = resolveds[0];
         let mut consumers: Vec<String> = Vec::new();
         for resolved in resolveds {
@@ -244,7 +271,7 @@ impl<E: Emitter> CgpEmitter<E> {
             .map(|help| subdiag(Level::Help, help))
             .collect();
         children.extend(
-            cause_notes(&causes, None)
+            cause_notes_seen(&causes, None, seen)
                 .into_iter()
                 .map(|note| subdiag(Level::Note, note)),
         );
@@ -279,35 +306,50 @@ impl<E: Emitter> CgpEmitter<E> {
         // Group the coalescible members by signature, keeping their arrival order.
         let mut groups: HashMap<&str, Vec<usize>> = HashMap::new();
         for (index, entry) in buffer.iter().enumerate() {
-            if let BufEntry::Coalescible { sig, .. } = entry {
-                groups.entry(sig).or_default().push(index);
+            if let BufEntry::Resolved(entry) = entry
+                && let Some(sig) = &entry.sig
+            {
+                groups.entry(sig.as_str()).or_default().push(index);
             }
         }
 
+        // The subtrees drawn so far, threaded through every block in emission order so a later one
+        // truncates at what an earlier one already showed. This is why notes are rendered here
+        // rather than on arrival: only now is that order known.
+        let mut seen = ChainNodeSet::new();
         let mut emitted: HashSet<&str> = HashSet::new();
         let mut to_emit: Vec<DiagInner> = Vec::new();
         for entry in &buffer {
             match entry {
-                BufEntry::Plain(diag) => to_emit.push(diag.clone()),
-                BufEntry::Coalescible { sig, .. } => {
+                BufEntry::Plain(diag) => to_emit.push((**diag).clone()),
+                BufEntry::Resolved(entry) => {
+                    let Some(sig) = &entry.sig else {
+                        // A resolution that never coalesces: render its own note and emit it here.
+                        let mut diag = entry.diag.clone();
+                        self.append_note(&mut diag, &entry.note, &mut seen);
+                        to_emit.push(diag);
+                        continue;
+                    };
                     if !emitted.insert(sig.as_str()) {
                         continue;
                     }
                     let members = &groups[sig.as_str()];
                     if members.len() == 1 {
-                        let BufEntry::Coalescible { diag, .. } = &buffer[members[0]] else {
+                        let BufEntry::Resolved(only) = &buffer[members[0]] else {
                             unreachable!("indices came from the coalescible entries");
                         };
-                        to_emit.push(diag.clone());
+                        let mut diag = only.diag.clone();
+                        self.append_note(&mut diag, &only.note, &mut seen);
+                        to_emit.push(diag);
                     } else {
                         let (resolveds, diags): (Vec<&Resolved>, Vec<&DiagInner>) = members
                             .iter()
                             .map(|&index| match &buffer[index] {
-                                BufEntry::Coalescible { resolved, diag, .. } => (resolved, diag),
+                                BufEntry::Resolved(member) => (&member.resolved, &member.diag),
                                 _ => unreachable!("indices came from the coalescible entries"),
                             })
                             .unzip();
-                        to_emit.push(self.merged_diag(&resolveds, &diags));
+                        to_emit.push(self.merged_diag(&resolveds, &diags, &mut seen));
                     }
                 }
             }
@@ -561,7 +603,7 @@ impl<E: Emitter> CgpEmitter<E> {
             .iter()
             .filter_map(|entry| match entry {
                 BufEntry::Plain(diag) => diag.code,
-                BufEntry::Coalescible { diag, .. } => diag.code,
+                BufEntry::Resolved(entry) => entry.diag.code,
             })
             .map(|code| code.to_string())
             .collect();
@@ -688,7 +730,7 @@ impl<E: Emitter> CgpEmitter<E> {
         resolved: &Resolved,
         span: Span,
         at_call: bool,
-    ) {
+    ) -> PendingNote {
         let kind = match diag_kind(diag) {
             kind if at_call && kind != DiagKind::TypeMismatch => DiagKind::MethodNotFound,
             kind => kind,
@@ -702,21 +744,32 @@ impl<E: Emitter> CgpEmitter<E> {
             diag.span = MultiSpan::from_span(span);
         }
 
-        let mut children = Vec::new();
-        children.extend(
-            plan.helps
-                .into_iter()
-                .map(|help| subdiag(Level::Help, help)),
-        );
-        children.extend(
-            plan.notes
-                .into_iter()
-                .map(|note| subdiag(Level::Note, note)),
-        );
-        diag.children = children;
+        // The `help`s are applied now; the `root cause:` note is not, because rendering it needs the
+        // emission order the flush establishes (see [`PendingNote`]). It is appended there, after
+        // these children, which preserves the help-then-note order this built directly before.
+        diag.children = plan
+            .helps
+            .into_iter()
+            .map(|help| subdiag(Level::Help, help))
+            .collect();
         // Drop rustc's structured suggestions along with its notes — for a use-site failure
         // that includes the misleading "use associated function syntax instead".
         diag.suggestions = Suggestions::Enabled(vec![]);
+
+        PendingNote {
+            causes: plan.note_causes,
+            header_leaf: plan.note_header_leaf,
+        }
+    }
+
+    /// Render a deferred [`PendingNote`] against the `seen` set shared by this flush and append it to
+    /// `diag`. The note is post-processed on its own, since the rest of the diagnostic was already
+    /// processed when it arrived and re-running the chain over it could compound.
+    fn append_note(&self, diag: &mut DiagInner, note: &PendingNote, seen: &mut ChainNodeSet) {
+        for text in cause_notes_seen(&note.causes, note.header_leaf.as_ref(), seen) {
+            let text = postprocess_message(&text, false, true).unwrap_or(text);
+            diag.children.push(subdiag(Level::Note, text));
+        }
     }
 }
 
@@ -726,8 +779,11 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
         // had its cascade suppressed, so it lists `rustc --explain` codes only for errors still
         // shown. Confined to crates with the mistake, so no other output is affected.
         if let Some(replacement) = self.rebuilt_explain_footer(&diag) {
-            self.buffer
-                .extend(replacement.into_iter().map(BufEntry::Plain));
+            self.buffer.extend(
+                replacement
+                    .into_iter()
+                    .map(|diag| BufEntry::Plain(Box::new(diag))),
+            );
             return;
         }
         // A `#[cgp_impl]` header naming the wrong trait — the component's consumer trait, or a
@@ -773,7 +829,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     self.buffer
                         .retain(|entry| !is_cgp_impl_sibling_entry(entry, impl_span, macro_span));
                     self.record_cgp_spans(&diag);
-                    self.buffer.push(BufEntry::Plain(diag));
+                    self.buffer.push(BufEntry::Plain(Box::new(diag)));
                     return;
                 }
                 None => {}
@@ -794,7 +850,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     // A rewritten diagnostic: bare `@…` paths.
                     self.postprocess(&mut diag, true);
                     self.record_cgp_spans(&diag);
-                    self.buffer.push(BufEntry::Plain(diag));
+                    self.buffer.push(BufEntry::Plain(Box::new(diag)));
                     return;
                 }
             }
@@ -816,7 +872,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             // wrapper).
             self.postprocess(&mut diag, true);
             self.record_cgp_spans(&diag);
-            self.buffer.push(BufEntry::Plain(diag));
+            self.buffer.push(BufEntry::Plain(Box::new(diag)));
             return;
         }
         // A capability called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]`:
@@ -836,7 +892,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             ));
             self.postprocess(&mut diag, true);
             self.record_cgp_spans(&diag);
-            self.buffer.push(BufEntry::Plain(diag));
+            self.buffer.push(BufEntry::Plain(Box::new(diag)));
             return;
         }
         // A higher-order provider calling an inner provider it never imported with `#[use_provider]`:
@@ -852,13 +908,13 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                 .push(subdiag(Level::Help, missing_use_provider_help(&missing)));
             self.postprocess(&mut diag, true);
             self.record_cgp_spans(&diag);
-            self.buffer.push(BufEntry::Plain(diag));
+            self.buffer.push(BufEntry::Plain(Box::new(diag)));
             return;
         }
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
         // resolver declines, the wiring-message rename runs as the first fallback pass. A resolved
         // failure also yields its span-independent cause signature, for the de-duplication below.
-        let (rewritten, cause_sig, coalescible) =
+        let (rewritten, cause_sig, resolution) =
             if let Some((resolved, span, at_call)) = self.try_resolve(&diag) {
                 // The downstream check re-report of a `#[cgp_impl]` consumer-trait mistake (its
                 // provider struct failing `NotAProvider` because its impl targets the wrong trait)
@@ -867,11 +923,12 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     return;
                 }
                 let sig = cause_signature(&resolved);
-                self.transform_resolved(&mut diag, &resolved, span, at_call);
+                let note = self.transform_resolved(&mut diag, &resolved, span, at_call);
                 // A consumer-trait failure joins its cause-only group for coalescing at flush; any
-                // other shape (a field mismatch, a provider check) emits on its own.
-                let coalescible = is_consumer_shaped(&resolved).then_some(resolved);
-                (true, Some(sig), coalescible)
+                // other shape (a field mismatch, a provider check) emits on its own — but every
+                // resolution defers its note to the flush, so all of them elide against one another.
+                let coalescing = is_consumer_shaped(&resolved);
+                (true, Some(sig), Some((resolved, note, coalescing)))
             } else {
                 // A CGP consumer-method `E0599` the resolver declined still carries rustc's
                 // method-probe advice — the associated-function framing and the "use associated
@@ -942,19 +999,22 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
         {
             return;
         }
-        // Buffer rather than emit now: a consumer failure joins its cause-only group (coalesced at
-        // flush), everything else is emitted verbatim in place. The flush happens in `Drop`, the
-        // only point after every diagnostic has arrived.
-        match coalescible {
-            Some(resolved) => {
-                let sig = cause_only_signature(&resolved);
-                self.buffer.push(BufEntry::Coalescible {
+        // Buffer rather than emit now: a resolution has its `root cause:` note rendered at flush,
+        // where the emission order lets it elide what an earlier block drew, and a consumer failure
+        // additionally joins its cause-only group for coalescing there. Everything else is emitted
+        // verbatim in place. The flush happens in `Drop`, the only point after every diagnostic has
+        // arrived.
+        match resolution {
+            Some((resolved, note, coalescing)) => {
+                let sig = coalescing.then(|| cause_only_signature(&resolved));
+                self.buffer.push(BufEntry::Resolved(Box::new(ResolvedEntry {
                     sig,
                     resolved,
+                    note,
                     diag,
-                });
+                })));
             }
-            None => self.buffer.push(BufEntry::Plain(diag)),
+            None => self.buffer.push(BufEntry::Plain(Box::new(diag))),
         }
     }
 

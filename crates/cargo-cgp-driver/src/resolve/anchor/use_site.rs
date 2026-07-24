@@ -46,7 +46,7 @@ pub fn resolve_use_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -
                     }
                 }
                 for cause in resolved.causes {
-                    if !causes.iter().any(|c| c.key() == cause.key()) {
+                    if !causes.iter().any(|c| c.leaf == cause.leaf) {
                         causes.push(cause);
                     }
                 }

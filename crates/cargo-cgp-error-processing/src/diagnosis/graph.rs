@@ -7,7 +7,7 @@
 //! super-root, and independent chains converging on one leaf all render correctly. The whole thing
 //! is a pure function over the structured nodes, so every shape is unit-tested without a compiler.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::diagnosis::node::ChainNode;
 use crate::tree::{DependencyTree, render_dependency_tree};
@@ -93,6 +93,22 @@ impl DependencyGraph {
         self.nodes.is_empty()
     }
 
+    /// Whether rendering against `seen` would say nothing new — every top-level root was already
+    /// drawn elsewhere, so the whole diagram would collapse to `(*)` references.
+    ///
+    /// A caller uses this to drop the chain entirely rather than print a
+    /// `this is required through the dependency chain:` heading over a single pointer, which promises
+    /// a chain and delivers none. It reports the *whole* graph being redundant, not a subtree: a
+    /// partly-elided graph still has its own hops to show and renders normally.
+    pub fn fully_elided_by(&self, seen: &HashSet<ChainNode>) -> bool {
+        let roots = self.roots();
+        !roots.is_empty()
+            && roots
+                .iter()
+                // A childless root is a bare leaf, which is never elided, so it always renders.
+                .all(|&root| !self.children[root].is_empty() && seen.contains(&self.nodes[root]))
+    }
+
     /// The top-level roots: path heads that are not also some node's child. A head that appears
     /// inside another path (one consumer's chain running through another) is therefore not rendered
     /// as a second root — which is how subsumption falls out. Falls back to every head if that set is
@@ -114,23 +130,58 @@ impl DependencyGraph {
     /// Render the graph as one `cargo tree`-style diagram per root, joined by newlines and with no
     /// trailing newline (so a caller can drop it into a diagnostic note).
     pub fn render(&self) -> String {
+        self.render_seen(&mut HashSet::new())
+    }
+
+    /// [`render`](Self::render) against a `seen` set that outlives this graph, so a node some
+    /// *earlier* graph already drew is `(*)`-referenced here instead of expanded again.
+    ///
+    /// This is what lets a compilation's diagnostics elide across blocks. CGP wiring is lazy, so one
+    /// mistake surfaces in several diagnostics that do not de-duplicate — a hand-written wrapper
+    /// trait is a distinct trait from the consumer it reduces to, so it keeps its own block — and
+    /// their chains can share everything below their own first few hops. Threading one `seen` through
+    /// the blocks in emission order keeps each block's own prefix and truncates the shared remainder,
+    /// which is the same `(*)` convention `cargo tree` uses for a subtree printed elsewhere in the
+    /// output.
+    ///
+    /// A truncated block stays actionable on its own: its header, its fix `help`, and its
+    /// `root cause:` lead all still name the cause, so only chain *detail* is elided, never what
+    /// failed or how to fix it.
+    pub fn render_seen(&self, seen: &mut HashSet<ChainNode>) -> String {
         let mut expanded = vec![false; self.nodes.len()];
-        self.roots()
+        // Nodes this render draws are collected apart and folded into `seen` only at the end, so
+        // within this render `seen` names *only* what earlier ones drew. That separation is
+        // load-bearing: `seen` is keyed by node value, while a label repeating within a single path
+        // is deliberately a distinct node (see [`from_paths`](Self::from_paths)), so consulting a
+        // set this render is also filling would mark the second occurrence `(*)` and fold a linear
+        // descent into a false cycle. Within a render, only `expanded` — keyed by id — elides.
+        let mut drawn: Vec<ChainNode> = Vec::new();
+        let rendered = self
+            .roots()
             .into_iter()
-            .map(|root| render_dependency_tree(&self.expand(root, None, &mut expanded)))
+            .map(|root| {
+                render_dependency_tree(&self.expand(root, None, &mut expanded, seen, &mut drawn))
+            })
             .collect::<Vec<_>>()
-            .join("\n")
+            .join("\n");
+        seen.extend(drawn);
+        rendered
     }
 
     /// Expand node `id` into a render tree. Its generics are elided when its trait exactly repeats
-    /// its parent's (`parent_trait`, the parent's *own* un-elided trait). A node reached a second
-    /// time whose subtree was already drawn is emitted as a `(*)` reference rather than re-expanded;
-    /// the `expanded` marks double as cycle protection, since each node is expanded at most once.
+    /// its parent's (`parent_trait`, the parent's *own* un-elided trait). A node whose subtree was
+    /// already drawn — earlier in this render (`expanded`, indexed by id) or by an earlier one
+    /// (`seen`, keyed by node identity so it spans graphs) — is emitted as a `(*)` reference rather
+    /// than re-expanded; the `expanded` marks double as cycle protection, since each node is expanded
+    /// at most once. Only a node with children is ever elided: a leaf hides no subtree, so it is
+    /// drawn in full wherever a chain bottoms out on it.
     fn expand(
         &self,
         id: usize,
         parent_trait: Option<&str>,
         expanded: &mut [bool],
+        seen: &HashSet<ChainNode>,
+        drawn: &mut Vec<ChainNode>,
     ) -> DependencyTree {
         let node = &self.nodes[id];
         let own_trait = node.elidable_trait().map(str::to_owned);
@@ -144,15 +195,18 @@ impl DependencyGraph {
         };
 
         let has_children = !self.children[id].is_empty();
-        if expanded[id] && has_children {
+        if has_children && (expanded[id] || seen.contains(node)) {
             return DependencyTree::leaf(format!("{label} (*)"));
         }
         expanded[id] = true;
+        if has_children {
+            drawn.push(node.clone());
+        }
 
         let kids = self.children[id]
             .clone()
             .into_iter()
-            .map(|child| self.expand(child, own_trait.as_deref(), expanded))
+            .map(|child| self.expand(child, own_trait.as_deref(), expanded, seen, drawn))
             .collect();
         DependencyTree::node(label, kids)
     }

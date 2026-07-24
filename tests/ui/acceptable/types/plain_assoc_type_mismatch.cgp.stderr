@@ -4,8 +4,7 @@ error[E0271]: [CGP-E017] expected the associated type `Unit` of `HasUnit` on `Re
 54 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E112] associated type `Unit` of `HasUnit` on `Rectangle` is `u32`, but `f64` is required
-           this is required through the dependency chain:
+   = note: this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
              └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
                └─ [CGP-E112] associated type `Unit` of `HasUnit` on `Rectangle` is `u32`, but `f64` is required

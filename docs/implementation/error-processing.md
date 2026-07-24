@@ -330,7 +330,8 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   the DAG build-and-render), the `wording/` directory — `header.rs` (`consumer_header`,
   `field_mismatch_header`, `assoc_mismatch_header`), `lead.rs` (`root_cause_lead` and the leaf codes),
   `note.rs`
-  (`cause_notes`, which folds every cause's paths into one graph and words the heading over it),
+  (`cause_notes`, which folds every cause's paths into one graph and words the heading over it, and
+  `cause_notes_seen`, the same against a `seen` set shared with the compilation's other notes),
   `help.rs` (`fix_help_messages` over `derive_help_messages` and `assoc_mismatch_help_messages` — the
   one entry point both the streaming plan and the emitter's coalesced block build their `help`s
   through, so a merged block carries the same fixes), and `signature.rs` (`cause_signature`) —

@@ -66,7 +66,7 @@ fn compute_leaves<'tcx>(
     for sc in sub.causes {
         // One cause per distinct leaf; a leaf reached by several paths keeps each path, so the
         // graph can render the convergence rather than dropping every path but the first.
-        if let Some(existing) = causes.iter_mut().find(|cause| cause.key() == sc.leaf.key()) {
+        if let Some(existing) = causes.iter_mut().find(|cause| cause.leaf == sc.leaf) {
             existing.paths.push(sc.path);
         } else {
             causes.push(Cause {

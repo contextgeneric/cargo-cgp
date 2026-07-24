@@ -2,6 +2,8 @@
 //! `(*)` dedup, over hand-built structured nodes and with no compiler in the loop. Each rendered
 //! tree is pinned as an `insta` inline snapshot.
 
+use std::collections::HashSet;
+
 use cargo_cgp_error_processing::{ChainNode, DepNode, DependencyGraph, Leaf};
 
 /// An interior `trait impl` hop labeled `name` (self type fixed to `Ctx`).
@@ -252,4 +254,53 @@ fn a_cycle_across_paths_terminates_and_is_marked() {
         out.contains("(*)"),
         "the re-reached node is marked, not re-expanded"
     );
+}
+
+/// Two graphs rendered against one shared `seen` set — the shape a compilation's separate error
+/// blocks form when one mistake surfaces in several diagnostics that do not de-duplicate. The
+/// second keeps its own prefix and truncates at the subtree the first already drew.
+#[test]
+fn a_second_graph_elides_what_the_first_drew() {
+    let mut seen = HashSet::new();
+
+    let first = DependencyGraph::from_paths(&[vec![hop("Check"), hop("Shared"), leaf("missing")]]);
+    insta::assert_snapshot!(first.render_seen(&mut seen), @r"
+    [CGP-E105] trait impl `Check` for `Ctx`
+    └─ [CGP-E105] trait impl `Shared` for `Ctx`
+      └─ the trait bound `missing` is not satisfied
+    ");
+
+    // `Wrapper` is this graph's own hop and renders; `Shared` was drawn above, so its subtree is
+    // referenced rather than repeated.
+    let second =
+        DependencyGraph::from_paths(&[vec![hop("Wrapper"), hop("Shared"), leaf("missing")]]);
+    assert!(!second.fully_elided_by(&seen), "its own root is unseen");
+    insta::assert_snapshot!(second.render_seen(&mut seen), @r"
+    [CGP-E105] trait impl `Wrapper` for `Ctx`
+    └─ [CGP-E105] trait impl `Shared` for `Ctx` (*)
+    ");
+}
+
+/// A graph whose *every* root was already drawn has nothing of its own to show, so a caller is told
+/// to drop the chain rather than head a lone `(*)` with a promise of one.
+#[test]
+fn a_wholly_redundant_graph_reports_itself_fully_elided() {
+    let mut seen = HashSet::new();
+    let paths = vec![vec![hop("Shared"), leaf("missing")]];
+
+    let first = DependencyGraph::from_paths(&paths);
+    assert!(!first.fully_elided_by(&seen), "nothing drawn yet");
+    let _ = first.render_seen(&mut seen);
+
+    assert!(DependencyGraph::from_paths(&paths).fully_elided_by(&seen));
+}
+
+/// A bare leaf hides no subtree, so it is drawn in full wherever a chain bottoms out on it — a
+/// graph that is only a leaf is never reported as fully elided, however often it recurs.
+#[test]
+fn a_leaf_only_graph_is_never_elided() {
+    let mut seen = HashSet::new();
+    let paths = vec![vec![leaf("missing")]];
+    let _ = DependencyGraph::from_paths(&paths).render_seen(&mut seen);
+    assert!(!DependencyGraph::from_paths(&paths).fully_elided_by(&seen));
 }

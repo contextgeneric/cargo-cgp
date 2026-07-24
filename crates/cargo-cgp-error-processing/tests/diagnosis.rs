@@ -394,14 +394,46 @@ fn plans_an_abstract_type_mismatch() {
             "wire `ErrorTypeProviderComponent` to `UseType<AppError>` in the wiring for `App`, or change the provider to work with `String`"
         ]
     );
+    // The `[CGP-E017]` header states the leaf, so the note carries the chain alone.
     assert_eq!(
         plan.notes,
         vec![format!(
-            "root cause: [CGP-E112] abstract type `Error` of `HasErrorType` on `App` is `String`, but `AppError` is required\nthis is required through the dependency chain:\n{}",
+            "this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
         )]
     );
     assert_eq!(assoc_mismatch_leaf(&resolved), Some(&leaf));
+}
+
+/// The lead is dropped by whether the *header* states the leaf, not by the leaf's kind. Under a
+/// header that names something else — as the emitter's coalesced block produces, listing the
+/// affected consumers — a mismatch keeps its lead, since that is then the only place above the tree
+/// where the cause appears.
+#[test]
+fn keeps_a_mismatch_lead_under_a_header_that_does_not_state_it() {
+    for leaf in [
+        Leaf::FieldTypeMismatch {
+            name: "height".to_owned(),
+            owner: "Rectangle".to_owned(),
+            expected: "f64".to_owned(),
+            actual: "i32".to_owned(),
+        },
+        Leaf::AssocTypeMismatch {
+            assoc: "Error".to_owned(),
+            trait_name: "HasErrorType".to_owned(),
+            owner: "App".to_owned(),
+            expected: "AppError".to_owned(),
+            actual: "String".to_owned(),
+            component: Some("ErrorTypeProviderComponent".to_owned()),
+        },
+    ] {
+        let cause = one_path(leaf.clone(), vec![consumer("CanGreet", "App")]);
+        let note = &cause_notes(std::slice::from_ref(&cause), None)[0];
+        assert!(
+            note.starts_with("root cause: ["),
+            "expected a kept lead for {leaf:?}, got: {note}"
+        );
+    }
 }
 
 /// An associated type on a trait that is *not* a CGP abstract-type component reads as an

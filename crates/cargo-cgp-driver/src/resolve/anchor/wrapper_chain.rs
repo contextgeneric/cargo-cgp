@@ -142,7 +142,7 @@ fn collect_wrapper_chain_causes<'tcx>(
                 .into_iter()
                 .map(|path| prepend_chain(chain, path))
                 .collect();
-            match out.iter_mut().find(|c| c.key() == cause.leaf.key()) {
+            match out.iter_mut().find(|c| c.leaf == cause.leaf) {
                 Some(existing) => existing.paths.extend(wrapped),
                 None => out.push(Cause {
                     leaf: cause.leaf,

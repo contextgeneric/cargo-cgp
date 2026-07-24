@@ -168,23 +168,9 @@ pub enum Leaf {
     },
 }
 
-impl Leaf {
-    /// A stable key that de-duplicates a leaf reached by several dependency paths — the field name
-    /// for a field, the associated-type name for a projection mismatch, the bound restatement
-    /// otherwise. The key names the *thing to fix* rather than the whole leaf, so two leaves that
-    /// name the same thing on different owners merge into one cause; the merged cause keeps every
-    /// path, so the tree still branches to each leaf and nothing is lost but the heading's
-    /// precision.
-    pub fn key(&self) -> &str {
-        match self {
-            Leaf::Field { name, .. } | Leaf::FieldTypeMismatch { name, .. } => name,
-            Leaf::UnderivedFields { owner, .. } => owner,
-            Leaf::MissingWiring { component, .. } => component,
-            Leaf::MissingDispatchEntry { key, .. } => key,
-            Leaf::NotAProvider { provider, .. } => provider,
-            Leaf::MissingRedirectWiring { path, .. } => path,
-            Leaf::AssocTypeMismatch { assoc, .. } => assoc,
-            Leaf::Bound { summary } => summary,
-        }
-    }
-}
+// A leaf carries no separate identity key: two causes are the same cause exactly when their leaves
+// are equal in every field, which is what the derived `PartialEq` above gives. An earlier key named
+// only the *thing to fix* — a field or associated-type name — which merged two leaves naming the
+// same thing on different owners into one cause whose heading could then name only the first of
+// them. Whole-leaf equality keeps the useful merge (one leaf genuinely reached by several paths,
+// which is how a diamond survives to the renderer) and separates the rest.

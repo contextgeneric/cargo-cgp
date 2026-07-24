@@ -36,7 +36,7 @@ pub use diagnosis::{
     Cause, CgpImplMisuse, ChainNode, DepNode, DependencyGraph, DiagKind, DiagnosisPlan, FieldIssue,
     Leaf, MissingUseProvider, OrphanConflict, OrphanTrigger, Resolved, UndeclaredCapability,
     WiringConflict, WiringKey, assoc_mismatch_header, assoc_mismatch_help_messages, cause_note,
-    cause_notes, cause_only_signature, cause_signature, cgp_impl_misuse_help,
+    cause_notes, cause_notes_seen, cause_only_signature, cause_signature, cgp_impl_misuse_help,
     coalesce_underived_fields, consumer_header, dependency_leaf_code, dependency_tree_leaf,
     derive_help_messages, field_mismatch_header, fix_help_messages, missing_delegate_entry,
     missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,

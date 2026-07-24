@@ -24,14 +24,6 @@ pub struct Cause {
     pub paths: Vec<Vec<ChainNode>>,
 }
 
-impl Cause {
-    /// A stable key that de-duplicates a leaf reached by several dependency paths — see
-    /// [`Leaf::key`].
-    pub fn key(&self) -> &str {
-        self.leaf.key()
-    }
-}
-
 /// The recovered root cause(s) of a check failure, in owned form so they outlive the inference
 /// contexts they were read from.
 #[derive(Debug, Clone, PartialEq, Eq)]

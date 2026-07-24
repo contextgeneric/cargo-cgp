@@ -197,17 +197,20 @@ The `root cause:` lead is worded by *why* the leaf is unmet, and there are six l
   is not a CGP abstract-type component — an ordinary trait's associated type is fixed by whatever impl
   supplies it, so there is no wiring entry to name. The
   [`abstract_type_mismatch`](../../tests/ui/acceptable/types/abstract_type_mismatch.rs) fixture pins
-  the shape. Unlike the field mismatch below it keeps its `root cause:` lead even though its own
-  `[CGP-E017]` header states the same fact, because this leaf very often reaches the reader through a
-  *coalesced* block instead: one wrong abstract type breaks every consumer that raises through it, so
-  the block's header lists those consumers and the lead is the only place the cause is named above the
-  tree.
+  the shape.
 
-A field-type mismatch is an eighth leaf, but its own `[CGP-E003]` headline always states it in full (as
-the `E0271` example above shows), so its note drops the `root cause:` lead and carries the chain
-alone. Any other leaf simply restates its bound —
-`root cause: the trait bound \`f64: Eq\` is not satisfied`, module qualifiers stripped — except when
-the kept headline already states that very bound, where the lead is likewise dropped.
+A field-type mismatch is an eighth leaf, worded the same way from its `[CGP-E003]` headline. Any
+other leaf simply restates its bound — `root cause: the trait bound \`f64: Eq\` is not satisfied`,
+module qualifiers stripped.
+
+**A lead is dropped when the main message already states that very leaf**, so the note does not
+repeat the header — and the test is the header, not the kind of leaf. Both mismatch classes state
+their leaf in full, so their notes normally carry the chain alone (as the `E0271` example above
+shows), and a kept rustc header restating the ordinary bound the walk descended to drops that bound's
+lead the same way. But the *same* leaf keeps its lead under a header that names something else, which
+is what the emitter's coalesced block produces: its header lists the affected consumers, so the lead
+is the only place above the tree where the cause appears. This matters most for an abstract type,
+since one wrong binding breaks every consumer that raises through it and so almost always coalesces.
 
 ## Emitting the transformed diagnostic
 

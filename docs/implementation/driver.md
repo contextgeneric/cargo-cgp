@@ -418,9 +418,22 @@ root and the block leads with the subsuming chain; when two consumers are indepe
 cause, both chains render, converging at the shared node. A
 member rustc happened to surface provider-side (a `[CGP-E002]` header as a lone diagnostic) is worded
 uniformly as a consumer in the merged block, since a `check_components!` entry failing *is* the
-consumer trait failing. Everything not consumer-shaped — an untouched `rustc` error, a conflict, an
-orphan reshape, a field-type mismatch — is buffered as a plain entry and emitted verbatim at its
-arrival position, so global ordering (a CGP block beside an unrelated `E0308`, say) is preserved. The
+consumer trait failing. An untouched `rustc` error, a conflict, or an orphan reshape is buffered as a
+plain entry and emitted verbatim at its arrival position, so global ordering (a CGP block beside an
+unrelated `E0308`, say) is preserved.
+
+The flush is also where every resolution's `root cause:` note is *rendered*, not merely where the
+coalesced ones are merged, and that is what lets the notes elide against one another. A resolution
+that does not coalesce still buffers its causes rather than its note — a wrapper trait, a mismatch, a
+provider-side check — because only at flush is the emission order known, and one
+[dependency graph](dependency-graph-rendering.md#eliding-across-blocks) `seen` set threaded through
+the blocks in that order lets a later one `(*)`-truncate at the subtree an earlier one already drew.
+The redundancy this removes is large in real code: CGP wiring is lazy, so one mistake reaches several
+diagnostics that legitimately do *not* de-duplicate, and their chains can share everything below their
+own first few hops. A block whose whole chain was already drawn keeps its lead and drops the chain
+entirely rather than heading a lone `(*)`. Either way the block stays actionable alone — its header,
+its fix `help`, and its `root cause:` lead all still name the cause, so only chain *detail* is elided.
+The
 [`density_3`](../../tests/ui/acceptable/duplication/density_3.rs) (two components, one missing field),
 [`dependency_cascade`](../../tests/ui/acceptable/duplication/dependency_cascade.rs) (three chained
 providers), and [`missing_normal_bound`](../../tests/ui/acceptable/wiring/missing-wiring/missing_normal_bound.rs)
@@ -747,8 +760,9 @@ will likely grow toward it:
   `cgp_emitter.rs` holds the `CgpEmitter<E>` type (holding the `ComponentNameMap`, the rustc-free
   `DedupLedger` of already-emitted failures, the `cgp_spans` list of recognized-failure spans that
   anchors the `?`-operator cascade suppression, and the arrival-ordered `buffer` of `BufEntry`s
-  flushed from `Drop` — `Plain` verbatim in place, `Coalescible` grouped by `cause_only_signature`
-  and merged into one consumer header per group by `merged_diag`) and its
+  flushed from `Drop` — `Plain` verbatim in place, `Resolved` having its `root cause:` note rendered
+  there against the flush's shared `seen` set, and those of it carrying a `sig` additionally grouped
+  by `cause_only_signature` and merged into one consumer header per group by `merged_diag`) and its
   transform/post-process/de-duplicate/coalesce orchestration, and
   `edit.rs` holds the `DiagInner`-editing helpers (including `message_signature`, the span-independent
   text key for de-duplicating a declined-but-rewritten diagnostic; `strip_method_probe_advice`, the

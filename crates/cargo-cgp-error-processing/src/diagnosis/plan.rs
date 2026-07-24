@@ -10,7 +10,7 @@
 
 use crate::diagnosis::coalesce::coalesce_underived_fields;
 use crate::diagnosis::leaf::Leaf;
-use crate::diagnosis::resolved::Resolved;
+use crate::diagnosis::resolved::{Cause, Resolved};
 use crate::diagnosis::wording::{
     assoc_mismatch_header, assoc_mismatch_leaf, cause_notes, consumer_header,
     field_mismatch_header, fix_help_messages, mismatch_leaf,
@@ -46,6 +46,12 @@ pub struct DiagnosisPlan {
     /// The `root cause:` note — every cause's paths folded into one dependency graph. A single
     /// element, or none when there are no causes.
     pub notes: Vec<String>,
+    /// The inputs [`notes`](Self::notes) was rendered from. A caller that must *defer* rendering —
+    /// the emitter does, so a note can elide the subtrees earlier diagnostics already drew — rebuilds
+    /// it from these through [`cause_notes_seen`](super::cause_notes_seen) and ignores `notes`.
+    pub note_causes: Vec<Cause>,
+    /// The leaf the header states, if any — the second argument the deferred rebuild needs.
+    pub note_header_leaf: Option<Leaf>,
 }
 
 /// Build the [`DiagnosisPlan`] for a resolved failure. The main message is rewritten only when
@@ -60,25 +66,61 @@ pub fn plan_resolved(
     resolved: &Resolved,
     names: &ComponentNameMap,
 ) -> DiagnosisPlan {
-    let header = categorized_header(kind, main_message, resolved, names);
-    // The bound the kept main message states, if any, so a note does not restate it as its root
-    // cause; a rewritten header makes it moot.
-    let header_bound = if header.is_some() {
-        None
-    } else {
-        main_message
-            .and_then(parse_trait_bound)
-            .map(|parsed| parsed.bound.to_owned())
-    };
+    let Header { text, states_leaf } = categorized_header(kind, main_message, resolved, names);
+    // The leaf the main message already states, whether because the header was *rewritten* from
+    // that leaf or because rustc's kept header restates the ordinary bound the walk descended to.
+    // Its note then drops the `root cause:` lead rather than repeating the header.
+    let header_leaf = states_leaf.or_else(|| {
+        if text.is_some() {
+            return None;
+        }
+        let bound = parse_trait_bound(main_message?)?.bound;
+        resolved
+            .causes
+            .iter()
+            .map(|cause| &cause.leaf)
+            .find(|leaf| matches!(leaf, Leaf::Bound { summary } if summary == bound))
+    });
 
     let causes = coalesce_underived_fields(&resolved.causes);
     let helps = fix_help_messages(&causes);
-    let notes = cause_notes(&causes, header_bound.as_deref());
+    let notes = cause_notes(&causes, header_leaf);
+    let header = text;
 
     DiagnosisPlan {
         header,
         helps,
         notes,
+        note_header_leaf: header_leaf.cloned(),
+        note_causes: causes,
+    }
+}
+
+/// What [`categorized_header`] decided: the main message to show, and the leaf it states.
+struct Header<'a> {
+    /// The rewritten main message, or `None` to keep rustc's own.
+    text: Option<String>,
+    /// The leaf the rewritten message states in full, when it was worded from one — so the note can
+    /// drop that leaf's now-redundant `root cause:` lead.
+    states_leaf: Option<&'a Leaf>,
+}
+
+impl Header<'_> {
+    /// A header that keeps rustc's own main message, stating no leaf of its own.
+    fn keep() -> Self {
+        Header {
+            text: None,
+            states_leaf: None,
+        }
+    }
+
+    /// A rewritten header worded from something other than a single leaf (a consumer trait, a
+    /// provider bound), so no lead is redundant.
+    fn rewritten(text: String) -> Self {
+        Header {
+            text: Some(text),
+            states_leaf: None,
+        }
     }
 }
 
@@ -87,17 +129,18 @@ pub fn plan_resolved(
 /// bound such as `f64: Eq` the solver already descended to). A projection mismatch
 /// ([`DiagKind::TypeMismatch`]) becomes the `[CGP-E003]` field form when the resolver traced it to a
 /// `HasField` projection, or the `[CGP-E017]` abstract-type form for any other associated type, each
-/// worded from its mismatch leaf. An unsatisfied `CanUseComponent`
+/// worded from its mismatch leaf — and reported as the leaf it states, so its note drops the now
+/// redundant lead. An unsatisfied `CanUseComponent`
 /// bound and a consumer-method [`DiagKind::MethodNotFound`] (whose text names no wiring trait)
 /// are both worded from the typed resolution, whose full-path marker keys make the consumer name
 /// exact; an unsatisfied `IsProviderFor` bound rewrites by its text, since the resolution does
 /// not carry the provider-side names.
-fn categorized_header(
+fn categorized_header<'a>(
     kind: DiagKind,
     main_message: Option<&str>,
-    resolved: &Resolved,
+    resolved: &'a Resolved,
     names: &ComponentNameMap,
-) -> Option<String> {
+) -> Header<'a> {
     // A projection mismatch (`E0271`) the resolver traced to a failing associated type is its own
     // class, worded from the mismatch leaf rather than from the consumer trait: the `[CGP-E003]`
     // field form for a `HasField` value, the `[CGP-E017]` abstract-type form for any other. The
@@ -110,7 +153,10 @@ fn categorized_header(
             actual,
         }) = mismatch_leaf(resolved)
         {
-            return Some(field_mismatch_header(name, owner, expected, actual));
+            return Header {
+                text: Some(field_mismatch_header(name, owner, expected, actual)),
+                states_leaf: mismatch_leaf(resolved),
+            };
         }
         if let Some(Leaf::AssocTypeMismatch {
             assoc,
@@ -121,18 +167,21 @@ fn categorized_header(
             component,
         }) = assoc_mismatch_leaf(resolved)
         {
-            return Some(assoc_mismatch_header(
-                assoc,
-                trait_name,
-                owner,
-                expected,
-                actual,
-                component.as_deref(),
-            ));
+            return Header {
+                text: Some(assoc_mismatch_header(
+                    assoc,
+                    trait_name,
+                    owner,
+                    expected,
+                    actual,
+                    component.as_deref(),
+                )),
+                states_leaf: assoc_mismatch_leaf(resolved),
+            };
         }
     }
     if resolved.consumers.is_empty() {
-        return None;
+        return Header::keep();
     }
     // A mismatch-coded (`E0271`) failure that the resolver traced to a *non*-mismatch cause — a
     // missing field or wiring reached through an opaque-future or associated-type projection, as a
@@ -140,12 +189,12 @@ fn categorized_header(
     // consumer failing, not a type mismatch. Its rustc message (`type mismatch resolving …`) is
     // opaque, so name the consumer trait that could not be implemented instead.
     if kind == DiagKind::TypeMismatch {
-        return Some(consumer_header(resolved));
+        return Header::rewritten(consumer_header(resolved));
     }
     if let Some(text) = main_message {
         if let Some(parsed) = parse_trait_bound(text) {
             if parsed.trait_name == "CanUseComponent" {
-                return Some(consumer_header(resolved));
+                return Header::rewritten(consumer_header(resolved));
             }
             // An `IsProviderFor` bound whose subject is a `RedirectLookup` names only redirect
             // plumbing — the lookup resolved to *no* provider at all (the wiring is missing), so
@@ -157,14 +206,14 @@ fn categorized_header(
             // provider whose dependency fails — `SerializeIterator`, say — keeps the provider form
             // below, since it names something the programmer chose.)
             if parsed.trait_name == "IsProviderFor" && subject_is_redirect_lookup(parsed.subject) {
-                return Some(consumer_header(resolved));
+                return Header::rewritten(consumer_header(resolved));
             }
             // rustc opened the diagnostic on a bound that restates a genuine recovered leaf — an
             // ordinary bound such as `f64: Eq` the solver descended to *is* the root cause — so
             // keep rustc's header, which already names that cause. (The matching note then drops
             // its `root cause:` lead so it does not repeat the header.)
             if bound_is_leaf(resolved, parsed.bound) {
-                return None;
+                return Header::keep();
             }
         }
         // A failure recovered at the use site reports the consumer trait the *call* needs. rustc's
@@ -174,23 +223,23 @@ fn categorized_header(
         // mentions. (A provider-side headline the programmer *did* assert — a `#[check_providers]`
         // layer — arrives as a `Check`, not a use-site kind, and keeps the provider form.)
         if kind == DiagKind::MethodNotFound {
-            return Some(consumer_header(resolved));
+            return Header::rewritten(consumer_header(resolved));
         }
         if let Some(rewritten) = rewrite_trait_bound(text, names) {
-            return Some(rewritten);
+            return Header::rewritten(rewritten);
         }
         // The main message is a trait bound, but not a recognized CGP wiring bound and not a
         // recovered leaf: rustc descended to a mid-chain *symptom* (a getter bound on a request,
         // say, whose real cause is a missing wiring one level down). Naming the consumer trait the
         // context fails to implement is truer than leaking that symptom bound as the headline.
         if parse_trait_bound(text).is_some() {
-            return Some(consumer_header(resolved));
+            return Header::rewritten(consumer_header(resolved));
         }
     }
     if kind == DiagKind::MethodNotFound {
-        return Some(consumer_header(resolved));
+        return Header::rewritten(consumer_header(resolved));
     }
-    None
+    Header::keep()
 }
 
 /// Whether a trait bound's subject (self type) is CGP's `RedirectLookup` provider — the redirect

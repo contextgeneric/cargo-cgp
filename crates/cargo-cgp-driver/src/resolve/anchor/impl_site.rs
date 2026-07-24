@@ -182,7 +182,7 @@ fn wrapper_consumer_causes<'tcx>(
                     path
                 })
                 .collect();
-            match causes.iter_mut().find(|c| c.key() == cause.leaf.key()) {
+            match causes.iter_mut().find(|c| c.leaf == cause.leaf) {
                 Some(existing) => existing.paths.extend(wrapped),
                 None => causes.push(Cause {
                     leaf: cause.leaf,
