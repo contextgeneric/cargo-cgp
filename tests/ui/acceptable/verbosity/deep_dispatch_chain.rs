@@ -1,15 +1,18 @@
-//! A resolved dispatch chain over a DSL-sized program, its repeated code type elided.
+//! A resolved dispatch chain over a DSL-sized program, every construct named in full.
 //!
 //! `App` runs a four-stage pipeline program through the `Code`-dispatched `Handler`
 //! component, inherited through two namespace levels. The first stage reads the
 //! context's `name` field, which `App` lacks, and the call-site anchor resolves the
 //! failure cleanly — root cause first, one block. What this fixture pins is the
-//! *presentation* of that success on a program-sized `Code` type: the full
-//! `Prog<Product![…]>` type appears once, on the first `Handler` node (and the
-//! header), and every subsequent hop that restates the same trait and parameters is
-//! elided to `Handler<…>`, so the chain reads as its meaningful steps — the pipeline
-//! unfolding stage by stage down to the missing field — rather than as dozens of
-//! near-identical lines.
+//! *presentation* of that success on a program-sized `Code` type: the whole chain
+//! unfolds stage by stage down to the missing field, and each hop states its trait and
+//! parameters as written.
+//!
+//! A hop repeating its parent's trait exactly once rendered as `Handler<…>` to keep the
+//! chain short. That elision was removed deliberately: it hid the very type a reader
+//! follows the chain to trace, and made a genuine repeat indistinguishable from a hop
+//! whose parameters differ. The length here is the accepted cost, and the snapshot is
+//! what makes it visible when it changes.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md (use-site face).

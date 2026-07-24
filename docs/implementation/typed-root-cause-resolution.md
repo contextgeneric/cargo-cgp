@@ -225,8 +225,7 @@ resugared.
 
 **[The transformed diagnostic](typed-resolution-output.md)** is the output side: the coded
 `[CGP-E001]`/`[CGP-E002]`/`[CGP-E003]`/`[CGP-E009]` headline classes, the `root cause:` notes over
-their merged dependency trees (with underived-field causes coalesced and repeated trait generics
-elided), and the emitter's application of the rustc-free plan to the compiler's `DiagInner`.
+their merged dependency trees (with underived-field causes coalesced), and the emitter's application of the rustc-free plan to the compiler's `DiagInner`.
 
 ## Boundaries and open ends
 
@@ -451,7 +450,7 @@ syntactically — pins its fallback (with the method-probe advice stripped) in
 [`acceptable/use-site/generic_consumer_unwritten_arg`](../../tests/ui/acceptable/use-site/generic_consumer_unwritten_arg.rs),
 so the two sides together pin both the transform and the decline boundary;
 [`acceptable/verbosity/deep_dispatch_chain`](../../tests/ui/acceptable/verbosity/deep_dispatch_chain.rs)
-pins the repeated-generics elision on a resolved deep dispatch chain. [Testing](testing.md)
+pins a resolved deep dispatch chain, every hop naming its program type in full. [Testing](testing.md)
 describes the suite and its bless workflow. The fixtures group by what they pin.
 
 Each **leaf class** has fixtures for its field, wiring, and redirect shapes:

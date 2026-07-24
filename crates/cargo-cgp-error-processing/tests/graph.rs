@@ -126,10 +126,12 @@ fn a_super_root_over_two_branches_shares_the_subtree() {
 }
 
 #[test]
-fn a_repeated_trait_elides_its_generics_against_its_parent() {
+fn a_repeated_trait_still_names_its_generics_in_full() {
     // Two distinct provider nodes sharing a trait reference (`Handler<Big>`) form a parent/child
-    // pair; the child's generics elide to `<…>` because it repeats its parent's trait. (They are
-    // distinct nodes — different providers — so the graph does not merge them.)
+    // pair. The child once printed `Handler<…>`, shortening a dispatch chain that restates a
+    // program-sized `Code` at every step — but that hid the very type the reader is tracing. Every
+    // CGP construct a chain names is now rendered as written. (They are distinct nodes — different
+    // providers — so the graph does not merge them.)
     let parent = ChainNode::Hop(DepNode::Provider {
         trait_ref: "Handler<Big>".to_owned(),
         context: "Ctx".to_owned(),
@@ -141,18 +143,19 @@ fn a_repeated_trait_elides_its_generics_against_its_parent() {
         provider: "P2".to_owned(),
     });
     let out = render(&[vec![parent, child, leaf("D")]]);
+    assert!(!out.contains("<…>"), "no CGP construct is ever elided");
     insta::assert_snapshot!(out, @r"
     [CGP-E102] provider trait impl `Handler<Big>` with context `Ctx` for provider `P1`
-    └─ [CGP-E102] provider trait impl `Handler<…>` with context `Ctx` for provider `P2`
+    └─ [CGP-E102] provider trait impl `Handler<Big>` with context `Ctx` for provider `P2`
       └─ the trait bound `D` is not satisfied
     ");
 }
 
 #[test]
 fn a_hop_whose_generics_differ_from_its_parent_keeps_its_full_form() {
-    // The complement of the elision test: two provider nodes on the *same* trait whose generic
-    // arguments differ (`ValueEncoder<Outer>` then `ValueEncoder<Vec<Mid>>`) each keep their full
-    // parameters — elision fires only on an *exact* repeat, never on a changing generic.
+    // The companion of the test above: two provider nodes on the *same* trait whose generic
+    // arguments differ (`ValueEncoder<Outer>` then `ValueEncoder<Vec<Mid>>`). Both are rendered in
+    // full, as every hop now is.
     let parent = ChainNode::Hop(DepNode::Provider {
         trait_ref: "ValueEncoder<Outer>".to_owned(),
         context: "Ctx".to_owned(),
@@ -164,7 +167,7 @@ fn a_hop_whose_generics_differ_from_its_parent_keeps_its_full_form() {
         provider: "EncodeIterator".to_owned(),
     });
     let out = render(&[vec![parent, child, leaf("D")]]);
-    assert!(!out.contains("<…>"), "a changing generic is not elided");
+    assert!(!out.contains("<…>"), "no CGP construct is ever elided");
     insta::assert_snapshot!(out, @r"
     [CGP-E102] provider trait impl `ValueEncoder<Outer>` with context `Ctx` for provider `EncodeRecord`
     └─ [CGP-E102] provider trait impl `ValueEncoder<Vec<Mid>>` with context `Ctx` for provider `EncodeIterator`

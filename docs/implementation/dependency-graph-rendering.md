@@ -37,7 +37,7 @@ rest of this document is how that graph is built, ruled, and rendered.
 ## Structured nodes
 
 A dependency node is structured data, not a pre-rendered string, so the graph can compare nodes for
-identity and elide a hop's generics against its parent. The interior hops are a
+identity. The interior hops are a
 [`DepNode`](../../crates/cargo-cgp-error-processing/src/diagnosis/node.rs) enum with one variant per
 `CGP-E1xx` chain-hop class, each carrying the names that class renders from:
 
@@ -65,7 +65,7 @@ pub enum ChainNode {
 ```
 
 Each variant renders to exactly the label its `CGP-E1xx` template dictates — `` consumer trait impl `…` for context `…` `` and the rest — with the trait reference stored *with* its generic arguments
-(`CanCalculateArea<f64>`), since rendering and eliding them is a rustc-free concern. Node identity is
+(`CanCalculateArea<f64>`), since rendering them is a rustc-free concern. Node identity is
 whole-node structural equality (`Eq`/`Hash` derived on the enum), which is faithful even where the
 rendered label is not: the `Redirect` node holds the dispatched `key` (`Left` versus `Right`) though it
 renders only the route (`@ValueBuilderComponent`), so two lookups along one route for different keys
@@ -152,12 +152,15 @@ hide, so a leaf reached by several paths is drawn in full each time rather than 
 reads the same wherever a chain bottoms out on it. The render produces one
 [`DependencyTree`](../../crates/cargo-cgp-error-processing/src/tree.rs) per root, stacked into the note.
 
-Generic elision happens during this walk. A hop whose trait reference *exactly* repeats its parent's
-prints its generic list as `<…>`, so a dispatch chain that restates a program-sized `Code` type at
-every hop reads as its meaningful steps rather than the type over and over. The comparison is against
-the parent's own un-elided trait, and only an exact repeat elides — a hop whose generics differ from
-its parent's (`ValueEncoder<Outer>` above `ValueEncoder<Vec<Mid>>`) keeps its full form. A redirect
-hop carries no trait, so nothing elides across it.
+**Every CGP construct is rendered in full.** A hop whose trait reference exactly repeated its
+parent's once printed its generic list as `<…>`, which shortened a dispatch chain that restates a
+program-sized `Code` type at every step. That is no longer done, deliberately: the elision hid the
+very type the reader is tracing, and left them unable to tell a genuine repeat from a hop whose
+parameters differ without re-deriving it. A chain step now always names its trait and its parameters
+as written. The verbosity that buys back is real on a DSL-sized program and is accepted — the chain
+is there to be read precisely, and a reader who wants it shorter is better served by the
+[cross-block elision](#eliding-across-blocks) below, which drops whole subtrees a previous block
+already drew rather than obscuring individual types.
 
 ## Worked shapes
 
@@ -344,10 +347,7 @@ A few edges of the model are worth recording. Node identity is whole-node struct
 is faithful in both directions: within a single path a repeated label stays distinct, so a recursive
 descent never folds into a false cycle, and across paths the fields a node carries capture what
 distinguishes it even where the rendered label does not — the `Redirect` key being the load-bearing
-case. Generic elision compares a node to its single rendered parent, so a node reached from two parents
-whose trait references differ would elide under one and not the other; the first-reach-expands rule
-makes which parent wins deterministic. The `(*)` convention is borrowed from `cargo tree` and is pinned
-in the fixtures. This document covers rendering only; the resolver's walk, anchors, and cache are
+case. The `(*)` convention is borrowed from `cargo tree` and is pinned in the fixtures. This document covers rendering only; the resolver's walk, anchors, and cache are
 described in [Typed root-cause resolution](typed-root-cause-resolution.md) and changed by this model
 only in the representation they emit.
 
@@ -378,8 +378,8 @@ and the end-to-end behavior is pinned by the UI suite.
 - [`crates/cargo-cgp-error-processing/tests/graph.rs`](../../crates/cargo-cgp-error-processing/tests/graph.rs)
   — the build-and-render as `insta` inline snapshots: a linear spine, a shared-prefix branch, a
   subsuming cascade, converging independent roots on one leaf, a diamond, a super-root, a within-path
-  label repeat kept linear, cross-path redirects distinct by key versus merged by key, generic elision
-  on an exact repeat and its absence on a differing generic, a cyclic input terminating with a `(*)`
+  label repeat kept linear, cross-path redirects distinct by key versus merged by key, a repeated
+  trait and a differing one both rendered in full, a cyclic input terminating with a `(*)`
   mark, and an empty path set rendering empty. The cross-block elision has four of its own: a second
   graph truncating at what the first drew while keeping its own prefix *and still ending at the root
   cause*, the within-render reference staying bare by contrast, a wholly-redundant graph reporting
@@ -408,7 +408,7 @@ and the end-to-end behavior is pinned by the UI suite.
   templates).
 - [`crates/cargo-cgp-error-processing/src/diagnosis/graph.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/graph.rs)
   — `DependencyGraph`, `from_paths` (the cross-path-only merge), the root rule, the `(*)`-dedup
-  renderer with parent-based generic elision, and `render_seen`/`leaves_below`/`fully_elided_by` (the
+  renderer (every construct rendered in full), and `render_seen`/`leaves_below`/`fully_elided_by` (the
   cross-block elision and the terminus it keeps).
 - [`crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs)
   — `Cause { leaf, paths }`, one cause per leaf holding every path that reaches it.

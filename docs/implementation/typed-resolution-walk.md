@@ -348,12 +348,12 @@ with its own [`CGP-E1xx` code](../error-code.md) when rendered — so `consumer 
 (`CGP-E106`–`CGP-E109`), except a pass-through ordinary bound, which stays uncoded. The walk emits
 one flat path of these nodes per way a cause is reached, and the rustc-free
 [dependency graph](dependency-graph-rendering.md) merges the paths and renders them as `cargo
-tree`-style text — including the generic elision of a hop whose quoted trait *exactly repeats its
-parent's* (a dispatch pipeline's plumbing hops all restate the same program-sized `Code` type, so
-only the first spells it out and the rest read `Handler<…>`,
-[`deep_dispatch_chain`](../../tests/ui/acceptable/verbosity/deep_dispatch_chain.rs) pinning it). All
-of the merge and render is in the rustc-free `cargo-cgp-error-processing` crate, unit-tested on any
-toolchain.
+tree`-style text, every construct named in full — a dispatch pipeline's plumbing hops all restate the
+same program-sized `Code` type, and each spells it out, since the type a reader is tracing is the
+point of the chain
+([`deep_dispatch_chain`](../../tests/ui/acceptable/verbosity/deep_dispatch_chain.rs) pins the
+resulting shape). All of the merge and render is in the rustc-free `cargo-cgp-error-processing`
+crate, unit-tested on any toolchain.
 
 ## Tests
 

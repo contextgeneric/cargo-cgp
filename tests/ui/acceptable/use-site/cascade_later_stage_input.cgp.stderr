@@ -9,7 +9,7 @@ error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog, _>` is not implemen
               [CGP-E101] consumer trait impl `CanHandle<Prog, _>` for context `App`
               └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
                 └─ [CGP-E102] provider trait impl `Handler<Prog, _>` with context `App` for provider `PipeHandlers<Product![Call<Fetch>, Call<Hex>]>`
-                  └─ [CGP-E102] provider trait impl `Handler<…>` with context `App` for provider `ComposeHandlers<Call<Fetch>, Call<Hex>>`
+                  └─ [CGP-E102] provider trait impl `Handler<Prog, _>` with context `App` for provider `ComposeHandlers<Call<Fetch>, Call<Hex>>`
                     └─ [CGP-E102] provider trait impl `Handler<Prog, ByteStream>` with context `App` for provider `Call<Hex>`
                       └─ [CGP-E101] consumer trait impl `CanHandle<Hex, ByteStream>` for context `App`
                         └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`

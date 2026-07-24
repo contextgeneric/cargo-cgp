@@ -159,9 +159,7 @@ impl DependencyGraph {
         let rendered = self
             .roots()
             .into_iter()
-            .map(|root| {
-                render_dependency_tree(&self.expand(root, None, &mut expanded, seen, &mut drawn))
-            })
+            .map(|root| render_dependency_tree(&self.expand(root, &mut expanded, seen, &mut drawn)))
             .collect::<Vec<_>>()
             .join("\n");
         seen.extend(drawn);
@@ -192,31 +190,27 @@ impl DependencyGraph {
         leaves.into_iter().map(DependencyTree::leaf).collect()
     }
 
-    /// Expand node `id` into a render tree. Its generics are elided when its trait exactly repeats
-    /// its parent's (`parent_trait`, the parent's *own* un-elided trait). A node whose subtree was
-    /// already drawn — earlier in this render (`expanded`, indexed by id) or by an earlier one
-    /// (`seen`, keyed by node identity so it spans graphs) — is emitted as a `(*)` reference rather
-    /// than re-expanded; the `expanded` marks double as cycle protection, since each node is expanded
-    /// at most once. Only a node with children is ever elided: a leaf hides no subtree, so it is
-    /// drawn in full wherever a chain bottoms out on it.
+    /// Expand node `id` into a render tree. A node whose subtree was already drawn — earlier in this
+    /// render (`expanded`, indexed by id) or by an earlier one (`seen`, keyed by node identity so it
+    /// spans graphs) — is emitted as a `(*)` reference rather than re-expanded; the `expanded` marks
+    /// double as cycle protection, since each node is expanded at most once. Only a node with
+    /// children is ever referenced that way: a leaf hides no subtree, so it is drawn in full wherever
+    /// a chain bottoms out on it.
+    ///
+    /// **Every CGP construct is rendered in full.** A hop repeating its parent's trait once printed
+    /// its generic list as `<…>`, which shortened a dispatch chain that restates a program-sized
+    /// `Code` at every step — but at the cost of hiding the very type the reader is tracing, and
+    /// leaving them unable to tell a genuine repeat from a hop whose parameters differ. A chain step
+    /// now always names its trait and parameters as written.
     fn expand(
         &self,
         id: usize,
-        parent_trait: Option<&str>,
         expanded: &mut [bool],
         seen: &HashSet<ChainNode>,
         drawn: &mut Vec<ChainNode>,
     ) -> DependencyTree {
         let node = &self.nodes[id];
-        let own_trait = node.elidable_trait().map(str::to_owned);
-        let label = match (&own_trait, parent_trait) {
-            (Some(this), Some(parent))
-                if this == parent && this.ends_with('>') && this.contains('<') =>
-            {
-                node.with_generics_elided().render()
-            }
-            _ => node.render(),
-        };
+        let label = node.render();
 
         let has_children = !self.children[id].is_empty();
         if has_children && expanded[id] {
@@ -238,7 +232,7 @@ impl DependencyGraph {
         let kids = self.children[id]
             .clone()
             .into_iter()
-            .map(|child| self.expand(child, own_trait.as_deref(), expanded, seen, drawn))
+            .map(|child| self.expand(child, expanded, seen, drawn))
             .collect();
         DependencyTree::node(label, kids)
     }

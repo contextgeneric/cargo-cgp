@@ -5,8 +5,11 @@ use rustc_data_structures::fingerprint::Fingerprint;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
 
+use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::cache::{NodeKey, ResolveCache, SubCause, SubResult, pred_fingerprint};
-use crate::resolve::cgp_item::{is_consumer_trait, is_local_adt};
+use crate::resolve::cgp_item::{
+    is_cgp_item, is_consumer_trait, is_local_adt, trim_unknown_path_tail,
+};
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, trait_generics};
 use crate::resolve::walk::{
@@ -179,6 +182,25 @@ fn resolve_node<'tcx>(
         return terminal_result(tcx, erased, leaf_ref, parent, context, self_fp);
     }
 
+    // An unmet `DelegateComponent` on the **context** is the missing-wiring leaf, whatever impl
+    // nominally matches it. Normally none does and the terminal branch below catches it, but a
+    // context that joins a namespace carries a blanket `DelegateComponent<__Key__>` forwarding that
+    // unifies with *every* key, so the descent would follow it into the namespace's own lookup
+    // machinery (`ConcatPath`, `Sized` on the unresolved key) and bottom out on plumbing instead.
+    // Descending can never find anything better: had the context wired this key the obligation would
+    // hold and be pruned before becoming a node at all, so reaching here means the entry is simply
+    // absent — which is the cause to report.
+    if let Some(missing) = missing_context_wiring(tcx, erased, context) {
+        return terminal_result(
+            tcx,
+            missing,
+            missing.skip_binder().trait_ref,
+            parent,
+            context,
+            self_fp,
+        );
+    }
+
     let descendable = is_descendable(tcx, erased, context);
 
     let Some(children) = impl_where_obligations(tcx, erased) else {
@@ -278,6 +300,41 @@ fn cache_if_complete(cache: &ResolveCache, key: NodeKey, result: SubResult) -> S
         cache.insert(key, result.clone());
     }
     result
+}
+
+/// The unmet `DelegateComponent` obligation to report when `pred` is one **on the context** — with
+/// any trailing unknown segments trimmed off a redirect-path key — or `None` when `pred` is not one.
+///
+/// The trim is what makes a call-site-anchored redirect reportable. A `RedirectLookup` keys on the
+/// path *plus the component's parameters*, so a lookup recovered from a call whose input is inferred
+/// carries that placeholder as the path's last segment: the leaf would name an entry the programmer
+/// could not write, and would be dropped as unknowable before it was ever shown. Trimming leaves the
+/// path they can actually wire ([`trim_unknown_path_tail`]).
+fn missing_context_wiring<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    pred: ty::PolyTraitPredicate<'tcx>,
+    context: Ty<'tcx>,
+) -> Option<ty::PolyTraitPredicate<'tcx>> {
+    let trait_ref = pred.skip_binder().trait_ref;
+    if !is_cgp_item(
+        tcx,
+        trait_ref.def_id,
+        DELEGATE_COMPONENT_TRAIT,
+        CGP_COMPONENT_CRATE,
+    ) {
+        return None;
+    }
+    if tcx.erase_and_anonymize_regions(trait_ref.self_ty()) != context {
+        return None;
+    }
+
+    let key = trait_ref.args.type_at(1);
+    let Some(trimmed) = trim_unknown_path_tail(tcx, key) else {
+        return Some(pred);
+    };
+    let args: [ty::GenericArg<'tcx>; 2] = [trait_ref.self_ty().into(), trimmed.into()];
+    let trait_ref = ty::TraitRef::new(tcx, trait_ref.def_id, args);
+    Some(ty::Binder::dummy(trait_ref).upcast(tcx))
 }
 
 /// Build the sub-result for a terminal leaf `leaf_ref` (a `HasField`, an impl-less bound, or a

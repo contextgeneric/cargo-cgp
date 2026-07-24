@@ -9,12 +9,12 @@ error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog, _>` is not implemen
               [CGP-E101] consumer trait impl `CanHandle<Prog, _>` for context `App`
               └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
                 └─ [CGP-E102] provider trait impl `Handler<Prog, _>` with context `App` for provider `PipeHandlers<Product![Call<Fetch>, Call<Sink>]>`
-                  └─ [CGP-E102] provider trait impl `Handler<…>` with context `App` for provider `ComposeHandlers<Call<Fetch>, Call<Sink>>`
+                  └─ [CGP-E102] provider trait impl `Handler<Prog, _>` with context `App` for provider `ComposeHandlers<Call<Fetch>, Call<Sink>>`
                     └─ [CGP-E102] provider trait impl `Handler<Prog, ByteStream>` with context `App` for provider `Call<Sink>`
                       └─ [CGP-E101] consumer trait impl `CanHandle<Sink, ByteStream>` for context `App`
                         └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
                           └─ [CGP-E102] provider trait impl `Handler<Sink, ByteStream>` with context `App` for provider `HandleSink`
-                            └─ [CGP-E102] provider trait impl `Handler<…>` with context `App` for provider `UseInputDelegate<EmptySink>`
+                            └─ [CGP-E102] provider trait impl `Handler<Sink, ByteStream>` with context `App` for provider `UseInputDelegate<EmptySink>`
                               └─ [CGP-E110] provider `EmptySink` does not contain any delegate entry for `ByteStream`
 
 For more information about this error, try `rustc --explain E0277`.

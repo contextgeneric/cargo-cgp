@@ -36,10 +36,15 @@ their fixtures now live under `acceptable/`:
   wired components that share a cause used to keep only the first component's route, so a consumer the
   header named had no chain in the note; each now renders, converging on the shared hop
   ([`use_site_shared_cause`](../../tests/ui/acceptable/duplication/use_site_shared_cause.rs)).
-- A **resolved dispatch chain restating the full program type at every node** is elided: a hop that
-  exactly repeats its predecessor's trait and parameters renders as `Handler<…>`, so a DSL-sized
-  chain reads as its meaningful steps
-  ([`deep_dispatch_chain`](../../tests/ui/acceptable/verbosity/deep_dispatch_chain.rs)).
+- A **pipeline stage routing back to the context for an unwired `Code`** is resolved rather than
+  declined. A type-level DSL interprets each stage by routing through the context's own handler, so a
+  program naming a fragment the language has no interpreter for fails one hop away from the stage —
+  and a context that joins a namespace carries a blanket forwarding that matches *every* key, which
+  used to send the walk into the namespace's own lookup machinery instead of stopping at the absent
+  entry. An unmet delegation on the context is now terminal whatever nominally matches it, so the
+  block leads with `[CGP-E107] … does not contain any delegate entry for @….Missing` in place of one
+  `[CGP-E002]` per combinator layer naming `PipeHandlers`/`ComposeHandlers`
+  ([`pipeline_unhandled_code`](../../tests/ui/acceptable/use-site/pipeline_unhandled_code.rs)).
 - A **use-site failure the resolver declines** no longer keeps rustc's misleading method advice:
   the "this is an associated function, not a method" framing and the actively wrong "use associated
   function syntax instead" suggestion — both artifacts of CGP's `self`-less provider methods — are
@@ -151,6 +156,15 @@ their fixtures now live under `acceptable/`:
   as, and flattened only when that recovers something
   ([`upcast_missing_variant`](../../tests/ui/usability/extensible-data/upcast_missing_variant.rs)
   shows it on a declined diagnostic).
+
+One presentation decision was deliberately **reversed**. A dispatch chain restates a program-sized
+`Code` type at every hop, and a hop repeating its parent's trait exactly used to render as
+`Handler<…>` to shorten it. That elision is gone: it hid the very type a reader follows the chain to
+trace, and left a genuine repeat indistinguishable from a hop whose parameters differ. Every CGP
+construct is now shown as written, and the length that costs on a DSL-sized program is accepted — the
+[cross-block elision](../implementation/dependency-graph-rendering.md#eliding-across-blocks), which
+drops whole subtrees an earlier block already drew, is the mechanism for brevity that does not
+sacrifice precision.
 
 What remains below are the classes the tool does not yet reshape.
 

@@ -2,7 +2,7 @@
 //!
 //! A dependency chain is a sequence of these nodes rather than pre-rendered strings, so the
 //! [graph](super::graph) can compare nodes for identity (merging a hop or leaf several paths reach
-//! in common) and elide a hop's generics against its parent. Each [`DepNode`] variant is one
+//! in common). Each [`DepNode`] variant is one
 //! `CGP-E1xx` chain-hop class carrying the names that class needs; the terminal root cause is the
 //! existing [`Leaf`], and a [`ChainNode`] is one or the other. Rendering reproduces exactly the
 //! label templates these replaced.
@@ -15,7 +15,9 @@ use crate::diagnosis::wording::dependency_tree_leaf;
 
 /// One interior hop of a dependency chain — a wiring step the walk descended — tagged by the
 /// `CGP-E1xx` rendering template it takes. The trait-bearing variants keep the trait reference *with*
-/// its generic arguments (`CanCalculateArea<f64>`), since rendering and eliding them is now a
+/// its generic arguments (`CanCalculateArea<f64>`), rendered in full — every CGP construct a chain
+/// names is shown as written, since the type a reader is tracing is the point of the chain. Rendering
+/// is a
 /// rustc-free concern.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DepNode {
@@ -63,36 +65,6 @@ impl DepNode {
             }
         }
     }
-
-    /// The trait reference (with generics) this hop elides when it repeats its parent's — the
-    /// consumer/provider/other-trait name — or `None` for a hop whose label carries no such trait
-    /// (a `HasField` accessor or a redirect path).
-    fn elidable_trait(&self) -> Option<&str> {
-        match self {
-            DepNode::Consumer { trait_ref, .. }
-            | DepNode::Provider { trait_ref, .. }
-            | DepNode::Trait { trait_ref, .. } => Some(trait_ref),
-            DepNode::Redirect { .. } => None,
-        }
-    }
-
-    /// A copy with the generic list of its elidable trait reduced to `<…>`. A no-op for a variant
-    /// with no elidable trait or a trait reference that carries no `<…>` list.
-    fn with_generics_elided(&self) -> DepNode {
-        let mut node = self.clone();
-        let trait_ref = match &mut node {
-            DepNode::Consumer { trait_ref, .. }
-            | DepNode::Provider { trait_ref, .. }
-            | DepNode::Trait { trait_ref, .. } => trait_ref,
-            DepNode::Redirect { .. } => return node,
-        };
-        if trait_ref.ends_with('>')
-            && let Some(open) = trait_ref.find('<')
-        {
-            *trait_ref = format!("{}<…>", &trait_ref[..open]);
-        }
-        node
-    }
 }
 
 /// A node of the rendered dependency graph — an interior [`DepNode`] hop or the terminal root-cause
@@ -110,22 +82,6 @@ impl ChainNode {
         match self {
             ChainNode::Hop(hop) => hop.render(),
             ChainNode::Leaf(leaf) => dependency_tree_leaf(leaf),
-        }
-    }
-
-    /// The elidable trait reference for a hop; a leaf never elides.
-    pub(crate) fn elidable_trait(&self) -> Option<&str> {
-        match self {
-            ChainNode::Hop(hop) => hop.elidable_trait(),
-            ChainNode::Leaf(_) => None,
-        }
-    }
-
-    /// This node with its generics elided when it is a hop; a leaf is returned unchanged.
-    pub(crate) fn with_generics_elided(&self) -> ChainNode {
-        match self {
-            ChainNode::Hop(hop) => ChainNode::Hop(hop.with_generics_elided()),
-            ChainNode::Leaf(_) => self.clone(),
         }
     }
 }

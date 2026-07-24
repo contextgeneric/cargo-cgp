@@ -9,8 +9,8 @@ error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog<Product![HandleName,
              [CGP-E101] consumer trait impl `CanHandle<Prog<Product![HandleName, HandleShout]>, _>` for context `App`
              └─ [CGP-E104] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
                └─ [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `PipeHandlers<Product![HandleName, HandleShout]>`
-                 └─ [CGP-E102] provider trait impl `Handler<…>` with context `App` for provider `ComposeHandlers<HandleName, HandleShout>`
-                   └─ [CGP-E102] provider trait impl `Handler<…>` with context `App` for provider `HandleName`
+                 └─ [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `ComposeHandlers<HandleName, HandleShout>`
+                   └─ [CGP-E102] provider trait impl `Handler<Prog<Product![HandleName, HandleShout]>, _>` with context `App` for provider `HandleName`
                      └─ [CGP-E105] trait impl `HasName` for `App`
                        └─ [CGP-E106] missing field `name` on `App`
 

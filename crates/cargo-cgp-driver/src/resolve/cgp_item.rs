@@ -5,7 +5,7 @@
 //! replacement — the same discipline [`component_map`](crate::component_map) uses for
 //! `IsProviderFor`.
 
-use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 
 use crate::config::{
@@ -288,6 +288,48 @@ pub(crate) fn path_cons_parts<'tcx>(
         }
         _ => None,
     }
+}
+
+/// A redirect path with its trailing **unknown** segments removed, or `None` when it has none.
+///
+/// A `RedirectLookup` keys its table on the redirect path *plus the component's own parameters*, so
+/// a `Handler` lookup for the fragment `Missing` reads `@…HandlerComponent.Missing.<Input>`. When
+/// the failure was recovered from a call the code does not fully type — a
+/// [call site](crate::resolve::call_site) whose input is inferred — that trailing parameter is a
+/// placeholder, and reporting it would name an entry the programmer could not write, besides being
+/// dropped as unknowable. Trimming the trailing run leaves the path they *can* wire.
+///
+/// Only a trailing run is trimmed: a placeholder further up is part of what the lookup keys on, so
+/// such a leaf stays unknowable and is dropped as before.
+pub(crate) fn trim_unknown_path_tail<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    let ty::Adt(cons_def, _) = path.kind() else {
+        return None;
+    };
+    if !is_cgp_item(tcx, cons_def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE) {
+        return None;
+    }
+
+    let mut segments = Vec::new();
+    let mut rest = path;
+    while let Some((head, tail)) = path_cons_parts(tcx, rest) {
+        segments.push(head);
+        rest = tail;
+    }
+    if !is_nil(tcx, rest) {
+        return None;
+    }
+
+    let kept = segments
+        .iter()
+        .rposition(|segment| !segment.has_placeholders())
+        .map_or(0, |last| last + 1);
+    if kept == segments.len() {
+        return None;
+    }
+
+    Some(segments[..kept].iter().rev().fold(rest, |tail, &head| {
+        Ty::new_adt(tcx, *cons_def, tcx.mk_args(&[head.into(), tail.into()]))
+    }))
 }
 
 /// Whether `ty` is CGP's type-level path/list terminator `Nil`.
