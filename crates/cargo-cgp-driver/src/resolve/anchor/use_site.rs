@@ -1,6 +1,6 @@
 //! The by-component use-site anchor: re-checking every component the context wires.
 
-use cargo_cgp_error_processing::{Cause, Resolved};
+use cargo_cgp_error_processing::{Cause, Resolved, merge_causes_by_leaf};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::Span;
 
@@ -45,11 +45,9 @@ pub fn resolve_use_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -
                         consumers.push(consumer);
                     }
                 }
-                for cause in resolved.causes {
-                    if !causes.iter().any(|c| c.leaf == cause.leaf) {
-                        causes.push(cause);
-                    }
-                }
+                // Merged by leaf below, so a cause several wired components reach keeps every
+                // component's path rather than only the first's.
+                causes.extend(resolved.causes);
             }
         }
         if !causes.is_empty() {
@@ -60,7 +58,7 @@ pub fn resolve_use_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -
                 consumers_are_cgp: true,
                 // The subject is the checked context itself.
                 subject_is_context: true,
-                causes,
+                causes: merge_causes_by_leaf(&causes),
             });
         }
     }

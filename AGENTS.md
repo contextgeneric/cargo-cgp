@@ -302,7 +302,10 @@ splitting utilities). `diagnosis/` is the rustc-free root-cause model and its wo
 `leaf.rs`/`resolved.rs` (the `Leaf`/`FieldIssue`/`Cause`/`Resolved` types the driver's resolver fills
 in), `wording/` (the pure `Resolved`-to-text builders — headers, root-cause leads and their codes,
 notes, derive helps, the de-duplication `cause_signature`, and the consumer-independent
-`cause_only_signature` the emitter coalesces different consumers on), `coalesce.rs`
+`cause_only_signature` the emitter coalesces different consumers on), `merge.rs`
+(`merge_causes_by_leaf`, folding duplicate copies of one leaf back into a single cause holding every
+path — what a *unioned* cause list, as the emitter's coalesced block builds, needs to keep one mistake
+from being stated once per member), `coalesce.rs`
 (`coalesce_underived_fields`, merging several underived fields on one struct into one heading cause),
 `node.rs`/`graph.rs` (the structured `DepNode`/`ChainNode` chain nodes and the `DependencyGraph` that
 merges every cause's paths into a DAG — shared nodes fused, a reuse `(*)`-referenced — and renders it,

@@ -1,0 +1,43 @@
+error[E0599]: the method `greet` exists for struct `App`, but its trait bounds were not satisfied
+  --> src/main.rs:69:17
+   |
+54 | pub struct App {
+   | -------------- method `greet` not found for this struct because it doesn't satisfy `App: CanGreet` or `App: Greeter<App>`
+...
+69 |     let _ = app.greet();
+   |                 ^^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `Greeter`
+  --> src/main.rs:28:5
+   |
+28 |     fn greet(&self) -> String;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: trait bound `App: Greeter<App>` was not satisfied
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+27 | pub trait CanGreet {
+   |           ^^^^^^^^
+note: the trait `Greeter` must be implemented
+  --> src/main.rs:27:1
+   |
+27 | / pub trait CanGreet {
+28 | |     fn greet(&self) -> String;
+29 | | }
+   | |_^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `CanGreet` defines an item `greet`, perhaps you need to implement it
+  --> src/main.rs:27:1
+   |
+27 | pub trait CanGreet {
+   | ^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+   |
+69 -     let _ = app.greet();
+69 +     let _ = App::greet();
+   |
+
+For more information about this error, try `rustc --explain E0599`.

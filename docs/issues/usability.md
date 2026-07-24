@@ -27,7 +27,15 @@ their fixtures now live under `acceptable/`:
   ([`base_area_2`](../../tests/ui/acceptable/fields/base_area_2.rs); the boundaries — a lone
   underived field, genuinely absent fields — are pinned by
   [`underived_and_missing_field`](../../tests/ui/acceptable/fields/underived_and_missing_field.rs)
-  and [`parallel_branches`](../../tests/ui/acceptable/fields/parallel_branches.rs)).
+  and [`parallel_branches`](../../tests/ui/acceptable/fields/parallel_branches.rs)). The *same*
+  field reached by several coalesced consumers is one cause, not several: the block's union of its
+  members' causes is folded back by leaf before the wording runs, so a lead that once read
+  `` the fields `name`, `name`, and `name` `` keeps the single-field form
+  ([`coalesced_underived_field`](../../tests/ui/acceptable/duplication/coalesced_underived_field.rs)).
+  The same fold keeps a chain from being *lost* at the other end: a use-site failure spanning several
+  wired components that share a cause used to keep only the first component's route, so a consumer the
+  header named had no chain in the note; each now renders, converging on the shared hop
+  ([`use_site_shared_cause`](../../tests/ui/acceptable/duplication/use_site_shared_cause.rs)).
 - A **resolved dispatch chain restating the full program type at every node** is elided: a hop that
   exactly repeats its predecessor's trait and parameters renders as `Handler<…>`, so a DSL-sized
   chain reads as its meaningful steps

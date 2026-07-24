@@ -1,6 +1,6 @@
 //! Descending the failing obligation to every terminal root-cause leaf.
 
-use cargo_cgp_error_processing::{Cause, ChainNode, Resolved};
+use cargo_cgp_error_processing::{Cause, ChainNode, Resolved, merge_causes_by_leaf};
 use rustc_data_structures::fingerprint::Fingerprint;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
@@ -62,19 +62,17 @@ fn compute_leaves<'tcx>(
 ) -> Option<Resolved> {
     let sub = resolve_node(tcx, cache, top, None, context, &[], 0);
 
-    let mut causes: Vec<Cause> = Vec::new();
-    for sc in sub.causes {
-        // One cause per distinct leaf; a leaf reached by several paths keeps each path, so the
-        // graph can render the convergence rather than dropping every path but the first.
-        if let Some(existing) = causes.iter_mut().find(|cause| cause.leaf == sc.leaf) {
-            existing.paths.push(sc.path);
-        } else {
-            causes.push(Cause {
+    // One cause per distinct leaf; a leaf reached by several paths keeps each path, so the graph
+    // can render the convergence rather than dropping every path but the first.
+    let causes = merge_causes_by_leaf(
+        &sub.causes
+            .into_iter()
+            .map(|sc| Cause {
                 leaf: sc.leaf,
                 paths: vec![sc.path],
-            });
-        }
-    }
+            })
+            .collect::<Vec<_>>(),
+    );
 
     if causes.is_empty() {
         return None;

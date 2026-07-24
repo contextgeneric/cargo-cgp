@@ -39,10 +39,10 @@ pub use diagnosis::{
     assoc_mismatch_help_messages, cause_note, cause_notes, cause_only_signature, cause_signature,
     cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, dependency_leaf_code,
     dependency_tree_leaf, derive_help_messages, field_mismatch_header, fix_help_messages,
-    missing_delegate_entry, missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
-    plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_undeclared_capability,
-    plan_wiring_conflict, root_cause_code, root_cause_lead, undeclared_capability_help,
-    wiring_conflict_help,
+    merge_causes_by_leaf, missing_delegate_entry, missing_use_provider_help, orphan_conflict_help,
+    plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict, plan_resolved,
+    plan_undeclared_capability, plan_wiring_conflict, root_cause_code, root_cause_lead,
+    undeclared_capability_help, wiring_conflict_help,
 };
 pub use postprocess::{
     CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_lists, resugar_path,

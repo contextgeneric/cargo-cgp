@@ -33,8 +33,11 @@ driver, is what keeps them unit-testable.
 - **The diagnosis model and its wording**
   ([`diagnosis`](../../crates/cargo-cgp-error-processing/src/diagnosis)) is the rustc-free root-cause
   model — the `Resolved` failure the driver's typed resolver produces, in owned `String` form — and
-  the wording that turns it into diagnostic text. `plan_resolved` coalesces causes that share one fix
-  (`coalesce_underived_fields`) and composes the rewritten header, the
+  the wording that turns it into diagnostic text. Two pure cause-list transforms run ahead of the
+  wording: `merge_causes_by_leaf` folds duplicate copies of one leaf into a single cause holding
+  every path (what the emitter's coalesced block needs, since its members were grouped for sharing a
+  cause), and `coalesce_underived_fields` then merges the *distinct* underived fields of one struct
+  into the single derive fix they share. `plan_resolved` runs the latter and composes the rewritten header, the
   fix `help`s, and the `root cause:` note into a `DiagnosisPlan`, which the emitter only maps onto
   rustc's `DiagInner`. The note travels as an unrendered `PendingNote` — the causes and the
   header-stated leaf — because rendering it needs the emission order only the emitter's flush knows;
@@ -300,6 +303,10 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   `coalesce_underived_fields` over hand-built causes: the merged group (keeping every field's path),
   its lead and single derive help, and the boundaries (a lone underived field, genuinely missing
   fields, different owners, a group beside a missing field).
+- [`crates/cargo-cgp-error-processing/tests/merge.rs`](../../crates/cargo-cgp-error-processing/tests/merge.rs) —
+  `merge_causes_by_leaf` over hand-built causes: one leaf reached by three consumers folding into one
+  cause with all three paths, the repeated-field lead it prevents downstream, distinct leaves left
+  apart, an exact repeat of a path dropped, and a well-formed list returned unchanged.
 - [`crates/cargo-cgp-error-processing/tests/dedup.rs`](../../crates/cargo-cgp-error-processing/tests/dedup.rs) —
   the `DedupLedger` key scheme: a re-reported cause suppressed, distinct causes kept, the text key,
   the coded-header key collapsing a declined fallback, and a kept rustc header never keying.
@@ -338,7 +345,8 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   `help.rs` (`fix_help_messages` over `derive_help_messages` and `assoc_mismatch_help_messages` — the
   one entry point both the streaming plan and the emitter's coalesced block build their `help`s
   through, so a merged block carries the same fixes), and `signature.rs` (`cause_signature`) —
-  `coalesce.rs`
+  `merge.rs` (`merge_causes_by_leaf`, the one-cause-per-distinct-leaf restoration a unioned cause list
+  needs), `coalesce.rs`
   (`coalesce_underived_fields`), `plan.rs` (`DiagKind`,
   `DiagnosisPlan`, the unrendered `PendingNote` and its `render`, and `plan_resolved` with its
   `categorized_header`), and `wiring.rs`

@@ -1,6 +1,6 @@
 //! The foreign-wrapper anchor: descending a `where`-clause chain to a CGP consumer.
 
-use cargo_cgp_error_processing::{Cause, ChainNode, DepNode, Resolved};
+use cargo_cgp_error_processing::{Cause, ChainNode, DepNode, Resolved, merge_causes_by_leaf};
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{
@@ -76,6 +76,8 @@ pub fn resolve_wrapper_chain(
         }
 
         if !causes.is_empty() {
+            // One cause per distinct leaf, since separate supertraits can descend to the same one.
+            let mut causes = merge_causes_by_leaf(&causes);
             // Head every cause's paths with the impl's own trait — the code the programmer wrote.
             for cause in &mut causes {
                 for path in &mut cause.paths {
@@ -134,21 +136,17 @@ fn collect_wrapper_chain_causes<'tcx>(
     // The handoff: `obligation` is a CGP consumer on a local context. Recover its cause tree and
     // prepend the chain of ordinary hops that led here.
     if let Some(causes) = consumer_handoff_causes(tcx, cache, obligation) {
+        // Prepend the ordinary hops that led here to each path. The caller merges `out` by leaf, so
+        // alternative routes reaching one cause down different branches of the chain all survive.
         for cause in causes {
-            // Prepend the ordinary hops that led here to each path, grouping by leaf so alternative
-            // paths to one cause survive.
-            let wrapped: Vec<Vec<ChainNode>> = cause
-                .paths
-                .into_iter()
-                .map(|path| prepend_chain(chain, path))
-                .collect();
-            match out.iter_mut().find(|c| c.leaf == cause.leaf) {
-                Some(existing) => existing.paths.extend(wrapped),
-                None => out.push(Cause {
-                    leaf: cause.leaf,
-                    paths: wrapped,
-                }),
-            }
+            out.push(Cause {
+                leaf: cause.leaf,
+                paths: cause
+                    .paths
+                    .into_iter()
+                    .map(|path| prepend_chain(chain, path))
+                    .collect(),
+            });
         }
         return;
     }

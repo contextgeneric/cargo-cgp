@@ -411,7 +411,11 @@ failures differing only in which consumer they break group together. A group of 
 per-entry block unchanged; a group of several emits **one merged block** — a `[CGP-E001]` header
 listing every affected consumer trait (`consumer_header` over a synthesized `Resolved` whose
 `consumers` is the union), a caret at each failing entry, and one root-cause note built by folding
-every member's paths into a single [dependency graph](dependency-graph-rendering.md). The graph does
+every member's paths into a single [dependency graph](dependency-graph-rendering.md). Because the
+members were grouped for *sharing* a cause, the union of their causes holds one copy of it per
+member, so the block folds those copies back into one through the rustc-free `merge_causes_by_leaf`
+before wording anything — otherwise the same mistake is stated once per member, most visibly as an
+underived field listed once per consumer that reads it. The graph does
 the merging: when one failing consumer transitively depends on another — `CanCalculateDensity` needs
 `CanCalculateArea`, so its chain *contains* the other's — the contained consumer is not a top-level
 root and the block leads with the subsuming chain; when two consumers are independent but share the
