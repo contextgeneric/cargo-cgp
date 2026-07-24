@@ -36,7 +36,8 @@ The categories are:
 - [`ui/usability/`](ui/usability) — errors that carry the root cause but bury it in volume, encoding,
   duplication, or misleading framing (a [usability issue](../docs/issues/usability.md)); the cause is
   present, so the work is re-presentation. It is split into issue-class sub-directories —
-  `lowering/` and `wiring/constraints/` — each naming the problem its fixtures expose.
+  `extensible-data/`, `lowering/`, and `wiring/constraints/` — each naming the problem its fixtures
+  expose.
 - [`ui/ok/`](ui/ok) — the clean-compile baseline: correctly-wired programs that check with empty
   output.
 - `ui/hidden-root-cause/` — errors whose root cause cannot be recovered from the output at all, the

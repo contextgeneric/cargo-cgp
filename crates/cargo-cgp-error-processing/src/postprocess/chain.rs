@@ -53,3 +53,32 @@ pub fn postprocess_message(text: &str, has_field_impls: bool, bare_paths: bool) 
         Cow::Borrowed(_) => None,
     }
 }
+
+/// Post-process a message rustc built from several *styled fragments*, reading them as the one
+/// text they render as. Returns the rewritten whole when reading them together achieves something
+/// reading them singly cannot, and `None` to keep the fragments — and their styling — as they are.
+///
+/// rustc splits a message into fragments to highlight parts of it, and when it highlights the
+/// *difference* between two types it splits at every difference. Its "similar impl" hint does
+/// exactly that, so a CGP type in one is shredded — `Symbol<3, Chars<'B', …>>` becomes a fragment
+/// per character — and no fragment holds a whole construct for [`postprocess_message`] to match.
+/// The rendered line is the concatenation, so matching on the concatenation is matching on what the
+/// reader actually sees.
+///
+/// The caller runs [`postprocess_message`] over each fragment first and passes the results here, so
+/// this fires only on a construct that genuinely spans a boundary. That is what makes flattening
+/// safe to pay for: the caller replaces the fragments with this one string, losing rustc's
+/// highlighting, and it only does so when there was a CGP construct to recover — never merely
+/// because a fragment was tidied on its own.
+pub fn postprocess_fragments(
+    fragments: &[&str],
+    has_field_impls: bool,
+    bare_paths: bool,
+) -> Option<String> {
+    if fragments.len() < 2 {
+        return None;
+    }
+    let joined = fragments.concat();
+    let rewritten = postprocess_message(&joined, has_field_impls, bare_paths)?;
+    (rewritten != joined).then_some(rewritten)
+}

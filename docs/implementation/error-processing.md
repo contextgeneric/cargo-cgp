@@ -111,6 +111,20 @@ are all covered. Editing the structured `DiagInner` rather than a rendered blob 
 never touches the source snippets the emitter pulls from the `SourceMap`, so it cannot corrupt a line
 of the user's own code the way a whole-text rewrite could.
 
+**One rustc "message" can be several styled fragments, and a construct split across them needs the
+fragments read together.** `Diag::highlighted_*` stores one entry per `StringPart`, which the
+renderer concatenates; rustc splits a message that way to highlight part of it, and when what it
+highlights is the *difference between two types* it splits at every difference. Its "similar impl"
+hint does exactly that, so a `Symbol<3, Chars<'B', …>>` in one of the two traits is shredded into a
+fragment per character and no fragment holds a whole construct to match — the header beside it would
+read `Symbol!("Bar")` while the hint still showed the raw spine. So the driver post-processes each
+fragment first, keeping rustc's highlighting, and then reads them as the one line they render as
+through [`postprocess_fragments`](../../crates/cargo-cgp-error-processing/src/postprocess/chain.rs).
+When that recovers something the per-fragment pass could not, the message collapses to that single
+unstyled string. Matching on the concatenation is matching on what the reader actually sees, and the
+highlighting is given up only when there was a construct to recover — never merely because a fragment
+was tidied on its own.
+
 One transform needs a fact about the whole diagnostic rather than one message, and the driver
 computes it once up front. The missing-field reword must know whether the context implements
 `HasField` for *any* field, because that decides between two wordings whose fixes differ, and the
@@ -320,7 +334,8 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
 
 - [`crates/cargo-cgp-error-processing/src/postprocess/`](../../crates/cargo-cgp-error-processing/src/postprocess) —
   the post-processing transforms: `mod.rs` (re-exports), `chain.rs` (the `postprocess_message` chain,
-  threading the `bare_paths` flag), `strip_modules.rs` (`strip_module_paths`, the UTF-8-safe
+  threading the `bare_paths` flag, and `postprocess_fragments`, which reads a message rustc split
+  into styled fragments as the one line it renders as), `strip_modules.rs` (`strip_module_paths`, the UTF-8-safe
   module-qualifier collapse), `strip_prefixes.rs` (`strip_cgp_prefixes` and the `CGP_PREFIXES`
   constant), `resugar_symbol.rs` (the exact-match `Symbol!` parser), `resugar_path.rs` (the
   `PathCons` → `@…`/`Path!(@…)` resugarer, the form chosen by its `wrap` parameter), and

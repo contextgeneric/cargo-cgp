@@ -75,6 +75,23 @@ pub const HAS_FIELD_TRAIT: &str = "HasField";
 /// `HasField` lives in `cgp-field`, not `cgp-component`.
 pub const CGP_FIELD_CRATE: &str = "cgp_field";
 
+/// The crates whose traits count as *CGP evidence* when deciding whether a blanket-impl trait
+/// from another crate is a `#[cgp_fn]`/`#[blanket_trait]` capability rather than an ordinary
+/// blanket trait.
+///
+/// A blanket impl over a bare context is the only structural mark such a capability carries, and
+/// it is far too broad on its own — `ToString`, `Into`, and `Borrow` all have one. A trait the
+/// checked crate *defines* is trusted outright (cargo-cgp runs on CGP workspaces), but a foreign
+/// one must show that its blanket actually depends on CGP: on a trait from one of these crates
+/// (`HasField` above all), on a CGP consumer trait, or on another capability that does. Anchoring
+/// to the defining crates rather than to a name keeps a same-named trait elsewhere from qualifying.
+pub const CGP_CRATES: &[&str] = &[
+    CGP_COMPONENT_CRATE,
+    CGP_FIELD_CRATE,
+    CGP_TYPE_CRATE,
+    CGP_BASE_TYPES_CRATE,
+];
+
 /// The crate that defines the type-level string spine (`Symbol`, `Chars`, `Nil`) the resolver
 /// walks to decode a field name. Anchoring the decode to this crate keeps a same-named type
 /// from another crate from being mistaken for CGP's.

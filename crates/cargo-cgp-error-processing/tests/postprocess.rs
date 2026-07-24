@@ -4,8 +4,8 @@
 //! it is driven directly over the case under test — no diagnostic wrapper, no compiler.
 
 use cargo_cgp_error_processing::{
-    context_has_hasfield_impls, postprocess_message, resugar_lists, resugar_path, resugar_symbol,
-    rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
+    context_has_hasfield_impls, postprocess_fragments, postprocess_message, resugar_lists,
+    resugar_path, resugar_symbol, rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
 };
 
 #[test]
@@ -461,4 +461,46 @@ fn postprocess_message_leaves_plain_rust_alone() {
         postprocess_message("the trait bound `Foo: Bar` is not satisfied", false, false),
         None,
     );
+}
+
+// --- Fragmented messages -----------------------------------------------------------------
+//
+// rustc splits a message into styled fragments to highlight part of it, and splits at every
+// difference when highlighting the difference between two types — shredding a CGP spine so no
+// single fragment matches. `postprocess_fragments` reads them as the one line they render as.
+
+#[test]
+fn a_spine_split_across_fragments_is_resugared_as_a_whole() {
+    // The shape rustc's "similar impl" hint produces, split at each differing character.
+    let fragments = [
+        "the trait `FromVariant<Symbol<3, Chars<'",
+        "B",
+        "', Chars<'",
+        "a",
+        "', Chars<'",
+        "r",
+        "', Nil>>>>>` is not implemented for `Big`",
+    ];
+
+    assert_eq!(
+        postprocess_fragments(&fragments, false, true).as_deref(),
+        Some("the trait `FromVariant<Symbol!(\"Bar\")>` is not implemented for `Big`")
+    );
+}
+
+#[test]
+fn fragments_needing_no_joining_keep_their_styling() {
+    // Each fragment is post-processed on its own by the caller before this runs, so a message
+    // with nothing spanning a boundary must decline — flattening would drop rustc's
+    // highlighting for no gain.
+    let fragments = ["the trait `", "Foo", "` is not implemented for `Bar`"];
+
+    assert_eq!(postprocess_fragments(&fragments, false, true), None);
+}
+
+#[test]
+fn a_single_fragment_is_left_to_the_per_message_pass() {
+    let fragments = ["Symbol<2, Chars<'x', Chars<'y', Nil>>>"];
+
+    assert_eq!(postprocess_fragments(&fragments, false, true), None);
 }

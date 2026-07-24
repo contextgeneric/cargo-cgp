@@ -188,9 +188,23 @@ whose recovery works from the code the programmer wrote rather than from the dia
 its rationale, mechanics, and worked example have their own document:
 [Typed resolution: the call-site anchor](typed-resolution-call-site.md).
 
+**Recognizing a capability trait.** Three of the anchors below reach a
+`#[cgp_fn]`/`#[blanket_trait]` **capability** — a trait consumed like a consumer but which is not a
+component, so no marker or provider trait identifies it. The only structural mark it carries is a
+blanket impl over a bare context, and that alone is far too broad to key on: `ToString`, `Into`, and
+`Borrow` all have one, and reshaping their failures into CGP errors would be an over-reach. So
+`is_capability_trait` accepts a trait two ways. One the **checked crate defines** qualifies outright,
+since cargo-cgp runs on CGP workspaces and a failing local blanket trait is the shape `#[cgp_fn]`
+produces. A **foreign** one must show that its blanket genuinely depends on CGP — on a trait from
+cgp's own crates (`HasField` above all), on a CGP consumer trait, or on another capability that does,
+followed a few links through composed capabilities. That is what lets the reshaping reach a
+capability a *library* publishes, which is where capabilities normally live
+([`upstream_capability_use_site`](../../tests/ui/acceptable/use-site/upstream_capability_use_site.rs)),
+while still excluding the std blankets the rule is aimed at.
+
 **From a use site, by capability trait.** The seventh and last anchor, `resolve_use_site_capability`,
 is the by-consumer anchor's counterpart for a `#[cgp_fn]`/`#[blanket_trait]` **capability trait** — a
-local blanket-impl trait that is not a CGP component. It reaches the shape a capability required
+blanket-impl trait that is not a CGP component. It reaches the shape a capability required
 through a `where` **bound** or supertrait produces (`fn greet_all<Context: GetName>(…)` called with a
 context missing the field): an `E0277` naming the capability, with no method call on a concrete
 context for the call-site anchor to read. It recovers the capability trait from the diagnostic's

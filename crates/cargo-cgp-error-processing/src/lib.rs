@@ -45,8 +45,9 @@ pub use diagnosis::{
     undeclared_capability_help, wiring_conflict_help,
 };
 pub use postprocess::{
-    CGP_PREFIXES, context_has_hasfield_impls, postprocess_message, resugar_lists, resugar_path,
-    resugar_symbol, rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
+    CGP_PREFIXES, context_has_hasfield_impls, postprocess_fragments, postprocess_message,
+    resugar_lists, resugar_path, resugar_symbol, rewrite_missing_fields, strip_cgp_prefixes,
+    strip_module_paths,
 };
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use signals::{

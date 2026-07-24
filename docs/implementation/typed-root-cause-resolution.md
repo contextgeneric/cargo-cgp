@@ -332,9 +332,12 @@ separate header brand; the inline code is the only marking.
     non-generic CGP consumer trait from the diagnostic's spans and walks `Ctx: Consumer` directly —
     the anchor that reaches a namespace-joined context — and its by-capability sibling
     `resolve_use_site_capability` (seventh, gated to `E0277`, tried after the call-site anchor) does
-    the same for a local `#[cgp_fn]`/`#[blanket_trait]` capability trait required as a bound, reading
+    the same for a `#[cgp_fn]`/`#[blanket_trait]` capability trait required as a bound, reading
     the context off the failing expression via the call-site anchor's `contexts_at_spans` and heading
-    the result `[CGP-E009]` by clearing `consumers_are_cgp`.
+    the result `[CGP-E009]` by clearing `consumers_are_cgp`. A capability is recognized by
+    `is_capability_trait`: a blanket impl over a bare context, accepted outright for a trait the
+    checked crate defines and, for a foreign one, only on evidence that the blanket depends on a CGP
+    construct — so a capability a library publishes is reached while `ToString` and `Into` are not.
   - [`call_site/`](../../crates/cargo-cgp-driver/src/resolve/call_site) holds the sixth anchor,
     `resolve_call_site` — the HIR re-read of the failing call, one stage per file:
     `find_call.rs` (`method_calls_at`, the calls at, or inside an expression at, the diagnostic's
@@ -613,6 +616,11 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
   (clearing `consumers_are_cgp`) rather than declining to rustc's `E0599` with the cause buried under
   a method-probe candidate list. The use-site counterpart of the impl-site
   [`cgp_fn_missing_field`](../../tests/ui/acceptable/fields/cgp_fn_missing_field.rs).
+- `upstream_capability_use_site` — the `cgp_fn_use_site` shape with the capability defined in an
+  *upstream* crate (via `//@aux-build`), the arrangement a library publishing capabilities produces.
+  Pins the foreign half of `is_capability_trait`: recognition once required the trait to be local, so
+  the `[CGP-E009]` reshaping stopped at the crate boundary and the failure fell through to rustc's
+  `E0599`; the CGP-evidence rule (`Describe` → `HasName` → `HasField`) now reaches it.
 - `cgp_fn_where_bound` — the same `#[cgp_fn]` capability required through a `where` **bound**
   (`fn greet_all<Context: GetName>(…)`) rather than called, so the failure is an `E0277` on the call
   with no method call to read. Pins the by-capability anchor (`resolve_use_site_capability`): it

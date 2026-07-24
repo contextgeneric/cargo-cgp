@@ -9,8 +9,8 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
 use crate::config::{
-    CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_TYPE_CRATE, DELEGATE_COMPONENT_TRAIT, NIL_TYPE,
-    PATH_CONS_TYPE, USE_TYPE_TYPE,
+    CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_CRATES, CGP_TYPE_CRATE,
+    DELEGATE_COMPONENT_TRAIT, NIL_TYPE, PATH_CONS_TYPE, USE_TYPE_TYPE,
 };
 
 /// Whether `def_id` is a trait/type named `name` defined by crate `krate` — the DefId anchor
@@ -101,21 +101,68 @@ pub(crate) fn is_consumer_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     consumer_provider_trait(tcx, def_id).is_some()
 }
 
-/// Whether `def_id` is a **local blanket-impl trait** — a trait defined in the crate under
-/// compilation that carries a blanket impl over a bare context parameter (`impl<Context> Trait for
-/// Context where Self: …`). This is the shape `#[cgp_fn]` and `#[blanket_trait]` generate, and the
-/// hand-written desugaring of them: the trait is available to any context meeting the blanket's
-/// `where` bounds (a `HasField`, another such capability), so a failing `Ctx: Trait` bound has a
-/// recoverable root cause down those bounds even though the trait is not a CGP *component* (it has
-/// no provider trait or `DelegateComponent`). Requiring the trait to be local excludes std blanket
-/// traits such as `Into`, whose blanket lives in another crate, and — together with the auto traits
-/// having no such impl — a plain supertrait like `Send`. A CGP consumer trait also matches (its
-/// consumer blanket is a blanket impl), which is harmless: callers that care about the distinction
-/// test [`consumer_provider_trait`] separately.
-pub(crate) fn is_local_blanket_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    def_id.is_local()
-        && tcx.is_trait(def_id)
-        && !tcx.trait_impls_of(def_id).blanket_impls().is_empty()
+/// Whether `def_id` is a **capability trait** — one carrying a blanket impl over a bare context
+/// parameter (`impl<Context> Trait for Context where Self: …`). This is the shape `#[cgp_fn]` and
+/// `#[blanket_trait]` generate, and the hand-written desugaring of them: the trait is available to
+/// any context meeting the blanket's `where` bounds (a `HasField`, another such capability), so a
+/// failing `Ctx: Trait` bound has a recoverable root cause down those bounds even though the trait
+/// is not a CGP *component* (it has no provider trait or `DelegateComponent`). A CGP consumer trait
+/// also matches (its consumer blanket is a blanket impl), which is harmless: callers that care about
+/// the distinction test [`consumer_provider_trait`] separately.
+///
+/// The blanket impl alone is far too broad a signal to accept, since `ToString`, `Into`, and
+/// `Borrow` all carry one and reshaping their failures into CGP errors would be an over-reach. So a
+/// trait qualifies one of two ways. A trait the **checked crate defines** qualifies outright:
+/// cargo-cgp runs on CGP workspaces, and a local blanket trait whose bound is failing is the shape
+/// `#[cgp_fn]` produces. A **foreign** trait must instead show that its blanket genuinely depends on
+/// CGP ([`blanket_depends_on_cgp`]) — which is what admits a capability a library publishes, the
+/// normal arrangement, while still excluding the std blankets the locality rule was aimed at.
+pub(crate) fn is_capability_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    has_blanket_impl(tcx, def_id) && (def_id.is_local() || blanket_depends_on_cgp(tcx, def_id, 0))
+}
+
+/// Whether `def_id` is a trait carrying at least one blanket impl.
+fn has_blanket_impl(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.is_trait(def_id) && !tcx.trait_impls_of(def_id).blanket_impls().is_empty()
+}
+
+/// How far the CGP-evidence search follows one capability's blanket bounds into another's. A
+/// composed chain (`Describe` → `HasName` → `HasField`) is a few links at most, and the bound is
+/// also what stops a pair of capabilities that depend on each other from looping.
+const MAX_CAPABILITY_DEPTH: u32 = 4;
+
+/// Whether a blanket-impl trait's blanket actually depends on CGP — the positive evidence a
+/// *foreign* trait needs before it is read as a capability. A bound qualifies when its trait comes
+/// from one of [`CGP_CRATES`] (`HasField` above all), is a CGP consumer trait (recognized
+/// structurally in any crate), or is itself such a capability, followed to
+/// [`MAX_CAPABILITY_DEPTH`].
+fn blanket_depends_on_cgp(tcx: TyCtxt<'_>, def_id: DefId, depth: u32) -> bool {
+    if depth >= MAX_CAPABILITY_DEPTH {
+        return false;
+    }
+    tcx.trait_impls_of(def_id)
+        .blanket_impls()
+        .iter()
+        .any(|&blanket| {
+            tcx.predicates_of(blanket)
+                .predicates
+                .iter()
+                .filter_map(|(clause, _)| clause.as_trait_clause())
+                .any(|bound| {
+                    let bound_did = bound.def_id();
+                    is_cgp_crate_trait(tcx, bound_did)
+                        || is_consumer_trait(tcx, bound_did)
+                        || (has_blanket_impl(tcx, bound_did)
+                            && blanket_depends_on_cgp(tcx, bound_did, depth + 1))
+                })
+        })
+}
+
+/// Whether `def_id` is defined by one of CGP's own crates ([`CGP_CRATES`]) — anchored to the
+/// defining crate, so a same-named trait elsewhere never counts as evidence.
+fn is_cgp_crate_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let krate = tcx.crate_name(def_id.krate);
+    CGP_CRATES.iter().any(|name| krate.as_str() == *name)
 }
 
 /// Recover the `(consumer trait, provider trait)` a component marker keys — the `IsProviderFor`-free

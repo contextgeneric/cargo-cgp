@@ -8,7 +8,7 @@ use rustc_span::Span;
 use crate::resolve::anchor::enclosing_trait_impls;
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{
-    consumer_provider_trait, is_local_adt, is_local_blanket_trait, is_provider_trait,
+    consumer_provider_trait, is_capability_trait, is_local_adt, is_provider_trait,
 };
 use crate::resolve::walk::{holds, resolve_leaves};
 
@@ -164,8 +164,7 @@ fn wrapper_consumer_causes<'tcx>(
         // where Self: HasField<…>`), whose failing bound has a recoverable cause down the blanket's
         // `where` clause. Walk the supertrait obligation directly in either case.
         let sup_did = sup.skip_binder().trait_ref.def_id;
-        if consumer_provider_trait(tcx, sup_did).is_none() && !is_local_blanket_trait(tcx, sup_did)
-        {
+        if consumer_provider_trait(tcx, sup_did).is_none() && !is_capability_trait(tcx, sup_did) {
             continue;
         }
         let Some(resolved) = resolve_leaves(tcx, cache, sup) else {

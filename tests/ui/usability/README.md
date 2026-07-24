@@ -17,6 +17,12 @@ class in [the usability issue document](../../../docs/issues/usability.md):
 - [`lowering/`](lowering) — a macro lowered accepted input into ill-formed Rust, and the error lands
   on the macro attribute without naming the real cause: an unsized generated type (`option_slice`) or
   a cyclic `#[use_type]` routing (`use_type_cyclic_context`).
+- [`extensible-data/`](extensible-data) — a cast, builder, or extractor failure the resolver does
+  not reshape at all (`upcast_missing_variant`), so the reader gets an internal `FromVariant` bound
+  and the macro-generated extractor state instead of the variant one enum lacks. It also pins the
+  post-processing that survives a decline: rustc's "similar impl" hint splits into styled fragments
+  at every difference, and the fragments are read as one line so a shredded `Symbol!` still
+  resugars.
 - [`wiring/constraints/`](wiring/constraints) — an unconstrained per-entry generic
   (`unconstrained_generic`), whose `E0207` fires twice with contradictory auto-fixes. The other
   structural conflicts have been reshaped and graduated: the duplicate delegate-key family into

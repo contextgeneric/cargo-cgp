@@ -10,7 +10,8 @@ use std::borrow::Cow;
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{
     DiagKind, context_has_hasfield_impls, is_method_probe_advice_text,
-    is_question_mark_cascade_text, mentions_wiring_text, postprocess_message,
+    is_question_mark_cascade_text, mentions_wiring_text, postprocess_fragments,
+    postprocess_message,
 };
 use rustc_errors::codes::{E0271, E0599};
 use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, Suggestions};
@@ -203,10 +204,21 @@ pub(crate) fn rewrite_messages<S>(
     changed
 }
 
-/// Post-process each plain-string message in place through [`postprocess_message`], leaving
-/// its style and any Fluent message untouched.
-pub(crate) fn postprocess_messages<S>(
-    messages: &mut [(DiagMessage, S)],
+/// Post-process a message in place through [`postprocess_message`], leaving any Fluent message
+/// untouched.
+///
+/// One rustc "message" can be several *styled fragments* — `Diag::highlighted_*` stores one entry
+/// per [`StringPart`](rustc_errors::StringPart), and the renderer concatenates them. Each fragment
+/// is post-processed on its own first, which keeps rustc's highlighting; but a construct split
+/// across fragments is invisible that way, and rustc splits precisely where it highlights a
+/// *difference* between two types — so its "similar impl" hint shreds a `Symbol<3, Chars<'B', …>>`
+/// into a fragment per character and no fragment matches. So the fragments are then read as the one
+/// line they render as ([`postprocess_fragments`]), and when that recovers something the per-fragment
+/// pass could not, the whole message collapses to that single unstyled string. Losing the
+/// highlighting is the price of the recovery, and it is only paid when there was a construct to
+/// recover.
+pub(crate) fn postprocess_messages(
+    messages: &mut Vec<(DiagMessage, Style)>,
     has_field_impls: bool,
     bare_paths: bool,
 ) {
@@ -216,6 +228,23 @@ pub(crate) fn postprocess_messages<S>(
         {
             *message = DiagMessage::Str(Cow::Owned(rewritten));
         }
+    }
+
+    // Only a wholly plain-string message can be read as one line; a Fluent fragment has no text
+    // here to join, so such a message keeps its per-fragment result.
+    let fragments: Vec<&str> = messages
+        .iter()
+        .filter_map(|(message, _)| match message {
+            DiagMessage::Str(text) => Some(text.as_ref()),
+            _ => None,
+        })
+        .collect();
+    if fragments.len() != messages.len() {
+        return;
+    }
+
+    if let Some(joined) = postprocess_fragments(&fragments, has_field_impls, bare_paths) {
+        *messages = vec![(DiagMessage::Str(Cow::Owned(joined)), Style::NoStyle)];
     }
 }
 

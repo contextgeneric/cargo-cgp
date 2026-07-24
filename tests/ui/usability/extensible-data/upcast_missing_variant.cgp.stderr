@@ -1,0 +1,20 @@
+error[E0277]: the trait bound `Big: FromVariant<Symbol!("Bar")>` is not satisfied
+  --> src/main.rs:43:39
+   |
+43 |     let _: Big = Small::Foo(1).upcast(PhantomData::<Big>);
+   |                                ------ ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |                                |
+   |                                required by a bound introduced by this call
+   |
+help: the trait `FromVariant<Symbol!("Bar")>` is not implemented for `Big`
+      but trait `FromVariant<Symbol!("Foo")>` is implemented for it
+  --> src/main.rs:39:5
+   |
+39 |     Foo(u64),
+   |     ^^^
+   = note: required for `Enum! { Bar(String) }` to implement `FieldsExtractor<__PartialSmall<IsVoid, IsPresent>, Big>`
+   = note: 1 redundant requirement hidden
+   = note: required for `Enum! { Foo(u64), Bar(String) }` to implement `FieldsExtractor<__PartialSmall<IsPresent, IsPresent>, Big>`
+   = note: required for `Small` to implement `CanUpcast<Big>`
+
+For more information about this error, try `rustc --explain E0277`.

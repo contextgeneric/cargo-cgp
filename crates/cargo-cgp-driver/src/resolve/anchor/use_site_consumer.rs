@@ -9,7 +9,7 @@ use rustc_span::def_id::DefId;
 use crate::resolve::anchor::{consumer_obligation, context_candidates_from_spans};
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::contexts_at_spans;
-use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt, is_local_blanket_trait};
+use crate::resolve::cgp_item::{consumer_provider_trait, is_capability_trait, is_local_adt};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by anchoring on the **consumer trait** the diagnostic names, rather
@@ -133,7 +133,7 @@ fn local_traits_from_spans(tcx: TyCtxt<'_>, spans: &[Span], kind: TraitKind) -> 
         let is_consumer = consumer_provider_trait(tcx, did).is_some();
         let matches = match kind {
             TraitKind::CgpConsumer => is_consumer,
-            TraitKind::Capability => !is_consumer && is_local_blanket_trait(tcx, did),
+            TraitKind::Capability => !is_consumer && is_capability_trait(tcx, did),
         };
         if !matches {
             continue;

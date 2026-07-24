@@ -137,6 +137,21 @@ their fixtures now live under `acceptable/`:
   over a root-cause tree, with a `help` naming the wiring entry to change
   ([`abstract_type_mismatch`](../../tests/ui/acceptable/types/abstract_type_mismatch.rs)).
 
+- A **capability published by a library** is reshaped like a local one. A
+  `#[cgp_fn]`/`#[blanket_trait]` capability is recognized by its blanket impl over a bare context,
+  and that signal alone is too broad (`ToString` and `Into` share it), so recognition was gated to
+  traits the checked crate defines — which excluded every *published* capability along with the std
+  blankets it was aimed at, and stopped the `[CGP-E009]` reshaping at the crate boundary. A foreign
+  trait now qualifies on evidence that its blanket depends on a CGP construct instead
+  ([`upstream_capability_use_site`](../../tests/ui/acceptable/use-site/upstream_capability_use_site.rs)).
+- A **CGP construct rustc split across styled fragments** is resugared. rustc builds its "similar
+  impl" hint from fragments split at every difference between the two traits, shredding a
+  `Symbol<3, Chars<'B', …>>` so no fragment matches — the header would read `Symbol!("Bar")` while
+  the hint beside it showed the raw spine. The fragments are now read as the one line they render
+  as, and flattened only when that recovers something
+  ([`upcast_missing_variant`](../../tests/ui/usability/extensible-data/upcast_missing_variant.rs)
+  shows it on a declined diagnostic).
+
 What remains below are the classes the tool does not yet reshape.
 
 ## An unconstrained per-entry generic emits two contradictory errors
@@ -165,11 +180,24 @@ cause, since nothing in the output states "cycle" (its counterpart
 `acceptable/` precisely because rustc already names the typo and its fix). Recognizing the lowering
 class and naming the offending construct is the work here.
 
+## Extensible-data failures are not reshaped at all
+
+The casts, builders, and extractors of the
+[extensible-data](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/extensible-records.md)
+family have no reshaping and no upstream error class. A `CanUpcast` into a target missing one variant
+([`upcast_missing_variant`](../../tests/ui/usability/extensible-data/upcast_missing_variant.rs))
+reports an internal `FromVariant` bound, puts its caret on the *wrong* variant, exposes the
+macro-generated `__PartialSmall<IsVoid, IsPresent>` extractor state, and hides a requirement — while
+never stating the mistake, that one enum has a variant the other lacks. The mismatch is pure
+type-level list algebra the compiler holds exactly, so the class suits the typed resolver: a leaf
+naming the absent variant (or the unbuildable field) is the work here.
+
 ## What good presentation looks like
 
 Taken together, these issues define the tool's presentation target for the classes it does not yet
 reshape: collapse the `E0207` unconstrained-generic pair so only the fix that matches the mistake
-survives; and recover the untransformed lowering class into a coded, root-cause-first diagnostic, or
+survives; give the extensible-data family a root cause naming the absent variant or field; and
+recover the untransformed lowering class into a coded, root-cause-first diagnostic, or
 at least name the offending construct instead of the macro attribute. The bar is the one the check-trait-failure family already meets:
 lead with the cause as one plain sentence, name the decoded construct, give a short dependency path,
 and never let a misleading `rustc` heuristic outrank the real cause. The

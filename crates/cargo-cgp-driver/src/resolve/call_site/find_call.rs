@@ -9,7 +9,7 @@ use rustc_span::{Span, Symbol};
 
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{receiver_context, seed_from_call};
-use crate::resolve::cgp_item::{is_consumer_trait, is_local_adt, is_local_blanket_trait};
+use crate::resolve::cgp_item::{is_capability_trait, is_consumer_trait, is_local_adt};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
@@ -145,7 +145,7 @@ pub(crate) fn traits_with_method(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId,
         };
         if is_consumer_trait(tcx, trait_did) {
             consumers.push((trait_did, method_did, true));
-        } else if is_local_blanket_trait(tcx, trait_did) {
+        } else if is_capability_trait(tcx, trait_did) {
             capabilities.push((trait_did, method_did, false));
         }
     }
