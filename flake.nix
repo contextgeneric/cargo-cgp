@@ -100,10 +100,24 @@
             # driver embeds and `rustc --print sysroot` returns that toolchain's sysroot —
             # whose `lib` holds the matching `librustc_driver`. The driver stays reachable
             # as the front-end's sibling in this same `bin/` directory.
+            #
+            # The dylib prefix is the same protection the driver gets above, and the
+            # front-end needs it for the toolchain binaries *it* spawns. Invoked as `cargo
+            # cgp check`, the entry point is rustup's `cargo` shim, which exports
+            # `${dylibPathVar}=<the project's active toolchain>/lib` to its children — so a
+            # foreign toolchain's library directory is searched ahead of this one's own
+            # RUNPATH. That is harmless while the two Rust versions differ, but a rustc
+            # shared library is named for its Rust version rather than by content hash
+            # (`libLLVM.so.<n>-rust-<version>`), so a project pinning the *same* version as
+            # the toolchain below collides on the SONAME: the Nix `rustc` loads rustup's
+            # copy, which then wants a system library the Nix loader cannot resolve, and
+            # dies with a bare exit 127. Prefixing this toolchain's `lib` makes its own
+            # libraries win that lookup while leaving the caller's entries in place.
             wrapProgram $out/bin/cargo-cgp \
               --set CARGO_CGP_NO_MANAGE 1 \
               --set RUSTC "${rustToolchain}/bin/rustc" \
-              --prefix PATH : "${rustToolchain}/bin"
+              --prefix PATH : "${rustToolchain}/bin" \
+              --prefix ${dylibPathVar} : "${rustToolchain}/lib"
           '';
 
           meta = {

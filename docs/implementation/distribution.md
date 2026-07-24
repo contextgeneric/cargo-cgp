@@ -368,6 +368,21 @@ search path, so the driver loads `librustc_driver` even when invoked directly ra
 through the front-end. Both binaries land in one `bin/` directory, so the front-end's
 [sibling lookup](../../crates/cargo-cgp/src/check/driver_path.rs) finds the driver with no override.
 
+**The front-end wrapper needs that dylib prefix too, and for a reason peculiar to being invoked
+through rustup.** `cargo cgp check` enters through rustup's `cargo` shim, which exports the project's
+active toolchain's `lib` directory on the loader path for every child — so the Nix `rustc` the
+front-end probes is searched against a *foreign* toolchain's libraries before its own `RUNPATH`. That
+is inert while the two Rust versions differ, because a rustc shared library is named for its version
+(`libLLVM.so.<n>-rust-<version>`) rather than by content hash. When they match, the names collide: the
+Nix `rustc` loads rustup's copy, which wants a system library the Nix loader cannot resolve, and exits
+127 before printing a sysroot. The counter-intuitive consequence is that the failure appears in
+whichever project tracks the *same* Rust version as the pinned nightly. Prefixing the toolchain's own
+`lib` on the front-end wrapper — the same protection the driver already had — makes its libraries win
+that lookup while leaving the caller's entries after them. A rustup-managed install is immune by
+construction: its probe goes through rustup's own shim, which points the path at the toolchain being
+queried. The user-facing account is in
+[Troubleshooting](../reference/troubleshooting.md#a-nix-install-fails-its-sysroot-probe-under-cargo-cgp).
+
 The flake's source input is deliberately narrowed with `lib.fileset` to the crate sources, the
 manifests, the lockfile, and `rust-toolchain.toml` — everything the build reads and nothing else. The
 churny, build-irrelevant trees at the repository root (`docs/`, the `tests/ui` fixtures, `README.md`,

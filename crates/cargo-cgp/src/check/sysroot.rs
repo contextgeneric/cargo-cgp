@@ -30,9 +30,15 @@ pub fn sysroot(rustc: &str, toolchain: Option<&str>) -> anyhow::Result<PathBuf> 
         .with_context(|| format!("failed to run `{rustc} --print sysroot`"))?;
 
     if !output.status.success() {
+        // Include the compiler's own stderr: when this probe fails it is almost never
+        // rustc rejecting the query but the process failing to start, and the reason is
+        // only ever in that stream. A dynamic-loader failure is the archetype — it exits
+        // 127 with `error while loading shared libraries: …` on stderr — which the status
+        // alone reduces to an unexplained number.
         bail!(
-            "`{rustc} --print sysroot` failed with status {}",
-            output.status
+            "`{rustc} --print sysroot` failed with status {}{}",
+            output.status,
+            format_stderr(&output.stderr)
         );
     }
 
@@ -40,4 +46,17 @@ pub fn sysroot(rustc: &str, toolchain: Option<&str>) -> anyhow::Result<PathBuf> 
         .context("`rustc --print sysroot` produced non-UTF-8 output")?;
 
     Ok(PathBuf::from(path.trim()))
+}
+
+/// A failed probe's stderr as a block to append to the error, or nothing when it is empty.
+/// Lossy-decoded, since a loader message is written by the OS rather than by rustc and is
+/// not guaranteed to be UTF-8 — and a mangled byte is no reason to withhold the diagnosis.
+pub fn format_stderr(stderr: &[u8]) -> String {
+    let text = String::from_utf8_lossy(stderr);
+    let text = text.trim();
+    if text.is_empty() {
+        String::new()
+    } else {
+        format!(":\n\n{text}")
+    }
 }

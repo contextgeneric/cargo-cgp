@@ -145,6 +145,47 @@ regardless of the directory. The `--version` line the driver prints on success n
 `pinned-toolchain:` it needs and the `built-against-rustc:` it was compiled with, which is the fastest
 way to see which nightly a driver actually wants.
 
+## A Nix install fails its sysroot probe under `cargo cgp`
+
+A Nix-installed tool can fail before it compiles anything, on the query it makes to locate the
+toolchain's libraries:
+
+```text
+cargo-cgp: `/nix/store/…-rust-minimal-1.99.0-nightly-…/bin/rustc --print sysroot` failed with status exit status: 127:
+
+rustc: error while loading shared libraries: libz.so.1: cannot open shared object file: No such file or directory
+```
+
+The distinctive part is that the *same command run by hand succeeds*, and that it fails only in some
+projects. Both follow from one cause: **a foreign toolchain's library directory reaching the Nix
+toolchain's binaries.** Invoked as `cargo cgp check`, the entry point is rustup's `cargo` shim, which
+exports the project's active toolchain's `lib` directory on the loader path for everything it
+spawns — including the Nix `cargo-cgp`, and in turn the Nix `rustc` it probes. The loader searches
+that directory ahead of the binary's own `RUNPATH`.
+
+Whether that matters depends on the project, because a rustc shared library is named for its Rust
+version rather than by a content hash. A project on a *different* version is harmless: its
+`libLLVM.so.21.1-rust-1.91.1-stable` collides with nothing. A project pinning the **same** version as
+the tool's own nightly is not: rustup's `libLLVM.so.22.1-rust-1.99.0-nightly` has exactly the name the
+Nix `rustc` is looking for, so it is loaded instead — and being an FHS build, it then wants a system
+`libz.so.1` the Nix loader cannot resolve. So the failure appears in whichever project happens to
+track the same Rust version as the tool, which is the *opposite* of the intuition that a closely
+matched toolchain is the safe case.
+
+The fix ships in the flake, whose wrapper prefixes the pinned toolchain's `lib` so its own libraries
+win that lookup; upgrade the installed tool (`nix profile upgrade cargo-cgp`, or remove and re-add it)
+and the probe resolves the Nix copy again. To confirm the diagnosis on an un-upgraded install, run the
+probe with the toolchain's own `lib` in front — it should succeed where the bare command failed:
+
+```sh
+NIX_RUSTC=/nix/store/…-rust-minimal-…/bin/rustc
+LD_LIBRARY_PATH=$(dirname "$NIX_RUSTC")/../lib "$NIX_RUSTC" --print sysroot
+```
+
+A rustup-managed (non-Nix) install does not hit this. Its probe runs rustup's own `rustc` shim, which
+sets the library path to the toolchain being queried, and the front-end then *prepends* the pinned
+sysroot's `lib` for the driver — so the pinned toolchain wins every lookup by construction.
+
 ## The managed preflight rejects the setup
 
 Before a managed check, the front-end runs a read-only preflight that verifies the toolchain and the
@@ -214,6 +255,7 @@ you see, then read the section for the fix.
 | `failed to run the cargo-cgp-driver at …` | driver missing (managed) | [The front-end cannot find the driver](#the-front-end-cannot-find-the-driver) |
 | `could not execute process` … `(never executed)` | driver path wrong (unmanaged) | [The front-end cannot find the driver](#the-front-end-cannot-find-the-driver) |
 | `error while loading shared libraries: librustc_driver-…` | library path unset, or toolchain mismatch | [The driver cannot load the compiler library](#the-driver-cannot-load-the-compiler-library) |
+| `--print sysroot` failed with status exit status: 127` | Nix install; a same-version rustup toolchain shadows its libraries | [A Nix install fails its sysroot probe](#a-nix-install-fails-its-sysroot-probe-under-cargo-cgp) |
 | `the pinned toolchain is not installed` | pinned nightly absent | [The managed preflight rejects the setup](#the-managed-preflight-rejects-the-setup) |
 | `could not run under toolchain …` | driver built against another nightly | [The managed preflight rejects the setup](#the-managed-preflight-rejects-the-setup) |
 | `out of lockstep` / `now provides` | front-end and driver versions/builds differ | [The managed preflight rejects the setup](#the-managed-preflight-rejects-the-setup) |
