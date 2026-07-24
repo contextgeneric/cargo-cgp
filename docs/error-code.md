@@ -50,13 +50,14 @@ implied.
 ## Codes
 
 The catalog today holds the classes the driver's emitter recognizes in a main message, in five
-groups. The **check-failure** codes `CGP-E001`–`CGP-E003` and `CGP-E009` come from the typed
-resolver; each carries the root cause in the accompanying `note`s — one per recovered cause, each
-opening `root cause: …` over its dependency chain (see
-[Typed root-cause resolution](implementation/typed-root-cause-resolution.md)) — except `CGP-E003`,
-whose main message already states its cause in full and so carries the chain alone. (`CGP-E009` is
-the check-failure code for a hand-written wrapper trait rather than a CGP consumer; it is grouped
-with `CGP-E001`–`CGP-E003` below.) The **structural
+groups. The **check-failure** codes `CGP-E001`–`CGP-E003`, `CGP-E009`, and `CGP-E017` come from the
+typed resolver; each carries the root cause in the accompanying `note`s — one per recovered cause,
+each opening `root cause: …` over its dependency chain (see
+[Typed root-cause resolution](implementation/typed-root-cause-resolution.md)) — except the two
+mismatch codes `CGP-E003` and `CGP-E017`, whose main messages already state their cause in full and
+so carry the chain alone. (`CGP-E009` is the check-failure code for a hand-written wrapper trait
+rather than a CGP consumer, and `CGP-E017` the abstract-type counterpart of `CGP-E003`; both are
+grouped with `CGP-E001`–`CGP-E003` below.) The **structural
 wiring-conflict** codes `CGP-E004`–`CGP-E008` are different in kind: they come from the duplicate-key
 conflict classifier, carry no root-cause note, and instead keep rustc's two carets, which already
 point at the two colliding entries. They are five separate codes because each rewrites the `E0119`
@@ -122,6 +123,32 @@ the rewritten message, the mistake behind it, the fix, and the upstream
   through.
 - **Upstream class:** [check-trait failure](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md)
   (its projection-mismatch face).
+
+### `CGP-E017` — abstract type has the wrong type
+
+- **Message:** `` [CGP-E017] expected the abstract type `<assoc>` of `<Trait>` on `<Owner>` to be
+  `<expected>`, but found `<actual>` `` — reading `associated type` in place of `abstract type` when
+  the trait is not a CGP abstract-type component.
+- **Means:** the owner supplies one concrete type for an associated type while a provider the wiring
+  reaches requires another. The archetype is a CGP
+  [abstract type](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/abstract-types.md): a
+  context binds `HasErrorType::Error` by wiring `ErrorTypeProviderComponent` to `UseType<String>`,
+  while a provider pins the same type with `#[use_type(HasErrorType.{Error = AppError})]`. As with
+  [`CGP-E003`](#cgp-e003--field-has-the-wrong-type), the trait bound itself holds — the context *does*
+  implement `HasErrorType` — and only the associated-type projection
+  `<Ctx as HasErrorType>::Error == AppError` fails. The expected type is read from the failing
+  projection, and the actual type by normalizing the projection, so a `UseType<T>` wiring and a
+  hand-written `impl HasErrorType for Ctx` are read the same way.
+- **Triggered by:** a `` type mismatch resolving `<Ctx as Trait>::Assoc == T` `` (`E0271`) that the
+  typed resolver traced through CGP wiring to a projection other than `HasField`'s. The Rust code
+  stays `E0271`.
+- **Fix:** reconcile the two sides. For a `#[cgp_type]` component a `help` names both ways —
+  `` wire `<Marker>` to `UseType<<expected>>` in the wiring for `<Owner>`, or change the provider to
+  work with `<actual>` `` — with the component marker recovered from the trait, so the reader is
+  pointed at the wiring entry rather than left to find it. An ordinary trait's associated type has no
+  such wiring entry, so it carries no `help`.
+- **Upstream class:** [check-trait failure](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md)
+  (its abstract-type projection-mismatch face).
 
 ### `CGP-E004`–`CGP-E008` — the duplicate-key wiring-conflict family
 
@@ -408,6 +435,11 @@ The codes divide into the inner chain-node templates and the terminal root-cause
   request type sits where an `ApiHandler` belongs. Distinct from `CGP-E110`: the owner is not a table
   missing one entry, so the fix is to use an actual provider (wrap it in the handler), not to add a
   wiring entry.
+- **`CGP-E112` — associated type mismatch (leaf).** `` abstract type `<assoc>` of `<Trait>` on
+  `<Owner>` is `<actual>`, but `<expected>` is required `` — the chain bottoms out on an associated
+  type the owner supplies differently from what a provider requires (the leaf face of the
+  `CGP-E017` main message). It reads `associated type` in place of `abstract type` when the trait is
+  not a CGP abstract-type component. The non-`HasField` sibling of `CGP-E109`.
 
 ## Root-cause lead codes (`CGP-E2xx`)
 

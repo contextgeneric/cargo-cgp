@@ -54,6 +54,18 @@ pub const DELEGATE_COMPONENT_TRAIT: &str = "DelegateComponent";
 /// `Path` (the second argument) to tell the user which redirected key to set.
 pub const REDIRECT_LOOKUP_TYPE: &str = "RedirectLookup";
 
+/// The name of the provider type a context wires to bind an abstract type to a concrete one —
+/// `UseType<T>`, the blanket provider `#[cgp_type]` generates so no bespoke provider is needed. The
+/// leaf classifier looks for an impl of a provider trait *for* this type to confirm that a
+/// single-associated-type consumer trait really is a `#[cgp_type]` abstract-type component, which is
+/// what earns the mismatch leaf its `abstract type` wording and its `UseType<…>` wiring `help`.
+pub const USE_TYPE_TYPE: &str = "UseType";
+
+/// The crate that defines [`USE_TYPE_TYPE`] (and `HasType`/`TypeProvider`, CGP's built-in
+/// abstract-type machinery) — distinct from [`CGP_COMPONENT_CRATE`], since `UseType` lives in
+/// `cgp-type`.
+pub const CGP_TYPE_CRATE: &str = "cgp_type";
+
 /// The item name of the field-access trait whose unmet bound is the root cause the typed
 /// resolver reports, paired with [`CGP_FIELD_CRATE`] to confirm a leaf obligation is a
 /// genuine CGP `HasField` before decoding its `Symbol!` field name.

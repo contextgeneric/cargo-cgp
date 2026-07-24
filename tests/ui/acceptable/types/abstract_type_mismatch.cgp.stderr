@@ -1,0 +1,14 @@
+error[E0271]: [CGP-E017] expected the abstract type `Scalar` of `HasScalarType` on `Rectangle` to be `f64`, but found `u32`
+  --> src/main.rs:63:9
+   |
+63 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: wire `ScalarTypeProviderComponent` to `UseType<f64>` in the wiring for `Rectangle`, or change the provider to work with `u32`
+   = note: root cause: [CGP-E112] abstract type `Scalar` of `HasScalarType` on `Rectangle` is `u32`, but `f64` is required
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+             └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+               └─ [CGP-E112] abstract type `Scalar` of `HasScalarType` on `Rectangle` is `u32`, but `f64` is required
+
+For more information about this error, try `rustc --explain E0271`.

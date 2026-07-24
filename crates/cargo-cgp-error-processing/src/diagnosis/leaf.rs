@@ -130,9 +130,37 @@ pub enum Leaf {
         /// delegate entry for the path.
         context: String,
     },
-    /// Any other terminal unmet bound — an ordinary trait bound (`f64: Eq`), an unmet abstract
-    /// type, and so on. The emitter keeps rustc's own header for these and only replaces the
-    /// sub-notes with the dependency tree.
+    /// An associated type the wiring projects through that carries a different type from the one a
+    /// provider requires. Like [`Leaf::FieldTypeMismatch`], the trait bound itself holds and only the
+    /// `<owner as Trait>::Assoc == expected` projection fails; unlike it, the projection is *not*
+    /// `HasField`'s `Value`. The archetype is a CGP
+    /// [abstract type](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/abstract-types.md):
+    /// the context binds `HasErrorType::Error` to one concrete type by wiring
+    /// `ErrorTypeProviderComponent` to `UseType<T>`, while a provider pins it to another with the
+    /// `#[use_type(HasErrorType.{Error = AppError})]` equality form. The emitter words this as a
+    /// `[CGP-E017]` main message of its own.
+    AssocTypeMismatch {
+        /// The associated type's name, e.g. `Error`.
+        assoc: String,
+        /// The trait that declares it, e.g. `HasErrorType`.
+        trait_name: String,
+        /// The type the projection is taken on — the context for an abstract type, e.g. `App`.
+        owner: String,
+        /// The type the wiring requires, taken from the failing projection's right-hand side, e.g.
+        /// `AppError`.
+        expected: String,
+        /// The type the owner actually supplies, read by normalizing the projection, e.g. `String`.
+        actual: String,
+        /// The component marker a context wires to choose this type (`ErrorTypeProviderComponent`),
+        /// present only when the trait is a CGP abstract-type component — a consumer trait with one
+        /// associated type whose provider carries the `UseType` blanket `#[cgp_type]` generates. It
+        /// selects the `abstract type` wording over the plain `associated type` one, and supplies the
+        /// wiring `help`; `None` for an ordinary trait's associated type, which has no such fix.
+        component: Option<String>,
+    },
+    /// Any other terminal unmet bound — an ordinary trait bound such as `f64: Eq`, or a capability
+    /// bound the walk cannot descend further. The emitter keeps rustc's own header for these and
+    /// only replaces the sub-notes with the dependency tree.
     Bound {
         /// The bound restated as `self: Trait`, e.g. `f64: std::cmp::Eq`, for the note lead and
         /// for de-duplicating a leaf reached by several paths.
@@ -141,8 +169,12 @@ pub enum Leaf {
 }
 
 impl Leaf {
-    /// A stable key that de-duplicates a leaf reached by several dependency paths — the field
-    /// name for a field, the bound restatement otherwise.
+    /// A stable key that de-duplicates a leaf reached by several dependency paths — the field name
+    /// for a field, the associated-type name for a projection mismatch, the bound restatement
+    /// otherwise. The key names the *thing to fix* rather than the whole leaf, so two leaves that
+    /// name the same thing on different owners merge into one cause; the merged cause keeps every
+    /// path, so the tree still branches to each leaf and nothing is lost but the heading's
+    /// precision.
     pub fn key(&self) -> &str {
         match self {
             Leaf::Field { name, .. } | Leaf::FieldTypeMismatch { name, .. } => name,
@@ -151,6 +183,7 @@ impl Leaf {
             Leaf::MissingDispatchEntry { key, .. } => key,
             Leaf::NotAProvider { provider, .. } => provider,
             Leaf::MissingRedirectWiring { path, .. } => path,
+            Leaf::AssocTypeMismatch { assoc, .. } => assoc,
             Leaf::Bound { summary } => summary,
         }
     }

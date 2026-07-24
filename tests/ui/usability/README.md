@@ -8,16 +8,12 @@ cause were *absent* would belong under
 [hidden-root-cause](../../../docs/issues/hidden-root-cause.md) instead. A fixture whose presentation
 improves enough to clear the bar graduates out of here into [`../acceptable/`](../acceptable); the
 whole check-trait-failure family has already done so, followed by the missing-derive coalescing, the
-dispatch-chain elision, the method-advice cleanup, and most of the wiring-conflict reshaping.
+dispatch-chain elision, the method-advice cleanup, the abstract-type mismatch, the consumer
+coalescing, and most of the wiring-conflict reshaping.
 
 The fixtures are grouped by the *kind* of remaining usability problem, one sub-directory per issue
 class in [the usability issue document](../../../docs/issues/usability.md):
 
-- [`duplication/`](duplication) — one mistake reported as many errors: a single cause that fans out
-  across several top-level error blocks because *different* consumers share it (`density_3`,
-  `dependency_cascade`). Re-reports of the *same* consumer already de-duplicate; naming every
-  affected consumer in one block needs the emitter to buffer the compilation's diagnostics, the open
-  work.
 - [`lowering/`](lowering) — a macro lowered accepted input into ill-formed Rust, and the error lands
   on the macro attribute without naming the real cause: an unsized generated type (`option_slice`) or
   a cyclic `#[use_type]` routing (`use_type_cyclic_context`).

@@ -29,15 +29,14 @@ The categories are:
 - [`ui/acceptable/`](ui/acceptable) — errors whose root cause the tool already presents well: a
   coded `[CGP-Exxx]` headline, a plain-language `root cause:` note, a compact dependency tree, and no
   generated-type scaffolding. This is where an error fixture graduates once it clears the usability
-  bar. It is split into concept sub-directories — `fields/`, `field-types/`, `providers/`,
+  bar. It is split into concept sub-directories — `fields/`, `field-types/`, `types/`, `providers/`,
   `generic/`, `resolution/`, `use-site/`, `use-type/`, `verbosity/`, `duplication/`, `lowering/`, and
-  `wiring/{constrained-key,constraints,duplicate-keys,missing-wiring,namespace-paths}/` — so no
+  `wiring/{constrained-key,constraints,duplicate-keys,missing-wiring,namespace-paths,orphan}/` — so no
   directory grows crowded.
 - [`ui/usability/`](ui/usability) — errors that carry the root cause but bury it in volume, encoding,
   duplication, or misleading framing (a [usability issue](../docs/issues/usability.md)); the cause is
   present, so the work is re-presentation. It is split into issue-class sub-directories —
-  `duplication/`, `lowering/`, and `wiring/constraints/` — each naming the problem its fixtures
-  expose.
+  `lowering/` and `wiring/constraints/` — each naming the problem its fixtures expose.
 - [`ui/ok/`](ui/ok) — the clean-compile baseline: correctly-wired programs that check with empty
   output.
 - `ui/hidden-root-cause/` — errors whose root cause cannot be recovered from the output at all, the
@@ -95,10 +94,9 @@ against it). They back two kinds of fixture:
 
 - **The three orphan-rule failures** — `default_impl_foreign_component`,
   `default_impl_foreign_prefix_path`, and `reopen_foreign_namespace`, in
-  [`ui/usability/wiring/orphan/`](ui/usability/wiring/orphan) — each `//@aux-build: cgp-test-crate-a`
-  so the `E0210` orphan violation can arise against a foreign namespace. They sit in `usability/`
-  because cargo-cgp does not yet reshape `E0210` into a CGP-level explanation (a gap to close later),
-  not because the cause is missing.
+  [`ui/acceptable/wiring/orphan/`](ui/acceptable/wiring/orphan) — each `//@aux-build: cgp-test-crate-a`
+  so the `E0210` orphan violation can arise against a foreign namespace. cargo-cgp reshapes each into
+  a `[CGP-E011]` header naming the foreign namespace and key, with the ownership fix in a `help`.
 - **The positive counterpart** — [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs) builds
   `cgp-test-crate-b` (and transitively `cgp-test-crate-a`) to confirm every orphan-*safe* cross-crate
   impl compiles cleanly.

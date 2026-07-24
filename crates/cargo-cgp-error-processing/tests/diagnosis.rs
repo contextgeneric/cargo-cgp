@@ -9,7 +9,7 @@
 
 use std::collections::HashMap;
 
-use cargo_cgp_error_processing::diagnosis::{mismatch_leaf, quoted_list};
+use cargo_cgp_error_processing::diagnosis::{assoc_mismatch_leaf, mismatch_leaf, quoted_list};
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
     Cause, ChainNode, DepNode, DependencyGraph, DiagKind, FieldIssue, Leaf, Resolved, cause_note,
@@ -335,7 +335,7 @@ fn plans_a_field_type_mismatch() {
     let path = cause.paths[0].clone();
     let resolved = cgp_resolved("Rectangle", &["CanCalculateArea"], vec![cause]);
     let plan = plan_resolved(
-        DiagKind::FieldMismatch,
+        DiagKind::TypeMismatch,
         Some(
             "type mismatch resolving `<Rectangle as HasField<Symbol!(\"height\")>>::Value == f64`",
         ),
@@ -357,6 +357,85 @@ fn plans_a_field_type_mismatch() {
         )]
     );
     assert_eq!(mismatch_leaf(&resolved), Some(&leaf));
+}
+
+/// An abstract-type mismatch is the `HasField` mismatch's sibling: the same `E0271` projection
+/// failure on a CGP abstract type instead of a field value, so it takes the `[CGP-E017]` header and
+/// carries the wiring fix in a `help`.
+#[test]
+fn plans_an_abstract_type_mismatch() {
+    let leaf = Leaf::AssocTypeMismatch {
+        assoc: "Error".to_owned(),
+        trait_name: "HasErrorType".to_owned(),
+        owner: "App".to_owned(),
+        expected: "AppError".to_owned(),
+        actual: "String".to_owned(),
+        component: Some("ErrorTypeProviderComponent".to_owned()),
+    };
+    let cause = one_path(leaf.clone(), vec![consumer("CanRaiseHttpError", "App")]);
+    let path = cause.paths[0].clone();
+    let resolved = cgp_resolved("App", &["CanRaiseHttpError"], vec![cause]);
+    let plan = plan_resolved(
+        DiagKind::TypeMismatch,
+        Some("type mismatch resolving `<App as HasErrorType>::Error == AppError`"),
+        &resolved,
+        &empty_names(),
+    );
+
+    assert_eq!(
+        plan.header.as_deref(),
+        Some(
+            "[CGP-E017] expected the abstract type `Error` of `HasErrorType` on `App` to be `AppError`, but found `String`"
+        )
+    );
+    assert_eq!(
+        plan.helps,
+        vec![
+            "wire `ErrorTypeProviderComponent` to `UseType<AppError>` in the wiring for `App`, or change the provider to work with `String`"
+        ]
+    );
+    assert_eq!(
+        plan.notes,
+        vec![format!(
+            "root cause: [CGP-E112] abstract type `Error` of `HasErrorType` on `App` is `String`, but `AppError` is required\nthis is required through the dependency chain:\n{}",
+            indent2(&render_path(&path))
+        )]
+    );
+    assert_eq!(assoc_mismatch_leaf(&resolved), Some(&leaf));
+}
+
+/// An associated type on a trait that is *not* a CGP abstract-type component reads as an
+/// `associated type` and carries no `help`: there is no wiring entry to name, since the type is
+/// fixed by whatever impl supplies it.
+#[test]
+fn plans_a_plain_associated_type_mismatch() {
+    let leaf = Leaf::AssocTypeMismatch {
+        assoc: "Item".to_owned(),
+        trait_name: "Iterator".to_owned(),
+        owner: "Feed".to_owned(),
+        expected: "u8".to_owned(),
+        actual: "u16".to_owned(),
+        component: None,
+    };
+    let resolved = cgp_resolved(
+        "App",
+        &["CanRead"],
+        vec![one_path(leaf, vec![consumer("CanRead", "App")])],
+    );
+    let plan = plan_resolved(
+        DiagKind::TypeMismatch,
+        Some("type mismatch resolving `<Feed as Iterator>::Item == u8`"),
+        &resolved,
+        &empty_names(),
+    );
+
+    assert_eq!(
+        plan.header.as_deref(),
+        Some(
+            "[CGP-E017] expected the associated type `Item` of `Iterator` on `Feed` to be `u8`, but found `u16`"
+        )
+    );
+    assert!(plan.helps.is_empty());
 }
 
 #[test]
@@ -490,6 +569,17 @@ fn dependency_tree_leaf_codes_rewritten_leaves_and_passes_bounds_through() {
             provider_trait: "ApiHandler".to_owned(),
         }),
         "[CGP-E111] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`"
+    );
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::AssocTypeMismatch {
+            assoc: "Error".to_owned(),
+            trait_name: "HasErrorType".to_owned(),
+            owner: "App".to_owned(),
+            expected: "AppError".to_owned(),
+            actual: "String".to_owned(),
+            component: Some("ErrorTypeProviderComponent".to_owned()),
+        }),
+        "[CGP-E112] abstract type `Error` of `HasErrorType` on `App` is `String`, but `AppError` is required"
     );
     // …but a pass-through ordinary bound keeps rustc's phrasing with no code.
     assert_eq!(

@@ -1,0 +1,31 @@
+error[E0271]: type mismatch resolving `<Rectangle as HasScalarType>::Scalar == f64`
+  --> src/main.rs:63:9
+   |
+63 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<Rectangle as HasScalarType>::Scalar == f64`
+   |
+note: expected this to be `f64`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_type]
+   | ^^^^^^^^^^^
+note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:39:1
+   |
+39 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+40 | #[use_type(HasScalarType.{Scalar = f64})]
+   |                           ------------ unsatisfied trait bound introduced here
+   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:61:1
+   |
+61 | / check_components! {
+62 | |     Rectangle {
+63 | |         AreaCalculatorComponent,
+64 | |     }
+65 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_type` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.

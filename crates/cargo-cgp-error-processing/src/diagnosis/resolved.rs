@@ -25,8 +25,8 @@ pub struct Cause {
 }
 
 impl Cause {
-    /// A stable key that de-duplicates a leaf reached by several dependency paths — the field
-    /// name for a field, the bound restatement otherwise.
+    /// A stable key that de-duplicates a leaf reached by several dependency paths — see
+    /// [`Leaf::key`].
     pub fn key(&self) -> &str {
         self.leaf.key()
     }

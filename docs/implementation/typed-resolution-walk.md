@@ -188,19 +188,28 @@ dependency is the real cause; following only the *same* trait keeps the `f64: Eq
 foreign leaf's `impl` dependency is a *different* trait.
 
 Two further rules finish the terminal cases. An obligation whose satisfying impl's trait-clause
-`where`-obligations **all hold**, yet is itself unmet, is failing for a projection/associated-type
-mismatch the trait-clause walk cannot see; the resolver looks among that impl's own predicates for the
-one form it can pin down — an unmet `HasField` projection
-(`<Ctx as HasField<Symbol!("f")>>::Value == T`), a field present with the wrong type — and completes
-the branch with that field's `HasField` trait ref, tagging the path with the expected type so the leaf
-renders as a field-type mismatch (the `E0271`
-case shown earlier). This projection search *also* prefers the concrete-`Self` impl over the delegation
-blanket (`has_field_projection_mismatch` / `impl_field_projection_mismatch`): the projection lives on
-the provider's own impl, and matching the blanket first — which carries no projection — would wrongly
-report no mismatch; but a getter trait whose *only* impl is a blanket
-(`impl<C: HasField<..>> HasName for C`) still has its projection read from that blanket, so a blanket is
-deferred, not skipped outright. A branch with no such projection yields nothing and declines to the
-fallback. Finally, a branch that bottoms out on a `DelegateComponent` is kept only when the owner
+`where`-obligations **all hold**, yet is itself unmet, is failing for an associated-type mismatch the
+trait-clause walk cannot see: `Self: Trait<Assoc = T>` desugars into *two* predicates, and the walk
+follows only the trait half, so a satisfied `Ctx: HasErrorType` beside a failing
+`<Ctx as HasErrorType>::Error == AppError` looks, to the trait-clause walk, like an impl with nothing
+wrong. The resolver therefore looks among that impl's own predicates for an unmet **projection**
+(`projection_mismatch`) and completes the branch with that projection's own trait ref, tagging the
+path with the required type. Two leaf shapes come out of it, differing only in which trait the
+projection is on: a `HasField` value (`<Ctx as HasField<Symbol!("f")>>::Value == T`, a field present
+with the wrong type) renders as the field-type mismatch, and any other associated type renders as the
+[abstract-type mismatch](typed-resolution-output.md#the-root-cause-notes), whose *actual* side is read
+by normalizing the projection rather than by reading a struct field. A `HasField` projection wins when
+an impl carries both, since a field's value type is the more specific classification and the one whose
+leaf names a struct field to fix.
+
+The projection search *also* prefers the concrete-`Self` impl over the delegation blanket
+(`projection_mismatch` / `impl_projection_mismatch`): the projection lives on the provider's own impl,
+and matching the blanket first — which carries no projection — would wrongly report no mismatch; but a
+getter trait whose *only* impl is a blanket (`impl<C: HasField<..>> HasName for C`) still has its
+projection read from that blanket, so a blanket is deferred, not skipped outright. A branch with no
+such projection yields nothing and declines to the fallback.
+
+Finally, a branch that bottoms out on a `DelegateComponent` is kept only when the owner
 genuinely lacks an entry it *should* carry, and dropped as **pure wiring plumbing** otherwise (a
 delegation that *holds* is pruned before it can be a leaf, so bottoming out unmet always means the key
 is genuinely unwired — the question is only whether that owner is meant to be a table). It is kept in
@@ -279,6 +288,22 @@ another module is never queried) for the actual type, yielding the `[CGP-E003]` 
 non-field leaf carries no struct, so it is simply restated as `self: Trait` (`f64: std::cmp::Eq`) for
 its note lead and for de-duplicating a leaf reached by several paths.
 
+**Read the type an owner supplies for any other associated type.** A projection mismatch on a trait
+other than `HasField` has no struct field to query, so its *actual* side is read by asking the solver
+to normalize the projection itself (`projected_type`). That one query covers every way an owner can
+supply the type — an abstract type wired to `UseType<T>` resolves through the blanket `#[cgp_type]`
+generates, a hand-written `impl HasErrorType for App` through that impl — so no wiring shape is
+special-cased, and a result that does not reduce to a concrete type is rendered `_` rather than
+half-resolved. The leaf also records whether the trait is a **CGP abstract-type component**, which is
+what earns it the `abstract type` wording and a `help` naming the wiring entry to change. That is
+recognized structurally by the three things
+[`#[cgp_type]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/macros/cgp_type.md)
+generates and nothing else does — a consumer trait, whose only associated item is a type, whose
+provider trait carries the `UseType` blanket — with the last condition anchored by `DefId` to the crate
+defining `UseType`, since it is what makes `UseType<T>` a valid fix to suggest
+(`abstract_type_component_marker`). A behavioral component, or a plain trait with an associated type,
+matches none of the three and reads as a plain `associated type` with no `help`.
+
 **Render each root cause.** A root-cause path is a list of typed predicates, and rendering it is where
 each real trait obligation becomes the concept it stands for — with every name read straight off the
 obligation, no component marker and no [`ComponentNameMap`](error-processing.md) in the loop. A
@@ -343,11 +368,12 @@ the parent document's [Tests](typed-root-cause-resolution.md#tests) section.
 - [`crates/cargo-cgp-driver/src/resolve/walk/`](../../crates/cargo-cgp-driver/src/resolve/walk) —
   the descent: `leaves.rs` (the recursion), `vocabulary.rs` (what it walks into),
   `impl_match.rs` (the satisfying impl and its dependencies), `unknowns.rs` (placeholders and
-  stalled projections), `projection_mismatch.rs` (the field-type mismatch), and `holds.rs` (the
-  solver query).
+  stalled projections), `projection_mismatch.rs` (the unmet projection an impl carries, `HasField`
+  or otherwise), and `holds.rs` (the solver query).
 - [`crates/cargo-cgp-driver/src/resolve/classify/`](../../crates/cargo-cgp-driver/src/resolve/classify)
-  — `reportable.rs` (root cause versus routing dead-end), `leaf.rs` (the rustc-free `Leaf`), and
-  `field.rs` (the struct and `Deref`-chain inspection).
+  — `reportable.rs` (root cause versus routing dead-end), `leaf.rs` (the rustc-free `Leaf`),
+  `field.rs` (the struct and `Deref`-chain inspection), and `assoc_type.rs` (the normalization that
+  reads the type an owner supplies for any other projected associated type).
 - [`crates/cargo-cgp-driver/src/resolve/label/`](../../crates/cargo-cgp-driver/src/resolve/label) —
   `predicate_label.rs` (each hop as a structured `DepNode`, read off the obligation) and
   `render_ty.rs` (the type-level spine resugaring).

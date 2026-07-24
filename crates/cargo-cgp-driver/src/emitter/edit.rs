@@ -29,7 +29,7 @@ pub(crate) fn main_message_text(diag: &DiagInner) -> Option<&str> {
 /// (chiefly `E0277`) a plain check/bound failure.
 pub(crate) fn diag_kind(diag: &DiagInner) -> DiagKind {
     match diag.code {
-        Some(E0271) => DiagKind::FieldMismatch,
+        Some(E0271) => DiagKind::TypeMismatch,
         Some(E0599) => DiagKind::MethodNotFound,
         _ => DiagKind::Check,
     }

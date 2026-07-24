@@ -140,9 +140,22 @@ pub const CONSUMER_TRAIT_IN_PROVIDER_BOUND: &str = "CGP-E015";
 /// `#[uses]` capability. The Rust code stays `E0599`.
 pub const INNER_PROVIDER_NOT_IMPORTED: &str = "CGP-E016";
 
+/// `CGP-E017` — an *abstract type* the context supplies does not match the one a provider requires.
+/// Stamped on a `type mismatch resolving <Ctx as HasErrorType>::Error == AppError` (`E0271`) that the
+/// typed resolver traced through CGP wiring to an associated-type projection other than `HasField`'s.
+/// The context binds the abstract type one way — by wiring its component to `UseType<T>`, or by
+/// implementing the trait directly — while a provider it uses pins the same type to another, most
+/// often through the `#[use_type(Trait.{Assoc = Concrete})]` equality form. The trait bound itself
+/// holds, so only the projection fails; the rewritten message names the abstract type, its owning
+/// trait, the required type, and the one actually supplied, and for a
+/// [`#[cgp_type]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/macros/cgp_type.md)
+/// component the wiring fix rides in a `help`. Sibling of [`FIELD_TYPE_MISMATCH`], which is the same
+/// failure for a `HasField` value type rather than an abstract type. The Rust code stays `E0271`.
+pub const ABSTRACT_TYPE_MISMATCH: &str = "CGP-E017";
+
 // The `CGP-E1xx` family codes the entries of a `root cause:` note's dependency tree, one code per
 // distinct rendering template. `CGP-E101`, `CGP-E102`, `CGP-E104`, and `CGP-E105` are the inner chain
-// nodes (a wiring hop — `CGP-E103` is retired, see below); `CGP-E106`–`CGP-E111` are the terminal
+// nodes (a wiring hop — `CGP-E103` is retired, see below); `CGP-E106`–`CGP-E112` are the terminal
 // root-cause leaves. An entry that passes a non-CGP message through unchanged (the `the trait bound …
 // is not satisfied` restatement) carries no code.
 
@@ -198,6 +211,14 @@ pub const DEP_MISSING_DISPATCH_ENTRY: &str = "CGP-E110";
 /// `UseBasicAuth<QueryBalanceRequest>` where the endpoint handler is missing — so the fix is to use an
 /// actual provider, not to add a wiring entry (which is [`DEP_MISSING_DISPATCH_ENTRY`]).
 pub const DEP_NOT_A_PROVIDER: &str = "CGP-E111";
+
+/// `CGP-E112` — a root-cause leaf: an associated type the wiring projects through carries a
+/// different type from the one required, `abstract type \`Error\` of \`HasErrorType\` on \`App\` is
+/// \`String\`, but \`AppError\` is required`. It reads `abstract type` for a CGP abstract-type
+/// component (whose concrete type a context chooses by wiring) and `associated type` for any other
+/// trait. The abstract-type leaf face of the [`ABSTRACT_TYPE_MISMATCH`] main message, and the
+/// non-`HasField` sibling of [`DEP_FIELD_TYPE_MISMATCH`].
+pub const DEP_ASSOC_TYPE_MISMATCH: &str = "CGP-E112";
 
 // The `CGP-E2xx` range codes the `root cause:` note lead. It reuses the terminal leaf's `CGP-E1xx`
 // code where the leaf has one; the constants here cover only the leads that need a code of their

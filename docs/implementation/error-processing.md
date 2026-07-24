@@ -277,7 +277,8 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   the wiring-message rewrite over a hand-built name map (see [The driver](driver.md#tests)).
 - [`crates/cargo-cgp-error-processing/tests/diagnosis.rs`](../../crates/cargo-cgp-error-processing/tests/diagnosis.rs) —
   `plan_resolved` and the wording over hand-built `Resolved` values: the missing-field, missing-derive,
-  and `Deref`-target field cases, a field-type mismatch, a use-site method failure, a kept ordinary
+  and `Deref`-target field cases, a field-type mismatch, an abstract-type mismatch (with its wiring
+  `help`) and its help-less plain-associated-type sibling, a use-site method failure, a kept ordinary
   bound (header dropped, lead-less note), a provider header via the text rewrite, and the pluralized
   consumer header.
 - [`crates/cargo-cgp-error-processing/tests/tree.rs`](../../crates/cargo-cgp-error-processing/tests/tree.rs) —
@@ -327,9 +328,13 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   (`Cause`, holding a leaf and every path that reaches it, and `Resolved`), `node.rs` (`DepNode` /
   `ChainNode`, the structured chain nodes and their rendering) and `graph.rs` (`DependencyGraph`,
   the DAG build-and-render), the `wording/` directory — `header.rs` (`consumer_header`,
-  `field_mismatch_header`), `lead.rs` (`root_cause_lead` and the leaf codes), `note.rs`
+  `field_mismatch_header`, `assoc_mismatch_header`), `lead.rs` (`root_cause_lead` and the leaf codes),
+  `note.rs`
   (`cause_notes`, which folds every cause's paths into one graph and words the heading over it),
-  `help.rs` (`derive_help_messages`), and `signature.rs` (`cause_signature`) — `coalesce.rs`
+  `help.rs` (`fix_help_messages` over `derive_help_messages` and `assoc_mismatch_help_messages` — the
+  one entry point both the streaming plan and the emitter's coalesced block build their `help`s
+  through, so a merged block carries the same fixes), and `signature.rs` (`cause_signature`) —
+  `coalesce.rs`
   (`coalesce_underived_fields`), `plan.rs` (`DiagKind`,
   `DiagnosisPlan`, and `plan_resolved` with its `categorized_header`), and `wiring.rs`
   (`WiringConflict`/`WiringKey`, `plan_wiring_conflict` for the `[CGP-E004]`–`[CGP-E008]`

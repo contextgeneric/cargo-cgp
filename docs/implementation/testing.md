@@ -48,6 +48,7 @@ an empty `.cgp.stderr` and an empty `.rust.stderr`.
 
 Within each category the fixtures are sorted into kind subdirectories. `acceptable/` is split by the
 kind of failure the tool resolves — `fields/` and `field-types/` for missing and mistyped fields,
+`types/` for an abstract type the context and a provider disagree on,
 `providers/` for provider dependency chains, `generic/` for generic components, `resolution/` for the
 non-field and boundary cases the resolver still reshapes, `use-site/` for consumer-method call
 failures, `duplication/` for the de-duplicated and coalesced multi-block cases, and `lowering/` and

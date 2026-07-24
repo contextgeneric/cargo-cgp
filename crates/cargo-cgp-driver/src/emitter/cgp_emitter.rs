@@ -9,7 +9,7 @@ use cargo_cgp_error_processing::rewrite::{
 use cargo_cgp_error_processing::{
     Cause, CgpImplMisuse, DedupLedger, DiagKind, Leaf, MissingUseProvider, OrphanConflict,
     Resolved, UndeclaredCapability, cause_notes, cause_only_signature, cause_signature,
-    cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, derive_help_messages,
+    cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, fix_help_messages,
     is_method_bounds_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
     missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
     plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_undeclared_capability,
@@ -239,7 +239,7 @@ impl<E: Emitter> CgpEmitter<E> {
             .flat_map(|resolved| resolved.causes.iter().cloned())
             .collect();
         let causes = coalesce_underived_fields(&causes);
-        let mut children: Vec<_> = derive_help_messages(&causes)
+        let mut children: Vec<_> = fix_help_messages(&causes)
             .into_iter()
             .map(|help| subdiag(Level::Help, help))
             .collect();
@@ -690,7 +690,7 @@ impl<E: Emitter> CgpEmitter<E> {
         at_call: bool,
     ) {
         let kind = match diag_kind(diag) {
-            kind if at_call && kind != DiagKind::FieldMismatch => DiagKind::MethodNotFound,
+            kind if at_call && kind != DiagKind::TypeMismatch => DiagKind::MethodNotFound,
             kind => kind,
         };
         let plan = plan_resolved(kind, main_message_text(diag), resolved, &self.names);

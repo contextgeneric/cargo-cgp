@@ -3,7 +3,7 @@
 //! [`plan_resolved`] is the rustc-free heart of the typed-resolution transform: given the
 //! recovered [`Resolved`], the diagnostic's kind and main-message text, and the component-name
 //! map, it decides the rewritten main message (when the diagnostic is an identified CGP class)
-//! and the replacement sub-messages (the derive `help`s and one `root cause:` note per cause).
+//! and the replacement sub-messages (the fix `help`s and the `root cause:` note).
 //! The driver's emitter feeds it those inputs from the live `DiagInner` and turns the returned
 //! [`DiagnosisPlan`] strings into `rustc` sub-diagnostics — so all the wording logic is here,
 //! unit-tested without a compiler, and the emitter is left with only `DiagInner` manipulation.
@@ -12,7 +12,8 @@ use crate::diagnosis::coalesce::coalesce_underived_fields;
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
 use crate::diagnosis::wording::{
-    cause_notes, consumer_header, derive_help_messages, field_mismatch_header, mismatch_leaf,
+    assoc_mismatch_header, assoc_mismatch_leaf, cause_notes, consumer_header,
+    field_mismatch_header, fix_help_messages, mismatch_leaf,
 };
 use crate::rewrite::{ComponentNameMap, parse_trait_bound, rewrite_trait_bound};
 
@@ -22,8 +23,10 @@ use crate::rewrite::{ComponentNameMap, parse_trait_bound, rewrite_trait_bound};
 pub enum DiagKind {
     /// A check-trait or ordinary-bound failure — rustc's `E0277`, the default.
     Check,
-    /// A field-type mismatch — rustc's `E0271`, traced to a `HasField` projection.
-    FieldMismatch,
+    /// An associated-type mismatch — rustc's `E0271`, traced to a failing projection: a `HasField`
+    /// value type (the `[CGP-E003]` field form) or any other associated type, most often a CGP
+    /// abstract type (the `[CGP-E017]` form).
+    TypeMismatch,
     /// A consumer-method call failure recovered at the use site — rustc's `E0599`, or an `E0277`
     /// whose obligation the resolver re-read from the call expression itself.
     MethodNotFound,
@@ -36,7 +39,9 @@ pub struct DiagnosisPlan {
     /// The rewritten, `[CGP-Exxx]`-coded main message, or `None` when the original is not an
     /// identified CGP class and must be kept.
     pub header: Option<String>,
-    /// The `help` messages naming each type that must derive `HasField`.
+    /// The `help` messages naming each fix the causes call for — a type that must derive
+    /// `HasField`, or an abstract type whose wiring must change (see
+    /// [`fix_help_messages`](super::fix_help_messages)).
     pub helps: Vec<String>,
     /// The `root cause:` note — every cause's paths folded into one dependency graph. A single
     /// element, or none when there are no causes.
@@ -67,7 +72,7 @@ pub fn plan_resolved(
     };
 
     let causes = coalesce_underived_fields(&resolved.causes);
-    let helps = derive_help_messages(&causes);
+    let helps = fix_help_messages(&causes);
     let notes = cause_notes(&causes, header_bound.as_deref());
 
     DiagnosisPlan {
@@ -79,9 +84,10 @@ pub fn plan_resolved(
 
 /// The rewritten, `[CGP-Exxx]`-coded main message for a resolved failure — or `None` when the
 /// original main message is not an identified CGP error class and must be kept (an ordinary
-/// bound such as `f64: Eq` the solver already descended to). A field-type mismatch
-/// ([`DiagKind::FieldMismatch`]) the resolver traced to a `HasField` projection becomes the
-/// `[CGP-E003]` field form, worded from the mismatch leaf. An unsatisfied `CanUseComponent`
+/// bound such as `f64: Eq` the solver already descended to). A projection mismatch
+/// ([`DiagKind::TypeMismatch`]) becomes the `[CGP-E003]` field form when the resolver traced it to a
+/// `HasField` projection, or the `[CGP-E017]` abstract-type form for any other associated type, each
+/// worded from its mismatch leaf. An unsatisfied `CanUseComponent`
 /// bound and a consumer-method [`DiagKind::MethodNotFound`] (whose text names no wiring trait)
 /// are both worded from the typed resolution, whose full-path marker keys make the consumer name
 /// exact; an unsatisfied `IsProviderFor` bound rewrites by its text, since the resolution does
@@ -92,27 +98,48 @@ fn categorized_header(
     resolved: &Resolved,
     names: &ComponentNameMap,
 ) -> Option<String> {
-    // A field-type mismatch (`E0271`) the resolver traced to a `HasField` projection is its own
-    // class, worded from the mismatch leaf rather than from the consumer trait.
-    if kind == DiagKind::FieldMismatch
-        && let Some(Leaf::FieldTypeMismatch {
+    // A projection mismatch (`E0271`) the resolver traced to a failing associated type is its own
+    // class, worded from the mismatch leaf rather than from the consumer trait: the `[CGP-E003]`
+    // field form for a `HasField` value, the `[CGP-E017]` abstract-type form for any other. The
+    // field form is tried first, since a `HasField` value type is the more specific classification.
+    if kind == DiagKind::TypeMismatch {
+        if let Some(Leaf::FieldTypeMismatch {
             name,
             owner,
             expected,
             actual,
         }) = mismatch_leaf(resolved)
-    {
-        return Some(field_mismatch_header(name, owner, expected, actual));
+        {
+            return Some(field_mismatch_header(name, owner, expected, actual));
+        }
+        if let Some(Leaf::AssocTypeMismatch {
+            assoc,
+            trait_name,
+            owner,
+            expected,
+            actual,
+            component,
+        }) = assoc_mismatch_leaf(resolved)
+        {
+            return Some(assoc_mismatch_header(
+                assoc,
+                trait_name,
+                owner,
+                expected,
+                actual,
+                component.as_deref(),
+            ));
+        }
     }
     if resolved.consumers.is_empty() {
         return None;
     }
-    // A field-mismatch-coded (`E0271`) failure that the resolver traced to a *non*-mismatch cause —
-    // a missing field or wiring reached through an opaque-future or associated-type projection, as a
+    // A mismatch-coded (`E0271`) failure that the resolver traced to a *non*-mismatch cause — a
+    // missing field or wiring reached through an opaque-future or associated-type projection, as a
     // manual `Send`-recovery wrapper's forwarding `async fn` produces — is a consequence of the
-    // consumer failing, not a field-type mismatch. Its rustc message (`type mismatch resolving …`)
-    // is opaque, so name the consumer trait that could not be implemented instead.
-    if kind == DiagKind::FieldMismatch {
+    // consumer failing, not a type mismatch. Its rustc message (`type mismatch resolving …`) is
+    // opaque, so name the consumer trait that could not be implemented instead.
+    if kind == DiagKind::TypeMismatch {
         return Some(consumer_header(resolved));
     }
     if let Some(text) = main_message {

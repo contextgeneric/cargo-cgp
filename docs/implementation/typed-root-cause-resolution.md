@@ -287,12 +287,15 @@ And the walk
 uses an **empty parameter environment** throughout, which suits the concrete check
 impls the fixtures exercise but will need the impl's own environment to extend cleanly to checks that
 carry generic parameters. The resolver renders only leaves it can trust — a `HasField` field (missing,
-underived, or type-mismatched), a missing wiring, a missing dispatch entry on a non-context delegation
+underived, or type-mismatched), an associated type the owner supplies differently from what a provider
+requires, a missing wiring, a missing dispatch entry on a non-context delegation
 table, a namespace redirect the context does not terminate,
-an ordinary foreign bound, or a terminal capability bound — and declines an associated-type projection
-mismatch that is *not* a `HasField` one, dropping pure wiring-plumbing dead-ends, so a diagnostic whose
-only recoverable leaf is one of those falls back. Parallel branches, deep nesting, and non-field leaves,
-by contrast, are all handled.
+an ordinary foreign bound, or a terminal capability bound — dropping pure wiring-plumbing dead-ends, so
+a diagnostic whose only recoverable leaf is one of those falls back. Parallel branches, deep nesting,
+and non-field leaves, by contrast, are all handled. The associated-type leaf is bounded in one way
+worth recording: it is reported only for a *trait* associated-type projection, since an opaque,
+inherent, or const alias has no `Trait::Assoc` to name; and where normalizing the projection does not
+reduce to a concrete type, the leaf renders that side as `_` rather than guessing.
 
 How a transformed diagnostic is *marked* as CGP is settled by the [error-code scheme](../error-code.md):
 a rewritten, classified main message carries its `[CGP-Exxx]` code inline, and everything else — a kept
@@ -366,12 +369,15 @@ separate header brand; the inline code is the only marking.
     whose value is *fixed* independent of an unknown input — structurally, for any trait and
     associated type — keeping only a fully-concrete result, so a later pipeline stage keyed on an
     earlier stage's un-normalized output projection is still descended and reported on when its
-    input concretizes). `projection_mismatch.rs` finds an unmet `HasField` projection on the
-    concrete-`Self` impl (`has_field_projection_mismatch`/`impl_field_projection_mismatch`,
-    deferring the blanket), and `holds.rs` asks the solver whether a predicate is satisfied.
+    input concretizes). `projection_mismatch.rs` finds an unmet associated-type projection on the
+    concrete-`Self` impl (`projection_mismatch`/`impl_projection_mismatch`, deferring the blanket and
+    preferring a `HasField` projection over any other), and `holds.rs` asks the solver whether a
+    predicate is satisfied.
   - [`classify/`](../../crates/cargo-cgp-driver/src/resolve/classify) classifies a terminal:
     `leaf.rs` turns it into the rustc-free `Leaf` (a field by inspecting the struct and its `Deref`
     chain in `field.rs`, a field-type mismatch with `field_type` reading the actual type by `DefId`,
+    an abstract-type mismatch with `assoc_type.rs`'s `projected_type` normalizing the projection for
+    the actual type and `abstract_type_component_marker` recovering the wiring marker for its `help`,
     a missing wiring on the context, a missing dispatch entry on a non-context delegation table, a
     not-a-provider on a non-table type, a missing redirect wiring told apart by `is_path_cons`, or a
     bound); `reportable.rs` holds `is_reportable_leaf`, keeping an unmet `DelegateComponent` on the
@@ -433,9 +439,9 @@ separate header brand; the inline code is the only marking.
 ## Tests
 
 The resolver is exercised end to end by the UI snapshot suite. The fixtures it reshapes live under
-[`tests/ui/acceptable/`](../../tests/ui/acceptable) — the `fields/`, `field-types/`, `providers/`,
-`generic/`, `resolution/`, `verbosity/`, `wiring/`, `use-site/`, and `use-type/` subgroups, carrying
-`.cgp.stderr` snapshots of the transformed output. The failure it still declines — a use-site `E0599`
+[`tests/ui/acceptable/`](../../tests/ui/acceptable) — the `fields/`, `field-types/`, `types/`,
+`providers/`, `generic/`, `resolution/`, `verbosity/`, `wiring/`, `use-site/`, and `use-type/`
+subgroups, carrying `.cgp.stderr` snapshots of the transformed output. The failure it still declines — a use-site `E0599`
 on a generic consumer whose dispatch parameter rides in an argument the call does not type
 syntactically — pins its fallback (with the method-probe advice stripped) in
 [`acceptable/use-site/generic_consumer_unwritten_arg`](../../tests/ui/acceptable/use-site/generic_consumer_unwritten_arg.rs),
@@ -451,6 +457,18 @@ Each **leaf class** has fixtures for its field, wiring, and redirect shapes:
 - `field_via_deref` — a field on a `Deref` target, with the `help` pointed at the target.
 - `field_type_mismatch` and `field_type_mismatch_1` — a matching name with a mismatched type, read
   through a getter and directly via an `#[implicit]` argument.
+- `abstract_type_mismatch` (under [`acceptable/types/`](../../tests/ui/acceptable/types)) — the
+  abstract-type sibling of those two: a context binds `HasScalarType` to `UseType<u32>` while its
+  provider pins the same type to `f64` with the `#[use_type(HasScalarType.{Scalar = f64})]` equality
+  form, so the trait bound holds and only the projection fails. Pins the generalized projection
+  recovery — the walk reports the unmet non-`HasField` projection instead of declining — the
+  `[CGP-E017]` header and `[CGP-E112]` leaf, the actual type read by normalizing the projection, and
+  the `UseType<…>` `help` the `#[cgp_type]` recognition earns.
+- `plain_assoc_type_mismatch` — the negative counterpart, and the pin on that recognition's
+  discriminator: the same projection failure on a plain associated-type trait implemented directly on
+  the context. It takes the same `[CGP-E017]` class, since the mechanism is the projection rather than
+  the trait, but reads `associated type` and carries **no** `help` — there is no wiring entry to
+  change, so suggesting `UseType<…>` would name a fix that does not exist.
 - `field_type_mismatch_modules` — two `Rectangle` contexts in separate modules with differently-typed
   `height` fields, proving the actual-type query is `DefId`-anchored.
 - `basic_missing_wiring` — a `#[uses]` dependency on an unwired component.

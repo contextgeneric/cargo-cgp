@@ -10,8 +10,8 @@ use crate::resolve::cgp_item::{is_consumer_trait, is_local_adt};
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, trait_generics};
 use crate::resolve::walk::{
-    has_field_projection_mismatch, holds, impl_where_obligations, is_descendable, is_has_field,
-    is_workaround_plumbing,
+    ProjectionMismatch, holds, impl_where_obligations, is_descendable, is_has_field,
+    is_workaround_plumbing, projection_mismatch,
 };
 
 /// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or
@@ -217,13 +217,12 @@ fn resolve_node<'tcx>(
         followable
     } else if unmet.is_empty() {
         // Matched an impl, yet every trait-clause `where`-obligation holds: the fault is a projection
-        // the trait-clause walk cannot see. Surface the one form we can pin down — a `HasField::Value`
-        // mismatch (a field present with the wrong type) — and decline anything else. Either way the
-        // node matched an impl, so it is a complete non-terminal and is cached.
-        let result = match has_field_projection_mismatch(tcx, erased) {
-            Some((field_ref, expected)) => {
-                projection_result(tcx, erased, leaf_ref, context, field_ref, expected, self_fp)
-            }
+        // the trait-clause walk cannot see — a `HasField::Value` mismatch (a field present with the
+        // wrong type), or any other associated type the owner supplies differently from what the impl
+        // requires (a CGP abstract type, typically). Either way the node matched an impl, so it is a
+        // complete non-terminal and is cached.
+        let result = match projection_mismatch(tcx, erased) {
+            Some(mismatch) => projection_result(tcx, erased, leaf_ref, context, mismatch, self_fp),
             None => SubResult::empty(self_fp),
         };
         return cache_if_complete(cache, key, result);
@@ -318,28 +317,28 @@ fn terminal_result<'tcx>(
     }
 }
 
-/// Build the sub-result for a field-type mismatch: the impl matched with every trait-clause holding,
-/// but a `HasField::Value` projection is wrong. The node itself becomes a chain hop (its label) and
-/// the field's `HasField` ref is the terminal leaf, carrying the expected type. `parent_ref` (the
-/// node's own trait) is the field leaf's parent.
+/// Build the sub-result for a projection mismatch: the impl matched with every trait-clause holding,
+/// but an associated type it projects through carries the wrong type. The node itself becomes a chain
+/// hop (its label) and the projection's own trait ref is the terminal leaf, carrying the mismatch.
+/// `parent_ref` (the node's own trait) is that leaf's parent.
 fn projection_result<'tcx>(
     tcx: TyCtxt<'tcx>,
     erased: ty::PolyTraitPredicate<'tcx>,
     parent_ref: ty::TraitRef<'tcx>,
     context: Ty<'tcx>,
-    field_ref: ty::TraitRef<'tcx>,
-    expected: Ty<'tcx>,
+    mismatch: ProjectionMismatch<'tcx>,
     self_fp: Fingerprint,
 ) -> SubResult {
-    let leaf_poly: ty::PolyTraitPredicate<'tcx> = ty::Binder::dummy(field_ref).upcast(tcx);
+    let leaf_ref = mismatch.trait_ref;
+    let leaf_poly: ty::PolyTraitPredicate<'tcx> = ty::Binder::dummy(leaf_ref).upcast(tcx);
     if leaf_poly.has_placeholders() {
         return SubResult::empty(self_fp);
     }
     let parent = Some(parent_ref);
-    if !is_reportable_leaf(tcx, field_ref, context, parent) {
+    if !is_reportable_leaf(tcx, leaf_ref, context, parent) {
         return SubResult::empty(self_fp);
     }
-    let leaf = classify_leaf(tcx, field_ref, context, parent, Some(expected));
+    let leaf = classify_leaf(tcx, leaf_ref, context, parent, Some(mismatch));
     let mut path = Vec::new();
     if let Some(node_hop) = label_for(tcx, erased, context) {
         path.push(ChainNode::Hop(node_hop));

@@ -9,7 +9,8 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
 use crate::config::{
-    CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, NIL_TYPE, PATH_CONS_TYPE,
+    CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_TYPE_CRATE, DELEGATE_COMPONENT_TRAIT, NIL_TYPE,
+    PATH_CONS_TYPE, USE_TYPE_TYPE,
 };
 
 /// Whether `def_id` is a trait/type named `name` defined by crate `krate` — the DefId anchor
@@ -138,6 +139,40 @@ pub(crate) fn marker_to_consumer(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<(Def
         .all_traits_including_private()
         .find(|&trait_did| consumer_provider_trait(tcx, trait_did) == Some(provider_did))?;
     Some((consumer_did, provider_did))
+}
+
+/// The component marker a CGP **abstract-type** component keys on — `ScalarTypeProviderComponent`
+/// for `HasScalarType` — or `None` when `def_id` is not one. This is the name a context writes on the
+/// left of the `delegate_components!` entry that chooses the concrete type, so it is what the
+/// mismatch leaf's `help` offers as the fix.
+///
+/// An abstract-type component is recognized **structurally**, by the three things
+/// [`#[cgp_type]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/macros/cgp_type.md)
+/// generates and nothing else does: the trait is a CGP consumer trait ([`consumer_provider_trait`]),
+/// its *only* associated item is a type, and its provider trait carries the `UseType<T>` blanket impl
+/// that supplies that type. The last condition is the decisive one — it is what makes `UseType<T>` a
+/// valid fix to suggest — and it is anchored by `DefId` to the crate defining `UseType`, so a
+/// same-named type elsewhere cannot pass. A behavioral component, or a plain trait with an associated
+/// type, matches none of the three.
+pub(crate) fn abstract_type_component_marker<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+) -> Option<Ty<'tcx>> {
+    let mut items = tcx.associated_items(def_id).in_definition_order();
+    let first = items.next()?;
+    if items.next().is_some() || first.kind.tag() != ty::AssocTag::Type {
+        return None;
+    }
+    let provider_did = consumer_provider_trait(tcx, def_id)?;
+    // `UseType<T>` is an ADT, so its impl is keyed by self type rather than filed under
+    // `blanket_impls()`; scan every impl of the provider trait.
+    let supplies_use_type = tcx.all_impls(provider_did).any(|impl_did| {
+        match tcx.impl_trait_ref(impl_did).skip_binder().self_ty().kind() {
+            ty::Adt(def, _) => is_cgp_item(tcx, def.did(), USE_TYPE_TYPE, CGP_TYPE_CRATE),
+            _ => false,
+        }
+    });
+    supplies_use_type.then(|| provider_blanket_marker(tcx, provider_did))?
 }
 
 /// Whether `def_id` is a **namespace lookup trait** — the fingerprint every `cgp_namespace!`

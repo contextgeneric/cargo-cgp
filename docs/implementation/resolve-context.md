@@ -90,7 +90,7 @@ structural reads.
 `holds` in [`walk/holds.rs`](../../crates/cargo-cgp-driver/src/resolve/walk/holds.rs),
 `impl_where_obligations` in
 [`walk/impl_match.rs`](../../crates/cargo-cgp-driver/src/resolve/walk/impl_match.rs), and
-`has_field_projection_mismatch` in
+`projection_mismatch` in
 [`walk/projection_mismatch.rs`](../../crates/cargo-cgp-driver/src/resolve/walk/projection_mismatch.rs).
 Each builds a fresh `InferCtxt` internally, so the implementation is stateful — but that state is fully
 encapsulated behind a pure typed signature, which is exactly what makes the query cacheable at its

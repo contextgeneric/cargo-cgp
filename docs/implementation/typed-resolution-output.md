@@ -10,7 +10,7 @@ being worded here is the subject of [the anchors](typed-resolution-anchors.md) a
 ## The coded headline
 
 The main message is rewritten into a coded CGP class only when the resolution identifies one; the
-Rust error code (`E0277`, `E0599`, `E0271`) is always kept. Four classes cover the cases:
+Rust error code (`E0277`, `E0599`, `E0271`) is always kept. Five classes cover the cases:
 
 - **`[CGP-E001]`, the consumer form**, for a context that cannot implement a consumer trait — a
   [check-trait failure](https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md). It names the consumer
@@ -30,6 +30,10 @@ Rust error code (`E0277`, `E0599`, `E0271`) is always kept. Four classes cover t
   `RedirectLookup<App, @…>` as a provider.
 - **`[CGP-E003]`, the field-type-mismatch form**, for an `E0271` the resolver traced to a `HasField`
   projection — a field whose name matches but whose type does not.
+- **`[CGP-E017]`, the abstract-type-mismatch form**, for an `E0271` the resolver traced to any *other*
+  associated-type projection — most often a CGP abstract type the context binds one way while a
+  provider pins it another. It is `[CGP-E003]`'s sibling in every respect but the trait the projection
+  sits on, and is worded in the same shape.
 - **`[CGP-E009]`, the plain-trait form**, for a hand-written wrapper trait that is *not* itself a CGP
   consumer (it has only a concrete impl, no consumer blanket) — `CanHandleApiSend`, say. It reads
   `the trait \`…\` is not implemented for \`…\``, distinguished from `[CGP-E001]` by the wrapper's
@@ -184,7 +188,22 @@ The `root cause:` lead is worded by *why* the leaf is unmet, and there are six l
   and named against that trait rather than a wiring key
   ([`non_provider_wired`](../../tests/ui/acceptable/providers/non_provider_wired.rs) pins it).
 
-A field-type mismatch is a seventh leaf, but its own `[CGP-E003]` headline already states it in full (as
+- An **abstract-type mismatch** — an associated type the owner supplies differently from what a
+  provider requires — reads as
+  `root cause: [CGP-E112] abstract type \`Error\` of \`HasErrorType\` on \`App\` is \`String\`, but \`AppError\` is required`,
+  and a separate `help` names the fix:
+  `` wire `ErrorTypeProviderComponent` to `UseType<AppError>` in the wiring for `App`, or change the
+  provider to work with `String` ``. It reads `associated type`, and carries no `help`, when the trait
+  is not a CGP abstract-type component — an ordinary trait's associated type is fixed by whatever impl
+  supplies it, so there is no wiring entry to name. The
+  [`abstract_type_mismatch`](../../tests/ui/acceptable/types/abstract_type_mismatch.rs) fixture pins
+  the shape. Unlike the field mismatch below it keeps its `root cause:` lead even though its own
+  `[CGP-E017]` header states the same fact, because this leaf very often reaches the reader through a
+  *coalesced* block instead: one wrong abstract type breaks every consumer that raises through it, so
+  the block's header lists those consumers and the lead is the only place the cause is named above the
+  tree.
+
+A field-type mismatch is an eighth leaf, but its own `[CGP-E003]` headline always states it in full (as
 the `E0271` example above shows), so its note drops the `root cause:` lead and carries the chain
 alone. Any other leaf simply restates its bound —
 `root cause: the trait bound \`f64: Eq\` is not satisfied`, module qualifiers stripped — except when
@@ -194,7 +213,7 @@ the kept headline already states that very bound, where the lead is likewise dro
 
 The wording is decided rustc-free and only *applied* by the emitter. The emitter maps the diagnostic's
 own rustc code to a rustc-free [`DiagKind`](../../crates/cargo-cgp-error-processing/src/diagnosis/plan.rs)
-(`E0271` a field mismatch, `E0599` a use-site method, everything else a plain check) and hands that,
+(`E0271` a projection mismatch, `E0599` a use-site method, everything else a plain check) and hands that,
 the main-message text, the `Resolved`, and the name map to `plan_resolved`, which returns a
 `DiagnosisPlan`: the rewritten header (or `None` to keep rustc's), the derive `help`s, and a single
 `root cause:` note folding every cause's paths into one [dependency graph](dependency-graph-rendering.md). One mapping is by *anchor* rather than by code: a resolution the call-site anchor produced
@@ -207,8 +226,10 @@ programmer never asserted on, where the `[CGP-E002]` provider form would leak in
 `CGP-E001` consumer form (worded from the resolution's context and consumer trait(s), pluralized when a
 use-site failure spans several components, and also used for an `IsProviderFor` bound whose provider is
 a `RedirectLookup`), the `CGP-E002` provider form from the text rewrite when rustc's own header names a
-real wired provider's `IsProviderFor`, the `CGP-E003` field-type-mismatch form, or the `CGP-E009` plain
-wrapper form. One extra case routes here: a field-mismatch-coded (`E0271`) failure the resolver traced
+real wired provider's `IsProviderFor`, the two mismatch forms — `CGP-E003` for a `HasField` value type,
+`CGP-E017` for any other associated type, the field form tried first as the more specific of the two —
+or the `CGP-E009` plain
+wrapper form. One extra case routes here: a mismatch-coded (`E0271`) failure the resolver traced
 to a *non*-mismatch cause — a manual `Send`-recovery wrapper's opaque-future error, whose
 `type mismatch resolving …` message is unreadable — takes the `CGP-E001` consumer form, since it is
 really the consumer trait failing to be implemented. The header is `None` (rustc's kept) only when the
@@ -221,8 +242,9 @@ traits.)
 `transform_resolved` then mutates rustc's `DiagInner`: with a header it replaces the main message and
 collapses the span to the primary caret (the original labels restate the replaced message), and with
 `None` it leaves the header, labels, and caret alone. Either way it replaces the children with the
-plan's `help`s (one per distinct type that must derive `#[derive(HasField)]`, or the `Deref` target; a
-field-type mismatch contributes none) and the plan's single note — opening with its `root cause:` lead
+plan's `help`s (one per distinct type that must derive `#[derive(HasField)]`, or the `Deref` target,
+plus one per abstract-type mismatch naming the wiring entry to change; a field-type mismatch
+contributes none) and the plan's single note — opening with its `root cause:` lead
 (or `root causes:` list, when the causes bottom out on different leaves) over `this is required through
 the dependency chain:` and the graph beneath (the lead omitted when the kept header or the `CGP-E003`
 header already states the bound). rustc's structured

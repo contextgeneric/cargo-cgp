@@ -117,6 +117,18 @@ their fixtures now live under `acceptable/`:
   the `E0308` body cascade suppressed
   ([`higher_order_use_provider_consumer_trait`](../../tests/ui/acceptable/lowering/higher_order_use_provider_consumer_trait.rs)).
 
+- An **abstract type the context binds one way while a provider pins it another** is resolved into a
+  coded mismatch of its own. A context chooses an abstract type's concrete form by wiring its
+  component to `UseType<T>`; a provider can pin the same type with the
+  `#[use_type(Trait.{Assoc = Concrete})]` equality form, and when the two disagree the trait bound
+  still holds and only the projection fails. The resolver used to recognize only a `HasField`
+  projection there and decline everything else, leaving rustc's `type mismatch resolving
+  <Ctx as HasErrorType>::Error == AppError` under its `IsProviderFor` scaffolding — with the type the
+  context actually supplies absent from the message and the caret on the `#[cgp_type]` attribute. Its
+  projection recovery is now general, so the failure becomes a `[CGP-E017]` header naming both types
+  over a root-cause tree, with a `help` naming the wiring entry to change
+  ([`abstract_type_mismatch`](../../tests/ui/acceptable/types/abstract_type_mismatch.rs)).
+
 What remains below are the classes the tool does not yet reshape.
 
 ## An unconstrained per-entry generic emits two contradictory errors

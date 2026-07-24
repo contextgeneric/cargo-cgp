@@ -1,0 +1,32 @@
+error[E0271]: type mismatch resolving `<Rectangle as HasUnit>::Unit == f64`
+  --> src/main.rs:54:9
+   |
+54 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<Rectangle as HasUnit>::Unit == f64`
+   |
+note: expected this to be `f64`
+  --> src/main.rs:33:17
+   |
+33 |     type Unit = u32;
+   |                 ^^^
+note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:36:1
+   |
+36 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+39 |     Self: HasUnit<Unit = f64>,
+   |                   ---------- unsatisfied trait bound introduced here
+   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:52:1
+   |
+52 | / check_components! {
+53 | |     Rectangle {
+54 | |         AreaCalculatorComponent,
+55 | |     }
+56 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.

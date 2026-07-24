@@ -1,8 +1,12 @@
 //! The coded main-message headers of a resolved failure.
 
-use crate::code::{CONSUMER_TRAIT_UNIMPLEMENTED, FIELD_TYPE_MISMATCH, WRAPPER_TRAIT_UNIMPLEMENTED};
+use crate::code::{
+    ABSTRACT_TYPE_MISMATCH, CONSUMER_TRAIT_UNIMPLEMENTED, FIELD_TYPE_MISMATCH,
+    WRAPPER_TRAIT_UNIMPLEMENTED,
+};
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
+use crate::diagnosis::wording::lead::assoc_type_noun;
 
 /// A `and`-joined, back-quoted list: `` `x` ``, `` `x` and `y` ``, or `` `x`, `y`, and `z` ``.
 pub fn quoted_list(items: &[String]) -> String {
@@ -65,4 +69,32 @@ pub fn mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
         .iter()
         .map(|cause| &cause.leaf)
         .find(|leaf| matches!(leaf, Leaf::FieldTypeMismatch { .. }))
+}
+
+/// The `[CGP-E017]` main message for an associated-type mismatch: the type the owner supplies is not
+/// the one the wiring requires. Worded in the same shape as [`field_mismatch_header`] — required type
+/// first, actual second — and reading `abstract type` for a CGP abstract-type component, where the
+/// concrete type is a wiring choice, or `associated type` for any other trait.
+pub fn assoc_mismatch_header(
+    assoc: &str,
+    trait_name: &str,
+    owner: &str,
+    expected: &str,
+    actual: &str,
+    component: Option<&str>,
+) -> String {
+    let noun = assoc_type_noun(component);
+    format!(
+        "[{ABSTRACT_TYPE_MISMATCH}] expected the {noun} `{assoc}` of `{trait_name}` on `{owner}` to be `{expected}`, but found `{actual}`"
+    )
+}
+
+/// The first associated-type-mismatch cause of a resolution, if any — the leaf `[CGP-E017]` is
+/// worded from.
+pub fn assoc_mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
+    resolved
+        .causes
+        .iter()
+        .map(|cause| &cause.leaf)
+        .find(|leaf| matches!(leaf, Leaf::AssocTypeMismatch { .. }))
 }

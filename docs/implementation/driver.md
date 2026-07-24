@@ -365,8 +365,10 @@ every method `E0599`, `E0271`, and `E0277` (not only the ones mentioning a wirin
 anchors such an error on the enclosing hand-written `impl` (whose supertrait is a CGP consumer trait)
 and traces the dependency chain from there; if the chain reaches a CGP root cause it renders the tree,
 and if it does not it declines and the error passes through untouched. A traced `E0271` whose cause is
-*not* a field-type mismatch (its opaque `type mismatch resolving …` message being unreadable) is given
-the `[CGP-E001]` consumer header, since it is really the consumer trait failing to be implemented.
+*not* a projection mismatch (its opaque `type mismatch resolving …` message being unreadable) is given
+the `[CGP-E001]` consumer header, since it is really the consumer trait failing to be implemented; one
+that *is* takes the matching mismatch header — `[CGP-E003]` for a `HasField` value type, `[CGP-E017]`
+for any other associated type.
 
 A final gate de-duplicates the transformed diagnostics *across* the compilation, because CGP wiring is
 lazy and so one mistake surfaces the same error at many sites. A missing dependency is reported at the

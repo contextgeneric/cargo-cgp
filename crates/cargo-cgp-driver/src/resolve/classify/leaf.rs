@@ -8,16 +8,21 @@ use crate::config::{
     CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT, HAS_FIELD_TRAIT,
 };
 use crate::resolve::cgp_item::{
-    decode_symbol, is_cgp_item, is_namespace_lookup_trait, is_path_cons,
+    abstract_type_component_marker, decode_symbol, is_cgp_item, is_namespace_lookup_trait,
+    is_path_cons,
 };
-use crate::resolve::classify::{field_issue, field_type, is_dispatch_lookup, owner_has_impl_of};
+use crate::resolve::classify::{
+    field_issue, field_type, is_dispatch_lookup, owner_has_impl_of, projected_type,
+};
+use crate::resolve::walk::ProjectionMismatch;
 
 /// Classify the terminal predicate a dependency chain bottoms out on. A `HasField` whose branch
-/// carried an unmet projection (`mismatch` is `Some(expected)`) becomes a
-/// [`Leaf::FieldTypeMismatch`], its actual field type queried from the struct; a plain `HasField`
-/// becomes a [`Leaf::Field`] (inspecting the struct so the emitter can tell missing from
-/// underived); an unmet `DelegateComponent<Marker>` — a component the context does not wire —
-/// becomes a [`Leaf::MissingWiring`] naming that component marker; an unmet namespace lookup
+/// carried an unmet projection (`mismatch` is `Some`) becomes a [`Leaf::FieldTypeMismatch`], its
+/// actual field type queried from the struct; a plain `HasField` becomes a [`Leaf::Field`]
+/// (inspecting the struct so the emitter can tell missing from underived); a branch whose unmet
+/// projection is on any *other* associated type becomes a [`Leaf::AssocTypeMismatch`]; an unmet
+/// `DelegateComponent<Marker>` — a component the context does not wire — becomes a
+/// [`Leaf::MissingWiring`] naming that component marker; an unmet namespace lookup
 /// (`Path: DefaultNamespace<Ctx>` or a user `cgp_namespace!` trait) — a `RedirectLookup` whose path
 /// the context does not terminate — becomes a [`Leaf::MissingRedirectWiring`] naming the path; any
 /// other bound becomes a [`Leaf::Bound`] restating it as `self: Trait`.
@@ -26,8 +31,16 @@ pub(crate) fn classify_leaf<'tcx>(
     leaf_ref: ty::TraitRef<'tcx>,
     context: Ty<'tcx>,
     parent: Option<ty::TraitRef<'tcx>>,
-    mismatch: Option<Ty<'tcx>>,
+    mismatch: Option<ProjectionMismatch<'tcx>>,
 ) -> Leaf {
+    // A projection mismatch on a trait that is *not* `HasField` — most often a CGP abstract type the
+    // context binds one way and a provider pins another. Classified before the trait-keyed branches
+    // below, since the leaf is about the projected type rather than the trait bound (which holds).
+    if let Some(mismatch) = mismatch
+        && !is_cgp_item(tcx, leaf_ref.def_id, HAS_FIELD_TRAIT, CGP_FIELD_CRATE)
+    {
+        return assoc_type_mismatch(tcx, mismatch);
+    }
     if is_cgp_item(
         tcx,
         leaf_ref.def_id,
@@ -109,12 +122,12 @@ pub(crate) fn classify_leaf<'tcx>(
         && let Some(name) = decode_symbol(tcx, leaf_ref.args.type_at(1))
     {
         let owner = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
-        if let Some(expected) = mismatch {
+        if let Some(mismatch) = mismatch {
             return Leaf::FieldTypeMismatch {
                 actual: field_type(tcx, owner, &name).unwrap_or_else(|| "_".to_owned()),
                 name,
                 owner: owner.to_string(),
-                expected: expected.to_string(),
+                expected: mismatch.expected.to_string(),
             };
         }
         let issue = field_issue(tcx, owner, &name);
@@ -130,6 +143,30 @@ pub(crate) fn classify_leaf<'tcx>(
             leaf_ref.self_ty(),
             leaf_ref.print_only_trait_path()
         ),
+    }
+}
+
+/// Build the [`Leaf::AssocTypeMismatch`] for a projection mismatch on a trait other than `HasField`:
+/// the associated type and its trait named off the projection, the *expected* type read from the
+/// failing projection's right-hand side, and the *actual* one read by normalizing the projection —
+/// the same query for a `UseType<T>` wiring and a hand-written impl alike. When the trait is a CGP
+/// abstract-type component, its wiring marker rides along so the emitter can offer the `UseType<…>`
+/// fix and call the type an *abstract* rather than a plain associated type. An actual type that does
+/// not reduce is rendered `_`, as the field query's does.
+fn assoc_type_mismatch<'tcx>(tcx: TyCtxt<'tcx>, mismatch: ProjectionMismatch<'tcx>) -> Leaf {
+    let trait_did = mismatch.trait_ref.def_id;
+    let owner = tcx.erase_and_anonymize_regions(mismatch.trait_ref.self_ty());
+    let actual = projected_type(tcx, mismatch.alias)
+        .map(|ty| ty.to_string())
+        .unwrap_or_else(|| "_".to_owned());
+    Leaf::AssocTypeMismatch {
+        assoc: tcx.item_name(mismatch.assoc_did).to_string(),
+        trait_name: tcx.item_name(trait_did).to_string(),
+        owner: owner.to_string(),
+        expected: mismatch.expected.to_string(),
+        actual,
+        component: abstract_type_component_marker(tcx, trait_did)
+            .map(|marker| component_marker_name(tcx, marker)),
     }
 }
 
