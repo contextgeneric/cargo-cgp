@@ -78,7 +78,12 @@ it pipes and redirects like any other program's:
 ```sh
 cargo cgp expand --lib > expanded.rs
 cargo cgp expand --lib | rg 'Symbol!'
+cargo cgp expand --help                 # the expand options, including --item
 ```
+
+`expand` answers `--help` itself rather than forwarding it, because `--item` is a flag cargo does not
+know and `cargo rustc --help` would never mention it. Run `cargo rustc --help` for the forwarded
+options.
 
 **A whole crate's expansion is long, so `--item <path>` narrows it to one part.** The path is
 `::`-separated, and what it selects depends on what it names:

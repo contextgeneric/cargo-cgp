@@ -9,6 +9,7 @@ use crate::config::{EXPAND_FLAG, EXPAND_ITEM_FLAG};
 use crate::expand::item::take_item;
 use crate::expand::output::{output_path, read_expansion};
 use crate::expand::profile::forwards_profile;
+use crate::help::{expand_help_text, is_help_flag};
 use crate::launch::wrapped_cargo;
 
 /// Expand one target's CGP macros and print the result, returning the exit code to propagate.
@@ -24,6 +25,13 @@ use crate::launch::wrapped_cargo;
 /// compilation stops after expansion, so the unit yields no artifact and cargo may report a
 /// failure for a run that did exactly what was asked.
 pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
+    // Answer a help request here rather than forwarding it: `cargo rustc --help` would describe
+    // cargo's options and never mention `--item`, the one flag that is ours.
+    if forwarded_args.iter().any(|arg| is_help_flag(arg)) {
+        println!("{}", expand_help_text());
+        return Ok(0);
+    }
+
     let (cargo_args, item) = take_item(forwarded_args)?;
 
     let output = output_path();

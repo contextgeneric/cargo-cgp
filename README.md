@@ -9,7 +9,8 @@ it statically, so there is no runtime cost.
 `cargo-cgp` is a cargo subcommand that makes CGP's compiler errors readable. It stands in for
 `cargo check`, compiling your workspace through a `rustc` wrapper that recognizes CGP wiring errors
 and re-presents them with the root cause first — much as Clippy layers its own analysis on top of
-`rustc`.
+`rustc`. A second command, `cargo cgp expand`, shows the Rust your CGP macros generate, with CGP's
+type-level constructs spelled the way you wrote them.
 
 > **This is a pre-release (`v0.1.0-alpha`).** The tool works and is useful today, but its surface is
 > small and still changing. See [Status](#status) for what it does now.
@@ -191,20 +192,44 @@ The check builds into an isolated `target/cgp` directory, so it will not contend
 builds or Rust Analyzer's own project loading. The full integration notes are in
 [docs/reference/usage.md](docs/reference/usage.md#editor-integration-rust-analyzer).
 
+## Expanding the generated code
+
+Because a CGP mistake is usually a mistake in *generated* code, the second command shows you that
+code. `cargo cgp expand` prints a target after macro expansion with CGP's type-level constructs
+**resugared** — a field tag reads `Symbol!("width")` rather than the raw `Symbol<5, Chars<'w', …>>`
+spine the compiler prints — so the generated impls are legible in the same vocabulary as your source:
+
+```sh
+cargo cgp expand --lib                              # the whole library target
+cargo cgp expand --lib --item contexts::MockApp     # one module, type, or trait
+cargo cgp expand --help                             # the options, including --item
+```
+
+It expands exactly one target, so a package with a library and a binary needs `--lib` or
+`--bin NAME`; every other argument is forwarded to `cargo rustc`. `--item <path>` narrows the output:
+a module gives its contents, a type its declaration and every impl written for it, and a trait its
+definition and every impl of it — the last being the one to reach for on a component, whose generated
+items are almost all impls. Reach for `expand` when an error names types you never wrote and you need
+to see the impl behind it; note that it is not a check, since it stops as soon as the macros are
+expanded.
+
 ## Status
 
-This is an early pre-release. Today the tool ships one command, `cargo cgp check`, which stands in for
-`cargo check` and does two things for CGP code: it turns on the **next-generation trait solver**,
-which surfaces the CGP dependency errors the default solver hides, and it **rewrites the wiring errors
-it recognizes** into the root-cause-first form shown above. Errors it does not yet recognize pass
-through unchanged. The set of recognized error classes will grow over the pre-release series.
+This is an early pre-release. The tool ships two commands that read your code. `cargo cgp check`
+stands in for `cargo check` and does two things for CGP code: it turns on the **next-generation trait
+solver**, which surfaces the CGP dependency errors the default solver hides, and it **rewrites the
+wiring errors it recognizes** into the root-cause-first form shown above; errors it does not yet
+recognize pass through unchanged, and the set of recognized classes will grow over the pre-release
+series. `cargo cgp expand` shows the generated code, as above — it is newer than the `v0.1.0-alpha`
+release, so a crates.io install does not carry it yet; build from a checkout or use the Nix flake
+without a tag until the next release.
 
 ## Learn more
 
 The `docs/` directory is a knowledge base covering both how to use the tool and how it is built:
 
-- [docs/reference/usage.md](docs/reference/usage.md) — running the check, reading its output, and
-  editor integration.
+- [docs/reference/usage.md](docs/reference/usage.md) — running the check, reading its output,
+  expanding a target, and editor integration.
 - [docs/reference/installation.md](docs/reference/installation.md) — every install, update, and
   uninstall path.
 - [docs/error-code.md](docs/error-code.md) — the catalog of the `[CGP-Exxx]` codes in the output.

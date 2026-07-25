@@ -33,6 +33,13 @@ that matching version, so `cargo install cargo-cgp` followed by `cargo cgp setup
 install; the Nix flake builds the same pair from the tagged source; and a source checkout builds it
 directly. The cargo path is the intended primary distribution for a machine with rustup.
 
+One command is newer than that release: **`cargo cgp expand`** (see
+[Usage](usage.md#expanding-a-target)) landed after `v0.1.0-alpha` was tagged, so an install from
+crates.io — or from the pinned Nix reference — does not carry it. Until the next release, get it from
+the Nix flake with the tag dropped, which tracks `main`
+(`nix run github:contextgeneric/cargo-cgp -- expand --lib`), or from a
+[source checkout](#installing-from-source). `cargo cgp check` is unaffected.
+
 ## Installing with Nix
 
 The flake at the repository root builds both binaries against the pinned nightly and wraps them so

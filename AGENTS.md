@@ -218,7 +218,8 @@ that only repeats the code.
 The front-end (`crates/cargo-cgp/src`) is organized around dispatch and four subcommands.
 `run.rs` is the entrypoint that normalizes arguments and dispatches on the subcommand (`check`,
 `expand`, `setup`, `update`), printing `help.rs`'s help text for a leading `--help`/`-h` or no
-subcommand; `args.rs` strips the cargo-inserted `cgp` token so the same entrypoint serves both
+subcommand (`help.rs` also carries `expand`'s own help, which that subcommand answers itself rather
+than forwarding, since `--item` is a flag cargo does not know); `args.rs` strips the cargo-inserted `cgp` token so the same entrypoint serves both
 `cargo cgp check` and a direct `cargo-cgp check`; `config.rs` holds the shared well-known names,
 including the build-time-baked `PINNED_TOOLCHAIN` (from `build.rs`), the management environment
 variables, and the `EXPAND_FLAG` marker; `toolchain.rs` resolves the effective pinned toolchain and

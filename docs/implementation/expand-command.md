@@ -135,6 +135,13 @@ and the rest verbatim and lets cargo's own error tell the user to disambiguate. 
 re-declares every one of those flags with `clap` and additionally consults the manifest's
 `default-run`; the front-end has no tool-specific arguments today and this keeps it that way.
 
+**`expand` answers `--help` itself**, unlike `check`. Forwarding a help request is right for `check`,
+whose every argument is cargo's, but `expand` has a flag of its own: `cargo rustc --help` would
+describe cargo's options and never mention `--item`, so the one thing a reader needs to discover would
+be the one thing missing — and the run would then end with "no expansion was produced", reporting a
+help request as a failure. So a help flag anywhere in its arguments prints
+[`expand_help_text`](../../crates/cargo-cgp/src/help.rs) and succeeds.
+
 **`--item <path>` is the one argument the front-end does not forward.** A whole crate's expansion is
 long, so the command narrows it on request, and the path travels to the driver as a second marker flag
 (`--cgp-expand-item=<path>`) beside the output one. The form is a flag rather than the bare positional
@@ -495,6 +502,10 @@ printing halves need a real compilation, so they are exercised by running the co
 - [`crates/cargo-cgp-driver/tests/expand.rs`](../../crates/cargo-cgp-driver/tests/expand.rs) — the
   marker flag: the request and its path recovered, the flag stripped from the vector the compiler
   sees, an ordinary compilation carrying no request, and an empty path declining.
+- [`crates/cargo-cgp/tests/help.rs`](../../crates/cargo-cgp/tests/help.rs) — that the expand help
+  documents `--item` and its three rules, names the target-selection trap, and points at
+  `cargo rustc --help` for the forwarded options; and that the top-level help points at both
+  subcommands' helps, since their options come from different places.
 - [`crates/cargo-cgp/tests/expand.rs`](../../crates/cargo-cgp/tests/expand.rs) — the front-end's pure
   helpers: the profile detection in both forms (and a `--bin release` value that must not count as
   one), the per-process output path, and the `--item` extraction — both spellings, everything else
@@ -527,8 +538,9 @@ printing halves need a real compilation, so they are exercised by running the co
   is now just the `cargo check` run.
 - [`crates/cargo-cgp/src/run.rs`](../../crates/cargo-cgp/src/run.rs),
   [`help.rs`](../../crates/cargo-cgp/src/help.rs),
-  [`config.rs`](../../crates/cargo-cgp/src/config.rs) — the dispatch arm, the help line, and the
-  front-end's half of the marker-flag contract (`EXPAND_FLAG`).
+  [`config.rs`](../../crates/cargo-cgp/src/config.rs) — the dispatch arm, the top-level help line and
+  the subcommand's own `expand_help_text`, and the front-end's half of the marker-flag contract
+  (`EXPAND_FLAG`).
 - [`crates/cargo-cgp-driver/src/expand/`](../../crates/cargo-cgp-driver/src/expand) — expand mode:
   `request.rs` takes the marker flag out of the argument vector, and `print.rs` prints the expanded
   crate through `pprust::print_crate`, resugars it, and writes it out.
