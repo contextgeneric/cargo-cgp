@@ -14,6 +14,7 @@ fn expand(source: &str) -> String {
 fn expand_verbatim(source: &str) -> String {
     let options = ExpandOptions {
         strip_cgp_prefixes: false,
+        ..ExpandOptions::default()
     };
     resugar_expanded_source(source, &options)
 }

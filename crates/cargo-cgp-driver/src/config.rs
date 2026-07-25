@@ -18,6 +18,13 @@ pub const SYSROOT_FLAG: &str = "--sysroot";
 /// [`crate::args::rustc_args`] strips it before the compiler sees the argument vector.
 pub const EXPAND_FLAG: &str = "--cgp-expand";
 
+/// The flag through which `cargo cgp expand --item <path>` narrows the expansion to one module or
+/// item (`--cgp-expand-item=<path>`).
+///
+/// The counterpart of `cargo_cgp::config::EXPAND_ITEM_FLAG`, and stripped from the argument vector
+/// the same way [`EXPAND_FLAG`] is.
+pub const EXPAND_ITEM_FLAG: &str = "--cgp-expand-item";
+
 /// The flag that turns on the next-generation trait solver, injected into every
 /// workspace-crate compilation.
 ///

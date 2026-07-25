@@ -13,12 +13,17 @@
 //! back to, and of the three implementations that must agree on it, is
 //! `docs/implementation/resugaring.md`.
 //!
+//! It also narrows an expansion to one module or item when asked ([`select`]), since an expanded
+//! crate is large and a reader usually wants one part of it.
+//!
 //! The entry point is [`resugar_expanded_source`].
 
 pub mod options;
 pub mod resugar;
+pub mod select;
 pub mod source;
 
 pub use options::ExpandOptions;
 pub use resugar::resugar_file;
+pub use select::{ItemPath, select_items};
 pub use source::resugar_expanded_source;

@@ -135,6 +135,31 @@ and the rest verbatim and lets cargo's own error tell the user to disambiguate. 
 re-declares every one of those flags with `clap` and additionally consults the manifest's
 `default-run`; the front-end has no tool-specific arguments today and this keeps it that way.
 
+**`--item <path>` is the one argument the front-end does not forward.** A whole crate's expansion is
+long, so the command narrows it on request, and the path travels to the driver as a second marker flag
+(`--cgp-expand-item=<path>`) beside the output one. The form is a flag rather than the bare positional
+`cargo-expand` accepts, and that follows from forwarding: with every other argument passed through
+untouched, a bare word cannot be told from the value of a cargo flag (`--bin my_module`) without
+re-declaring cargo's whole argument grammar here, which is what forwarding exists to avoid. The path's
+*shape* is checked in the front-end, before anything compiles, so a typo costs nothing; the driver
+parses it again for real, since the matching lives there.
+
+What a path selects is three rules, and the third is the CGP-shaped one:
+
+- an item **declared** at that path — and a module selects its *contents*, since the `mod` wrapper is
+  noise around what was asked for;
+- an `impl` whose **self type** is that path, so `--item Rectangle` shows the struct with its
+  `HasField` impls and its wiring;
+- an `impl` whose **trait** is that path, so `--item AreaCalculator` shows a component's provider trait
+  with the blanket impls, the `UseContext` impl, and each provider's impl of it.
+
+The third rule is what makes the filter useful here rather than merely available. A CGP component's
+generated items are almost all impls, and impls have no names of their own — so a filter that matched
+only declarations would answer "what does this component generate?" with just the trait definition. A
+path that matches nothing yields nothing, never the whole crate, and the front-end says so, naming the
+path; that message also allows for the other possibility, a target that did not compile far enough to
+expand, since both look the same from outside.
+
 **The driver writes the finished text to a file and the front-end prints it.** The path is a temp
 file named after the front-end's process id, so two concurrent runs never read each other's output
 ([`expand/output.rs`](../../crates/cargo-cgp/src/expand/output.rs)); the front-end clears it before
@@ -320,8 +345,8 @@ answers are recorded here rather than left as open items.
   diagnostic's reader does not need.
 
 One question remains a judgement call for a first user to sharpen: **what the second slice adds
-first** — syntax highlighting and paging (`cargo-expand` uses `bat`), an `--item` filter (it uses
-`syn-select`), the `--verbatim` flag above, or the selectivity below.
+first** — syntax highlighting and paging (`cargo-expand` uses `bat`), the `--verbatim` flag above, or
+the selectivity below. (The `--item` filter, which was on this list, is built.)
 
 Running it across the whole fixture tree also surfaced one boundary worth knowing about. An `open`
 statement's per-key wiring entry is generic over the *rest* of the path, so the impl the macro writes
@@ -410,9 +435,16 @@ Four divergences are deliberate, and each follows from something this tool alrea
 
 The gaps where `cargo-expand` does more are first-slice omissions rather than decisions, and they are
 the obvious candidates for a second slice: no syntax highlighting or paging (its `bat` dependency), no
-`--item` filter (its `syn-select` dependency), no `--ugly` raw mode, no theme selection, and no
-re-declared cargo flags of its own — including the manifest `default-run` lookup it uses to pick a
-default binary, where this command leaves the ambiguity for cargo to report.
+`--ugly` raw mode, no theme selection, and no re-declared cargo flags of its own — including the
+manifest `default-run` lookup it uses to pick a default binary, where this command leaves the ambiguity
+for cargo to report.
+
+The item filter both tools have differs in two ways, each following from a choice made above.
+`cargo-expand` takes the path as a **bare positional** and matches it with `syn-select`; this command
+takes it as `--item`, because forwarding the rest of the arguments to cargo means a bare word is
+ambiguous, and it matches with its own [`select`](resugaring.md) rules — which add the CGP-shaped third
+rule, selecting the impls *of* a named trait, so naming a component's provider trait shows what the
+component generates.
 
 The one thing `cargo cgp expand` means to do that `cargo-expand` never will is CGP-aware output: the
 resugaring in the first slice, and [the selectivity](#selective-expansion-the-deferred-phase) after it.
@@ -448,7 +480,13 @@ printing halves need a real compilation, so they are exercised by running the co
   sees, an ordinary compilation carrying no request, and an empty path declining.
 - [`crates/cargo-cgp/tests/expand.rs`](../../crates/cargo-cgp/tests/expand.rs) — the front-end's pure
   helpers: the profile detection in both forms (and a `--bin release` value that must not count as
-  one), and the per-process output path.
+  one), the per-process output path, and the `--item` extraction — both spellings, everything else
+  forwarded untouched, a bare word left to cargo, and the two rejection shapes (a flag-shaped mistake
+  names the flag, a malformed path names the path).
+- [`crates/cargo-cgp-expand/tests/select.rs`](../../crates/cargo-cgp-expand/tests/select.rs) — the
+  three selection rules over a two-module program: a module giving its unwrapped contents, a type
+  giving its declaration and the impls for it, an unqualified path reaching into a module, a trait
+  giving the impls of it, a path matching nothing yielding nothing, and the path-shape parser.
 
 - The [UI suite](testing.md#three-passes-per-fixture) runs the command over **every fixture** as its
   third pass, diffing the expansion against a committed `<name>.expand.rs`. That is the end-to-end
@@ -461,8 +499,9 @@ printing halves need a real compilation, so they are exercised by running the co
 ## Source
 
 - [`crates/cargo-cgp/src/expand/`](../../crates/cargo-cgp/src/expand) — the front-end subcommand:
-  `command.rs` runs the wrapped `cargo rustc` with the marker flag and prints what the driver wrote,
-  `output.rs` holds the per-process output path and reads it back, and `profile.rs` decides whether
+  `command.rs` runs the wrapped `cargo rustc` with the marker flags and prints what the driver wrote,
+  `item.rs` takes `--item <path>` out of the forwarded arguments and checks its shape, `output.rs`
+  holds the per-process output path and reads it back, and `profile.rs` decides whether
   `--profile check` is added.
 - [`crates/cargo-cgp/src/launch/`](../../crates/cargo-cgp/src/launch) — the setup both subcommands
   share, lifted out of the old `check/` directory: `command.rs` builds the wrapped cargo command (the
@@ -483,5 +522,5 @@ printing halves need a real compilation, so they are exercised by running the co
   driver's half of the flag contract.
 - [`crates/cargo-cgp-expand/`](../../crates/cargo-cgp-expand) — the rustc-free resugaring crate:
   `source.rs` is the entry point, `resugar/` holds one module per pass (`symbol`, `path`, `list`,
-  `strip`, `spacing`) over the shared `parts.rs`, and `options.rs` carries the strip switch. See
-  [Resugaring](resugaring.md).
+  `strip`, `spacing`) over the shared `parts.rs`, `select.rs` narrows an expansion to one module or
+  item, and `options.rs` carries the item path and the strip switch. See [Resugaring](resugaring.md).

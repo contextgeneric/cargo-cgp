@@ -2,7 +2,7 @@
 
 use std::fs;
 
-use cargo_cgp_expand::{ExpandOptions, resugar_expanded_source};
+use cargo_cgp_expand::{ExpandOptions, ItemPath, resugar_expanded_source};
 use rustc_ast_pretty::pprust;
 use rustc_middle::ty::TyCtxt;
 use rustc_session::Session;
@@ -51,12 +51,40 @@ pub fn print_expansion(sess: &Session, tcx: TyCtxt<'_>, request: &ExpandRequest)
         &sess.psess.attr_id_generator,
     );
 
-    let resugared = resugar_expanded_source(&printed, &ExpandOptions::default());
+    let Some(options) = expand_options(sess, request) else {
+        return;
+    };
+    let resugared = resugar_expanded_source(&printed, &options);
 
     if let Err(error) = fs::write(&request.output, resugared) {
         sess.dcx()
             .warn(format!("could not write the expansion: {error}"));
     }
+}
+
+/// Build the resugaring options for this request, or `None` when its item path is unusable.
+///
+/// The front-end checks the path's shape before compiling, so a rejected one here means the two
+/// disagree; warning rather than expanding the whole crate keeps that from looking like a filter that
+/// silently did nothing.
+fn expand_options(sess: &Session, request: &ExpandRequest) -> Option<ExpandOptions> {
+    let item = match &request.item {
+        Some(item) => match ItemPath::parse(item) {
+            Some(path) => Some(path),
+            None => {
+                sess.dcx().warn(format!(
+                    "`{item}` is not an item path, so nothing was expanded"
+                ));
+                return None;
+            }
+        },
+        None => None,
+    };
+
+    Some(ExpandOptions {
+        item,
+        ..ExpandOptions::default()
+    })
 }
 
 /// The crate root's source text, read back from the source map the way the compiler's own

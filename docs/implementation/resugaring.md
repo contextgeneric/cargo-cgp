@@ -522,8 +522,10 @@ construct — consistency between them rests on this document.
   syntax-tree passes, one module per construct (`symbol.rs`, `path.rs`, `list.rs`), plus `strip.rs`
   (the prelude qualifier and the qualified-path index it corrects), `spacing.rs` (the post-print
   tightening), `parts.rs` (the shared shape reading and macro-node building), and `file.rs`, which
-  sequences the passes. Driven by [`source.rs`](../../crates/cargo-cgp-expand/src/source.rs); see
-  [The expand command](expand-command.md).
+  sequences the passes. Driven by [`source.rs`](../../crates/cargo-cgp-expand/src/source.rs), which
+  also applies the crate's [`select.rs`](../../crates/cargo-cgp-expand/src/select.rs) filter — not a
+  resugaring, but the narrowing `--item <path>` asks for, applied before the passes run so only what
+  is printed is resugared. See [The expand command](expand-command.md).
 
 ## Further reading
 

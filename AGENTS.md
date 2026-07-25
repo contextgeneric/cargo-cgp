@@ -128,8 +128,9 @@ and the text signals the emitter's candidate checks key on; it links no compiler
 either, so it builds and tests on any toolchain (see
 [Error processing](docs/implementation/error-processing.md)). A fourth, library-only crate,
 **`cargo-cgp-expand`** (`crates/cargo-cgp-expand`), is the rustc-free half of `cargo cgp expand`: it
-takes the source the compiler printed for an expanded crate and folds CGP's type-level spines back to
-the surface macros (`Symbol!`, `Path!`, `Product!`/`Sum!`), and it links no compiler internals either
+takes the source the compiler printed for an expanded crate, optionally narrows it to one module or
+item, and folds CGP's type-level spines back to the surface macros (`Symbol!`, `Path!`,
+`Product!`/`Sum!`); it links no compiler internals either
 (see [Resugaring](docs/implementation/resugaring.md) and
 [The expand command](docs/implementation/expand-command.md)).
 
@@ -231,9 +232,9 @@ path; and `preflight.rs` verifies a matching driver and the pinned toolchain, di
 `cargo cgp setup` on any failure. `check.rs` then just runs that command, inheriting cargo's stdio so
 its output streams through untouched (the driver does every diagnostic transform, so the front-end
 captures and processes nothing). The `expand/` directory holds the expand command: `command.rs` runs
-the wrapped `cargo rustc` with the marker flag that puts the driver in expand mode and prints what the
-driver wrote, over `output.rs` (the per-process output file) and `profile.rs` (the default
-`--profile check`). `setup.rs` and `update.rs` are the provisioning and upgrade subcommands. The distribution design — the pinned-toolchain forcing, the preflight version handshake,
+the wrapped `cargo rustc` with the marker flags that put the driver in expand mode and prints what the
+driver wrote, over `item.rs` (the `--item <path>` filter, the one argument not forwarded to cargo),
+`output.rs` (the per-process output file), and `profile.rs` (the default `--profile check`). `setup.rs` and `update.rs` are the provisioning and upgrade subcommands. The distribution design — the pinned-toolchain forcing, the preflight version handshake,
 and the `setup`/`update` flow — is documented in
 [Distribution](docs/implementation/distribution.md).
 

@@ -5,7 +5,9 @@ use std::process::ExitCode;
 
 use crate::args::{is_wrapper_mode, rustc_args};
 use crate::callbacks::CgpCallbacks;
-use crate::config::{EXPAND_FLAG, NEXT_SOLVER_FLAG, SYSROOT_ENV, SYSROOT_FLAG, VERBOSE_FLAG};
+use crate::config::{
+    EXPAND_FLAG, EXPAND_ITEM_FLAG, NEXT_SOLVER_FLAG, SYSROOT_ENV, SYSROOT_FLAG, VERBOSE_FLAG,
+};
 use crate::expand::take_expand_request;
 use crate::help::{help_text, wants_help};
 use crate::version::{version_string, wants_version};
@@ -38,7 +40,7 @@ pub fn run() -> ExitCode {
     // Expand mode is requested by a flag of ours rather than an environment variable, so cargo
     // scopes it to the one target the user asked about. It is not a rustc flag, so it is taken out
     // of the vector here, before the arguments are prepared.
-    let expand = take_expand_request(&mut raw, EXPAND_FLAG);
+    let expand = take_expand_request(&mut raw, EXPAND_FLAG, EXPAND_ITEM_FLAG);
 
     // The injected flags shape diagnostics produced during analysis, which expand mode never
     // reaches — it stops once the crate is expanded — so they are left off there.

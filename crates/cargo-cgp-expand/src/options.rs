@@ -1,8 +1,16 @@
-//! How much of the compiler's spelling to clean up besides resugaring.
+//! What to expand, and how much of the compiler's spelling to clean up besides resugaring.
+
+use crate::select::ItemPath;
 
 /// Options for one expansion.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct ExpandOptions {
+    /// Narrow the expansion to one module or item, instead of showing the whole crate.
+    ///
+    /// `None` expands everything, which is the default and what a reader wants the first time. A
+    /// path selects what [`select_items`](crate::select::select_items) matches — an item declared
+    /// there, an impl written *for* that type, or an impl *of* that trait.
+    pub item: Option<ItemPath>,
     /// Whether to drop the `cgp::macro_prelude::` qualifier the CGP macros emit in front of
     /// every construct they reference.
     ///
@@ -16,6 +24,7 @@ pub struct ExpandOptions {
 impl Default for ExpandOptions {
     fn default() -> Self {
         Self {
+            item: None,
             strip_cgp_prefixes: true,
         }
     }

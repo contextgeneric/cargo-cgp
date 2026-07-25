@@ -64,6 +64,14 @@ pub const CHECK_TARGET_DIR: &str = "target/cgp";
 /// between them.
 pub const EXPAND_FLAG: &str = "--cgp-expand";
 
+/// The rustc flag through which `cargo cgp expand --item <path>` tells the driver to narrow the
+/// expansion to one module or item (`--cgp-expand-item=<path>`).
+///
+/// A second flag rather than a second value on [`EXPAND_FLAG`], so each carries one thing. Like that
+/// flag it is stripped by the driver before the compiler sees the argument vector, and the driver
+/// declares the same name independently.
+pub const EXPAND_ITEM_FLAG: &str = "--cgp-expand-item";
+
 /// The crate name of the driver on crates.io, installed by `setup` at the front-end's own
 /// version to keep the pair in lockstep.
 pub const DRIVER_CRATE: &str = "cargo-cgp-driver";

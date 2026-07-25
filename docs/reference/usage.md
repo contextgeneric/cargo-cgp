@@ -77,6 +77,25 @@ cargo cgp expand --lib > expanded.rs
 cargo cgp expand --lib | rg 'Symbol!'
 ```
 
+**A whole crate's expansion is long, so `--item <path>` narrows it to one part.** The path is
+`::`-separated, and what it selects depends on what it names:
+
+```sh
+cargo cgp expand --lib --item shapes             # a module: its contents
+cargo cgp expand --lib --item shapes::Rectangle  # a type: its declaration and every impl for it
+cargo cgp expand --lib --item AreaCalculator     # a trait: its definition and every impl of it
+```
+
+The trait form is usually what you want on CGP code, because a component's generated items *are*
+impls: `--item AreaCalculator` gives the provider trait together with the blanket impls, the
+`UseContext` impl, and each provider's impl of it. A type's form is the companion — `--item Rectangle`
+shows the struct with its `HasField` impls and its wiring. If the path matches nothing you get an
+error saying so, not a silent whole-crate expansion.
+
+The filter is the one argument `expand` does not forward to cargo. A bare positional path — the way
+`cargo-expand` takes it — is not accepted, because with everything else passed through untouched a bare
+word cannot be told from the value of a cargo flag (`--bin my_module`).
+
 Two things about the output are worth knowing. **Every macro is expanded**, not only CGP's, so
 `#[derive(Debug)]` and `println!` appear in their generated form too — the CGP-specific part is that
 CGP's own type-level constructs are resugared, so a field name reads `Symbol!("height")` rather than a

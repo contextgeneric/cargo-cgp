@@ -7,7 +7,7 @@
 
 #![feature(rustc_private)]
 
-use cargo_cgp_driver::config::EXPAND_FLAG;
+use cargo_cgp_driver::config::{EXPAND_FLAG, EXPAND_ITEM_FLAG};
 use cargo_cgp_driver::expand::take_expand_request;
 
 fn args(items: &[&str]) -> Vec<String> {
@@ -24,9 +24,10 @@ fn takes_the_flag_and_its_path() {
         "lib.rs",
     ]);
 
-    let request = take_expand_request(&mut argv, EXPAND_FLAG).expect("a request");
+    let request = take_expand_request(&mut argv, EXPAND_FLAG, EXPAND_ITEM_FLAG).expect("a request");
 
     assert_eq!(request.output, "/tmp/out.rs");
+    assert!(request.item.is_none());
     // The flag is no flag of rustc's, so it must not survive into the compiler's argument vector.
     assert_eq!(
         argv,
@@ -43,7 +44,7 @@ fn takes_the_flag_and_its_path() {
 fn an_ordinary_compilation_carries_no_request() {
     let mut argv = args(&["cargo-cgp-driver", "/tk/bin/rustc", "lib.rs"]);
 
-    assert!(take_expand_request(&mut argv, EXPAND_FLAG).is_none());
+    assert!(take_expand_request(&mut argv, EXPAND_FLAG, EXPAND_ITEM_FLAG).is_none());
     assert_eq!(argv, ["cargo-cgp-driver", "/tk/bin/rustc", "lib.rs"]);
 }
 
@@ -53,6 +54,31 @@ fn an_empty_path_is_not_a_request() {
     // reject it either way.
     let mut argv = args(&["cargo-cgp-driver", "--cgp-expand=", "lib.rs"]);
 
-    assert!(take_expand_request(&mut argv, EXPAND_FLAG).is_none());
+    assert!(take_expand_request(&mut argv, EXPAND_FLAG, EXPAND_ITEM_FLAG).is_none());
+    assert_eq!(argv, ["cargo-cgp-driver", "lib.rs"]);
+}
+
+#[test]
+fn takes_the_item_filter_alongside_the_output() {
+    let mut argv = args(&[
+        "cargo-cgp-driver",
+        "--cgp-expand=/tmp/out.rs",
+        "--cgp-expand-item=shapes::Rectangle",
+        "lib.rs",
+    ]);
+
+    let request = take_expand_request(&mut argv, EXPAND_FLAG, EXPAND_ITEM_FLAG).expect("a request");
+
+    assert_eq!(request.item.as_deref(), Some("shapes::Rectangle"));
+    assert_eq!(argv, ["cargo-cgp-driver", "lib.rs"]);
+}
+
+#[test]
+fn a_stray_item_flag_never_reaches_the_compiler() {
+    // Without the mode flag there is nothing to expand, but the item flag is no flag of rustc's
+    // either, so it still has to come out of the vector.
+    let mut argv = args(&["cargo-cgp-driver", "--cgp-expand-item=shapes", "lib.rs"]);
+
+    assert!(take_expand_request(&mut argv, EXPAND_FLAG, EXPAND_ITEM_FLAG).is_none());
     assert_eq!(argv, ["cargo-cgp-driver", "lib.rs"]);
 }
