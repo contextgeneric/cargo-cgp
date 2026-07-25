@@ -7,13 +7,13 @@ use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
 };
 use cargo_cgp_error_processing::{
-    Cause, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider,
+    Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider,
     OrphanConflict, PendingNote, Resolved, UndeclaredCapability, cause_signature,
     cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, fix_help_messages,
     group_by_shared_cause, is_method_bounds_text, is_unbounded_type_param_item_text,
-    mentions_orphan_param_text, merge_causes_by_leaf, missing_use_provider_help,
-    orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
-    plan_resolved, plan_undeclared_capability, plan_wiring_conflict, postprocess_message,
+    mentions_orphan_param_text, missing_use_provider_help, orphan_conflict_help,
+    plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict, plan_resolved,
+    plan_undeclared_capability, plan_wiring_conflict, postprocess_message,
     undeclared_capability_help, wiring_conflict_help,
 };
 use rustc_errors::codes::{
@@ -276,20 +276,17 @@ impl<E: Emitter> CgpEmitter<E> {
             subject_is_context: true,
             // Only the consumers and context matter for the header; the note is built from the
             // causes below.
-            causes: Vec::new(),
+            causes: Causes::default(),
         };
 
         // Every cause across the coalesced consumers. The dependency graph then merges what they
         // share — a consumer whose chain runs through another collapses into it, while independent
         // chains to one cause render side by side — so no chain is dropped and every consumer appears.
-        // These members were grouped precisely *because* they share a cause, so the union repeats it
-        // once per member; `merge_causes_by_leaf` folds those copies back into one cause holding
-        // every path, restoring the one-cause-per-distinct-leaf invariant the wording below assumes.
-        let causes: Vec<Cause> = resolveds
-            .iter()
-            .flat_map(|resolved| resolved.causes.iter().cloned())
-            .collect();
-        let causes = coalesce_underived_fields(&merge_causes_by_leaf(&causes));
+        // These members were grouped precisely *because* they share a cause, so each carries its own
+        // copy; `Causes::union` folds those copies back into one cause holding every path — the
+        // one-cause-per-distinct-leaf invariant the wording below assumes, kept by construction.
+        let causes = Causes::union(resolveds.iter().map(|resolved| resolved.causes.clone()));
+        let causes = coalesce_underived_fields(&causes);
         let mut children: Vec<_> = fix_help_messages(&causes)
             .into_iter()
             .map(|help| subdiag(Level::Help, help))

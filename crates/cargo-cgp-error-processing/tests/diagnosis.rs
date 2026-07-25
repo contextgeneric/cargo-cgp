@@ -91,7 +91,7 @@ fn cgp_resolved(context: &str, consumers: &[&str], causes: Vec<Cause>) -> Resolv
         consumers: consumers.iter().map(|c| (*c).to_owned()).collect(),
         consumers_are_cgp: true,
         subject_is_context: true,
-        causes,
+        causes: causes.into_iter().collect(),
     }
 }
 
@@ -776,7 +776,7 @@ fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
         consumers: vec!["CanHandleApiSend<QueryBalanceApi>".to_owned()],
         consumers_are_cgp: false,
         subject_is_context: true,
-        causes: vec![missing_field_cause()],
+        causes: [missing_field_cause()].into_iter().collect(),
     };
     assert_eq!(
         consumer_header(&resolved),
@@ -794,7 +794,7 @@ fn wrapper_header_names_a_foreign_subject_plainly() {
         consumers: vec!["CanAddApiRoutes".to_owned()],
         consumers_are_cgp: false,
         subject_is_context: false,
-        causes: vec![missing_field_cause()],
+        causes: [missing_field_cause()].into_iter().collect(),
     };
     assert_eq!(
         consumer_header(&resolved),

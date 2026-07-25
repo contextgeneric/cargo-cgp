@@ -1,6 +1,6 @@
 //! The impl-site anchor: a wiring failure surfaced inside a hand-written `impl Trait for Context`.
 
-use cargo_cgp_error_processing::{Cause, DepNode, Resolved, prepend_hop};
+use cargo_cgp_error_processing::{Causes, DepNode, Resolved};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 use rustc_span::Span;
@@ -129,7 +129,7 @@ fn wrapper_consumer_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
     obligation: ty::PolyTraitPredicate<'tcx>,
-) -> Option<(bool, Vec<Cause>)> {
+) -> Option<(bool, Causes)> {
     let trait_ref = obligation.skip_binder().trait_ref;
     let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
     if !is_local_adt(context) {
@@ -141,7 +141,7 @@ fn wrapper_consumer_causes<'tcx>(
         self_ty: context.to_string(),
     };
 
-    let mut causes: Vec<Cause> = Vec::new();
+    let mut causes: Vec<Causes> = Vec::new();
     // Each supertrait the wrapper trait carries, instantiated for this `Self`. A CGP consumer trait
     // among them that does not hold is the wiring failure the wrapper surfaces.
     for &(clause, _) in tcx
@@ -170,16 +170,16 @@ fn wrapper_consumer_causes<'tcx>(
         let Some(resolved) = resolve_leaves(tcx, cache, sup) else {
             continue;
         };
-        causes.extend(resolved.causes);
+        causes.push(resolved.causes);
     }
 
     if causes.is_empty() {
         return None;
     }
     // Head each recovered path with the wrapper hop, so the CGP chain hangs beneath the trait the
-    // programmer wrote, and keep one cause per distinct leaf — so alternative paths to one cause
-    // survive rather than only the first supertrait's.
-    let causes = prepend_hop(&causes, &wrapper_node);
+    // programmer wrote. The union keeps one cause per distinct leaf, so alternative paths to one
+    // cause survive rather than only the first supertrait's.
+    let causes = Causes::union(causes).headed_by(&wrapper_node);
     // Whether the wrapper trait is a CGP *consumer* trait or a plain wrapper, decided by its
     // fingerprint: a consumer trait carries a blanket impl routing to a provider trait
     // (`consumer_provider_trait`), while a hand-written wrapper like `CanHandleApiSend` has only its

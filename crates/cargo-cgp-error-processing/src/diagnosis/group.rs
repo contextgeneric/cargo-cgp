@@ -42,7 +42,7 @@ pub fn group_by_shared_cause(resolveds: &[&Resolved]) -> Vec<Vec<usize>> {
     // links its holders into one component.
     let mut first_holder: HashMap<(&str, &Leaf), usize> = HashMap::new();
     for (index, resolved) in resolveds.iter().enumerate() {
-        for cause in &resolved.causes {
+        for cause in resolved.causes.iter() {
             let key = (resolved.context.as_str(), &cause.leaf);
             match first_holder.get(&key) {
                 Some(&holder) => union(&mut parent, index, holder),

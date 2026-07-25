@@ -1,6 +1,6 @@
 //! The foreign-wrapper anchor: descending a `where`-clause chain to a CGP consumer.
 
-use cargo_cgp_error_processing::{Cause, ChainNode, DepNode, Resolved, prepend_hop};
+use cargo_cgp_error_processing::{Causes, ChainNode, DepNode, Leaf, Resolved};
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{
@@ -60,7 +60,7 @@ pub fn resolve_wrapper_chain(
 
         // Descend each unmet supertrait of the impl's own trait, collecting a cause per CGP handoff
         // reached beneath it.
-        let mut causes: Vec<Cause> = Vec::new();
+        let mut causes: Vec<(Leaf, Vec<ChainNode>)> = Vec::new();
         for &(clause, _) in tcx
             .explicit_super_predicates_of(trait_ref.def_id)
             .skip_binder()
@@ -79,7 +79,7 @@ pub fn resolve_wrapper_chain(
             // Head every cause's paths with the impl's own trait — the code the programmer wrote —
             // and keep one cause per distinct leaf, since separate supertraits can descend to the
             // same one.
-            let causes = prepend_hop(&causes, &top_node);
+            let causes = Causes::from_sub_chains(causes).headed_by(&top_node);
             return Some(Resolved {
                 context: self_ty.to_string(),
                 consumers: vec![wrapper],
@@ -123,7 +123,7 @@ fn collect_wrapper_chain_causes<'tcx>(
     obligation: ty::PolyTraitPredicate<'tcx>,
     chain: &[DepNode],
     depth: u32,
-    out: &mut Vec<Cause>,
+    out: &mut Vec<(Leaf, Vec<ChainNode>)>,
 ) {
     if depth > MAX_WRAPPER_DEPTH {
         return;
@@ -132,17 +132,12 @@ fn collect_wrapper_chain_causes<'tcx>(
     // The handoff: `obligation` is a CGP consumer on a local context. Recover its cause tree and
     // prepend the chain of ordinary hops that led here.
     if let Some(causes) = consumer_handoff_causes(tcx, cache, obligation) {
-        // Prepend the ordinary hops that led here to each path. The caller merges `out` by leaf, so
-        // alternative routes reaching one cause down different branches of the chain all survive.
-        for cause in causes {
-            out.push(Cause {
-                leaf: cause.leaf,
-                paths: cause
-                    .paths
-                    .into_iter()
-                    .map(|path| prepend_chain(chain, path))
-                    .collect(),
-            });
+        // Prepend the ordinary hops that led here to each path. `Causes` groups these by leaf at the
+        // top, so alternative routes reaching one cause down different branches all survive.
+        for cause in causes.iter() {
+            for path in &cause.paths {
+                out.push((cause.leaf.clone(), prepend_chain(chain, path.clone())));
+            }
         }
         return;
     }
@@ -180,7 +175,7 @@ fn consumer_handoff_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
     obligation: ty::PolyTraitPredicate<'tcx>,
-) -> Option<Vec<Cause>> {
+) -> Option<Causes> {
     let trait_ref = obligation.skip_binder().trait_ref;
     let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
     if !is_local_adt(context) {

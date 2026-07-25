@@ -34,7 +34,7 @@ driver, is what keeps them unit-testable.
   ([`diagnosis`](../../crates/cargo-cgp-error-processing/src/diagnosis)) is the rustc-free root-cause
   model — the `Resolved` failure the driver's typed resolver produces, in owned `String` form — and
   the wording that turns it into diagnostic text. Two pure cause-list transforms run ahead of the
-  wording: `merge_causes_by_leaf` folds duplicate copies of one leaf into a single cause holding
+  wording: `Causes::union` folds duplicate copies of one leaf into a single cause holding
   every path (what the emitter's coalesced block needs, since its members were grouped for sharing a
   cause), and `coalesce_underived_fields` then merges the *distinct* underived fields of one struct
   into the single derive fix they share. `plan_resolved` runs the latter and composes the rewritten header, the
@@ -328,12 +328,12 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   kept apart, the union-of-two-others case partial overlap produces, the transitive bridge that makes
   the relation a partition, the context keeping one field name on two contexts apart, a causeless
   failure alone, and the arrival ordering of the groups and their members.
-- [`crates/cargo-cgp-error-processing/tests/merge.rs`](../../crates/cargo-cgp-error-processing/tests/merge.rs) —
-  `merge_causes_by_leaf` over hand-built causes: one leaf reached by three consumers folding into one
-  cause with all three paths, the repeated-field lead it prevents downstream, distinct leaves left
-  apart, an exact repeat of a path dropped, and a well-formed list returned unchanged. Plus
-  `prepend_hop`: every path headed and merged by leaf, distinct leaves kept apart, and the
-  commutation with the merge that lets the two be one operation.
+- [`crates/cargo-cgp-error-processing/tests/causes.rs`](../../crates/cargo-cgp-error-processing/tests/causes.rs) —
+  the `Causes` set: one leaf reached by three consumers collecting into one cause with all three paths,
+  the repeated-underived-field lead the invariant prevents, distinct leaves kept apart, an exact repeat
+  of a path dropped, `from_sub_chains` grouping, `union` folding a shared cause while keeping every
+  route (and its associativity), and `headed_by` prefixing every path — plus its commutation with the
+  grouping, which is why heading needs no re-merge.
 - [`crates/cargo-cgp-error-processing/tests/dedup.rs`](../../crates/cargo-cgp-error-processing/tests/dedup.rs) —
   the `DedupLedger` key scheme: a re-reported cause suppressed, distinct causes kept, the text key,
   the coded-header key collapsing a declined fallback, and a kept rustc header never keying.
@@ -363,7 +363,9 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   [The driver](driver.md#naming-the-traits-behind-a-component-marker).
 - [`crates/cargo-cgp-error-processing/src/diagnosis/`](../../crates/cargo-cgp-error-processing/src/diagnosis) —
   the rustc-free root-cause model and its wording: `leaf.rs` (`Leaf`/`FieldIssue`), `resolved.rs`
-  (`Cause`, holding a leaf and every path that reaches it, and `Resolved`), `node.rs` (`DepNode` /
+  (`Cause`, holding a leaf and every path that reaches it; `Causes`, the set that keeps one cause per
+  distinct leaf by construction, through `from_sub_chains`/`union`/`headed_by` over a private field;
+  and `Resolved`), `node.rs` (`DepNode` /
   `ChainNode`, the structured chain nodes and their rendering) and `graph.rs` (`DependencyGraph`,
   the DAG build-and-render), the `wording/` directory — `header.rs` (`consumer_header`,
   `field_mismatch_header`, `assoc_mismatch_header`), `lead.rs` (`root_cause_lead` and the leaf codes),
@@ -375,8 +377,7 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   through, so a merged block carries the same fixes), and `signature.rs` (`cause_signature`) —
   `group.rs` (`group_by_shared_cause`, partitioning the coalescible failures into the connected
   components of the shares-a-cause relation, keyed structurally on each context-scoped `Leaf`),
-  `merge.rs` (`merge_causes_by_leaf`, the one-cause-per-distinct-leaf restoration a unioned cause list
-  needs, and `prepend_hop`, the anchors' shared head-then-re-merge step), `coalesce.rs`
+  `coalesce.rs`
   (`coalesce_underived_fields`), `plan.rs` (`DiagKind`,
   `DiagnosisPlan`, the unrendered `PendingNote` and its `render`, and `plan_resolved` with its
   `categorized_header`), and `wiring.rs`

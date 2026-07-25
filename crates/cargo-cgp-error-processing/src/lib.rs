@@ -33,16 +33,16 @@ pub mod tree;
 
 pub use dedup::DedupLedger;
 pub use diagnosis::{
-    Cause, CgpImplMisuse, ChainNode, DepNode, DependencyGraph, DiagKind, DiagnosisPlan, FieldIssue,
-    Leaf, MissingUseProvider, OrphanConflict, OrphanTrigger, PendingNote, Resolved,
+    Cause, Causes, CgpImplMisuse, ChainNode, DepNode, DependencyGraph, DiagKind, DiagnosisPlan,
+    FieldIssue, Leaf, MissingUseProvider, OrphanConflict, OrphanTrigger, PendingNote, Resolved,
     UndeclaredCapability, WiringConflict, WiringKey, assoc_mismatch_header,
     assoc_mismatch_help_messages, cause_note, cause_notes, cause_signature, cgp_impl_misuse_help,
     coalesce_underived_fields, consumer_header, dependency_leaf_code, dependency_tree_leaf,
     derive_help_messages, field_mismatch_header, fix_help_messages, group_by_shared_cause,
-    merge_causes_by_leaf, missing_delegate_entry, missing_use_provider_help, orphan_conflict_help,
-    plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict, plan_resolved,
-    plan_undeclared_capability, plan_wiring_conflict, prepend_hop, root_cause_code,
-    root_cause_lead, undeclared_capability_help, wiring_conflict_help,
+    missing_delegate_entry, missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
+    plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_undeclared_capability,
+    plan_wiring_conflict, root_cause_code, root_cause_lead, undeclared_capability_help,
+    wiring_conflict_help,
 };
 pub use postprocess::{
     CGP_PREFIXES, context_has_hasfield_impls, postprocess_fragments, postprocess_message,

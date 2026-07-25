@@ -86,26 +86,28 @@ pub struct Cause {
 A leaf reached one way has a single path — the common case; a leaf reached through a shared capability
 several providers depend on has several, one per parent. Holding several paths on one cause rather
 than one cause per path is deliberate: it preserves the **one cause per distinct leaf** invariant that
-the rest of the pipeline relies on. The de-duplication ledger's `cause_signature` and
-`cause_signature`, the consumer coalescing, and `derive_help_messages` all read `resolved.causes`
-expecting each leaf once; only the *rendering* consumes the extra paths.
+the rest of the pipeline relies on. The de-duplication ledger's `cause_signature`, the grouping key,
+the consumer coalescing, and `derive_help_messages` all read a cause list expecting each leaf once;
+only the *rendering* consumes the extra paths.
 
-Every place that *builds* a cause list has to establish that invariant, and there are four: the
-walk's own `compute_leaves`, the impl-site and wrapper-chain anchors (each prepending a hop to the
-paths of the sub-walks it collects), the by-component use-site anchor (unioning a walk per wired
-component), and the emitter's coalesced block (unioning a resolution per affected consumer). All four
-go through one function,
-[`merge_causes_by_leaf`](../../crates/cargo-cgp-error-processing/src/diagnosis/merge.rs), which folds
-causes naming the same leaf into one carrying every path.
+That invariant is held **by the type**, not by discipline.
+[`Causes`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs) is a cause set over a
+private `Vec<Cause>` whose every constructor normalizes — `from_sub_chains` groups the walk's
+`(leaf, path)` sub-chains, `union` merges several failures' sets, `headed_by` prefixes a hop, and
+collecting folds ready-made causes — with reads exposed through `Deref` to `[Cause]`. There is no way
+to build one holding a leaf twice, so the five places a `Resolved` is assembled (the walk's own
+`compute_leaves`, the impl-site and wrapper-chain anchors, the by-component use-site anchor, and the
+emitter's coalesced block) get it for free.
 
-Getting it wrong fails in two directions, and both were live before the function existed. **Merging
-nothing** states one mistake once per contributor: three consumers failing on one underived field
-produced `` accessor trait `HasField` is not implemented for the fields `name`, `name`, and `name` ``
-— the underived-field coalescing below, faithfully reporting three causes it should never have been
-given. **De-duplicating by leaf but dropping the duplicate's paths** loses a chain instead: a
-use-site failure across several wired components that share a cause kept only the first component's
-route, so the header named a consumer whose chain appeared nowhere in the note. Keeping the leaf
-*and* accumulating the paths is what avoids both.
+It was worth making structural because getting it wrong fails in two directions, and both were live
+when each of those sites re-established it by hand. **Merging nothing** states one mistake once per
+contributor: three consumers failing on one underived field produced
+`` accessor trait `HasField` is not implemented for the fields `name`, `name`, and `name` `` — the
+underived-field coalescing below, faithfully reporting three causes it should never have been given.
+**De-duplicating by leaf but dropping the duplicate's paths** loses a chain instead: a use-site
+failure across several wired components that share a cause kept only the first component's route, so
+the header named a consumer whose chain appeared nowhere in the note. Neither announces itself, which
+is why a sixth construction site forgetting the call was a real hazard rather than a theoretical one.
 
 Coalescing several present-but-underived fields on one struct is the one case where a cause's heading
 leaf differs from its paths' terminal leaves.
@@ -312,8 +314,8 @@ own. When several consumer failures share a cause and coalesce into one `[CGP-E0
 [The driver](driver.md)), that block's note folds *every* member's causes
 into one graph, so a consumer whose chain runs through another collapses into it while independent
 chains to the shared cause render side by side — and no member's chain is dropped. Its causes pass
-through `merge_causes_by_leaf` first, so the heading names each distinct cause once however many
-members reached it, while the merged cause still carries every member's path into the graph.
+through `Causes::union`, so the heading names each distinct cause once however many members reached
+it, while the merged cause still carries every member's path into the graph.
 
 ## How the resolver feeds the graph
 
@@ -392,10 +394,12 @@ and the end-to-end behavior is pinned by the UI suite.
 - [`crates/cargo-cgp-error-processing/tests/coalesce.rs`](../../crates/cargo-cgp-error-processing/tests/coalesce.rs)
   — `coalesce_underived_fields` keeping every field's path while merging the heading into one
   `UnderivedFields` cause.
-- [`crates/cargo-cgp-error-processing/tests/merge.rs`](../../crates/cargo-cgp-error-processing/tests/merge.rs)
-  — `merge_causes_by_leaf`: one leaf reached by three consumers folding to one cause holding all three
+- [`crates/cargo-cgp-error-processing/tests/causes.rs`](../../crates/cargo-cgp-error-processing/tests/causes.rs)
+  — the `Causes` set: one leaf reached by three consumers collecting to one cause holding all three
   paths, the underived-field lead that repetition would otherwise produce, distinct leaves staying
-  apart, an exact repeat of a path dropped, and a well-formed list left untouched.
+  apart, an exact repeat of a path dropped, `from_sub_chains` grouping, `union`'s fold and its
+  associativity, and `headed_by` — including its commutation with the grouping, which is why heading
+  needs no re-merge.
 - The UI fixtures the worked shapes above cite — `base_area_1`, `parallel_branches`, `density_3`,
   `parallel_consumers`, `diamond_shared_capability`, and `redirect_distinct_keys` — plus
   [`foreign_getter_missing_wiring`](../../tests/ui/acceptable/resolution/foreign_getter_missing_wiring.rs),
@@ -411,16 +415,15 @@ and the end-to-end behavior is pinned by the UI suite.
   renderer (every construct rendered in full), and `render_seen`/`leaves_below`/`fully_elided_by` (the
   cross-block elision and the terminus it keeps).
 - [`crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/resolved.rs)
-  — `Cause { leaf, paths }`, one cause per leaf holding every path that reaches it.
+  — `Cause { leaf, paths }`, and the `Causes` set that holds the one-cause-per-distinct-leaf invariant
+  by construction, so every cause-list builder gets it for free: the walk's `compute_leaves`, the
+  `impl_site` and `wrapper_chain` anchors, the by-component `use_site` anchor, and the emitter's
+  coalesced block.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/wording/note.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/wording/note.rs)
   — `cause_notes`, folding every cause's paths into one graph and wording the heading over it.
 - [`crates/cargo-cgp-error-processing/src/diagnosis/coalesce.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/coalesce.rs)
   — `coalesce_underived_fields`, merging underived fields into one heading cause while keeping their
   paths.
-- [`crates/cargo-cgp-error-processing/src/diagnosis/merge.rs`](../../crates/cargo-cgp-error-processing/src/diagnosis/merge.rs)
-  — `merge_causes_by_leaf`, the one-cause-per-distinct-leaf invariant, applied by all four cause-list
-  builders: the walk's `compute_leaves`, the `impl_site` and `wrapper_chain` anchors, the
-  by-component `use_site` anchor, and the emitter's coalesced block.
 - [`crates/cargo-cgp-error-processing/src/tree.rs`](../../crates/cargo-cgp-error-processing/src/tree.rs)
   — the `DependencyTree` type and its `termtree`-backed renderer, the target the graph expands into.
 - [`crates/cargo-cgp-driver/src/resolve/label`](../../crates/cargo-cgp-driver/src/resolve/label),

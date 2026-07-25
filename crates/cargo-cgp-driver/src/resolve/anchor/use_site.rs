@@ -1,6 +1,6 @@
 //! The by-component use-site anchor: re-checking every component the context wires.
 
-use cargo_cgp_error_processing::{Cause, Resolved, merge_causes_by_leaf};
+use cargo_cgp_error_processing::{Causes, Resolved};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::Span;
 
@@ -23,7 +23,7 @@ pub fn resolve_use_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -
     // A diagnostic span can land on a provider struct as well as the real context (both are local
     // ADTs), so try each candidate and keep the first that actually wires a failing component.
     for context in context_candidates_from_spans(tcx, spans) {
-        let mut causes: Vec<Cause> = Vec::new();
+        let mut causes: Vec<Causes> = Vec::new();
         let mut consumers: Vec<String> = Vec::new();
         for (marker, params) in delegated_check_targets(tcx, context) {
             // Map the wired marker to its consumer trait and walk the real obligation
@@ -45,9 +45,9 @@ pub fn resolve_use_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -
                         consumers.push(consumer);
                     }
                 }
-                // Merged by leaf below, so a cause several wired components reach keeps every
-                // component's path rather than only the first's.
-                causes.extend(resolved.causes);
+                // Unioned below, so a cause several wired components reach keeps every component's
+                // path rather than only the first's.
+                causes.push(resolved.causes);
             }
         }
         if !causes.is_empty() {
@@ -58,7 +58,7 @@ pub fn resolve_use_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -
                 consumers_are_cgp: true,
                 // The subject is the checked context itself.
                 subject_is_context: true,
-                causes: merge_causes_by_leaf(&causes),
+                causes: Causes::union(causes),
             });
         }
     }

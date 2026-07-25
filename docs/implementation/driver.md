@@ -424,7 +424,7 @@ listing every affected consumer trait (`consumer_header` over a synthesized `Res
 `consumers` is the union), a caret at each failing entry, and one root-cause note built by folding
 every member's paths into a single [dependency graph](dependency-graph-rendering.md). Because the
 members were grouped for *sharing* a cause, the union of their causes holds one copy of it per
-member, so the block folds those copies back into one through the rustc-free `merge_causes_by_leaf`
+member, so the block folds those copies back into one through the rustc-free `Causes::union`
 before wording anything — otherwise the same mistake is stated once per member, most visibly as an
 underived field listed once per consumer that reads it. The graph does
 the merging: when one failing consumer transitively depends on another — `CanCalculateDensity` needs

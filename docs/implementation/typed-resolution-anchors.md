@@ -124,7 +124,7 @@ receiver's type is one such — the "method not found for this struct" span land
 definition) and, for each candidate, reads the `DelegateComponent<Key>` impls that context wires, maps
 each key to its consumer trait, seeds that consumer obligation, and keeps the ones that do not hold.
 Because it walks every wired component, several of them can bottom out on one shared cause, so the
-collected causes go through `merge_causes_by_leaf`: the shared cause is named once and keeps *every*
+collected causes go through `Causes::union`: the shared cause is named once and keeps *every*
 component's route to it, so each consumer the header lists has a chain in the note
 ([`use_site_shared_cause`](../../tests/ui/acceptable/duplication/use_site_shared_cause.rs)). A
 diagnostic span can also land on a *provider* struct, so a candidate that wires no failing component is
