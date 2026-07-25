@@ -82,6 +82,19 @@ fn collapse_chars_spines(text: &str) -> String {
     out
 }
 
+/// Rewrite an *expansion* into its committed-snapshot form.
+///
+/// Only the absolute paths are replaced. None of the diagnostic normalization applies here, and one
+/// piece of it would actively hide a defect: [`collapse_chars_spines`] exists to absorb how rustc
+/// truncates a `Chars` spine in a *diagnostic*, but in an expansion a raw `Chars<…>` spine means the
+/// resugaring declined — exactly what the snapshot is there to show.
+pub fn normalize_source(raw: &str, harness_dir: &Path, cgp_root: &Path) -> String {
+    raw.lines()
+        .map(|line| replace_paths(line, harness_dir, cgp_root))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 /// Replace the throwaway-crate and cgp-checkout absolute paths with `$DIR`/`$CGP`.
 fn replace_paths(text: &str, harness_dir: &Path, cgp_root: &Path) -> String {
     let dir = harness_dir.display().to_string();

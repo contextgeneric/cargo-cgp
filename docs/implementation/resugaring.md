@@ -441,6 +441,12 @@ module qualifiers, because in printed source a qualifier carries information a r
 Three things a reader might expect to see resugared are deliberately not, and each has a reason worth
 recording so nobody adds it as a "missing" transform.
 
+An **open-ended path** stays raw in source output, and this is the one construct a real expansion still
+shows as a spine. An `open` statement's per-key entry is generic over the rest of the path, so the impl
+keys on `PathCons<Component, PathCons<Key, __Wildcard__>>` — a tail that is a named type parameter, not
+`Nil`. A diagnostic renders that tail as the `.*` wildcard; source output cannot, since `.*` would not
+parse, so the chain is left as written.
+
 An **empty spine** stays as its terminator, per the shared rule above: a bare `Nil` or `Void` is a
 plain type in the reader's source too. A **type-level index** (`Index<0>`, the tuple-field tag) needs
 nothing — `Index<N>` *is* the surface form a programmer writes, so there is no expansion to reverse.
@@ -489,9 +495,14 @@ compiler, and the UI suite pins the typed pass end to end.
   fold, the tightened spacing of a generic element, the two diagnostic-only forms confirmed *absent*,
   and the prelude strip including the qualified-path shapes whose index it has to correct.
 
+- Every fixture's `.expand.rs` snapshot in the [UI suite](testing.md#three-passes-per-fixture) pins the
+  syntax-tree pass over *real* macro output, across the whole fixture tree. That is the widest coverage
+  any of the three implementations has: across the current tree no expansion contains a raw `Chars<…>`
+  spine outside a fixture's own doc comment, which is the standing evidence that the pass reaches every
+  construct the fixtures produce.
+
 What is *not* guarded: no test asserts that the three implementations agree with each other on the same
-construct — consistency between them rests on this document — and the expand command has no end-to-end
-fixture harness yet (see [The expand command](expand-command.md#tests)).
+construct — consistency between them rests on this document.
 
 ## Source
 

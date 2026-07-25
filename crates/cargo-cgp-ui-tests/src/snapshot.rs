@@ -27,6 +27,13 @@ pub fn rust_stderr_path(fixture: &Path) -> PathBuf {
     fixture.with_extension("rust.stderr")
 }
 
+/// The `.expand.rs` snapshot path beside a fixture (`foo.rs` → `foo.expand.rs`) — the Rust the
+/// fixture's CGP macros generate, as `cargo cgp expand` shows it. It records what the macros
+/// *produce*, where the two `.stderr` snapshots record what the compiler says about it.
+pub fn expand_path(fixture: &Path) -> PathBuf {
+    fixture.with_extension("expand.rs")
+}
+
 /// Compare `actual` against the snapshot at `path`, or rewrite it when `bless` is set. On
 /// a mismatch, [`Outcome::Mismatch`] carries the rendered diff (for the caller to print).
 /// Comparison ignores trailing whitespace so a snapshot's single trailing newline never
@@ -57,7 +64,7 @@ fn format_diff(expected: &str, actual: &str) -> String {
     use std::fmt::Write;
 
     let mut out = String::new();
-    let _ = writeln!(out, "  --- expected (committed .stderr) ---");
+    let _ = writeln!(out, "  --- expected (committed snapshot) ---");
     for line in expected.lines() {
         let _ = writeln!(out, "  | {line}");
     }

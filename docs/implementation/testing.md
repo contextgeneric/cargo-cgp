@@ -16,13 +16,6 @@ real compiler through the driver, so it is exercised by running the whole tool a
 and snapshotting what it prints. The argument tests and the two rustc-free libraries' unit tests guard
 the former; the UI snapshot suite guards the latter. Each is described below.
 
-One gap is worth naming here, since it is invisible from the sections that follow: **`cargo cgp expand`
-has no end-to-end coverage.** Its resugaring is unit-tested in
-[`cargo-cgp-expand`](../../crates/cargo-cgp-expand/tests/resugar.rs) and its flag handling in both tool
-crates, but nothing drives the command through a real compilation and compares the expansion. Such a
-harness would mirror the UI suite with a committed `<name>.expand.rs` snapshot per fixture, and it is
-recorded as owed work in [The expand command](expand-command.md#tests).
-
 ## Argument-handling tests
 
 The argument-handling logic on both sides of the tool is tested directly, because it is pure
@@ -48,10 +41,12 @@ grouped into three top-level categories by the *quality of the output* the tool 
 `acceptable/` for output that meets the bar — the diagnostic the tool renders is a clean,
 root-cause-first error a reader can act on; `usability/` for errors that still carry the cause but
 bury it, the remaining issues; and `ok/` for a fixture that compiles clean and needs no diagnostic
-work. Each fixture `<name>.rs` has two siblings: `<name>.cgp.stderr`, the tool's rendered output;
-and `<name>.rust.stderr`, what plain `cargo check` prints for the same fixture — the untransformed
-"before" against which the tool's `.cgp.stderr` is the "after". A fixture that compiles cleanly has
-an empty `.cgp.stderr` and an empty `.rust.stderr`.
+work. Each fixture `<name>.rs` has three siblings: `<name>.cgp.stderr`, the tool's rendered output;
+`<name>.rust.stderr`, what plain `cargo check` prints for the same fixture — the untransformed
+"before" against which the tool's `.cgp.stderr` is the "after"; and `<name>.expand.rs`, the Rust the
+fixture's CGP macros generate, as `cargo cgp expand` shows it. A fixture that compiles cleanly has
+an empty `.cgp.stderr` and an empty `.rust.stderr`, but still has an `.expand.rs` — every fixture has
+one, since expansion happens before type-checking and so succeeds whether or not the fixture compiles.
 
 Within each category the fixtures are sorted into kind subdirectories. `acceptable/` is split by the
 kind of failure the tool resolves — `fields/` and `field-types/` for missing and mistyped fields,
@@ -84,19 +79,40 @@ messages it fully rewrites. As the tool reshapes more diagnostics in the driver'
 them is the visible measure of the tool's work, and the `.cgp.stderr` diff is the signal that a
 change did what was intended. The suite exists so that is caught the moment it lands.
 
-### Two passes per fixture
+### Three passes per fixture
 
-Each fixture is verified by two passes: one records the tool's real output, the other the
-plain-compiler baseline it improves on. They do not cross-check each other, and there is no separate
-capture or unit pass — because the driver applies every CGP transform in-process and renders the
-result, `.cgp.stderr` is simply what `cargo-cgp` prints, with nothing to reconcile it against. Both
-are implemented in [`passes`](../../crates/cargo-cgp-ui-tests/src/passes.rs):
+Each fixture is verified by three passes: two about what the compiler *says* — the tool's real output
+and the plain-compiler baseline it improves on — and one about what the macros *generate*. They do not
+cross-check each other, and there is no separate capture or unit pass — because the driver applies
+every CGP transform in-process and renders the result, `.cgp.stderr` is simply what `cargo-cgp` prints,
+with nothing to reconcile it against. All three are implemented in
+[`passes`](../../crates/cargo-cgp-ui-tests/src/passes.rs):
 
 - **The cgp-stderr pass** runs `cargo-cgp check` directly and compares the tool's rendered stderr to
   `<name>.cgp.stderr`. This is the end-to-end check that the whole binary produces the expected output.
 - **The rust-stderr pass** runs plain `cargo check` — no `cargo-cgp`, no driver — and compares its
   rendered stderr to `<name>.rust.stderr`. Nothing cross-checks it, because it is the untransformed
   compiler output, not a tool result; it exists to record the "before" the cgp-stderr pass improves on.
+- **The expand pass** runs `cargo cgp expand` and compares its **stdout** to `<name>.expand.rs`. It is
+  the only pass whose artifact is not a diagnostic, and it earns its place twice over: it makes every
+  fixture's *generated code* visible beside the error about it — which is where the answer to "why does
+  it say that?" usually is — and it is the end-to-end coverage of
+  [the expand command](expand-command.md) and the syntax-tree
+  [resugaring](resugaring.md) it drives, neither of which any other test exercises through a real
+  compilation.
+
+The expand pass normalizes less than the other two, deliberately. Only the absolute paths are replaced;
+none of the diagnostic normalization applies, and one piece of it would actively hide a defect — the
+`Chars<…>` spine collapse exists to absorb how rustc truncates a spine in a *diagnostic*, but in an
+expansion a raw `Chars<…>` spine means the resugaring declined, which is exactly what the snapshot is
+there to show. (Across the current tree, no expansion contains one outside a fixture's own doc
+comment.)
+
+Two small things follow from an `.expand.rs` being Rust. The fixture collector skips `*.expand.rs`, or
+a snapshot would be collected as a fixture and then expanded in turn; and a fixture that fails *during*
+macro expansion has no expansion to record, so its snapshot holds a one-line marker saying so — a fact
+worth pinning, since it says the failure precedes type-checking. No fixture in the tree is in that
+state today.
 
 ### The harness is a custom Rust test binary
 
@@ -126,10 +142,11 @@ A fixture is a loose `.rs` file, so the harness turns it into a crate the tool c
 maintains a throwaway crate that depends on `cgp` by path, copies the fixture in as its `src/main.rs`,
 and runs `cargo-cgp check -q --color never` there. Naming the crate `ui` keeps cargo's output stable,
 and an empty `[workspace]` table in its manifest stops cargo from folding it into the `cargo-cgp`
-workspace above it in `target/`. In a full run the cgp-stderr pass runs the tool once and the
-rust-stderr pass runs plain `cargo check` once, so the fixture is compiled twice; re-copying it
-before each run bumps its mtime, which forces cargo to recompile and re-emit diagnostics rather than
-serve a cached build with none.
+workspace above it in `target/`. In a full run each of the three passes compiles the fixture once — the
+tool, plain `cargo check`, and `cargo cgp expand` — and re-copying it before each run bumps its mtime,
+which forces cargo to recompile and re-emit rather than serve a cached build with nothing to say. The
+expand pass shares the `cargo-cgp` passes' target directory and profile, so it reuses their cached
+dependency builds; cargo re-runs only the fixture crate itself, whose expansion produces no artifact.
 
 A cross-crate scenario — the orphan rule, cross-crate coherence — cannot live in one crate, so a
 fixture may pull in **auxiliary crates** with a header directive (`//@aux-build: cgp-test-crate-a`),
@@ -139,7 +156,7 @@ auxiliary crate once, up front: it copies the crate's source from
 `target/ui-harness/aux/` and generates its manifest there, substituting the resolved sibling-`cgp`
 path (the same path the worker crates use) for the placeholder the stored manifest carries. When a
 fixture declares an auxiliary crate, the harness rewrites the worker crate's manifest to add it as a
-path dependency before both passes run; a transitive auxiliary dependency (one aux crate's
+path dependency before any pass runs; a transitive auxiliary dependency (one aux crate's
 `../other-aux` path) resolves through the shared materialized sibling. Because a worker's manifest is
 rewritten only when its dependency set actually changes, a run of ordinary (no-aux) fixtures never
 disturbs the cached `cgp` build. This is what lets the three cross-crate orphan-rule fixtures and the
@@ -197,7 +214,7 @@ comparing, and `--jobs N` (`-j N`) to set the worker count:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests --test ui -- usability    # only fixtures whose path contains "usability"
-cargo test -p cargo-cgp-ui-tests --test ui -- --bless      # rewrite the .cgp.stderr and .rust.stderr snapshots
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless      # rewrite all three snapshots per fixture
 cargo test -p cargo-cgp-ui-tests --test ui -- -j 4                    # check at most 4 fixtures at once
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # print raw output
 ```
@@ -207,11 +224,13 @@ machine's parallelism, capped at 8 and at the number of fixtures. Raise it past 
 machine that can afford more concurrent `cgp` builds — one per worker, since the workers cannot share
 a target directory (above) — or set `-j 1` to run fully sequentially.
 
-After an *intended* change to what the tool emits, `--bless` regenerates both snapshots — the
-analogue of Clippy's `cargo bless` — writing `.cgp.stderr` from the real `cargo-cgp` run and
-`.rust.stderr` from plain `cargo check`, and the diff is reviewed before committing. Because
-`.rust.stderr` records plain `cargo check`, it changes only on a toolchain bump, not when the tool's
-own behavior changes.
+After an *intended* change to what the tool emits, `--bless` regenerates all three snapshots — the
+analogue of Clippy's `cargo bless` — writing `.cgp.stderr` from the real `cargo-cgp` run,
+`.rust.stderr` from plain `cargo check`, and `.expand.rs` from `cargo cgp expand`, and the diff is
+reviewed before committing. The three move for different reasons, which is what makes a diff
+informative: `.cgp.stderr` changes when the tool's diagnostics change, `.rust.stderr` only on a
+toolchain bump, and `.expand.rs` when a CGP macro's expansion changes or when the resugaring does —
+so an unexpected `.expand.rs` diff after a `cgp` update is a report of what the macros now generate.
 
 ### Toolchain and determinism
 
@@ -220,7 +239,10 @@ compiler's diagnostic text. The harness builds and runs under the toolchain the 
 [`rust-toolchain.toml`](../../rust-toolchain.toml) (overridable with `RUSTUP_TOOLCHAIN`), and
 snapshots must be blessed under that same toolchain. A deliberate toolchain bump can therefore change
 the diagnostic wording and require a re-bless, exactly as it does for Clippy — a `.cgp.stderr` or
-`.rust.stderr` diff after a toolchain change is expected, not a regression. A passing
+`.rust.stderr` diff after a toolchain change is expected, not a regression. An `.expand.rs` is
+steadier, since it holds generated *source* rather than compiler prose, but it too is
+toolchain-dependent: the compiler's own pretty-printer lays it out, and the injected
+`#![feature(prelude_import)]`/`extern crate std` preamble comes from the edition's prelude. A passing
 `acceptable/use-site/unsatisfied_dependency`
 snapshot is also the standing proof that the driver genuinely stands in as the compiler, since its
 un-hidden root cause could only be produced by compiling the fixture through the tool.

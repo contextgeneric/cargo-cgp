@@ -110,6 +110,33 @@ pub fn run_fixture(harness_crate: &Path, fixture: &Path) -> String {
     String::from_utf8_lossy(&output.stderr).into_owned()
 }
 
+/// Expand one fixture through `cargo cgp expand` and return the expansion from **stdout**.
+///
+/// Unlike the two diagnostic passes, what is captured is stdout: the expansion is the command's
+/// output, and its stderr carries only cargo's progress. The fixture is the worker crate's one
+/// binary target, so `cargo rustc` needs no target flag to pick it.
+///
+/// A fixture that fails *during* macro expansion produces no expansion at all, and the marker
+/// returned here is what its snapshot records — a fact worth pinning rather than papering over,
+/// since it says the failure happens before the compiler ever type-checks the generated code.
+pub fn run_fixture_expand(harness_crate: &Path, fixture: &Path) -> String {
+    let output = run_cargo_cgp(
+        harness_crate,
+        fixture,
+        &["expand", "-q", "--color", "never"],
+    );
+    let expansion = String::from_utf8_lossy(&output.stdout).into_owned();
+
+    if expansion.trim().is_empty() {
+        return NO_EXPANSION.to_owned();
+    }
+    expansion
+}
+
+/// What an `.expand.rs` snapshot records for a fixture that never got as far as an expansion.
+pub const NO_EXPANSION: &str = "// no expansion: this fixture fails during macro expansion, before the compiler\n\
+     // type-checks the generated code, so there is nothing to expand.\n";
+
 /// Compile one fixture through plain `cargo check` — no `cargo-cgp`, no driver — and return
 /// its rendered diagnostics from stderr. This records the *original* compiler output for the
 /// fixture, the "before" against which the tool's `.cgp.stderr` is the "after": no

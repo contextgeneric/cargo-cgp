@@ -359,10 +359,16 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
 
 The UI suite is a custom Rust test harness modeled on Clippy's `compile-test`: the
 [`cargo-cgp-ui-tests`](crates/cargo-cgp-ui-tests) crate has a `harness = false` test with its own
-`fn main` that checks each fixture under [`tests/ui/`](tests/README.md) through two passes. The tool
+`fn main` that checks each fixture under [`tests/ui/`](tests/README.md) through three passes. The tool
 pass runs `cargo-cgp` and diffs its stderr against `<name>.cgp.stderr`; the baseline pass runs plain
 `cargo check` and diffs its stderr against `<name>.rust.stderr`, recording the untransformed "before"
-so the diff against `.cgp.stderr` shows what the tool changes. Because the driver now renders the
+so the diff against `.cgp.stderr` shows what the tool changes; and the expand pass runs
+`cargo cgp expand` and diffs its stdout against `<name>.expand.rs`, the Rust the fixture's CGP macros
+generate. The two `.stderr` files record what the compiler *says* about the code and `.expand.rs`
+records the code it was given, so the three together answer both "what does the tool report?" and "why
+does it report that?" — and the expand pass is also the end-to-end coverage of
+[`cargo cgp expand`](docs/implementation/expand-command.md) and the syntax-tree
+[resugaring](docs/implementation/resugaring.md) it drives. Because the driver now renders the
 diagnostics in-process, `<name>.cgp.stderr` is simply what `cargo-cgp` prints — there is no captured
 JSON or separate processing pass to keep in sync. The crate is a full workspace member, so
 `cargo test` runs the whole suite alongside the argument tests; a full run builds the driver and
@@ -370,7 +376,7 @@ expects a sibling `cgp` checkout at `../cgp`. Work with the suite directly throu
 
 ```sh
 cargo test -p cargo-cgp-ui-tests                                  # just the snapshot suite
-cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate .cgp.stderr and .rust.stderr
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate all three snapshots
 cargo test -p cargo-cgp-ui-tests --test ui -- -j 4                # check at most 4 fixtures at once
 cargo test -q -p cargo-cgp-ui-tests --test ui -- usability        # only fixtures whose path contains "usability"
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print greet    # print raw output for a fixture
@@ -389,7 +395,7 @@ sub-directories so no directory grows crowded. Add a scenario by dropping a `<na
 `fn main`) into the sub-directory that matches its output quality and running
 `cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes both snapshot files). A fixture
 whose output improves enough to clear the usability bar graduates from `usability/` into
-`acceptable/` (a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr` triple — the snapshots are
+`acceptable/` (a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr`/`.expand.rs` set — the snapshots are
 independent of the fixture's directory, so no re-bless is needed).
 Snapshots are blessed under the pinned toolchain, so a toolchain bump can require a re-bless. The full
 testing picture — the harness structure, why it drives the whole tool rather than the driver

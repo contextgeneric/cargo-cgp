@@ -1,9 +1,10 @@
 //! A custom UI-test harness for `cargo-cgp`, modeled on Clippy's `compile-test`.
 //!
-//! Each fixture under `tests/ui/` is checked through two passes (see [`passes`]): one runs
+//! Each fixture under `tests/ui/` is checked through three passes (see [`passes`]): one runs
 //! the whole tool end to end (front-end and driver) and pins its rendered `.cgp.stderr`, so
-//! when the tool reformats diagnostics that snapshot is what changes; the other runs plain
-//! `cargo check` to record the untransformed `.rust.stderr` baseline the tool improves on.
+//! when the tool reformats diagnostics that snapshot is what changes; one runs plain
+//! `cargo check` to record the untransformed `.rust.stderr` baseline the tool improves on; and
+//! one runs `cargo cgp expand` to pin the `.expand.rs` code the fixture's CGP macros generate.
 //! It is driven by the `harness = false` test in [`tests/ui.rs`](../../tests/ui.rs), which
 //! calls [`run`]; the logic lives here so it stays small and out of the `bin`/test
 //! entrypoint. Fixtures are checked in parallel across a pool of workers (see [`runner`]).
@@ -128,8 +129,8 @@ struct Report {
 }
 
 /// Run the passes for one fixture and return each pass's label and outcome: the rust pass
-/// records the plain-compiler `.rust.stderr` baseline, and the cgp-stderr pass owns the
-/// tool's `.cgp.stderr` output.
+/// records the plain-compiler `.rust.stderr` baseline, the cgp-stderr pass owns the tool's
+/// `.cgp.stderr` output, and the expand pass owns the `.expand.rs` generated code.
 fn run_passes(
     options: &Options,
     harness_crate: &Path,
@@ -144,6 +145,10 @@ fn run_passes(
         (
             "cgp",
             passes::cgp_stderr_pass(harness_crate, fixture, cgp_root, options.bless),
+        ),
+        (
+            "expand",
+            passes::expand_pass(harness_crate, fixture, cgp_root, options.bless),
         ),
     ]
 }

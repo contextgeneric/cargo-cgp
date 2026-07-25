@@ -8,6 +8,7 @@ the text is handed back, so a field name reads as `Symbol!("height")` rather tha
 **Status: implemented.** `cargo cgp expand` runs: the front-end launches a wrapped `cargo rustc`, the
 driver prints the expanded crate from `after_expansion`, and the rustc-free
 [`cargo-cgp-expand`](../../crates/cargo-cgp-expand) crate resugars it before the front-end prints it.
+Every UI fixture now carries an `.expand.rs` snapshot, so the command is covered end to end.
 What is *not* built is the [selective expansion](#selective-expansion-the-deferred-phase) the command
 started from — the whole crate is expanded — and the conveniences listed under
 [what the first slice leaves out](#comparison-with-cargo-expand). The document extends
@@ -322,6 +323,14 @@ One question remains a judgement call for a first user to sharpen: **what the se
 first** — syntax highlighting and paging (`cargo-expand` uses `bat`), an `--item` filter (it uses
 `syn-select`), the `--verbatim` flag above, or the selectivity below.
 
+Running it across the whole fixture tree also surfaced one boundary worth knowing about. An `open`
+statement's per-key wiring entry is generic over the *rest* of the path, so the impl the macro writes
+keys on `PathCons<ItemEncoderComponent, PathCons<u64, __Wildcard__>>` — a chain whose tail is a named
+type parameter rather than `Nil`. The path fold declines it, correctly: there is no `Path!` syntax for
+"this prefix followed by anything", and inventing one would break the real-syntax rule above. So the
+one construct an expansion still shows raw is an `open`-generated key, and the surrounding
+`RedirectLookup<App, Path!(@ItemEncoderComponent)>` beside it reads normally.
+
 ## Selective expansion: the deferred phase
 
 Expanding only the CGP macros remains the goal this command started from, and the design above is
@@ -441,12 +450,13 @@ printing halves need a real compilation, so they are exercised by running the co
   helpers: the profile detection in both forms (and a `--bin release` value that must not count as
   one), and the per-process output path.
 
-What is **not** guarded is the command end to end. There is no expand fixture harness yet: it would
-mirror the [UI suite](testing.md) with a `<name>.rs` fixture and a committed `<name>.expand.rs`
-snapshot, but as a separate harness, because the artifact compared is stdout rather than stderr and
-because a fixture must compile far enough to expand rather than fail to compile. Until it exists, the
-printing path — the `after_expansion` hook, the `pprust` call, the file handoff — is only verified by
-running the command by hand.
+- The [UI suite](testing.md#three-passes-per-fixture) runs the command over **every fixture** as its
+  third pass, diffing the expansion against a committed `<name>.expand.rs`. That is the end-to-end
+  coverage of the whole path — the marker flag, the `after_expansion` hook, the `pprust` call, the
+  resugaring, the file handoff — and it doubles as a wide test of the resugaring itself, since the
+  fixtures between them exercise every CGP construct the tool knows. It also pins the expansion of
+  code the tool's own diagnostics are about, so a `.cgp.stderr` and the `.expand.rs` beside it can be
+  read together.
 
 ## Source
 

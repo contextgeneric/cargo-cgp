@@ -17,10 +17,13 @@ operational guide.
 ## Layout
 
 Fixtures live under [`ui/`](ui), grouped into category directories by the *quality of the output* the
-tool produces for them. Each fixture `<name>.rs` has two siblings: `<name>.cgp.stderr`, the tool's
-rendered output, and `<name>.rust.stderr`, what plain `cargo check` prints for the same fixture — the
-untransformed "before" against which the tool's `.cgp.stderr` is the "after". A fixture that compiles
-cleanly has an empty `.cgp.stderr` and an empty `.rust.stderr`. A snapshot depends only on the
+tool produces for them. Each fixture `<name>.rs` has three siblings: `<name>.cgp.stderr`, the tool's
+rendered output; `<name>.rust.stderr`, what plain `cargo check` prints for the same fixture — the
+untransformed "before" against which the tool's `.cgp.stderr` is the "after"; and `<name>.expand.rs`,
+the Rust the fixture's CGP macros generate, as `cargo cgp expand` shows it. A fixture that compiles
+cleanly has an empty `.cgp.stderr` and an empty `.rust.stderr`, but still has an `.expand.rs`: the two
+`.stderr` files record what the compiler *says* about the code, and `.expand.rs` records the code it
+was actually given, which is usually where the answer to "why does it say that?" is. A snapshot depends only on the
 fixture's *content*, never on its directory (the harness copies each fixture into a throwaway crate's
 `src/main.rs` before compiling), so moving a fixture between categories needs no re-bless.
 
@@ -112,9 +115,10 @@ rather than committed as a misleading empty snapshot.
 ## Running
 
 The suite is a custom Rust test harness in the [`cargo-cgp-ui-tests`](../crates/cargo-cgp-ui-tests)
-crate (modeled on Clippy's `compile-test`). It checks every fixture through two passes: it runs
-`cargo-cgp` and diffs its stderr against `.cgp.stderr`, and it runs plain `cargo check` and diffs its
-stderr against `.rust.stderr`, the untransformed baseline. Run it with `cargo test`:
+crate (modeled on Clippy's `compile-test`). It checks every fixture through three passes: it runs
+`cargo-cgp` and diffs its stderr against `.cgp.stderr`, it runs plain `cargo check` and diffs its
+stderr against `.rust.stderr` (the untransformed baseline), and it runs `cargo cgp expand` and diffs
+its stdout against `.expand.rs`. Run it with `cargo test`:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests            # run the whole suite
@@ -125,7 +129,7 @@ also handed to the crate's other tests:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests --test ui -- acceptable  # only fixtures whose path contains "acceptable"
-cargo test -p cargo-cgp-ui-tests --test ui -- --bless     # regenerate the .cgp.stderr and .rust.stderr snapshots
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless     # regenerate all three snapshots per fixture
 cargo test -p cargo-cgp-ui-tests --test ui -- -j 4        # check at most 4 fixtures at once
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # raw output
 ```
@@ -146,8 +150,10 @@ as a binary, and open it with a `//!` comment stating what the scenario demonstr
 reproduces, and — for a problem case — the [issue](../docs/issues/README.md) it exposes. `cgp` is
 available to every fixture, so a fixture may `use cgp::prelude::*;` with no setup; for a cross-crate
 scenario, add a `//@aux-build: <crate>` directive (see above). Then run
-`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes both snapshots) and review them
-before committing.
+`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes all three snapshots) and review
+them before committing. The `.expand.rs` is worth reading as carefully as the `.stderr` pair: it shows
+the code the fixture's macros generate, so a surprise there — a construct left as a raw type-level
+spine, say — is a finding of its own.
 
 ## Maintaining the migrated fixtures
 
