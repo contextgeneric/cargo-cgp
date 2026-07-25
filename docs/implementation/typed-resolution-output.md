@@ -118,8 +118,8 @@ The `root cause:` lead is worded by *why* the leaf is unmet, and there are six l
   [`field_via_deref`](../../tests/ui/acceptable/fields/field_via_deref.rs)). Several such fields on
   *one* struct are one mistake — the derive emits an impl per field — so `plan_resolved` coalesces
   them (`coalesce_underived_fields`) into a single cause reading
-  `root cause: accessor trait \`HasField\` is not implemented for the fields \`height\` and \`width\`
-  of \`Rectangle\``, over one merged tree whose branches still end at the per-field leaves
+  `root cause: accessor trait \`HasField\` is not implemented for the fields \`height\` and \`width\` of \`Rectangle\``,
+  over one merged tree whose branches still end at the per-field leaves
   ([`base_area_2`](../../tests/ui/acceptable/fields/base_area_2.rs)); a lone underived field, an
   underived field beside a genuinely missing one, and underived fields on *different* structs all
   stay apart
@@ -253,8 +253,9 @@ collapses the span to the primary caret (the original labels restate the replace
 plan's `help`s (one per distinct type that must derive `#[derive(HasField)]`, or the `Deref` target,
 plus one per abstract-type mismatch naming the wiring entry to change; a field-type mismatch
 contributes none) and the plan's single note — opening with its `root cause:` lead
-(or `root causes:` list, when the causes bottom out on different leaves) over `this is required through
-the dependency chain:` and the graph beneath (the lead omitted when the kept header or the `CGP-E003`
+(or `root causes:` list, when the causes bottom out on different leaves) over
+`this is required through the dependency chain:` and the graph beneath (the lead omitted when the kept
+header or the `CGP-E003`
 header already states the bound). rustc's structured
 suggestions are discarded with its notes, the diagnostic's Rust code is never touched, and a provider
 with two absent dependencies sharing its chain yields one note over a merged tree that branches to

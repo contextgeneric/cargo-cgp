@@ -61,5 +61,5 @@ clean-compile baseline — correctly-wired programs that check with empty output
 whole check-trait-failure family there, so `acceptable/` holds the reformatted errors that clear the
 usability bar, grouped into concept sub-directories. Their snapshots are the standing proof the tool
 keeps producing good output. As a usability issue is closed, its fixture graduates from `usability/`
-into `acceptable/` — a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr` triple, since the
+into `acceptable/` — a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr`/`.expand.rs` set, since the
 snapshots are independent of the fixture's directory.

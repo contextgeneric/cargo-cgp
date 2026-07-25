@@ -340,6 +340,18 @@ post-processors, the rewrite, the diagnosis plan and wording, the coalescing, th
 de-duplication ledger, the tree renderer, and the dependency-graph build-and-render (`insta` inline
 snapshots in `tests/graph.rs`) over hand-built inputs, so they run on any toolchain.
 
+The expansion library (`crates/cargo-cgp-expand/src`) is the other rustc-free half, driven by the
+driver's expand mode. `source.rs` is the one entry point (`resugar_expanded_source`): it parses the
+source the compiler printed, narrows it when asked, resugars, and prints. `select.rs` is the narrowing
+— the `--item <path>` match rules, which select an item declared at a path, an impl *for* that type, or
+an impl *of* that trait. `resugar/` holds the passes, one module per construct (`symbol.rs`, `path.rs`,
+`list.rs`) plus `strip.rs` (the `cgp::macro_prelude::` qualifier, and the qualified-path index it must
+correct), `spacing.rs` (the post-print tightening the printer's macro-body layout forces), `parts.rs`
+(the shared shape reading and macro-node building), and `file.rs`, which sequences them in the one
+order that works. `options.rs` carries the item path and the strip switch. Its tests in `tests/` drive
+the resugaring and the selection over hand-written expanded source, so they run on any toolchain (see
+[Resugaring](docs/implementation/resugaring.md)).
+
 ## Commands
 
 The commands mirror the `cgp` workspace. Run them from the repository root.
@@ -537,7 +549,7 @@ target project is re-checked.
    collapsing a path, or a mistaken argument order will silently write back into the project and
    revert the very state step 2 depends on, and the only symptom is that the check starts passing.
 8. **Graduate the fixture if it earned it.** A fixture whose output now clears the usability bar moves
-   from `usability/` into `acceptable/` (a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr` triple,
+   from `usability/` into `acceptable/` (a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr`/`.expand.rs` set,
    no re-bless), recording that this class of error is now presented well.
 
 ## Committing changes

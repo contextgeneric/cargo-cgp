@@ -39,5 +39,5 @@ cases reproduced through auxiliary crates, and the one class with no snapshot li
 [`../acceptable/`](../acceptable), since every reproducible class carries its cause and most are
 presented well. When a fixture here is fixed, delete its issue from
 [docs/issues/usability.md](../../../docs/issues/usability.md) and move its
-`.rs`/`.cgp.stderr`/`.rust.stderr` triple into the matching `../acceptable/` concept sub-directory (no
-re-bless is needed — a snapshot is independent of the fixture's directory).
+`.rs`/`.cgp.stderr`/`.rust.stderr`/`.expand.rs` set into the matching `../acceptable/` concept
+sub-directory (no re-bless is needed — a snapshot is independent of the fixture's directory).

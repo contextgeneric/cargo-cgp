@@ -107,7 +107,7 @@ sets `RUSTUP_TOOLCHAIN=<PINNED_TOOLCHAIN>` in the child environment (equivalentl
 
 Forcing the toolchain resolves the sysroot-and-dylib coherence problem for free. With
 `RUSTUP_TOOLCHAIN` set to the pinned nightly, the front-end's existing
-`rustc --print sysroot` discovery ([`check::sysroot`](../../crates/cargo-cgp/src/check/sysroot.rs))
+`rustc --print sysroot` discovery ([`launch::sysroot`](../../crates/cargo-cgp/src/launch/sysroot.rs))
 returns the *pinned* sysroot, so the `--sysroot` the driver injects and the `librustc_driver` it
 loads both belong to the nightly the driver was compiled against. The three things that must agree —
 the driver's embedded compiler, the injected sysroot, and the loaded shared library — now come from
@@ -160,7 +160,7 @@ package as a second `[[bin]]` would force the whole package — front-end includ
 pinned nightly, losing the bare-`cargo install cargo-cgp` bootstrap. Two crates let the front-end
 install on any toolchain while the driver stays confined to the pinned one, and cargo places both in
 `~/.cargo/bin`, so the front-end's sibling lookup
-([`check::driver_path`](../../crates/cargo-cgp/src/check/driver_path.rs)) finds the driver with no
+([`launch::driver_path`](../../crates/cargo-cgp/src/launch/driver_path.rs)) finds the driver with no
 configuration. Lockstep is enforced by the version preflight below, not by shared packaging.
 
 ## Provisioning: `setup` does the work, `check` only verifies
@@ -192,11 +192,11 @@ fails, the preflight already knows whether the toolchain underneath it is to bla
 
 **Is a driver present?** The preflight locates the driver as the `CARGO_CGP_DRIVER` override if set,
 otherwise as the sibling of the running front-end (the existing
-[`driver_path`](../../crates/cargo-cgp/src/check/driver_path.rs) lookup). No driver is the plainest
+[`driver_path`](../../crates/cargo-cgp/src/launch/driver_path.rs) lookup). No driver is the plainest
 "run setup" case.
 
-**Is the pinned toolchain installed?** The preflight runs `rustc +<PINNED_TOOLCHAIN> --version
---verbose` and reads back the toolchain's own rustc identity — its `commit-hash` and `release`. This
+**Is the pinned toolchain installed?** The preflight runs `rustc +<PINNED_TOOLCHAIN> --version --verbose`
+and reads back the toolchain's own rustc identity — its `commit-hash` and `release`. This
 is cheap, and doing it first separates a *missing toolchain* from a *bad driver*: if this query fails,
 the toolchain the driver needs is simply not installed, and that is the message the user gets. If it
 succeeds, the preflight now holds the identity of the compiler the check will force, to compare the
@@ -366,7 +366,7 @@ compiles under the same nightly the driver embeds, and the front-end's existing
 on a managed machine. The driver wrapper adds that same `lib` directory to the driver's own runtime
 search path, so the driver loads `librustc_driver` even when invoked directly rather than only
 through the front-end. Both binaries land in one `bin/` directory, so the front-end's
-[sibling lookup](../../crates/cargo-cgp/src/check/driver_path.rs) finds the driver with no override.
+[sibling lookup](../../crates/cargo-cgp/src/launch/driver_path.rs) finds the driver with no override.
 
 **The front-end wrapper needs that dylib prefix too, and for a reason peculiar to being invoked
 through rustup.** `cargo cgp check` enters through rustup's `cargo` shim, which exports the project's
@@ -645,7 +645,7 @@ UI suite exercises the managed/unmanaged wiring end to end.
 
 - [`crates/cargo-cgp/tests/preflight.rs`](../../crates/cargo-cgp/tests/preflight.rs) — parses the
   driver's `--version` output (accepting the real shape, rejecting a foreign first line and missing
-  fields); the [`evaluate`](../../crates/cargo-cgp/src/check/preflight.rs) verdict on a matching
+  fields); the [`evaluate`](../../crates/cargo-cgp/src/launch/preflight.rs) verdict on a matching
   driver, a version mismatch, and a rustc mismatch; and a check that the baked-in `PINNED_TOOLCHAIN`
   equals the channel in [`rust-toolchain.toml`](../../rust-toolchain.toml).
 - [`crates/cargo-cgp/tests/update.rs`](../../crates/cargo-cgp/tests/update.rs) — `sparse_index_path`
@@ -678,15 +678,15 @@ has a build script that bakes in the pinned toolchain.
   `update`.
 - [`crates/cargo-cgp/src/toolchain.rs`](../../crates/cargo-cgp/src/toolchain.rs) — resolves the
   effective pinned toolchain and queries its `rustc --version` through rustup.
-- [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — runs the
+- [`crates/cargo-cgp/src/launch/command.rs`](../../crates/cargo-cgp/src/launch/command.rs) — runs the
   preflight (when managed), forces `RUSTUP_TOOLCHAIN`, wires the driver and sysroot, and injects the
   `target/cgp` default unless the caller set the target directory.
-- [`crates/cargo-cgp/src/check/preflight.rs`](../../crates/cargo-cgp/src/check/preflight.rs) — verifies
+- [`crates/cargo-cgp/src/launch/preflight.rs`](../../crates/cargo-cgp/src/launch/preflight.rs) — verifies
   the toolchain is installed and the driver runs and matches (the pure `evaluate` plus the
   `--version`-parsing and IO), returning the discovered sysroot.
-- [`crates/cargo-cgp/src/check/driver_path.rs`](../../crates/cargo-cgp/src/check/driver_path.rs) — the
+- [`crates/cargo-cgp/src/launch/driver_path.rs`](../../crates/cargo-cgp/src/launch/driver_path.rs) — the
   `CARGO_CGP_DRIVER` override and the sibling lookup.
-- [`crates/cargo-cgp/src/check/dylib.rs`](../../crates/cargo-cgp/src/check/dylib.rs) — the OS
+- [`crates/cargo-cgp/src/launch/dylib.rs`](../../crates/cargo-cgp/src/launch/dylib.rs) — the OS
   dynamic-library search path, shared by the check and the preflight's load test.
 - [`crates/cargo-cgp/src/setup.rs`](../../crates/cargo-cgp/src/setup.rs) — installs the pinned
   toolchain with `rustup` and the driver with `cargo install`, co-located via `--root`.

@@ -114,8 +114,8 @@ the rewritten message, the mistake behind it, the fix, and the upstream
   associated-type projection `<Context as HasField<Symbol!("<field>")>>::Value == <expected>`
   fails. The expected type is read from the failing projection, and the actual type is queried from
   the struct itself (by `DefId`, so a same-named struct in another module is never read).
-- **Triggered by:** a `` type mismatch resolving `<Context as HasField<Symbol!("<field>")>>::Value
-  == <expected>` `` (`E0271`) that the typed resolver traced through CGP wiring to a `HasField`
+- **Triggered by:** a `` type mismatch resolving `<Context as HasField<Symbol!("<field>")>>::Value == <expected>` ``
+  (`E0271`) that the typed resolver traced through CGP wiring to a `HasField`
   projection — a `check_components!` entry whose provider reads the field with the wrong type. The
   Rust code stays `E0271`.
 - **Fix:** change the field's type on the struct to the expected type (or change the provider to

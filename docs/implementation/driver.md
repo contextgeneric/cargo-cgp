@@ -66,10 +66,13 @@ The prepared vector runs under
 [`rustc_driver::catch_with_exit_code`](../../crates/cargo-cgp-driver/src/run.rs), which executes the
 compiler and converts a compiler-signalled failure into the process `ExitCode`, matching what plain
 `rustc` returns. The compiler behavior the driver adds is installed through
-[`callbacks::CgpCallbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs); its `config` hook
-installs the diagnostic-rewriting emitter described under
-[Naming the traits behind a component marker](#naming-the-traits-behind-a-component-marker). Aside
-from the injected flags and that emitter, the driver compiles exactly as `rustc` would.
+[`callbacks::CgpCallbacks`](../../crates/cargo-cgp-driver/src/callbacks.rs), which implements two
+hooks. Its `config` hook installs the diagnostic-rewriting emitter described under
+[Naming the traits behind a component marker](#naming-the-traits-behind-a-component-marker). Its
+`after_expansion` hook serves the driver's *other* mode: when `cargo cgp expand` asked for an
+expansion, it prints the expanded crate and stops the compilation there instead of checking it (see
+[The expand command](expand-command.md)). Aside from the injected flags, that emitter, and that second
+mode, the driver compiles exactly as `rustc` would.
 
 ## Accessing the Rust compiler API
 
@@ -230,8 +233,8 @@ implement `CanUseComponent<AreaCalculatorComponent>` ``, the tool emits `` requi
 `RectangleArea` to implement the provider trait `AreaCalculator` for the context `Rectangle` `` and
 `` required for the context `Rectangle` to implement the consumer trait `CanCalculateArea` ``. The
 primary header is rewritten further, because an unsatisfied wiring bound is an identified CGP error
-class and gains its [CGP error code](../error-code.md): `` the trait bound `Rectangle:
-CanUseComponent<AreaCalculatorComponent>` is not satisfied `` becomes `` [CGP-E001] the consumer
+class and gains its [CGP error code](../error-code.md):
+`` the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied `` becomes `` [CGP-E001] the consumer
 trait `CanCalculateArea` is not implemented for context `Rectangle` ``, and a provider-side header
 `` `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle>` `` becomes `` [CGP-E002] the
 provider trait `AreaCalculator` with context `Rectangle` is not implemented for provider
@@ -727,9 +730,10 @@ will likely grow toward it:
   diagnostic-free output of an info query, so it needs no further guard today — but one will be needed
   once the callbacks do heavier work that should not run for an info query.
 - **Callbacks.** Clippy carries three `Callbacks` implementations (default, rustc-only, and
-  lint-registering) and selects among them per invocation. `cargo-cgp` has one `CgpCallbacks`, whose
-  `config` hook installs the rewriting emitter; the differentiation will grow as the driver does more
-  post-processing.
+  lint-registering) and selects among them per invocation. `cargo-cgp` has one `CgpCallbacks`, which
+  varies by its fields rather than by type: its `config` hook always installs the rewriting emitter,
+  and its `after_expansion` hook acts only when the invocation carried an expansion request. The
+  differentiation will grow as the driver does more post-processing.
 
 ## Further reading
 
@@ -785,7 +789,8 @@ will likely grow toward it:
   names: the injected flags (`NEXT_SOLVER_FLAG`, `VERBOSE_FLAG`, `SYSROOT_ENV`) and the
   identity anchor (`CGP_COMPONENT_CRATE`, `IS_PROVIDER_FOR_TRAIT`), each with its rationale.
 - [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs) — the
-  `Callbacks` implementation; its `config` hook installs the transforming emitter.
+  `Callbacks` implementation: its `config` hook installs the transforming emitter, and its
+  `after_expansion` hook serves expand mode ([The expand command](expand-command.md)).
 - [`crates/cargo-cgp-driver/src/emitter/`](../../crates/cargo-cgp-driver/src/emitter) — the generic
   `CgpEmitter<E>`, split behind a re-exporting `mod.rs`: `install.rs` rebuilds the compiler's default
   emitter for the active format (a `JsonEmitter` or an `AnnotateSnippetEmitter`) and wraps it,

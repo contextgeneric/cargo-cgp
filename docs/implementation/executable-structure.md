@@ -26,8 +26,9 @@ protocol, described next.
 
 ## Wrapping cargo: the front-end
 
-The front-end's whole job is to run `cargo check` with the driver installed as the compiler cargo
-uses for the user's own crates. It does this with the `RUSTC_WORKSPACE_WRAPPER` environment
+The front-end's whole job is to run cargo with the driver installed as the compiler cargo uses for
+the user's own crates — `cargo check` for a check, `cargo rustc` for an expansion (see
+[The expand command](expand-command.md)). It does this with the `RUSTC_WORKSPACE_WRAPPER` environment
 variable, which tells cargo to invoke a wrapper in place of `rustc` for each *workspace* crate while
 leaving dependencies to compile with the normal compiler. Scoping to the workspace is deliberate:
 the point of the tool is the user's code, not their dependency tree.
@@ -47,14 +48,16 @@ cargo-cgp check --workspace   →  cargo-cgp       check --workspace   (invoked 
 subcommands exist: `check` (below), `expand` (show the Rust a target's CGP macros generate, see
 [The expand command](expand-command.md)), `setup` (provision the pinned toolchain and driver), and
 `update` (upgrade the tool) — the last two are covered in [Distribution](distribution.md). Anything after
-`check` is forwarded verbatim to `cargo check`, so `cargo cgp check -v` and `cargo cgp check
---workspace` behave as expected. A leading `--help`/`-h`, or no subcommand at all, prints the
+`check` is forwarded verbatim to `cargo check`, so `cargo cgp check -v` and
+`cargo cgp check --workspace` behave as expected. A leading `--help`/`-h`, or no subcommand at all, prints the
 front-end help text ([`help::help_text`](../../crates/cargo-cgp/src/help.rs)) and exits successfully,
 so a bare `cargo cgp` is a friendly overview rather than an error.
 
-[`check::run_check`](../../crates/cargo-cgp/src/check/command.rs) then builds and runs the wrapped
-command. It sets `RUSTC_WORKSPACE_WRAPPER` to the driver's path — located by
-[`check::driver_path`](../../crates/cargo-cgp/src/check/driver_path.rs) as a sibling of the running
+[`launch::wrapped_cargo`](../../crates/cargo-cgp/src/launch/command.rs) then builds the wrapped
+command, which [`check::run_check`](../../crates/cargo-cgp/src/check.rs) runs (`expand` builds on the
+same function — see [The expand command](expand-command.md)). It sets `RUSTC_WORKSPACE_WRAPPER` to the
+driver's path — located by
+[`launch::driver_path`](../../crates/cargo-cgp/src/launch/driver_path.rs) as a sibling of the running
 front-end executable, since cargo and rustup lay the two binaries down together — and hands the
 driver the two further things it needs through the environment (the next section).
 
@@ -105,14 +108,14 @@ preflight that precedes it, are part of [Distribution](distribution.md#the-pinne
 this section covers the two pieces of state the forcing then makes coherent.
 
 The front-end passes the **sysroot** through `CARGO_CGP_SYSROOT`. It discovers the value by running
-`rustc --print sysroot` ([`check::sysroot`](../../crates/cargo-cgp/src/check/sysroot.rs)) and the
+`rustc --print sysroot` ([`launch::sysroot`](../../crates/cargo-cgp/src/launch/sysroot.rs)) and the
 driver reads it back to inject `--sysroot` ([`config::SYSROOT_ENV`](../../crates/cargo-cgp-driver/src/config.rs)),
 because a `rustc_driver` binary that is not inside a toolchain has no other way to locate `std`. The
 two crates declare the variable name independently; the shared string is the contract between them.
 
 The front-end also prepends the sysroot's `lib` directory to the OS **dynamic-library search
 path** — `LD_LIBRARY_PATH`, or its platform equivalent
-([`check::command`](../../crates/cargo-cgp/src/check/command.rs)) — so the loader can find
+([`launch::command`](../../crates/cargo-cgp/src/launch/command.rs)) — so the loader can find
 `librustc_driver` when cargo spawns the driver. The driver links that library dynamically from the
 sysroot, and nothing else would put it on the search path.
 
@@ -193,17 +196,21 @@ The front-end's modules are listed here; the driver's are in the
   subcommand dispatch (`check`, `expand`, `setup`, `update`).
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs) — process-argument
   normalization.
-- [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — builds and
-  runs the wrapped `cargo check`, runs the preflight and forces the toolchain (when managed), sets the
-  environment contract and the isolated target directory, forwards cargo's output, and propagates the
+- [`crates/cargo-cgp/src/launch/command.rs`](../../crates/cargo-cgp/src/launch/command.rs) — builds the
+  wrapped cargo command both reading subcommands run: it runs the preflight and forces the toolchain
+  (when managed), and sets the environment contract and the isolated target directory.
+- [`crates/cargo-cgp/src/check.rs`](../../crates/cargo-cgp/src/check.rs) — runs that command for
+  `cargo check`, inheriting cargo's stdio so its output streams through untouched, and propagates the
   exit code.
-- [`crates/cargo-cgp/src/check/driver_path.rs`](../../crates/cargo-cgp/src/check/driver_path.rs) —
+- [`crates/cargo-cgp/src/expand/`](../../crates/cargo-cgp/src/expand) — the `expand` subcommand over
+  the same launch (see [The expand command](expand-command.md)).
+- [`crates/cargo-cgp/src/launch/driver_path.rs`](../../crates/cargo-cgp/src/launch/driver_path.rs) —
   locates the driver via the `CARGO_CGP_DRIVER` override or as a sibling.
-- [`crates/cargo-cgp/src/check/preflight.rs`](../../crates/cargo-cgp/src/check/preflight.rs) — the
+- [`crates/cargo-cgp/src/launch/preflight.rs`](../../crates/cargo-cgp/src/launch/preflight.rs) — the
   read-only pre-check of the driver and toolchain (see [Distribution](distribution.md)).
-- [`crates/cargo-cgp/src/check/sysroot.rs`](../../crates/cargo-cgp/src/check/sysroot.rs) — discovers
+- [`crates/cargo-cgp/src/launch/sysroot.rs`](../../crates/cargo-cgp/src/launch/sysroot.rs) — discovers
   the toolchain sysroot, optionally under a forced toolchain.
-- [`crates/cargo-cgp/src/check/dylib.rs`](../../crates/cargo-cgp/src/check/dylib.rs) — the OS
+- [`crates/cargo-cgp/src/launch/dylib.rs`](../../crates/cargo-cgp/src/launch/dylib.rs) — the OS
   dynamic-library search path.
 - [`crates/cargo-cgp/src/toolchain.rs`](../../crates/cargo-cgp/src/toolchain.rs),
   [`setup.rs`](../../crates/cargo-cgp/src/setup.rs),

@@ -306,7 +306,7 @@ no dogfood test yet (see above).
   — harness option/filter parsing and the output normalizer.
 - [`tests/ui/`](../../tests/ui) — the UI snapshot fixtures, each `<name>.rs` paired with a blessed
   `<name>.cgp.stderr` (the tool's output) and `<name>.rust.stderr` (the plain-`cargo check`
-  baseline), run by the harness's two passes.
+  baseline) and its `.expand.rs` generated code, run by the harness's three passes.
 
 ## Source
 

@@ -98,14 +98,14 @@ the rustc-free post-processing and rewrite transforms are unit-tested in the
 [`cargo-cgp-error-processing`](../../crates/cargo-cgp-error-processing) crate. This document's own
 concern — that the front-end forwards the driver's output faithfully — is exercised end to end by the
 UI snapshot suite: every fixture's `.cgp.stderr` is what the whole tool, front-end and driver,
-printed. The [Testing](testing.md) document describes that suite and its two passes.
+printed. The [Testing](testing.md) document describes that suite and its passes.
 
 ## Source
 
 - The driver-side configure, transform, and render stages are in
   [`crates/cargo-cgp-driver/src`](../../crates/cargo-cgp-driver/src); see the
   [driver deep dive](driver.md#source) for the per-module list.
-- [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — the
+- [`crates/cargo-cgp/src/launch/command.rs`](../../crates/cargo-cgp/src/launch/command.rs) — the
   front-end's whole role: run the wrapped `cargo check` with the driver installed and forward its
   output untouched.
 - [`crates/cargo-cgp-error-processing/src`](../../crates/cargo-cgp-error-processing/src) — the

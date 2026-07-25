@@ -221,8 +221,9 @@ pinned-toolchain: nightly-2026-07-16
 built-against-rustc: rustc 1.99.0-nightly (d0babd8b6 2026-07-15)
 ```
 
-A failure *before* that output — typically `error while loading shared libraries:
-librustc_driver-<hash>.so: cannot open shared object file` — means the loader cannot find the
+A failure *before* that output — typically
+`error while loading shared libraries: librustc_driver-<hash>.so: cannot open shared object file` —
+means the loader cannot find the
 compiler library, either because the dynamic-library path is not set or because the driver was built
 against a different nightly than the one installed. A Nix-built driver has that path baked into its
 wrapper, so `--version` works as-is; a from-source driver needs the pinned toolchain's `lib` directory

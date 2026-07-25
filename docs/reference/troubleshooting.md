@@ -255,7 +255,7 @@ you see, then read the section for the fix.
 | `failed to run the cargo-cgp-driver at …` | driver missing (managed) | [The front-end cannot find the driver](#the-front-end-cannot-find-the-driver) |
 | `could not execute process` … `(never executed)` | driver path wrong (unmanaged) | [The front-end cannot find the driver](#the-front-end-cannot-find-the-driver) |
 | `error while loading shared libraries: librustc_driver-…` | library path unset, or toolchain mismatch | [The driver cannot load the compiler library](#the-driver-cannot-load-the-compiler-library) |
-| `--print sysroot` failed with status exit status: 127` | Nix install; a same-version rustup toolchain shadows its libraries | [A Nix install fails its sysroot probe](#a-nix-install-fails-its-sysroot-probe-under-cargo-cgp) |
+| `--print sysroot` failed with status `exit status: 127` | Nix install; a same-version rustup toolchain shadows its libraries | [A Nix install fails its sysroot probe](#a-nix-install-fails-its-sysroot-probe-under-cargo-cgp) |
 | `the pinned toolchain is not installed` | pinned nightly absent | [The managed preflight rejects the setup](#the-managed-preflight-rejects-the-setup) |
 | `could not run under toolchain …` | driver built against another nightly | [The managed preflight rejects the setup](#the-managed-preflight-rejects-the-setup) |
 | `out of lockstep` / `now provides` | front-end and driver versions/builds differ | [The managed preflight rejects the setup](#the-managed-preflight-rejects-the-setup) |

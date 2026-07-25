@@ -119,8 +119,9 @@ directly, which is common in the `E0277` builders.
 
 For CGP this truncation lands routinely, because a `Symbol` for a normal field name or a `Product!`
 list is already long enough to trip the width test. It shows up as the `...` inside a nested type — for
-instance a similar-impl *candidate list* that reads `HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s',
-...>>>>>` — where the tail of the name is replaced by `...` and moved to the file. `--verbose` sets
+instance a similar-impl *candidate list* that reads
+`HasField<Symbol<4, Chars<'m', Chars<'a', Chars<'s', ...>>>>>` — where the tail of the name is replaced
+by `...` and moved to the file. `--verbose` sets
 `opts.verbose`, so `short_string_namespace` returns the full type inline and the field name is never
 sent to a temp file. (When the type *is* diverted to a file, the UI-test harness normalizes the
 hash-named path away; see [Testing](testing.md).)
@@ -186,8 +187,9 @@ borrow, not the emitter behind it.
 The trap is indirect, because the resolver does not emit diagnostics itself. It forces a **query**,
 and the query emits. Two query paths are known to do this. Forcing `predicates_of` on an impl whose
 `where`-clause has a type that fails to lower makes `gather_explicit_predicates_of` →
-`lower_ty` → `resolve_type_relative_path` report a resolution error (an `E0599` such as `no variant
-named …`) the first time it is computed; if the resolver forces that query while a diagnostic is being
+`lower_ty` → `resolve_type_relative_path` report a resolution error (an `E0599` such as
+`no variant named …`) the first time it is computed; if the resolver forces that query while a
+diagnostic is being
 emitted, the query's own emission re-enters the lock. Forcing `tcx.typeck` is worse: it is a body-level
 query that *replays its cached diagnostics* when forced, so forcing it from the emitter re-emits every
 error in that body.

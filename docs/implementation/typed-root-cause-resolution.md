@@ -594,8 +594,9 @@ and [`acceptable/use-type/`](../../tests/ui/acceptable/use-type) fixtures:
   (`WrapGreeter<NotAGreeter>` with `NotAGreeter` an ordinary struct, the `money-transfer-api`
   `UseBasicAuth<QueryBalanceRequest>` shape). Pins the `[CGP-E111]` not-a-provider leaf and its
   discriminator against the `cascade_after_use_site` dead-end: `NotAGreeter` has no concrete `Greeter`
-  impl (`owner_has_impl_of` false), so it is reported as `the provider trait \`Greeter\` is not
-  implemented for \`NotAGreeter\`` rather than declining to a `[CGP-E002]` block naming the whole
+  impl (`owner_has_impl_of` false), so it is reported as
+  `the provider trait \`Greeter\` is not implemented for \`NotAGreeter\`` rather than declining to a
+  `[CGP-E002]` block naming the whole
   `WrapGreeter<NotAGreeter>` pipeline.
 - `generic_consumer_use_site` — the same anchor's value-argument case: the dispatch parameter
   recovered by signature unification from a written tuple, no tag argument involved, with the

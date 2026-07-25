@@ -19,9 +19,11 @@ tool needs. The install and usage documents both call out where to prefer the lo
 ## Overview
 
 Using `cargo-cgp` has two phases — getting it onto your machine, then running it — and the two
-reference documents cover one each. Today the tool is a single command, `cargo cgp check`, which
-compiles your workspace through a custom `rustc` wrapper so it can present CGP wiring errors with the
-root cause first instead of the wall of generated-type errors the plain compiler prints.
+reference documents cover one each. Today the tool has two commands that read your code, both
+compiling it through a custom `rustc` wrapper: `cargo cgp check` presents CGP wiring errors with the
+root cause first, instead of the wall of generated-type errors the plain compiler prints, and
+`cargo cgp expand` shows the Rust your CGP macros generate, with CGP's type-level constructs spelled
+the way you wrote them.
 
 Installation is shaped by the one fact that the tool embeds a compiler. The `cargo-cgp-driver` binary
 links the compiler's internal libraries, so it must be built against an exact pinned nightly that
