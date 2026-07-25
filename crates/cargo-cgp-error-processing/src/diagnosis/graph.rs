@@ -96,10 +96,11 @@ impl DependencyGraph {
     /// Whether rendering against `seen` would say nothing new — every top-level root was already
     /// drawn elsewhere, so the whole diagram would collapse to `(*)` references.
     ///
-    /// A caller uses this to drop the chain entirely rather than print a
-    /// `this is required through the dependency chain:` heading over a single pointer, which promises
-    /// a chain and delivers none. It reports the *whole* graph being redundant, not a subtree: a
-    /// partly-elided graph still has its own hops to show and renders normally.
+    /// A caller uses this to render such a graph against a *fresh* set instead, so the block shows its
+    /// own chain rather than a heading over a single pointer that promises a chain and delivers none.
+    /// Eliding here would trim not a shared tail but the entire derivation, leaving the block asserting
+    /// a cause with no account of where it came from. It reports the *whole* graph being redundant, not
+    /// a subtree: a partly-elided graph still has its own hops to show and elides normally.
     pub fn fully_elided_by(&self, seen: &HashSet<ChainNode>) -> bool {
         let roots = self.roots();
         !roots.is_empty()

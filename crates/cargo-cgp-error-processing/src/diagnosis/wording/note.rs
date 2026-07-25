@@ -43,18 +43,23 @@ pub fn cause_notes_seen(
         }
     }
 
-    // An earlier note already drew this whole chain, so there is nothing left to show but pointers.
-    // Keep the root cause named — that is what makes the block actionable on its own — and drop the
-    // chain rather than head a single `(*)` reference with a promise of one. With the lead dropped
-    // too (the header states it), the note would be empty, so none is emitted.
-    if graph.fully_elided_by(seen) {
-        return match leaves.as_slice() {
-            [only] => leaf_lead(only, header_leaf).into_iter().collect(),
-            many => vec![format!("root causes:\n{}", leaf_list(many))],
-        };
-    }
-
-    let chain = graph.render_seen(seen);
+    // Every root of this graph was drawn by an earlier note, so eliding against that note has nothing
+    // to *trim* — it would remove the whole derivation and leave the block asserting a cause with no
+    // account of where it came from. The cross-block elision exists to drop a long shared tail hanging
+    // under a block's own distinct prefix; a block with no distinct prefix at all is the degenerate
+    // case, not the case it was built for. Such a block has already survived de-duplication, so it is a
+    // *different* failure that happens to run through ground another one covered, and it earns its own
+    // chain: render it against a fresh set, ignoring what came before. The cost is bounded — a
+    // wholly-contained graph is by construction no larger than the one that contains it — and the
+    // nodes still join `seen`, so later notes elide against this block as usual.
+    let chain = if graph.fully_elided_by(seen) {
+        let mut fresh = HashSet::new();
+        let rendered = graph.render_seen(&mut fresh);
+        seen.extend(fresh);
+        rendered
+    } else {
+        graph.render_seen(seen)
+    };
     let note = match leaves.as_slice() {
         [only] => leaf_lead(only, header_leaf)
             .map(|lead| format!("{lead}\n{}", chain_heading(&chain)))

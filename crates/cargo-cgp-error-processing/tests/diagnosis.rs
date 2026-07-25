@@ -12,9 +12,9 @@ use std::collections::HashMap;
 use cargo_cgp_error_processing::diagnosis::{assoc_mismatch_leaf, mismatch_leaf, quoted_list};
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
-    Cause, ChainNode, DepNode, DependencyGraph, DiagKind, FieldIssue, Leaf, Resolved, cause_note,
-    cause_notes, cause_signature, consumer_header, dependency_tree_leaf, derive_help_messages,
-    field_mismatch_header, plan_resolved, root_cause_code,
+    Cause, ChainNode, DepNode, DependencyGraph, DiagKind, FieldIssue, Leaf, PendingNote, Resolved,
+    cause_note, cause_notes, cause_signature, consumer_header, dependency_tree_leaf,
+    derive_help_messages, field_mismatch_header, plan_resolved, root_cause_code,
 };
 
 /// The plan's `root cause:` note as text. The plan carries the note unrendered so the emitter can
@@ -918,5 +918,97 @@ fn independent_root_causes_render_as_one_note_with_stacked_chains() {
          \x20 └─ [CGP-E106] missing field `height` on `App`\n\
          \x20 [CGP-E101] consumer trait impl `CanReportWidth` for context `App`\n\
          \x20 └─ [CGP-E106] missing field `width` on `App`"
+    );
+}
+
+/// A block whose every root an earlier block already drew still renders its own chain.
+///
+/// The cross-block elision exists to trim a long shared *tail* hanging under a block's own distinct
+/// prefix. A block with no distinct prefix at all is the degenerate case rather than the case it was
+/// built for: eliding there removes the whole derivation and leaves the block asserting a cause with
+/// no account of where it came from. Such a block has already survived de-duplication, so it is a
+/// distinct failure that merely runs through ground another one covered, and it earns its chain.
+#[test]
+fn a_wholly_contained_block_still_renders_its_chain() {
+    let leaf = missing_field_leaf();
+    // A wrapper block whose chain runs *through* the consumer's own chain.
+    let wrapper = Cause {
+        leaf: leaf.clone(),
+        paths: vec![vec![
+            trait_hop("CanCalculateAreaChecked", "Rectangle"),
+            consumer("CanCalculateArea", "Rectangle"),
+            ChainNode::Leaf(leaf.clone()),
+        ]],
+    };
+    // The consumer block: a strict suffix of it, so every one of its roots was already drawn.
+    let inner = one_path(
+        leaf.clone(),
+        vec![consumer("CanCalculateArea", "Rectangle")],
+    );
+
+    let mut seen = std::collections::HashSet::new();
+    let first = PendingNote {
+        causes: [wrapper].into_iter().collect(),
+        header_leaf: None,
+    }
+    .render(&mut seen);
+    let second = PendingNote {
+        causes: [inner].into_iter().collect(),
+        header_leaf: None,
+    }
+    .render(&mut seen);
+
+    assert!(first[0].contains("this is required through the dependency chain:"));
+    assert!(
+        second[0].contains("this is required through the dependency chain:"),
+        "the contained block keeps a chain rather than degenerating to a bare lead"
+    );
+    assert!(
+        second[0].contains("consumer trait impl `CanCalculateArea` for context `Rectangle`"),
+        "and renders its nodes in full"
+    );
+    assert!(
+        !second[0].contains("(*)"),
+        "rendered against a fresh set, so nothing points at another block"
+    );
+}
+
+/// The partial case is untouched: a block with its own prefix still elides the shared tail, keeping
+/// the `(*)` marker and the leaves beneath it.
+#[test]
+fn a_partly_contained_block_still_elides_its_shared_tail() {
+    let leaf = missing_field_leaf();
+    let inner = one_path(
+        leaf.clone(),
+        vec![consumer("CanCalculateArea", "Rectangle")],
+    );
+    let outer = Cause {
+        leaf: leaf.clone(),
+        paths: vec![vec![
+            trait_hop("CanCalculateAreaChecked", "Rectangle"),
+            consumer("CanCalculateArea", "Rectangle"),
+            ChainNode::Leaf(leaf.clone()),
+        ]],
+    };
+
+    let mut seen = std::collections::HashSet::new();
+    let _first = PendingNote {
+        causes: [inner].into_iter().collect(),
+        header_leaf: None,
+    }
+    .render(&mut seen);
+    let second = PendingNote {
+        causes: [outer].into_iter().collect(),
+        header_leaf: None,
+    }
+    .render(&mut seen);
+
+    assert!(
+        second[0].contains("(*)"),
+        "the shared tail is still elided under the block's own prefix"
+    );
+    assert!(
+        second[0].contains("missing field `height` on `Rectangle`"),
+        "and the elided branch still bottoms out at the root cause"
     );
 }

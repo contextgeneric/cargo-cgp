@@ -447,9 +447,11 @@ while still ending at the root cause, since the block it points into is one the 
 hand.
 The redundancy this removes is large in real code: CGP wiring is lazy, so one mistake reaches several
 diagnostics that legitimately do *not* de-duplicate, and their chains can share everything below their
-own first few hops. A block whose whole chain was already drawn keeps its lead and drops the chain
-entirely rather than heading a lone `(*)`. Either way the block stays actionable alone — its header,
-its fix `help`, and its `root cause:` lead all still name the cause, so only chain *detail* is elided.
+own first few hops. A block whose whole chain was already drawn is rendered against a fresh set
+instead, keeping a chain of its own rather than heading a lone `(*)`: with no distinct prefix to hang a
+shared tail under, eliding would remove the entire derivation. Either way the block stays actionable
+alone — its header, its fix `help`, and its `root cause:` lead all still name the cause, so only chain
+*detail* is ever elided.
 The
 [`density_3`](../../tests/ui/acceptable/duplication/density_3.rs) (two components, one missing field),
 [`dependency_cascade`](../../tests/ui/acceptable/duplication/dependency_cascade.rs) (three chained

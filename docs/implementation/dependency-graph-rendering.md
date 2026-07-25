@@ -288,9 +288,16 @@ path is deliberately a distinct node — a set the current render were also fill
 occurrence `(*)` and fold a linear descent into a false cycle. Within a render, only the id-keyed
 `expanded` elides.
 
-**A block that would say nothing new drops its chain.** `fully_elided_by` reports every top-level root
-already drawn, and the note then keeps its `root cause:` lead alone rather than heading a lone `(*)`
-with the promise of a chain. The cause is still named — by the lead instead of by a terminus.
+**A block with no distinct prefix of its own renders in full instead of eliding.** `fully_elided_by`
+reports every top-level root already drawn, and such a block is rendered against a *fresh* `seen` set
+rather than truncated. The elision exists to trim a long shared *tail* hanging under a block's own
+prefix; a block whose every root was already drawn has no prefix to hang it under, so eliding removes
+the whole derivation and leaves the block asserting a cause with no account of where it came from.
+Such a block has already survived [de-duplication](driver.md), so it is a *different* failure that
+merely runs through ground another one covered — a hand-written wrapper trait and the CGP consumer it
+reduces to, say — and it earns its own chain. The cost is bounded: a wholly-contained graph is by
+construction no larger than the one containing it. Its nodes still join `seen`, so later blocks elide
+against it as usual.
 
 An elided block stays actionable read on its own — its header, its fix `help`, and its `root cause:`
 lead all still name the cause, so what is elided is chain *detail*, never what failed or how to fix
