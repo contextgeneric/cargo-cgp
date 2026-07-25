@@ -194,13 +194,13 @@ pub(crate) fn marker_to_consumer(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<(Def
 /// mismatch leaf's `help` offers as the fix.
 ///
 /// An abstract-type component is recognized **structurally**, by the three things
-/// [`#[cgp_type]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/macros/cgp_type.md)
-/// generates and nothing else does: the trait is a CGP consumer trait ([`consumer_provider_trait`]),
-/// its *only* associated item is a type, and its provider trait carries the `UseType<T>` blanket impl
-/// that supplies that type. The last condition is the decisive one — it is what makes `UseType<T>` a
-/// valid fix to suggest — and it is anchored by `DefId` to the crate defining `UseType`, so a
-/// same-named type elsewhere cannot pass. A behavioral component, or a plain trait with an associated
-/// type, matches none of the three.
+/// [`#[cgp_type]`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/macros/cgp_type.md)
+/// generates and nothing else does: the trait is a CGP consumer trait
+/// ([`consumer_provider_trait`]), its *only* associated item is a type, and its provider trait
+/// carries the `UseType<T>` blanket impl that supplies that type. The last condition is the
+/// decisive one — it is what makes `UseType<T>` a valid fix to suggest — and it is anchored by
+/// `DefId` to the crate defining `UseType`, so a same-named type elsewhere cannot pass. A
+/// behavioral component, or a plain trait with an associated type, matches none of the three.
 pub(crate) fn abstract_type_component_marker<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,

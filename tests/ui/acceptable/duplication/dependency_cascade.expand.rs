@@ -15,7 +15,7 @@
 //! provider-side bound, but coalescing words the group uniformly as consumer traits,
 //! since a `check_components!` entry failing *is* the consumer trait failing.
 //!
-//! See docs/errors/checks/verbose-cascade.md.
+//! See cgp-knowledge-base/cgp/errors/checks/verbose-cascade.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

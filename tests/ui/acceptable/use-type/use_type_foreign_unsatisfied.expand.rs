@@ -9,7 +9,8 @@
 //! working as designed: it emits the bound and defers the actual check to `rustc`,
 //! which reports the missing `NoScalar: HasScalarType` at the use site.
 //!
-//! See docs/reference/attributes/use_type.md and docs/errors/checks/check-trait-failure.md.
+//! See cgp-knowledge-base/cgp/reference/attributes/use_type.md and
+//! cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -9,8 +9,8 @@
 //! problem: the tool should name the failing layer. Contrast scaled_area_2, where
 //! the outer layer fails.
 //!
-//! Exposes issues in docs/issues/usability.md. CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/higher-order-provider-layer.md.
+//! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md. CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/higher-order-provider-layer.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -15,7 +15,7 @@
 //! to add `#[derive(HasField)]`, not to add a field. This is the check doing its
 //! job, not a macro defect.
 //!
-//! See docs/errors/checks/check-trait-failure.md (the "when the derive is missing
+//! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md (the "when the derive is missing
 //! entirely" variant).
 extern crate std;
 #[prelude_import]

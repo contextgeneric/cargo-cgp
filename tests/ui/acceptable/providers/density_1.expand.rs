@@ -9,8 +9,8 @@
 //! present, so this is a usability problem: the tool should collapse the chain to a
 //! short path (Density → Area → missing `height`) and drop the scaffolding.
 //!
-//! Exposes issues in docs/issues/usability.md. CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/verbose-cascade.md.
+//! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md. CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/verbose-cascade.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -25,7 +25,8 @@
 //! hand-written `impl CanHandleApiSend<GreetApi> for App` (traced by the impl-site anchor) and — the
 //! case this fixture pins — at the foreign `impl CanAddAppRoutes for Box<App>` several hops removed.
 //!
-//! See docs/implementation/typed-root-cause-resolution.md (the wrapper-chain path).
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the
+//! wrapper-chain path).
 
 use core::future::Future;
 use core::marker::PhantomData;

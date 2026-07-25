@@ -33,7 +33,7 @@
 //! `PipeHandlers`/`ComposeHandlers`-plumbing `[CGP-E002]` blocks with the cause nowhere in the
 //! output. The mechanism (and why it generalizes to any stalled associated-type projection) is
 //! documented under "Walking the dependency graph downward" in
-//! `docs/implementation/typed-root-cause-resolution.md`.
+//! `cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md`.
 
 use core::marker::PhantomData;
 

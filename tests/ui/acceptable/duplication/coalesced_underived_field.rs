@@ -17,7 +17,8 @@
 //! sibling, where the leaf never coalesces, is `dependency_cascade`.
 //!
 //! CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md (derive-missing variant).
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md
+//! (derive-missing variant).
 
 use cgp::prelude::*;
 

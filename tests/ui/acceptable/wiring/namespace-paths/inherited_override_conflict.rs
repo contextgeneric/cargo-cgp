@@ -21,7 +21,7 @@
 //! contrast the context-level shape in override_registered_path.rs, where a context
 //! joining a namespace tries to override a path the namespace registers.
 //!
-//! See docs/errors/wiring/namespace-override-conflict.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/namespace-override-conflict.md.
 
 use cgp::prelude::*;
 

@@ -1,11 +1,11 @@
 //! The negative counterpart of [`abstract_type_mismatch`](abstract_type_mismatch.rs): the same
-//! projection failure on a trait that is **not** a CGP abstract-type component. `HasUnit` is a plain
-//! Rust trait with an associated type, implemented directly on the context — no `#[cgp_type]`, so no
-//! provider trait, no component marker, and no `UseType` blanket. `RectangleArea` pins its `Unit` to
-//! `f64` through an ordinary `where` clause (the form
-//! [`#[use_type]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/attributes/use_type.md)
-//! deliberately does not cover, since the trait is not an abstract-type component), while `Rectangle`
-//! supplies `u32`.
+//! projection failure on a trait that is **not** a CGP abstract-type component. `HasUnit` is a
+//! plain Rust trait with an associated type, implemented directly on the context — no
+//! `#[cgp_type]`, so no provider trait, no component marker, and no `UseType` blanket.
+//! `RectangleArea` pins its `Unit` to `f64` through an ordinary `where` clause (the form
+//! [`#[use_type]`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/attributes/use_type.md)
+//! deliberately does not cover, since the trait is not an abstract-type component), while
+//! `Rectangle` supplies `u32`.
 //!
 //! The failure is reshaped into the same `[CGP-E017]` class — the mechanism is the projection, not
 //! the trait — but the wording turns on the trait's fingerprint, and that is what this fixture pins.

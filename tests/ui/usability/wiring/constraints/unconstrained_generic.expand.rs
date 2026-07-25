@@ -14,7 +14,7 @@
 //! hand-written `impl<T>` with an unused parameter. Deferring this to the
 //! compiler is the intended behavior, not a macro defect.
 //!
-//! See docs/errors/wiring/unconstrained-generic.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/unconstrained-generic.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

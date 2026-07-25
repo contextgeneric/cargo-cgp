@@ -14,8 +14,9 @@
 //! dependency chain bottoming out at the `CanUseBar` capability the missing component
 //! would supply.
 //!
-//! See docs/errors/checks/check-trait-failure.md (its "the wiring is missing" face) and
-//! docs/implementation/typed-root-cause-resolution.md.
+//! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md (its "the wiring
+//! is missing" face) and
+//! cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

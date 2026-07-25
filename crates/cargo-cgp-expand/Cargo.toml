@@ -13,12 +13,12 @@ keywords     = { workspace = true }
 # pretty-printer produced for an expanded crate and rewrites CGP's type-level spines back to
 # the surface macros the programmer wrote. Like `cargo-cgp-error-processing` it links no
 # compiler internals — it works on text and a `syn` tree — so it builds and its tests run on
-# any toolchain. See `docs/implementation/resugaring.md`.
+# any toolchain. See `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 
 [dependencies]
 # The parser and syntax tree the resugaring matches on. Matching a parsed `syn::Type` rather
 # than rendered text is what makes the passes immune to the printer's line breaking; see
-# `docs/implementation/resugaring.md`.
+# `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 syn = { workspace = true }
 quote = { workspace = true }
 proc-macro2 = { workspace = true }

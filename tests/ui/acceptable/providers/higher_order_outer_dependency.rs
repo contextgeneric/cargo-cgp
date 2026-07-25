@@ -13,7 +13,7 @@
 //! at fault is identified by which provider's `where` clause the caret sits on and
 //! how deep the chain runs. This is the check doing its job, not a macro defect.
 //!
-//! See docs/errors/checks/higher-order-provider-layer.md.
+//! See cgp-knowledge-base/cgp/errors/checks/higher-order-provider-layer.md.
 
 use cgp::prelude::*;
 

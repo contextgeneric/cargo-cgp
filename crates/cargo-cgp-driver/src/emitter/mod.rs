@@ -3,7 +3,7 @@
 //! This is the compiler-side seam of every diagnostic transform. It replaces the session's own
 //! emitter with [`CgpEmitter`], which acts on each diagnostic before handing it to a real inner
 //! emitter, so the transformed result reaches cargo already shaped and rendered like vanilla
-//! `rustc` (see `docs/implementation/driver.md`).
+//! `rustc` (see `cgp-knowledge-base/cargo-cgp/implementation/driver.md`).
 //!
 //! Each `emit_diagnostic` runs one of two transforms, then a shared cleanup. A resolvable CGP
 //! wiring failure is handed to the typed [`resolve`](crate::resolve)r and, when it succeeds, the

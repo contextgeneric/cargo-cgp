@@ -37,7 +37,7 @@ const MAX_DEPTH: u32 = 256;
 /// The descent is memoized at **every node** through `cache`: one CGP mistake surfaces the same
 /// failure at many sites (all seeding the same obligation), and a shared capability is a diamond
 /// reached from several parents, so each distinct obligation is resolved once and reused. See
-/// `docs/implementation/cached-dependency-resolution.md`.
+/// `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`.
 pub(crate) fn resolve_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,

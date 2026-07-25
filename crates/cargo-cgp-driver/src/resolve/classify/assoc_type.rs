@@ -24,7 +24,8 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 ///
 /// The normalization runs in its own throwaway `InferCtxt`, and nothing crosses back out of it but
 /// the owned rendered type, so it cannot leak a variable into the walk's contexts (the
-/// cross-context contamination hazard in `docs/implementation/rustc-diagnostic-internals.md`).
+/// cross-context contamination hazard in
+/// `cgp-knowledge-base/cargo-cgp/implementation/rustc-diagnostic-internals.md`).
 pub(crate) fn projected_type<'tcx>(tcx: TyCtxt<'tcx>, alias: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let param_env = ty::ParamEnv::empty();
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());

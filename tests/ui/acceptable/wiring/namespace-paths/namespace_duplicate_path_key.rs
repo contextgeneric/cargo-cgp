@@ -12,7 +12,9 @@
 //! `build_namespace_impl` (`mapping/eval.rs`) regresses, the caret snaps back to
 //! the block and this `.stderr` changes.
 //!
-//! See docs/errors/wiring/conflicting-wiring.md; error-span mechanics in docs/implementation/entrypoints/cgp_namespace.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md; error-span
+//! mechanics in
+//! cgp-knowledge-base/cgp/implementation/entrypoints/cgp_namespace.md.
 
 use cgp::prelude::*;
 

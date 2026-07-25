@@ -15,8 +15,8 @@
 //! its own missing-wiring leaf, rather than collapsing both leaves under one shared redirect with the
 //! other branch reduced to a `(*)` back-reference.
 //!
-//! See docs/implementation/dependency-graph-rendering.md (node identity is cross-path, keyed on the
-//! dispatched value).
+//! See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md (node identity is
+//! cross-path, keyed on the dispatched value).
 
 use cgp::prelude::*;
 

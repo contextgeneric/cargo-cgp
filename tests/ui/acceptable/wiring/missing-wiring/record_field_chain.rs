@@ -23,7 +23,7 @@
 //! The single mistake is the un-wired `@ValueBuilderComponent.Inner`; the root cause names exactly
 //! that path, reached through the record chain.
 //!
-//! See docs/implementation/typed-root-cause-resolution.md (the walk).
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the walk).
 
 use cgp::prelude::*;
 

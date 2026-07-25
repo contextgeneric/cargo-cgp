@@ -1,10 +1,11 @@
 //! A per-compilation memoization cache over the typed resolver's walk.
 //!
-//! See `docs/implementation/cached-dependency-resolution.md`. CGP wiring is lazy, so one mistake
-//! surfaces the same failure at many sites — the `check_components!` entry, every hand-written
-//! `impl` that references the broken consumer, and each call — and a shared capability is a diamond
-//! reached from several parents. This cache memoizes the walk **at every node**, storing each node's
-//! owned, rustc-free sub-result so a repeated obligation is resolved once and reused.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`. CGP wiring is
+//! lazy, so one mistake surfaces the same failure at many sites — the `check_components!` entry,
+//! every hand-written `impl` that references the broken consumer, and each call — and a shared
+//! capability is a diamond reached from several parents. This cache memoizes the walk **at every
+//! node**, storing each node's owned, rustc-free sub-result so a repeated obligation is resolved
+//! once and reused.
 //!
 //! The key is a [`StableHash`] fingerprint of the region-erased obligation together with its root
 //! context — the context is part of the input because the walk's rendering compares node self-types

@@ -18,7 +18,7 @@
 //! alongside two_namespaces_joined.rs (two `namespace` joins on one context);
 //! contrast the specific-vs-blanket override in override_registered_path.rs.
 //!
-//! See docs/errors/wiring/namespace-forwarding-conflict.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/namespace-forwarding-conflict.md.
 
 use cgp::prelude::*;
 

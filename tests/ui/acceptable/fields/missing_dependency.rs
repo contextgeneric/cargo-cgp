@@ -14,7 +14,8 @@
 //! that re-span would report the error on the single `Person` token shared by
 //! every checked component instead of on the component that actually fails.
 //!
-//! See docs/errors/checks/check-trait-failure.md; span mechanics: check_components.md.
+//! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md; span
+//! mechanics: check_components.md.
 
 use cgp::prelude::*;
 

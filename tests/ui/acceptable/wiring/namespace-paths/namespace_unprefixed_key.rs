@@ -15,7 +15,8 @@
 //! redirected key. If the projection normalization in `resolve/conflict.rs` regresses, this
 //! reverts to the `[CGP-E005]` overlap form.
 //!
-//! See docs/errors/wiring/namespace-override-conflict.md and docs/error-code.md (CGP-E007).
+//! See cgp-knowledge-base/cgp/errors/wiring/namespace-override-conflict.md and
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E007).
 
 use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::prelude::*;

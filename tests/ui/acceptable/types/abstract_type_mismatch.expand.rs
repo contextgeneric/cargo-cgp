@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! An **abstract type** the context binds to one concrete type while a provider it uses pins the
-//! same abstract type to another. `HasScalarType` is an
-//! [abstract-type component](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/abstract-types.md):
+//! same abstract type to another. `HasScalarType` is an [abstract-type
+//! component](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/abstract-types.md):
 //! generic code names `Scalar` without committing to a concrete type, and the context chooses one
 //! by wiring `ScalarTypeProviderComponent` to `UseType<T>`. Here `Rectangle` wires it to
 //! `UseType<u32>`, but `RectangleArea` pins it with the `#[use_type(HasScalarType.{Scalar = f64})]`

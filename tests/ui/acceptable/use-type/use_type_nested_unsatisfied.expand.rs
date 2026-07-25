@@ -10,7 +10,8 @@
 //! and defers the check to `rustc`, which reports the missing `NoScalar: HasScalarType`
 //! at the site that requires `App: GetScalar`.
 //!
-//! See docs/reference/attributes/use_type.md and docs/errors/checks/check-trait-failure.md.
+//! See cgp-knowledge-base/cgp/reference/attributes/use_type.md and
+//! cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

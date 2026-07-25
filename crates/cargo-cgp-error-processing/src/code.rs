@@ -23,9 +23,9 @@
 //! Renamed obligation notes and resugared `Symbol!`s are supporting detail, not classifications
 //! of their own, and stay uncoded.
 //!
-//! The scheme is the letters `CGP-E` followed by three digits, deliberately unlike rustc's
-//! `E0277`, so the two namespaces never blur. The catalog of what each code means and how to
-//! fix it lives in `docs/error-code.md`; register a new code there in the same change that
+//! The scheme is the letters `CGP-E` followed by three digits, deliberately unlike rustc's `E0277`,
+//! so the two namespaces never blur. The catalog of what each code means and how to fix it lives in
+//! `cgp-knowledge-base/cargo-cgp/error-code.md`; register a new code there in the same change that
 //! adds its constant here.
 
 /// `CGP-E001` — the consumer trait behind a component is not implemented for the context.
@@ -141,16 +141,17 @@ pub const CONSUMER_TRAIT_IN_PROVIDER_BOUND: &str = "CGP-E015";
 pub const INNER_PROVIDER_NOT_IMPORTED: &str = "CGP-E016";
 
 /// `CGP-E017` — an *abstract type* the context supplies does not match the one a provider requires.
-/// Stamped on a `type mismatch resolving <Ctx as HasErrorType>::Error == AppError` (`E0271`) that the
-/// typed resolver traced through CGP wiring to an associated-type projection other than `HasField`'s.
-/// The context binds the abstract type one way — by wiring its component to `UseType<T>`, or by
-/// implementing the trait directly — while a provider it uses pins the same type to another, most
-/// often through the `#[use_type(Trait.{Assoc = Concrete})]` equality form. The trait bound itself
-/// holds, so only the projection fails; the rewritten message names the abstract type, its owning
-/// trait, the required type, and the one actually supplied, and for a
-/// [`#[cgp_type]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/macros/cgp_type.md)
-/// component the wiring fix rides in a `help`. Sibling of [`FIELD_TYPE_MISMATCH`], which is the same
-/// failure for a `HasField` value type rather than an abstract type. The Rust code stays `E0271`.
+/// Stamped on a `type mismatch resolving <Ctx as HasErrorType>::Error == AppError` (`E0271`) that
+/// the typed resolver traced through CGP wiring to an associated-type projection other than
+/// `HasField`'s. The context binds the abstract type one way — by wiring its component to
+/// `UseType<T>`, or by implementing the trait directly — while a provider it uses pins the same
+/// type to another, most often through the `#[use_type(Trait.{Assoc = Concrete})]` equality form.
+/// The trait bound itself holds, so only the projection fails; the rewritten message names the
+/// abstract type, its owning trait, the required type, and the one actually supplied, and for a
+/// [`#[cgp_type]`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/macros/cgp_type.md)
+/// component the wiring fix rides in a `help`. Sibling of [`FIELD_TYPE_MISMATCH`], which is the
+/// same failure for a `HasField` value type rather than an abstract type. The Rust code stays
+/// `E0271`.
 pub const ABSTRACT_TYPE_MISMATCH: &str = "CGP-E017";
 
 // The `CGP-E1xx` family codes the entries of a `root cause:` note's dependency tree, one code per

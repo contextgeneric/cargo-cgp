@@ -14,7 +14,8 @@
 //! overlapping paths in bare `@…` form (the wildcard tail is what makes the
 //! overlap visible).
 //!
-//! See docs/errors/wiring/conflicting-wiring.md and docs/error-code.md (CGP-E005).
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E005).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

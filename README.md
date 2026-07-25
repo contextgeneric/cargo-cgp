@@ -98,7 +98,7 @@ error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemente
 
 The Rust error code (`E0277`) is always kept, so `rustc --explain` still works; the `[CGP-Exxx]`
 codes ride inside the message and are catalogued in
-[docs/error-code.md](docs/error-code.md).
+the [error-code catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/error-code.md).
 
 ## Installing
 
@@ -133,7 +133,7 @@ The first command builds the front-end under whatever toolchain you already have
 then provisions the pinned nightly and builds the matching driver against it, in lockstep. Later,
 `cargo cgp update` upgrades the tool. Full instructions for every path, including installing from a
 source checkout, are in
-[docs/reference/installation.md](docs/reference/installation.md).
+the [installation guide](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/installation.md).
 
 ## Running it without installing
 
@@ -190,7 +190,7 @@ appear inline in your editor. Because the command is two words and must emit JSO
 
 The check builds into an isolated `target/cgp` directory, so it will not contend with your normal
 builds or Rust Analyzer's own project loading. The full integration notes are in
-[docs/reference/usage.md](docs/reference/usage.md#editor-integration-rust-analyzer).
+the [usage guide](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/usage.md#editor-integration-rust-analyzer).
 
 ## Expanding the generated code
 
@@ -226,20 +226,23 @@ without a tag until the next release.
 
 ## Learn more
 
-The `docs/` directory is a knowledge base covering both how to use the tool and how it is built:
+This tool's documentation lives in the [CGP knowledge base](https://github.com/contextgeneric/cgp-knowledge-base),
+the consolidated documentation for every project in the CGP ecosystem. Its
+[`cargo-cgp/` section](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/README.md) covers both how to use the tool and how it is built:
 
-- [docs/reference/usage.md](docs/reference/usage.md) — running the check, reading its output,
-  expanding a target, and editor integration.
-- [docs/reference/installation.md](docs/reference/installation.md) — every install, update, and
-  uninstall path.
-- [docs/error-code.md](docs/error-code.md) — the catalog of the `[CGP-Exxx]` codes in the output.
-- [docs/reference/troubleshooting.md](docs/reference/troubleshooting.md) — what to do when the tool
-  itself will not run.
-- [docs/README.md](docs/README.md) — the rest of the knowledge base, including the implementation
-  internals (the two-binary design, the driver, and how the diagnostics are transformed).
+- [Usage](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/usage.md) — running the check, reading its output, expanding a
+  target, and editor integration.
+- [Installation](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/installation.md) — every install, update, and uninstall
+  path.
+- [Error codes](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/error-code.md) — the catalog of the `[CGP-Exxx]` codes in the output.
+- [Troubleshooting](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/troubleshooting.md) — what to do when the tool itself
+  will not run.
+- [The implementation documents](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/README.md) — the internals: the
+  two-binary design, the driver, and how the diagnostics are transformed.
 
 Contributors and agents should start from [AGENTS.md](AGENTS.md), which maps the code and records the
-conventions this project follows.
+conventions this project follows, and [sibling-projects.md](sibling-projects.md), which lists the
+related repositories and where to find them.
 
 ## License
 

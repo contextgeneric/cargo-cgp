@@ -55,8 +55,8 @@ pub struct CgpEmitter<E: Emitter> {
     /// header — live with the ledger in the rustc-free crate.
     dedup: DedupLedger,
     /// Memoization of the typed resolver's walk, so a wiring mistake re-reported at many sites is
-    /// resolved once and reused rather than re-walked per diagnostic (see
-    /// [`ResolveCache`] and `docs/implementation/cached-dependency-resolution.md`). Keyed at
+    /// resolved once and reused rather than re-walked per diagnostic (see [`ResolveCache`] and
+    /// `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`). Keyed at
     /// **every node** on the region-erased obligation and its context, valued by that node's owned
     /// rustc-free sub-result, so entries persist for the whole compilation like
     /// [`names`](Self::names) and [`dedup`](Self::dedup).
@@ -809,8 +809,9 @@ impl<E: Emitter> CgpEmitter<E> {
     /// processed when it arrived and re-running the chain over it could compound.
     fn append_note(&self, diag: &mut DiagInner, note: &PendingNote, seen: &mut ChainNodeSet) {
         // A resolver-built note never carries the `` `HasField<…>` is not implemented `` clause the
-        // missing-field reword keys on (see docs/implementation/error-processing.md), so that branch
-        // has nothing to match and the flag it needs is moot here.
+        // missing-field reword keys on (see
+        // cgp-knowledge-base/cargo-cgp/implementation/error-processing.md), so that branch has
+        // nothing to match and the flag it needs is moot here.
         const HAS_FIELD_IMPLS: bool = false;
         for text in note.render(seen) {
             let text = postprocess_message(&text, HAS_FIELD_IMPLS, true).unwrap_or(text);

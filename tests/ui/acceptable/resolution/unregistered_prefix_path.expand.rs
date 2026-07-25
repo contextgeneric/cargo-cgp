@@ -21,7 +21,7 @@
 //! in `App`, but `App` has no delegate entry for it — naming the path the programmer must
 //! wire rather than leaving a raw `DefaultNamespace` bound.
 //!
-//! See docs/errors/checks/unregistered-namespace-path.md.
+//! See cgp-knowledge-base/cgp/errors/checks/unregistered-namespace-path.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

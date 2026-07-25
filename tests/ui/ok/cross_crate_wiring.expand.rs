@@ -11,7 +11,7 @@
 //! This is the orphan-*safe* counterpart to the failing `wiring/orphan/` fixtures.
 //!
 //! CGP coherence concept:
-//! <https://github.com/contextgeneric/cgp/blob/main/docs/concepts/coherence.md>.
+//! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/coherence.md>.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -14,8 +14,8 @@
 //! `root cause: context \`App\` does not contain any delegate entry for \`BarProviderComponent\`` note, with
 //! rustc's misleading "use associated function syntax instead" advice dropped.
 //!
-//! See docs/errors/hidden/unsatisfied-dependency.md and
-//! docs/implementation/typed-root-cause-resolution.md (the use-site path).
+//! See cgp-knowledge-base/cgp/errors/hidden/unsatisfied-dependency.md and
+//! cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the use-site path).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

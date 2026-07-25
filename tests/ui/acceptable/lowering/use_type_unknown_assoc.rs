@@ -11,8 +11,8 @@
 //! lands on the `Scalr` in the signature, not on the macro attribute — so this
 //! fixture also guards that span behavior.
 //!
-//! See docs/reference/attributes/use_type.md and
-//! docs/errors/lowering/unresolved-imported-type.md.
+//! See cgp-knowledge-base/cgp/reference/attributes/use_type.md and
+//! cgp-knowledge-base/cgp/errors/lowering/unresolved-imported-type.md.
 
 use cgp::prelude::*;
 

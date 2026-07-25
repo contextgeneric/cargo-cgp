@@ -11,7 +11,8 @@
 //! A regression that followed only the first unmet bound would report one and hide the
 //! other.
 //!
-//! See docs/implementation/typed-root-cause-resolution.md (parallel branches).
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md
+//! (parallel branches).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -6,7 +6,8 @@
 //! mismatch, which is not a check-entry `E0277`, so the resolver declines it and it flows
 //! through the fallback pipeline unchanged. Both diagnostics should appear.
 //!
-//! CGP error class: https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md.
+//! CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.
 
 use cgp::prelude::*;
 

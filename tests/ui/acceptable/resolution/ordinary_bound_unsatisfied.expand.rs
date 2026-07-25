@@ -20,7 +20,7 @@
 //! defers to the compiler. This is the same lazy-wiring mechanism as a CGP-capability
 //! dependency; only the *kind of leaf* (an ordinary trait) and the fix differ.
 //!
-//! See docs/errors/checks/ordinary-trait-bound.md.
+//! See cgp-knowledge-base/cgp/errors/checks/ordinary-trait-bound.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

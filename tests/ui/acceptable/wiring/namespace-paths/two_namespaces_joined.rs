@@ -19,7 +19,7 @@
 //! alongside for_loop_bare_key.rs (a namespace join plus a bare-key `for` loop);
 //! contrast the specific-vs-blanket override in override_registered_path.rs.
 //!
-//! See docs/errors/wiring/namespace-forwarding-conflict.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/namespace-forwarding-conflict.md.
 
 use cgp::prelude::*;
 

@@ -15,7 +15,8 @@
 //!
 //! Reproduces the [check-trait failure] class.
 //!
-//! [check-trait failure]: https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md
+//! [check-trait failure]:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md
 
 use core::fmt::Display;
 

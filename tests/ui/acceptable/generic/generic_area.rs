@@ -8,8 +8,8 @@
 //! the extra `f64` parameter in the wiring traits. This fixture is the regression guard that
 //! the driver's trait-renaming still names the traits when generic parameters are present.
 //!
-//! Exposes issues in docs/issues/usability.md. CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md.
+//! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md. CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.
 
 use cgp::prelude::*;
 

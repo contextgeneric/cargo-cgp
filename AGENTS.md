@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file guides LLM agents working in the `cargo-cgp` repository. Read it before any task here,
+This file guides AI agents working in the `cargo-cgp` repository. Read it before any task here,
 then read the sub-crate `AGENTS.md` for whichever crate you are about to touch.
 
 ## What this project is
@@ -21,43 +21,57 @@ in-process emitter recognizes the CGP error classes and rewrites them: it leads 
 renders the transitive dependency chain as a `cargo tree`-style tree, and stamps each rewritten
 message with a `[CGP-Exxx]` code (keeping rustc's own code alongside it). The project is an early
 pre-release: it reshapes the core wiring-error classes well and still passes some classes through
-largely as `rustc` wrote them — a shrinking gap tracked in [docs/issues/](docs/issues/README.md).
+largely as `rustc` wrote them — a shrinking gap tracked in [cgp-knowledge-base/cargo-cgp/issues/](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md).
 When reasoning about behaviour, remember the tool diverges from plain `cargo check` both by its choice
 of trait solver and by rewriting the diagnostics it recognizes.
 
-## The two projects: cgp and cargo-cgp
+## The sibling projects
 
-`cargo-cgp` and `cgp` are developed together but live in separate Git repositories, so a task in one
-routinely reads — and sometimes updates — the other. `cargo-cgp` is CGP's **first-class toolchain**:
-it rewrites the compiler's diagnostics into readable, root-cause-first CGP errors, and it is the
-recommended way to build and check any CGP code. `cgp`'s own docs and skill point users at it, so
-treat it as the default tool a CGP developer reaches for.
+`cargo-cgp` is one repository in a family that is developed together, so a task here routinely
+reads — and often updates — another one. [sibling-projects.md](sibling-projects.md) is the
+authoritative list: where each project lives, which revision of it to read, and the rules for finding
+a sibling locally versus linking to it. Three of them matter constantly.
 
-**Finding `cgp`.** Look first in the parent directory, at `../cgp`. When that sibling checkout is
-present, use it — it is the fastest reference and reflects any uncommitted work. When it is absent,
-fall back to the official repository at
-[github.com/contextgeneric/cgp](https://github.com/contextgeneric/cgp), fetching the file you need
-from there. (The mirror image applies to an agent working in `cgp` and looking for `cargo-cgp` at
-`../cargo-cgp`, else [github.com/contextgeneric/cargo-cgp](https://github.com/contextgeneric/cargo-cgp).)
+**This repository's documentation lives in [`cgp-knowledge-base`](https://github.com/contextgeneric/cgp-knowledge-base).**
+There is no `docs/` directory here. The usage reference, the implementation documents, the
+pending-issue list, and the `[CGP-Exxx]` error-code catalog are all in that repository's
+[`cargo-cgp/`](https://github.com/contextgeneric/cgp-knowledge-base/tree/main/cargo-cgp) directory.
+Because the base is *consolidated*, CGP's own documentation is the neighbouring
+[`cgp/`](https://github.com/contextgeneric/cgp-knowledge-base/tree/main/cgp) section — so the
+[error catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md)
+this tool is built against and the documents describing how the tool reshapes those errors are now one
+directory apart, and a change that spans both is one edit in one repository. Treat the knowledge base
+as part of this repository's surface: **a change to how the tool behaves carries its documentation
+change**, and when the checkout is missing, say plainly what needs updating there.
 
-**Writing cross-project links.** A *link* from a committed file here to a document in `cgp` — a
-Markdown link or a URL — is **always written as a GitHub URL**
-(`https://github.com/contextgeneric/cgp/blob/main/<path>`), never as a relative `../cgp/...` link, so
-the document resolves for a reader who has only this repository checked out. When *reading* such a
-link yourself, prefer the local `../cgp` checkout if it is available and fetch the GitHub URL only
-when it is not. (A bare mention of the checkout's location, like the path `../cgp`, is a filesystem
-reference rather than a link and stays relative.)
+**[`cgp`](https://github.com/contextgeneric/cgp) is the subject matter.** `cargo-cgp` reads its
+source — the constructs whose expansions produce the diagnostics this tool rewrites, and the crates a
+UI fixture compiles against — but never modifies it. Read anything under `../cgp` to understand CGP
+behaviour.
 
-**Keeping the two in sync.** When a change here affects `cgp`'s documentation — its error catalog,
-the `cargo-cgp` reference doc, the CGP skill, or a fixture the catalog cites — and `cgp` is checked
-out at `../cgp`, update it in the same change, following `cgp`'s own conventions (its `AGENTS.md` and
-doc-authoring rules). When `../cgp` is not checked out, state plainly what in `cgp` needs updating so
-it is not silently left to drift.
+**[`cgp-skills`](https://github.com/contextgeneric/cgp-skills) holds the `/cgp` skill**, which
+recommends this tool as the way to read a CGP error. When a change here alters what the tool offers —
+a new command, a changed flag, a class it now reshapes — check whether the skill's tooling section
+still describes it correctly.
+
+**Finding a sibling.** Look first in the parent directory, at `../cgp`, `../cgp-knowledge-base`,
+`../cgp-skills`. When the checkout is present, use it — it is the fastest reference and reflects any
+uncommitted work. When it is absent, fetch the file you need from the project's repository at the
+revision [sibling-projects.md](sibling-projects.md) records.
+
+**Writing cross-project links.** A *link* from a committed file here to a document in another
+project — a Markdown link or a URL — is **always written as a GitHub URL** on `main`
+(`https://github.com/contextgeneric/<project>/blob/main/<path>`), never as a relative `../cgp/...`
+link, so it resolves for a reader who has only this repository checked out. When *reading* such a link
+yourself, prefer the local checkout. A bare mention of a checkout's location, like the path `../cgp`,
+is a filesystem reference rather than a link and stays relative — as is a doc pointer in a source
+comment or a fixture header, which names its knowledge-base path
+(`cgp-knowledge-base/cargo-cgp/implementation/driver.md`).
 
 **The code dependency stays one-way.** No `cgp` *crate* may depend on a `cargo-cgp` crate:
-`cargo-cgp` reads `cgp` (its source, its error catalog, its UI-fixture inputs), never the reverse.
-Documentation is the deliberate exception — `cgp`'s prose references `cargo-cgp` as the recommended
-toolchain — so it is the *code* graph that stays acyclic, not the documentation.
+`cargo-cgp` reads `cgp` (its source, its UI-fixture inputs), never the reverse. Documentation is the
+deliberate exception — CGP's own prose references `cargo-cgp` as the recommended toolchain — so it is
+the *code* graph that stays acyclic, not the documentation.
 
 ## Orient before any task
 
@@ -67,17 +81,16 @@ diagnostics they produce; the skill is the ground truth for what each macro expa
 errors look the way they do.
 
 The `cgp` source is a sibling of this repository (see
-[The two projects](#the-two-projects-cgp-and-cargo-cgp) above for finding it, linking to it, and the
-sync rule). Read anything under `../cgp` to understand CGP behaviour, and in particular the
-**[CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md)** is the
+[The sibling projects](#the-sibling-projects) above for finding it, linking to it, and the sync
+rule). Read anything under `../cgp` to understand CGP behaviour, and in particular the
+**[CGP error catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md)** is the
 map of every error class this tool recognizes or should: which classes hide the root cause, which
 surface it, and where the cause sits when it is present. Each class is backed by a UI fixture in
 *this* repository's [`tests/ui/`](tests/README.md) — the post-codegen compile-fail cases were migrated
 here out of `cgp`, so a fixture is a concrete input you run through `cargo cgp check` to see a class
-in the raw, and each `cgp` class doc links the fixture that pins it. The **code** dependency stays
-one-way — `cargo-cgp` reads `cgp`, never the reverse — but `cgp`'s *documentation* now references this
-tool as the recommended toolchain, so editing `cgp`'s prose (never a `cgp` crate) to match a change
-here is expected under the sync rule.
+in the raw, and each class doc links the fixture that pins it. The catalog lives in the knowledge base
+beside this tool's own documentation, so editing it (never a `cgp` crate) to match a change here is
+expected under the sync rule — and is a single-repository edit.
 
 Two more read-only references sit alongside this repository, and you should use them whenever a task
 turns on how the compiler actually behaves rather than on how it is documented to behave. The **Rust
@@ -91,13 +104,15 @@ integration this project performs, so read its `src/main.rs` (the `cargo-clippy`
 inject the sysroot, or install callbacks. Prefer verifying against these sources over guessing, but
 do not edit them and do not create a dependency on them.
 
-This repository keeps its own knowledge base under [`docs/`](docs/README.md), written by and for
-agents. Read it before a task and keep it in sync after one. The
-[implementation documentation](docs/implementation/README.md) explains how the tool is built and why
-— start with [Executable structure](docs/implementation/executable-structure.md) for the
-two-executable design and the cargo wrapping, and [The driver](docs/implementation/driver.md) for the
+This repository's documentation lives in the [knowledge base](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/README.md), written by and for
+agents. Read it before a task and keep it in sync after one; its
+[summary.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/summary.md) lists every
+document in the whole base on one page, which is the fastest way to find the few a task needs. The
+[implementation documentation](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/README.md) explains how the tool is built and why
+— start with [Executable structure](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/executable-structure.md) for the
+two-executable design and the cargo wrapping, and [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md) for the
 rustc wrapping, the compiler-API access, and the driver-side diagnostic transformations. The knowledge base
-is bound by a **synchronization rule** ([docs/AGENTS.md](docs/AGENTS.md)): the source is the single
+is bound by a **synchronization rule** ([its AGENTS.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/AGENTS.md)): the source is the single
 source of truth, and when you change how the tool is structured or behaves, you revise the matching
 document in the same change. A document describing a design the code no longer has is worse than
 none.
@@ -107,7 +122,9 @@ When your task involves editing markdown documentation or inline doc comments, *
 own authoring conventions — including showing the example code behind any error message a document
 discusses, and keeping markdown backticks well formed (inline spans opened and closed on one line,
 fenced blocks delimited by blank-line-separated triple-backtick lines, re-checked after every edit) —
-live in [docs/AGENTS.md](docs/AGENTS.md) and apply to inline doc comments too.
+live in the base's [AGENTS.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/AGENTS.md)
+and its [`cargo-cgp` section's own](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/AGENTS.md),
+and apply to inline doc comments too.
 
 ## Architecture: two binaries, like Clippy
 
@@ -126,22 +143,22 @@ post-processing text transforms, the rustc-free root-cause model and the diagnos
 that turns it into text, the dependency-tree renderer, the cross-diagnostic de-duplication ledger,
 and the text signals the emitter's candidate checks key on; it links no compiler internals
 either, so it builds and tests on any toolchain (see
-[Error processing](docs/implementation/error-processing.md)). A fourth, library-only crate,
+[Error processing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-processing.md)). A fourth, library-only crate,
 **`cargo-cgp-expand`** (`crates/cargo-cgp-expand`), is the rustc-free half of `cargo cgp expand`: it
 takes the source the compiler printed for an expanded crate, optionally narrows it to one module or
 item, and folds CGP's type-level spines back to the surface macros (`Symbol!`, `Path!`,
 `Product!`/`Sum!`); it links no compiler internals either
-(see [Resugaring](docs/implementation/resugaring.md) and
-[The expand command](docs/implementation/expand-command.md)).
+(see [Resugaring](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/resugaring.md) and
+[The expand command](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/expand-command.md)).
 
 How the two cooperate — the argument normalization, the `CARGO_CGP_SYSROOT` and
 dynamic-library-path contract, wrapper-mode detection, and the front-end's plain forwarding of
 cargo's output — is documented in
-[Executable structure](docs/implementation/executable-structure.md); the driver's own internals — the
+[Executable structure](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/executable-structure.md); the driver's own internals — the
 argument preparation, the `rustc_private` compiler-API access, and the diagnostic transformations (the
 `-Znext-solver=globally` and `--verbose` flag injections, the generic `CgpEmitter` that renders text
 or JSON like vanilla `rustc`, its typed root-cause resolution, and its wiring-note rename plus
-post-processing fallback) — are in [The driver](docs/implementation/driver.md). Read the relevant one
+post-processing fallback) — are in [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md). Read the relevant one
 before changing how the executables interact or what the driver does, and keep it in sync when you do.
 
 ## Toolchain and `rustc_private`
@@ -158,7 +175,7 @@ needed on the driver's **binary** crate as well as its library (the binary is wh
 dylib), and the pinned nightly is the compiler the driver *embeds*, so the tool must be run against a
 project using that same nightly — for example with `RUSTUP_TOOLCHAIN` set — or it loads a mismatched
 `librustc_driver` and fails.
-[The driver](docs/implementation/driver.md#accessing-the-rust-compiler-api)
+[The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md#accessing-the-rust-compiler-api)
 explains both in full.
 
 ## Code organization conventions
@@ -213,146 +230,6 @@ Keep inline docs brief and current as you write. Add a one-line `///` to any pub
 one, prefer naming the *why* or a corner case over restating the signature, and delete a comment
 that only repeats the code.
 
-### Module map
-
-The front-end (`crates/cargo-cgp/src`) is organized around dispatch and four subcommands.
-`run.rs` is the entrypoint that normalizes arguments and dispatches on the subcommand (`check`,
-`expand`, `setup`, `update`), printing `help.rs`'s help text for a leading `--help`/`-h` or no
-subcommand (`help.rs` also carries `expand`'s own help, which that subcommand answers itself rather
-than forwarding, since `--item` is a flag cargo does not know); `args.rs` strips the cargo-inserted `cgp` token so the same entrypoint serves both
-`cargo cgp check` and a direct `cargo-cgp check`; `config.rs` holds the shared well-known names,
-including the build-time-baked `PINNED_TOOLCHAIN` (from `build.rs`), the management environment
-variables, and the `EXPAND_FLAG` marker; `toolchain.rs` resolves the effective pinned toolchain and
-queries its `rustc`. The `launch/` directory holds what the two reading commands share:
-`command.rs` runs the [preflight](docs/implementation/distribution.md) and forces `RUSTUP_TOOLCHAIN` to
-the pinned nightly (unless `CARGO_CGP_NO_MANAGE` is set), then builds the wrapped cargo command with
-the driver wired in as the workspace rustc wrapper and an isolated `target/cgp` directory
-(`target_dir.rs`); `driver_path.rs` locates the driver (via the `CARGO_CGP_DRIVER` override or as a
-sibling); `sysroot.rs` discovers the toolchain sysroot; `dylib.rs` builds the dynamic-library search
-path; and `preflight.rs` verifies a matching driver and the pinned toolchain, directing the user to
-`cargo cgp setup` on any failure. `check.rs` then just runs that command, inheriting cargo's stdio so
-its output streams through untouched (the driver does every diagnostic transform, so the front-end
-captures and processes nothing). The `expand/` directory holds the expand command: `command.rs` runs
-the wrapped `cargo rustc` with the marker flags that put the driver in expand mode and prints what the
-driver wrote, over `item.rs` (the `--item <path>` filter, the one argument not forwarded to cargo),
-`output.rs` (the per-process output file), and `profile.rs` (the default `--profile check`). `setup.rs` and `update.rs` are the provisioning and upgrade subcommands. The distribution design — the pinned-toolchain forcing, the preflight version handshake,
-and the `setup`/`update` flow — is documented in
-[Distribution](docs/implementation/distribution.md).
-
-The driver (`crates/cargo-cgp-driver/src`) is organized around the compiler wrapping and the
-diagnostic transform. `run.rs` is the entrypoint that runs the compiler through `rustc_driver`,
-answering a direct (non-wrapper) `--help`/`-h`/no-args from `help.rs` and `--version`/`-V` from
-`version.rs` before compiling; `args.rs` turns the wrapper's process arguments into a rustc argument
-vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds the
-`Callbacks` implementation, whose `config` hook installs the diagnostic-transforming emitter and whose
-`after_expansion` hook serves expand mode; `config.rs` holds the shared names and the injected flags.
-The `expand/` directory is expand mode: `request.rs` takes the front-end's `--cgp-expand=<path>` marker
-out of the argument vector, and `print.rs` prints the expanded crate through the compiler's own
-`pprust::print_crate`, resugars it through `cargo-cgp-expand`, and writes it out — the whole crate is
-expanded, only CGP's constructs are resugared (see
-[The expand command](docs/implementation/expand-command.md)). The transform is split across two directories. `emitter/` is the `CgpEmitter<E>`
-seam: `install.rs` rebuilds whichever inner emitter the compiler's default would build — a
-`JsonEmitter` or an `AnnotateSnippetEmitter` — and wraps it, `cgp_emitter.rs` is the wrapper type and
-its `emit_diagnostic` orchestration (first recognize a `#[cgp_impl]` provider naming the wrong trait
-in its header or an inner-provider bound — its `E0107` reshaped into a
-`[CGP-E013]`/`[CGP-E014]`/`[CGP-E015]` header and the rest of its cascade suppressed —
-or a duplicate-key `E0119` conflict — suppressing
-the redundant `IsProviderFor` half, rewriting the wiring half — or an orphan-rule `E0210`/`E0117`
-namespace registration, reworded into its `[CGP-E011]` header, or a capability used in a
-`#[cgp_fn]`/`#[cgp_impl]` body without a `#[uses(…)]` declaration, reworded into its `[CGP-E012]`
-header, or a higher-order provider calling an inner provider it never imported with `#[use_provider]`,
-reworded into its `[CGP-E016]` header; else try the typed
-resolver, else the text rewrite with its method-probe-advice and overflow cleanups; then always
-post-process; then cross-diagnostic de-duplicate through the rustc-free `DedupLedger` — drop a
-transformed diagnostic whose span-independent signature was already emitted, so one mistake re-reported
-at many wiring sites is shown once; then, rather than emit, hold every diagnostic in an arrival-ordered
-buffer flushed from `Drop` — the only point after all diagnostics have arrived — where consumer
-failures that *share a root cause* are grouped by `group_by_shared_cause` and coalesce into one
-`[CGP-E001]` headline listing every affected consumer, the trailing `rustc --explain` footer is
-rebuilt to name only codes still shown, and everything else emits verbatim in place), and `edit.rs` holds the
-`DiagInner`-editing helpers. `resolve/` is the typed root-cause resolver, one sub-directory per
-stage: `anchor/` recovers the
-failing obligation from a `check_components!` entry, a hand-written `impl Trait for Context` block
-the failure surfaces inside (reconstructing the obligation from the impl's CGP consumer supertrait,
-concrete parameters preserved), a hand-written `impl Trait for Foreign` block whose `Self` is a
-foreign wrapper holding the context (descending its supertrait's `where`-clause hops — through a
-projection bound's base trait — to a CGP consumer on the context, the routing-glue case), or the use
-site of a broken consumer-method call (`E0599`), with `call_site/` the last-resort re-read of the
-failing call expression itself; `walk/` descends the wiring to each terminal leaf, `classify/` turns
-a leaf into the
-rustc-free model by inspecting the struct it lands on, `label/` renders each path predicate as a
-tree label, `conflict/` classifies a duplicate-key `E0119` by reading the two conflicting wiring
-impls off the compiler (which keys collide, whether either is a `RedirectLookup`), `orphan.rs`
-classifies an orphan-rule `E0210`/`E0117` by reading the offending namespace-registration impl off
-the compiler (which foreign namespace and key it names, whether a re-open or a registration),
-`undeclared.rs` recognizes a `#[uses(…)]`-undeclared capability call (its `[CGP-E012]` reshape),
-`cgp_impl_misuse.rs` recognizes a `#[cgp_impl]` provider naming the wrong trait — a consumer trait or a
-non-component in its header, or a consumer trait in an inner-provider bound — off the consumer/provider
-fingerprints (its `[CGP-E013]`/`[CGP-E014]`/`[CGP-E015]` reshape), `missing_use_provider.rs` recognizes
-a higher-order provider calling an inner provider it never imported with `#[use_provider]` (its
-`[CGP-E016]` reshape),
-and `cgp_item.rs` holds the DefId-anchored CGP-trait recognition every stage relies on (see
-[Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md) and its per-stage
-sub-documents). `cache.rs` memoizes the walk at every node — keyed on the region-erased obligation and context —
-so a mistake re-reported at many sites, or a capability depended on by many providers, is resolved
-once (see [Cached dependency resolution](docs/implementation/cached-dependency-resolution.md)).
-`component_map.rs` builds the component-marker → consumer/provider trait-name map by querying the
-trait solver. Everything downstream of the resolver's rustc-free `Resolved` model — the
-header/note/help wording, the tree-label templates, the diagnostic plan, the wiring rewrite, the
-post-processing transforms, the de-duplication ledger, the text signals,
-and the lazily-built `ComponentNameMap` — lives in the `cargo-cgp-error-processing` crate (the
-driver's one ordinary dependency), so it is unit-tested without the driver's `rustc_private` linkage.
-
-The helper library (`crates/cargo-cgp-error-processing/src`) is the rustc-free half, holding no
-compiler linkage and driven entirely by the driver's emitter (the front-end no longer touches
-diagnostics), so its logic is unit-tested on any toolchain. `postprocess/` holds the fallback text
-transforms the driver applies to a diagnostic's messages — one module per transform (stripping CGP
-path prefixes, resugaring `Symbol!` and `Path!`, resugaring `Product!`/`Sum!` lists and their
-`Struct!`/`Enum!` record/variant forms, rewriting unmet `HasField` bounds into missing-field
-messages), each a pure `&str -> Option<String>` function — plus `chain.rs` for the
-`postprocess_message` chain, with `mod.rs` re-exporting only. `rewrite/` is the wiring-message
-rewrite: `message.rs` (the note, header, and wiring-overflow rewrites), `names.rs` (the
-`ComponentTraitNames` and the
-lazily-built `ComponentNameMap`), `parse.rs` (the trait-bound parse), and `text.rs` (the shared
-splitting utilities). `diagnosis/` is the rustc-free root-cause model and its wording:
-`leaf.rs`/`resolved.rs` (the `Leaf`/`FieldIssue`/`Cause`/`Resolved` types the driver's resolver fills
-in, plus `Causes` — the cause *set*, which enforces the one-cause-per-distinct-leaf invariant by
-construction through `from_sub_chains`/`union`/`headed_by` over a private field, where it used to be
-re-established by hand at each of the five sites that build a `Resolved`), `wording/` (the pure `Resolved`-to-text builders — headers, root-cause leads and their codes,
-notes, derive helps, and the de-duplication `cause_signature` — textual, since the ledger shares a key
-space with rendered-message keys), `group.rs` (`group_by_shared_cause`, partitioning the coalescible
-failures into the connected components of the shares-a-cause relation — keyed on each context-scoped
-`Leaf` *structurally*, so grouping never rides on how a lead is worded — which is what keeps one
-mistake in one block when the depths it surfaces at each reach a different *subset* of its causes),
-`coalesce.rs`
-(`coalesce_underived_fields`, merging several underived fields on one struct into one heading cause),
-`node.rs`/`graph.rs` (the structured `DepNode`/`ChainNode` chain nodes and the `DependencyGraph` that
-merges every cause's paths into a DAG — shared nodes fused, a reuse `(*)`-referenced — and renders it,
-see [Dependency-graph rendering](docs/implementation/dependency-graph-rendering.md)), `plan.rs`
-(`plan_resolved`, which words
-a `Resolved` into the header, help, and note strings the emitter emits, and holds the
-`categorized_header` classification), `wiring.rs` (the `WiringConflict` model and
-`plan_wiring_conflict`, which words a duplicate-key conflict into its `[CGP-E004]`–`[CGP-E008]` header, one code per conflict shape), and `orphan.rs` (the `OrphanConflict` model and `plan_orphan_conflict`/`orphan_conflict_help`, which word an orphan-rule namespace registration into its `[CGP-E011]` header and ownership fix). `tree.rs` is the `DependencyTree` type and its `cargo tree`-style
-renderer (over the `termtree` crate), the target the graph expands into; `dedup.rs` is the `DedupLedger` behind the
-emitter's cross-diagnostic de-duplication; `signals.rs` holds the stable rustc phrasings the
-emitter's candidate checks and cleanups key on; and `code.rs` holds the `CGP-E` error-code constants stamped on
-classified main messages (catalogued in docs/error-code.md). Its tests in `tests/` drive the
-post-processors, the rewrite, the diagnosis plan and wording, the coalescing, the text signals, the
-de-duplication ledger, the tree renderer, and the dependency-graph build-and-render (`insta` inline
-snapshots in `tests/graph.rs`) over hand-built inputs, so they run on any toolchain.
-
-The expansion library (`crates/cargo-cgp-expand/src`) is the other rustc-free half, driven by the
-driver's expand mode. `source.rs` is the one entry point (`resugar_expanded_source`): it parses the
-source the compiler printed, narrows it when asked, resugars, and prints. `select.rs` is the narrowing
-— the `--item <path>` match rules, which select an item declared at a path, an impl *for* that type, or
-an impl *of* that trait. `resugar/` holds the passes, one module per construct (`symbol.rs`, `path.rs`,
-`list.rs`) plus `strip.rs` (the `cgp::macro_prelude::` qualifier, and the qualified-path index it must
-correct), `spacing.rs` (the post-print tightening the printer's macro-body layout forces), `parts.rs`
-(the shared shape reading and macro-node building), and `file.rs`, which sequences them in the one
-order that works. `options.rs` carries the item path and the strip switch. Its tests in `tests/` drive
-the resugaring and the selection over hand-written expanded source, so they run on any toolchain (see
-[Resugaring](docs/implementation/resugaring.md)).
-
 ## Commands
 
 The commands mirror the `cgp` workspace. Run them from the repository root.
@@ -381,8 +258,8 @@ so the diff against `.cgp.stderr` shows what the tool changes; and the expand pa
 generate. The two `.stderr` files record what the compiler *says* about the code and `.expand.rs`
 records the code it was given, so the three together answer both "what does the tool report?" and "why
 does it report that?" — and the expand pass is also the end-to-end coverage of
-[`cargo cgp expand`](docs/implementation/expand-command.md) and the syntax-tree
-[resugaring](docs/implementation/resugaring.md) it drives. Because the driver now renders the
+[`cargo cgp expand`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/expand-command.md) and the syntax-tree
+[resugaring](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/resugaring.md) it drives. Because the driver now renders the
 diagnostics in-process, `<name>.cgp.stderr` is simply what `cargo-cgp` prints — there is no captured
 JSON or separate processing pass to keep in sync. The crate is a full workspace member, so
 `cargo test` runs the whole suite alongside the argument tests; a full run builds the driver and
@@ -414,7 +291,7 @@ independent of the fixture's directory, so no re-bless is needed).
 Snapshots are blessed under the pinned toolchain, so a toolchain bump can require a re-bless. The full
 testing picture — the harness structure, why it drives the whole tool rather than the driver
 directly, and the comparison with Clippy — is documented in
-[Testing](docs/implementation/testing.md); read it before adding tests, and keep it in sync when the
+[Testing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/testing.md); read it before adding tests, and keep it in sync when the
 test setup changes.
 
 ### Checking a CGP project elsewhere with Nix
@@ -431,9 +308,9 @@ nix run /path/to/cargo-cgp -- check   # == `cargo cgp check`, args after `--` go
 The full instructions — preferring a local checkout over the published flake, the other Nix entry
 points, why no rustup or project toolchain is needed, and how the check isolates its `target/cgp` —
 are in the usage reference:
-[Usage](docs/reference/usage.md#running-on-a-project-outside-this-repository) and
-[Installation](docs/reference/installation.md#installing-with-nix). A good input is a distilled CGP
-program that reproduces an [error class](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md),
+[Usage](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/usage.md#running-on-a-project-outside-this-repository) and
+[Installation](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/installation.md#installing-with-nix). A good input is a distilled CGP
+program that reproduces an [error class](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md),
 or one of this repository's own [UI fixtures](tests/README.md), dropped into a throwaway cargo package. Rebuild
 for a code change with `nix build` first, or just re-run `nix run`, which rebuilds only when a source
 file in the flake's narrowed input actually changed.
@@ -461,7 +338,7 @@ CGP program with the same shape, so:
 - **Keep every explanation generalized; never frame it around a specific example.** A knowledge-base
   document, an inline doc comment, and a UI fixture must each be self-contained and framed around the
   *core CGP concept* it describes — never around any one project that happens to exhibit it. Assume
-  the reader, human or agent, knows core CGP (via the [construct reference](https://github.com/contextgeneric/cgp/blob/main/docs/reference/README.md)
+  the reader, human or agent, knows core CGP (via the [construct reference](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/README.md)
   and the `/cgp` skill) but **nothing** about any non-core CGP project. An example may *illustrate* a
   generalized concept, but only when the prose explains it in core-CGP terms that stand on their own:
   state the general rule first and present the example as one demonstration of it; never let a
@@ -473,24 +350,24 @@ CGP program with the same shape, so:
   the example. Reproduce a real failure as a *distilled, self-contained* fixture rather than a
   reference to the example. A core CGP construct that merely appears in examples (a handler combinator
   such as `ComposeHandlers`/`PipeHandlers`, say) is fair game, but introduce it as the CGP construct
-  it is — linking the [construct reference](https://github.com/contextgeneric/cgp/blob/main/docs/reference/README.md) or a concept page such as
-  [handlers](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/handlers.md) for background — not as "the thing that example uses."
+  it is — linking the [construct reference](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/README.md) or a concept page such as
+  [handlers](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/handlers.md) for background — not as "the thing that example uses."
 
 Read these first, every time, before touching anything — the loop assumes their contents. They fall
 into three groups: how the tool is run and its output read, how the tool builds that output, and what
 the upstream error classes are.
 
-- **Using the tool** — [Usage](docs/reference/usage.md) (running the check, and reading its output and
-  `[CGP-Exxx]` codes), [Troubleshooting](docs/reference/troubleshooting.md) (when the tool itself will
-  not run), and the [error-code catalog](docs/error-code.md) (what each code already means).
-- **How the output is produced** — [Typed root-cause resolution](docs/implementation/typed-root-cause-resolution.md)
+- **Using the tool** — [Usage](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/usage.md) (running the check, and reading its output and
+  `[CGP-Exxx]` codes), [Troubleshooting](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/troubleshooting.md) (when the tool itself will
+  not run), and the [error-code catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/error-code.md) (what each code already means).
+- **How the output is produced** — [Typed root-cause resolution](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-root-cause-resolution.md)
   (the resolver that turns a wiring failure into its root-cause tree — the main lever for a better
-  message), [The driver](docs/implementation/driver.md) and [Error processing](docs/implementation/error-processing.md)
-  (the emitter and the rustc-free wording/plan/tree it drives), [The error pipeline](docs/implementation/error-pipeline.md)
-  (how the stages fit together), [rustc diagnostic internals](docs/implementation/rustc-diagnostic-internals.md)
-  (where the compiler hides the information a good message needs), and [Testing](docs/implementation/testing.md)
+  message), [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md) and [Error processing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-processing.md)
+  (the emitter and the rustc-free wording/plan/tree it drives), [The error pipeline](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-pipeline.md)
+  (how the stages fit together), [rustc diagnostic internals](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/rustc-diagnostic-internals.md)
+  (where the compiler hides the information a good message needs), and [Testing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/testing.md)
   (the UI snapshot suite and its bless workflow, the mechanism the loop runs on).
-- **The problem domain** — the upstream [CGP error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) (which error
+- **The problem domain** — the upstream [CGP error catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md) (which error
   classes hide the root cause and where the cause sits), and the **`/cgp` skill**, invoked as always
   when reasoning about CGP constructs.
 
@@ -522,8 +399,8 @@ target project is re-checked.
    `.cgp.stderr` shows the same shortcoming you saw on the real project. A change with no fixture that
    reproduces its motivation does not belong in the tool.
 5. **Change the tool, and verify the fixture first.** Make the improvement (usually in the
-   [resolver](docs/implementation/typed-root-cause-resolution.md) or the rustc-free
-   [wording](docs/implementation/error-processing.md)), then re-run the UI suite and confirm the
+   [resolver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-root-cause-resolution.md) or the rustc-free
+   [wording](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-processing.md)), then re-run the UI suite and confirm the
    fixture's `.cgp.stderr` improved as intended — and that no other snapshot regressed — **before** you
    go back to the target project. The simplified fixture, not the real project, is the fast feedback
    loop.

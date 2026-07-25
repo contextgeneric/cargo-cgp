@@ -18,7 +18,7 @@ pub fn mentions_wiring_text(text: &str) -> bool {
 /// trait bounds were not satisfied" — the one `E0599` form the typed resolver may run on. A
 /// *resolution*-class `E0599` (`no variant named …`) is emitted mid-`predicates_of`, where running
 /// the solver re-enters the diagnostic context and aborts the compiler, so the distinction is
-/// load-bearing (see `docs/implementation/rustc-diagnostic-internals.md`).
+/// load-bearing (see `cgp-knowledge-base/cargo-cgp/implementation/rustc-diagnostic-internals.md`).
 pub fn is_method_bounds_text(text: &str) -> bool {
     text.contains("trait bounds were not satisfied")
 }

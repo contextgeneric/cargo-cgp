@@ -5,7 +5,8 @@
 //! field, so the one check failure has two distinct root causes. The dependency note should
 //! branch at the provider into a `first_name` path and a `last_name` path.
 //!
-//! CGP error class: https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md.
+//! CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.
 
 use cgp::prelude::*;
 

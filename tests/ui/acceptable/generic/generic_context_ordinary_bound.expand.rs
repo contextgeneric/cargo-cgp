@@ -11,7 +11,7 @@
 //! arises anywhere impl generics carry a bound, including a generic
 //! `delegate_components!` table checked at one instantiation.
 //!
-//! See docs/errors/checks/ordinary-trait-bound.md.
+//! See cgp-knowledge-base/cgp/errors/checks/ordinary-trait-bound.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

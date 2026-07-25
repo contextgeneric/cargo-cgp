@@ -10,7 +10,7 @@
 //! coherence and orphan rules across crate boundaries.
 //!
 //! See the CGP coherence concept:
-//! <https://github.com/contextgeneric/cgp/blob/main/docs/concepts/coherence.md>.
+//! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/coherence.md>.
 
 use cgp::prelude::*;
 

@@ -6,12 +6,12 @@ Clippy's `tests/ui/`, pairing each `.rs` fixture with a blessed expected-output 
 are the canonical reproductions of CGP's post-codegen error classes: those cases were migrated here
 from `cgp`'s former `cgp-compile-fail-tests` suite (since removed), so `cargo-cgp` — the tool that
 rewrites those errors — owns the snapshots of what a reader actually sees. `cgp`'s
-[error catalog](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) links each
+[error catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md) links each
 error class to the fixture here that pins it.
 
 For how the fixtures fit into the project's overall testing approach — the argument tests, the
 harness mechanics, the toolchain caveat, and the comparison with Clippy — see the
-[Testing](../docs/implementation/testing.md) implementation document. This README is the quick
+[Testing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/testing.md) implementation document. This README is the quick
 operational guide.
 
 ## Layout
@@ -37,19 +37,19 @@ The categories are:
   `wiring/{constrained-key,constraints,duplicate-keys,missing-wiring,namespace-paths,orphan}/` — so no
   directory grows crowded.
 - [`ui/usability/`](ui/usability) — errors that carry the root cause but bury it in volume, encoding,
-  duplication, or misleading framing (a [usability issue](../docs/issues/usability.md)); the cause is
+  duplication, or misleading framing (a [usability issue](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md)); the cause is
   present, so the work is re-presentation. It is split into issue-class sub-directories —
   `extensible-data/`, `lowering/`, and `wiring/constraints/` — each naming the problem its fixtures
   expose.
 - [`ui/ok/`](ui/ok) — the clean-compile baseline: correctly-wired programs that check with empty
   output.
 - `ui/hidden-root-cause/` — errors whose root cause cannot be recovered from the output at all, the
-  highest-value class to fix (a [hidden root cause](../docs/issues/hidden-root-cause.md)). It has
+  highest-value class to fix (a [hidden root cause](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/hidden-root-cause.md)). It has
   **no fixture today** — both known archetypes are defeated by flags the driver injects, so the
   directory is absent — but it is recreated the moment a genuinely unrecoverable case is found.
 
 A fixture's placement follows the sufficiency-and-presentation test in
-[docs/issues/](../docs/issues/README.md): if no downstream tool could recover the cause from the
+[cgp-knowledge-base/cargo-cgp/issues/](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md): if no downstream tool could recover the cause from the
 output, it is `hidden-root-cause/`; if a careful reader could but the output buries it, `usability/`;
 if the output already leads with the cause, `acceptable/`; if the program compiles clean, `ok/`.
 
@@ -62,12 +62,12 @@ regression pins the knowledge base references — the check-trait-failure family
 `dependency_cascade`, `missing_has_field_derive`, `field_via_deref`, `ordinary_bound_unsatisfied`,
 `mixed_rust_error`, `empty_field_struct`, and the missing-wiring family `basic_missing_wiring`,
 `direct_missing_wiring`, `parallel_missing_wiring`, and the use-site `missing_wiring`), each catalogued under
-[Typed root-cause resolution](../docs/implementation/typed-root-cause-resolution.md#tests). The rest
+[Typed root-cause resolution](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-root-cause-resolution.md#tests). The rest
 were **migrated from `cgp`'s former compile-fail suite** — one fixture per post-codegen error class
 CGP produces — and are now maintained here directly rather than mirrored from anywhere. A migrated
 fixture's `.cgp.stderr` is cargo-cgp's own transformed output, and its `.rust.stderr` is what plain
 `cargo check` prints for the same source; its `//!` header names the
-[CGP error class](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) it
+[CGP error class](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md) it
 reproduces.
 
 **No reproducible class hides its root cause.** Every imported case carries the concrete cause in
@@ -109,7 +109,7 @@ One upstream class has **no snapshot at all**: `inheritance_cycle`, two namespac
 each other. Plain `rustc` rejects it eagerly with an `E0275` overflow, but under cargo-cgp's next-gen
 solver it **compiles clean**, so there is no error to reproduce. This is a *missing* error, not a
 suppressed cause — the "reverse" of the next-solver compatibility caveat noted in
-[The driver](../docs/implementation/driver.md#choosing-the-trait-solver) — and it is recorded here
+[The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md#choosing-the-trait-solver) — and it is recorded here
 rather than committed as a misleading empty snapshot.
 
 ## Running
@@ -146,8 +146,8 @@ Drop a new `<name>.rs` into the category sub-directory under `ui/` its output be
 group in `acceptable/` if the tool presents its cause well, the issue-class group in `usability/` if
 the cause is buried, or `ok/` for a clean compile. Give it a `fn main`, since the harness compiles it
 as a binary, and open it with a `//!` comment stating what the scenario demonstrates, which
-[CGP error class](https://github.com/contextgeneric/cgp/blob/main/docs/errors/README.md) it
-reproduces, and — for a problem case — the [issue](../docs/issues/README.md) it exposes. `cgp` is
+[CGP error class](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md) it
+reproduces, and — for a problem case — the [issue](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md) it exposes. `cgp` is
 available to every fixture, so a fixture may `use cgp::prelude::*;` with no setup; for a cross-crate
 scenario, add a `//@aux-build: <crate>` directive (see above). Then run
 `cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes all three snapshots) and review
@@ -160,7 +160,7 @@ spine, say — is a finding of its own.
 These fixtures are owned by `cargo-cgp` — there is no upstream suite to re-copy from (the migration
 was one-way, and `cgp`'s `cgp-compile-fail-tests` has been removed). Change a fixture like any other:
 edit the `.rs` and re-bless. When `cgp` changes a construct in a way that alters one of these error
-classes, the [sync rule](../AGENTS.md#the-two-projects-cgp-and-cargo-cgp) applies in both directions —
+classes, the [sync rule](../AGENTS.md#the-sibling-projects) applies in both directions —
 update the fixture here and the class doc in `cgp`'s error catalog together. One historical note: two
 fixtures were renamed on migration to avoid a collision, since `duplicate_path_key` existed under two
 CGP constructs — `namespace_duplicate_path_key` (reshaped into `[CGP-E008]`) and

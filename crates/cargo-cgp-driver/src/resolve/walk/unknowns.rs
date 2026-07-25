@@ -100,7 +100,8 @@ impl<'tcx> TypeFolder<TyCtxt<'tcx>> for ProjectionResolver<'tcx> {
 ///
 /// This is the one extra trait-solver interaction the walk performs here, and it is the safe kind:
 /// a fresh `InferCtxt` normalizing a concrete goal, forcing only the cached queries type-checking
-/// already ran (see the panic hazards in `docs/implementation/rustc-diagnostic-internals.md`).
+/// already ran (see the panic hazards in
+/// `cgp-knowledge-base/cargo-cgp/implementation/rustc-diagnostic-internals.md`).
 fn try_project_fixed<'tcx>(tcx: TyCtxt<'tcx>, alias_ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
     let ocx = ObligationCtxt::new(&infcx);

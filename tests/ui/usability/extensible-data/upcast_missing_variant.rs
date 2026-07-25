@@ -19,10 +19,10 @@
 //! one line they render as, so both say `Symbol!("Bar")`.
 //!
 //! CGP error class: none yet — the extensible-data casts
-//! (https://github.com/contextgeneric/cgp/blob/main/docs/concepts/extensible-variants.md)
+//! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/extensible-variants.md)
 //! are not in the upstream catalog.
 //!
-//! Issue: docs/issues/usability.md.
+//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 use cgp::core::field::impls::CanUpcast;
 use cgp::prelude::*;

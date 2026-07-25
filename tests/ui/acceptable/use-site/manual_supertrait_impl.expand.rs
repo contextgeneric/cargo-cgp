@@ -20,7 +20,8 @@
 //! tree that leads with `CanCalculateAreaChecked`, then its `CanCalculateArea` supertrait, down to
 //! the missing field.
 //!
-//! See docs/implementation/typed-root-cause-resolution.md (the impl-site path).
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the impl-site
+//! path).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

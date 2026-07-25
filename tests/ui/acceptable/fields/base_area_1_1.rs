@@ -15,8 +15,8 @@
 //! `[CGP-E001]` "missing field `height`" form; the `--verbose` elision guard from `base_area_1`
 //! still applies to the untransformed baseline.
 //!
-//! Exposes issues in docs/issues/usability.md. CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md.
+//! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md. CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.
 
 use cgp::prelude::*;
 

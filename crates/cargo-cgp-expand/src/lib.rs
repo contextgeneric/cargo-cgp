@@ -11,7 +11,7 @@
 //! diagnostic resugarers work on strings and are formatting-sensitive, which a printer that
 //! line-breaks a long generic list defeats. The full account of what each construct folds
 //! back to, and of the three implementations that must agree on it, is
-//! `docs/implementation/resugaring.md`.
+//! `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 //!
 //! It also narrows an expansion to one module or item when asked ([`select`]), since an expanded
 //! crate is large and a reader usually wants one part of it.

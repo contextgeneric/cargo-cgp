@@ -10,7 +10,7 @@
 //! without a whole-program view, so it defers the failure to the compiler. The fix is
 //! to wire the component to a concrete provider that terminates the lookup.
 //!
-//! See docs/errors/wiring/wiring-cycle.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/wiring-cycle.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

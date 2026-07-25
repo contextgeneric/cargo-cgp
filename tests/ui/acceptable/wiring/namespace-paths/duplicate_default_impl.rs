@@ -12,7 +12,7 @@
 //! cgp-macro-core/src/types/attributes/default_impl/attribute.rs). A regression
 //! that dropped the re-span would move the carets back onto the macro attribute.
 //!
-//! See docs/errors/wiring/conflicting-wiring.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
 
 use cgp::core::component::DefaultImpls1;
 use cgp::prelude::*;

@@ -14,7 +14,7 @@
 //! The check-entry counterpart of this shape is `parallel_consumers`.
 //!
 //! CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/hidden/unsatisfied-dependency.md
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md
 
 use cgp::prelude::*;
 

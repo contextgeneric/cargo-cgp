@@ -17,7 +17,7 @@
 //! is why `#[check_providers(...)]` exists to assert `IsProviderFor` per layer.
 //! This is the check doing its job, not a macro defect.
 //!
-//! See docs/errors/checks/higher-order-provider-layer.md.
+//! See cgp-knowledge-base/cgp/errors/checks/higher-order-provider-layer.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

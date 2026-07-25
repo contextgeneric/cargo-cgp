@@ -21,7 +21,8 @@
 //! `AppDefaults``, exercising the typed path renderer's collapse of a `for`-loop key
 //! parameter to a trailing `.*` wildcard.
 //!
-//! See docs/errors/wiring/namespace-forwarding-conflict.md and docs/error-code.md (CGP-E005).
+//! See cgp-knowledge-base/cgp/errors/wiring/namespace-forwarding-conflict.md and
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E005).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

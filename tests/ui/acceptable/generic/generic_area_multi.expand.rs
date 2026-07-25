@@ -9,8 +9,8 @@
 //! header must *unwrap* the tuple to name the trait as written (`CanCalculateArea<u32, u64,
 //! bool>`). This fixture is the regression guard for that multi-parameter unwrapping.
 //!
-//! Exposes issues in docs/issues/usability.md. CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md.
+//! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md. CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -18,9 +18,9 @@
 //! triggers in the sibling fixtures.
 //!
 //! CGP error class:
-//! <https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/orphan-rule.md>.
+//! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/orphan-rule.md>.
 
-//@aux-build: cgp-test-crate-a
+// @aux-build: cgp-test-crate-a
 
 use cgp::prelude::*;
 use cgp_test_crate_a::{AppNamespace, GreeterComponent};

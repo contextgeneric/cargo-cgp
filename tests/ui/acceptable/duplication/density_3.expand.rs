@@ -17,7 +17,7 @@
 //! representative chain is the deepest, not the first to arrive.
 //!
 //! CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/verbose-cascade.md.
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/verbose-cascade.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

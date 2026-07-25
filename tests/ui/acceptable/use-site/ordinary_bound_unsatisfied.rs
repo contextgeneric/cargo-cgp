@@ -13,8 +13,8 @@
 //! that bound is a `HasField`, a CGP capability, or an ordinary trait. Promote it with
 //! `check_components!` to surface the `f64: Eq` cause.
 //!
-//! See docs/errors/hidden/unsatisfied-dependency.md; the surfaced counterpart is
-//! docs/errors/checks/ordinary-trait-bound.md.
+//! See cgp-knowledge-base/cgp/errors/hidden/unsatisfied-dependency.md; the surfaced counterpart is
+//! cgp-knowledge-base/cgp/errors/checks/ordinary-trait-bound.md.
 
 use cgp::prelude::*;
 

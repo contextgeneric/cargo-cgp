@@ -9,8 +9,9 @@
 //! chain, finds `name` on `AppFields`, and points the fix at the type that must derive
 //! `HasField` — `AppFields`, not `App`.
 //!
-//! See docs/errors/checks/check-trait-failure.md and
-//! docs/implementation/typed-root-cause-resolution.md (the field-inspection variants).
+//! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md and
+//! cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the
+//! field-inspection variants).
 
 use core::ops::Deref;
 

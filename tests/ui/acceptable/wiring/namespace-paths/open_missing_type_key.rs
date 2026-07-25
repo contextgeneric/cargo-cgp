@@ -9,12 +9,13 @@
 //! Two things had to line up. The missing `DelegateComponent` key is a redirect *path*
 //! (`PathCons<ItemEncoderComponent, PathCons<Vec<u8>, Nil>>`), not a bare component marker, so the
 //! leaf classifier renders the whole path (as a [missing-redirect-wiring
-//! leaf](../../../../../docs/implementation/typed-root-cause-resolution.md)) rather than reading only
-//! its ADT item name (`PathCons`); and the `Path!` resugarer renders the value segment `Vec<u8>`
-//! verbatim rather than declining it for carrying generics, so the path folds to
-//! `@ItemEncoderComponent.Vec<u8>`.
+//! leaf](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-root-cause-resolution.md))
+//! rather than reading only its ADT item name (`PathCons`); and the `Path!` resugarer renders the
+//! value segment `Vec<u8>` verbatim rather than declining it for carrying generics, so the path
+//! folds to `@ItemEncoderComponent.Vec<u8>`.
 //!
-//! See docs/implementation/typed-root-cause-resolution.md (the missing-redirect-wiring leaf).
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the
+//! missing-redirect-wiring leaf).
 
 use cgp::prelude::*;
 

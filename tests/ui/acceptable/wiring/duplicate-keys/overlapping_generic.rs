@@ -6,7 +6,7 @@
 //! defers the overlap check to the compiler, the same as two overlapping
 //! hand-written generic impls.
 //!
-//! See docs/errors/wiring/conflicting-wiring.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
 
 use cgp::prelude::*;
 

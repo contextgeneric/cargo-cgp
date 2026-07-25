@@ -19,7 +19,7 @@
 //! which only compiles fixtures and diffs their diagnostics.)
 //!
 //! See the CGP coherence concept:
-//! <https://github.com/contextgeneric/cgp/blob/main/docs/concepts/coherence.md>.
+//! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/coherence.md>.
 
 use cgp::prelude::*;
 use cgp_test_crate_a::{

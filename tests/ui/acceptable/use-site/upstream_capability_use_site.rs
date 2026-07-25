@@ -19,9 +19,9 @@
 //! candidate list. `ToString` reaches no such construct and stays excluded.
 //!
 //! CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/hidden/unsatisfied-dependency.md
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md
 
-//@aux-build: cgp-test-crate-a
+// @aux-build: cgp-test-crate-a
 
 use cgp::prelude::*;
 use cgp_test_crate_a::Describe;

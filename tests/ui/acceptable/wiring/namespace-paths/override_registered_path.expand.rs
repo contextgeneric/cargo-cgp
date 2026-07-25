@@ -20,7 +20,7 @@
 //! the namespace-level (inheritance) shape in inherited_override_conflict.rs, where
 //! a child namespace tries to override an entry its parent binds.
 //!
-//! See docs/errors/wiring/namespace-override-conflict.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/namespace-override-conflict.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

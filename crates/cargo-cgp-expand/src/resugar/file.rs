@@ -20,7 +20,7 @@ use crate::resugar::symbol::Symbols;
 /// Folding them into one visitor is a bug, not an optimization: a visitor recurses innermost-first,
 /// so it would rewrite a `Symbol`'s terminating `Nil` into `Product![]` before ever examining the
 /// enclosing `Symbol`, which then no longer matches — and every field name silently stays raw. See
-/// `docs/implementation/resugaring.md`.
+/// `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 pub fn resugar_file(file: &mut File, options: &ExpandOptions) {
     if options.strip_cgp_prefixes {
         StripPrelude.visit_file_mut(file);

@@ -1,10 +1,10 @@
 #![feature(prelude_import)]
 //! A use-site `E0277` on a `Code`-dispatched handler pipeline whose root cause is a missing
 //! **input-dispatch entry**: the third stage dispatches its provider on the *input type* through
-//! [`UseInputDelegate`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/providers/use_delegate.md), and no entry
-//! matches the type the second stage produces. This is the counterpart of the missing-wiring leaf
-//! for the input axis: a delegation table (`SinkHandlers`) that is missing one key, rather than a
-//! context that does not wire a component.
+//! [`UseInputDelegate`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/providers/use_delegate.md),
+//! and no entry matches the type the second stage produces. This is the counterpart of the
+//! missing-wiring leaf for the input axis: a delegation table (`SinkHandlers`) that is missing one
+//! key, rather than a context that does not wire a component.
 //!
 //! Distilled from the `hypershell` `http_checksum_native` example: a `StreamingHttpRequest`
 //! (fixed output stream) piped to `Checksum<Sha256>` (producing the raw digest

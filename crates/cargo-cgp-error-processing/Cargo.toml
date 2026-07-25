@@ -13,7 +13,7 @@ keywords     = { workspace = true }
 # rewrite, the fallback post-processing transforms, and the dependency-tree renderer. It
 # deliberately does *not* depend on `rustc_private`: it operates on plain text and typed
 # tree data the driver hands it, so it builds and its tests run on any toolchain, without
-# the driver's compiler linkage. See `docs/implementation/error-processing.md`.
+# the driver's compiler linkage. See `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md`.
 
 # The dependency-graph rendering tests pin each rendered tree as an inline snapshot with `insta`.
 [dev-dependencies]

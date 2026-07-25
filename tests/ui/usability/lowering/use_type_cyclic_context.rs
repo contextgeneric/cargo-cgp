@@ -13,8 +13,8 @@
 //! back-to-front) grounds fine — see the passing `use_type_fn_reverse_order`
 //! behavioral test. Only a genuine cycle, which has no valid ordering, fails.
 //!
-//! See docs/reference/attributes/use_type.md and
-//! docs/errors/lowering/unresolved-imported-type.md.
+//! See cgp-knowledge-base/cgp/reference/attributes/use_type.md and
+//! cgp-knowledge-base/cgp/errors/lowering/unresolved-imported-type.md.
 
 use cgp::prelude::*;
 

@@ -9,7 +9,7 @@
 //! that the resolver reports a bare unwired component, not only one reached through a
 //! provider's impl-side dependency (that transitive case is basic_missing_wiring.rs).
 //!
-//! See docs/implementation/typed-root-cause-resolution.md.
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md.
 
 use cgp::prelude::*;
 

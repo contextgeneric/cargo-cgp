@@ -8,8 +8,8 @@
 //! and the chain is shorter (the inner provider is never named). The cause is
 //! recoverable, so this is a usability problem: name the layer at fault.
 //!
-//! Exposes issues in docs/issues/usability.md. CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/higher-order-provider-layer.md.
+//! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md. CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/higher-order-provider-layer.md.
 
 use cgp::prelude::*;
 

@@ -12,7 +12,9 @@
 //! threading in `key/path.rs` regresses, the caret snaps back to the block and
 //! this `.stderr` changes.
 //!
-//! See docs/errors/wiring/conflicting-wiring.md; error-span mechanics in docs/implementation/entrypoints/delegate_components.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md; error-span
+//! mechanics in
+//! cgp-knowledge-base/cgp/implementation/entrypoints/delegate_components.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

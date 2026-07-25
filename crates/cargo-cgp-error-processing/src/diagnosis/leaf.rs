@@ -85,13 +85,15 @@ pub enum Leaf {
         owner: String,
     },
     /// A non-context delegation table that has no entry for a key it is asked to resolve. The owner
-    /// is a *provider* that delegates — an [aggregate provider](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/aggregate-providers.md)
+    /// is a *provider* that delegates — an [aggregate
+    /// provider](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/aggregate-providers.md)
     /// missing a component wiring, or a
-    /// [`UseDelegate`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/providers/use_delegate.md) / `UseInputDelegate`
-    /// dispatch table missing a branch for the type it dispatches on (a `Code` fragment or an `Input`
-    /// value's type). Parallel to [`Leaf::MissingWiring`], but the owner is a provider table rather
-    /// than the context: the fix is to add the entry to *that provider's* table (or feed the stage a
-    /// type the table already covers), not to wire a component on the context.
+    /// [`UseDelegate`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/providers/use_delegate.md)
+    /// / `UseInputDelegate` dispatch table missing a branch for the type it dispatches on (a `Code`
+    /// fragment or an `Input` value's type). Parallel to [`Leaf::MissingWiring`], but the owner is
+    /// a provider table rather than the context: the fix is to add the entry to *that provider's*
+    /// table (or feed the stage a type the table already covers), not to wire a component on the
+    /// context.
     MissingDispatchEntry {
         /// The key with no entry — a component marker (`BarProviderComponent`) for an aggregate
         /// provider, or a dispatched-on type (`GenericArray<u8, U32>`) for a `UseDelegate` /
@@ -131,10 +133,10 @@ pub enum Leaf {
         context: String,
     },
     /// An associated type the wiring projects through that carries a different type from the one a
-    /// provider requires. Like [`Leaf::FieldTypeMismatch`], the trait bound itself holds and only the
-    /// `<owner as Trait>::Assoc == expected` projection fails; unlike it, the projection is *not*
-    /// `HasField`'s `Value`. The archetype is a CGP
-    /// [abstract type](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/abstract-types.md):
+    /// provider requires. Like [`Leaf::FieldTypeMismatch`], the trait bound itself holds and only
+    /// the `<owner as Trait>::Assoc == expected` projection fails; unlike it, the projection is
+    /// *not* `HasField`'s `Value`. The archetype is a CGP [abstract
+    /// type](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/abstract-types.md):
     /// the context binds `HasErrorType::Error` to one concrete type by wiring
     /// `ErrorTypeProviderComponent` to `UseType<T>`, while a provider pins it to another with the
     /// `#[use_type(HasErrorType.{Error = AppError})]` equality form. The emitter words this as a

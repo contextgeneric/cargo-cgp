@@ -12,7 +12,7 @@
 //! The E0119 carets fall on each provider `impl` block, since those impls are the
 //! user's own `#[cgp_impl]` blocks rewritten in place.
 //!
-//! See docs/errors/wiring/conflicting-wiring.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
 
 use cgp::prelude::*;
 

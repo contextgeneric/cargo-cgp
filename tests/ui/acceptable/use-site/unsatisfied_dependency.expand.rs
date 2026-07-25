@@ -12,8 +12,9 @@
 //! associated function syntax instead", misleading for a wiring error, wrapped
 //! around the real note.
 //!
-//! CGP error class: https://github.com/contextgeneric/cgp/blob/main/docs/errors/hidden/unsatisfied-dependency.md.
-//! Exposes issues in docs/issues/usability.md.
+//! CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md.
+//! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

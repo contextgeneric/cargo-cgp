@@ -9,7 +9,7 @@
 //! — no calling convention assumed — and each parameter the call leaves to inference is seeded as
 //! a rigid placeholder the walk resolves around but never reports on. The failure shape, the
 //! rationale for each recovery step, the worked example, and the decline boundaries are
-//! documented in `docs/implementation/typed-resolution-call-site.md`.
+//! documented in `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution-call-site.md`.
 //!
 //! The recovery is split by stage: [`find_call`] locates the failing call and the candidate
 //! consumer traits, [`receiver`] reads the context off the receiver expression, [`seed`] builds

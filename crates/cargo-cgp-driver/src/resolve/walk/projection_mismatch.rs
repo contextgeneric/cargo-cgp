@@ -28,9 +28,9 @@ pub(crate) struct ProjectionMismatch<'tcx> {
 }
 
 /// When the impl that satisfies `pred`'s trait obligation carries an unmet associated-type
-/// projection, return it. This covers two shapes of the same failure: a `HasField` value type
-/// (a field present with the wrong type) and any other associated type — most often a CGP
-/// [abstract type](https://github.com/contextgeneric/cgp/blob/main/docs/concepts/abstract-types.md)
+/// projection, return it. This covers two shapes of the same failure: a `HasField` value type (a
+/// field present with the wrong type) and any other associated type — most often a CGP [abstract
+/// type](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/abstract-types.md)
 /// a provider pinned with the `#[use_type(Trait.{Assoc = Concrete})]` equality form while the
 /// context bound it to something else. `None` when the impl carries no unmet projection.
 ///

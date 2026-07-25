@@ -19,8 +19,9 @@
 //!     to `Inner` and thereby shares `Inner`'s own cached subtree, rather than borrowing `Outer`'s
 //!     context. Were the key the obligation alone, one tree would splice in the other's labels.
 //!
-//! See docs/implementation/cached-dependency-resolution.md (the cache key) and
-//! docs/implementation/typed-root-cause-resolution.md (the impl-site anchor and cross-context walk).
+//! See cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md (the cache key)
+//! and cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the impl-site
+//! anchor and cross-context walk).
 
 use cgp::prelude::*;
 

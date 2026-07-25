@@ -15,10 +15,11 @@
 //! misclassification: it accurately states what is observable — the context implements
 //! `HasField` for no field — and a fieldless derive is exactly that. There is nothing to
 //! recover, since the two situations are the same program. This fixture pins the expected
-//! behavior; see docs/implementation/error-processing.md.
+//! behavior; see cgp-knowledge-base/cargo-cgp/implementation/error-processing.md.
 //!
-//! Exposes issues in docs/issues/usability.md. CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md (derive-missing variant).
+//! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md. CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md
+//! (derive-missing variant).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -19,7 +19,7 @@
 //! triggers in the sibling fixtures.
 //!
 //! CGP error class:
-//! <https://github.com/contextgeneric/cgp/blob/main/docs/errors/wiring/orphan-rule.md>.
+//! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/orphan-rule.md>.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

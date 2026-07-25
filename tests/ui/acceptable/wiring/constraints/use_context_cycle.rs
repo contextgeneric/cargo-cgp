@@ -9,7 +9,7 @@
 //! without a whole-program view, so it defers the failure to the compiler. The fix is
 //! to wire the component to a concrete provider that terminates the lookup.
 //!
-//! See docs/errors/wiring/wiring-cycle.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/wiring-cycle.md.
 
 use cgp::prelude::*;
 
@@ -34,7 +34,7 @@ delegate_components! {
 // Forcing the wiring through a check drives the solver into the cycle directly, so it
 // overflows with `E0275` and the note chain names the cycle. (A plain method call on
 // `Person` would instead surface the hidden `E0599`, since the method probe treats the
-// unresolvable cycle as an unsatisfied bound — see docs/errors/hidden/.)
+// unresolvable cycle as an unsatisfied bound — see cgp-knowledge-base/cgp/errors/hidden/.)
 check_components! {
     Person {
         GreeterComponent,

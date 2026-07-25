@@ -3,7 +3,7 @@
 //! This crate holds the string-level diagnostic logic the driver drives but keeps out of
 //! its `rustc_private` linkage, so it builds and its tests run on any toolchain. The driver
 //! (`cargo-cgp-driver`) is the only caller; the front-end no longer touches diagnostics.
-//! See `docs/implementation/error-processing.md` for the design.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md` for the design.
 //!
 //! Six tenants live here, all driven by the driver's emitter:
 //!

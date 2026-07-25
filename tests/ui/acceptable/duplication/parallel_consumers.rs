@@ -14,7 +14,7 @@
 //! This pins the parallel counterpart of the subsuming coalescing the cascade fixtures pin.
 //!
 //! CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/verbose-cascade.md.
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/verbose-cascade.md.
 
 use cgp::prelude::*;
 

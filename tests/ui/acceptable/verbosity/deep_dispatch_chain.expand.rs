@@ -16,7 +16,8 @@
 //! what makes it visible when it changes.
 //!
 //! CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md (use-site face).
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md
+//! (use-site face).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

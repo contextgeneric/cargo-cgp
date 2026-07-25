@@ -10,7 +10,7 @@
 //! arises anywhere impl generics carry a bound, including a generic
 //! `delegate_components!` table checked at one instantiation.
 //!
-//! See docs/errors/checks/ordinary-trait-bound.md.
+//! See cgp-knowledge-base/cgp/errors/checks/ordinary-trait-bound.md.
 
 use cgp::prelude::*;
 

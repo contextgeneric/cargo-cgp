@@ -52,7 +52,7 @@ pub fn fix_help_messages(causes: &[Cause]) -> Vec<String> {
 /// bind the component to the type the provider requires, or relax the provider to work with the one
 /// the context supplies. Only a CGP abstract-type component earns a `help` — its concrete type is a
 /// wiring choice, so there is a specific entry to change (`UseType<T>`, the provider
-/// [`#[cgp_type]`](https://github.com/contextgeneric/cgp/blob/main/docs/reference/macros/cgp_type.md)
+/// [`#[cgp_type]`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/macros/cgp_type.md)
 /// generates for exactly this). An ordinary trait's associated type is fixed by whatever impl
 /// supplies it, with no wiring entry to name, so it contributes none. Emitted in first-seen order,
 /// de-duplicated by component.

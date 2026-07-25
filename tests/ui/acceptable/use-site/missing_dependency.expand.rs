@@ -9,8 +9,8 @@
 //! site; deferring it to the use site is the intended lazy behavior, not a
 //! macro defect.
 //!
-//! See docs/errors/hidden/unsatisfied-dependency.md; its surfaced counterpart is
-//! docs/errors/checks/check-trait-failure.md.
+//! See cgp-knowledge-base/cgp/errors/hidden/unsatisfied-dependency.md; its surfaced counterpart is
+//! cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

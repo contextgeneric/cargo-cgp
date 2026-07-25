@@ -16,7 +16,7 @@
 //! whole `#[cgp_component(..)]` attribute — the leak the span fix removed so that
 //! cross-crate go-to-definition on the marker resolves to the provider name alone.
 //!
-//! See docs/errors/wiring/conflicting-wiring.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

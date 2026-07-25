@@ -12,7 +12,8 @@
 //! If the redirect detection in `resolve/conflict.rs` regresses (counting one redirect instead of
 //! two), the header reverts to the single-redirect `[CGP-E007]` form.
 //!
-//! See docs/errors/wiring/conflicting-wiring.md and docs/error-code.md (CGP-E008).
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E008).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

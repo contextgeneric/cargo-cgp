@@ -5,7 +5,7 @@
 //! trait obligations rather than by reading the rendered error text. The result is the rustc-free
 //! [`Resolved`](cargo_cgp_error_processing::Resolved) the emitter turns into a diagnostic through
 //! [`plan_resolved`](cargo_cgp_error_processing::plan_resolved). See
-//! `docs/implementation/typed-root-cause-resolution.md` for the design.
+//! `cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md` for the design.
 //!
 //! The pipeline is split by stage: [`anchor`] recovers the starting obligation (from a check
 //! entry, a hand-written impl on the context, a foreign wrapper whose `where`-clause chain reaches

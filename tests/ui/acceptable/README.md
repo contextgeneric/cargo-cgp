@@ -9,7 +9,7 @@ category is the passing baseline for *reformatted errors*, the counterpart to [`
 holds only clean compiles). Its snapshots are the standing proof the tool keeps producing good output.
 
 The whole check-trait-failure family lives here, carried across by the driver's
-[typed root-cause resolver](../../../docs/implementation/typed-root-cause-resolution.md). The fixtures
+[typed root-cause resolver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-root-cause-resolution.md). The fixtures
 are split into concept sub-directories so no directory grows crowded:
 
 - [`fields/`](fields) — a missing or underived context field, reached directly or through a `Deref`
@@ -41,7 +41,7 @@ are split into concept sub-directories so no directory grows crowded:
   recovered from the use site with the misleading method-syntax advice dropped — including
   `namespace_join_use_site`, whose namespace-joined context is anchored on the consumer trait the
   diagnostic names and walked through the namespace to its root cause, and the two shapes resolved by
-  [the call-site anchor](../../../docs/implementation/typed-resolution-call-site.md):
+  [the call-site anchor](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-resolution-call-site.md):
   `cascade_after_use_site` (an unconditionally-dispatched `E0277` re-read from the failing call into
   one root-cause block, its await-site re-report de-duplicated and its `?`-operator cascade
   suppressed) and `generic_consumer_use_site` (the dispatch parameter recovered from a plain written

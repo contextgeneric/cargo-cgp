@@ -6,7 +6,7 @@
 //! independently and has no view of the other block — so it correctly defers to
 //! the compiler, exactly as two hand-written overlapping impls would.
 //!
-//! See docs/errors/wiring/conflicting-wiring.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -13,11 +13,12 @@
 //! two-line hint diffs the two `HasField` symbols and elides every generic argument they
 //! share to `_`, which dropped the shared `'h'` out of *both* field names and left
 //! `height` unreadable from the text. The driver's injected `--verbose` turns that
-//! elision off (see docs/implementation/rustc-diagnostic-internals.md), so the symbols
-//! now print in full — watch this snapshot for a `_` returning.
+//! elision off (see
+//! cgp-knowledge-base/cargo-cgp/implementation/rustc-diagnostic-internals.md), so the
+//! symbols now print in full — watch this snapshot for a `_` returning.
 //!
-//! Exposes issues in docs/issues/usability.md. CGP error class:
-//! https://github.com/contextgeneric/cgp/blob/main/docs/errors/checks/check-trait-failure.md.
+//! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md. CGP error class:
+//! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
