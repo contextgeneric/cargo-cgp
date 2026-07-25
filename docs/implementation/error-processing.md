@@ -147,74 +147,33 @@ the order matters. Module-path stripping runs first so the later transforms matc
 (`Symbol`, `Chars`, …) rather than their fully-qualified forms; `Symbol!` resugaring runs before
 `Path!` resugaring (which reads the already-resugared `Symbol!("…")` segments), before list resugaring
 (which reads a `Field`'s `Symbol!("…")` tag when naming a struct field or enum variant), and before
-the field rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Six transforms exist
-today:
+the field rewrite (which matches the resugared `HasField<Symbol!("…")>` form). Six transforms run
+today, in three groups:
 
-- **[`strip_module_paths`](../../crates/cargo-cgp-error-processing/src/postprocess/strip_modules.rs)**
-  collapses every `a::b::C` identifier run to its bare final segment, so a fully-qualified
-  `contexts::app::MockApp` becomes `MockApp`, `interfaces::types::QuantityTypeProviderComponent`
-  becomes `QuantityTypeProviderComponent`, and `f64: std::cmp::Eq` becomes `f64: Eq` — the module
-  qualifiers are noise a CGP diagnostic reads better without. It scans by byte for the ASCII
-  identifier run but copies every other character whole by its UTF-8 width, so multi-byte text (a
-  rendered tree's `└─`) is never split; it skips string literals and leaves a turbofish, an
-  associated-type `>::Assoc` tail, and a lone identifier alone. It subsumes `strip_cgp_prefixes`
-  (a `cgp::prelude::Chars` is just one such run), which still runs after it for the specific CGP
-  re-export list.
-- **[`strip_cgp_prefixes`](../../crates/cargo-cgp-error-processing/src/postprocess/strip_prefixes.rs)**
-  removes the CGP module paths rustc prints in front of CGP type names — `cgp::prelude::Chars` becomes
-  `Chars`. The prefixes it strips are a constant list, `CGP_PREFIXES` (`cgp::prelude::`,
-  `cgp::macro_prelude::`, `cgp::cgp_core::`, `cgp::cgp_extra::`); with `strip_module_paths` now running
-  first this is largely redundant, kept as the explicit CGP-specific fallback.
-- **[`resugar_symbol`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_symbol.rs)**
-  reverses a `Symbol!` expansion back to its surface form: `Symbol<2, Chars<'x', Chars<'y', Nil>>>`
-  becomes `Symbol!("xy")`. It parses the spine and rewrites it **only on an exact structural match** —
-  the declared length must equal the decoded string's byte length (the length `Symbol!` bakes in is
-  `str::len()`, not the character count), the spine must be `Chars`/`Nil` all the way down, and each
-  `Chars` head must be a single plain character literal. A `Symbol<…>` that does not match exactly is
-  left untouched, because another type could share the name; this caution is essential to every
-  resugaring transform, not just this one.
-- **[`resugar_path`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_path.rs)**
-  reverses a `Path!` expansion back to its surface form:
-  `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` becomes `@app.GreeterComponent`. Its
-  `wrap` parameter chooses the shape: in a **rewritten** diagnostic (the tool constructed the message)
-  it renders the bare `@app.GreeterComponent`, since it reads as a path the message names; in the
-  **resugaring fallback** (an un-rewritten message showing a raw type in source form) it wraps it as
-  the `Path!(@app.GreeterComponent)` macro form. The emitter passes `wrap` accordingly — bare on a
-  rewrite (a wiring-conflict or typed resolution), wrapped on a diagnostic it left untouched.
-  It walks the right-nested `PathCons`/`Nil` spine and rewrites it on a **well-formed match**,
-  mirroring how `Path!` classifies each segment forward: a `Symbol!("name")` head becomes the bare
-  segment `name` only when `name` is a lowercase, non-primitive identifier `Path!` would encode as a
-  `Symbol`, and every other head is rendered back verbatim as its type — a capitalized component
-  marker, a primitive, or a compound value type an `open` statement dispatches on (`Vec<u8>`,
-  `&Coord`), which is exactly what lets an `open`-dispatched redirect path read as
-  `@ItemEncoderComponent.Vec<u8>` rather than a raw spine. Two shapes still decline, leaving the
-  `PathCons` spine untouched: a **module-qualified** segment (a residual `::` the earlier module strip
-  should have removed) folds to its final identifier only when that is a plain type, and a **bare
-  lowercase identifier** — which `Path!` would have made a `Symbol` — is ambiguous as a plain type. A
-  spine that is not `PathCons`/`Nil` all the way down is also left untouched. One spine that
-  is *not* `Nil`-terminated is still rewritten: an **open-ended path**, whose spine ends in a generic
-  "rest of path" parameter that rustc prints as the placeholder `_` (as in the conflicting-wiring
-  `E0119` blocks over a duplicated `@`-path key). Such a tail resugars to a trailing `.*` wildcard
-  segment, so `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>` becomes `Path!(@foo.bar.*)`. The
-  `.*` is not real `Path!` syntax and would not parse back, but it reads far better than the raw spine;
-  only a bare `_` tail triggers it, since `_` is never a concrete segment, and any other non-`Nil` tail
-  still declines. It runs after `resugar_symbol`, so its symbol segments are already in `Symbol!("…")`
-  form.
-- **[`resugar_lists`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_list.rs)**
-  reverses a `Product!`/`Sum!` expansion back to its surface form: `Cons<u64, Cons<String, Nil>>`
-  becomes `Product![u64, String]` and `Either<A, Either<B, Void>>` becomes `Sum![A, B]`. A spine whose
-  elements are *all* named fields `Field<Symbol!("name"), Type>` folds one step further to the record
-  or variant it describes — a product to `Struct! { name: Type, … }`, a sum to `Enum! { Name(Type), …
-  }` (presentation-only forms, not real CGP macros). This is the **fallback** counterpart of the
-  driver's typed `render_ty`, which resugars the same spines in the dependency tree anchored by
-  `DefId`; this one exists to catch a raw spine in a diagnostic the resolver *declined* and left to
-  rustc's own text, so a fallback message reads the same as a reshaped one. Running on plain text it
-  cannot check the defining crate, so — the caution every resugaring transform shares — it rewrites
-  **only on an exact structural match**: the spine must close on the exact `Nil` (product) or `Void`
-  (sum) terminator, an open-ended or wrong-terminated spine is left untouched, and a `Cons<` that is
-  only the tail of `PathCons<` is not mistaken for a cell. It runs after `resugar_symbol` (so a
-  `Field`'s tag reads as `Symbol!("…")`) and resugars each element recursively, so a nested list folds
-  in turn.
+- **The two path strips** —
+  [`strip_module_paths`](../../crates/cargo-cgp-error-processing/src/postprocess/strip_modules.rs),
+  which collapses every `a::b::C` identifier run to its final segment (`contexts::app::MockApp` →
+  `MockApp`, `f64: std::cmp::Eq` → `f64: Eq`), and
+  [`strip_cgp_prefixes`](../../crates/cargo-cgp-error-processing/src/postprocess/strip_prefixes.rs),
+  which removes the CGP re-export paths in `CGP_PREFIXES` (`cgp::prelude::Chars` → `Chars`) and is
+  largely redundant now that the general strip runs first. They lead the chain because everything after
+  them matches bare type names; [Resugaring](resugaring.md#the-path-strips-that-run-first) covers what
+  each leaves alone and why.
+- **The three resugaring transforms** —
+  [`resugar_symbol`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_symbol.rs)
+  (`Symbol<2, Chars<'x', Chars<'y', Nil>>>` → `Symbol!("xy")`),
+  [`resugar_path`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_path.rs)
+  (`PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` → `@app.GreeterComponent`, or the
+  `Path!(@…)` macro form when its `wrap` parameter is set), and
+  [`resugar_lists`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_list.rs)
+  (`Cons`/`Either` spines → `Product![…]`/`Sum![…]`, or `Struct! { … }`/`Enum! { … }` when every
+  element is a named field) — reverse a CGP type-level expansion back to the syntax the programmer
+  wrote. They are one of the tool's [three resugaring implementations](resugaring.md), which
+  **[Resugaring](resugaring.md)** documents in full: what each construct expands to and folds back to,
+  the exact-match rule that makes each decline rather than guess, why this text implementation needs
+  hand-rolled structural parsing where the driver's typed one does not, and who passes `wrap`. Read it
+  before changing any of the three, since a change to what a construct resugars to belongs in all three
+  implementations at once.
 - **[`rewrite_missing_fields`](../../crates/cargo-cgp-error-processing/src/postprocess/missing_field.rs)**
   turns an unmet `HasField` bound into a field-oriented message. It matches (after the two transforms
   above) `` the trait `HasField<Symbol!("name")>` is not implemented for `Context` `` and distinguishes
@@ -269,11 +228,11 @@ the transforms stay consistent with what the driver emits across the whole catal
 
 The transforms still ahead extend the per-diagnostic cleanup, each a new function added to the
 post-processing chain, each applying the same exact-match caution `resugar_symbol` sets the precedent
-for. Decoding the remaining type-level encodings is the nearest: `Symbol!` and `Path!` are done;
-`Cons<A, Cons<B, Nil>>` is `Product![A, B]`, `Either<…>`/`Void` spines are `Sum![…]`, and so on —
-rewriting these back to their surface form removes the rest of the visual noise a CGP error carries.
-Recognizing more error classes is the other direction, each rewriting its message the way the
-missing-field transform does.
+for. The type-level encodings a CGP diagnostic carries are now all decoded — `Symbol!`, `Path!`, and
+the `Product!`/`Sum!` spines with their record and variant forms — so what remains on that front is
+whichever encoding a new CGP construct introduces, and the place to add it is
+[Resugaring](resugaring.md). Recognizing more error classes is the other direction, each rewriting its
+message the way the missing-field transform does.
 
 One larger transformation is deliberately out of scope for this crate: collapsing a *cascade* — the
 one deep mistake reported at every transitively dependent provider — into a single root cause. That

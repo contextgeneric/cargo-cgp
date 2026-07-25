@@ -35,6 +35,13 @@ kind sits inside a single walk: a capability depended on by several providers (a
 unified cache below closes both, because both reduce to the same primitive — resolve each distinct
 obligation once.
 
+The compiler memoizes none of that for us, and knowing which layer is already cached prevents building
+the wrong thing. rustc's query system memoizes each individual lookup the walk makes — the
+`predicates_of`, the `impl` list, the ADT fields — so the resolver inherits that for free (see
+[The resolve context](resolve-context.md)). What nothing memoizes is the **composite walk**: the
+descent that assembles those lookups into one root-cause tree, whose result is the rustc-free owned
+value below. That layer is what this cache adds.
+
 The deeper reason to build this, though, is not speed — it is that **a cacheable query is a stateless
 query, and statelessness is the property that makes the resolver possible to reason about and
 eventually to test without a compiler.** A query you can cache is a pure function of its explicit
@@ -346,17 +353,6 @@ anticipate, not in competition with it. Buffering would decide *what* to emit �
 different-consumer-same-cause blocks into one listing — while a node-memoized walk is the "resolve each
 unique obligation exactly once" primitive a buffered emitter would want underneath it. So this cache is
 a building block for that later work, not throwaway if it lands.
-
-## Comparison with Clippy
-
-Clippy has no analog to this cache, because it has no analog to the work being cached. Clippy's late
-passes run only on code that type-checks (the same `after_analysis` gate that forces cargo-cgp's
-resolver into the emitter), so Clippy never re-runs the trait solver from inside diagnostic emission
-and never resolves the same failure at many sites. Where Clippy relies on the compiler's own query
-memoization for repeated `TyCtxt` lookups, cargo-cgp inherits that same memoization for its schema
-queries (see [The resolve context](resolve-context.md)) — this cache adds the layer rustc does *not*
-provide: memoizing the resolver's own composite walk, whose result is the rustc-free tree. There is no
-Clippy code to follow here; the design is particular to reshaping errors rather than adding them.
 
 ## Tests
 

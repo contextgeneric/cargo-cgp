@@ -7,6 +7,12 @@ that several paths reach in common into a directed acyclic graph, then renders t
 `(*)` marker on any subtree already drawn elsewhere. All the merging and rendering is a pure function
 over owned data, so every shape is unit-tested without a compiler in the loop.
 
+The whole layer exists because cargo-cgp *reshapes* a diagnostic the compiler already built rather than
+emitting a new one of its own. A tool that only adds lints hands its findings to rustc's standard
+emitter and never reconstructs a failed obligation's chain, so it has nothing to merge into a graph or
+lay out as a tree; every decision below follows from having that chain in hand and owing the reader a
+readable account of it.
+
 ## Why a graph rather than a chain per cause
 
 A single failure's root causes do not form independent chains, so the note cannot be a stack of
@@ -369,15 +375,6 @@ are listed. Reproducing a six-way convergence makes this plain — the weight is
 branches, which are genuine information, not the six markers that end them. The length is inherent to
 wiring in which six capabilities really do need one shared thing. What *is* worth collapsing is a
 subtree drawn in another block, which is [the cross-block elision](#eliding-across-blocks) above.
-
-## Comparison with Clippy
-
-Clippy has no analog to this rendering, because it has no analog to the work behind it. Clippy adds new
-lints and lets the compiler's standard emitter render them; it never reconstructs a failed obligation's
-dependency chain, so it has nothing to merge into a graph or lay out as a tree. The whole graph is
-particular to reshaping an existing diagnostic rather than emitting a new one, and it lives in the
-rustc-free `cargo-cgp-error-processing` crate precisely so it is testable the way Clippy's own logic is
-— as a pure function over owned data, with no compiler in the loop.
 
 ## Tests
 

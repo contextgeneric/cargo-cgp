@@ -328,18 +328,15 @@ user's own capability or getter trait — or a terminal ordinary bound — rende
   ahead of the context in a provider trait's argument list (`ReferenceGetter<'a, Ctx, T>`): indexing
   by raw argument position would land on the region and abort the compiler, while the type-position
   read skips lifetimes in the label the way ordinary Rust elision does (`ReferenceGetter<str>`).
-- **Type-level spines are resugared.** A rendered label's `Self` type has its `Cons<A, Cons<B, Nil>>`
-  product spine read back as `Product![A, B]` and its `Either<A, Either<B, Void>>` sum spine as
-  `Sum![A, B]`, so a field- or variant-list handler (the modular-serialization example's
-  `FieldsSerializer` over a record's `Cons` field list) reads as the flat list the programmer wrote. A
-  spine whose elements are all named fields `Field<Symbol!("name"), Type>` resugars one step further to
-  the record or variant it describes — a product to `Struct! { name: Type, … }`, a sum to
-  `Enum! { Name(Type), … }` — so a `HasFields` field list reads as
-  `Struct! { message_id: u64, date: DateTime<Utc>, … }` rather than a chain of `Field` cells.
-  `Struct!`/`Enum!` are not real CGP macros; like `Path!`'s `.*` wildcard they are a readability-only
-  form. Each cell is anchored by `DefId` to the CGP crate that defines it (`Cons`/`Nil` in
-  `cgp-base-types`, `Either`/`Void`/`Field` in `cgp-field`), so a same-named type from another crate is
-  never resugared, and elements are rendered recursively so a nested list resugars in turn.
+- **Type-level spines are resugared.** A rendered label's `Self` type has its `Cons`/`Either` spine read
+  back as the `Product![A, B]` or `Sum![A, B]` the programmer wrote — and one step further to
+  `Struct! { name: Type, … }` or `Enum! { Name(Type), … }` when every element is a named field — so a
+  field- or variant-list handler (the modular-serialization example's `FieldsSerializer` over a record's
+  field list) names the list rather than a chain of cells. The rendering is `render_ty`, the **typed**
+  one of the tool's three resugaring implementations, anchored by `DefId` to the CGP crate that defines
+  each cell so a same-named type elsewhere is never resugared. What each construct folds back to, what
+  makes a fold decline, and how this implementation differs from the text and syntax-tree ones is
+  [Resugaring](resugaring.md).
 
 Each hop is a structured [`DepNode`](error-processing.md) variant — one per template, each stamped
 with its own [`CGP-E1xx` code](../error-code.md) when rendered — so `consumer trait impl`

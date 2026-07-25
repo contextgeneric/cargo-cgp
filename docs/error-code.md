@@ -478,7 +478,16 @@ transform.
 **`Symbol!` resugaring** reverses a `Symbol!` type expansion back to its surface form, so
 `Symbol<2, Chars<'x', Chars<'y', Nil>>>` becomes `Symbol!("xy")`. It restores the syntax the
 programmer wrote and nothing more;
-[`resugar_symbol`](../crates/cargo-cgp-error-processing/src/postprocess/resugar_symbol.rs) owns it.
+[`resugar_symbol`](../crates/cargo-cgp-error-processing/src/postprocess/resugar_symbol.rs) owns it,
+and [Resugaring](implementation/resugaring.md) explains this and every other construct in full.
+
+**`Product!` / `Sum!` resugaring** reverses a type-level list expansion back to its surface form, so
+`Cons<u64, Cons<String, Nil>>` becomes `Product![u64, String]` and an `Either`/`Void` spine becomes
+`Sum![…]`. A list whose elements are all named fields folds one step further to a `Struct! { … }` or
+`Enum! { … }` — presentation-only forms, not real CGP macros, chosen because a record reads far better
+than a chain of `Field` cells.
+[`resugar_lists`](../crates/cargo-cgp-error-processing/src/postprocess/resugar_list.rs) owns the text
+form and the driver's `render_ty` the typed one.
 
 **`Path!` resugaring** reverses a `Path!` type expansion back to its surface form, so
 `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` becomes `Path!(@app.GreeterComponent)`.

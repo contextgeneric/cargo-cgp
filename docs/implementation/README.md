@@ -7,11 +7,13 @@ the last one left off rather than reconstructing it from the two crates each tim
 rules, the document shape, and the synchronization rule that binds these documents to the code live
 in [AGENTS.md](AGENTS.md), on top of the knowledge-base-wide rules in [../AGENTS.md](../AGENTS.md).
 
-Each document explains how one subsystem *works* and *why it is built that way*, and — because
-`cargo-cgp` is modeled on Clippy and built on the compiler's unstable API — how the design compares
-to Clippy and where it depends on `rustc_driver` behavior. The comparison is not decoration: Clippy
-is the closest working example of the same integration, so knowing where the two agree and where
-they diverge is often the fastest way to understand why a piece of code is shaped the way it is.
+Each document explains how one subsystem *works* and *why it is built that way*, including where it
+depends on the compiler's unstable `rustc_driver` behavior and — where a related tool has already
+solved the same problem — how the design compares to it. That comparison is not decoration: Clippy is
+the closest working example of this compiler integration, and `cargo-expand` of printing an expanded
+crate, so knowing where `cargo-cgp` agrees with one of them and where it diverges is often the fastest
+way to understand why a piece of code is shaped the way it is. A subsystem with no such counterpart
+carries no comparison at all.
 
 ## Catalog
 
@@ -84,6 +86,21 @@ same change.
   missing-field messages), the wiring-message rewrite, the root-cause diagnosis model and the wording
   that turns it into the header, help, and note text, and the dependency-tree renderer, all driven by
   the driver's emitter and unit-tested without a compiler.
+- [Resugaring](resugaring.md) — the transforms that reverse CGP's type-level expansions, so every
+  construct the tool shows is spelled the way the programmer wrote it: `Symbol!`, `Path!`, the
+  `Product!`/`Sum!` spines and their `Struct!`/`Enum!` record forms, and the path strips that must run
+  first. One section per construct with its expansion and its decline cases, the exact-match rule that
+  keeps a resugaring from claiming syntax nobody wrote, and one sub-section per implementation — typed
+  over `Ty<'tcx>`, text over `&str`, syntax tree over `syn::Type` — explaining why three inputs force
+  three separate matchers that must nonetheless agree.
+- [The expand command](expand-command.md) — the blueprint (ahead of implementation) for
+  `cargo cgp expand`, which shows the ordinary Rust a project's CGP macros generate: a full
+  `cargo-expand`-style expansion whose CGP type-level sugar the driver resugars before returning it.
+  Covers why the compiler offers no way to expand only some macros, the `cargo rustc` launch and the
+  marker flag that scopes expand mode to one crate, why the driver prints the expanded AST from
+  `after_expansion` instead of setting `-Zunpretty=expanded` (which bypasses every callback), the
+  rustc-free syntax-tree resugaring and its load-bearing pass order, and the selective un-expansion
+  deferred to a second phase.
 - [rustc diagnostic internals](rustc-diagnostic-internals.md) — a map of the compiler code that
   builds CGP diagnostics and where it *suppresses* information: the type/const printer, the
   trait-error reporters, the two verbosity switches (`--verbose` versus `-Zverbose-internals`), and the
