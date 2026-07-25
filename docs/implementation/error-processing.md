@@ -68,9 +68,14 @@ driver, is what keeps them unit-testable.
 - **The signature keys** ([`signature`](../../crates/cargo-cgp-error-processing/src/diagnosis/wording/signature.rs))
   are the two span-independent keys the emitter groups failures on: `cause_signature` (context,
   failing consumer trait(s), and each root-cause leaf) identifies *the same* failure across its
-  re-reports for de-duplication, and `cause_only_signature` (the same with the consumer dropped)
-  groups *different* consumers that share one root cause for the emitter's coalescing into one
-  headline. Both are pure functions over the `Resolved` model.
+  re-reports for de-duplication, and `cause_keys` (the same with the consumer dropped, one key per
+  cause rather than one per failure) identifies each root cause across the consumers it breaks. The
+  emitter groups on those keys through `group_by_shared_cause`
+  ([`group`](../../crates/cargo-cgp-error-processing/src/diagnosis/group.rs)), which partitions the
+  coalescible failures into the connected components of the shares-a-cause relation — per cause rather
+  than per whole failure, because one mistake surfaces at several depths and each depth reaches a
+  different *subset* of its causes, so demanding two identical sets grouped none of them. All are pure
+  functions over the `Resolved` model.
 - **The text signals** ([`signals`](../../crates/cargo-cgp-error-processing/src/signals.rs)) are the
   stable rustc phrasings the emitter's candidate checks key on — the wiring-trait mention that makes
   a diagnostic a resolution candidate, the method-bounds `E0599` shape the resolver may safely run
@@ -317,6 +322,11 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   `coalesce_underived_fields` over hand-built causes: the merged group (keeping every field's path),
   its lead and single derive help, and the boundaries (a lone underived field, genuinely missing
   fields, different owners, a group beside a missing field).
+- [`crates/cargo-cgp-error-processing/tests/group.rs`](../../crates/cargo-cgp-error-processing/tests/group.rs) —
+  `group_by_shared_cause` over hand-built resolutions: failures sharing a cause grouped, disjoint ones
+  kept apart, the union-of-two-others case partial overlap produces, the transitive bridge that makes
+  the relation a partition, the context keeping one field name on two contexts apart, a causeless
+  failure alone, and the arrival ordering of the groups and their members.
 - [`crates/cargo-cgp-error-processing/tests/merge.rs`](../../crates/cargo-cgp-error-processing/tests/merge.rs) —
   `merge_causes_by_leaf` over hand-built causes: one leaf reached by three consumers folding into one
   cause with all three paths, the repeated-field lead it prevents downstream, distinct leaves left
@@ -359,9 +369,10 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   `cause_notes_seen`, the same against a `seen` set shared with the compilation's other notes),
   `help.rs` (`fix_help_messages` over `derive_help_messages` and `assoc_mismatch_help_messages` — the
   one entry point both the streaming plan and the emitter's coalesced block build their `help`s
-  through, so a merged block carries the same fixes), and `signature.rs` (`cause_signature`) —
-  `merge.rs` (`merge_causes_by_leaf`, the one-cause-per-distinct-leaf restoration a unioned cause list
-  needs), `coalesce.rs`
+  through, so a merged block carries the same fixes), and `signature.rs` (`cause_signature` and the
+  per-cause `cause_keys`) — `group.rs` (`group_by_shared_cause`, partitioning the coalescible failures
+  into the connected components of the shares-a-cause relation), `merge.rs` (`merge_causes_by_leaf`,
+  the one-cause-per-distinct-leaf restoration a unioned cause list needs), `coalesce.rs`
   (`coalesce_underived_fields`), `plan.rs` (`DiagKind`,
   `DiagnosisPlan`, the unrendered `PendingNote` and its `render`, and `plan_resolved` with its
   `categorized_header`), and `wiring.rs`

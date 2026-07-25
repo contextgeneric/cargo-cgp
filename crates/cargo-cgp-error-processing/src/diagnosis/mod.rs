@@ -10,6 +10,7 @@
 mod cgp_impl_misuse;
 mod coalesce;
 mod graph;
+mod group;
 mod leaf;
 mod merge;
 mod node;
@@ -23,6 +24,7 @@ mod wording;
 pub use cgp_impl_misuse::*;
 pub use coalesce::*;
 pub use graph::*;
+pub use group::*;
 pub use leaf::*;
 pub use merge::*;
 pub use node::*;

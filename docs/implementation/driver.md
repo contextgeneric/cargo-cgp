@@ -405,9 +405,18 @@ has been handed to the emitter but while the inner emitter — a field of the wr
 afterward — is still alive to render; the diagnostics were counted by the `DiagCtxt` as they arrived,
 so deferring their *rendering* to `Drop` leaves the error count untouched. At flush, each buffered
 consumer-trait failure (`is_consumer_shaped` — a CGP consumer on the checked context, not a field
-mismatch, provider check, or foreign wrapper) is grouped by a **consumer-independent** signature: the
-rustc-free `cause_only_signature`, which is `cause_signature` with the failing consumer dropped, so
-failures differing only in which consumer they break group together. A group of one emits its own
+mismatch, provider check, or foreign wrapper) is grouped with every failure it **shares a root cause**
+with, by the rustc-free `group_by_shared_cause` over the consumer-independent per-cause `cause_keys`.
+Grouping on a shared cause rather than on one whole-failure key is what keeps a single mistake in a
+single block, because the depths one mistake surfaces at each see a different *subset* of its causes: a
+`check_components!` entry stops at the first unmet leaf on its own branch, while a use-site call walks
+every wired component and reaches them all. Those subsets overlap without ever being equal, so an
+exact-match key grouped none of them — and the block whose causes were the *union* of the others fared
+worst, since every one of its roots had already been drawn and its chain was then
+[fully elided](dependency-graph-rendering.md#eliding-across-blocks) into a bare `root causes:` list
+with no chain at all. The relation is made transitive so it is a partition rather than an ambiguous
+overlap graph, which also earns an invariant the exact key could not: **no two coalesced blocks share a
+root cause**. A group of one emits its own
 per-entry block unchanged; a group of several emits **one merged block** — a `[CGP-E001]` header
 listing every affected consumer trait (`consumer_header` over a synthesized `Resolved` whose
 `consumers` is the union), a caret at each failing entry, and one root-cause note built by folding
@@ -629,8 +638,15 @@ while the earlier-phase `E0425` (emitted mid-name-resolution) is being handled, 
 The sibling `E0425`/`E0186`/`E0207`/`E0308` are suppressed by matching their spans against the impl body and
 the `__Context__` parameter's call-site (a sibling arriving before the `E0107` is purged from the
 buffer at reshape time), the downstream `NotAProvider` check re-report by matching its resolved leaf
-against the offending provider struct, and rustc's trailing `rustc --explain` footer is rebuilt from
-the codes still shown so it does not list the suppressed ones. The message wording is decided by the
+against the offending provider struct, and rustc's trailing `rustc --explain` footer is rebuilt so it
+does not list the suppressed ones. That footer rebuild is not particular to this reshape: rustc builds
+the footer in `print_error_count` from every code it *registered*, which is a superset of what the
+emitter emits once it has suppressed a re-report, a `?`-cascade, or this sibling burst, and once it has
+*merged* the failures sharing a cause into one block carrying the first member's code. So
+`rebuild_explain_footers` runs over the whole flushed list, keeping the footer's own codes filtered by
+what survived — an intersection rather than a fresh set, since rustc lists only codes that *have* an
+extended explanation and second-guessing that would offer `--explain` for a code with no such text.
+A footer whose codes all survive is rewritten identically, so untouched output is unaffected. The message wording is decided by the
 rustc-free
 [`plan_cgp_impl_misuse`](../../crates/cargo-cgp-error-processing/src/diagnosis/cgp_impl_misuse.rs)
 (and `cgp_impl_misuse_help` for the fix) over the owned `CgpImplMisuse` the detector fills in, so it
@@ -767,9 +783,10 @@ will likely grow toward it:
   `DedupLedger` of already-emitted failures, the `cgp_spans` list of recognized-failure spans that
   anchors the `?`-operator cascade suppression, and the arrival-ordered `buffer` of `BufEntry`s
   flushed from `Drop` — `Plain` verbatim in place, `Resolved` having its `root cause:` note rendered
-  there against the flush's shared `seen` set, and those of it carrying a `sig` additionally grouped
-  by `cause_only_signature` and merged into one consumer header per group by `merged_diag`) and its
-  transform/post-process/de-duplicate/coalesce orchestration, and
+  there against the flush's shared `seen` set, and the `coalescible` ones additionally partitioned by
+  `group_by_shared_cause` and merged into one consumer header per group by `merged_diag`, after which
+  `rebuild_explain_footers` makes the trailing `rustc --explain` footer name only the codes that
+  survived) and its transform/post-process/de-duplicate/coalesce orchestration, and
   `edit.rs` holds the `DiagInner`-editing helpers (including `message_signature`, the span-independent
   text key for de-duplicating a declined-but-rewritten diagnostic; `strip_method_probe_advice`, the
   drop of rustc's associated-function framing on a declined consumer-method `E0599`; and

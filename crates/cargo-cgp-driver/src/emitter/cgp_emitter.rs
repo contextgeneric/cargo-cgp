@@ -8,9 +8,9 @@ use cargo_cgp_error_processing::rewrite::{
 };
 use cargo_cgp_error_processing::{
     Cause, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider,
-    OrphanConflict, PendingNote, Resolved, UndeclaredCapability, cause_only_signature,
-    cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, consumer_header,
-    fix_help_messages, is_method_bounds_text, is_unbounded_type_param_item_text,
+    OrphanConflict, PendingNote, Resolved, UndeclaredCapability, cause_signature,
+    cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, fix_help_messages,
+    group_by_shared_cause, is_method_bounds_text, is_unbounded_type_param_item_text,
     mentions_orphan_param_text, merge_causes_by_leaf, missing_use_provider_help,
     orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
     plan_resolved, plan_undeclared_capability, plan_wiring_conflict, postprocess_message,
@@ -74,9 +74,9 @@ pub struct CgpEmitter<E: Emitter> {
     /// diagnostics one at a time with no "end of compilation" hook, so listing every consumer a
     /// mistake breaks in one headline is only possible once they have all arrived — which is why
     /// the buffer is flushed from `Drop` (the inner emitter is still alive then), not eagerly. A
-    /// [`BufEntry::Coalescible`] failure joins the group of its cause-only signature; everything
-    /// else — an untouched `rustc` error, a conflict, a declined fallback — is a
-    /// [`BufEntry::Plain`] emitted verbatim at its original position, so ordering is preserved.
+    /// coalescible [`BufEntry::Resolved`] failure joins the group of every failure it shares a root
+    /// cause with; everything else — an untouched `rustc` error, a conflict, a declined fallback — is
+    /// a [`BufEntry::Plain`] emitted verbatim at its original position, so ordering is preserved.
     buffer: Vec<BufEntry>,
     /// The `#[cgp_impl]` header-trait mistakes in the crate — a consumer trait or a non-CGP trait
     /// named where the provider trait belongs — detected once from the compiler and reused. `None`
@@ -95,16 +95,17 @@ enum BufEntry {
     /// arrival: only there is the emission order known, so a note can `(*)`-elide the subtrees an
     /// earlier block already drew. `diag` therefore carries the header and `help`s but no note yet.
     ///
-    /// `sig` is `Some` for a consumer-trait failure, which coalesces with others of the same
-    /// [`cause_only_signature`]: a group of one emits `diag` alone, a group of several emits a single
-    /// merged block naming every affected consumer at the position of the first. It is `None` for a
-    /// resolution that never coalesces — a wrapper trait, a mismatch, a provider-side check.
+    /// `coalescible` is set for a consumer-trait failure, which groups with every other failure it
+    /// shares a root cause with ([`group_by_shared_cause`]): a group of one emits `diag` alone, a
+    /// group of several emits a single merged block naming every affected consumer at the position of
+    /// the first. It is clear for a resolution that never coalesces — a wrapper trait, a mismatch, a
+    /// provider-side check.
     Resolved(Box<ResolvedEntry>),
 }
 
 /// The payload of a [`BufEntry::Resolved`].
 struct ResolvedEntry {
-    sig: Option<String>,
+    coalescible: bool,
     resolved: Resolved,
     note: PendingNote,
     diag: DiagInner,
@@ -195,6 +196,33 @@ fn mentions_generated_context(diag: &DiagInner) -> bool {
 /// can arrive before the `E0107` that recognizes the mistake.
 fn is_cgp_impl_sibling_entry(entry: &BufEntry, impl_span: Span, macro_span: Span) -> bool {
     matches!(entry, BufEntry::Plain(diag) if is_cgp_impl_sibling(diag, impl_span, macro_span))
+}
+
+/// The `rustc --explain` codes a "detailed explanations" footer line names — every code of the
+/// `Some errors have detailed explanations: E0277, E0599.` list form, or the single code of the
+/// `try \`rustc --explain E0277\`` pointer form.
+fn footer_codes(text: &str) -> Vec<String> {
+    if let Some(list) = text.strip_prefix("Some errors have detailed explanations:") {
+        return list
+            .trim()
+            .trim_end_matches('.')
+            .split(',')
+            .map(|code| code.trim().to_string())
+            .filter(|code| !code.is_empty())
+            .collect();
+    }
+    text.split_once("--explain ")
+        .map(|(_, rest)| {
+            rest.trim_start()
+                .trim_start_matches('`')
+                .trim_end_matches('.')
+                .trim_end_matches('`')
+                .trim()
+                .to_string()
+        })
+        .filter(|code| !code.is_empty())
+        .into_iter()
+        .collect()
 }
 
 /// A rebuilt "detailed explanations" footer note: `template` cloned from the original footer
@@ -297,49 +325,66 @@ impl<E: Emitter> CgpEmitter<E> {
         diag
     }
 
-    /// Flush the buffer to the inner emitter, coalescing each group of [`BufEntry::Coalescible`]
-    /// failures that share a cause-only signature into one block at the position of its first
-    /// member. Called only from [`Drop`], where the inner emitter is still alive.
+    /// Flush the buffer to the inner emitter, coalescing each group of coalescible failures that
+    /// **share a root cause** into one block at the position of its first member. Called only from
+    /// [`Drop`], where the inner emitter is still alive.
     fn flush(&mut self) {
         let buffer = std::mem::take(&mut self.buffer);
 
-        // Group the coalescible members by signature, keeping their arrival order.
-        let mut groups: HashMap<&str, Vec<usize>> = HashMap::new();
-        for (index, entry) in buffer.iter().enumerate() {
-            if let BufEntry::Resolved(entry) = entry
-                && let Some(sig) = &entry.sig
-            {
-                groups.entry(sig.as_str()).or_default().push(index);
-            }
-        }
+        // The coalescible entries in arrival order, grouped by the root causes they share. Grouping
+        // on shared causes rather than on one whole-failure key is what keeps a single mistake in a
+        // single block: the depths it surfaces at each see a different *subset* of its causes, so no
+        // two of them ever carried equal keys (see [`group_by_shared_cause`]).
+        let positions: Vec<usize> = buffer
+            .iter()
+            .enumerate()
+            .filter_map(|(index, entry)| match entry {
+                BufEntry::Resolved(entry) if entry.coalescible => Some(index),
+                _ => None,
+            })
+            .collect();
+        let resolveds: Vec<&Resolved> = positions
+            .iter()
+            .map(|&index| match &buffer[index] {
+                BufEntry::Resolved(entry) => &entry.resolved,
+                _ => unreachable!("indices came from the coalescible entries"),
+            })
+            .collect();
+        let groups: Vec<Vec<usize>> = group_by_shared_cause(&resolveds)
+            .into_iter()
+            .map(|group| group.into_iter().map(|member| positions[member]).collect())
+            .collect();
+        let group_of: HashMap<usize, usize> = groups
+            .iter()
+            .enumerate()
+            .flat_map(|(group, members)| members.iter().map(move |&index| (index, group)))
+            .collect();
 
         // The subtrees drawn so far, threaded through every block in emission order so a later one
         // truncates at what an earlier one already showed. This is why notes are rendered here
         // rather than on arrival: only now is that order known.
         let mut seen = ChainNodeSet::new();
-        let mut emitted: HashSet<&str> = HashSet::new();
+        let mut emitted: HashSet<usize> = HashSet::new();
         let mut to_emit: Vec<DiagInner> = Vec::new();
-        for entry in &buffer {
+        for (index, entry) in buffer.iter().enumerate() {
             match entry {
                 BufEntry::Plain(diag) => to_emit.push((**diag).clone()),
                 BufEntry::Resolved(entry) => {
-                    let Some(sig) = &entry.sig else {
+                    let Some(&group) = group_of.get(&index) else {
                         // A resolution that never coalesces: render its own note and emit it here.
                         let mut diag = entry.diag.clone();
                         self.append_note(&mut diag, &entry.note, &mut seen);
                         to_emit.push(diag);
                         continue;
                     };
-                    if !emitted.insert(sig.as_str()) {
+                    if !emitted.insert(group) {
                         continue;
                     }
-                    let members = &groups[sig.as_str()];
+                    let members = &groups[group];
                     if members.len() == 1 {
-                        let BufEntry::Resolved(only) = &buffer[members[0]] else {
-                            unreachable!("indices came from the coalescible entries");
-                        };
-                        let mut diag = only.diag.clone();
-                        self.append_note(&mut diag, &only.note, &mut seen);
+                        // A group's first member is where it is emitted, so that member is `entry`.
+                        let mut diag = entry.diag.clone();
+                        self.append_note(&mut diag, &entry.note, &mut seen);
                         to_emit.push(diag);
                     } else {
                         let (resolveds, diags): (Vec<&Resolved>, Vec<&DiagInner>) = members
@@ -354,6 +399,9 @@ impl<E: Emitter> CgpEmitter<E> {
                 }
             }
         }
+
+        // Now that the surviving set is final, make the "detailed explanations" footer agree with it.
+        Self::rebuild_explain_footers(&mut to_emit);
 
         for diag in to_emit {
             self.inner.emit_diagnostic(diag);
@@ -574,66 +622,88 @@ impl<E: Emitter> CgpEmitter<E> {
         })
     }
 
-    /// Rebuild the trailing "detailed explanations" footer when this crate had a `#[cgp_impl]` header
-    /// mistake. rustc builds that footer from every error code it *registered* as diagnostics
-    /// arrived — which includes the cascade siblings this emitter then suppressed
-    /// (`E0425`/`E0186`/`E0207`/`E0277`) — so left alone it would list `rustc --explain` codes for
-    /// errors no longer shown, contradicting the single error that survives. The footer arrives last
-    /// (from `print_error_count`, after every error is buffered), so it is rebuilt from the codes
-    /// still in the buffer. Returns the replacement diagnostics (empty to drop the footer), or `None`
-    /// when `diag` is not a footer or the feature is inactive — so no output without this mistake is
-    /// touched.
-    fn rebuilt_explain_footer(&self, diag: &DiagInner) -> Option<Vec<DiagInner>> {
-        match self.cgp_impl_misuses.as_deref() {
-            Some(misuses) if !misuses.is_empty() => {}
-            _ => return None,
+    /// Rewrite the trailing "detailed explanations" footer of a flushed diagnostic list so it names
+    /// `rustc --explain` codes only for errors still shown.
+    ///
+    /// rustc builds that footer in `print_error_count` from every error code it *registered* as
+    /// diagnostics arrived, which is a superset of what this emitter emits: it suppresses a
+    /// re-reported failure, a `?`-operator cascade, and a `#[cgp_impl]` mistake's sibling burst, and
+    /// it *merges* the failures sharing a root cause into one block whose code is the first member's.
+    /// Left alone the footer contradicts the output, offering `--explain` for a code no error carries.
+    ///
+    /// It runs over the flushed list rather than on the footer's arrival because only here is the
+    /// surviving set final — coalescing happens at flush, after every diagnostic has been buffered.
+    /// The kept codes are the footer's own codes filtered by what survived, never a fresh set built
+    /// from the survivors: rustc lists only codes that *have* an extended explanation, and
+    /// intersecting preserves that filtering instead of second-guessing it. A footer whose codes all
+    /// survive is rewritten to the identical text, so output the emitter did not touch is unaffected.
+    fn rebuild_explain_footers(to_emit: &mut Vec<DiagInner>) {
+        let is_footer = |diag: &DiagInner| {
+            diag.level() == Level::FailureNote
+                && main_message_text(diag).is_some_and(|text| {
+                    text.starts_with("Some errors have detailed explanations:")
+                        || text.starts_with("For more information about")
+                })
+        };
+        if !to_emit.iter().any(is_footer) {
+            return;
         }
-        if diag.level() != Level::FailureNote {
-            return None;
-        }
-        let text = main_message_text(diag)?;
-        let is_list = text.starts_with("Some errors have detailed explanations:");
-        let is_pointer = text.starts_with("For more information about");
-        if !is_list && !is_pointer {
-            return None;
-        }
-        // The rust codes of the error diagnostics still in the buffer — what is actually shown.
-        let mut codes: Vec<String> = self
-            .buffer
+
+        // The rust codes still shown, and the explainable ones the footer itself names (the list line
+        // carries every one, the pointer line only the first, so their union is the whole set).
+        let surviving: HashSet<String> = to_emit
             .iter()
-            .filter_map(|entry| match entry {
-                BufEntry::Plain(diag) => diag.code,
-                BufEntry::Resolved(entry) => entry.diag.code,
-            })
+            .filter(|diag| diag.level() != Level::FailureNote)
+            .filter_map(|diag| diag.code)
             .map(|code| code.to_string())
             .collect();
-        codes.sort();
-        codes.dedup();
-
-        // The "Some errors …" list line is only right for two or more surviving codes; otherwise the
-        // singular pointer line below carries the sole code, so drop the list line.
-        if is_list {
-            if codes.len() < 2 {
-                return Some(Vec::new());
+        let mut explainable: Vec<String> = Vec::new();
+        for diag in to_emit.iter().filter(|diag| is_footer(diag)) {
+            for code in footer_codes(main_message_text(diag).unwrap_or_default()) {
+                if !explainable.contains(&code) {
+                    explainable.push(code);
+                }
             }
-            return Some(vec![footer_note(
-                diag,
-                &format!(
-                    "Some errors have detailed explanations: {}.",
-                    codes.join(", ")
-                ),
-            )]);
         }
-        // The pointer line: singular when one code survives, plural when several, dropped when none.
-        let Some(first) = codes.first() else {
-            return Some(Vec::new());
-        };
-        let message = if codes.len() == 1 {
-            format!("For more information about this error, try `rustc --explain {first}`.")
-        } else {
-            format!("For more information about an error, try `rustc --explain {first}`.")
-        };
-        Some(vec![footer_note(diag, &message)])
+        let kept: Vec<String> = explainable
+            .into_iter()
+            .filter(|code| surviving.contains(code))
+            .collect();
+
+        let rebuilt: Vec<DiagInner> = to_emit
+            .drain(..)
+            .filter_map(|diag| {
+                if !is_footer(&diag) {
+                    return Some(diag);
+                }
+                let text = main_message_text(&diag).unwrap_or_default();
+                let Some(first) = kept.first() else {
+                    // Nothing explainable is left to point at, so both footer lines go.
+                    return None;
+                };
+                if text.starts_with("Some errors have detailed explanations:") {
+                    // The list line is only right for two or more codes; with one, the pointer line
+                    // below carries it alone.
+                    if kept.len() < 2 {
+                        return None;
+                    }
+                    return Some(footer_note(
+                        &diag,
+                        &format!(
+                            "Some errors have detailed explanations: {}.",
+                            kept.join(", ")
+                        ),
+                    ));
+                }
+                let message = if kept.len() == 1 {
+                    format!("For more information about this error, try `rustc --explain {first}`.")
+                } else {
+                    format!("For more information about an error, try `rustc --explain {first}`.")
+                };
+                Some(footer_note(&diag, &message))
+            })
+            .collect();
+        *to_emit = rebuilt;
     }
 
     /// Resolve `diag`'s failure to its root-cause dependency tree(s), or `None` when the resolver
@@ -776,17 +846,6 @@ impl<E: Emitter> CgpEmitter<E> {
 
 impl<E: Emitter> Emitter for CgpEmitter<E> {
     fn emit_diagnostic(&mut self, mut diag: DiagInner) {
-        // The trailing "detailed explanations" footer, rebuilt when a `#[cgp_impl]` header mistake
-        // had its cascade suppressed, so it lists `rustc --explain` codes only for errors still
-        // shown. Confined to crates with the mistake, so no other output is affected.
-        if let Some(replacement) = self.rebuilt_explain_footer(&diag) {
-            self.buffer.extend(
-                replacement
-                    .into_iter()
-                    .map(|diag| BufEntry::Plain(Box::new(diag))),
-            );
-            return;
-        }
         // A `#[cgp_impl]` header naming the wrong trait — the component's consumer trait, or a
         // non-CGP trait — makes the macro generate an inside-out impl of the wrong trait, producing
         // a burst of cryptic macro-lowering errors (E0425/E0107/E0186/E0207) plus a downstream check
@@ -925,9 +984,10 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                 }
                 let sig = cause_signature(&resolved);
                 let note = self.transform_resolved(&mut diag, &resolved, span, at_call);
-                // A consumer-trait failure joins its cause-only group for coalescing at flush; any
-                // other shape (a field mismatch, a provider check) emits on its own — but every
-                // resolution defers its note to the flush, so all of them elide against one another.
+                // A consumer-trait failure coalesces at flush with every failure it shares a
+                // root cause with; any other shape (a field mismatch, a provider check) emits on its
+                // own — but every resolution defers its note to the flush, so all of them elide
+                // against one another.
                 let coalescing = is_consumer_shaped(&resolved);
                 (true, Some(sig), Some((resolved, note, coalescing)))
             } else {
@@ -1002,14 +1062,13 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
         }
         // Buffer rather than emit now: a resolution has its `root cause:` note rendered at flush,
         // where the emission order lets it elide what an earlier block drew, and a consumer failure
-        // additionally joins its cause-only group for coalescing there. Everything else is emitted
-        // verbatim in place. The flush happens in `Drop`, the only point after every diagnostic has
-        // arrived.
+        // is additionally grouped there with every failure sharing one of its root causes. Everything
+        // else is emitted verbatim in place. The flush happens in `Drop`, the only point after every
+        // diagnostic has arrived.
         match resolution {
             Some((resolved, note, coalescing)) => {
-                let sig = coalescing.then(|| cause_only_signature(&resolved));
                 self.buffer.push(BufEntry::Resolved(Box::new(ResolvedEntry {
-                    sig,
+                    coalescible: coalescing,
                     resolved,
                     note,
                     diag,

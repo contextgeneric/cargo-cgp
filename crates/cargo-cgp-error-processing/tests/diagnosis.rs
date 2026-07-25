@@ -12,8 +12,8 @@ use std::collections::HashMap;
 use cargo_cgp_error_processing::diagnosis::{assoc_mismatch_leaf, mismatch_leaf, quoted_list};
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
-    Cause, ChainNode, DepNode, DependencyGraph, DiagKind, FieldIssue, Leaf, Resolved, cause_note,
-    cause_notes, cause_only_signature, cause_signature, consumer_header, dependency_tree_leaf,
+    Cause, ChainNode, DepNode, DependencyGraph, DiagKind, FieldIssue, Leaf, Resolved, cause_keys,
+    cause_note, cause_notes, cause_signature, consumer_header, dependency_tree_leaf,
     derive_help_messages, field_mismatch_header, plan_resolved, root_cause_code,
 };
 
@@ -693,16 +693,10 @@ fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
     );
     assert_ne!(cause_signature(&at_check), cause_signature(&other_cause));
 
-    // The cause-only signature drops the consumer, so two *different* consumers that share one
-    // cause group together (for coalescing) while a different cause still separates them.
-    assert_eq!(
-        cause_only_signature(&at_check),
-        cause_only_signature(&other_consumer),
-    );
-    assert_ne!(
-        cause_only_signature(&at_check),
-        cause_only_signature(&other_cause),
-    );
+    // The cause keys drop the consumer, so two *different* consumers that share one cause carry an
+    // equal key for it (which is what groups them for coalescing), while a different cause does not.
+    assert_eq!(cause_keys(&at_check), cause_keys(&other_consumer));
+    assert_ne!(cause_keys(&at_check), cause_keys(&other_cause));
 }
 
 #[test]

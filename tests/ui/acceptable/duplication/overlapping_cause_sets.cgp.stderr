@@ -1,0 +1,27 @@
+error[E0277]: [CGP-E001] the consumer traits `CanReportFirst` and `CanReportSecond` are not implemented for context `App`
+   --> src/main.rs:93:9
+    |
+ 93 |         FirstReporterComponent,
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+ 94 |         SecondReporterComponent,
+    |         ^^^^^^^^^^^^^^^^^^^^^^^
+...
+101 |     let _ = app.report_first();
+    |                 ^^^^^^^^^^^^
+    |
+    = note: root causes:
+              - [CGP-E107] context `App` does not contain any delegate entry for `@EncoderComponent.Element<u32>`
+              - [CGP-E107] context `App` does not contain any delegate entry for `@EncoderComponent.Element<u64>`
+            this is required through the dependency chain:
+              [CGP-E101] consumer trait impl `CanReportFirst` for context `App`
+              └─ [CGP-E102] provider trait impl `FirstReporter` with context `App` for provider `ReportFirst`
+                └─ [CGP-E101] consumer trait impl `CanEncode<Element<u32>>` for context `App`
+                  └─ [CGP-E104] redirect lookup to `@EncoderComponent` in `App`
+                    └─ [CGP-E107] context `App` does not contain any delegate entry for `@EncoderComponent.Element<u32>`
+              [CGP-E101] consumer trait impl `CanReportSecond` for context `App`
+              └─ [CGP-E102] provider trait impl `SecondReporter` with context `App` for provider `ReportSecond`
+                └─ [CGP-E101] consumer trait impl `CanEncode<Element<u64>>` for context `App`
+                  └─ [CGP-E104] redirect lookup to `@EncoderComponent` in `App`
+                    └─ [CGP-E107] context `App` does not contain any delegate entry for `@EncoderComponent.Element<u64>`
+
+For more information about this error, try `rustc --explain E0277`.

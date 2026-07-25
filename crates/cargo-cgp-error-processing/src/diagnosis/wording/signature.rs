@@ -14,27 +14,30 @@ use crate::diagnosis::wording::lead::root_cause_lead;
 pub fn cause_signature(resolved: &Resolved) -> String {
     let mut consumers = resolved.consumers.clone();
     consumers.sort();
+    let mut keys = cause_keys(resolved);
+    keys.sort();
     // `\u{1f}` (unit separator) cannot occur in a type or trait name, so joining on it makes the
     // signature unambiguous without escaping.
-    format!(
-        "{}\u{1f}{}",
-        consumers.join("\u{1e}"),
-        cause_only_signature(resolved)
-    )
+    format!("{}\u{1f}{}", consumers.join("\u{1e}"), keys.join("\u{1e}"))
 }
 
-/// A span- *and* consumer-independent signature identifying *the same root cause* across the
-/// several consumers one mistake breaks. It is [`cause_signature`] with the failing consumer
-/// trait(s) dropped, so two *different* consumers that bottom out on the same cause — a missing
-/// field several components read, a dependency chain many providers share — carry an equal
-/// signature. The emitter groups buffered failures by this key and coalesces each group into one
-/// headline that lists every affected consumer, rather than emitting one block per consumer.
-pub fn cause_only_signature(resolved: &Resolved) -> String {
-    let mut leads: Vec<String> = resolved
+/// One span- *and* consumer-independent key per root cause of a failure, each scoped to the context
+/// so two contexts never share one. A key identifies *one mistake* across every consumer it breaks:
+/// two different consumers bottoming out on the same missing field, or on one dependency many
+/// providers share, produce an equal key for it.
+///
+/// The emitter groups buffered failures on these keys ([`group_by_shared_cause`]) and coalesces each
+/// group into one headline listing every affected consumer. Keys are returned per cause rather than
+/// folded into one whole-failure signature deliberately: a failure reached at different depths sees
+/// different *subsets* of one mistake's causes — a `check_components!` entry stops at the first unmet
+/// leaf on its branch while a use-site call walks every wired component and reaches them all — so
+/// grouping has to compare the causes one by one rather than demand two identical sets.
+///
+/// [`group_by_shared_cause`]: crate::group_by_shared_cause
+pub fn cause_keys(resolved: &Resolved) -> Vec<String> {
+    resolved
         .causes
         .iter()
-        .map(|cause| root_cause_lead(&cause.leaf))
-        .collect();
-    leads.sort();
-    format!("{}\u{1f}{}", resolved.context, leads.join("\u{1e}"))
+        .map(|cause| format!("{}\u{1f}{}", resolved.context, root_cause_lead(&cause.leaf)))
+        .collect()
 }

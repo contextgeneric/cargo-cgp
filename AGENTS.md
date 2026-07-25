@@ -252,8 +252,9 @@ post-process; then cross-diagnostic de-duplicate through the rustc-free `DedupLe
 transformed diagnostic whose span-independent signature was already emitted, so one mistake re-reported
 at many wiring sites is shown once; then, rather than emit, hold every diagnostic in an arrival-ordered
 buffer flushed from `Drop` — the only point after all diagnostics have arrived — where consumer
-failures sharing a `cause_only_signature` coalesce into one `[CGP-E001]` headline listing every
-affected consumer, and everything else emits verbatim in place), and `edit.rs` holds the
+failures that *share a root cause* are grouped by `group_by_shared_cause` and coalesce into one
+`[CGP-E001]` headline listing every affected consumer, the trailing `rustc --explain` footer is
+rebuilt to name only codes still shown, and everything else emits verbatim in place), and `edit.rs` holds the
 `DiagInner`-editing helpers. `resolve/` is the typed root-cause resolver, one sub-directory per
 stage: `anchor/` recovers the
 failing obligation from a `check_components!` entry, a hand-written `impl Trait for Context` block
@@ -301,8 +302,10 @@ lazily-built `ComponentNameMap`), `parse.rs` (the trait-bound parse), and `text.
 splitting utilities). `diagnosis/` is the rustc-free root-cause model and its wording:
 `leaf.rs`/`resolved.rs` (the `Leaf`/`FieldIssue`/`Cause`/`Resolved` types the driver's resolver fills
 in), `wording/` (the pure `Resolved`-to-text builders — headers, root-cause leads and their codes,
-notes, derive helps, the de-duplication `cause_signature`, and the consumer-independent
-`cause_only_signature` the emitter coalesces different consumers on), `merge.rs`
+notes, derive helps, the de-duplication `cause_signature`, and the consumer-independent per-cause
+`cause_keys`), `group.rs` (`group_by_shared_cause`, partitioning the coalescible failures into the
+connected components of the shares-a-cause relation, which is what keeps one mistake in one block when
+the depths it surfaces at each reach a different *subset* of its causes), `merge.rs`
 (`merge_causes_by_leaf`, folding duplicate copies of one leaf back into a single cause holding every
 path — what a *unioned* cause list, as the emitter's coalesced block builds, needs to keep one mistake
 from being stated once per member), `coalesce.rs`

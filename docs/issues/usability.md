@@ -91,12 +91,20 @@ their fixtures now live under `acceptable/`:
   *different* consumers that share one root cause coalesce into a single `[CGP-E001]` headline
   listing every affected consumer trait, with a caret per failing entry and the shared cause shown
   once. The emitter holds each compilation's diagnostics in arrival order and flushes them at `Drop`
-  — the only point after every diagnostic has arrived — grouping consumer failures by a
-  consumer-independent cause signature, so
+  — the only point after every diagnostic has arrived — grouping together the consumer failures that
+  *share* a root cause, so
   [`density_3`](../../tests/ui/acceptable/duplication/density_3.rs) (two components, one missing
   `height`), [`dependency_cascade`](../../tests/ui/acceptable/duplication/dependency_cascade.rs)
   (three chained providers), and `missing_normal_bound` (two consumers sharing an `App: Clone` bound)
-  each collapse to one block, and cargo's re-count keeps the "N errors" summary honest.
+  each collapse to one block, and cargo's re-count keeps the "N errors" summary honest. Grouping on a
+  shared cause rather than on one whole-failure key is what reaches the *partial-overlap* form of this
+  class, where one omission is reached at several instantiations and so surfaces as several root
+  causes: each `check_components!` entry stops at the first unmet leaf on its own branch while a
+  use-site call walks every wired component and reaches them all, so no two of those cause sets are
+  equal and none used to group. The union block fared worst of them, since every one of its roots had
+  already been drawn and its chain was then elided away entirely, leaving a bare `root causes:` list
+  with no dependency chain
+  ([`overlapping_cause_sets`](../../tests/ui/acceptable/duplication/overlapping_cause_sets.rs)).
 - A **capability used but not declared** — a `#[cgp_fn]`/`#[cgp_impl]` body that calls a CGP
   capability (a consumer or `#[cgp_fn]`/`#[blanket_trait]` trait) on `self` without declaring it via
   `#[uses(…)]`, so the method cannot resolve on the generated `__Context__` generic — is reshaped

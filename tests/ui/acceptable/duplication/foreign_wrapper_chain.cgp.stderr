@@ -25,5 +25,5 @@ error[E0277]: [CGP-E009] the trait `CanAddAppRoutes` is not implemented for `Box
                 └─ [CGP-E101] consumer trait impl `CanHandleApi<GreetApi>` for context `App` (*)
                   └─ [CGP-E106] missing field `name` on `App`
 
-Some errors have detailed explanations: E0271, E0277, E0599.
+Some errors have detailed explanations: E0271, E0277.
 For more information about an error, try `rustc --explain E0271`.
