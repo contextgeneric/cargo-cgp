@@ -9,11 +9,11 @@ use cargo_cgp_error_processing::rewrite::{
 use cargo_cgp_error_processing::{
     Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider,
     OrphanConflict, PendingNote, Resolved, UndeclaredCapability, cause_signature,
-    cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, fix_help_messages,
-    group_by_shared_cause, is_method_bounds_text, is_unbounded_type_param_item_text,
-    mentions_orphan_param_text, missing_use_provider_help, orphan_conflict_help,
-    plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict, plan_resolved,
-    plan_undeclared_capability, plan_wiring_conflict, postprocess_message,
+    cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, explain_footer_codes,
+    fix_help_messages, group_by_shared_cause, is_explain_footer_text, is_method_bounds_text,
+    is_unbounded_type_param_item_text, mentions_orphan_param_text, missing_use_provider_help,
+    orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
+    plan_resolved, plan_undeclared_capability, plan_wiring_conflict, postprocess_message,
     undeclared_capability_help, wiring_conflict_help,
 };
 use rustc_errors::codes::{
@@ -196,33 +196,6 @@ fn mentions_generated_context(diag: &DiagInner) -> bool {
 /// can arrive before the `E0107` that recognizes the mistake.
 fn is_cgp_impl_sibling_entry(entry: &BufEntry, impl_span: Span, macro_span: Span) -> bool {
     matches!(entry, BufEntry::Plain(diag) if is_cgp_impl_sibling(diag, impl_span, macro_span))
-}
-
-/// The `rustc --explain` codes a "detailed explanations" footer line names — every code of the
-/// `Some errors have detailed explanations: E0277, E0599.` list form, or the single code of the
-/// `try \`rustc --explain E0277\`` pointer form.
-fn footer_codes(text: &str) -> Vec<String> {
-    if let Some(list) = text.strip_prefix("Some errors have detailed explanations:") {
-        return list
-            .trim()
-            .trim_end_matches('.')
-            .split(',')
-            .map(|code| code.trim().to_string())
-            .filter(|code| !code.is_empty())
-            .collect();
-    }
-    text.split_once("--explain ")
-        .map(|(_, rest)| {
-            rest.trim_start()
-                .trim_start_matches('`')
-                .trim_end_matches('.')
-                .trim_end_matches('`')
-                .trim()
-                .to_string()
-        })
-        .filter(|code| !code.is_empty())
-        .into_iter()
-        .collect()
 }
 
 /// A rebuilt "detailed explanations" footer note: `template` cloned from the original footer
@@ -637,10 +610,7 @@ impl<E: Emitter> CgpEmitter<E> {
     fn rebuild_explain_footers(to_emit: &mut Vec<DiagInner>) {
         let is_footer = |diag: &DiagInner| {
             diag.level() == Level::FailureNote
-                && main_message_text(diag).is_some_and(|text| {
-                    text.starts_with("Some errors have detailed explanations:")
-                        || text.starts_with("For more information about")
-                })
+                && main_message_text(diag).is_some_and(is_explain_footer_text)
         };
         if !to_emit.iter().any(is_footer) {
             return;
@@ -656,11 +626,18 @@ impl<E: Emitter> CgpEmitter<E> {
             .collect();
         let mut explainable: Vec<String> = Vec::new();
         for diag in to_emit.iter().filter(|diag| is_footer(diag)) {
-            for code in footer_codes(main_message_text(diag).unwrap_or_default()) {
+            for code in explain_footer_codes(main_message_text(diag).unwrap_or_default()) {
                 if !explainable.contains(&code) {
                     explainable.push(code);
                 }
             }
+        }
+        // A footer line always names at least one code, so parsing none from any of them means the
+        // parse failed — rustc reworded — not that the line names nothing. Rebuilding on that would
+        // delete the footer outright, so leave it exactly as rustc wrote it: a stale footer is a far
+        // smaller fault than a silently missing one, and it is the pre-rebuild behaviour.
+        if explainable.is_empty() {
+            return;
         }
         let kept: Vec<String> = explainable
             .into_iter()
@@ -675,7 +652,8 @@ impl<E: Emitter> CgpEmitter<E> {
                 }
                 let text = main_message_text(&diag).unwrap_or_default();
                 let Some(first) = kept.first() else {
-                    // Nothing explainable is left to point at, so both footer lines go.
+                    // Every explainable code was suppressed, so there is nothing left to point at
+                    // and both footer lines go.
                     return None;
                 };
                 if text.starts_with("Some errors have detailed explanations:") {

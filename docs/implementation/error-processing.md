@@ -80,9 +80,10 @@ driver, is what keeps them unit-testable.
 - **The text signals** ([`signals`](../../crates/cargo-cgp-error-processing/src/signals.rs)) are the
   stable rustc phrasings the emitter's candidate checks key on — the wiring-trait mention that makes
   a diagnostic a resolution candidate, the method-bounds `E0599` shape the resolver may safely run
-  on, the method-probe advice the emitter strips, the orphan-parameter `E0210` shape, and the
-  `?`-operator cascade wording — each a pure predicate, so the wording dependence on rustc's phrasing
-  is documented and tested in one place.
+  on, the method-probe advice the emitter strips, the orphan-parameter `E0210` shape, the
+  `?`-operator cascade wording, and the trailing "detailed explanations" footer the emitter rebuilds
+  (both recognizing the line and reading the codes it names) — each a pure function, so the wording
+  dependence on rustc's phrasing is documented and tested in one place.
 
 A further module, [`code`](../../crates/cargo-cgp-error-processing/src/code.rs), holds the `CGP-E`
 error-code constants the rewrite and the diagnosis wording stamp on classified main messages
@@ -339,7 +340,9 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   the coded-header key collapsing a declined fallback, and a kept rustc header never keying.
 - [`crates/cargo-cgp-error-processing/tests/signals.rs`](../../crates/cargo-cgp-error-processing/tests/signals.rs) —
   the text signals: the wording each matches and the near-miss it must not (the two `E0599` shapes,
-  the method-probe artifacts, the orphan marker-plus-phrase pair, the `?`-cascade phrasing).
+  the method-probe artifacts, the orphan marker-plus-phrase pair, the `?`-cascade phrasing, and both
+  footer forms — including the reworded line that yields no codes, the case the rebuild must decline
+  on rather than delete the footer).
 - The [UI snapshot suite](testing.md) exercises the transforms over every fixture's real diagnostics:
   each `.cgp.stderr` is what the driver rendered after applying them.
 

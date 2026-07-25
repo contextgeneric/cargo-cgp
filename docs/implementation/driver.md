@@ -648,7 +648,13 @@ emitter emits once it has suppressed a re-report, a `?`-cascade, or this sibling
 `rebuild_explain_footers` runs over the whole flushed list, keeping the footer's own codes filtered by
 what survived — an intersection rather than a fresh set, since rustc lists only codes that *have* an
 extended explanation and second-guessing that would offer `--explain` for a code with no such text.
-A footer whose codes all survive is rewritten identically, so untouched output is unaffected. The message wording is decided by the
+A footer whose codes all survive is rewritten identically, so untouched output is unaffected. And
+because a footer line always names at least one code, parsing none from any of them means rustc
+reworded rather than that there are none — so the rebuild declines and leaves the footer exactly as
+written, a stale footer being a far smaller fault than a silently deleted one. Both the recognition
+and the code reading live in the rustc-free
+[`signals`](../../crates/cargo-cgp-error-processing/src/signals.rs) module with the emitter's other
+rustc-phrasing dependencies, where they are unit-tested. The message wording is decided by the
 rustc-free
 [`plan_cgp_impl_misuse`](../../crates/cargo-cgp-error-processing/src/diagnosis/cgp_impl_misuse.rs)
 (and `cgp_impl_misuse_help` for the fix) over the owned `CgpImplMisuse` the detector fills in, so it

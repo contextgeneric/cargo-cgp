@@ -51,7 +51,8 @@ pub use postprocess::{
 };
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use signals::{
-    is_method_bounds_text, is_method_probe_advice_text, is_question_mark_cascade_text,
-    is_unbounded_type_param_item_text, mentions_orphan_param_text, mentions_wiring_text,
+    explain_footer_codes, is_explain_footer_text, is_method_bounds_text,
+    is_method_probe_advice_text, is_question_mark_cascade_text, is_unbounded_type_param_item_text,
+    mentions_orphan_param_text, mentions_wiring_text,
 };
 pub use tree::{DependencyTree, render_dependency_tree};

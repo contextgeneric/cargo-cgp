@@ -71,3 +71,40 @@ pub fn mentions_orphan_param_text(text: &str) -> bool {
 pub fn is_question_mark_cascade_text(text: &str) -> bool {
     text.contains("`?` operator")
 }
+
+/// Whether a message is one of rustc's trailing "detailed explanations" footer lines — the
+/// `Some errors have detailed explanations: E0277, E0599.` list or the
+/// `For more information about …, try `rustc --explain E0277`.` pointer that `print_error_count`
+/// emits last. The emitter rebuilds these from the errors that actually survived its suppressions
+/// and merges, so it has to recognize them first.
+pub fn is_explain_footer_text(text: &str) -> bool {
+    text.starts_with("Some errors have detailed explanations:")
+        || text.starts_with("For more information about")
+}
+
+/// The `rustc --explain` codes an [`is_explain_footer_text`] line names: every code of the list
+/// form, or the single code of the pointer form.
+///
+/// A footer line always names at least one code, so an empty result means the *parse* failed — a
+/// rewording upstream — not that the line names nothing. The caller keys on that to leave the footer
+/// alone rather than rebuild it from nothing, since rebuilding would silently delete output.
+pub fn explain_footer_codes(text: &str) -> Vec<String> {
+    if let Some(list) = text.strip_prefix("Some errors have detailed explanations:") {
+        return list
+            .trim()
+            .trim_end_matches('.')
+            .split(',')
+            .map(|code| code.trim().to_owned())
+            .filter(|code| !code.is_empty())
+            .collect();
+    }
+    text.split_once("--explain ")
+        .map(|(_, rest)| {
+            rest.trim_start_matches(['`', ' '])
+                .trim_end_matches(['.', '`', ' '])
+                .to_owned()
+        })
+        .filter(|code| !code.is_empty())
+        .into_iter()
+        .collect()
+}

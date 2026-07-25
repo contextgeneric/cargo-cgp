@@ -3,8 +3,9 @@
 //! matches and, as importantly, the near-misses it must not.
 
 use cargo_cgp_error_processing::{
-    is_method_bounds_text, is_method_probe_advice_text, is_question_mark_cascade_text,
-    mentions_orphan_param_text, mentions_wiring_text,
+    explain_footer_codes, is_explain_footer_text, is_method_bounds_text,
+    is_method_probe_advice_text, is_question_mark_cascade_text, mentions_orphan_param_text,
+    mentions_wiring_text,
 };
 
 #[test]
@@ -78,4 +79,47 @@ fn question_mark_signal_matches_rustc_try_wording() {
         "the `?` operator can only be applied to values that implement `Try`"
     ));
     assert!(!is_question_mark_cascade_text("mismatched types"));
+}
+
+#[test]
+fn recognizes_the_explain_footer_lines() {
+    assert!(is_explain_footer_text(
+        "Some errors have detailed explanations: E0277, E0599."
+    ));
+    assert!(is_explain_footer_text(
+        "For more information about this error, try `rustc --explain E0277`."
+    ));
+    assert!(is_explain_footer_text(
+        "For more information about an error, try `rustc --explain E0271`."
+    ));
+    // A note that merely mentions an error is not the footer.
+    assert!(!is_explain_footer_text(
+        "note: required for `App` to implement `CanGreet`"
+    ));
+}
+
+#[test]
+fn reads_the_codes_a_footer_line_names() {
+    assert_eq!(
+        explain_footer_codes("Some errors have detailed explanations: E0277, E0599."),
+        vec!["E0277", "E0599"]
+    );
+    assert_eq!(
+        explain_footer_codes("For more information about this error, try `rustc --explain E0277`."),
+        vec!["E0277"]
+    );
+    assert_eq!(
+        explain_footer_codes("Some errors have detailed explanations: E0271."),
+        vec!["E0271"]
+    );
+}
+
+/// The guard the rebuild keys on: a footer always names a code, so parsing none means the wording
+/// moved. The emitter leaves such a footer alone rather than rebuilding it out of existence.
+#[test]
+fn yields_no_codes_when_the_wording_moved() {
+    assert!(explain_footer_codes("Some errors have detailed explanations:").is_empty());
+    assert!(
+        explain_footer_codes("For more information about this error, see the manual.").is_empty()
+    );
 }
