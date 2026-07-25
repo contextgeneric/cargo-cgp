@@ -1,7 +1,11 @@
 # AGENTS.md
 
-This file guides AI agents working in the `cargo-cgp` repository. Read it before any task here,
-then read the sub-crate `AGENTS.md` for whichever crate you are about to touch.
+This file guides AI agents working in the `cargo-cgp` repository. Read it before any task here, and
+[sibling-projects.md](sibling-projects.md) for the related repositories — including
+[`cgp-knowledge-base`](https://github.com/contextgeneric/cgp-knowledge-base), which holds this
+project's documentation. Where a crate's structure or a subsystem's design matters to your task, the
+knowledge base's [implementation documents](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/README.md)
+are the detailed account this file only summarizes.
 
 ## What this project is
 
