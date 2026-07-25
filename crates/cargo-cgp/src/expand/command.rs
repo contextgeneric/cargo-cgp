@@ -60,16 +60,12 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
         }
         None => {
             let _ = fs::remove_file(&output);
-            // With a filter, the likelier cause is a path that names nothing — so say both rather
-            // than blame the compilation for what is usually a typo.
-            match &item {
-                Some(item) => eprintln!(
-                    "error: nothing was expanded for `{item}` — no such module or item, or the target did not compile far enough to expand"
-                ),
-                None => eprintln!(
-                    "error: no expansion was produced — the target did not compile far enough to expand"
-                ),
-            }
+            // Whatever went wrong, the layer that knows has already said so above — cargo when it
+            // would not run the expansion at all (a package with several targets needs `--lib` or
+            // `--bin NAME`), the compiler when the crate failed before expanding, the driver when an
+            // `--item` path matched nothing. So this line only reports that nothing came back;
+            // guessing at a cause here is what made it confusing.
+            eprintln!("error: no expansion was produced; see the errors above");
             Ok(status.code().filter(|code| *code != 0).unwrap_or(1))
         }
     }

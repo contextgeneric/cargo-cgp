@@ -69,7 +69,10 @@ cargo cgp expand -p my-crate --lib
 ```
 
 Arguments are forwarded to `cargo rustc`, so target selection is cargo's own — and because it expands
-exactly one target, cargo asks you to choose when a package has several. The output goes to stdout, so
+exactly one target, cargo asks you to choose when a package has several. That is worth knowing before
+your first run: a package with both a library and a binary needs `--lib` or `--bin <NAME>`, and without
+one cargo declines with *"extra arguments to `rustc` can only be passed to one target"*. Expanding a
+module of a library crate is therefore `cargo cgp expand --lib --item <path>`. The output goes to stdout, so
 it pipes and redirects like any other program's:
 
 ```sh
@@ -85,6 +88,10 @@ cargo cgp expand --lib --item shapes             # a module: its contents
 cargo cgp expand --lib --item shapes::Rectangle  # a type: its declaration and every impl for it
 cargo cgp expand --lib --item AreaCalculator     # a trait: its definition and every impl of it
 ```
+
+The path names a module or item **inside the crate being expanded**, and a leading `crate::` is
+accepted, so `--item crate::contexts::app` and `--item contexts::app` are the same request. (`self::`
+and a bare leading `::` work too.)
 
 The trait form is usually what you want on CGP code, because a component's generated items *are*
 impls: `--item AreaCalculator` gives the provider trait together with the blanket impls, the

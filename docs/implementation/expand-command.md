@@ -144,6 +144,11 @@ re-declaring cargo's whole argument grammar here, which is what forwarding exist
 *shape* is checked in the front-end, before anything compiles, so a typo costs nothing; the driver
 parses it again for real, since the matching lives there.
 
+A **crate-root prefix is accepted and dropped** — `crate::contexts::app`, `::contexts::app`, and
+`self::contexts::app` all mean `contexts::app`. Matching is against module paths within the crate, which
+carry no such prefix, but `crate::…` is how the module is spelled in the source, so it is what a reader
+reaches for.
+
 What a path selects is three rules, and the third is the CGP-shaped one:
 
 - an item **declared** at that path — and a module selects its *contents*, since the `mod` wrapper is
@@ -155,10 +160,22 @@ What a path selects is three rules, and the third is the CGP-shaped one:
 
 The third rule is what makes the filter useful here rather than merely available. A CGP component's
 generated items are almost all impls, and impls have no names of their own — so a filter that matched
-only declarations would answer "what does this component generate?" with just the trait definition. A
-path that matches nothing yields nothing, never the whole crate, and the front-end says so, naming the
-path; that message also allows for the other possibility, a target that did not compile far enough to
-expand, since both look the same from outside.
+only declarations would answer "what does this component generate?" with just the trait definition.
+
+**A path that matches nothing yields nothing — never the whole crate — and the *driver* reports it.**
+Which layer reports what matters here, because getting it wrong produced a genuinely misleading message.
+The front-end sees only an absent expansion, and cannot tell a path that names nothing from a crate that
+never got far enough to expand, nor from cargo declining to run at all (a package with several targets
+needs `--lib` or `--bin NAME`). It used to guess, and so contradicted cargo's own correct explanation by
+blaming the path. Now each layer reports what it knows: cargo says it would not run, the compiler says
+the crate failed, the driver says the path matched nothing, and the front-end only reports that nothing
+came back and points up.
+
+The driver prints that one message straight to stderr rather than emitting a compiler diagnostic, for
+two reasons. It is not about the code being compiled, so it should not add to the crate's error count
+and make cargo report a failed compilation. And the driver's own
+[post-processing](error-processing.md) would rewrite it: the module-path strip that shortens CGP type
+names in an error would shorten the very path the message quotes, turning `contexts::nope` into `nope`.
 
 **The driver writes the finished text to a file and the front-end prints it.** The path is a temp
 file named after the front-end's process id, so two concurrent runs never read each other's output

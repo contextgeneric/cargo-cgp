@@ -99,13 +99,38 @@ fn nothing_matching_yields_nothing() {
 }
 
 #[test]
+fn a_crate_root_prefix_is_accepted() {
+    // `crate::contexts::app` is how the module is spelled in the source, so it is what a reader
+    // reaches for; matching is against paths within the crate, which carry no such prefix.
+    for spelling in [
+        "shapes::Rectangle",
+        "crate::shapes::Rectangle",
+        "::shapes::Rectangle",
+        "self::shapes::Rectangle",
+    ] {
+        let out = expand_item(PROGRAM, spelling);
+        assert!(
+            out.contains("pub struct Rectangle"),
+            "`{spelling}` should reach the same module: {out}"
+        );
+    }
+}
+
+#[test]
 fn an_item_path_must_be_identifiers() {
     assert!(ItemPath::parse("shapes::Rectangle").is_some());
     assert!(ItemPath::parse("Rectangle").is_some());
     assert!(ItemPath::parse("_private::thing").is_some());
 
+    assert!(ItemPath::parse("crate::shapes").is_some());
+    assert!(ItemPath::parse("::shapes").is_some());
+
     // Declining a malformed path is what keeps a typo from looking like an item that is not there.
     assert!(ItemPath::parse("shapes::").is_none());
+    // A prefix with nothing after it names nothing.
+    assert!(ItemPath::parse("crate").is_none());
+    assert!(ItemPath::parse("crate::").is_none());
+    assert!(ItemPath::parse("::").is_none());
     assert!(ItemPath::parse("shapes:Rectangle").is_none());
     assert!(ItemPath::parse("shapes::<T>").is_none());
     assert!(ItemPath::parse("not a path").is_none());

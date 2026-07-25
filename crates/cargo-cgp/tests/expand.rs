@@ -87,9 +87,28 @@ fn a_missing_or_repeated_item_filter_names_the_flag() {
 }
 
 #[test]
+fn a_crate_rooted_item_path_is_accepted() {
+    // The front-end only checks the shape; the driver's parser strips the prefix.
+    for spelling in [
+        "crate::contexts::app",
+        "::contexts::app",
+        "self::contexts::app",
+    ] {
+        let (_, item) = take_item(&args(&["--item", spelling])).expect("a valid path");
+        assert_eq!(item.as_deref(), Some(spelling));
+    }
+}
+
+#[test]
 fn a_malformed_item_path_names_the_path() {
     // Rejected here rather than after a build, so a typo costs nothing.
-    for bad in ["not a path", "shapes::", "shapes:Rectangle", "shapes::<T>"] {
+    for bad in [
+        "not a path",
+        "shapes::",
+        "shapes:Rectangle",
+        "shapes::<T>",
+        "::",
+    ] {
         let error =
             take_item(&args(&["--item", bad])).expect_err(&format!("{bad:?} should be rejected"));
         assert!(

@@ -26,11 +26,26 @@ pub struct ItemPath {
 }
 
 impl ItemPath {
-    /// Parse a path pattern, or `None` when it is not one: every segment must be a plain identifier,
-    /// and there must be at least one. Declining here rather than matching nothing keeps a typo
-    /// (`shapes:Rectangle`, `shapes::`) from looking like an item that does not exist.
+    /// Parse a path pattern, or `None` when it is not one: after the crate-root prefix below, every
+    /// segment must be a plain identifier and at least one must remain. Declining here rather than
+    /// matching nothing keeps a typo (`shapes:Rectangle`, `shapes::`) from looking like an item that
+    /// does not exist.
+    ///
+    /// A **crate-root prefix is accepted and dropped**: `crate::contexts::app`, `::contexts::app`, and
+    /// `self::contexts::app` all mean `contexts::app`. Matching is against module paths within the
+    /// crate being expanded, which carry no such prefix — but `crate::…` is how the module is spelled
+    /// in the source, so it is what a reader reaches for, and rejecting it would be pedantry.
     pub fn parse(pattern: &str) -> Option<Self> {
-        let segments: Vec<String> = pattern.split("::").map(str::to_owned).collect();
+        let mut segments: Vec<String> = pattern.split("::").map(str::to_owned).collect();
+
+        // A leading `::` leaves an empty first segment; `crate` and `self` are real segments to drop.
+        if segments
+            .first()
+            .is_some_and(|first| first.is_empty() || first == "crate" || first == "self")
+        {
+            segments.remove(0);
+        }
+
         let plain = |segment: &String| {
             let mut chars = segment.chars();
             chars.next().is_some_and(|c| c == '_' || c.is_alphabetic())

@@ -58,15 +58,18 @@ fn set_item(item: &mut Option<String>, path: String) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Whether `path` is a `::`-separated run of plain identifiers.
+/// Whether `path` is a `::`-separated run of plain identifiers, optionally rooted at the crate.
 ///
 /// Checked here, before anything is compiled, so a typo fails at once rather than after a build that
-/// then matches nothing. The driver parses the path again for real (that parser owns the matching), so
-/// this is a fail-fast courtesy rather than the authority.
+/// then matches nothing. The driver parses the path again for real — that parser owns the matching and
+/// the crate-root prefix (`crate::`, `self::`, a leading `::`) it strips — so this is a fail-fast
+/// courtesy rather than the authority, and it only has to be no stricter.
 fn is_item_path(path: &str) -> bool {
-    path.split("::").all(|segment| {
-        let mut chars = segment.chars();
-        chars.next().is_some_and(|c| c == '_' || c.is_alphabetic())
-            && chars.all(|c| c == '_' || c.is_alphanumeric())
-    })
+    let path = path.strip_prefix("::").unwrap_or(path);
+    !path.is_empty()
+        && path.split("::").all(|segment| {
+            let mut chars = segment.chars();
+            chars.next().is_some_and(|c| c == '_' || c.is_alphabetic())
+                && chars.all(|c| c == '_' || c.is_alphanumeric())
+        })
 }

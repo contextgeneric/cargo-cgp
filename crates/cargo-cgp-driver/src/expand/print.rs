@@ -56,6 +56,26 @@ pub fn print_expansion(sess: &Session, tcx: TyCtxt<'_>, request: &ExpandRequest)
     };
     let resugared = resugar_expanded_source(&printed, &options);
 
+    // An item filter that selected nothing is reported *here*, by the layer that knows: the
+    // front-end sees only an absent expansion, and cannot tell a path that names nothing from a
+    // crate that never got far enough to expand. Guessing between them is what made this confusing.
+    //
+    // Printed straight to stderr rather than emitted as a compiler diagnostic, for two reasons. It is
+    // not about the code being compiled, so it should not add to the crate's error count and make
+    // cargo report a failed compilation; and the driver's own diagnostic post-processing would rewrite
+    // it — the module-path strip exists to shorten CGP type names in an error, and it would shorten
+    // the very path this message quotes (`contexts::nope` down to `nope`).
+    if resugared.is_empty()
+        && let Some(item) = &request.item
+    {
+        eprintln!("error: no module or item matched `{item}`");
+        eprintln!(
+            "note: the path names a module or item inside the crate being expanded, as in \
+             `contexts::app`; a leading `crate::` is accepted too"
+        );
+        return;
+    }
+
     if let Err(error) = fs::write(&request.output, resugared) {
         sess.dcx()
             .warn(format!("could not write the expansion: {error}"));

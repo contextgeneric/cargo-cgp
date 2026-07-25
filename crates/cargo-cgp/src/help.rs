@@ -38,7 +38,8 @@ Options:
 Expand options:
     --item <PATH>  Expand only this module or item, as a `::`-separated path — a module
                    (its contents), a type (with the impls for it), or a trait (with the
-                   impls of it). Example: `cargo cgp expand --lib --item shapes::Rectangle`.
+                   impls of it). A leading `crate::` is accepted.
+                   Example: `cargo cgp expand --lib --item contexts::app`.
 
 Run `cargo cgp check --help` to see the underlying `cargo check` options."
     )
