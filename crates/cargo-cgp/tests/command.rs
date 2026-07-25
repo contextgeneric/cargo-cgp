@@ -1,6 +1,6 @@
-//! Tests for check-command helpers that are pure enough to pin directly.
+//! Tests for the wrapped-launch helpers that are pure enough to pin directly.
 
-use cargo_cgp::check::forwards_target_dir;
+use cargo_cgp::launch::forwards_target_dir;
 
 fn args(list: &[&str]) -> Vec<String> {
     list.iter().map(|s| s.to_string()).collect()

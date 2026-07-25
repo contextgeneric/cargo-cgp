@@ -43,9 +43,10 @@ cargo-cgp check --workspace   →  cargo-cgp       check --workspace   (invoked 
 
 [`args::strip_subcommand`](../../crates/cargo-cgp/src/args.rs) drops the program name and a *leading*
 `cgp` token if present, leaving `["check", ...]` in both cases, and
-[`run::dispatch`](../../crates/cargo-cgp/src/run.rs) routes on the first remaining word. Three
-subcommands exist: `check` (below), `setup` (provision the pinned toolchain and driver), and `update`
-(upgrade the tool) — the latter two are covered in [Distribution](distribution.md). Anything after
+[`run::dispatch`](../../crates/cargo-cgp/src/run.rs) routes on the first remaining word. Four
+subcommands exist: `check` (below), `expand` (show the Rust a target's CGP macros generate, see
+[The expand command](expand-command.md)), `setup` (provision the pinned toolchain and driver), and
+`update` (upgrade the tool) — the last two are covered in [Distribution](distribution.md). Anything after
 `check` is forwarded verbatim to `cargo check`, so `cargo cgp check -v` and `cargo cgp check
 --workspace` behave as expected. A leading `--help`/`-h`, or no subcommand at all, prints the
 front-end help text ([`help::help_text`](../../crates/cargo-cgp/src/help.rs)) and exits successfully,
@@ -189,7 +190,7 @@ The front-end's modules are listed here; the driver's are in the
 [driver deep dive](driver.md#source).
 
 - [`crates/cargo-cgp/src/run.rs`](../../crates/cargo-cgp/src/run.rs) — front-end entrypoint and
-  subcommand dispatch (`check`, `setup`, `update`).
+  subcommand dispatch (`check`, `expand`, `setup`, `update`).
 - [`crates/cargo-cgp/src/args.rs`](../../crates/cargo-cgp/src/args.rs) — process-argument
   normalization.
 - [`crates/cargo-cgp/src/check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) — builds and

@@ -12,9 +12,9 @@ use std::process::Command;
 
 use anyhow::{Context, anyhow, bail};
 
-use crate::check::dylib::prepend_dylib_path;
-use crate::check::sysroot::sysroot;
 use crate::config::{RUSTUP_TOOLCHAIN_ENV, SYSROOT_ENV, TOOL_VERSION};
+use crate::launch::dylib::prepend_dylib_path;
+use crate::launch::sysroot::sysroot;
 use crate::toolchain::rustc_version;
 
 /// The identity a `cargo-cgp-driver --version` reports, parsed from its output.

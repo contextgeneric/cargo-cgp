@@ -106,8 +106,8 @@ in the loop.
 
 ### Syntax tree: `syn::Type` in the expand command
 
-The syntax-tree approach resugars a whole printed crate rather than a diagnostic, and it is the planned
-pass in `cargo-cgp-expand` (see
+The syntax-tree approach resugars a whole printed crate rather than a diagnostic, and it is the
+[`cargo-cgp-expand`](../../crates/cargo-cgp-expand) crate that `cargo cgp expand` drives (see
 [The expand command](expand-command.md#the-rustc-free-resugaring)). Its input is the source text the
 compiler's pretty-printer produced, re-parsed with `syn`.
 
@@ -118,16 +118,46 @@ testable. So, like the text pass, it recognizes constructs by name and must matc
 It cannot reuse the text pass either, and that is a measured result rather than a preference. The text
 matchers were written against rustc's *diagnostic* rendering, and on printed source they are
 formatting-sensitive: `prettyplease` breaks a long generic list across lines and ends it with a trailing
-comma before the closing `>`, which the `Symbol!` matcher's final `>` check rejects. In a prototype over
-this document's own rectangle example that left `Symbol!("width")` resugared and `height` a raw spine,
-purely because the longer name was the one that got wrapped. Matching `syn::Type` is immune to
-formatting, because the structure is already parsed.
+comma before the closing `>`, which the `Symbol!` matcher's final `>` check rejects. On a rectangle
+example that left `Symbol!("width")` resugared and `height` a raw spine, purely because the longer name
+was the one that got wrapped. Matching `syn::Type` is immune to formatting, because the structure is
+already parsed.
 
-Two demands are specific to this approach. Its **output must be a syntax node**, not a string:
-`Symbol!("height")` has to be built as a macro-call type that the printer then formats, where the other
-two approaches simply emit text. And the **innermost-first traversal a visitor naturally performs** is
-exactly what makes the shared `Nil` overlap hazard bite hardest here, which is why the passes must stay
-separate whole-tree visits (see [the rules](#the-rules-every-resugaring-follows)).
+Four demands are specific to this approach, and each shapes the code. Its **output must be a syntax
+node**, not a string: `Symbol!("height")` is built as a macro-call type the printer then formats, where
+the other two approaches simply emit text. Its passes must **fold each spine outermost-first**, because
+a visitor recurses innermost-first and a spine's tail is itself a spine — folding the inner cell first
+leaves a two-element list as `Cons<A, Product![B]>` — so each pass folds before recursing and then
+recurses into the elements it collected. That same innermost-first instinct is what makes the shared
+`Nil` overlap hazard bite hardest here, which is why the passes stay separate whole-tree visits (see
+[the rules](#the-rules-every-resugaring-follows)). And it **emits only real syntax**, which is the one
+place the three implementations deliberately differ — the next section.
+
+A fifth demand is not about matching at all but about printing, and it is why the crate ends with a
+text pass despite being built to avoid text matching. A resugared construct is a macro call whose body
+holds ordinary types, and the printer lays a macro body out token by token: it cannot know the body is a
+type list, so it prints `Product![Multiply < Symbol!("foo") >]`. Its spacing rules cannot be coaxed into
+the conventional form, because the space *before* a token is the printer's decision and an identifier
+cannot ask for it to be dropped. So one narrow pass removes spaces inside the bodies of the four macros
+the crate emits — never inside a literal, never anywhere else in the program — which only ever removes a
+space and so cannot alter meaning.
+
+### Only source output is held to real syntax
+
+Two of the forms a diagnostic shows are **presentation-only**: the `Struct! { … }` / `Enum! { … }`
+record forms an all-field list folds to, and the trailing `.*` wildcard an open-ended path takes. No
+such CGP macros exist and neither would parse back. They earn their place in a diagnostic because the
+alternative is unreadable — a chain of `Field` cells, a raw `PathCons` spine — and a diagnostic is prose
+about the program, not the program.
+
+Source output is different, and the syntax-tree pass therefore **does not emit either**. An expansion is
+read as code: a reader may copy a line out of it, and every construct in it should be something they
+could have written. So a field list stays `Product![Field<Symbol!("width"), f64>, …]` — real, writable,
+and true to the type — and an open-ended path stays its raw chain. (In an expansion the open tail is a
+named generic parameter anyway, not the `_` a diagnostic renders.)
+
+This is the one sanctioned divergence between the implementations. The rule that generalizes it: the two
+diagnostic passes may show a form that reads better than it parses, and the source pass may not.
 
 ### Why the three cannot be one
 
@@ -179,7 +209,9 @@ keep the constructs apart, and no implementation may fold them into one traversa
 **A few surface forms are presentation-only.** `Struct! { … }`, `Enum! { … }`, and `Path!`'s trailing
 `.*` wildcard are not real CGP macros and would not parse back. They exist because the shape they
 describe reads far better than the spine, and they are the one place resugaring shows something other
-than what the programmer could have written. Every other output is real, writable syntax.
+than what the programmer could have written — so they are shown in a *diagnostic* only, never in source
+output, per [only source output is held to real syntax](#only-source-output-is-held-to-real-syntax).
+Every other output is real, writable syntax everywhere.
 
 **An empty spine is left as its terminator.** A bare `Nil` or `Void` is not rewritten to `Product![]`
 or `Sum![]`: the terminator alone reads as the plain type it is, and resugaring it would mean claiming
@@ -291,7 +323,8 @@ PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>   →   Path!(@foo.bar.*)
 
 `.*` is not `Path!` syntax and would not parse back, but it reads far better than the spine and says
 what the path means: it matches any continuation. Only a bare `_` triggers it, since `_` is never a
-concrete segment; any other non-`Nil` tail declines.
+concrete segment; any other non-`Nil` tail declines. Being presentation-only, it is a diagnostic form:
+the source pass leaves an open-ended chain raw.
 
 The text implementation is
 [`resugar_path`](../../crates/cargo-cgp-error-processing/src/postprocess/resugar_path.rs), which also
@@ -364,7 +397,9 @@ Either<Field<Symbol!("Rect"), u64>, Either<Field<Symbol!("Circle"), f64>, Void>>
 `Struct!` and `Enum!` are presentation-only — no such CGP macros exist — and they are worth that
 exception because the alternative is unreadable: a real record provider's chain hop otherwise names a
 chain of `Field` cells several fields long, where `Struct! { message_id: u64, date: DateTime<Utc>, … }`
-says the same thing at a glance.
+says the same thing at a glance. For that same reason they are a *diagnostic* form only; source output
+stops at the `Product!`/`Sum!` list, which is real syntax
+([why](#only-source-output-is-held-to-real-syntax)).
 
 The fold applies only when **every** element is a bare `Field` cell whose tag is a plain symbol
 literal; a single element that is not drops the whole list back to its plain `Product!`/`Sum!` form,
@@ -448,10 +483,15 @@ compiler, and the UI suite pins the typed pass end to end.
   [`open_missing_type_key`](../../tests/ui/acceptable/wiring/namespace-paths/open_missing_type_key.rs) —
   the typed path rendering, in a namespace redirect and an `open` dispatch key.
 
-What is *not* guarded: the syntax-tree implementation has no tests because it does not exist yet (the
-coverage it owes is listed in [The expand command](expand-command.md#tests)), and no test asserts that
-the implementations agree with each other on the same construct — consistency between them rests on
-this document.
+- [`crates/cargo-cgp-expand/tests/resugar.rs`](../../crates/cargo-cgp-expand/tests/resugar.rs) — the
+  syntax-tree implementation over hand-written expanded source, run through the whole pipeline the
+  driver runs: each construct and its decline cases, both `Nil` overlap hazards, the outermost-first
+  fold, the tightened spacing of a generic element, the two diagnostic-only forms confirmed *absent*,
+  and the prelude strip including the qualified-path shapes whose index it has to correct.
+
+What is *not* guarded: no test asserts that the three implementations agree with each other on the same
+construct — consistency between them rests on this document — and the expand command has no end-to-end
+fixture harness yet (see [The expand command](expand-command.md#tests)).
 
 ## Source
 
@@ -467,8 +507,12 @@ this document.
 - [`crates/cargo-cgp-error-processing/src/postprocess/`](../../crates/cargo-cgp-error-processing/src/postprocess)
   — the text passes, one module each: `resugar_symbol.rs`, `resugar_path.rs`, `resugar_list.rs`,
   `strip_modules.rs`, `strip_prefixes.rs`, and `chain.rs`, which sequences them.
-- `crates/cargo-cgp-expand/` — the planned syntax-tree pass (see
-  [The expand command](expand-command.md)); not yet written.
+- [`crates/cargo-cgp-expand/src/resugar/`](../../crates/cargo-cgp-expand/src/resugar) — the
+  syntax-tree passes, one module per construct (`symbol.rs`, `path.rs`, `list.rs`), plus `strip.rs`
+  (the prelude qualifier and the qualified-path index it corrects), `spacing.rs` (the post-print
+  tightening), `parts.rs` (the shared shape reading and macro-node building), and `file.rs`, which
+  sequences the passes. Driven by [`source.rs`](../../crates/cargo-cgp-expand/src/source.rs); see
+  [The expand command](expand-command.md).
 
 ## Further reading
 

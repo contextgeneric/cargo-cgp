@@ -1,6 +1,6 @@
 //! Formatting a failed sysroot probe's stderr into its error message.
 
-use cargo_cgp::check::format_stderr;
+use cargo_cgp::launch::format_stderr;
 
 #[test]
 fn a_loader_failure_is_appended_to_the_message() {

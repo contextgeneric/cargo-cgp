@@ -12,8 +12,8 @@ types the programmer never wrote and the root cause is often buried or suppresse
 `cargo-cgp` post-processes those diagnostics into a compact, root-cause-first form, the way Clippy
 layers analysis on top of `rustc`.
 
-The one diagnostic command is `cargo cgp check` (the other subcommands, `setup` and `update`, only
-provision the tool). It compiles the workspace through a `rustc_driver`-based wrapper that does two
+The main diagnostic command is `cargo cgp check` (`expand` is the second reading command, showing the
+Rust a target's CGP macros generate; `setup` and `update` only provision the tool). It compiles the workspace through a `rustc_driver`-based wrapper that does two
 things. First, it injects `-Znext-solver=globally`, turning on the next-generation trait solver,
 which surfaces the CGP dependency errors the default solver hides (it descends to the real missing
 bound — e.g. `HasField<Symbol!("name")>` — instead of stopping at the provider trait). Second, its
@@ -126,7 +126,12 @@ post-processing text transforms, the rustc-free root-cause model and the diagnos
 that turns it into text, the dependency-tree renderer, the cross-diagnostic de-duplication ledger,
 and the text signals the emitter's candidate checks key on; it links no compiler internals
 either, so it builds and tests on any toolchain (see
-[Error processing](docs/implementation/error-processing.md)).
+[Error processing](docs/implementation/error-processing.md)). A fourth, library-only crate,
+**`cargo-cgp-expand`** (`crates/cargo-cgp-expand`), is the rustc-free half of `cargo cgp expand`: it
+takes the source the compiler printed for an expanded crate and folds CGP's type-level spines back to
+the surface macros (`Symbol!`, `Path!`, `Product!`/`Sum!`), and it links no compiler internals either
+(see [Resugaring](docs/implementation/resugaring.md) and
+[The expand command](docs/implementation/expand-command.md)).
 
 How the two cooperate — the argument normalization, the `CARGO_CGP_SYSROOT` and
 dynamic-library-path contract, wrapper-mode detection, and the front-end's plain forwarding of
@@ -209,23 +214,26 @@ that only repeats the code.
 
 ### Module map
 
-The front-end (`crates/cargo-cgp/src`) is organized around dispatch and three subcommands.
+The front-end (`crates/cargo-cgp/src`) is organized around dispatch and four subcommands.
 `run.rs` is the entrypoint that normalizes arguments and dispatches on the subcommand (`check`,
-`setup`, `update`), printing `help.rs`'s help text for a leading `--help`/`-h` or no subcommand;
-`args.rs` strips the cargo-inserted `cgp` token so the same entrypoint serves both
+`expand`, `setup`, `update`), printing `help.rs`'s help text for a leading `--help`/`-h` or no
+subcommand; `args.rs` strips the cargo-inserted `cgp` token so the same entrypoint serves both
 `cargo cgp check` and a direct `cargo-cgp check`; `config.rs` holds the shared well-known names,
-including the build-time-baked `PINNED_TOOLCHAIN` (from `build.rs`) and the management environment
-variables; `toolchain.rs` resolves the effective pinned toolchain and queries its `rustc`. The
-`check/` directory holds the check command: `command.rs` runs the [preflight](docs/implementation/distribution.md)
-and forces `RUSTUP_TOOLCHAIN` to the pinned nightly (unless `CARGO_CGP_NO_MANAGE` is set), builds and
-runs the wrapped `cargo check` with the driver wired in as the workspace rustc wrapper, injects an
-isolated `target/cgp` directory, and inherits cargo's stdio so its output streams through untouched
-(the driver does every diagnostic transform, so the front-end captures and processes nothing);
-`driver_path.rs` locates the driver (via the `CARGO_CGP_DRIVER` override or as a sibling); `sysroot.rs`
-discovers the toolchain sysroot; `dylib.rs` builds the dynamic-library search path; and `preflight.rs`
-verifies a matching driver and the pinned toolchain before a check, directing the user to
-`cargo cgp setup` on any failure. `setup.rs` and `update.rs` are the provisioning and upgrade
-subcommands. The distribution design — the pinned-toolchain forcing, the preflight version handshake,
+including the build-time-baked `PINNED_TOOLCHAIN` (from `build.rs`), the management environment
+variables, and the `EXPAND_FLAG` marker; `toolchain.rs` resolves the effective pinned toolchain and
+queries its `rustc`. The `launch/` directory holds what the two reading commands share:
+`command.rs` runs the [preflight](docs/implementation/distribution.md) and forces `RUSTUP_TOOLCHAIN` to
+the pinned nightly (unless `CARGO_CGP_NO_MANAGE` is set), then builds the wrapped cargo command with
+the driver wired in as the workspace rustc wrapper and an isolated `target/cgp` directory
+(`target_dir.rs`); `driver_path.rs` locates the driver (via the `CARGO_CGP_DRIVER` override or as a
+sibling); `sysroot.rs` discovers the toolchain sysroot; `dylib.rs` builds the dynamic-library search
+path; and `preflight.rs` verifies a matching driver and the pinned toolchain, directing the user to
+`cargo cgp setup` on any failure. `check.rs` then just runs that command, inheriting cargo's stdio so
+its output streams through untouched (the driver does every diagnostic transform, so the front-end
+captures and processes nothing). The `expand/` directory holds the expand command: `command.rs` runs
+the wrapped `cargo rustc` with the marker flag that puts the driver in expand mode and prints what the
+driver wrote, over `output.rs` (the per-process output file) and `profile.rs` (the default
+`--profile check`). `setup.rs` and `update.rs` are the provisioning and upgrade subcommands. The distribution design — the pinned-toolchain forcing, the preflight version handshake,
 and the `setup`/`update` flow — is documented in
 [Distribution](docs/implementation/distribution.md).
 
@@ -233,9 +241,14 @@ The driver (`crates/cargo-cgp-driver/src`) is organized around the compiler wrap
 diagnostic transform. `run.rs` is the entrypoint that runs the compiler through `rustc_driver`,
 answering a direct (non-wrapper) `--help`/`-h`/no-args from `help.rs` and `--version`/`-V` from
 `version.rs` before compiling; `args.rs` turns the wrapper's process arguments into a rustc argument
-vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds the `Callbacks` implementation, whose
-`config` hook installs the diagnostic-transforming emitter; `config.rs` holds the shared names and
-the injected flags. The transform is split across two directories. `emitter/` is the `CgpEmitter<E>`
+vector (dropping the injected `rustc` path and injecting `--sysroot`); `callbacks.rs` holds the
+`Callbacks` implementation, whose `config` hook installs the diagnostic-transforming emitter and whose
+`after_expansion` hook serves expand mode; `config.rs` holds the shared names and the injected flags.
+The `expand/` directory is expand mode: `request.rs` takes the front-end's `--cgp-expand=<path>` marker
+out of the argument vector, and `print.rs` prints the expanded crate through the compiler's own
+`pprust::print_crate`, resugars it through `cargo-cgp-expand`, and writes it out — the whole crate is
+expanded, only CGP's constructs are resugared (see
+[The expand command](docs/implementation/expand-command.md)). The transform is split across two directories. `emitter/` is the `CgpEmitter<E>`
 seam: `install.rs` rebuilds whichever inner emitter the compiler's default would build — a
 `JsonEmitter` or an `AnnotateSnippetEmitter` — and wraps it, `cgp_emitter.rs` is the wrapper type and
 its `emit_diagnostic` orchestration (first recognize a `#[cgp_impl]` provider naming the wrong trait

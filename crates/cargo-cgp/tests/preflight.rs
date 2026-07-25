@@ -4,8 +4,8 @@
 
 use std::path::Path;
 
-use cargo_cgp::check::{DriverVersion, evaluate, parse_driver_version};
 use cargo_cgp::config::PINNED_TOOLCHAIN;
+use cargo_cgp::launch::{DriverVersion, evaluate, parse_driver_version};
 
 /// The exact line format the driver prints (mirrors `cargo-cgp-driver`'s `version_string`).
 const DRIVER_OUTPUT: &str = "cargo-cgp-driver 0.1.0\n\

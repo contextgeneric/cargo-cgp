@@ -10,6 +10,14 @@ pub const SYSROOT_ENV: &str = "CARGO_CGP_SYSROOT";
 /// infer a sysroot from the driver's out-of-tree location.
 pub const SYSROOT_FLAG: &str = "--sysroot";
 
+/// The flag through which `cargo cgp expand` puts the driver in expand mode, carrying the path
+/// the expansion is written to (`--cgp-expand=<path>`).
+///
+/// It is the counterpart of `cargo_cgp::config::EXPAND_FLAG`; the two crates declare it
+/// independently and the shared string is the contract between them. It is not a rustc flag, so
+/// [`crate::args::rustc_args`] strips it before the compiler sees the argument vector.
+pub const EXPAND_FLAG: &str = "--cgp-expand";
+
 /// The flag that turns on the next-generation trait solver, injected into every
 /// workspace-crate compilation.
 ///

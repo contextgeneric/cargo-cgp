@@ -10,11 +10,18 @@ crate's `tests/` directory; per [../../AGENTS.md](../../AGENTS.md) the project k
 ## The layers of testing
 
 Testing the tool splits along the seam between its two kinds of logic: the ordinary Rust that decides
-*how to invoke the compiler*, and the emergent behavior of *actually invoking it*. The first is pure
-and cheap to test; the second only appears when a real `cargo` drives a real compiler through the
-driver, so it is exercised by running the whole tool against example crates and snapshotting what it
-prints. The argument tests guard the former; the UI snapshot suite guards the latter. Each is
-described below.
+*how to invoke the compiler* and what to do with its text, and the emergent behavior of *actually
+invoking it*. The first is pure and cheap to test; the second only appears when a real `cargo` drives a
+real compiler through the driver, so it is exercised by running the whole tool against example crates
+and snapshotting what it prints. The argument tests and the two rustc-free libraries' unit tests guard
+the former; the UI snapshot suite guards the latter. Each is described below.
+
+One gap is worth naming here, since it is invisible from the sections that follow: **`cargo cgp expand`
+has no end-to-end coverage.** Its resugaring is unit-tested in
+[`cargo-cgp-expand`](../../crates/cargo-cgp-expand/tests/resugar.rs) and its flag handling in both tool
+crates, but nothing drives the command through a real compilation and compares the expansion. Such a
+harness would mirror the UI suite with a committed `<name>.expand.rs` snapshot per fixture, and it is
+recorded as owed work in [The expand command](expand-command.md#tests).
 
 ## Argument-handling tests
 

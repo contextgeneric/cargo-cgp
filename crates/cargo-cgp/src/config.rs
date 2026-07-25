@@ -14,7 +14,7 @@ pub const CARGO_SUBCOMMAND: &str = "cgp";
 
 /// Executable name of the rustc wrapper cargo-cgp launches. The driver is expected to
 /// sit next to the `cargo-cgp` binary in the same directory (see
-/// [`crate::check::driver_path`]).
+/// [`crate::launch::driver_path`]).
 pub const DRIVER_BIN: &str = "cargo-cgp-driver";
 
 /// Environment variable through which cargo-cgp hands the active toolchain's sysroot
@@ -53,6 +53,16 @@ pub const TOOLCHAIN_ENV: &str = "CARGO_CGP_TOOLCHAIN";
 /// normal builds and with Rust Analyzer. Overridable with an explicit `--target-dir` or
 /// `CARGO_TARGET_DIR`.
 pub const CHECK_TARGET_DIR: &str = "target/cgp";
+
+/// The rustc flag through which `cargo cgp expand` puts the driver in expand mode, carrying the
+/// path the driver writes the finished expansion to (`--cgp-expand=<path>`).
+///
+/// It is passed after `cargo rustc`'s `--`, so cargo appends it to exactly one target's rustc
+/// invocation — which is what scopes expand mode to the crate the user asked about. The driver
+/// strips it from the argument vector before the compiler sees it, since it is no flag of rustc's;
+/// the driver crate declares the same name independently, and the shared string is the contract
+/// between them.
+pub const EXPAND_FLAG: &str = "--cgp-expand";
 
 /// The crate name of the driver on crates.io, installed by `setup` at the front-end's own
 /// version to keep the pair in lockstep.

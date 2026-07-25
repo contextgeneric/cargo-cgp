@@ -1,15 +1,16 @@
 # Usage
 
-`cargo-cgp` today is a single command, `cargo cgp check`, that stands in for `cargo check` and
-re-presents CGP wiring errors with their root cause first. You run it in a cargo project the way you
-run `cargo check`, and its output streams to your terminal in the same form — the difference is in
-which errors it surfaces and how it words them. This document covers running the check, reading its
-output, using it from an editor, and the switches that change its behavior. For installing the tool,
-see [Installation](installation.md).
+`cargo-cgp` has two commands that read your code. `cargo cgp check` stands in for `cargo check` and
+re-presents CGP wiring errors with their root cause first; `cargo cgp expand` shows the ordinary Rust
+your CGP macros generate, with CGP's type-level constructs spelled the way you wrote them. You run
+either in a cargo project the way you run `cargo check`. This document covers running the check,
+reading its output, expanding a target, using the tool from an editor, and the switches that change
+its behavior. For installing it, see [Installation](installation.md).
 
-cargo-cgp is **optional**, and its one job is developer-time readability. `check` is the only command
-that compiles your code — it re-checks it under the pinned nightly solely to reshape the diagnostics —
-and there is no `cargo cgp build`, `run`, or `test` (`setup` and `update` only provision the tool).
+cargo-cgp is **optional**, and its job is developer-time readability. Its two reading commands compile
+your code only to inspect it — `check` re-checks it under the pinned nightly solely to reshape the
+diagnostics, and `expand` stops as soon as the macros are expanded — and there is no
+`cargo cgp build`, `run`, or `test` (`setup` and `update` only provision the tool).
 CGP is an ordinary library that builds on any **stable Rust ≥ 1.89**, so plain `cargo check`,
 `cargo build`, `cargo run`, and `cargo test` all work on a CGP project unchanged. Use `cargo cgp check`
 when you hit or expect a wiring error and want it readable; use plain `cargo check` when you do not;
@@ -54,6 +55,37 @@ settings.
 
 To send the check's artifacts somewhere other than `target/cgp`, pass `--target-dir` (or set
 `CARGO_TARGET_DIR`); either takes precedence over the default.
+
+## Expanding a target
+
+`cargo cgp expand` prints the crate as the compiler sees it after macro expansion, which is how you
+answer "what did that macro actually generate?" — for a wiring table you are unsure about, for a
+provider whose bound you want to see, or to confirm what an error is telling you:
+
+```sh
+cargo cgp expand --lib          # expand the library target
+cargo cgp expand --bin my-app   # expand one binary
+cargo cgp expand -p my-crate --lib
+```
+
+Arguments are forwarded to `cargo rustc`, so target selection is cargo's own — and because it expands
+exactly one target, cargo asks you to choose when a package has several. The output goes to stdout, so
+it pipes and redirects like any other program's:
+
+```sh
+cargo cgp expand --lib > expanded.rs
+cargo cgp expand --lib | rg 'Symbol!'
+```
+
+Two things about the output are worth knowing. **Every macro is expanded**, not only CGP's, so
+`#[derive(Debug)]` and `println!` appear in their generated form too — the CGP-specific part is that
+CGP's own type-level constructs are resugared, so a field name reads `Symbol!("height")` rather than a
+six-level `Chars` spine. And the `cgp::macro_prelude::` qualifier the macros emit is stripped for
+readability, which means the output is meant to be *read* rather than compiled.
+
+`expand` is not a check: the compilation stops once the crate is expanded, so no type analysis runs and
+no CGP diagnostic is produced. A malformed macro invocation still fails — that happens during
+expansion — but a wiring mistake does not. Use `check` for that.
 
 ## Reading the output
 

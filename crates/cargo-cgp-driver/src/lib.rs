@@ -25,6 +25,7 @@
 #![feature(rustc_private)]
 
 extern crate rustc_ast;
+extern crate rustc_ast_pretty;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_errors;
@@ -42,6 +43,7 @@ pub mod callbacks;
 pub mod component_map;
 pub mod config;
 pub mod emitter;
+pub mod expand;
 pub mod help;
 pub mod resolve;
 pub mod run;

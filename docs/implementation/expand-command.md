@@ -5,10 +5,12 @@ expansion in the style of `cargo-expand`, with CGP's type-level sugar resugared 
 the text is handed back, so a field name reads as `Symbol!("height")` rather than as a six-deep
 `Chars` spine.
 
-**Status: blueprint ahead of implementation.** Nothing here is built yet. The document records the
-design agreed for the work, the compiler facts it rests on (each verified against
-[`../external/rust`](../../../external/rust)), and the selective-expansion phase deliberately
-deferred, so a later agent can carry it out without re-deriving any of it. It extends
+**Status: implemented.** `cargo cgp expand` runs: the front-end launches a wrapped `cargo rustc`, the
+driver prints the expanded crate from `after_expansion`, and the rustc-free
+[`cargo-cgp-expand`](../../crates/cargo-cgp-expand) crate resugars it before the front-end prints it.
+What is *not* built is the [selective expansion](#selective-expansion-the-deferred-phase) the command
+started from — the whole crate is expanded — and the conveniences listed under
+[what the first slice leaves out](#comparison-with-cargo-expand). The document extends
 [Executable structure](executable-structure.md), whose front-end/driver split it reuses, and
 [The driver](driver.md), whose `Callbacks` it adds a second hook to. The reference implementation for
 the command as a whole is not Clippy but `cargo-expand`, checked out read-only at
@@ -118,12 +120,13 @@ environment variable would have been the other way to signal expand mode, but it
 workspace crate at once and the driver would then have to reconstruct which one the user meant from
 `--crate-name`; letting cargo do the scoping is both simpler and more accurate.
 
-Everything else about launching the compilation is what `check` already does, and should be *shared
-code rather than a copy*: the [preflight](distribution.md) that verifies a matching driver, forcing
+Everything else about launching the compilation is what `check` already does, and it is *shared code
+rather than a copy*: the [preflight](distribution.md) that verifies a matching driver, forcing
 `RUSTUP_TOOLCHAIN` to the pinned nightly, `CARGO_CGP_SYSROOT`, the dynamic-library path, and the
-isolated `target/cgp` directory. The natural shape is to lift that setup out of
-[`check/command.rs`](../../crates/cargo-cgp/src/check/command.rs) into a module both subcommands call,
-leaving each command to choose the cargo subcommand and the arguments.
+isolated `target/cgp` directory all live in
+[`launch/`](../../crates/cargo-cgp/src/launch), lifted out of what used to be the `check/` directory,
+and each command only chooses the cargo subcommand and the arguments. `check.rs` is now just the run
+itself.
 
 **Target selection is cargo's problem, not ours.** `cargo rustc` requires exactly one target and
 errors when the choice is ambiguous, so the front-end forwards `--lib`, `--bin`, `-p`, `--features`,
@@ -131,20 +134,25 @@ and the rest verbatim and lets cargo's own error tell the user to disambiguate. 
 re-declares every one of those flags with `clap` and additionally consults the manifest's
 `default-run`; the front-end has no tool-specific arguments today and this keeps it that way.
 
-**The driver writes the finished text to a file and the front-end prints it.** The output path is a
-temp file under the isolated target directory, passed in the marker flag; when the compilation is
-done the front-end reads it and writes it to stdout. Routing the content through a file rather than
-the driver's stdout keeps it from interleaving with cargo's progress output, which is why
+**The driver writes the finished text to a file and the front-end prints it.** The path is a temp
+file named after the front-end's process id, so two concurrent runs never read each other's output
+([`expand/output.rs`](../../crates/cargo-cgp/src/expand/output.rs)); the front-end clears it before
+launching cargo, reads it afterwards, and writes it to stdout. Routing the content through a file
+rather than the driver's stdout keeps it from interleaving with cargo's progress output, which is why
 `cargo-expand` passes `-o` too, and it leaves the front-end's role unchanged from `check`: it never
 parses or reshapes what the driver produced, it only relays it.
 
+The expansion also builds under `--profile check`, since it needs no codegen — added unless the
+caller chose a profile of their own, which `forwards_profile` decides the way the target-directory
+injection decides its own default.
+
 Judging success needs care, because the compilation deliberately does not finish. The unit produces
-no metadata, so cargo may report a failure for a run that did exactly what was asked. The front-end
-therefore treats the presence of non-empty output as success — `cargo-expand` makes the same call,
-checking `outfile_path.exists()` and reporting `ERROR: rustc produced no expanded output`
-otherwise — and propagates cargo's exit code only when there is no output to show. The exact cargo
-behaviour here is the one part of this design that must be confirmed empirically rather than from the
-source, and it is listed under [Open decisions](#open-decisions-to-confirm-during-implementation).
+no metadata, so cargo could report a failure for a run that did exactly what was asked. The
+front-end therefore treats non-empty output as success and falls back to cargo's exit code only when
+there is nothing to show — the same call `cargo-expand` makes, checking `outfile_path.exists()`. In
+practice cargo exits 0 and simply re-runs that unit on the next invocation, since its fingerprint is
+never satisfied; a following `cargo cgp check` in the same target directory re-checks the crate
+normally.
 
 ## The driver: expand mode
 
@@ -205,7 +213,8 @@ printer interleave the original comments.
 The driver then hands that text to the [rustc-free resugaring crate](#the-rustc-free-resugaring),
 writes the result to the requested path, and returns `Compilation::Stop`. Stopping is both sufficient
 and deliberate: nothing downstream is wanted, and running analysis on a crate we are only reading
-would cost a full type-check for no output.
+would cost a full type-check for no output. A write that fails is reported as a compiler warning
+rather than swallowed, so a bad path does not look like a crate that would not expand.
 
 Two smaller decisions round out expand mode. **The injected diagnostic flags are skipped**, because
 `-Znext-solver=globally` and `--verbose` exist to shape diagnostics produced during analysis, which
@@ -233,29 +242,53 @@ degrades to plain `cargo-expand` output rather than failing. `cargo-expand` has 
 an extra `rustfmt` rung this crate does not need.
 
 **What each construct folds back to is not this document's subject — [Resugaring](resugaring.md) is.**
-That document specifies every construct (`Symbol!`, `Path!`, the `Product!`/`Sum!` spines and their
-`Struct!`/`Enum!` forms), the exact-match rule each obeys, and the fixed pass order they must run in.
-This pass is the third of the three implementations it describes, and the two facts that make it a
-separate implementation rather than a reuse of the existing ones are worth stating here, since both
-were measured on a prototype.
+That document specifies every construct, the exact-match rule each obeys, and the fixed pass order.
+This pass is the third of the three implementations it describes; what belongs here is the handful of
+facts particular to resugaring *source* rather than a diagnostic, each of which the implementation
+either confirmed or forced.
 
 **It matches on `syn::Type`, not on rendered text, because the text matchers are formatting-sensitive.**
 The diagnostic post-processors are `&str -> Option<String>` functions written against rustc's
 *diagnostic* rendering; `prettyplease` breaks a long generic list across lines and ends it with a
-trailing comma before the closing `>`, which the `Symbol!` matcher's final `>` check rejects. In the
-prototype that left `Symbol!("width")` resugared and `height` a raw spine, purely because the longer
-name was the one that got wrapped. Matching a parsed type is immune to formatting, and it lets the
-printer format the resugared macro call — which is why the output above is one tidy line.
+trailing comma before the closing `>`, which the `Symbol!` matcher's final `>` check rejects. On this
+document's own rectangle example that left `Symbol!("width")` resugared and `height` a raw spine,
+purely because the longer name was the one that got wrapped. Matching a parsed type is immune to
+formatting.
 
-**Its passes must stay separate whole-tree visits, because a visitor recurses innermost-first.** This is
-the sharpest form of the `Nil` overlap hazard [Resugaring](resugaring.md#the-rules-every-resugaring-follows)
-describes: one combined visitor rewrites a `Symbol`'s terminating `Nil` to `Product![]` before it
-examines the enclosing `Symbol`, and every field name silently stays raw. The prototype hit it twice,
-once on `Symbol` and once on an `open` statement's `PathCons<AreaCalculatorComponent, Nil>`.
+**Its passes are separate whole-tree visits, and each spine is folded outermost-first.** The
+separation is the `Nil` overlap hazard [Resugaring](resugaring.md#the-rules-every-resugaring-follows)
+describes, at its sharpest here because a visitor recurses innermost-first: one combined visitor
+rewrites a `Symbol`'s terminating `Nil` to `Product![]` before examining the enclosing `Symbol`, and
+every field name silently stays raw. The direction is a second, subtler form of the same problem — a
+spine's *tail is itself a spine*, so folding the innermost cell first leaves a two-element list as
+`Cons<A, Product![B]>`. Each pass therefore folds a spine before recursing, and recurses into the
+elements it collected.
+
+**Only real syntax is emitted, so two diagnostic-only forms are deliberately not produced.** A
+diagnostic folds an all-field list on to `Struct! { width: f64, … }` and renders an open-ended path
+with a trailing `.*`; neither is a real CGP macro, and this pass writes source, where every construct
+shown should be something the programmer could have written. So a field list stays
+`Product![Field<Symbol!("width"), f64>, …]` and an open-ended path stays its raw chain. This is the
+one place the three implementations deliberately differ, and the reason is recorded in both documents.
+
+**The printer's spacing has to be corrected after the fact.** A resugared construct is a macro call
+whose body holds ordinary types, and the printer lays a macro body out token by token — it cannot know
+the body is a type list, so it prints `Product![Multiply < Symbol!("foo") >]`. Its rules cannot be
+coaxed into the conventional form, because the space *before* a token is the printer's decision and an
+identifier cannot ask for it to be dropped. So the crate ends with one narrow text pass that removes
+spaces inside the bodies of the four macros it emits, never inside a literal, and never anywhere else
+in the program.
 
 Sugar the *user* wrote needs no attention at all — a hand-written
 `PipeHandlers<Product![StepOne, StepTwo]>` comes out as written, because the CGP macro that copied it
 never expanded it.
+
+One implementation hazard is worth recording, because it fails loudly rather than subtly. Stripping
+the `cgp::macro_prelude::` qualifier changes a path's segment count, and a **qualified** path —
+`<__Provider__ as DelegateComponent<C>>::Delegate`, which generated CGP code is full of — carries an
+index saying where its qualifier ends. Dropping segments without moving that index leaves the two
+inconsistent, and the printer asserts on exactly that, panicking the driver mid-compilation. The strip
+corrects the index for both node kinds that carry one, and two unit tests pin it.
 
 The one option the first slice needs is how much path noise to remove. CGP macros emit fully-qualified
 `::cgp::macro_prelude::Symbol<…>`, which is pure noise to a reader and which the resugaring must see
@@ -264,35 +297,30 @@ past anyway, so **the `cgp::macro_prelude::` qualifier is stripped by default** 
 `strip_cgp_prefixes` does it for errors). General module qualifiers are **kept**, unlike in a
 diagnostic, because in source they carry information a reader may want.
 
-A `--verbatim` flag turning the stripping off, so the output stays compilable, is the natural escape
-hatch — and it would be the front-end's *first* tool-specific argument, so it has to be recognized and
-removed before the rest are forwarded to cargo. That is the one place where `expand` cannot stay the
-pure pass-through `check` is, and it is why the flag is worth deferring until someone wants it.
+The switch that turns the stripping off — [`ExpandOptions`](../../crates/cargo-cgp-expand/src/options.rs)
+carries it, so the output can be kept compilable — has no command-line flag yet. A `--verbatim` flag
+would be the front-end's *first* tool-specific argument, so it has to be recognized and removed before
+the rest are forwarded to cargo; that is the one place where `expand` cannot stay the pure
+pass-through `check` is, and it is why the flag waits until someone wants it.
 
-## Open decisions to confirm during implementation
+## What the implementation settled
 
-Four questions are settled enough to build on but should be verified or revisited rather than
-inherited as fact. The first two are empirical, the last two are judgement calls a first user will
-sharpen.
+Three of the four questions this design was uncertain about are now answered by running it, and the
+answers are recorded here rather than left as open items.
 
-- **How cargo reports a unit that produced no artifact.** The design treats non-empty output as
-  success and falls back to cargo's exit code otherwise, following `cargo-expand`; confirm the actual
-  exit code and whether cargo re-runs the unit on the next invocation because its fingerprint is
-  unsatisfied.
-- **Whether any spurious rustc warning survives.** Not setting an output file should avoid
-  `IgnoringOutDir` entirely; if some other warning appears in expand mode, suppress it in the
-  driver's emitter rather than filtering cargo's stderr in the front-end, since the front-end does not
-  process output. (`cargo-expand` filters a handful of such lines by text in `ignore_cargo_err`, an
-  approach this tool should not need.)
-- **Whether module qualifiers should be stripped.** Kept by default above; if real output proves
-  unreadable, the diagnostic chain's `strip_module_paths` is the ready-made pass to reuse.
-- **What the second slice adds first**: syntax highlighting and paging (`cargo-expand` uses `bat`), an
-  `--item` filter (it uses `syn-select`), or the selectivity below. All three are out of the first
-  slice.
+- **Cargo tolerates the unit that produces no artifact.** It exits 0, and simply re-runs that unit on
+  the next invocation, since the fingerprint is never satisfied. A `cargo cgp check` afterwards in the
+  same target directory re-checks the crate normally, so the two commands share the directory without
+  confusing each other.
+- **No spurious compiler warning appears.** Not setting an output file avoids `IgnoringOutDir`
+  entirely, and nothing else surfaced, so the front-end needs none of the stderr filtering
+  `cargo-expand` does in `ignore_cargo_err`.
+- **Module qualifiers stay.** Real output reads well with them, and in source they carry information a
+  diagnostic's reader does not need.
 
-Implementing the command also carries two synchronization obligations beyond this document:
-[`reference/usage.md`](../reference/usage.md) gains an `expand` section, and the front-end help text
-gains its line.
+One question remains a judgement call for a first user to sharpen: **what the second slice adds
+first** — syntax highlighting and paging (`cargo-expand` uses `bat`), an `--item` filter (it uses
+`syn-select`), the `--verbatim` flag above, or the selectivity below.
 
 ## Selective expansion: the deferred phase
 
@@ -396,41 +424,54 @@ worth reading before changing the launching or printing halves.
 
 ## Tests
 
-Nothing is guarded yet, since nothing is implemented; this section records the coverage the
-implementation owes, and should be rewritten as each test lands.
+The resugaring is pure text-to-text, so it is pinned by unit tests with no compiler; the launching and
+printing halves need a real compilation, so they are exercised by running the command.
 
-- **Unit tests in `cargo-cgp-expand`** over hand-written expanded-source inputs, running with no
-  compiler: one per spine (`Symbol!`, `Path!`, `Product!`/`Sum!` and their `Struct!`/`Enum!` forms), the
-  pass-ordering hazard (a `Symbol` whose terminating `Nil` a combined visitor would turn into
-  `Product![]`), a structurally-wrong `Symbol` left untouched, and a `syn`-unparsable input returned
-  verbatim.
-- **`insta` inline snapshots** of whole-file resugaring, so the printed shape is pinned the way
-  [`tests/graph.rs`](../../crates/cargo-cgp-error-processing/tests/graph.rs) pins the dependency graph.
-- **An expand fixture harness** mirroring the [UI suite](testing.md): a `<name>.rs` fixture and a
-  committed `<name>.expand.rs` snapshot, blessed the same way. It is a separate harness from the UI one
-  because the artifact compared is stdout rather than stderr, and because a fixture must compile far
-  enough to expand rather than fail to compile.
-- **Front-end argument tests** for the new dispatch arm, alongside the existing
-  [`tests/args.rs`](../../crates/cargo-cgp/tests/args.rs) cases.
+- [`crates/cargo-cgp-expand/tests/resugar.rs`](../../crates/cargo-cgp-expand/tests/resugar.rs) — the
+  resugaring end to end over hand-written expanded source: each construct and its decline cases, the
+  two overlap hazards (a `Symbol`'s and a path's terminating `Nil`, either of which a combined pass
+  would turn into `Product![]`), the outermost-first fold (a two-element field list), the tightened
+  spacing of a generic element, the diagnostic-only forms deliberately *not* emitted (a field list kept
+  as a `Product!`, an open-ended path left raw), the prelude strip including both qualified-path
+  shapes, an ordinary module qualifier kept, and unparsable input returned verbatim.
+- [`crates/cargo-cgp-driver/tests/expand.rs`](../../crates/cargo-cgp-driver/tests/expand.rs) — the
+  marker flag: the request and its path recovered, the flag stripped from the vector the compiler
+  sees, an ordinary compilation carrying no request, and an empty path declining.
+- [`crates/cargo-cgp/tests/expand.rs`](../../crates/cargo-cgp/tests/expand.rs) — the front-end's pure
+  helpers: the profile detection in both forms (and a `--bin release` value that must not count as
+  one), and the per-process output path.
+
+What is **not** guarded is the command end to end. There is no expand fixture harness yet: it would
+mirror the [UI suite](testing.md) with a `<name>.rs` fixture and a committed `<name>.expand.rs`
+snapshot, but as a separate harness, because the artifact compared is stdout rather than stderr and
+because a fixture must compile far enough to expand rather than fail to compile. Until it exists, the
+printing path — the `after_expansion` hook, the `pprust` call, the file handoff — is only verified by
+running the command by hand.
 
 ## Source
 
-None of these exist yet; the list is the intended shape of the change, so a reader can map this
-document onto the tree as it lands.
-
-- `crates/cargo-cgp/src/expand/` — the front-end subcommand: building and running the wrapped
-  `cargo rustc`, passing the marker flag, and printing what the driver wrote.
-- `crates/cargo-cgp/src/check/command.rs` → a shared launch module — the preflight, toolchain forcing,
-  sysroot, dylib path, and target-directory injection both subcommands need.
+- [`crates/cargo-cgp/src/expand/`](../../crates/cargo-cgp/src/expand) — the front-end subcommand:
+  `command.rs` runs the wrapped `cargo rustc` with the marker flag and prints what the driver wrote,
+  `output.rs` holds the per-process output path and reads it back, and `profile.rs` decides whether
+  `--profile check` is added.
+- [`crates/cargo-cgp/src/launch/`](../../crates/cargo-cgp/src/launch) — the setup both subcommands
+  share, lifted out of the old `check/` directory: `command.rs` builds the wrapped cargo command (the
+  preflight, the forced toolchain, the sysroot and dylib path), with `driver_path.rs`, `dylib.rs`,
+  `preflight.rs`, `sysroot.rs`, and `target_dir.rs` beside it. [`check.rs`](../../crates/cargo-cgp/src/check.rs)
+  is now just the `cargo check` run.
 - [`crates/cargo-cgp/src/run.rs`](../../crates/cargo-cgp/src/run.rs),
   [`help.rs`](../../crates/cargo-cgp/src/help.rs),
-  [`config.rs`](../../crates/cargo-cgp/src/config.rs) — the new dispatch arm, its help line, and the
-  marker-flag constant.
-- `crates/cargo-cgp-driver/src/expand/` — expand mode: the request parsed off the marker flag, the
-  `pprust::print_crate` call, and writing the resugared text.
-- [`crates/cargo-cgp-driver/src/args.rs`](../../crates/cargo-cgp-driver/src/args.rs),
-  [`callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs),
-  [`config.rs`](../../crates/cargo-cgp-driver/src/config.rs) — stripping the marker flag, the
-  `after_expansion` hook, and the driver's half of the flag contract.
-- `crates/cargo-cgp-expand/` — the rustc-free resugaring crate: the entry point, one module per pass,
-  and the options.
+  [`config.rs`](../../crates/cargo-cgp/src/config.rs) — the dispatch arm, the help line, and the
+  front-end's half of the marker-flag contract (`EXPAND_FLAG`).
+- [`crates/cargo-cgp-driver/src/expand/`](../../crates/cargo-cgp-driver/src/expand) — expand mode:
+  `request.rs` takes the marker flag out of the argument vector, and `print.rs` prints the expanded
+  crate through `pprust::print_crate`, resugars it, and writes it out.
+- [`crates/cargo-cgp-driver/src/callbacks.rs`](../../crates/cargo-cgp-driver/src/callbacks.rs),
+  [`run.rs`](../../crates/cargo-cgp-driver/src/run.rs),
+  [`config.rs`](../../crates/cargo-cgp-driver/src/config.rs) — the `after_expansion` hook, the request
+  threaded into the callbacks (which also drops the diagnostic flag injections in expand mode), and the
+  driver's half of the flag contract.
+- [`crates/cargo-cgp-expand/`](../../crates/cargo-cgp-expand) — the rustc-free resugaring crate:
+  `source.rs` is the entry point, `resugar/` holds one module per pass (`symbol`, `path`, `list`,
+  `strip`, `spacing`) over the shared `parts.rs`, and `options.rs` carries the strip switch. See
+  [Resugaring](resugaring.md).

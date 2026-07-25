@@ -11,7 +11,7 @@ pub fn is_help_flag(arg: &str) -> bool {
     arg == "--help" || arg == "-h"
 }
 
-/// The front-end help text: the tagline, the two invocation forms, the three subcommands,
+/// The front-end help text: the tagline, the two invocation forms, the four subcommands,
 /// and the top-level options.
 pub fn help_text() -> String {
     format!(
@@ -25,6 +25,9 @@ Usage:
 Commands:
     check     Check the current package like `cargo check`, presenting CGP errors
               root-cause first. Arguments after `check` are forwarded to `cargo check`.
+    expand    Show the Rust one target's CGP macros generate, with CGP's type-level
+              constructs resugared. Arguments after `expand` are forwarded to
+              `cargo rustc`, so target selection (--lib, --bin, -p) is cargo's own.
     setup     Install the pinned nightly toolchain and build the matching driver.
     update    Upgrade cargo-cgp to the latest published version.
 

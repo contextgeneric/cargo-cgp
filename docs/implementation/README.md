@@ -92,15 +92,15 @@ same change.
   first. One section per construct with its expansion and its decline cases, the exact-match rule that
   keeps a resugaring from claiming syntax nobody wrote, and one sub-section per implementation — typed
   over `Ty<'tcx>`, text over `&str`, syntax tree over `syn::Type` — explaining why three inputs force
-  three separate matchers that must nonetheless agree.
-- [The expand command](expand-command.md) — the blueprint (ahead of implementation) for
-  `cargo cgp expand`, which shows the ordinary Rust a project's CGP macros generate: a full
-  `cargo-expand`-style expansion whose CGP type-level sugar the driver resugars before returning it.
-  Covers why the compiler offers no way to expand only some macros, the `cargo rustc` launch and the
-  marker flag that scopes expand mode to one crate, why the driver prints the expanded AST from
-  `after_expansion` instead of setting `-Zunpretty=expanded` (which bypasses every callback), the
-  rustc-free syntax-tree resugaring and its load-bearing pass order, and the selective un-expansion
-  deferred to a second phase.
+  three separate matchers that must nonetheless agree, and the one divergence that is sanctioned: only
+  a diagnostic may show a form that reads better than it parses.
+- [The expand command](expand-command.md) — `cargo cgp expand`, which shows the ordinary Rust a
+  project's CGP macros generate: a full `cargo-expand`-style expansion whose CGP type-level sugar the
+  driver resugars before returning it. Covers why the compiler offers no way to expand only some macros,
+  the `cargo rustc` launch and the marker flag that scopes expand mode to one crate, why the driver
+  prints the expanded AST from `after_expansion` instead of setting `-Zunpretty=expanded` (which
+  bypasses every callback), what running it settled about cargo's handling of a unit that yields no
+  artifact, and the selective un-expansion still deferred to a second phase.
 - [rustc diagnostic internals](rustc-diagnostic-internals.md) — a map of the compiler code that
   builds CGP diagnostics and where it *suppresses* information: the type/const printer, the
   trait-error reporters, the two verbosity switches (`--verbose` versus `-Zverbose-internals`), and the

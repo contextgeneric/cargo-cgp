@@ -4,6 +4,7 @@ members  = [
     "crates/cargo-cgp",
     "crates/cargo-cgp-driver",
     "crates/cargo-cgp-error-processing",
+    "crates/cargo-cgp-expand",
     "crates/cargo-cgp-ui-tests",
 ]
 # The UI snapshot harness lives in its own crate (`cargo-cgp-ui-tests`), a full workspace
@@ -40,6 +41,18 @@ serde_json = { version = "1" }
 # The rustc-free error-processing library the driver drives. An ordinary crate that does
 # not touch `rustc_private`, so it builds and its tests run on any toolchain.
 cargo-cgp-error-processing = { version = "0.1.0-alpha", path = "crates/cargo-cgp-error-processing" }
+# The rustc-free resugaring library `cargo cgp expand` drives: it turns the source the compiler
+# printed for an expanded crate back into the CGP syntax the programmer wrote. Like the
+# error-processing crate it links no compiler internals, so it builds and its tests run on any
+# toolchain.
+cargo-cgp-expand = { version = "0.1.0-alpha", path = "crates/cargo-cgp-expand" }
+# The parser, printer, and token plumbing the resugaring works over. `syn` gives it a parsed
+# syntax tree to match on, which is what keeps the passes immune to how the compiler's printer
+# broke a long type across lines; `prettyplease` prints the result, as `cargo-expand` does.
+syn = { version = "2", features = ["full", "visit-mut", "parsing", "printing", "clone-impls"] }
+quote = { version = "1" }
+proc-macro2 = { version = "1" }
+prettyplease = { version = "0.2" }
 # Renders the transitive dependency chain of a resolved check failure as a `cargo tree`-style
 # tree in the replacement diagnostic. Tiny and dependency-free, so it does not weigh down the
 # rustc-free error-processing crate that hosts the pure renderer.

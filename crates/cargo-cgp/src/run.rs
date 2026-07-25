@@ -7,13 +7,15 @@ use anyhow::bail;
 use crate::args::strip_subcommand;
 use crate::check::run_check;
 use crate::config::CARGO_SUBCOMMAND;
+use crate::expand::run_expand;
 use crate::help::{help_text, is_help_flag};
 use crate::setup::run_setup;
 use crate::update::run_update;
 
 /// Parse the process arguments and dispatch to the matching subcommand, returning the
 /// exit code to propagate. `check` forwards to `cargo check` through the cargo-cgp driver;
-/// `setup` provisions the toolchain and driver; `update` upgrades the tool.
+/// `expand` shows the Rust a target's CGP macros generate; `setup` provisions the toolchain
+/// and driver; `update` upgrades the tool.
 pub fn run() -> anyhow::Result<i32> {
     let args = strip_subcommand(env::args(), CARGO_SUBCOMMAND);
     dispatch(&args)
@@ -35,11 +37,12 @@ pub fn dispatch(args: &[String]) -> anyhow::Result<i32> {
             Ok(0)
         }
         Some((subcommand, rest)) if subcommand == "check" => run_check(rest),
+        Some((subcommand, rest)) if subcommand == "expand" => run_expand(rest),
         Some((subcommand, rest)) if subcommand == "setup" => run_setup(rest),
         Some((subcommand, rest)) if subcommand == "update" => run_update(rest),
         Some((subcommand, _)) => {
             bail!(
-                "unknown cargo-cgp subcommand `{subcommand}` (expected `check`, `setup`, or `update`)"
+                "unknown cargo-cgp subcommand `{subcommand}` (expected `check`, `expand`, `setup`, or `update`)"
             )
         }
     }

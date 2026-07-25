@@ -1,0 +1,27 @@
+[package]
+name         = "cargo-cgp-expand"
+description  = "Resugars CGP's type-level constructs in expanded Rust source, for the cargo-cgp expand command."
+version      = { workspace = true }
+edition      = { workspace = true }
+rust-version = { workspace = true }
+license      = { workspace = true }
+repository   = { workspace = true }
+authors      = { workspace = true }
+keywords     = { workspace = true }
+
+# The syntax-tree half of the `cargo cgp expand` command: it takes the source the compiler's
+# pretty-printer produced for an expanded crate and rewrites CGP's type-level spines back to
+# the surface macros the programmer wrote. Like `cargo-cgp-error-processing` it links no
+# compiler internals — it works on text and a `syn` tree — so it builds and its tests run on
+# any toolchain. See `docs/implementation/resugaring.md`.
+
+[dependencies]
+# The parser and syntax tree the resugaring matches on. Matching a parsed `syn::Type` rather
+# than rendered text is what makes the passes immune to the printer's line breaking; see
+# `docs/implementation/resugaring.md`.
+syn = { workspace = true }
+quote = { workspace = true }
+proc-macro2 = { workspace = true }
+# Prints the resugared tree back to source. The same printer `cargo-expand` uses, so the
+# formatting a user sees matches what they are used to from that tool.
+prettyplease = { workspace = true }
