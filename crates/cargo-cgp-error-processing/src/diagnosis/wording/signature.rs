@@ -11,33 +11,26 @@ use crate::diagnosis::wording::lead::root_cause_lead;
 /// root-cause lead of each leaf — everything that identifies the failure and nothing tied to where
 /// it surfaced — so two distinct broken endpoints (different consumers) or two different causes
 /// keep distinct signatures and are each still reported.
+///
+/// This one is deliberately *textual*, unlike the structural key the emitter's coalescing groups on
+/// ([`group_by_shared_cause`](crate::group_by_shared_cause)): the de-duplication ledger compares it
+/// against the rendered-message keys it falls back to for a diagnostic the resolver declined, so
+/// every key it holds has to be a string.
 pub fn cause_signature(resolved: &Resolved) -> String {
     let mut consumers = resolved.consumers.clone();
     consumers.sort();
-    let mut keys = cause_keys(resolved);
-    keys.sort();
-    // `\u{1f}` (unit separator) cannot occur in a type or trait name, so joining on it makes the
-    // signature unambiguous without escaping.
-    format!("{}\u{1f}{}", consumers.join("\u{1e}"), keys.join("\u{1e}"))
-}
-
-/// One span- *and* consumer-independent key per root cause of a failure, each scoped to the context
-/// so two contexts never share one. A key identifies *one mistake* across every consumer it breaks:
-/// two different consumers bottoming out on the same missing field, or on one dependency many
-/// providers share, produce an equal key for it.
-///
-/// The emitter groups buffered failures on these keys ([`group_by_shared_cause`]) and coalesces each
-/// group into one headline listing every affected consumer. Keys are returned per cause rather than
-/// folded into one whole-failure signature deliberately: a failure reached at different depths sees
-/// different *subsets* of one mistake's causes — a `check_components!` entry stops at the first unmet
-/// leaf on its branch while a use-site call walks every wired component and reaches them all — so
-/// grouping has to compare the causes one by one rather than demand two identical sets.
-///
-/// [`group_by_shared_cause`]: crate::group_by_shared_cause
-pub fn cause_keys(resolved: &Resolved) -> Vec<String> {
-    resolved
+    let mut leads: Vec<String> = resolved
         .causes
         .iter()
-        .map(|cause| format!("{}\u{1f}{}", resolved.context, root_cause_lead(&cause.leaf)))
-        .collect()
+        .map(|cause| root_cause_lead(&cause.leaf))
+        .collect();
+    leads.sort();
+    // `\u{1f}` (unit separator) and `\u{1e}` (record separator) cannot occur in a type or trait
+    // name, so joining on them makes the signature unambiguous without escaping.
+    format!(
+        "{}\u{1f}{}\u{1f}{}",
+        consumers.join("\u{1e}"),
+        resolved.context,
+        leads.join("\u{1e}")
+    )
 }

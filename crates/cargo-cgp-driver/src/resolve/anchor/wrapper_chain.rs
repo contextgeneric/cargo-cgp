@@ -1,6 +1,6 @@
 //! The foreign-wrapper anchor: descending a `where`-clause chain to a CGP consumer.
 
-use cargo_cgp_error_processing::{Cause, ChainNode, DepNode, Resolved, merge_causes_by_leaf};
+use cargo_cgp_error_processing::{Cause, ChainNode, DepNode, Resolved, prepend_hop};
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{
@@ -76,14 +76,10 @@ pub fn resolve_wrapper_chain(
         }
 
         if !causes.is_empty() {
-            // One cause per distinct leaf, since separate supertraits can descend to the same one.
-            let mut causes = merge_causes_by_leaf(&causes);
-            // Head every cause's paths with the impl's own trait — the code the programmer wrote.
-            for cause in &mut causes {
-                for path in &mut cause.paths {
-                    path.insert(0, ChainNode::Hop(top_node.clone()));
-                }
-            }
+            // Head every cause's paths with the impl's own trait — the code the programmer wrote —
+            // and keep one cause per distinct leaf, since separate supertraits can descend to the
+            // same one.
+            let causes = prepend_hop(&causes, &top_node);
             return Some(Resolved {
                 context: self_ty.to_string(),
                 consumers: vec![wrapper],

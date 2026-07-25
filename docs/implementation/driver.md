@@ -406,7 +406,9 @@ afterward — is still alive to render; the diagnostics were counted by the `Dia
 so deferring their *rendering* to `Drop` leaves the error count untouched. At flush, each buffered
 consumer-trait failure (`is_consumer_shaped` — a CGP consumer on the checked context, not a field
 mismatch, provider check, or foreign wrapper) is grouped with every failure it **shares a root cause**
-with, by the rustc-free `group_by_shared_cause` over the consumer-independent per-cause `cause_keys`.
+with, by the rustc-free `group_by_shared_cause`, which keys each cause on its context and its `Leaf`
+structurally rather than on the `root cause:` lead that leaf words — grouping should not shift when a
+lead is reworded.
 Grouping on a shared cause rather than on one whole-failure key is what keeps a single mistake in a
 single block, because the depths one mistake surfaces at each see a different *subset* of its causes: a
 `check_components!` entry stops at the first unmet leaf on its own branch, while a use-site call walks

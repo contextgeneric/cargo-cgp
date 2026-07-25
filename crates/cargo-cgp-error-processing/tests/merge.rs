@@ -2,7 +2,7 @@
 
 use cargo_cgp_error_processing::{
     Cause, ChainNode, DepNode, FieldIssue, Leaf, coalesce_underived_fields, merge_causes_by_leaf,
-    root_cause_lead,
+    prepend_hop, root_cause_lead,
 };
 
 /// A cause reaching `owner`'s `name` field through the named consumer — the shape one member of a
@@ -121,4 +121,59 @@ fn merging_leaves_a_well_formed_cause_list_untouched() {
     ];
 
     assert_eq!(merge_causes_by_leaf(&causes), causes);
+}
+
+/// The hop an anchor heads a recovered chain with — the wrapper trait the programmer wrote.
+fn wrapper_hop() -> DepNode {
+    DepNode::Trait {
+        trait_ref: "CanGreetChecked".to_owned(),
+        self_ty: "App".to_owned(),
+    }
+}
+
+#[test]
+fn prepending_a_hop_heads_every_path_and_merges_by_leaf() {
+    // Two causes naming one leaf, as two supertraits descending to the same cause produce.
+    let causes = vec![
+        field_cause_via("CanFoo", "name", "App", FieldIssue::Missing),
+        field_cause_via("CanBar", "name", "App", FieldIssue::Missing),
+    ];
+
+    let headed = prepend_hop(&causes, &wrapper_hop());
+
+    // Merged to one cause holding both routes, each now headed by the wrapper.
+    assert_eq!(headed.len(), 1);
+    assert_eq!(headed[0].paths.len(), 2);
+    for path in &headed[0].paths {
+        assert_eq!(path.first(), Some(&ChainNode::Hop(wrapper_hop())));
+    }
+}
+
+#[test]
+fn prepending_a_hop_leaves_distinct_leaves_apart() {
+    let causes = vec![
+        field_cause_via("CanFoo", "name", "App", FieldIssue::Missing),
+        field_cause_via("CanFoo", "age", "App", FieldIssue::Missing),
+    ];
+
+    let headed = prepend_hop(&causes, &wrapper_hop());
+
+    assert_eq!(headed.len(), 2);
+    assert_eq!(headed[0].leaf, causes[0].leaf);
+    assert_eq!(headed[1].leaf, causes[1].leaf);
+}
+
+/// Prepending is order-independent with respect to the merge, which is why the two can be one
+/// operation: a single constant hop cannot change any leaf's identity, so heading first and merging
+/// first agree. The two anchors used to rely on that without stating it.
+#[test]
+fn prepending_and_merging_commute() {
+    let causes = vec![
+        field_cause_via("CanFoo", "name", "App", FieldIssue::Missing),
+        field_cause_via("CanBar", "name", "App", FieldIssue::Missing),
+    ];
+
+    let merged_first = prepend_hop(&merge_causes_by_leaf(&causes), &wrapper_hop());
+
+    assert_eq!(prepend_hop(&causes, &wrapper_hop()), merged_first);
 }

@@ -68,14 +68,15 @@ driver, is what keeps them unit-testable.
 - **The signature keys** ([`signature`](../../crates/cargo-cgp-error-processing/src/diagnosis/wording/signature.rs))
   are the two span-independent keys the emitter groups failures on: `cause_signature` (context,
   failing consumer trait(s), and each root-cause leaf) identifies *the same* failure across its
-  re-reports for de-duplication, and `cause_keys` (the same with the consumer dropped, one key per
-  cause rather than one per failure) identifies each root cause across the consumers it breaks. The
-  emitter groups on those keys through `group_by_shared_cause`
+  re-reports for de-duplication. It is deliberately *textual*, because the ledger compares it against
+  the rendered-message keys it falls back to for a declined diagnostic. The emitter's coalescing groups
+  on a *structural* key instead, through `group_by_shared_cause`
   ([`group`](../../crates/cargo-cgp-error-processing/src/diagnosis/group.rs)), which partitions the
-  coalescible failures into the connected components of the shares-a-cause relation — per cause rather
-  than per whole failure, because one mistake surfaces at several depths and each depth reaches a
-  different *subset* of its causes, so demanding two identical sets grouped none of them. All are pure
-  functions over the `Resolved` model.
+  coalescible failures into the connected components of the shares-a-cause relation — keyed on each
+  cause's context and `Leaf` rather than on the lead that leaf words, so grouping does not shift when a
+  lead is reworded, and per cause rather than per whole failure, because one mistake surfaces at several
+  depths and each depth reaches a different *subset* of its causes, so demanding two identical sets
+  grouped none of them. Both are pure functions over the `Resolved` model.
 - **The text signals** ([`signals`](../../crates/cargo-cgp-error-processing/src/signals.rs)) are the
   stable rustc phrasings the emitter's candidate checks key on — the wiring-trait mention that makes
   a diagnostic a resolution candidate, the method-bounds `E0599` shape the resolver may safely run
@@ -330,7 +331,9 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
 - [`crates/cargo-cgp-error-processing/tests/merge.rs`](../../crates/cargo-cgp-error-processing/tests/merge.rs) —
   `merge_causes_by_leaf` over hand-built causes: one leaf reached by three consumers folding into one
   cause with all three paths, the repeated-field lead it prevents downstream, distinct leaves left
-  apart, an exact repeat of a path dropped, and a well-formed list returned unchanged.
+  apart, an exact repeat of a path dropped, and a well-formed list returned unchanged. Plus
+  `prepend_hop`: every path headed and merged by leaf, distinct leaves kept apart, and the
+  commutation with the merge that lets the two be one operation.
 - [`crates/cargo-cgp-error-processing/tests/dedup.rs`](../../crates/cargo-cgp-error-processing/tests/dedup.rs) —
   the `DedupLedger` key scheme: a re-reported cause suppressed, distinct causes kept, the text key,
   the coded-header key collapsing a declined fallback, and a kept rustc header never keying.
@@ -369,10 +372,11 @@ Clippy's "just use the compiler's emitter" approach is not open to a tool that r
   `cause_notes_seen`, the same against a `seen` set shared with the compilation's other notes),
   `help.rs` (`fix_help_messages` over `derive_help_messages` and `assoc_mismatch_help_messages` — the
   one entry point both the streaming plan and the emitter's coalesced block build their `help`s
-  through, so a merged block carries the same fixes), and `signature.rs` (`cause_signature` and the
-  per-cause `cause_keys`) — `group.rs` (`group_by_shared_cause`, partitioning the coalescible failures
-  into the connected components of the shares-a-cause relation), `merge.rs` (`merge_causes_by_leaf`,
-  the one-cause-per-distinct-leaf restoration a unioned cause list needs), `coalesce.rs`
+  through, so a merged block carries the same fixes), and `signature.rs` (`cause_signature`) —
+  `group.rs` (`group_by_shared_cause`, partitioning the coalescible failures into the connected
+  components of the shares-a-cause relation, keyed structurally on each context-scoped `Leaf`),
+  `merge.rs` (`merge_causes_by_leaf`, the one-cause-per-distinct-leaf restoration a unioned cause list
+  needs, and `prepend_hop`, the anchors' shared head-then-re-merge step), `coalesce.rs`
   (`coalesce_underived_fields`), `plan.rs` (`DiagKind`,
   `DiagnosisPlan`, the unrendered `PendingNote` and its `render`, and `plan_resolved` with its
   `categorized_header`), and `wiring.rs`

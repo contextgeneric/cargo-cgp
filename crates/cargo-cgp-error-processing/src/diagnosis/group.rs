@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 
+use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
-use crate::diagnosis::wording::cause_keys;
 
 /// Partition failures into groups that **share a root cause**, so the emitter can coalesce each
 /// group into one headline listing every affected consumer. Returns one `Vec` of indices into
@@ -11,8 +11,8 @@ use crate::diagnosis::wording::cause_keys;
 /// first member — so the caller emits each group where its first member arrived and overall ordering
 /// is preserved.
 ///
-/// Two failures group when they share *at least one* [cause key](cause_keys), and grouping is
-/// transitive: the groups are the connected components of the "shares a cause" relation. Demanding
+/// Two failures group when they share *at least one* root cause, and grouping is transitive: the
+/// groups are the connected components of the "shares a cause" relation. Demanding
 /// two *identical* cause sets instead is what left one mistake reported as several blocks. CGP wiring
 /// is lazy, so a single omission surfaces at several depths, and each depth sees a different subset of
 /// its causes: a `check_components!` entry stops at the first unmet leaf on its own branch, while a
@@ -28,15 +28,22 @@ use crate::diagnosis::wording::cause_keys;
 /// have the same top-level roots by way of a shared cause — which is what made the whole-chain elision
 /// degenerate in the first place.
 ///
+/// A cause is identified by its context and its [`Leaf`] **structurally**, not by the rendered
+/// `root cause:` lead the leaf words. Keying on the wording would make a reword of a lead silently
+/// change which diagnostics coalesce; the leaf is the thing two failures either do or do not have in
+/// common. (The de-duplication ledger's [`cause_signature`](crate::cause_signature) stays textual for
+/// its own reason — it shares a key space with rendered-message keys.)
+///
 /// A failure with no causes shares nothing and forms its own group.
 pub fn group_by_shared_cause(resolveds: &[&Resolved]) -> Vec<Vec<usize>> {
     let mut parent: Vec<usize> = (0..resolveds.len()).collect();
 
-    // Union every failure carrying a cause key with the first failure that carried it, so each key
+    // Union every failure carrying a cause with the first failure that carried it, so each cause
     // links its holders into one component.
-    let mut first_holder: HashMap<String, usize> = HashMap::new();
+    let mut first_holder: HashMap<(&str, &Leaf), usize> = HashMap::new();
     for (index, resolved) in resolveds.iter().enumerate() {
-        for key in cause_keys(resolved) {
+        for cause in &resolved.causes {
+            let key = (resolved.context.as_str(), &cause.leaf);
             match first_holder.get(&key) {
                 Some(&holder) => union(&mut parent, index, holder),
                 None => {

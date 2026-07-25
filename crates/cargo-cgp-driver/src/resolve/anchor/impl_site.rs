@@ -1,6 +1,6 @@
 //! The impl-site anchor: a wiring failure surfaced inside a hand-written `impl Trait for Context`.
 
-use cargo_cgp_error_processing::{Cause, ChainNode, DepNode, Resolved, merge_causes_by_leaf};
+use cargo_cgp_error_processing::{Cause, DepNode, Resolved, prepend_hop};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 use rustc_span::Span;
@@ -170,28 +170,16 @@ fn wrapper_consumer_causes<'tcx>(
         let Some(resolved) = resolve_leaves(tcx, cache, sup) else {
             continue;
         };
-        // Prepend the wrapper hop atop each path, so the recovered CGP chain hangs beneath the
-        // trait the programmer wrote. Merged by leaf below, so alternative paths to one cause
-        // survive rather than only the first supertrait's.
-        for cause in resolved.causes {
-            causes.push(Cause {
-                leaf: cause.leaf,
-                paths: cause
-                    .paths
-                    .into_iter()
-                    .map(|mut path| {
-                        path.insert(0, ChainNode::Hop(wrapper_node.clone()));
-                        path
-                    })
-                    .collect(),
-            });
-        }
+        causes.extend(resolved.causes);
     }
 
     if causes.is_empty() {
         return None;
     }
-    let causes = merge_causes_by_leaf(&causes);
+    // Head each recovered path with the wrapper hop, so the CGP chain hangs beneath the trait the
+    // programmer wrote, and keep one cause per distinct leaf — so alternative paths to one cause
+    // survive rather than only the first supertrait's.
+    let causes = prepend_hop(&causes, &wrapper_node);
     // Whether the wrapper trait is a CGP *consumer* trait or a plain wrapper, decided by its
     // fingerprint: a consumer trait carries a blanket impl routing to a provider trait
     // (`consumer_provider_trait`), while a hand-written wrapper like `CanHandleApiSend` has only its

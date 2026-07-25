@@ -302,13 +302,15 @@ lazily-built `ComponentNameMap`), `parse.rs` (the trait-bound parse), and `text.
 splitting utilities). `diagnosis/` is the rustc-free root-cause model and its wording:
 `leaf.rs`/`resolved.rs` (the `Leaf`/`FieldIssue`/`Cause`/`Resolved` types the driver's resolver fills
 in), `wording/` (the pure `Resolved`-to-text builders — headers, root-cause leads and their codes,
-notes, derive helps, the de-duplication `cause_signature`, and the consumer-independent per-cause
-`cause_keys`), `group.rs` (`group_by_shared_cause`, partitioning the coalescible failures into the
-connected components of the shares-a-cause relation, which is what keeps one mistake in one block when
-the depths it surfaces at each reach a different *subset* of its causes), `merge.rs`
-(`merge_causes_by_leaf`, folding duplicate copies of one leaf back into a single cause holding every
-path — what a *unioned* cause list, as the emitter's coalesced block builds, needs to keep one mistake
-from being stated once per member), `coalesce.rs`
+notes, derive helps, and the de-duplication `cause_signature` — textual, since the ledger shares a key
+space with rendered-message keys), `group.rs` (`group_by_shared_cause`, partitioning the coalescible
+failures into the connected components of the shares-a-cause relation — keyed on each context-scoped
+`Leaf` *structurally*, so grouping never rides on how a lead is worded — which is what keeps one
+mistake in one block when the depths it surfaces at each reach a different *subset* of its causes),
+`merge.rs` (`merge_causes_by_leaf`, folding duplicate copies of one leaf back into a single cause
+holding every path — what a *unioned* cause list, as the emitter's coalesced block builds, needs to
+keep one mistake from being stated once per member — and `prepend_hop`, the anchors' shared
+head-with-an-enclosing-hop-then-re-merge step), `coalesce.rs`
 (`coalesce_underived_fields`, merging several underived fields on one struct into one heading cause),
 `node.rs`/`graph.rs` (the structured `DepNode`/`ChainNode` chain nodes and the `DependencyGraph` that
 merges every cause's paths into a DAG — shared nodes fused, a reuse `(*)`-referenced — and renders it,

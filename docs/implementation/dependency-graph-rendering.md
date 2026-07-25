@@ -87,7 +87,7 @@ A leaf reached one way has a single path — the common case; a leaf reached thr
 several providers depend on has several, one per parent. Holding several paths on one cause rather
 than one cause per path is deliberate: it preserves the **one cause per distinct leaf** invariant that
 the rest of the pipeline relies on. The de-duplication ledger's `cause_signature` and
-`cause_keys`, the consumer coalescing, and `derive_help_messages` all read `resolved.causes`
+`cause_signature`, the consumer coalescing, and `derive_help_messages` all read `resolved.causes`
 expecting each leaf once; only the *rendering* consumes the extra paths.
 
 Every place that *builds* a cause list has to establish that invariant, and there are four: the
