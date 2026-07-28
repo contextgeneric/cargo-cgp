@@ -102,12 +102,14 @@ pub fn assoc_mismatch_header(
     trait_name: &str,
     owner: &str,
     expected: &str,
+    expected_normalized: Option<&str>,
     actual: &str,
     component: Option<&str>,
 ) -> String {
     let noun = assoc_type_noun(component);
+    let required = required_type(expected, expected_normalized);
     format!(
-        "[{ABSTRACT_TYPE_MISMATCH}] expected the {noun} `{assoc}` of `{trait_name}` on `{owner}` to be `{expected}`, but found `{actual}`"
+        "[{ABSTRACT_TYPE_MISMATCH}] expected the {noun} `{assoc}` of `{trait_name}` on `{owner}` to be {required}, but found `{actual}`"
     )
 }
 

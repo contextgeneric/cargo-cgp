@@ -62,6 +62,7 @@ pub fn assoc_mismatch_help_messages(causes: &[Cause]) -> Vec<String> {
         let Leaf::AssocTypeMismatch {
             owner,
             expected,
+            expected_normalized,
             actual,
             component: Some(component),
             ..
@@ -69,8 +70,14 @@ pub fn assoc_mismatch_help_messages(causes: &[Cause]) -> Vec<String> {
         else {
             continue;
         };
+        // Unlike the header and the leaf, which *describe* the requirement and so lead with the
+        // projection that names where it comes from, this `help` prescribes an edit the reader is
+        // meant to type — so it takes the reduced form when there is one. `UseType<Tx<Postgres>>`
+        // is a wiring entry; `UseType<Tx<<App as HasDbType>::Db>>` is a restatement of the
+        // requirement that would leave the reader to reduce it themselves.
+        let required = expected_normalized.as_deref().unwrap_or(expected);
         let help = format!(
-            "wire `{component}` to `UseType<{expected}>` in the wiring for `{owner}`, or change the provider to work with `{actual}`"
+            "wire `{component}` to `UseType<{required}>` in the wiring for `{owner}`, or change the provider to work with `{actual}`"
         );
         if !helps.contains(&help) {
             helps.push(help);

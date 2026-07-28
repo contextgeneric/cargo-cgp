@@ -191,6 +191,7 @@ fn categorized_header<'a>(
             trait_name,
             owner,
             expected,
+            expected_normalized,
             actual,
             component,
         }) = assoc_mismatch_leaf(resolved)
@@ -201,6 +202,7 @@ fn categorized_header<'a>(
                     trait_name,
                     owner,
                     expected,
+                    expected_normalized.as_deref(),
                     actual,
                     component.as_deref(),
                 )),

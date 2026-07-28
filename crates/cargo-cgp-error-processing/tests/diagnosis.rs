@@ -376,6 +376,7 @@ fn plans_an_abstract_type_mismatch() {
         trait_name: "HasErrorType".to_owned(),
         owner: "App".to_owned(),
         expected: "AppError".to_owned(),
+        expected_normalized: None,
         actual: "String".to_owned(),
         component: Some("ErrorTypeProviderComponent".to_owned()),
     };
@@ -431,6 +432,7 @@ fn keeps_a_mismatch_lead_under_a_header_that_does_not_state_it() {
             trait_name: "HasErrorType".to_owned(),
             owner: "App".to_owned(),
             expected: "AppError".to_owned(),
+            expected_normalized: None,
             actual: "String".to_owned(),
             component: Some("ErrorTypeProviderComponent".to_owned()),
         },
@@ -454,6 +456,7 @@ fn plans_a_plain_associated_type_mismatch() {
         trait_name: "Iterator".to_owned(),
         owner: "Feed".to_owned(),
         expected: "u8".to_owned(),
+        expected_normalized: None,
         actual: "u16".to_owned(),
         component: None,
     };
@@ -617,6 +620,7 @@ fn dependency_tree_leaf_codes_rewritten_leaves_and_passes_bounds_through() {
             trait_name: "HasErrorType".to_owned(),
             owner: "App".to_owned(),
             expected: "AppError".to_owned(),
+            expected_normalized: None,
             actual: "String".to_owned(),
             component: Some("ErrorTypeProviderComponent".to_owned()),
         }),

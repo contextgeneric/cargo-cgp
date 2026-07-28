@@ -160,6 +160,14 @@ pub enum Leaf {
         /// The type the wiring requires, taken from the failing projection's right-hand side, e.g.
         /// `AppError`.
         expected: String,
+        /// What `expected` normalizes to, when normalizing changes it and reduces to a concrete
+        /// type — `Some("Tx<Postgres>")` for `Tx<<App as HasDbType>::Db>`, and `None` for an
+        /// `expected` that is already concrete or does not reduce. A pin whose right-hand side
+        /// projects through another abstract type (the `{HashedPassword = Password}` unification
+        /// form, or `{Transaction = Tx<Db>}`) produces exactly such a requirement, and naming only
+        /// the projection would say where it comes from without saying what it resolves to. Mirrors
+        /// [`Leaf::FieldTypeMismatch::expected_normalized`].
+        expected_normalized: Option<String>,
         /// The type the owner actually supplies, read by normalizing the projection, e.g. `String`.
         actual: String,
         /// The component marker a context wires to choose this type (`ErrorTypeProviderComponent`),

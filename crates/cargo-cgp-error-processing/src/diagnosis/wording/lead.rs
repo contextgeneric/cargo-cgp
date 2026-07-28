@@ -77,12 +77,14 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
             trait_name,
             owner,
             expected,
+            expected_normalized,
             actual,
             component,
         } => {
             let noun = assoc_type_noun(component.as_deref());
+            let required = required_type(expected, expected_normalized.as_deref());
             format!(
-                "{noun} `{assoc}` of `{trait_name}` on `{owner}` is `{actual}`, but `{expected}` is required"
+                "{noun} `{assoc}` of `{trait_name}` on `{owner}` is `{actual}`, but {required} is required"
             )
         }
         Leaf::Bound { summary } => format!("the trait bound `{summary}` is not satisfied"),

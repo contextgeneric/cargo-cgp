@@ -171,11 +171,21 @@ fn assoc_type_mismatch<'tcx>(tcx: TyCtxt<'tcx>, mismatch: ProjectionMismatch<'tc
     let actual = projected_type(tcx, mismatch.alias)
         .map(|ty| ty.to_string())
         .unwrap_or_else(|| "_".to_owned());
+    let expected = mismatch.expected.to_string();
+
+    // A required type read off the projection may itself project through another abstract type —
+    // the unification pin form produces exactly that — so carry what it reduces to alongside the
+    // form the provider wrote, on the same rule as the field leaf.
+    let expected_normalized = projected_type(tcx, mismatch.expected)
+        .map(|ty| ty.to_string())
+        .filter(|normalized| *normalized != expected);
+
     Leaf::AssocTypeMismatch {
         assoc: tcx.item_name(mismatch.assoc_did).to_string(),
         trait_name: tcx.item_name(trait_did).to_string(),
         owner: owner.to_string(),
-        expected: mismatch.expected.to_string(),
+        expected,
+        expected_normalized,
         actual,
         component: abstract_type_component_marker(tcx, trait_did)
             .map(|marker| component_marker_name(tcx, marker)),
