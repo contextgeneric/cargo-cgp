@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `Person`
-  --> src/main.rs:55:9
+  --> src/main.rs:56:9
    |
-55 |         GreeterComponent,
+56 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E106] missing field `name` on `Person`

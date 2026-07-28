@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `CanUseFoo` is not implemented for context `App`
-  --> src/main.rs:45:9
+  --> src/main.rs:46:9
    |
-45 |         FooProviderComponent: DoFooWithBarBaz,
+46 |         FooProviderComponent: DoFooWithBarBaz,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
    = note: root causes:

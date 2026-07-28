@@ -1,0 +1,32 @@
+error[E0271]: type mismatch resolving `<App as HasField<Symbol<8, Chars<..>>>>::Value == Pool<Postgres>`
+  --> src/main.rs:82:9
+   |
+82 |         RowCounterComponent,
+   |         ^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<App as HasField<Symbol<8, Chars<..>>>>::Value == Pool<Postgres>`
+   |
+note: expected this to be `Pool<Postgres>`
+  --> src/main.rs:69:19
+   |
+69 |     pub database: Pool<Sqlite>,
+   |                   ^^^^^^^^^^^^
+   = note: expected struct `Pool<Postgres>`
+              found struct `Pool<Sqlite>`
+note: required for `CountPooledRows` to implement `IsProviderFor<RowCounterComponent, App>`
+  --> src/main.rs:58:1
+   |
+58 | #[cgp_impl(new CountPooledRows)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: required for `App` to implement `CanUseComponent<RowCounterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:80:1
+   |
+80 | / check_components! {
+81 | |     App {
+82 | |         RowCounterComponent,
+83 | |     }
+84 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.

@@ -1,9 +1,9 @@
 error[E0119]: [CGP-E005] `App` cannot wire `@cgp.core.error.ErrorTypeProviderComponent.String.*` that is already set through `@cgp.core.error.ErrorTypeProviderComponent.*`
-  --> src/main.rs:28:10
+  --> src/main.rs:29:10
    |
-27 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,
+28 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,
    |          ----------------------------------------- first implementation here
-28 |         @cgp.core.error.ErrorTypeProviderComponent.String: UseType<String>,
+29 |         @cgp.core.error.ErrorTypeProviderComponent.String: UseType<String>,
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
 For more information about this error, try `rustc --explain E0119`.

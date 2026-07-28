@@ -33,11 +33,36 @@ const CGP_PLACEHOLDER: &str = "__CGP_CRATE_DIR__";
 /// fixture is copied in as `main.rs`; only the harness reads it.
 pub fn declared(fixture: &Path) -> Vec<String> {
     let text = fs::read_to_string(fixture).unwrap_or_default();
-    text.lines()
-        .filter_map(|line| line.trim().strip_prefix("//@aux-build:"))
-        .map(|name| name.trim().to_owned())
-        .filter(|name| !name.is_empty())
-        .collect()
+    let mut names = Vec::new();
+
+    for line in text.lines() {
+        let line = line.trim();
+
+        if let Some(name) = line.strip_prefix("//@aux-build:") {
+            let name = name.trim();
+            if !name.is_empty() {
+                names.push(name.to_owned());
+            }
+            continue;
+        }
+
+        // A directive this parser does not recognize is otherwise a silent no-op:
+        // the fixture loses its path dependency and fails on an unresolved import
+        // instead of reproducing the cross-crate scenario it was written for, which
+        // reads as ordinary snapshot staleness. A stray space after the `//` is the
+        // mistake that has actually happened, so reject anything directive-shaped
+        // rather than ignore it. Only a line whose comment *starts* with the
+        // directive is flagged, so prose mentioning the syntax stays legal.
+        let after_slashes = line.trim_start_matches('/').trim_start_matches('!');
+        assert!(
+            !after_slashes.trim_start().starts_with("@aux-build"),
+            "malformed `//@aux-build:` directive in {}:\n  {line}\n\
+             the directive takes no space between `//` and `@`",
+            fixture.display(),
+        );
+    }
+
+    names
 }
 
 /// Materialize every stored auxiliary crate once and return a map from crate name

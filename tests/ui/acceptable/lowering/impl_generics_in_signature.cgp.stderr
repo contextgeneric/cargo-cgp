@@ -1,0 +1,7 @@
+error[E0433]: cannot find type `Db` in this scope
+  --> src/main.rs:37:61
+   |
+37 | pub fn fetch_row(&self, #[implicit] database: &Pool<Db>) -> Db::Row {
+   |                                                             ^^ use of undeclared type `Db`
+
+For more information about this error, try `rustc --explain E0433`.

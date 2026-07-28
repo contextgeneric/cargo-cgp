@@ -55,10 +55,32 @@ pub fn consumer_header(resolved: &Resolved) -> String {
 /// the wrong type. The expected type comes from the failing projection and the actual from
 /// querying the struct by `DefId`, so the two are read from the real type, never a same-named
 /// one elsewhere.
-pub fn field_mismatch_header(name: &str, owner: &str, expected: &str, actual: &str) -> String {
+pub fn field_mismatch_header(
+    name: &str,
+    owner: &str,
+    expected: &str,
+    expected_normalized: Option<&str>,
+    actual: &str,
+) -> String {
+    let required = required_type(expected, expected_normalized);
     format!(
-        "[{FIELD_TYPE_MISMATCH}] expected a `{name}` field of type `{expected}` on `{owner}`, but found `{actual}`"
+        "[{FIELD_TYPE_MISMATCH}] expected a `{name}` field of type {required} on `{owner}`, but found `{actual}`"
     )
+}
+
+/// Render a required type: the un-normalized form, followed by what it reduces to in parentheses
+/// when that differs. Shared by the `[CGP-E003]` header and the `[CGP-E109]` leaf so the two cannot
+/// state the same requirement two ways.
+///
+/// The un-normalized form leads because it names *where* the requirement comes from — a provider
+/// reading `&Pool<Db>` under an imported abstract type requires
+/// `Pool<<App as HasDbType>::Db>`, which points at the wiring — while the reduced form is what the
+/// reader compares against the field, so neither alone is enough.
+pub fn required_type(expected: &str, expected_normalized: Option<&str>) -> String {
+    match expected_normalized {
+        Some(normalized) => format!("`{expected}` (`{normalized}`)"),
+        None => format!("`{expected}`"),
+    }
 }
 
 /// The first field-type-mismatch cause of a resolution, if any — the leaf `[CGP-E003]` is

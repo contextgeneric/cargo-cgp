@@ -1,39 +1,39 @@
 error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
-  --> src/main.rs:61:9
+  --> src/main.rs:62:9
    |
-61 |         AreaCalculatorComponent,
+62 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<6, Chars<..>>>` is not implemented for `Rectangle`
       but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
-  --> src/main.rs:47:9
+  --> src/main.rs:48:9
    |
-47 |     pub width: f64,
+48 |     pub width: f64,
    |         ^^^^^
 note: required for `Rectangle` to implement `HasRectangleFields`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 | #[cgp_auto_getter]
+29 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-29 | pub trait HasRectangleFields {
+30 | pub trait HasRectangleFields {
    |           ^^^^^^^^^^^^^^^^^^
 note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
-  --> src/main.rs:35:1
+  --> src/main.rs:36:1
    |
-35 | #[cgp_impl(new RectangleArea)]
+36 | #[cgp_impl(new RectangleArea)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-38 |     Self: HasRectangleFields,
+39 |     Self: HasRectangleFields,
    |           ------------------ unsatisfied trait bound introduced here
    = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
 note: required by a bound in `__CheckRectangle`
-  --> src/main.rs:59:1
+  --> src/main.rs:60:1
    |
-59 | / check_components! {
-60 | |     Rectangle {
-61 | |         AreaCalculatorComponent,
-62 | |     }
-63 | | }
+60 | / check_components! {
+61 | |     Rectangle {
+62 | |         AreaCalculatorComponent,
+63 | |     }
+64 | | }
    | |_^ required by this bound in `__CheckRectangle`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

@@ -1,12 +1,12 @@
 error[E0277]: [CGP-E001] the consumer traits `CanReportFirst` and `CanReportSecond` are not implemented for context `App`
-   --> src/main.rs:93:9
+   --> src/main.rs:94:9
     |
- 93 |         FirstReporterComponent,
+ 94 |         FirstReporterComponent,
     |         ^^^^^^^^^^^^^^^^^^^^^^
- 94 |         SecondReporterComponent,
+ 95 |         SecondReporterComponent,
     |         ^^^^^^^^^^^^^^^^^^^^^^^
 ...
-101 |     let _ = app.report_first();
+102 |     let _ = app.report_first();
     |                 ^^^^^^^^^^^^
     |
     = note: root causes:

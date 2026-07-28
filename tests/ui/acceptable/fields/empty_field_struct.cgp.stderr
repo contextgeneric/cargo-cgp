@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`
-  --> src/main.rs:59:9
+  --> src/main.rs:60:9
    |
-59 |         AreaCalculatorComponent,
+60 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root causes:

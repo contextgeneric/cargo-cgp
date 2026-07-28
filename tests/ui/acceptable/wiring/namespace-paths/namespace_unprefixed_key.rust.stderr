@@ -1,19 +1,19 @@
 error[E0119]: conflicting implementations of trait `DelegateComponent<ErrorTypeProviderComponent>` for type `App`
-  --> src/main.rs:29:9
+  --> src/main.rs:30:9
    |
-27 |         namespace DefaultNamespace;
+28 |         namespace DefaultNamespace;
    |                   ---------------- first implementation here
-28 |
-29 |         ErrorTypeProviderComponent: UseType<String>,
+29 |
+30 |         ErrorTypeProviderComponent: UseType<String>,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
 error[E0119]: conflicting implementations of trait `IsProviderFor<ErrorTypeProviderComponent, _, _>` for type `App`
-  --> src/main.rs:29:9
+  --> src/main.rs:30:9
    |
-27 |         namespace DefaultNamespace;
+28 |         namespace DefaultNamespace;
    |                   ---------------- first implementation here
-28 |
-29 |         ErrorTypeProviderComponent: UseType<String>,
+29 |
+30 |         ErrorTypeProviderComponent: UseType<String>,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
    |
    = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::cgp_core::cgp_error::ErrorTypeProviderComponent, _, _>` for type `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<4, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<5, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::cgp_core::cgp_error::ErrorTypeProviderComponent, cgp::prelude::Nil>>>>>`

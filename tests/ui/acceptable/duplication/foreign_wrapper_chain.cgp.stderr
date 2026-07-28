@@ -1,7 +1,7 @@
 error[E0271]: [CGP-E009] the trait `CanHandleApiSend<GreetApi>` is not implemented for context `App`
-  --> src/main.rs:80:10
+  --> src/main.rs:81:10
    |
-80 |     ) -> impl Future<Output = Self::Response> + Send {
+81 |     ) -> impl Future<Output = Self::Response> + Send {
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E106] missing field `name` on `App`
@@ -13,9 +13,9 @@ error[E0271]: [CGP-E009] the trait `CanHandleApiSend<GreetApi>` is not implement
                    └─ [CGP-E106] missing field `name` on `App`
 
 error[E0277]: [CGP-E009] the trait `CanAddAppRoutes` is not implemented for `Box<App>`
-   --> src/main.rs:105:26
+   --> src/main.rs:106:26
     |
-105 | impl CanAddAppRoutes for Box<App> {}
+106 | impl CanAddAppRoutes for Box<App> {}
     |                          ^^^^^^^^
     |
     = note: root cause: [CGP-E106] missing field `name` on `App`

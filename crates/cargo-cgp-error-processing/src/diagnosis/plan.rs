@@ -171,11 +171,18 @@ fn categorized_header<'a>(
             name,
             owner,
             expected,
+            expected_normalized,
             actual,
         }) = mismatch_leaf(resolved)
         {
             return Header {
-                text: Some(field_mismatch_header(name, owner, expected, actual)),
+                text: Some(field_mismatch_header(
+                    name,
+                    owner,
+                    expected,
+                    expected_normalized.as_deref(),
+                    actual,
+                )),
                 states_leaf: mismatch_leaf(resolved),
             };
         }

@@ -1,38 +1,38 @@
 error[E0277]: the trait bound `App: CanUseComponent<GreeterComponent>` is not satisfied
-  --> src/main.rs:66:9
+  --> src/main.rs:67:9
    |
-66 |         GreeterComponent,
+67 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:46:1
+  --> src/main.rs:47:1
    |
-46 | pub struct App {
+47 | pub struct App {
    | ^^^^^^^^^^^^^^
 note: required for `App` to implement `HasName`
-  --> src/main.rs:24:1
+  --> src/main.rs:25:1
    |
-24 | #[cgp_auto_getter]
+25 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-25 | pub trait HasName {
+26 | pub trait HasName {
    |           ^^^^^^^
 note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, App>`
-  --> src/main.rs:29:1
+  --> src/main.rs:30:1
    |
-29 | #[cgp_impl(new GreetHello)]
+30 | #[cgp_impl(new GreetHello)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-32 |     Self: HasName,
+33 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
    = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:64:1
+  --> src/main.rs:65:1
    |
-64 | / check_components! {
-65 | |     App {
-66 | |         GreeterComponent,
-67 | |     }
-68 | | }
+65 | / check_components! {
+66 | |     App {
+67 | |         GreeterComponent,
+68 | |     }
+69 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

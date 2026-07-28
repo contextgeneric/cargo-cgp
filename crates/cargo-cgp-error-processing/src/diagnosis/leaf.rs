@@ -52,8 +52,17 @@ pub enum Leaf {
         /// The struct that carries the field, e.g. `Rectangle`.
         owner: String,
         /// The type the wiring requires the field to have, taken from the failing projection's
-        /// right-hand side, e.g. `f64`.
+        /// right-hand side and rendered *un-normalized*, e.g. `f64` or
+        /// `Pool<<App as HasDbType>::Db>`. Keeping the projection is deliberate: it names where the
+        /// requirement comes from, so a reader is pointed at the wiring rather than left wondering
+        /// why a type they never wrote is demanded of them.
         expected: String,
+        /// What `expected` normalizes to, when normalizing changes it and reduces to a concrete
+        /// type — `Some("Pool<Postgres>")` for `Pool<<App as HasDbType>::Db>`, and `None` for an
+        /// `expected` that is already concrete or does not reduce. The un-normalized form alone
+        /// says where the requirement comes from but not what it currently resolves to, and the two
+        /// things in conflict are then never put side by side, so both are carried.
+        expected_normalized: Option<String>,
         /// The type the field actually has, queried from the struct by `DefId`, e.g. `i32`.
         actual: String,
     },

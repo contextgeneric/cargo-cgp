@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `CanMeasureA` is not implemented for context `App`
-  --> src/main.rs:86:9
+  --> src/main.rs:87:9
    |
-86 |         shapes_a::MeasurerComponent,
+87 |         shapes_a::MeasurerComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E106] missing field `width_a` on `App`
@@ -12,9 +12,9 @@ error[E0277]: [CGP-E001] the consumer trait `CanMeasureA` is not implemented for
                  └─ [CGP-E106] missing field `width_a` on `App`
 
 error[E0277]: [CGP-E001] the consumer trait `CanMeasureB` is not implemented for context `App`
-  --> src/main.rs:87:9
+  --> src/main.rs:88:9
    |
-87 |         shapes_b::MeasurerComponent,
+88 |         shapes_b::MeasurerComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E106] missing field `width_b` on `App`

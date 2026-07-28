@@ -1,19 +1,19 @@
 error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<4, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<ErrorRaiserComponent, PathCons<String, _>>>>>>` for type `App`
-  --> src/main.rs:48:14
+  --> src/main.rs:49:14
    |
-45 |         namespace AppDefaults;
+46 |         namespace AppDefaults;
    |                   ----------- first implementation here
 ...
-48 |             @cgp.core.error.ErrorRaiserComponent.Key: Value,
+49 |             @cgp.core.error.ErrorRaiserComponent.Key: Value,
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
 error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<4, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<ErrorRaiserComponent, PathCons<String, _>>>>>, _, _>` for type `App`
-  --> src/main.rs:48:14
+  --> src/main.rs:49:14
    |
-45 |         namespace AppDefaults;
+46 |         namespace AppDefaults;
    |                   ----------- first implementation here
 ...
-48 |             @cgp.core.error.ErrorRaiserComponent.Key: Value,
+49 |             @cgp.core.error.ErrorRaiserComponent.Key: Value,
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
    |
    = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<4, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<5, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::cgp_core::cgp_error::ErrorRaiserComponent, cgp::prelude::PathCons<std::string::String, _>>>>>, _, _>` for type `cgp::cgp_extra::cgp_error_extra::DisplayError`

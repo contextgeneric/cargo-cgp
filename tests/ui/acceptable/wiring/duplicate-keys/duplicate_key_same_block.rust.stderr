@@ -1,17 +1,17 @@
 error[E0119]: conflicting implementations of trait `IsProviderFor<GreeterComponent, _, _>` for type `Person`
-  --> src/main.rs:38:9
+  --> src/main.rs:40:9
    |
-37 |         GreeterComponent: GreetHello,
+39 |         GreeterComponent: GreetHello,
    |         ---------------- first implementation here
-38 |         GreeterComponent: GreetGoodbye,
+40 |         GreeterComponent: GreetGoodbye,
    |         ^^^^^^^^^^^^^^^^ conflicting implementation for `Person`
 
 error[E0119]: conflicting implementations of trait `DelegateComponent<GreeterComponent>` for type `Person`
-  --> src/main.rs:38:9
+  --> src/main.rs:40:9
    |
-37 |         GreeterComponent: GreetHello,
+39 |         GreeterComponent: GreetHello,
    |         ---------------- first implementation here
-38 |         GreeterComponent: GreetGoodbye,
+40 |         GreeterComponent: GreetGoodbye,
    |         ^^^^^^^^^^^^^^^^ conflicting implementation for `Person`
 
 For more information about this error, try `rustc --explain E0119`.

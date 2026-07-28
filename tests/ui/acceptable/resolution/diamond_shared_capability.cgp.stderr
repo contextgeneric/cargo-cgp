@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E002] the provider trait `SharedProvider` with context `App` is not implemented for provider `ProvideShared`
-  --> src/main.rs:97:9
+  --> src/main.rs:99:9
    |
-97 |         TopProviderComponent,
+99 |         TopProviderComponent,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E106] missing field `name` on `App`

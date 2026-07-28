@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog<Product![HandleReadName, HandlePass<Politely>, HandlePass<Shout>, HandlePass<Repeat>]>, _>` is not implemented for context `App`
-   --> src/main.rs:109:16
+   --> src/main.rs:110:16
     |
-109 |     app.handle(PhantomData::<Program>, Vec::new()).await?;
+110 |     app.handle(PhantomData::<Program>, Vec::new()).await?;
     |                ^^^^^^^^^^^^^^^^^^^^^^
     |
     = note: root cause: [CGP-E106] missing field `name` on `App`

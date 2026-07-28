@@ -1,22 +1,22 @@
 error[E0119]: conflicting implementations of trait `IsProviderFor<FooComponent, _, _>` for type `App`
-  --> src/main.rs:29:9
+  --> src/main.rs:30:9
    |
-27 |         FooComponent =>
+28 |         FooComponent =>
    |         ------------ first implementation here
-28 |             @app.foo,
-29 |         FooComponent =>
+29 |             @app.foo,
+30 |         FooComponent =>
    |         ^^^^^^^^^^^^ conflicting implementation for `App`
    |
    = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<FooComponent, _, _>` for type `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::Nil>>>`
    = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<FooComponent, _, _>` for type `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::Nil>>>`
 
 error[E0119]: conflicting implementations of trait `DelegateComponent<FooComponent>` for type `App`
-  --> src/main.rs:29:9
+  --> src/main.rs:30:9
    |
-27 |         FooComponent =>
+28 |         FooComponent =>
    |         ------------ first implementation here
-28 |             @app.foo,
-29 |         FooComponent =>
+29 |             @app.foo,
+30 |         FooComponent =>
    |         ^^^^^^^^^^^^ conflicting implementation for `App`
 
 For more information about this error, try `rustc --explain E0119`.

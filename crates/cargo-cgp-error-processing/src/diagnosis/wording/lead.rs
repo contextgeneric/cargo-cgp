@@ -6,7 +6,7 @@ use crate::code::{
     ROOT_CAUSE_ORDINARY_BOUND,
 };
 use crate::diagnosis::leaf::{FieldIssue, Leaf};
-use crate::diagnosis::wording::header::quoted_list;
+use crate::diagnosis::wording::header::{quoted_list, required_type};
 
 /// What an associated type is called in a message: `abstract type` when it belongs to a CGP
 /// abstract-type component (a context *chooses* its concrete type by wiring), and `associated type`
@@ -66,9 +66,11 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
             name,
             owner,
             expected,
+            expected_normalized,
             actual,
         } => {
-            format!("field `{name}` on `{owner}` has type `{actual}`, but `{expected}` is required")
+            let required = required_type(expected, expected_normalized.as_deref());
+            format!("field `{name}` on `{owner}` has type `{actual}`, but {required} is required")
         }
         Leaf::AssocTypeMismatch {
             assoc,

@@ -123,11 +123,23 @@ pub(crate) fn classify_leaf<'tcx>(
     {
         let owner = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
         if let Some(mismatch) = mismatch {
+            let expected = mismatch.expected.to_string();
+
+            // A required type read off the projection may itself project through the context's own
+            // wiring — `Pool<<App as HasDbType>::Db>` when a provider reads a field whose type is
+            // expressed through an abstract type it imports. Keep that form, since it names where
+            // the requirement comes from, and carry what it reduces to alongside; a requirement
+            // that is already concrete normalizes to itself and gets nothing extra.
+            let expected_normalized = projected_type(tcx, mismatch.expected)
+                .map(|ty| ty.to_string())
+                .filter(|normalized| *normalized != expected);
+
             return Leaf::FieldTypeMismatch {
                 actual: field_type(tcx, owner, &name).unwrap_or_else(|| "_".to_owned()),
                 name,
                 owner: owner.to_string(),
-                expected: mismatch.expected.to_string(),
+                expected,
+                expected_normalized,
             };
         }
         let issue = field_issue(tcx, owner, &name);

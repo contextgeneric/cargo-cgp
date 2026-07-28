@@ -1,9 +1,9 @@
 error[E0119]: conflicting implementations of trait `MyNamespace<_>` for type `PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<3, cgp::prelude::Chars<..>>, _>>`
-  --> src/main.rs:22:10
+  --> src/main.rs:24:10
    |
-21 |         @foo.bar => @baz,
+23 |         @foo.bar => @baz,
    |          ------- first implementation here
-22 |         @foo.bar => @qux,
+24 |         @foo.bar => @qux,
    |          ^^^^^^^ conflicting implementation for `PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<3, cgp::prelude::Chars<..>>, _>>`
 
 For more information about this error, try `rustc --explain E0119`.

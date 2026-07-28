@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `CanUseFoo` is not implemented for context `App`
-  --> src/main.rs:48:9
+  --> src/main.rs:49:9
    |
-48 |         FooProviderComponent: DoFooWithBar,
+49 |         FooProviderComponent: DoFooWithBar,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`

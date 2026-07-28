@@ -1,11 +1,11 @@
 error[E0277]: [CGP-E001] the consumer traits `CanBaz`, `CanBar`, and `CanFoo` are not implemented for context `App`
-  --> src/main.rs:84:9
+  --> src/main.rs:85:9
    |
-84 |         BazComponent,
+85 |         BazComponent,
    |         ^^^^^^^^^^^^
-85 |         BarComponent,
+86 |         BarComponent,
    |         ^^^^^^^^^^^^
-86 |         FooComponent,
+87 |         FooComponent,
    |         ^^^^^^^^^^^^
    |
    = help: make sure that `#[derive(HasField)]` is used for `App`

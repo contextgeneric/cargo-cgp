@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `CanCompute` is not implemented for context `Inner`
-  --> src/main.rs:56:5
+  --> src/main.rs:57:5
    |
-56 |     Inner: CanCompute,
+57 |     Inner: CanCompute,
    |     ^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E106] missing field `name` on `Inner`
@@ -12,9 +12,9 @@ error[E0277]: [CGP-E001] the consumer trait `CanCompute` is not implemented for 
                  └─ [CGP-E106] missing field `name` on `Inner`
 
 error[E0277]: [CGP-E001] the consumer trait `CanRun` is not implemented for context `Outer`
-  --> src/main.rs:91:9
+  --> src/main.rs:92:9
    |
-91 |         RunnerComponent,
+92 |         RunnerComponent,
    |         ^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E106] missing field `name` on `Inner`

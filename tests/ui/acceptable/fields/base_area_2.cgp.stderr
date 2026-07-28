@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`
-  --> src/main.rs:56:9
+  --> src/main.rs:57:9
    |
-56 |         AreaCalculatorComponent,
+57 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: make sure that `#[derive(HasField)]` is used for `Rectangle`

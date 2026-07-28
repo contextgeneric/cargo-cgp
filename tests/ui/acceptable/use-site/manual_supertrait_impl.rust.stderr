@@ -1,178 +1,178 @@
 error[E0277]: the trait bound `RedirectLookup<App, PathCons<AreaCalculatorComponent, Nil>>: AreaCalculator<App, Rectangle>` is not satisfied
-  --> src/main.rs:66:45
+  --> src/main.rs:67:45
    |
-66 | impl CanCalculateAreaChecked<Rectangle> for App {
+67 | impl CanCalculateAreaChecked<Rectangle> for App {
    |                                             ^^^ the trait `AreaCalculator<App, Rectangle>` is not implemented for `RedirectLookup<App, PathCons<AreaCalculatorComponent, Nil>>`
    |
 help: the trait `AreaCalculator<__Context__, Shape>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 |   #[cgp_component(AreaCalculator)]
+29 |   #[cgp_component(AreaCalculator)]
    |  _^^^^^^^^^^^^^^^^-^^^^^^^^^^^^^^^
-29 | | pub trait CanCalculateArea<Shape> {
+30 | | pub trait CanCalculateArea<Shape> {
    | |_________________________________- unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<AreaCalculatorComponent, Nil> as ConcatPath<PathCons<Rectangle, Nil>>>::Output>>::Delegate: AreaCalculator<App, Rectangle>`
 note: required for `App` to implement `AreaCalculator<App, Rectangle>`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 |   #[cgp_component(AreaCalculator)]
+29 |   #[cgp_component(AreaCalculator)]
    |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | | pub trait CanCalculateArea<Shape> {
+30 | | pub trait CanCalculateArea<Shape> {
    | |_________________________________^
 note: required for `App` to implement `CanCalculateArea<Rectangle>`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 | #[cgp_component(AreaCalculator)]
+29 | #[cgp_component(AreaCalculator)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | pub trait CanCalculateArea<Shape> {
+30 | pub trait CanCalculateArea<Shape> {
    |           ^^^^^^^^^^^^^^^^^^^^^^^
 note: required by a bound in `CanCalculateAreaChecked`
-  --> src/main.rs:62:43
+  --> src/main.rs:63:43
    |
-62 | pub trait CanCalculateAreaChecked<Shape>: CanCalculateArea<Shape> {
+63 | pub trait CanCalculateAreaChecked<Shape>: CanCalculateArea<Shape> {
    |                                           ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `CanCalculateAreaChecked`
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `ScaleArea: AreaCalculator<App, Rectangle>` is not satisfied
-  --> src/main.rs:66:45
+  --> src/main.rs:67:45
    |
-66 | impl CanCalculateAreaChecked<Rectangle> for App {
+67 | impl CanCalculateAreaChecked<Rectangle> for App {
    |                                             ^^^ unsatisfied trait bound
    |
 help: the trait `AreaCalculator<App, Rectangle>` is not implemented for `ScaleArea`
-  --> src/main.rs:39:16
+  --> src/main.rs:40:16
    |
-39 | #[cgp_impl(new ScaleArea)]
+40 | #[cgp_impl(new ScaleArea)]
    |                ^^^^^^^^^
 help: the trait `AreaCalculator<__Context__, Shape>` is conditionally implemented for `ScaleArea`
-  --> src/main.rs:41:1
+  --> src/main.rs:42:1
    |
-40 |   #[uses(HasScaleFactor)]
+41 |   #[uses(HasScaleFactor)]
    |          -------------- unsatisfied requirement introduced here: `App: HasScaleFactor`
-41 | / impl<Shape> AreaCalculator<Shape> {
-42 | |     fn area(&self, _shape: PhantomData<Shape>) -> f64 {
-43 | |         *self.scale_factor()
-44 | |     }
-45 | | }
+42 | / impl<Shape> AreaCalculator<Shape> {
+43 | |     fn area(&self, _shape: PhantomData<Shape>) -> f64 {
+44 | |         *self.scale_factor()
+45 | |     }
+46 | | }
    | |_^
 note: required for `RedirectLookup<App, PathCons<AreaCalculatorComponent, Nil>>` to implement `IsProviderFor<AreaCalculatorComponent, App, Rectangle>`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 | #[cgp_component(AreaCalculator)]
+29 | #[cgp_component(AreaCalculator)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: 1 redundant requirement hidden
    = note: required for `App` to implement `IsProviderFor<AreaCalculatorComponent, App, Rectangle>`
 note: required for `App` to implement `AreaCalculator<App, Rectangle>`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 |   #[cgp_component(AreaCalculator)]
+29 |   #[cgp_component(AreaCalculator)]
    |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | | pub trait CanCalculateArea<Shape> {
+30 | | pub trait CanCalculateArea<Shape> {
    | |_________________________________^
 note: required for `App` to implement `CanCalculateArea<Rectangle>`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 | #[cgp_component(AreaCalculator)]
+29 | #[cgp_component(AreaCalculator)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | pub trait CanCalculateArea<Shape> {
+30 | pub trait CanCalculateArea<Shape> {
    |           ^^^^^^^^^^^^^^^^^^^^^^^
 note: required by a bound in `CanCalculateAreaChecked`
-  --> src/main.rs:62:43
+  --> src/main.rs:63:43
    |
-62 | pub trait CanCalculateAreaChecked<Shape>: CanCalculateArea<Shape> {
+63 | pub trait CanCalculateAreaChecked<Shape>: CanCalculateArea<Shape> {
    |                                           ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `CanCalculateAreaChecked`
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: CanCalculateArea<Rectangle>` is not satisfied
-  --> src/main.rs:66:45
+  --> src/main.rs:67:45
    |
-66 | impl CanCalculateAreaChecked<Rectangle> for App {
+67 | impl CanCalculateAreaChecked<Rectangle> for App {
    |                                             ^^^ unsatisfied trait bound
    |
 help: the trait `cgp::prelude::HasField<Symbol<12, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:47:1
+  --> src/main.rs:48:1
    |
-47 | pub struct App;
+48 | pub struct App;
    | ^^^^^^^^^^^^^^
 note: required for `App` to implement `HasScaleFactor`
-  --> src/main.rs:33:1
+  --> src/main.rs:34:1
    |
-33 | #[cgp_auto_getter]
+34 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-34 | pub trait HasScaleFactor {
+35 | pub trait HasScaleFactor {
    |           ^^^^^^^^^^^^^^
 note: required for `ScaleArea` to implement `IsProviderFor<AreaCalculatorComponent, App, Rectangle>`
-  --> src/main.rs:39:1
+  --> src/main.rs:40:1
    |
-39 | #[cgp_impl(new ScaleArea)]
+40 | #[cgp_impl(new ScaleArea)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
-40 | #[uses(HasScaleFactor)]
+41 | #[uses(HasScaleFactor)]
    |        -------------- unsatisfied trait bound introduced here
    = note: 2 redundant requirements hidden
    = note: required for `App` to implement `IsProviderFor<AreaCalculatorComponent, App, Rectangle>`
 note: required for `App` to implement `AreaCalculator<App, Rectangle>`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 |   #[cgp_component(AreaCalculator)]
+29 |   #[cgp_component(AreaCalculator)]
    |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | | pub trait CanCalculateArea<Shape> {
+30 | | pub trait CanCalculateArea<Shape> {
    | |_________________________________^
 note: required for `App` to implement `CanCalculateArea<Rectangle>`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 | #[cgp_component(AreaCalculator)]
+29 | #[cgp_component(AreaCalculator)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | pub trait CanCalculateArea<Shape> {
+30 | pub trait CanCalculateArea<Shape> {
    |           ^^^^^^^^^^^^^^^^^^^^^^^
 note: required by a bound in `CanCalculateAreaChecked`
-  --> src/main.rs:62:43
+  --> src/main.rs:63:43
    |
-62 | pub trait CanCalculateAreaChecked<Shape>: CanCalculateArea<Shape> {
+63 | pub trait CanCalculateAreaChecked<Shape>: CanCalculateArea<Shape> {
    |                                           ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `CanCalculateAreaChecked`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0599]: the method `area` exists for reference `&App`, but its trait bounds were not satisfied
-  --> src/main.rs:68:14
+  --> src/main.rs:69:14
    |
-47 | pub struct App;
+48 | pub struct App;
    | -------------- doesn't satisfy `App: AreaCalculator<App, _>` or `App: CanCalculateArea<_>`
 ...
-68 |         self.area(shape)
+69 |         self.area(shape)
    |              ^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `AreaCalculator`
-  --> src/main.rs:30:5
+  --> src/main.rs:31:5
    |
-30 |     fn area(&self, shape: PhantomData<Shape>) -> f64;
+31 |     fn area(&self, shape: PhantomData<Shape>) -> f64;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: the following trait bounds were not satisfied:
       `&App: AreaCalculator<&App, _>`
       `App: AreaCalculator<App, _>`
-  --> src/main.rs:28:17
+  --> src/main.rs:29:17
    |
-28 |   #[cgp_component(AreaCalculator)]
+29 |   #[cgp_component(AreaCalculator)]
    |  _----------------^---------------
-29 | | pub trait CanCalculateArea<Shape> {
+30 | | pub trait CanCalculateArea<Shape> {
    | |           ----------------------^
    | |_________________________________|
    |                                   unsatisfied trait bound introduced here
 note: the trait `AreaCalculator` must be implemented
-  --> src/main.rs:29:1
+  --> src/main.rs:30:1
    |
-29 | / pub trait CanCalculateArea<Shape> {
-30 | |     fn area(&self, shape: PhantomData<Shape>) -> f64;
-31 | | }
+30 | / pub trait CanCalculateArea<Shape> {
+31 | |     fn area(&self, shape: PhantomData<Shape>) -> f64;
+32 | | }
    | |_^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanCalculateArea` defines an item `area`, perhaps you need to implement it
-  --> src/main.rs:29:1
+  --> src/main.rs:30:1
    |
-29 | pub trait CanCalculateArea<Shape> {
+30 | pub trait CanCalculateArea<Shape> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 help: use associated function syntax instead
    |
-68 -         self.area(shape)
-68 +         App::area(shape)
+69 -         self.area(shape)
+69 +         App::area(shape)
    |
 
 Some errors have detailed explanations: E0277, E0599.

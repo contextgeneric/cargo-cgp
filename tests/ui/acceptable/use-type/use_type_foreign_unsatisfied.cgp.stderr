@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `HasScalarType` is not implemented for context `NoScalar`
-  --> src/main.rs:31:31
+  --> src/main.rs:32:31
    |
-31 | pub trait CheckMissingScalar: CanCalculateArea<NoScalar> {}
+32 | pub trait CheckMissingScalar: CanCalculateArea<NoScalar> {}
    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E107] context `NoScalar` does not contain any delegate entry for `ScalarTypeProviderComponent`

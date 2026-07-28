@@ -1,44 +1,44 @@
 error[E0599]: the method `format_pair` exists for struct `App`, but its trait bounds were not satisfied
-  --> src/main.rs:57:17
+  --> src/main.rs:58:17
    |
-43 | pub struct App {
+44 | pub struct App {
    | -------------- method `format_pair` not found for this struct because it doesn't satisfy `App: CanFormatPair<_>` or `App: PairFormatter<App, _>`
 ...
-57 |     let _ = app.format_pair(pair);
+58 |     let _ = app.format_pair(pair);
    |                 ^^^^^^^^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `PairFormatter`
-  --> src/main.rs:24:5
+  --> src/main.rs:25:5
    |
-24 |     fn format_pair(&self, value: T) -> String;
+25 |     fn format_pair(&self, value: T) -> String;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: trait bound `App: PairFormatter<App, _>` was not satisfied
-  --> src/main.rs:22:17
+  --> src/main.rs:23:17
    |
-22 |   #[cgp_component(PairFormatter)]
+23 |   #[cgp_component(PairFormatter)]
    |  _----------------^--------------
-23 | | pub trait CanFormatPair<T> {
+24 | | pub trait CanFormatPair<T> {
    | |           ---------------^
    | |__________________________|
    |                            unsatisfied trait bound introduced here
 note: the trait `PairFormatter` must be implemented
-  --> src/main.rs:23:1
+  --> src/main.rs:24:1
    |
-23 | / pub trait CanFormatPair<T> {
-24 | |     fn format_pair(&self, value: T) -> String;
-25 | | }
+24 | / pub trait CanFormatPair<T> {
+25 | |     fn format_pair(&self, value: T) -> String;
+26 | | }
    | |_^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanFormatPair` defines an item `format_pair`, perhaps you need to implement it
-  --> src/main.rs:23:1
+  --> src/main.rs:24:1
    |
-23 | pub trait CanFormatPair<T> {
+24 | pub trait CanFormatPair<T> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
 help: use associated function syntax instead
    |
-57 -     let _ = app.format_pair(pair);
-57 +     let _ = App::format_pair(pair);
+58 -     let _ = app.format_pair(pair);
+58 +     let _ = App::format_pair(pair);
    |
 
 For more information about this error, try `rustc --explain E0599`.

@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E009] the trait `CanCalculateAreaChecked<Rectangle>` is not implemented for context `App`
-  --> src/main.rs:66:45
+  --> src/main.rs:67:45
    |
-66 | impl CanCalculateAreaChecked<Rectangle> for App {
+67 | impl CanCalculateAreaChecked<Rectangle> for App {
    |                                             ^^^
    |
    = note: root cause: [CGP-E106] missing field `scale_factor` on `App`

@@ -1,9 +1,9 @@
 error[E0119]: [CGP-E004] duplicate wiring for `@cgp.core.error.ErrorTypeProviderComponent.*` on `App`
-  --> src/main.rs:26:10
+  --> src/main.rs:28:10
    |
-25 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,
+27 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,
    |          ----------------------------------------- first implementation here
-26 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,
+28 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
 For more information about this error, try `rustc --explain E0119`.

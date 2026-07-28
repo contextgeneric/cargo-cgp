@@ -1,10 +1,10 @@
 error[E0119]: [CGP-E007] component `ErrorTypeProviderComponent` on `App` is redirected to `@cgp.core.error.ErrorTypeProviderComponent`
-  --> src/main.rs:29:9
+  --> src/main.rs:30:9
    |
-27 |         namespace DefaultNamespace;
+28 |         namespace DefaultNamespace;
    |                   ---------------- first implementation here
-28 |
-29 |         ErrorTypeProviderComponent: UseType<String>,
+29 |
+30 |         ErrorTypeProviderComponent: UseType<String>,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
    |
    = help: wire the provider `UseType<String>` with the key `@cgp.core.error.ErrorTypeProviderComponent`

@@ -332,6 +332,7 @@ fn plans_a_field_type_mismatch() {
         name: "height".to_owned(),
         owner: "Rectangle".to_owned(),
         expected: "f64".to_owned(),
+        expected_normalized: None,
         actual: "i32".to_owned(),
     };
     let cause = one_path(
@@ -422,6 +423,7 @@ fn keeps_a_mismatch_lead_under_a_header_that_does_not_state_it() {
             name: "height".to_owned(),
             owner: "Rectangle".to_owned(),
             expected: "f64".to_owned(),
+            expected_normalized: None,
             actual: "i32".to_owned(),
         },
         Leaf::AssocTypeMismatch {
@@ -590,6 +592,7 @@ fn dependency_tree_leaf_codes_rewritten_leaves_and_passes_bounds_through() {
             name: "height".to_owned(),
             owner: "Rectangle".to_owned(),
             expected: "f64".to_owned(),
+            expected_normalized: None,
             actual: "i32".to_owned(),
         }),
         "[CGP-E109] field `height` on `Rectangle` has type `i32`, but `f64` is required"
@@ -816,8 +819,35 @@ fn wording_helpers_format_directly() {
     );
 
     assert_eq!(
-        field_mismatch_header("height", "Rectangle", "f64", "i32"),
+        field_mismatch_header("height", "Rectangle", "f64", None, "i32"),
         "[CGP-E003] expected a `height` field of type `f64` on `Rectangle`, but found `i32`"
+    );
+
+    // A required type that projects through the context's own wiring carries both forms: the
+    // projection says where the requirement comes from, the reduction says what it resolves to.
+    assert_eq!(
+        field_mismatch_header(
+            "database",
+            "App",
+            "Pool<<App as HasDbType>::Db>",
+            Some("Pool<Postgres>"),
+            "Pool<Sqlite>"
+        ),
+        "[CGP-E003] expected a `database` field of type `Pool<<App as HasDbType>::Db>` \
+         (`Pool<Postgres>`) on `App`, but found `Pool<Sqlite>`"
+    );
+
+    // The leaf states the same requirement the same way, so the header and the tree cannot drift.
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::FieldTypeMismatch {
+            name: "database".to_owned(),
+            owner: "App".to_owned(),
+            expected: "Pool<<App as HasDbType>::Db>".to_owned(),
+            expected_normalized: Some("Pool<Postgres>".to_owned()),
+            actual: "Pool<Sqlite>".to_owned(),
+        }),
+        "[CGP-E109] field `database` on `App` has type `Pool<Sqlite>`, but \
+         `Pool<<App as HasDbType>::Db>` (`Pool<Postgres>`) is required"
     );
 
     let cause = missing_field_cause();

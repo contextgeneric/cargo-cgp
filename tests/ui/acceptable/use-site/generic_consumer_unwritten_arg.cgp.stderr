@@ -1,18 +1,18 @@
 error[E0599]: the method `format_pair` exists for struct `App`, but its trait bounds were not satisfied
-  --> src/main.rs:57:17
+  --> src/main.rs:58:17
    |
-43 | pub struct App {
+44 | pub struct App {
    | -------------- method `format_pair` not found for this struct because it doesn't satisfy `App: CanFormatPair<_>` or `_: HasField<Symbol!("separator")>`
 ...
-57 |     let _ = app.format_pair(pair);
+58 |     let _ = app.format_pair(pair);
    |                 ^^^^^^^^^^^
    |
 note: trait bound `App: HasField<Symbol!("separator")>` was not satisfied
-  --> src/main.rs:27:1
+  --> src/main.rs:28:1
    |
-27 | #[cgp_auto_getter]
+28 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-28 | pub trait HasSeparator {
+29 | pub trait HasSeparator {
    |           ^^^^^^^^^^^^
 note: the trait `HasField` must be implemented
   --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
@@ -21,9 +21,9 @@ note: the trait `HasField` must be implemented
    | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanFormatPair` defines an item `format_pair`, perhaps you need to implement it
-  --> src/main.rs:23:1
+  --> src/main.rs:24:1
    |
-23 | pub trait CanFormatPair<T> {
+24 | pub trait CanFormatPair<T> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 

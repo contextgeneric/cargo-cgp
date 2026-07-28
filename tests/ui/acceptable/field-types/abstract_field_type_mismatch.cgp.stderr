@@ -1,0 +1,12 @@
+error[E0271]: [CGP-E003] expected a `database` field of type `Pool<<App as HasDbType>::Db>` (`Pool<Postgres>`) on `App`, but found `Pool<Sqlite>`
+  --> src/main.rs:82:9
+   |
+82 |         RowCounterComponent,
+   |         ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCountRows` for context `App`
+             └─ [CGP-E102] provider trait impl `RowCounter` with context `App` for provider `CountPooledRows`
+               └─ [CGP-E109] field `database` on `App` has type `Pool<Sqlite>`, but `Pool<<App as HasDbType>::Db>` (`Pool<Postgres>`) is required
+
+For more information about this error, try `rustc --explain E0271`.
