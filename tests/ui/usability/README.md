@@ -15,8 +15,10 @@ The fixtures are grouped by the *kind* of remaining usability problem, one sub-d
 class in [the usability issue document](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md):
 
 - [`lowering/`](lowering) — a macro lowered accepted input into ill-formed Rust, and the error lands
-  on the macro attribute without naming the real cause: an unsized generated type (`option_slice`) or
-  a cyclic `#[use_type]` routing (`use_type_cyclic_context`).
+  on the macro attribute without naming the real cause: an unsized generated type (`option_slice`).
+  A cyclic `#[use_type]` routing used to sit here too and was resolved upstream instead — the cycle
+  is decidable from the import list, so the macro now rejects it and nothing reaches the compiler for
+  the tool to reshape.
 - [`extensible-data/`](extensible-data) — a cast, builder, or extractor failure the resolver does
   not reshape at all (`upcast_missing_variant`), so the reader gets an internal `FromVariant` bound
   and the macro-generated extractor state instead of the variant one enum lacks. It also pins the
