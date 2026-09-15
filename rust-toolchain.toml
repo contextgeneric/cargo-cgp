@@ -8,7 +8,12 @@
 # The parent cgp workspace pins stable 1.96.1 for the *library*; that is unrelated to
 # the toolchain used to build this tool. A project being checked keeps its own
 # toolchain — cargo-cgp only wraps the compiler cargo already selects for it.
+# `rust-src` is not needed to build the driver. It is pinned because the UI snapshots
+# contain compiler diagnostics, and a diagnostic pointing into the standard library shows
+# the `core`/`std` source line only when that component is present — so without it here, a
+# snapshot would depend on whichever components a contributor's toolchain happened to pick
+# up. See cgp-knowledge-base/cargo-cgp/implementation/testing.md.
 [toolchain]
 channel    = "nightly-2026-09-14"
-components = ["rustc-dev", "llvm-tools"]
+components = ["rustc-dev", "llvm-tools", "rust-src"]
 profile    = "minimal"

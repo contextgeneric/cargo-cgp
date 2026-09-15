@@ -1,9 +1,11 @@
 //! Normalizing tool output into a portable snapshot.
 //!
 //! Running each fixture through the next-generation trait solver produces the richer
-//! diagnostics cargo-cgp exists to surface, but those diagnostics carry a couple of
+//! diagnostics cargo-cgp exists to surface, but those diagnostics carry a few
 //! machine-specific details that must not be committed: the absolute path of the sibling
-//! `cgp` checkout (in cross-crate notes) and of the throwaway crate, plus a note pointing
+//! `cgp` checkout (in cross-crate notes), of the throwaway crate, and of the toolchain
+//! sysroot (in a note pointing into the standard library, which carries the user's home
+//! directory, the pinned nightly's name, and the host target triple), plus a note pointing
 //! at a hash-named temp file when a long type is elided. This module rewrites the paths to
 //! stable placeholders and drops the temp-file note, so a snapshot depends only on the
 //! diagnostic content. It applies to the rendered `.stderr` of both the tool pass and the
@@ -34,12 +36,12 @@ const DROP_MARKERS: &[&str] = &[
 ];
 
 /// Rewrite rendered `.stderr` output into its committed-snapshot form: drop the
-/// content-free lines above, and replace the throwaway-crate and cgp-checkout absolute
-/// paths with `$DIR` and `$CGP`.
-pub fn normalize(raw: &str, harness_dir: &Path, cgp_root: &Path) -> String {
+/// content-free lines above, and replace the throwaway-crate, cgp-checkout, and sysroot
+/// absolute paths with `$DIR`, `$CGP`, and `$SYSROOT`.
+pub fn normalize(raw: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path) -> String {
     raw.lines()
         .filter(|line| !DROP_MARKERS.iter().any(|marker| line.contains(marker)))
-        .map(|line| replace_paths(line, harness_dir, cgp_root))
+        .map(|line| replace_paths(line, harness_dir, cgp_root, sysroot))
         .map(|line| collapse_chars_spines(&line))
         .collect::<Vec<_>>()
         .join("\n")
@@ -88,16 +90,20 @@ fn collapse_chars_spines(text: &str) -> String {
 /// piece of it would actively hide a defect: [`collapse_chars_spines`] exists to absorb how rustc
 /// truncates a `Chars` spine in a *diagnostic*, but in an expansion a raw `Chars<…>` spine means the
 /// resugaring declined — exactly what the snapshot is there to show.
-pub fn normalize_source(raw: &str, harness_dir: &Path, cgp_root: &Path) -> String {
+pub fn normalize_source(raw: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path) -> String {
     raw.lines()
-        .map(|line| replace_paths(line, harness_dir, cgp_root))
+        .map(|line| replace_paths(line, harness_dir, cgp_root, sysroot))
         .collect::<Vec<_>>()
         .join("\n")
 }
 
-/// Replace the throwaway-crate and cgp-checkout absolute paths with `$DIR`/`$CGP`.
-fn replace_paths(text: &str, harness_dir: &Path, cgp_root: &Path) -> String {
+/// Replace the throwaway-crate, cgp-checkout, and sysroot absolute paths with
+/// `$DIR`/`$CGP`/`$SYSROOT`.
+fn replace_paths(text: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path) -> String {
     let dir = harness_dir.display().to_string();
     let cgp = cgp_root.display().to_string();
-    text.replace(&dir, "$DIR").replace(&cgp, "$CGP")
+    let sysroot = sysroot.display().to_string();
+    text.replace(&dir, "$DIR")
+        .replace(&cgp, "$CGP")
+        .replace(&sysroot, "$SYSROOT")
 }

@@ -12,6 +12,10 @@ fn cgp_root() -> PathBuf {
     PathBuf::from("/home/x/cgp")
 }
 
+fn sysroot() -> PathBuf {
+    PathBuf::from("/home/x/.rustup/toolchains/nightly-2026-09-14-aarch64-unknown-linux-gnu")
+}
+
 #[test]
 fn replaces_paths_and_drops_noise_lines() {
     let raw = "\
@@ -21,7 +25,7 @@ error: boom
    = note: consider using `--verbose` to print the full type name to the console
    = help: keep this
 error: could not compile `ui` (bin \"ui\") due to 1 previous error";
-    let out = normalize(raw, &harness_dir(), &cgp_root());
+    let out = normalize(raw, &harness_dir(), &cgp_root(), &sysroot());
     assert_eq!(
         out,
         "\
@@ -40,7 +44,10 @@ fn collapses_chars_spines_regardless_of_truncation() {
     let truncated_shallow = "`HasField<Symbol<4, Chars<'m', Chars<'a', _>>>>`";
     let expected = "`HasField<Symbol<4, Chars<..>>>`";
     for input in [full, truncated_deep, truncated_shallow] {
-        assert_eq!(normalize(input, &harness_dir(), &cgp_root()), expected);
+        assert_eq!(
+            normalize(input, &harness_dir(), &cgp_root(), &sysroot()),
+            expected
+        );
     }
 }
 
@@ -52,5 +59,25 @@ fn collapses_qualified_and_multiple_spines() {
     let input = "`HasField<Symbol<1, cgp::prelude::Chars<'a', cgp::prelude::Chars<'b', Nil>>>>` \
                  and `HasField<Symbol<1, cgp::prelude::Chars<'c', _>>>`";
     let expected = "`HasField<Symbol<1, cgp::prelude::Chars<..>>>` and `HasField<Symbol<1, cgp::prelude::Chars<..>>>`";
-    assert_eq!(normalize(input, &harness_dir(), &cgp_root()), expected);
+    assert_eq!(
+        normalize(input, &harness_dir(), &cgp_root(), &sysroot()),
+        expected
+    );
+}
+
+#[test]
+fn replaces_the_sysroot_in_a_standard_library_note() {
+    // A diagnostic that points into the standard library names a path holding the user's home
+    // directory, the pinned nightly, and the host target triple — none of which may reach a
+    // snapshot. Whether rustc can show the source line depends on the `rust-src` component, which
+    // `rust-toolchain.toml` pins for exactly that reason; the path itself is normalized here.
+    let raw = "\
+note: required by an implicit `Sized` bound in `Option`
+   --> /home/x/.rustup/toolchains/nightly-2026-09-14-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:598:17";
+    assert_eq!(
+        normalize(raw, &harness_dir(), &cgp_root(), &sysroot()),
+        "\
+note: required by an implicit `Sized` bound in `Option`
+   --> $SYSROOT/lib/rustlib/src/rust/library/core/src/option.rs:598:17"
+    );
 }

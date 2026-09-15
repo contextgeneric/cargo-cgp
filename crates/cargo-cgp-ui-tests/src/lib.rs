@@ -45,6 +45,7 @@ pub fn run(args: Vec<String>) {
     }
 
     let cgp_root = paths::cgp_root();
+    let sysroot = paths::sysroot();
     let jobs = options
         .jobs
         .unwrap_or_else(|| runner::default_jobs(fixtures.len()))
@@ -89,7 +90,7 @@ pub fn run(args: Vec<String>) {
                     failed: false,
                 }
             } else {
-                let outcomes = run_passes(&options, crate_dir, fixture, &cgp_root);
+                let outcomes = run_passes(&options, crate_dir, fixture, &cgp_root, &sysroot);
                 let failed = outcomes
                     .iter()
                     .any(|(_, outcome)| matches!(outcome, Outcome::Mismatch(_)));
@@ -136,19 +137,20 @@ fn run_passes(
     harness_crate: &Path,
     fixture: &Path,
     cgp_root: &Path,
+    sysroot: &Path,
 ) -> Vec<(&'static str, Outcome)> {
     vec![
         (
             "rust",
-            passes::rust_stderr_pass(harness_crate, fixture, cgp_root, options.bless),
+            passes::rust_stderr_pass(harness_crate, fixture, cgp_root, sysroot, options.bless),
         ),
         (
             "cgp",
-            passes::cgp_stderr_pass(harness_crate, fixture, cgp_root, options.bless),
+            passes::cgp_stderr_pass(harness_crate, fixture, cgp_root, sysroot, options.bless),
         ),
         (
             "expand",
-            passes::expand_pass(harness_crate, fixture, cgp_root, options.bless),
+            passes::expand_pass(harness_crate, fixture, cgp_root, sysroot, options.bless),
         ),
     ]
 }

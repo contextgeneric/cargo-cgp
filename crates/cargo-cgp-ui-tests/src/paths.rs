@@ -8,6 +8,7 @@
 
 use std::env;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 /// The cargo-cgp workspace root — two levels up from this crate's manifest
 /// (`crates/cargo-cgp-ui-tests`).
@@ -85,6 +86,33 @@ pub fn ancestor_holding(from: &Path, binary: &str) -> Option<PathBuf> {
 /// The `cargo-cgp` front-end's file name, with the platform's executable suffix.
 fn front_end_name() -> String {
     format!("cargo-cgp{}", env::consts::EXE_SUFFIX)
+}
+
+/// The sysroot of the toolchain the harness runs under, from `rustc --print sysroot`.
+///
+/// A diagnostic that points into the standard library — an implicit `Sized` bound on
+/// `Option`, say — names a path inside this directory, which carries the user's home
+/// directory, the pinned nightly's name, and the host target triple. The snapshots
+/// normalize it to `$SYSROOT` for the same reason they normalize the `cgp` checkout.
+pub fn sysroot() -> PathBuf {
+    let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
+    // Ask through `rustc` as cargo resolves it, so this is the toolchain the fixtures are
+    // actually compiled with rather than whatever `rustc` is first on `PATH`.
+    let rustc = Path::new(&cargo).with_file_name(format!("rustc{}", env::consts::EXE_SUFFIX));
+    let output = Command::new(if rustc.is_file() {
+        rustc.into_os_string()
+    } else {
+        "rustc".into()
+    })
+    .args(["--print", "sysroot"])
+    .output()
+    .expect("running `rustc --print sysroot`");
+
+    PathBuf::from(
+        String::from_utf8_lossy(&output.stdout)
+            .trim_end()
+            .to_owned(),
+    )
 }
 
 /// The root under which the per-worker throwaway crates live (`target/ui-harness`),

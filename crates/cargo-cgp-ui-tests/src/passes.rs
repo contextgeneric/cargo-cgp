@@ -30,18 +30,25 @@ pub fn cgp_stderr_pass(
     harness_crate: &Path,
     fixture: &Path,
     cgp_root: &Path,
+    sysroot: &Path,
     bless: bool,
 ) -> Outcome {
     let raw = harness::run_fixture(harness_crate, fixture);
-    let actual = normalize(&raw, harness_crate, cgp_root);
+    let actual = normalize(&raw, harness_crate, cgp_root, sysroot);
     review(&cgp_stderr_path(fixture), &actual, bless)
 }
 
 /// Run `cargo cgp expand` on the fixture and review its expansion against `.expand.rs` — the Rust
 /// its CGP macros generate, with CGP's type-level constructs resugared.
-pub fn expand_pass(harness_crate: &Path, fixture: &Path, cgp_root: &Path, bless: bool) -> Outcome {
+pub fn expand_pass(
+    harness_crate: &Path,
+    fixture: &Path,
+    cgp_root: &Path,
+    sysroot: &Path,
+    bless: bool,
+) -> Outcome {
     let raw = harness::run_fixture_expand(harness_crate, fixture);
-    let actual = normalize_source(&raw, harness_crate, cgp_root);
+    let actual = normalize_source(&raw, harness_crate, cgp_root, sysroot);
     review(&expand_path(fixture), &actual, bless)
 }
 
@@ -52,9 +59,10 @@ pub fn rust_stderr_pass(
     harness_crate: &Path,
     fixture: &Path,
     cgp_root: &Path,
+    sysroot: &Path,
     bless: bool,
 ) -> Outcome {
     let raw = harness::run_fixture_rust(harness_crate, fixture);
-    let actual = normalize(&raw, harness_crate, cgp_root);
+    let actual = normalize(&raw, harness_crate, cgp_root, sysroot);
     review(&rust_stderr_path(fixture), &actual, bless)
 }
