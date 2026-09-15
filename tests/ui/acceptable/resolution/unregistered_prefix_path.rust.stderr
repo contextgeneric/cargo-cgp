@@ -1,34 +1,19 @@
-error[E0277]: the trait bound `PathCons<Symbol<3, Chars<..>>, _>: DefaultNamespace<_>` is not satisfied
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: IsProviderFor<_, App>` is not satisfied
   --> src/main.rs:50:9
    |
 50 |         GreeterComponent,
-   |         ^^^^^^^^^^^^^^^^ the trait `cgp::prelude::DefaultNamespace<App>` is not implemented for `PathCons<Symbol<3, Chars<..>>, _>`
+   |         ^^^^^^^^^^^^^^^^ the trait `IsProviderFor<GreeterComponent, App>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
    |
-   = help: the following other types implement trait `cgp::prelude::DefaultNamespace<Components>`:
-             AsyncComputerComponent
-             AsyncComputerRefComponent
-             ComputerComponent
-             ComputerRefComponent
-             ErrorRaiserComponent
-             ErrorTypeProviderComponent
-             ErrorWrapperComponent
-             GreeterComponent
-           and 5 others
-note: required for `App` to implement `DelegateComponent<PathCons<Symbol<3, Chars<..>>, _>>`
-  --> src/main.rs:42:1
-   |
-42 | / delegate_components! {
-43 | |     App {
-   | |     ^^^
-44 | |         namespace DefaultNamespace;
-45 | |     }
-46 | | }
-   | |_^
-note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<GreeterComponent, App>`
-  --> src/main.rs:27:1
-   |
-27 | #[cgp_component(Greeter)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorTypeProviderComponent, __Context__>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+             IsProviderFor<GreeterComponent, __Context__>
+           and 10 others
    = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
 note: required by a bound in `__CheckApp`
   --> src/main.rs:48:1
@@ -39,6 +24,6 @@ note: required by a bound in `__CheckApp`
 51 | |     }
 52 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

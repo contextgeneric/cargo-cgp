@@ -8,7 +8,7 @@
 //! It is driven by the `harness = false` test in [`tests/ui.rs`](../../tests/ui.rs), which
 //! calls [`run`]; the logic lives here so it stays small and out of the `bin`/test
 //! entrypoint. Fixtures are checked in parallel across a pool of workers (see [`runner`]).
-//! See the [testing document](../../docs/implementation/testing.md).
+//! See cgp-knowledge-base/cargo-cgp/implementation/testing.md.
 
 pub mod aux;
 pub mod fixtures;

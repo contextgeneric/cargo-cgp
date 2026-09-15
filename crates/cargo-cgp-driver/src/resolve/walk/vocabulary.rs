@@ -16,7 +16,7 @@ use crate::resolve::cgp_item::{is_cgp_item, is_provider_trait};
 /// the resolution independent of `IsProviderFor`.
 pub(crate) fn is_workaround_plumbing<'tcx>(
     tcx: TyCtxt<'tcx>,
-    pred: ty::PolyTraitPredicate<'tcx>,
+    pred: ty::PolyTraitClause<'tcx>,
 ) -> bool {
     let did = pred.skip_binder().trait_ref.def_id;
     is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
@@ -35,7 +35,7 @@ pub(crate) fn is_workaround_plumbing<'tcx>(
 /// while the real provider-trait obligation beside them carries the cause.
 pub(crate) fn is_descendable<'tcx>(
     tcx: TyCtxt<'tcx>,
-    pred: ty::PolyTraitPredicate<'tcx>,
+    pred: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
 ) -> bool {
     let trait_ref = pred.skip_binder().trait_ref;
@@ -46,7 +46,7 @@ pub(crate) fn is_descendable<'tcx>(
 }
 
 /// Whether a trait predicate is a genuine CGP `HasField` bound — the missing-field leaf.
-pub(crate) fn is_has_field(tcx: TyCtxt<'_>, pred: ty::PolyTraitPredicate<'_>) -> bool {
+pub(crate) fn is_has_field(tcx: TyCtxt<'_>, pred: ty::PolyTraitClause<'_>) -> bool {
     is_cgp_item(
         tcx,
         pred.skip_binder().def_id(),

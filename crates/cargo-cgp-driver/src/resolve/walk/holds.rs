@@ -7,7 +7,7 @@ use rustc_trait_selection::traits::ObligationCause;
 use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
 
 /// Whether `pred` already holds — a dependency that is satisfied and so is not descended into.
-pub(crate) fn holds<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitPredicate<'tcx>) -> bool {
+pub(crate) fn holds<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitClause<'tcx>) -> bool {
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
     let obligation = Obligation::new(tcx, ObligationCause::dummy(), ty::ParamEnv::empty(), pred);
     infcx.predicate_must_hold_modulo_regions(&obligation)
@@ -18,7 +18,7 @@ pub(crate) fn holds<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitPredicate<'tcx>)
 /// is `f64`, fails when it is `i32`).
 pub(crate) fn holds_projection<'tcx>(
     tcx: TyCtxt<'tcx>,
-    pred: ty::PolyProjectionPredicate<'tcx>,
+    pred: ty::PolyProjectionClause<'tcx>,
 ) -> bool {
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
     let obligation = Obligation::new(tcx, ObligationCause::dummy(), ty::ParamEnv::empty(), pred);

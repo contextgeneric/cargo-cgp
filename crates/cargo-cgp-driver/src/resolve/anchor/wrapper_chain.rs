@@ -62,7 +62,7 @@ pub fn resolve_wrapper_chain(
         // reached beneath it.
         let mut causes: Vec<(Leaf, Vec<ChainNode>)> = Vec::new();
         for &(clause, _) in tcx
-            .explicit_super_predicates_of(trait_ref.def_id)
+            .explicit_super_clauses_of(trait_ref.def_id)
             .skip_binder()
         {
             let concrete = clause.instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref));
@@ -120,7 +120,7 @@ const MAX_WRAPPER_DEPTH: u32 = 32;
 fn collect_wrapper_chain_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
-    obligation: ty::PolyTraitPredicate<'tcx>,
+    obligation: ty::PolyTraitClause<'tcx>,
     chain: &[DepNode],
     depth: u32,
     out: &mut Vec<(Leaf, Vec<ChainNode>)>,
@@ -174,7 +174,7 @@ fn collect_wrapper_chain_causes<'tcx>(
 fn consumer_handoff_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
-    obligation: ty::PolyTraitPredicate<'tcx>,
+    obligation: ty::PolyTraitClause<'tcx>,
 ) -> Option<Causes> {
     let trait_ref = obligation.skip_binder().trait_ref;
     let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
@@ -200,8 +200,8 @@ fn consumer_handoff_causes<'tcx>(
 /// base.
 fn wrapper_chain_children<'tcx>(
     tcx: TyCtxt<'tcx>,
-    obligation: ty::PolyTraitPredicate<'tcx>,
-) -> Option<Vec<ty::PolyTraitPredicate<'tcx>>> {
+    obligation: ty::PolyTraitClause<'tcx>,
+) -> Option<Vec<ty::PolyTraitClause<'tcx>>> {
     let param_env = ty::ParamEnv::empty();
 
     for impl_did in tcx.all_impls(obligation.def_id()) {
@@ -238,10 +238,10 @@ fn wrapper_chain_children<'tcx>(
         }
 
         let mut children = Vec::new();
-        for (predicate, _) in tcx.predicates_of(impl_did).instantiate(tcx, impl_args) {
+        for (predicate, _) in tcx.clauses_of(impl_did).instantiate(tcx, impl_args) {
             // Keep the predicate un-normalized so an associated-type `Self` survives; `skip_norm_wip`
             // unwraps without normalizing, unlike the `ocx.normalize` a trait-clause walk uses.
-            let clause = infcx.resolve_vars_if_possible(predicate.skip_norm_wip());
+            let clause = infcx.deeply_resolve_ignoring_regions(predicate.skip_norm_wip());
             let clause = tcx.erase_and_anonymize_regions(clause);
             let Some(tp) = clause.as_trait_clause() else {
                 continue;

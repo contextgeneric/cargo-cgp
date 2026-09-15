@@ -2,7 +2,7 @@ error[E0599]: the method `format_pair` exists for struct `App`, but its trait bo
   --> src/main.rs:51:17
    |
 38 | pub struct App {
-   | -------------- method `format_pair` not found for this struct because it doesn't satisfy `App: CanFormatPair<_>` or `App: PairFormatter<App, _>`
+   | -------------- method `format_pair` not found for this struct because it doesn't satisfy `App: CanFormatPair<_>` or `_: HasField<Symbol<9, Chars<..>>>`
 ...
 51 |     let _ = app.format_pair((1_u32, 2_u64));
    |                 ^^^^^^^^^^^ this is an associated function, not a method
@@ -13,28 +13,25 @@ note: the candidate is defined in the trait `PairFormatter`
    |
 19 |     fn format_pair(&self, value: T) -> String;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `App: PairFormatter<App, _>` was not satisfied
-  --> src/main.rs:17:17
+note: trait bound `App: cgp::prelude::HasField<Symbol<9, cgp::prelude::Chars<..>>>` was not satisfied
+  --> src/main.rs:22:1
    |
-17 |   #[cgp_component(PairFormatter)]
-   |  _----------------^--------------
-18 | | pub trait CanFormatPair<T> {
-   | |           ---------------^
-   | |__________________________|
-   |                            unsatisfied trait bound introduced here
-note: the trait `PairFormatter` must be implemented
-  --> src/main.rs:18:1
+22 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+23 | pub trait HasSeparator {
+   |           ^^^^^^^^^^^^
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
    |
-18 | / pub trait CanFormatPair<T> {
-19 | |     fn format_pair(&self, value: T) -> String;
-20 | | }
-   | |_^
+46 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanFormatPair` defines an item `format_pair`, perhaps you need to implement it
   --> src/main.rs:18:1
    |
 18 | pub trait CanFormatPair<T> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
 51 -     let _ = app.format_pair((1_u32, 2_u64));

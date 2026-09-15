@@ -1,113 +1,24 @@
-error[E0277]: the trait bound `NoScalar: HasScalarType` is not satisfied
-  --> src/main.rs:50:10
-   |
-50 |     App: GetScalar,
-   |          ^^^^^^^^^ unsatisfied trait bound
-   |
-help: the trait `DelegateComponent<ScalarTypeProviderComponent>` is not implemented for `NoScalar`
-  --> src/main.rs:38:1
-   |
-38 | pub struct NoScalar;
-   | ^^^^^^^^^^^^^^^^^^^
-   = help: the following other types implement trait `DelegateComponent<Key>`:
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<ComputerComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<ComputerRefComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<HandlerComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<HandlerRefComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<TryComputerComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<TryComputerRefComponent>`
-             `MatchFirstWithFieldHandlersInputs<Provider>` implements `DelegateComponent<(Input, Args)>`
-             `MatchFirstWithFieldHandlersInputsMut<Provider>` implements `DelegateComponent<(&'a mut Input, Args)>`
-           and 61 others
-note: required for `NoScalar` to implement `ScalarTypeProvider<NoScalar>`
-  --> src/main.rs:22:1
-   |
-22 | #[cgp_type]
-   | ^^^^^^^^^^^
-note: required for `NoScalar` to implement `HasScalarType`
-  --> src/main.rs:22:1
-   |
-22 | #[cgp_type]
-   | ^^^^^^^^^^^
-23 | pub trait HasScalarType {
-   |           ^^^^^^^^^^^^^
-note: required by a bound in `GetScalar`
-  --> src/main.rs:32:28
-   |
-32 | #[use_type(HasTypes.Types, HasScalarType.Scalar in Types)]
-   |                            ^^^^^^^^^^^^^ required by this bound in `GetScalar`
-33 | pub fn get_scalar(&self) -> Scalar {
-   |        ---------- required by a bound in this trait
-   = note: this error originates in the attribute macro `cgp_type` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `NoScalar: HasScalarType` is not satisfied
-  --> src/main.rs:50:10
-   |
-50 |     App: GetScalar,
-   |          ^^^^^^^^^ unsatisfied trait bound
-   |
-help: the trait `IsProviderFor<ScalarTypeProviderComponent, NoScalar>` is not implemented for `NoScalar`
-  --> src/main.rs:38:1
-   |
-38 | pub struct NoScalar;
-   | ^^^^^^^^^^^^^^^^^^^
-   = help: the following other types implement trait `IsProviderFor<Component, Context, Params>`:
-             `BindErr<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
-             `BindErr<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T1, E>)>`
-             `BindOk<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T, E1>)>`
-             `BindOk<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T, E1>)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<ComputerComponent, Context, (Code, Builder)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<HandlerComponent, Context, (Code, Builder)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<TryComputerComponent, Context, (Code, Builder)>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `IsProviderFor<ComputerComponent, __Context__, __Params__>`
-           and 206 others
-note: required for `NoScalar` to implement `ScalarTypeProvider<NoScalar>`
-  --> src/main.rs:22:1
-   |
-22 | #[cgp_type]
-   | ^^^^^^^^^^^
-note: required for `NoScalar` to implement `HasScalarType`
-  --> src/main.rs:22:1
-   |
-22 | #[cgp_type]
-   | ^^^^^^^^^^^
-23 | pub trait HasScalarType {
-   |           ^^^^^^^^^^^^^
-note: required by a bound in `GetScalar`
-  --> src/main.rs:32:28
-   |
-32 | #[use_type(HasTypes.Types, HasScalarType.Scalar in Types)]
-   |                            ^^^^^^^^^^^^^ required by this bound in `GetScalar`
-33 | pub fn get_scalar(&self) -> Scalar {
-   |        ---------- required by a bound in this trait
-   = note: this error originates in the attribute macro `cgp_type` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `NoScalar: DelegateComponent<ScalarTypeProviderComponent>` is not satisfied
+error[E0277]: the trait bound `NoScalar: ScalarTypeProvider<NoScalar>` is not satisfied
   --> src/main.rs:50:5
    |
 50 |     App: GetScalar,
    |     ^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `DelegateComponent<ScalarTypeProviderComponent>` is not implemented for `NoScalar`
+help: the trait `ScalarTypeProvider<NoScalar>` is not implemented for `NoScalar`
   --> src/main.rs:38:1
    |
 38 | pub struct NoScalar;
    | ^^^^^^^^^^^^^^^^^^^
-   = help: the following other types implement trait `DelegateComponent<Key>`:
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<ComputerComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<ComputerRefComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<HandlerComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<HandlerRefComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<TryComputerComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<TryComputerRefComponent>`
-             `MatchFirstWithFieldHandlersInputs<Provider>` implements `DelegateComponent<(Input, Args)>`
-             `MatchFirstWithFieldHandlersInputsMut<Provider>` implements `DelegateComponent<(&'a mut Input, Args)>`
-           and 61 others
-note: required for `NoScalar` to implement `ScalarTypeProvider<NoScalar>`
+help: the following other types implement trait `ScalarTypeProvider<__Context__>`
   --> src/main.rs:22:1
    |
 22 | #[cgp_type]
    | ^^^^^^^^^^^
+   | |
+   | `RedirectLookup<__Components__, __Path__>`
+   | `UseContext`
+   | `UseType<Scalar>`
+   | `WithProvider<__Provider__>`
 note: required for `NoScalar` to implement `HasScalarType`
   --> src/main.rs:22:1
    |
@@ -130,52 +41,41 @@ help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
 15 + #![feature(trivial_bounds)]
    |
 
-error[E0277]: the trait bound `NoScalar: IsProviderFor<ScalarTypeProviderComponent, NoScalar>` is not satisfied
-  --> src/main.rs:50:5
+error[E0277]: the trait bound `<App as HasTypes>::Types: HasScalarType` is not satisfied
+  --> src/main.rs:50:10
    |
 50 |     App: GetScalar,
-   |     ^^^^^^^^^^^^^^ unsatisfied trait bound
+   |          ^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `IsProviderFor<ScalarTypeProviderComponent, NoScalar>` is not implemented for `NoScalar`
+help: the trait `ScalarTypeProvider<NoScalar>` is not implemented for `NoScalar`
   --> src/main.rs:38:1
    |
 38 | pub struct NoScalar;
    | ^^^^^^^^^^^^^^^^^^^
-   = help: the following other types implement trait `IsProviderFor<Component, Context, Params>`:
-             `BindErr<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
-             `BindErr<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T1, E>)>`
-             `BindOk<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T, E1>)>`
-             `BindOk<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T, E1>)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<ComputerComponent, Context, (Code, Builder)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<HandlerComponent, Context, (Code, Builder)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<TryComputerComponent, Context, (Code, Builder)>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `IsProviderFor<ComputerComponent, __Context__, __Params__>`
-           and 206 others
-note: required for `NoScalar` to implement `ScalarTypeProvider<NoScalar>`
+help: the following other types implement trait `ScalarTypeProvider<__Context__>`
   --> src/main.rs:22:1
    |
 22 | #[cgp_type]
    | ^^^^^^^^^^^
-note: required for `NoScalar` to implement `HasScalarType`
+   | |
+   | `RedirectLookup<__Components__, __Path__>`
+   | `UseContext`
+   | `UseType<Scalar>`
+   | `WithProvider<__Provider__>`
+note: required for `<App as HasTypes>::Types` to implement `HasScalarType`
   --> src/main.rs:22:1
    |
 22 | #[cgp_type]
    | ^^^^^^^^^^^
 23 | pub trait HasScalarType {
    |           ^^^^^^^^^^^^^
-note: required for `App` to implement `GetScalar`
-  --> src/main.rs:31:1
+note: required by a bound in `GetScalar`
+  --> src/main.rs:32:28
    |
-31 | #[cgp_fn]
-   | ^^^^^^^^^
 32 | #[use_type(HasTypes.Types, HasScalarType.Scalar in Types)]
-   |                            ------------- unsatisfied trait bound introduced here
+   |                            ^^^^^^^^^^^^^ required by this bound in `GetScalar`
 33 | pub fn get_scalar(&self) -> Scalar {
-   |        ^^^^^^^^^^
-   = note: this error originates in the attribute macro `cgp_type` which comes from the expansion of the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
-help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
-   |
-15 + #![feature(trivial_bounds)]
-   |
+   |        ---------- required by a bound in this trait
+   = note: this error originates in the attribute macro `cgp_type` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

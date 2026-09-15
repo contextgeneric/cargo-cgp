@@ -44,7 +44,7 @@ pub(crate) struct ProjectionMismatch<'tcx> {
 /// hold check.
 pub(crate) fn projection_mismatch<'tcx>(
     tcx: TyCtxt<'tcx>,
-    pred: ty::PolyTraitPredicate<'tcx>,
+    pred: ty::PolyTraitClause<'tcx>,
 ) -> Option<ProjectionMismatch<'tcx>> {
     // Prefer a concrete-`Self` impl, falling back to a blanket, exactly as
     // `impl_where_obligations` does. For a provider trait both the concrete provider impl (which
@@ -66,7 +66,7 @@ pub(crate) fn projection_mismatch<'tcx>(
 /// unmet projection it does carry.
 fn impl_projection_mismatch<'tcx>(
     tcx: TyCtxt<'tcx>,
-    pred: ty::PolyTraitPredicate<'tcx>,
+    pred: ty::PolyTraitClause<'tcx>,
     impl_did: DefId,
 ) -> Option<Option<ProjectionMismatch<'tcx>>> {
     let param_env = ty::ParamEnv::empty();
@@ -101,11 +101,11 @@ fn impl_projection_mismatch<'tcx>(
     }
 
     let mut fallback: Option<ProjectionMismatch<'tcx>> = None;
-    for (predicate, _) in tcx.predicates_of(impl_did).instantiate(tcx, impl_args) {
+    for (predicate, _) in tcx.clauses_of(impl_did).instantiate(tcx, impl_args) {
         // Keep the projection un-normalized so its `<.. as Trait>::Assoc` alias survives;
         // `skip_norm_wip` unwraps without normalizing, unlike the `ocx.normalize` the trait-clause
         // walk uses.
-        let clause = infcx.resolve_vars_if_possible(predicate.skip_norm_wip());
+        let clause = infcx.deeply_resolve_ignoring_regions(predicate.skip_norm_wip());
         // An unconstrained impl parameter leaves inference vars behind; such a projection
         // cannot be re-checked in a fresh context, so skip it (regions are erased below).
         if clause.has_non_region_infer() {

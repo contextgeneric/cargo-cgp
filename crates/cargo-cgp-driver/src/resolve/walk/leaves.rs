@@ -41,7 +41,7 @@ const MAX_DEPTH: u32 = 256;
 pub(crate) fn resolve_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
-    top: ty::PolyTraitPredicate<'tcx>,
+    top: ty::PolyTraitClause<'tcx>,
 ) -> Option<Resolved> {
     // Erase the seed's free regions up front, exactly as every descendant obligation is erased by
     // [`impl_where_obligations`]. A lifetime-parameterized check entry (`(Life<'a>, str)`) seeds an
@@ -60,7 +60,7 @@ pub(crate) fn resolve_leaves<'tcx>(
 fn compute_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
-    top: ty::PolyTraitPredicate<'tcx>,
+    top: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
 ) -> Option<Resolved> {
     let sub = resolve_node(tcx, cache, top, None, context, &[], 0);
@@ -107,10 +107,10 @@ fn compute_leaves<'tcx>(
 fn resolve_node<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
-    pred: ty::PolyTraitPredicate<'tcx>,
+    pred: ty::PolyTraitClause<'tcx>,
     parent: Option<ty::TraitRef<'tcx>>,
     context: Ty<'tcx>,
-    prefix: &[ty::PolyTraitPredicate<'tcx>],
+    prefix: &[ty::PolyTraitClause<'tcx>],
     depth: u32,
 ) -> SubResult {
     // Depth cap: a divergent wiring the cycle guard cannot catch (obligations that keep growing
@@ -211,7 +211,7 @@ fn resolve_node<'tcx>(
         .collect();
 
     // Decide the children to descend, or return a terminal / projection result directly.
-    let children: Vec<ty::PolyTraitPredicate<'tcx>> = if !descendable {
+    let children: Vec<ty::PolyTraitClause<'tcx>> = if !descendable {
         // A foreign-type bound is normally the terminal root cause, and the descent must not wander
         // into whatever `std` blanket impl happens to satisfy it. Two exceptions are followed: a CGP
         // getter/capability on a non-context type whose blanket impl depends on the *context* (so the
@@ -304,9 +304,9 @@ fn cache_if_complete(cache: &ResolveCache, key: NodeKey, result: SubResult) -> S
 /// path they can actually wire ([`trim_unknown_path_tail`]).
 fn missing_context_wiring<'tcx>(
     tcx: TyCtxt<'tcx>,
-    pred: ty::PolyTraitPredicate<'tcx>,
+    pred: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
-) -> Option<ty::PolyTraitPredicate<'tcx>> {
+) -> Option<ty::PolyTraitClause<'tcx>> {
     let trait_ref = pred.skip_binder().trait_ref;
     if !is_cgp_item(
         tcx,
@@ -335,7 +335,7 @@ fn missing_context_wiring<'tcx>(
 /// no-cause result. Not cached — the classification reads `parent`, which lies outside the leaf.
 fn terminal_result<'tcx>(
     tcx: TyCtxt<'tcx>,
-    erased: ty::PolyTraitPredicate<'tcx>,
+    erased: ty::PolyTraitClause<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
     parent: Option<ty::TraitRef<'tcx>>,
     context: Ty<'tcx>,
@@ -370,14 +370,14 @@ fn terminal_result<'tcx>(
 /// `parent_ref` (the node's own trait) is that leaf's parent.
 fn projection_result<'tcx>(
     tcx: TyCtxt<'tcx>,
-    erased: ty::PolyTraitPredicate<'tcx>,
+    erased: ty::PolyTraitClause<'tcx>,
     parent_ref: ty::TraitRef<'tcx>,
     context: Ty<'tcx>,
     mismatch: ProjectionMismatch<'tcx>,
     self_fp: Fingerprint,
 ) -> SubResult {
     let leaf_ref = mismatch.trait_ref;
-    let leaf_poly: ty::PolyTraitPredicate<'tcx> = ty::Binder::dummy(leaf_ref).upcast(tcx);
+    let leaf_poly: ty::PolyTraitClause<'tcx> = ty::Binder::dummy(leaf_ref).upcast(tcx);
     if leaf_poly.has_placeholders() {
         return SubResult::empty(self_fp);
     }

@@ -27,8 +27,8 @@ use crate::resolve::walk::{resolve_fixed_projections, unknowns_to_placeholders};
 /// (`App: CanUseComponent<…>` has only the blanket).
 pub(crate) fn impl_where_obligations<'tcx>(
     tcx: TyCtxt<'tcx>,
-    obligation: ty::PolyTraitPredicate<'tcx>,
-) -> Option<Vec<ty::PolyTraitPredicate<'tcx>>> {
+    obligation: ty::PolyTraitClause<'tcx>,
+) -> Option<Vec<ty::PolyTraitClause<'tcx>>> {
     let param_env = ty::ParamEnv::empty();
 
     for impl_did in impls_concrete_first(tcx, obligation.def_id()) {
@@ -71,7 +71,7 @@ pub(crate) fn impl_where_obligations<'tcx>(
         }
 
         let raw: Vec<Unnormalized<ty::Clause<'tcx>>> = tcx
-            .predicates_of(impl_did)
+            .clauses_of(impl_did)
             .instantiate(tcx, impl_args)
             .into_iter()
             .map(|(clause, _)| clause)
@@ -113,14 +113,14 @@ pub(crate) fn impl_where_obligations<'tcx>(
             // inference variable, losing the projection.
             let pre = resolve_fixed_projections(
                 tcx,
-                infcx.resolve_vars_if_possible(clause.skip_norm_wip()),
+                infcx.deeply_resolve_ignoring_regions(clause.skip_norm_wip()),
             );
             let clause: ty::Clause<'tcx> = ocx.normalize(
                 &ObligationCause::dummy(),
                 param_env,
                 Unnormalized::new_wip(pre),
             );
-            let clause = infcx.resolve_vars_if_possible(clause);
+            let clause = infcx.deeply_resolve_ignoring_regions(clause);
             // A clause that still carries inference vars after solving is one whose parameter the
             // impl match left unconstrained — most often a *later pipeline stage keyed on an
             // earlier stage's unresolved `::Output`* (`ProviderB: Handler<Ctx, Code, ProviderA::

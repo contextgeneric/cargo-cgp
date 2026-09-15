@@ -2,7 +2,9 @@ error[E0277]: the trait bound `App: GetName` is not satisfied
   --> src/main.rs:50:15
    |
 50 |     greet_all(app)
-   |               ^^^ unsatisfied trait bound
+   |     --------- ^^^ unsatisfied trait bound
+   |     |
+   |     required by a bound introduced by this call
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<6, Chars<..>>>` is implemented for it

@@ -1,72 +1,29 @@
-error[E0277]: the trait bound `RedirectLookup<App, PathCons<EncoderComponent, Nil>>: Encoder<App, Element<u32>>` is not satisfied
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProviderFor<_, App, _>` is not satisfied
   --> src/main.rs:94:9
    |
 94 |         FirstReporterComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^ the trait `Encoder<App, Element<u32>>` is not implemented for `RedirectLookup<App, PathCons<EncoderComponent, Nil>>`
+   |         ^^^^^^^^^^^^^^^^^^^^^^ the trait `IsProviderFor<EncoderComponent, App, Element<u32>>` is not implemented for `RedirectLookup<App, PathCons<EncoderComponent, Nil>>`
    |
-help: the trait `Encoder<__Context__, Value>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
-  --> src/main.rs:25:1
+   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<EncoderComponent, __Context__, Value>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorTypeProviderComponent, __Context__>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+           and 12 others
+note: required for `App` to implement `IsProviderFor<EncoderComponent, App, Element<u32>>`
+  --> src/main.rs:71:1
    |
-25 | #[cgp_component(Encoder)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied requirement introduced here: `App: DelegateComponent<<PathCons<EncoderComponent, Nil> as ConcatPath<PathCons<Element<u32>, Nil>>>::Output>`
-note: required for `App` to implement `Encoder<App, Element<u32>>`
-  --> src/main.rs:25:1
-   |
-25 |   #[cgp_component(Encoder)]
-   |  _^^^^^^^^^^^^^^^^^^^^^^^^^
-26 | | pub trait CanEncode<Value> {
-   | |__________________________^
-note: required for `App` to implement `CanEncode<Element<u32>>`
-  --> src/main.rs:25:1
-   |
-25 | #[cgp_component(Encoder)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-26 | pub trait CanEncode<Value> {
-   |           ^^^^^^^^^^^^^^^^
-note: required for `ReportFirst` to implement `IsProviderFor<FirstReporterComponent, App>`
-  --> src/main.rs:48:1
-   |
-48 | #[cgp_impl(new ReportFirst)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-49 | #[uses(CanEncode<Element<u32>>)]
-   |        ----------------------- unsatisfied trait bound introduced here
-   = note: required for `App` to implement `CanUseComponent<FirstReporterComponent>`
-note: required by a bound in `__CheckApp`
-  --> src/main.rs:92:1
-   |
-92 | / check_components! {
-93 | |     App {
-94 | |         FirstReporterComponent,
-95 | |         SecondReporterComponent,
-96 | |     }
-97 | | }
-   | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `App: CanUseComponent<FirstReporterComponent>` is not satisfied
-  --> src/main.rs:94:9
-   |
-94 |         FirstReporterComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-   |
-help: the trait `DelegateComponent<PathCons<EncoderComponent, PathCons<Element<u32>, Nil>>>` is not implemented for `App`
-  --> src/main.rs:69:1
-   |
-69 | pub struct App;
-   | ^^^^^^^^^^^^^^
-   = help: `App` implements trait `DelegateComponent<Key>`:
-             DelegateComponent<EncoderComponent>
-             DelegateComponent<FirstReporterComponent>
-             DelegateComponent<PathCons<EncoderComponent, PathCons<u32, __Wildcard__>>>
-             DelegateComponent<PathCons<EncoderComponent, PathCons<u64, __Wildcard__>>>
-             DelegateComponent<SecondReporterComponent>
-note: required for `RedirectLookup<App, PathCons<EncoderComponent, Nil>>` to implement `IsProviderFor<EncoderComponent, App, Element<u32>>`
-  --> src/main.rs:25:1
-   |
-25 | #[cgp_component(Encoder)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-   = note: 1 redundant requirement hidden
-   = note: required for `App` to implement `IsProviderFor<EncoderComponent, App, Element<u32>>`
+71 | / delegate_components! {
+72 | |     App {
+   | |     ^^^
+73 | |         open EncoderComponent;
+...  |
+90 | | }
+   | |_^
 note: required for `App` to implement `Encoder<App, Element<u32>>`
   --> src/main.rs:25:1
    |
@@ -94,77 +51,34 @@ note: required by a bound in `__CheckApp`
 96 | |     }
 97 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0277]: the trait bound `RedirectLookup<App, PathCons<EncoderComponent, Nil>>: Encoder<App, Element<u64>>` is not satisfied
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProviderFor<_, App, _>` is not satisfied
   --> src/main.rs:95:9
    |
 95 |         SecondReporterComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^ the trait `Encoder<App, Element<u64>>` is not implemented for `RedirectLookup<App, PathCons<EncoderComponent, Nil>>`
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ the trait `IsProviderFor<EncoderComponent, App, Element<u64>>` is not implemented for `RedirectLookup<App, PathCons<EncoderComponent, Nil>>`
    |
-help: the trait `Encoder<__Context__, Value>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
-  --> src/main.rs:25:1
+   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<EncoderComponent, __Context__, Value>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorTypeProviderComponent, __Context__>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+           and 12 others
+note: required for `App` to implement `IsProviderFor<EncoderComponent, App, Element<u64>>`
+  --> src/main.rs:71:1
    |
-25 | #[cgp_component(Encoder)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied requirement introduced here: `App: DelegateComponent<<PathCons<EncoderComponent, Nil> as ConcatPath<PathCons<Element<u64>, Nil>>>::Output>`
-note: required for `App` to implement `Encoder<App, Element<u64>>`
-  --> src/main.rs:25:1
-   |
-25 |   #[cgp_component(Encoder)]
-   |  _^^^^^^^^^^^^^^^^^^^^^^^^^
-26 | | pub trait CanEncode<Value> {
-   | |__________________________^
-note: required for `App` to implement `CanEncode<Element<u64>>`
-  --> src/main.rs:25:1
-   |
-25 | #[cgp_component(Encoder)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-26 | pub trait CanEncode<Value> {
-   |           ^^^^^^^^^^^^^^^^
-note: required for `ReportSecond` to implement `IsProviderFor<SecondReporterComponent, App>`
-  --> src/main.rs:61:1
-   |
-61 | #[cgp_impl(new ReportSecond)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-62 | #[uses(CanEncode<Element<u64>>)]
-   |        ----------------------- unsatisfied trait bound introduced here
-   = note: required for `App` to implement `CanUseComponent<SecondReporterComponent>`
-note: required by a bound in `__CheckApp`
-  --> src/main.rs:92:1
-   |
-92 | / check_components! {
-93 | |     App {
-94 | |         FirstReporterComponent,
-95 | |         SecondReporterComponent,
-96 | |     }
-97 | | }
-   | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `App: CanUseComponent<SecondReporterComponent>` is not satisfied
-  --> src/main.rs:95:9
-   |
-95 |         SecondReporterComponent,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-   |
-help: the trait `DelegateComponent<PathCons<EncoderComponent, PathCons<Element<u64>, Nil>>>` is not implemented for `App`
-  --> src/main.rs:69:1
-   |
-69 | pub struct App;
-   | ^^^^^^^^^^^^^^
-   = help: `App` implements trait `DelegateComponent<Key>`:
-             DelegateComponent<EncoderComponent>
-             DelegateComponent<FirstReporterComponent>
-             DelegateComponent<PathCons<EncoderComponent, PathCons<u32, __Wildcard__>>>
-             DelegateComponent<PathCons<EncoderComponent, PathCons<u64, __Wildcard__>>>
-             DelegateComponent<SecondReporterComponent>
-note: required for `RedirectLookup<App, PathCons<EncoderComponent, Nil>>` to implement `IsProviderFor<EncoderComponent, App, Element<u64>>`
-  --> src/main.rs:25:1
-   |
-25 | #[cgp_component(Encoder)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-   = note: 1 redundant requirement hidden
-   = note: required for `App` to implement `IsProviderFor<EncoderComponent, App, Element<u64>>`
+71 | / delegate_components! {
+72 | |     App {
+   | |     ^^^
+73 | |         open EncoderComponent;
+...  |
+90 | | }
+   | |_^
 note: required for `App` to implement `Encoder<App, Element<u64>>`
   --> src/main.rs:25:1
    |
@@ -192,16 +106,21 @@ note: required by a bound in `__CheckApp`
 96 | |     }
 97 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0599]: the method `report_first` exists for struct `App`, but its trait bounds were not satisfied
    --> src/main.rs:102:17
     |
  69 | pub struct App;
-    | -------------- method `report_first` not found for this struct because it doesn't satisfy `App: CanReportFirst` or `App: FirstReporter<App>`
+    | -------------- method `report_first` not found for this struct because it doesn't satisfy `App: CanReportFirst`
 ...
 102 |     let _ = app.report_first();
     |                 ^^^^^^^^^^^^ this is an associated function, not a method
+    |
+   ::: $CGP/crates/core/cgp-component/src/providers/redirect_lookup.rs:3:1
+    |
+  3 | pub struct RedirectLookup<Key, Components>(pub PhantomData<(Key, Components)>);
+    | ------------------------------------------ doesn't satisfy `_: IsProviderFor<EncoderComponent, App, Element<u32>>`
     |
     = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `FirstReporter`
@@ -209,27 +128,25 @@ note: the candidate is defined in the trait `FirstReporter`
     |
  45 |     fn report_first(&self) -> String;
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `App: FirstReporter<App>` was not satisfied
-   --> src/main.rs:43:1
+note: trait bound `RedirectLookup<App, PathCons<EncoderComponent, Nil>>: IsProviderFor<EncoderComponent, App, Element<u32>>` was not satisfied
+   --> src/main.rs:71:1
     |
- 43 | #[cgp_component(FirstReporter)]
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 44 | pub trait CanReportFirst {
-    |           ^^^^^^^^^^^^^^
-note: the trait `FirstReporter` must be implemented
-   --> src/main.rs:44:1
+ 71 | / delegate_components! {
+ 72 | |     App {
+    | |     ---
+ 73 | |         open EncoderComponent;
+...   |
+ 90 | | }
+    | | ^ unsatisfied trait bound introduced here
+    | |_|
     |
- 44 | / pub trait CanReportFirst {
- 45 | |     fn report_first(&self) -> String;
- 46 | | }
-    | |_^
     = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanReportFirst` defines an item `report_first`, perhaps you need to implement it
    --> src/main.rs:44:1
     |
  44 | pub trait CanReportFirst {
     | ^^^^^^^^^^^^^^^^^^^^^^^^
-    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
     |
 102 -     let _ = app.report_first();

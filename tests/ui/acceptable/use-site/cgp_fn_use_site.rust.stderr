@@ -2,27 +2,25 @@ error[E0599]: the method `describe` exists for reference `&App`, but its trait b
   --> src/main.rs:57:9
    |
 50 | pub struct App {
-   | -------------- doesn't satisfy `App: Describe` or `App: GetName`
+   | -------------- doesn't satisfy `App: Describe` or `_: HasField<Symbol<4, Chars<..>>>`
 ...
 57 |     app.describe()
    |         ^^^^^^^^ method cannot be called on `&App` due to unsatisfied trait bounds
    |
 note: the following trait bounds were not satisfied:
-      `&App: GetName`
-      `App: GetName`
-  --> src/main.rs:44:8
-   |
-43 | #[cgp_fn]
-   | ---------
-44 | #[uses(GetName, GetCount)]
-   |        ^^^^^^^ unsatisfied trait bound introduced here
-45 | pub fn describe(&self) -> String {
-   |        --------
-note: the trait `GetName` must be implemented
+      `&App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>`
+      `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>`
   --> src/main.rs:30:1
    |
 30 | #[cgp_fn]
    | ^^^^^^^^^
+31 | pub fn get_name(&self, #[implicit] name: &str) -> String {
+   |        ^^^^^^^^
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+   |
+46 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `Describe` defines an item `describe`, perhaps you need to implement it
   --> src/main.rs:43:1

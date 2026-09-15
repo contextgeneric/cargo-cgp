@@ -139,8 +139,8 @@ fn enclosing_trait_impl(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
 /// Whether `impl_did`'s `where` clause bounds a type parameter named `param` by trait `trait_did` —
 /// i.e. the inner provider is already imported (via `#[use_provider]` or a hand-written bound).
 fn impl_bounds_param_by(tcx: TyCtxt<'_>, impl_did: DefId, trait_did: DefId, param: &str) -> bool {
-    tcx.predicates_of(impl_did)
-        .predicates
+    tcx.clauses_of(impl_did)
+        .clauses
         .iter()
         .filter_map(|(clause, _)| clause.as_trait_clause())
         .any(|bound| {

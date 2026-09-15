@@ -36,7 +36,7 @@ use crate::resolve::label::render_ty;
 /// terminal leaf.
 pub(crate) fn label_for<'tcx>(
     tcx: TyCtxt<'tcx>,
-    pred: ty::PolyTraitPredicate<'tcx>,
+    pred: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
 ) -> Option<DepNode> {
     let trait_ref = pred.skip_binder().trait_ref;

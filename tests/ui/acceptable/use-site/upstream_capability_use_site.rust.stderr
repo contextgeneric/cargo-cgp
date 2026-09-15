@@ -2,21 +2,21 @@ error[E0599]: the method `describe` exists for reference `&App`, but its trait b
   --> src/main.rs:36:9
    |
 30 | pub struct App {
-   | -------------- doesn't satisfy `App: Describe` or `App: HasName`
+   | -------------- doesn't satisfy `App: Describe` or `_: HasField<Symbol<4, Chars<..>>>`
 ...
 36 |     app.describe()
    |         ^^^^^^^^ method cannot be called on `&App` due to unsatisfied trait bounds
    |
    = note: the following trait bounds were not satisfied:
-           `App: HasName`
+           `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>`
            which is required by `App: Describe`
-           `&App: HasName`
+           `&App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>`
            which is required by `&App: Describe`
-note: the trait `HasName` must be implemented
-  --> /home/soares/development/context-generic/cargo-cgp/target/ui-harness/aux/cgp-test-crate-a/src/lib.rs:20:1
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
    |
-20 | pub trait HasName {
-   | ^^^^^^^^^^^^^^^^^
+46 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
    = note: the following trait defines an item `describe`, perhaps you need to implement it:
            candidate #1: `Describe`

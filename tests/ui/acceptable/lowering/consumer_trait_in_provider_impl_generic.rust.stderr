@@ -1,12 +1,14 @@
 error[E0425]: cannot find type `CanCalculateAreaComponent` in this scope
   --> src/main.rs:16:1
    |
- 5 | #[cgp_component(AreaCalculator)]
-   |                 -------------- similarly named struct `AreaCalculatorComponent` defined here
-...
 16 | #[cgp_impl(new RectangleArea)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
    |
+note: similarly named struct `AreaCalculatorComponent` defined here
+  --> src/main.rs:5:17
+   |
+ 5 | #[cgp_component(AreaCalculator)]
+   |                 ^^^^^^^^^^^^^^
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: a struct with a similar name exists
    |

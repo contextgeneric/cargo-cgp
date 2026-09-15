@@ -4,7 +4,7 @@
 //! The `GreetChoice` provider's `where` clause names `Choice::Fields` — but `Choice` is an enum
 //! with no such associated item reachable that way (the writer meant `<Choice as HasFields>::Fields`
 //! and forgot the qualified form), so rustc reports `E0599: no variant named Fields`. Crucially that
-//! error is emitted *during* predicate lowering (`gather_explicit_predicates_of`), while that query
+//! error is emitted *during* predicate lowering (`gather_explicit_clauses_of`), while that query
 //! is mid-flight.
 //!
 //! The resolver used to treat every `E0599` as a candidate consumer-method failure and run its trait

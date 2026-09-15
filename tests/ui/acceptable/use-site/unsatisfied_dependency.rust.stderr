@@ -2,7 +2,7 @@ error[E0599]: the method `greet` exists for struct `Person`, but its trait bound
   --> src/main.rs:56:12
    |
 41 | pub struct Person {
-   | ----------------- method `greet` not found for this struct because it doesn't satisfy `Person: CanGreet` or `Person: Greeter<Person>`
+   | ----------------- method `greet` not found for this struct because it doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<..>>>`
 ...
 56 |     person.greet();
    |            ^^^^^ this is an associated function, not a method
@@ -13,27 +13,25 @@ note: the candidate is defined in the trait `Greeter`
    |
 22 |     fn greet(&self);
    |     ^^^^^^^^^^^^^^^^
-note: trait bound `Person: Greeter<Person>` was not satisfied
-  --> src/main.rs:20:1
+note: trait bound `Person: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+  --> src/main.rs:25:1
    |
-20 | #[cgp_component(Greeter)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-21 | pub trait CanGreet {
-   |           ^^^^^^^^
-note: the trait `Greeter` must be implemented
-  --> src/main.rs:21:1
+25 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+26 | pub trait HasName {
+   |           ^^^^^^^
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
    |
-21 | / pub trait CanGreet {
-22 | |     fn greet(&self);
-23 | | }
-   | |_^
+46 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanGreet` defines an item `greet`, perhaps you need to implement it
   --> src/main.rs:21:1
    |
 21 | pub trait CanGreet {
    | ^^^^^^^^^^^^^^^^^^
-   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
 56 -     person.greet();

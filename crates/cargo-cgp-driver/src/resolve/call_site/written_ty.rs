@@ -32,9 +32,7 @@ pub(crate) fn expr_written_ty<'tcx>(
                 };
                 instantiate_written(tcx, adt_did, written_type_args(tcx, path)?)
             }
-            Res::Def(DefKind::Const { .. }, did) if tcx.generics_of(did).is_empty() => {
-                item_ty(tcx, did)
-            }
+            Res::Def(DefKind::Const, did) if tcx.generics_of(did).is_empty() => item_ty(tcx, did),
             _ => None,
         },
         ExprKind::Struct(qpath, ..) => {

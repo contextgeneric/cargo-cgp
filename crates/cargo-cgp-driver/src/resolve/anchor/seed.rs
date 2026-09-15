@@ -23,7 +23,7 @@ pub(crate) fn consumer_obligation<'tcx>(
     context: Ty<'tcx>,
     consumer_did: DefId,
     params: Ty<'tcx>,
-) -> Option<ty::PolyTraitPredicate<'tcx>> {
+) -> Option<ty::PolyTraitClause<'tcx>> {
     // `own_params` opens with the implicit `Self`; the rest are the component's parameters.
     let expected = &tcx.generics_of(consumer_did).own_params[1..];
 

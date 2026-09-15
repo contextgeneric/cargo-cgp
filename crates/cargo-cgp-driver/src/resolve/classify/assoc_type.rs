@@ -36,7 +36,8 @@ pub(crate) fn projected_type<'tcx>(tcx: TyCtxt<'tcx>, alias: Ty<'tcx>) -> Option
         param_env,
         Unnormalized::new_wip(alias),
     );
-    let normalized = tcx.erase_and_anonymize_regions(infcx.resolve_vars_if_possible(normalized));
+    let normalized =
+        tcx.erase_and_anonymize_regions(infcx.deeply_resolve_ignoring_regions(normalized));
 
     // A still-aliased or inference-laden result means the projection did not reduce, so there is no
     // actual type to report.

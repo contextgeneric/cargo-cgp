@@ -14,7 +14,7 @@ note: required for `PickFirstProvider<Nil>` to implement `IsProviderFor<GreeterC
    |
 42 | / delegate_components! {
 43 | |     <Component, Provider, List: PickFirst<Provider = Provider>>
-   | |                                 ------------------------------ unsatisfied trait bound introduced here
+   | |                                           ------------------- unsatisfied trait bound introduced here
 44 | |     PickFirstProvider<List> {
    | |     ^^^^^^^^^^^^^^^^^^^^^^^
 45 | |         Component: Provider,

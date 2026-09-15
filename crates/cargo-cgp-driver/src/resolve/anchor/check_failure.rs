@@ -64,8 +64,8 @@ pub fn resolve_check_failure(
 /// no known consumer trait, or the slot does not match the consumer's parameters.
 fn can_use_to_consumer_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
-    can_use: ty::PolyTraitPredicate<'tcx>,
-) -> Option<ty::PolyTraitPredicate<'tcx>> {
+    can_use: ty::PolyTraitClause<'tcx>,
+) -> Option<ty::PolyTraitClause<'tcx>> {
     let trait_ref = can_use.skip_binder().trait_ref;
     // `CanUseComponent<Marker, Params>` — args are `[Ctx, Marker, Params]`.
     let context = trait_ref.self_ty();
@@ -78,7 +78,7 @@ fn can_use_to_consumer_obligation<'tcx>(
 /// The `CanUseComponent<..>` supertrait clause of `trait_did`, if it carries one — the marker
 /// of a `check_components!` check trait. Anchored by DefId to `cgp_component`.
 fn can_use_component_supertrait(tcx: TyCtxt<'_>, trait_did: DefId) -> Option<ty::Clause<'_>> {
-    for &(clause, _) in tcx.explicit_super_predicates_of(trait_did).skip_binder() {
+    for &(clause, _) in tcx.explicit_super_clauses_of(trait_did).skip_binder() {
         if let Some(tp) = clause.as_trait_clause()
             && is_cgp_item(
                 tcx,

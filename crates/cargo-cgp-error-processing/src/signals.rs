@@ -16,7 +16,7 @@ pub fn mentions_wiring_text(text: &str) -> bool {
 
 /// Whether a main message is the method-bounds `E0599` shape — "the method `…` exists … but its
 /// trait bounds were not satisfied" — the one `E0599` form the typed resolver may run on. A
-/// *resolution*-class `E0599` (`no variant named …`) is emitted mid-`predicates_of`, where running
+/// *resolution*-class `E0599` (`no variant named …`) is emitted mid-`clauses_of`, where running
 /// the solver re-enters the diagnostic context and aborts the compiler, so the distinction is
 /// load-bearing (see `cgp-knowledge-base/cargo-cgp/implementation/rustc-diagnostic-internals.md`).
 pub fn is_method_bounds_text(text: &str) -> bool {
@@ -30,7 +30,7 @@ pub fn is_method_bounds_text(text: &str) -> bool {
 /// associated-function call cannot resolve. The `E0599`'s main message is a Fluent (non-`Str`)
 /// message, so this signal keys on the help, which *is* a plain string. It is distinctive to this
 /// shape — reported during typeck of the calling body, where the queries the detector forces are
-/// already cached — and absent from the resolution-class `E0599` emitted mid-`predicates_of` (where
+/// already cached — and absent from the resolution-class `E0599` emitted mid-`clauses_of` (where
 /// running those queries would re-enter the diagnostic context and abort the compiler).
 pub fn is_unbounded_type_param_item_text(text: &str) -> bool {
     text.contains("the type parameter is bounded by the trait")

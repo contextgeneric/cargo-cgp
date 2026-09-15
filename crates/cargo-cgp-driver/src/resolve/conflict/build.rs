@@ -171,7 +171,7 @@ fn normalize<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         ty::ParamEnv::empty(),
         Unnormalized::new_wip(ty),
     );
-    let normalized = infcx.resolve_vars_if_possible(normalized);
+    let normalized = infcx.deeply_resolve_ignoring_regions(normalized);
     if normalized.has_non_region_infer() {
         return None;
     }

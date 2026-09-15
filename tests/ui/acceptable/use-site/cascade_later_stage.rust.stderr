@@ -1,37 +1,10 @@
-error[E0277]: the trait bound `HandleName: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, String>` is not satisfied
+error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
   --> src/main.rs:94:16
    |
 94 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
    |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |         |
    |         required by a bound introduced by this call
-   |
-help: the trait `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, String>` is not implemented for `HandleName`
-  --> src/main.rs:58:16
-   |
-58 | #[cgp_impl(new HandleName)]
-   |                ^^^^^^^^^^
-help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `HandleName`
-  --> src/main.rs:60:1
-   |
-60 | / impl<Code, Input> Handler<Code, Input>
-61 | | where
-62 | |     Self: HasName,
-   | |           ------- unsatisfied requirement introduced here: `App: HasName`
-63 | |     Input: Send,
-...  |
-70 | | }
-   | |_^
-   = note: required for `ComposeHandlers<HandleConnect, HandleName>` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, _>`
-   = note: 3 redundant requirements hidden
-   = note: required for `App` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, _>`
-   = note: required for `App` to implement `CanHandle<Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, _>`
-
-error[E0277]: the trait bound `App: CanHandle<Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, _>` is not satisfied
-  --> src/main.rs:94:16
-   |
-94 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
-   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:83:1
@@ -45,7 +18,7 @@ note: required for `App` to implement `HasName`
    | ^^^^^^^^^^^^^^^^^^
 32 | pub trait HasName {
    |           ^^^^^^^
-note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, _)>`
+note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, String)>`
   --> src/main.rs:58:1
    |
 58 | #[cgp_impl(new HandleName)]
@@ -59,101 +32,43 @@ note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, Ap
    = note: required for `App` to implement `CanHandle<Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, _>`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
+error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
   --> src/main.rs:94:5
    |
 94 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-   = help: the trait `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
-help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
-  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:1
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+  --> src/main.rs:83:1
    |
- 9 |   #[cgp_component(Handler)]
-   |  _^^^^^^^^^^^^^^^^-^^^^^^^^
-10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
-11 | | #[derive_delegate(UseDelegate<Code>)]
-12 | | #[derive_delegate(UseInputDelegate<Input>)]
-13 | | #[use_type(HasErrorType.Error)]
-14 | | pub trait CanHandle<Code, Input> {
-   | |                                -
-   | |                                |
-   | |                                unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-   | |________________________________unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-   |                                  unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-   = note: required for `App` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
-  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+83 | pub struct App {
+   | ^^^^^^^^^^^^^^
+   = help: the following other types implement trait `Handler<__Context__, Code, Input>`:
+             `BuildAndMerge<Provider>` implements `Handler<Context, Code, Builder>`
+             `BuildAndSetField<Tag, Provider>` implements `Handler<Context, Code, Builder>`
+             `BuildWithHandlers<Output, Handlers>` implements `Handler<Context, Code, Input>`
+             `ComposeHandlers<ProviderA, ProviderB>` implements `Handler<Context, Code, Input>`
+             `HandleConnect` implements `Handler<__Context__, Code, Input>`
+             `HandleName` implements `Handler<__Context__, Code, Input>`
+             `Promote<Provider>` implements `Handler<Context, Code, Input>`
+             `PromoteAsync<Provider>` implements `Handler<Context, Code, Input>`
+           and 7 others
+note: required for `App` to implement `HasName`
+  --> src/main.rs:31:1
    |
- 9 |   #[cgp_component(Handler)]
-   |  _________________^
-10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
-11 | | #[derive_delegate(UseDelegate<Code>)]
-12 | | #[derive_delegate(UseInputDelegate<Input>)]
-13 | | #[use_type(HasErrorType.Error)]
-14 | | pub trait CanHandle<Code, Input> {
-   | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
-   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `ComposeHandlers<HandleConnect, HandleName>: Handler<App, Prog<_>, _>` is not satisfied
-  --> src/main.rs:94:5
-   |
-94 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-   |
-   = help: the trait `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>` is not implemented for `ComposeHandlers<HandleConnect, HandleName>`
-help: the trait `Handler<Context, Code, Input>` is conditionally implemented for `ComposeHandlers<ProviderA, ProviderB>`
-  --> $CGP/crates/extra/cgp-handler/src/providers/compose.rs:65:1
-   |
-65 | / impl<Context, Code, Input, ProviderA, ProviderB> Handler<Context, Code, Input>
-66 | |     for ComposeHandlers<ProviderA, ProviderB>
-67 | | where
-68 | |     Context: HasErrorType,
-69 | |     ProviderA: Handler<Context, Code, Input>,
-70 | |     ProviderB: Handler<Context, Code, ProviderA::Output>,
-   | |________________-----------------------------------------^
-   |                  |
-   |                  unsatisfied requirement introduced here: `HandleName: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, <HandleConnect as Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>>::Output>`
-   = note: required for `PipeHandlers<Cons<HandleConnect, Cons<HandleName, Nil>>>` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-   = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, _)>`
-   = note: 2 redundant requirements hidden
-   = note: required for `App` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
-  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
-   |
- 9 |   #[cgp_component(Handler)]
-   |  _________________^
-10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
-11 | | #[derive_delegate(UseDelegate<Code>)]
-12 | | #[derive_delegate(UseInputDelegate<Input>)]
-13 | | #[use_type(HasErrorType.Error)]
-14 | | pub trait CanHandle<Code, Input> {
-   | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
-
-error[E0277]: the trait bound `HandleName: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, String>` is not satisfied
-  --> src/main.rs:94:5
-   |
-94 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-   |
-help: the trait `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, String>` is not implemented for `HandleName`
-  --> src/main.rs:58:16
+31 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+32 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, String)>`
+  --> src/main.rs:58:1
    |
 58 | #[cgp_impl(new HandleName)]
-   |                ^^^^^^^^^^
-help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `HandleName`
-  --> src/main.rs:60:1
-   |
-60 | / impl<Code, Input> Handler<Code, Input>
-61 | | where
-62 | |     Self: HasName,
-   | |           ------- unsatisfied requirement introduced here: `App: HasName`
-63 | |     Input: Send,
-...  |
-70 | | }
-   | |_^
-   = note: required for `ComposeHandlers<HandleConnect, HandleName>` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, _)>`
-   = note: 3 redundant requirements hidden
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+62 |     Self: HasName,
+   |           ------- unsatisfied trait bound introduced here
+   = note: 4 redundant requirements hidden
    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, _)>`
    = note: required for `App` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
 note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
@@ -167,102 +82,45 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
 13 | | #[use_type(HasErrorType.Error)]
 14 | | pub trait CanHandle<Code, Input> {
    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: Handler<_, _, _>` is not satisfied
+error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
   --> src/main.rs:95:10
    |
 95 |         .await?;
    |          ^^^^^ unsatisfied trait bound
    |
-   = help: the trait `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
-help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `RedirectLookup<__Components__, __Path__>`
-  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:1
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+  --> src/main.rs:83:1
    |
- 9 |   #[cgp_component(Handler)]
-   |  _^^^^^^^^^^^^^^^^-^^^^^^^^
-10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
-11 | | #[derive_delegate(UseDelegate<Code>)]
-12 | | #[derive_delegate(UseInputDelegate<Input>)]
-13 | | #[use_type(HasErrorType.Error)]
-14 | | pub trait CanHandle<Code, Input> {
-   | |                                -
-   | |                                |
-   | |                                unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-   | |________________________________unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-   |                                  unsatisfied requirement introduced here: `<App as DelegateComponent<<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Symbol<5, cgp::prelude::Chars<..>>, PathCons<Symbol<7, cgp::prelude::Chars<..>>, PathCons<HandlerComponent, Nil>>>> as ConcatPath<PathCons<Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, PathCons<Vec<_>, Nil>>>>::Output>>::Delegate: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-   = note: required for `App` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
-  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+83 | pub struct App {
+   | ^^^^^^^^^^^^^^
+   = help: the following other types implement trait `Handler<__Context__, Code, Input>`:
+             `BuildAndMerge<Provider>` implements `Handler<Context, Code, Builder>`
+             `BuildAndSetField<Tag, Provider>` implements `Handler<Context, Code, Builder>`
+             `BuildWithHandlers<Output, Handlers>` implements `Handler<Context, Code, Input>`
+             `ComposeHandlers<ProviderA, ProviderB>` implements `Handler<Context, Code, Input>`
+             `HandleConnect` implements `Handler<__Context__, Code, Input>`
+             `HandleName` implements `Handler<__Context__, Code, Input>`
+             `Promote<Provider>` implements `Handler<Context, Code, Input>`
+             `PromoteAsync<Provider>` implements `Handler<Context, Code, Input>`
+           and 7 others
+note: required for `App` to implement `HasName`
+  --> src/main.rs:31:1
    |
- 9 |   #[cgp_component(Handler)]
-   |  _________________^
-10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
-11 | | #[derive_delegate(UseDelegate<Code>)]
-12 | | #[derive_delegate(UseInputDelegate<Input>)]
-13 | | #[use_type(HasErrorType.Error)]
-14 | | pub trait CanHandle<Code, Input> {
-   | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
-   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `ComposeHandlers<HandleConnect, HandleName>: Handler<App, Prog<_>, _>` is not satisfied
-  --> src/main.rs:95:10
-   |
-95 |         .await?;
-   |          ^^^^^ unsatisfied trait bound
-   |
-   = help: the trait `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>` is not implemented for `ComposeHandlers<HandleConnect, HandleName>`
-help: the trait `Handler<Context, Code, Input>` is conditionally implemented for `ComposeHandlers<ProviderA, ProviderB>`
-  --> $CGP/crates/extra/cgp-handler/src/providers/compose.rs:65:1
-   |
-65 | / impl<Context, Code, Input, ProviderA, ProviderB> Handler<Context, Code, Input>
-66 | |     for ComposeHandlers<ProviderA, ProviderB>
-67 | | where
-68 | |     Context: HasErrorType,
-69 | |     ProviderA: Handler<Context, Code, Input>,
-70 | |     ProviderB: Handler<Context, Code, ProviderA::Output>,
-   | |________________-----------------------------------------^
-   |                  |
-   |                  unsatisfied requirement introduced here: `HandleName: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, <HandleConnect as Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>>::Output>`
-   = note: required for `PipeHandlers<Cons<HandleConnect, Cons<HandleName, Nil>>>` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-   = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, _)>`
-   = note: 2 redundant requirements hidden
-   = note: required for `App` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
-note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
-  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
-   |
- 9 |   #[cgp_component(Handler)]
-   |  _________________^
-10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
-11 | | #[derive_delegate(UseDelegate<Code>)]
-12 | | #[derive_delegate(UseInputDelegate<Input>)]
-13 | | #[use_type(HasErrorType.Error)]
-14 | | pub trait CanHandle<Code, Input> {
-   | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
-
-error[E0277]: the trait bound `HandleName: Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, String>` is not satisfied
-  --> src/main.rs:95:10
-   |
-95 |         .await?;
-   |          ^^^^^ unsatisfied trait bound
-   |
-help: the trait `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, String>` is not implemented for `HandleName`
-  --> src/main.rs:58:16
+31 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+32 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, String)>`
+  --> src/main.rs:58:1
    |
 58 | #[cgp_impl(new HandleName)]
-   |                ^^^^^^^^^^
-help: the trait `Handler<__Context__, Code, Input>` is conditionally implemented for `HandleName`
-  --> src/main.rs:60:1
-   |
-60 | / impl<Code, Input> Handler<Code, Input>
-61 | | where
-62 | |     Self: HasName,
-   | |           ------- unsatisfied requirement introduced here: `App: HasName`
-63 | |     Input: Send,
-...  |
-70 | | }
-   | |_^
-   = note: required for `ComposeHandlers<HandleConnect, HandleName>` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, _)>`
-   = note: 3 redundant requirements hidden
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+62 |     Self: HasName,
+   |           ------- unsatisfied trait bound introduced here
+   = note: 4 redundant requirements hidden
    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, _)>`
    = note: required for `App` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
 note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
@@ -276,5 +134,81 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
 13 | | #[use_type(HasErrorType.Error)]
 14 | | pub trait CanHandle<Code, Input> {
    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
+  --> src/main.rs:94:5
+   |
+94 | /     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
+95 | |         .await?;
+   | |______________^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+  --> src/main.rs:83:1
+   |
+83 | pub struct App {
+   | ^^^^^^^^^^^^^^
+   = help: the following other types implement trait `Handler<__Context__, Code, Input>`:
+             `BuildAndMerge<Provider>` implements `Handler<Context, Code, Builder>`
+             `BuildAndSetField<Tag, Provider>` implements `Handler<Context, Code, Builder>`
+             `BuildWithHandlers<Output, Handlers>` implements `Handler<Context, Code, Input>`
+             `ComposeHandlers<ProviderA, ProviderB>` implements `Handler<Context, Code, Input>`
+             `HandleConnect` implements `Handler<__Context__, Code, Input>`
+             `HandleName` implements `Handler<__Context__, Code, Input>`
+             `Promote<Provider>` implements `Handler<Context, Code, Input>`
+             `PromoteAsync<Provider>` implements `Handler<Context, Code, Input>`
+           and 7 others
+note: required for `App` to implement `HasName`
+  --> src/main.rs:31:1
+   |
+31 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+32 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, String)>`
+  --> src/main.rs:58:1
+   |
+58 | #[cgp_impl(new HandleName)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+62 |     Self: HasName,
+   |           ------- unsatisfied trait bound introduced here
+   = note: 4 redundant requirements hidden
+   = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, _)>`
+   = note: required for `App` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+   |
+ 9 |   #[cgp_component(Handler)]
+   |  _________________^
+10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+11 | | #[derive_delegate(UseDelegate<Code>)]
+12 | | #[derive_delegate(UseInputDelegate<Input>)]
+13 | | #[use_type(HasErrorType.Error)]
+14 | | pub trait CanHandle<Code, Input> {
+   | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the `?` operator can only be applied to values that implement `Try`
+  --> src/main.rs:94:5
+   |
+94 | /     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
+95 | |         .await?;
+   | |_______________^ the `?` operator cannot be applied to type `<impl Future<Output = Result<_, _>> as Future>::Output`
+   |
+   = help: the nightly-only, unstable trait `Try` is not implemented for `<impl Future<Output = Result<_, _>> as Future>::Output`
+
+error[E0277]: the `?` operator can only be used in an async function that returns `Result` or `Option` (or another type that implements `FromResidual`)
+  --> src/main.rs:94:5
+   |
+93 |    async fn run_app(app: &App) -> Result<(), String> {
+   |  ____________________________________________________-
+94 | |/     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
+95 | ||         .await?;
+   | ||_______________^ cannot use the `?` operator in an async function that returns `<impl Future<Output = Result<_, _>> as Future>::Output`
+96 | |      Ok(())
+97 | |  }
+   | |__- this function should return `Result` or `Option` to accept `?`
+   |
 
 For more information about this error, try `rustc --explain E0277`.

@@ -24,7 +24,7 @@ pub(crate) fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Op
             Res::Def(DefKind::Ctor(CtorOf::Struct, CtorKind::Const), ctor_did) => {
                 item_ty(tcx, tcx.parent(ctor_did))
             }
-            Res::Def(DefKind::Const { .. } | DefKind::Static { .. }, did) => item_ty(tcx, did),
+            Res::Def(DefKind::Const | DefKind::Static { .. }, did) => item_ty(tcx, did),
             _ => None,
         },
         ExprKind::Struct(qpath, ..) => {

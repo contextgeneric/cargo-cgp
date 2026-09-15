@@ -21,7 +21,7 @@ use rustc_errors::codes::{
 };
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
-use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Suggestions};
+use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Sublevel, Suggestions};
 use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
 
@@ -262,7 +262,7 @@ impl<E: Emitter> CgpEmitter<E> {
         let causes = coalesce_underived_fields(&causes);
         let mut children: Vec<_> = fix_help_messages(&causes)
             .into_iter()
-            .map(|help| subdiag(Level::Help, help))
+            .map(|help| subdiag(Sublevel::Help, help))
             .collect();
         children.extend(
             PendingNote {
@@ -271,7 +271,7 @@ impl<E: Emitter> CgpEmitter<E> {
             }
             .render(seen)
             .into_iter()
-            .map(|note| subdiag(Level::Note, note)),
+            .map(|note| subdiag(Sublevel::Note, note)),
         );
 
         let mut diag = diags[0].clone();
@@ -506,7 +506,7 @@ impl<E: Emitter> CgpEmitter<E> {
     /// the associated-function call cannot resolve. Returns the inner provider and the provider trait
     /// to import it as, or `None`. Gated to the "no associated item for a type parameter" `E0599`
     /// shape — reported during typeck of the calling body, so the detector's queries are cached and
-    /// safe (unlike the resolution-class `E0599` emitted mid-`predicates_of`) — then confirmed
+    /// safe (unlike the resolution-class `E0599` emitted mid-`clauses_of`) — then confirmed
     /// structurally by [`resolve::detect_missing_use_provider`].
     fn missing_use_provider(&self, diag: &DiagInner) -> Option<MissingUseProvider> {
         // The `E0599`'s main message is a Fluent (non-`Str`) message, so the shape is recognized by
@@ -693,7 +693,7 @@ impl<E: Emitter> CgpEmitter<E> {
     /// The `E0599` arm is narrowed to the "the method `…` exists … but its trait bounds were not
     /// satisfied" shape — the consumer-method call the use-site anchor handles. A *resolution*-class
     /// `E0599` (`no variant named …`, `no associated item …`) is not a wiring failure and, worse, is
-    /// emitted *during* type lowering / `predicates_of`, while that query is mid-flight: running the
+    /// emitted *during* type lowering / `clauses_of`, while that query is mid-flight: running the
     /// resolver's trait solver on it re-forces an emitting query and re-enters the already-held
     /// `DiagCtxt` lock, aborting the compiler (`lock was already held`). Declining such an `E0599`
     /// before any solving both keeps the tool from crashing and is correct, since the resolver has
@@ -795,7 +795,7 @@ impl<E: Emitter> CgpEmitter<E> {
         diag.children = plan
             .helps
             .into_iter()
-            .map(|help| subdiag(Level::Help, help))
+            .map(|help| subdiag(Sublevel::Help, help))
             .collect();
         // Drop rustc's structured suggestions along with its notes — for a use-site failure
         // that includes the misleading "use associated function syntax instead".
@@ -815,7 +815,7 @@ impl<E: Emitter> CgpEmitter<E> {
         const HAS_FIELD_IMPLS: bool = false;
         for text in note.render(seen) {
             let text = postprocess_message(&text, HAS_FIELD_IMPLS, true).unwrap_or(text);
-            diag.children.push(subdiag(Level::Note, text));
+            diag.children.push(subdiag(Sublevel::Note, text));
         }
     }
 }
@@ -856,7 +856,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     if let Some(primary) = primary {
                         diag.span = MultiSpan::from_span(primary);
                     }
-                    diag.children = vec![subdiag(Level::Help, cgp_impl_misuse_help(&misuse))];
+                    diag.children = vec![subdiag(Sublevel::Help, cgp_impl_misuse_help(&misuse))];
                     diag.suggestions = Suggestions::Enabled(Vec::new());
                     self.postprocess(&mut diag, true);
                     // Drop any sibling of this impl already buffered: E0425 (name resolution)
@@ -881,7 +881,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     replace_header(&mut diag, plan_wiring_conflict(&conflict));
                     // A redirect collision carries its fix as a `help`, kept out of the header.
                     if let Some(help) = wiring_conflict_help(&conflict) {
-                        diag.children.push(subdiag(Level::Help, help));
+                        diag.children.push(subdiag(Sublevel::Help, help));
                     }
                     // A rewritten diagnostic: bare `@…` paths.
                     self.postprocess(&mut diag, true);
@@ -903,7 +903,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             replace_header(&mut diag, plan_orphan_conflict(&conflict));
             diag.span = MultiSpan::from_span(primary_span);
             diag.children
-                .push(subdiag(Level::Help, orphan_conflict_help(&conflict)));
+                .push(subdiag(Sublevel::Help, orphan_conflict_help(&conflict)));
             // A rewritten diagnostic: bare `@…` paths (a path key renders without the `Path!`
             // wrapper).
             self.postprocess(&mut diag, true);
@@ -923,7 +923,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             replace_header(&mut diag, plan_undeclared_capability(&undeclared));
             diag.span = MultiSpan::from_span(primary_span);
             diag.children.push(subdiag(
-                Level::Help,
+                Sublevel::Help,
                 undeclared_capability_help(&undeclared),
             ));
             self.postprocess(&mut diag, true);
@@ -941,7 +941,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             replace_header(&mut diag, plan_missing_use_provider(&missing));
             diag.span = MultiSpan::from_span(primary_span);
             diag.children
-                .push(subdiag(Level::Help, missing_use_provider_help(&missing)));
+                .push(subdiag(Sublevel::Help, missing_use_provider_help(&missing)));
             self.postprocess(&mut diag, true);
             self.record_cgp_spans(&diag);
             self.buffer.push(BufEntry::Plain(Box::new(diag)));
@@ -993,7 +993,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                         })
                     });
                     diag.children
-                        .push(subdiag(Level::Help, wiring_overflow_help()));
+                        .push(subdiag(Sublevel::Help, wiring_overflow_help()));
                 }
                 (changed, None, None)
             };

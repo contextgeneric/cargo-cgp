@@ -130,7 +130,7 @@ pub(crate) fn bounding_trait_ref<'tcx>(
     key: Ty<'tcx>,
 ) -> Option<ty::TraitRef<'tcx>> {
     let sized = tcx.lang_items().sized_trait();
-    for &(clause, _) in tcx.predicates_of(impl_did).predicates {
+    for &(clause, _) in tcx.clauses_of(impl_did).clauses {
         let Some(predicate) = clause.as_trait_clause() else {
             continue;
         };

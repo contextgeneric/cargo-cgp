@@ -70,7 +70,7 @@ impl SubResult {
 /// walk, so it need not enter these fingerprints.
 pub(crate) fn pred_fingerprint<'tcx>(
     tcx: TyCtxt<'tcx>,
-    pred: ty::PolyTraitPredicate<'tcx>,
+    pred: ty::PolyTraitClause<'tcx>,
 ) -> Fingerprint {
     tcx.with_stable_hashing_context(|mut hcx| {
         let mut hasher = StableHasher::new();
@@ -101,7 +101,7 @@ impl NodeKey {
     /// identity, so two same-named types from different modules never collide.
     pub(crate) fn new<'tcx>(
         tcx: TyCtxt<'tcx>,
-        obligation: ty::PolyTraitPredicate<'tcx>,
+        obligation: ty::PolyTraitClause<'tcx>,
         context: Ty<'tcx>,
     ) -> Self {
         let fingerprint = tcx.with_stable_hashing_context(|mut hcx| {

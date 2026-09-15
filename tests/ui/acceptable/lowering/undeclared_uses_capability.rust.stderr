@@ -6,8 +6,6 @@ error[E0599]: the method `get_count` exists for reference `&__Context__`, but it
    |
 note: the following trait bounds were not satisfied:
       `&__Context__: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
-      `<&__Context__ as cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>>::Value = u64`
-      `<__Context__ as cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>>::Value = u64`
       `__Context__: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
   --> src/main.rs:34:1
    |

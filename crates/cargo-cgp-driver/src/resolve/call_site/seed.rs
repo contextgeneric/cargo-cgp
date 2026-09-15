@@ -26,7 +26,7 @@ pub(crate) fn seed_from_call<'tcx>(
     consumer_did: DefId,
     method_did: DefId,
     args: &[Expr<'tcx>],
-) -> Option<ty::PolyTraitPredicate<'tcx>> {
+) -> Option<ty::PolyTraitClause<'tcx>> {
     let param_env = ty::ParamEnv::empty();
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
     let ocx = ObligationCtxt::new(&infcx);
@@ -69,7 +69,7 @@ pub(crate) fn seed_from_call<'tcx>(
         match param.kind {
             ty::GenericParamDefKind::Type { .. } => {
                 let var = method_args.type_at(param.index as usize);
-                let resolved = infcx.resolve_vars_if_possible(var);
+                let resolved = infcx.deeply_resolve_ignoring_regions(var);
                 seed_args.push(unknowns_to_placeholders(tcx, resolved).into());
             }
             // A lifetime parameter is erased everywhere in the walk; supply it erased here too.
@@ -78,7 +78,7 @@ pub(crate) fn seed_from_call<'tcx>(
         }
     }
     let trait_ref = ty::TraitRef::new(tcx, consumer_did, seed_args);
-    let seed: ty::PolyTraitPredicate<'tcx> = ty::Binder::dummy(trait_ref).upcast(tcx);
+    let seed: ty::PolyTraitClause<'tcx> = ty::Binder::dummy(trait_ref).upcast(tcx);
     // Erase the region variables the fresh args and written references minted, so nothing of this
     // inference context leaks into the walk's.
     Some(tcx.erase_and_anonymize_regions(seed))

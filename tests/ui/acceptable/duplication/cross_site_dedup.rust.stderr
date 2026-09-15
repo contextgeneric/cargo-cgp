@@ -35,47 +35,6 @@ note: required by a bound in `__CheckApp`
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0277]: the trait bound `GreetHello: Greeter<App>` is not satisfied
-  --> src/main.rs:56:23
-   |
-56 | impl CanGreetSend for App {
-   |                       ^^^ unsatisfied trait bound
-   |
-help: the trait `Greeter<App>` is not implemented for `GreetHello`
-  --> src/main.rs:25:16
-   |
-25 | #[cgp_impl(new GreetHello)]
-   |                ^^^^^^^^^^
-help: the trait `Greeter<__Context__>` is conditionally implemented for `GreetHello`
-  --> src/main.rs:27:1
-   |
-26 |   #[uses(HasName)]
-   |          ------- unsatisfied requirement introduced here: `App: HasName`
-27 | / impl Greeter {
-28 | |     fn greet(&self) {
-29 | |         let _ = self.name();
-30 | |     }
-31 | | }
-   | |_^
-note: required for `App` to implement `Greeter<App>`
-  --> src/main.rs:20:1
-   |
-20 | #[cgp_component(Greeter)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-note: required for `App` to implement `CanGreet`
-  --> src/main.rs:20:1
-   |
-20 | #[cgp_component(Greeter)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-21 | pub trait CanGreet {
-   |           ^^^^^^^^
-note: required by a bound in `CanGreetSend`
-  --> src/main.rs:52:25
-   |
-52 | pub trait CanGreetSend: CanGreet + Send {
-   |                         ^^^^^^^^ required by this bound in `CanGreetSend`
-   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
-
 error[E0277]: the trait bound `App: CanGreet` is not satisfied
   --> src/main.rs:56:23
    |
@@ -126,7 +85,7 @@ error[E0599]: the method `greet` exists for reference `&App`, but its trait boun
   --> src/main.rs:58:14
    |
 34 | pub struct App;
-   | -------------- doesn't satisfy `App: CanGreet` or `App: Greeter<App>`
+   | -------------- doesn't satisfy `App: CanGreet` or `_: HasField<Symbol<4, Chars<..>>>`
 ...
 58 |         self.greet()
    |              ^^^^^ this is an associated function, not a method
@@ -137,29 +96,32 @@ note: the candidate is defined in the trait `Greeter`
    |
 22 |     fn greet(&self);
    |     ^^^^^^^^^^^^^^^^
-note: the following trait bounds were not satisfied:
-      `&App: Greeter<&App>`
-      `App: Greeter<App>`
+note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+  --> src/main.rs:15:1
+   |
+15 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+16 | pub trait HasName {
+   |           ^^^^^^^
+note: trait bound `&App: Greeter<&App>` was not satisfied
   --> src/main.rs:20:1
    |
 20 | #[cgp_component(Greeter)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^
 21 | pub trait CanGreet {
    |           ^^^^^^^^
-note: the trait `Greeter` must be implemented
-  --> src/main.rs:21:1
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
    |
-21 | / pub trait CanGreet {
-22 | |     fn greet(&self);
-23 | | }
-   | |_^
+46 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanGreet` defines an item `greet`, perhaps you need to implement it
   --> src/main.rs:21:1
    |
 21 | pub trait CanGreet {
    | ^^^^^^^^^^^^^^^^^^
-   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
 58 -         self.greet()

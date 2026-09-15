@@ -2,8 +2,9 @@
 //!
 //! The harness is a separate crate, so it cannot use `CARGO_BIN_EXE_*` (those name only
 //! the binaries of the crate under test). Instead it finds the `target/debug` directory
-//! from its own executable location, which is robust to `CARGO_TARGET_DIR`, and resolves
-//! everything else relative to the workspace root.
+//! by walking up from its own executable, which is robust to `CARGO_TARGET_DIR` and to
+//! where cargo chooses to place a test binary, and resolves everything else relative to
+//! the workspace root.
 
 use std::env;
 use std::path::{Path, PathBuf};
@@ -54,14 +55,36 @@ pub fn cgp_root() -> PathBuf {
         .to_path_buf()
 }
 
-/// The `target/debug` directory, derived from the harness test binary's own path
-/// (`<target>/debug/deps/ui-<hash>`).
+/// The `target/debug` directory, found by walking up from the harness test binary until
+/// an ancestor holds the built `cargo-cgp` front-end. Searching for the binary rather
+/// than counting parent directories keeps this independent of where cargo puts a test
+/// executable, which differs between cargo versions (`<target>/debug/deps/ui-<hash>` in
+/// some, `<target>/debug/build/<package>/<hash>/out/ui-<hash>` in others).
 pub fn debug_dir() -> PathBuf {
     let exe = env::current_exe().expect("resolving the harness executable path");
-    exe.parent()
-        .and_then(Path::parent)
-        .expect("deriving target/debug from the harness executable path")
-        .to_path_buf()
+    let front_end = front_end_name();
+    ancestor_holding(&exe, &front_end).unwrap_or_else(|| {
+        panic!(
+            "deriving target/debug from the harness executable {}: no ancestor holds a \
+             built `{front_end}` — run `cargo build` first",
+            exe.display(),
+        )
+    })
+}
+
+/// The nearest ancestor directory of `from` that directly contains a file named `binary`,
+/// searching upwards. `from` itself is considered, so passing a directory finds `binary`
+/// in that directory. This is the layout-independent half of [`debug_dir`], kept a plain
+/// function of its arguments so it can be exercised against either cargo layout.
+pub fn ancestor_holding(from: &Path, binary: &str) -> Option<PathBuf> {
+    from.ancestors()
+        .find(|dir| dir.join(binary).is_file())
+        .map(Path::to_path_buf)
+}
+
+/// The `cargo-cgp` front-end's file name, with the platform's executable suffix.
+fn front_end_name() -> String {
+    format!("cargo-cgp{}", env::consts::EXE_SUFFIX)
 }
 
 /// The root under which the per-worker throwaway crates live (`target/ui-harness`),
@@ -83,5 +106,5 @@ pub fn worker_crate_dir(index: usize) -> PathBuf {
 
 /// Path to the built `cargo-cgp` front-end binary.
 pub fn cargo_cgp_bin() -> PathBuf {
-    debug_dir().join(format!("cargo-cgp{}", env::consts::EXE_SUFFIX))
+    debug_dir().join(front_end_name())
 }

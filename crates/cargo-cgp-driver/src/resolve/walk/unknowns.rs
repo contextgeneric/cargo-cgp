@@ -112,7 +112,8 @@ fn try_project_fixed<'tcx>(tcx: TyCtxt<'tcx>, alias_ty: Ty<'tcx>) -> Option<Ty<'
         Unnormalized::new_wip(goal),
     );
     let _ = ocx.try_evaluate_obligations();
-    let normalized = tcx.erase_and_anonymize_regions(infcx.resolve_vars_if_possible(normalized));
+    let normalized =
+        tcx.erase_and_anonymize_regions(infcx.deeply_resolve_ignoring_regions(normalized));
     if normalized.has_non_region_infer()
         || normalized.has_placeholders()
         || matches!(normalized.kind(), ty::Alias(..))

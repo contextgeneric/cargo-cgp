@@ -14,7 +14,7 @@ use cargo_cgp_error_processing::{
     postprocess_message,
 };
 use rustc_errors::codes::{E0271, E0599};
-use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, Suggestions};
+use rustc_errors::{DiagInner, DiagMessage, MultiSpan, Style, Subdiag, Sublevel, Suggestions};
 use rustc_span::Span;
 
 /// The text of the diagnostic's main message, when it is a plain string.
@@ -49,7 +49,7 @@ pub(crate) fn replace_header(diag: &mut DiagInner, header: String) {
 
 /// Build a plain-text sub-diagnostic (a `help` or `note`) with no span — the shape every
 /// diagnosis note and derive help takes.
-pub(crate) fn subdiag(level: Level, message: String) -> Subdiag {
+pub(crate) fn subdiag(level: Sublevel, message: String) -> Subdiag {
     Subdiag {
         level,
         messages: vec![(DiagMessage::Str(message.into()), Style::NoStyle)],

@@ -71,7 +71,7 @@ pub fn resolve_impl_site(
         // failure at their own code; the CGP consumer it depends on follows as the next node. Being
         // a distinct trait from that supertrait, the wrapper's error is reported on its own rather
         // than de-duplicated into the `check_components!` entry for the supertrait.
-        let obligation: ty::PolyTraitPredicate<'_> = ty::Binder::dummy(trait_ref).upcast(tcx);
+        let obligation: ty::PolyTraitClause<'_> = ty::Binder::dummy(trait_ref).upcast(tcx);
         if let Some((consumers_are_cgp, causes)) = wrapper_consumer_causes(tcx, cache, obligation) {
             return Some(Resolved {
                 context: context.to_string(),
@@ -99,7 +99,7 @@ fn cross_context_where_bound<'tcx>(
     cache: &ResolveCache,
     impl_did: rustc_span::def_id::DefId,
 ) -> Option<Resolved> {
-    for &(clause, _) in tcx.predicates_of(impl_did).predicates {
+    for &(clause, _) in tcx.clauses_of(impl_did).clauses {
         let Some(bound) = clause.as_trait_clause() else {
             continue;
         };
@@ -128,7 +128,7 @@ fn cross_context_where_bound<'tcx>(
 fn wrapper_consumer_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
-    obligation: ty::PolyTraitPredicate<'tcx>,
+    obligation: ty::PolyTraitClause<'tcx>,
 ) -> Option<(bool, Causes)> {
     let trait_ref = obligation.skip_binder().trait_ref;
     let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
@@ -145,7 +145,7 @@ fn wrapper_consumer_causes<'tcx>(
     // Each supertrait the wrapper trait carries, instantiated for this `Self`. A CGP consumer trait
     // among them that does not hold is the wiring failure the wrapper surfaces.
     for &(clause, _) in tcx
-        .explicit_super_predicates_of(trait_ref.def_id)
+        .explicit_super_clauses_of(trait_ref.def_id)
         .skip_binder()
     {
         let concrete = clause.instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref));

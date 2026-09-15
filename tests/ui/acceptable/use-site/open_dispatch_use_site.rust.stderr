@@ -2,10 +2,15 @@ error[E0599]: the method `encode_item` exists for struct `App`, but its trait bo
   --> src/main.rs:50:17
    |
 38 | pub struct App;
-   | -------------- method `encode_item` not found for this struct because it doesn't satisfy `App: CanEncodeItem<_>` or `App: ItemEncoder<App, _>`
+   | -------------- method `encode_item` not found for this struct because it doesn't satisfy `App: CanEncodeItem<_>`
 ...
 50 |     let _ = app.encode_item(&Seq(vec![1u64]));
    |                 ^^^^^^^^^^^ this is an associated function, not a method
+   |
+  ::: $CGP/crates/core/cgp-component/src/providers/redirect_lookup.rs:3:1
+   |
+ 3 | pub struct RedirectLookup<Key, Components>(pub PhantomData<(Key, Components)>);
+   | ------------------------------------------ doesn't satisfy `_: IsProviderFor<ItemEncoderComponent, App, u64>`
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `ItemEncoder`
@@ -13,28 +18,25 @@ note: the candidate is defined in the trait `ItemEncoder`
    |
 21 |     fn encode_item(&self, value: &Value) -> String;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `App: ItemEncoder<App, _>` was not satisfied
-  --> src/main.rs:19:17
+note: trait bound `RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>: IsProviderFor<ItemEncoderComponent, App, u64>` was not satisfied
+  --> src/main.rs:40:1
    |
-19 |   #[cgp_component(ItemEncoder)]
-   |  _----------------^------------
-20 | | pub trait CanEncodeItem<Value> {
-   | |           -------------------^
-   | |______________________________|
-   |                                unsatisfied trait bound introduced here
-note: the trait `ItemEncoder` must be implemented
-  --> src/main.rs:20:1
+40 | / delegate_components! {
+41 | |     App {
+   | |     ---
+42 | |         open ItemEncoderComponent;
+...  |
+46 | | }
+   | | ^ unsatisfied trait bound introduced here
+   | |_|
    |
-20 | / pub trait CanEncodeItem<Value> {
-21 | |     fn encode_item(&self, value: &Value) -> String;
-22 | | }
-   | |_^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanEncodeItem` defines an item `encode_item`, perhaps you need to implement it
   --> src/main.rs:20:1
    |
 20 | pub trait CanEncodeItem<Value> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
 50 -     let _ = app.encode_item(&Seq(vec![1u64]));

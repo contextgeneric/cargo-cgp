@@ -2,7 +2,7 @@ error[E0599]: the method `foo` exists for struct `App`, but its trait bounds wer
   --> src/main.rs:51:9
    |
 39 | pub struct App;
-   | -------------- method `foo` not found for this struct because it doesn't satisfy `App: CanUseFoo` or `App: FooProvider<App>`
+   | -------------- method `foo` not found for this struct because it doesn't satisfy `App: BarProvider<App>` or `App: CanUseFoo`
 ...
 51 |     App.foo();
    |         ^^^ this is an associated function, not a method
@@ -13,19 +13,19 @@ note: the candidate is defined in the trait `FooProvider`
    |
 23 |     fn foo(&self);
    |     ^^^^^^^^^^^^^^
-note: trait bound `App: FooProvider<App>` was not satisfied
-  --> src/main.rs:21:1
+note: trait bound `App: BarProvider<App>` was not satisfied
+  --> src/main.rs:26:1
    |
-21 | #[cgp_component(FooProvider)]
+26 | #[cgp_component(BarProvider)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-22 | pub trait CanUseFoo {
+27 | pub trait CanUseBar {
    |           ^^^^^^^^^
-note: the trait `FooProvider` must be implemented
-  --> src/main.rs:22:1
+note: the trait `BarProvider` must be implemented
+  --> src/main.rs:27:1
    |
-22 | / pub trait CanUseFoo {
-23 | |     fn foo(&self);
-24 | | }
+27 | / pub trait CanUseBar {
+28 | |     fn bar(&self);
+29 | | }
    | |_^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanUseFoo` defines an item `foo`, perhaps you need to implement it

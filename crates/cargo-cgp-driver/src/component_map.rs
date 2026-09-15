@@ -75,7 +75,7 @@ pub fn build_component_name_map(tcx: TyCtxt<'_>) -> HashMap<String, ComponentTra
     // name) means a same-named trait from another crate is simply never matched.
     let mut providers: HashMap<DefId, (String, String)> = HashMap::new();
     for &trait_did in &all_traits {
-        for &(clause, _) in tcx.explicit_super_predicates_of(trait_did).skip_binder() {
+        for &(clause, _) in tcx.explicit_super_clauses_of(trait_did).skip_binder() {
             let Some(predicate) = clause.as_trait_clause() else {
                 continue;
             };
@@ -112,7 +112,7 @@ pub fn build_component_name_map(tcx: TyCtxt<'_>) -> HashMap<String, ComponentTra
     for &consumer_did in &all_traits {
         for &impl_did in tcx.trait_impls_of(consumer_did).blanket_impls() {
             let impl_self_ty = tcx.type_of(impl_did).skip_binder();
-            for &(clause, _) in tcx.predicates_of(impl_did).predicates {
+            for &(clause, _) in tcx.clauses_of(impl_did).clauses {
                 let Some(predicate) = clause.as_trait_clause() else {
                     continue;
                 };

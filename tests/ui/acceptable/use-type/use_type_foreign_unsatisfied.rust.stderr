@@ -4,68 +4,21 @@ error[E0277]: the trait bound `NoScalar: HasScalarType` is not satisfied
 32 | pub trait CheckMissingScalar: CanCalculateArea<NoScalar> {}
    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `DelegateComponent<ScalarTypeProviderComponent>` is not implemented for `NoScalar`
+help: the trait `ScalarTypeProvider<NoScalar>` is not implemented for `NoScalar`
   --> src/main.rs:28:1
    |
 28 | pub struct NoScalar;
    | ^^^^^^^^^^^^^^^^^^^
-   = help: the following other types implement trait `DelegateComponent<Key>`:
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<ComputerComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<ComputerRefComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<HandlerComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<HandlerRefComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<TryComputerComponent>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `DelegateComponent<TryComputerRefComponent>`
-             `MatchFirstWithFieldHandlersInputs<Provider>` implements `DelegateComponent<(Input, Args)>`
-             `MatchFirstWithFieldHandlersInputsMut<Provider>` implements `DelegateComponent<(&'a mut Input, Args)>`
-           and 61 others
-note: required for `NoScalar` to implement `ScalarTypeProvider<NoScalar>`
+help: the following other types implement trait `ScalarTypeProvider<__Context__>`
   --> src/main.rs:16:1
    |
 16 | #[cgp_type]
    | ^^^^^^^^^^^
-note: required for `NoScalar` to implement `HasScalarType`
-  --> src/main.rs:16:1
-   |
-16 | #[cgp_type]
-   | ^^^^^^^^^^^
-17 | pub trait HasScalarType {
-   |           ^^^^^^^^^^^^^
-note: required by a bound in `CanCalculateArea`
-  --> src/main.rs:22:12
-   |
-22 | #[use_type(HasScalarType.Scalar in Types)]
-   |            ^^^^^^^^^^^^^ required by this bound in `CanCalculateArea`
-23 | pub trait CanCalculateArea<Types> {
-   |           ---------------- required by a bound in this trait
-   = note: this error originates in the attribute macro `cgp_type` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `NoScalar: HasScalarType` is not satisfied
-  --> src/main.rs:32:31
-   |
-32 | pub trait CheckMissingScalar: CanCalculateArea<NoScalar> {}
-   |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-   |
-help: the trait `IsProviderFor<ScalarTypeProviderComponent, NoScalar>` is not implemented for `NoScalar`
-  --> src/main.rs:28:1
-   |
-28 | pub struct NoScalar;
-   | ^^^^^^^^^^^^^^^^^^^
-   = help: the following other types implement trait `IsProviderFor<Component, Context, Params>`:
-             `BindErr<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
-             `BindErr<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T1, E>)>`
-             `BindOk<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T, E1>)>`
-             `BindOk<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T, E1>)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<ComputerComponent, Context, (Code, Builder)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<HandlerComponent, Context, (Code, Builder)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<TryComputerComponent, Context, (Code, Builder)>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `IsProviderFor<ComputerComponent, __Context__, __Params__>`
-           and 204 others
-note: required for `NoScalar` to implement `ScalarTypeProvider<NoScalar>`
-  --> src/main.rs:16:1
-   |
-16 | #[cgp_type]
-   | ^^^^^^^^^^^
+   | |
+   | `RedirectLookup<__Components__, __Path__>`
+   | `UseContext`
+   | `UseType<Scalar>`
+   | `WithProvider<__Provider__>`
 note: required for `NoScalar` to implement `HasScalarType`
   --> src/main.rs:16:1
    |

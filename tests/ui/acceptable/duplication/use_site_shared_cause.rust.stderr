@@ -2,7 +2,7 @@ error[E0599]: the method `greet` exists for struct `App`, but its trait bounds w
   --> src/main.rs:69:17
    |
 54 | pub struct App {
-   | -------------- method `greet` not found for this struct because it doesn't satisfy `App: CanGreet` or `App: Greeter<App>`
+   | -------------- method `greet` not found for this struct because it doesn't satisfy `App: CanGreet` or `_: HasField<Symbol<4, Chars<..>>>`
 ...
 69 |     let _ = app.greet();
    |                 ^^^^^ this is an associated function, not a method
@@ -13,27 +13,25 @@ note: the candidate is defined in the trait `Greeter`
    |
 28 |     fn greet(&self) -> String;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `App: Greeter<App>` was not satisfied
-  --> src/main.rs:26:1
+note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+  --> src/main.rs:21:1
    |
-26 | #[cgp_component(Greeter)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-27 | pub trait CanGreet {
-   |           ^^^^^^^^
-note: the trait `Greeter` must be implemented
-  --> src/main.rs:27:1
+21 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+22 | pub trait HasName {
+   |           ^^^^^^^
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
    |
-27 | / pub trait CanGreet {
-28 | |     fn greet(&self) -> String;
-29 | | }
-   | |_^
+46 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanGreet` defines an item `greet`, perhaps you need to implement it
   --> src/main.rs:27:1
    |
 27 | pub trait CanGreet {
    | ^^^^^^^^^^^^^^^^^^
-   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
 69 -     let _ = app.greet();

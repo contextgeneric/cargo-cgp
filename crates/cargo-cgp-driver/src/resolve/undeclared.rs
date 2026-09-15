@@ -148,8 +148,8 @@ fn enclosing_trait_impl(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
 /// Whether `impl_did`'s `where` clause carries a trait bound of trait `trait_did` — i.e. the impl
 /// already declares that capability (via `#[uses]` or a hand-written bound).
 fn impl_bounds_by(tcx: TyCtxt<'_>, impl_did: DefId, trait_did: DefId) -> bool {
-    tcx.predicates_of(impl_did)
-        .predicates
+    tcx.clauses_of(impl_did)
+        .clauses
         .iter()
         .filter_map(|(clause, _)| clause.as_trait_clause())
         .any(|bound| bound.skip_binder().trait_ref.def_id == trait_did)

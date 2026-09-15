@@ -51,7 +51,7 @@ pub(crate) fn provider_blanket_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) ->
         if !matches!(self_ty.kind(), ty::Param(_)) {
             continue;
         }
-        for &(clause, _) in tcx.predicates_of(impl_did).predicates {
+        for &(clause, _) in tcx.clauses_of(impl_did).clauses {
             let Some(tp) = clause.as_trait_clause() else {
                 continue;
             };
@@ -81,7 +81,7 @@ pub(crate) fn provider_blanket_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) ->
 pub(crate) fn consumer_provider_trait(tcx: TyCtxt<'_>, consumer_did: DefId) -> Option<DefId> {
     for &impl_did in tcx.trait_impls_of(consumer_did).blanket_impls() {
         let impl_self = tcx.type_of(impl_did).skip_binder();
-        for &(clause, _) in tcx.predicates_of(impl_did).predicates {
+        for &(clause, _) in tcx.clauses_of(impl_did).clauses {
             let Some(tp) = clause.as_trait_clause() else {
                 continue;
             };
@@ -144,8 +144,8 @@ fn blanket_depends_on_cgp(tcx: TyCtxt<'_>, def_id: DefId, depth: u32) -> bool {
         .blanket_impls()
         .iter()
         .any(|&blanket| {
-            tcx.predicates_of(blanket)
-                .predicates
+            tcx.clauses_of(blanket)
+                .clauses
                 .iter()
                 .filter_map(|(clause, _)| clause.as_trait_clause())
                 .any(|bound| {
