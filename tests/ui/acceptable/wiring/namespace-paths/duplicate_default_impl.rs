@@ -12,7 +12,16 @@
 //! cgp-macro-core/src/types/attributes/default_impl/attribute.rs). A regression
 //! that dropped the re-span would move the carets back onto the macro attribute.
 //!
-//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
+//! The tool reads the collision off the two registration impls and rewrites the
+//! header to `[CGP-E004]`, naming the key and the table it is registered in. The
+//! key here is an ordinary *type*, not a component marker, so it is worded as one
+//! — the classifier tells the two apart structurally, by whether a provider trait
+//! keys on it — and the subject is the lookup trait with its leading arguments,
+//! `DefaultImpls1<ShowImplComponent>`, minus the components table the macro
+//! appends.
+//!
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E004).
 
 use cgp::core::component::DefaultImpls1;
 use cgp::prelude::*;

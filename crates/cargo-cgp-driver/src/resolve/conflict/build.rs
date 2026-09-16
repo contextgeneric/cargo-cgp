@@ -1,14 +1,10 @@
 //! Wording the recovered conflicting impls into a [`WiringConflict`].
 
 use cargo_cgp_error_processing::{WiringConflict, WiringKey};
-use rustc_infer::infer::TyCtxtInferExt as _;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode, Unnormalized};
-use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
+use rustc_middle::ty::TyCtxt;
 
-use crate::config::{CGP_COMPONENT_CRATE, REDIRECT_LOOKUP_TYPE};
-use crate::resolve::cgp_item::is_cgp_item;
 use crate::resolve::conflict::{
-    DelegateImpl, bounding_trait_ref, describe_key, redirect_path, render_path, render_provider,
+    DelegateImpl, describe_key, namespace_redirect, redirect_path, render_provider,
 };
 
 /// Word the recovered impls into a [`WiringConflict`], picking the shape from how the two entries
@@ -114,66 +110,11 @@ fn namespace_redirect_conflict<'tcx>(
         (false, true) => (first, conflicting),
         _ => return None,
     };
-    let path = namespace_redirect(tcx, blanket, concrete.key)?;
+    let path = namespace_redirect(tcx, blanket.impl_did, blanket.key, concrete.key)?;
     Some(WiringConflict::Redirect {
         context: context.to_owned(),
         key: describe_key(tcx, concrete.key, concrete.impl_did)?,
         path,
         provider: render_provider(tcx, concrete.delegate?),
     })
-}
-
-/// The redirected path a blanket namespace forwarding maps `concrete_key` to, if it maps it to a
-/// `RedirectLookup` at all. Recovered by normalizing the namespace trait's `Delegate` projection for
-/// that key — `<concrete_key as DefaultNamespace<Ctx>>::Delegate` — through the trait solver, the
-/// same re-entrant normalization the typed resolver uses. `None` unless the key is fully concrete
-/// and the projection resolves to a `RedirectLookup`.
-fn namespace_redirect<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    blanket: &DelegateImpl<'tcx>,
-    concrete_key: Ty<'tcx>,
-) -> Option<String> {
-    // Only a fully concrete key resolves through the namespace to a single value.
-    if concrete_key.has_param() || concrete_key.has_non_region_infer() {
-        return None;
-    }
-    // The blanket's bounding trait `<blanket key>: NsTrait<Ctx>`, rebuilt with the concrete key as
-    // `Self` so the projection names the mapping for *this* key.
-    let ns_ref = bounding_trait_ref(tcx, blanket.impl_did, blanket.key)?;
-    let delegate_did = tcx
-        .associated_items(ns_ref.def_id)
-        .in_definition_order()
-        .find(|item| item.name().as_str() == "Delegate")?
-        .def_id;
-    let mut args: Vec<ty::GenericArg<'tcx>> = ns_ref.args.iter().collect();
-    *args.first_mut()? = concrete_key.into();
-
-    let projection = Ty::new_projection(tcx, ty::IsRigid::No, delegate_did, args);
-    let delegate = normalize(tcx, projection)?;
-    let ty::Adt(def, redirect_args) = delegate.kind() else {
-        return None;
-    };
-    if !is_cgp_item(tcx, def.did(), REDIRECT_LOOKUP_TYPE, CGP_COMPONENT_CRATE) {
-        return None;
-    }
-    render_path(tcx, redirect_args.type_at(1))
-}
-
-/// Normalize `ty` through a fresh inference context, returning the resolved type — or `None` if it
-/// does not resolve to a concrete type (an ambiguous or unresolved projection leaves inference vars
-/// or an alias behind). Re-entering the solver mid-emission is the same technique the typed resolver
-/// relies on.
-fn normalize<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
-    let ocx = ObligationCtxt::new(&infcx);
-    let normalized = ocx.normalize(
-        &ObligationCause::dummy(),
-        ty::ParamEnv::empty(),
-        Unnormalized::new_wip(ty),
-    );
-    let normalized = infcx.deeply_resolve_ignoring_regions(normalized);
-    if normalized.has_non_region_infer() {
-        return None;
-    }
-    Some(tcx.erase_and_anonymize_regions(normalized))
 }

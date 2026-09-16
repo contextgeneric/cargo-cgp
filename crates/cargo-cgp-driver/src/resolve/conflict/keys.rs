@@ -1,32 +1,67 @@
 //! Rendering a conflicting entry's key, provider, and redirect path to their surface forms.
 
 use cargo_cgp_error_processing::WiringKey;
-use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 
 use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, NIL_TYPE, PATH_CONS_TYPE, REDIRECT_LOOKUP_TYPE,
 };
-use crate::resolve::cgp_item::{decode_symbol, is_cgp_item};
+use crate::resolve::cgp_item::{decode_symbol, is_cgp_item, is_component_marker};
 
-/// The surface form of a `DelegateComponent` key: a bare component marker, an `@`-path, or a
-/// blanket forwarding tagged by the namespace/table trait that keys it. `None` for a key the
-/// classifier cannot render (so the rewrite is declined rather than guessed).
+/// The surface form of a wiring key — a `DelegateComponent` key, or the `Self` of a namespace
+/// lookup-trait entry: a bare component marker, an ordinary type, an `@`-path, or a blanket
+/// forwarding tagged by the namespace/table trait that keys it. A component marker is told from an
+/// ordinary type structurally, by whether a provider trait keys on it
+/// ([`is_component_marker`]), so a per-type default's `String` reads as a type rather than as a
+/// component nobody defined. `None` for a key the classifier cannot render — one still carrying a
+/// generic parameter, an inference variable, or a placeholder — so the rewrite is declined rather
+/// than guessed.
 pub(crate) fn describe_key<'tcx>(
     tcx: TyCtxt<'tcx>,
     key: Ty<'tcx>,
     impl_did: DefId,
 ) -> Option<WiringKey> {
     match key.kind() {
-        ty::Adt(def, _) => {
-            if is_cgp_item(tcx, def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE) {
-                Some(WiringKey::Path(render_path(tcx, key)?))
-            } else {
-                Some(WiringKey::Component(tcx.item_name(def.did()).to_string()))
-            }
-        }
         ty::Param(_) => Some(WiringKey::Blanket(bounding_trait(tcx, impl_did, key)?)),
-        _ => None,
+        ty::Adt(def, _) if is_cgp_item(tcx, def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE) => {
+            Some(WiringKey::Path(render_path(tcx, key)?))
+        }
+        ty::Adt(def, _) if is_component_marker(tcx, key) => {
+            Some(WiringKey::Component(tcx.item_name(def.did()).to_string()))
+        }
+        _ if key.has_param() || key.has_non_region_infer() || key.has_placeholders() => None,
+        _ => Some(WiringKey::Type(
+            tcx.erase_and_anonymize_regions(key).to_string(),
+        )),
+    }
+}
+
+/// The namespace lookup trait an entry registers into, rendered the way it is written in a
+/// `#[default_impl(… in …)]` or a `cgp_namespace!` header: the trait name with its leading
+/// arguments but without the components-table parameter the macro appends, so a plain namespace
+/// reads `AppNamespace` and a per-type table reads `DefaultImpls1<ShowImplComponent>`. It is the
+/// subject a namespace conflict is reported on, standing where a context does for a table
+/// collision.
+pub(crate) fn render_lookup_trait(tcx: TyCtxt<'_>, impl_did: DefId) -> String {
+    let trait_ref = tcx
+        .impl_trait_ref(impl_did)
+        .instantiate_identity()
+        .skip_norm_wip();
+    let name = tcx.item_name(trait_ref.def_id).to_string();
+    // A lookup trait's shape is `Trait<…, Components>` and the macros append that table parameter
+    // themselves, so the arguments are `[Self, leading…, Table]` and the written ones sit between.
+    let args = trait_ref.args.as_slice();
+    let leading: Vec<String> = args
+        .get(1..args.len().saturating_sub(1))
+        .unwrap_or_default()
+        .iter()
+        .map(|arg| tcx.erase_and_anonymize_regions(*arg).to_string())
+        .collect();
+    if leading.is_empty() {
+        name
+    } else {
+        format!("{name}<{}>", leading.join(", "))
     }
 }
 

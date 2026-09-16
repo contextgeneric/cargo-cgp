@@ -34,8 +34,8 @@ pub enum OrphanTrigger {
 
 /// A recognized orphan-rule namespace registration: a foreign namespace trait implemented locally
 /// for a foreign key. Carries the namespace trait name, the key in the programmer's own surface
-/// form (a bare component marker or an `@`-path, never a [`Blanket`](WiringKey::Blanket)), and the
-/// construct that generated the impl.
+/// form (a bare component marker, a per-type key, or an `@`-path, never a
+/// [`Blanket`](WiringKey::Blanket)), and the construct that generated the impl.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrphanConflict {
     pub namespace: String,
@@ -44,10 +44,12 @@ pub struct OrphanConflict {
 }
 
 impl WiringKey {
-    /// The key as the object of "cannot register the foreign …" — a bare component or an `@`-path.
+    /// The key as the object of "cannot register the foreign …" — a bare component, a per-type
+    /// key, or an `@`-path.
     fn orphan_phrase(&self) -> String {
         match self {
             WiringKey::Component(name) => format!("component `{name}`"),
+            WiringKey::Type(name) => format!("type `{name}`"),
             WiringKey::Path(path) => format!("path `{path}`"),
             // The orphan classifier only ever recovers a component or path key; a blanket
             // forwarding is not a registration, so this arm is unreachable in practice.

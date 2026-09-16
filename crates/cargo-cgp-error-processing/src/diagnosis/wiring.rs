@@ -25,6 +25,9 @@ use crate::code::{
 pub enum WiringKey {
     /// A bare component marker, e.g. `GreeterComponent`.
     Component(String),
+    /// An ordinary type used as a wiring key, e.g. the `String` of a per-type default or the
+    /// `u64` of a dispatch table — a key that names no component.
+    Type(String),
     /// An `@`-path key, in bare surface notation (`@a.b.*`); a generic tail or loop parameter
     /// collapses to the trailing `.*` wildcard.
     Path(String),
@@ -39,6 +42,7 @@ impl WiringKey {
     fn noun(&self) -> String {
         match self {
             WiringKey::Component(name) => format!("component `{name}`"),
+            WiringKey::Type(name) => format!("type `{name}`"),
             WiringKey::Path(path) => format!("`{path}`"),
             WiringKey::Blanket(trait_name) => format!("every key forwarded through `{trait_name}`"),
         }
@@ -48,6 +52,7 @@ impl WiringKey {
     fn conflicting_phrase(&self) -> String {
         match self {
             WiringKey::Component(name) => format!("component `{name}`"),
+            WiringKey::Type(name) => format!("type `{name}`"),
             WiringKey::Path(path) => format!("`{path}`"),
             WiringKey::Blanket(trait_name) => format!("a key through `{trait_name}`"),
         }
@@ -57,6 +62,7 @@ impl WiringKey {
     fn source_phrase(&self) -> String {
         match self {
             WiringKey::Component(name) => format!("component `{name}`"),
+            WiringKey::Type(name) => format!("type `{name}`"),
             WiringKey::Path(path) => format!("`{path}`"),
             WiringKey::Blanket(trait_name) => format!("`{trait_name}`"),
         }

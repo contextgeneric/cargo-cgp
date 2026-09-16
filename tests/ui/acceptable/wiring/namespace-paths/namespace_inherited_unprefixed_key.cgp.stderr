@@ -1,0 +1,12 @@
+error[E0119]: [CGP-E007] component `GreeterComponent` on `AppNamespace` is redirected to `@app.GreeterComponent`
+  --> src/main.rs:38:16
+   |
+34 |     new AppNamespace: DefaultNamespace
+   |                       ---------------- first implementation here
+...
+38 | #[default_impl(GreeterComponent in AppNamespace)]
+   |                ^^^^^^^^^^^^^^^^ conflicting implementation for `GreeterComponent`
+   |
+   = help: wire the provider `GreetHello` with the key `@app.GreeterComponent`
+
+For more information about this error, try `rustc --explain E0119`.

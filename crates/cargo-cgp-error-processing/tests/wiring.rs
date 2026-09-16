@@ -34,6 +34,39 @@ fn duplicate_path_key() {
 }
 
 #[test]
+fn duplicate_type_key() {
+    // A per-type default's key names a type, not a component, so it is worded as one.
+    let conflict = WiringConflict::Duplicate {
+        context: "DefaultImpls1<ShowImplComponent>".to_owned(),
+        key: WiringKey::Type("String".to_owned()),
+    };
+    assert_eq!(
+        plan_wiring_conflict(&conflict),
+        "[CGP-E004] duplicate wiring for type `String` on `DefaultImpls1<ShowImplComponent>`",
+    );
+}
+
+#[test]
+fn redirect_collides_with_inherited_namespace_entry() {
+    // The namespace-level face of the redirect collision: the subject is the namespace binding the
+    // bare key, and the path comes from the parent namespace the key is registered in.
+    let conflict = WiringConflict::Redirect {
+        context: "AppNamespace".to_owned(),
+        key: WiringKey::Component("GreeterComponent".to_owned()),
+        path: "@app.GreeterComponent".to_owned(),
+        provider: "GreetHello".to_owned(),
+    };
+    assert_eq!(
+        plan_wiring_conflict(&conflict),
+        "[CGP-E007] component `GreeterComponent` on `AppNamespace` is redirected to `@app.GreeterComponent`",
+    );
+    assert_eq!(
+        wiring_conflict_help(&conflict).as_deref(),
+        Some("wire the provider `GreetHello` with the key `@app.GreeterComponent`"),
+    );
+}
+
+#[test]
 fn overlap_bare_component_over_namespace() {
     let conflict = WiringConflict::Overlap {
         context: "App".to_owned(),

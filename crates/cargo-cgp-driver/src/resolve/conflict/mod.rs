@@ -14,15 +14,23 @@
 //! and its `Delegate` — then words the collision through the key renderings in [`keys`]. Each
 //! recognized trait is anchored by `DefId` exactly as the rest of [`resolve`](crate::resolve) is,
 //! so a same-named trait from another crate can never drive the rewrite.
+//!
+//! A collision inside a *namespace* rather than on a context reaches [`namespace`] instead, since
+//! it lands on the namespace's own lookup trait and names neither wiring trait. Both faces share
+//! [`redirect`], which answers the question that turns a bare overlap into an actionable message:
+//! what path does a blanket forwarding — a context's `namespace …;` join, or a namespace's own
+//! inheritance blanket — map the colliding key to?
 
 mod build;
 mod classify;
 mod delegate_impls;
 mod keys;
 mod namespace;
+mod redirect;
 
 pub(crate) use build::*;
 pub use classify::*;
 pub(crate) use delegate_impls::*;
 pub(crate) use keys::*;
 pub(crate) use namespace::*;
+pub(crate) use redirect::*;

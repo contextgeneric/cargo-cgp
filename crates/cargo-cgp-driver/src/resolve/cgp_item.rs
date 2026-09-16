@@ -172,20 +172,37 @@ fn is_cgp_crate_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// one whose blanket routes to that provider ([`consumer_provider_trait`]). `None` when `marker` is
 /// not an ADT, or no provider/consumer pair keys on it.
 pub(crate) fn marker_to_consumer(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<(DefId, DefId)> {
-    let ty::Adt(marker_def, _) = marker.kind() else {
-        return None;
-    };
-    let marker_did = marker_def.did();
-    let provider_did = tcx.all_traits_including_private().find(|&trait_did| {
-        matches!(
-            provider_blanket_marker(tcx, trait_did).and_then(|marker| marker.ty_adt_def()),
-            Some(def) if def.did() == marker_did,
-        )
-    })?;
+    let provider_did = marker_provider_trait(tcx, marker)?;
     let consumer_did = tcx
         .all_traits_including_private()
         .find(|&trait_did| consumer_provider_trait(tcx, trait_did) == Some(provider_did))?;
     Some((consumer_did, provider_did))
+}
+
+/// The provider trait a component marker keys — the trait whose provider blanket bounds on
+/// `DelegateComponent<marker>` ([`provider_blanket_marker`]). `None` when `marker` is not an ADT,
+/// or when no provider trait keys on it, which is what makes this the marker recognizer
+/// [`is_component_marker`] as well.
+pub(crate) fn marker_provider_trait(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<DefId> {
+    let ty::Adt(marker_def, _) = marker.kind() else {
+        return None;
+    };
+    let marker_did = marker_def.did();
+    tcx.all_traits_including_private().find(|&trait_did| {
+        matches!(
+            provider_blanket_marker(tcx, trait_did).and_then(|marker| marker.ty_adt_def()),
+            Some(def) if def.did() == marker_did,
+        )
+    })
+}
+
+/// Whether `ty` is a CGP **component marker** — the `…Component` key some provider trait's
+/// delegation blanket bounds on ([`marker_provider_trait`]) — rather than an ordinary type used as
+/// a wiring key, such as the `String` of a per-type default or the `u64` of a dispatch table. The
+/// distinction is what lets a conflicting key be worded as a component or as a type, and it is
+/// structural rather than by name, so a type merely *called* `FooComponent` does not pass.
+pub(crate) fn is_component_marker(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    marker_provider_trait(tcx, ty).is_some()
 }
 
 /// The component marker a CGP **abstract-type** component keys on — `ScalarTypeProviderComponent`
