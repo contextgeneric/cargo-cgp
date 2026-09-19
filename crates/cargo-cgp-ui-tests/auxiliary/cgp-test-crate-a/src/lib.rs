@@ -1,6 +1,6 @@
 //! Upstream crate for cross-crate CGP coherence and orphan-rule UI fixtures.
 //!
-//! This crate defines a getter capability, a component with a provider, a
+//! This crate defines a getter trait, a component with a provider, a
 //! component registered under the `@app` namespace, and a shared namespace that
 //! downstream code joins. A fixture pulls it in with a `//@aux-build:
 //! cgp-test-crate-a` header directive; the orphan-rule fixtures then try to
@@ -65,15 +65,15 @@ cgp_namespace! {
     new AppNamespace: DefaultNamespace {}
 }
 
-/// A published `#[cgp_fn]` **capability** — a blanket-impl trait rather than a component,
+/// A published `#[cgp_fn]` **blanket trait** — a blanket-impl trait rather than a component,
 /// composed from the getter above so its blanket depends on `Self: HasName` and, through
 /// that, on a `HasField`. Downstream code calls `app.describe()` directly, which is how a
-/// capability is normally consumed.
+/// trait is normally consumed.
 ///
-/// It exists so a fixture can exercise a capability the checked crate does **not** define.
+/// It exists so a fixture can exercise a trait the checked crate does **not** define.
 /// Recognizing one is what earns the `[CGP-E009]` reshaping, and a blanket impl alone is far
 /// too broad a signal to key on (`ToString` and `Into` have one), so recognition needs
-/// positive CGP evidence for a foreign trait — which this capability's `HasName`/`HasField`
+/// positive CGP evidence for a foreign trait — which this trait's `HasName`/`HasField`
 /// chain supplies.
 #[cgp_fn]
 #[uses(HasName)]

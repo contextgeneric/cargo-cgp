@@ -35,7 +35,7 @@ const MAX_DEPTH: u32 = 256;
 /// `where` bounds, never through `IsProviderFor`. `None` when no branch reaches a resolvable leaf.
 ///
 /// The descent is memoized at **every node** through `cache`: one CGP mistake surfaces the same
-/// failure at many sites (all seeding the same obligation), and a shared capability is a diamond
+/// failure at many sites (all seeding the same obligation), and a shared trait is a diamond
 /// reached from several parents, so each distinct obligation is resolved once and reused. See
 /// `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`.
 pub(crate) fn resolve_leaves<'tcx>(
@@ -53,7 +53,7 @@ pub(crate) fn resolve_leaves<'tcx>(
 }
 
 /// Fold the root node's owned sub-causes into a [`Resolved`]: group by leaf into one [`Cause`] per
-/// distinct root cause, each holding every path that reaches it (so a shared capability's diamond
+/// distinct root cause, each holding every path that reaches it (so a shared trait's diamond
 /// survives to the renderer). Repeated-generic elision and merging now happen in the rustc-free
 /// [dependency graph](cargo_cgp_error_processing::DependencyGraph) at render time, not here. `top`
 /// is already region-erased and `context` is its self type.
@@ -214,7 +214,7 @@ fn resolve_node<'tcx>(
     let children: Vec<ty::PolyTraitClause<'tcx>> = if !descendable {
         // A foreign-type bound is normally the terminal root cause, and the descent must not wander
         // into whatever `std` blanket impl happens to satisfy it. Two exceptions are followed: a CGP
-        // getter/capability on a non-context type whose blanket impl depends on the *context* (so the
+        // getter or blanket trait on a non-context type whose blanket impl depends on the *context* (so the
         // real cause surfaces and de-duplicates), and a same-trait recursion over a type-level list
         // (a record's `Cons<..>: HandleMapEntry<..>` whose tail is another `Cons<.., Nil>: …`). A
         // foreign `f64: FnPtr` step is neither, so the bound stays the leaf.

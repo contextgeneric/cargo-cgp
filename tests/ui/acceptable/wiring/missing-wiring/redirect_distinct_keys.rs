@@ -20,7 +20,7 @@
 
 use cgp::prelude::*;
 
-// The per-value build capability, dispatched per value type with `open`.
+// The per-value build operation, dispatched per value type with `open`.
 #[cgp_component(ValueBuilder)]
 pub trait CanBuildValue<Value> {
     fn build_value(&self) -> Value;
@@ -37,7 +37,7 @@ impl ValueBuilder<u64> {
 pub struct Left;
 pub struct Right;
 
-// A top capability wired *directly* to its provider, so its dependencies' redirects are each the
+// A top-level trait wired *directly* to its provider, so its dependencies' redirects are each the
 // first redirect on their path.
 #[cgp_component(Assembler)]
 pub trait CanAssemble {

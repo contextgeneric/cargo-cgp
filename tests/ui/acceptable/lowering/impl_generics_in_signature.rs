@@ -11,7 +11,7 @@
 //!
 //! This is the forcing condition that separates an inferred type from an abstract
 //! one: a type reachable only through an implicit argument may stay an
-//! `#[impl_generics]` parameter, while a type the capability *names* in its public
+//! `#[impl_generics]` parameter, while a type the trait *names* in its public
 //! signature must be an abstract type the context supplies by wiring. The working
 //! counterpart is [`ok/abstract_db_transaction.rs`](../../ok/abstract_db_transaction.rs).
 //!

@@ -36,7 +36,7 @@ mod undeclared;
 mod walk;
 
 pub use anchor::{
-    resolve_check_failure, resolve_impl_site, resolve_use_site, resolve_use_site_capability,
+    resolve_check_failure, resolve_impl_site, resolve_use_site, resolve_use_site_blanket_trait,
     resolve_use_site_consumer, resolve_wrapper_chain,
 };
 pub use cache::ResolveCache;
@@ -45,4 +45,4 @@ pub use cgp_impl_misuse::{DetectedCgpImplMisuse, detect_cgp_impl_misuses};
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
 pub use missing_use_provider::detect_missing_use_provider;
 pub use orphan::classify_orphan_conflict;
-pub use undeclared::detect_undeclared_capability;
+pub use undeclared::detect_undeclared_trait;

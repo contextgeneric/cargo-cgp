@@ -1,8 +1,8 @@
-//! A `#[cgp_fn]` capability check that fails because the context is missing the field the
-//! capability reads. `#[cgp_fn]` turns a function into a *blanket-impl trait* — `impl<Context>
+//! A `#[cgp_fn]` trait check that fails because the context is missing the field the
+//! trait reads. `#[cgp_fn]` turns a function into a *blanket-impl trait* — `impl<Context>
 //! FormatName for Context where Self: HasField<Symbol!("name"), Value = String>` — which is not a
 //! CGP component (there is no provider trait or `DelegateComponent`). A common way to assert such a
-//! capability holds for a concrete context is a wrapper trait carrying it as a supertrait,
+//! trait holds for a concrete context is a wrapper trait carrying it as a supertrait,
 //! implemented on the context: `pub trait CheckFormatName: FormatName {}` + `impl CheckFormatName
 //! for App {}`. When the context lacks the field, that impl fails with an `E0277`.
 //!
@@ -17,13 +17,13 @@
 
 use cgp::prelude::*;
 
-/// A `#[cgp_fn]` capability that reads a `name` field from its context.
+/// A `#[cgp_fn]` trait that reads a `name` field from its context.
 #[cgp_fn]
 pub fn format_name(&self, #[implicit] name: &str) -> String {
     name.to_owned()
 }
 
-/// A second `#[cgp_fn]` capability that composes the first through `#[uses]`, so its blanket impl
+/// A second `#[cgp_fn]` trait that composes the first through `#[uses]`, so its blanket impl
 /// depends on `Self: FormatName` rather than on a field directly.
 #[cgp_fn]
 #[uses(FormatName)]
@@ -33,7 +33,7 @@ pub fn greeting(&self) -> String {
 
 #[derive(HasField)]
 pub struct App {
-    // No `name` field — the `#[cgp_fn]` capabilities above cannot be satisfied.
+    // No `name` field — the `#[cgp_fn]` traits above cannot be satisfied.
     pub locale: String,
 }
 

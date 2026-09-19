@@ -84,7 +84,7 @@ impl CanHandleApiSend<GreetApi> for App {
 }
 
 // A generic routing trait whose blanket impl for the *foreign* wrapper `Box<Ctx>` depends on the
-// wrapper capability on `Ctx` and on its associated `Response` type — the `impl CanAddRoute<App, ..>
+// wrapper trait on `Ctx` and on its associated `Response` type — the `impl CanAddRoute<App, ..>
 // for Router<Arc<App>>` shape. `Ctx` appears only as a type argument, never as the impl's `Self`.
 pub trait CanAddRoute<Ctx, Api> {
     fn add_route(self);

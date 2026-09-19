@@ -26,7 +26,7 @@ use crate::resolve::label::render_ty;
 ///   `RedirectLookup<Ctx, Path>` provider is a namespace/`open` redirection hop instead, so a chain
 ///   of them reads as its successive hops.
 /// - `HasField` becomes the field-trait impl (the field and the struct that must carry it).
-/// - Any other trait — a user's own capability or getter — is shown as a trait impl for its self.
+/// - Any other trait — a user's own blanket trait or getter — is shown as a trait impl for its self.
 ///
 /// The steps that carry no information for a reader return `None` and are dropped: the
 /// `CanUseComponent`/`IsProviderFor` scaffolding, a provider-trait obligation *for the context
@@ -100,7 +100,7 @@ pub(crate) fn label_for<'tcx>(
         });
     }
 
-    // A user's own capability/getter trait, or a terminal ordinary bound.
+    // A user's own blanket or getter trait, or a terminal ordinary bound.
     Some(DepNode::Trait {
         trait_ref: tcx.item_name(did).to_string(),
         self_ty: render_ty(tcx, self_ty),

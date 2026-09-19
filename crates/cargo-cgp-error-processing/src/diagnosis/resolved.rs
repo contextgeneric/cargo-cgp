@@ -11,7 +11,7 @@ use crate::diagnosis::node::{ChainNode, DepNode};
 
 /// One recovered root cause: the leaf it names for the note heading, and every root→leaf path that
 /// reaches it. A leaf reached one way has a single path — the common case; a leaf reached through a
-/// shared capability several providers depend on has several, which the
+/// shared trait several providers depend on has several, which the
 /// [dependency graph](crate::DependencyGraph) merges when it renders. Keeping several paths on one
 /// cause preserves the *one cause per distinct leaf* invariant the de-duplication signatures, the
 /// consumer coalescing, and the derive `help`s all rely on. For a coalesced underived-field cause the
@@ -45,7 +45,7 @@ pub struct Causes(Vec<Cause>);
 impl Causes {
     /// Collect `(leaf, path)` sub-chains — one per way the walk reached a root cause — grouping the
     /// paths that reach one leaf onto a single cause. This is what the walk's own result folds
-    /// through, and what keeps a shared capability's diamond intact: a leaf reached twice keeps both
+    /// through, and what keeps a shared trait's diamond intact: a leaf reached twice keeps both
     /// routes rather than only the first.
     pub fn from_sub_chains(chains: impl IntoIterator<Item = (Leaf, Vec<ChainNode>)>) -> Self {
         let mut causes = Causes::default();

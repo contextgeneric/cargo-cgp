@@ -94,14 +94,14 @@ pub const WIRING_OVERFLOW: &str = "CGP-E010";
 /// one end of the wiring — rides in a `help`.
 pub const ORPHAN_FOREIGN_NAMESPACE: &str = "CGP-E011";
 
-/// `CGP-E012` — a CGP capability is called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared as a
-/// dependency. The macro lowers the body into a blanket impl over a generated generic context
-/// (`impl<__Context__> Describe for __Context__ where __Context__: GetName`), and a capability the
-/// body calls on `self` must be a `where` bound on that context — declared with `#[uses(…)]`. When
-/// it is omitted, rustc reports a vague `E0599` on `&__Context__` pointing at a transitive
-/// `HasField` bound; the rewritten message names the capability instead, and the fix — add it to
+/// `CGP-E012` — a CGP trait's method is called in a `#[cgp_fn]`/`#[cgp_impl]` body but the trait is
+/// not declared as a dependency. The macro lowers the body into a blanket impl over a generated
+/// generic context (`impl<__Context__> Describe for __Context__ where __Context__: GetName`), and a
+/// trait the body calls on `self` must be a `where` bound on that context — declared with
+/// `#[uses(…)]`. When it is omitted, rustc reports a vague `E0599` on `&__Context__` pointing at a
+/// transitive `HasField` bound; the rewritten message names the trait instead, and the fix — add it to
 /// `#[uses(…)]` — rides in a `help`. The Rust code stays `E0599`.
-pub const UNDECLARED_CAPABILITY: &str = "CGP-E012";
+pub const UNDECLARED_TRAIT: &str = "CGP-E012";
 
 /// `CGP-E013` — a `#[cgp_impl]` provider impl whose header names the component's *consumer* trait
 /// where the *provider* trait belongs. `#[cgp_impl(new P)] impl AreaCalculator { … }` is the
@@ -136,8 +136,8 @@ pub const CONSUMER_TRAIT_IN_PROVIDER_BOUND: &str = "CGP-E015";
 /// generated `__Context__` placeholder and suggests restricting the parameter with the *consumer*
 /// trait (the wrong fix for a higher-order provider). The rewritten message names the inner provider
 /// and the fix — import it with `#[use_provider(Inner: ProviderTrait)]` — in a `help`. Sibling of
-/// [`UNDECLARED_CAPABILITY`]: a used-but-undeclared dependency, here an inner provider rather than a
-/// `#[uses]` capability. The Rust code stays `E0599`.
+/// [`UNDECLARED_TRAIT`]: a used-but-undeclared dependency, here an inner provider rather than a
+/// `#[uses]` trait. The Rust code stays `E0599`.
 pub const INNER_PROVIDER_NOT_IMPORTED: &str = "CGP-E016";
 
 /// `CGP-E017` — an *abstract type* the context supplies does not match the one a provider requires.
@@ -178,7 +178,7 @@ pub const DEP_PROVIDER_TRAIT_IMPL: &str = "CGP-E102";
 pub const DEP_REDIRECT_LOOKUP: &str = "CGP-E104";
 
 /// `CGP-E105` — a dependency-chain hop through any other trait, rendered in the general
-/// `trait impl \`Trait\` for \`Type\`` form (a user capability trait, or an ordinary bound
+/// `trait impl \`Trait\` for \`Type\`` form (a user blanket trait, or an ordinary bound
 /// restated as an impl).
 pub const DEP_TRAIT_IMPL: &str = "CGP-E105";
 

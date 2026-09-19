@@ -27,7 +27,7 @@
 
 use cgp::prelude::*;
 
-// The per-value build capability, dispatched per value type with `open`.
+// The per-value build operation, dispatched per value type with `open`.
 #[cgp_component(ValueBuilder)]
 pub trait CanBuildValue<Value> {
     fn build_value(&self) -> Value;

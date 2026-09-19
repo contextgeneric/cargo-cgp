@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
-//! Diamond reuse in the resolver's walk: one shared capability reached from two independent
+//! Diamond reuse in the resolver's walk: one shared trait reached from two independent
 //! branches of a single dependency tree. `CanTop` depends on both `CanLeft` and `CanRight`, and
-//! each of those depends on the same `CanShared` capability, whose provider needs the `name` field.
+//! each of those depends on the same `CanShared` trait, whose provider needs the `name` field.
 //! `App` wires all four components but has no `name` field, so the walk from `CanTop` descends into
 //! `App: CanShared` twice — once under `CanLeft`, once under `CanRight` — the diamond the per-node
 //! [resolution

@@ -9,7 +9,7 @@ use rustc_span::{Span, Symbol};
 
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{receiver_context, seed_from_call};
-use crate::resolve::cgp_item::{is_capability_trait, is_consumer_trait, is_local_adt};
+use crate::resolve::cgp_item::{is_blanket_trait, is_consumer_trait, is_local_adt};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
@@ -20,10 +20,10 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// placeholder-free root cause is found.
 ///
 /// The called method resolves through either a CGP **consumer trait** or a `#[cgp_fn]` /
-/// `#[blanket_trait]` **capability trait** (a local blanket-impl trait that is not a CGP
+/// `#[blanket_trait]` **blanket trait** (a local blanket-impl trait that is not a CGP
 /// component). Both are consumed the same way — `app.describe()` — and both seed a walkable
 /// obligation `Ctx: Trait<…>` whose `Self` is the context; they differ only in the header the
-/// result gets. A capability trait is not a CGP component, so — exactly as the impl-site anchor
+/// result gets. A blanket trait is not a CGP component, so — exactly as the impl-site anchor
 /// words such a trait — its failure reads `[CGP-E009] the trait …` rather than `[CGP-E001] the
 /// consumer trait …`, by clearing [`Resolved::consumers_are_cgp`] the walk sets.
 ///
@@ -51,7 +51,7 @@ pub fn resolve_call_site(
                 continue;
             }
             if let Some(mut resolved) = resolve_leaves(tcx, cache, top) {
-                // A `#[cgp_fn]` / `#[blanket_trait]` capability is consumed like a consumer trait
+                // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait is consumed like a consumer trait
                 // but is not a CGP *component*, so it heads the diagnostic as `[CGP-E009] the trait
                 // …` — the same wording the impl-site anchor gives such a trait reached through a
                 // wrapper. A genuine consumer keeps the `consumers_are_cgp` the walk set.
@@ -120,7 +120,7 @@ impl<'tcx> Visitor<'tcx> for CallFinder<'_, 'tcx> {
 /// call's arguments against) and whether the trait is a CGP *consumer* trait.
 ///
 /// Two kinds qualify, and CGP consumer traits come **first** so a directly-wired consumer keeps its
-/// precise `[CGP-E001]` recovery before any capability trait is tried:
+/// precise `[CGP-E001]` recovery before any blanket trait is tried:
 ///
 /// - a **CGP consumer trait** (recognized structurally, in any crate); and
 /// - a **local blanket-impl trait** that is not a consumer — the shape `#[cgp_fn]` /
@@ -133,7 +133,7 @@ impl<'tcx> Visitor<'tcx> for CallFinder<'_, 'tcx> {
 /// wrong guess from fabricating a diagnostic.
 pub(crate) fn traits_with_method(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId, DefId, bool)> {
     let mut consumers = Vec::new();
-    let mut capabilities = Vec::new();
+    let mut blanket_traits = Vec::new();
     for trait_did in tcx.all_traits_including_private() {
         let Some(method_did) = tcx
             .associated_items(trait_did)
@@ -145,9 +145,9 @@ pub(crate) fn traits_with_method(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId,
         };
         if is_consumer_trait(tcx, trait_did) {
             consumers.push((trait_did, method_did, true));
-        } else if is_capability_trait(tcx, trait_did) {
-            capabilities.push((trait_did, method_did, false));
+        } else if is_blanket_trait(tcx, trait_did) {
+            blanket_traits.push((trait_did, method_did, false));
         }
     }
-    consumers.into_iter().chain(capabilities).collect()
+    consumers.into_iter().chain(blanket_traits).collect()
 }

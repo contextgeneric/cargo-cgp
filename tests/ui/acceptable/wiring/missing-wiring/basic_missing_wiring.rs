@@ -10,7 +10,7 @@
 //! terminal leaf is an unmet `DelegateComponent<BarProviderComponent>` on the context
 //! rather than an unmet `HasField`. It renders as a `[CGP-E001]` header over one
 //! `root cause: context \`App\` does not contain any delegate entry for \`BarProviderComponent\`` note, with the
-//! dependency chain bottoming out at the `CanUseBar` capability the missing component
+//! dependency chain bottoming out at the `CanUseBar` trait the missing component
 //! would supply.
 //!
 //! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md (its "the wiring

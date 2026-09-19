@@ -1,8 +1,8 @@
 //! Rendering a resolved check failure's dependency chain as a `cargo tree`-style tree.
 //!
 //! When the driver's typed resolver traces a check failure down to its root cause, it recovers
-//! the whole transitive chain that led there — the checked capability, each provider and
-//! capability it depends on, and the missing leaf. This module turns that chain, handed over as
+//! the whole transitive chain that led there — the checked trait, each provider and
+//! trait it depends on, and the missing leaf. This module turns that chain, handed over as
 //! a compiler-free [`DependencyTree`], into the indented text that goes in the replacement
 //! diagnostic's one dependency note.
 //!
@@ -30,7 +30,7 @@ const COMPACT_GLYPHS: GlyphPalette = GlyphPalette {
 };
 
 /// One node of a resolved check failure's dependency chain: a human-readable `label` and its
-/// dependencies as `children`. The root is the checked capability, each descent is a further
+/// dependencies as `children`. The root is the checked trait, each descent is a further
 /// dependency, and the deepest node is the missing root cause. A linear cascade is a single
 /// spine; a provider with several unmet dependencies branches.
 #[derive(Debug, Clone, PartialEq, Eq)]

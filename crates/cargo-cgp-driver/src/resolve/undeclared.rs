@@ -1,17 +1,17 @@
-//! Detecting a CGP capability called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared.
+//! Detecting a CGP trait called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared.
 //!
 //! `#[cgp_fn]` and `#[cgp_impl]` lower a body into a blanket impl over a generated generic context
-//! (`impl<__Context__> Describe for __Context__ where __Context__: GetName`). A capability the body
+//! (`impl<__Context__> Describe for __Context__ where __Context__: GetName`). A trait the body
 //! calls on `self` must be a `where` bound on that context — declared with `#[uses(…)]`. When the
-//! body calls a capability the `#[uses]` list omits, the method cannot resolve and rustc reports a
+//! body calls a trait the `#[uses]` list omits, the method cannot resolve and rustc reports a
 //! vague `E0599` on `&__Context__` pointing at a transitive `HasField` bound.
 //!
 //! This module recognizes that shape off the compiler: the failing call sits inside a generated
-//! blanket impl whose `Self` is a bare type parameter, the call names a method of a CGP capability
-//! trait, and that trait is *not* among the impl's `where` bounds. It fills the rustc-free
-//! [`UndeclaredCapability`] the emitter words into a `[CGP-E012]` header and `#[uses(…)]` help.
+//! blanket impl whose `Self` is a bare type parameter, the call names a method of a CGP trait,
+//! and that trait is *not* among the impl's `where` bounds. It fills the rustc-free
+//! [`UndeclaredTrait`] the emitter words into a `[CGP-E012]` header and `#[uses(…)]` help.
 
-use cargo_cgp_error_processing::UndeclaredCapability;
+use cargo_cgp_error_processing::UndeclaredTrait;
 use rustc_hir::def::DefKind;
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Expr, ExprKind, HirId};
@@ -21,10 +21,10 @@ use rustc_span::{Span, Symbol};
 
 use crate::resolve::call_site::traits_with_method;
 
-/// Recognize an undeclared-capability failure and recover the capability trait to declare, or
+/// Recognize an undeclared-trait failure and recover the trait to declare, or
 /// `None` when the diagnostic is not one. Everything is keyed on `primary_span`, the failing method
 /// call — never on the diagnostic's note spans (which point at *other* generated impls, such as the
-/// called capability's own definition).
+/// called trait's own definition).
 ///
 /// The three conditions, all read structurally off the compiler:
 /// 1. the failing call sits inside a generated blanket impl whose `Self` is a bare type parameter —
@@ -32,15 +32,15 @@ use crate::resolve::call_site::traits_with_method;
 ///    found by walking up from the call's own body owner (the generated method) to its parent impl,
 ///    rather than by span containment: a generated impl's item span does not reliably cover its
 ///    body;
-/// 2. the call names a method of a CGP capability trait (a consumer trait, or a
-///    `#[cgp_fn]`/`#[blanket_trait]` capability trait); and
-/// 3. that capability is *not* already a `where` bound of the impl — so this is a genuinely omitted
-///    dependency, not a capability whose own deeper wiring fails.
-pub fn detect_undeclared_capability(
+/// 2. the call names a method of a CGP trait (a consumer trait, or a
+///    `#[cgp_fn]`/`#[blanket_trait]` blanket trait); and
+/// 3. that trait is *not* already a `where` bound of the impl — so this is a genuinely omitted
+///    dependency, not a trait whose own deeper wiring fails.
+pub fn detect_undeclared_trait(
     tcx: TyCtxt<'_>,
     primary_span: Span,
     spans: &[Span],
-) -> Option<UndeclaredCapability> {
+) -> Option<UndeclaredTrait> {
     let (method, call_hir_id) = failing_call_at(tcx, primary_span)?;
 
     // The impl enclosing the failing call. Walk up the def-parent chain from the call's innermost
@@ -60,19 +60,19 @@ pub fn detect_undeclared_capability(
         return None;
     }
 
-    // The capability trait(s) declaring `method`. Several unrelated traits can share a method name
-    // across modules (a `#[cgp_fn]` capability and a `#[cgp_component]` consumer both named
+    // The CGP trait(s) declaring `method`. Several unrelated traits can share a method name
+    // across modules (a `#[cgp_fn]` trait and a `#[cgp_component]` consumer both named
     // `fetch_storage_object`), so disambiguate to the one the diagnostic actually points at: the
     // "trait bound not satisfied" note spans the *failing* trait's own definition. Only if none is
     // referenced (a single unambiguous candidate) fall back to the full list.
     let candidates: Vec<DefId> = traits_with_method(tcx, method)
         .into_iter()
-        .map(|(cap_did, _, _)| cap_did)
+        .map(|(trait_did, _, _)| trait_did)
         .collect();
     let referenced: Vec<DefId> = candidates
         .iter()
         .copied()
-        .filter(|&cap_did| is_referenced(tcx, cap_did, spans))
+        .filter(|&trait_did| is_referenced(tcx, trait_did, spans))
         .collect();
     let pool = if referenced.is_empty() {
         &candidates
@@ -80,20 +80,20 @@ pub fn detect_undeclared_capability(
         &referenced
     };
 
-    for &cap_did in pool {
+    for &trait_did in pool {
         // Already a `where` bound of the impl → declared; the failure is something else.
-        if impl_bounds_by(tcx, impl_did, cap_did) {
+        if impl_bounds_by(tcx, impl_did, trait_did) {
             continue;
         }
-        return Some(UndeclaredCapability {
-            capability: tcx.item_name(cap_did).to_string(),
+        return Some(UndeclaredTrait {
+            trait_name: tcx.item_name(trait_did).to_string(),
         });
     }
     None
 }
 
 /// Whether the diagnostic's spans point into `trait_did`'s own definition — the "trait bound not
-/// satisfied" note lands on the failing capability's `#[cgp_fn]`/`#[cgp_component]` definition,
+/// satisfied" note lands on the failing trait's `#[cgp_fn]`/`#[cgp_component]` definition,
 /// which is how a same-named method on an unrelated trait in another module is told apart.
 fn is_referenced(tcx: TyCtxt<'_>, trait_did: DefId, spans: &[Span]) -> bool {
     let def_span = tcx.def_span(trait_did);
@@ -146,7 +146,7 @@ fn enclosing_trait_impl(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
 }
 
 /// Whether `impl_did`'s `where` clause carries a trait bound of trait `trait_did` — i.e. the impl
-/// already declares that capability (via `#[uses]` or a hand-written bound).
+/// already declares that trait (via `#[uses]` or a hand-written bound).
 fn impl_bounds_by(tcx: TyCtxt<'_>, impl_did: DefId, trait_did: DefId) -> bool {
     tcx.clauses_of(impl_did)
         .clauses

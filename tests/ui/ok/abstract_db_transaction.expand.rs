@@ -1,6 +1,6 @@
 #![feature(prelude_import)]
 //! Clean compile: two abstract types the context supplies by wiring, related by an
-//! ordinary trait bound, with the capability that composes them naming neither.
+//! ordinary trait bound, with the trait that composes them naming neither.
 //!
 //! This is the positive counterpart to the lowering failures around abstract database
 //! types. `Db` and `Transaction` are both abstract, so both are nameable in the
@@ -13,7 +13,7 @@
 //! and it grounds a nested alias too — see
 //! [`use_type_pin_nested_alias`](use_type_pin_nested_alias.rs).
 //!
-//! The payoff is `run_unit_of_work`: it composes both capabilities and mentions neither
+//! The payoff is `run_unit_of_work`: it composes both traits and mentions neither
 //! type, where a threaded generic parameter would have put `Db` and its bound in this
 //! signature and in every caller's. The provider's body calls through the fully-qualified
 //! `<Transaction as CanBeginFrom<Db>>::begin_from(…)` form, which names the trait

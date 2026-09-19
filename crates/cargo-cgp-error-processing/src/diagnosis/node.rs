@@ -38,7 +38,7 @@ pub enum DepNode {
         context: String,
         key: String,
     },
-    /// `CGP-E105` — a hop through any other trait (a user capability, a wrapper, or an ordinary
+    /// `CGP-E105` — a hop through any other trait (a user's blanket trait, a wrapper, or an ordinary
     /// bound restated as an impl).
     Trait { trait_ref: String, self_ty: String },
 }

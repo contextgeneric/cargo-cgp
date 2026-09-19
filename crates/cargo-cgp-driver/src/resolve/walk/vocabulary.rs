@@ -26,7 +26,7 @@ pub(crate) fn is_workaround_plumbing<'tcx>(
 /// Whether the descent should walk *into* `pred`'s dependencies, rather than treat `pred` as a
 /// terminal leaf. It descends any **provider trait** (a `ProvideFoo: Foo<App>` bound routes on to
 /// the provider's own real `where` bounds), the `DelegateComponent` table lookup, and any
-/// obligation on the context itself (its consumer, getter, and capability traits). It stops at
+/// obligation on the context itself (its consumer, getter, and blanket traits). It stops at
 /// everything else — an ordinary bound like `f64: Eq`, whose `Self` is a foreign type, is a leaf.
 ///
 /// It deliberately does *not* descend `CanUseComponent`/`IsProviderFor`: the resolver reads a

@@ -177,7 +177,7 @@ pub enum Leaf {
         /// wiring `help`; `None` for an ordinary trait's associated type, which has no such fix.
         component: Option<String>,
     },
-    /// Any other terminal unmet bound — an ordinary trait bound such as `f64: Eq`, or a capability
+    /// Any other terminal unmet bound — an ordinary trait bound such as `f64: Eq`, or a trait
     /// bound the walk cannot descend further. The emitter keeps rustc's own header for these and
     /// only replaces the sub-notes with the dependency tree.
     Bound {

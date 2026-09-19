@@ -8,13 +8,13 @@ use cargo_cgp_error_processing::rewrite::{
 };
 use cargo_cgp_error_processing::{
     Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider,
-    OrphanConflict, PendingNote, Resolved, UndeclaredCapability, cause_signature,
-    cgp_impl_misuse_help, coalesce_underived_fields, consumer_header, explain_footer_codes,
-    fix_help_messages, group_by_shared_cause, is_explain_footer_text, is_method_bounds_text,
+    OrphanConflict, PendingNote, Resolved, UndeclaredTrait, cause_signature, cgp_impl_misuse_help,
+    coalesce_underived_fields, consumer_header, explain_footer_codes, fix_help_messages,
+    group_by_shared_cause, is_explain_footer_text, is_method_bounds_text,
     is_unbounded_type_param_item_text, mentions_orphan_param_text, missing_use_provider_help,
     orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
-    plan_resolved, plan_undeclared_capability, plan_wiring_conflict, postprocess_message,
-    undeclared_capability_help, wiring_conflict_help,
+    plan_resolved, plan_undeclared_trait, plan_wiring_conflict, postprocess_message,
+    undeclared_trait_help, wiring_conflict_help,
 };
 use rustc_errors::codes::{
     E0107, E0117, E0119, E0186, E0207, E0210, E0271, E0275, E0277, E0308, E0425, E0599,
@@ -484,20 +484,20 @@ impl<E: Emitter> CgpEmitter<E> {
         rustc_middle::ty::tls::with_opt(|tcx| resolve::classify_orphan_conflict(tcx?, primary_span))
     }
 
-    /// Recognize `diag` as an undeclared-capability failure — a CGP capability called in a
+    /// Recognize `diag` as an undeclared-trait failure — a CGP trait called in a
     /// `#[cgp_fn]`/`#[cgp_impl]` body without being declared via `#[uses(…)]`, so its method cannot
-    /// resolve on the generated `__Context__` generic. Returns the capability to declare, or `None`
+    /// resolve on the generated `__Context__` generic. Returns the trait to declare, or `None`
     /// when it is not one. Gated to the method-bounds `E0599` shape, then confirmed structurally by
-    /// [`resolve::detect_undeclared_capability`] (a generated blanket impl with a bare-parameter
-    /// `Self`, a capability-trait method call, and no matching `where` bound).
-    fn undeclared_capability(&self, diag: &DiagInner) -> Option<UndeclaredCapability> {
+    /// [`resolve::detect_undeclared_trait`] (a generated blanket impl with a bare-parameter
+    /// `Self`, a CGP trait method call, and no matching `where` bound).
+    fn undeclared_trait(&self, diag: &DiagInner) -> Option<UndeclaredTrait> {
         if diag.code != Some(E0599) || !main_message_text(diag).is_some_and(is_method_bounds_text) {
             return None;
         }
         let primary_span = diag.span.primary_span()?;
         let spans = diagnostic_spans(diag);
         rustc_middle::ty::tls::with_opt(|tcx| {
-            resolve::detect_undeclared_capability(tcx?, primary_span, &spans)
+            resolve::detect_undeclared_trait(tcx?, primary_span, &spans)
         })
     }
 
@@ -739,21 +739,21 @@ impl<E: Emitter> CgpEmitter<E> {
             // The next resort re-reads the failing *call expression* itself — the anchor for a
             // consumer-method `E0277` whose spans never touch the context's definition (a
             // `Code`-dispatched handler pipeline that matches unconditionally), and for a direct
-            // call to a `#[cgp_fn]` capability method. A resolution from here is flagged, so the
+            // call to a `#[cgp_fn]` trait method. A resolution from here is flagged, so the
             // header is worded from the trait the call needs rather than from whichever provider
             // bound rustc's headline stopped on.
             if let Some(resolved) = resolve::resolve_call_site(tcx, cache, &spans) {
                 return Some((resolved, true));
             }
-            // Last: a `#[cgp_fn]` / `#[blanket_trait]` capability trait the diagnostic names in its
+            // Last: a `#[cgp_fn]` / `#[blanket_trait]` blanket trait the diagnostic names in its
             // spans, required through a `where` bound or supertrait rather than a direct call. This
-            // is gated to `E0277` — a capability *used as a bound* — deliberately: an `E0599` method
+            // is gated to `E0277` — a trait *used as a bound* — deliberately: an `E0599` method
             // call is the call-site anchor's domain, and a *generic consumer* method call whose deep
-            // capability bound is a note (not the failure the diagnostic is about) must stay declined
+            // trait bound is a note (not the failure the diagnostic is about) must stay declined
             // when its dispatch parameter is unrecoverable, rather than latch onto that transitive
-            // capability (see `generic_consumer_unwritten_arg`).
+            // trait (see `generic_consumer_unwritten_arg`).
             if diag.code == Some(E0277)
-                && let Some(resolved) = resolve::resolve_use_site_capability(tcx, cache, &spans)
+                && let Some(resolved) = resolve::resolve_use_site_blanket_trait(tcx, cache, &spans)
             {
                 return Some((resolved, false));
             }
@@ -911,21 +911,19 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             self.buffer.push(BufEntry::Plain(Box::new(diag)));
             return;
         }
-        // A capability called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]`:
+        // A trait called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]`:
         // its method cannot resolve on the generated `__Context__` generic, and rustc reports a
-        // vague `E0599` pointing at a transitive `HasField` bound. Reword it to name the capability
+        // vague `E0599` pointing at a transitive `HasField` bound. Reword it to name the trait
         // and carry the `#[uses(…)]` fix in a `help`, keeping the caret on the failing call. Recording
         // the span drops the unsized-`[u8]` cascade the failed method resolution trails on the same
         // expression.
-        if let Some(undeclared) = self.undeclared_capability(&diag)
+        if let Some(undeclared) = self.undeclared_trait(&diag)
             && let Some(primary_span) = diag.span.primary_span()
         {
-            replace_header(&mut diag, plan_undeclared_capability(&undeclared));
+            replace_header(&mut diag, plan_undeclared_trait(&undeclared));
             diag.span = MultiSpan::from_span(primary_span);
-            diag.children.push(subdiag(
-                Sublevel::Help,
-                undeclared_capability_help(&undeclared),
-            ));
+            diag.children
+                .push(subdiag(Sublevel::Help, undeclared_trait_help(&undeclared)));
             self.postprocess(&mut diag, true);
             self.record_cgp_spans(&diag);
             self.buffer.push(BufEntry::Plain(Box::new(diag)));

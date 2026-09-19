@@ -681,7 +681,7 @@ fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
     );
     assert_eq!(cause_signature(&at_check), cause_signature(&at_call));
 
-    // A different consumer is a distinct failure — never merged, so no capability is hidden.
+    // A different consumer is a distinct failure — never merged, so no trait is hidden.
     let other_consumer = cgp_resolved("App", &["CanShout"], vec![missing_name()]);
     assert_ne!(cause_signature(&at_check), cause_signature(&other_consumer));
 

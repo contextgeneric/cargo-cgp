@@ -49,11 +49,11 @@ pub(crate) fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Op
 /// The context types recovered from the *expressions* at the diagnostic's spans, by reading each
 /// overlapping expression's type syntactically ([`receiver_context`]). This reaches a use-site
 /// failure whose context is *not* on any struct-definition span but is the **value whose type
-/// fails** — the argument of a call bounded on a capability (`greet_all(app)`), where the context
+/// fails** — the argument of a call bounded on a trait (`greet_all(app)`), where the context
 /// comes from `app`'s binding rather than from a span on `App`'s definition (rustc puts its "not
 /// implemented for `App`" span on the `#[derive(HasField)]` attribute, outside the struct item).
 /// Every kind of expression `receiver_context` understands contributes; the caller filters to local
-/// ADTs and gates each on actually failing the capability, so an unrelated overlapping expression
+/// ADTs and gates each on actually failing the trait, so an unrelated overlapping expression
 /// (the enclosing call, whose "context" would be its return type) contributes nothing.
 pub(crate) fn contexts_at_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Ty<'tcx>> {
     struct ContextFinder<'a, 'tcx> {

@@ -1,6 +1,6 @@
 #![feature(prelude_import)]
 //! Acceptable failure: a provider's impl-side dependency is an *ordinary Rust
-//! trait bound* — a standard trait (`Eq`), not a CGP capability — on an abstract
+//! trait bound* — a standard trait (`Eq`), not a CGP trait — on an abstract
 //! type, and the concrete type the context wires for that abstract type does not
 //! implement it.
 //!
@@ -17,7 +17,7 @@
 //! not to wire a component or add a field.
 //!
 //! CGP lowers the bound faithfully and cannot see the wired type violates it, so it
-//! defers to the compiler. This is the same lazy-wiring mechanism as a CGP-capability
+//! defers to the compiler. This is the same lazy-wiring mechanism as a CGP-trait
 //! dependency; only the *kind of leaf* (an ordinary trait) and the fix differ.
 //!
 //! See cgp-knowledge-base/cgp/errors/checks/ordinary-trait-bound.md.
