@@ -39,8 +39,8 @@ The categories are:
 - [`ui/usability/`](ui/usability) — errors that carry the root cause but bury it in volume, encoding,
   duplication, or misleading framing (a [usability issue](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md)); the cause is
   present, so the work is re-presentation. It is split into issue-class sub-directories —
-  `extensible-data/`, `lowering/`, and `wiring/constraints/` — each naming the problem its fixtures
-  expose.
+  `extensible-data/`, `lowering/`, `wiring/constraints/`, and `wiring/redirect-tables/` — each naming
+  the problem its fixtures expose.
 - [`ui/ok/`](ui/ok) — the clean-compile baseline: correctly-wired programs that check with empty
   output.
 - `ui/hidden-root-cause/` — errors whose root cause cannot be recovered from the output at all, the

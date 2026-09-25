@@ -1,0 +1,42 @@
+error[E0277]: the trait bound `RedirectLookup<ByteSink, PathCons<_, Nil>>: IsProviderFor<_, App, _>` is not satisfied
+  --> src/main.rs:61:9
+   |
+61 |         ComputerComponent: (Sink, Digest),
+   |         ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `IsProviderFor<ComputerComponent, App, (Sink, Digest)>` is not implemented for `RedirectLookup<ByteSink, PathCons<ComputerComponent, Nil>>`
+   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorTypeProviderComponent, __Context__>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+             IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
+           and 9 others
+note: required for `ByteSink` to implement `IsProviderFor<ComputerComponent, App, (Sink, Digest)>`
+  --> src/main.rs:40:1
+   |
+40 | / delegate_components! {
+41 | |     new ByteSink {
+   | |         ^^^^^^^^
+42 | |         open ComputerComponent;
+...  |
+46 | | }
+   | |_^
+   = note: 1 redundant requirement hidden
+   = note: required for `RedirectLookup<App, PathCons<ComputerComponent, Nil>>` to implement `IsProviderFor<ComputerComponent, App, (Sink, Digest)>`
+   = note: required for `App` to implement `CanUseComponent<ComputerComponent, (Sink, Digest)>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:59:1
+   |
+59 | / check_components! {
+60 | |     App {
+61 | |         ComputerComponent: (Sink, Digest),
+62 | |     }
+63 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

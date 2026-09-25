@@ -25,6 +25,10 @@ class in [the usability issue document](https://github.com/contextgeneric/cgp-kn
   post-processing that survives a decline: rustc's "similar impl" hint splits into styled fragments
   at every difference, and the fragments are read as one line so a shredded `Symbol!` still
   resugars.
+- [`wiring/redirect-tables/`](wiring/redirect-tables) — a missing entry in an aggregate provider's
+  own `open` table (`open_aggregate_missing_entry`), which the dependency tree attributes to the
+  context: the redirect hop inside the aggregate is labeled with the context's name, and the leaf
+  calls the aggregate a "context" rather than using the provider-table wording.
 - [`wiring/constraints/`](wiring/constraints) — an unconstrained per-entry generic
   (`unconstrained_generic`), whose `E0207` fires twice with contradictory auto-fixes. The other
   structural conflicts have been reshaped and graduated: the duplicate delegate-key family into
