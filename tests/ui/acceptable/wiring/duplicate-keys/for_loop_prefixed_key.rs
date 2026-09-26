@@ -20,7 +20,7 @@
 //! `AppDefaults``, exercising the typed path renderer's collapse of a `for`-loop key
 //! parameter to a trailing `.*` wildcard.
 //!
-//! See cgp-knowledge-base/cgp/errors/wiring/namespace-forwarding-conflict.md and
+//! See cgp-knowledge-base/cgp/errors/wiring/namespace-override-conflict.md and
 //! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E005).
 
 use cgp::core::error::ErrorRaiserComponent;

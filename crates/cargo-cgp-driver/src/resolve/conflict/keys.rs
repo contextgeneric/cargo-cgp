@@ -68,9 +68,12 @@ pub(crate) fn render_lookup_trait(tcx: TyCtxt<'_>, impl_did: DefId) -> String {
 /// Render a `PathCons<..>` key back to its bare `@a.b.*` surface form — the typed counterpart of
 /// the text `resugar_path`, done straight off the types so a generic tail or loop parameter is
 /// read as a `.*` wildcard rather than a printed parameter name. A lowercase `Symbol` segment
-/// decodes to its string; a named segment keeps its type name; a `Param` anywhere ends the path in
-/// `.*`. The bare `@…` form (no `Path!(…)` wrapper) is what the rewritten conflict message uses.
-/// `None` on a spine that is not `PathCons`/`Nil`.
+/// decodes to its string; a named segment keeps its type name, and any other type prints as itself;
+/// a generic segment reads `*` in its own position, so the concrete segments after it still show
+/// (`@ComputerComponent.*.u64.*`); and a generic tail ends the path in `.*`, folded into a generic
+/// last segment so a `for`-loop key reads `@a.b.*` rather than `@a.b.*.*`. The bare `@…` form (no
+/// `Path!(…)` wrapper) is what the rewritten conflict message uses. `None` on a spine that is not
+/// `PathCons`/`Nil`.
 pub(crate) fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
     let mut segments: Vec<String> = Vec::new();
     let mut wildcard = false;
@@ -82,9 +85,10 @@ pub(crate) fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<Str
             return None;
         }
         match current.kind() {
-            // A generic tail — the rest of the path is open, so it reads as `.*`.
+            // A generic tail — the rest of the path is open, so it reads as `.*`, unless the last
+            // segment already reads `*`.
             ty::Param(_) => {
-                wildcard = true;
+                wildcard = segments.last().is_none_or(|last| last != "*");
                 break;
             }
             ty::Adt(def, args) => {
@@ -96,11 +100,9 @@ pub(crate) fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<Str
                 }
                 let head = args.type_at(0);
                 match head.kind() {
-                    // A generic segment (a `for`-loop key parameter) opens the path here.
-                    ty::Param(_) => {
-                        wildcard = true;
-                        break;
-                    }
+                    // A generic segment (a `for`-loop key parameter, or an `open` key's per-entry
+                    // generic) matches any value in its position.
+                    ty::Param(_) => segments.push("*".to_owned()),
                     ty::Adt(head_def, _) => {
                         if let Some(symbol) = decode_symbol(tcx, head) {
                             segments.push(symbol);
@@ -108,7 +110,9 @@ pub(crate) fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<Str
                             segments.push(tcx.item_name(head_def.did()).to_string());
                         }
                     }
-                    _ => return None,
+                    // A primitive, reference, or tuple segment, such as the `u64` an input-keyed
+                    // `open` entry names, reads as the type itself.
+                    _ => segments.push(tcx.erase_and_anonymize_regions(head).to_string()),
                 }
                 current = args.type_at(1);
             }

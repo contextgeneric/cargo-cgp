@@ -1,0 +1,15 @@
+error[E0277]: [CGP-E001] the consumer trait `CanName` is not implemented for context `App`
+  --> src/main.rs:57:9
+   |
+57 |         NamerComponent,
+   |         ^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E110] provider `AppComponents` does not contain any delegate entry for `@app.NamerComponent`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanName` for context `App`
+             └─ [CGP-E104] redirect lookup to `@app.NamerComponent` in `App`
+               └─ [CGP-E102] provider trait impl `Namer` with context `App` for provider `AppComponents`
+                 └─ [CGP-E104] redirect lookup to `@app.NamerComponent` in `AppComponents`
+                   └─ [CGP-E110] provider `AppComponents` does not contain any delegate entry for `@app.NamerComponent`
+
+For more information about this error, try `rustc --explain E0277`.

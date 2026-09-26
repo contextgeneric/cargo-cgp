@@ -1,0 +1,41 @@
+error[E0277]: the trait bound `RedirectLookup<AppComponents, PathCons<_, _>>: IsProviderFor<_, App>` is not satisfied
+  --> src/main.rs:57:9
+   |
+57 |         NamerComponent,
+   |         ^^^^^^^^^^^^^^ the trait `IsProviderFor<NamerComponent, App>` is not implemented for `RedirectLookup<AppComponents, PathCons<Symbol<3, Chars<..>>, _>>`
+   |
+   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorTypeProviderComponent, __Context__>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+             IsProviderFor<GreeterComponent, __Context__>
+           and 11 others
+note: required for `AppComponents` to implement `IsProviderFor<NamerComponent, App>`
+  --> src/main.rs:37:1
+   |
+37 | / delegate_components! {
+38 | |     new AppComponents {
+   | |         ^^^^^^^^^^^^^
+39 | |         namespace DefaultNamespace;
+...  |
+43 | | }
+   | |_^
+   = note: 1 redundant requirement hidden
+   = note: required for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>` to implement `IsProviderFor<NamerComponent, App>`
+   = note: required for `App` to implement `CanUseComponent<NamerComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:55:1
+   |
+55 | / check_components! {
+56 | |     App {
+57 | |         NamerComponent,
+58 | |     }
+59 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

@@ -29,13 +29,15 @@ pub enum DepNode {
         context: String,
         provider: String,
     },
-    /// `CGP-E104` — a hop through a namespace/`open` `RedirectLookup`. `key` is the dispatched value
-    /// (`<Outer>`); it is part of the node's *identity* — so two lookups along the same route for
-    /// different keys stay distinct nodes rather than merging in the graph — but not its rendered
-    /// label, since that dispatched value already shows on the child provider node.
+    /// `CGP-E104` — a hop through a namespace/`open` `RedirectLookup<Table, Path>`, labeled with
+    /// the `Table` the path is looked up in: the context for its own redirects, or an aggregate
+    /// provider for one that opens its own components. `key` is the dispatched value (`<Outer>`);
+    /// it is part of the node's *identity* — so two lookups along the same route for different keys
+    /// stay distinct nodes rather than merging in the graph — but not its rendered label, since
+    /// that dispatched value already shows on the child provider node.
     Redirect {
         path: String,
-        context: String,
+        table: String,
         key: String,
     },
     /// `CGP-E105` — a hop through any other trait (a user's blanket trait, a wrapper, or an ordinary
@@ -57,8 +59,8 @@ impl DepNode {
             } => format!(
                 "[{DEP_PROVIDER_TRAIT_IMPL}] provider trait impl `{trait_ref}` with context `{context}` for provider `{provider}`"
             ),
-            DepNode::Redirect { path, context, .. } => {
-                format!("[{DEP_REDIRECT_LOOKUP}] redirect lookup to `{path}` in `{context}`")
+            DepNode::Redirect { path, table, .. } => {
+                format!("[{DEP_REDIRECT_LOOKUP}] redirect lookup to `{path}` in `{table}`")
             }
             DepNode::Trait { trait_ref, self_ty } => {
                 format!("[{DEP_TRAIT_IMPL}] trait impl `{trait_ref}` for `{self_ty}`")

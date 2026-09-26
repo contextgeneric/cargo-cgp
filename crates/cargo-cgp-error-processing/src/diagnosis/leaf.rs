@@ -105,8 +105,9 @@ pub enum Leaf {
     /// context.
     MissingDispatchEntry {
         /// The key with no entry — a component marker (`BarProviderComponent`) for an aggregate
-        /// provider, or a dispatched-on type (`GenericArray<u8, U32>`) for a `UseDelegate` /
-        /// `UseInputDelegate` table.
+        /// provider, a redirect path (`@HandlerComponent.Code.Input`) for an aggregate provider
+        /// that opens its own components, or a dispatched-on type (`GenericArray<u8, U32>`) for a
+        /// `UseDelegate` / `UseInputDelegate` table.
         key: String,
         /// The provider table that lacks the entry, e.g. `CommonProvider` or
         /// `ToTokioAsyncReadHandlers`.
@@ -125,13 +126,14 @@ pub enum Leaf {
         /// The provider trait it fails to implement, e.g. `ApiHandler`.
         provider_trait: String,
     },
-    /// A namespace redirect whose target path has no delegate entry. A `RedirectLookup<Ctx, Path>`
-    /// provider resolves a component by forwarding the lookup to `Path` inside `Ctx`'s wiring
-    /// (through the namespace lookup trait every joined namespace supplies), but nothing — no direct
-    /// entry, no namespace default, no `#[default_impl]` — terminates that path with a provider, so
-    /// the redirect resolves to nothing. Parallel to [`Leaf::MissingWiring`], but keyed by a redirect
-    /// *path* rather than a bare component marker: the fix is to add a wiring entry for the path (on
-    /// the context, or in the namespace it joins).
+    /// A namespace redirect whose target path has no delegate entry in the context. A
+    /// `RedirectLookup<Ctx, Path>` provider resolves a component by forwarding the lookup to `Path`
+    /// inside `Ctx`'s wiring (through the namespace lookup trait every joined namespace supplies),
+    /// but nothing — no direct entry, no namespace default, no `#[default_impl]` — terminates that
+    /// path with a provider, so the redirect resolves to nothing. Parallel to
+    /// [`Leaf::MissingWiring`], but keyed by a redirect *path* rather than a bare component marker:
+    /// the fix is to add a wiring entry for the path (on the context, or in the namespace it
+    /// joins).
     MissingRedirectWiring {
         /// The redirect path with no terminating entry, e.g.
         /// `Path!(@app.finance.types.QuantityTypeProviderComponent)` (resugared from its `PathCons`

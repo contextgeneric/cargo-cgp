@@ -25,7 +25,7 @@ fn leaf(name: &str) -> ChainNode {
 fn redirect(route: &str, key: &str) -> ChainNode {
     ChainNode::Hop(DepNode::Redirect {
         path: route.to_owned(),
-        context: "App".to_owned(),
+        table: "App".to_owned(),
         key: key.to_owned(),
     })
 }

@@ -1,15 +1,15 @@
 error[E0277]: [CGP-E001] the consumer trait `CanCompute<Sink, Digest>` is not implemented for context `App`
-  --> src/main.rs:61:9
+  --> src/main.rs:57:9
    |
-61 |         ComputerComponent: (Sink, Digest),
+57 |         ComputerComponent: (Sink, Digest),
    |         ^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E107] context `ByteSink` does not contain any delegate entry for `@ComputerComponent.Sink.Digest`
+   = note: root cause: [CGP-E110] provider `ByteSink` does not contain any delegate entry for `@ComputerComponent.Sink.Digest`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanCompute<Sink, Digest>` for context `App`
              └─ [CGP-E104] redirect lookup to `@ComputerComponent` in `App`
                └─ [CGP-E102] provider trait impl `Computer<Sink, Digest>` with context `App` for provider `ByteSink`
-                 └─ [CGP-E104] redirect lookup to `@ComputerComponent` in `App`
-                   └─ [CGP-E107] context `ByteSink` does not contain any delegate entry for `@ComputerComponent.Sink.Digest`
+                 └─ [CGP-E104] redirect lookup to `@ComputerComponent` in `ByteSink`
+                   └─ [CGP-E110] provider `ByteSink` does not contain any delegate entry for `@ComputerComponent.Sink.Digest`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -1,22 +1,18 @@
 #![feature(prelude_import)]
-//! Usability failure: a missing entry in an aggregate provider's own `open` table is reported as if
-//! it were missing from the context. The context `App` opens `ComputerComponent` and routes the
-//! `Sink` code to the aggregate provider `ByteSink`, which opens `ComputerComponent` in its own
-//! table and dispatches on the *input*, the component's second parameter, with a two-segment
-//! `@ComputerComponent.<Code> Code.Bytes` key. `ByteSink` has no entry for the `Digest` input the
-//! check asks for, so the real root cause is the unmet
+//! Acceptable failure: a missing entry in an aggregate provider's own `open` table. The context
+//! `App` opens `ComputerComponent` and routes the `Sink` code to the aggregate provider `ByteSink`,
+//! which opens `ComputerComponent` in its own table and dispatches on the *input*, the component's
+//! second parameter, with a two-segment `@ComputerComponent.<Code> Code.Bytes` key. `ByteSink` has no
+//! entry for the `Digest` input the check asks for, so the root cause is the unmet
 //! `ByteSink: DelegateComponent<@ComputerComponent.Sink.Digest>`.
 //!
-//! The root cause is present, and the path is right, but two labels misname the table. The second
-//! `[CGP-E104]` redirect hop, the one that runs inside `ByteSink` (`RedirectLookup<ByteSink, …>`),
-//! is rendered `redirect lookup to @ComputerComponent in App`, because the hop takes the walk's
-//! context rather than the redirect's own table. And the `[CGP-E107]` leaf names the right owner
-//! but calls it a context: `context ByteSink does not contain any delegate entry for …`, where a
-//! provider table missing a key is otherwise the `[CGP-E110]` "provider … does not contain" leaf.
-//! A reader cannot tell from the tree which table to add the entry to without knowing that the
-//! second hop is the aggregate's.
+//! The tree names the table each lookup runs in. The first `[CGP-E104]` hop is the context's own
+//! redirect, `redirect lookup to @ComputerComponent in App`; the second runs inside the aggregate
+//! (`RedirectLookup<ByteSink, …>`) and reads `… in ByteSink`. The leaf is the `[CGP-E110]`
+//! provider-table leaf, `provider ByteSink does not contain any delegate entry for
+//! @ComputerComponent.Sink.Digest`, so the reader adds the entry to `ByteSink` rather than to `App`.
 //!
-//! See cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! See cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E104, CGP-E110).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -1,0 +1,9 @@
+error[E0119]: [CGP-E005] `App` cannot wire `@ComputerComponent.*.u64.*` that is already set through `@ComputerComponent.Eval.*`
+  --> src/main.rs:46:10
+   |
+45 |         @ComputerComponent.Eval: Show,
+   |          ---------------------- first implementation here
+46 |         @ComputerComponent.<Code> Code.u64: Double,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

@@ -22,10 +22,13 @@ use crate::resolve::walk::ProjectionMismatch;
 /// (inspecting the struct so the emitter can tell missing from underived); a branch whose unmet
 /// projection is on any *other* associated type becomes a [`Leaf::AssocTypeMismatch`]; an unmet
 /// `DelegateComponent<Marker>` — a component the context does not wire — becomes a
-/// [`Leaf::MissingWiring`] naming that component marker; an unmet namespace lookup
-/// (`Path: DefaultNamespace<Ctx>` or a user `cgp_namespace!` trait) — a `RedirectLookup` whose path
-/// the context does not terminate — becomes a [`Leaf::MissingRedirectWiring`] naming the path; any
-/// other bound becomes a [`Leaf::Bound`] restating it as `self: Trait`.
+/// [`Leaf::MissingWiring`] naming that component marker (or, for a redirect path, a
+/// [`Leaf::MissingRedirectWiring`] on the context and a [`Leaf::MissingDispatchEntry`] on an
+/// aggregate provider); an unmet namespace lookup
+/// (`Path: DefaultNamespace<Table>` or a user `cgp_namespace!` trait) — a `RedirectLookup` whose
+/// path the table does not terminate — becomes a [`Leaf::MissingRedirectWiring`] naming the path
+/// when the table is the context, and a [`Leaf::MissingDispatchEntry`] when it is an aggregate
+/// provider; any other bound becomes a [`Leaf::Bound`] restating it as `self: Trait`.
 pub(crate) fn classify_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
@@ -51,12 +54,21 @@ pub(crate) fn classify_leaf<'tcx>(
         let self_ty = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
         let owner = self_ty.to_string();
         // A `DelegateComponent<PathCons<…>>` key is a redirect *path* an `open` statement or a
-        // namespace routed the lookup along, not a bare component marker — the context's own table
-        // has no entry terminating it. Rendering only its ADT item name would flatten the whole path
-        // to a useless `PathCons`, so it becomes a [`Leaf::MissingRedirectWiring`] naming the full
-        // path (its `PathCons` spine resugars to `@…` when the note is post-processed), parallel to
-        // the namespace-lookup leaf below.
+        // namespace routed the lookup along, not a bare component marker, and the table it was
+        // looked up in has no entry terminating it. Rendering only its ADT item name would flatten
+        // the whole path to a useless `PathCons`, so the leaf names the full path (its `PathCons`
+        // spine resugars to `@…` when the note is post-processed).
         if is_path_cons(tcx, key) {
+            // On a *non-context* table the path is an aggregate provider's own `open` redirect, so
+            // the leaf names that provider table as any other entry missing from it does. On the
+            // context it is a [`Leaf::MissingRedirectWiring`], parallel to the namespace-lookup
+            // leaf below.
+            if self_ty != context {
+                return Leaf::MissingDispatchEntry {
+                    key: tcx.erase_and_anonymize_regions(key).to_string(),
+                    table: owner,
+                };
+            }
             return Leaf::MissingRedirectWiring {
                 path: tcx.erase_and_anonymize_regions(key).to_string(),
                 context: owner,
@@ -103,18 +115,30 @@ pub(crate) fn classify_leaf<'tcx>(
     }
     if is_namespace_lookup_trait(tcx, leaf_ref.def_id) {
         // A namespace lookup trait (`DefaultNamespace`, a user `cgp_namespace!` trait, …) unmet at
-        // the terminal: a `RedirectLookup` forwarded the lookup to this path inside the context's
+        // the terminal: a `RedirectLookup` forwarded the lookup to this path inside a table's
         // wiring, but nothing terminates it. The `Self` type is the redirect path (its `PathCons`
         // spine resugars to `Path!(@…)` when the note is post-processed) and the trait's last type
-        // argument is the context whose table carries no entry for it.
+        // argument is the table that carries no entry for it.
         let path = tcx
             .erase_and_anonymize_regions(leaf_ref.self_ty())
             .to_string();
-        let context = leaf_ref
+        let table = leaf_ref
             .args
             .types()
             .last()
-            .map(|ctx| tcx.erase_and_anonymize_regions(ctx).to_string())
+            .map(|table| tcx.erase_and_anonymize_regions(table));
+        // A table other than the context is an aggregate provider that joins the namespace itself,
+        // so the leaf names that provider table, as for a path missing from its own `open` table.
+        if let Some(table) = table
+            && table != context
+        {
+            return Leaf::MissingDispatchEntry {
+                key: path,
+                table: table.to_string(),
+            };
+        }
+        let context = table
+            .map(|table| table.to_string())
             .unwrap_or_else(|| path.clone());
         return Leaf::MissingRedirectWiring { path, context };
     }

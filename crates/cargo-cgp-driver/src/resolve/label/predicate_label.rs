@@ -23,8 +23,8 @@ use crate::resolve::label::render_ty;
 /// - A consumer-trait obligation on the context becomes the consumer-trait impl.
 /// - A provider-trait obligation whose `Self` is a real provider becomes the provider-trait impl
 ///   (its trait, context, provider struct, and the component's extra parameters). A
-///   `RedirectLookup<Ctx, Path>` provider is a namespace/`open` redirection hop instead, so a chain
-///   of them reads as its successive hops.
+///   `RedirectLookup<Table, Path>` provider is a namespace/`open` redirection hop instead, so a
+///   chain of them reads as its successive hops, each naming the table it looks the path up in.
 /// - `HasField` becomes the field-trait impl (the field and the struct that must carry it).
 /// - Any other trait — a user's own blanket trait or getter — is shown as a trait impl for its self.
 ///
@@ -62,15 +62,18 @@ pub(crate) fn label_for<'tcx>(
         if self_ty == context {
             return None;
         }
-        // A `RedirectLookup<Ctx, Path>` provider is a namespace/`open` redirection hop, not a real
-        // provider impl, so a chain of them reads as its successive hops. The dispatched key (the
-        // provider trait's own parameters, skipping `Self` = the lookup and the context) is carried
-        // as the node's identity so two lookups along the same route for different keys stay
-        // distinct — it is not rendered, since the key already shows on the child provider node.
-        if let Some(path) = redirect_path(tcx, self_ty) {
+        // A `RedirectLookup<Table, Path>` provider is a namespace/`open` redirection hop, not a
+        // real provider impl, so a chain of them reads as its successive hops. `Table` is where the
+        // path is looked up: the context for its own `open` or `namespace`, but an aggregate
+        // provider for a bundle that opens its own components, so the hop names it rather than the
+        // context. The dispatched key (the provider trait's own parameters, skipping `Self` = the
+        // lookup and the context) is carried as the node's identity so two lookups along the same
+        // route for different keys stay distinct — it is not rendered, since the key already shows
+        // on the child provider node.
+        if let Some((table, path)) = redirect_lookup_args(tcx, self_ty) {
             return Some(DepNode::Redirect {
                 path: path.to_string(),
-                context: context.to_string(),
+                table: table.to_string(),
                 key: trait_generics(tcx, trait_ref, 2),
             });
         }
@@ -131,12 +134,16 @@ pub(crate) fn trait_generics<'tcx>(
     }
 }
 
-/// The redirect path of a `RedirectLookup<Ctx, Path>` provider — its second type argument — or
-/// `None` when `provider` is not a `RedirectLookup`. Anchored to the CGP crate that defines the
-/// type, so a same-named type elsewhere is never mistaken for it.
-fn redirect_path<'tcx>(tcx: TyCtxt<'tcx>, provider: Ty<'tcx>) -> Option<Ty<'tcx>> {
+/// The table and path of a `RedirectLookup<Table, Path>` provider, or `None` when `provider` is not
+/// a `RedirectLookup`. Anchored to the CGP crate that defines the type, so a same-named type
+/// elsewhere is never mistaken for it.
+fn redirect_lookup_args<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    provider: Ty<'tcx>,
+) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
     let ty::Adt(def, args) = provider.kind() else {
         return None;
     };
-    is_cgp_item(tcx, def.did(), REDIRECT_LOOKUP_TYPE, CGP_COMPONENT_CRATE).then(|| args.type_at(1))
+    is_cgp_item(tcx, def.did(), REDIRECT_LOOKUP_TYPE, CGP_COMPONENT_CRATE)
+        .then(|| (args.type_at(0), args.type_at(1)))
 }

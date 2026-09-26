@@ -59,10 +59,10 @@ fn trait_hop(trait_ref: &str, self_ty: &str) -> ChainNode {
 }
 
 /// A redirect-lookup hop node (no dispatched key).
-fn redirect(path: &str, context: &str) -> ChainNode {
+fn redirect(path: &str, table: &str) -> ChainNode {
     ChainNode::Hop(DepNode::Redirect {
         path: path.to_owned(),
-        context: context.to_owned(),
+        table: table.to_owned(),
         key: String::new(),
     })
 }

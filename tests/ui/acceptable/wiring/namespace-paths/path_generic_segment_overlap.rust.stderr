@@ -1,0 +1,20 @@
+error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<ComputerComponent, PathCons<Eval, PathCons<u64, _>>>, _, _>` for type `App`
+  --> src/main.rs:46:10
+   |
+45 |         @ComputerComponent.Eval: Show,
+   |          ---------------------- first implementation here
+46 |         @ComputerComponent.<Code> Code.u64: Double,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+   |
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::ComputerComponent, cgp::prelude::PathCons<Eval, cgp::prelude::PathCons<u64, _>>>, _, _>` for type `Show`
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::ComputerComponent, cgp::prelude::PathCons<Eval, cgp::prelude::PathCons<u64, _>>>, _, _>` for type `Double`
+
+error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<ComputerComponent, PathCons<Eval, PathCons<u64, _>>>>` for type `App`
+  --> src/main.rs:46:10
+   |
+45 |         @ComputerComponent.Eval: Show,
+   |          ---------------------- first implementation here
+46 |         @ComputerComponent.<Code> Code.u64: Double,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

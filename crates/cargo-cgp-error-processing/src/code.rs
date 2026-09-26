@@ -200,6 +200,7 @@ pub const DEP_FIELD_TYPE_MISMATCH: &str = "CGP-E109";
 
 /// `CGP-E110` — a root-cause leaf: a non-context delegation table — an aggregate provider, or a
 /// `UseDelegate`/`UseInputDelegate` dispatch table — has no entry for a key it is asked to resolve,
+/// whether a component marker, a dispatched-on type, or a path its own `open` redirected along,
 /// `provider \`T\` does not contain any delegate entry for \`Key\``. Distinct from
 /// [`DEP_MISSING_DELEGATE_ENTRY`] (a component the *context* does not wire): here the owner is a
 /// provider table, so the fix is to add the entry to that provider (or feed the stage a type/key the

@@ -9,7 +9,8 @@ cause were *absent* would belong under
 improves enough to clear the bar graduates out of here into [`../acceptable/`](../acceptable); the
 whole check-trait-failure family has already done so, followed by the missing-derive coalescing, the
 dispatch-chain elision, the method-advice cleanup, the abstract-type mismatch, the consumer
-coalescing, and most of the wiring-conflict reshaping.
+coalescing, most of the wiring-conflict reshaping, and the naming of an aggregate provider's own
+`open` table.
 
 The fixtures are grouped by the *kind* of remaining usability problem, one sub-directory per issue
 class in [the usability issue document](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md):
@@ -25,10 +26,6 @@ class in [the usability issue document](https://github.com/contextgeneric/cgp-kn
   post-processing that survives a decline: rustc's "similar impl" hint splits into styled fragments
   at every difference, and the fragments are read as one line so a shredded `Symbol!` still
   resugars.
-- [`wiring/redirect-tables/`](wiring/redirect-tables) — a missing entry in an aggregate provider's
-  own `open` table (`open_aggregate_missing_entry`), which the dependency tree attributes to the
-  context: the redirect hop inside the aggregate is labeled with the context's name, and the leaf
-  calls the aggregate a "context" rather than using the provider-table wording.
 - [`wiring/constraints/`](wiring/constraints) — an unconstrained per-entry generic
   (`unconstrained_generic`), whose `E0207` fires twice with contradictory auto-fixes. The other
   structural conflicts have been reshaped and graduated: the duplicate delegate-key family into

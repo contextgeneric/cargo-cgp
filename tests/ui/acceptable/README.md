@@ -59,10 +59,14 @@ are split into concept sub-directories so no directory grows crowded:
   redundant `IsProviderFor` half dropped, the colliding key named), a duplicate component name, and
   a duplicate provider name (its redundant `IsProviderFor` conflict suppressed, leaving the `E0428`
   and the provider-trait conflict). `namespace-paths/` holds the `@`-path collisions — a duplicated
-  or overriding path, a path that is a prefix of another, two joined namespaces, a prefixed
+  or overriding path, a path that is a prefix of another, a generic first segment overlapping a
+  one-segment key (rendered `@ComputerComponent.*.u64.*`), two joined namespaces, a prefixed
   `for`-loop key, a bare unprefixed key over a namespace, a duplicate default impl, an
   inherited-override conflict, and the duplicate `cgp_namespace!` path reshaped into `[CGP-E008]`
-  naming both redirect targets. `missing-wiring/` holds the unwired-component chains, and
+  naming both redirect targets. `missing-wiring/` holds the unwired-component chains, including a
+  missing entry in an aggregate provider's own `open` table (`open_aggregate_missing_entry`) or in
+  one that joins a namespace itself (`namespace_aggregate_missing_entry`), whose redirect hops and
+  `[CGP-E110]` leaf name the aggregate rather than the context, and
   `constrained-key/` a delegation whose constrained key is unsatisfied. `constraints/` holds the
   `UseContext` cycle, its `E0275` rewritten into a `[CGP-E010]` headline over a `help` naming the
   usual cause.

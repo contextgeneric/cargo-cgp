@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `RedirectLookup<ByteSink, PathCons<_, Nil>>: IsProviderFor<_, App, _>` is not satisfied
-  --> src/main.rs:61:9
+  --> src/main.rs:57:9
    |
-61 |         ComputerComponent: (Sink, Digest),
+57 |         ComputerComponent: (Sink, Digest),
    |         ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `IsProviderFor<ComputerComponent, App, (Sink, Digest)>` is not implemented for `RedirectLookup<ByteSink, PathCons<ComputerComponent, Nil>>`
@@ -16,26 +16,26 @@ error[E0277]: the trait bound `RedirectLookup<ByteSink, PathCons<_, Nil>>: IsPro
              IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
            and 9 others
 note: required for `ByteSink` to implement `IsProviderFor<ComputerComponent, App, (Sink, Digest)>`
-  --> src/main.rs:40:1
+  --> src/main.rs:36:1
    |
-40 | / delegate_components! {
-41 | |     new ByteSink {
+36 | / delegate_components! {
+37 | |     new ByteSink {
    | |         ^^^^^^^^
-42 | |         open ComputerComponent;
+38 | |         open ComputerComponent;
 ...  |
-46 | | }
+42 | | }
    | |_^
    = note: 1 redundant requirement hidden
    = note: required for `RedirectLookup<App, PathCons<ComputerComponent, Nil>>` to implement `IsProviderFor<ComputerComponent, App, (Sink, Digest)>`
    = note: required for `App` to implement `CanUseComponent<ComputerComponent, (Sink, Digest)>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:59:1
+  --> src/main.rs:55:1
    |
-59 | / check_components! {
-60 | |     App {
-61 | |         ComputerComponent: (Sink, Digest),
-62 | |     }
-63 | | }
+55 | / check_components! {
+56 | |     App {
+57 | |         ComputerComponent: (Sink, Digest),
+58 | |     }
+59 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
