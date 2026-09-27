@@ -5,7 +5,7 @@
 # between nightlies; bump this deliberately, in lockstep with any driver code that a
 # newer compiler API requires.
 #
-# The parent cgp workspace pins stable 1.96.1 for the *library*; that is unrelated to
+# The cgp workspace pins a stable toolchain for the *library*; that is unrelated to
 # the toolchain used to build this tool. A project being checked keeps its own
 # toolchain — cargo-cgp only wraps the compiler cargo already selects for it.
 # `rust-src` is not needed to build the driver. It is pinned because the UI snapshots
