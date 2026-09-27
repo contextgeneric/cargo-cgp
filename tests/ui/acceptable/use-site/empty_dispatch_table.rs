@@ -1,7 +1,7 @@
 //! A use-site `E0277` on a handler pipeline whose root cause is an *empty* input-dispatch table: the
 //! second stage dispatches its provider on the input type through `UseInputDelegate<EmptySink>`, and
 //! that table wires no entries at all. This pins the **structural** half of the missing-dispatch-entry
-//! recognition, the case the owner-property check (`is_delegation_table`, "does the table wire *some*
+//! recognition, the case the owner-property check (`owner_has_impl_of`, "does the table wire *some*
 //! key") cannot see — an empty table has no `DelegateComponent` impl to find.
 //!
 //! The resolver instead keys on *where* the unmet `DelegateComponent` arises: it is a `where`-clause

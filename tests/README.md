@@ -73,9 +73,11 @@ reproduces.
 **No reproducible class hides its root cause.** Every imported case carries the concrete cause in
 cargo-cgp's output, so each is either an `acceptable/` case (the cause is presented well) or a
 `usability/` case (the cause is present but buried) — none is a hidden root cause. The sharpest
-confirmation is the consumer-call class: it is *hidden* as raw `rustc` (only `E0599` "method exists
-but its bounds were not satisfied"), yet under cargo-cgp's next-gen solver the leaf bound is recovered
-and the resolver leads with it, so those fixtures sit in
+confirmation is the consumer-call class. What raw `rustc` shows depends on the compiler: stable
+reports only the `E0599` "method exists but its bounds were not satisfied" and the provider trait,
+while the pinned nightly also names the leaf `HasField` bound, but in a buried note with the field
+name elided. Under cargo-cgp's next-gen solver the leaf bound is recovered and the resolver leads
+with it, so those fixtures sit in
 [`ui/acceptable/use-site/`](ui/acceptable/use-site).
 
 ## Cross-crate fixtures and the one class with no snapshot

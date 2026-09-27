@@ -198,11 +198,10 @@ impl DependencyGraph {
     /// children is ever referenced that way: a leaf hides no subtree, so it is drawn in full wherever
     /// a chain bottoms out on it.
     ///
-    /// **Every CGP construct is rendered in full.** A hop repeating its parent's trait once printed
-    /// its generic list as `<…>`, which shortened a dispatch chain that restates a program-sized
-    /// `Code` at every step — but at the cost of hiding the very type the reader is tracing, and
-    /// leaving them unable to tell a genuine repeat from a hop whose parameters differ. A chain step
-    /// now always names its trait and parameters as written.
+    /// **Every CGP construct is rendered in full.** A hop repeating its parent's trait still prints
+    /// its whole generic list, even in a dispatch chain that restates a program-sized `Code` at every
+    /// step: shortening it to `<…>` would hide the very type the reader is tracing, and leave them
+    /// unable to tell a genuine repeat from a hop whose parameters differ.
     fn expand(
         &self,
         id: usize,

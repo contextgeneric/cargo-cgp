@@ -54,7 +54,7 @@ pub(crate) fn resolve_leaves<'tcx>(
 
 /// Fold the root node's owned sub-causes into a [`Resolved`]: group by leaf into one [`Cause`] per
 /// distinct root cause, each holding every path that reaches it (so a shared trait's diamond
-/// survives to the renderer). Repeated-generic elision and merging now happen in the rustc-free
+/// survives to the renderer). Merging happens in the rustc-free
 /// [dependency graph](cargo_cgp_error_processing::DependencyGraph) at render time, not here. `top`
 /// is already region-erased and `context` is its self type.
 fn compute_leaves<'tcx>(
