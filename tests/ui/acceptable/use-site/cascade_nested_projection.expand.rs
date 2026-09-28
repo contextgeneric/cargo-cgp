@@ -205,8 +205,10 @@ pub struct HandleSink;
 impl DelegateComponent<HandlerComponent> for HandleSink {
     type Delegate = UseInputDelegate<SinkHandlers>;
 }
-impl<__Context__, __Params__> IsProviderFor<HandlerComponent, __Context__, __Params__>
-for HandleSink
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<HandlerComponent, __Context__, __Params__> for HandleSink
 where
     UseInputDelegate<
         SinkHandlers,
@@ -216,7 +218,7 @@ pub struct SinkHandlers;
 impl DelegateComponent<Vec<u8>> for SinkHandlers {
     type Delegate = HandleWriteBytes;
 }
-impl<__Context__, __Params__> IsProviderFor<Vec<u8>, __Context__, __Params__>
+impl<__Context__, __Params__: ?Sized> IsProviderFor<Vec<u8>, __Context__, __Params__>
 for SinkHandlers
 where
     HandleWriteBytes: IsProviderFor<Vec<u8>, __Context__, __Params__>,
@@ -224,7 +226,7 @@ where
 impl DelegateComponent<String> for SinkHandlers {
     type Delegate = HandleWriteBytes;
 }
-impl<__Context__, __Params__> IsProviderFor<String, __Context__, __Params__>
+impl<__Context__, __Params__: ?Sized> IsProviderFor<String, __Context__, __Params__>
 for SinkHandlers
 where
     HandleWriteBytes: IsProviderFor<String, __Context__, __Params__>,
@@ -315,7 +317,7 @@ impl<
     __Key__,
     __Value__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<__Key__, __Context__, __Params__> for App
 where
     __Key__: MyNamespace<App, Delegate = __Value__>,

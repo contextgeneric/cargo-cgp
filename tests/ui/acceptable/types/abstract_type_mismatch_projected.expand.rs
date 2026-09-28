@@ -348,7 +348,7 @@ impl DelegateComponent<DbTypeProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<DbTypeProviderComponent, __Context__, __Params__> for App
 where
     UseType<Postgres>: IsProviderFor<DbTypeProviderComponent, __Context__, __Params__>,
@@ -358,7 +358,7 @@ impl DelegateComponent<TransactionTypeProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<TransactionTypeProviderComponent, __Context__, __Params__> for App
 where
     UseType<
@@ -370,7 +370,7 @@ impl DelegateComponent<TransactionNamerComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<TransactionNamerComponent, __Context__, __Params__> for App
 where
     NamePooledTransaction: IsProviderFor<

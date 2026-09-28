@@ -183,7 +183,7 @@ impl DelegateComponent<AreaCalculatorComponent> for Rectangle {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<AreaCalculatorComponent, __Context__, __Params__> for Rectangle
 where
     ScaledArea<
@@ -192,8 +192,10 @@ where
 {}
 trait CheckRectangleProviders<
     __Component__,
+    __Context__,
     __Params__: ?Sized,
->: IsProviderFor<__Component__, Rectangle, __Params__> {}
-impl CheckRectangleProviders<AreaCalculatorComponent, ()> for RectangleArea {}
-impl CheckRectangleProviders<AreaCalculatorComponent, ()> for ScaledArea<RectangleArea> {}
+>: IsProviderFor<__Component__, __Context__, __Params__> {}
+impl CheckRectangleProviders<AreaCalculatorComponent, Rectangle, ()> for RectangleArea {}
+impl CheckRectangleProviders<AreaCalculatorComponent, Rectangle, ()>
+for ScaledArea<RectangleArea> {}
 fn main() {}

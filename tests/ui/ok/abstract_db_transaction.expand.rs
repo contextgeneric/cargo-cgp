@@ -541,7 +541,7 @@ impl DelegateComponent<ErrorTypeProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ErrorTypeProviderComponent, __Context__, __Params__> for App
 where
     UseType<String>: IsProviderFor<ErrorTypeProviderComponent, __Context__, __Params__>,
@@ -551,7 +551,7 @@ impl DelegateComponent<DbTypeProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<DbTypeProviderComponent, __Context__, __Params__> for App
 where
     UseType<Postgres>: IsProviderFor<DbTypeProviderComponent, __Context__, __Params__>,
@@ -561,7 +561,7 @@ impl DelegateComponent<TransactionTypeProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<TransactionTypeProviderComponent, __Context__, __Params__> for App
 where
     UseType<
@@ -573,7 +573,7 @@ impl DelegateComponent<TransactionStarterComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<TransactionStarterComponent, __Context__, __Params__> for App
 where
     BeginPooledTransaction: IsProviderFor<
@@ -587,7 +587,7 @@ impl DelegateComponent<TransactionCommitterComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<TransactionCommitterComponent, __Context__, __Params__> for App
 where
     CommitPooledTransaction: IsProviderFor<

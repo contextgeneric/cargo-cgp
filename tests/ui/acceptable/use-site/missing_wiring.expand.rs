@@ -171,7 +171,7 @@ impl DelegateComponent<FooProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<FooProviderComponent, __Context__, __Params__> for App
 where
     DoFooWithBar: IsProviderFor<FooProviderComponent, __Context__, __Params__>,

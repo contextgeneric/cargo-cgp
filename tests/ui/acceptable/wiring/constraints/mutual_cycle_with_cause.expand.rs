@@ -173,16 +173,20 @@ pub struct App {}
 impl DelegateComponent<ProviderAComponent> for App {
     type Delegate = DoA;
 }
-impl<__Context__, __Params__> IsProviderFor<ProviderAComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<ProviderAComponent, __Context__, __Params__> for App
 where
     DoA: IsProviderFor<ProviderAComponent, __Context__, __Params__>,
 {}
 impl DelegateComponent<ProviderBComponent> for App {
     type Delegate = DoB;
 }
-impl<__Context__, __Params__> IsProviderFor<ProviderBComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<ProviderBComponent, __Context__, __Params__> for App
 where
     DoB: IsProviderFor<ProviderBComponent, __Context__, __Params__>,
 {}

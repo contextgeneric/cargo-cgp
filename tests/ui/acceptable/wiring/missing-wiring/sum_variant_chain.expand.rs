@@ -138,7 +138,7 @@ impl DelegateComponent<VariantEncoderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<VariantEncoderComponent, __Context__, __Params__> for App
 where
     RedirectLookup<
@@ -155,7 +155,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<VariantEncoderComponent, PathCons<Choice, __Wildcard__>>,
     __Context__,
@@ -177,7 +177,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<VariantEncoderComponent, PathCons<u64, __Wildcard__>>,
     __Context__,

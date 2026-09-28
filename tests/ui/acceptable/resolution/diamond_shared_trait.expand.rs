@@ -382,7 +382,7 @@ impl DelegateComponent<SharedProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<SharedProviderComponent, __Context__, __Params__> for App
 where
     ProvideShared: IsProviderFor<SharedProviderComponent, __Context__, __Params__>,
@@ -392,7 +392,7 @@ impl DelegateComponent<LeftProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<LeftProviderComponent, __Context__, __Params__> for App
 where
     ProvideLeft: IsProviderFor<LeftProviderComponent, __Context__, __Params__>,
@@ -402,7 +402,7 @@ impl DelegateComponent<RightProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<RightProviderComponent, __Context__, __Params__> for App
 where
     ProvideRight: IsProviderFor<RightProviderComponent, __Context__, __Params__>,
@@ -412,7 +412,7 @@ impl DelegateComponent<TopProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<TopProviderComponent, __Context__, __Params__> for App
 where
     ProvideTop: IsProviderFor<TopProviderComponent, __Context__, __Params__>,

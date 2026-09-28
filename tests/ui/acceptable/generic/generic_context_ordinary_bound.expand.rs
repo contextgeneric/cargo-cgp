@@ -230,7 +230,7 @@ impl<T> DelegateComponent<ScalarTypeProviderComponent> for Wrapper<T> {
 impl<
     T,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ScalarTypeProviderComponent, __Context__, __Params__> for Wrapper<T>
 where
     UseType<T>: IsProviderFor<ScalarTypeProviderComponent, __Context__, __Params__>,
@@ -241,7 +241,7 @@ impl<T> DelegateComponent<ScalarEqualityComponent> for Wrapper<T> {
 impl<
     T,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ScalarEqualityComponent, __Context__, __Params__> for Wrapper<T>
 where
     CompareScalars: IsProviderFor<ScalarEqualityComponent, __Context__, __Params__>,

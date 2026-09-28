@@ -229,7 +229,7 @@ impl DelegateComponent<ValueBuilderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ValueBuilderComponent, __Context__, __Params__> for App
 where
     RedirectLookup<
@@ -246,7 +246,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ValueBuilderComponent, PathCons<u64, __Wildcard__>>,
     __Context__,
@@ -268,7 +268,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ValueBuilderComponent, PathCons<Outer, __Wildcard__>>,
     __Context__,

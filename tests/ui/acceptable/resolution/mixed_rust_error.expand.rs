@@ -107,8 +107,10 @@ pub struct Person {}
 impl DelegateComponent<GreeterComponent> for Person {
     type Delegate = GreetHello;
 }
-impl<__Context__, __Params__> IsProviderFor<GreeterComponent, __Context__, __Params__>
-for Person
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<GreeterComponent, __Context__, __Params__> for Person
 where
     GreetHello: IsProviderFor<GreeterComponent, __Context__, __Params__>,
 {}

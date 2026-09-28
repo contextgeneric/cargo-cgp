@@ -200,7 +200,7 @@ impl<
     __Key__,
     __Value__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<__Key__, __Context__, __Params__> for App
 where
     __Key__: MyNamespace<App, Delegate = __Value__>,

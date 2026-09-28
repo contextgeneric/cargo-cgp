@@ -32,7 +32,7 @@ impl<
     __Key__,
     __Value__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<__Key__, __Context__, __Params__> for App
 where
     __Key__: DefaultNamespace<App, Delegate = __Value__>,
@@ -57,7 +57,7 @@ impl<
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<
         Symbol!("cgp"),
@@ -109,7 +109,7 @@ impl<
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<
         Symbol!("cgp"),

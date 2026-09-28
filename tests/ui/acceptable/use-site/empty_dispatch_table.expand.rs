@@ -84,8 +84,10 @@ pub struct HandleSink;
 impl DelegateComponent<HandlerComponent> for HandleSink {
     type Delegate = UseInputDelegate<EmptySink>;
 }
-impl<__Context__, __Params__> IsProviderFor<HandlerComponent, __Context__, __Params__>
-for HandleSink
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<HandlerComponent, __Context__, __Params__> for HandleSink
 where
     UseInputDelegate<
         EmptySink,
@@ -163,7 +165,7 @@ impl<
     __Key__,
     __Value__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<__Key__, __Context__, __Params__> for App
 where
     __Key__: MyNamespace<App, Delegate = __Value__>,

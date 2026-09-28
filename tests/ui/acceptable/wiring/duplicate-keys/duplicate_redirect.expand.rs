@@ -77,8 +77,10 @@ pub struct App;
 impl DelegateComponent<FooComponent> for App {
     type Delegate = RedirectLookup<App, Path!(@app.foo)>;
 }
-impl<__Context__, __Params__> IsProviderFor<FooComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<FooComponent, __Context__, __Params__> for App
 where
     RedirectLookup<
         App,
@@ -88,8 +90,10 @@ where
 impl DelegateComponent<FooComponent> for App {
     type Delegate = RedirectLookup<App, Path!(@app.bar)>;
 }
-impl<__Context__, __Params__> IsProviderFor<FooComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<FooComponent, __Context__, __Params__> for App
 where
     RedirectLookup<
         App,

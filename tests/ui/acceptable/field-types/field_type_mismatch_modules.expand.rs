@@ -164,7 +164,7 @@ pub mod shape_a {
     }
     impl<
         __Context__,
-        __Params__,
+        __Params__: ?Sized,
     > IsProviderFor<AreaCalculatorAComponent, __Context__, __Params__> for Rectangle
     where
         RectangleAreaA: IsProviderFor<AreaCalculatorAComponent, __Context__, __Params__>,
@@ -319,7 +319,7 @@ pub mod shape_b {
     }
     impl<
         __Context__,
-        __Params__,
+        __Params__: ?Sized,
     > IsProviderFor<AreaCalculatorBComponent, __Context__, __Params__> for Rectangle
     where
         RectangleAreaB: IsProviderFor<AreaCalculatorBComponent, __Context__, __Params__>,

@@ -100,8 +100,10 @@ pub struct App;
 impl DelegateComponent<GreeterComponent> for App {
     type Delegate = GreetChoice;
 }
-impl<__Context__, __Params__> IsProviderFor<GreeterComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<GreeterComponent, __Context__, __Params__> for App
 where
     GreetChoice: IsProviderFor<GreeterComponent, __Context__, __Params__>,
 {}

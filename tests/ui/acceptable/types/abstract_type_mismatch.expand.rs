@@ -253,7 +253,7 @@ impl DelegateComponent<ScalarTypeProviderComponent> for Rectangle {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ScalarTypeProviderComponent, __Context__, __Params__> for Rectangle
 where
     UseType<u32>: IsProviderFor<ScalarTypeProviderComponent, __Context__, __Params__>,
@@ -263,7 +263,7 @@ impl DelegateComponent<AreaCalculatorComponent> for Rectangle {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<AreaCalculatorComponent, __Context__, __Params__> for Rectangle
 where
     RectangleArea: IsProviderFor<AreaCalculatorComponent, __Context__, __Params__>,

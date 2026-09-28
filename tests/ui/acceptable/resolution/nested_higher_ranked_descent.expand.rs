@@ -272,7 +272,7 @@ impl DelegateComponent<ValueEncoderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ValueEncoderComponent, __Context__, __Params__> for App
 where
     RedirectLookup<
@@ -289,7 +289,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ValueEncoderComponent, PathCons<Outer, __Wildcard__>>,
     __Context__,
@@ -311,7 +311,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ValueEncoderComponent, PathCons<Mid, __Wildcard__>>,
     __Context__,
@@ -333,7 +333,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ValueEncoderComponent, PathCons<Inner, __Wildcard__>>,
     __Context__,
@@ -355,7 +355,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ValueEncoderComponent, PathCons<Vec<Mid>, __Wildcard__>>,
     __Context__,
@@ -377,7 +377,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ValueEncoderComponent, PathCons<Vec<Inner>, __Wildcard__>>,
     __Context__,
@@ -403,7 +403,7 @@ impl<
     T,
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ValueEncoderComponent, PathCons<&'a T, __Wildcard__>>,
     __Context__,

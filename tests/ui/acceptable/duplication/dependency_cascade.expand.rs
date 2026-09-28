@@ -258,24 +258,30 @@ impl HasFieldMut<Symbol!("age")> for App {
 impl DelegateComponent<FooComponent> for App {
     type Delegate = ProvideFoo;
 }
-impl<__Context__, __Params__> IsProviderFor<FooComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<FooComponent, __Context__, __Params__> for App
 where
     ProvideFoo: IsProviderFor<FooComponent, __Context__, __Params__>,
 {}
 impl DelegateComponent<BarComponent> for App {
     type Delegate = ProvideBar;
 }
-impl<__Context__, __Params__> IsProviderFor<BarComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<BarComponent, __Context__, __Params__> for App
 where
     ProvideBar: IsProviderFor<BarComponent, __Context__, __Params__>,
 {}
 impl DelegateComponent<BazComponent> for App {
     type Delegate = ProvideBaz;
 }
-impl<__Context__, __Params__> IsProviderFor<BazComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<BazComponent, __Context__, __Params__> for App
 where
     ProvideBaz: IsProviderFor<BazComponent, __Context__, __Params__>,
 {}

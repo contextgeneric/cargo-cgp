@@ -150,8 +150,10 @@ pub struct App;
 impl DelegateComponent<ApiHandlerComponent> for App {
     type Delegate = HandleGreet;
 }
-impl<__Context__, __Params__> IsProviderFor<ApiHandlerComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<ApiHandlerComponent, __Context__, __Params__> for App
 where
     HandleGreet: IsProviderFor<ApiHandlerComponent, __Context__, __Params__>,
 {}

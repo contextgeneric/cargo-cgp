@@ -282,8 +282,10 @@ pub struct App;
 impl DelegateComponent<EncoderComponent> for App {
     type Delegate = RedirectLookup<App, Path!(@EncoderComponent)>;
 }
-impl<__Context__, __Params__> IsProviderFor<EncoderComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<EncoderComponent, __Context__, __Params__> for App
 where
     RedirectLookup<
         App,
@@ -295,7 +297,7 @@ impl DelegateComponent<FirstReporterComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<FirstReporterComponent, __Context__, __Params__> for App
 where
     ReportFirst: IsProviderFor<FirstReporterComponent, __Context__, __Params__>,
@@ -305,7 +307,7 @@ impl DelegateComponent<SecondReporterComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<SecondReporterComponent, __Context__, __Params__> for App
 where
     ReportSecond: IsProviderFor<SecondReporterComponent, __Context__, __Params__>,
@@ -318,7 +320,7 @@ impl<
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<EncoderComponent, PathCons<u32, __Wildcard__>>,
     __Context__,
@@ -339,7 +341,7 @@ impl<
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<EncoderComponent, PathCons<u64, __Wildcard__>>,
     __Context__,

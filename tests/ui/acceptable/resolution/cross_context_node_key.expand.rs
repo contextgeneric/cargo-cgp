@@ -228,16 +228,20 @@ impl HasFieldMut<Symbol!("label")> for Outer {
 impl DelegateComponent<ComputerComponent> for Inner {
     type Delegate = DoCompute;
 }
-impl<__Context__, __Params__> IsProviderFor<ComputerComponent, __Context__, __Params__>
-for Inner
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<ComputerComponent, __Context__, __Params__> for Inner
 where
     DoCompute: IsProviderFor<ComputerComponent, __Context__, __Params__>,
 {}
 impl DelegateComponent<RunnerComponent> for Outer {
     type Delegate = RunViaInner;
 }
-impl<__Context__, __Params__> IsProviderFor<RunnerComponent, __Context__, __Params__>
-for Outer
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<RunnerComponent, __Context__, __Params__> for Outer
 where
     RunViaInner: IsProviderFor<RunnerComponent, __Context__, __Params__>,
 {}

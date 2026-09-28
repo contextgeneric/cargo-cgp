@@ -266,7 +266,7 @@ impl DelegateComponent<ErrorTypeProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ErrorTypeProviderComponent, __Context__, __Params__> for App
 where
     UseType<String>: IsProviderFor<ErrorTypeProviderComponent, __Context__, __Params__>,
@@ -276,7 +276,7 @@ impl DelegateComponent<DbTypeProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<DbTypeProviderComponent, __Context__, __Params__> for App
 where
     UseType<Postgres>: IsProviderFor<DbTypeProviderComponent, __Context__, __Params__>,
@@ -284,8 +284,10 @@ where
 impl DelegateComponent<RowCounterComponent> for App {
     type Delegate = CountPooledRows;
 }
-impl<__Context__, __Params__> IsProviderFor<RowCounterComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<RowCounterComponent, __Context__, __Params__> for App
 where
     CountPooledRows: IsProviderFor<RowCounterComponent, __Context__, __Params__>,
 {}

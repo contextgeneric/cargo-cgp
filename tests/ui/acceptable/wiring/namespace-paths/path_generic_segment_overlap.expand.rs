@@ -51,8 +51,10 @@ pub struct App;
 impl DelegateComponent<ComputerComponent> for App {
     type Delegate = RedirectLookup<App, Path!(@ComputerComponent)>;
 }
-impl<__Context__, __Params__> IsProviderFor<ComputerComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<ComputerComponent, __Context__, __Params__> for App
 where
     RedirectLookup<
         App,
@@ -67,7 +69,7 @@ impl<
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ComputerComponent, PathCons<Eval, __Wildcard__>>,
     __Context__,
@@ -92,7 +94,7 @@ impl<
     Code,
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ComputerComponent, PathCons<Code, PathCons<u64, __Wildcard__>>>,
     __Context__,

@@ -233,7 +233,7 @@ impl DelegateComponent<ScalarTypeProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ScalarTypeProviderComponent, __Context__, __Params__> for App
 where
     UseType<f64>: IsProviderFor<ScalarTypeProviderComponent, __Context__, __Params__>,
@@ -243,7 +243,7 @@ impl DelegateComponent<ScalarEqualityComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ScalarEqualityComponent, __Context__, __Params__> for App
 where
     CompareScalars: IsProviderFor<ScalarEqualityComponent, __Context__, __Params__>,

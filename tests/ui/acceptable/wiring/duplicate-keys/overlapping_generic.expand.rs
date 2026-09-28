@@ -85,16 +85,21 @@ pub struct Wrapper<T>(pub T);
 impl<T> DelegateComponent<GreeterComponent> for Wrapper<T> {
     type Delegate = GreetHello;
 }
-impl<T, __Context__, __Params__> IsProviderFor<GreeterComponent, __Context__, __Params__>
-for Wrapper<T>
+impl<
+    T,
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<GreeterComponent, __Context__, __Params__> for Wrapper<T>
 where
     GreetHello: IsProviderFor<GreeterComponent, __Context__, __Params__>,
 {}
 impl DelegateComponent<GreeterComponent> for Wrapper<u64> {
     type Delegate = GreetHello;
 }
-impl<__Context__, __Params__> IsProviderFor<GreeterComponent, __Context__, __Params__>
-for Wrapper<u64>
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<GreeterComponent, __Context__, __Params__> for Wrapper<u64>
 where
     GreetHello: IsProviderFor<GreeterComponent, __Context__, __Params__>,
 {}

@@ -232,7 +232,7 @@ impl DelegateComponent<shapes_a::MeasurerComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<shapes_a::MeasurerComponent, __Context__, __Params__> for App
 where
     shapes_a::MeasureWidthA: IsProviderFor<
@@ -246,7 +246,7 @@ impl DelegateComponent<shapes_b::MeasurerComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<shapes_b::MeasurerComponent, __Context__, __Params__> for App
 where
     shapes_b::MeasureWidthB: IsProviderFor<

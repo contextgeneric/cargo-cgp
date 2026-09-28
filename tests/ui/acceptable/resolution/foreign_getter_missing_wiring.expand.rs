@@ -265,7 +265,7 @@ impl DelegateComponent<AuthenticatorComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<AuthenticatorComponent, __Context__, __Params__> for App
 where
     RequireCredential<

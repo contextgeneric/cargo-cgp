@@ -131,7 +131,7 @@ impl<
     __Key__,
     __Value__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<__Key__, __Context__, __Params__> for App
 where
     __Key__: AppNamespace<App, Delegate = __Value__>,
@@ -146,7 +146,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<Symbol!("app"), PathCons<GreeterComponent, __Wildcard__>>,
     __Context__,

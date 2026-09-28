@@ -163,7 +163,7 @@ impl<
     __Key__,
     __Value__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<__Key__, __Context__, __Params__> for AppComponents
 where
     __Key__: DefaultNamespace<AppComponents, Delegate = __Value__>,
@@ -178,7 +178,7 @@ for AppComponents {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<Symbol!("app"), PathCons<GreeterComponent, __Wildcard__>>,
     __Context__,
@@ -202,7 +202,7 @@ impl<
     __Key__,
     __Value__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<__Key__, __Context__, __Params__> for App
 where
     __Key__: DefaultNamespace<App, Delegate = __Value__>,
@@ -214,7 +214,7 @@ impl<__Wildcard__> DelegateComponent<PathCons<Symbol!("app"), __Wildcard__>> for
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<PathCons<Symbol!("app"), __Wildcard__>, __Context__, __Params__> for App
 where
     AppComponents: IsProviderFor<

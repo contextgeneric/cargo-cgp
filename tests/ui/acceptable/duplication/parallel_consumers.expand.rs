@@ -238,7 +238,7 @@ impl DelegateComponent<AreaCalculatorComponent> for Rectangle {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<AreaCalculatorComponent, __Context__, __Params__> for Rectangle
 where
     RectangleArea: IsProviderFor<AreaCalculatorComponent, __Context__, __Params__>,
@@ -248,7 +248,7 @@ impl DelegateComponent<HeightReporterComponent> for Rectangle {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<HeightReporterComponent, __Context__, __Params__> for Rectangle
 where
     ReportHeight: IsProviderFor<HeightReporterComponent, __Context__, __Params__>,

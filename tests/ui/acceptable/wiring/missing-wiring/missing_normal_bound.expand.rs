@@ -165,7 +165,7 @@ impl DelegateComponent<FooProviderComponent> for CommonProvider {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<FooProviderComponent, __Context__, __Params__> for CommonProvider
 where
     DoFooWithBar: IsProviderFor<FooProviderComponent, __Context__, __Params__>,
@@ -176,7 +176,7 @@ impl DelegateComponent<FooProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<FooProviderComponent, __Context__, __Params__> for App
 where
     DoFooWithBar: IsProviderFor<FooProviderComponent, __Context__, __Params__>,
@@ -186,7 +186,7 @@ impl DelegateComponent<BarProviderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<BarProviderComponent, __Context__, __Params__> for App
 where
     DoBar: IsProviderFor<BarProviderComponent, __Context__, __Params__>,

@@ -40,8 +40,10 @@ pub struct ByteSink;
 impl DelegateComponent<ComputerComponent> for ByteSink {
     type Delegate = RedirectLookup<ByteSink, Path!(@ComputerComponent)>;
 }
-impl<__Context__, __Params__> IsProviderFor<ComputerComponent, __Context__, __Params__>
-for ByteSink
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<ComputerComponent, __Context__, __Params__> for ByteSink
 where
     RedirectLookup<
         ByteSink,
@@ -60,7 +62,7 @@ impl<
     Code,
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ComputerComponent, PathCons<Code, PathCons<Bytes, __Wildcard__>>>,
     __Context__,
@@ -77,8 +79,10 @@ pub struct App;
 impl DelegateComponent<ComputerComponent> for App {
     type Delegate = RedirectLookup<App, Path!(@ComputerComponent)>;
 }
-impl<__Context__, __Params__> IsProviderFor<ComputerComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<ComputerComponent, __Context__, __Params__> for App
 where
     RedirectLookup<
         App,
@@ -93,7 +97,7 @@ impl<
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ComputerComponent, PathCons<Sink, __Wildcard__>>,
     __Context__,

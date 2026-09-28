@@ -134,7 +134,7 @@ impl DelegateComponent<AreaCalculatorComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<AreaCalculatorComponent, __Context__, __Params__> for App
 where
     RedirectLookup<
@@ -151,7 +151,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<AreaCalculatorComponent, PathCons<Rectangle, __Wildcard__>>,
     __Context__,

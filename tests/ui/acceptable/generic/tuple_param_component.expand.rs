@@ -138,7 +138,7 @@ impl DelegateComponent<PairFormatterComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<PairFormatterComponent, __Context__, __Params__> for App
 where
     FormatWithSeparator: IsProviderFor<PairFormatterComponent, __Context__, __Params__>,

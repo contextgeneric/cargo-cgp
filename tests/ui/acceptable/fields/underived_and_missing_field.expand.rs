@@ -123,7 +123,7 @@ impl DelegateComponent<VolumeCalculatorComponent> for Shape {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<VolumeCalculatorComponent, __Context__, __Params__> for Shape
 where
     ShapeVolume: IsProviderFor<VolumeCalculatorComponent, __Context__, __Params__>,

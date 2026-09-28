@@ -150,7 +150,7 @@ impl<'a> DelegateComponent<ReferenceGetterComponent> for App<'a> {
 impl<
     'a,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ReferenceGetterComponent, __Context__, __Params__> for App<'a>
 where
     GetReference: IsProviderFor<ReferenceGetterComponent, __Context__, __Params__>,

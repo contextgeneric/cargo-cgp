@@ -108,7 +108,7 @@ impl<
     Provider,
     List: PickFirst<Provider = Provider>,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<Component, __Context__, __Params__> for PickFirstProvider<List>
 where
     Provider: IsProviderFor<Component, __Context__, __Params__>,
@@ -117,8 +117,10 @@ pub struct App;
 impl DelegateComponent<GreeterComponent> for App {
     type Delegate = PickFirstProvider<Nil>;
 }
-impl<__Context__, __Params__> IsProviderFor<GreeterComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<GreeterComponent, __Context__, __Params__> for App
 where
     PickFirstProvider<Nil>: IsProviderFor<GreeterComponent, __Context__, __Params__>,
 {}

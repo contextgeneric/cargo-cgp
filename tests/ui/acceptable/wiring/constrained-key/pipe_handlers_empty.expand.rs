@@ -84,8 +84,10 @@ pub struct App;
 impl DelegateComponent<GreeterComponent> for App {
     type Delegate = PipeHandlers<Nil>;
 }
-impl<__Context__, __Params__> IsProviderFor<GreeterComponent, __Context__, __Params__>
-for App
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<GreeterComponent, __Context__, __Params__> for App
 where
     PipeHandlers<Nil>: IsProviderFor<GreeterComponent, __Context__, __Params__>,
 {}

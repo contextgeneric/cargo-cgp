@@ -116,7 +116,7 @@ impl DelegateComponent<ItemEncoderComponent> for App {
 }
 impl<
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<ItemEncoderComponent, __Context__, __Params__> for App
 where
     RedirectLookup<
@@ -133,7 +133,7 @@ for App {
 impl<
     __Wildcard__,
     __Context__,
-    __Params__,
+    __Params__: ?Sized,
 > IsProviderFor<
     PathCons<ItemEncoderComponent, PathCons<u64, __Wildcard__>>,
     __Context__,
