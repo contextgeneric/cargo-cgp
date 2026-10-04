@@ -1,0 +1,20 @@
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:14:10
+   |
+14 | fn parse<T: core::str::FromStr>(value: String) -> Option<T> {
+   |          ^ unconstrained type parameter
+   |
+help: use the type parameter `T` in the `Parse` type and use it in the type definition
+   |
+14 | fn parse<T><T: core::str::FromStr>(value: String) -> Option<T> {
+   |         +++
+
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:14:10
+   |
+13 | #[cgp_computer]
+   | --------------- help: remove the unused type parameter `T`
+14 | fn parse<T: core::str::FromStr>(value: String) -> Option<T> {
+   |          ^ unconstrained type parameter
+
+For more information about this error, try `rustc --explain E0207`.

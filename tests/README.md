@@ -93,10 +93,11 @@ orphan rule, cross-crate coherence — exists only *between* crates, so the harn
 The named crate's source lives under
 [`crates/cargo-cgp-ui-tests/auxiliary/`](../crates/cargo-cgp-ui-tests/auxiliary); the harness
 materializes it against the sibling `cgp` checkout (generating its manifest so its `cgp` path
-resolves) and adds it as a path dependency of the throwaway crate before compiling. Two aux crates
-carry the cross-crate CGP surface, migrated from `cgp`: `cgp-test-crate-a` (upstream — a foreign
-namespace, component, and getter) and `cgp-test-crate-b` (downstream — the orphan-*safe* wirings
-against it). They back two kinds of fixture:
+resolves) and adds it as a path dependency of the throwaway crate before compiling. A fixture may
+declare several directives. Two aux crates carry the cross-crate wiring surface, migrated from
+`cgp`: `cgp-test-crate-a` (upstream — a foreign namespace, component, and getter) and
+`cgp-test-crate-b` (downstream — the orphan-*safe* wirings against it). They back two kinds of
+fixture:
 
 - **The three orphan-rule failures** — `default_impl_foreign_component`,
   `default_impl_foreign_prefix_path`, and `reopen_foreign_namespace`, in
@@ -106,6 +107,15 @@ against it). They back two kinds of fixture:
 - **The positive counterpart** — [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs) builds
   `cgp-test-crate-b` (and transitively `cgp-test-crate-a`) to confirm every orphan-*safe* cross-crate
   impl compiles cleanly.
+
+Two more aux crates carry the cross-crate surface of the function and dispatch macros:
+`cgp-test-dispatch-traits` (upstream — `#[cgp_auto_dispatch]` traits with no implementor, plus a
+`#[cgp_computer]` and a `#[cgp_producer]`) and `cgp-test-dispatch-shapes` (the middle crate —
+payloads implementing those traits and an enum over them). They back two clean-compile fixtures:
+[`ui/ok/cross_crate_dispatch_enum.rs`](ui/ok/cross_crate_dispatch_enum.rs) implements and dispatches
+the foreign traits over its own payloads and enum, and
+[`ui/ok/cross_crate_dispatch_payloads.rs`](ui/ok/cross_crate_dispatch_payloads.rs) dispatches over
+the middle crate's enum and derives its own enum over the middle crate's payloads.
 
 One upstream class has **no snapshot at all**: `inheritance_cycle`, two namespaces that inherit from
 each other. Plain `rustc` rejects it eagerly with an `E0275` overflow, but under cargo-cgp's next-gen

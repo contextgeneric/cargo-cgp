@@ -1,0 +1,17 @@
+# Auxiliary crate for the UI suite: the middle crate of the cross-crate fixtures
+# for `#[cgp_auto_dispatch]`, depending on `cgp-test-dispatch-traits`. The harness
+# materializes both aux crates as siblings under `target/ui-harness/aux/` and
+# replaces `__CGP_CRATE_DIR__` with the resolved sibling `cgp` checkout path, so
+# the `../cgp-test-dispatch-traits` path dependency resolves. The empty
+# `[workspace]` table detaches it from the cargo-cgp workspace above `target/`.
+[package]
+name    = "cgp-test-dispatch-shapes"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+cgp                      = { path = "__CGP_CRATE_DIR__" }
+cgp-test-dispatch-traits = { path = "../cgp-test-dispatch-traits" }
+
+[workspace]

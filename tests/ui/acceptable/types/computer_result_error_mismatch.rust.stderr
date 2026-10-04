@@ -1,0 +1,45 @@
+error[E0271]: type mismatch resolving `<CheckedAdd as Computer<App, _, (u64, u64)>>::Output == Result<u64, ()>`
+  --> src/main.rs:29:13
+   |
+29 |     let _ = CheckedAdd::try_compute(&App, PhantomData::<()>, (1, 2));
+   |             ^^^^^^^^^^ type mismatch resolving `<CheckedAdd as Computer<App, _, (u64, u64)>>::Output == Result<u64, ()>`
+   |
+note: expected this to be `Result<u64, ()>`
+  --> src/main.rs:16:35
+   |
+16 | fn checked_add(a: u64, b: u64) -> Result<u64, String> {
+   |                                   ^^^^^^^^^^^^^^^^^^^
+   = note: expected enum `Result<_, ()>`
+              found enum `Result<_, String>`
+   = note: required for `TryPromote<CheckedAdd>` to implement `IsProviderFor<cgp::prelude::TryComputerComponent, App, (_, (u64, u64))>`
+   = note: 1 redundant requirement hidden
+   = note: required for `CheckedAdd` to implement `IsProviderFor<cgp::prelude::TryComputerComponent, App, (_, (u64, u64))>`
+note: required by a bound in `cgp::prelude::TryComputer::try_compute`
+  --> $CGP/crates/extra/cgp-handler/src/components/try_compute.rs:8:1
+   |
+ 8 | #[cgp_component(TryComputer)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `TryComputer::try_compute`
+...
+16 |     fn try_compute(&self, _code: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
+   |        ----------- required by a bound in this associated function
+   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: type mismatch resolving `<CheckedAdd as Computer<App, (), (u64, u64)>>::Output == Result<u64, ()>`
+  --> src/main.rs:29:13
+   |
+29 |     let _ = CheckedAdd::try_compute(&App, PhantomData::<()>, (1, 2));
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<CheckedAdd as Computer<App, (), (u64, u64)>>::Output == Result<u64, ()>`
+   |
+note: expected this to be `Result<u64, ()>`
+  --> src/main.rs:16:35
+   |
+16 | fn checked_add(a: u64, b: u64) -> Result<u64, String> {
+   |                                   ^^^^^^^^^^^^^^^^^^^
+   = note: expected enum `Result<_, ()>`
+              found enum `Result<_, String>`
+   = note: required for `TryPromote<CheckedAdd>` to implement `IsProviderFor<cgp::prelude::TryComputerComponent, App, ((), (u64, u64))>`
+   = note: 1 redundant requirement hidden
+   = note: required for `CheckedAdd` to implement `IsProviderFor<cgp::prelude::TryComputerComponent, App, ((), (u64, u64))>`
+   = note: required for `CheckedAdd` to implement `TryComputer<App, (), (u64, u64)>`
+
+For more information about this error, try `rustc --explain E0271`.

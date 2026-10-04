@@ -1,0 +1,15 @@
+# Auxiliary crate for the UI suite: the upstream half of the cross-crate fixtures
+# for CGP's function and dispatch macros. The harness copies this directory under
+# `target/ui-harness/aux/` and replaces `__CGP_CRATE_DIR__` with the resolved path
+# of the sibling `cgp` checkout. The empty `[workspace]` table detaches it from the
+# cargo-cgp workspace above `target/`.
+[package]
+name    = "cgp-test-dispatch-traits"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+cgp = { path = "__CGP_CRATE_DIR__" }
+
+[workspace]

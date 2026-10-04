@@ -1,0 +1,35 @@
+error[E0599]: the method `area` exists for enum `Shape`, but its trait bounds were not satisfied
+  --> src/main.rs:39:35
+   |
+22 | pub enum Shape {
+   | -------------- method `area` not found for this enum because it doesn't satisfy `Shape: HasArea`
+...
+39 |     let _ = Shape::Circle(Circle).area();
+   |                                   ^^^^ method cannot be called on `Shape` due to unsatisfied trait bounds
+   |
+  ::: $CGP/crates/extra/cgp-dispatch/src/providers/matchers/match_with_field_handlers.rs:19:1
+   |
+19 | pub struct MatchWithValueHandlersRef<Provider = UseContext>(pub PhantomData<Provider>);
+   | ----------------------------------------------------------- doesn't satisfy `<_ as Computer<(), (), &Shape>>::Output = f64`
+   |
+note: trait bound `<cgp::prelude::MatchWithValueHandlersRef<ComputeArea> as cgp::prelude::Computer<(), (), &'__a__ Shape>>::Output = f64` was not satisfied
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_auto_dispatch]
+   | ^^^^^^^^^^^^^^^^^^^^
+28 | pub trait HasArea {
+   |           ^^^^^^^
+note: the method `area` exists on the type `Circle`
+  --> src/main.rs:29:5
+   |
+29 |     fn area(&self) -> f64;
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `HasArea` defines an item `area`, perhaps you need to implement it
+  --> src/main.rs:28:1
+   |
+28 | pub trait HasArea {
+   | ^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0599`.
