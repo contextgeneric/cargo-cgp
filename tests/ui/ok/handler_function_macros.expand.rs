@@ -4,9 +4,9 @@
 //! value and one returning `Result<T, E>`, an async computer returning each, a
 //! generic computer, a computer taking a reference, and a producer. The program
 //! compiles clean, so the snapshot of cargo-cgp's output is empty; the
-//! `.expand.rs` pins the code each macro generates, including the provider impls
-//! and promotion wiring its nested `#[cgp_new_provider]` and
-//! `delegate_components!` expand to.
+//! `.expand.rs` pins the code each macro generates: the provider struct and impl,
+//! its `IsProviderFor` impl, and the promotion wiring's `DelegateComponent`
+//! impls.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

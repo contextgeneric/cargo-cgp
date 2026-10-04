@@ -3,8 +3,8 @@
 //! method, a method borrowing through an elided lifetime, and an async method
 //! stacked with `#[async_trait]`. The program compiles clean, so the snapshot of
 //! cargo-cgp's output is empty; the `.expand.rs` pins the enum-level blanket
-//! impls and the per-variant computers the macro generates, down to the provider
-//! impls their nested `#[cgp_computer]` expands to.
+//! impls and the per-variant computers the macro generates, each a helper
+//! function with its provider impl and promotion wiring.
 
 use cgp::prelude::*;
 
