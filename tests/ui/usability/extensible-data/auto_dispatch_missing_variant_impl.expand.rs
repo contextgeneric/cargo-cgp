@@ -240,7 +240,7 @@ impl<
     type Output = f64;
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0): (&'__a__ __Variants__),
     ) -> Self::Output {
         __compute_area__(arg_0)

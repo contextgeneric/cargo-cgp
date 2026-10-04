@@ -12,13 +12,13 @@ error[E0599]: the method `area` exists for enum `Shape`, but its trait bounds we
 19 | pub struct MatchWithValueHandlersRef<Provider = UseContext>(pub PhantomData<Provider>);
    | ----------------------------------------------------------- doesn't satisfy `<_ as Computer<(), (), &Shape>>::Output = f64`
    |
-note: trait bound `<cgp::prelude::MatchWithValueHandlersRef<ComputeArea> as cgp::prelude::Computer<(), (), &'__a__ Shape>>::Output = f64` was not satisfied
+note: trait bound `<MatchWithValueHandlersRef<ComputeArea> as Computer<(), (), &'__a__ Shape>>::Output = f64` was not satisfied
   --> src/main.rs:27:1
    |
 27 | #[cgp_auto_dispatch]
-   | ^^^^^^^^^^^^^^^^^^^^
+   | ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound introduced here
 28 | pub trait HasArea {
-   |           ^^^^^^^
+   |           -------
 note: the method `area` exists on the type `Circle`
   --> src/main.rs:29:5
    |

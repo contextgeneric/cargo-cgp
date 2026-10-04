@@ -21,7 +21,7 @@ impl<__Context__, __Code__> Computer<__Context__, __Code__, (u64, u64)> for Chec
     type Output = Result<u64, String>;
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0, arg_1): (u64, u64),
     ) -> Self::Output {
         checked_add(arg_0, arg_1)

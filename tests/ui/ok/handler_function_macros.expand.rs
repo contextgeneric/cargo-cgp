@@ -21,7 +21,7 @@ impl<__Context__, __Code__> Computer<__Context__, __Code__, (u64, u64)> for Add 
     type Output = u64;
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0, arg_1): (u64, u64),
     ) -> Self::Output {
         add(arg_0, arg_1)
@@ -179,7 +179,7 @@ impl<__Context__, __Code__> Computer<__Context__, __Code__, (u64, u64)> for Chec
     type Output = Result<u64, String>;
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0, arg_1): (u64, u64),
     ) -> Self::Output {
         checked_add(arg_0, arg_1)
@@ -338,7 +338,7 @@ for AddAsync {
     type Output = u64;
     async fn compute_async(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0, arg_1): (u64, u64),
     ) -> Self::Output {
         add_async(arg_0, arg_1).await
@@ -418,7 +418,7 @@ for CheckedAddAsync {
     type Output = Result<u64, String>;
     async fn compute_async(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0, arg_1): (u64, u64),
     ) -> Self::Output {
         checked_add_async(arg_0, arg_1).await
@@ -501,7 +501,7 @@ impl<
     type Output = T;
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0, arg_1): (T, T),
     ) -> Self::Output {
         add_generic(arg_0, arg_1)
@@ -661,7 +661,7 @@ for ToStringRef {
     type Output = String;
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0): (&Value),
     ) -> Self::Output {
         to_string_ref(arg_0)
@@ -818,7 +818,10 @@ fn magic_number() -> u64 {
 }
 impl<__Context__, __Code__> Producer<__Context__, __Code__> for MagicNumber {
     type Output = u64;
-    fn produce(_context: &__Context__, _code: PhantomData<__Code__>) -> Self::Output {
+    fn produce(
+        _context: &__Context__,
+        _code: ::core::marker::PhantomData<__Code__>,
+    ) -> Self::Output {
         magic_number()
     }
 }

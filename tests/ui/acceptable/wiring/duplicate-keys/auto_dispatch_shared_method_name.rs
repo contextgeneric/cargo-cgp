@@ -4,9 +4,12 @@
 //! twice: `E0428` on both names, then `E0119` on the computers' conflicting
 //! impls. This is a known defect of the macro: folding the trait name into the
 //! generated names would remove the clash, at the cost of renaming the public
-//! `Compute{Method}` provider. The `ComputeArea` carets fall on the second `area`
-//! method name, since the computer's name is spanned on the method identifier
-//! it derives from; the helper's carets cover the whole attribute.
+//! `Compute{Method}` provider. The carets on `ComputeArea` itself, its `E0428`
+//! and the conflicting `Computer` and `IsProviderFor<ComputerComponent, …>`
+//! impls, fall on the second `area` method name, because the computer's name and
+//! its provider impl are spanned on the method identifier they derive from. The
+//! helper's `E0428` and the conflicting promotion wiring cover the whole
+//! attribute.
 //!
 //! Error class: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md, with the name clash itself
 //! under https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/error_codes/e0428.md.

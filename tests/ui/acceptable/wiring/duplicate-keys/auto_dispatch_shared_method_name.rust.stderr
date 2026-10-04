@@ -1,226 +1,222 @@
 error[E0428]: the name `__compute_area__` is defined multiple times
-  --> src/main.rs:21:1
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- previous definition of the value `__compute_area__` here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ `__compute_area__` redefined here
    |
    = note: `__compute_area__` must be defined only once in the value namespace of this module
    = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0428]: the name `ComputeArea` is defined multiple times
-  --> src/main.rs:23:8
+  --> src/main.rs:26:8
    |
-18 |     fn area(&self) -> f64;
+21 |     fn area(&self) -> f64;
    |        ---- previous definition of the type `ComputeArea` here
 ...
-23 |     fn area(&self) -> f64;
+26 |     fn area(&self) -> f64;
    |        ^^^^ `ComputeArea` redefined here
    |
    = note: `ComputeArea` must be defined only once in the type namespace of this module
 
-error[E0119]: conflicting implementations of trait `cgp::prelude::Computer<_, _, &_>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `Computer<_, _, &_>` for type `ComputeArea`
+  --> src/main.rs:26:8
    |
-16 | #[cgp_auto_dispatch]
-   | -------------------- first implementation here
+21 |     fn area(&self) -> f64;
+   |        ---- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
-   | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
-   |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+26 |     fn area(&self) -> f64;
+   |        ^^^^ conflicting implementation for `ComputeArea`
 
-error[E0119]: conflicting implementations of trait `IsProviderFor<cgp::prelude::ComputerComponent, _, (_, &_)>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `IsProviderFor<ComputerComponent, _, (_, &_)>` for type `ComputeArea`
+  --> src/main.rs:26:8
    |
-16 | #[cgp_auto_dispatch]
-   | -------------------- first implementation here
+21 |     fn area(&self) -> f64;
+   |        ---- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
-   | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
-   |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+26 |     fn area(&self) -> f64;
+   |        ^^^^ conflicting implementation for `ComputeArea`
 
-error[E0119]: conflicting implementations of trait `IsProviderFor<cgp::prelude::ComputerRefComponent, _, _>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `IsProviderFor<ComputerRefComponent, _, _>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `IsProviderFor<cgp::prelude::TryComputerComponent, _, _>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `IsProviderFor<TryComputerComponent, _, _>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `IsProviderFor<cgp::prelude::TryComputerRefComponent, _, _>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `IsProviderFor<TryComputerRefComponent, _, _>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `IsProviderFor<cgp::prelude::AsyncComputerComponent, _, _>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `IsProviderFor<AsyncComputerComponent, _, _>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `IsProviderFor<cgp::prelude::AsyncComputerRefComponent, _, _>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `IsProviderFor<AsyncComputerRefComponent, _, _>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `IsProviderFor<cgp::prelude::HandlerComponent, _, _>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `IsProviderFor<HandlerComponent, _, _>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `IsProviderFor<cgp::prelude::HandlerRefComponent, _, _>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `IsProviderFor<HandlerRefComponent, _, _>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<cgp::prelude::ComputerRefComponent>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `DelegateComponent<ComputerRefComponent>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<cgp::prelude::TryComputerComponent>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `DelegateComponent<TryComputerComponent>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<cgp::prelude::TryComputerRefComponent>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `DelegateComponent<TryComputerRefComponent>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<cgp::prelude::AsyncComputerComponent>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `DelegateComponent<AsyncComputerComponent>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<cgp::prelude::AsyncComputerRefComponent>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `DelegateComponent<AsyncComputerRefComponent>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<cgp::prelude::HandlerComponent>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `DelegateComponent<HandlerComponent>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<cgp::prelude::HandlerRefComponent>` for type `ComputeArea`
-  --> src/main.rs:21:1
+error[E0119]: conflicting implementations of trait `DelegateComponent<HandlerRefComponent>` for type `ComputeArea`
+  --> src/main.rs:24:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | -------------------- first implementation here
 ...
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `ComputeArea`
    |
-   = note: this error originates in the attribute macro `cgp_computer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0271]: type mismatch resolving `<MatchWithValueHandlersRef<ComputeArea> as Computer<(), (), &__Variants__>>::Output == f64`
-  --> src/main.rs:21:1
+  --> src/main.rs:24:1
    |
-21 | #[cgp_auto_dispatch]
+24 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^ types differ
-22 | pub trait HasScaledArea {
-23 |     fn area(&self) -> f64;
+25 | pub trait HasScaledArea {
+26 |     fn area(&self) -> f64;
    |        ---- required by a bound introduced by this call
    |
 note: required for `__Variants__` to implement `HasArea`
-  --> src/main.rs:16:1
+  --> src/main.rs:19:1
    |
-16 | #[cgp_auto_dispatch]
+19 | #[cgp_auto_dispatch]
    | ^^^^^^^^^^^^^^^^^^^^
-17 | pub trait HasArea {
+20 | pub trait HasArea {
    |           ^^^^^^^
    = note: associated types for the current `impl` cannot be restricted in `where` clauses
    = note: associated types for the current `impl` cannot be restricted in `where` clauses
 note: required by a bound in `__compute_area__`
-  --> src/main.rs:17:11
+  --> src/main.rs:20:11
    |
-17 | pub trait HasArea {
+20 | pub trait HasArea {
    |           ^^^^^^^ required by this bound in `__compute_area__`
-18 |     fn area(&self) -> f64;
+21 |     fn area(&self) -> f64;
    |        ---- required by a bound in this function
    = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 

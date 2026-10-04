@@ -23,7 +23,7 @@ impl<
     type Output = Option<T>;
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0): (String),
     ) -> Self::Output {
         parse(arg_0)

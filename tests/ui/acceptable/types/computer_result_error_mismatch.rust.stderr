@@ -11,9 +11,9 @@ note: expected this to be `Result<u64, ()>`
    |                                   ^^^^^^^^^^^^^^^^^^^
    = note: expected enum `Result<_, ()>`
               found enum `Result<_, String>`
-   = note: required for `TryPromote<CheckedAdd>` to implement `IsProviderFor<cgp::prelude::TryComputerComponent, App, (_, (u64, u64))>`
+   = note: required for `TryPromote<CheckedAdd>` to implement `IsProviderFor<TryComputerComponent, App, (_, (u64, u64))>`
    = note: 1 redundant requirement hidden
-   = note: required for `CheckedAdd` to implement `IsProviderFor<cgp::prelude::TryComputerComponent, App, (_, (u64, u64))>`
+   = note: required for `CheckedAdd` to implement `IsProviderFor<TryComputerComponent, App, (_, (u64, u64))>`
 note: required by a bound in `cgp::prelude::TryComputer::try_compute`
   --> $CGP/crates/extra/cgp-handler/src/components/try_compute.rs:8:1
    |
@@ -37,9 +37,9 @@ note: expected this to be `Result<u64, ()>`
    |                                   ^^^^^^^^^^^^^^^^^^^
    = note: expected enum `Result<_, ()>`
               found enum `Result<_, String>`
-   = note: required for `TryPromote<CheckedAdd>` to implement `IsProviderFor<cgp::prelude::TryComputerComponent, App, ((), (u64, u64))>`
+   = note: required for `TryPromote<CheckedAdd>` to implement `IsProviderFor<TryComputerComponent, App, ((), (u64, u64))>`
    = note: 1 redundant requirement hidden
-   = note: required for `CheckedAdd` to implement `IsProviderFor<cgp::prelude::TryComputerComponent, App, ((), (u64, u64))>`
+   = note: required for `CheckedAdd` to implement `IsProviderFor<TryComputerComponent, App, ((), (u64, u64))>`
    = note: required for `CheckedAdd` to implement `TryComputer<App, (), (u64, u64)>`
 
 For more information about this error, try `rustc --explain E0271`.

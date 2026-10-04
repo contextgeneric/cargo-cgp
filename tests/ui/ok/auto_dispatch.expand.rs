@@ -227,10 +227,10 @@ where
     >: Computer<(), (), __Variants__, Output = &'static str>,
     MatchFirstWithValueHandlersRef<
         ComputeLabel,
-    >: for<'__a__> Computer<
+    >: for<'__a__, '__a1__> Computer<
         (),
         (),
-        (&'__a__ __Variants__, (&'__a__ str)),
+        (&'__a__ __Variants__, (&'__a1__ str)),
         Output = String,
     >,
     __Variants__: HasExtractor,
@@ -278,7 +278,7 @@ impl<
     type Output = f64;
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0): (&'__a__ __Variants__),
     ) -> Self::Output {
         __compute_area__(arg_0)
@@ -447,7 +447,7 @@ impl<
     type Output = ();
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0, arg_1): (&'__a__ mut __Variants__, (f64)),
     ) -> Self::Output {
         __compute_scale__(arg_0, arg_1)
@@ -617,7 +617,7 @@ impl<
     type Output = &'static str;
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0): (__Variants__),
     ) -> Self::Output {
         __compute_into_name__(arg_0)
@@ -770,37 +770,39 @@ where
         HandlerRefComponent,
     >>::Delegate: IsProviderFor<HandlerRefComponent, __Context__, __Params__>,
 {}
-fn __compute_label__<'__a__, __Variants__: HasShape>(
+fn __compute_label__<'__a__, '__a1__, __Variants__: HasShape>(
     __Variants__: &'__a__ __Variants__,
-    (arg_0): (&'__a__ str),
+    (arg_0): (&'__a1__ str),
 ) -> String {
     __Variants__.label(arg_0)
 }
 impl<
     '__a__,
+    '__a1__,
     __Variants__: HasShape,
     __Context__,
     __Code__,
-> Computer<__Context__, __Code__, (&'__a__ __Variants__, (&'__a__ str))>
+> Computer<__Context__, __Code__, (&'__a__ __Variants__, (&'__a1__ str))>
 for ComputeLabel {
     type Output = String;
     fn compute(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
-        (arg_0, arg_1): (&'__a__ __Variants__, (&'__a__ str)),
+        _code: ::core::marker::PhantomData<__Code__>,
+        (arg_0, arg_1): (&'__a__ __Variants__, (&'__a1__ str)),
     ) -> Self::Output {
         __compute_label__(arg_0, arg_1)
     }
 }
 impl<
     '__a__,
+    '__a1__,
     __Variants__: HasShape,
     __Context__,
     __Code__,
 > IsProviderFor<
     ComputerComponent,
     __Context__,
-    (__Code__, (&'__a__ __Variants__, (&'__a__ str))),
+    (__Code__, (&'__a__ __Variants__, (&'__a1__ str))),
 > for ComputeLabel {}
 pub struct ComputeLabel;
 impl DelegateComponent<ComputerRefComponent> for ComputeLabel
@@ -978,7 +980,7 @@ impl<
     type Output = String;
     async fn compute_async(
         _context: &__Context__,
-        _code: PhantomData<__Code__>,
+        _code: ::core::marker::PhantomData<__Code__>,
         (arg_0): (&'__a__ __Variants__),
     ) -> Self::Output {
         __compute_describe__(arg_0).await
