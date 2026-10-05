@@ -28,3 +28,31 @@ fn help_flag_shows_help() {
     assert_eq!(dispatch(&args(&["--help"])).unwrap(), 0);
     assert_eq!(dispatch(&args(&["-h"])).unwrap(), 0);
 }
+
+#[test]
+fn version_flag_prints_the_version() {
+    assert_eq!(dispatch(&args(&["--version"])).unwrap(), 0);
+    assert_eq!(dispatch(&args(&["-V"])).unwrap(), 0);
+}
+
+#[test]
+fn setup_and_update_answer_help_without_running() {
+    // Both install things, so `--help` must print help rather than start the install.
+    for subcommand in ["setup", "update"] {
+        assert_eq!(dispatch(&args(&[subcommand, "--help"])).unwrap(), 0);
+        assert_eq!(dispatch(&args(&[subcommand, "-h"])).unwrap(), 0);
+    }
+}
+
+#[test]
+fn setup_and_update_reject_arguments() {
+    for subcommand in ["setup", "update"] {
+        let err = dispatch(&args(&[subcommand, "--force"]))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("takes no arguments") && err.contains("--force"),
+            "message should name the stray argument: {err}"
+        );
+    }
+}

@@ -1,7 +1,10 @@
 //! Tests for the front-end help texts ([`cargo_cgp::help::help_text`] and
 //! [`cargo_cgp::help::expand_help_text`]).
 
-use cargo_cgp::help::{expand_help_text, help_text, is_help_flag};
+use cargo_cgp::help::{
+    expand_help_text, help_text, is_help_flag, is_version_flag, setup_help_text, update_help_text,
+    version_text,
+};
 
 #[test]
 fn help_lists_the_subcommands_and_options() {
@@ -13,6 +16,7 @@ fn help_lists_the_subcommands_and_options() {
         "setup",
         "update",
         "-h, --help",
+        "-V, --version",
     ] {
         assert!(
             help.contains(expected),
@@ -27,6 +31,32 @@ fn recognizes_help_flags() {
     assert!(is_help_flag("-h"));
     assert!(!is_help_flag("check"));
     assert!(!is_help_flag("--version"));
+}
+
+#[test]
+fn recognizes_version_flags() {
+    assert!(is_version_flag("--version"));
+    assert!(is_version_flag("-V"));
+    assert!(!is_version_flag("-v"));
+    assert!(version_text().starts_with("cargo-cgp "));
+}
+
+#[test]
+fn setup_and_update_help_say_what_they_install() {
+    let setup = setup_help_text();
+    for expected in ["cargo cgp setup", "rustup", "network", "-h, --help"] {
+        assert!(
+            setup.contains(expected),
+            "setup help should mention `{expected}`:\n{setup}"
+        );
+    }
+    let update = update_help_text();
+    for expected in ["cargo cgp update", "pre-release", "network", "-h, --help"] {
+        assert!(
+            update.contains(expected),
+            "update help should mention `{expected}`:\n{update}"
+        );
+    }
 }
 
 #[test]

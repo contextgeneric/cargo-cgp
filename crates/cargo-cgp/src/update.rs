@@ -1,10 +1,11 @@
 //! `cargo cgp update` — upgrading the tool to its latest published version.
 //!
 //! Update is a thin orchestrator over cargo. It reads the crates.io sparse index for the
-//! front-end crate, picks the highest published version **in the running version's channel**
-//! (stable stays on stable, a pre-release stays on pre-releases), and stops early unless
-//! that is strictly newer. Otherwise it reinstalls the front-end with `cargo install` and
-//! hands off to the freshly installed `cargo cgp setup`, which brings the driver and
+//! front-end crate, picks the highest published version **the running version's channel allows**
+//! (a stable install moves only to stable releases; a pre-release install moves to any newer
+//! version, so `0.1.0-alpha` reaches `0.1.0`), and stops early unless that is strictly newer.
+//! Otherwise it reinstalls the front-end at exactly that version with `cargo install --version`
+//! and hands off to the freshly installed `cargo cgp setup`, which brings the driver and
 //! toolchain up to the new version.
 //!
 //! There is no self-replacing installer: on Unix `cargo install` atomically replaces the
@@ -38,7 +39,7 @@ pub fn run_update(_args: &[String]) -> anyhow::Result<i32> {
     };
 
     println!("cargo-cgp: updating v{TOOL_VERSION} → v{latest}…");
-    reinstall_frontend()?;
+    reinstall_frontend(&latest)?;
 
     // Hand off to the newly installed front-end's setup, which knows the new pinned
     // toolchain and provisions the matching driver.
@@ -98,40 +99,43 @@ pub fn parse_versions(index_body: &str) -> Vec<String> {
         .collect()
 }
 
-/// Pick the highest version that is both **in `current`'s channel** and strictly newer than
-/// it, or `None` when there is nothing to move to. The channel is preserved by matching
-/// pre-release-ness: a stable current (no pre-release) considers only stable candidates, so
-/// it never jumps to a pre-release, and a pre-release current considers only pre-releases.
+/// Pick the highest version that `current`'s channel allows and that is strictly newer than
+/// it, or `None` when there is nothing to move to. A stable current (no pre-release) considers
+/// only stable candidates, so it never jumps to a pre-release. A pre-release current considers
+/// every candidate, pre-release or stable: semver orders `0.1.0-alpha` below `0.1.0`, so a
+/// pre-release install reaches the release it previewed, and moves on from there.
 pub fn select_update(versions: &[String], current: &str) -> anyhow::Result<Option<String>> {
     let current = Version::parse(current)
         .with_context(|| format!("`{current}` is not a valid semver version"))?;
-    let want_prerelease = !current.pre.is_empty();
+    let accepts_prerelease = !current.pre.is_empty();
 
     let best = versions
         .iter()
         .filter_map(|version| Version::parse(version).ok())
-        .filter(|version| !version.pre.is_empty() == want_prerelease)
+        .filter(|version| accepts_prerelease || version.pre.is_empty())
         .filter(|version| *version > current)
         .max();
 
     Ok(best.map(|version| version.to_string()))
 }
 
-/// Reinstall the front-end from crates.io. On Windows the running binary is locked and this
-/// fails; we translate that into the manual commands the user can run from a shell where
-/// `cargo-cgp` is not running.
-fn reinstall_frontend() -> anyhow::Result<()> {
+/// Reinstall the front-end from crates.io at exactly `version`. The version is named because a
+/// bare `cargo install` picks the newest *stable* release, which is the wrong target for a
+/// pre-release install moving to a newer pre-release. On Windows the running binary is locked
+/// and this fails; we translate that into the manual commands the user can run from a shell
+/// where `cargo-cgp` is not running.
+fn reinstall_frontend(version: &str) -> anyhow::Result<()> {
     let status = Command::new("cargo")
-        .args(["install", FRONTEND_CRATE])
+        .args(["install", FRONTEND_CRATE, "--version", version])
         .status()
         .context("failed to run `cargo install` (is cargo on PATH?)")?;
 
     if !status.success() {
         bail!(
-            "`cargo install {FRONTEND_CRATE}` failed with status {status}.\n\
+            "`cargo install {FRONTEND_CRATE} --version {version}` failed with status {status}.\n\
              On Windows the running executable is locked and cannot be replaced in place; \
              from a shell where cargo-cgp is not running, update by hand with:\n\
-             \x20   cargo install {FRONTEND_CRATE}\n\
+             \x20   cargo install {FRONTEND_CRATE} --version {version}\n\
              \x20   cargo cgp setup"
         );
     }

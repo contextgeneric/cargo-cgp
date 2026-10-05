@@ -1,0 +1,23 @@
+error[E0599]: the method `describe` exists for reference `&Value`, but its trait bounds were not satisfied
+  --> src/main.rs:31:15
+   |
+31 |         value.describe()
+   |               ^^^^^^^^ method cannot be called on `&Value` due to unsatisfied trait bounds
+   |
+note: the following trait bounds were not satisfied:
+      `&Value: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>`
+      `Value: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>`
+  --> src/main.rs:18:1
+   |
+18 | #[cgp_fn]
+   | ^^^^^^^^^
+19 | fn describe(&self, #[implicit] name: &str) -> String {
+   |    ^^^^^^^^
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: the following trait defines an item `describe`, perhaps you need to restrict type parameter `Value` with it:
+   |
+29 | impl<Value: Describe> Reporter<Value> {
+   |           ++++++++++
+
+For more information about this error, try `rustc --explain E0599`.

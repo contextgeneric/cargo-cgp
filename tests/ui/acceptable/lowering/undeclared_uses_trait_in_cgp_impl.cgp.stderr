@@ -1,0 +1,9 @@
+error[E0599]: [CGP-E012] the trait `PersonName` is used but not declared as a dependency
+  --> src/main.rs:35:36
+   |
+35 |         format!("Hello, {}!", self.person_name())
+   |                                    ^^^^^^^^^^^
+   |
+   = help: declare it as a dependency with `#[uses(PersonName)]`
+
+For more information about this error, try `rustc --explain E0599`.

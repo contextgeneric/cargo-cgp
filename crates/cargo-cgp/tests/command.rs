@@ -30,3 +30,31 @@ fn absent_target_dir_is_not_detected() {
         "--all-targets"
     ])));
 }
+
+use std::path::PathBuf;
+
+use cargo_cgp::launch::{forwarded_manifest_path, parse_target_directory};
+
+#[test]
+fn finds_a_forwarded_manifest_path_in_either_form() {
+    assert_eq!(
+        forwarded_manifest_path(&args(&["--manifest-path", "a/Cargo.toml", "--workspace"])),
+        Some("a/Cargo.toml".to_owned())
+    );
+    assert_eq!(
+        forwarded_manifest_path(&args(&["--workspace", "--manifest-path=b/Cargo.toml"])),
+        Some("b/Cargo.toml".to_owned())
+    );
+    assert_eq!(forwarded_manifest_path(&args(&["--workspace"])), None);
+}
+
+#[test]
+fn reads_the_target_directory_from_cargo_metadata() {
+    let json = r#"{"packages":[],"target_directory":"/work/proj/target","version":1}"#;
+    assert_eq!(
+        parse_target_directory(json),
+        Some(PathBuf::from("/work/proj/target"))
+    );
+    assert_eq!(parse_target_directory("not json"), None);
+    assert_eq!(parse_target_directory(r#"{"packages":[]}"#), None);
+}

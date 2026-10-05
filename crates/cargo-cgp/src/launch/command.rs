@@ -52,7 +52,8 @@ pub fn wrapped_cargo(subcommand: &str, forwarded_args: &[String]) -> anyhow::Res
     }
 
     // Build into an isolated target directory so the run never contends with the project's
-    // own builds (or Rust Analyzer's), unless the caller chose a directory.
+    // own builds (or Rust Analyzer's), unless the caller chose a directory. This comes after the
+    // toolchain is forced, because the directory query runs under the same toolchain.
     inject_target_dir(&mut command, forwarded_args);
 
     Ok(command)

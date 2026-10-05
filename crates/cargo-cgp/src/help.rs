@@ -11,6 +11,16 @@ pub fn is_help_flag(arg: &str) -> bool {
     arg == "--help" || arg == "-h"
 }
 
+/// Whether `arg` is a version flag (`--version` or `-V`, cargo's own spelling).
+pub fn is_version_flag(arg: &str) -> bool {
+    arg == "--version" || arg == "-V"
+}
+
+/// The `--version` output: the tool's name and version, the same line that heads [`help_text`].
+pub fn version_text() -> String {
+    format!("cargo-cgp {TOOL_VERSION}")
+}
+
 /// The front-end help text: the tagline, the two invocation forms, the four subcommands,
 /// and the top-level options.
 pub fn help_text() -> String {
@@ -33,7 +43,8 @@ Commands:
     update    Upgrade cargo-cgp to the latest published version.
 
 Options:
-    -h, --help    Print this help.
+    -h, --help       Print this help.
+    -V, --version    Print the version.
 
 Run `cargo cgp expand --help` for the expand options, and `cargo cgp check --help` to see
 the underlying `cargo check` options."
@@ -77,5 +88,42 @@ Examples:
 The expansion is written to stdout, so redirect or pipe it. Note that `expand` is not a
 check: it stops once the macros are expanded, so it reports nothing about wiring — use
 `cargo cgp check` for that."
+    )
+}
+
+/// The `setup` subcommand's help text. `setup` takes no arguments, so the text exists for the
+/// reader who asks before running a command that installs a toolchain.
+pub fn setup_help_text() -> String {
+    format!(
+        "cargo-cgp {TOOL_VERSION}
+Install the pinned nightly toolchain and build the matching cargo-cgp-driver.
+
+Usage:
+    cargo cgp setup
+
+Installs the pinned nightly through rustup, with the rustc-dev and llvm-tools components, then
+builds cargo-cgp-driver at this version under that nightly and installs it beside cargo-cgp.
+Needs rustup and a network connection. Running it again when both are present does no harm.
+
+Options:
+    -h, --help    Print this help."
+    )
+}
+
+/// The `update` subcommand's help text.
+pub fn update_help_text() -> String {
+    format!(
+        "cargo-cgp {TOOL_VERSION}
+Upgrade cargo-cgp to the newest published version, then run its setup.
+
+Usage:
+    cargo cgp update
+
+Looks up the published versions on crates.io. A stable install moves only to a newer stable
+release; a pre-release install moves to the newest newer version, pre-release or stable.
+Needs a network connection.
+
+Options:
+    -h, --help    Print this help."
     )
 }

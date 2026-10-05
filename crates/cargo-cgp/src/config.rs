@@ -47,11 +47,16 @@ pub const NO_MANAGE_ENV: &str = "CARGO_CGP_NO_MANAGE";
 /// toolchain will not match the driver's baked-in build identity.
 pub const TOOLCHAIN_ENV: &str = "CARGO_CGP_TOOLCHAIN";
 
-/// The default target directory `cargo cgp check` builds into, relative to the working
-/// directory, instead of the project's `target/`. Isolating the check's artifacts (built
-/// under a forced nightly with extra flags) keeps it from contending with the project's
-/// normal builds and with Rust Analyzer. Overridable with an explicit `--target-dir` or
+/// The subdirectory of the project's own target directory that `cargo cgp check` and `expand`
+/// build into, so `target/cgp` beside the normal `target/debug`. Isolating the artifacts (built
+/// under a forced nightly with extra flags) keeps them from contending with the project's normal
+/// builds and with Rust Analyzer. Overridable with an explicit `--target-dir` or
 /// `CARGO_TARGET_DIR`.
+pub const CHECK_TARGET_SUBDIR: &str = "cgp";
+
+/// The fallback target directory, relative to the working directory, for when cargo cannot report
+/// the project's target directory (no package here, or a broken manifest). The wrapped command
+/// then fails on the same problem, so this path is rarely built into.
 pub const CHECK_TARGET_DIR: &str = "target/cgp";
 
 /// The rustc flag through which `cargo cgp expand` puts the driver in expand mode, carrying the

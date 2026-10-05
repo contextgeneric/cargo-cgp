@@ -47,13 +47,36 @@ fn stable_install_with_only_prereleases_ahead_does_not_update() {
 }
 
 #[test]
-fn prerelease_install_updates_to_the_highest_prerelease() {
-    // v0.1.0-alpha → v0.1.1-alpha, not the stable 0.1.0 below it, nor a stable above.
+fn prerelease_install_updates_to_the_release_it_previewed() {
+    // v0.1.0-alpha → v0.1.0: semver orders the release above its own pre-release, and a
+    // pre-release install must be able to reach it, or it is stranded on pre-releases.
+    let vs = versions(&["0.1.0-alpha", "0.1.0"]);
+    assert_eq!(
+        select_update(&vs, "0.1.0-alpha").unwrap(),
+        Some("0.1.0".to_owned())
+    );
+}
+
+#[test]
+fn prerelease_install_updates_to_the_highest_version_of_either_kind() {
+    // A pre-release install takes the newest version, whichever kind it is.
     let vs = versions(&["0.1.0-alpha", "0.1.1-alpha", "0.1.0", "0.1.1"]);
     assert_eq!(
         select_update(&vs, "0.1.0-alpha").unwrap(),
-        Some("0.1.1-alpha".to_owned())
+        Some("0.1.1".to_owned())
     );
+    let vs = versions(&["0.1.0-alpha", "0.1.0", "0.2.0-alpha"]);
+    assert_eq!(
+        select_update(&vs, "0.1.0-alpha").unwrap(),
+        Some("0.2.0-alpha".to_owned())
+    );
+}
+
+#[test]
+fn prerelease_install_never_moves_to_an_older_version() {
+    // Taking any kind of version must not turn into a downgrade.
+    let vs = versions(&["0.0.9", "0.1.0-alpha", "0.1.0-0"]);
+    assert_eq!(select_update(&vs, "0.1.0-alpha").unwrap(), None);
 }
 
 #[test]
