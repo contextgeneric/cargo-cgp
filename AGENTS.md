@@ -23,11 +23,20 @@ which surfaces the CGP dependency errors the default solver hides (it descends t
 bound — e.g. `HasField<Symbol!("name")>` — instead of stopping at the provider trait). Second, its
 in-process emitter recognizes the CGP error classes and rewrites them: it leads with the root cause,
 renders the transitive dependency chain as a `cargo tree`-style tree, and stamps each rewritten
-message with a `[CGP-Exxx]` code (keeping rustc's own code alongside it). The project is an early
-pre-release: it reshapes the core wiring-error classes well and still passes some classes through
+message with a `[CGP-Exxx]` code (keeping rustc's own code alongside it). The project is at an early
+stage: it reshapes the core wiring-error classes well and still passes some classes through
 largely as `rustc` wrote them — a shrinking gap tracked in [cgp-knowledge-base/cargo-cgp/issues/](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md).
 When reasoning about behaviour, remember the tool diverges from plain `cargo check` both by its choice
 of trait solver and by rewriting the diagnostics it recognizes.
+
+**Document the tool as its official release.** The tree is the upcoming **v0.1.0**. Its manifests may
+carry a pre-release version such as `0.1.0-alpha`, published to crates.io only to test the cargo
+integration before the official release; that suffix is not a version anyone documents or tracks.
+Every document, README, and help text describes the tool as v0.1.0, as though it had already been
+published, and output that names the version is quoted with `0.1.0`, per the knowledge base's
+[rule on versions](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/AGENTS.md#document-official-versions-never-pre-releases).
+Never name a pre-release, describe how one behaves, or tell a reader how to move off one, unless the
+user explicitly asks.
 
 ## The sibling projects
 

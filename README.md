@@ -12,7 +12,7 @@ and re-presents them with the root cause first — much as Clippy layers its own
 `rustc`. A second command, `cargo cgp expand`, shows the Rust your CGP macros generate, with CGP's
 type-level constructs spelled the way you wrote them.
 
-> **This is a pre-release (`v0.1.0-alpha`).** The tool works and is useful today, but its surface is
+> **This is an early release (`v0.1.0`).** The tool works and is useful today, but its surface is
 > small and still changing. See [Status](#status) for what it does now.
 
 ## What cargo-cgp solves
@@ -113,10 +113,10 @@ toolchain it already uses.
 
 The flake at the repository root builds both binaries against the pinned nightly and wraps them so
 they run without rustup. To install the tool onto your `PATH` so `cargo cgp check` works like any
-other cargo subcommand, install the pre-release tag from the profile:
+other cargo subcommand, install the release tag from the profile:
 
 ```sh
-nix profile install github:contextgeneric/cargo-cgp/v0.1.0-alpha
+nix profile install github:contextgeneric/cargo-cgp/v0.1.0
 ```
 
 ### With cargo
@@ -138,18 +138,18 @@ the [installation guide](https://github.com/contextgeneric/cgp-knowledge-base/bl
 ## Running it without installing
 
 To try the tool on a project without adding anything to your `PATH`, run the flake's default app from
-that project's directory, pinning the pre-release tag:
+that project's directory, pinning the release tag:
 
 ```sh
 cd /path/to/your/project     # a cargo package or workspace that uses `cgp`
-nix run github:contextgeneric/cargo-cgp/v0.1.0-alpha -- check
+nix run github:contextgeneric/cargo-cgp/v0.1.0 -- check
 ```
 
 This builds (or reuses a cached) `cargo-cgp` and `cargo-cgp-driver` under the pinned nightly and runs
 `cargo cgp check` in the current directory, with everything after `--` forwarded to the check. It
 needs no rustup and leaves the project's own toolchain and `target/` untouched, which makes it
 convenient for CI or a one-off trial. To pin the tool as an input in another project's own flake, add
-`inputs.cargo-cgp.url = "github:contextgeneric/cargo-cgp/v0.1.0-alpha";` and take its
+`inputs.cargo-cgp.url = "github:contextgeneric/cargo-cgp/v0.1.0";` and take its
 `packages.default`.
 
 ## Uninstalling
@@ -215,14 +215,12 @@ expanded.
 
 ## Status
 
-This is an early pre-release. The tool ships two commands that read your code. `cargo cgp check`
+This is an early release. The tool ships two commands that read your code. `cargo cgp check`
 stands in for `cargo check` and does two things for CGP code: it turns on the **next-generation trait
 solver**, which surfaces the CGP dependency errors the default solver hides, and it **rewrites the
 wiring errors it recognizes** into the root-cause-first form shown above; errors it does not yet
-recognize pass through unchanged, and the set of recognized classes will grow over the pre-release
-series. `cargo cgp expand` shows the generated code, as above — it is newer than the `v0.1.0-alpha`
-release, so a crates.io install does not carry it yet; build from a checkout or use the Nix flake
-without a tag until the next release.
+recognize pass through unchanged, and the set of recognized classes will grow with later releases.
+`cargo cgp expand` shows the generated code, as above.
 
 ## Learn more
 
