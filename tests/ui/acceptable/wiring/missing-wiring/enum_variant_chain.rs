@@ -13,7 +13,8 @@
 //! `Field<Symbol!("Name"), Type>`, the renderer resugars the whole list past `Sum![…]` to
 //! `Enum! { Rect(u64), Circle(f64) }`, and its tail to `Enum! { Circle(f64) }` — the enum the
 //! variant list represents. It is the sum counterpart of `record_field_chain`'s `Struct! { … }`.
-//! (`Struct!`/`Enum!` are presentation-only forms, not real CGP macros.)
+//! Both are CGP's own `Struct!`/`Enum!` shape macros, so the rendered list can be copied back into
+//! code; `enum_variant_shapes_chain` covers the other variant shapes.
 
 use cgp::prelude::*;
 

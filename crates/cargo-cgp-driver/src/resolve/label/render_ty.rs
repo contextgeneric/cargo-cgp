@@ -1,11 +1,12 @@
 //! Rendering a type to its dependency-tree form, resugaring CGP's type-level spines.
 
+use cargo_cgp_error_processing::{ShapeTag, render_enum_shape, render_struct_shape};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_FIELD_CRATE, CONS_TYPE, EITHER_TYPE, FIELD_TYPE, NIL_TYPE, VOID_TYPE,
 };
-use crate::resolve::cgp_item::{decode_symbol, is_cgp_item};
+use crate::resolve::cgp_item::{decode_index, decode_symbol, is_cgp_item, is_nil};
 
 /// Render a type to its dependency-tree form, resugaring CGP's type-level list and sum spines back
 /// to their surface macros: a `Cons<A, Cons<B, Nil>>` product spine to `Product![A, B]` and an
@@ -16,11 +17,10 @@ use crate::resolve::cgp_item::{decode_symbol, is_cgp_item};
 /// nested list (a `Sum!` inside a `Product!`, say) is resugared too; a non-spine type falls back to
 /// its ordinary printed form (whose inner `Symbol!`/`Path!` the post-processing then resugars).
 ///
-/// A list whose elements are *all* named fields — `Field<Symbol!("name"), Type>` — resugars one step
-/// further to the record/variant surface form the shape describes: a product to `Struct! { name:
-/// Type, … }` and a sum to `Enum! { Name(Type), … }`, so a `HasFields` field list reads as the struct
-/// or enum it represents. `Struct!`/`Enum!` are not (yet) real CGP macros — like `Path!`'s `.*`
-/// wildcard, they are a presentation form chosen for readability, not something that parses back.
+/// A list whose elements are *all* `Field` cells resugars one step further to the CGP `Struct!` or
+/// `Enum!` shape it describes, when the shape has an exact spelling, so a `HasFields` field list reads
+/// as the struct or enum it represents. The spelling rules are shared with the text post-processing
+/// through `cargo_cgp_error_processing::shape`.
 pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     // The call-site anchor's stand-in for a parameter the call leaves to inference: render it as
     // the `_` the programmer would write, never rustc's internal placeholder form.
@@ -48,13 +48,14 @@ pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         NIL_TYPE,
         CGP_BASE_TYPES_CRATE,
     ) {
-        if let Some(fields) = named_fields(tcx, &elems) {
-            let body = fields
-                .iter()
-                .map(|(name, value)| format!("{name}: {value}"))
-                .collect::<Vec<_>>()
-                .join(", ");
-            return format!("Struct! {{ {body} }}");
+        if let Some(shape) = field_cells(tcx, &elems).and_then(|fields| {
+            let fields = fields
+                .into_iter()
+                .map(|(tag, value)| (tag, render_ty(tcx, value)))
+                .collect::<Vec<_>>();
+            render_struct_shape(&fields)
+        }) {
+            return shape;
         }
         return format!("Product![{}]", render_ty_list(tcx, &elems));
     }
@@ -66,25 +67,29 @@ pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         VOID_TYPE,
         CGP_FIELD_CRATE,
     ) {
-        if let Some(fields) = named_fields(tcx, &elems) {
-            let body = fields
-                .iter()
-                .map(|(name, value)| format!("{name}({value})"))
-                .collect::<Vec<_>>()
-                .join(", ");
-            return format!("Enum! {{ {body} }}");
+        if let Some(shape) = field_cells(tcx, &elems).and_then(|fields| {
+            // A `Nil` payload is a unit variant, recognized by `DefId` before it is rendered.
+            let variants = fields
+                .into_iter()
+                .map(|(tag, payload)| {
+                    let rendered = (!is_nil(tcx, payload)).then(|| render_ty(tcx, payload));
+                    (tag, rendered)
+                })
+                .collect::<Vec<_>>();
+            render_enum_shape(&variants)
+        }) {
+            return shape;
         }
         return format!("Sum![{}]", render_ty_list(tcx, &elems));
     }
     ty.to_string()
 }
 
-/// Interpret every element of a resugared list as a named field `Field<Symbol!("name"), Value>`,
-/// returning each `(name, rendered value)` pair — or `None` if *any* element is not such a field, so
-/// the caller keeps the plain `Product!`/`Sum!` form. The `Field` cell is anchored by `DefId` to
-/// `cgp-field`, its name decoded from the `Symbol!` tag, and its value rendered recursively so a
-/// nested record/variant resugars in turn.
-fn named_fields<'tcx>(tcx: TyCtxt<'tcx>, elems: &[Ty<'tcx>]) -> Option<Vec<(String, String)>> {
+/// Interpret every element of a resugared list as a `Field<Tag, Value>` cell, returning each tag
+/// and value type, or `None` if *any* element is not such a cell, so the caller keeps the plain
+/// `Product!`/`Sum!` form. The `Field` cell is anchored by `DefId` to `cgp-field`, and its tag is
+/// decoded from a `Symbol!` name or an `Index<N>` position.
+fn field_cells<'tcx>(tcx: TyCtxt<'tcx>, elems: &[Ty<'tcx>]) -> Option<Vec<(ShapeTag, Ty<'tcx>)>> {
     elems
         .iter()
         .map(|elem| {
@@ -94,9 +99,13 @@ fn named_fields<'tcx>(tcx: TyCtxt<'tcx>, elems: &[Ty<'tcx>]) -> Option<Vec<(Stri
             if !is_cgp_item(tcx, def.did(), FIELD_TYPE, CGP_FIELD_CRATE) {
                 return None;
             }
-            // `Field<Tag, Value>` — the tag is a `Symbol!` name, the value its type.
-            let name = decode_symbol(tcx, args.type_at(0))?;
-            Some((name, render_ty(tcx, args.type_at(1))))
+            // `Field<Tag, Value>` — the tag is a `Symbol!` name or an `Index<N>` position.
+            let tag = args.type_at(0);
+            let tag = match decode_symbol(tcx, tag) {
+                Some(name) => ShapeTag::Name(name),
+                None => ShapeTag::Index(decode_index(tcx, tag)?),
+            };
+            Some((tag, args.type_at(1)))
         })
         .collect()
 }

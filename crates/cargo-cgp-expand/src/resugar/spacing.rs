@@ -6,19 +6,37 @@
 //! be coaxed into the conventional form — the space *before* a token is the printer's decision and
 //! an identifier cannot ask for it to be dropped — so the layout is corrected after printing.
 //!
-//! This is the one text pass in the crate, and it is deliberately narrow: it only ever removes a
-//! space, only inside the body of one of the CGP macros [`SUGAR_MACROS`] names, and never inside a
-//! literal. So it cannot alter the meaning of anything, and it cannot reach the surrounding
-//! program at all. (A `Product![…]` a programmer wrote themselves is tightened the same way, which
-//! is the same transformation and equally harmless.)
+//! The printer also always breaks a brace-delimited macro body onto lines of its own, printing a
+//! `Struct! { … }` shape as a block. It still puts the whole body on one line, so a brace body is
+//! joined back onto the macro's line, `Struct! { width: f64 }`, the way a diagnostic and the
+//! documentation write a shape.
+//!
+//! This is the one text pass in the crate, and it is deliberately narrow: it only ever removes
+//! whitespace (joining a brace body replaces each line break with a single space), only inside the
+//! body of one of the CGP macros [`SUGAR_MACROS`] names, and never inside a literal. So it cannot
+//! alter the meaning of anything, and it cannot reach the surrounding program at all. (A
+//! `Product![…]` a programmer wrote themselves is tightened the same way, which is the same
+//! transformation and equally harmless.)
+
+/// How a macro body is laid out after tightening.
+#[derive(Clone, Copy)]
+enum Layout {
+    /// Keep the printer's line breaks, so a long list stays broken across lines.
+    AsPrinted,
+    /// Join the body onto the macro's line, between single spaces: `Struct! { width: f64 }`.
+    Inline,
+}
 
 /// The macro calls whose bodies are tightened: the ones this crate emits. A body is located by an
 /// exact name match followed by its opening delimiter.
-const SUGAR_MACROS: &[(&str, char, char)] = &[
-    ("Symbol!", '(', ')'),
-    ("Path!", '(', ')'),
-    ("Product!", '[', ']'),
-    ("Sum!", '[', ']'),
+const SUGAR_MACROS: &[(&str, char, char, Layout)] = &[
+    ("Symbol!", '(', ')', Layout::AsPrinted),
+    ("Path!", '(', ')', Layout::AsPrinted),
+    ("Product!", '[', ']', Layout::AsPrinted),
+    ("Sum!", '[', ']', Layout::AsPrinted),
+    ("Struct!", '(', ')', Layout::AsPrinted),
+    ("Struct!", '{', '}', Layout::Inline),
+    ("Enum!", '{', '}', Layout::Inline),
 ];
 
 /// Remove the spaces the printer inserted inside every resugared macro body in `printed`.
@@ -26,7 +44,7 @@ pub fn tighten_sugar_bodies(printed: &str) -> String {
     let mut out = String::with_capacity(printed.len());
     let mut rest = printed;
 
-    while let Some((index, open, close)) = next_sugar(rest) {
+    while let Some((index, open, close, layout)) = next_sugar(rest) {
         let (before, from_macro) = rest.split_at(index);
         out.push_str(before);
 
@@ -38,13 +56,20 @@ pub fn tighten_sugar_bodies(printed: &str) -> String {
         out.push_str(&from_macro[..name_end]);
         let body_start = &from_macro[name_end..];
 
-        match body_end(body_start, open, close) {
-            Some(end) => {
+        match (body_end(body_start, open, close), layout) {
+            (Some(end), Layout::AsPrinted) => {
                 out.push_str(&tighten(&body_start[..end]));
                 rest = &body_start[end..];
             }
+            (Some(end), Layout::Inline) => {
+                // `end` is the closing delimiter, which `rest` carries on.
+                out.push(' ');
+                out.push_str(&tighten(&join_lines(&body_start[..end])));
+                out.push(' ');
+                rest = &body_start[end..];
+            }
             // An unbalanced body cannot be trusted, so it is copied through untouched.
-            None => rest = body_start,
+            (None, _) => rest = body_start,
         }
     }
 
@@ -52,12 +77,13 @@ pub fn tighten_sugar_bodies(printed: &str) -> String {
     out
 }
 
-/// The next resugared macro call in `text`: its offset and its delimiter pair. The name must stand
-/// alone rather than end a longer identifier, so a `MySum!` is not mistaken for a `Sum!`.
-fn next_sugar(text: &str) -> Option<(usize, char, char)> {
-    let mut best: Option<(usize, char, char)> = None;
+/// The next resugared macro call in `text`: its offset, its delimiter pair, and its layout. The
+/// name must stand alone rather than end a longer identifier, so a `MySum!` is not mistaken for a
+/// `Sum!`.
+fn next_sugar(text: &str) -> Option<(usize, char, char, Layout)> {
+    let mut best: Option<(usize, char, char, Layout)> = None;
 
-    for (name, open, close) in SUGAR_MACROS {
+    for (name, open, close, layout) in SUGAR_MACROS {
         let mut from = 0;
         while let Some(found) = text[from..].find(name) {
             let index = from + found;
@@ -68,8 +94,8 @@ fn next_sugar(text: &str) -> Option<(usize, char, char)> {
             // The printer may break between the name and its delimiter, so allow whitespace.
             let after = text[index + name.len()..].trim_start();
             if !preceded_by_ident && after.starts_with(*open) {
-                if best.is_none_or(|(current, _, _)| index < current) {
-                    best = Some((index, *open, *close));
+                if best.is_none_or(|(current, ..)| index < current) {
+                    best = Some((index, *open, *close, *layout));
                 }
                 break;
             }
@@ -80,7 +106,7 @@ fn next_sugar(text: &str) -> Option<(usize, char, char)> {
     best
 }
 
-/// The offset just past the delimiter that closes a body starting at `text`, or `None` when the
+/// The offset of the delimiter that closes a body starting at `text`, or `None` when the
 /// delimiters do not balance. Delimiters inside a string or character literal are skipped.
 fn body_end(text: &str, open: char, close: char) -> Option<usize> {
     let mut depth = 1usize;
@@ -145,11 +171,38 @@ fn skip_char_literal(chars: &mut std::str::CharIndices<'_>) {
     }
 }
 
+/// A brace body with the printer's line breaks and their indentation collapsed to single spaces,
+/// and the space it leaves at either end trimmed. String literals are copied whole.
+fn join_lines(body: &str) -> String {
+    let mut out = String::with_capacity(body.len());
+    let mut chars = body.chars().peekable();
+    let mut pending_space = false;
+
+    while let Some(c) = chars.next() {
+        if c.is_whitespace() {
+            pending_space = true;
+            continue;
+        }
+        if pending_space && !out.is_empty() {
+            out.push(' ');
+        }
+        pending_space = false;
+        out.push(c);
+        if c == '"' {
+            copy_string(&mut chars, &mut out);
+        }
+    }
+
+    out
+}
+
 /// Remove the spaces around a macro body's punctuation, leaving newlines and the space after a
 /// comma alone so a body the printer broke across lines keeps its shape.
 fn tighten(body: &str) -> String {
     // The characters a space is dropped beside: the generic brackets, a reference, and a path
     // separator. A space before a comma goes too; the one after it stays, as in ordinary Rust.
+    // The space after a single `:` also stays, since that `:` separates a `Struct!` field from
+    // its type rather than the segments of a path.
     const TIGHT_AFTER: &[char] = &['<', '&', ':'];
     const TIGHT_BEFORE: &[char] = &['<', '>', ',', ':'];
 
@@ -165,7 +218,9 @@ fn tighten(body: &str) -> String {
             ' ' => {
                 let previous = out.chars().next_back();
                 let next = chars.peek().copied();
-                let drop_space = previous.is_some_and(|p| TIGHT_AFTER.contains(&p))
+                let after_field_colon = previous == Some(':') && !out.ends_with("::");
+                let drop_space = (previous.is_some_and(|p| TIGHT_AFTER.contains(&p))
+                    && !after_field_colon)
                     || next.is_some_and(|n| TIGHT_BEFORE.contains(&n));
                 if !drop_space {
                     out.push(' ');

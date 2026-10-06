@@ -19,15 +19,10 @@ pub enum Tile {
     Circle(Circle),
 }
 impl HasFields for Tile {
-    type Fields = Sum![
-        Field<Symbol!("Square"), Square>, Field<Symbol!("Circle"), Circle>
-    ];
+    type Fields = Enum! { Square(Square), Circle(Circle) };
 }
 impl HasFieldsRef for Tile {
-    type FieldsRef<'__a> = Sum![
-        Field<Symbol!("Square"), &'__a Square>, Field<Symbol!("Circle"), &'__a
-        Circle>
-    ]
+    type FieldsRef<'__a> = Enum! { Square(&'__a Square), Circle(&'__a Circle) }
     where
         Self: '__a;
 }

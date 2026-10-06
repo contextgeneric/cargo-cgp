@@ -147,12 +147,17 @@ pub const VOID_TYPE: &str = "Void";
 /// region slot, not a type standing in for one.
 pub const LIFE_TYPE: &str = "Life";
 
-/// The name of the type-level named-field cell (defined by [`CGP_FIELD_CRATE`]): `Field<Tag, Value>`
-/// pairs a `Symbol!` name tag with a value type. When every element of a resugared `Product!`/`Sum!`
-/// list is a `Field`, the dependency-tree renderer resugars the whole list to the record/variant
-/// surface form `Struct! { name: Type, … }` / `Enum! { Name(Type), … }`. Anchored by `DefId` to
-/// `cgp-field`.
+/// The name of the type-level field cell (defined by [`CGP_FIELD_CRATE`]): `Field<Tag, Value>`
+/// pairs a `Symbol!` name tag or an [`INDEX_TYPE`] position tag with a value type. When every
+/// element of a resugared `Product!`/`Sum!` list is a `Field`, the dependency-tree renderer
+/// resugars the whole list to the CGP `Struct!`/`Enum!` shape it describes, where the shape has an
+/// exact spelling. Anchored by `DefId` to `cgp-field`.
 pub const FIELD_TYPE: &str = "Field";
+
+/// The name of the type-level position tag (defined by [`CGP_FIELD_CRATE`]): `Index<N>` tags the
+/// `N`th field of a tuple struct or tuple variant inside a [`FIELD_TYPE`] cell, and is what lets a
+/// field list resugar to the tuple form `Struct!(A, B)`.
+pub const INDEX_TYPE: &str = "Index";
 
 /// The stable `--verbose` flag, injected into every workspace-crate compilation to stop
 /// the diagnostic machinery from *eliding* the parts of a type it deems uninteresting.

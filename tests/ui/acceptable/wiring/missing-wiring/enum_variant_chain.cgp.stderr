@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] the consumer trait `CanEncodeVariant<Choice>` is not implemented for context `App`
-  --> src/main.rs:81:9
+  --> src/main.rs:82:9
    |
-81 |         VariantEncoderComponent: [Choice],
+82 |         VariantEncoderComponent: [Choice],
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@VariantEncoderComponent.f64`

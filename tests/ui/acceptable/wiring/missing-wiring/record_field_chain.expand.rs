@@ -155,10 +155,10 @@ pub struct Inner {
     pub value: u64,
 }
 impl HasFields for Inner {
-    type Fields = Product![Field<Symbol!("value"), u64>];
+    type Fields = Struct! { value: u64 };
 }
 impl HasFieldsRef for Inner {
-    type FieldsRef<'__a> = Product![Field<Symbol!("value"), &'__a u64>]
+    type FieldsRef<'__a> = Struct! { value: &'__a u64 }
     where
         Self: '__a;
 }
@@ -185,14 +185,10 @@ pub struct Outer {
     pub inner: Inner,
 }
 impl HasFields for Outer {
-    type Fields = Product![
-        Field<Symbol!("id"), u64>, Field<Symbol!("inner"), Inner>
-    ];
+    type Fields = Struct! { id: u64, inner: Inner };
 }
 impl HasFieldsRef for Outer {
-    type FieldsRef<'__a> = Product![
-        Field<Symbol!("id"), &'__a u64>, Field<Symbol!("inner"), &'__a Inner>
-    ]
+    type FieldsRef<'__a> = Struct! { id: &'__a u64, inner: &'__a Inner }
     where
         Self: '__a;
 }

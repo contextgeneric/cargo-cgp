@@ -2,10 +2,10 @@
 //!
 //! `Product![A, B]` expands to the right-nested product spine `Cons<A, Cons<B, Nil>>`, and `Sum![A, B]`
 //! to the sum spine `Either<A, Either<B, Void>>` (see the CGP `Product!` / `Sum!` references). This
-//! reverses those spines back to the surface macro. A spine whose elements are *all* named fields —
-//! `Field<Symbol!("name"), Type>` — resugars one step further to the record or variant it describes: a
-//! product to `Struct! { name: Type, … }` and a sum to `Enum! { Name(Type), … }`. `Struct!`/`Enum!`
-//! are not real CGP macros; like `Path!`'s `.*` wildcard they are a readability-only presentation form.
+//! reverses those spines back to the surface macro. A spine whose elements are *all* `Field` cells
+//! resugars one step further to the CGP `Struct!` or `Enum!` shape it describes, when the shape has
+//! an exact spelling: a product to `Struct! { name: Type, … }` or `Struct!(A, B)`, and a sum to
+//! `Enum! { Name(Type), … }`. The spelling rules are the shared [`shape`](crate::shape) module's.
 //!
 //! This is the **fallback** counterpart of the driver's typed `render_ty` (which resugars the same
 //! spines in the dependency tree, anchored by `DefId` to the CGP crates). It exists to catch a raw
@@ -17,13 +17,15 @@
 //! in its `Symbol!("…")` surface form when a field/variant name is read from it, and each element is
 //! resugared recursively so a nested list resugars in turn.
 
+use crate::shape::{ShapeTag, render_enum_shape, render_struct_shape};
+
 /// Which type-level list a spine is — the cell/terminator names it is built from and the surface
 /// macros it resugars to (the plain list, and the record/variant form when every element is a field).
 #[derive(Clone, Copy)]
 enum ListKind {
-    /// `Cons<…, Nil>` — a `Product!`, or `Struct! { … }` when every element is a named field.
+    /// `Cons<…, Nil>` — a `Product!`, or a `Struct!` when every element is a `Field` cell.
     Product,
-    /// `Either<…, Void>` — a `Sum!`, or `Enum! { … }` when every element is a named field.
+    /// `Either<…, Void>` — a `Sum!`, or an `Enum!` when every element is a named `Field` cell.
     Sum,
 }
 
@@ -49,23 +51,6 @@ impl ListKind {
         match self {
             ListKind::Product => "Product!",
             ListKind::Sum => "Sum!",
-        }
-    }
-
-    /// Render one named field for the record/variant form: `name: Type` for a struct, `Name(Type)`
-    /// for an enum variant.
-    fn field(self, name: &str, value: &str) -> String {
-        match self {
-            ListKind::Product => format!("{name}: {value}"),
-            ListKind::Sum => format!("{name}({value})"),
-        }
-    }
-
-    /// The record/variant macro name used when every element is a named field.
-    fn record_macro(self) -> &'static str {
-        match self {
-            ListKind::Product => "Struct!",
-            ListKind::Sum => "Enum!",
         }
     }
 }
@@ -153,17 +138,23 @@ fn parse_spine(input: &str, kind: ListKind) -> Option<(String, usize)> {
     Some((render(kind, &elems), consumed))
 }
 
-/// Render a spine's element list as its surface form: the record/variant form when every element is a
-/// named `Field`, otherwise the plain list macro. Each element (or field value) is resugared
-/// recursively so a nested spine resugars in turn.
+/// Render a spine's element list as its surface form: the `Struct!`/`Enum!` shape when every element
+/// is a `Field` cell and the shape has an exact spelling, otherwise the plain list macro. Each
+/// element (or field value) is resugared recursively so a nested spine resugars in turn.
 fn render(kind: ListKind, elems: &[&str]) -> String {
-    if let Some(fields) = named_fields(elems) {
-        let body = fields
-            .iter()
-            .map(|(name, value)| kind.field(name, value))
-            .collect::<Vec<_>>()
-            .join(", ");
-        return format!("{} {{ {body} }}", kind.record_macro());
+    if let Some(fields) = field_cells(elems) {
+        let shape = match kind {
+            ListKind::Product => render_struct_shape(&fields),
+            ListKind::Sum => render_enum_shape(
+                &fields
+                    .into_iter()
+                    .map(|(tag, value)| (tag, (value != "Nil").then_some(value)))
+                    .collect::<Vec<_>>(),
+            ),
+        };
+        if let Some(shape) = shape {
+            return shape;
+        }
     }
     let body = elems
         .iter()
@@ -173,10 +164,10 @@ fn render(kind: ListKind, elems: &[&str]) -> String {
     format!("{}[{body}]", kind.list_macro())
 }
 
-/// Interpret every element as a named field `Field<Symbol!("name"), Value>`, returning each
-/// `(name, rendered value)` pair — or `None` if any element is not such a field, so the caller keeps
-/// the plain list form. The value is resugared recursively.
-fn named_fields(elems: &[&str]) -> Option<Vec<(String, String)>> {
+/// Interpret every element as a `Field<Tag, Value>` cell, returning each tag and rendered value, or
+/// `None` if any element is not such a cell, so the caller keeps the plain list form. The value is
+/// resugared recursively.
+fn field_cells(elems: &[&str]) -> Option<Vec<(ShapeTag, String)>> {
     elems
         .iter()
         .map(|elem| {
@@ -188,8 +179,7 @@ fn named_fields(elems: &[&str]) -> Option<Vec<(String, String)>> {
             if "Field<".len() + inner_len != elem.len() {
                 return None;
             }
-            let name = symbol_name(tag.trim())?;
-            Some((name, resugar_element(value.trim())))
+            Some((shape_tag(tag.trim())?, resugar_element(value.trim())))
         })
         .collect()
 }
@@ -200,16 +190,26 @@ fn resugar_element(elem: &str) -> String {
     resugar_lists(elem).unwrap_or_else(|| elem.to_owned())
 }
 
-/// The field name inside a `Symbol!("name")` tag, or `None` when the tag is not a plain symbol
-/// literal. Only an unescaped literal is accepted, so a name that cannot be read back verbatim leaves
-/// the list as its plain form rather than being decoded by guesswork. Meant to run after
-/// [`resugar_symbol`](super::resugar_symbol) has already produced the `Symbol!("…")` surface form.
-fn symbol_name(tag: &str) -> Option<String> {
+/// The tag of a `Field` cell: the name inside a `Symbol!("name")` tag, or the position inside an
+/// `Index<N>` tag. `None` for any other tag. Only an unescaped symbol literal is read, so a name that
+/// cannot be read back verbatim leaves the list as its plain form rather than being decoded by
+/// guesswork. Meant to run after [`resugar_symbol`](super::resugar_symbol) has already produced the
+/// `Symbol!("…")` surface form.
+fn shape_tag(tag: &str) -> Option<ShapeTag> {
+    if let Some(index) = tag
+        .strip_prefix("Index<")
+        .and_then(|rest| rest.strip_suffix('>'))
+    {
+        if !index.is_empty() && index.chars().all(|c| c.is_ascii_digit()) {
+            return index.parse().ok().map(ShapeTag::Index);
+        }
+        return None;
+    }
     let inner = tag.strip_prefix("Symbol!(\"")?.strip_suffix("\")")?;
     if inner.contains('"') || inner.contains('\\') {
         return None;
     }
-    Some(inner.to_owned())
+    Some(ShapeTag::Name(inner.to_owned()))
 }
 
 /// Split the content after a cell's opening token into its `Head` and `Tail`, returning them and the

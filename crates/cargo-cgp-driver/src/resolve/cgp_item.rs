@@ -9,8 +9,8 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 
 use crate::config::{
-    CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_CRATES, CGP_TYPE_CRATE,
-    DELEGATE_COMPONENT_TRAIT, NIL_TYPE, PATH_CONS_TYPE, USE_TYPE_TYPE,
+    CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_CRATES, CGP_FIELD_CRATE, CGP_TYPE_CRATE,
+    DELEGATE_COMPONENT_TRAIT, INDEX_TYPE, NIL_TYPE, PATH_CONS_TYPE, USE_TYPE_TYPE,
 };
 
 /// Whether `def_id` is a trait/type named `name` defined by crate `krate` — the DefId anchor
@@ -356,7 +356,8 @@ pub(crate) fn is_nil(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 
 /// Decode a CGP `Symbol!` type into its string, by walking the `Chars<'c', Tail>` spine and
 /// reading each `char` const argument until `Nil`. Anchored to `cgp_base_types`, and returns
-/// `None` for any type that is not a well-formed `Symbol`.
+/// `None` for any type that is not a well-formed `Symbol`, including one whose `LEN` is not the
+/// decoded string's byte length, since `Symbol!` always writes `str::len()` there.
 pub(crate) fn decode_symbol(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<String> {
     let ty::Adt(def, args) = ty.kind() else {
         return None;
@@ -365,7 +366,14 @@ pub(crate) fn decode_symbol(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<String> {
         return None;
     }
 
-    // `Symbol<const LEN, Chars>` — the second argument is the head of the `Chars` spine.
+    // `Symbol<const LEN, Chars>` — the first argument is the byte length, checked once the spine is
+    // decoded, and the second is the head of the `Chars` spine.
+    let len = args
+        .const_at(0)
+        .try_to_value()?
+        .valtree
+        .try_to_leaf()?
+        .to_target_usize(tcx);
     let mut current = args.type_at(1);
     let mut name = String::new();
     loop {
@@ -384,5 +392,25 @@ pub(crate) fn decode_symbol(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<String> {
         name.push(char::from_u32(scalar.to_u32())?);
         current = args.type_at(1);
     }
-    Some(name)
+    (u64::try_from(name.len()).ok()? == len).then_some(name)
+}
+
+/// Decode a CGP `Index<N>` type, the position tag of a tuple field, into its `N`. Anchored to
+/// `cgp_field`, and returns `None` for any other type.
+pub(crate) fn decode_index(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<usize> {
+    let ty::Adt(def, args) = ty.kind() else {
+        return None;
+    };
+    if !is_cgp_item(tcx, def.did(), INDEX_TYPE, CGP_FIELD_CRATE) {
+        return None;
+    }
+
+    // `Index<const I: usize>` — the only argument is the position.
+    let index = args
+        .const_at(0)
+        .try_to_value()?
+        .valtree
+        .try_to_leaf()?
+        .to_target_usize(tcx);
+    usize::try_from(index).ok()
 }

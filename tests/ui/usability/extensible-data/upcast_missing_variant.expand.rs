@@ -34,12 +34,10 @@ pub enum Small {
     Bar(String),
 }
 impl HasFields for Small {
-    type Fields = Sum![Field<Symbol!("Foo"), u64>, Field<Symbol!("Bar"), String>];
+    type Fields = Enum! { Foo(u64), Bar(String) };
 }
 impl HasFieldsRef for Small {
-    type FieldsRef<'__a> = Sum![
-        Field<Symbol!("Foo"), &'__a u64>, Field<Symbol!("Bar"), &'__a String>
-    ]
+    type FieldsRef<'__a> = Enum! { Foo(&'__a u64), Bar(&'__a String) }
     where
         Self: '__a;
 }
@@ -222,10 +220,12 @@ pub enum Big {
     Foo(u64),
 }
 impl HasFields for Big {
-    type Fields = Sum![Field<Symbol!("Foo"), u64>];
+    type Fields = Enum! { Foo(u64) };
 }
 impl HasFieldsRef for Big {
-    type FieldsRef<'__a> = Sum![Field<Symbol!("Foo"), &'__a u64>] where Self: '__a;
+    type FieldsRef<'__a> = Enum! { Foo(&'__a u64) }
+    where
+        Self: '__a;
 }
 impl FromFields for Big {
     fn from_fields(rest: Self::Fields) -> Self {

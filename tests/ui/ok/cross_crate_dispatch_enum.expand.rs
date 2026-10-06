@@ -29,15 +29,10 @@ pub enum Polygon {
     Hexagon(Hexagon),
 }
 impl HasFields for Polygon {
-    type Fields = Sum![
-        Field<Symbol!("Triangle"), Triangle>, Field<Symbol!("Hexagon"), Hexagon>
-    ];
+    type Fields = Enum! { Triangle(Triangle), Hexagon(Hexagon) };
 }
 impl HasFieldsRef for Polygon {
-    type FieldsRef<'__a> = Sum![
-        Field<Symbol!("Triangle"), &'__a Triangle>, Field<Symbol!("Hexagon"), &
-        '__a Hexagon>
-    ]
+    type FieldsRef<'__a> = Enum! { Triangle(&'__a Triangle), Hexagon(&'__a Hexagon) }
     where
         Self: '__a;
 }

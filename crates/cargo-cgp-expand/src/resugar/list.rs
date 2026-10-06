@@ -1,20 +1,20 @@
-//! Resugaring `Product!` and `Sum!` — the type-level list spines.
+//! Resugaring `Product!` and `Sum!`, the type-level list spines, and their `Struct!`/`Enum!` shapes.
 //!
 //! A product expands through `Cons` to `Nil` and a sum through `Either` to `Void`, so this pass
-//! collects each spine's heads and prints them as the flat list the programmer wrote.
-//!
-//! Unlike the diagnostic resugarers, it stops there: a list whose elements are all named fields is
-//! **not** folded on to the `Struct! { … }` / `Enum! { … }` record form. Those forms are
-//! presentation-only — no such CGP macros exist — and this pass writes *source*, where every
-//! construct shown should be syntax the programmer could have written. A reader of an expansion
-//! sees `Product![Field<Symbol!("width"), f64>, …]`, which is both real and true to the type.
+//! collects each spine's heads and prints them as the flat list the programmer wrote. A list whose
+//! elements are all `Field` cells folds one step further, to the CGP `Struct!` or `Enum!` shape it
+//! describes, when the shape has an exact spelling: `Struct! { width: f64 }`, `Struct!(u8, u16)`,
+//! or `Enum! { Empty, Circle(f64) }`. Any other list keeps its `Product!`/`Sum!` form. The rules
+//! are the same as the diagnostic resugarers' (see
+//! `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`).
 
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::visit_mut::{self, VisitMut};
-use syn::{GenericArgument, Type};
+use syn::{Expr, ExprLit, GenericArgument, Lit, MacroDelimiter, Type};
 
-use crate::resugar::parts::{Delimiter, is_terminator, macro_type, type_args};
+use crate::resugar::parts::{Delimiter, is_terminator, macro_type, shape_name, type_args};
+use crate::resugar::symbol::symbol_macro_name;
 
 /// The `Product!`/`Sum!` pass. Runs after [`Paths`](super::Paths), which consumes the `Nil` that
 /// terminates a path — a `Nil` this pass would otherwise read as an empty list.
@@ -41,10 +41,12 @@ impl Lists {
     /// list — or a field's list-typed value — folds in turn.
     fn fold_spine(&mut self, ty: &Type) -> Option<Type> {
         if let Some(elements) = self.spine(ty, "Cons", "Nil") {
-            return Some(list_macro("Product", &elements));
+            return Some(
+                struct_shape(&elements).unwrap_or_else(|| list_macro("Product", &elements)),
+            );
         }
         if let Some(elements) = self.spine(ty, "Either", "Void") {
-            return Some(list_macro("Sum", &elements));
+            return Some(enum_shape(&elements).unwrap_or_else(|| list_macro("Sum", &elements)));
         }
         None
     }
@@ -63,6 +65,126 @@ impl Lists {
 fn list_macro(name: &str, elements: &[Type]) -> Type {
     let body: TokenStream = quote!(#(#elements),*);
     macro_type(name, Delimiter::Bracket, body)
+}
+
+/// The tag of a `Field` cell: a field or variant name, or a tuple position.
+enum Tag {
+    Name(Ident),
+    Index(usize),
+}
+
+/// The `Struct!` a product of `Field` cells becomes, or `None` when it has no exact spelling.
+///
+/// Every tag a writable name gives `Struct! { a: A }`. Every tag an `Index`, counting up from 0 with
+/// at least two cells, gives `Struct!(A, B)`. A single `Index` cell has no spelling, because
+/// `Struct!(T)` is the bare `T`, and neither has a list that mixes the tags or skips a position.
+fn struct_shape(elements: &[Type]) -> Option<Type> {
+    let cells = field_cells(elements)?;
+
+    let named = cells
+        .iter()
+        .map(|(tag, value)| match tag {
+            Tag::Name(name) => Some(quote!(#name: #value)),
+            Tag::Index(_) => None,
+        })
+        .collect::<Option<Vec<_>>>();
+    if let Some(fields) = named {
+        return Some(macro_type("Struct", Delimiter::Brace, quote!(#(#fields),*)));
+    }
+
+    if cells.len() < 2 {
+        return None;
+    }
+    let positional = cells
+        .iter()
+        .enumerate()
+        .map(|(position, (tag, value))| match tag {
+            Tag::Index(index) if *index == position => Some(value),
+            _ => None,
+        })
+        .collect::<Option<Vec<_>>>()?;
+    Some(macro_type(
+        "Struct",
+        Delimiter::Paren,
+        quote!(#(#positional),*),
+    ))
+}
+
+/// The `Enum!` a sum of named `Field` cells becomes, or `None` when it has no exact spelling.
+///
+/// Each variant takes the shortest of its equivalent spellings: a `Nil` payload is a unit variant,
+/// a payload already folded to `Struct! { … }` or `Struct!(…)` lends the variant its braces or
+/// parentheses, and any other payload is the single positional field of `V(T)`.
+fn enum_shape(elements: &[Type]) -> Option<Type> {
+    let variants = field_cells(elements)?
+        .into_iter()
+        .map(|(tag, payload)| {
+            let Tag::Name(name) = tag else {
+                return None;
+            };
+            Some(variant(&name, &payload))
+        })
+        .collect::<Option<Vec<_>>>()?;
+
+    Some(macro_type("Enum", Delimiter::Brace, quote!(#(#variants),*)))
+}
+
+/// One `Enum!` variant, spelled from its payload.
+fn variant(name: &Ident, payload: &Type) -> TokenStream {
+    if is_terminator(payload, "Nil") {
+        return quote!(#name);
+    }
+
+    if let Type::Macro(shape) = payload
+        && shape.mac.path.is_ident("Struct")
+    {
+        let body = &shape.mac.tokens;
+        match shape.mac.delimiter {
+            MacroDelimiter::Brace(_) => return quote!(#name { #body }),
+            MacroDelimiter::Paren(_) => return quote!(#name(#body)),
+            MacroDelimiter::Bracket(_) => {}
+        }
+    }
+
+    quote!(#name(#payload))
+}
+
+/// Interpret every element as a `Field<Tag, Value>` cell whose tag is a writable `Symbol!` name or
+/// an `Index<N>` position, or `None` if any element is not such a cell.
+fn field_cells(elements: &[Type]) -> Option<Vec<(Tag, Type)>> {
+    elements
+        .iter()
+        .map(|element| {
+            let args = type_args(element, "Field")?;
+            let [GenericArgument::Type(tag), GenericArgument::Type(value)] = args.as_slice() else {
+                return None;
+            };
+            let tag = if let Some(name) = symbol_macro_name(tag) {
+                Tag::Name(syn::parse_str(&shape_name(&name)?).ok()?)
+            } else {
+                Tag::Index(index_tag(tag)?)
+            };
+            Some((tag, value.clone()))
+        })
+        .collect()
+}
+
+/// The `N` of an `Index<N>` tag written as a plain decimal literal.
+fn index_tag(tag: &Type) -> Option<usize> {
+    let args = type_args(tag, "Index")?;
+    let [
+        GenericArgument::Const(Expr::Lit(ExprLit {
+            lit: Lit::Int(index),
+            ..
+        })),
+    ] = args.as_slice()
+    else {
+        return None;
+    };
+    if !index.suffix().is_empty() {
+        return None;
+    }
+    index.base10_parse().ok()
 }
 
 /// Collect the head types of a `Cell<Head, Tail>` spine ended by `Terminator`, or `None` when

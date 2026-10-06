@@ -81,25 +81,85 @@ fn resugars_a_nested_list() {
 }
 
 #[test]
-fn a_field_list_stays_a_product_rather_than_folding_to_a_record() {
-    // A diagnostic folds an all-field list on to `Struct! { width: f64, … }`, but that form is not
-    // a real CGP macro. This pass writes source, so it stops at the list macro that is.
+fn folds_a_named_field_list_to_a_struct_shape() {
+    // The printer breaks a brace body onto lines of its own; the spacing pass joins it back.
     let source = "\
 type Fields = Cons<
     Field<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', Chars<'h', Nil>>>>>>, f64>,
-    Cons<Field<Symbol<4, Chars<'n', Chars<'a', Chars<'m', Chars<'e', Nil>>>>>, String>, Nil>,
+    Cons<Field<Symbol<4, Chars<'n', Chars<'a', Chars<'m', Chars<'e', Nil>>>>>, Vec<u8>>, Nil>,
 >;
 ";
 
-    // The printer breaks a body too long for one line, which the tightening leaves alone.
     assert_eq!(
         expand(source),
-        "\
-type Fields = Product![
-    Field<Symbol!(\"width\"), f64>, Field<Symbol!(\"name\"), String>
-];
-"
+        "type Fields = Struct! { width: f64, name: Vec<u8> };\n"
     );
+}
+
+#[test]
+fn folds_an_index_field_list_to_a_tuple_struct_shape() {
+    let source = "type Fields = Cons<Field<Index<0>, u8>, Cons<Field<Index<1>, Vec<u8>>, Nil>>;\n";
+
+    assert_eq!(expand(source), "type Fields = Struct!(u8, Vec<u8>);\n");
+}
+
+#[test]
+fn a_single_index_field_stays_a_product() {
+    // `Struct!(u8)` is the bare `u8`, so this one-element list has no `Struct!` spelling.
+    let source = "type Fields = Cons<Field<Index<0>, u8>, Nil>;\n";
+
+    assert_eq!(
+        expand(source),
+        "type Fields = Product![Field<Index<0>, u8>];\n"
+    );
+}
+
+#[test]
+fn a_keyword_field_name_is_written_raw() {
+    let source = "type Fields = Cons<Field<Symbol<4, Chars<'t', Chars<'y', Chars<'p', Chars<'e', Nil>>>>>, u8>, Nil>;\n";
+
+    assert_eq!(expand(source), "type Fields = Struct! { r#type: u8 };\n");
+}
+
+#[test]
+fn a_field_name_that_is_not_an_identifier_stays_a_product() {
+    let source =
+        "type Fields = Cons<Field<Symbol<3, Chars<'a', Chars<' ', Chars<'b', Nil>>>>, u8>, Nil>;\n";
+
+    assert_eq!(
+        expand(source),
+        "type Fields = Product![Field<Symbol!(\"a b\"), u8>];\n"
+    );
+}
+
+#[test]
+fn folds_a_variant_list_to_an_enum_shape_in_each_variant_spelling() {
+    // A `Nil` payload is a unit variant, a named-field payload lends the variant its braces, an
+    // `Index` payload its parentheses, and any other payload is the single positional field.
+    let source = "\
+type Fields = Either<
+    Field<Symbol<5, Chars<'E', Chars<'m', Chars<'p', Chars<'t', Chars<'y', Nil>>>>>>, Nil>,
+    Either<
+        Field<Symbol<4, Chars<'R', Chars<'e', Chars<'c', Chars<'t', Nil>>>>>, Cons<Field<Symbol<1, Chars<'w', Nil>>, f64>, Nil>>,
+        Either<
+            Field<Symbol<4, Chars<'P', Chars<'a', Chars<'i', Chars<'r', Nil>>>>>, Cons<Field<Index<0>, u8>, Cons<Field<Index<1>, u16>, Nil>>>,
+            Either<Field<Symbol<6, Chars<'C', Chars<'i', Chars<'r', Chars<'c', Chars<'l', Chars<'e', Nil>>>>>>>, f64>, Void>,
+        >,
+    >,
+>;
+";
+
+    assert_eq!(
+        expand(source),
+        "type Fields = Enum! { Empty, Rect { w: f64 }, Pair(u8, u16), Circle(f64) };\n"
+    );
+}
+
+#[test]
+fn a_variant_list_tagged_by_position_stays_a_sum() {
+    let source = "type Fields = Either<Field<Index<0>, u8>, Void>;\n";
+
+    assert_eq!(expand(source), "type Fields = Sum![Field<Index<0>, u8>];\n");
 }
 
 #[test]

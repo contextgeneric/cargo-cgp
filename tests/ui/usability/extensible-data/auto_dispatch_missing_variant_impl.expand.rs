@@ -23,15 +23,10 @@ pub enum Shape {
     Square(Square),
 }
 impl HasFields for Shape {
-    type Fields = Sum![
-        Field<Symbol!("Circle"), Circle>, Field<Symbol!("Square"), Square>
-    ];
+    type Fields = Enum! { Circle(Circle), Square(Square) };
 }
 impl HasFieldsRef for Shape {
-    type FieldsRef<'__a> = Sum![
-        Field<Symbol!("Circle"), &'__a Circle>, Field<Symbol!("Square"), &'__a
-        Square>
-    ]
+    type FieldsRef<'__a> = Enum! { Circle(&'__a Circle), Square(&'__a Square) }
     where
         Self: '__a;
 }

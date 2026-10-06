@@ -47,6 +47,61 @@ fn resugars_a_sum_of_fields_to_an_enum() {
 }
 
 #[test]
+fn resugars_a_product_of_index_fields_to_a_tuple_struct() {
+    assert_eq!(
+        resugar_lists("Cons<Field<Index<0>, u64>, Cons<Field<Index<1>, String>, Nil>>").as_deref(),
+        Some("Struct!(u64, String)"),
+    );
+}
+
+#[test]
+fn a_single_index_field_stays_a_plain_product() {
+    // `Struct!(u64)` is the bare `u64`, so this one-element list has no `Struct!` spelling.
+    assert_eq!(
+        resugar_lists("Cons<Field<Index<0>, u64>, Nil>").as_deref(),
+        Some("Product![Field<Index<0>, u64>]"),
+    );
+}
+
+#[test]
+fn a_field_name_that_is_not_an_identifier_stays_a_plain_product() {
+    assert_eq!(
+        resugar_lists("Cons<Field<Symbol!(\"foo bar\"), u8>, Nil>").as_deref(),
+        Some("Product![Field<Symbol!(\"foo bar\"), u8>]"),
+    );
+}
+
+#[test]
+fn a_keyword_field_name_is_written_raw() {
+    assert_eq!(
+        resugar_lists("Cons<Field<Symbol!(\"type\"), u8>, Nil>").as_deref(),
+        Some("Struct! { r#type: u8 }"),
+    );
+}
+
+#[test]
+fn each_variant_takes_its_shortest_spelling() {
+    assert_eq!(
+        resugar_lists(
+            "Either<Field<Symbol!(\"Empty\"), Nil>, \
+             Either<Field<Symbol!(\"Pair\"), Cons<Field<Index<0>, u8>, Cons<Field<Index<1>, u16>, Nil>>>, \
+             Either<Field<Symbol!(\"Rect\"), Cons<Field<Symbol!(\"width\"), f64>, Nil>>, \
+             Either<Field<Symbol!(\"One\"), Cons<Field<Index<0>, u8>, Nil>>, Void>>>>"
+        )
+        .as_deref(),
+        Some("Enum! { Empty, Pair(u8, u16), Rect { width: f64 }, One(Product![Field<Index<0>, u8>]) }"),
+    );
+}
+
+#[test]
+fn a_sum_tagged_by_position_stays_a_plain_sum() {
+    assert_eq!(
+        resugar_lists("Either<Field<Index<0>, u8>, Void>").as_deref(),
+        Some("Sum![Field<Index<0>, u8>]"),
+    );
+}
+
+#[test]
 fn a_mixed_list_stays_a_plain_product() {
     // Not every element is a `Field`, so the list keeps its `Product!` form rather than `Struct!`.
     assert_eq!(

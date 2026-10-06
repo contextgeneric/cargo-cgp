@@ -1,21 +1,21 @@
 #![feature(prelude_import)]
-//! Acceptable: a missing wiring reached through a sum spine of *named* variants, whose
-//! dependency-tree entries resugar `Either<Field<…>, …, Void>` all the way to the `Enum! { … }`
-//! surface form.
+//! Acceptable: a missing wiring reached through a sum of named variants that uses every variant
+//! shape, whose dependency-tree entries render each variant in its shortest `Enum!` spelling.
 //!
 //! `EncodeChoice` dispatches over the variant list
-//! `Sum![Field<Symbol!("Rect"), u64>, Field<Symbol!("Circle"), f64>]` — the shape an enum's
-//! `HasFields` produces, written out here directly — through the `EncodeVariants` visitor, each
-//! variant's payload encoded via the context. `App` wires `u64` but not `f64`, so the
-//! `check_components!` entry for `Choice` fails on the missing `@VariantEncoderComponent.f64` wiring,
-//! reached by following the sum spine.
+//! `Enum! { Empty, Rect { w: f64 }, Pair(u8, u16), Circle(f64) }` through the `EncodeVariants`
+//! visitor, encoding each variant's payload through the context. Under the `Struct!` rules those
+//! payloads are `Nil`, `Struct! { w: f64 }`, `Struct!(u8, u16)`, and `f64`. `App` wires the first
+//! three (keying two of them by a shape in its `open` entries) but not `f64`, so the
+//! `check_components!` entry for `Choice` fails on the missing `@VariantEncoderComponent.f64`
+//! wiring, reached by following the sum spine.
 //!
-//! The point of the fixture is the rendering: because every element of the sum is a
-//! `Field<Symbol!("Name"), Type>`, the renderer resugars the whole list past `Sum![…]` to
-//! `Enum! { Rect(u64), Circle(f64) }`, and its tail to `Enum! { Circle(f64) }` — the enum the
-//! variant list represents. It is the sum counterpart of `record_field_chain`'s `Struct! { … }`.
-//! Both are CGP's own `Struct!`/`Enum!` shape macros, so the rendered list can be copied back into
-//! code; `enum_variant_shapes_chain` covers the other variant shapes.
+//! The point of the fixture is the rendering. Each hop down the spine names the remaining variant
+//! list as an `Enum!`, and each variant takes its shortest spelling: `Empty` for the `Nil` payload,
+//! `Rect { w: f64 }` for the named-field payload, `Pair(u8, u16)` for the positional one, and
+//! `Circle(f64)` for the bare payload. Each spelling is the same type as the field list it renders,
+//! so the list can be copied back into code. It complements `enum_variant_chain`, whose variants
+//! all carry a bare payload.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
@@ -96,14 +96,14 @@ where
     >>::Delegate: IsProviderFor<VariantEncoderComponent, __Context__, (Value)>
         + VariantEncoder<__Context__, Value>,
 {}
-impl<__Context__> VariantEncoder<__Context__, u64> for EncodeU64 {
-    fn encode_variant(__context__: &__Context__, value: &u64) -> String {
-        value.to_string()
+impl<__Context__, Value> VariantEncoder<__Context__, Value> for EncodeAny {
+    fn encode_variant(__context__: &__Context__, _value: &Value) -> String {
+        String::new()
     }
 }
-impl<__Context__> IsProviderFor<VariantEncoderComponent, __Context__, (u64)>
-for EncodeU64 {}
-pub struct EncodeU64;
+impl<__Context__, Value> IsProviderFor<VariantEncoderComponent, __Context__, (Value)>
+for EncodeAny {}
+pub struct EncodeAny;
 pub trait EncodeVariants<Context> {
     fn encode_variants(context: &Context) -> String;
 }
@@ -125,7 +125,7 @@ impl<Context> EncodeVariants<Context> for Void {
 pub struct Choice;
 impl<__Context__> VariantEncoder<__Context__, Choice> for EncodeChoice
 where
-    Enum! { Rect(u64), Circle(f64) }: EncodeVariants<__Context__>,
+    Enum! { Empty, Rect { w: f64 }, Pair(u8, u16), Circle(f64) }: EncodeVariants<__Context__>,
 {
     fn encode_variant(__context__: &__Context__, _value: &Choice) -> String {
         String::new()
@@ -134,7 +134,7 @@ where
 impl<__Context__> IsProviderFor<VariantEncoderComponent, __Context__, (Choice)>
 for EncodeChoice
 where
-    Enum! { Rect(u64), Circle(f64) }: EncodeVariants<__Context__>,
+    Enum! { Empty, Rect { w: f64 }, Pair(u8, u16), Circle(f64) }: EncodeVariants<__Context__>,
 {}
 pub struct EncodeChoice;
 pub struct App;
@@ -175,22 +175,86 @@ where
 {}
 impl<
     __Wildcard__,
-> DelegateComponent<PathCons<VariantEncoderComponent, PathCons<u64, __Wildcard__>>>
+> DelegateComponent<PathCons<VariantEncoderComponent, PathCons<Nil, __Wildcard__>>>
 for App {
-    type Delegate = EncodeU64;
+    type Delegate = EncodeAny;
 }
 impl<
     __Wildcard__,
     __Context__,
     __Params__: ?Sized,
 > IsProviderFor<
-    PathCons<VariantEncoderComponent, PathCons<u64, __Wildcard__>>,
+    PathCons<VariantEncoderComponent, PathCons<Nil, __Wildcard__>>,
     __Context__,
     __Params__,
 > for App
 where
-    EncodeU64: IsProviderFor<
-        PathCons<VariantEncoderComponent, PathCons<u64, __Wildcard__>>,
+    EncodeAny: IsProviderFor<
+        PathCons<VariantEncoderComponent, PathCons<Nil, __Wildcard__>>,
+        __Context__,
+        __Params__,
+    >,
+{}
+impl<
+    __Wildcard__,
+> DelegateComponent<
+    PathCons<
+        VariantEncoderComponent,
+        PathCons<
+            Struct! { w: f64 },
+            __Wildcard__,
+        >,
+    >,
+> for App {
+    type Delegate = EncodeAny;
+}
+impl<
+    __Wildcard__,
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<
+    PathCons<
+        VariantEncoderComponent,
+        PathCons<
+            Struct! { w: f64 },
+            __Wildcard__,
+        >,
+    >,
+    __Context__,
+    __Params__,
+> for App
+where
+    EncodeAny: IsProviderFor<
+        PathCons<
+            VariantEncoderComponent,
+            PathCons<
+                Struct! { w: f64 },
+                __Wildcard__,
+            >,
+        >,
+        __Context__,
+        __Params__,
+    >,
+{}
+impl<
+    __Wildcard__,
+> DelegateComponent<
+    PathCons<VariantEncoderComponent, PathCons<Struct!(u8, u16), __Wildcard__>>,
+> for App {
+    type Delegate = EncodeAny;
+}
+impl<
+    __Wildcard__,
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<
+    PathCons<VariantEncoderComponent, PathCons<Struct!(u8, u16), __Wildcard__>>,
+    __Context__,
+    __Params__,
+> for App
+where
+    EncodeAny: IsProviderFor<
+        PathCons<VariantEncoderComponent, PathCons<Struct!(u8, u16), __Wildcard__>>,
         __Context__,
         __Params__,
     >,

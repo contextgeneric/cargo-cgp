@@ -2,17 +2,17 @@
 //! the macro-call type a resugared construct becomes.
 
 use proc_macro2::TokenStream;
-use syn::token::{Bracket, Paren};
+use syn::token::{Brace, Bracket, Paren};
 use syn::{GenericArgument, Macro, MacroDelimiter, PathArguments, Type, TypeMacro};
 
-/// Which delimiter a resugared macro call uses — `Symbol!(…)` and `Path!(…)` take parentheses,
-/// `Product![…]` and `Sum![…]` brackets. There is no brace form, because the brace-delimited
-/// `Struct!`/`Enum!` record forms are deliberately not emitted into source (see
-/// [`list`](super::list)).
+/// Which delimiter a resugared macro call uses: `Symbol!(…)`, `Path!(…)`, and a tuple
+/// `Struct!(…)` take parentheses, `Product![…]` and `Sum![…]` brackets, and a named
+/// `Struct! { … }` and `Enum! { … }` braces.
 #[derive(Clone, Copy)]
 pub(crate) enum Delimiter {
     Paren,
     Bracket,
+    Brace,
 }
 
 /// Build the macro-call type a resugared construct becomes, such as `Symbol!("height")`.
@@ -24,6 +24,7 @@ pub(crate) fn macro_type(name: &str, delimiter: Delimiter, tokens: TokenStream) 
     let delimiter = match delimiter {
         Delimiter::Paren => MacroDelimiter::Paren(Paren::default()),
         Delimiter::Bracket => MacroDelimiter::Bracket(Bracket::default()),
+        Delimiter::Brace => MacroDelimiter::Brace(Brace::default()),
     };
 
     Type::Macro(TypeMacro {
@@ -84,4 +85,40 @@ pub(crate) fn is_primitive_type(ident: &str) -> bool {
         return true;
     }
     matches!(ident, "char" | "bool" | "usize" | "isize" | "str")
+}
+
+/// The keywords a field or variant name can only be written as with `r#`: the strict keywords and
+/// the reserved ones, as of the 2024 edition.
+const RAW_KEYWORDS: &[&str] = &[
+    "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "do", "dyn",
+    "else", "enum", "extern", "false", "final", "fn", "for", "gen", "if", "impl", "in", "let",
+    "loop", "macro", "match", "mod", "move", "mut", "override", "priv", "pub", "ref", "return",
+    "static", "struct", "trait", "true", "try", "type", "typeof", "unsafe", "unsized", "use",
+    "virtual", "where", "while", "yield",
+];
+
+/// The keywords that cannot be a field or variant name at all, not even as a raw identifier.
+const UNWRITABLE_KEYWORDS: &[&str] = &["_", "crate", "self", "Self", "super"];
+
+/// A `Symbol!` tag's name as a `Struct!` or `Enum!` body writes it, or `None` when no body can
+/// write it: an identifier as is, a keyword raw (`r#type`), and anything else not at all. Kept in
+/// step with `shape_name` in the diagnostic resugarers (`cargo-cgp-error-processing`), so a shape
+/// gets the same spelling in an expansion and in a diagnostic.
+pub(crate) fn shape_name(name: &str) -> Option<String> {
+    let mut chars = name.chars();
+    let first = chars.next()?;
+
+    if !(first == '_' || first.is_alphabetic()) || !chars.all(|c| c == '_' || c.is_alphanumeric()) {
+        return None;
+    }
+
+    if UNWRITABLE_KEYWORDS.contains(&name) {
+        return None;
+    }
+
+    if RAW_KEYWORDS.contains(&name) {
+        return Some(format!("r#{name}"));
+    }
+
+    Some(name.to_owned())
 }
