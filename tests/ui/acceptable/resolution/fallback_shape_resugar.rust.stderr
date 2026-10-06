@@ -1,0 +1,52 @@
+error[E0277]: the trait bound `Cons<Field<Index<0>, u8>, Cons<Field<Index<1>, u16>, Nil>>: Needs` is not satisfied
+  --> src/main.rs:20:15
+   |
+20 |     require::<Struct!(u8, u16)>();
+   |               ^^^^^^^^^^^^^^^^ the trait `Needs` is not implemented for `Cons<Field<Index<0>, u8>, Cons<Field<Index<1>, u16>, Nil>>`
+   |
+help: this trait has no implementations, consider adding one
+  --> src/main.rs:15:1
+   |
+15 | pub trait Needs {}
+   | ^^^^^^^^^^^^^^^
+note: required by a bound in `require`
+  --> src/main.rs:17:15
+   |
+17 | fn require<T: Needs>() {}
+   |               ^^^^^ required by this bound in `require`
+
+error[E0277]: the trait bound `Cons<Field<Symbol<4, Chars<..>>, u8>, _>: Needs` is not satisfied
+  --> src/main.rs:21:15
+   |
+21 |     require::<Struct! { r#type: u8, name: u16 }>();
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Needs` is not implemented for `Cons<Field<Symbol<4, Chars<..>>, u8>, _>`
+   |
+help: this trait has no implementations, consider adding one
+  --> src/main.rs:15:1
+   |
+15 | pub trait Needs {}
+   | ^^^^^^^^^^^^^^^
+note: required by a bound in `require`
+  --> src/main.rs:17:15
+   |
+17 | fn require<T: Needs>() {}
+   |               ^^^^^ required by this bound in `require`
+
+error[E0277]: the trait bound `Either<Field<Symbol<5, Chars<..>>, Nil>, _>: Needs` is not satisfied
+  --> src/main.rs:22:15
+   |
+22 |     require::<Enum! { Empty, Pair(u8, u16), Rect { w: f64 } }>();
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Needs` is not implemented for `Either<Field<Symbol<5, Chars<..>>, Nil>, _>`
+   |
+help: this trait has no implementations, consider adding one
+  --> src/main.rs:15:1
+   |
+15 | pub trait Needs {}
+   | ^^^^^^^^^^^^^^^
+note: required by a bound in `require`
+  --> src/main.rs:17:15
+   |
+17 | fn require<T: Needs>() {}
+   |               ^^^^^ required by this bound in `require`
+
+For more information about this error, try `rustc --explain E0277`.

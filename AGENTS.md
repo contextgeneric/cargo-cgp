@@ -152,7 +152,8 @@ reason — only the driver links the compiler's internal libraries, and keeping 
 front-end keeps it a small, ordinary binary that builds without loading LLVM. A third, library-only
 crate, **`cargo-cgp-error-processing`** (`crates/cargo-cgp-error-processing`), holds the rustc-free
 string-level diagnostic helpers the driver drives — the wiring-message rewrite, the fallback
-post-processing text transforms, the rustc-free root-cause model and the diagnostic-plan wording
+post-processing text transforms, the `Struct!`/`Enum!` shape spellings the text and typed
+resugaring share, the rustc-free root-cause model and the diagnostic-plan wording
 that turns it into text, the dependency-tree renderer, the cross-diagnostic de-duplication ledger,
 and the text signals the emitter's candidate checks key on; it links no compiler internals
 either, so it builds and tests on any toolchain (see
