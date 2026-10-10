@@ -14,6 +14,6 @@
 # snapshot would depend on whichever components a contributor's toolchain happened to pick
 # up. See cgp-knowledge-base/cargo-cgp/implementation/testing.md.
 [toolchain]
-channel    = "nightly-2026-09-14"
-components = ["rustc-dev", "llvm-tools", "rust-src"]
+channel    = "nightly-2026-10-10"
+components = ["rustc-dev", "llvm-tools", "rust-src", "clippy", "rustfmt"]
 profile    = "minimal"

@@ -58,8 +58,8 @@ fn collects_fixtures_from_nested_directories_in_order() {
 
 #[test]
 fn the_no_expansion_marker_is_a_comment_block() {
-    // No fixture triggers this today, so nothing else would notice if the constant's line
-    // continuation ever indented its second line into the snapshot.
+    // The fixtures that define a type twice record this marker, but a stray indent on its second
+    // line would be blessed into all of them at once, so the shape is pinned here.
     let lines: Vec<&str> = cargo_cgp_ui_tests::harness::NO_EXPANSION.lines().collect();
 
     assert_eq!(lines.len(), 2, "{lines:?}");

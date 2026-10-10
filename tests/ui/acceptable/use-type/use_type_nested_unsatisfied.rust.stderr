@@ -75,7 +75,6 @@ note: required by a bound in `GetScalar`
 32 | #[use_type(HasTypes.Types, HasScalarType.Scalar in Types)]
    |                            ^^^^^^^^^^^^^ required by this bound in `GetScalar`
 33 | pub fn get_scalar(&self) -> Scalar {
-   |        ---------- required by a bound in this trait
    = note: this error originates in the attribute macro `cgp_type` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

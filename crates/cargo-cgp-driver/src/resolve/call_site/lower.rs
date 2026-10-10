@@ -34,11 +34,11 @@ pub(crate) fn lower_hir_ty<'tcx>(tcx: TyCtxt<'tcx>, hir_ty: &hir::Ty<'tcx>) -> O
                 .collect::<Option<_>>()?;
             Some(Ty::new_tup(tcx, &elems))
         }
-        hir::TyKind::Ref(_, mut_ty) => Some(Ty::new_ref(
+        hir::TyKind::Ref(_, ty, mutbl) => Some(Ty::new_ref(
             tcx,
             tcx.lifetimes.re_erased,
-            lower_hir_ty(tcx, mut_ty.ty)?,
-            mut_ty.mutbl,
+            lower_hir_ty(tcx, ty)?,
+            mutbl,
         )),
         hir::TyKind::Slice(ty) => Some(Ty::new_slice(tcx, lower_hir_ty(tcx, ty)?)),
         _ => None,
@@ -149,8 +149,8 @@ pub(crate) fn item_ty<'tcx>(tcx: TyCtxt<'tcx>, did: DefId) -> Option<Ty<'tcx>> {
 /// Strip the reference layers off a written type (`&App` → `App`), since the receiver's context
 /// is the ADT beneath them.
 pub(crate) fn peel_hir_refs<'tcx>(mut ty: &'tcx hir::Ty<'tcx>) -> &'tcx hir::Ty<'tcx> {
-    while let hir::TyKind::Ref(_, mut_ty) = ty.kind {
-        ty = mut_ty.ty;
+    while let hir::TyKind::Ref(_, inner, _) = ty.kind {
+        ty = inner;
     }
     ty
 }

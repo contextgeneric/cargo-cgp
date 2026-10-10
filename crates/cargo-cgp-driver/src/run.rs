@@ -55,6 +55,6 @@ pub fn run() -> ExitCode {
 
     rustc_driver::catch_with_exit_code(|| {
         let mut callbacks = CgpCallbacks { expand };
-        rustc_driver::run_compiler(&args, &mut callbacks);
+        rustc_driver::compiler_entrypoint(&args, &mut callbacks);
     })
 }

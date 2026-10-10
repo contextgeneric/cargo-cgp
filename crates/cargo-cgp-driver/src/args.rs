@@ -3,12 +3,12 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-/// Build the argument vector handed to [`rustc_driver::run_compiler`].
+/// Build the argument vector handed to [`rustc_driver::compiler_entrypoint`].
 ///
 /// cargo invokes the wrapper as `cargo-cgp-driver <path-to-rustc> <rustc args...>`. Like
 /// `clippy-driver`, we detect that "wrapper mode" — the second argument is a path whose
 /// file stem is `rustc` — and drop the injected compiler path, leaving our own program
-/// name in `args[0]` (which `run_compiler` ignores) followed by the genuine rustc flags.
+/// name in `args[0]` (which `compiler_entrypoint` ignores) followed by the genuine rustc flags.
 ///
 /// We then adjust the flags in two ways:
 ///

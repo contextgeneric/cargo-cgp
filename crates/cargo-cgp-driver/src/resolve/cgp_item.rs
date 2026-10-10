@@ -5,6 +5,7 @@
 //! replacement — the same discipline [`component_map`](crate::component_map) uses for
 //! `IsProviderFor`.
 
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 
