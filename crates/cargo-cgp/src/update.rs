@@ -20,6 +20,7 @@
 //! widely-used `ureq` and `serde_json` rather than taking on that dependency.
 
 use std::env;
+use std::path::Path;
 use std::process::Command;
 
 use anyhow::{Context, bail};
@@ -38,12 +39,17 @@ pub fn run_update(_args: &[String]) -> anyhow::Result<i32> {
         return Ok(0);
     };
 
+    // Resolve our own path before the reinstall replaces the file. On Linux `current_exe` reads
+    // `/proc/self/exe`, which names a replaced binary as `<path> (deleted)`, a path that does not
+    // exist; read beforehand, it is the path the new binary is installed at.
+    let exe = env::current_exe().context("failed to locate the cargo-cgp executable")?;
+
     println!("cargo-cgp: updating v{TOOL_VERSION} → v{latest}…");
     reinstall_frontend(&latest)?;
 
     // Hand off to the newly installed front-end's setup, which knows the new pinned
     // toolchain and provisions the matching driver.
-    run_new_setup()
+    run_new_setup(&exe)
 }
 
 /// Read the crates.io sparse index entry for `crate_name` over HTTP and return the body: one
@@ -142,10 +148,10 @@ fn reinstall_frontend(version: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Run the freshly installed front-end's `setup`. The binary at this path is now the new
-/// version (cargo replaced the file), so its `setup` knows the new pinned toolchain.
-fn run_new_setup() -> anyhow::Result<i32> {
-    let exe = env::current_exe().context("failed to locate the cargo-cgp executable")?;
+/// Run the freshly installed front-end's `setup`. `exe` is the path the front-end was installed
+/// at, read before the reinstall; the binary there is now the new version (cargo replaced the
+/// file), so its `setup` knows the new pinned toolchain.
+fn run_new_setup(exe: &Path) -> anyhow::Result<i32> {
     let status = Command::new(exe)
         .arg("setup")
         .status()
