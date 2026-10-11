@@ -1,0 +1,27 @@
+error[E0277]: the trait bound `Ctx: HasField<Symbol!("a")>` is not satisfied
+  --> src/main.rs:32:12
+   |
+32 |     need::<Ctx>();
+   |            ^^^ unsatisfied trait bound
+   |
+help: `#[derive(HasField)]` is required to access field `a` on `Ctx`
+      but trait `HasField<Symbol!("b")>` is implemented for it
+  --> src/main.rs:25:1
+   |
+25 | impl HasField<Symbol<1, Chars<'b', Nil>>> for Ctx {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `need`
+  --> src/main.rs:29:12
+   |
+29 | fn need<T: HasField<Symbol<1, Chars<'a', Nil>>>>() {}
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `need`
+
+For more information about this error, try `rustc --explain E0277`.
+warning: unused dependency `cgp`
+ --> Cargo.toml:8:1
+  |
+8 | cgp = { path = "$CGP/crates/main/cgp" }
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `cargo::unused_dependencies` is set to `warn` by default
+help: consider removing the dependency on `cgp`

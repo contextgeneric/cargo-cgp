@@ -8,7 +8,6 @@ fn reads_every_directive() {
 //! A fixture.
 //@aux-build: cgp-test-crate-a
 //@aux-build: cgp-test-crate-b
-//@false-acceptance
 //@rewrites-falsely: the module strip drops the paths
 //@json
 fn main() {}
@@ -17,7 +16,6 @@ fn main() {}
         parse(text, "demo.rs"),
         Directives {
             aux_build: vec!["cgp-test-crate-a".into(), "cgp-test-crate-b".into()],
-            false_acceptance: true,
             rewrites_falsely: Some("the module strip drops the paths".into()),
             json: true,
         }

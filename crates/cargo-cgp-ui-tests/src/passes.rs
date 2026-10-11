@@ -13,7 +13,7 @@
 //! Two checks compare the passes with each other rather than with a snapshot:
 //!
 //! - [`status_check`]: the tool and plain `cargo check` must agree on whether the fixture
-//!   compiles, unless the fixture is a known false acceptance (`//@false-acceptance`).
+//!   compiles.
 //! - [`pass_through_check`]: for a fixture under `pass-through/`, a plain Rust error the tool must
 //!   not touch, the tool's output must equal plain rustc's, unless the fixture is marked
 //!   `//@rewrites-falsely:` until its fix lands.
@@ -76,26 +76,19 @@ pub fn json_pass(fixture: &Path, paths: &Paths, bless: bool) -> Outcome {
     review(&json_path(fixture), &actual, bless, "json")
 }
 
-/// Check that the tool and plain `cargo check` agree on whether the fixture compiles. A known
-/// false acceptance must disagree in exactly one way: plain `cargo check` rejects it and the tool
-/// accepts it. A marker on a fixture that no longer disagrees is reported, so it cannot go stale.
-pub fn status_check(plain_ok: bool, tool_ok: bool, false_acceptance: bool) -> Outcome {
+/// Check that the tool and plain `cargo check` agree on whether the fixture compiles. A crash
+/// with no output, or the tool accepting what rustc rejects, would otherwise pass whenever the
+/// snapshot happened to match.
+pub fn status_check(plain_ok: bool, tool_ok: bool) -> Outcome {
+    if plain_ok == tool_ok {
+        return Outcome::Ok;
+    }
     let describe = |ok: bool| if ok { "compiles" } else { "fails" };
-    let problem = match (false_acceptance, plain_ok, tool_ok) {
-        (false, plain, tool) if plain == tool => return Outcome::Ok,
-        (true, false, true) => return Outcome::Ok,
-        (false, plain, tool) => format!(
-            "plain `cargo check` {} but `cargo cgp check` {}",
-            describe(plain),
-            describe(tool)
-        ),
-        (true, plain, tool) => format!(
-            "marked `//@false-acceptance`, but plain `cargo check` {} and `cargo cgp check` {}",
-            describe(plain),
-            describe(tool)
-        ),
-    };
-    Outcome::Mismatch(format!("  --- status: {problem} ---\n"))
+    Outcome::Mismatch(format!(
+        "  --- status: plain `cargo check` {} but `cargo cgp check` {} ---\n",
+        describe(plain_ok),
+        describe(tool_ok)
+    ))
 }
 
 /// Check that a `pass-through/` fixture's tool output equals plain rustc's. Both are compared as

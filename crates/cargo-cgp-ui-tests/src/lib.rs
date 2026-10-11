@@ -163,10 +163,7 @@ fn run_passes(
             passes::cgp_stderr_pass(&cgp, fixture, paths, options.bless),
         ),
         ("expand", passes::expand_pass(fixture, paths, options.bless)),
-        (
-            "status",
-            passes::status_check(rust.success, cgp.success, directives.false_acceptance),
-        ),
+        ("status", passes::status_check(rust.success, cgp.success)),
     ];
 
     if name.starts_with("pass-through/") {

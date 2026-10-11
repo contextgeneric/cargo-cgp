@@ -44,6 +44,9 @@ The categories are:
   naming the problem its fixtures expose.
 - [`ui/ok/`](ui/ok) — the clean-compile baseline: correctly-wired programs that check with empty
   output.
+- [`ui/pass-through/`](ui/pass-through) — plain Rust errors in which nothing CGP is at fault, which
+  the tool must render exactly as plain `cargo check` does; the harness checks the two outputs are
+  equal. A fixture the tool still rewrites carries `//@rewrites-falsely: <reason>` until its fix.
 - [`ui/hidden-root-cause/`](ui/hidden-root-cause) — errors whose root cause cannot be recovered
   from the output at all, the highest-value class to fix (a [hidden root cause](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/hidden-root-cause.md)).
   Its one fixture, `foreign_context_error_route`, runs a pipeline on a context defined in an
@@ -121,12 +124,13 @@ the foreign traits over its own payloads and enum, and
 [`ui/ok/cross_crate_dispatch_payloads.rs`](ui/ok/cross_crate_dispatch_payloads.rs) dispatches over
 the middle crate's enum and derives its own enum over the middle crate's payloads.
 
-One upstream class has **no snapshot at all**: `inheritance_cycle`, two namespaces that inherit from
-each other. Plain `rustc` rejects it eagerly with an `E0275` overflow, but under cargo-cgp's next-gen
-solver it **compiles clean**, so there is no error to reproduce. This is a *missing* error, not a
-suppressed cause — the "reverse" of the next-solver compatibility caveat noted in
-[The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md#choosing-the-trait-solver) — and it is recorded here
-rather than committed as a misleading empty snapshot.
+One upstream class compiles clean under the tool: two namespaces that inherit from each other,
+pinned by [`ui/usability/wiring/namespaces/namespace_inheritance_cycle.rs`](ui/usability/wiring/namespaces/namespace_inheritance_cycle.rs).
+Stable `rustc` rejects it with an `E0275` overflow, but on the pinned nightly both the default solver
+and cargo-cgp's next-generation solver accept it, so both snapshots are empty. This is a *missing*
+error, not a suppressed cause, and a documented limitation of checking with the next solver (see
+[The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md#choosing-the-trait-solver)).
+The fixture's exit-status check fails if a later nightly makes the two compilers disagree.
 
 ## Running
 
@@ -158,8 +162,6 @@ prints a line diff for each failing pass, and a missing snapshot fails rather th
 A fixture tells the harness about itself with `//@` directives, line comments the compiler ignores:
 
 - `//@aux-build: <crate>`: build an auxiliary crate (see below).
-- `//@false-acceptance`: plain `cargo check` rejects the fixture but the tool accepts it, a known
-  disagreement of the next-generation trait solver that the exit-status check then expects.
 - `//@rewrites-falsely: <reason>`: a `pass-through/` fixture the tool still rewrites; its snapshots
   pin today's output until the fix removes the marker.
 - `//@json`: also run the JSON pass, which pins the tool's diagnostics as cargo's JSON stream carries

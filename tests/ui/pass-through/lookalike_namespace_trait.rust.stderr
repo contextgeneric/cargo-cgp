@@ -1,0 +1,10 @@
+error[E0119]: conflicting implementations of trait `Lookup<Table>` for type `Key`
+  --> src/main.rs:28:1
+   |
+24 | impl Lookup<Table> for Key {
+   | -------------------------- first implementation here
+...
+28 | impl Lookup<Table> for Key {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `Key`
+
+For more information about this error, try `rustc --explain E0119`.

@@ -1,0 +1,29 @@
+error[E0308]: mismatched types
+  --> src/main.rs:22:5
+   |
+21 | fn same_name() -> a::Foo {
+   |                   ------ expected `a::Foo` because of return type
+22 |     b::Foo
+   |     ^^^^^^ expected `a::Foo`, found `b::Foo`
+   |
+   = note: `b::Foo` and `a::Foo` have similar names, but are actually distinct types
+note: `b::Foo` is defined in module `crate::b` of the current crate
+  --> src/main.rs:18:5
+   |
+18 |     pub struct Foo;
+   |     ^^^^^^^^^^^^^^
+note: `a::Foo` is defined in module `crate::a` of the current crate
+  --> src/main.rs:14:5
+   |
+14 |     pub struct Foo;
+   |     ^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0308`.
+warning: unused dependency `cgp`
+ --> Cargo.toml:8:1
+  |
+8 | cgp = { path = "$CGP/crates/main/cgp" }
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `cargo::unused_dependencies` is set to `warn` by default
+help: consider removing the dependency on `cgp`

@@ -5,8 +5,6 @@
 //!
 //! - `//@aux-build: <crate>`: build an auxiliary crate and add it as a dependency (see
 //!   [`crate::aux`]).
-//! - `//@false-acceptance`: plain `cargo check` rejects the fixture but the tool accepts it, a
-//!   known disagreement of the next-generation trait solver; the exit-status check expects it.
 //! - `//@rewrites-falsely: <reason>`: a `pass-through/` fixture whose tool output still differs
 //!   from plain rustc's, so its snapshots pin today's output instead of the equality check.
 //! - `//@json`: also run the JSON pass, pinning the diagnostics an editor reads.
@@ -20,15 +18,13 @@ use std::fs;
 use std::path::Path;
 
 /// The directive names, as they follow `//@`.
-const NAMES: &[&str] = &["aux-build", "false-acceptance", "rewrites-falsely", "json"];
+const NAMES: &[&str] = &["aux-build", "rewrites-falsely", "json"];
 
 /// The directives one fixture declares.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Directives {
     /// Auxiliary crates, from `//@aux-build:` lines, in declaration order.
     pub aux_build: Vec<String>,
-    /// Whether the fixture is a known false acceptance (`//@false-acceptance`).
-    pub false_acceptance: bool,
     /// Why a `pass-through/` fixture still rewrites falsely (`//@rewrites-falsely:`).
     pub rewrites_falsely: Option<String>,
     /// Whether the JSON pass runs (`//@json`).
@@ -82,8 +78,6 @@ fn apply(directives: &mut Directives, rest: &str, line: &str, name: &str) {
             "`//@rewrites-falsely:` needs a reason in {name}:\n  {line}"
         );
         directives.rewrites_falsely = Some(reason.to_owned());
-    } else if rest.trim_end() == "false-acceptance" {
-        directives.false_acceptance = true;
     } else if rest.trim_end() == "json" {
         directives.json = true;
     } else {

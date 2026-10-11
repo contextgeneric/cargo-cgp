@@ -17,26 +17,18 @@ fn mismatch(outcome: Outcome) -> String {
 
 #[test]
 fn agreeing_exit_statuses_pass() {
-    assert!(is_ok(&status_check(true, true, false)));
-    assert!(is_ok(&status_check(false, false, false)));
+    assert!(is_ok(&status_check(true, true)));
+    assert!(is_ok(&status_check(false, false)));
 }
 
 #[test]
 fn disagreeing_exit_statuses_fail() {
-    let text = mismatch(status_check(false, true, false));
+    let text = mismatch(status_check(false, true));
     assert!(
         text.contains("plain `cargo check` fails but `cargo cgp check` compiles"),
         "{text}"
     );
-    assert!(!is_ok(&status_check(true, false, false)));
-}
-
-#[test]
-fn a_known_false_acceptance_must_disagree_one_way() {
-    assert!(is_ok(&status_check(false, true, true)));
-    // A stale marker, where the two now agree, is reported.
-    assert!(mismatch(status_check(false, false, true)).contains("marked `//@false-acceptance`"));
-    assert!(!is_ok(&status_check(true, true, true)));
+    assert!(!is_ok(&status_check(true, false)));
 }
 
 #[test]
