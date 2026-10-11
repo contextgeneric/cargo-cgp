@@ -1,9 +1,10 @@
 #![feature(prelude_import)]
 //! A provider calling `Self::raise_error(…)` without declaring `CanRaiseError` in `#[uses]`.
 //!
-//! The tool reports `[CGP-E016]` "the inner provider `__Context__` is used but not imported" with a
-//! `#[use_provider(__Context__: ErrorRaiser)]` help. `__Context__` is the generated context, not an
-//! inner provider; the fix is `#[uses(CanRaiseError<String>)]`.
+//! `Self` lowers to the provider impl's generated `__Context__` parameter, which the `[CGP-E016]`
+//! inner-provider check skips, so the tool keeps rustc's `E0599`: no `raise_error` found for the
+//! type parameter `__Context__`. It states nothing false, but it leaks `__Context__` and suggests a
+//! bound inside `#[use_type]`; the fix is `#[uses(CanRaiseError<String>)]`.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
 //!

@@ -43,7 +43,18 @@ pub fn detect_missing_use_provider(
     // The enclosing trait impl, and its own provider trait (a higher-order provider implements one).
     let owner = tcx.hir_enclosing_body_owner(call_hir_id);
     let impl_did = enclosing_trait_impl(tcx, owner.to_def_id())?;
-    let impl_trait_did = tcx.impl_trait_ref(impl_did).skip_binder().def_id;
+    let impl_trait_ref = tcx.impl_trait_ref(impl_did).skip_binder();
+    let impl_trait_did = impl_trait_ref.def_id;
+
+    // The provider impl's own context parameter is what `Self` lowers to in a `#[cgp_impl]` body, so
+    // `Self::raise_error(…)` names it; it is the context, never an inner provider, and its missing
+    // bound is a `#[uses]` dependency rather than a `#[use_provider]` import.
+    if is_provider_trait(tcx, impl_trait_did)
+        && let Some(context) = impl_trait_ref.args.types().nth(1)
+        && matches!(context.kind(), ty::Param(p) if p.name.as_str() == inner)
+    {
+        return None;
+    }
 
     // The provider trait the call's method belongs to: the enclosing impl's own trait when it
     // declares the method (a higher-order provider wrapping the same component — the common case),
