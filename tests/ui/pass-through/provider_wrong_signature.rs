@@ -1,12 +1,13 @@
 //! A provider method whose signature differs from the provider trait's.
 //!
-//! The error is plain Rust: the method's type is incompatible with the trait (`E0053`). The tool
-//! must print what plain `cargo check` prints; under the injected `--verbose`, rustc prints the
-//! generated `__Context__` in the signature note where plain `cargo check` prints `_`.
+//! The error is plain Rust: the method's type is incompatible with the trait (`E0053`), and the
+//! tool leaves it alone. Its text still differs from plain `cargo check`, a documented limitation:
+//! the injected `--verbose` prints the generated `__Context__` in the signature note where rustc
+//! prints `_` (cgp-knowledge-base/cargo-cgp/implementation/driver.md, "Un-eliding the diagnostic").
 //!
-//! CGP error class: none; plain Rust the tool must pass through unchanged.
+//! CGP error class: none; plain Rust the tool passes through.
 
-//@rewrites-falsely: the injected `--verbose` prints the generated `__Context__` where rustc prints `_`
+//@rewrites-falsely: the injected `--verbose` prints the generated `__Context__` where rustc prints `_` (a documented limitation)
 
 use cgp::prelude::*;
 

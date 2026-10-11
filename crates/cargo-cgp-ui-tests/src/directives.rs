@@ -41,7 +41,7 @@ pub const QUALITIES: &[&str] = &["acceptable", "usability", "hidden"];
 pub struct Directives {
     /// Auxiliary crates, from `//@aux-build:` lines, in declaration order.
     pub aux_build: Vec<String>,
-    /// Why a `pass-through/` fixture still rewrites falsely (`//@rewrites-falsely:`).
+    /// Why a `pass-through/` fixture's output still differs from rustc's (`//@rewrites-falsely:`).
     pub rewrites_falsely: Option<String>,
     /// Whether the JSON pass runs (`//@json`).
     pub json: bool,

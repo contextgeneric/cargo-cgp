@@ -71,8 +71,9 @@ declares two:
 Four more directives are used where they apply:
 
 - `//@aux-build: <crate>`: build an auxiliary crate and depend on it (see below).
-- `//@rewrites-falsely: <reason>`: a `pass-through/` fixture the tool still rewrites; its snapshots
-  pin today's output until the fix removes the marker.
+- `//@rewrites-falsely: <reason>`: a `pass-through/` fixture whose output still differs from plain
+  rustc's, for a fix still to come or a documented limitation; its snapshots pin today's output, and
+  a fix that closes the difference removes the marker.
 - `//@json`: also run the JSON pass.
 - `//@env: <KEY>=<VALUE>`: set an environment variable for the tool's runs. The `robustness/`
   fixtures set `CARGO_CGP_TEST_PANIC` this way to make the emitter panic on purpose.

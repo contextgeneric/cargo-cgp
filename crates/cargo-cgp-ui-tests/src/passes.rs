@@ -16,7 +16,7 @@
 //!   compiles.
 //! - [`pass_through_check`]: for a fixture under `pass-through/`, a plain Rust error the tool must
 //!   not touch, the tool's output must equal plain rustc's, unless the fixture is marked
-//!   `//@rewrites-falsely:` until its fix lands.
+//!   `//@rewrites-falsely:` for a fix still to come or a documented limitation.
 //!
 //! [`header_check`] holds every error fixture to its structured header: the `//@quality:` it
 //! declares, and the exact set of `[CGP-Exxx]` codes its `//@codes:` lists, checked against the
@@ -99,7 +99,7 @@ pub fn status_check(plain_ok: bool, tool_ok: bool) -> Outcome {
 /// Check that a `pass-through/` fixture's tool output equals plain rustc's. Both are compared as
 /// [`normalize_baseline`] leaves them, so the baseline's run-to-run spine truncation cannot cause a
 /// difference. A fixture marked `//@rewrites-falsely:` is expected to differ; once it no longer
-/// does, the marker is reported so its fix removes it.
+/// does, the marker is reported so the fix removes it.
 pub fn pass_through_check(baseline: &str, tool: &str, rewrites_falsely: Option<&str>) -> Outcome {
     let equal = baseline.trim_end() == tool.trim_end();
     match (equal, rewrites_falsely) {

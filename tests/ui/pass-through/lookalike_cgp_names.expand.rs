@@ -3,12 +3,12 @@
 //!
 //! The program never uses `cgp`, so its unmet `HasField` bound is plain Rust, and the tool must not
 //! resugar the bound or reword its help into a `#[derive(HasField)]` hint. It still differs from
-//! plain `cargo check`: the injected `--verbose` prints `Symbol<1, Chars<'a', Nil>>` in full where
-//! rustc elides it to `Symbol<1, Chars<..>>`.
+//! plain `cargo check`, a documented limitation: the injected `--verbose` prints
+//! `Symbol<1, Chars<'a', Nil>>` in full where rustc elides it to `Symbol<1, Chars<..>>`.
 //!
-//! CGP error class: none; plain Rust the tool must pass through unchanged.
+//! CGP error class: none; plain Rust the tool passes through.
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Limitation: cgp-knowledge-base/cargo-cgp/implementation/driver.md, "Un-eliding the diagnostic".
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
