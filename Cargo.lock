@@ -62,6 +62,7 @@ dependencies = [
 name = "cargo-cgp-expand"
 version = "0.1.0-alpha"
 dependencies = [
+ "cargo-cgp-error-processing",
  "prettyplease",
  "proc-macro2",
  "quote",

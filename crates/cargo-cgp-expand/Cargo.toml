@@ -25,3 +25,8 @@ proc-macro2 = { workspace = true }
 # Prints the resugared tree back to source. The same printer `cargo-expand` uses, so the
 # formatting a user sees matches what they are used to from that tool.
 prettyplease = { workspace = true }
+
+[dev-dependencies]
+# The agreement test compares this crate's resugaring with the diagnostic text resugaring over the
+# same constructs. A path-only dependency, so `cargo publish` drops it from the published manifest.
+cargo-cgp-error-processing = { path = "../cargo-cgp-error-processing" }
