@@ -1,0 +1,19 @@
+error[E0119]: conflicting implementations of trait `IsProviderFor<_, _, _>` for type `App`
+  --> src/main.rs:53:13
+   |
+50 |         namespace DefaultNamespace;
+   |                   ---------------- first implementation here
+...
+53 |             Key: Value,
+   |             ^^^ conflicting implementation for `App`
+
+error[E0119]: conflicting implementations of trait `DelegateComponent<_>` for type `App`
+  --> src/main.rs:53:13
+   |
+50 |         namespace DefaultNamespace;
+   |                   ---------------- first implementation here
+...
+53 |             Key: Value,
+   |             ^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

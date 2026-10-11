@@ -1,0 +1,77 @@
+error[E0277]: the trait bound `DoA: IsProviderFor<ProviderAComponent, App>` is not satisfied
+  --> src/main.rs:55:9
+   |
+55 |         ProviderAComponent,
+   |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<ProviderAComponent, App>` is not implemented for `DoA`
+  --> src/main.rs:26:16
+   |
+26 | #[cgp_impl(new DoA)]
+   |                ^^^
+help: the trait `IsProviderFor<ProviderAComponent, __Context__>` is conditionally implemented for `DoA`
+  --> src/main.rs:28:1
+   |
+27 |   #[uses(CanB, HasWidth)]
+   |          ----  -------- unsatisfied requirement introduced here: `_: HasWidth`
+   |          |
+   |          unsatisfied requirement introduced here: `_: CanB`
+28 | / impl ProviderA {
+29 | |     fn a(&self) {
+30 | |         let _ = self.width();
+31 | |         self.b();
+32 | |     }
+33 | | }
+   | |_^
+note: required for `App` to implement `IsProviderFor<ProviderAComponent, App>`
+  --> src/main.rs:46:1
+   |
+46 | / delegate_components! {
+47 | |     App {
+   | |     ^^^
+48 | |         ProviderAComponent: DoA,
+49 | |         ProviderBComponent: DoB,
+50 | |     }
+51 | | }
+   | |_^
+note: required for `App` to implement `ProviderA<App>`
+  --> src/main.rs:11:1
+   |
+11 | #[cgp_component(ProviderA)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanA`
+  --> src/main.rs:11:1
+   |
+11 | #[cgp_component(ProviderA)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | pub trait CanA {
+   |           ^^^^
+   = note: 2 redundant requirements hidden
+   = note: required for `App` to implement `IsProviderFor<ProviderBComponent, App>`
+note: required for `App` to implement `ProviderB<App>`
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_component(ProviderB)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanB`
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_component(ProviderB)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | pub trait CanB {
+   |           ^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `DoA` to implement `IsProviderFor<ProviderAComponent, App>`
+   = note: required for `App` to implement `CanUseComponent<ProviderAComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:53:1
+   |
+53 | / check_components! {
+54 | |     App {
+55 | |         ProviderAComponent,
+56 | |     }
+57 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

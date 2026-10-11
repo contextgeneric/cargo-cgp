@@ -1,0 +1,15 @@
+error[E0277]: [CGP-E001] the consumer trait `CanHandle<(), u64>` is not implemented for context `App`
+  --> src/main.rs:38:9
+   |
+38 |         HandlerComponent: ((), u64),
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E111] the provider trait `TryComputer` is not implemented for `Double`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanHandle<(), u64>` for context `App`
+             └─ [CGP-E102] provider trait impl `Handler<(), u64>` with context `App` for provider `PromoteComputer<Double>`
+               └─ [CGP-E102] provider trait impl `Handler<(), u64>` with context `App` for provider `PromoteAsync<Double>`
+                 └─ [CGP-E102] provider trait impl `TryComputer<(), u64>` with context `App` for provider `Double`
+                   └─ [CGP-E111] the provider trait `TryComputer` is not implemented for `Double`
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,0 +1,62 @@
+error[E0277]: the trait bound `App: FormatName` is not satisfied
+  --> src/main.rs:44:26
+   |
+44 | impl CheckFormatName for App {}
+   |                          ^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<6, Chars<..>>>` is implemented for it
+  --> src/main.rs:40:9
+   |
+40 |     pub locale: String,
+   |         ^^^^^^
+note: required for `App` to implement `FormatName`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_fn]
+   | ^^^^^^^^^
+25 | pub fn format_name(&self, #[implicit] name: &str) -> String {
+   |        ^^^^^^^^^^^
+note: required by a bound in `CheckFormatName`
+  --> src/main.rs:43:28
+   |
+43 | pub trait CheckFormatName: FormatName {}
+   |                            ^^^^^^^^^^ required by this bound in `CheckFormatName`
+   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: Greeting` is not satisfied
+  --> src/main.rs:47:24
+   |
+47 | impl CheckGreeting for App {}
+   |                        ^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<6, Chars<..>>>` is implemented for it
+  --> src/main.rs:40:9
+   |
+40 |     pub locale: String,
+   |         ^^^^^^
+note: required for `App` to implement `FormatName`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_fn]
+   | ^^^^^^^^^
+25 | pub fn format_name(&self, #[implicit] name: &str) -> String {
+   |        ^^^^^^^^^^^
+note: required for `App` to implement `Greeting`
+  --> src/main.rs:31:1
+   |
+31 | #[cgp_fn]
+   | ^^^^^^^^^
+32 | #[uses(FormatName)]
+   |        ---------- unsatisfied trait bound introduced here
+33 | pub fn greeting(&self) -> String {
+   |        ^^^^^^^^
+note: required by a bound in `CheckGreeting`
+  --> src/main.rs:46:26
+   |
+46 | pub trait CheckGreeting: Greeting {}
+   |                          ^^^^^^^^ required by this bound in `CheckGreeting`
+   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

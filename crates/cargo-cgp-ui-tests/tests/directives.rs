@@ -10,6 +10,8 @@ fn reads_every_directive() {
 //@aux-build: cgp-test-crate-b
 //@rewrites-falsely: the module strip drops the paths
 //@json
+//@codes: CGP-E001 CGP-E106
+//@quality: acceptable
 fn main() {}
 ";
     assert_eq!(
@@ -18,6 +20,8 @@ fn main() {}
             aux_build: vec!["cgp-test-crate-a".into(), "cgp-test-crate-b".into()],
             rewrites_falsely: Some("the module strip drops the paths".into()),
             json: true,
+            codes: Some(vec!["CGP-E001".into(), "CGP-E106".into()]),
+            quality: Some("acceptable".into()),
         }
     );
 }
@@ -53,4 +57,22 @@ fn a_spaced_directive_is_rejected() {
 #[should_panic(expected = "needs a reason")]
 fn a_rewrites_falsely_marker_needs_a_reason() {
     let _ = parse("//@rewrites-falsely:\nfn main() {}\n", "demo.rs");
+}
+
+#[test]
+fn codes_none_is_an_empty_list() {
+    let directives = parse("//@codes: none\nfn main() {}\n", "demo.rs");
+    assert_eq!(directives.codes, Some(Vec::new()));
+}
+
+#[test]
+#[should_panic(expected = "`//@codes:` takes `none` or `CGP-Exxx` codes")]
+fn a_malformed_code_is_rejected() {
+    let _ = parse("//@codes: E0277\nfn main() {}\n", "demo.rs");
+}
+
+#[test]
+#[should_panic(expected = "`//@quality:` takes one of")]
+fn an_unknown_quality_is_rejected() {
+    let _ = parse("//@quality: fine\nfn main() {}\n", "demo.rs");
 }

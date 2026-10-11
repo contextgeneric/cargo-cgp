@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E001] the consumer trait `HasName` is not implemented for context `NameGetterComponent`
+  --> src/main.rs:31:1
+   |
+31 | #[cgp_impl(UseDefault)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E107] context `NameGetterComponent` does not contain any delegate entry for `NameGetterComponent`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `HasName` for context `NameGetterComponent`
+             └─ [CGP-E107] context `NameGetterComponent` does not contain any delegate entry for `NameGetterComponent`
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

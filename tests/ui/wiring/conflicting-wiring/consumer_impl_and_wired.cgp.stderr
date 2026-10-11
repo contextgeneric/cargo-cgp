@@ -1,0 +1,12 @@
+error[E0119]: conflicting implementations of trait `CanGreet` for type `Person`
+  --> src/main.rs:15:1
+   |
+15 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `Person`
+...
+40 | impl CanGreet for Person {
+   | ------------------------ first implementation here
+   |
+   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0119`.

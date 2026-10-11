@@ -1,9 +1,0 @@
-error[E0119]: [CGP-E006] only one namespace can be used for each target type in `delegate_components!`, but `App` uses both `NamespaceA` and `NamespaceB`
-  --> src/main.rs:53:19
-   |
-52 |         namespace NamespaceA;
-   |                   ---------- first implementation here
-53 |         namespace NamespaceB;
-   |                   ^^^^^^^^^^ conflicting implementation for `App`
-
-For more information about this error, try `rustc --explain E0119`.

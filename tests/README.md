@@ -1,203 +1,169 @@
 # cargo-cgp UI tests
 
-This directory holds the UI test fixtures for `cargo-cgp`: small, standalone CGP source files, each
-compiled through the tool and compared against a committed snapshot of its output. It is modeled on
-Clippy's `tests/ui/`, pairing each `.rs` fixture with a blessed expected-output file. These fixtures
-are the canonical reproductions of CGP's post-codegen error classes: those cases were migrated here
-from `cgp`'s former `cgp-compile-fail-tests` suite (since removed), so `cargo-cgp` — the tool that
-rewrites those errors — owns the snapshots of what a reader actually sees. `cgp`'s
-[error catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md) links each
-error class to the fixture here that pins it.
+This directory holds the UI test fixtures for `cargo-cgp`: small, standalone CGP programs, each
+compiled through the tool and compared against committed snapshots of its output. It is modeled on
+Clippy's `tests/ui/`. The fixtures are the canonical reproductions of CGP's post-codegen error
+classes: `cgp`'s
+[error catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md)
+links each class to the fixtures here that pin it.
 
-For how the fixtures fit into the project's overall testing approach — the argument tests, the
-harness mechanics, the toolchain caveat, and the comparison with Clippy — see the
-[Testing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/testing.md) implementation document. This README is the quick
-operational guide.
+For how the fixtures fit into the project's testing (the unit tests, the harness mechanics, the
+toolchain caveat, and the comparison with Clippy), see the
+[Testing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/testing.md)
+implementation document. This README is the quick operational guide.
 
 ## Layout
 
-Fixtures live under [`ui/`](ui), grouped into category directories by the *quality of the output* the
-tool produces for them. Each fixture `<name>.rs` has three siblings: `<name>.cgp.stderr`, the tool's
-rendered output; `<name>.rust.stderr`, what plain `cargo check` prints for the same fixture — the
-untransformed "before" against which the tool's `.cgp.stderr` is the "after"; and `<name>.expand.rs`,
-the Rust the fixture's CGP macros generate, as `cargo cgp expand` shows it. A fixture that compiles
-cleanly has an empty `.cgp.stderr` and an empty `.rust.stderr`, but still has an `.expand.rs`: the two
-`.stderr` files record what the compiler *says* about the code, and `.expand.rs` records the code it
-was actually given, which is usually where the answer to "why does it say that?" is. A snapshot depends only on the
-fixture's *content*, never on its directory (the harness copies each fixture into a throwaway crate's
-`src/main.rs` before compiling), so moving a fixture between categories needs no re-bless.
+Each fixture `<name>.rs` has three snapshots beside it: `<name>.cgp.stderr`, the tool's rendered
+output; `<name>.rust.stderr`, what plain `cargo check` prints for the same program (the
+untransformed "before"); and `<name>.expand.rs`, the Rust the fixture's CGP macros generate, as
+`cargo cgp expand` shows it. A fixture marked `//@json` also has `<name>.cgp.json`, the compiler
+messages of the tool's JSON output. A snapshot depends only on the fixture's content, never on its
+directory, so moving a fixture needs no re-bless.
 
-The categories are:
+**Fixtures are grouped by the error class they reproduce**, so a fixture moves only when its class
+changes, never when the tool's message for it improves. The class directories under [`ui/`](ui)
+mirror the error catalog:
 
-- [`ui/acceptable/`](ui/acceptable) — errors whose root cause the tool already presents well: a
-  coded `[CGP-Exxx]` headline, a plain-language `root cause:` note, a compact dependency tree, and no
-  generated-type scaffolding. This is where an error fixture graduates once it clears the usability
-  bar. It is split into concept sub-directories — `fields/`, `field-types/`, `types/`, `providers/`,
-  `generic/`, `resolution/`, `use-site/`, `use-type/`, `verbosity/`, `duplication/`, `lowering/`, and
-  `wiring/{constrained-key,constraints,duplicate-keys,missing-wiring,namespace-paths,orphan}/` — so no
-  directory grows crowded.
-- [`ui/usability/`](ui/usability) — errors that carry the root cause but bury it in volume, encoding,
-  duplication, or misleading framing (a [usability issue](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md)); the cause is
-  present, so the work is re-presentation. It is split into issue-class sub-directories —
-  `extensible-data/`, `fields/`, `handlers/`, `lowering/`, `misleading/`, `paths/`, `providers/`,
-  `types/`, `use-site/`, and `wiring/{checks,conflicts,constraints,cycles,keys,namespaces}/` — each
-  naming the problem its fixtures expose.
-- [`ui/ok/`](ui/ok) — the clean-compile baseline: correctly-wired programs that check with empty
-  output.
-- [`ui/pass-through/`](ui/pass-through) — plain Rust errors in which nothing CGP is at fault, which
-  the tool must render exactly as plain `cargo check` does; the harness checks the two outputs are
-  equal. A fixture the tool still rewrites carries `//@rewrites-falsely: <reason>` until its fix.
-- [`ui/hidden-root-cause/`](ui/hidden-root-cause) — errors whose root cause cannot be recovered
-  from the output at all, the highest-value class to fix (a [hidden root cause](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/hidden-root-cause.md)).
-  Its one fixture, `foreign_context_error_route`, runs a pipeline on a context defined in an
-  auxiliary crate, where a missing error route never reaches the output.
+- [`ui/checks/`](ui/checks): failures a check trait surfaces, one directory per class
+  (`check-trait-failure/`, `higher-order-provider-layer/`, `ordinary-trait-bound/`,
+  `unregistered-namespace-path/`, `verbose-cascade/`). The largest, `check-trait-failure/`, keeps
+  concept sub-directories such as `fields/`, `providers/`, and `missing-wiring/`.
+- [`ui/hidden/unsatisfied-dependency/`](ui/hidden/unsatisfied-dependency): an unmet dependency
+  reached by calling a method rather than through a check, whose cause plain `cargo check` hides.
+- [`ui/lowering/`](ui/lowering): failures in what a macro lowered the user's input into.
+- [`ui/wiring/`](ui/wiring): structural wiring failures, such as conflicting wiring, orphan-rule
+  violations, cycles, and unconstrained generics.
+- [`ui/uncataloged/`](ui/uncataloged): mistakes the catalog does not cover yet, one directory per
+  class: `used-but-undeclared/` and `wrong-component-half/` (the gap the catalog names),
+  `extensible-data/`, `wiring-keys/`, `implicit-arguments/`, and `macro-defects/` (mistakes a `cgp`
+  macro mishandles).
 
-A fixture's placement follows the sufficiency-and-presentation test in
-[cgp-knowledge-base/cargo-cgp/issues/](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md): if no downstream tool could recover the cause from the
-output, it is `hidden-root-cause/`; if a careful reader could but the output buries it, `usability/`;
-if the output already leads with the cause, `acceptable/`; if the program compiles clean, `ok/`.
+Two more directories hold fixtures that belong to no error class:
 
-## Two sources of fixtures
+- [`ui/ok/`](ui/ok): correctly wired programs that compile clean.
+- [`ui/pass-through/`](ui/pass-through): plain Rust errors in which nothing CGP is at fault, which
+  the tool must render exactly as plain `cargo check` does.
 
-The fixtures come from two origins. The **hand-curated** fixtures are the worked examples and the
-regression pins the knowledge base references — the check-trait-failure family (`base_area_*`,
-`density_*`, `scaled_area_*`, the consumer-call `unsatisfied_dependency`) and the typed-resolver pins
-(`field_type_mismatch*`, `same_name_components`, `generic_area*`, `deep_nesting`, `parallel_branches`,
-`dependency_cascade`, `missing_has_field_derive`, `field_via_deref`, `ordinary_bound_unsatisfied`,
-`mixed_rust_error`, `empty_field_struct`, and the missing-wiring family `basic_missing_wiring`,
-`direct_missing_wiring`, `parallel_missing_wiring`, and the use-site `missing_wiring`), each catalogued under
-[Typed root-cause resolution](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-root-cause-resolution.md#tests). The rest
-were **migrated from `cgp`'s former compile-fail suite** — one fixture per post-codegen error class
-CGP produces — and are now maintained here directly rather than mirrored from anywhere. A migrated
-fixture's `.cgp.stderr` is cargo-cgp's own transformed output, and its `.rust.stderr` is what plain
-`cargo check` prints for the same source; its `//!` header names the
-[CGP error class](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md) it
-reproduces.
+Every fixture name is unique across the tree, so `find tests/ui -name '<name>.rs'` locates any
+fixture.
 
-**No migrated class hides its root cause.** Every imported case carries the concrete cause in
-cargo-cgp's output, so each is either an `acceptable/` case (the cause is presented well) or a
-`usability/` case (the cause is present but buried) — none is a hidden root cause. The sharpest
-confirmation is the consumer-call class. What raw `rustc` shows depends on the compiler: stable
-reports only the `E0599` "method exists but its bounds were not satisfied" and the provider trait,
-while the pinned nightly also names the leaf `HasField` bound, but in a buried note with the field
-name elided. Under cargo-cgp's next-gen solver the leaf bound is recovered and the resolver leads
-with it, so those fixtures sit in
-[`ui/acceptable/use-site/`](ui/acceptable/use-site).
+## The fixture header
 
-## Cross-crate fixtures and the one class with no snapshot
+A fixture opens with a `//!` comment stating what it demonstrates and the mistake behind it, then
+declares **directives**: line comments starting with `//@`, which the compiler ignores and the
+harness reads. Every error fixture (everything outside `ok/` and `pass-through/`) declares two:
 
-Most fixtures are one standalone crate depending only on `cgp`, but a cross-crate scenario — the
-orphan rule, cross-crate coherence — exists only *between* crates, so the harness supports
-**auxiliary crates**. A fixture opts in with a header directive naming a companion crate:
+```rust
+//@quality: acceptable
+//@codes: CGP-E001 CGP-E101 CGP-E106
+```
+
+- `//@quality:` records how well the tool presents the error today: `acceptable` (the tool leads
+  with the cause), `usability` (the cause is present but buried), or `hidden` (the cause is absent
+  from the output). Improving a message changes this field, not the fixture's directory.
+- `//@codes:` lists the exact set of `[CGP-Exxx]` codes the tool's output carries, or `none`. The
+  harness fails a fixture whose output gains or loses a code.
+
+Three more directives are used where they apply:
+
+- `//@aux-build: <crate>`: build an auxiliary crate and depend on it (see below).
+- `//@rewrites-falsely: <reason>`: a `pass-through/` fixture the tool still rewrites; its snapshots
+  pin today's output until the fix removes the marker.
+- `//@json`: also run the JSON pass.
+
+An unknown directive, or a known one written with a space after `//`, is rejected rather than
+ignored.
+
+## The checks
+
+Beside the three snapshot comparisons, each fixture runs these checks:
+
+- **Exit status:** the tool and plain `cargo check` must agree on whether the fixture compiles.
+- **Pass-through:** for a fixture under `pass-through/`, the tool's output must equal plain
+  rustc's.
+- **Header:** an error fixture must declare its quality, and its `//@codes:` must match the output.
+
+A mismatch prints a line diff for each failing pass, and a missing snapshot fails rather than
+passing as empty.
+
+## Cross-crate fixtures
+
+Most fixtures are one standalone crate depending only on `cgp`, but a cross-crate scenario, such as
+the orphan rule or cross-crate coherence, exists only *between* crates, so the harness supports
+**auxiliary crates**. A fixture opts in with a directive naming a companion crate:
 
 ```rust
 //@aux-build: cgp-test-crate-a
 ```
 
 The named crate's source lives under
-[`crates/cargo-cgp-ui-tests/auxiliary/`](../crates/cargo-cgp-ui-tests/auxiliary); the harness
+[`crates/cargo-cgp-ui-tests/auxiliary/`](../crates/cargo-cgp-ui-tests/auxiliary). The harness
 materializes it against the sibling `cgp` checkout (generating its manifest so its `cgp` path
 resolves) and adds it as a path dependency of the throwaway crate before compiling. A fixture may
-declare several directives. Two aux crates carry the cross-crate wiring surface, migrated from
-`cgp`: `cgp-test-crate-a` (upstream — a foreign namespace, component, and getter) and
-`cgp-test-crate-b` (downstream — the orphan-*safe* wirings against it). They back two kinds of
-fixture:
+declare several. The auxiliary crates and the fixtures they back:
 
-- **The three orphan-rule failures** — `default_impl_foreign_component`,
-  `default_impl_foreign_prefix_path`, and `reopen_foreign_namespace`, in
-  [`ui/acceptable/wiring/orphan/`](ui/acceptable/wiring/orphan) — each `//@aux-build: cgp-test-crate-a`
-  so the `E0210` orphan violation can arise against a foreign namespace. cargo-cgp reshapes each into
-  a `[CGP-E011]` header naming the foreign namespace and key, with the ownership fix in a `help`.
-- **The positive counterpart** — [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs) builds
-  `cgp-test-crate-b` (and transitively `cgp-test-crate-a`) to confirm every orphan-*safe* cross-crate
-  impl compiles cleanly.
+- `cgp-test-crate-a` (upstream: a foreign namespace, component, and getter) and `cgp-test-crate-b`
+  (downstream: the orphan-safe wirings against it). They back the three orphan-rule failures in
+  [`ui/wiring/orphan-rule/`](ui/wiring/orphan-rule), which `cargo-cgp` reshapes into
+  `[CGP-E011]`, and the clean [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs).
+- `cgp-test-foreign-pipeline`: a pipeline context and its wiring for
+  [`foreign_context_error_route`](ui/hidden/unsatisfied-dependency/foreign_context_error_route.rs),
+  whose cause is lost because the context is foreign (its quality is `hidden`).
+- `cgp-test-dispatch-traits` (upstream: `#[cgp_auto_dispatch]` traits with no implementor, plus a
+  `#[cgp_computer]` and a `#[cgp_producer]`) and `cgp-test-dispatch-shapes` (payloads implementing
+  those traits and an enum over them). They back the clean
+  [`ui/ok/cross_crate_dispatch_enum.rs`](ui/ok/cross_crate_dispatch_enum.rs) and
+  [`ui/ok/cross_crate_dispatch_payloads.rs`](ui/ok/cross_crate_dispatch_payloads.rs).
 
-Another aux crate, `cgp-test-foreign-pipeline`, holds a pipeline context and its wiring for the
-one `ui/hidden-root-cause/` fixture, whose cause is lost because the context is foreign.
-
-Two more aux crates carry the cross-crate surface of the function and dispatch macros:
-`cgp-test-dispatch-traits` (upstream — `#[cgp_auto_dispatch]` traits with no implementor, plus a
-`#[cgp_computer]` and a `#[cgp_producer]`) and `cgp-test-dispatch-shapes` (the middle crate —
-payloads implementing those traits and an enum over them). They back two clean-compile fixtures:
-[`ui/ok/cross_crate_dispatch_enum.rs`](ui/ok/cross_crate_dispatch_enum.rs) implements and dispatches
-the foreign traits over its own payloads and enum, and
-[`ui/ok/cross_crate_dispatch_payloads.rs`](ui/ok/cross_crate_dispatch_payloads.rs) dispatches over
-the middle crate's enum and derives its own enum over the middle crate's payloads.
-
-One upstream class compiles clean under the tool: two namespaces that inherit from each other,
-pinned by [`ui/usability/wiring/namespaces/namespace_inheritance_cycle.rs`](ui/usability/wiring/namespaces/namespace_inheritance_cycle.rs).
-Stable `rustc` rejects it with an `E0275` overflow, but on the pinned nightly both the default solver
-and cargo-cgp's next-generation solver accept it, so both snapshots are empty. This is a *missing*
-error, not a suppressed cause, and a documented limitation of checking with the next solver (see
+One class compiles clean under the tool: two namespaces that inherit from each other, pinned by
+[`namespace_inheritance_cycle`](ui/wiring/namespace-inheritance-cycle/namespace_inheritance_cycle.rs).
+Stable `rustc` rejects it with an `E0275` overflow, but on the pinned nightly both the default
+solver and the next-generation solver accept it, so both snapshots are empty. It is a *missing*
+error rather than a suppressed cause, and a documented limitation of checking with the next solver
+(see
 [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md#choosing-the-trait-solver)).
-The fixture's exit-status check fails if a later nightly makes the two compilers disagree.
+Its exit-status check fails if a later nightly makes the two compilers disagree.
 
 ## Running
 
 The suite is a custom Rust test harness in the [`cargo-cgp-ui-tests`](../crates/cargo-cgp-ui-tests)
-crate (modeled on Clippy's `compile-test`). It checks every fixture through three passes: it runs
-`cargo-cgp` and diffs its stderr against `.cgp.stderr`, it runs plain `cargo check` and diffs its
-stderr against `.rust.stderr` (the untransformed baseline), and it runs `cargo cgp expand` and diffs
-its stdout against `.expand.rs`. Run it with `cargo test`:
+crate, modeled on Clippy's `compile-test`. Run it with `cargo test`:
 
 ```sh
 cargo test -p cargo-cgp-ui-tests            # run the whole suite
 ```
 
-To filter, bless, or print, pass an argument to the harness — target `--test ui` so the flag is not
-also handed to the crate's other tests:
+To filter, bless, print, or list, pass an argument to the harness, targeting `--test ui` so the
+flag is not also handed to the crate's other tests:
 
 ```sh
-cargo test -p cargo-cgp-ui-tests --test ui -- acceptable  # only fixtures whose path contains "acceptable"
-cargo test -p cargo-cgp-ui-tests --test ui -- --bless     # regenerate all three snapshots per fixture
-cargo test -p cargo-cgp-ui-tests --test ui -- -j 4        # check at most 4 fixtures at once
+cargo test -p cargo-cgp-ui-tests --test ui -- wiring/      # only fixtures whose path contains "wiring/"
+cargo test -p cargo-cgp-ui-tests --test ui -- --bless      # regenerate the snapshots
+cargo test -p cargo-cgp-ui-tests --test ui -- -j 4         # check at most 4 fixtures at once
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # raw output of all three passes
+cargo test -q -p cargo-cgp-ui-tests --test ui -- --list | grep ^usability        # the fixtures still to improve
 ```
 
-Beside the three snapshot passes, two checks compare the passes with each other. The tool and plain
-`cargo check` must agree on whether a fixture compiles, and for a fixture under `ui/pass-through/`
-(a plain Rust error the tool must not touch) the tool's output must equal plain rustc's. A mismatch
-prints a line diff for each failing pass, and a missing snapshot fails rather than passing as empty.
-
-A fixture tells the harness about itself with `//@` directives, line comments the compiler ignores:
-
-- `//@aux-build: <crate>`: build an auxiliary crate (see below).
-- `//@rewrites-falsely: <reason>`: a `pass-through/` fixture the tool still rewrites; its snapshots
-  pin today's output until the fix removes the marker.
-- `//@json`: also run the JSON pass, which pins the tool's diagnostics as cargo's JSON stream carries
-  them, in `<name>.cgp.json`.
-
-An unknown directive, or a known one written with a space after `//`, is rejected.
-
-Fixtures are checked in parallel across a pool of workers — one throwaway crate each, so they never
-collide — with `--jobs`/`-j` setting the count (default: the machine's parallelism, capped at 8).
-Each fixture's result prints the moment it finishes, so the run streams live in completion order;
-every line names its fixture. Snapshots are blessed under the toolchain the repository pins, so a
-toolchain bump can require a re-bless.
+Fixtures are checked in parallel across a pool of workers, one throwaway crate each, with
+`--jobs`/`-j` setting the count (default: the machine's parallelism, capped at 8). Each fixture's
+result prints the moment it finishes, so the run streams in completion order. Snapshots are blessed
+under the toolchain the repository pins, so a toolchain bump can require a re-bless.
 
 ## Adding a fixture
 
-Drop a new `<name>.rs` into the category sub-directory under `ui/` its output belongs to — the concept
-group in `acceptable/` if the tool presents its cause well, the issue-class group in `usability/` if
-the cause is buried, or `ok/` for a clean compile. Give it a `fn main`, since the harness compiles it
-as a binary, and open it with a `//!` comment stating what the scenario demonstrates, which
-[CGP error class](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md) it
-reproduces, and — for a problem case — the [issue](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md) it exposes. `cgp` is
-available to every fixture, so a fixture may `use cgp::prelude::*;` with no setup; for a cross-crate
-scenario, add a `//@aux-build: <crate>` directive (see above). Then run
-`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes all three snapshots) and review
-them before committing. The `.expand.rs` is worth reading as carefully as the `.stderr` pair: it shows
-the code the fixture's macros generate, so a surprise there — a construct left as a raw type-level
-spine, say — is a finding of its own.
+Put a new `<name>.rs` in the directory of the error class it reproduces (or `ok/` for a clean
+compile, `pass-through/` for a plain Rust error), with a name no other fixture uses. Give it a
+`fn main`, since the harness compiles it as a binary. Open it with a `//!` comment stating what the
+scenario demonstrates and the mistake behind it, linking the
+[CGP error class](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md)
+it reproduces and, for a problem case, the
+[issue](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md)
+it exposes. Follow it with the `//@quality:` and `//@codes:` directives. `cgp` is available to every
+fixture, so a fixture may `use cgp::prelude::*;` with no setup.
 
-## Maintaining the migrated fixtures
-
-These fixtures are owned by `cargo-cgp` — there is no upstream suite to re-copy from (the migration
-was one-way, and `cgp`'s `cgp-compile-fail-tests` has been removed). Change a fixture like any other:
-edit the `.rs` and re-bless. When `cgp` changes a construct in a way that alters one of these error
-classes, the [sync rule](../AGENTS.md#the-sibling-projects) applies in both directions —
-update the fixture here and the class doc in `cgp`'s error catalog together. One historical note: two
-fixtures were renamed on migration to avoid a collision, since `duplicate_path_key` existed under two
-CGP constructs — `namespace_duplicate_path_key` (reshaped into `[CGP-E008]`) and
-`delegate_duplicate_path_key` (reshaped into `[CGP-E004]`), both in
-[`ui/acceptable/wiring/namespace-paths/`](ui/acceptable/wiring/namespace-paths).
+Then run `cargo test -p cargo-cgp-ui-tests --test ui -- --bless`, which writes the snapshots, and
+review them before committing. The `.expand.rs` is worth reading as carefully as the `.stderr` pair:
+it shows the code the fixture's macros generate, so a surprise there, such as a construct left as a
+raw type-level spine, is a finding of its own. When a `cgp` change alters one of these error
+classes, update the fixture here and the class document in the error catalog together.

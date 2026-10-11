@@ -1,0 +1,12 @@
+error[E0782]: expected a type, found a trait
+  --> src/main.rs:42:9
+   |
+42 |         CanGreet: GreetHello,
+   |         ^^^^^^^^
+   |
+help: you can add the `dyn` keyword if you want a trait object
+   |
+42 |         dyn CanGreet: GreetHello,
+   |         +++
+
+For more information about this error, try `rustc --explain E0782`.

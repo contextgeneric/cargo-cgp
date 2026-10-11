@@ -1,0 +1,109 @@
+error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
+  --> src/main.rs:89:9
+   |
+89 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<6, cgp::prelude::Chars<..>>>` is not implemented for `Rectangle`
+  --> src/main.rs:69:1
+   |
+69 | pub struct Rectangle {
+   | ^^^^^^^^^^^^^^^^^^^^
+help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
+  --> src/main.rs:70:9
+   |
+70 |     pub mass: f64,
+   |         ^^^^ `HasField<Symbol<4, Chars<..>>>`
+71 |     pub width: f64,
+   |         ^^^^^ `HasField<Symbol<5, Chars<..>>>`
+note: required for `Rectangle` to implement `HasRectangleFields`
+  --> src/main.rs:36:1
+   |
+36 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+37 | pub trait HasRectangleFields {
+   |           ^^^^^^^^^^^^^^^^^^
+note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:48:1
+   |
+48 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+51 |     Self: HasRectangleFields,
+   |           ------------------ unsatisfied trait bound introduced here
+   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:87:1
+   |
+87 | / check_components! {
+88 | |     Rectangle {
+89 | |         AreaCalculatorComponent,
+90 | |         DensityCalculatorComponent,
+91 | |     }
+92 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Rectangle: CanUseComponent<DensityCalculatorComponent>` is not satisfied
+  --> src/main.rs:90:9
+   |
+90 |         DensityCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<6, cgp::prelude::Chars<..>>>` is not implemented for `Rectangle`
+  --> src/main.rs:69:1
+   |
+69 | pub struct Rectangle {
+   | ^^^^^^^^^^^^^^^^^^^^
+help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
+  --> src/main.rs:70:9
+   |
+70 |     pub mass: f64,
+   |         ^^^^ `HasField<Symbol<4, Chars<..>>>`
+71 |     pub width: f64,
+   |         ^^^^^ `HasField<Symbol<5, Chars<..>>>`
+note: required for `Rectangle` to implement `HasRectangleFields`
+  --> src/main.rs:36:1
+   |
+36 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+37 | pub trait HasRectangleFields {
+   |           ^^^^^^^^^^^^^^^^^^
+note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:48:1
+   |
+48 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+51 |     Self: HasRectangleFields,
+   |           ------------------ unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `Rectangle` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+note: required for `Rectangle` to implement `AreaCalculator<Rectangle>`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Rectangle` to implement `CanCalculateArea`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+27 | pub trait CanCalculateArea {
+   |           ^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `DensityFromMassField` to implement `IsProviderFor<DensityCalculatorComponent, Rectangle>`
+   = note: required for `Rectangle` to implement `CanUseComponent<DensityCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:87:1
+   |
+87 | / check_components! {
+88 | |     Rectangle {
+89 | |         AreaCalculatorComponent,
+90 | |         DensityCalculatorComponent,
+91 | |     }
+92 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

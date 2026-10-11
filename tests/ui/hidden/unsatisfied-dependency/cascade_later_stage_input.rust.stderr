@@ -1,0 +1,85 @@
+error[E0277]: the trait bound `App: CanHandle<Hex, ByteStream>` is not satisfied
+   --> src/main.rs:135:9
+    |
+135 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |         ^^^^^^ unsatisfied trait bound
+    |
+help: the trait `CanHandle<Hex, ByteStream>` is not implemented for `App`
+   --> src/main.rs:126:1
+    |
+126 | pub struct App {}
+    | ^^^^^^^^^^^^^^
+note: required for `Call<Hex>` to implement `IsProviderFor<HandlerComponent, App, (Prog, ByteStream)>`
+   --> src/main.rs:61:1
+    |
+ 61 | #[cgp_impl(new Call<InCode>)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 64 |     Self: CanHandle<InCode, Input, Output = Output>,
+    |                                    --------------- unsatisfied trait bound introduced here
+    = note: 4 redundant requirements hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Prog, _)>`
+    = note: required for `App` to implement `Handler<App, Prog, _>`
+    = note: required for `App` to implement `CanHandle<Prog, _>`
+    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: CanHandle<Prog, _>` is not satisfied
+   --> src/main.rs:135:16
+    |
+135 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |         ------ ^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |         |
+    |         required by a bound introduced by this call
+    |
+help: the trait `Handler<App, Hex, ByteStream>` is not implemented for `App`
+   --> src/main.rs:126:1
+    |
+126 | pub struct App {}
+    | ^^^^^^^^^^^^^^
+    = help: the following other types implement trait `Handler<__Context__, Code, Input>`:
+              `BuildAndMerge<Provider>` implements `Handler<Context, Code, Builder>`
+              `BuildAndSetField<Tag, Provider>` implements `Handler<Context, Code, Builder>`
+              `BuildWithHandlers<Output, Handlers>` implements `Handler<Context, Code, Input>`
+              `Call<InCode>` implements `Handler<__Context__, OutCode, Input>`
+              `ComposeHandlers<ProviderA, ProviderB>` implements `Handler<Context, Code, Input>`
+              `HandleFetch` implements `Handler<__Context__, Fetch, Input>`
+              `HandleHex` implements `Handler<__Context__, Hex, Input>`
+              `Promote<Provider>` implements `Handler<Context, Code, Input>`
+            and 8 others
+    = note: required for `App` to implement `CanHandle<Hex, ByteStream>`
+note: required for `Call<Hex>` to implement `IsProviderFor<HandlerComponent, App, (Prog, ByteStream)>`
+   --> src/main.rs:61:1
+    |
+ 61 | #[cgp_impl(new Call<InCode>)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 64 |     Self: CanHandle<InCode, Input, Output = Output>,
+    |                                    --------------- unsatisfied trait bound introduced here
+    = note: 4 redundant requirements hidden
+    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Prog, _)>`
+    = note: required for `App` to implement `Handler<App, Prog, _>`
+    = note: 1 redundant requirement hidden
+    = note: required for `App` to implement `CanHandle<Prog, _>`
+    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the `?` operator can only be applied to values that implement `Try`
+   --> src/main.rs:135:5
+    |
+135 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `?` operator cannot be applied to type `<impl Future<Output = Result<_, _>> as Future>::Output`
+    |
+    = help: the nightly-only, unstable trait `Try` is not implemented for `<impl Future<Output = Result<_, _>> as Future>::Output`
+
+error[E0277]: the `?` operator can only be used in an async function that returns `Result` or `Option` (or another type that implements `FromResidual`)
+   --> src/main.rs:135:5
+    |
+134 |   async fn run_app(app: &App) -> Result<(), String> {
+    |  ___________________________________________________-
+135 | |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+    | |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot use the `?` operator in an async function that returns `<impl Future<Output = Result<_, _>> as Future>::Output`
+136 | |     Ok(())
+137 | | }
+    | |_- this function should return `Result` or `Option` to accept `?`
+    |
+
+For more information about this error, try `rustc --explain E0277`.

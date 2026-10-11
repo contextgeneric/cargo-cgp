@@ -1,0 +1,10 @@
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:24:6
+   |
+22 | #[cgp_impl(new ShowWithDisplay)]
+   | -------------------------------- help: remove the unused type parameter `T`
+23 | #[default_impl(String in DefaultImpls1<ShowImplComponent>)]
+24 | impl<T: Display> ShowImpl<T> {
+   |      ^ unconstrained type parameter
+
+For more information about this error, try `rustc --explain E0207`.

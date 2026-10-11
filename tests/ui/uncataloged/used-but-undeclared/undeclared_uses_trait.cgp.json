@@ -1,0 +1,30 @@
+[
+  {
+    "children": [
+      {
+        "level": "help",
+        "message": "declare it as a dependency with `#[uses(GetCount)]`",
+        "spans": []
+      }
+    ],
+    "code": "E0599",
+    "level": "error",
+    "message": "[CGP-E012] the trait `GetCount` is used but not declared as a dependency",
+    "spans": [
+      {
+        "column": 46,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 48,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [],
+    "code": null,
+    "level": "failure-note",
+    "message": "For more information about this error, try `rustc --explain E0599`.",
+    "spans": []
+  }
+]

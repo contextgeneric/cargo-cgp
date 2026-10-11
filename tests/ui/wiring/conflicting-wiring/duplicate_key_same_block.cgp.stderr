@@ -1,0 +1,9 @@
+error[E0119]: [CGP-E004] duplicate wiring for component `GreeterComponent` on `Person`
+  --> src/main.rs:43:9
+   |
+42 |         GreeterComponent: GreetHello,
+   |         ---------------- first implementation here
+43 |         GreeterComponent: GreetGoodbye,
+   |         ^^^^^^^^^^^^^^^^ conflicting implementation for `Person`
+
+For more information about this error, try `rustc --explain E0119`.

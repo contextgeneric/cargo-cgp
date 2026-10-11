@@ -1,0 +1,27 @@
+error[E0275]: overflow evaluating the requirement `App: CanUseComponent<ErrorRaiserComponent, ParseIntError>`
+  --> src/main.rs:34:9
+   |
+34 |         ErrorRaiserComponent: ParseIntError,
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:32:1
+   |
+32 | / check_components! {
+33 | |     App {
+34 | |         ErrorRaiserComponent: ParseIntError,
+35 | |     }
+36 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0433]: cannot find module or crate `backend` in this scope
+  --> src/main.rs:26:45
+   |
+26 |         ErrorTypeProviderComponent: UseType<backend::Error>,
+   |                                             ^^^^^^^ use of unresolved module or unlinked crate `backend`
+   |
+   = help: if you wanted to use a crate named `backend`, use `cargo add backend` to add it to your `Cargo.toml`
+
+Some errors have detailed explanations: E0275, E0433.
+For more information about an error, try `rustc --explain E0275`.

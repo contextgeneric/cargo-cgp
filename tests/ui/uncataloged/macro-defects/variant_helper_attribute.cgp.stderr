@@ -1,0 +1,16 @@
+error: cannot find attribute `default` in this scope
+  --> src/main.rs:18:7
+   |
+18 |     #[default]
+   |       ^^^^^^^
+   |
+help: `default` is an attribute that can be used by the derive macro `Default`, you might be missing a `derive` attribute
+   |
+17 + #[derive(Default)]
+18 | pub enum Mode {
+   |
+help: consider adding a derive
+   |
+17 + #[derive(Default)]
+18 | pub enum Mode {
+   |

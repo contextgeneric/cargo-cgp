@@ -1,0 +1,10 @@
+error[E0119]: [CGP-E005] `App` cannot wire `@app.GreeterComponent.*` that is already set through `AppNamespace`
+  --> src/main.rs:60:10
+   |
+58 |         namespace AppNamespace;
+   |                   ------------ first implementation here
+59 |
+60 |         @app.GreeterComponent: GreetBye,
+   |          ^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

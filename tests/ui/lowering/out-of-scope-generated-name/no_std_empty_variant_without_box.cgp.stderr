@@ -1,0 +1,12 @@
+error[E0433]: cannot find type `Box` in this scope
+  --> src/main.rs:23:5
+   |
+23 |     Closed,
+   |     ^^^^^^ use of undeclared type `Box`
+   |
+help: consider importing this struct
+   |
+18 + use std::boxed::Box;
+   |
+
+For more information about this error, try `rustc --explain E0433`.

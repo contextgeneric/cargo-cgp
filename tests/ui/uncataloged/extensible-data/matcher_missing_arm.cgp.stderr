@@ -1,0 +1,47 @@
+error[E0277]: the trait bound `__PartialShape<IsVoid, IsPresent>: FinalizeExtract` is not satisfied
+  --> src/main.rs:55:5
+   |
+55 | /     MatchWithHandlers::<
+56 | |         Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>],
+57 | |     >::compute(&(), PhantomData::<()>, shape)
+   | |_____^ unsatisfied trait bound
+   |
+help: the trait `FinalizeExtract` is not implemented for `__PartialShape<IsVoid, IsPresent>`
+  --> src/main.rs:27:1
+   |
+27 | pub enum Shape {
+   | ^^^^^^^^^^^^^^
+help: the trait `FinalizeExtract` is implemented for `__PartialShape<IsVoid, IsVoid>`
+  --> src/main.rs:27:10
+   |
+27 | pub enum Shape {
+   |          ^^^^^
+   = note: required for the provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>]>` to implement the provider trait `Computer` for the context `()`
+note: required by a bound in `compute`
+  --> $CGP/crates/extra/cgp-handler/src/components/computer.rs:8:1
+   |
+ 8 | #[cgp_component(Computer)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `compute`
+   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `__PartialShape<IsVoid, IsPresent>: FinalizeExtract` is not satisfied
+  --> src/main.rs:55:5
+   |
+55 | /     MatchWithHandlers::<
+56 | |         Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>],
+57 | |     >::compute(&(), PhantomData::<()>, shape)
+   | |_____________________________________________^ unsatisfied trait bound
+   |
+help: the trait `FinalizeExtract` is not implemented for `__PartialShape<IsVoid, IsPresent>`
+  --> src/main.rs:27:1
+   |
+27 | pub enum Shape {
+   | ^^^^^^^^^^^^^^
+help: the trait `FinalizeExtract` is implemented for `__PartialShape<IsVoid, IsVoid>`
+  --> src/main.rs:27:10
+   |
+27 | pub enum Shape {
+   |          ^^^^^
+   = note: required for `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>]>` to implement `Computer<(), (), Shape>`
+
+For more information about this error, try `rustc --explain E0277`.

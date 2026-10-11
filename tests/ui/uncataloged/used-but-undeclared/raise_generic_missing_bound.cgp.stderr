@@ -1,0 +1,9 @@
+error[E0599]: [CGP-E016] the inner provider `__Context__` is used but not imported
+  --> src/main.rs:26:19
+   |
+26 |         Err(Self::raise_error("failed".to_owned()))
+   |                   ^^^^^^^^^^^
+   |
+   = help: import it with `#[use_provider(__Context__: ErrorRaiser)]`
+
+For more information about this error, try `rustc --explain E0599`.

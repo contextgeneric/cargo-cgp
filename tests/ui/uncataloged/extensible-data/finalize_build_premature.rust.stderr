@@ -1,0 +1,16 @@
+error[E0599]: no method named `finalize_build` found for struct `__PartialPerson<__F0__, __F1__>` in the current scope
+  --> src/main.rs:27:10
+   |
+19 | pub struct Person {
+   | ----------------- method `finalize_build` not found for this struct
+...
+25 |     let _: Person = Person::builder()
+26 |         .build_field(PhantomData::<Symbol!("first_name")>, "Alice".to_owned())
+27 |         .finalize_build();
+   |          ^^^^^^^^^^^^^^ method not found in `__PartialPerson<IsPresent, IsNothing>`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `finalize_build`, perhaps you need to implement it:
+           candidate #1: `cgp::prelude::FinalizeBuild`
+
+For more information about this error, try `rustc --explain E0599`.

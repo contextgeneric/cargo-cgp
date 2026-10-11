@@ -1,0 +1,13 @@
+error[E0271]: [CGP-E017] expected the abstract type `Error` of `HasErrorType` on `App` to be `Error`, but found `String`
+  --> src/main.rs:30:9
+   |
+30 |         ErrorRaiserComponent: io::Error,
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: wire `ErrorTypeProviderComponent` to `UseType<Error>` in the wiring for `App`, or change the provider to work with `String`
+   = note: this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanRaiseError<Error>` for context `App`
+             └─ [CGP-E102] provider trait impl `ErrorRaiser<Error>` with context `App` for provider `RaiseBackendError`
+               └─ [CGP-E112] abstract type `Error` of `HasErrorType` on `App` is `String`, but `Error` is required
+
+For more information about this error, try `rustc --explain E0271`.

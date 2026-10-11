@@ -48,6 +48,11 @@ pub fn run(args: Vec<String>) {
         std::process::exit(2);
     }
 
+    if options.list {
+        print!("{}", list_block(&fixtures_dir, &fixtures));
+        return;
+    }
+
     let cgp_root = paths::cgp_root();
     let sysroot = paths::sysroot();
     let jobs = options
@@ -166,6 +171,18 @@ fn run_passes(
         ("status", passes::status_check(rust.success, cgp.success)),
     ];
 
+    let exempt = name.starts_with("ok/") || name.starts_with("pass-through/");
+    let tool_output = normalize::normalize(
+        &cgp.stderr,
+        paths.harness_crate,
+        paths.cgp_root,
+        paths.sysroot,
+    );
+    outcomes.push((
+        "header",
+        passes::header_check(exempt, &directives, &tool_output),
+    ));
+
     if name.starts_with("pass-through/") {
         let baseline = |stderr: &str| {
             normalize::normalize_baseline(
@@ -237,4 +254,26 @@ fn print_block(harness_crate: &Path, fixture: &Path, name: &str) -> String {
         rust.stderr,
         expand,
     )
+}
+
+/// List the selected fixtures with their declared quality and codes, one per line, without
+/// compiling anything. The quality leads each line, so `--list | grep ^usability` finds every
+/// fixture whose presentation still needs work.
+fn list_block(fixtures_dir: &Path, fixtures: &[PathBuf]) -> String {
+    let mut out = String::new();
+    for fixture in fixtures {
+        let name = fixture
+            .strip_prefix(fixtures_dir)
+            .unwrap_or(fixture)
+            .display();
+        let directives = directives::read(fixture);
+        let quality = directives.quality.as_deref().unwrap_or("-");
+        let codes = match &directives.codes {
+            Some(codes) if codes.is_empty() => "none".to_owned(),
+            Some(codes) => codes.join(" "),
+            None => "-".to_owned(),
+        };
+        out.push_str(&format!("{quality:<11} {name}  [{codes}]\n"));
+    }
+    out
 }

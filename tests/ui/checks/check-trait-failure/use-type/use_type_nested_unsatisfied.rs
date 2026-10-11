@@ -1,0 +1,55 @@
+//! A *nested* foreign `#[use_type(HasTypes.Types, HasScalarType.Scalar in Types)]`
+//! import adds the two-hop bound `<Self as HasTypes>::Types: HasScalarType` to the
+//! generated trait, so a context whose `Types` associated type does not implement
+//! `HasScalarType` is rejected, which shows the transitively grounded foreign bound is
+//! enforced at depth, not just for a directly named parameter.
+//!
+//! CGP emits the grounded bound and defers the check to `rustc`, which reports the missing
+//! `NoScalar: HasScalarType` at the site that requires `App: GetScalar`.
+//!
+//! See cgp-knowledge-base/cgp/reference/attributes/use_type.md and
+//! cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md.
+
+//@quality: acceptable
+//@codes: CGP-E001 CGP-E101 CGP-E107
+
+use cgp::prelude::*;
+
+#[cgp_type]
+pub trait HasTypes {
+    type Types;
+}
+
+#[cgp_type]
+pub trait HasScalarType {
+    type Scalar;
+}
+
+// The generated `GetScalar` trait becomes, after the rewrite:
+//   pub trait GetScalar: HasTypes
+//   where <Self as HasTypes>::Types: HasScalarType
+//   { fn get_scalar(&self) -> <<Self as HasTypes>::Types as HasScalarType>::Scalar; }
+#[cgp_fn]
+#[use_type(HasTypes.Types, HasScalarType.Scalar in Types)]
+pub fn get_scalar(&self) -> Scalar {
+    todo!()
+}
+
+// `App::Types` is `NoScalar`, which deliberately does not implement `HasScalarType`.
+pub struct NoScalar;
+
+pub struct App;
+
+impl HasTypes for App {
+    type Types = NoScalar;
+}
+
+// Requires `App: GetScalar`, which the blanket impl reduces to
+// `<App as HasTypes>::Types: HasScalarType`, i.e. `NoScalar: HasScalarType`.
+fn assert_app()
+where
+    App: GetScalar,
+{
+}
+
+fn main() {}

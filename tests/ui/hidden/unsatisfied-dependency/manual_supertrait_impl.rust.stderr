@@ -1,0 +1,99 @@
+error[E0277]: the trait bound `App: CanCalculateArea<Rectangle>` is not satisfied
+  --> src/main.rs:70:45
+   |
+70 | impl CanCalculateAreaChecked<Rectangle> for App {
+   |                                             ^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<12, cgp::prelude::Chars<..>>>` is not implemented for `App`
+  --> src/main.rs:51:1
+   |
+51 | pub struct App;
+   | ^^^^^^^^^^^^^^
+note: required for `App` to implement `HasScaleFactor`
+  --> src/main.rs:37:1
+   |
+37 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+38 | pub trait HasScaleFactor {
+   |           ^^^^^^^^^^^^^^
+note: required for `ScaleArea` to implement `IsProviderFor<AreaCalculatorComponent, App, Rectangle>`
+  --> src/main.rs:43:1
+   |
+43 | #[cgp_impl(new ScaleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+44 | #[uses(HasScaleFactor)]
+   |        -------------- unsatisfied trait bound introduced here
+   = note: 2 redundant requirements hidden
+   = note: required for `App` to implement `IsProviderFor<AreaCalculatorComponent, App, Rectangle>`
+note: required for `App` to implement `AreaCalculator<App, Rectangle>`
+  --> src/main.rs:32:1
+   |
+32 |   #[cgp_component(AreaCalculator)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+33 | | pub trait CanCalculateArea<Shape> {
+   | |_________________________________^
+note: required for `App` to implement `CanCalculateArea<Rectangle>`
+  --> src/main.rs:32:1
+   |
+32 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+33 | pub trait CanCalculateArea<Shape> {
+   |           ^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `CanCalculateAreaChecked`
+  --> src/main.rs:66:43
+   |
+66 | pub trait CanCalculateAreaChecked<Shape>: CanCalculateArea<Shape> {
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `CanCalculateAreaChecked`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `area` exists for reference `&App`, but its trait bounds were not satisfied
+  --> src/main.rs:72:14
+   |
+51 | pub struct App;
+   | -------------- doesn't satisfy `App: CanCalculateArea<_>` or `_: HasField<Symbol<12, Chars<..>>>`
+...
+72 |         self.area(shape)
+   |              ^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `AreaCalculator`
+  --> src/main.rs:34:5
+   |
+34 |     fn area(&self, shape: PhantomData<Shape>) -> f64;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: trait bound `&App: AreaCalculator<&App, _>` was not satisfied
+  --> src/main.rs:32:17
+   |
+32 |   #[cgp_component(AreaCalculator)]
+   |  _----------------^---------------
+33 | | pub trait CanCalculateArea<Shape> {
+   | |           ----------------------^
+   | |_________________________________|
+   |                                   unsatisfied trait bound introduced here
+note: trait bound `App: cgp::prelude::HasField<Symbol<12, cgp::prelude::Chars<..>>>` was not satisfied
+  --> src/main.rs:37:1
+   |
+37 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+38 | pub trait HasScaleFactor {
+   |           ^^^^^^^^^^^^^^
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+   |
+46 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `CanCalculateArea` defines an item `area`, perhaps you need to implement it
+  --> src/main.rs:33:1
+   |
+33 | pub trait CanCalculateArea<Shape> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+   |
+72 -         self.area(shape)
+72 +         App::area(shape)
+   |
+
+Some errors have detailed explanations: E0277, E0599.
+For more information about an error, try `rustc --explain E0277`.

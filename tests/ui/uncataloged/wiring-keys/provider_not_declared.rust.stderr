@@ -1,0 +1,20 @@
+error[E0425]: cannot find type `GreetHello` in this scope
+  --> src/main.rs:20:12
+   |
+20 | #[cgp_impl(GreetHello)]
+   |            ^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `GreetHello` in this scope
+  --> src/main.rs:29:27
+   |
+29 |         GreeterComponent: GreetHello,
+   |                           ^^^^^^^^^^ not found in this scope
+
+error[E0275]: overflow evaluating the requirement `Person: CanGreet`
+  --> src/main.rs:34:12
+   |
+34 |     Person.greet();
+   |            ^^^^^
+
+Some errors have detailed explanations: E0275, E0425.
+For more information about an error, try `rustc --explain E0275`.

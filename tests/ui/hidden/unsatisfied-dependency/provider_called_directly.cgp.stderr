@@ -1,0 +1,24 @@
+error[E0599]: the associated function or constant `compute` exists for struct `PipeHandlers<Product![Increment, Increment]>`, but its trait bounds were not satisfied
+   --> src/main.rs:24:61
+    |
+ 17 | pub fn increment(value: u8) -> Result<u8, &'static str> {
+    |        --------- doesn't satisfy `_: IsProviderFor<ComputerComponent, _, (_, Result<u8, &str>)>`
+...
+ 24 |     let _ = PipeHandlers::<Product![Increment, Increment]>::compute(&(), PhantomData::<()>, 1u8);
+    |                                                             ^^^^^^^ associated function or constant cannot be called due to unsatisfied trait bounds
+    |
+   ::: $CGP/crates/extra/cgp-handler/src/providers/pipe.rs:7:1
+    |
+  7 | pub struct PipeHandlers<Providers>(pub PhantomData<Providers>);
+    | ---------------------------------- doesn't satisfy `_: Computer<_, _, _>`
+    |
+    = note: the following trait bounds were not satisfied:
+            `Increment: IsProviderFor<ComputerComponent, _, (_, Result<u8, &'static str>)>`
+            which is required by `PipeHandlers<Product![Increment, Increment]>: Computer<_, _, _>`
+note: the trait `IsProviderFor` must be implemented
+   --> $CGP/crates/core/cgp-component/src/traits/is_provider.rs:120:1
+    |
+120 | pub trait IsProviderFor<Component, Context, Params: ?Sized = ()> {}
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0599`.

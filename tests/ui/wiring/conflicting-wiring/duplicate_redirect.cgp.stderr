@@ -1,0 +1,10 @@
+error[E0119]: [CGP-E008] duplicate redirect for component `FooComponent` on `App`: redirected to both `@app.foo` and `@app.bar`
+  --> src/main.rs:33:9
+   |
+31 |         FooComponent =>
+   |         ------------ first implementation here
+32 |             @app.foo,
+33 |         FooComponent =>
+   |         ^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

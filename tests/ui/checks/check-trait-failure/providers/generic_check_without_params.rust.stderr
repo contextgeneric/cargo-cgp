@@ -1,0 +1,30 @@
+error[E0277]: the trait bound `SquareArea: IsProviderFor<AreaCalculatorComponent, App>` is not satisfied
+  --> src/main.rs:39:9
+   |
+39 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<AreaCalculatorComponent, App, ()>` is not implemented for `SquareArea`
+      but trait `IsProviderFor<AreaCalculatorComponent, App, Square>` is implemented for it
+  --> src/main.rs:23:1
+   |
+23 | / impl AreaCalculator<Square> {
+24 | |     fn area(&self, shape: &Square) -> f64 {
+25 | |         shape.0 * shape.0
+26 | |     }
+27 | | }
+   | |_^
+   = help: for that trait implementation, expected `Square`, found `()`
+   = note: required for `App` to implement `CanUseComponent<AreaCalculatorComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:37:1
+   |
+37 | / check_components! {
+38 | |     App {
+39 | |         AreaCalculatorComponent,
+40 | |     }
+41 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

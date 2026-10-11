@@ -1,0 +1,49 @@
+error[E0599]: the method `greet` exists for struct `Robot`, but its trait bounds were not satisfied
+   --> src/main.rs:35:11
+    |
+ 21 | pub struct Robot;
+    | ---------------- method `greet` not found for this struct because it doesn't satisfy `Robot: CanGreet`
+ 22 |
+ 23 | #[cgp_impl(new GreetPerson)]
+    |                ----------- doesn't satisfy `_: IsProviderFor<GreeterComponent, Robot>`
+...
+ 35 |     Robot.greet();
+    |           ^^^^^ this is an associated function, not a method
+    |
+    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `Greeter`
+   --> src/main.rs:17:5
+    |
+ 17 |     fn greet(&self);
+    |     ^^^^^^^^^^^^^^^^
+note: trait bound `GreetPerson: IsProviderFor<GreeterComponent, Robot>` was not satisfied
+   --> src/main.rs:28:1
+    |
+ 28 | / delegate_components! {
+ 29 | |     Robot {
+    | |     -----
+ 30 | |         GreeterComponent: GreetPerson,
+ 31 | |     }
+ 32 | | }
+    | | ^ unsatisfied trait bound introduced here
+    | |_|
+    |
+note: the trait `IsProviderFor` must be implemented
+   --> $CGP/crates/core/cgp-component/src/traits/is_provider.rs:120:1
+    |
+120 | pub trait IsProviderFor<Component, Context, Params: ?Sized = ()> {}
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `CanGreet` defines an item `greet`, perhaps you need to implement it
+   --> src/main.rs:16:1
+    |
+ 16 | pub trait CanGreet {
+    | ^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+    |
+ 35 -     Robot.greet();
+ 35 +     Robot::greet();
+    |
+
+For more information about this error, try `rustc --explain E0599`.

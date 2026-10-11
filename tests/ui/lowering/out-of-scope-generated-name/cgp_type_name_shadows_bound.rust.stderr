@@ -1,0 +1,12 @@
+error[E0404]: expected trait, found type parameter `Database`
+  --> src/main.rs:37:20
+   |
+25 | pub trait Database: Sized {
+   |           -------- you might have meant to refer to this trait
+...
+37 |     type Database: Database;
+   |          --------  ^^^^^^^^ not a trait
+   |          |
+   |          found this type parameter
+
+For more information about this error, try `rustc --explain E0404`.

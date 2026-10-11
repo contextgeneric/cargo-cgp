@@ -1,0 +1,12 @@
+error[E0119]: [CGP-E007] component `AreaCalculatorComponent` on `App` is redirected to `@AreaCalculatorComponent`
+  --> src/main.rs:43:9
+   |
+35 |         open AreaCalculatorComponent;
+   |              ----------------------- first implementation here
+...
+43 |         AreaCalculatorComponent: UseDelegate<new AreaTable {
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+   |
+   = help: wire the provider `UseDelegate<AreaTable>` with the key `@AreaCalculatorComponent`
+
+For more information about this error, try `rustc --explain E0119`.

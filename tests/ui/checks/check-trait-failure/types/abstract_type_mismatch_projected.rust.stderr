@@ -1,0 +1,33 @@
+error[E0271]: type mismatch resolving `<App as HasTransactionType>::Transaction == Tx<Postgres>`
+  --> src/main.rs:87:9
+   |
+87 |         TransactionNamerComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<App as HasTransactionType>::Transaction == Tx<Postgres>`
+   |
+note: expected this to be `Tx<Postgres>`
+  --> src/main.rs:51:1
+   |
+51 | #[cgp_type]
+   | ^^^^^^^^^^^
+   = note: expected struct `Tx<Postgres>`
+              found struct `Tx<Sqlite>`
+note: required for `NamePooledTransaction` to implement `IsProviderFor<TransactionNamerComponent, App>`
+  --> src/main.rs:64:1
+   |
+64 | #[cgp_impl(new NamePooledTransaction)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+65 | #[use_type(HasDbType.Db, HasTransactionType.{Transaction = Tx<Db>})]
+   |                                              -------------------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<TransactionNamerComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:85:1
+   |
+85 | / check_components! {
+86 | |     App {
+87 | |         TransactionNamerComponent,
+88 | |     }
+89 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_type` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.

@@ -1,0 +1,28 @@
+warning: unused import: `cgp::core::error::ErrorTypeProviderComponent`
+  --> src/main.rs:15:5
+   |
+15 | use cgp::core::error::ErrorTypeProviderComponent;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0271]: type mismatch resolving `<Double as Computer<App, (), &u64>>::Output == _`
+  --> src/main.rs:39:9
+   |
+39 |         ComputerRefComponent: ((), u64),
+   |         ^^^^^^^^^^^^^^^^^^^^ types differ
+   |
+   = note: required for the provider `PromoteRef<Double>` to implement the provider trait `ComputerRef` for the context `App`
+   = note: required for the context `App` to implement the consumer trait `CanComputeRef`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:37:1
+   |
+37 | / check_components! {
+38 | |     App {
+39 | |         ComputerRefComponent: ((), u64),
+40 | |     }
+41 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.

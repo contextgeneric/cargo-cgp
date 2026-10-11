@@ -1,0 +1,35 @@
+error[E0277]: the trait bound `OnlyAbsent: TransformMap<cgp::prelude::IsPresent, cgp::prelude::IsPresent, u16>` is not satisfied
+  --> src/main.rs:35:79
+   |
+35 |     let _ = TransformMapFields::<OnlyAbsent, IsPresent>::transform_map_fields(partial).finalize_build();
+   |             ----------------------------------------------------------------- ^^^^^^^ unsatisfied trait bound
+   |             |
+   |             required by a bound introduced by this call
+   |
+help: the trait `TransformMap<cgp::prelude::IsPresent, IsPresent, _>` is not implemented for `OnlyAbsent`
+      but trait `TransformMap<cgp::prelude::IsNothing, IsPresent, _>` is implemented for it
+  --> src/main.rs:21:1
+   |
+21 | impl<T: Default> TransformMap<IsNothing, IsPresent, T> for OnlyAbsent {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `cgp::prelude::IsNothing`, found `cgp::prelude::IsPresent`
+   = note: required for `Cons<Field<Symbol<4, Chars<..>>, u16>, _>` to implement `TransformMapFieldsImpl<__PartialConfig<IsPresent, IsNothing>, _, _>`
+   = note: required for `__PartialConfig<cgp::prelude::IsPresent, cgp::prelude::IsNothing>` to implement `TransformMapFields<OnlyAbsent, cgp::prelude::IsPresent>`
+
+error[E0277]: the trait bound `OnlyAbsent: TransformMap<cgp::prelude::IsPresent, cgp::prelude::IsPresent, u16>` is not satisfied
+  --> src/main.rs:35:13
+   |
+35 |     let _ = TransformMapFields::<OnlyAbsent, IsPresent>::transform_map_fields(partial).finalize_build();
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `TransformMap<cgp::prelude::IsPresent, IsPresent, _>` is not implemented for `OnlyAbsent`
+      but trait `TransformMap<cgp::prelude::IsNothing, IsPresent, _>` is implemented for it
+  --> src/main.rs:21:1
+   |
+21 | impl<T: Default> TransformMap<IsNothing, IsPresent, T> for OnlyAbsent {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `cgp::prelude::IsNothing`, found `cgp::prelude::IsPresent`
+   = note: required for `Cons<Field<Symbol<4, Chars<..>>, u16>, _>` to implement `TransformMapFieldsImpl<__PartialConfig<IsPresent, IsNothing>, _, _>`
+   = note: required for `__PartialConfig<cgp::prelude::IsPresent, cgp::prelude::IsNothing>` to implement `TransformMapFields<OnlyAbsent, cgp::prelude::IsPresent>`
+
+For more information about this error, try `rustc --explain E0277`.

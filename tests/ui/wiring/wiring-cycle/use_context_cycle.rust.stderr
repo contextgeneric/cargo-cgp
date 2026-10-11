@@ -1,0 +1,18 @@
+error[E0275]: overflow evaluating the requirement `Person: CanUseComponent<GreeterComponent>`
+  --> src/main.rs:43:9
+   |
+43 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+note: required by a bound in `__CheckPerson`
+  --> src/main.rs:41:1
+   |
+41 | / check_components! {
+42 | |     Person {
+43 | |         GreeterComponent,
+44 | |     }
+45 | | }
+   | |_^ required by this bound in `__CheckPerson`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0275`.

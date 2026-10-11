@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E002] the provider trait `Greeter` with context `Person` is not implemented for provider `SayBye`
+  --> src/main.rs:58:9
+   |
+58 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E111] the provider trait `Greeter` is not implemented for `SayBye`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `Person`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `SayBye`
+               └─ [CGP-E111] the provider trait `Greeter` is not implemented for `SayBye`
+
+For more information about this error, try `rustc --explain E0277`.

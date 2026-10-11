@@ -1,0 +1,23 @@
+error[E0277]: the trait bound `App: CanUseComponent<FooProviderComponent>` is not satisfied
+  --> src/main.rs:34:9
+   |
+34 |         FooProviderComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `CanUseComponent<FooProviderComponent>` is not implemented for `App`
+  --> src/main.rs:29:1
+   |
+29 | pub struct App;
+   | ^^^^^^^^^^^^^^
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:32:1
+   |
+32 | / check_components! {
+33 | |     App {
+34 | |         FooProviderComponent,
+35 | |     }
+36 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

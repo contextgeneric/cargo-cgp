@@ -1,0 +1,10 @@
+error[E0119]: conflicting implementations of trait `cgp::prelude::FromVariant<cgp::prelude::Symbol<6, cgp::prelude::Chars<..>>>` for type `Shape`
+  --> src/main.rs:25:5
+   |
+25 |     Circle(Circle),
+   |     ^^^^^^ conflicting implementation for `Shape`
+...
+29 | impl FromVariant<Symbol!("Circle")> for Shape {
+   | --------------------------------------------- first implementation here
+
+For more information about this error, try `rustc --explain E0119`.

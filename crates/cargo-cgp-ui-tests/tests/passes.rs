@@ -1,7 +1,10 @@
 //! Tests for the checks that compare passes ([`cargo_cgp_ui_tests::passes`]) and for the JSON
 //! reduction.
 
-use cargo_cgp_ui_tests::passes::{pass_through_check, reduce_json, status_check};
+use cargo_cgp_ui_tests::directives::parse;
+use cargo_cgp_ui_tests::passes::{
+    cgp_codes, header_check, pass_through_check, reduce_json, status_check,
+};
 use cargo_cgp_ui_tests::snapshot::Outcome;
 
 fn is_ok(outcome: &Outcome) -> bool {
@@ -72,4 +75,50 @@ fn reduces_cargo_json_to_compiler_messages() {
             "children": [{"level": "note", "message": "root cause: x", "spans": []}],
         }])
     );
+}
+
+#[test]
+fn collects_the_distinct_codes_in_order() {
+    let output =
+        "error[E0277]: [CGP-E001] x\n  [CGP-E106] y\n  [CGP-E101] z [CGP-E106]\n CGP-E1 short";
+    assert_eq!(cgp_codes(output), ["CGP-E001", "CGP-E101", "CGP-E106"]);
+}
+
+#[test]
+fn the_header_must_list_the_output_codes_exactly() {
+    let header = parse(
+        "//@quality: acceptable\n//@codes: CGP-E001 CGP-E106\n",
+        "demo.rs",
+    );
+    assert!(is_ok(&header_check(
+        false,
+        &header,
+        "[CGP-E106] then [CGP-E001]"
+    )));
+    let text = mismatch(header_check(false, &header, "[CGP-E001] only"));
+    assert!(
+        text.contains("`//@codes: CGP-E001 CGP-E106` but the output carries CGP-E001"),
+        "{text}"
+    );
+}
+
+#[test]
+fn an_error_fixture_must_declare_its_header() {
+    let text = mismatch(header_check(false, &parse("fn main() {}\n", "demo.rs"), ""));
+    assert!(
+        text.contains("no `//@quality:` directive") && text.contains("no `//@codes:` directive"),
+        "{text}"
+    );
+    assert!(is_ok(&header_check(
+        true,
+        &parse("fn main() {}\n", "demo.rs"),
+        ""
+    )));
+}
+
+#[test]
+fn codes_none_requires_an_uncoded_output() {
+    let header = parse("//@quality: usability\n//@codes: none\n", "demo.rs");
+    assert!(is_ok(&header_check(false, &header, "error[E0425]: plain")));
+    assert!(!is_ok(&header_check(false, &header, "[CGP-E010] coded")));
 }

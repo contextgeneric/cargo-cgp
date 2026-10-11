@@ -8,6 +8,10 @@
 //! - `//@rewrites-falsely: <reason>`: a `pass-through/` fixture whose tool output still differs
 //!   from plain rustc's, so its snapshots pin today's output instead of the equality check.
 //! - `//@json`: also run the JSON pass, pinning the diagnostics an editor reads.
+//! - `//@codes: <CGP-Exxx ...>` (or `//@codes: none`): the exact set of `[CGP-Exxx]` codes the
+//!   tool's output carries, checked against it.
+//! - `//@quality: acceptable|usability|hidden`: how well the tool presents the error today:
+//!   the cause is presented well, present but buried, or absent from the output.
 //!
 //! A misspelled directive would be a silent no-op, so an unknown `//@name` is rejected, and so is
 //! a known name written in another comment form (`// @aux-build:` with a space, or `//! @json`):
@@ -18,7 +22,10 @@ use std::fs;
 use std::path::Path;
 
 /// The directive names, as they follow `//@`.
-const NAMES: &[&str] = &["aux-build", "rewrites-falsely", "json"];
+const NAMES: &[&str] = &["aux-build", "rewrites-falsely", "json", "codes", "quality"];
+
+/// The values `//@quality:` accepts.
+pub const QUALITIES: &[&str] = &["acceptable", "usability", "hidden"];
 
 /// The directives one fixture declares.
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -29,6 +36,11 @@ pub struct Directives {
     pub rewrites_falsely: Option<String>,
     /// Whether the JSON pass runs (`//@json`).
     pub json: bool,
+    /// The `[CGP-Exxx]` codes the tool's output must carry, exactly (`//@codes:`); `None` when the
+    /// fixture does not declare them, and an empty list for `//@codes: none`.
+    pub codes: Option<Vec<String>>,
+    /// How well the tool presents the error (`//@quality:`), one of [`QUALITIES`].
+    pub quality: Option<String>,
 }
 
 /// Read a fixture's directives. A missing or unreadable fixture declares none.
@@ -80,7 +92,29 @@ fn apply(directives: &mut Directives, rest: &str, line: &str, name: &str) {
         directives.rewrites_falsely = Some(reason.to_owned());
     } else if rest.trim_end() == "json" {
         directives.json = true;
+    } else if let Some(codes) = rest.strip_prefix("codes:") {
+        let codes: Vec<String> = codes.split_whitespace().map(str::to_owned).collect();
+        let valid =
+            codes == ["none"] || (!codes.is_empty() && codes.iter().all(|code| is_cgp_code(code)));
+        assert!(
+            valid,
+            "`//@codes:` takes `none` or `CGP-Exxx` codes in {name}:\n  {line}"
+        );
+        directives.codes = Some(if codes == ["none"] { Vec::new() } else { codes });
+    } else if let Some(quality) = rest.strip_prefix("quality:") {
+        let quality = quality.trim();
+        assert!(
+            QUALITIES.contains(&quality),
+            "`//@quality:` takes one of {QUALITIES:?} in {name}:\n  {line}"
+        );
+        directives.quality = Some(quality.to_owned());
     } else {
         panic!("unknown `//@` directive in {name}:\n  {line}");
     }
+}
+
+/// Whether `text` is a `CGP-Exxx` code: `CGP-E` followed by three digits.
+fn is_cgp_code(text: &str) -> bool {
+    text.strip_prefix("CGP-E")
+        .is_some_and(|digits| digits.len() == 3 && digits.bytes().all(|b| b.is_ascii_digit()))
 }

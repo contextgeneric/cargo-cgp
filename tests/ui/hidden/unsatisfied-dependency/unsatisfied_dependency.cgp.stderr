@@ -1,0 +1,14 @@
+error[E0599]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `Person`
+  --> src/main.rs:57:12
+   |
+57 |     person.greet();
+   |            ^^^^^
+   |
+   = note: root cause: [CGP-E106] missing field `name` on `Person`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `Person`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
+               └─ [CGP-E105] trait impl `HasName` for `Person`
+                 └─ [CGP-E106] missing field `name` on `Person`
+
+For more information about this error, try `rustc --explain E0599`.

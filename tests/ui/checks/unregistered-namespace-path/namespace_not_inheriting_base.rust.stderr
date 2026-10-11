@@ -1,0 +1,23 @@
+error[E0277]: the trait bound `App: CanUseComponent<GreeterComponent>` is not satisfied
+  --> src/main.rs:44:9
+   |
+44 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `CanUseComponent<GreeterComponent>` is not implemented for `App`
+  --> src/main.rs:32:1
+   |
+32 | pub struct App;
+   | ^^^^^^^^^^^^^^
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:42:1
+   |
+42 | / check_components! {
+43 | |     App {
+44 | |         GreeterComponent,
+45 | |     }
+46 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

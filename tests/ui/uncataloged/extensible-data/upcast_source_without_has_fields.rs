@@ -1,0 +1,31 @@
+//! Upcasting from an enum that derives only `ExtractField`.
+//!
+//! An upcast walks the source's `HasFields` list, so the source needs `#[derive(HasFields)]` too. The
+//! output is "no method named `upcast` found for enum `Small`"; `HasFields` is never mentioned.
+//!
+//! CGP error class: none yet; the extensible-data family
+//! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/extensible-records.md)
+//! is not in the upstream catalog.
+//!
+//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+
+//@quality: usability
+//@codes: none
+
+use cgp::core::field::impls::CanUpcast;
+use cgp::prelude::*;
+
+#[derive(ExtractField)]
+pub enum Small {
+    Foo(u64),
+}
+
+#[derive(CgpData)]
+pub enum Big {
+    Foo(u64),
+    Bar(String),
+}
+
+fn main() {
+    let _ = Small::Foo(1).upcast(PhantomData::<Big>);
+}

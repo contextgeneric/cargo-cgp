@@ -1,0 +1,51 @@
+error[E0599]: the method `name` exists for struct `Person`, but its trait bounds were not satisfied
+  --> src/main.rs:26:44
+   |
+21 | pub struct Person {
+   | ----------------- method `name` not found for this struct because it doesn't satisfy `Person: HasName` or `Person: NameGetter<Person>`
+...
+26 |     let _ = Person { name: String::new() }.name();
+   |                                            ^^^^
+   |                                            |
+   |                                            this is an associated function, not a method
+   |                                            field, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `NameGetter`
+  --> src/main.rs:17:5
+   |
+17 |     fn name(&self) -> &str;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+note: trait bound `Person: NameGetter<Person>` was not satisfied
+  --> src/main.rs:15:1
+   |
+15 | #[cgp_getter]
+   | ^^^^^^^^^^^^^
+16 | pub trait HasName {
+   |           ^^^^^^^
+note: the trait `NameGetter` must be implemented
+  --> src/main.rs:16:1
+   |
+16 | / pub trait HasName {
+17 | |     fn name(&self) -> &str;
+18 | | }
+   | |_^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `HasName` defines an item `name`, perhaps you need to implement it
+  --> src/main.rs:16:1
+   |
+16 | pub trait HasName {
+   | ^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+   |
+26 -     let _ = Person { name: String::new() }.name();
+26 +     let _ = Person::name();
+   |
+help: remove the arguments
+   |
+26 -     let _ = Person { name: String::new() }.name();
+26 +     let _ = Person { name: String::new() }.name;
+   |
+
+For more information about this error, try `rustc --explain E0599`.

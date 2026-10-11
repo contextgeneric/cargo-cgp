@@ -1,0 +1,37 @@
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:35:14
+   |
+35 |         for <T, Provider> in DefaultImpls1<ShowImplComponent> {
+   |              ^--
+   |              |
+   |              unconstrained type parameter
+   |              help: remove the unused type parameter `T`
+
+error[E0207]: the type parameter `Provider` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:35:17
+   |
+35 |         for <T, Provider> in DefaultImpls1<ShowImplComponent> {
+   |                 ^^^^^^^^ unconstrained type parameter
+   |
+help: use the type parameter `Provider` in the `App` type and use it in the type definition
+   |
+29 ~ pub struct App<Provider>;
+30 |
+31 | delegate_components! {
+32 ~     App<Provider> {
+   |
+
+error[E0207]: the type parameter `Provider` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:35:17
+   |
+31 | / delegate_components! {
+32 | |     App {
+33 | |         namespace DefaultNamespace;
+34 | |
+35 | |         for <T, Provider> in DefaultImpls1<ShowImplComponent> {
+   | |                 ^^^^^^^^ unconstrained type parameter
+...  |
+39 | | }
+   | |_- help: remove the unused type parameter `Provider`
+
+For more information about this error, try `rustc --explain E0207`.

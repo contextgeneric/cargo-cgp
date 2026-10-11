@@ -8,9 +8,10 @@ fn opts(args: &[&str]) -> Options {
 
 #[test]
 fn parses_flags_and_filters() {
-    let o = opts(&["--bless", "hidden", "--print", "greet"]);
+    let o = opts(&["--bless", "hidden", "--print", "--list", "greet"]);
     assert!(o.bless);
     assert!(o.print);
+    assert!(o.list);
     assert_eq!(o.filters, ["hidden", "greet"]);
 }
 

@@ -1,0 +1,56 @@
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProviderFor<_, App, Left>` is not satisfied
+  --> src/main.rs:75:9
+   |
+75 |         AssemblerComponent,
+   |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `IsProviderFor<ValueBuilderComponent, App, Left>` is not implemented for `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>`
+   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AssemblerComponent, __Context__>
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorTypeProviderComponent, __Context__>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+           and 11 others
+note: required for `App` to implement `IsProviderFor<ValueBuilderComponent, App, Left>`
+  --> src/main.rs:61:1
+   |
+61 | / delegate_components! {
+62 | |     App {
+   | |     ^^^
+63 | |         open ValueBuilderComponent;
+...  |
+71 | | }
+   | |_^
+note: required for `App` to implement `ValueBuilder<App, Left>`
+  --> src/main.rs:27:1
+   |
+27 |   #[cgp_component(ValueBuilder)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+28 | | pub trait CanBuildValue<Value> {
+   | |______________________________^
+note: required for `App` to implement `CanBuildValue<Left>`
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_component(ValueBuilder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+28 | pub trait CanBuildValue<Value> {
+   |           ^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `AssembleParts` to implement `IsProviderFor<AssemblerComponent, App>`
+   = note: required for `App` to implement `CanUseComponent<AssemblerComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:73:1
+   |
+73 | / check_components! {
+74 | |     App {
+75 | |         AssemblerComponent,
+76 | |     }
+77 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,5 +1,5 @@
 #![feature(prelude_import)]
-//! Ok: CGP's `Struct!` and `Enum!` shape macros written by hand compile cleanly, and the expansion
+//! CGP's `Struct!` and `Enum!` shape macros written by hand compile cleanly, and the expansion
 //! snapshot shows the expand pass printing every field list in the same form.
 //!
 //! `Person` and `Shape` derive `HasFields`, whose `Fields` the expansion prints as

@@ -1,0 +1,14 @@
+error[E0277]: [CGP-E001] the consumer trait `CanUseFoo` is not implemented for context `App`
+  --> src/main.rs:52:9
+   |
+52 |         FooProviderComponent: DoFooWithBar,
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
+             └─ [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBar`
+               └─ [CGP-E101] consumer trait impl `CanUseBar` for context `App`
+                 └─ [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,0 +1,26 @@
+error[E0271]: type mismatch resolving `<App as HasErrorType>::Error == Error`
+  --> src/main.rs:30:9
+   |
+30 |         ErrorRaiserComponent: io::Error,
+   |         ^^^^^^^^^^^^^^^^^^^^ expected `Error`, found `String`
+   |
+note: required for `RaiseBackendError` to implement `IsProviderFor<ErrorRaiserComponent, App, std::io::Error>`
+  --> src/main.rs:46:5
+   |
+46 |     #[cgp_impl(RaiseBackendError)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+47 |     #[use_type(HasErrorType.{Error = crate::backend::Error})]
+   |                              ----------------------------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<ErrorRaiserComponent, std::io::Error>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:28:1
+   |
+28 | / check_components! {
+29 | |     App {
+30 | |         ErrorRaiserComponent: io::Error,
+31 | |     }
+32 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.

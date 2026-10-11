@@ -1,0 +1,11 @@
+error: cannot find attribute `uses` in this scope
+  --> src/main.rs:20:3
+   |
+20 | #[uses(HasName)]
+   |   ^^^^
+   |
+help: a built-in attribute with a similar name exists
+   |
+20 - #[uses(HasName)]
+20 + #[used(HasName)]
+   |

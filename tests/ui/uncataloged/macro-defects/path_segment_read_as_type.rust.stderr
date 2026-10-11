@@ -1,0 +1,42 @@
+error[E0425]: cannot find type `f` in this scope
+  --> src/main.rs:32:34
+   |
+32 |         GreeterComponent => @app.f,
+   |                                  ^ not found in this scope
+   |
+help: you might be missing a type parameter
+   |
+32 |         GreeterComponent<f> => @app.f,
+   |                         +++
+
+error[E0425]: cannot find type `f` in this scope
+  --> src/main.rs:32:34
+   |
+32 |         GreeterComponent => @app.f,
+   |                                  ^ not found in this scope
+
+error[E0425]: cannot find type `f` in this scope
+  --> src/main.rs:33:14
+   |
+33 |         @app.f: GreetHello,
+   |              ^ not found in this scope
+
+error[E0275]: overflow evaluating the requirement `App: CanUseComponent<GreeterComponent>`
+  --> src/main.rs:39:9
+   |
+39 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:37:1
+   |
+37 | / check_components! {
+38 | |     App {
+39 | |         GreeterComponent,
+40 | |     }
+41 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0275, E0425.
+For more information about an error, try `rustc --explain E0275`.

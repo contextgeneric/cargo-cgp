@@ -283,8 +283,9 @@ expects a sibling `cgp` checkout at `../cgp`. Work with the suite directly throu
 cargo test -p cargo-cgp-ui-tests                                  # just the snapshot suite
 cargo test -p cargo-cgp-ui-tests --test ui -- --bless             # regenerate all three snapshots
 cargo test -p cargo-cgp-ui-tests --test ui -- -j 4                # check at most 4 fixtures at once
-cargo test -q -p cargo-cgp-ui-tests --test ui -- usability        # only fixtures whose path contains "usability"
+cargo test -q -p cargo-cgp-ui-tests --test ui -- wiring/          # only fixtures whose path contains "wiring/"
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print greet    # print raw output for a fixture
+cargo test -q -p cargo-cgp-ui-tests --test ui -- --list           # every fixture with its quality and codes
 ```
 
 Passing an argument to the harness needs `--test ui`, so the flag is not also handed to the crate's
@@ -293,15 +294,17 @@ own throwaway crate (so they never share a `src/main.rs` or a cargo target lock)
 the worker count, which otherwise defaults to the machine's parallelism capped at 8. The snapshots
 capture `cargo-cgp`'s own output end to end, so they are what changes once the tool reformats
 diagnostics; a passing suite is also the standing end-to-end proof that the driver runs as the
-compiler. The fixtures are grouped under `tests/ui/` by the *quality of the output* the tool
-produces: `ok/` for a clean compile, `acceptable/` for an error whose cause the tool already presents
-well, and `usability/` for one with a remaining presentation problem — each split into concept
-sub-directories so no directory grows crowded. Add a scenario by dropping a `<name>.rs` file (with a
-`fn main`) into the sub-directory that matches its output quality and running
-`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes both snapshot files). A fixture
-whose output improves enough to clear the usability bar graduates from `usability/` into
-`acceptable/` (a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr`/`.expand.rs` set — the snapshots are
-independent of the fixture's directory, so no re-bless is needed).
+compiler. The fixtures are grouped under `tests/ui/` by the *error class* they reproduce,
+mirroring the knowledge base's error catalog (`checks/`, `hidden/`, `lowering/`, `wiring/`, and
+`uncataloged/` for classes the catalog lacks), beside `ok/` for clean compiles and `pass-through/`
+for plain Rust errors the tool must leave as rustc renders them. How well the tool presents a
+fixture's error is a header directive, not a directory: `//@quality: acceptable`, `usability`, or
+`hidden`, next to `//@codes:`, the exact `[CGP-Exxx]` codes its output carries, which the harness
+checks. Add a scenario by dropping a `<name>.rs` file (with a `fn main`, a `//!` header, and those
+two directives) into its class directory and running
+`cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes the snapshots); see
+[`tests/README.md`](tests/README.md) for the header and the checks. A fixture whose output improves
+enough to clear the usability bar changes its `//@quality:` to `acceptable` and stays where it is.
 Snapshots are blessed under the pinned toolchain, so a toolchain bump can require a re-bless. The full
 testing picture — the harness structure, why it drives the whole tool rather than the driver
 directly, and the comparison with Clippy — is documented in
@@ -407,9 +410,9 @@ target project is re-checked.
 4. **Reproduce it as a simplified UI fixture — do not fix the tool yet.** Before changing any
    `cargo-cgp` code, distill the failure into the smallest self-contained CGP program that provokes the
    same *class* of bad message, and add it as a `<name>.rs` fixture under
-   [`tests/ui/`](tests/README.md) — in the sub-directory matching the tool's *current* output quality
-   (`usability/` for a message that carries the cause but buries it, and the concept sub-directory that
-   fits). Bless it (`cargo test -p cargo-cgp-ui-tests --test ui -- --bless`) and confirm the committed
+   [`tests/ui/`](tests/README.md), in the directory of its error class, with the `//@quality:` header
+   matching the tool's *current* output (`usability` for a message that carries the cause but buries
+   it). Bless it (`cargo test -p cargo-cgp-ui-tests --test ui -- --bless`) and confirm the committed
    `.cgp.stderr` shows the same shortcoming you saw on the real project. A change with no fixture that
    reproduces its motivation does not belong in the tool.
 5. **Change the tool, and verify the fixture first.** Make the improvement (usually in the
@@ -440,9 +443,9 @@ target project is re-checked.
    improvise a copy with `rsync`/`cp` plus an in-place edit — a stray `sed -i`, an unset variable
    collapsing a path, or a mistaken argument order will silently write back into the project and
    revert the very state step 2 depends on, and the only symptom is that the check starts passing.
-8. **Graduate the fixture if it earned it.** A fixture whose output now clears the usability bar moves
-   from `usability/` into `acceptable/` (a plain move of its `.rs`/`.cgp.stderr`/`.rust.stderr`/`.expand.rs` set,
-   no re-bless), recording that this class of error is now presented well.
+8. **Graduate the fixture if it earned it.** A fixture whose output now clears the usability bar
+   changes its header to `//@quality: acceptable`, recording that this class of error is now
+   presented well; it stays in its class directory.
 
 ## Committing changes
 

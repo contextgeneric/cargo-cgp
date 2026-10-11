@@ -1,0 +1,45 @@
+warning: unused import: `cgp::core::error::ErrorTypeProviderComponent`
+  --> src/main.rs:15:5
+   |
+15 | use cgp::core::error::ErrorTypeProviderComponent;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0277]: the trait bound `BindErr<IdentMonadic, Double>: IsProviderFor<cgp::prelude::ComputerComponent, App, ((), u64)>` is not satisfied
+  --> src/main.rs:40:9
+   |
+40 |         ComputerComponent: ((), u64),
+   |         ^^^^^^^^^^^^^^^^^ the trait `IsProviderFor<cgp::prelude::ComputerComponent, App, ((), u64)>` is not implemented for `BindErr<IdentMonadic, Double>`
+   |
+help: `BindErr<M, Cont>` implements trait `IsProviderFor<Component, Context, Params>`
+  --> $CGP/crates/extra/cgp-monad/src/monadic/err.rs:73:1
+   |
+73 | / impl<Context, Code, T1, T2, E, M, Cont> Computer<Context, Code, Result<T1, E>> for BindErr<M, Cont>
+74 | | where
+75 | |     Cont: Computer<Context, Code, T1>,
+76 | |     M: ContainsValue<Cont::Output, Value = Result<T2, E>> + LiftValue<Result<T2, E>, Cont::Output>,
+   | |___________________________________________________________________________________________________^ `IsProviderFor<cgp::prelude::ComputerComponent, Context, (Code, Result<T1, E>)>`
+...
+89 | / impl<Context, Code, T1, T2, E, M, Cont> AsyncComputer<Context, Code, Result<T1, E>>
+90 | |     for BindErr<M, Cont>
+91 | | where
+92 | |     Cont: AsyncComputer<Context, Code, T1>,
+93 | |     M: ContainsValue<Cont::Output, Value = Result<T2, E>> + LiftValue<Result<T2, E>, Cont::Output>,
+   | |___________________________________________________________________________________________________^ `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
+   = note: required for `ComposeHandlers<Double, BindErr<IdentMonadic, Double>>` to implement `IsProviderFor<cgp::prelude::ComputerComponent, App, ((), u64)>`
+   = note: 1 redundant requirement hidden
+   = note: required for `PipeMonadic<ErrMonadic, Cons<Double, Cons<Double, Nil>>>` to implement `IsProviderFor<cgp::prelude::ComputerComponent, App, ((), u64)>`
+   = note: required for `App` to implement `CanUseComponent<cgp::prelude::ComputerComponent, ((), u64)>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:38:1
+   |
+38 | / check_components! {
+39 | |     App {
+40 | |         ComputerComponent: ((), u64),
+41 | |     }
+42 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

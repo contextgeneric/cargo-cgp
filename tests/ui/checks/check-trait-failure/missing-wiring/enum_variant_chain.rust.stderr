@@ -1,0 +1,64 @@
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProviderFor<_, App, f64>` is not satisfied
+  --> src/main.rs:85:9
+   |
+85 |         VariantEncoderComponent: [Choice],
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `IsProviderFor<VariantEncoderComponent, App, f64>` is not implemented for `RedirectLookup<App, PathCons<VariantEncoderComponent, Nil>>`
+   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorTypeProviderComponent, __Context__>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+             IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
+           and 10 others
+note: required for `App` to implement `IsProviderFor<VariantEncoderComponent, App, f64>`
+  --> src/main.rs:72:1
+   |
+72 | / delegate_components! {
+73 | |     App {
+   | |     ^^^
+74 | |         open VariantEncoderComponent;
+...  |
+81 | | }
+   | |_^
+note: required for `App` to implement `VariantEncoder<App, f64>`
+  --> src/main.rs:24:1
+   |
+24 |   #[cgp_component(VariantEncoder)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | | pub trait CanEncodeVariant<Value> {
+   | |_________________________________^
+note: required for `App` to implement `CanEncodeVariant<f64>`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_component(VariantEncoder)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | pub trait CanEncodeVariant<Value> {
+   |           ^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Either<Field<Symbol<6, Chars<..>>, f64>, Void>` to implement `EncodeVariants<App>`
+  --> src/main.rs:42:33
+   |
+42 | impl<Context, Tag, Value, Tail> EncodeVariants<Context> for Either<Field<Tag, Value>, Tail>
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+43 | where
+44 |     Context: CanEncodeVariant<Value>,
+   |              ----------------------- unsatisfied trait bound introduced here
+   = note: 3 redundant requirements hidden
+   = note: required for `RedirectLookup<App, PathCons<VariantEncoderComponent, Nil>>` to implement `IsProviderFor<VariantEncoderComponent, App, Choice>`
+   = note: required for `App` to implement `CanUseComponent<VariantEncoderComponent, Choice>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:83:1
+   |
+83 | / check_components! {
+84 | |     App {
+85 | |         VariantEncoderComponent: [Choice],
+86 | |     }
+87 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

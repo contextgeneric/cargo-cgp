@@ -1,0 +1,22 @@
+error[E0277]: the trait bound `Pair: HasField<Symbol!("0")>` is not satisfied
+  --> src/main.rs:22:21
+   |
+22 |     *pair.get_field(PhantomData::<Symbol!("0")>)
+   |           --------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |           |
+   |           required by a bound introduced by this call
+   |
+help: `#[derive(HasField)]` is required to access field `0` on `Pair`
+  --> src/main.rs:19:1
+   |
+19 | pub struct Pair(pub u32, pub String);
+   | ^^^^^^^^^^^^^^^
+help: `Pair` implements trait `HasField<Tag>`
+  --> src/main.rs:19:17
+   |
+19 | pub struct Pair(pub u32, pub String);
+   |                 ^^^^^^^  ^^^^^^^^^^ `HasField<Index<1>>`
+   |                 |
+   |                 `HasField<Index<0>>`
+
+For more information about this error, try `rustc --explain E0277`.

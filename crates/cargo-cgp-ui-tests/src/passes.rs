@@ -18,11 +18,16 @@
 //!   not touch, the tool's output must equal plain rustc's, unless the fixture is marked
 //!   `//@rewrites-falsely:` until its fix lands.
 //!
+//! [`header_check`] holds every error fixture to its structured header: the `//@quality:` it
+//! declares, and the exact set of `[CGP-Exxx]` codes its `//@codes:` lists, checked against the
+//! tool's output.
+//!
 //! A fixture marked `//@json` also runs [`json_pass`], which pins the diagnostics cargo's JSON
 //! stream carries, the form an editor reads.
 
 use std::path::Path;
 
+use crate::directives::Directives;
 use crate::harness::{self, Run};
 use crate::normalize::{normalize, normalize_baseline, normalize_source, replace_paths};
 use crate::snapshot::{Outcome, cgp_stderr_path, expand_path, json_path, review, rust_stderr_path};
@@ -109,6 +114,65 @@ pub fn pass_through_check(baseline: &str, tool: &str, rewrites_falsely: Option<&
              `//@rewrites-falsely: {reason}` marker ---\n"
         )),
     }
+}
+
+/// Check an error fixture's structured header against the tool's output: it must declare its
+/// `//@quality:`, and its `//@codes:` must list exactly the `[CGP-Exxx]` codes in `tool_output`.
+/// Fixtures under `ok/` and `pass-through/` are `exempt`: a clean compile carries no codes, and a
+/// pass-through fixture is held to plain rustc's output instead.
+pub fn header_check(exempt: bool, directives: &Directives, tool_output: &str) -> Outcome {
+    if exempt {
+        return Outcome::Ok;
+    }
+    let mut problems = Vec::new();
+    if directives.quality.is_none() {
+        problems.push("no `//@quality:` directive".to_owned());
+    }
+    match &directives.codes {
+        None => problems.push("no `//@codes:` directive".to_owned()),
+        Some(declared) => {
+            let actual = cgp_codes(tool_output);
+            let mut declared = declared.clone();
+            declared.sort();
+            declared.dedup();
+            if declared != actual {
+                let list = |codes: &[String]| {
+                    if codes.is_empty() {
+                        "none".to_owned()
+                    } else {
+                        codes.join(" ")
+                    }
+                };
+                problems.push(format!(
+                    "`//@codes: {}` but the output carries {}",
+                    list(&declared),
+                    list(&actual)
+                ));
+            }
+        }
+    }
+    if problems.is_empty() {
+        Outcome::Ok
+    } else {
+        Outcome::Mismatch(format!("  --- header: {} ---\n", problems.join("; ")))
+    }
+}
+
+/// The distinct `CGP-Exxx` codes in `text`, sorted.
+pub fn cgp_codes(text: &str) -> Vec<String> {
+    let mut codes: Vec<String> = text
+        .match_indices("CGP-E")
+        .filter_map(|(at, _)| {
+            let code = text.get(at..at + 8)?;
+            code[5..]
+                .bytes()
+                .all(|b| b.is_ascii_digit())
+                .then(|| code.to_owned())
+        })
+        .collect();
+    codes.sort();
+    codes.dedup();
+    codes
 }
 
 /// Reduce cargo's JSON message stream to the compiler messages an editor reads, as pretty JSON:

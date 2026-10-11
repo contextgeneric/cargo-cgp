@@ -1,0 +1,18 @@
+error[E0107]: missing generics for struct `AreaCalculatorComponent`
+  --> src/main.rs:25:1
+   |
+25 | #[cgp_impl(new SquareArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected 1 generic argument
+   |
+note: struct defined here, with 1 generic parameter: `Shape`
+  --> src/main.rs:16:11
+   |
+16 |     name: AreaCalculatorComponent<Shape>,
+   |           ^^^^^^^^^^^^^^^^^^^^^^^ -----
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: add missing generic argument
+   |
+25 | #[cgp_impl(new SquareArea)]<Shape>
+   |                            +++++++
+
+For more information about this error, try `rustc --explain E0107`.

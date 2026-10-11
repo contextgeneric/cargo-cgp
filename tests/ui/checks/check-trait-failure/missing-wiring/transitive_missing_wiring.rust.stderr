@@ -1,0 +1,54 @@
+error[E0277]: the trait bound `CommonProvider: IsProviderFor<BarProviderComponent, App>` is not satisfied
+  --> src/main.rs:57:9
+   |
+57 |         FooProviderComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<BarProviderComponent, App>` is not implemented for `CommonProvider`
+  --> src/main.rs:41:9
+   |
+41 |     new CommonProvider {
+   |         ^^^^^^^^^^^^^^
+help: the trait `IsProviderFor<FooProviderComponent, __Context__, __Params__>` is implemented for `CommonProvider`
+  --> src/main.rs:42:9
+   |
+42 |         FooProviderComponent: DoFooWithBar,
+   |         ^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `IsProviderFor<BarProviderComponent, App>`
+  --> src/main.rs:46:1
+   |
+46 | / delegate_components! {
+47 | |     new App {
+   | |         ^^^
+48 | |         [
+49 | |             FooProviderComponent,
+...  |
+53 | | }
+   | |_^
+note: required for `App` to implement `BarProvider<App>`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(BarProvider)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanUseBar`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(BarProvider)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+23 | pub trait CanUseBar {
+   |           ^^^^^^^^^
+   = note: 2 redundant requirements hidden
+   = note: required for `CommonProvider` to implement `IsProviderFor<FooProviderComponent, App>`
+   = note: required for `App` to implement `CanUseComponent<FooProviderComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:55:1
+   |
+55 | / check_components! {
+56 | |     App {
+57 | |         FooProviderComponent,
+58 | |     }
+59 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,0 +1,15 @@
+error[E0277]: the trait bound `__PartialFooBarBaz<IsNothing, IsNothing, IsNothing>: CanBuildFrom<FooBar>` is not satisfied
+  --> src/main.rs:34:21
+   |
+34 |         .build_from(FooBar { foo: 1, bar: "bar".into() })
+   |          ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |          |
+   |          required by a bound introduced by this call
+   |
+help: the trait `CanBuildFrom<FooBar>` is not implemented for `__PartialFooBarBaz<IsNothing, IsNothing, IsNothing>`
+  --> src/main.rs:26:1
+   |
+26 | pub struct FooBarBaz {
+   | ^^^^^^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0277`.

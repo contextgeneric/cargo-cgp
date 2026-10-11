@@ -1,0 +1,12 @@
+error[E0428]: the name `GreetHello` is defined multiple times
+  --> src/main.rs:33:16
+   |
+27 | #[cgp_impl(new GreetHello)]
+   |                ---------- previous definition of the type `GreetHello` here
+...
+33 | #[cgp_impl(new GreetHello)]
+   |                ^^^^^^^^^^ `GreetHello` redefined here
+   |
+   = note: `GreetHello` must be defined only once in the type namespace of this module
+
+For more information about this error, try `rustc --explain E0428`.
