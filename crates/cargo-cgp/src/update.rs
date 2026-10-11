@@ -27,6 +27,7 @@ use anyhow::{Context, bail};
 use semver::Version;
 
 use crate::config::{FRONTEND_CRATE, TOOL_VERSION};
+use crate::exit::exit_code;
 
 /// Find a newer in-channel version and, if there is one, reinstall the front-end and run
 /// the new `setup`. Returns the exit code to propagate.
@@ -164,5 +165,5 @@ fn run_new_setup(exe: &Path) -> anyhow::Result<i32> {
         .arg("setup")
         .status()
         .context("failed to run the updated `cargo cgp setup`")?;
-    Ok(status.code().unwrap_or(1))
+    Ok(exit_code(status))
 }

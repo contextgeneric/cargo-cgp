@@ -2,6 +2,7 @@
 
 use anyhow::Context;
 
+use crate::exit::exit_code;
 use crate::launch::wrapped_cargo;
 
 /// Run `cargo check` with the cargo-cgp driver wired in as the workspace rustc wrapper,
@@ -21,5 +22,5 @@ pub fn run_check(forwarded_args: &[String]) -> anyhow::Result<i32> {
         .status()
         .context("failed to run `cargo check` (is cargo on PATH?)")?;
 
-    Ok(status.code().unwrap_or(1))
+    Ok(exit_code(status))
 }

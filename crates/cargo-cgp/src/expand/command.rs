@@ -5,6 +5,7 @@ use std::io::{self, Write};
 use anyhow::Context;
 
 use crate::config::{EXPAND_FLAG, EXPAND_ITEM_FLAG};
+use crate::exit::exit_code;
 use crate::expand::item::take_item;
 use crate::expand::output::{ExpansionDir, read_expansion};
 use crate::expand::profile::forwards_profile;
@@ -73,7 +74,11 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
             // `--item` path matched nothing. So this line only reports that nothing came back;
             // guessing at a cause here is what made it confusing.
             eprintln!("error: no expansion was produced; see the errors above");
-            Ok(status.code().filter(|code| *code != 0).unwrap_or(1))
+            // Nothing to print is a failure, whatever cargo's own status says.
+            Ok(match exit_code(status) {
+                0 => 1,
+                code => code,
+            })
         }
     }
 }

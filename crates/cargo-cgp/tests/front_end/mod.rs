@@ -3,6 +3,7 @@ pub mod command;
 pub mod dispatch;
 pub mod driver_path;
 pub mod dylib;
+pub mod exit;
 pub mod expand;
 pub mod help;
 pub mod preflight;

@@ -12,6 +12,7 @@
 pub mod args;
 pub mod check;
 pub mod config;
+pub mod exit;
 pub mod expand;
 pub mod help;
 pub mod launch;
