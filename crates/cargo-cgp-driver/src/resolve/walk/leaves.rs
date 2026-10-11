@@ -52,6 +52,18 @@ pub(crate) fn resolve_leaves<'tcx>(
     compute_leaves(tcx, cache, top, context)
 }
 
+/// Whether walking `top` is cut short: the cycle guard met an obligation among its own ancestors,
+/// or a branch reached the depth cap. Either means the wiring's lookup never terminates.
+pub(crate) fn walk_is_cut<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    cache: &ResolveCache,
+    top: ty::PolyTraitClause<'tcx>,
+) -> bool {
+    let top = tcx.erase_and_anonymize_regions(top);
+    let context = top.skip_binder().self_ty();
+    resolve_node(tcx, cache, top, None, context, &[], 0).incomplete
+}
+
 /// Fold the root node's owned sub-causes into a [`Resolved`]: group by leaf into one [`Cause`] per
 /// distinct root cause, each holding every path that reaches it (so a shared trait's diamond
 /// survives to the renderer). Merging happens in the rustc-free
@@ -167,6 +179,13 @@ fn resolve_node<'tcx>(
 
     let self_fp = pred_fingerprint(tcx, erased);
     let leaf_ref = erased.skip_binder().trait_ref;
+
+    // An obligation holding a `{type error}` names a type an earlier error left unresolved. Such a
+    // type unifies with anything, so walking into it can only invent causes or loops; the earlier
+    // error is the cause, and the branch ends here with nothing to report.
+    if erased.references_error() {
+        return SubResult::empty(self_fp);
+    }
 
     // A `HasField` completes a path directly — a terminal leaf, not cached (its classification can
     // read its parent, which lies outside a leaf-rooted subtree, and it is cheap to re-derive).
@@ -420,7 +439,7 @@ fn projection_result<'tcx>(
 ) -> SubResult {
     let leaf_ref = mismatch.trait_ref;
     let leaf_poly: ty::PolyTraitClause<'tcx> = ty::Binder::dummy(leaf_ref).upcast(tcx);
-    if leaf_poly.has_placeholders() {
+    if leaf_poly.has_placeholders() || leaf_poly.references_error() {
         return SubResult::empty(self_fp);
     }
     let parent = Some(parent_ref);

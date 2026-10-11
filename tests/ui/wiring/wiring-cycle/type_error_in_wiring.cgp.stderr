@@ -1,27 +1,15 @@
-error[E0275]: overflow evaluating the requirement `App: CanUseComponent<ErrorRaiserComponent, ParseIntError>`
-  --> src/main.rs:34:9
+error[E0275]: [CGP-E010] the wiring for the consumer trait `CanRaiseError<ParseIntError>` on context `App` never resolves — the lookup recurses without terminating
+  --> src/main.rs:35:9
    |
-34 |         ErrorRaiserComponent: ParseIntError,
+35 |         ErrorRaiserComponent: ParseIntError,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E201] the trait bound `{type error}: Debug` is not satisfied
-           this is required through the dependency chain:
-             [CGP-E101] consumer trait impl `CanRaiseError<ParseIntError>` for context `App`
-             ├─ [CGP-E101] consumer trait impl `HasErrorType` for context `App`
-             │ └─ [CGP-E102] provider trait impl `ErrorTypeProvider` with context `App` for provider `UseType<{type error}>`
-             │   └─ the trait bound `{type error}: Debug` is not satisfied
-             └─ [CGP-E104] redirect lookup to `@ErrorRaiserComponent` in `App`
-               ├─ [CGP-E101] consumer trait impl `HasErrorType` for context `App` (*)
-               └─ [CGP-E102] provider trait impl `ErrorRaiser<ParseIntError>` with context `App` for provider `DebugError`
-                 └─ [CGP-E101] consumer trait impl `CanRaiseError<String>` for context `App`
-                   ├─ [CGP-E101] consumer trait impl `HasErrorType` for context `App` (*)
-                   └─ [CGP-E104] redirect lookup to `@ErrorRaiserComponent` in `App`
-                     └─ [CGP-E101] consumer trait impl `HasErrorType` for context `App` (*)
+   = help: a lookup that recurses usually means the component is delegated back to the context itself — e.g. wired to `UseContext` with no direct implementation of the consumer trait — so wire a real provider, or implement the consumer trait directly on the context
 
 error[E0433]: cannot find module or crate `backend` in this scope
-  --> src/main.rs:26:45
+  --> src/main.rs:27:45
    |
-26 |         ErrorTypeProviderComponent: UseType<backend::Error>,
+27 |         ErrorTypeProviderComponent: UseType<backend::Error>,
    |                                             ^^^^^^^ use of unresolved module or unlinked crate `backend`
    |
    = help: if you wanted to use a crate named `backend`, use `cargo add backend` to add it to your `Cargo.toml`

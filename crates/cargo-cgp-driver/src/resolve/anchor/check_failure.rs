@@ -56,14 +56,29 @@ pub fn resolve_check_failure(
     None
 }
 
-/// The context of the `check_components!` entry whose caret sits at `primary_span`: the `Self` of
-/// the check impl the macro re-spans onto that entry. `None` when no check impl is there.
-pub fn check_entry_context(tcx: TyCtxt<'_>, primary_span: Span) -> Option<ty::Ty<'_>> {
-    tcx.all_traits_including_private()
-        .filter(|&trait_did| can_use_component_supertrait(tcx, trait_did).is_some())
-        .flat_map(|trait_did| tcx.all_impls(trait_did))
-        .find(|&impl_did| impl_self_ty_span(tcx, impl_did) == Some(primary_span))
-        .map(|impl_did| tcx.type_of(impl_did).instantiate_identity().skip_norm_wip())
+/// The consumer obligation the `check_components!` entry whose caret sits at `primary_span` asserts,
+/// read as [`resolve_check_failure`] reads it. `None` when no check impl is there.
+pub(crate) fn check_entry_obligation<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    primary_span: Span,
+) -> Option<ty::PolyTraitClause<'tcx>> {
+    for trait_did in tcx.all_traits_including_private() {
+        let Some(super_clause) = can_use_component_supertrait(tcx, trait_did) else {
+            continue;
+        };
+        for impl_did in tcx.all_impls(trait_did) {
+            if impl_self_ty_span(tcx, impl_did) != Some(primary_span) {
+                continue;
+            }
+            let trait_ref = tcx
+                .impl_trait_ref(impl_did)
+                .instantiate_identity()
+                .skip_norm_wip();
+            let concrete = super_clause.instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref));
+            return can_use_to_consumer_obligation(tcx, concrete.as_trait_clause()?);
+        }
+    }
+    None
 }
 
 /// Turn a `Ctx: CanUseComponent<Marker, Params>` assertion into the real consumer obligation

@@ -419,14 +419,16 @@ impl<E: Emitter> CgpEmitter<E> {
         changed
     }
 
-    /// Whether `diag` is an `E0275` overflow at a check entry whose context wires a type the
-    /// compiler could not resolve ([`resolve::overflow_follows_type_error`]).
-    fn overflow_follows_type_error(&self, diag: &DiagInner) -> bool {
+    /// Whether `diag` is an `E0275` overflow at a check entry whose wiring walk meets no cycle
+    /// ([`resolve::overflow_is_wiring_cycle`]), so the `[CGP-E010]` cycle rewrite would be false.
+    fn overflow_is_not_a_cycle(&self, diag: &DiagInner) -> bool {
         diag.code == Some(E0275)
             && diag.span.primary_span().is_some_and(|span| {
                 rustc_middle::ty::tls::with_opt(|tcx| {
-                    tcx.is_some_and(|tcx| resolve::overflow_follows_type_error(tcx, span))
-                })
+                    tcx.and_then(|tcx| {
+                        resolve::overflow_is_wiring_cycle(tcx, &self.resolve_cache, span)
+                    })
+                }) == Some(false)
             })
     }
 
@@ -1065,9 +1067,9 @@ impl<E: Emitter> CgpEmitter<E> {
                 {
                     strip_method_probe_advice(&mut diag);
                 }
-                // An overflow through wiring that holds an unresolved type follows from that earlier
-                // error, not from a cycle, so it keeps rustc's wording.
-                let changed = !self.overflow_follows_type_error(&diag) && self.rewrite(&mut diag);
+                // An overflow whose wiring walk meets no cycle (one that follows from an unresolved
+                // type, say) is not a wiring cycle, so it keeps rustc's wording.
+                let changed = !self.overflow_is_not_a_cycle(&diag) && self.rewrite(&mut diag);
                 // A rewritten wiring overflow (`E0275`, now a `[CGP-E010]` header) drops the
                 // note pointing at the generated `__Check…` trait — a name the user never wrote,
                 // whose location the kept caret already covers — and carries the fix in a `help`.

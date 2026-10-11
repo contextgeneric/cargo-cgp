@@ -1,29 +1,21 @@
-//! Whether a wiring overflow follows from a type the compiler could not resolve.
+//! Whether a wiring overflow is a cycle in the wiring.
 
-use rustc_middle::ty::{TyCtxt, TypeVisitableExt as _};
+use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
-use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
-use crate::resolve::anchor::check_entry_context;
-use crate::resolve::cgp_item::find_cgp_trait;
-use crate::resolve::conflict::local_delegate_impls;
+use crate::resolve::anchor::check_entry_obligation;
+use crate::resolve::cache::ResolveCache;
+use crate::resolve::walk::walk_is_cut;
 
-/// Whether the context checked at `primary_span` wires some key with a type the compiler could not
-/// resolve (a `{type error}` in an entry's key or `Delegate`, left by an earlier unresolved-name
-/// error). A lookup through such an entry can overflow without any cycle in the wiring, so an
-/// `E0275` there is not reported as one. `false` when no `check_components!` entry is at the span.
-pub fn overflow_follows_type_error(tcx: TyCtxt<'_>, primary_span: Span) -> bool {
-    let Some(context) = check_entry_context(tcx, primary_span) else {
-        return false;
-    };
-    let Some(delegate_did) = find_cgp_trait(tcx, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
-    else {
-        return false;
-    };
-    local_delegate_impls(tcx, delegate_did)
-        .into_iter()
-        .filter(|entry| entry.self_ty == context)
-        .any(|entry| {
-            entry.key.references_error() || entry.delegate.is_some_and(|d| d.references_error())
-        })
+/// Whether the `E0275` overflow at the `check_components!` entry at `primary_span` comes from a
+/// lookup that never terminates in the wiring: walking the entry's consumer obligation meets a
+/// cycle or the depth cap. An overflow can also follow from a type the compiler could not resolve,
+/// whose walk ends without a cut, and that is no cycle. `None` when no check entry is at the span.
+pub fn overflow_is_wiring_cycle(
+    tcx: TyCtxt<'_>,
+    cache: &ResolveCache,
+    primary_span: Span,
+) -> Option<bool> {
+    let obligation = check_entry_obligation(tcx, primary_span)?;
+    Some(walk_is_cut(tcx, cache, obligation))
 }
