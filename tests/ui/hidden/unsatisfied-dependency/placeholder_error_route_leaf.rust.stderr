@@ -1,0 +1,41 @@
+error[E0599]: the method `handle` exists for reference `&App`, but its trait bounds were not satisfied
+  --> src/main.rs:79:9
+   |
+64 | pub struct App {
+   | -------------- doesn't satisfy `App: CanHandle<_, _>` or `_: HasField<Symbol<4, Chars<..>>>`
+...
+79 |     app.handle(PhantomData::<()>, Vec::new()).await
+   |         ^^^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `Handler`
+  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:17:11
+   |
+17 |     async fn handle(&self, _tag: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+  --> src/main.rs:45:1
+   |
+45 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+46 | pub trait HasName {
+   |           ^^^^^^^
+   = note: the following trait bounds were not satisfied:
+           `&App: ErrorTypeProvider<&App>`
+           which is required by `&App: CanHandle<_, _>`
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+   |
+46 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `handle`, perhaps you need to implement it:
+           candidate #1: `CanHandle`
+   = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+   |
+79 -     app.handle(PhantomData::<()>, Vec::new()).await
+79 +     App::handle(PhantomData::<()>, Vec::new()).await
+   |
+
+For more information about this error, try `rustc --explain E0599`.
