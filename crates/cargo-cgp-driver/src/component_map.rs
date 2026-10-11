@@ -28,10 +28,10 @@
 //! **Keyed by full path.** Each entry is keyed by the marker's *full path* (`def_path_str`),
 //! not its bare name, so two distinct markers sharing a name in different modules occupy
 //! separate entries instead of one clobbering the other. The map's sole consumer is the
-//! compiler-free text rewrite, which sees just the unqualified name rustc printed and so
-//! resolves a key by its last segment — a residual, text-only ambiguity when two markers share
-//! a name. (The typed resolver does not use the map at all: it reads consumer and provider
-//! names straight off the real trait `DefId`s it walks.)
+//! compiler-free text rewrite, which sees only the marker as rustc printed it and matches it
+//! against each key's trailing segments, declining when two components share a name the printed
+//! text does not tell apart. (The typed resolver does not use the map at all: it reads consumer
+//! and provider names straight off the real trait `DefId`s it walks.)
 
 use std::collections::HashMap;
 
