@@ -1,0 +1,33 @@
+error[E0599]: the method `handle` exists for struct `AppBuilder`, but its trait bounds were not satisfied
+  --> src/main.rs:87:27
+   |
+76 | pub struct AppBuilder;
+   | --------------------- method `handle` not found for this struct because it doesn't satisfy `AppBuilder: CanHandle<_, _>`
+...
+87 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
+   |                           ^^^^^^ this is an associated function, not a method
+   |
+  ::: $CGP/crates/extra/cgp-dispatch/src/providers/field_builders/build_and_merge.rs:7:1
+   |
+ 7 | pub struct BuildAndMerge<Provider = UseContext>(pub PhantomData<Provider>);
+   | ----------------------------------------------- doesn't satisfy `_: IsProviderFor<HandlerComponent, AppBuilder, (_, __PartialApp<IsPresent>)>`
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `Handler`
+  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:17:11
+   |
+17 |     async fn handle(&self, _tag: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: the following trait bounds were not satisfied:
+           `BuildAndMerge<BuildHttp>: IsProviderFor<HandlerComponent, AppBuilder, (_, __PartialApp<IsPresent>)>`
+           which is required by `AppBuilder: CanHandle<_, _>`
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `handle`, perhaps you need to implement it:
+           candidate #1: `CanHandle`
+help: use associated function syntax instead
+   |
+87 -     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
+87 +     let _app = AppBuilder::handle(PhantomData::<()>, ()).await?;
+   |
+
+For more information about this error, try `rustc --explain E0599`.
