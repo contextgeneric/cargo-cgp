@@ -76,7 +76,8 @@ Four more directives are used where they apply:
   a fix that closes the difference removes the marker.
 - `//@json`: also run the JSON pass.
 - `//@env: <KEY>=<VALUE>`: set an environment variable for the tool's runs. The `robustness/`
-  fixtures set `CARGO_CGP_TEST_PANIC` this way to make the emitter panic on purpose.
+  fixtures set `CARGO_CGP_TEST_PANIC` this way to make the emitter panic on purpose, and
+  `RUSTFLAGS=-Ztreat-err-as-bug=2` to make the compiler crash.
 
 An unknown directive, or a known one written with a space after `//`, is rejected rather than
 ignored.

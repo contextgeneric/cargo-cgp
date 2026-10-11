@@ -20,6 +20,10 @@
 //! therefore rewrites every such spine to a stable `Chars<..>` placeholder. The tool's output is
 //! normalized without that collapse: the tool resugars a field name into `Symbol!("…")`, so a raw
 //! `Chars<…>` spine in its output means the resugaring declined, which a snapshot must show.
+//!
+//! A compiler crash report (from the `robustness/` fixture that makes rustc panic on purpose) names
+//! the panicking thread by its operating-system id, which differs on every run, so [`normalize`]
+//! replaces it with `$TID`.
 
 use std::path::Path;
 
@@ -37,14 +41,32 @@ const DROP_MARKERS: &[&str] = &[
 ];
 
 /// Rewrite the tool's rendered `.stderr` output into its committed-snapshot form: drop the
-/// content-free lines above, and replace the throwaway-crate, cgp-checkout, and sysroot
-/// absolute paths with `$DIR`, `$CGP`, and `$SYSROOT`.
+/// content-free lines above, replace the throwaway-crate, cgp-checkout, and sysroot absolute paths
+/// with `$DIR`, `$CGP`, and `$SYSROOT`, and a crash report's thread id with `$TID`.
 pub fn normalize(raw: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path) -> String {
     raw.lines()
         .filter(|line| !DROP_MARKERS.iter().any(|marker| line.contains(marker)))
-        .map(|line| replace_paths(line, harness_dir, cgp_root, sysroot))
+        .map(|line| replace_thread_id(&replace_paths(line, harness_dir, cgp_root, sysroot)))
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+/// Replace the thread id in a panic's first line, `thread 'rustc' (1234) panicked at …`, with
+/// `$TID`; any other line is returned unchanged.
+fn replace_thread_id(line: &str) -> String {
+    let Some(rest) = line.strip_prefix("thread '") else {
+        return line.to_owned();
+    };
+    let Some(name_end) = rest.find("' (") else {
+        return line.to_owned();
+    };
+    let after_name = &rest[name_end + "' (".len()..];
+    let digits = after_name.bytes().take_while(u8::is_ascii_digit).count();
+    let tail = &after_name[digits..];
+    if digits == 0 || !tail.starts_with(") panicked") {
+        return line.to_owned();
+    }
+    format!("thread '{}' ($TID{tail}", &rest[..name_end])
 }
 
 /// Rewrite plain `cargo check`'s rendered `.stderr` into its committed-snapshot form: what

@@ -1,0 +1,48 @@
+error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
+  --> src/main.rs:53:9
+   |
+53 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<6, Chars<..>>>` is not implemented for `Rectangle`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
+  --> src/main.rs:42:9
+   |
+42 |     pub width: f64,
+   |         ^^^^^
+note: required for `Rectangle` to implement `HasRectangleFields`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+27 | pub trait HasRectangleFields {
+   |           ^^^^^^^^^^^^^^^^^^
+note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:32:1
+   |
+32 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+33 | #[uses(HasRectangleFields)]
+   |        ------------------ unsatisfied trait bound introduced here
+   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:51:1
+   |
+51 | / check_components! {
+52 | |     Rectangle {
+53 | |         AreaCalculatorComponent,
+54 | |     }
+55 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+  --> src/main.rs:58:5
+   |
+57 | fn after() -> u32 {
+   |               --- expected `u32` because of return type
+58 |     "not a number"
+   |     ^^^^^^^^^^^^^^ expected `u32`, found `&str`
+
+Some errors have detailed explanations: E0277, E0308.
+For more information about an error, try `rustc --explain E0277`.

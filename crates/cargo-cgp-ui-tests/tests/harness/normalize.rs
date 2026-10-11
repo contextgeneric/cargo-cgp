@@ -104,3 +104,23 @@ error: process didn't exit successfully: `/home/x/rustc --crate-name ui` (exit s
         "error: boom"
     );
 }
+
+#[test]
+fn replaces_the_thread_id_of_a_panic() {
+    let raw = "\
+thread 'rustc' (3683731) panicked at /rustc-dev/abc/compiler/rustc_errors/src/lib.rs:1506:17:
+aborting after 2 errors
+thread 'main' (12) panicked at src/main.rs:1:1:
+thread 'rustc' panicked at src/main.rs:1:1:
+note: thread 'rustc' (3683731) panicked";
+    let out = normalize(raw, &harness_dir(), &cgp_root(), &sysroot());
+    assert_eq!(
+        out,
+        "\
+thread 'rustc' ($TID) panicked at /rustc-dev/abc/compiler/rustc_errors/src/lib.rs:1506:17:
+aborting after 2 errors
+thread 'main' ($TID) panicked at src/main.rs:1:1:
+thread 'rustc' panicked at src/main.rs:1:1:
+note: thread 'rustc' (3683731) panicked"
+    );
+}
