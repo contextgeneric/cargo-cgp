@@ -181,21 +181,31 @@ fn resolve_node<'tcx>(
     // machinery (`ConcatPath`, `Sized` on the unresolved key) and bottom out on plumbing instead.
     // Descending can never find anything better: had the context wired this key the obligation would
     // hold and be pruned before becoming a node at all, so reaching here means the entry is simply
-    // absent — which is the cause to report.
+    // absent — which is the cause to report. The one exception is an entry that *delegates* the key
+    // to another table (`Key -> Table`): the context does carry it, and the failure is that table's
+    // lookup, so the walk descends there instead of blaming the context.
+    let mut delegated = Vec::new();
     if let Some(missing) = missing_context_wiring(tcx, erased, context) {
-        return terminal_result(
-            tcx,
-            missing,
-            missing.skip_binder().trait_ref,
-            parent,
-            context,
-            self_fp,
-        );
+        delegated = delegated_table_lookups(tcx, erased, context);
+        if delegated.is_empty() {
+            return terminal_result(
+                tcx,
+                missing,
+                missing.skip_binder().trait_ref,
+                parent,
+                context,
+                self_fp,
+            );
+        }
     }
 
     let descendable = is_descendable(tcx, erased, context);
 
-    let Some(children) = impl_where_obligations(tcx, erased) else {
+    let Some(children) = (if delegated.is_empty() {
+        impl_where_obligations(tcx, erased)
+    } else {
+        Some(delegated)
+    }) else {
         // No impl satisfies `pred` at all — `pred` is itself the terminal root-cause bound.
         return terminal_result(tcx, erased, leaf_ref, parent, context, self_fp);
     };
@@ -292,6 +302,32 @@ fn cache_if_complete(cache: &ResolveCache, key: NodeKey, result: SubResult) -> S
         cache.insert(key, result.clone());
     }
     result
+}
+
+/// The unmet `DelegateComponent` lookups on *another* table that the context's own entry for
+/// `pred`'s key forwards to, the `where Table: DelegateComponent<Key>` bound a `Key -> Table` entry
+/// generates. Empty when the context has no such entry, so its missing wiring stands.
+fn delegated_table_lookups<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    pred: ty::PolyTraitClause<'tcx>,
+    context: Ty<'tcx>,
+) -> Vec<ty::PolyTraitClause<'tcx>> {
+    let Some(children) = impl_where_obligations(tcx, pred) else {
+        return Vec::new();
+    };
+    children
+        .into_iter()
+        .filter(|child| {
+            let trait_ref = child.skip_binder().trait_ref;
+            is_cgp_item(
+                tcx,
+                trait_ref.def_id,
+                DELEGATE_COMPONENT_TRAIT,
+                CGP_COMPONENT_CRATE,
+            ) && tcx.erase_and_anonymize_regions(trait_ref.self_ty()) != context
+                && !holds(tcx, *child)
+        })
+        .collect()
 }
 
 /// The unmet `DelegateComponent` obligation to report when `pred` is one **on the context** — with

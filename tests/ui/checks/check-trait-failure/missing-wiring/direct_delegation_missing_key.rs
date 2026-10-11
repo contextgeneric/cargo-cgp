@@ -1,16 +1,17 @@
 //! A `->` delegation to a table that lacks the key.
 //!
-//! `GreeterComponent -> Bundle` where `Bundle` has no `GreeterComponent` entry gives two raw `E0277`s
-//! spanning the whole block with a wrong `trivial_bounds` suggestion, then `[CGP-E107]` "context
-//! `Person` does not contain any delegate entry", which is false: `Person` has the entry and
-//! `Bundle` lacks it.
+//! `GreeterComponent -> Bundle` where `Bundle` has no `GreeterComponent` entry. The check's
+//! `[CGP-E001]` block ends at `[CGP-E110]` "provider `Bundle` does not contain any delegate entry
+//! for `GreeterComponent`": `Person` has the entry, and the walk follows its forwarding bound to the
+//! table that lacks the key. Two raw `E0277`s still precede it, spanning the whole block with a wrong
+//! `trivial_bounds` suggestion, because the `->` entry's impls are not re-spanned onto the entry.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 //!
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: usability
-//@codes: CGP-E001 CGP-E101 CGP-E107
+//@codes: CGP-E001 CGP-E101 CGP-E110
 
 use cgp::prelude::*;
 

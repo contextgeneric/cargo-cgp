@@ -1,62 +1,62 @@
 error[E0277]: the trait bound `Bundle: DelegateComponent<GreeterComponent>` is not satisfied
-  --> src/main.rs:40:1
+  --> src/main.rs:41:1
    |
-40 | / delegate_components! {
-41 | |     Person {
-42 | |         GreeterComponent -> Bundle,
-43 | |     }
-44 | | }
+41 | / delegate_components! {
+42 | |     Person {
+43 | |         GreeterComponent -> Bundle,
+44 | |     }
+45 | | }
    | |_^ unsatisfied trait bound
    |
 help: the trait `DelegateComponent<GreeterComponent>` is not implemented for `Bundle`
       but trait `DelegateComponent<FarewellComponent>` is implemented for it
-  --> src/main.rs:34:9
+  --> src/main.rs:35:9
    |
-34 |         FarewellComponent: SayBye,
+35 |         FarewellComponent: SayBye,
    |         ^^^^^^^^^^^^^^^^^
    = help: for that trait implementation, expected `FarewellComponent`, found `GreeterComponent`
    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
    |
-15 + #![feature(trivial_bounds)]
+16 + #![feature(trivial_bounds)]
    |
 
 error[E0277]: the size for values of type `<Bundle as DelegateComponent<GreeterComponent>>::Delegate` cannot be known
-  --> src/main.rs:40:1
+  --> src/main.rs:41:1
    |
-40 | / delegate_components! {
-41 | |     Person {
-42 | |         GreeterComponent -> Bundle,
-43 | |     }
-44 | | }
+41 | / delegate_components! {
+42 | |     Person {
+43 | |         GreeterComponent -> Bundle,
+44 | |     }
+45 | | }
    | |_^ doesn't have a known size
    |
    = help: the nightly-only, unstable trait `MetaSized` is not implemented for `<Bundle as DelegateComponent<GreeterComponent>>::Delegate`
    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
    |
-15 + #![feature(trivial_bounds)]
+16 + #![feature(trivial_bounds)]
    |
 
 error[E0277]: the trait bound `Person: CanUseComponent<GreeterComponent>` is not satisfied
-  --> src/main.rs:48:9
+  --> src/main.rs:49:9
    |
-48 |         GreeterComponent,
+49 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `CanUseComponent<GreeterComponent>` is not implemented for `Person`
-  --> src/main.rs:38:1
+  --> src/main.rs:39:1
    |
-38 | pub struct Person;
+39 | pub struct Person;
    | ^^^^^^^^^^^^^^^^^
 note: required by a bound in `__CheckPerson`
-  --> src/main.rs:46:1
+  --> src/main.rs:47:1
    |
-46 | / check_components! {
-47 | |     Person {
-48 | |         GreeterComponent,
-49 | |     }
-50 | | }
+47 | / check_components! {
+48 | |     Person {
+49 | |         GreeterComponent,
+50 | |     }
+51 | | }
    | |_^ required by this bound in `__CheckPerson`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
