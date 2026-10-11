@@ -144,3 +144,41 @@ fn the_whole_crate_is_expanded_without_a_filter() {
     assert!(out.contains("mod shapes"), "{out}");
     assert!(out.contains("struct Circle"), "{out}");
 }
+
+/// The shape many third-party derives emit: their impls sit inside an unnamed constant's block,
+/// beside the imports those impls resolve through.
+const DERIVE_BLOCKS: &str = "\
+pub struct Rectangle;
+pub struct Circle;
+const _: () = {
+    extern crate serde as _serde;
+    impl _serde::Serialize for Rectangle {}
+};
+const _: () = {
+    extern crate serde as _serde;
+    impl _serde::Serialize for Circle {}
+};
+";
+
+#[test]
+fn an_impl_inside_an_unnamed_constant_selects_its_block() {
+    let out = expand_item(DERIVE_BLOCKS, "Rectangle");
+
+    assert!(out.contains("pub struct Rectangle"), "{out}");
+    // The whole block comes along, so the impl's `_serde` path still resolves.
+    assert!(out.contains("extern crate serde as _serde"), "{out}");
+    assert!(
+        out.contains("impl _serde::Serialize for Rectangle"),
+        "{out}"
+    );
+    assert!(!out.contains("for Circle"), "{out}");
+}
+
+#[test]
+fn a_trait_selects_the_blocks_implementing_it() {
+    let out = expand_item(DERIVE_BLOCKS, "Serialize");
+
+    assert!(out.contains("for Rectangle"), "{out}");
+    assert!(out.contains("for Circle"), "{out}");
+    assert!(!out.contains("pub struct"), "{out}");
+}

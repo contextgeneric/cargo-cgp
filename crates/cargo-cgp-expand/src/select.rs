@@ -14,10 +14,14 @@
 //!    provider-trait impls. This is what makes the filter useful on CGP code: the interesting part of
 //!    a CGP expansion is impls, and the name a reader has in mind is usually the trait's.
 //!
+//! An impl inside an unnamed constant's block (`const _: () = { … };`, the shape many third-party
+//! derives emit) is matched by the same two impl rules, and selecting it selects the whole block,
+//! whose imports the impl's paths resolve through.
+//!
 //! A path is matched against the item's own written path, qualified by the module it sits in — so
 //! `shapes::Rectangle` finds a `Rectangle` declared or implemented inside `mod shapes`.
 
-use syn::{File, Item, Path, Type};
+use syn::{Expr, File, Item, ItemImpl, Path, Stmt, Type};
 
 /// A `::`-separated path naming what to expand, such as `shapes::Rectangle`.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -99,11 +103,16 @@ fn collect(items: &[Item], prefix: &mut Vec<String>, path: &ItemPath, out: &mut 
         match item {
             // An impl has no name of its own, so it is selected by what it is *about*.
             Item::Impl(item_impl) => {
-                let self_ty = self_type_path(&item_impl.self_ty);
-                let trait_path = item_impl.trait_.as_ref().map(|(_, path, _)| path);
-                let selects = self_ty.is_some_and(|path_ref| matches_path(path, prefix, path_ref))
-                    || trait_path.is_some_and(|path_ref| matches_path(path, prefix, path_ref));
-                if selects {
+                if impl_selected(path, prefix, item_impl) {
+                    out.push(item.clone());
+                }
+            }
+            // Many derives put their impls in an unnamed constant's block, beside the imports
+            // those impls resolve through, so an impl selected there brings its whole block.
+            Item::Const(constant) if constant.ident == "_" => {
+                if block_impls(&constant.expr)
+                    .any(|item_impl| impl_selected(path, prefix, item_impl))
+                {
                     out.push(item.clone());
                 }
             }
@@ -118,6 +127,27 @@ fn collect(items: &[Item], prefix: &mut Vec<String>, path: &ItemPath, out: &mut 
             _ => {}
         }
     }
+}
+
+/// Whether `path` selects `item_impl`, by its self type or by its trait.
+fn impl_selected(path: &ItemPath, prefix: &[String], item_impl: &ItemImpl) -> bool {
+    let self_ty = self_type_path(&item_impl.self_ty);
+    let trait_path = item_impl.trait_.as_ref().map(|(_, path, _)| path);
+    self_ty.is_some_and(|path_ref| matches_path(path, prefix, path_ref))
+        || trait_path.is_some_and(|path_ref| matches_path(path, prefix, path_ref))
+}
+
+/// The impls written directly in a block expression, as in `const _: () = { impl … };`. Anything
+/// else yields none.
+fn block_impls(expr: &Expr) -> impl Iterator<Item = &ItemImpl> {
+    let stmts = match expr {
+        Expr::Block(block) => block.block.stmts.as_slice(),
+        _ => &[],
+    };
+    stmts.iter().filter_map(|stmt| match stmt {
+        Stmt::Item(Item::Impl(item_impl)) => Some(item_impl),
+        _ => None,
+    })
 }
 
 /// Whether `path` names the item written as `written` inside module `prefix`.
