@@ -13,4 +13,5 @@ pub mod shape;
 pub mod signals;
 pub mod support;
 pub mod tree;
+pub mod undeclared;
 pub mod wiring;
