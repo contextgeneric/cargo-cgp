@@ -1,0 +1,48 @@
+error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
+  --> src/main.rs:38:9
+   |
+38 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<6, Chars<..>>>` is not implemented for `Rectangle`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
+  --> src/main.rs:27:9
+   |
+27 |     pub width: f64,
+   |         ^^^^^
+note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+  --> src/main.rs:18:1
+   |
+18 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
+note: required by a bound in `__CheckRectangle`
+  --> src/main.rs:36:1
+   |
+36 | / check_components! {
+37 | |     Rectangle {
+38 | |         AreaCalculatorComponent,
+39 | |     }
+40 | | }
+   | |_^ required by this bound in `__CheckRectangle`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0391]: cycle detected when checking if `A` is a trivial const
+  --> src/main.rs:42:1
+   |
+42 | const A: usize = B;
+   | ^^^^^^^^^^^^^^
+   |
+   = note: ...which requires building MIR for `A`...
+note: ...which requires checking if `B` is a trivial const...
+  --> src/main.rs:43:1
+   |
+43 | const B: usize = A;
+   | ^^^^^^^^^^^^^^
+   = note: ...which requires building MIR for `B`...
+   = note: ...which again requires checking if `A` is a trivial const, completing the cycle
+   = note: cycle used when simplifying constant for the type system `A`
+   = note: for more information, see <https://rustc-dev-guide.rust-lang.org/overview.html#queries> and <https://rustc-dev-guide.rust-lang.org/query.html>
+
+Some errors have detailed explanations: E0277, E0391.
+For more information about an error, try `rustc --explain E0277`.
