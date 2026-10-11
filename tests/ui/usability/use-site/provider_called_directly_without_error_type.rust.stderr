@@ -1,0 +1,62 @@
+error[E0277]: the trait bound `App: ErrorTypeProvider<App>` is not satisfied
+  --> src/main.rs:27:13
+   |
+27 |     let _ = Add::try_compute(&App, PhantomData::<()>, (1, 2));
+   |             ^^^ unsatisfied trait bound
+   |
+help: the trait `ErrorTypeProvider<App>` is not implemented for `App`
+  --> src/main.rs:23:1
+   |
+23 | pub struct App;
+   | ^^^^^^^^^^^^^^
+help: the following other types implement trait `ErrorTypeProvider<__Context__>`
+  --> $CGP/crates/core/cgp-error/src/traits/has_error_type.rs:25:1
+   |
+25 | #[cgp_type]
+   | ^^^^^^^^^^^
+   | |
+   | `RedirectLookup<__Components__, __Path__>`
+   | `UseContext`
+   | `UseType<Error>`
+   | `WithProvider<__Provider__>`
+   = note: required for `App` to implement `HasErrorType`
+   = note: required for `Promote<Add>` to implement `IsProviderFor<TryComputerComponent, App, (_, (u64, u64))>`
+   = note: 1 redundant requirement hidden
+   = note: required for `Add` to implement `IsProviderFor<TryComputerComponent, App, (_, (u64, u64))>`
+note: required by a bound in `cgp::prelude::TryComputer::try_compute`
+  --> $CGP/crates/extra/cgp-handler/src/components/try_compute.rs:8:1
+   |
+ 8 | #[cgp_component(TryComputer)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `TryComputer::try_compute`
+...
+13 | pub trait CanTryCompute<Code, Input> {
+...
+16 |     fn try_compute(&self, _code: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
+   = note: this error originates in the attribute macro `cgp_type` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `App: ErrorTypeProvider<App>` is not satisfied
+  --> src/main.rs:27:13
+   |
+27 |     let _ = Add::try_compute(&App, PhantomData::<()>, (1, 2));
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `ErrorTypeProvider<App>` is not implemented for `App`
+  --> src/main.rs:23:1
+   |
+23 | pub struct App;
+   | ^^^^^^^^^^^^^^
+help: the following other types implement trait `ErrorTypeProvider<__Context__>`
+  --> $CGP/crates/core/cgp-error/src/traits/has_error_type.rs:25:1
+   |
+25 | #[cgp_type]
+   | ^^^^^^^^^^^
+   | |
+   | `RedirectLookup<__Components__, __Path__>`
+   | `UseContext`
+   | `UseType<Error>`
+   | `WithProvider<__Provider__>`
+   = note: required for `App` to implement `HasErrorType`
+   = note: required for `Add` to implement `TryComputer<App, (), (u64, u64)>`
+   = note: this error originates in the attribute macro `cgp_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

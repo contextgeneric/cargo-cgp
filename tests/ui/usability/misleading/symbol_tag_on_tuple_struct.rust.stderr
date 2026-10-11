@@ -1,0 +1,22 @@
+error[E0277]: the trait bound `Pair: cgp::prelude::HasField<cgp::prelude::Symbol<1, cgp::prelude::Chars<..>>>` is not satisfied
+  --> src/main.rs:19:21
+   |
+19 |     *pair.get_field(PhantomData::<Symbol!("0")>)
+   |           --------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |           |
+   |           required by a bound introduced by this call
+   |
+help: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<1, cgp::prelude::Chars<..>>>` is not implemented for `Pair`
+  --> src/main.rs:16:1
+   |
+16 | pub struct Pair(pub u32, pub String);
+   | ^^^^^^^^^^^^^^^
+help: `Pair` implements trait `cgp::prelude::HasField<Tag>`
+  --> src/main.rs:16:17
+   |
+16 | pub struct Pair(pub u32, pub String);
+   |                 ^^^^^^^  ^^^^^^^^^^ `cgp::prelude::HasField<cgp::prelude::Index<1>>`
+   |                 |
+   |                 `cgp::prelude::HasField<cgp::prelude::Index<0>>`
+
+For more information about this error, try `rustc --explain E0277`.
