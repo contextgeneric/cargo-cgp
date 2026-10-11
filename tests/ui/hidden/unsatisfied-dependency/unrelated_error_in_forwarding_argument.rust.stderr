@@ -1,0 +1,104 @@
+error[E0277]: the trait bound `Person: CanGreet` is not satisfied
+  --> src/main.rs:53:24
+   |
+53 | impl CanGreetTwice for Person {
+   |                        ^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `Person`
+      but trait `HasField<Symbol<3, Chars<..>>>` is implemented for it
+  --> src/main.rs:36:9
+   |
+36 |     pub age: u8,
+   |         ^^^
+note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, Person>`
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `Person` to implement `IsProviderFor<GreeterComponent, Person>`
+note: required for `Person` to implement `Greeter<Person>`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Person` to implement `CanGreet`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+23 | pub trait CanGreet {
+   |           ^^^^^^^^
+note: required by a bound in `CanGreetTwice`
+  --> src/main.rs:45:26
+   |
+45 | pub trait CanGreetTwice: CanGreet {
+   |                          ^^^^^^^^ required by this bound in `CanGreetTwice`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `greet` exists for reference `&Person`, but its trait bounds were not satisfied
+  --> src/main.rs:55:14
+   |
+35 | pub struct Person {
+   | ----------------- doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<..>>>`
+...
+55 |         self.greet(count(Rc::new(1)))
+   |              ^^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `Greeter`
+  --> src/main.rs:24:5
+   |
+24 |     fn greet(&self, times: u32) -> String;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: trait bound `&Person: Greeter<&Person>` was not satisfied
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+23 | pub trait CanGreet {
+   |           ^^^^^^^^
+note: trait bound `Person: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^----------^^ unsatisfied trait bound introduced here
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+   |
+46 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `CanGreet` defines an item `greet`, perhaps you need to implement it
+  --> src/main.rs:23:1
+   |
+23 | pub trait CanGreet {
+   | ^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+   |
+55 -         self.greet(count(Rc::new(1)))
+55 +         Person::greet(count(Rc::new(1)))
+   |
+
+error[E0277]: `Rc<{integer}>` cannot be sent between threads safely
+  --> src/main.rs:55:26
+   |
+55 |         self.greet(count(Rc::new(1)))
+   |                    ----- ^^^^^^^^^^ `Rc<{integer}>` cannot be sent between threads safely
+   |                    |
+   |                    required by a bound introduced by this call
+   |
+   = help: the trait `Send` is not implemented for `Rc<{integer}>`
+note: required by a bound in `count`
+  --> src/main.rs:49:13
+   |
+49 | fn count<T: Send>(_value: T) -> u32 {
+   |             ^^^^ required by this bound in `count`
+help: consider dereferencing here
+   |
+55 |         self.greet(count(*Rc::new(1)))
+   |                          +
+
+Some errors have detailed explanations: E0277, E0599.
+For more information about an error, try `rustc --explain E0277`.
