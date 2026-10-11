@@ -1,6 +1,6 @@
 //! Tests for the rustc argument-vector preparation ([`cargo_cgp_driver::args::rustc_args`]).
 
-use cargo_cgp_driver::args::rustc_args;
+use cargo_cgp_driver::args::{expand_arg_files, rustc_args};
 
 fn args(items: &[&str]) -> Vec<String> {
     items.iter().map(|s| s.to_string()).collect()
@@ -132,4 +132,41 @@ fn injects_flags_on_a_real_compilation() {
             "--verbose"
         ]
     );
+}
+
+#[test]
+fn expands_an_argument_file_before_the_driver_reads_its_flags() {
+    // When a command line grows long, cargo keeps the wrapper and the rustc path visible and moves
+    // the rest into `@<file>`, one argument per line. The driver's own flags travel there too, so
+    // the file is expanded before anything reads them.
+    let dir = std::env::temp_dir().join(format!("cargo-cgp-argfile-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).expect("a temporary directory");
+    let file = dir.join("args");
+    std::fs::write(
+        &file,
+        "--crate-name=demo\n--cgp-expand=/tmp/out.rs\n-Znext-solver=no\nlib.rs",
+    )
+    .expect("an argument file");
+
+    let expanded = expand_arg_files(args(&[
+        "d",
+        "/tk/bin/rustc",
+        &format!("@{}", file.display()),
+    ]));
+    std::fs::remove_dir_all(&dir).ok();
+
+    assert_eq!(
+        expanded,
+        [
+            "d",
+            "/tk/bin/rustc",
+            "--crate-name=demo",
+            "--cgp-expand=/tmp/out.rs",
+            "-Znext-solver=no",
+            "lib.rs"
+        ]
+    );
+    // The user's solver choice inside the file is now seen, so the injected one is not appended.
+    let out = rustc_args(expanded, None, "--sysroot", &["-Znext-solver=globally"]);
+    assert!(!out.iter().any(|arg| arg == "-Znext-solver=globally"));
 }

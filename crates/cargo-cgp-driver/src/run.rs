@@ -6,7 +6,7 @@ use std::process::ExitCode;
 use rustc_session::EarlyDiagCtxt;
 use rustc_session::config::ErrorOutputType;
 
-use crate::args::{is_wrapper_mode, rustc_args};
+use crate::args::{expand_arg_files, is_wrapper_mode, rustc_args};
 use crate::callbacks::CgpCallbacks;
 use crate::config::{
     BUG_REPORT_URL, EXPAND_FLAG, EXPAND_ITEM_FLAG, NEXT_SOLVER_FLAG, SYSROOT_ENV, SYSROOT_FLAG,
@@ -27,7 +27,7 @@ use crate::version::{version_string, wants_version};
 /// driver does: the `RUSTC_LOG` logger, and an ICE hook, here naming cargo-cgp's issue tracker
 /// and wrapped so a panic the emitter contains is not reported (see [`install_panic_hooks`]).
 pub fn run() -> ExitCode {
-    let mut raw: Vec<String> = env::args().collect();
+    let raw: Vec<String> = env::args().collect();
 
     // A direct invocation (not cargo's wrapper call) answers the tool's own queries here,
     // before touching the compiler: `--help`/`-h` or no arguments prints the help, and
@@ -44,26 +44,31 @@ pub fn run() -> ExitCode {
         }
     }
 
-    // Expand mode is requested by a flag of ours rather than an environment variable, so cargo
-    // scopes it to the one target the user asked about. It is not a rustc flag, so it is taken out
-    // of the vector here, before the arguments are prepared.
-    let expand = take_expand_request(&mut raw, EXPAND_FLAG, EXPAND_ITEM_FLAG);
-
-    // The injected flags shape diagnostics produced during analysis, which expand mode never
-    // reaches — it stops once the crate is expanded — so they are left off there.
-    let injected_flags: &[&str] = if expand.is_some() {
-        &[]
-    } else {
-        &[NEXT_SOLVER_FLAG, VERBOSE_FLAG]
-    };
-
     rustc_driver::init_rustc_env_logger(&EarlyDiagCtxt::new(ErrorOutputType::default()));
     install_panic_hooks(BUG_REPORT_URL);
 
-    let sysroot = env::var(SYSROOT_ENV).ok();
-    let args = rustc_args(raw, sysroot, SYSROOT_FLAG, injected_flags);
-
     rustc_driver::catch_with_exit_code(|| {
+        // Cargo may move all but the wrapper and the `rustc` path into an `@file`, so it is expanded
+        // before the driver reads its own flags or looks for the user's. Inside the catch, so a file
+        // that cannot be read ends the compilation as rustc's own fatal error would.
+        let mut raw = expand_arg_files(raw);
+
+        // Expand mode is requested by a flag of ours rather than an environment variable, so cargo
+        // scopes it to the one target the user asked about. It is not a rustc flag, so it is taken
+        // out of the vector here, before the arguments are prepared.
+        let expand = take_expand_request(&mut raw, EXPAND_FLAG, EXPAND_ITEM_FLAG);
+
+        // The injected flags shape diagnostics produced during analysis, which expand mode never
+        // reaches — it stops once the crate is expanded — so they are left off there.
+        let injected_flags: &[&str] = if expand.is_some() {
+            &[]
+        } else {
+            &[NEXT_SOLVER_FLAG, VERBOSE_FLAG]
+        };
+
+        let sysroot = env::var(SYSROOT_ENV).ok();
+        let args = rustc_args(raw, sysroot, SYSROOT_FLAG, injected_flags);
+
         let mut callbacks = CgpCallbacks { expand };
         rustc_driver::compiler_entrypoint(&args, &mut callbacks);
     })

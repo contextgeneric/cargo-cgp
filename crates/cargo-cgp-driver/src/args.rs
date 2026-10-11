@@ -3,6 +3,22 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
+use rustc_session::EarlyDiagCtxt;
+use rustc_session::config::ErrorOutputType;
+
+/// Replace each `@file` argument with the arguments the file holds, one per line, exactly as rustc
+/// does when it starts ([`rustc_driver::args::arg_expand_all`]).
+///
+/// Cargo moves a long command line into such a file, keeping only the wrapper and the `rustc` path
+/// visible, so the driver's own flags (`--cgp-expand=`) and a user's explicit choices
+/// (`-Znext-solver`, `--verbose`, `--sysroot`) may sit inside it. Expanding first lets the driver
+/// read them; rustc then receives the arguments already expanded. A file that cannot be read is a
+/// fatal error, as it is for rustc.
+pub fn expand_arg_files(raw: Vec<String>) -> Vec<String> {
+    let early_dcx = EarlyDiagCtxt::new(ErrorOutputType::default());
+    rustc_driver::args::arg_expand_all(&early_dcx, &raw)
+}
+
 /// Build the argument vector handed to [`rustc_driver::compiler_entrypoint`].
 ///
 /// cargo invokes the wrapper as `cargo-cgp-driver <path-to-rustc> <rustc args...>`. Like
