@@ -1,14 +1,16 @@
 //! Finding the local items a diagnostic's spans land on.
 //!
 //! Every span-matching anchor starts from these lookups: the trait impls a failure can surface
-//! inside, and the struct/enum definitions a use-site failure's spans touch.
+//! inside (and whether a caret inside one is about it), and the struct/enum definitions a use-site
+//! failure's spans touch.
 
 use rustc_hir::ItemKind;
 use rustc_hir::def::DefKind;
-use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_middle::ty::{self, Interner as _, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
+use crate::resolve::call_site::method_calls_at;
 use crate::resolve::cgp_item::is_provider_struct;
 
 /// The local trait-impl blocks (`impl Trait for Ty { … }`) whose source span contains one of the
@@ -70,4 +72,48 @@ pub(crate) fn impl_self_ty_span(tcx: TyCtxt<'_>, impl_did: DefId) -> Option<Span
         ItemKind::Impl(imp) => Some(imp.self_ty.span),
         _ => None,
     }
+}
+
+/// Whether one of the diagnostic's primary `spans` is about the impl itself rather than about other
+/// code its methods run: a caret on the impl outside every method body (its header), or a caret on
+/// a call inside a body to a method that the impl's trait or one of its supertraits declares (a
+/// forwarding `self.greet()`, which fails because the supertrait does). An unrelated error inside
+/// a body, such as an `Rc` passed to a `Send` bound, is neither, so it keeps its own diagnostic.
+pub(crate) fn is_about_impl(
+    tcx: TyCtxt<'_>,
+    impl_did: DefId,
+    trait_did: DefId,
+    spans: &[Span],
+) -> bool {
+    let Some(local) = impl_did.as_local() else {
+        return false;
+    };
+    let impl_span = tcx.hir_expect_item(local).span;
+    let bodies: Vec<Span> = tcx
+        .associated_item_def_ids(impl_did)
+        .iter()
+        .filter_map(|item| tcx.hir_maybe_body_owned_by(item.as_local()?))
+        .map(|body| body.value.span)
+        .collect();
+    let (in_bodies, outside): (Vec<Span>, Vec<Span>) = spans
+        .iter()
+        .copied()
+        .filter(|span| impl_span.contains(*span))
+        .partition(|span| bodies.iter().any(|body| body.contains(*span)));
+    if !outside.is_empty() {
+        return true;
+    }
+    if in_bodies.is_empty() {
+        return false;
+    }
+    let traits: Vec<DefId> = std::iter::once(trait_did)
+        .chain(tcx.supertrait_def_ids(trait_did))
+        .collect();
+    method_calls_at(tcx, &in_bodies).iter().any(|call| {
+        traits.iter().any(|&trait_did| {
+            tcx.associated_items(trait_did)
+                .filter_by_name_unhygienic(call.method)
+                .any(|item| matches!(item.kind, ty::AssocKind::Fn { .. }))
+        })
+    })
 }

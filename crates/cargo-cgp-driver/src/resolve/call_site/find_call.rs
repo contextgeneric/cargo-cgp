@@ -5,7 +5,7 @@ use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Expr, ExprKind};
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
-use rustc_span::{Span, Symbol};
+use rustc_span::{DesugaringKind, Span, Symbol};
 
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{receiver_context, seed_from_call};
@@ -16,7 +16,7 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// from the receiver's binding, the component's parameters by unifying the call's written
 /// argument types against the method's declared signature, and seed the walk with a rigid
 /// placeholder for each parameter the call leaves to inference. `None` when no method call sits
-/// at the diagnostic's spans, the receiver's type is not syntactically recoverable, or no
+/// at the diagnostic's primary spans, the receiver's type is not syntactically recoverable, or no
 /// placeholder-free root cause is found.
 ///
 /// The called method resolves through either a CGP **consumer trait** or a `#[cgp_fn]` /
@@ -65,7 +65,7 @@ pub fn resolve_call_site(
     None
 }
 
-/// One method call found at the diagnostic's spans: the method name, the receiver expression,
+/// One method call found at the diagnostic's primary spans: the method name, the receiver expression,
 /// and the call's argument expressions.
 pub(crate) struct MethodCall<'tcx> {
     pub(crate) method: Symbol,
@@ -73,16 +73,17 @@ pub(crate) struct MethodCall<'tcx> {
     pub(crate) args: &'tcx [Expr<'tcx>],
 }
 
-/// Every method-call expression in a local body at one of the diagnostic's spans. A use-site
-/// failure's spans sit on the method name, an argument, the whole call — or, for the re-report
-/// rustc raises where the result is awaited, on the `.await` alone, whose desugared wrapper
-/// expressions contain the call without the call's own span overlapping. So a method call is
-/// collected when its own span overlaps a diagnostic span *or* it sits inside any expression
-/// whose span does; each match is a candidate the caller tries (and gates on actually failing).
+/// Every method-call expression in a local body that one of the diagnostic's primary spans lands
+/// on. A use-site failure's primary span sits on the method name, an argument, or the whole call,
+/// so a call is collected when its own span overlaps one. The re-report rustc raises where the
+/// result is awaited sits on the `.await` alone, whose desugared wrapper expressions contain the
+/// call without the call's own span overlapping, so a match also carries into the expressions an
+/// `.await` desugaring wraps. It never carries through an ordinary enclosing expression: a
+/// function's body block overlaps every error inside it, and those errors are not about its calls.
 pub(crate) fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<MethodCall<'tcx>> {
     let mut finder = CallFinder {
         spans,
-        within_match: false,
+        within_await: false,
         calls: Vec::new(),
     };
     for owner in tcx.hir_body_owners() {
@@ -93,14 +94,15 @@ pub(crate) fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Me
 
 struct CallFinder<'a, 'tcx> {
     spans: &'a [Span],
-    /// Whether the current expression sits inside one whose span overlapped a diagnostic span.
-    within_match: bool,
+    /// Whether the current expression sits inside an `.await` desugaring that a diagnostic span
+    /// landed on.
+    within_await: bool,
     calls: Vec<MethodCall<'tcx>>,
 }
 
 impl<'tcx> Visitor<'tcx> for CallFinder<'_, 'tcx> {
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        let matched = self.within_match || self.spans.iter().any(|span| span.overlaps(expr.span));
+        let matched = self.within_await || self.spans.iter().any(|span| span.overlaps(expr.span));
         if matched && let ExprKind::MethodCall(segment, receiver, args, _) = expr.kind {
             self.calls.push(MethodCall {
                 method: segment.ident.name,
@@ -108,9 +110,10 @@ impl<'tcx> Visitor<'tcx> for CallFinder<'_, 'tcx> {
                 args,
             });
         }
-        let saved = std::mem::replace(&mut self.within_match, matched);
+        let carries = matched && expr.span.is_desugaring(DesugaringKind::Await);
+        let saved = std::mem::replace(&mut self.within_await, carries);
         intravisit::walk_expr(self, expr);
-        self.within_match = saved;
+        self.within_await = saved;
     }
 }
 

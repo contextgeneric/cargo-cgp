@@ -1,8 +1,27 @@
-error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `Person`
-  --> src/main.rs:45:16
+error[E0277]: `Rc<{integer}>` cannot be sent between threads safely
+  --> src/main.rs:44:16
    |
-45 |     needs_send(Rc::new(1));
-   |                ^^^^^^^^^^
+44 |     needs_send(Rc::new(1));
+   |     ---------- ^^^^^^^^^^ `Rc<{integer}>` cannot be sent between threads safely
+   |     |
+   |     required by a bound introduced by this call
+   |
+   = help: the trait `Send` is not implemented for `Rc<{integer}>`
+note: required by a bound in `needs_send`
+  --> src/main.rs:41:18
+   |
+41 | fn needs_send<T: Send>(_value: T) {}
+   |                  ^^^^ required by this bound in `needs_send`
+help: consider dereferencing here
+   |
+44 |     needs_send(*Rc::new(1));
+   |                +
+
+error[E0599]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `Person`
+  --> src/main.rs:45:12
+   |
+45 |     person.greet()
+   |            ^^^^^
    |
    = note: root cause: [CGP-E106] missing field `name` on `Person`
            this is required through the dependency chain:
@@ -10,4 +29,5 @@ error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for co
              └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
                └─ [CGP-E106] missing field `name` on `Person`
 
-For more information about this error, try `rustc --explain E0277`.
+Some errors have detailed explanations: E0277, E0599.
+For more information about an error, try `rustc --explain E0277`.

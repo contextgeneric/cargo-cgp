@@ -2,13 +2,12 @@
 //! A plain Rust error in a function that also calls a consumer method whose wiring fails.
 //!
 //! `Person` is missing the `name` field `GreetHello` reads, so `person.greet()` fails. The line
-//! before it passes an `Rc` to a `Send` bound, a separate mistake. Plain `cargo check` reports both;
-//! the tool re-anchors the `Send` error to the failing call, prints one `[CGP-E001]` block with its
-//! caret on the `Rc` line, and drops the `Send` error.
+//! before it passes an `Rc` to a `Send` bound, a separate mistake. The tool reports both, as plain
+//! `cargo check` does: the `Send` error as rustc wrote it, and the `[CGP-E001]` block with its caret
+//! on the `greet` call. The call-site anchor matches a call only by the diagnostic's primary span,
+//! so it does not reach `person.greet()` through the function body that encloses the `Send` error.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

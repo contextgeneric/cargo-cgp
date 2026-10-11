@@ -11,4 +11,23 @@ error[E0277]: [CGP-E009] the trait `CanGreetTwice` is not implemented for contex
                └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
                  └─ [CGP-E106] missing field `name` on `Person`
 
+error[E0277]: `Rc<{integer}>` cannot be sent between threads safely
+  --> src/main.rs:50:20
+   |
+50 |         needs_send(Rc::new(1));
+   |         ---------- ^^^^^^^^^^ `Rc<{integer}>` cannot be sent between threads safely
+   |         |
+   |         required by a bound introduced by this call
+   |
+   = help: the trait `Send` is not implemented for `Rc<{integer}>`
+note: required by a bound in `needs_send`
+  --> src/main.rs:46:18
+   |
+46 | fn needs_send<T: Send>(_value: T) {}
+   |                  ^^^^ required by this bound in `needs_send`
+help: consider dereferencing here
+   |
+50 |         needs_send(*Rc::new(1));
+   |                    +
+
 For more information about this error, try `rustc --explain E0277`.

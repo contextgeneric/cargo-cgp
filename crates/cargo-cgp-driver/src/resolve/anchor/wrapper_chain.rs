@@ -9,7 +9,7 @@ use rustc_middle::ty::{
 use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::anchor::enclosing_trait_impls;
+use crate::resolve::anchor::{enclosing_trait_impls, is_about_impl};
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt, is_provider_trait};
 use crate::resolve::walk::{holds, resolve_leaves};
@@ -32,6 +32,9 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// obligation with the trait solver rather than trusting rustc's cascade-suppressed diagnostic, it
 /// recovers the cause even where rustc's own error names only the outermost unsatisfied bound.
 /// `None` when no enclosing impl's supertrait chain reaches a CGP consumer on a local context.
+///
+/// `spans` are the diagnostic's primary spans, gated by [`is_about_impl`] as the impl-site anchor's
+/// are.
 pub fn resolve_wrapper_chain(
     tcx: TyCtxt<'_>,
     cache: &ResolveCache,
@@ -47,6 +50,9 @@ pub fn resolve_wrapper_chain(
         // the provider trait's own `__Context__` parameter into the tree. A caret on a provider's own
         // impl is a documented decline (mirrored in [`resolve_impl_site`](super::resolve_impl_site)).
         if is_provider_trait(tcx, trait_ref.def_id) {
+            continue;
+        }
+        if !is_about_impl(tcx, impl_did, trait_ref.def_id, spans) {
             continue;
         }
         let self_ty = tcx.erase_and_anonymize_regions(trait_ref.self_ty());

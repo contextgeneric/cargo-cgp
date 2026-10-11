@@ -2,13 +2,13 @@
 //! A plain Rust error inside a hand-written impl whose CGP supertrait also fails.
 //!
 //! `Person` is missing the `name` field `GreetHello` reads, so `CanGreetTwice`'s supertrait
-//! `CanGreet` fails. The impl body also passes an `Rc` to a `Send` bound, a separate mistake. Plain
-//! `cargo check` reports both; the tool re-anchors the `Send` error to the CGP failure and its
-//! de-duplication then drops it, so the user never sees an error they must fix.
+//! `CanGreet` fails. The impl body also passes an `Rc` to a `Send` bound, a separate mistake. The
+//! tool reports both, as plain `cargo check` does: the `[CGP-E009]` block on the impl, and the
+//! `Send` error as rustc wrote it. The impl-site anchor takes a caret inside a method body only on a
+//! call to a method of the impl's trait or its supertraits, so the forwarding `self.greet()` error
+//! joins the CGP block while the `Send` error keeps its own.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -1,48 +1,48 @@
 error[E0277]: `Rc<{integer}>` cannot be sent between threads safely
-  --> src/main.rs:45:16
+  --> src/main.rs:44:16
    |
-45 |     needs_send(Rc::new(1));
+44 |     needs_send(Rc::new(1));
    |     ---------- ^^^^^^^^^^ `Rc<{integer}>` cannot be sent between threads safely
    |     |
    |     required by a bound introduced by this call
    |
    = help: the trait `Send` is not implemented for `Rc<{integer}>`
 note: required by a bound in `needs_send`
-  --> src/main.rs:42:18
+  --> src/main.rs:41:18
    |
-42 | fn needs_send<T: Send>(_value: T) {}
+41 | fn needs_send<T: Send>(_value: T) {}
    |                  ^^^^ required by this bound in `needs_send`
 help: consider dereferencing here
    |
-45 |     needs_send(*Rc::new(1));
+44 |     needs_send(*Rc::new(1));
    |                +
 
 error[E0599]: the method `greet` exists for reference `&Person`, but its trait bounds were not satisfied
-  --> src/main.rs:46:12
+  --> src/main.rs:45:12
    |
-32 | pub struct Person {
+31 | pub struct Person {
    | ----------------- doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<..>>>`
 ...
-46 |     person.greet()
+45 |     person.greet()
    |            ^^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `Greeter`
-  --> src/main.rs:21:5
+  --> src/main.rs:20:5
    |
-21 |     fn greet(&self) -> String;
+20 |     fn greet(&self) -> String;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: trait bound `&Person: Greeter<&Person>` was not satisfied
-  --> src/main.rs:19:1
+  --> src/main.rs:18:1
    |
-19 | #[cgp_component(Greeter)]
+18 | #[cgp_component(Greeter)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^
-20 | pub trait CanGreet {
+19 | pub trait CanGreet {
    |           ^^^^^^^^
 note: trait bound `Person: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
-  --> src/main.rs:24:1
+  --> src/main.rs:23:1
    |
-24 | #[cgp_impl(new GreetHello)]
+23 | #[cgp_impl(new GreetHello)]
    | ^^^^^^^^^^^^^^^----------^^ unsatisfied trait bound introduced here
 note: the trait `cgp::prelude::HasField` must be implemented
   --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
@@ -51,15 +51,15 @@ note: the trait `cgp::prelude::HasField` must be implemented
    | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanGreet` defines an item `greet`, perhaps you need to implement it
-  --> src/main.rs:20:1
+  --> src/main.rs:19:1
    |
-20 | pub trait CanGreet {
+19 | pub trait CanGreet {
    | ^^^^^^^^^^^^^^^^^^
    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
-46 -     person.greet()
-46 +     Person::greet()
+45 -     person.greet()
+45 +     Person::greet()
    |
 
 Some errors have detailed explanations: E0277, E0599.

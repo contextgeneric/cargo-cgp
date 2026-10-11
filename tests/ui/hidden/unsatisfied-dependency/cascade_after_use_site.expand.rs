@@ -19,11 +19,9 @@
 //! One block remains of the four rustc reports. The re-report where the result is awaited
 //! resolves to the same cause and de-duplicates away. The trailing `?`-operator
 //! `Try`/`FromResidual` cascade, which restates the failure and dumps the unresolved
-//! `<App as CanHandle<..>>::Output` projection, also disappears, but not through the emitter's
-//! dedicated `?`-cascade gate, which does not run here: the call-site anchor re-anchors those
-//! errors to the failing call, and de-duplication drops them. That re-anchoring is too broad
-//! (it also hides unrelated errors, see `unrelated_error_before_call`), so its fix must keep this
-//! cascade suppressed through the gate.
+//! `<App as CanHandle<..>>::Output` projection, is dropped by the emitter's `?`-cascade gate: its
+//! span overlaps the CGP failure already reported, and the resolver never takes a `?` error, so
+//! without the gate both errors would print.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

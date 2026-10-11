@@ -732,11 +732,21 @@ impl<E: Emitter> CgpEmitter<E> {
         {
             return None;
         }
+        // A `?`-operator error is about `Try` on the call's result, not about the call's bounds; the
+        // cascade gate in `emit_diagnostic` drops one that follows a CGP failure, and any other is
+        // left as rustc wrote it rather than re-anchored onto the call it overlaps.
+        if is_question_mark_cascade(diag) {
+            return None;
+        }
         let primary_span = diag.span.primary_span()?;
         let cache = &self.resolve_cache;
         let (resolved, at_call) = rustc_middle::ty::tls::with_opt(|tcx| {
             let tcx = tcx?;
             let spans = diagnostic_spans(diag);
+            // The impl-site, wrapper-chain, and call-site anchors re-anchor a diagnostic onto code it
+            // sits inside, so they match only where rustc aimed it: a secondary label or a note can
+            // point at any code the failure passed through.
+            let primary = diag.span.primary_spans();
             // Prefer the check-entry anchor (an obligation recovered from the check impl at the
             // caret). Failing that, the impl-site anchor recovers the exact failing obligation —
             // with its concrete component parameters — from a hand-written `impl … for Context`
@@ -747,8 +757,8 @@ impl<E: Emitter> CgpEmitter<E> {
             // as a consumer-method call, whose obligation no check impl carries — recover the
             // context from the diagnostic's spans.
             let resolved = resolve::resolve_check_failure(tcx, cache, primary_span)
-                .or_else(|| resolve::resolve_impl_site(tcx, cache, &spans))
-                .or_else(|| resolve::resolve_wrapper_chain(tcx, cache, &spans))
+                .or_else(|| resolve::resolve_impl_site(tcx, cache, primary))
+                .or_else(|| resolve::resolve_wrapper_chain(tcx, cache, primary))
                 .or_else(|| resolve::resolve_use_site(tcx, cache, &spans))
                 // A namespace-joined context's wiring lives in the namespace, not its own
                 // `DelegateComponent` impls, so the per-component re-check above finds nothing;
@@ -764,7 +774,7 @@ impl<E: Emitter> CgpEmitter<E> {
             // call to a `#[cgp_fn]` trait method. A resolution from here is flagged, so the
             // header is worded from the trait the call needs rather than from whichever provider
             // bound rustc's headline stopped on.
-            if let Some(resolved) = resolve::resolve_call_site(tcx, cache, &spans) {
+            if let Some(resolved) = resolve::resolve_call_site(tcx, cache, primary) {
                 return Some((resolved, true));
             }
             // Last: a `#[cgp_fn]` / `#[blanket_trait]` blanket trait the diagnostic names in its
@@ -972,6 +982,21 @@ impl<E: Emitter> CgpEmitter<E> {
             self.push(BufEntry::Plain(Box::new(diag)));
             return;
         }
+        if is_question_mark_cascade(&diag) && self.overlaps_cgp_failure(&diag) {
+            // A downstream `?`-operator cascade of a CGP wiring failure already reported at this
+            // expression: it restates the failure in `Try` terms and dumps the unresolved projected
+            // type, adding nothing. Drop it (cargo re-counts emitted diagnostics, so the "N errors"
+            // summary stays honest). A `?` error with no CGP failure on its expression is untouched.
+            // The check runs before resolution, since the call-site anchor would otherwise
+            // re-anchor the cascade onto the failing call it overlaps.
+            //
+            // Only the `?` cascade is dropped, never a `[T]: Sized` one: an unsized error the failed
+            // method/trait resolution trails can land off the failing expression (on the binding
+            // pattern, or a later statement the unresolved type flows into), where a span-overlap
+            // check misses it and a broader check would risk suppressing an unrelated error — so
+            // those are left in place rather than dropped unreliably.
+            return;
+        }
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
         // resolver declines, the wiring-message rename runs as the first fallback pass. A resolved
         // failure also yields its span-independent cause signature, for the de-duplication below.
@@ -1032,22 +1057,10 @@ impl<E: Emitter> CgpEmitter<E> {
         };
         self.postprocess(&mut diag, origin);
         if rewritten {
-            // Remember where this wiring failure landed, so a `?`-operator cascade on the same
-            // expression can be dropped below. Recorded before de-duplication, so a re-report that
-            // is itself suppressed still anchors its cascade.
+            // Remember where this wiring failure landed, so a later `?`-operator cascade on the same
+            // expression is dropped. Recorded before de-duplication, so a re-report that is itself
+            // suppressed still anchors its cascade.
             self.record_cgp_spans(&diag);
-        } else if is_question_mark_cascade(&diag) && self.overlaps_cgp_failure(&diag) {
-            // A downstream `?`-operator cascade of a CGP wiring failure already reported at this
-            // expression: it restates the failure in `Try` terms and dumps the unresolved projected
-            // type, adding nothing. Drop it (cargo re-counts emitted diagnostics, so the "N errors"
-            // summary stays honest). A `?` error with no CGP failure on its expression is untouched.
-            //
-            // Only the `?` cascade is dropped, never a `[T]: Sized` one: an unsized error the failed
-            // method/trait resolution trails can land off the failing expression (on the binding
-            // pattern, or a later statement the unresolved type flows into), where a span-overlap
-            // check misses it and a broader check would risk suppressing an unrelated error — so
-            // those are left in place rather than dropped unreliably.
-            return;
         }
         // Cross-diagnostic de-duplication. CGP wiring is lazy, so one mistake surfaces as the same
         // error at many sites — the `check_components!` entry, every hand-written `impl` that

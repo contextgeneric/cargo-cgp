@@ -1,27 +1,42 @@
-error[E0277]: [CGP-E009] the trait `Describe` is not implemented for context `App`
-  --> src/main.rs:37:18
+error[E0277]: the trait bound `App: Describe` is not satisfied
+  --> src/main.rs:33:18
    |
-37 |     let _ = show(&app);
-   |                  ^^^^
+33 |     let _ = show(&app);
+   |             ---- ^^^^ unsatisfied trait bound
+   |             |
+   |             required by a bound introduced by this call
    |
-   = note: root cause: [CGP-E201] the trait bound `App: Display` is not satisfied
-           this is required through the dependency chain:
-             [CGP-E105] trait impl `Describe` for `App`
-             └─ the trait bound `App: Display` is not satisfied
+help: the trait `std::fmt::Display` is not implemented for `App`
+  --> src/main.rs:25:1
+   |
+25 | pub struct App;
+   | ^^^^^^^^^^^^^^
+note: required for `App` to implement `Describe`
+  --> src/main.rs:19:18
+   |
+19 | impl<T: Display> Describe for T {
+   |         -------  ^^^^^^^^     ^
+   |         |
+   |         unsatisfied trait bound introduced here
+note: required by a bound in `show`
+  --> src/main.rs:27:12
+   |
+27 | fn show<T: Describe>(value: &T) -> String {
+   |            ^^^^^^^^ required by this bound in `show`
 
 error[E0599]: `App` doesn't implement `std::fmt::Display`
-    --> src/main.rs:38:17
+    --> src/main.rs:34:17
      |
-  29 | pub struct App;
+  25 | pub struct App;
      | -------------- method `describe` not found for this struct because it doesn't satisfy `App: Describe` or `App: std::fmt::Display`
 ...
-  38 |     let _ = app.describe();
+  34 |     let _ = app.describe();
      |                 ^^^^^^^^ method cannot be called on `App` due to unsatisfied trait bounds
      |
 note: trait bound `App: std::fmt::Display` was not satisfied
-    --> src/main.rs:23:9
+    --> src/main.rs:19:9
      |
-  23 | impl<T: Display> Describe for T {
+  19 | impl<T: Display> Describe for T {
      |         ^^^^^^^  --------     -
      |         |
      |         unsatisfied trait bound introduced here
@@ -32,9 +47,9 @@ note: the trait `std::fmt::Display` must be implemented
      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
      = help: items from traits can only be used if the trait is implemented and in scope
 note: `Describe` defines an item `describe`, perhaps you need to implement it
-    --> src/main.rs:19:1
+    --> src/main.rs:15:1
      |
-  19 | pub trait Describe {
+  15 | pub trait Describe {
      | ^^^^^^^^^^^^^^^^^^
 
 Some errors have detailed explanations: E0277, E0599.

@@ -4,8 +4,9 @@ use cargo_cgp_error_processing::{Causes, DepNode, Resolved};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 use rustc_span::Span;
+use rustc_span::def_id::DefId;
 
-use crate::resolve::anchor::enclosing_trait_impls;
+use crate::resolve::anchor::{enclosing_trait_impls, is_about_impl};
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{
     consumer_provider_trait, is_blanket_trait, is_local_adt, is_provider_trait,
@@ -32,6 +33,9 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// Because the wrapper is a distinct trait from that supertrait, its error stands on its own rather
 /// than de-duplicating into the `check_components!` entry. `None` when no enclosing impl on a local
 /// context carries an unmet, reconstructable CGP consumer supertrait.
+///
+/// `spans` are the diagnostic's primary spans, and an impl counts only when one of them is about the
+/// impl itself ([`is_about_impl`]), so an unrelated error inside a method body is left alone.
 pub fn resolve_impl_site(
     tcx: TyCtxt<'_>,
     cache: &ResolveCache,
@@ -43,6 +47,9 @@ pub fn resolve_impl_site(
             .impl_trait_ref(impl_did)
             .instantiate_identity()
             .skip_norm_wip();
+        if !is_about_impl(tcx, impl_did, trait_ref.def_id, spans) {
+            continue;
+        }
         // A provider-trait impl (`impl Runner<Ctx> for RunViaInner`) has a *provider* struct as its
         // `Self`, not a context, and its only supertrait is `IsProviderFor` — so the supertrait
         // recovery below would reach a consumer only via the `IsProviderFor` workaround this resolver
@@ -97,7 +104,7 @@ pub fn resolve_impl_site(
 fn cross_context_where_bound<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
-    impl_did: rustc_span::def_id::DefId,
+    impl_did: DefId,
 ) -> Option<Resolved> {
     for &(clause, _) in tcx.clauses_of(impl_did).clauses {
         let Some(bound) = clause.as_trait_clause() else {
