@@ -14,7 +14,7 @@ use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, trait_generics};
 use crate::resolve::walk::{
     ProjectionMismatch, holds, impl_where_obligations, is_descendable, is_has_field,
-    is_workaround_plumbing, projection_mismatch,
+    is_workaround_plumbing, may_hold_for_some_unknown, projection_mismatch,
 };
 
 /// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or
@@ -337,7 +337,10 @@ fn delegated_table_lookups<'tcx>(
 /// path *plus the component's parameters*, so a lookup recovered from a call whose input is inferred
 /// carries that placeholder as the path's last segment: the leaf would name an entry the programmer
 /// could not write, and would be dropped as unknowable before it was ever shown. Trimming leaves the
-/// path they can actually wire ([`trim_unknown_path_tail`]).
+/// path they can actually wire ([`trim_unknown_path_tail`]). The trimmed leaf claims the context has
+/// no entry under that path for *any* value of the unknown, so it is kept only when the lookup may
+/// hold for none ([`may_hold_for_some_unknown`]); otherwise `pred` is returned untrimmed, and the
+/// placeholder it carries drops it.
 fn missing_context_wiring<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitClause<'tcx>,
@@ -360,6 +363,9 @@ fn missing_context_wiring<'tcx>(
     let Some(trimmed) = trim_unknown_path_tail(tcx, key) else {
         return Some(pred);
     };
+    if may_hold_for_some_unknown(tcx, pred) {
+        return Some(pred);
+    }
     let args: [ty::GenericArg<'tcx>; 2] = [trait_ref.self_ty().into(), trimmed.into()];
     let trait_ref = ty::TraitRef::new(tcx, trait_ref.def_id, args);
     Some(ty::Binder::dummy(trait_ref).upcast(tcx))

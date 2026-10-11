@@ -128,7 +128,7 @@ fn try_project_fixed<'tcx>(tcx: TyCtxt<'tcx>, alias_ty: Ty<'tcx>) -> Option<Ty<'
 /// equalities are preserved. A leaked higher-ranked binder's placeholder (a non-root universe) is
 /// left alone. The inverse of [`unknowns_to_placeholders`], used to let the solver *defer* a bound
 /// on the unknown rather than reject it while a fixed projection is reduced.
-fn placeholders_to_infer<'tcx, T>(infcx: &InferCtxt<'tcx>, value: T) -> T
+pub(crate) fn placeholders_to_infer<'tcx, T>(infcx: &InferCtxt<'tcx>, value: T) -> T
 where
     T: TypeFoldable<TyCtxt<'tcx>>,
 {

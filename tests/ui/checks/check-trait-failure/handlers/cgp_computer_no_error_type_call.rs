@@ -1,15 +1,14 @@
 //! `try_compute` on a context wiring a `#[cgp_computer]` provider and no error type.
 //!
-//! Beside the real `[CGP-E107]` on `ErrorTypeProviderComponent`, the tool reports a second root cause,
-//! `[CGP-E110] provider `Add` does not contain any delegate entry for `ComputerComponent``, which is
-//! false: the call-site anchor types the input `(_, _)`, so `Add`'s own impl does not match.
+//! The one root cause is `[CGP-E107]` on `ErrorTypeProviderComponent`. The call-site anchor types
+//! the input `(_, _)`, so `Add`'s own `Computer` impl does not match and the walk reaches its
+//! delegation blanket; `Add` has its own impl of the trait, so the unmet `DelegateComponent` there
+//! is a dead end rather than a missing dispatch entry, even though `Add` wires its promotions.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E107 CGP-E110
+//@quality: acceptable
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E107
 
 use core::marker::PhantomData;
 

@@ -1,10 +1,10 @@
 error[E0599]: the method `handle` exists for reference `&App`, but its trait bounds were not satisfied
-  --> src/main.rs:79:9
+  --> src/main.rs:78:9
    |
-64 | pub struct App {
+63 | pub struct App {
    | -------------- doesn't satisfy `App: CanHandle<_, _>` or `_: HasField<Symbol<4, Chars<..>>>`
 ...
-79 |     app.handle(PhantomData::<()>, Vec::new()).await
+78 |     app.handle(PhantomData::<()>, Vec::new()).await
    |         ^^^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
@@ -14,11 +14,11 @@ note: the candidate is defined in the trait `Handler`
 17 |     async fn handle(&self, _tag: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
-  --> src/main.rs:45:1
+  --> src/main.rs:44:1
    |
-45 | #[cgp_auto_getter]
+44 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-46 | pub trait HasName {
+45 | pub trait HasName {
    |           ^^^^^^^
    = note: the following trait bounds were not satisfied:
            `&App: ErrorTypeProvider<&App>`
@@ -34,8 +34,8 @@ note: the trait `cgp::prelude::HasField` must be implemented
    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
-79 -     app.handle(PhantomData::<()>, Vec::new()).await
-79 +     App::handle(PhantomData::<()>, Vec::new()).await
+78 -     app.handle(PhantomData::<()>, Vec::new()).await
+78 +     App::handle(PhantomData::<()>, Vec::new()).await
    |
 
 For more information about this error, try `rustc --explain E0599`.

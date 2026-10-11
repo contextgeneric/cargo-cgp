@@ -25,7 +25,10 @@ use crate::resolve::cgp_item::is_cgp_item;
 ///   owner-property check cannot see;
 /// - on a **delegation table reached via the generic blanket** — an aggregate provider whose own
 ///   table lacks a key, recognized because the owner wires *some* other key
-///   ([`owner_has_impl_of`] for `DelegateComponent`).
+///   ([`owner_has_impl_of`] for `DelegateComponent`) and has no concrete impl of the parent trait.
+///   An owner that has one can never wire the trait's key too (the blanket and the impl would
+///   overlap), so it is the dead-end below even when it wires other keys, as a `#[cgp_computer]`
+///   provider wires its promotions.
 ///
 /// It is dropped only when it is none of these. The case that makes the last gate load-bearing (not
 /// just cautious): a **leaf provider** whose concrete impl fixes an input type the walk cannot match.
@@ -62,14 +65,23 @@ pub(crate) fn is_reportable_leaf<'tcx>(
         let self_ty = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
         if self_ty == context
             || parent.is_some_and(|p| is_dispatch_lookup(tcx, self_ty, p.self_ty()))
-            || owner_has_impl_of(tcx, did, self_ty)
         {
             return true;
         }
-        // Reached via the generic blanket for the parent provider trait: report only when the owner
-        // has no concrete impl of that trait (a genuine non-provider), never when it has one that
-        // merely failed to unify (a valid provider reached by an input mismatch — a dead-end).
-        return parent.is_some_and(|p| !owner_has_impl_of(tcx, p.def_id, self_ty));
+        // Reached via the generic blanket for the parent provider trait, which keys on the owner
+        // itself. An owner with a concrete impl of that trait can never wire its key too (the
+        // blanket and the impl would overlap), so the blanket was reached only because that impl
+        // did not unify: a dead-end, even when the owner wires other keys, as a `#[cgp_computer]`
+        // provider wires its promotions.
+        if parent.is_some_and(|p| {
+            tcx.erase_and_anonymize_regions(p.self_ty()) == self_ty
+                && owner_has_impl_of(tcx, p.def_id, self_ty)
+        }) {
+            return false;
+        }
+        // Otherwise an owner that wires some key is a table missing this one, and an owner that
+        // wires none is a genuine non-provider.
+        return owner_has_impl_of(tcx, did, self_ty) || parent.is_some();
     }
     !is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         && !is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)

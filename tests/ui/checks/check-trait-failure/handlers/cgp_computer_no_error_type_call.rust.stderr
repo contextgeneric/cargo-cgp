@@ -1,10 +1,10 @@
 error[E0599]: the method `try_compute` exists for struct `App`, but its trait bounds were not satisfied
-  --> src/main.rs:33:17
+  --> src/main.rs:32:17
    |
-24 | pub struct App;
+23 | pub struct App;
    | -------------- method `try_compute` not found for this struct because it doesn't satisfy `App: CanTryCompute<_, _>` or `App: ErrorTypeProvider<App>`
 ...
-33 |     let _ = App.try_compute(PhantomData::<()>, (1, 2));
+32 |     let _ = App.try_compute(PhantomData::<()>, (1, 2));
    |                 ^^^^^^^^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
@@ -28,8 +28,8 @@ note: the trait `ErrorTypeProvider` must be implemented
            candidate #1: `CanTryCompute`
 help: use associated function syntax instead
    |
-33 -     let _ = App.try_compute(PhantomData::<()>, (1, 2));
-33 +     let _ = App::try_compute(PhantomData::<()>, (1, 2));
+32 -     let _ = App.try_compute(PhantomData::<()>, (1, 2));
+32 +     let _ = App::try_compute(PhantomData::<()>, (1, 2));
    |
 
 For more information about this error, try `rustc --explain E0599`.

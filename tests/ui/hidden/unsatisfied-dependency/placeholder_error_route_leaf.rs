@@ -1,16 +1,15 @@
 //! A pipeline call whose first stage raises its input's error type, with the input left to inference.
 //!
 //! `App` runs `PipeHandlers<Product![ParseInput, GreetName]>` and lacks the `name` field `GreetName`
-//! reads, the real mistake. `ParseInput` requires `CanRaiseError<Input::Error>`, and the call's
-//! `Vec::new()` input is not written, so the call-site anchor seeds it as an unknown. The tool reports
-//! a second root cause beside the missing field: `CanRaiseError<_>` reaches the `open` error table and
-//! becomes `[CGP-E107]` "no delegate entry for `@ErrorRaiserComponent`", which is false, since the
-//! table routes the input's real error type, `String`.
+//! reads, the real mistake and the one root cause shown. `ParseInput` requires
+//! `CanRaiseError<Input::Error>`, and the call's `Vec::new()` input is not written, so the
+//! call-site anchor seeds it as an unknown. The lookup `@ErrorRaiserComponent.<unknown>` would hold
+//! for the input's real error type, `String`, so it is not reported as a missing entry.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
-//@quality: usability
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E105 CGP-E106 CGP-E107
+//@quality: acceptable
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E105 CGP-E106
 
 use core::marker::PhantomData;
 
