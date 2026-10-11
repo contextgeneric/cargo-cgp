@@ -1,0 +1,40 @@
+error[E0277]: the trait bound `App: HasField<Symbol<7, Chars<..>>>` is not satisfied
+  --> src/main.rs:83:23
+   |
+83 |     #[check_providers(shapes_a::MeasureWidthA)]
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<7, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
+  --> src/main.rs:72:9
+   |
+72 |     pub other: f64,
+   |         ^^^^^
+note: required for `App` to implement `HasWidthA`
+  --> src/main.rs:26:5
+   |
+26 |     #[cgp_auto_getter]
+   |     ^^^^^^^^^^^^^^^^^^
+27 |     pub trait HasWidthA {
+   |               ^^^^^^^^^
+note: required for `MeasureWidthA` to implement `IsProviderFor<shapes_a::MeasurerComponent, App>`
+  --> src/main.rs:31:5
+   |
+31 |     #[cgp_impl(new MeasureWidthA: MeasurerComponent)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+34 |         Self: HasWidthA,
+   |               --------- unsatisfied trait bound introduced here
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:82:1
+   |
+82 | / check_components! {
+83 | |     #[check_providers(shapes_a::MeasureWidthA)]
+84 | |     App {
+85 | |         shapes_a::MeasurerComponent,
+86 | |     }
+87 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
