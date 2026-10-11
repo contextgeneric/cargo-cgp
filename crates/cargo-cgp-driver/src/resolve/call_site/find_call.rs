@@ -5,7 +5,7 @@ use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Expr, ExprKind};
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
-use rustc_span::{DesugaringKind, Span, Symbol};
+use rustc_span::{Span, Symbol};
 
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{receiver_context, seed_from_call};
@@ -73,17 +73,15 @@ pub(crate) struct MethodCall<'tcx> {
     pub(crate) args: &'tcx [Expr<'tcx>],
 }
 
-/// Every method-call expression in a local body that one of the diagnostic's primary spans lands
-/// on. A use-site failure's primary span sits on the method name, an argument, or the whole call,
-/// so a call is collected when its own span overlaps one. The re-report rustc raises where the
-/// result is awaited sits on the `.await` alone, whose desugared wrapper expressions contain the
-/// call without the call's own span overlapping, so a match also carries into the expressions an
-/// `.await` desugaring wraps. It never carries through an ordinary enclosing expression: a
-/// function's body block overlaps every error inside it, and those errors are not about its calls.
+/// Every method-call expression in a local body that one of the diagnostic's primary spans is about.
+/// A use-site failure's primary span sits on the method name, on one whole argument, or on the
+/// whole call (rustc's re-report where the result is awaited included), so a call is collected when
+/// a span overlaps it without lying strictly inside its receiver or one of its arguments. An error
+/// inside an argument (an `Rc` passed to a `Send` bound in `person.greet(count(Rc::new(1)))`) is
+/// about that argument's own code, and an error elsewhere in the enclosing body is about no call.
 pub(crate) fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<MethodCall<'tcx>> {
     let mut finder = CallFinder {
         spans,
-        within_await: false,
         calls: Vec::new(),
     };
     for owner in tcx.hir_body_owners() {
@@ -94,27 +92,35 @@ pub(crate) fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Me
 
 struct CallFinder<'a, 'tcx> {
     spans: &'a [Span],
-    /// Whether the current expression sits inside an `.await` desugaring that a diagnostic span
-    /// landed on.
-    within_await: bool,
     calls: Vec<MethodCall<'tcx>>,
 }
 
 impl<'tcx> Visitor<'tcx> for CallFinder<'_, 'tcx> {
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        let matched = self.within_await || self.spans.iter().any(|span| span.overlaps(expr.span));
-        if matched && let ExprKind::MethodCall(segment, receiver, args, _) = expr.kind {
+        if let ExprKind::MethodCall(segment, receiver, args, _) = expr.kind
+            && self
+                .spans
+                .iter()
+                .any(|&span| is_about_call(span, expr.span, receiver, args))
+        {
             self.calls.push(MethodCall {
                 method: segment.ident.name,
                 receiver,
                 args,
             });
         }
-        let carries = matched && expr.span.is_desugaring(DesugaringKind::Await);
-        let saved = std::mem::replace(&mut self.within_await, carries);
         intravisit::walk_expr(self, expr);
-        self.within_await = saved;
     }
+}
+
+/// Whether a diagnostic's primary `span` is about the method call spanning `call`: it overlaps the
+/// call and does not lie strictly inside the receiver or one of the arguments. A span equal to a
+/// whole argument (the `PhantomData` tag a failing handler call is reported on) is about the call.
+fn is_about_call(span: Span, call: Span, receiver: &Expr<'_>, args: &[Expr<'_>]) -> bool {
+    span.overlaps(call)
+        && !std::iter::once(receiver)
+            .chain(args)
+            .any(|operand| operand.span.contains(span) && operand.span != span)
 }
 
 /// Every trait declaring a `self`-receiver associated fn named `method` that a call by that name

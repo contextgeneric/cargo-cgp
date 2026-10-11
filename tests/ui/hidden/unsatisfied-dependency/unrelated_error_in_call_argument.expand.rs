@@ -2,15 +2,11 @@
 //! A plain Rust error inside an argument of a consumer method call whose wiring fails.
 //!
 //! `Person` is missing the `name` field `GreetHello` reads, so `person.greet(...)` fails. Its
-//! argument passes an `Rc` to a `Send` bound, a separate mistake inside the call. Plain
-//! `cargo check` reports both; the tool reports only the `[CGP-E001]` block, and the `Send` error
-//! is lost.
-//!
-//! This is a known limitation of the call-site anchor. It matches a call by the diagnostic's
-//! primary span, and the `Send` error's span lies inside the call's argument, so the anchor reads it
-//! as another report of the failing call, resolves it to the same cause, and de-duplicates it away.
-//! A CGP failure can also point into an argument (the `PhantomData` tag of a handler call), and
-//! rustc's `E0277` carries no structured predicate to tell the two apart.
+//! argument passes an `Rc` to a `Send` bound, a separate mistake inside the call. The tool reports
+//! both, as plain `cargo check` does: the `[CGP-E001]` block with its caret on `greet`, and the
+//! `Send` error as rustc wrote it. The call-site anchor takes a call only when the diagnostic's
+//! primary span is on the call itself, its method name, or a whole argument; the `Send` error's
+//! span lies strictly inside the argument `count(Rc::new(1))`, so it stays with that code.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
