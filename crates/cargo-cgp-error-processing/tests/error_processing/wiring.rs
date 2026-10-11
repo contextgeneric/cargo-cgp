@@ -54,7 +54,8 @@ fn redirect_collides_with_inherited_namespace_entry() {
         context: "AppNamespace".to_owned(),
         key: WiringKey::Component("GreeterComponent".to_owned()),
         path: "@app.GreeterComponent".to_owned(),
-        provider: "GreetHello".to_owned(),
+        provider: Some("GreetHello".to_owned()),
+        params: Vec::new(),
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
@@ -129,7 +130,8 @@ fn redirect_collides_with_direct_wiring() {
         context: "Person".to_owned(),
         key: WiringKey::Component("GreeterComponent".to_owned()),
         path: "@GreeterComponent".to_owned(),
-        provider: "GreetHello".to_owned(),
+        provider: Some("GreetHello".to_owned()),
+        params: Vec::new(),
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
@@ -139,6 +141,54 @@ fn redirect_collides_with_direct_wiring() {
         wiring_conflict_help(&conflict).as_deref(),
         Some("wire the provider `GreetHello` with the key `@GreeterComponent`"),
     );
+}
+
+#[test]
+fn redirect_of_generic_component_names_per_parameter_keys() {
+    // The redirect appends the component's parameters to the path, so wiring the provider at the
+    // bare path would never be looked up.
+    let conflict = WiringConflict::Redirect {
+        context: "App".to_owned(),
+        key: WiringKey::Component("AreaCalculatorComponent".to_owned()),
+        path: "@AreaCalculatorComponent".to_owned(),
+        provider: Some("UseDelegate<AreaTable>".to_owned()),
+        params: vec!["Shape".to_owned()],
+    };
+    assert_eq!(
+        wiring_conflict_help(&conflict).as_deref(),
+        Some(
+            "the redirect appends the parameter `Shape` to `@AreaCalculatorComponent`, so wire \
+             each provider with a `@AreaCalculatorComponent.<Shape>` key in place of \
+             `UseDelegate<AreaTable>`"
+        ),
+    );
+
+    let conflict = WiringConflict::Redirect {
+        context: "App".to_owned(),
+        key: WiringKey::Component("PairComponent".to_owned()),
+        path: "@PairComponent".to_owned(),
+        provider: None,
+        params: vec!["A".to_owned(), "B".to_owned()],
+    };
+    assert_eq!(
+        wiring_conflict_help(&conflict).as_deref(),
+        Some(
+            "the redirect appends the parameters `A` and `B` to `@PairComponent`, so wire each \
+             provider with a `@PairComponent.<A>.<B>` key"
+        ),
+    );
+}
+
+#[test]
+fn redirect_without_a_written_provider_has_no_help() {
+    let conflict = WiringConflict::Redirect {
+        context: "App".to_owned(),
+        key: WiringKey::Component("GreeterComponent".to_owned()),
+        path: "@GreeterComponent".to_owned(),
+        provider: None,
+        params: Vec::new(),
+    };
+    assert_eq!(wiring_conflict_help(&conflict), None);
 }
 
 #[test]

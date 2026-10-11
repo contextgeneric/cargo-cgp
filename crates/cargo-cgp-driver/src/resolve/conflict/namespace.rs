@@ -15,29 +15,19 @@
 //! it looks like: the blanket forwards *every* key the parent answers, so binding a key the parent
 //! already registers collides with it. When the parent resolves that key to a `RedirectLookup` —
 //! the shape a component's `#[prefix(...)]` produces — the real mistake is that the key is
-//! addressed by its path, and [`inherited_redirect_conflict`] recovers that path so the message
-//! names the entry to write instead.
+//! addressed by its path, and [`redirect_conflict`](super::redirect_conflict) recovers that path so
+//! the message names the entry to write instead.
 
-use cargo_cgp_error_processing::{WiringConflict, WiringKey};
+use cargo_cgp_error_processing::WiringConflict;
 use rustc_hir::def::DefKind;
-use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
-use rustc_span::def_id::DefId;
 
 use crate::resolve::cgp_item::is_namespace_lookup_trait;
 use crate::resolve::conflict::{
-    describe_key, impl_delegate_type, namespace_redirect, redirect_path, render_lookup_trait,
-    render_provider, same_range,
+    ConflictSide, describe_key, impl_delegate_type, redirect_conflict, redirect_path,
+    render_lookup_trait, same_range,
 };
-
-/// One namespace entry, read off its namespace-trait impl: the impl itself, the key it registers
-/// (the impl's `Self` — an `@`-path, a component marker, a per-type key, or the generic parameter
-/// of an inheritance blanket), and the `Delegate` it maps that key to.
-struct NamespaceEntry<'tcx> {
-    impl_did: DefId,
-    key: Ty<'tcx>,
-    delegate: Option<Ty<'tcx>>,
-}
 
 /// Classify an `E0119` on a namespace lookup trait as a duplicate-entry conflict, or `None` when
 /// no namespace-trait impl sits at the caret (leaving the diagnostic to the ordinary fallback).
@@ -58,101 +48,45 @@ pub(crate) fn classify_namespace_conflict(
 
     let namespace = render_lookup_trait(tcx, conflicting.impl_did);
     let key = describe_key(tcx, conflicting.key, conflicting.impl_did)?;
-
-    let conflicting_redirect = conflicting.delegate.and_then(|d| redirect_path(tcx, d));
-    let first_redirect = first
-        .as_ref()
-        .and_then(|f| f.delegate)
-        .and_then(|d| redirect_path(tcx, d));
-
-    match (first_redirect, conflicting_redirect) {
-        (Some(first_path), Some(second_path)) => Some(WiringConflict::DuplicateRedirect {
-            context: namespace,
-            key,
-            first_path,
-            second_path,
-        }),
-        (Some(path), None) => Some(WiringConflict::Redirect {
-            context: namespace,
-            key,
-            path,
-            provider: render_provider(tcx, conflicting.delegate?),
-        }),
-        (None, Some(path)) => Some(WiringConflict::Redirect {
-            context: namespace,
-            key,
-            path,
-            provider: render_provider(tcx, first?.delegate?),
-        }),
-        (None, None) => {
-            let Some(first) = first else {
-                return Some(WiringConflict::Duplicate {
-                    context: namespace,
-                    key,
-                });
-            };
-            let first_key = describe_key(tcx, first.key, first.impl_did)?;
-
-            // An entry can also collide with the namespace's own *inheritance* blanket, whose
-            // `Delegate` is a projection rather than a written redirect. When the parent resolves
-            // the colliding key to a `RedirectLookup`, that is the whole mistake — the key is
-            // addressed by a path — so recover it and say so.
-            if let Some(redirect) =
-                inherited_redirect_conflict(tcx, &namespace, &conflicting, &first, &key, &first_key)
-            {
-                return Some(redirect);
-            }
-
-            Some(if first_key == key {
-                WiringConflict::Duplicate {
-                    context: namespace,
-                    key,
-                }
-            } else {
-                WiringConflict::Overlap {
-                    context: namespace,
-                    conflicting: key,
-                    first: first_key,
-                }
-            })
+    let Some(first) = first else {
+        // Without the first entry, a redirect has no provider to name.
+        if conflicting
+            .delegate
+            .and_then(|d| redirect_path(tcx, d))
+            .is_some()
+        {
+            return None;
         }
-    }
-}
-
-/// Recognize a namespace entry colliding with an *inheritance blanket* that redirects the same key:
-/// one of the two entries is the blanket a `new Child: Parent` header emits, the other a concrete
-/// key the parent maps to a `RedirectLookup` — the shape a component's
-/// [`#[prefix(...)]`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/attributes/prefix.md)
-/// registration produces, where the key is addressed by its path rather than by its bare marker.
-/// The message then names that path, and its `help` the entry to write instead. `None` when
-/// neither entry is a blanket, or the parent does not redirect the concrete key.
-fn inherited_redirect_conflict<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    namespace: &str,
-    conflicting: &NamespaceEntry<'tcx>,
-    first: &NamespaceEntry<'tcx>,
-    key: &WiringKey,
-    first_key: &WiringKey,
-) -> Option<WiringConflict> {
-    let is_blanket = |k: &WiringKey| matches!(k, WiringKey::Blanket(_));
-    let (blanket, concrete) = match (is_blanket(key), is_blanket(first_key)) {
-        (true, false) => (conflicting, first),
-        (false, true) => (first, conflicting),
-        _ => return None,
+        return Some(WiringConflict::Duplicate {
+            context: namespace,
+            key,
+        });
     };
-    let path = namespace_redirect(tcx, blanket.impl_did, blanket.key, concrete.key)?;
-    Some(WiringConflict::Redirect {
-        context: namespace.to_owned(),
-        key: describe_key(tcx, concrete.key, concrete.impl_did)?,
-        path,
-        provider: render_provider(tcx, concrete.delegate?),
+    // An entry can also collide with the namespace's own *inheritance* blanket, whose `Delegate`
+    // is a projection rather than a written redirect; `redirect_conflict` resolves what the parent
+    // maps the colliding key to.
+    if let Some(conflict) = redirect_conflict(tcx, &namespace, &first, &conflicting) {
+        return Some(conflict);
+    }
+    let first_key = describe_key(tcx, first.key, first.impl_did)?;
+    Some(if first_key == key {
+        WiringConflict::Duplicate {
+            context: namespace,
+            key,
+        }
+    } else {
+        WiringConflict::Overlap {
+            context: namespace,
+            conflicting: key,
+            first: first_key,
+        }
     })
 }
 
 /// The namespace entry whose namespace-trait impl sits at `span` — matched by source range
 /// against the impl's def-span, exactly as the `DelegateComponent` classifier matches its carets —
 /// or `None` when no local namespace-trait impl is there.
-fn namespace_entry_at<'tcx>(tcx: TyCtxt<'tcx>, span: Span) -> Option<NamespaceEntry<'tcx>> {
+fn namespace_entry_at<'tcx>(tcx: TyCtxt<'tcx>, span: Span) -> Option<ConflictSide<'tcx>> {
     for local in tcx.hir_crate_items(()).definitions() {
         if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
             continue;
@@ -165,7 +99,7 @@ fn namespace_entry_at<'tcx>(tcx: TyCtxt<'tcx>, span: Span) -> Option<NamespaceEn
         if !is_namespace_lookup_trait(tcx, trait_did) {
             continue;
         }
-        return Some(NamespaceEntry {
+        return Some(ConflictSide {
             impl_did,
             key: tcx.type_of(impl_did).instantiate_identity().skip_norm_wip(),
             delegate: impl_delegate_type(tcx, impl_did),

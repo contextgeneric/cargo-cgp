@@ -12,23 +12,21 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode, Unno
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::config::{CGP_COMPONENT_CRATE, REDIRECT_LOOKUP_TYPE};
-use crate::resolve::cgp_item::is_cgp_item;
-use crate::resolve::conflict::{bounding_trait_ref, render_path};
+use crate::resolve::conflict::bounding_trait_ref;
 
-/// The redirected path a blanket forwarding maps `concrete_key` to, if it maps it to a
-/// `RedirectLookup` at all. `blanket_impl_did` is the forwarding impl and `blanket_key` its
-/// generic key parameter — a context's `namespace …;` join, or a namespace's own inheritance
-/// blanket. The answer is recovered by normalizing the forwarded trait's `Delegate` projection for
-/// that key — `<concrete_key as ParentNamespace<Table>>::Delegate` — through the trait solver, the
-/// same re-entrant normalization the typed resolver uses. `None` unless the key is fully concrete
-/// and the projection resolves to a `RedirectLookup`.
-pub(crate) fn namespace_redirect<'tcx>(
+/// What a blanket forwarding maps `concrete_key` to: its `Delegate` for that key, which a redirect
+/// makes a `RedirectLookup`. `blanket_impl_did` is the forwarding impl and `blanket_key` its generic
+/// key parameter: a context's `namespace …;` join, or a namespace's own inheritance blanket. The
+/// answer is recovered by normalizing the forwarded trait's `Delegate` projection for that key,
+/// `<concrete_key as ParentNamespace<Table>>::Delegate`, through the trait solver, the same
+/// re-entrant normalization the typed resolver uses. `None` unless the key is fully concrete and
+/// the projection resolves.
+pub(crate) fn namespace_delegate<'tcx>(
     tcx: TyCtxt<'tcx>,
     blanket_impl_did: DefId,
     blanket_key: Ty<'tcx>,
     concrete_key: Ty<'tcx>,
-) -> Option<String> {
+) -> Option<Ty<'tcx>> {
     // Only a fully concrete key resolves through the namespace to a single value.
     if concrete_key.has_param() || concrete_key.has_non_region_infer() {
         return None;
@@ -45,14 +43,7 @@ pub(crate) fn namespace_redirect<'tcx>(
     *args.first_mut()? = concrete_key.into();
 
     let projection = Ty::new_projection(tcx, ty::IsRigid::No, delegate_did, args);
-    let delegate = normalize(tcx, projection)?;
-    let ty::Adt(def, redirect_args) = delegate.kind() else {
-        return None;
-    };
-    if !is_cgp_item(tcx, def.did(), REDIRECT_LOOKUP_TYPE, CGP_COMPONENT_CRATE) {
-        return None;
-    }
-    render_path(tcx, redirect_args.type_at(1))
+    normalize(tcx, projection)
 }
 
 /// Normalize `ty` through a fresh inference context, returning the resolved type — or `None` if it

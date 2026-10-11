@@ -1,19 +1,19 @@
 error[E0119]: conflicting implementations of trait `IsProviderFor<AreaCalculatorComponent, _, _>` for type `App`
-  --> src/main.rs:43:9
+  --> src/main.rs:41:9
    |
-35 |         open AreaCalculatorComponent;
+33 |         open AreaCalculatorComponent;
    |              ----------------------- first implementation here
 ...
-43 |         AreaCalculatorComponent: UseDelegate<new AreaTable {
+41 |         AreaCalculatorComponent: UseDelegate<new AreaTable {
    |         ^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
 error[E0119]: conflicting implementations of trait `DelegateComponent<AreaCalculatorComponent>` for type `App`
-  --> src/main.rs:43:9
+  --> src/main.rs:41:9
    |
-35 |         open AreaCalculatorComponent;
+33 |         open AreaCalculatorComponent;
    |              ----------------------- first implementation here
 ...
-43 |         AreaCalculatorComponent: UseDelegate<new AreaTable {
+41 |         AreaCalculatorComponent: UseDelegate<new AreaTable {
    |         ^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
 For more information about this error, try `rustc --explain E0119`.

@@ -17,6 +17,7 @@ use crate::code::{
     DUPLICATE_REDIRECT, DUPLICATE_WIRING, MULTIPLE_NAMESPACES, OVERLAPPING_WIRING,
     REDIRECT_COLLISION,
 };
+use crate::diagnosis::quoted_list;
 
 /// One key of a conflicting `delegate_components!` entry, rendered in the surface form the
 /// programmer wrote it. The driver decides which variant a key is by inspecting the impl the
@@ -94,12 +95,16 @@ pub enum WiringConflict {
     },
     /// One entry redirects the key (via `open` or a namespace) while the other sets it directly to
     /// `provider`, so the direct wiring never takes effect; the fix is to wire `provider` under the
-    /// redirected `path` instead (`CGP-E007`).
+    /// redirected `path` instead (`CGP-E007`). `provider` is `None` when the direct entry names no
+    /// provider a reader wrote. `params` are the component's type parameters, which the redirect
+    /// appends to `path` when it looks the component up, so a generic component is wired one key
+    /// per parameter value rather than at `path` itself.
     Redirect {
         context: String,
         key: WiringKey,
         path: String,
-        provider: String,
+        provider: Option<String>,
+        params: Vec<String>,
     },
     /// The same key is redirected more than once. `first_path` and `second_path` are the two
     /// redirect targets, equal when both redirects point the same way (`CGP-E008`).
@@ -168,14 +173,40 @@ pub fn plan_wiring_conflict(conflict: &WiringConflict) -> String {
 }
 
 /// The `help` message accompanying a conflict's header, when it has one. A redirect collision names
-/// how to fix it — wire the provider under the redirected key rather than setting the key directly
-/// — kept out of the header so the headline stays one short sentence. Every other shape's carets are
-/// the fix, so they carry no help.
+/// how to fix it (wire the provider under the redirected key rather than setting the key directly),
+/// kept out of the header so the headline stays one short sentence. For a generic component the
+/// key is the path extended by the component's parameters, one entry per parameter value. Every
+/// other shape's carets are the fix, so they carry no help.
 pub fn wiring_conflict_help(conflict: &WiringConflict) -> Option<String> {
-    match conflict {
-        WiringConflict::Redirect { path, provider, .. } => Some(format!(
-            "wire the provider `{provider}` with the key `{path}`"
-        )),
-        _ => None,
+    let WiringConflict::Redirect {
+        path,
+        provider,
+        params,
+        ..
+    } = conflict
+    else {
+        return None;
+    };
+    if params.is_empty() {
+        return provider
+            .as_ref()
+            .map(|provider| format!("wire the provider `{provider}` with the key `{path}`"));
     }
+    let noun = if params.len() == 1 {
+        "parameter"
+    } else {
+        "parameters"
+    };
+    let keys = params
+        .iter()
+        .fold(path.clone(), |key, param| format!("{key}.<{param}>"));
+    let replaced = provider
+        .as_ref()
+        .map(|provider| format!(" in place of `{provider}`"))
+        .unwrap_or_default();
+    Some(format!(
+        "the redirect appends the {noun} {} to `{path}`, so wire each provider with a `{keys}` \
+         key{replaced}",
+        quoted_list(params),
+    ))
 }

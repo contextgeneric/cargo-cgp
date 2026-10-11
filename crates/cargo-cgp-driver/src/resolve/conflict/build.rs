@@ -4,12 +4,12 @@ use cargo_cgp_error_processing::{WiringConflict, WiringKey};
 use rustc_middle::ty::TyCtxt;
 
 use crate::resolve::conflict::{
-    DelegateImpl, describe_key, namespace_redirect, redirect_path, render_provider,
+    ConflictSide, DelegateImpl, EntryTarget, component_params, describe_key, redirect_path,
 };
 
 /// Word the recovered impls into a [`WiringConflict`], picking the shape from how the two entries
-/// relate: a redirect (one or both `Delegate`s are `RedirectLookup`), or a plain
-/// duplicate/overlap otherwise. `None` when a key cannot be rendered to a surface form.
+/// relate: a redirect (one or both map the key to a `RedirectLookup`), or a plain duplicate or
+/// overlap otherwise. `None` when a key cannot be rendered to a surface form.
 pub(crate) fn build_conflict<'tcx>(
     tcx: TyCtxt<'tcx>,
     conflicting: &DelegateImpl<'tcx>,
@@ -18,60 +18,34 @@ pub(crate) fn build_conflict<'tcx>(
     let context = tcx
         .erase_and_anonymize_regions(conflicting.self_ty)
         .to_string();
-    let key = describe_key(tcx, conflicting.key, conflicting.impl_did)?;
-
-    let conflicting_redirect = conflicting.delegate.and_then(|d| redirect_path(tcx, d));
-    let first_redirect = first
-        .and_then(|f| f.delegate)
-        .and_then(|d| redirect_path(tcx, d));
-
-    match (first_redirect, conflicting_redirect) {
-        // Both entries redirect the same key — a duplicate redirect (the two targets may differ).
-        (Some(first_path), Some(second_path)) => {
-            return Some(WiringConflict::DuplicateRedirect {
-                context,
-                key,
-                first_path,
-                second_path,
-            });
-        }
-        // One entry redirects the key while the other sets it directly — a redirect collision. The
-        // provider named in the fix comes from the *direct* entry (the non-redirect one).
-        (Some(path), None) => {
-            let provider = render_provider(tcx, conflicting.delegate?);
-            return Some(WiringConflict::Redirect {
-                context,
-                key,
-                path,
-                provider,
-            });
-        }
-        (None, Some(path)) => {
-            let provider = render_provider(tcx, first?.delegate?);
-            return Some(WiringConflict::Redirect {
-                context,
-                key,
-                path,
-                provider,
-            });
-        }
-        (None, None) => {}
-    }
-
+    let conflicting_side = ConflictSide {
+        impl_did: conflicting.impl_did,
+        key: conflicting.key,
+        delegate: conflicting.delegate,
+    };
+    // Without the first entry, a redirect has no provider to name, so only a duplicate is worded.
     let Some(first) = first else {
+        if conflicting
+            .delegate
+            .and_then(|d| redirect_path(tcx, d))
+            .is_some()
+        {
+            return None;
+        }
+        let key = describe_key(tcx, conflicting.key, conflicting.impl_did)?;
         return Some(WiringConflict::Duplicate { context, key });
     };
-    let first_key = describe_key(tcx, first.key, first.impl_did)?;
-
-    // A direct wiring can also collide with a *namespace* that redirects the same key — the blanket
-    // forwarding's `Delegate` for that concrete key normalizes to a `RedirectLookup`. Recover that
-    // here, so it reads as a redirect collision rather than a bare overlap.
-    if let Some(redirect) =
-        namespace_redirect_conflict(tcx, &context, conflicting, first, &key, &first_key)
-    {
-        return Some(redirect);
+    let first_side = ConflictSide {
+        impl_did: first.impl_did,
+        key: first.key,
+        delegate: first.delegate,
+    };
+    if let Some(conflict) = redirect_conflict(tcx, &context, &first_side, &conflicting_side) {
+        return Some(conflict);
     }
 
+    let key = describe_key(tcx, conflicting.key, conflicting.impl_did)?;
+    let first_key = describe_key(tcx, first.key, first.impl_did)?;
     Some(match (&first_key, &key) {
         // Two blanket forwardings, each over every key — a context joining more than one
         // namespace (`namespace` desugars to a bare-key `for` loop, so the two are the same shape).
@@ -91,30 +65,48 @@ pub(crate) fn build_conflict<'tcx>(
     })
 }
 
-/// Recognize a direct wiring colliding with a *namespace* that redirects the same key: one of the
-/// two entries is a blanket namespace forwarding, the other a concrete key the namespace maps to a
-/// `RedirectLookup`. The message then reads as a redirect collision — wire the direct entry's
-/// provider under the redirected path — rather than a bare overlap. `None` when neither entry is a
-/// blanket, or the namespace does not redirect the concrete key.
-fn namespace_redirect_conflict<'tcx>(
+/// Recognize a collision in which at least one entry redirects the key: both redirecting is a
+/// duplicate redirect (naming both targets), one is a redirect collision whose fix names the other
+/// entry's provider. A blanket forwarding (a namespace join, or a namespace's inheritance blanket)
+/// redirects when it maps the other entry's concrete key to a `RedirectLookup`, and the message then
+/// names that concrete key. `None` when neither entry redirects. `subject` is the context or the
+/// namespace the collision is reported on.
+pub(crate) fn redirect_conflict<'tcx>(
     tcx: TyCtxt<'tcx>,
-    context: &str,
-    conflicting: &DelegateImpl<'tcx>,
-    first: &DelegateImpl<'tcx>,
-    key: &WiringKey,
-    first_key: &WiringKey,
+    subject: &str,
+    first: &ConflictSide<'tcx>,
+    conflicting: &ConflictSide<'tcx>,
 ) -> Option<WiringConflict> {
-    let is_blanket = |k: &WiringKey| matches!(k, WiringKey::Blanket(_));
-    let (blanket, concrete) = match (is_blanket(key), is_blanket(first_key)) {
-        (true, false) => (conflicting, first),
-        (false, true) => (first, conflicting),
-        _ => return None,
+    let first_target = first.target(tcx, conflicting.key);
+    let conflicting_target = conflicting.target(tcx, first.key);
+    // The key both entries map, as written: the concrete side's when one is a blanket.
+    let named = if conflicting.is_blanket() {
+        first
+    } else {
+        conflicting
     };
-    let path = namespace_redirect(tcx, blanket.impl_did, blanket.key, concrete.key)?;
-    Some(WiringConflict::Redirect {
-        context: context.to_owned(),
-        key: describe_key(tcx, concrete.key, concrete.impl_did)?,
-        path,
-        provider: render_provider(tcx, concrete.delegate?),
-    })
+    let key_ty = named.key;
+    let key = || describe_key(tcx, key_ty, named.impl_did);
+    let context = subject.to_owned();
+    match (first_target, conflicting_target) {
+        (EntryTarget::Redirect(first_path), EntryTarget::Redirect(second_path)) => {
+            Some(WiringConflict::DuplicateRedirect {
+                context,
+                key: key()?,
+                first_path,
+                second_path,
+            })
+        }
+        (EntryTarget::Redirect(path), EntryTarget::Provider(provider))
+        | (EntryTarget::Provider(provider), EntryTarget::Redirect(path)) => {
+            Some(WiringConflict::Redirect {
+                context,
+                key: key()?,
+                path,
+                provider,
+                params: component_params(tcx, key_ty),
+            })
+        }
+        (EntryTarget::Provider(_), EntryTarget::Provider(_)) => None,
+    }
 }

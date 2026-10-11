@@ -1,15 +1,13 @@
 //! `open` on a component that is prefixed into a joined namespace.
 //!
-//! `[CGP-E007]` helps "wire the provider `__Value__` with the key `@GreeterComponent`": `__Value__` is
-//! the namespace blanket's generated parameter, and the component is reached at
-//! `@app.GreeterComponent`.
+//! The namespace already redirects `GreeterComponent` to `@app.GreeterComponent`, so `open`
+//! redirects it a second time. `[CGP-E008]` names both targets; the fix is to drop `open` and wire
+//! `@app.GreeterComponent: GreetHello`.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: CGP-E007
+//@quality: acceptable
+//@codes: CGP-E008
 
 use cgp::prelude::*;
 

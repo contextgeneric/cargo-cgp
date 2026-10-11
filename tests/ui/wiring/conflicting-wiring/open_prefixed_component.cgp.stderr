@@ -1,11 +1,9 @@
-error[E0119]: [CGP-E007] component `GreeterComponent` on `App` is redirected to `@GreeterComponent`
-  --> src/main.rs:34:14
+error[E0119]: [CGP-E008] duplicate redirect for component `GreeterComponent` on `App`: redirected to both `@app.GreeterComponent` and `@GreeterComponent`
+  --> src/main.rs:32:14
    |
-33 |         namespace DefaultNamespace;
+31 |         namespace DefaultNamespace;
    |                   ---------------- first implementation here
-34 |         open GreeterComponent;
+32 |         open GreeterComponent;
    |              ^^^^^^^^^^^^^^^^ conflicting implementation for `App`
-   |
-   = help: wire the provider `__Value__` with the key `@GreeterComponent`
 
 For more information about this error, try `rustc --explain E0119`.

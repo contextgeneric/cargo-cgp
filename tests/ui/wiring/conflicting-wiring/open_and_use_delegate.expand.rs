@@ -1,13 +1,11 @@
 #![feature(prelude_import)]
 //! `open` plus a `UseDelegate` table for the same component.
 //!
-//! `[CGP-E007]` helps "wire the provider `UseDelegate<AreaTable>` with the key
-//! `@AreaCalculatorComponent`", which would wire a dispatcher under the opened route; the fix is one
-//! dispatch mechanism per component.
+//! The opened route looks `AreaCalculatorComponent` up with its parameter `Shape` appended, so the
+//! `[CGP-E007]` help names `@AreaCalculatorComponent.<Shape>` keys in place of the direct
+//! `UseDelegate<AreaTable>` entry, rather than the bare path the lookup never reads.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
