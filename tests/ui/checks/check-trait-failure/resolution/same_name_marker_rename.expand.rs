@@ -3,8 +3,9 @@
 //!
 //! `shapes_a` and `shapes_b` each define a component whose marker is named `MeasurerComponent`,
 //! with the provider traits `MeasurerA` and `MeasurerB`. The check on `MeasureWidthA` fails for a
-//! missing field and keeps rustc's header, and its renamed note must name `MeasurerA`. The text
-//! rename finds a marker by its bare name, which here matches both components.
+//! missing field and keeps rustc's header, and its renamed note names `MeasurerA`: rustc prints the
+//! shared marker qualified (`shapes_a::MeasurerComponent`), and the rename matches that path. A
+//! bare name both components share would leave the note as rustc wrote it.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;

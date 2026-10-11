@@ -62,7 +62,7 @@ pub fn rewrite_wiring_overflow(message: &str, names: &ComponentNameMap) -> Optio
         return None;
     }
     let args = split_top_level(args_str);
-    let component = last_segment(args.first()?.trim());
+    let component = args.first()?.trim();
     let entry = names.get(component)?;
     let generics = render_trait_generics(&[], &args[1..]);
     Some(format!(
@@ -98,7 +98,7 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
         "IsProviderFor" => {
             // `IsProviderFor<Component, Context, Params?>` — the provider (`subject`)
             // implements the provider trait behind `Component` for `Context`.
-            let component = last_segment(args.first()?.trim());
+            let component = args.first()?.trim();
             let context = args.get(1)?.trim();
             let entry = names.get(component)?;
             Some(format!(
@@ -109,7 +109,7 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
         "CanUseComponent" => {
             // `CanUseComponent<Component, Params?>` — the context (`subject`) implements
             // the consumer trait behind `Component`.
-            let component = last_segment(args.first()?.trim());
+            let component = args.first()?.trim();
             let entry = names.get(component)?;
             Some(format!(
                 "required for the context `{subject}` to implement the consumer trait `{}`",
@@ -147,7 +147,7 @@ pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<St
         "CanUseComponent" if !args.is_empty() && !args[0].trim().is_empty() => {
             // `CanUseComponent<Marker, Params?>` — the consumer trait's generics are exactly
             // the component's extra parameters.
-            let component = last_segment(args[0].trim());
+            let component = args[0].trim();
             let entry = names.get(component)?;
             let generics = render_trait_generics(&[], &args[1..]);
             Some(format!(
@@ -158,7 +158,7 @@ pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<St
         "IsProviderFor" if args.len() >= 2 => {
             // `IsProviderFor<Marker, Context, Params?>` — the context is named in prose, and
             // the provider trait's generics are the component's extra parameters.
-            let component = last_segment(args[0].trim());
+            let component = args[0].trim();
             let entry = names.get(component)?;
             let context = args[1].trim();
             let generics = render_trait_generics(&[], &args[2..]);

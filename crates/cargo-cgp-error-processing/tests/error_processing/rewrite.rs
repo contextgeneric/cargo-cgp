@@ -421,6 +421,47 @@ fn resolves_a_full_path_key_by_name() {
     );
 }
 
+/// Two components in different modules whose markers share the name `MeasurerComponent`.
+fn same_name_names() -> HashMap<String, ComponentTraitNames> {
+    let mut map = HashMap::new();
+    for (module, suffix) in [("shapes_a", "A"), ("shapes_b", "B")] {
+        map.insert(
+            format!("my_crate::{module}::MeasurerComponent"),
+            ComponentTraitNames {
+                consumer: format!("CanMeasure{suffix}"),
+                provider: format!("Measurer{suffix}"),
+            },
+        );
+    }
+    map
+}
+
+#[test]
+fn declines_a_marker_name_two_components_share() {
+    // The bare name rustc printed matches both entries, and the text cannot tell which one it
+    // meant, so the rename declines rather than pick one.
+    let map = ComponentNameMap::new(same_name_names);
+    assert_eq!(map.get("MeasurerComponent"), None);
+    assert_eq!(
+        rewrite_required_for(
+            "required for `MeasureWidthA` to implement `IsProviderFor<MeasurerComponent, App>`",
+            &map,
+        ),
+        None
+    );
+    // rustc qualifies a shared name, and the qualified path picks out one component.
+    assert_eq!(
+        rewrite_required_for(
+            "required for `MeasureWidthA` to implement `IsProviderFor<shapes_a::MeasurerComponent, App>`",
+            &map,
+        )
+        .as_deref(),
+        Some(
+            "required for the provider `MeasureWidthA` to implement the provider trait `MeasurerA` for the context `App`"
+        )
+    );
+}
+
 #[test]
 fn rewrites_a_wiring_overflow_into_its_cycle_header() {
     let out = rewrite_wiring_overflow(

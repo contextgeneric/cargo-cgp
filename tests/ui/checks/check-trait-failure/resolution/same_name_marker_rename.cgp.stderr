@@ -1,38 +1,38 @@
 error[E0277]: the trait bound `App: HasField<Symbol!("width_a")>` is not satisfied
-  --> src/main.rs:83:23
+  --> src/main.rs:84:23
    |
-83 |     #[check_providers(shapes_a::MeasureWidthA)]
+84 |     #[check_providers(shapes_a::MeasureWidthA)]
    |                       ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: missing field `width_a` on `App`
-  --> src/main.rs:72:9
+  --> src/main.rs:73:9
    |
-72 |     pub other: f64,
+73 |     pub other: f64,
    |         ^^^^^
 note: required for `App` to implement `HasWidthA`
-  --> src/main.rs:26:5
+  --> src/main.rs:27:5
    |
-26 |     #[cgp_auto_getter]
+27 |     #[cgp_auto_getter]
    |     ^^^^^^^^^^^^^^^^^^
-27 |     pub trait HasWidthA {
+28 |     pub trait HasWidthA {
    |               ^^^^^^^^^
-note: required for the provider `MeasureWidthA` to implement the provider trait `MeasurerB` for the context `App`
-  --> src/main.rs:31:5
+note: required for the provider `MeasureWidthA` to implement the provider trait `MeasurerA` for the context `App`
+  --> src/main.rs:32:5
    |
-31 |     #[cgp_impl(new MeasureWidthA: MeasurerComponent)]
+32 |     #[cgp_impl(new MeasureWidthA: MeasurerComponent)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-34 |         Self: HasWidthA,
+35 |         Self: HasWidthA,
    |               --------- unsatisfied trait bound introduced here
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:82:1
+  --> src/main.rs:83:1
    |
-82 | / check_components! {
-83 | |     #[check_providers(shapes_a::MeasureWidthA)]
-84 | |     App {
-85 | |         shapes_a::MeasurerComponent,
-86 | |     }
-87 | | }
+83 | / check_components! {
+84 | |     #[check_providers(shapes_a::MeasureWidthA)]
+85 | |     App {
+86 | |         shapes_a::MeasurerComponent,
+87 | |     }
+88 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
