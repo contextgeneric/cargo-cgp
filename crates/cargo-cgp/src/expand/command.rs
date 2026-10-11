@@ -1,13 +1,12 @@
 //! Running the wrapped `cargo rustc` that produces an expansion.
 
-use std::fs;
 use std::io::{self, Write};
 
 use anyhow::Context;
 
 use crate::config::{EXPAND_FLAG, EXPAND_ITEM_FLAG};
 use crate::expand::item::take_item;
-use crate::expand::output::{output_path, read_expansion};
+use crate::expand::output::{ExpansionDir, read_expansion};
 use crate::expand::profile::forwards_profile;
 use crate::help::{expand_help_text, is_help_flag};
 use crate::launch::wrapped_cargo;
@@ -34,9 +33,11 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
 
     let (cargo_args, item) = take_item(forwarded_args)?;
 
-    let output = output_path();
-    // Clear any leftover output, so a failed run can never print a previous expansion.
-    let _ = fs::remove_file(&output);
+    // A directory of this run's own, so nobody else can redirect the driver's write, and no
+    // previous run's output can be printed. It is removed when it goes out of scope.
+    let directory =
+        ExpansionDir::create().context("failed to create a private directory for the expansion")?;
+    let output = directory.output_path();
 
     let mut command = wrapped_cargo("rustc", &cargo_args)?;
 
@@ -60,14 +61,12 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
 
     match read_expansion(&output) {
         Some(expansion) => {
-            let _ = fs::remove_file(&output);
             io::stdout()
                 .write_all(expansion.as_bytes())
                 .context("failed to write the expansion to stdout")?;
             Ok(0)
         }
         None => {
-            let _ = fs::remove_file(&output);
             // Whatever went wrong, the layer that knows has already said so above — cargo when it
             // would not run the expansion at all (a package with several targets needs `--lib` or
             // `--bin NAME`), the compiler when the crate failed before expanding, the driver when an

@@ -1,10 +1,24 @@
 //! Tests for the `expand` subcommand's pure helpers. Running the command itself spawns cargo and
 //! the driver, so it is exercised end to end rather than here.
 
-use cargo_cgp::expand::{forwards_profile, output_path, take_item};
+use std::fs;
+use std::path::PathBuf;
+
+use cargo_cgp::expand::{ExpansionDir, forwards_profile, take_item};
 
 fn args(list: &[&str]) -> Vec<String> {
     list.iter().map(|s| s.to_string()).collect()
+}
+
+/// A fresh parent directory under the system temp directory, unique to this test and process.
+fn scratch(name: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!(
+        "cargo-cgp-expand-test-{name}-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("creating a scratch directory");
+    dir
 }
 
 #[test]
@@ -26,18 +40,55 @@ fn no_profile_flag_leaves_the_default_to_be_added() {
 }
 
 #[test]
-fn the_output_path_is_unique_per_process() {
-    let path = output_path();
-    let name = path.file_name().expect("a file name").to_string_lossy();
+fn each_expansion_gets_a_new_directory_removed_afterwards() {
+    let parent = scratch("fresh");
+    let first = ExpansionDir::create_in(&parent).expect("a directory");
+    let second = ExpansionDir::create_in(&parent).expect("a second directory");
 
+    assert_ne!(first.path(), second.path());
+    assert!(first.output_path().starts_with(first.path()));
+    let kept = first.path().to_path_buf();
+    drop(first);
     assert!(
-        name.contains(&std::process::id().to_string()),
-        "two concurrent runs must not share an output file: {name}"
+        !kept.exists(),
+        "the directory should be removed with its handle"
     );
+    drop(second);
+    let _ = fs::remove_dir_all(&parent);
+}
+
+#[test]
+fn a_name_another_process_holds_is_skipped_not_reused() {
+    // Someone else's directory, or a symlink planted at the predictable name, must never become the
+    // place the driver writes to.
+    let parent = scratch("taken");
+    let taken = parent.join(format!("cargo-cgp-expand-{}-0", std::process::id()));
+    fs::create_dir(&taken).unwrap();
+    fs::write(taken.join("expansion.rs"), "someone else's").unwrap();
+
+    let dir = ExpansionDir::create_in(&parent).expect("a directory under another name");
+
+    assert_ne!(dir.path(), taken);
+    drop(dir);
     assert_eq!(
-        path.extension().map(|e| e.to_string_lossy().into_owned()),
-        Some("rs".to_owned())
+        fs::read_to_string(taken.join("expansion.rs")).unwrap(),
+        "someone else's"
     );
+    let _ = fs::remove_dir_all(&parent);
+}
+
+#[cfg(unix)]
+#[test]
+fn only_this_user_can_enter_the_directory() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let parent = scratch("private");
+    let dir = ExpansionDir::create_in(&parent).expect("a directory");
+    let mode = fs::metadata(dir.path()).unwrap().permissions().mode();
+
+    assert_eq!(mode & 0o077, 0, "group and others get no access: {mode:o}");
+    drop(dir);
+    let _ = fs::remove_dir_all(&parent);
 }
 
 #[test]
