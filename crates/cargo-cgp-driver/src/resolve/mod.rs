@@ -33,6 +33,7 @@ mod conflict;
 mod label;
 mod missing_use_provider;
 mod orphan;
+mod overflow;
 mod undeclared;
 mod walk;
 
@@ -48,4 +49,5 @@ pub use cgp_item::crate_uses_cgp;
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
 pub use missing_use_provider::detect_missing_use_provider;
 pub use orphan::classify_orphan_conflict;
+pub use overflow::overflow_follows_type_error;
 pub use undeclared::detect_undeclared_trait;
