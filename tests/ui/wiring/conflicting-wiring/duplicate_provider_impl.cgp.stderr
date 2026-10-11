@@ -1,0 +1,14 @@
+error[E0119]: conflicting implementations of trait `Greeter<_>` for type `GreetHello`
+  --> src/main.rs:31:1
+   |
+25 | / impl Greeter {
+26 | |     fn greet(&self) {}
+27 | | }
+   | |_- first implementation here
+...
+31 | / impl Greeter {
+32 | |     fn greet(&self) {}
+33 | | }
+   | |_^ conflicting implementation for `GreetHello`
+
+For more information about this error, try `rustc --explain E0119`.
