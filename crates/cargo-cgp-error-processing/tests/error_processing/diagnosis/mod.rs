@@ -103,6 +103,7 @@ fn foo_names() -> HashMap<String, ComponentTraitNames> {
         ComponentTraitNames {
             consumer: "CanFoo".to_owned(),
             provider: "Fooer".to_owned(),
+            params: 0,
         },
     );
     map

@@ -134,7 +134,22 @@ pub fn build_component_name_map(tcx: TyCtxt<'_>) -> HashMap<String, ComponentTra
                 .get(&provider_did)
                 .cloned()
                 .unwrap_or_else(|| provider.clone());
-            (component, ComponentTraitNames { consumer, provider })
+            // A provider trait's type parameters are `Self`, the context, then the component's.
+            let params = tcx
+                .generics_of(provider_did)
+                .own_params
+                .iter()
+                .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }))
+                .count()
+                .saturating_sub(2);
+            (
+                component,
+                ComponentTraitNames {
+                    consumer,
+                    provider,
+                    params,
+                },
+            )
         })
         .collect()
 }

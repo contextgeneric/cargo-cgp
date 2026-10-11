@@ -19,6 +19,7 @@ fn names() -> HashMap<String, ComponentTraitNames> {
         ComponentTraitNames {
             consumer: "CanCalculateArea".to_owned(),
             provider: "AreaCalculator".to_owned(),
+            params: 0,
         },
     );
     map
@@ -394,6 +395,7 @@ fn full_path_names() -> HashMap<String, ComponentTraitNames> {
         ComponentTraitNames {
             consumer: "CanCalculateArea".to_owned(),
             provider: "AreaCalculator".to_owned(),
+            params: 0,
         },
     );
     map
@@ -430,6 +432,7 @@ fn same_name_names() -> HashMap<String, ComponentTraitNames> {
             ComponentTraitNames {
                 consumer: format!("CanMeasure{suffix}"),
                 provider: format!("Measurer{suffix}"),
+                params: 0,
             },
         );
     }
@@ -510,5 +513,62 @@ fn does_not_force_the_map_without_a_matching_message() {
             &map
         ),
         None
+    );
+}
+
+/// A component whose one parameter is a tuple (`CanFormatPair<(u32, u64)>`).
+fn tuple_param_names() -> HashMap<String, ComponentTraitNames> {
+    HashMap::from([(
+        "FormatPairComponent".to_owned(),
+        ComponentTraitNames {
+            consumer: "CanFormatPair".to_owned(),
+            provider: "PairFormatter".to_owned(),
+            params: 1,
+        },
+    )])
+}
+
+#[test]
+fn keeps_a_single_tuple_parameter_whole() {
+    // A one-parameter component whose parameter is a tuple arrives exactly as a two-parameter
+    // component's grouped list does, so the component's arity decides: one parameter stays whole.
+    let map = ComponentNameMap::new(tuple_param_names);
+    assert_eq!(
+        rewrite_trait_bound(
+            "the trait bound `App: CanUseComponent<FormatPairComponent, (u32, u64)>` is not satisfied",
+            &map,
+        )
+        .as_deref(),
+        Some(
+            "[CGP-E001] the consumer trait `CanFormatPair<(u32, u64)>` is not implemented for context `App`"
+        )
+    );
+}
+
+/// A two-parameter component, for a function-pointer parameter's `->`.
+fn fn_pointer_names() -> HashMap<String, ComponentTraitNames> {
+    HashMap::from([(
+        "ApplyComponent".to_owned(),
+        ComponentTraitNames {
+            consumer: "CanApply".to_owned(),
+            provider: "Applier".to_owned(),
+            params: 2,
+        },
+    )])
+}
+
+#[test]
+fn keeps_a_function_pointer_parameter_whole() {
+    // The `>` of `->` closes no bracket, so the grouped list still splits at its own comma.
+    let map = ComponentNameMap::new(fn_pointer_names);
+    assert_eq!(
+        rewrite_trait_bound(
+            "the trait bound `App: CanUseComponent<ApplyComponent, (fn(u8) -> u8, u32)>` is not satisfied",
+            &map,
+        )
+        .as_deref(),
+        Some(
+            "[CGP-E001] the consumer trait `CanApply<fn(u8) -> u8, u32>` is not implemented for context `App`"
+        )
     );
 }

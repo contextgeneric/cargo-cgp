@@ -15,14 +15,18 @@ pub(crate) fn split_generics(s: &str) -> Option<(&str, &str)> {
 }
 
 /// Split a generic argument list on its top-level commas, so a nested `<…>`, `(…)`, or
-/// `[…]` argument (e.g. a generic context or a `Params` tuple) is kept whole.
+/// `[…]` argument (e.g. a generic context or a `Params` tuple) is kept whole, and the `->` of a
+/// function-pointer type does not count as a closing bracket.
 pub(crate) fn split_top_level(args: &str) -> Vec<&str> {
     let mut depth: i32 = 0;
     let mut parts = Vec::new();
     let mut start = 0;
+    let mut previous = None;
     for (i, c) in args.char_indices() {
         match c {
             '<' | '(' | '[' => depth += 1,
+            // The `>` of a function pointer's `->` closes no bracket.
+            '>' if previous == Some('-') => {}
             '>' | ')' | ']' => depth -= 1,
             ',' if depth == 0 => {
                 parts.push(&args[start..i]);
@@ -30,6 +34,7 @@ pub(crate) fn split_top_level(args: &str) -> Vec<&str> {
             }
             _ => {}
         }
+        previous = Some(c);
     }
     parts.push(&args[start..]);
     parts

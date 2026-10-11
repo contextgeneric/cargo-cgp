@@ -15,6 +15,10 @@ pub struct ComponentTraitNames {
     pub consumer: String,
     /// The provider trait a provider implements (e.g. `AreaCalculator`).
     pub provider: String,
+    /// How many type parameters the component has. CGP groups two or more into a tuple in the
+    /// `CanUseComponent`/`IsProviderFor` parameter slot, so this tells that tuple from the single
+    /// parameter of a component whose one parameter is a tuple.
+    pub params: usize,
 }
 
 /// A lazily-built map from a component-marker's full path to the trait names behind it.

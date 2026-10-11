@@ -64,7 +64,7 @@ pub fn rewrite_wiring_overflow(message: &str, names: &ComponentNameMap) -> Optio
     let args = split_top_level(args_str);
     let component = args.first()?.trim();
     let entry = names.get(component)?;
-    let generics = render_trait_generics(&[], &args[1..]);
+    let generics = render_trait_generics(&[], &args[1..], entry.params);
     Some(format!(
         "[{WIRING_OVERFLOW}] the wiring for the consumer trait `{}{generics}` on context `{subject}` never resolves — the lookup recurses without terminating",
         entry.consumer
@@ -149,7 +149,7 @@ pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<St
             // the component's extra parameters.
             let component = args[0].trim();
             let entry = names.get(component)?;
-            let generics = render_trait_generics(&[], &args[1..]);
+            let generics = render_trait_generics(&[], &args[1..], entry.params);
             Some(format!(
                 "[{CONSUMER_TRAIT_UNIMPLEMENTED}] the consumer trait `{}{generics}` is not implemented for context `{subject}`{tail}",
                 entry.consumer
@@ -161,7 +161,7 @@ pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<St
             let component = args[0].trim();
             let entry = names.get(component)?;
             let context = args[1].trim();
-            let generics = render_trait_generics(&[], &args[2..]);
+            let generics = render_trait_generics(&[], &args[2..], entry.params);
             Some(format!(
                 "[{PROVIDER_TRAIT_UNIMPLEMENTED}] the provider trait `{}{generics}` with context `{context}` is not implemented for provider `{subject}`{tail}",
                 entry.provider
@@ -177,11 +177,14 @@ pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<St
 ///
 /// The extra parameters arrive as CGP groups them in `IsProviderFor`/`CanUseComponent`: a
 /// single parameter appears bare, and two or more are wrapped in a tuple, which is unwrapped
-/// here so the reattached list matches how the trait was written.
-fn render_trait_generics(leading: &[&str], params: &[&str]) -> String {
+/// here so the reattached list matches how the trait was written. `arity` is the component's
+/// parameter count: a component with exactly one parameter keeps it whole, even when that
+/// parameter is itself a tuple.
+fn render_trait_generics(leading: &[&str], params: &[&str], arity: usize) -> String {
     let mut generics: Vec<&str> = leading.to_vec();
     match params {
         [] => {}
+        [single] if arity == 1 => generics.push(single.trim()),
         [grouped] => match grouped
             .trim()
             .strip_prefix('(')
