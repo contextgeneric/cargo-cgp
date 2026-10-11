@@ -11,7 +11,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::resolve::call_site::method_calls_at;
-use crate::resolve::cgp_item::is_provider_struct;
+use crate::resolve::cgp_item::{is_component_marker, is_provider_struct};
 
 /// The local trait-impl blocks (`impl Trait for Ty { … }`) whose source span contains one of the
 /// diagnostic's spans — the impls a wiring failure can surface inside, whether the caret lands on
@@ -53,9 +53,10 @@ pub(crate) fn context_candidates_from_spans<'tcx>(
         let def_span = tcx.def_span(did);
         if spans.iter().any(|&span| def_span.contains(span)) {
             let ty = tcx.type_of(did).instantiate_identity().skip_norm_wip();
-            // A provider struct is never a context; exclude it so an anchor without a wiring check
-            // (e.g. `resolve_use_site_consumer`) does not mis-recover it as the failing context.
-            if !is_provider_struct(tcx, ty) {
+            // A provider struct or a component marker is never a context; exclude both so an
+            // anchor does not mis-recover one as the failing context. A marker's definition sits
+            // under the component macro's attribute, which rustc's notes point at.
+            if !is_provider_struct(tcx, ty) && !is_component_marker(tcx, ty) {
                 candidates.push(ty);
             }
         }

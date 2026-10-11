@@ -1,8 +1,11 @@
 #![feature(prelude_import)]
 //! A `UseDefault` provider whose default body calls a getter it does not declare in `#[uses]`.
 //!
-//! The headline names `NameGetterComponent` as the context, the same misnamed context as an unwired
-//! getter call; the fix is `#[uses(HasName)]` on the provider.
+//! The tool keeps rustc's `E0277` that `__Context__: HasName` is not satisfied, required by the
+//! `#[extend(HasName)]` bound on `Greeter`. Nothing names the fix, `#[uses(HasName)]` on the
+//! provider, and the message leaks the generated `__Context__`. The resolver skips the
+//! `NameGetterComponent` marker, defined under the `#[cgp_getter]` attribute rustc points at, as a
+//! context candidate, so it states no false context.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
 //!
