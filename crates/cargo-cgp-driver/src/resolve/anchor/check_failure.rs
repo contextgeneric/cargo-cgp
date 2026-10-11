@@ -102,7 +102,10 @@ fn can_use_to_consumer_obligation<'tcx>(
 
 /// The `CanUseComponent<..>` supertrait clause of `trait_did`, if it carries one — the marker
 /// of a `check_components!` check trait. Anchored by DefId to `cgp_component`.
-fn can_use_component_supertrait(tcx: TyCtxt<'_>, trait_did: DefId) -> Option<ty::Clause<'_>> {
+pub(crate) fn can_use_component_supertrait(
+    tcx: TyCtxt<'_>,
+    trait_did: DefId,
+) -> Option<ty::Clause<'_>> {
     for &(clause, _) in tcx.explicit_super_clauses_of(trait_did).skip_binder() {
         if let Some(tp) = clause.as_trait_clause()
             && is_cgp_item(

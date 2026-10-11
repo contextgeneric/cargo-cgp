@@ -6,7 +6,7 @@ use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::resolve::anchor::{enclosing_trait_impls, is_about_impl};
+use crate::resolve::anchor::{can_use_component_supertrait, enclosing_trait_impls, is_about_impl};
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{
     consumer_provider_trait, is_blanket_trait, is_context_adt, is_local_adt, is_provider_trait,
@@ -57,6 +57,11 @@ pub fn resolve_impl_site(
         // the provider's own `where` clause can name a cross-context dependency on a *concrete* local
         // context (`where Inner: CanCompute`); such a bound failing is a real wiring failure, so
         // recover it as the consumer obligation it is — de-duplicating into that context's own check.
+        // A `check_components!` check impl (its trait's supertrait is `CanUseComponent`) is the
+        // check anchor's to read; its generated trait is no wrapper the programmer wrote.
+        if can_use_component_supertrait(tcx, trait_ref.def_id).is_some() {
+            continue;
+        }
         if is_provider_trait(tcx, trait_ref.def_id) {
             if let Some(resolved) = cross_context_where_bound(tcx, cache, impl_did) {
                 return Some(resolved);

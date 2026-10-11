@@ -1,8 +1,10 @@
 #![feature(prelude_import)]
 //! `delegate_and_check_components!` with a generic key, `<I> FooKeyComponent<I>: AnyFoo`.
 //!
-//! The failure is reshaped as `[CGP-E009] the trait `__CanUseApp<FooKeyComponent<I>, ()>``, presenting
-//! the generated check trait as a trait the user wrote, over a `[CGP-E107]` leaf.
+//! Without `#[check_params(I)]` the derived check tests the key at unit parameters, which `AnyFoo`
+//! does not provide, so rustc reports `AnyFoo: IsProviderFor<FooKeyComponent<I>, App>`. The tool
+//! leaves it as rustc wrote it: the generated `__CanUseApp` check impl is not read as a wrapper
+//! trait the programmer wrote. Nothing names `#[check_params(I)]` as the fix.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 //!

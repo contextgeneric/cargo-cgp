@@ -1,12 +1,28 @@
-error[E0277]: [CGP-E009] the trait `__CanUseApp<FooKeyComponent<I>, ()>` is not implemented for context `App`
-  --> src/main.rs:37:13
+error[E0277]: the trait bound `AnyFoo: IsProviderFor<FooKeyComponent<I>, App>` is not satisfied
+  --> src/main.rs:39:13
    |
-37 |         <I> FooKeyComponent<I>: AnyFoo,
-   |             ^^^^^^^^^^^^^^^^^^
+39 |         <I> FooKeyComponent<I>: AnyFoo,
+   |             ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `FooKeyComponent`
-           this is required through the dependency chain:
-             [CGP-E105] trait impl `__CanUseApp<FooKeyComponent<I>, ()>` for `App`
-             └─ [CGP-E107] context `App` does not contain any delegate entry for `FooKeyComponent`
+help: the trait `IsProviderFor<FooKeyComponent<I>, App>` is not implemented for `AnyFoo`
+  --> src/main.rs:27:16
+   |
+27 | #[cgp_impl(new AnyFoo: FooKeyComponent<I>)]
+   |                ^^^^^^
+   = note: required for `App` to implement `CanUseComponent<FooKeyComponent<I>>`
+note: required by a bound in `__CanUseApp`
+  --> src/main.rs:37:1
+   |
+37 | / delegate_and_check_components! {
+38 | |     App {
+39 | |         <I> FooKeyComponent<I>: AnyFoo,
+40 | |     }
+41 | | }
+   | |_^ required by this bound in `__CanUseApp`
+   = note: this error originates in the macro `delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider introducing a `where` clause, but there might be an alternative better way to express this requirement
+   |
+39 |         <I> FooKeyComponent<I> where AnyFoo: IsProviderFor<FooKeyComponent<I>, App>: AnyFoo,
+   |                                ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 For more information about this error, try `rustc --explain E0277`.
