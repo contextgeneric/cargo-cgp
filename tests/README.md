@@ -44,10 +44,10 @@ The categories are:
   naming the problem its fixtures expose.
 - [`ui/ok/`](ui/ok) — the clean-compile baseline: correctly-wired programs that check with empty
   output.
-- `ui/hidden-root-cause/` — errors whose root cause cannot be recovered from the output at all, the
-  highest-value class to fix (a [hidden root cause](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/hidden-root-cause.md)). It has
-  **no fixture today** — both known archetypes are defeated by flags the driver injects, so the
-  directory is absent — but it is recreated the moment a genuinely unrecoverable case is found.
+- [`ui/hidden-root-cause/`](ui/hidden-root-cause) — errors whose root cause cannot be recovered
+  from the output at all, the highest-value class to fix (a [hidden root cause](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/hidden-root-cause.md)).
+  Its one fixture, `foreign_context_error_route`, runs a pipeline on a context defined in an
+  auxiliary crate, where a missing error route never reaches the output.
 
 A fixture's placement follows the sufficiency-and-presentation test in
 [cgp-knowledge-base/cargo-cgp/issues/](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md): if no downstream tool could recover the cause from the
@@ -71,7 +71,7 @@ fixture's `.cgp.stderr` is cargo-cgp's own transformed output, and its `.rust.st
 [CGP error class](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md) it
 reproduces.
 
-**No reproducible class hides its root cause.** Every imported case carries the concrete cause in
+**No migrated class hides its root cause.** Every imported case carries the concrete cause in
 cargo-cgp's output, so each is either an `acceptable/` case (the cause is presented well) or a
 `usability/` case (the cause is present but buried) — none is a hidden root cause. The sharpest
 confirmation is the consumer-call class. What raw `rustc` shows depends on the compiler: stable
@@ -108,6 +108,9 @@ fixture:
 - **The positive counterpart** — [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs) builds
   `cgp-test-crate-b` (and transitively `cgp-test-crate-a`) to confirm every orphan-*safe* cross-crate
   impl compiles cleanly.
+
+Another aux crate, `cgp-test-foreign-pipeline`, holds a pipeline context and its wiring for the
+one `ui/hidden-root-cause/` fixture, whose cause is lost because the context is foreign.
 
 Two more aux crates carry the cross-crate surface of the function and dispatch macros:
 `cgp-test-dispatch-traits` (upstream — `#[cgp_auto_dispatch]` traits with no implementor, plus a

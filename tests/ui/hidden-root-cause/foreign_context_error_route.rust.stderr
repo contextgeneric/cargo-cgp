@@ -1,0 +1,123 @@
+error[E0277]: the trait bound `ComposeHandlers<Call<Echo>, Call<Stdout>>: IsProviderFor<_, App, _>` is not satisfied
+  --> src/main.rs:24:16
+   |
+24 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
+   |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |         |
+   |         required by a bound introduced by this call
+   |
+   = help: the trait `IsProviderFor<HandlerComponent, App, (Pipe<Cons<Echo, Cons<cgp_test_foreign_pipeline::Stdout, Nil>>>, _)>` is not implemented for `ComposeHandlers<Call<Echo>, Call<cgp_test_foreign_pipeline::Stdout>>`
+help: `ComposeHandlers<ProviderA, ProviderB>` implements trait `IsProviderFor<Component, Context, Params>`
+  --> $CGP/crates/extra/cgp-handler/src/providers/compose.rs:11:1
+   |
+11 | / impl<Context, Code, Input, ProviderA, ProviderB> Computer<Context, Code, Input>
+12 | |     for ComposeHandlers<ProviderA, ProviderB>
+13 | | where
+14 | |     ProviderA: Computer<Context, Code, Input>,
+15 | |     ProviderB: Computer<Context, Code, ProviderA::Output>,
+   | |__________________________________________________________^ `IsProviderFor<ComputerComponent, Context, (Code, Input)>`
+...
+26 | / impl<Context, Code, Input, ProviderA, ProviderB> TryComputer<Context, Code, Input>
+27 | |     for ComposeHandlers<ProviderA, ProviderB>
+28 | | where
+29 | |     Context: HasErrorType,
+30 | |     ProviderA: TryComputer<Context, Code, Input>,
+31 | |     ProviderB: TryComputer<Context, Code, ProviderA::Output>,
+   | |_____________________________________________________________^ `IsProviderFor<TryComputerComponent, Context, (Code, Input)>`
+...
+46 | / impl<Context, Code, Input, ProviderA, ProviderB> AsyncComputer<Context, Code, Input>
+47 | |     for ComposeHandlers<ProviderA, ProviderB>
+48 | | where
+49 | |     ProviderA: AsyncComputer<Context, Code, Input>,
+50 | |     ProviderB: AsyncComputer<Context, Code, ProviderA::Output>,
+   | |_______________________________________________________________^ `IsProviderFor<AsyncComputerComponent, Context, (Code, Input)>`
+...
+65 | / impl<Context, Code, Input, ProviderA, ProviderB> Handler<Context, Code, Input>
+66 | |     for ComposeHandlers<ProviderA, ProviderB>
+67 | | where
+68 | |     Context: HasErrorType,
+69 | |     ProviderA: Handler<Context, Code, Input>,
+70 | |     ProviderB: Handler<Context, Code, ProviderA::Output>,
+   | |_________________________________________________________^ `IsProviderFor<HandlerComponent, Context, (Code, Input)>`
+   = note: required for `PipeHandlers<Cons<Call<Echo>, Cons<Call<cgp_test_foreign_pipeline::Stdout>, Nil>>>` to implement `IsProviderFor<HandlerComponent, App, (Pipe<Cons<Echo, _>>, _)>`
+   = note: 4 redundant requirements hidden
+   = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Pipe<Cons<Echo, _>>, _)>`
+   = note: required for `App` to implement `cgp::prelude::Handler<App, Pipe<Cons<Echo, Cons<cgp_test_foreign_pipeline::Stdout, Nil>>>, _>`
+   = note: required for `App` to implement `CanHandle<Pipe<Cons<Echo, Cons<cgp_test_foreign_pipeline::Stdout, Nil>>>, _>`
+
+error[E0277]: the trait bound `ComposeHandlers<Call<Echo>, Call<Stdout>>: IsProviderFor<_, App, _>` is not satisfied
+  --> src/main.rs:24:5
+   |
+24 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `IsProviderFor<HandlerComponent, App, (Pipe<Cons<Echo, Cons<cgp_test_foreign_pipeline::Stdout, Nil>>>, Vec<_>)>` is not implemented for `ComposeHandlers<Call<Echo>, Call<cgp_test_foreign_pipeline::Stdout>>`
+help: `ComposeHandlers<ProviderA, ProviderB>` implements trait `IsProviderFor<Component, Context, Params>`
+  --> $CGP/crates/extra/cgp-handler/src/providers/compose.rs:11:1
+   |
+11 | / impl<Context, Code, Input, ProviderA, ProviderB> Computer<Context, Code, Input>
+12 | |     for ComposeHandlers<ProviderA, ProviderB>
+13 | | where
+14 | |     ProviderA: Computer<Context, Code, Input>,
+15 | |     ProviderB: Computer<Context, Code, ProviderA::Output>,
+   | |__________________________________________________________^ `IsProviderFor<ComputerComponent, Context, (Code, Input)>`
+...
+26 | / impl<Context, Code, Input, ProviderA, ProviderB> TryComputer<Context, Code, Input>
+27 | |     for ComposeHandlers<ProviderA, ProviderB>
+28 | | where
+29 | |     Context: HasErrorType,
+30 | |     ProviderA: TryComputer<Context, Code, Input>,
+31 | |     ProviderB: TryComputer<Context, Code, ProviderA::Output>,
+   | |_____________________________________________________________^ `IsProviderFor<TryComputerComponent, Context, (Code, Input)>`
+...
+46 | / impl<Context, Code, Input, ProviderA, ProviderB> AsyncComputer<Context, Code, Input>
+47 | |     for ComposeHandlers<ProviderA, ProviderB>
+48 | | where
+49 | |     ProviderA: AsyncComputer<Context, Code, Input>,
+50 | |     ProviderB: AsyncComputer<Context, Code, ProviderA::Output>,
+   | |_______________________________________________________________^ `IsProviderFor<AsyncComputerComponent, Context, (Code, Input)>`
+...
+65 | / impl<Context, Code, Input, ProviderA, ProviderB> Handler<Context, Code, Input>
+66 | |     for ComposeHandlers<ProviderA, ProviderB>
+67 | | where
+68 | |     Context: HasErrorType,
+69 | |     ProviderA: Handler<Context, Code, Input>,
+70 | |     ProviderB: Handler<Context, Code, ProviderA::Output>,
+   | |_________________________________________________________^ `IsProviderFor<HandlerComponent, Context, (Code, Input)>`
+   = note: required for `PipeHandlers<Cons<Call<Echo>, Cons<Call<cgp_test_foreign_pipeline::Stdout>, Nil>>>` to implement `IsProviderFor<HandlerComponent, App, (Pipe<Cons<Echo, _>>, _)>`
+   = note: 4 redundant requirements hidden
+   = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Pipe<Cons<Echo, _>>, _)>`
+   = note: required for `App` to implement `Handler<App, Pipe<Cons<Echo, Cons<Stdout, Nil>>>, Vec<_>>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+   |
+ 9 |   #[cgp_component(Handler)]
+   |  _________________^
+10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+11 | | #[derive_delegate(UseDelegate<Code>)]
+12 | | #[derive_delegate(UseInputDelegate<Input>)]
+13 | | #[use_type(HasErrorType.Error)]
+14 | | pub trait CanHandle<Code, Input> {
+   | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+
+error[E0277]: the `?` operator can only be applied to values that implement `Try`
+  --> src/main.rs:24:5
+   |
+24 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `?` operator cannot be applied to type `<impl Future<Output = Result<_, _>> as Future>::Output`
+   |
+   = help: the nightly-only, unstable trait `Try` is not implemented for `<impl Future<Output = Result<_, _>> as Future>::Output`
+
+error[E0277]: the `?` operator can only be used in an async function that returns `Result` or `Option` (or another type that implements `FromResidual`)
+  --> src/main.rs:24:5
+   |
+23 |   pub async fn run() -> Result<(), backend::Error> {
+   |  __________________________________________________-
+24 | |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
+   | |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot use the `?` operator in an async function that returns `<impl Future<Output = Result<_, _>> as Future>::Output`
+25 | |     Ok(())
+26 | | }
+   | |_- this function should return `Result` or `Option` to accept `?`
+   |
+
+For more information about this error, try `rustc --explain E0277`.
