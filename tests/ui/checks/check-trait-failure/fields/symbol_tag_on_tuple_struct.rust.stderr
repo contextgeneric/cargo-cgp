@@ -1,20 +1,20 @@
 error[E0277]: the trait bound `Pair: cgp::prelude::HasField<cgp::prelude::Symbol<1, cgp::prelude::Chars<..>>>` is not satisfied
-  --> src/main.rs:22:21
+  --> src/main.rs:24:21
    |
-22 |     *pair.get_field(PhantomData::<Symbol!("0")>)
+24 |     *pair.get_field(PhantomData::<Symbol!("0")>)
    |           --------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |           |
    |           required by a bound introduced by this call
    |
 help: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<1, cgp::prelude::Chars<..>>>` is not implemented for `Pair`
-  --> src/main.rs:19:1
+  --> src/main.rs:21:1
    |
-19 | pub struct Pair(pub u32, pub String);
+21 | pub struct Pair(pub u32, pub String);
    | ^^^^^^^^^^^^^^^
 help: `Pair` implements trait `cgp::prelude::HasField<Tag>`
-  --> src/main.rs:19:17
+  --> src/main.rs:21:17
    |
-19 | pub struct Pair(pub u32, pub String);
+21 | pub struct Pair(pub u32, pub String);
    |                 ^^^^^^^  ^^^^^^^^^^ `cgp::prelude::HasField<cgp::prelude::Index<1>>`
    |                 |
    |                 `cgp::prelude::HasField<cgp::prelude::Index<0>>`

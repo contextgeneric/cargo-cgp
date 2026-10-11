@@ -25,14 +25,19 @@
 //! [`resugar_symbol`](super::resugar_symbol), so it matches the bare, resugared
 //! `HasField<Symbol!("…")>` form.
 
+use crate::postprocess::strip_modules::strip_module_paths;
+
 /// The text that opens the unmet-`HasField` clause, once prefixes are stripped and the
 /// symbol resugared.
 const ANCHOR: &str = "the trait `HasField<Symbol!(\"";
 
 /// Does the text show the context implementing `HasField` for at least one field? Both of
 /// rustc's "similar impl" phrasings count; their absence across the whole diagnostic means
-/// no impls at all.
+/// no impls at all. Module paths are stripped first, since rustc prints a glob-imported trait
+/// qualified (`implements trait `cgp::prelude::HasField<Tag>``). A caller passes a message's
+/// fragments joined, since rustc highlights the `is` of `is implemented for it` apart.
 pub fn context_has_hasfield_impls(text: &str) -> bool {
+    let text = strip_module_paths(text).unwrap_or_else(|| text.to_owned());
     text.contains("is implemented for it") || text.contains("implements trait `HasField")
 }
 

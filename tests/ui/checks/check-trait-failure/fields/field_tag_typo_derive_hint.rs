@@ -1,14 +1,14 @@
 //! A `HasField` bound whose tag misspells a field the struct derives.
 //!
 //! `Person` derives `HasField` and has `name`; the bound asks for `nmae`. The tool rewrites rustc's
-//! "similar impl" help into "`#[derive(HasField)]` is required to access field `nmae`", which is
-//! false: the derive is present, and the mistake is the spelling.
+//! "similar impl" help into "missing field `nmae` on `Person`", its caret on the `name` field that
+//! does exist. It reads the derive as present from rustc's own landmark, "but trait
+//! `HasField<Symbol!("name")>` is implemented for it", whose `is` rustc styles as a separate
+//! fragment, so the check reads each message's fragments joined.
 //!
 //! CGP error class: none; a plain `HasField` bound outside any wiring.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
+//@quality: acceptable
 //@codes: none
 
 use cgp::prelude::*;

@@ -171,11 +171,17 @@ pub(crate) fn mentions_wiring(diag: &DiagInner) -> bool {
 /// context implementing `HasField` for a field — the whole-diagnostic fact the missing-field
 /// rewrite needs to tell a single missing field from a missing `#[derive(HasField)]`.
 pub(crate) fn mentions_hasfield_impls(diag: &DiagInner) -> bool {
+    // A message's styled fragments are read joined: rustc highlights the `is` of `is implemented
+    // for it` apart, so no single fragment carries the landmark.
     fn in_messages<S>(messages: &[(DiagMessage, S)]) -> bool {
-        messages.iter().any(|(message, _)| match message {
-            DiagMessage::Str(text) => context_has_hasfield_impls(text),
-            _ => false,
-        })
+        let joined: String = messages
+            .iter()
+            .filter_map(|(message, _)| match message {
+                DiagMessage::Str(text) => Some(text.as_ref()),
+                _ => None,
+            })
+            .collect();
+        context_has_hasfield_impls(&joined)
     }
     fn in_span(span: &MultiSpan) -> bool {
         span.span_labels_raw()

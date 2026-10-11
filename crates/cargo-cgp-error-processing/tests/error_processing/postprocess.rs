@@ -477,6 +477,21 @@ fn missing_field_with_separate_impls_note_is_recognized() {
 }
 
 #[test]
+fn separate_impls_note_is_recognized_with_its_path() {
+    // rustc keeps a glob-imported trait's path in the note, so the landmark reads
+    // `cgp::prelude::HasField`; it still shows the context implementing `HasField`.
+    let text = "help: `Pair` implements trait `cgp::prelude::HasField<Tag>`";
+    assert!(context_has_hasfield_impls(text));
+}
+
+#[test]
+fn inline_landmark_is_recognized_with_its_path() {
+    let text =
+        "but trait `cgp::prelude::HasField<Symbol<4, Chars<'n', Nil>>>` is implemented for it";
+    assert!(context_has_hasfield_impls(text));
+}
+
+#[test]
 fn missing_derive_when_no_impls_present() {
     // No landmark at all: the context implements HasField for nothing, so the whole
     // derive is missing and the message points at the derive, not a single field.
