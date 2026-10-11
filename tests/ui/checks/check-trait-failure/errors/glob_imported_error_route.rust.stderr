@@ -1,0 +1,30 @@
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProviderFor<_, App, Error>` is not satisfied
+  --> src/main.rs:44:9
+   |
+44 |         ErrorRaiserComponent: std::io::Error,
+   |         ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `IsProviderFor<ErrorRaiserComponent, App, std::io::Error>` is not implemented for `RedirectLookup<App, PathCons<ErrorRaiserComponent, Nil>>`
+   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorTypeProviderComponent, __Context__>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+             IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
+           and 9 others
+   = note: required for `App` to implement `CanUseComponent<ErrorRaiserComponent, std::io::Error>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:42:1
+   |
+42 | / check_components! {
+43 | |     App {
+44 | |         ErrorRaiserComponent: std::io::Error,
+45 | |     }
+46 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
