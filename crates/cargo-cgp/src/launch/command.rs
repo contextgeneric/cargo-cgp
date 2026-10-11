@@ -43,7 +43,7 @@ pub fn wrapped_cargo(subcommand: &str, forwarded_args: &[String]) -> anyhow::Res
     // rustc), exactly as `cargo clippy` does with `clippy-driver`.
     command.env("RUSTC_WORKSPACE_WRAPPER", &driver.path);
     command.env(SYSROOT_ENV, &sysroot);
-    prepend_dylib_path(&mut command, &sysroot.join("lib"));
+    prepend_dylib_path(&mut command, &sysroot.join("lib"))?;
 
     // Force the pinned nightly so the whole build runs under the compiler the driver
     // embeds, whatever the project pins. Skipped in unmanaged mode.

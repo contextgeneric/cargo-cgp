@@ -81,7 +81,7 @@ pub fn run(driver: &DriverLocation, toolchain: &str) -> anyhow::Result<PathBuf> 
     let mut command = Command::new(&driver.path);
     command.env(RUSTUP_TOOLCHAIN_ENV, toolchain);
     command.env(SYSROOT_ENV, &sysroot);
-    prepend_dylib_path(&mut command, &sysroot.join("lib"));
+    prepend_dylib_path(&mut command, &sysroot.join("lib"))?;
     command.arg("--version");
 
     let output = command.output().map_err(|error| {

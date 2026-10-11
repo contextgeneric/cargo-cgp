@@ -27,24 +27,36 @@ use crate::version::{version_string, wants_version};
 /// driver does: the `RUSTC_LOG` logger, and an ICE hook, here naming cargo-cgp's issue tracker
 /// and wrapped so a panic the emitter contains is not reported (see [`install_panic_hooks`]).
 pub fn run() -> ExitCode {
-    let raw: Vec<String> = env::args().collect();
-
     // A direct invocation (not cargo's wrapper call) answers the tool's own queries here,
     // before touching the compiler: `--help`/`-h` or no arguments prints the help, and
     // `--version`/`-V` prints the version handshake the front-end preflight reads. In
-    // wrapper mode these flags belong to the real compiler, so we fall through.
-    if !is_wrapper_mode(&raw) {
-        if wants_help(&raw) || raw.len() <= 1 {
+    // wrapper mode these flags belong to the real compiler, so we fall through. The flags are
+    // matched on a lossy copy of the arguments: a non-Unicode one matches no flag, and is
+    // reported below, where the compiler reads the arguments for real.
+    let direct: Vec<String> = env::args_os()
+        .map(|arg| arg.to_string_lossy().into_owned())
+        .collect();
+    if !is_wrapper_mode(&direct) {
+        if wants_help(&direct) || direct.len() <= 1 {
             println!("{}", help_text());
             return ExitCode::SUCCESS;
         }
-        if wants_version(&raw) {
+        if wants_version(&direct) {
             println!("{}", version_string());
             return ExitCode::SUCCESS;
         }
     }
 
-    rustc_driver::init_rustc_env_logger(&EarlyDiagCtxt::new(ErrorOutputType::default()));
+    let early_dcx = EarlyDiagCtxt::new(ErrorOutputType::default());
+    rustc_driver::init_rustc_env_logger(&early_dcx);
+
+    // Read the arguments as rustc reads them, which reports a non-Unicode one as an error where
+    // `env::args` would panic. This comes before the panic hooks, because rustc's ICE hook reads
+    // `env::args` itself when `RUST_BACKTRACE` is unset, and would panic on such an argument.
+    let Ok(raw) = rustc_driver::catch_fatal_errors(|| rustc_driver::args::raw_args(&early_dcx))
+    else {
+        return ExitCode::FAILURE;
+    };
     install_panic_hooks(BUG_REPORT_URL);
 
     rustc_driver::catch_with_exit_code(|| {

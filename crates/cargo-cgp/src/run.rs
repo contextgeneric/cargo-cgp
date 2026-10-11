@@ -4,7 +4,7 @@ use std::env;
 
 use anyhow::bail;
 
-use crate::args::strip_subcommand;
+use crate::args::{strip_subcommand, utf8_args};
 use crate::check::run_check;
 use crate::config::CARGO_SUBCOMMAND;
 use crate::expand::run_expand;
@@ -19,7 +19,7 @@ use crate::update::run_update;
 /// `expand` shows the Rust a target's CGP macros generate; `setup` provisions the toolchain
 /// and driver; `update` upgrades the tool.
 pub fn run() -> anyhow::Result<i32> {
-    let args = strip_subcommand(env::args(), CARGO_SUBCOMMAND);
+    let args = strip_subcommand(utf8_args(env::args_os())?, CARGO_SUBCOMMAND);
     dispatch(&args)
 }
 
