@@ -1,9 +1,4 @@
 //! Tests for the driver's help query ([`cargo_cgp_driver::help`]).
-//!
-//! Linking `cargo-cgp-driver` links the compiler's `rustc_driver` dylib, so this test crate
-//! carries the same `#![feature(rustc_private)]` gate the driver binary does.
-
-#![feature(rustc_private)]
 
 use cargo_cgp_driver::help::{help_text, wants_help};
 

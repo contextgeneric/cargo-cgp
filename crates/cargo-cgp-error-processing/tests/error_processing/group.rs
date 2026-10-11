@@ -1,8 +1,10 @@
 //! Grouping coalescible failures by the root causes they share, over hand-built `Resolved` values.
 
 use cargo_cgp_error_processing::{
-    Cause, Causes, ChainNode, DepNode, FieldIssue, Leaf, Resolved, group_by_shared_cause,
+    Cause, Causes, ChainNode, DepNode, FieldIssue, Resolved, group_by_shared_cause,
 };
+
+use super::support::field_leaf;
 
 /// A failure of `consumer` on `context` bottoming out on one missing field per name in `fields` —
 /// the shape a check entry or a use-site call recovers, with the field names standing for the
@@ -11,11 +13,7 @@ fn failure(context: &str, consumer: &str, fields: &[&str]) -> Resolved {
     let causes: Causes = fields
         .iter()
         .map(|name| {
-            let leaf = Leaf::Field {
-                name: (*name).to_owned(),
-                owner: context.to_owned(),
-                issue: FieldIssue::Missing,
-            };
+            let leaf = field_leaf(name, context, FieldIssue::Missing);
             Cause {
                 paths: vec![vec![
                     ChainNode::Hop(DepNode::Consumer {

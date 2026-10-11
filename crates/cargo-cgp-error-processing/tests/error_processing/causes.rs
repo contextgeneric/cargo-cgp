@@ -1,17 +1,15 @@
 //! The `Causes` set and the *one cause per distinct leaf* invariant it enforces by construction.
 
 use cargo_cgp_error_processing::{
-    Cause, Causes, ChainNode, DepNode, FieldIssue, Leaf, coalesce_underived_fields, root_cause_lead,
+    Cause, Causes, ChainNode, DepNode, FieldIssue, coalesce_underived_fields, root_cause_lead,
 };
+
+use super::support::field_leaf;
 
 /// A cause reaching `owner`'s `name` field through the named consumer — the shape one member of a
 /// coalesced block contributes, each member reaching the shared cause down its own chain.
 fn field_cause_via(consumer: &str, name: &str, owner: &str, issue: FieldIssue) -> Cause {
-    let leaf = Leaf::Field {
-        name: name.to_owned(),
-        owner: owner.to_owned(),
-        issue,
-    };
+    let leaf = field_leaf(name, owner, issue);
     Cause {
         paths: vec![vec![
             ChainNode::Hop(DepNode::Consumer {

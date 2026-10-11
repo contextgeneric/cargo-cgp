@@ -1,11 +1,7 @@
 //! Tests for expand-mode recognition ([`cargo_cgp_driver::expand::take_expand_request`]).
 //!
-//! This links `cargo-cgp-driver`, which links the compiler's `rustc_driver` dylib, so the
-//! test crate carries the same `#![feature(rustc_private)]` gate the driver binary does.
 //! Printing the expansion needs a live compiler, so only the flag handling is pinned here;
 //! the printing is exercised end to end.
-
-#![feature(rustc_private)]
 
 use cargo_cgp_driver::config::{EXPAND_FLAG, EXPAND_ITEM_FLAG};
 use cargo_cgp_driver::expand::take_expand_request;

@@ -1,10 +1,4 @@
 //! Tests for the rustc argument-vector preparation ([`cargo_cgp_driver::args::rustc_args`]).
-//!
-//! This links `cargo-cgp-driver`, which links the compiler's `rustc_driver` dylib, so the
-//! test crate carries the same `#![feature(rustc_private)]` gate the driver binary does —
-//! the link is only permitted when the linking crate opts into the feature.
-
-#![feature(rustc_private)]
 
 use cargo_cgp_driver::args::rustc_args;
 

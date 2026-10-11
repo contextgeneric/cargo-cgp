@@ -1,23 +1,18 @@
 //! Coalescing underived-field causes, over hand-built `Cause` values.
 
 use cargo_cgp_error_processing::{
-    Cause, ChainNode, DepNode, FieldIssue, Leaf, coalesce_underived_fields, derive_help_messages,
+    Cause, ChainNode, FieldIssue, Leaf, coalesce_underived_fields, derive_help_messages,
     root_cause_lead,
 };
 
+use super::support::{field_leaf, trait_hop};
+
 /// A cause whose single path is `HasFields` hop → the field leaf, with the given issue.
 fn field_cause(name: &str, owner: &str, issue: FieldIssue) -> Cause {
-    let leaf = Leaf::Field {
-        name: name.to_owned(),
-        owner: owner.to_owned(),
-        issue,
-    };
+    let leaf = field_leaf(name, owner, issue);
     Cause {
         paths: vec![vec![
-            ChainNode::Hop(DepNode::Trait {
-                trait_ref: "HasFields".to_owned(),
-                self_ty: owner.to_owned(),
-            }),
+            trait_hop("HasFields", owner),
             ChainNode::Leaf(leaf.clone()),
         ]],
         leaf,

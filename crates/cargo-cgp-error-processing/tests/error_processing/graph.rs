@@ -6,12 +6,11 @@ use std::collections::HashSet;
 
 use cargo_cgp_error_processing::{ChainNode, DepNode, DependencyGraph, Leaf};
 
+use super::support::{self, trait_hop};
+
 /// An interior `trait impl` hop labeled `name` (self type fixed to `Ctx`).
 fn hop(name: &str) -> ChainNode {
-    ChainNode::Hop(DepNode::Trait {
-        trait_ref: name.to_owned(),
-        self_ty: "Ctx".to_owned(),
-    })
+    trait_hop(name, "Ctx")
 }
 
 /// A terminal leaf rendered as `the trait bound \`name\` is not satisfied`.
@@ -23,11 +22,7 @@ fn leaf(name: &str) -> ChainNode {
 
 /// A redirect-lookup hop along `route` dispatching `key` (identity carries the key; render does not).
 fn redirect(route: &str, key: &str) -> ChainNode {
-    ChainNode::Hop(DepNode::Redirect {
-        path: route.to_owned(),
-        table: "App".to_owned(),
-        key: key.to_owned(),
-    })
+    support::redirect(route, "App", key)
 }
 
 fn render(paths: &[Vec<ChainNode>]) -> String {
