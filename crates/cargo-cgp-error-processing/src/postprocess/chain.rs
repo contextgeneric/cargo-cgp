@@ -2,12 +2,12 @@
 
 use std::borrow::Cow;
 
+use crate::postprocess::ambiguous::AmbiguousNames;
 use crate::postprocess::missing_field::rewrite_missing_fields;
 use crate::postprocess::resugar_list::resugar_lists;
 use crate::postprocess::resugar_path::resugar_path;
 use crate::postprocess::resugar_symbol::resugar_symbol;
-use crate::postprocess::strip_modules::strip_module_paths;
-use crate::postprocess::strip_prefixes::strip_cgp_prefixes;
+use crate::postprocess::strip_modules::strip_unambiguous_paths;
 
 /// Who built the message the chain cleans up, which decides how much of the chain applies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -22,8 +22,8 @@ pub enum Origin {
     Untransformed,
 }
 
-/// Run the post-processing chain over one message string: strip module qualifiers and CGP path
-/// prefixes, resugar `Symbol!`, resugar `Path!`, resugar `Product!`/`Sum!` (and their
+/// Run the post-processing chain over one message string: strip module qualifiers except on a name
+/// in `ambiguous`, resugar `Symbol!`, resugar `Path!`, resugar `Product!`/`Sum!` (and their
 /// `Struct!`/`Enum!` forms), then rewrite an unmet `HasField` bound. The order matters — the strips
 /// first so the later stages match the bare CGP names, `Symbol!` resugaring before `Path!`
 /// resugaring (which reads the already-resugared `Symbol!("…")` segments) and before the list
@@ -32,21 +32,26 @@ pub enum Origin {
 /// form). Returns the rewritten text when the chain changed it, `None` otherwise.
 ///
 /// For an [`Origin::Untransformed`] message the strips alone never count as a change: the result
-/// is kept only when a later stage recovered a CGP encoding, so a path rustc printed in full on
-/// purpose (two types sharing a name, a glob-imported trait) survives.
+/// is kept only when a later stage recovered a CGP encoding, so a glob-imported CGP trait keeps
+/// the path rustc printed.
+///
+/// `ambiguous` holds the type names that name more than one item in the build; a path ending in one
+/// keeps its qualifier everywhere, so `std::io::Error` never reads as another `Error`.
 ///
 /// `has_field_impls` is the whole-diagnostic fact the field rewrite needs (whether the
 /// context implements `HasField` for any field), which the caller computes once with
 /// [`context_has_hasfield_impls`](super::context_has_hasfield_impls) across every message
 /// before rewriting each.
-pub fn postprocess_message(text: &str, has_field_impls: bool, origin: Origin) -> Option<String> {
+pub fn postprocess_message(
+    text: &str,
+    has_field_impls: bool,
+    origin: Origin,
+    ambiguous: &AmbiguousNames,
+) -> Option<String> {
     let mut current: Cow<str> = Cow::Borrowed(text);
-    // Strip module qualifiers first (subsuming the CGP-prefix strip), so the resugaring stages
-    // below match the bare `Symbol`/`Chars`/`PathCons` names and the output carries no module noise.
-    if let Some(stripped) = strip_module_paths(&current) {
-        current = Cow::Owned(stripped);
-    }
-    if let Some(stripped) = strip_cgp_prefixes(&current) {
+    // Strip module qualifiers first, so the resugaring stages below match the bare
+    // `Symbol`/`Chars`/`PathCons` names, keeping only those that tell two items apart.
+    if let Some(stripped) = strip_unambiguous_paths(&current, ambiguous) {
         current = Cow::Owned(stripped);
     }
 
@@ -97,11 +102,12 @@ pub fn postprocess_fragments(
     fragments: &[&str],
     has_field_impls: bool,
     origin: Origin,
+    ambiguous: &AmbiguousNames,
 ) -> Option<String> {
     if fragments.len() < 2 {
         return None;
     }
     let joined = fragments.concat();
-    let rewritten = postprocess_message(&joined, has_field_impls, origin)?;
+    let rewritten = postprocess_message(&joined, has_field_impls, origin, ambiguous)?;
     (rewritten != joined).then_some(rewritten)
 }

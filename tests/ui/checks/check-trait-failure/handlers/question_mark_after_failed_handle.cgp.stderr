@@ -4,10 +4,10 @@ error[E0599]: [CGP-E001] the consumer trait `CanRaiseError<()>` is not implement
 90 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
    |                           ^^^^^^
    |
-   = note: root cause: [CGP-E201] the trait bound `(): Error` is not satisfied
+   = note: root cause: [CGP-E201] the trait bound `(): std::error::Error` is not satisfied
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanRaiseError<()>` for context `AppBuilder`
              └─ [CGP-E102] provider trait impl `ErrorRaiser<()>` with context `AppBuilder` for provider `RaiseBackendError`
-               └─ the trait bound `(): Error` is not satisfied
+               └─ the trait bound `(): std::error::Error` is not satisfied
 
 For more information about this error, try `rustc --explain E0599`.

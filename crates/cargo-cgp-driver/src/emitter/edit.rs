@@ -9,7 +9,7 @@ use std::borrow::Cow;
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{
-    DiagKind, Origin, context_has_hasfield_impls, is_method_probe_advice_text,
+    AmbiguousNames, DiagKind, Origin, context_has_hasfield_impls, is_method_probe_advice_text,
     is_question_mark_cascade_text, mentions_wiring_text, postprocess_fragments,
     postprocess_message,
 };
@@ -236,10 +236,11 @@ pub(crate) fn postprocess_messages(
     messages: &mut Vec<(DiagMessage, Style)>,
     has_field_impls: bool,
     origin: Origin,
+    ambiguous: &AmbiguousNames,
 ) {
     for (message, _) in messages.iter_mut() {
         if let DiagMessage::Str(text) = message
-            && let Some(rewritten) = postprocess_message(text, has_field_impls, origin)
+            && let Some(rewritten) = postprocess_message(text, has_field_impls, origin, ambiguous)
         {
             *message = DiagMessage::Str(Cow::Owned(rewritten));
         }
@@ -258,7 +259,7 @@ pub(crate) fn postprocess_messages(
         return;
     }
 
-    if let Some(joined) = postprocess_fragments(&fragments, has_field_impls, origin) {
+    if let Some(joined) = postprocess_fragments(&fragments, has_field_impls, origin, ambiguous) {
         *messages = vec![(DiagMessage::Str(Cow::Owned(joined)), Style::NoStyle)];
     }
 }
@@ -266,7 +267,12 @@ pub(crate) fn postprocess_messages(
 /// Post-process each of a [`MultiSpan`]'s labels — the caret and secondary-label text the
 /// emitter renders alongside the source. The span is rebuilt only when a label actually
 /// changes, so an unaffected diagnostic keeps its exact `MultiSpan`.
-pub(crate) fn postprocess_multispan(span: &mut MultiSpan, has_field_impls: bool, origin: Origin) {
+pub(crate) fn postprocess_multispan(
+    span: &mut MultiSpan,
+    has_field_impls: bool,
+    origin: Origin,
+    ambiguous: &AmbiguousNames,
+) {
     let labels: Vec<(Span, DiagMessage)> = span.span_labels_raw().to_vec();
     if labels.is_empty() {
         return;
@@ -277,7 +283,8 @@ pub(crate) fn postprocess_multispan(span: &mut MultiSpan, has_field_impls: bool,
         .into_iter()
         .map(|(span, message)| {
             if let DiagMessage::Str(text) = &message
-                && let Some(rewritten) = postprocess_message(text, has_field_impls, origin)
+                && let Some(rewritten) =
+                    postprocess_message(text, has_field_impls, origin, ambiguous)
             {
                 changed = true;
                 (span, DiagMessage::Str(Cow::Owned(rewritten)))

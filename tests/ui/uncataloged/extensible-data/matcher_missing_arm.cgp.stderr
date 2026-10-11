@@ -21,7 +21,7 @@ note: required by a bound in `compute`
   --> $CGP/crates/extra/cgp-handler/src/components/computer.rs:8:1
    |
  8 | #[cgp_component(Computer)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `compute`
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Computer::compute`
 ...
 12 | pub trait CanCompute<Code, Input> {
 ...

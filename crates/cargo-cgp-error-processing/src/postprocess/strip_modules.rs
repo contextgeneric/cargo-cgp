@@ -14,9 +14,28 @@
 //! identifier before its `::` so it stays, and text inside a string literal is skipped so a
 //! `Symbol!("a::b")` (were one to arise) is never mangled.
 
+use crate::postprocess::ambiguous::AmbiguousNames;
+
 /// Strip module qualifiers from `text`, collapsing each `a::b::C` identifier run to its last
 /// segment. Returns the rewritten text when any run was collapsed, `None` otherwise.
 pub fn strip_module_paths(text: &str) -> Option<String> {
+    collapse_paths(text, |_, _| true)
+}
+
+/// Strip module qualifiers from `text` except where they tell two items apart: collapse each
+/// `a::b::C` run to `C` unless `ambiguous` holds `C`, a type name that names more than one item in
+/// the build (`Error` for `std::io::Error` beside `backend::Error`). A run rooted at the `cgp` crate
+/// always collapses, since rustc qualifies CGP's names for the prelude glob import. Returns the
+/// rewritten text when any run was collapsed, `None` otherwise.
+pub fn strip_unambiguous_paths(text: &str, ambiguous: &AmbiguousNames) -> Option<String> {
+    collapse_paths(text, |first_segment, last_segment| {
+        first_segment == "cgp" || !ambiguous.contains(last_segment)
+    })
+}
+
+/// Collapse each `a::b::C` identifier run that `collapse` accepts, given its first and last
+/// segments, to its last segment, leaving string literals and every other run alone.
+fn collapse_paths(text: &str, collapse: impl Fn(&str, &str) -> bool) -> Option<String> {
     let bytes = text.as_bytes();
     let mut out = String::with_capacity(text.len());
     let mut i = 0;
@@ -52,11 +71,13 @@ pub fn strip_module_paths(text: &str) -> Option<String> {
             // Walk an identifier run joined by `::`; only the final segment is emitted, dropping
             // the module qualifiers before it.
             let mut j = i;
+            let mut first_end = None;
             loop {
                 let seg_start = j;
                 while j < bytes.len() && is_ident_char(bytes[j]) {
                     j += 1;
                 }
+                let first_end = *first_end.get_or_insert(j);
                 // Continue the run only across a `::` that is followed by another identifier —
                 // not a turbofish `::<` and not a trailing `::` before a non-identifier.
                 if j + 2 < bytes.len()
@@ -67,9 +88,11 @@ pub fn strip_module_paths(text: &str) -> Option<String> {
                     j += 2;
                     continue;
                 }
-                out.push_str(&text[seg_start..j]);
-                if seg_start != i {
+                if seg_start != i && collapse(&text[i..first_end], &text[seg_start..j]) {
+                    out.push_str(&text[seg_start..j]);
                     changed = true;
+                } else {
+                    out.push_str(&text[i..j]);
                 }
                 break;
             }

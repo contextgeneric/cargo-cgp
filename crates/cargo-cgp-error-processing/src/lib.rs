@@ -48,9 +48,9 @@ pub use diagnosis::{
     undeclared_trait_help, wiring_conflict_help,
 };
 pub use postprocess::{
-    CGP_PREFIXES, Origin, context_has_hasfield_impls, postprocess_fragments, postprocess_message,
-    resugar_lists, resugar_path, resugar_symbol, rewrite_missing_fields, strip_cgp_prefixes,
-    strip_module_paths,
+    AmbiguousNames, CGP_PREFIXES, Origin, context_has_hasfield_impls, postprocess_fragments,
+    postprocess_message, resugar_lists, resugar_path, resugar_symbol, rewrite_missing_fields,
+    strip_cgp_prefixes, strip_module_paths, strip_unambiguous_paths,
 };
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use shape::{ShapeTag, render_enum_shape, render_struct_shape, render_variant, shape_name};

@@ -3,20 +3,21 @@
 use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, LazyLock, Mutex, MutexGuard};
 
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
 };
 use cargo_cgp_error_processing::{
-    Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider, Origin,
-    OrphanConflict, PendingNote, Resolved, UndeclaredTrait, cause_signature, cgp_impl_misuse_help,
-    coalesce_underived_fields, consumer_header, explain_footer_codes, fix_help_messages,
-    group_by_shared_cause, internal_error_note, is_explain_footer_text, is_method_bounds_text,
-    is_unbounded_type_param_item_text, mentions_orphan_param_text, missing_use_provider_help,
-    orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
-    plan_resolved, plan_undeclared_trait, plan_wiring_conflict, postprocess_message,
-    undeclared_trait_help, wiring_conflict_help,
+    AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf,
+    MissingUseProvider, Origin, OrphanConflict, PendingNote, Resolved, UndeclaredTrait,
+    cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, consumer_header,
+    explain_footer_codes, fix_help_messages, group_by_shared_cause, internal_error_note,
+    is_explain_footer_text, is_method_bounds_text, is_unbounded_type_param_item_text,
+    mentions_orphan_param_text, missing_use_provider_help, orphan_conflict_help,
+    plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict, plan_resolved,
+    plan_undeclared_trait, plan_wiring_conflict, postprocess_message, undeclared_trait_help,
+    wiring_conflict_help,
 };
 use rustc_errors::codes::{
     E0107, E0117, E0119, E0186, E0207, E0210, E0271, E0275, E0277, E0308, E0425, E0599,
@@ -91,6 +92,10 @@ pub struct CgpEmitter<E: Emitter> {
     /// diagnostic for which the compiler can answer. A crate that does not use CGP can carry no CGP
     /// encoding, so its untransformed diagnostics are left exactly as rustc built them.
     cgp_used: OnceCell<bool>,
+    /// The type names that name more than one item ([`resolve::ambiguous_type_names`]), decided on
+    /// the first diagnostic for which the compiler can answer, so the post-processing keeps the
+    /// qualifier that tells such a name's items apart.
+    ambiguous: OnceCell<AmbiguousNames>,
     /// The stage made to panic on purpose, set only by the UI fixtures that pin the panic fallback
     /// (see [`TestPanic`]).
     test_panic: Option<TestPanic>,
@@ -212,6 +217,7 @@ impl<E: Emitter> CgpEmitter<E> {
             cgp_spans: Vec::new(),
             cgp_impl_misuses: None,
             cgp_used: OnceCell::new(),
+            ambiguous: OnceCell::new(),
             test_panic,
         }
     }
@@ -428,11 +434,25 @@ impl<E: Emitter> CgpEmitter<E> {
             return;
         }
         let has_field_impls = mentions_hasfield_impls(diag);
-        postprocess_messages(&mut diag.messages, has_field_impls, origin);
-        postprocess_multispan(&mut diag.span, has_field_impls, origin);
+        let ambiguous = self.ambiguous_names();
+        postprocess_messages(&mut diag.messages, has_field_impls, origin, ambiguous);
+        postprocess_multispan(&mut diag.span, has_field_impls, origin, ambiguous);
         for child in &mut diag.children {
-            postprocess_messages(&mut child.messages, has_field_impls, origin);
-            postprocess_multispan(&mut child.span, has_field_impls, origin);
+            postprocess_messages(&mut child.messages, has_field_impls, origin, ambiguous);
+            postprocess_multispan(&mut child.span, has_field_impls, origin, ambiguous);
+        }
+    }
+
+    /// The type names that name more than one item, decided once the compiler can answer. Before
+    /// then the set is empty, which strips every qualifier.
+    fn ambiguous_names(&self) -> &AmbiguousNames {
+        static EMPTY: LazyLock<AmbiguousNames> = LazyLock::new(AmbiguousNames::default);
+        if let Some(names) = self.ambiguous.get() {
+            return names;
+        }
+        match rustc_middle::ty::tls::with_opt(|tcx| tcx.and_then(resolve::ambiguous_type_names)) {
+            Some(names) => self.ambiguous.get_or_init(|| names),
+            None => &EMPTY,
         }
     }
 
@@ -847,8 +867,13 @@ impl<E: Emitter> CgpEmitter<E> {
         // nothing to match and the flag it needs is moot here.
         const HAS_FIELD_IMPLS: bool = false;
         for text in note.render(seen) {
-            let text =
-                postprocess_message(&text, HAS_FIELD_IMPLS, Origin::Rewritten).unwrap_or(text);
+            let text = postprocess_message(
+                &text,
+                HAS_FIELD_IMPLS,
+                Origin::Rewritten,
+                self.ambiguous_names(),
+            )
+            .unwrap_or(text);
             diag.children.push(subdiag(Sublevel::Note, text));
         }
     }

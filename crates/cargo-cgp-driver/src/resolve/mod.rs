@@ -22,6 +22,7 @@
 //! conflict (`E0210`/`E0117`) the same way: it reads the offending namespace-registration impl off
 //! the compiler and words which foreign namespace and key it names.
 
+mod ambiguous_names;
 mod anchor;
 mod cache;
 mod call_site;
@@ -35,6 +36,7 @@ mod orphan;
 mod undeclared;
 mod walk;
 
+pub use ambiguous_names::ambiguous_type_names;
 pub use anchor::{
     resolve_check_failure, resolve_impl_site, resolve_use_site, resolve_use_site_blanket_trait,
     resolve_use_site_consumer, resolve_wrapper_chain,

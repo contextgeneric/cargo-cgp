@@ -2,7 +2,7 @@
 //! `?` and no check.
 //!
 //! The only error is `[CGP-E001] the consumer trait `CanRaiseError<()>` is not implemented` with root
-//! cause `(): Error`, a trait and a cause unrelated to the mistake; the missing `url` field on `App`
+//! cause `(): std::error::Error`, a trait and a cause unrelated to the mistake; the missing `url` field on `App`
 //! is never mentioned. Distilled from the application builder with its `http_client` field removed.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).

@@ -10,6 +10,7 @@
 //! message string of a `DiagInner` on the fallback path. The [chain] module composes the
 //! individual transforms in the order they must run.
 
+mod ambiguous;
 mod chain;
 mod missing_field;
 mod resugar_list;
@@ -18,6 +19,7 @@ mod resugar_symbol;
 mod strip_modules;
 mod strip_prefixes;
 
+pub use ambiguous::*;
 pub use chain::*;
 pub use missing_field::*;
 pub use resugar_list::*;

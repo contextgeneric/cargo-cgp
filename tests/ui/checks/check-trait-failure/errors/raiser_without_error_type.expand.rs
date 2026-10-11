@@ -1,12 +1,11 @@
 #![feature(prelude_import)]
 //! An error raiser wired on a context with no error type, checked for `io::Error`.
 //!
-//! The `[CGP-E107]` cause is right, but the headline reads `CanRaiseError<Error>` for `io::Error`:
-//! the stripped path collides with the abstract `Error`.
+//! The headline reads `CanRaiseError<std::io::Error>` over the `[CGP-E107]` cause on
+//! `ErrorTypeProviderComponent`: the tool keeps the qualifier rustc prints for the ambiguous
+//! `Error`, so the source error does not read as the abstract `Error`.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

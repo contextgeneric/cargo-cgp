@@ -12,11 +12,11 @@
 //! only when `name` is such a lowercase, non-primitive identifier, and every other segment is
 //! rendered back verbatim as its type — a capitalized component marker (`GreeterComponent`), a
 //! primitive (`u32`), or a compound value type an `open` statement dispatches on (`Vec<u8>`,
-//! `&Coord`, `DateTime<Utc>`). Two shapes still decline, leaving the raw `PathCons` spine rather than
-//! risk mangling it: a **module-qualified** segment — the [module strip](super::strip_modules) runs
-//! first and removes any qualifier, so a residual `::` means the spine is not the bare form `Path!`
-//! writes — and a **bare lowercase identifier**, which `Path!` would have made a `Symbol`, so meeting
-//! one as a plain type is ambiguous.
+//! `&Coord`, `DateTime<Utc>`), including a module-qualified type (`std::io::Error`), which rustc
+//! qualifies only when the bare name is ambiguous. Two shapes still decline, leaving the raw
+//! `PathCons` spine rather than risk mangling it: a qualified segment that is not a plain type path,
+//! and a **bare lowercase identifier**, which `Path!` would have made a `Symbol`, so meeting one as a
+//! plain type is ambiguous.
 //!
 //! A path may also be **open-ended**: instead of terminating in `Nil`, its spine ends in a
 //! generic "rest of path" parameter, which rustc renders as the inference placeholder `_` in
@@ -174,12 +174,11 @@ fn scan_head_tail(s: &str) -> Option<(&str, &str, usize)> {
 /// value type an `open` statement dispatches on (`Vec<u8>`, `&Coord`, `DateTime<Utc>`) — so it is
 /// rendered verbatim.
 ///
-/// Two non-Symbol shapes still decline, so the whole path is left as its raw spine rather than
-/// silently mangled. A **`::`-qualified** segment declines: the [module strip](super::strip_modules)
-/// runs before this stage and removes any qualifier, so a residual `::` (as when this is called
-/// directly, not through the chain) means the spine is not the bare form `Path!` writes. A **bare
-/// lowercase identifier** declines too: `Path!` turns a lowercase identifier into a `Symbol`, so
-/// meeting one as a plain type — rather than inside a `Symbol!(…)` — is ambiguous, not a clean path.
+/// A **`::`-qualified** type segment (`std::io::Error`) is rendered as written, since `Path!` parses
+/// it as the same type. Two shapes decline, so the whole path is left as its raw spine rather than
+/// silently mangled: a qualified segment that is not a plain type path (a lowercase tail, generics),
+/// and a **bare lowercase identifier**, which `Path!` would have made a `Symbol`, so meeting one as a
+/// plain type (rather than inside a `Symbol!(…)`) is ambiguous, not a clean path.
 fn render_segment(segment: &str) -> Option<String> {
     let segment = segment.trim();
     if let Some(name) = symbol_inner(segment) {
@@ -188,15 +187,14 @@ fn render_segment(segment: &str) -> Option<String> {
             && !is_primitive_type(&name);
         return lowercase_ident.then_some(name);
     }
-    // A **module-qualified** segment (`finance::QuantityTypeProviderComponent`) — as rustc prints a
-    // component defined in a sub-module when this is called directly rather than after the module
-    // strip — keeps only its final component, and only when every part is a plain identifier: a
-    // qualified segment whose tail is lowercase (would be a `Symbol`) or carries generics is not the
-    // bare form `Path!` writes, so it declines.
+    // A **module-qualified** segment (`std::io::Error`) is a type `Path!` accepts as written, so it
+    // stays qualified: rustc prints a name qualified only when it is ambiguous, and the chain strips
+    // CGP's own qualifiers before this stage. It must be a run of plain identifiers ending in a type
+    // name; a lowercase tail (would be a `Symbol`) or one carrying generics declines.
     if segment.contains("::") {
         let tail = type_segment_tail(segment)?;
         return (tail.starts_with(|c: char| c.is_ascii_uppercase()) || is_primitive_type(tail))
-            .then(|| tail.to_owned());
+            .then(|| segment.to_owned());
     }
     // A bare lowercase identifier would have been a `Symbol`, so as a plain type it is ambiguous.
     if is_ident(segment)

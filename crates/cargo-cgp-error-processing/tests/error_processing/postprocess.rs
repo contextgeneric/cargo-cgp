@@ -4,8 +4,9 @@
 //! it is driven directly over the case under test — no diagnostic wrapper, no compiler.
 
 use cargo_cgp_error_processing::{
-    Origin, context_has_hasfield_impls, postprocess_fragments, postprocess_message, resugar_lists,
-    resugar_path, resugar_symbol, rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
+    AmbiguousNames, Origin, context_has_hasfield_impls, postprocess_fragments, postprocess_message,
+    resugar_lists, resugar_path, resugar_symbol, rewrite_missing_fields, strip_cgp_prefixes,
+    strip_module_paths, strip_unambiguous_paths,
 };
 
 #[test]
@@ -149,6 +150,7 @@ fn full_chain_resugars_a_raw_field_spine_to_a_struct() {
             "Cons<Field<Symbol<1, Chars<'x', Nil>>, u64>, Nil>",
             false,
             Origin::Untransformed,
+            &AmbiguousNames::default()
         )
         .as_deref(),
         Some("Struct! { x: u64 }"),
@@ -311,19 +313,17 @@ fn resugars_a_single_segment_path() {
 }
 
 #[test]
-fn resugars_a_module_qualified_type_segment_by_its_tail() {
-    // In a multi-module crate rustc prints a component defined in a sub-module qualified, e.g.
-    // `finance::QuantityTypeProviderComponent`. `Path!` writes only the bare name, so the
-    // segment resugars to its final component and the whole path stays readable rather than a
-    // raw `PathCons<…>` spine.
+fn resugars_a_module_qualified_type_segment_as_written() {
+    // rustc qualifies a type segment only when its bare name is ambiguous (`std::io::Error` in a
+    // crate that also has an `Error`), and `Path!` parses the qualified type back, so the segment
+    // keeps its qualifier rather than reading as another `Error`.
     assert_eq!(
         resugar_path(
-            "PathCons<Symbol!(\"app\"), PathCons<Symbol!(\"finance\"), \
-             PathCons<finance::QuantityTypeProviderComponent, Nil>>>",
+            "PathCons<ErrorRaiserComponent, PathCons<std::io::Error, Nil>>",
             true
         )
         .as_deref(),
-        Some("Path!(@app.finance.QuantityTypeProviderComponent)"),
+        Some("Path!(@ErrorRaiserComponent.std::io::Error)"),
     );
 }
 
@@ -428,7 +428,13 @@ fn postprocess_message_resugars_an_expanded_path() {
     // resugared to a symbol and then folded into a `Path!`.
     let text = "PathCons<Symbol<3, Chars<'a', Chars<'p', Chars<'p', Nil>>>>, PathCons<GreeterComponent, Nil>>";
     assert_eq!(
-        postprocess_message(text, false, Origin::Untransformed).as_deref(),
+        postprocess_message(
+            text,
+            false,
+            Origin::Untransformed,
+            &AmbiguousNames::default()
+        )
+        .as_deref(),
         Some("Path!(@app.GreeterComponent)"),
     );
 }
@@ -440,7 +446,13 @@ fn postprocess_message_resugars_an_open_tailed_path() {
     // Stripped, resugared to symbols, then folded into a wildcard `Path!`.
     let text = "PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'f', cgp::prelude::Chars<'o', cgp::prelude::Chars<'o', Nil>>>>, PathCons<Symbol<3, Chars<'b', Chars<'a', Chars<'r', Nil>>>>, _>>";
     assert_eq!(
-        postprocess_message(text, false, Origin::Untransformed).as_deref(),
+        postprocess_message(
+            text,
+            false,
+            Origin::Untransformed,
+            &AmbiguousNames::default()
+        )
+        .as_deref(),
         Some("Path!(@foo.bar.*)"),
     );
 }
@@ -520,7 +532,13 @@ fn postprocess_message_chains_the_transforms() {
     // stripped, resugared, then rewritten as a missing derive in one pass.
     let text = "the trait `HasField<cgp::prelude::Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', Chars<'h', Nil>>>>>>>` is not implemented for `Rectangle`";
     assert_eq!(
-        postprocess_message(text, false, Origin::Untransformed).as_deref(),
+        postprocess_message(
+            text,
+            false,
+            Origin::Untransformed,
+            &AmbiguousNames::default()
+        )
+        .as_deref(),
         Some("`#[derive(HasField)]` is required to access field `width` on `Rectangle`"),
     );
 }
@@ -532,6 +550,7 @@ fn postprocess_message_leaves_plain_rust_alone() {
             "the trait bound `Foo: Bar` is not satisfied",
             false,
             Origin::Untransformed,
+            &AmbiguousNames::default()
         ),
         None,
     );
@@ -557,7 +576,13 @@ fn a_spine_split_across_fragments_is_resugared_as_a_whole() {
     ];
 
     assert_eq!(
-        postprocess_fragments(&fragments, false, Origin::Rewritten).as_deref(),
+        postprocess_fragments(
+            &fragments,
+            false,
+            Origin::Rewritten,
+            &AmbiguousNames::default()
+        )
+        .as_deref(),
         Some("the trait `FromVariant<Symbol!(\"Bar\")>` is not implemented for `Big`")
     );
 }
@@ -570,7 +595,12 @@ fn fragments_needing_no_joining_keep_their_styling() {
     let fragments = ["the trait `", "Foo", "` is not implemented for `Bar`"];
 
     assert_eq!(
-        postprocess_fragments(&fragments, false, Origin::Rewritten),
+        postprocess_fragments(
+            &fragments,
+            false,
+            Origin::Rewritten,
+            &AmbiguousNames::default()
+        ),
         None
     );
 }
@@ -580,7 +610,12 @@ fn a_single_fragment_is_left_to_the_per_message_pass() {
     let fragments = ["Symbol<2, Chars<'x', Chars<'y', Nil>>>"];
 
     assert_eq!(
-        postprocess_fragments(&fragments, false, Origin::Rewritten),
+        postprocess_fragments(
+            &fragments,
+            false,
+            Origin::Rewritten,
+            &AmbiguousNames::default()
+        ),
         None
     );
 }
@@ -591,36 +626,78 @@ fn an_untransformed_message_keeps_the_paths_rustc_printed() {
     // tool left alone keeps them; so does a glob-imported trait's path in a note.
     let same_name = "expected `a::Foo`, found `b::Foo`";
     assert_eq!(
-        postprocess_message(same_name, false, Origin::Untransformed),
+        postprocess_message(
+            same_name,
+            false,
+            Origin::Untransformed,
+            &AmbiguousNames::default()
+        ),
         None
     );
     let glob = "candidate #1 is defined in an impl of the trait `cgp::prelude::CanRaiseError`";
     assert_eq!(
-        postprocess_message(glob, false, Origin::Untransformed),
+        postprocess_message(
+            glob,
+            false,
+            Origin::Untransformed,
+            &AmbiguousNames::default()
+        ),
         None
     );
 }
 
 #[test]
-fn a_rewritten_message_strips_module_paths() {
-    // A message the tool built shows bare names, as its own wording does.
+fn a_rewritten_message_keeps_only_qualifiers_that_disambiguate() {
+    // A message the tool built drops every qualifier except on a name that names several items,
+    // where the qualifier tells them apart.
+    let ambiguous = AmbiguousNames::new(["App".to_owned()]);
     assert_eq!(
         postprocess_message(
-            "the consumer trait `contexts::CanGreet` for `app::App`",
+            "the consumer trait `cgp::prelude::CanRaiseError<std::io::Error>` for `app::App`",
             false,
             Origin::Rewritten,
+            &ambiguous,
         )
         .as_deref(),
-        Some("the consumer trait `CanGreet` for `App`"),
+        Some("the consumer trait `CanRaiseError<std::io::Error>` for `App`"),
     );
 }
 
 #[test]
 fn an_untransformed_message_with_a_cgp_encoding_is_cleaned_whole() {
-    // Once a CGP encoding is recovered, the strips apply to the rest of that message too.
-    let text = "`app::App: cgp::prelude::HasField<Symbol<1, Chars<'x', Nil>>>` is not satisfied";
+    // Once a CGP encoding is recovered, the strip applies to the rest of that message too.
+    let text = "`app::App: cgp::prelude::HasField<cgp::prelude::Symbol<1, Chars<'x', Nil>>>` is not satisfied";
     assert_eq!(
-        postprocess_message(text, false, Origin::Untransformed).as_deref(),
+        postprocess_message(
+            text,
+            false,
+            Origin::Untransformed,
+            &AmbiguousNames::default()
+        )
+        .as_deref(),
         Some("`App: HasField<Symbol!(\"x\")>` is not satisfied"),
+    );
+}
+
+#[test]
+fn unambiguous_path_strip_keeps_a_disambiguating_qualifier() {
+    // `cgp::prelude::HasErrorType` is CGP's and `Quantity` glob-imported, so both lose their
+    // qualifier; `Error` and `Rectangle` are neither, so rustc qualified them for being ambiguous.
+    let ambiguous = AmbiguousNames::new(["Quantity".to_owned()]);
+    assert_eq!(
+        strip_unambiguous_paths(
+            "`backend::Error` beside `cgp::prelude::HasErrorType` and `finance::Quantity`",
+            &ambiguous,
+        )
+        .as_deref(),
+        Some("`backend::Error` beside `HasErrorType` and `Quantity`"),
+    );
+    assert_eq!(
+        strip_unambiguous_paths("`shape_a::Rectangle`", &ambiguous),
+        None
+    );
+    assert_eq!(
+        strip_unambiguous_paths("Symbol!(\"a::B\")", &AmbiguousNames::default()),
+        None
     );
 }

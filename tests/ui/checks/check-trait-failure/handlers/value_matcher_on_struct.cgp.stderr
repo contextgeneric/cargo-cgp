@@ -4,10 +4,10 @@ error[E0277]: [CGP-E001] the consumer trait `CanCompute<(), Scene>` is not imple
 42 |         ComputerComponent: ((), Scene),
    |         ^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E201] the trait bound `Scene: HasFieldHandlers<MapExtractFieldAndHandle<HandleFieldValue<ComputeArea>>>` is not satisfied
+   = note: root cause: [CGP-E201] the trait bound `Scene: dispatch::providers::matchers::to_field_handlers::HasFieldHandlers<dispatch::providers::matchers::to_field_handlers::MapExtractFieldAndHandle<HandleFieldValue<ComputeArea>>>` is not satisfied
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanCompute<(), Scene>` for context `App`
              └─ [CGP-E102] provider trait impl `Computer<(), Scene>` with context `App` for provider `UseInputDelegate<MatchWithFieldHandlersInputs<HandleFieldValue<ComputeArea>>>`
-               └─ the trait bound `Scene: HasFieldHandlers<MapExtractFieldAndHandle<HandleFieldValue<ComputeArea>>>` is not satisfied
+               └─ the trait bound `Scene: dispatch::providers::matchers::to_field_handlers::HasFieldHandlers<dispatch::providers::matchers::to_field_handlers::MapExtractFieldAndHandle<HandleFieldValue<ComputeArea>>>` is not satisfied
 
 For more information about this error, try `rustc --explain E0277`.

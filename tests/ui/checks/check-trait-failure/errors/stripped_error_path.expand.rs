@@ -1,13 +1,12 @@
 #![feature(prelude_import)]
 //! An error raiser that pins the abstract error to a concrete type named `Error` from another module.
 //!
-//! The context wires `UseType<String>`, so `[CGP-E017]` fires, but the stripped path makes it read
-//! "expected the abstract type `Error` … to be `Error`" with a help naming `UseType<Error>`. The
-//! required type is `backend::Error`; the bare name collides with the abstract type's.
+//! The context wires `UseType<String>`, so `[CGP-E017]` fires: "expected the abstract type `Error`
+//! … to be `backend::Error`", with a help naming `UseType<backend::Error>`. rustc prints the type
+//! qualified because `Error` names several types here, and the tool keeps that qualifier, since a
+//! bare `Error` would read as the abstract type itself.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
