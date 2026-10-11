@@ -1,0 +1,33 @@
+error[E0277]: [CGP-E001] the consumer trait `CanN` is not implemented for context `Inner`
+  --> src/main.rs:96:9
+   |
+96 |         ProviderNComponent,
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = note: root causes:
+             - [CGP-E201] the trait bound `Outer: Linked` is not satisfied
+             - [CGP-E106] missing field `name` on `Inner`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanN` for context `Inner`
+             └─ [CGP-E102] provider trait impl `ProviderN` with context `Inner` for provider `DoN<Outer>`
+               ├─ the trait bound `Outer: Linked` is not satisfied
+               └─ [CGP-E105] trait impl `HasName` for `Inner`
+                 └─ [CGP-E106] missing field `name` on `Inner`
+
+error[E0277]: [CGP-E002] the provider trait `ProviderN` with context `Inner` is not implemented for provider `Inner`
+   --> src/main.rs:102:9
+    |
+102 |         ProviderRComponent,
+    |         ^^^^^^^^^^^^^^^^^^
+    |
+    = note: root cause: [CGP-E106] missing field `name` on `Inner`
+            this is required through the dependency chain:
+              [CGP-E101] consumer trait impl `CanR` for context `Outer`
+              └─ [CGP-E102] provider trait impl `ProviderR` with context `Outer` for provider `DoR`
+                └─ [CGP-E105] trait impl `Linked` for `Outer`
+                  └─ [CGP-E101] consumer trait impl `CanM` for context `Outer`
+                    └─ [CGP-E102] provider trait impl `ProviderM` with context `Outer` for provider `DoM<Inner>`
+                      └─ [CGP-E101] consumer trait impl `CanN` for context `Inner` (*)
+                        └─ [CGP-E106] missing field `name` on `Inner`
+
+For more information about this error, try `rustc --explain E0277`.

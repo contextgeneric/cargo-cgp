@@ -1,0 +1,18 @@
+error[E0277]: [CGP-E001] the consumer traits `CanA` and `CanB` are not implemented for context `App`
+  --> src/main.rs:61:9
+   |
+61 |         ProviderAComponent,
+   |         ^^^^^^^^^^^^^^^^^^
+62 |         ProviderBComponent,
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E106] missing field `width` on `App`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanB` for context `App`
+             └─ [CGP-E102] provider trait impl `ProviderB` with context `App` for provider `DoB`
+               └─ [CGP-E101] consumer trait impl `CanA` for context `App`
+                 └─ [CGP-E102] provider trait impl `ProviderA` with context `App` for provider `DoA`
+                   └─ [CGP-E105] trait impl `HasWidth` for `App`
+                     └─ [CGP-E106] missing field `width` on `App`
+
+For more information about this error, try `rustc --explain E0277`.
