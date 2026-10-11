@@ -28,36 +28,36 @@ impl DedupLedger {
     /// ([`cause_signature`](crate::cause_signature)); a declined-but-rewritten one by
     /// `text_signature`, its rendered message text — computed lazily, since it is only needed when
     /// no cause was recovered. A second key is the **coded main-message header** (a `[CGP-E0xx]`
-    /// main message): a failure the resolver declined but still rewrote falls back to raw
-    /// `IsProviderFor` scaffolding, yet carries the *same* coded header as the resolved tree of the
-    /// same failure — so keying on the header collapses that declined fallback into the resolved
-    /// occurrence even though their bodies differ. The header key is restricted to a `[CGP-E0`
-    /// prefix (a main-message code), so a kept rustc header is never a de-duplication key.
+    /// main message), and it works in one direction only: a failure the resolver declined but still
+    /// rewrote falls back to raw `IsProviderFor` scaffolding, yet carries the *same* coded header
+    /// as the resolved tree of the same failure, so a declined report is suppressed when a resolved
+    /// one already recorded its header. A resolved report never consults the header, so a declined
+    /// fallback that arrived first never hides the resolved tree, and two resolved reports of one
+    /// consumer with different causes are both kept (the flush coalesces what they share). The
+    /// header key is restricted to a `[CGP-E0` prefix (a main-message code), so a kept rustc header
+    /// is never a de-duplication key.
     pub fn check_and_record(
         &mut self,
         cause_signature: Option<&str>,
         text_signature: impl FnOnce() -> String,
         main_message: Option<&str>,
     ) -> bool {
-        let signature = match cause_signature {
-            Some(cause) => format!("cause\u{1f}{cause}"),
-            None => format!("text\u{1f}{}", text_signature()),
-        };
         let header = main_message
             .filter(|header| header.starts_with("[CGP-E0"))
             .map(|header| format!("header\u{1f}{header}"));
-
-        let already_seen = self.seen.contains(&signature)
-            || header
-                .as_ref()
-                .is_some_and(|header| self.seen.contains(header));
-        if already_seen {
-            return true;
+        match cause_signature {
+            Some(cause) => {
+                if let Some(header) = header {
+                    self.seen.insert(header);
+                }
+                !self.seen.insert(format!("cause\u{1f}{cause}"))
+            }
+            None => {
+                let declined_header_seen = header
+                    .as_ref()
+                    .is_some_and(|header| self.seen.contains(header));
+                !self.seen.insert(format!("text\u{1f}{}", text_signature())) || declined_header_seen
+            }
         }
-        self.seen.insert(signature);
-        if let Some(header) = header {
-            self.seen.insert(header);
-        }
-        false
     }
 }

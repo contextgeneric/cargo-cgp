@@ -59,3 +59,23 @@ fn a_kept_rustc_header_is_never_a_dedup_key() {
     // A different failure whose kept header happens to match is still reported.
     assert!(!ledger.check_and_record(Some("cause-b"), no_text, Some(rustc_header)));
 }
+
+#[test]
+fn a_declined_fallback_arriving_first_never_hides_the_resolved_tree() {
+    let mut ledger = DedupLedger::new();
+    let header = "[CGP-E001] the consumer trait `CanGreet` is not implemented for context `App`";
+    // The declined fallback is shown: nothing better has arrived yet.
+    assert!(!ledger.check_and_record(None, || "fallback body".to_owned(), Some(header)));
+    // The resolved tree of the same failure must still be shown, not suppressed by the header.
+    assert!(!ledger.check_and_record(Some("cause"), no_text, Some(header)));
+}
+
+#[test]
+fn two_resolved_reports_with_different_causes_are_both_kept() {
+    // One consumer on one context, reached at two sites that recover different cause sets: the
+    // shared header must not hide the second set (the flush coalesces what they share).
+    let mut ledger = DedupLedger::new();
+    let header = "[CGP-E001] the consumer trait `CanGreet` is not implemented for context `App`";
+    assert!(!ledger.check_and_record(Some("cause-a"), no_text, Some(header)));
+    assert!(!ledger.check_and_record(Some("cause-a+b"), no_text, Some(header)));
+}
