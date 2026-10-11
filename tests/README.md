@@ -158,10 +158,10 @@ under the toolchain the repository pins, so a toolchain bump can require a re-bl
 ## Adding a fixture
 
 Put a new `<name>.rs` in the directory of the error class it reproduces (or `ok/` for a clean
-compile, `pass-through/` for a plain Rust error, `robustness/` for a failure of the tool itself), with
-a name no other fixture uses. Give it a
-`fn main`, since the harness compiles it as a binary. Open it with a `//!` comment stating what the
-scenario demonstrates and the mistake behind it, linking the
+compile, `pass-through/` for a plain Rust error, `robustness/` for a failure of the tool itself),
+with a name no other fixture uses. Give it a `fn main`, since the harness compiles it as a binary.
+Open it with a `//!` comment stating what the scenario demonstrates and the mistake behind it,
+linking the
 [CGP error class](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md)
 it reproduces and, for a problem case, the
 [issue](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md)
