@@ -4,13 +4,12 @@ use cargo_cgp_error_processing::{WiringConflict, WiringKey};
 use rustc_middle::ty::TyCtxt;
 
 use crate::resolve::cgp_item::component_params;
-use crate::resolve::conflict::{
-    ConflictSide, DelegateImpl, EntryTarget, describe_key, redirect_path,
-};
+use crate::resolve::conflict::{ConflictSide, DelegateImpl, EntryTarget, describe_key};
 
 /// Word the recovered impls into a [`WiringConflict`], picking the shape from how the two entries
 /// relate: a redirect (one or both map the key to a `RedirectLookup`), or a plain duplicate or
-/// overlap otherwise. `None` when a key cannot be rendered to a surface form.
+/// overlap otherwise. `None` when a key cannot be rendered to a surface form, or when the first
+/// entry is not a local impl.
 pub(crate) fn build_conflict<'tcx>(
     tcx: TyCtxt<'tcx>,
     conflicting: &DelegateImpl<'tcx>,
@@ -24,18 +23,11 @@ pub(crate) fn build_conflict<'tcx>(
         key: conflicting.key,
         delegate: conflicting.delegate,
     };
-    // Without the first entry, a redirect has no provider to name, so only a duplicate is worded.
-    let Some(first) = first else {
-        if conflicting
-            .delegate
-            .and_then(|d| redirect_path(tcx, d))
-            .is_some()
-        {
-            return None;
-        }
-        let key = describe_key(tcx, conflicting.key, conflicting.impl_did)?;
-        return Some(WiringConflict::Duplicate { context, key });
-    };
+    // Without the first entry the tool cannot say what the key collides with. rustc labels the first
+    // impl only when it is local; an upstream one (the blanket forwarding of a namespace the context
+    // joins in another crate) appears in a note instead, and calling that a duplicate entry would
+    // be false. So the diagnostic keeps rustc's wording, which names the upstream impl.
+    let first = first?;
     let first_side = ConflictSide {
         impl_did: first.impl_did,
         key: first.key,

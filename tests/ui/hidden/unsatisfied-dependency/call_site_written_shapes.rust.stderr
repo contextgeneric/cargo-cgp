@@ -1,0 +1,196 @@
+error[E0277]: the trait bound `App: IsProviderFor<HandlerComponent, App, (ReadName, _)>` is not satisfied
+   --> src/main.rs:107:9
+    |
+107 |     app.handle(
+    |         ^^^^^^ unsatisfied trait bound
+    |
+help: the trait `IsProviderFor<HandlerComponent, App, (ReadName, _)>` is not implemented for `App`
+   --> src/main.rs:83:1
+    |
+ 83 | pub struct App {
+    | ^^^^^^^^^^^^^^
+help: the trait `IsProviderFor<__Key__, __Context__, __Params__>` is conditionally implemented for `App`
+   --> src/main.rs:89:19
+    |
+ 87 | / delegate_components! {
+ 88 | |     App {
+ 89 | |         namespace MyNamespace;
+    | |                   ^^^^^^^^^^^
+ 90 | |     }
+ 91 | | }
+    | |_- unsatisfied requirement introduced here: `_: IsProviderFor<_, _, _>`
+    = note: required for `App` to implement `Handler<App, ReadName, _>`
+    = note: required for `App` to implement `CanHandle<ReadName, _>`
+note: required for `HandleBranch` to implement `IsProviderFor<HandlerComponent, App, (Branch<ReadName>, (_, _))>`
+   --> src/main.rs:51:1
+    |
+ 51 | #[cgp_impl(new HandleBranch)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 55 |     Self: CanHandle<Cond, CondInput, Output = String>,
+    |                                      --------------- unsatisfied trait bound introduced here
+    = note: 4 redundant requirements hidden
+    = note: required for `App` to implement `CanHandle<Branch<ReadName>, (_, _)>`
+    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFor<_, App, _>` is not satisfied
+   --> src/main.rs:108:9
+    |
+107 |     app.handle(
+    |         ------ required by a bound introduced by this call
+108 |         PhantomData::<Branch<ReadName>>,
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+    = help: the trait `IsProviderFor<HandlerComponent, App, (ReadName, _)>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+    = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+              IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+              IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+              IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+              IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+              IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+              IsProviderFor<ErrorTypeProviderComponent, __Context__>
+              IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+              IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
+            and 9 others
+note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (ReadName, _)>`
+   --> src/main.rs:87:1
+    |
+ 87 | / delegate_components! {
+ 88 | |     App {
+    | |     ^^^
+ 89 | |         namespace MyNamespace;
+ 90 | |     }
+ 91 | | }
+    | |_^
+    = note: required for `App` to implement `Handler<App, ReadName, _>`
+    = note: required for `App` to implement `CanHandle<ReadName, _>`
+    = note: 5 redundant requirements hidden
+    = note: required for `App` to implement `CanHandle<Branch<ReadName>, (_, _)>`
+    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFor<_, App, _>` is not satisfied
+   --> src/main.rs:107:9
+    |
+107 |     app.handle(
+    |         ^^^^^^ unsatisfied trait bound
+    |
+    = help: the trait `IsProviderFor<HandlerComponent, App, (ReadName, _)>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+    = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+              IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+              IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+              IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+              IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+              IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+              IsProviderFor<ErrorTypeProviderComponent, __Context__>
+              IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+              IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
+            and 9 others
+note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (ReadName, _)>`
+   --> src/main.rs:87:1
+    |
+ 87 | / delegate_components! {
+ 88 | |     App {
+    | |     ^^^
+ 89 | |         namespace MyNamespace;
+ 90 | |     }
+ 91 | | }
+    | |_^
+    = note: required for `App` to implement `Handler<App, ReadName, _>`
+    = note: required for `App` to implement `CanHandle<ReadName, _>`
+    = note: 4 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, (_, _)>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFor<_, App, _>` is not satisfied
+   --> src/main.rs:107:5
+    |
+107 | /     app.handle(
+108 | |         PhantomData::<Branch<ReadName>>,
+109 | |         (
+110 | |             ("text", 1u8, true, 'c', b'a', 2.0f32),
+...   |
+117 | |         ),
+118 | |     )
+    | |_____^ unsatisfied trait bound
+    |
+    = help: the trait `IsProviderFor<HandlerComponent, App, (ReadName, (&str, u8, bool, char, u8, f32))>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+    = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+              IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+              IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+              IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+              IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+              IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+              IsProviderFor<ErrorTypeProviderComponent, __Context__>
+              IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+              IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
+            and 9 others
+note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (ReadName, (&str, u8, bool, char, u8, f32))>`
+   --> src/main.rs:87:1
+    |
+ 87 | / delegate_components! {
+ 88 | |     App {
+    | |     ^^^
+ 89 | |         namespace MyNamespace;
+ 90 | |     }
+ 91 | | }
+    | |_^
+    = note: required for `App` to implement `Handler<App, ReadName, (&str, u8, bool, char, u8, f32)>`
+    = note: required for `App` to implement `CanHandle<ReadName, (&str, u8, bool, char, u8, f32)>`
+    = note: 4 redundant requirements hidden
+    = note: required for `App` to implement `Handler<App, Branch<ReadName>, ((&str, u8, bool, char, u8, f32), _)>`
+note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+    |
+  9 |   #[cgp_component(Handler)]
+    |  _________________^
+ 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 11 | | #[derive_delegate(UseDelegate<Code>)]
+ 12 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 13 | | #[use_type(HasErrorType.Error)]
+ 14 | | pub trait CanHandle<Code, Input> {
+    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
+    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the `?` operator can only be applied to values that implement `Try`
+   --> src/main.rs:107:5
+    |
+107 | /     app.handle(
+108 | |         PhantomData::<Branch<ReadName>>,
+109 | |         (
+110 | |             ("text", 1u8, true, 'c', b'a', 2.0f32),
+...   |
+119 | |     .await?;
+    | |___________^ the `?` operator cannot be applied to type `<impl Future<Output = Result<_, _>> as Future>::Output`
+    |
+    = help: the nightly-only, unstable trait `Try` is not implemented for `<impl Future<Output = Result<_, _>> as Future>::Output`
+
+error[E0277]: the `?` operator can only be used in an async function that returns `Result` or `Option` (or another type that implements `FromResidual`)
+   --> src/main.rs:107:5
+    |
+103 |    async fn run_app(app: &App) -> Result<(), String> {
+    |  ____________________________________________________-
+...   |
+107 | |/     app.handle(
+108 | ||         PhantomData::<Branch<ReadName>>,
+109 | ||         (
+110 | ||             ("text", 1u8, true, 'c', b'a', 2.0f32),
+...   ||
+119 | ||     .await?;
+    | ||___________^ cannot use the `?` operator in an async function that returns `<impl Future<Output = Result<_, _>> as Future>::Output`
+120 | |      Ok(())
+121 | |  }
+    | |__- this function should return `Result` or `Option` to accept `?`
+    |
+
+For more information about this error, try `rustc --explain E0277`.

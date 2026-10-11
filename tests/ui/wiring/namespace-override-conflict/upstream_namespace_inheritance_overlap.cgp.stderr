@@ -1,0 +1,11 @@
+error[E0119]: conflicting implementations of trait `AppNamespace<_>` for type `LabelerComponent`
+  --> src/main.rs:34:16
+   |
+34 | #[default_impl(LabelerComponent in AppNamespace)]
+   |                ^^^^^^^^^^^^^^^^
+   |
+   = note: conflicting implementation in crate `cgp_test_crate_a`:
+           - impl<__Table__, __Key__, __Value__> AppNamespace<__Table__> for __Key__
+             where <__Key__ as cgp::prelude::DefaultNamespace<__Table__>>::Delegate == __Value__, __Key__: cgp::prelude::DefaultNamespace<__AppNamespaceComponents>, __Key__: cgp::prelude::DefaultNamespace<__Table__>;
+
+For more information about this error, try `rustc --explain E0119`.

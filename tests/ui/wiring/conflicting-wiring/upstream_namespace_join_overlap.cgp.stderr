@@ -1,17 +1,21 @@
 error[E0119]: conflicting implementations of trait `IsProviderFor<LabelerComponent, _, _>` for type `Broadcaster`
-  --> src/main.rs:39:9
+  --> src/main.rs:41:9
    |
-39 |         LabelerComponent: FixedLabel,
+41 |         LabelerComponent: FixedLabel,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: conflicting implementation in crate `cgp_test_crate_b`:
            - impl<__Key__, __Value__, __Context__, __Params__> IsProviderFor<__Key__, __Context__, __Params__> for Broadcaster
              where <__Key__ as cgp::prelude::DefaultNamespace<Broadcaster>>::Delegate == __Value__, __Key__: cgp::prelude::DefaultNamespace<Broadcaster>, __Value__: IsProviderFor<__Key__, __Context__, __Params__>, __Params__: ?Sized;
 
-error[E0119]: [CGP-E004] duplicate wiring for component `LabelerComponent` on `Broadcaster`
-  --> src/main.rs:39:9
+error[E0119]: conflicting implementations of trait `DelegateComponent<LabelerComponent>` for type `Broadcaster`
+  --> src/main.rs:41:9
    |
-39 |         LabelerComponent: FixedLabel,
+41 |         LabelerComponent: FixedLabel,
    |         ^^^^^^^^^^^^^^^^
+   |
+   = note: conflicting implementation in crate `cgp_test_crate_b`:
+           - impl<__Key__, __Value__> DelegateComponent<__Key__> for Broadcaster
+             where <__Key__ as cgp::prelude::DefaultNamespace<Broadcaster>>::Delegate == __Value__, __Key__: cgp::prelude::DefaultNamespace<Broadcaster>;
 
 For more information about this error, try `rustc --explain E0119`.

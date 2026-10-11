@@ -25,8 +25,8 @@ use rustc_span::Span;
 
 use crate::resolve::cgp_item::is_namespace_lookup_trait;
 use crate::resolve::conflict::{
-    ConflictSide, describe_key, impl_delegate_type, redirect_conflict, redirect_path,
-    render_lookup_trait, same_range,
+    ConflictSide, describe_key, impl_delegate_type, redirect_conflict, render_lookup_trait,
+    same_range,
 };
 
 /// Classify an `E0119` on a namespace lookup trait as a duplicate-entry conflict, or `None` when
@@ -48,20 +48,9 @@ pub(crate) fn classify_namespace_conflict(
 
     let namespace = render_lookup_trait(tcx, conflicting.impl_did);
     let key = describe_key(tcx, conflicting.key, conflicting.impl_did)?;
-    let Some(first) = first else {
-        // Without the first entry, a redirect has no provider to name.
-        if conflicting
-            .delegate
-            .and_then(|d| redirect_path(tcx, d))
-            .is_some()
-        {
-            return None;
-        }
-        return Some(WiringConflict::Duplicate {
-            context: namespace,
-            key,
-        });
-    };
+    // Without the first entry the tool cannot say what the key collides with (rustc names an
+    // upstream impl only in a note), so the diagnostic keeps rustc's wording.
+    let first = first?;
     // An entry can also collide with the namespace's own *inheritance* blanket, whose `Delegate`
     // is a projection rather than a written redirect; `redirect_conflict` resolves what the parent
     // maps the colliding key to.

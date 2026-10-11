@@ -9,8 +9,10 @@
 //! rather than at a labelled span, so the conflict classifier finds no local "first
 //! implementation" to compare the entry with.
 //!
-//! The tool's `[CGP-E004]` header calls this a duplicate wiring entry, which is false: the context
-//! has one entry for the key, and it collides with the namespace the context joins upstream.
+//! Without the first entry the tool cannot say what the key collides with, so both `E0119`s keep
+//! rustc's wording, each naming the upstream impl in its note. Calling the conflict a duplicate
+//! entry would be false: the context has one entry for the key, and it collides with the namespace
+//! the context joins upstream.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
 extern crate std;
