@@ -102,9 +102,23 @@ pub fn is_wrapper_mode(args: &[String]) -> bool {
         == Some("rustc")
 }
 
-/// Whether the flags already carry `key`, in either `key` or `key=value` form.
+/// Whether the flags already carry `key`, in any spelling rustc accepts for it: `key` or
+/// `key=value`; for a `-Z` option (`-Znext-solver`), also the two-argument `-Z next-solver=value`;
+/// and for `--verbose`, its short form `-v`.
 fn has_flag(args: &[String], key: &str) -> bool {
-    let with_eq = format!("{key}=");
-    args.iter()
-        .any(|arg| arg == key || arg.starts_with(&with_eq))
+    let matches = |arg: &str, key: &str| {
+        arg == key
+            || arg
+                .strip_prefix(key)
+                .is_some_and(|rest| rest.starts_with('='))
+    };
+    if args.iter().any(|arg| matches(arg, key)) {
+        return true;
+    }
+    if let Some(option) = key.strip_prefix("-Z") {
+        return args
+            .windows(2)
+            .any(|pair| pair[0] == "-Z" && matches(&pair[1], option));
+    }
+    key == "--verbose" && args.iter().any(|arg| arg == "-v")
 }

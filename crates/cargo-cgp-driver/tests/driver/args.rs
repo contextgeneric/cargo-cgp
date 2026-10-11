@@ -170,3 +170,29 @@ fn expands_an_argument_file_before_the_driver_reads_its_flags() {
     let out = rustc_args(expanded, None, "--sysroot", &["-Znext-solver=globally"]);
     assert!(!out.iter().any(|arg| arg == "-Znext-solver=globally"));
 }
+
+#[test]
+fn keeps_a_user_override_written_as_two_arguments() {
+    // rustc accepts `-Z key=value` as two arguments as well as `-Zkey=value`; either is the
+    // user's explicit choice, so the injected `-Znext-solver=globally` is not appended after it.
+    let out = rustc_args(
+        args(&["d", "/tk/bin/rustc", "-Z", "next-solver=no", "lib.rs"]),
+        None,
+        "--sysroot",
+        &["-Znext-solver=globally"],
+    );
+    assert_eq!(out, ["d", "-Z", "next-solver=no", "lib.rs"]);
+}
+
+#[test]
+fn treats_the_short_verbose_flag_as_verbose() {
+    // `-v` is `--verbose`; appending `--verbose` beside it makes rustc reject the invocation with
+    // "Option 'verbose' given more than once", as `RUSTFLAGS=-v` would.
+    let out = rustc_args(
+        args(&["d", "/tk/bin/rustc", "-v", "lib.rs"]),
+        None,
+        "--sysroot",
+        &["--verbose"],
+    );
+    assert_eq!(out, ["d", "-v", "lib.rs"]);
+}
