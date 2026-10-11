@@ -147,8 +147,25 @@ also handed to the crate's other tests:
 cargo test -p cargo-cgp-ui-tests --test ui -- acceptable  # only fixtures whose path contains "acceptable"
 cargo test -p cargo-cgp-ui-tests --test ui -- --bless     # regenerate all three snapshots per fixture
 cargo test -p cargo-cgp-ui-tests --test ui -- -j 4        # check at most 4 fixtures at once
-cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # raw output
+cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # raw output of all three passes
 ```
+
+Beside the three snapshot passes, two checks compare the passes with each other. The tool and plain
+`cargo check` must agree on whether a fixture compiles, and for a fixture under `ui/pass-through/`
+(a plain Rust error the tool must not touch) the tool's output must equal plain rustc's. A mismatch
+prints a line diff for each failing pass, and a missing snapshot fails rather than passing as empty.
+
+A fixture tells the harness about itself with `//@` directives, line comments the compiler ignores:
+
+- `//@aux-build: <crate>`: build an auxiliary crate (see below).
+- `//@false-acceptance`: plain `cargo check` rejects the fixture but the tool accepts it, a known
+  disagreement of the next-generation trait solver that the exit-status check then expects.
+- `//@rewrites-falsely: <reason>`: a `pass-through/` fixture the tool still rewrites; its snapshots
+  pin today's output until the fix removes the marker.
+- `//@json`: also run the JSON pass, which pins the tool's diagnostics as cargo's JSON stream carries
+  them, in `<name>.cgp.json`.
+
+An unknown directive, or a known one written with a space after `//`, is rejected.
 
 Fixtures are checked in parallel across a pool of workers — one throwaway crate each, so they never
 collide — with `--jobs`/`-j` setting the count (default: the machine's parallelism, capped at 8).

@@ -101,13 +101,43 @@ pub fn write_manifest(harness_crate: &Path, aux: &[(&str, &Path)]) {
     }
 }
 
+/// The result of compiling one fixture: the rendered diagnostics and whether the command
+/// succeeded.
+pub struct Run {
+    /// The command's stderr, holding the rendered diagnostics.
+    pub stderr: String,
+    /// Whether the command exited successfully (the fixture compiled).
+    pub success: bool,
+}
+
+impl Run {
+    fn from_output(output: &std::process::Output) -> Self {
+        Run {
+            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+            success: output.status.success(),
+        }
+    }
+}
+
 /// Compile one fixture through `cargo-cgp check` and return the tool's rendered
-/// diagnostics from stderr. `-q` suppresses cargo's progress lines, leaving the compiler
-/// diagnostics; `--color never` keeps the snapshot free of ANSI escapes. This is the
-/// "call cargo-cgp directly" pass.
-pub fn run_fixture(harness_crate: &Path, fixture: &Path) -> String {
+/// diagnostics from stderr with its exit status. `-q` suppresses cargo's progress lines,
+/// leaving the compiler diagnostics; `--color never` keeps the snapshot free of ANSI escapes.
+/// This is the "call cargo-cgp directly" pass.
+pub fn run_fixture(harness_crate: &Path, fixture: &Path) -> Run {
     let output = run_cargo_cgp(harness_crate, fixture, &["check", "-q", "--color", "never"]);
-    String::from_utf8_lossy(&output.stderr).into_owned()
+    Run::from_output(&output)
+}
+
+/// Compile one fixture through `cargo-cgp check --message-format=json` and return cargo's JSON
+/// message stream from stdout, the form an editor reads. The caller keeps only the compiler
+/// messages; cargo's artifact and build-finished lines are noise here.
+pub fn run_fixture_json(harness_crate: &Path, fixture: &Path) -> String {
+    let output = run_cargo_cgp(
+        harness_crate,
+        fixture,
+        &["check", "-q", "--message-format=json"],
+    );
+    String::from_utf8_lossy(&output.stdout).into_owned()
 }
 
 /// Expand one fixture through `cargo cgp expand` and return the expansion from **stdout**.
@@ -139,7 +169,7 @@ pub const NO_EXPANSION: &str = "// no expansion: compilation stops before macro 
      // finish, so there is nothing to expand.\n";
 
 /// Compile one fixture through plain `cargo check` — no `cargo-cgp`, no driver — and return
-/// its rendered diagnostics from stderr. This records the *original* compiler output for the
+/// its rendered diagnostics from stderr with its exit status. This records the *original* compiler output for the
 /// fixture, the "before" against which the tool's `.cgp.stderr` is the "after": no
 /// diagnostic rewriting, the default trait solver rather than the driver's
 /// `-Znext-solver=globally`, and none of the `--verbose` un-eliding the driver injects.
@@ -148,7 +178,7 @@ pub const NO_EXPANSION: &str = "// no expansion: compilation stops before macro 
 /// the two do not invalidate each other's `cgp` build: cargo's fingerprint includes
 /// `RUSTC_WORKSPACE_WRAPPER`, which `cargo-cgp` sets and plain `cargo` does not, so sharing a
 /// target directory would recompile `cgp` on every alternation.
-pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path) -> String {
+pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path) -> Run {
     fs::copy(fixture, harness_crate.join("src/main.rs"))
         .unwrap_or_else(|e| panic!("copying fixture {}: {e}", fixture.display()));
 
@@ -158,7 +188,7 @@ pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path) -> String {
         .args(["check", "-q", "--color", "never"])
         .output()
         .expect("running plain cargo check on a fixture");
-    String::from_utf8_lossy(&output.stderr).into_owned()
+    Run::from_output(&output)
 }
 
 /// Copy the fixture in as the throwaway crate's `src/main.rs` and run `cargo-cgp` with

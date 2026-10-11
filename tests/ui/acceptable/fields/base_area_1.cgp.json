@@ -1,0 +1,30 @@
+[
+  {
+    "children": [
+      {
+        "level": "note",
+        "message": "root cause: [CGP-E106] missing field `height` on `Rectangle`\nthis is required through the dependency chain:\n  [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`\n  └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`\n    └─ [CGP-E105] trait impl `HasRectangleFields` for `Rectangle`\n      └─ [CGP-E106] missing field `height` on `Rectangle`",
+        "spans": []
+      }
+    ],
+    "code": "E0277",
+    "level": "error",
+    "message": "[CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`",
+    "spans": [
+      {
+        "column": 9,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 64,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [],
+    "code": null,
+    "level": "failure-note",
+    "message": "For more information about this error, try `rustc --explain E0277`.",
+    "spans": []
+  }
+]

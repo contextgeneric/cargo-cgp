@@ -1,0 +1,31 @@
+[
+  {
+    "children": [],
+    "code": "E0119",
+    "level": "error",
+    "message": "[CGP-E004] duplicate wiring for component `GreeterComponent` on `Person`",
+    "spans": [
+      {
+        "column": 9,
+        "file": "src/main.rs",
+        "label": "first implementation here",
+        "line": 33,
+        "primary": false
+      },
+      {
+        "column": 9,
+        "file": "src/main.rs",
+        "label": "conflicting implementation for `Person`",
+        "line": 40,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [],
+    "code": null,
+    "level": "failure-note",
+    "message": "For more information about this error, try `rustc --explain E0119`.",
+    "spans": []
+  }
+]

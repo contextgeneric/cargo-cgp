@@ -7,6 +7,8 @@
 //!
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
+//@json
+
 use cgp::prelude::*;
 
 #[cgp_auto_getter]

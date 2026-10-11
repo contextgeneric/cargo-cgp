@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E012] the trait `GetCount` is used but not declared as a dependency
-  --> src/main.rs:44:46
+  --> src/main.rs:46:46
    |
-44 |     format!("{} ({})", self.get_name(), self.get_count())
+46 |     format!("{} ({})", self.get_name(), self.get_count())
    |                                              ^^^^^^^^^
    |
    = help: declare it as a dependency with `#[uses(GetCount)]`

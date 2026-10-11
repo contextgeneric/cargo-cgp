@@ -1,0 +1,30 @@
+[
+  {
+    "children": [
+      {
+        "level": "note",
+        "message": "root cause: [CGP-E106] missing field `name` on `Person`\nthis is required through the dependency chain:\n  [CGP-E101] consumer trait impl `CanGreet` for context `Person`\n  └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`\n    └─ [CGP-E105] trait impl `HasName` for `Person`\n      └─ [CGP-E106] missing field `name` on `Person`",
+        "spans": []
+      }
+    ],
+    "code": "E0599",
+    "level": "error",
+    "message": "[CGP-E001] the consumer trait `CanGreet` is not implemented for context `Person`",
+    "spans": [
+      {
+        "column": 12,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 58,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [],
+    "code": null,
+    "level": "failure-note",
+    "message": "For more information about this error, try `rustc --explain E0599`.",
+    "spans": []
+  }
+]

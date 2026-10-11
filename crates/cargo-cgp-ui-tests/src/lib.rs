@@ -5,12 +5,16 @@
 //! when the tool reformats diagnostics that snapshot is what changes; one runs plain
 //! `cargo check` to record the untransformed `.rust.stderr` baseline the tool improves on; and
 //! one runs `cargo cgp expand` to pin the `.expand.rs` code the fixture's CGP macros generate.
+//! Two checks compare the passes with each other (the exit status, and for `pass-through/`
+//! fixtures the output itself), and a fixture's `//@json` directive adds a JSON pass (see
+//! [`directives`]).
 //! It is driven by the `harness = false` test in [`tests/ui.rs`](../../tests/ui.rs), which
 //! calls [`run`]; the logic lives here so it stays small and out of the `bin`/test
 //! entrypoint. Fixtures are checked in parallel across a pool of workers (see [`runner`]).
 //! See cgp-knowledge-base/cargo-cgp/implementation/testing.md.
 
 pub mod aux;
+pub mod directives;
 pub mod fixtures;
 pub mod harness;
 pub mod normalize;
@@ -51,7 +55,7 @@ pub fn run(args: Vec<String>) {
         .unwrap_or_else(|| runner::default_jobs(fixtures.len()))
         .clamp(1, fixtures.len());
 
-    // Each worker checks fixtures in its own throwaway crate, so both passes need those
+    // Each worker checks fixtures in its own throwaway crate, so every pass needs those
     // crates (and the built binaries) first.
     harness::build_binaries();
     let workers: Vec<PathBuf> = harness::ensure_worker_crates(jobs);
@@ -80,7 +84,7 @@ pub fn run(args: Vec<String>) {
                 .to_string();
 
             // Point the worker crate at whatever auxiliary crates this fixture declares
-            // (usually none) before either pass copies the fixture in and compiles it.
+            // (usually none) before any pass copies the fixture in and compiles it.
             let fixture_aux = aux::required(fixture, &aux_crates);
             harness::write_manifest(crate_dir, &fixture_aux);
 
@@ -90,7 +94,12 @@ pub fn run(args: Vec<String>) {
                     failed: false,
                 }
             } else {
-                let outcomes = run_passes(&options, crate_dir, fixture, &cgp_root, &sysroot);
+                let paths = passes::Paths {
+                    harness_crate: crate_dir,
+                    cgp_root: &cgp_root,
+                    sysroot: &sysroot,
+                };
+                let outcomes = run_passes(&options, fixture, &name, &paths);
                 let failed = outcomes
                     .iter()
                     .any(|(_, outcome)| matches!(outcome, Outcome::Mismatch(_)));
@@ -129,30 +138,61 @@ struct Report {
     failed: bool,
 }
 
-/// Run the passes for one fixture and return each pass's label and outcome: the rust pass
-/// records the plain-compiler `.rust.stderr` baseline, the cgp-stderr pass owns the tool's
-/// `.cgp.stderr` output, and the expand pass owns the `.expand.rs` generated code.
+/// Run the passes and checks for one fixture and return each one's label and outcome: the rust
+/// pass records the plain-compiler `.rust.stderr` baseline, the cgp pass owns the tool's
+/// `.cgp.stderr`, the expand pass owns the `.expand.rs` generated code, the status check compares
+/// the two compilers' exit statuses, and, where they apply, the pass-through check and the JSON
+/// pass.
 fn run_passes(
     options: &Options,
-    harness_crate: &Path,
     fixture: &Path,
-    cgp_root: &Path,
-    sysroot: &Path,
+    name: &str,
+    paths: &passes::Paths,
 ) -> Vec<(&'static str, Outcome)> {
-    vec![
+    let directives = directives::read(fixture);
+    let rust = harness::run_fixture_rust(paths.harness_crate, fixture);
+    let cgp = harness::run_fixture(paths.harness_crate, fixture);
+
+    let mut outcomes = vec![
         (
             "rust",
-            passes::rust_stderr_pass(harness_crate, fixture, cgp_root, sysroot, options.bless),
+            passes::rust_stderr_pass(&rust, fixture, paths, options.bless),
         ),
         (
             "cgp",
-            passes::cgp_stderr_pass(harness_crate, fixture, cgp_root, sysroot, options.bless),
+            passes::cgp_stderr_pass(&cgp, fixture, paths, options.bless),
         ),
+        ("expand", passes::expand_pass(fixture, paths, options.bless)),
         (
-            "expand",
-            passes::expand_pass(harness_crate, fixture, cgp_root, sysroot, options.bless),
+            "status",
+            passes::status_check(rust.success, cgp.success, directives.false_acceptance),
         ),
-    ]
+    ];
+
+    if name.starts_with("pass-through/") {
+        let baseline = |stderr: &str| {
+            normalize::normalize_baseline(
+                stderr,
+                paths.harness_crate,
+                paths.cgp_root,
+                paths.sysroot,
+            )
+        };
+        outcomes.push((
+            "pass-through",
+            passes::pass_through_check(
+                &baseline(&rust.stderr),
+                &baseline(&cgp.stderr),
+                directives.rewrites_falsely.as_deref(),
+            ),
+        ));
+    }
+
+    if directives.json {
+        outcomes.push(("json", passes::json_pass(fixture, paths, options.bless)));
+    }
+
+    outcomes
 }
 
 /// Render one fixture's summary line, plus any mismatch diffs beneath it. Returns the
@@ -182,8 +222,22 @@ fn report_block(name: &str, outcomes: &[(&str, Outcome)]) -> String {
     }
 }
 
-/// Render a fixture's raw output for interactive inspection — the tool's own stderr.
+/// Render a fixture's raw output for interactive inspection: the tool's stderr, plain
+/// `cargo check`'s stderr, and the expansion, each unnormalized and labelled with its exit status.
 fn print_block(harness_crate: &Path, fixture: &Path, name: &str) -> String {
-    let body = harness::run_fixture(harness_crate, fixture);
-    format!("===== {name} =====\n{body}===== end {name} =====\n")
+    let status = |ok: bool| if ok { "success" } else { "failure" };
+    let cgp = harness::run_fixture(harness_crate, fixture);
+    let rust = harness::run_fixture_rust(harness_crate, fixture);
+    let expand = harness::run_fixture_expand(harness_crate, fixture);
+    format!(
+        "===== {name}: cargo cgp check ({}) =====\n{}\
+         ===== {name}: cargo check ({}) =====\n{}\
+         ===== {name}: cargo cgp expand =====\n{}\
+         ===== end {name} =====\n",
+        status(cgp.success),
+        cgp.stderr,
+        status(rust.success),
+        rust.stderr,
+        expand,
+    )
 }

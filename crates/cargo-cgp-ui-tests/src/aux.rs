@@ -28,41 +28,10 @@ use crate::paths::{aux_build_root, auxiliary_src_dir, cgp_crate_dir};
 /// with the resolved sibling checkout when the crate is materialized.
 const CGP_PLACEHOLDER: &str = "__CGP_CRATE_DIR__";
 
-/// The auxiliary crate names a fixture declares with `//@aux-build: <name>` lines.
-/// The directive is an ordinary comment, so it is ignored by the compiler when the
-/// fixture is copied in as `main.rs`; only the harness reads it.
+/// The auxiliary crate names a fixture declares with `//@aux-build: <name>` lines, read with
+/// the rest of its directives (see [`crate::directives`], which also rejects a malformed one).
 pub fn declared(fixture: &Path) -> Vec<String> {
-    let text = fs::read_to_string(fixture).unwrap_or_default();
-    let mut names = Vec::new();
-
-    for line in text.lines() {
-        let line = line.trim();
-
-        if let Some(name) = line.strip_prefix("//@aux-build:") {
-            let name = name.trim();
-            if !name.is_empty() {
-                names.push(name.to_owned());
-            }
-            continue;
-        }
-
-        // A directive this parser does not recognize is otherwise a silent no-op:
-        // the fixture loses its path dependency and fails on an unresolved import
-        // instead of reproducing the cross-crate scenario it was written for, which
-        // reads as ordinary snapshot staleness. A stray space after the `//` is the
-        // mistake that has actually happened, so reject anything directive-shaped
-        // rather than ignore it. Only a line whose comment *starts* with the
-        // directive is flagged, so prose mentioning the syntax stays legal.
-        let after_slashes = line.trim_start_matches('/').trim_start_matches('!');
-        assert!(
-            !after_slashes.trim_start().starts_with("@aux-build"),
-            "malformed `//@aux-build:` directive in {}:\n  {line}\n\
-             the directive takes no space between `//` and `@`",
-            fixture.display(),
-        );
-    }
-
-    names
+    crate::directives::read(fixture).aux_build
 }
 
 /// Materialize every stored auxiliary crate once and return a map from crate name
@@ -96,9 +65,15 @@ pub fn materialize_all() -> Vec<(String, PathBuf)> {
 }
 
 /// Copy one auxiliary crate's `src/` tree into `dest` and write its manifest with
-/// the `cgp` path placeholder resolved.
+/// the `cgp` path placeholder resolved. The previous copy of `src/` is removed first, so a
+/// file deleted from the stored crate does not survive in the materialized one.
 fn materialize_one(src: &Path, dest: &Path, cgp_crate_dir: &Path) {
-    copy_tree(&src.join("src"), &dest.join("src"));
+    let dest_src = dest.join("src");
+    if dest_src.exists() {
+        fs::remove_dir_all(&dest_src)
+            .unwrap_or_else(|e| panic!("clearing aux source {}: {e}", dest_src.display()));
+    }
+    copy_tree(&src.join("src"), &dest_src);
 
     let template = fs::read_to_string(src.join("Cargo.toml"))
         .unwrap_or_else(|e| panic!("reading aux manifest {}: {e}", src.display()));
@@ -107,7 +82,7 @@ fn materialize_one(src: &Path, dest: &Path, cgp_crate_dir: &Path) {
     fs::write(dest.join("Cargo.toml"), manifest).expect("writing the aux manifest");
 }
 
-/// Recursively copy a directory tree, replacing `dest` if it already exists.
+/// Recursively copy a directory tree into `dest`, creating it as needed.
 fn copy_tree(src: &Path, dest: &Path) {
     fs::create_dir_all(dest).expect("creating an aux source directory");
     let entries =

@@ -22,6 +22,8 @@
 //! declared is correctly left alone. (An async body's `[u8]: Sized` cascade — see the
 //! money-transfer-shaped real case — is dropped by the same-line cascade suppression.)
 
+//@json
+
 use cgp::prelude::*;
 
 /// A `#[cgp_fn]` trait that reads a `name` field.

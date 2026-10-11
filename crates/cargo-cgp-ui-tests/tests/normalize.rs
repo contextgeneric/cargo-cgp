@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use cargo_cgp_ui_tests::normalize::normalize;
+use cargo_cgp_ui_tests::normalize::{normalize, normalize_baseline};
 
 fn harness_dir() -> PathBuf {
     PathBuf::from("/home/x/proj/target/ui-harness")
@@ -45,7 +45,7 @@ fn collapses_chars_spines_regardless_of_truncation() {
     let expected = "`HasField<Symbol<4, Chars<..>>>`";
     for input in [full, truncated_deep, truncated_shallow] {
         assert_eq!(
-            normalize(input, &harness_dir(), &cgp_root(), &sysroot()),
+            normalize_baseline(input, &harness_dir(), &cgp_root(), &sysroot()),
             expected
         );
     }
@@ -60,7 +60,7 @@ fn collapses_qualified_and_multiple_spines() {
                  and `HasField<Symbol<1, cgp::prelude::Chars<'c', _>>>`";
     let expected = "`HasField<Symbol<1, cgp::prelude::Chars<..>>>` and `HasField<Symbol<1, cgp::prelude::Chars<..>>>`";
     assert_eq!(
-        normalize(input, &harness_dir(), &cgp_root(), &sysroot()),
+        normalize_baseline(input, &harness_dir(), &cgp_root(), &sysroot()),
         expected
     );
 }
@@ -79,5 +79,28 @@ note: required by an implicit `Sized` bound in `Option`
         "\
 note: required by an implicit `Sized` bound in `Option`
    --> $SYSROOT/lib/rustlib/src/rust/library/core/src/option.rs:598:17"
+    );
+}
+
+#[test]
+fn the_tool_output_keeps_a_chars_spine() {
+    // A raw spine in the tool's output means its resugaring declined, so the tool pass must not
+    // collapse it the way the baseline's run-to-run truncation is collapsed.
+    let spine = "`HasField<Symbol<1, Chars<'a', Nil>>>`";
+    assert_eq!(
+        normalize(spine, &harness_dir(), &cgp_root(), &sysroot()),
+        spine
+    );
+}
+
+#[test]
+fn drops_the_coverage_failure_line() {
+    // Under coverage instrumentation cargo adds its own failure line for the compiler process.
+    let raw = "\
+error: boom
+error: process didn't exit successfully: `/home/x/rustc --crate-name ui` (exit status: 1)";
+    assert_eq!(
+        normalize(raw, &harness_dir(), &cgp_root(), &sysroot()),
+        "error: boom"
     );
 }

@@ -53,7 +53,7 @@ fn a_missing_fixture_declares_nothing() {
 }
 
 #[test]
-#[should_panic(expected = "malformed `//@aux-build:` directive")]
+#[should_panic(expected = "malformed `//@` directive")]
 fn a_space_after_the_slashes_is_rejected() {
     // The exact regression: a formatter put a space after `//`, and the directive
     // was silently ignored.
@@ -65,7 +65,7 @@ fn a_space_after_the_slashes_is_rejected() {
 }
 
 #[test]
-#[should_panic(expected = "malformed `//@aux-build:` directive")]
+#[should_panic(expected = "malformed `//@` directive")]
 fn a_doc_comment_directive_is_rejected() {
     let path = fixture("doc.rs", "//! @aux-build: cgp-test-crate-a\nfn main() {}\n");
     let _ = aux::declared(&path);

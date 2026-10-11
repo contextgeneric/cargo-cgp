@@ -16,12 +16,10 @@
 //! spelling each field name as a `Symbol<N, Chars<'a', Chars<'b', …>>>` type-level spine, and
 //! rustc truncates such a spine to `_` at a depth that varies between runs of the *same* compiler
 //! (the diagnostic's "other impls" list uses a trimmed, length-budgeted printer whose cut point
-//! shifts with the non-deterministic order the impls are listed in). That volatility is confined
-//! to the `Chars<…>` spine, so [`collapse_chars_spines`] rewrites every such spine to a stable
-//! `Chars<..>` placeholder. It only ever matches the raw baseline: the tool pass reads a field
-//! name structurally from the type and resugars `Chars<…>` into `Symbol!("…")`, so its output
-//! carries no `Chars<` for this to touch — and the field name it *does* show is recovered whole
-//! regardless of how the spine printed.
+//! shifts with the non-deterministic order the impls are listed in). [`normalize_baseline`]
+//! therefore rewrites every such spine to a stable `Chars<..>` placeholder. The tool's output is
+//! normalized without that collapse: the tool resugars a field name into `Symbol!("…")`, so a raw
+//! `Chars<…>` spine in its output means the resugaring declined, which a snapshot must show.
 
 use std::path::Path;
 
@@ -33,16 +31,34 @@ const DROP_MARKERS: &[&str] = &[
     "the full name for the type has been written to",
     "consider using `--verbose` to print the full type name",
     "error: could not compile ",
+    // Cargo's own failure line for the compiler process. It appears only under coverage
+    // instrumentation (`cargo llvm-cov`), which makes rustc exit through a path cargo reports.
+    "error: process didn't exit successfully:",
 ];
 
-/// Rewrite rendered `.stderr` output into its committed-snapshot form: drop the
+/// Rewrite the tool's rendered `.stderr` output into its committed-snapshot form: drop the
 /// content-free lines above, and replace the throwaway-crate, cgp-checkout, and sysroot
 /// absolute paths with `$DIR`, `$CGP`, and `$SYSROOT`.
 pub fn normalize(raw: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path) -> String {
     raw.lines()
         .filter(|line| !DROP_MARKERS.iter().any(|marker| line.contains(marker)))
         .map(|line| replace_paths(line, harness_dir, cgp_root, sysroot))
-        .map(|line| collapse_chars_spines(&line))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Rewrite plain `cargo check`'s rendered `.stderr` into its committed-snapshot form: what
+/// [`normalize`] does, plus the collapse of every `Chars<…>` spine, whose truncation in the
+/// baseline varies between runs.
+pub fn normalize_baseline(
+    raw: &str,
+    harness_dir: &Path,
+    cgp_root: &Path,
+    sysroot: &Path,
+) -> String {
+    normalize(raw, harness_dir, cgp_root, sysroot)
+        .lines()
+        .map(collapse_chars_spines)
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -99,7 +115,7 @@ pub fn normalize_source(raw: &str, harness_dir: &Path, cgp_root: &Path, sysroot:
 
 /// Replace the throwaway-crate, cgp-checkout, and sysroot absolute paths with
 /// `$DIR`/`$CGP`/`$SYSROOT`.
-fn replace_paths(text: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path) -> String {
+pub fn replace_paths(text: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path) -> String {
     let dir = harness_dir.display().to_string();
     let cgp = cgp_root.display().to_string();
     let sysroot = sysroot.display().to_string();

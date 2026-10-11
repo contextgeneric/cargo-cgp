@@ -15,6 +15,8 @@
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md.
 //! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
+//@json
+
 use cgp::prelude::*;
 
 #[cgp_component(Greeter)]

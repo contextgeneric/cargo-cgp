@@ -3,6 +3,8 @@
 //! `Self: HasName` dependency is satisfied and `check_components!` passes, so the
 //! snapshot of cargo-cgp's output is empty.
 
+//@json
+
 use cgp::prelude::*;
 
 #[cgp_component(Greeter)]

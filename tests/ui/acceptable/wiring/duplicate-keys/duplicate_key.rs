@@ -7,6 +7,8 @@
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
 
+//@json
+
 use cgp::prelude::*;
 
 #[cgp_component(Greeter)]

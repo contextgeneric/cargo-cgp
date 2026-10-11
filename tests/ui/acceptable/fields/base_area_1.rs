@@ -19,6 +19,8 @@
 //! Exposes issues in cgp-knowledge-base/cargo-cgp/issues/usability.md. CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.
 
+//@json
+
 use cgp::prelude::*;
 
 #[cgp_component(AreaCalculator)]

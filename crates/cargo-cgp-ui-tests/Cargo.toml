@@ -15,8 +15,12 @@ publish      = false
 # compiles each fixture under ../../tests/ui through cargo-cgp (and plain cargo, for the
 # baseline) and diffs the output against committed `.cgp.stderr` / `.rust.stderr`
 # snapshots. The logic lives in the library so it stays small and testable; tests/ui.rs
-# is a thin entrypoint. The harness shells out to `cargo`/`cargo-cgp` and needs no
-# non-std dependencies — the driver does every diagnostic transform in-process.
+# is a thin entrypoint. The harness shells out to `cargo`/`cargo-cgp`; the driver does every
+# diagnostic transform in-process, so the one dependency is `serde_json`, which reads cargo's
+# JSON message stream for the JSON pass.
+[dependencies]
+serde_json = { workspace = true }
+
 [[test]]
 name    = "ui"
 path    = "tests/ui.rs"
