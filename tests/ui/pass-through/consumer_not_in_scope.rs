@@ -1,12 +1,9 @@
 //! A consumer method called where its trait is not imported.
 //!
-//! The tool prints `struct lib::Person` where plain `cargo check` prints `struct Person`.
+//! The error is plain Rust: the trait that provides `greet` is not in scope. The tool must print
+//! what plain `cargo check` prints, short paths included (`struct Person`, not `lib::Person`).
 //!
-//! CGP error class: none; a driver path-printing defect affecting untransformed diagnostics.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
-
-//@rewrites-falsely: untransformed output prints full paths, because the driver does not set `trimmed_def_paths`
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 
 mod lib {
     use cgp::prelude::*;

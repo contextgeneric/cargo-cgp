@@ -15,8 +15,8 @@ help: the trait `ErrorRaiser<App, String>` is not implemented for `App`
              `PanicOnError` implements `ErrorRaiser<Context, E>`
              `RaiseFrom` implements `ErrorRaiser<Context, E>`
              `RaiseInfallible` implements `ErrorRaiser<Context, !>`
-             `ReturnError` implements `ErrorRaiser<Context, E>`
              `RedirectLookup<__Components__, __Path__>` implements `ErrorRaiser<__Context__, SourceError>`
+             `ReturnError` implements `ErrorRaiser<Context, E>`
              `UseContext` implements `ErrorRaiser<__Context__, SourceError>`
              `UseDelegate<__Components__>` implements `ErrorRaiser<__Context__, SourceError>`
    = note: required for `App` to implement `CanRaiseError<String>`

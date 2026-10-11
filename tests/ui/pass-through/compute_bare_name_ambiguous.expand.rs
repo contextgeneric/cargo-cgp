@@ -1,12 +1,11 @@
 #![feature(prelude_import)]
 //! `compute` called by bare name where two traits provide it.
 //!
-//! rustc's `E0034` suggestions print `cgp::cgp_extra::cgp_handler::CanCompute` under the tool and
-//! `<App as cgp::prelude::Computer>` without its generics.
+//! The error is plain Rust: the call is ambiguous (`E0034`). The tool must print what plain
+//! `cargo check` prints; its module strip shortens the `cgp::prelude::Computer` path rustc prints in
+//! a note.
 //!
-//! CGP error class: none; a driver path-printing defect affecting untransformed diagnostics.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

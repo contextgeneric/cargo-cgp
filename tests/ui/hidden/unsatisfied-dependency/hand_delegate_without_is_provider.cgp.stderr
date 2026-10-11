@@ -2,7 +2,7 @@ error[E0599]: the method `greet` exists for struct `App`, but its trait bounds w
    --> src/main.rs:33:9
     |
  26 | pub struct App;
-    | -------------- method `greet` not found for this struct because it doesn't satisfy `App: CanGreet` or `_: IsProviderFor<GreeterComponent, App>`
+    | -------------- method `greet` not found for this struct because it doesn't satisfy `App: CanGreet` or `App: IsProviderFor<GreeterComponent, App>`
 ...
  33 |     App.greet();
     |         ^^^^^

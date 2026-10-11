@@ -1,13 +1,9 @@
 //! Calling `finalize_extract_result` without importing `FinalizeExtractResult`.
 //!
-//! The headline names `std::result::Result<T, E>` under the tool, where plain `cargo check` prints
-//! `Result<T, E>`.
+//! The error is plain Rust: the trait that provides the method is not in scope. The tool must print
+//! what plain `cargo check` prints, short paths included (`Result<T, E>` in the headline).
 //!
-//! CGP error class: none; a driver path-printing defect affecting every untransformed diagnostic.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
-
-//@rewrites-falsely: untransformed output prints full paths, because the driver does not set `trimmed_def_paths`
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 
 use cgp::prelude::*;
 

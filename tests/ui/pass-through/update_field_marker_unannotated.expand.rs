@@ -1,12 +1,11 @@
 #![feature(prelude_import)]
 //! A direct `update_field` call that leaves the target marker to inference.
 //!
-//! The `E0284` headline reads `cgp::prelude::IsNothing` where plain `cargo check` prints `IsNothing`,
-//! and the module strip shortens `UpdateField::update_field` to `update_field` in a label.
+//! The error is plain Rust: type annotations are needed (`E0284`). The tool must print what plain
+//! `cargo check` prints; its post-processing shortens `UpdateField::update_field` in a label and
+//! drops the unlabelled span on the method's definition.
 //!
-//! CGP error class: none; a driver path-printing defect affecting every untransformed diagnostic.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

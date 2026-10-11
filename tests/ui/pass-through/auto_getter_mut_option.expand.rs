@@ -1,12 +1,11 @@
 #![feature(prelude_import)]
-//! A `&mut self` auto getter returning `Option<&mut String>`, a known `cgp` defect.
+//! A `&mut self` auto getter returning `Option<&String>`, which the generated body cannot produce.
 //!
-//! rustc's suggestion is spliced after the attribute, and the tool prints it with full paths
-//! (`std::option::Option<&mut std::string::String>`).
+//! The error is a plain type mismatch, and rustc's suggestion is spliced after the attribute (a
+//! known `cgp` defect). The tool must print what plain `cargo check` prints, short paths included
+//! (`Option<&mut String>`, not `std::option::Option<&mut std::string::String>`).
 //!
-//! CGP error class: none; a driver path-printing defect affecting untransformed diagnostics.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

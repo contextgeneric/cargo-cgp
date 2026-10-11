@@ -1,10 +1,10 @@
 error[E0308]: mismatched types
-  --> src/main.rs:15:1
+  --> src/main.rs:13:1
    |
-15 | #[cgp_auto_getter]
+13 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^ types differ in mutability
-16 | pub trait HasNickname {
-17 |     fn nickname(&mut self) -> Option<&String>;
+14 | pub trait HasNickname {
+15 |     fn nickname(&mut self) -> Option<&String>;
    |                               --------------- expected `Option<&String>` because of return type
    |
    = note: expected enum `Option<&String>`
@@ -12,7 +12,7 @@ error[E0308]: mismatched types
    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: try using `.as_deref()` to convert `Option<&mut String>` to `Option<&String>`
    |
-15 | #[cgp_auto_getter].as_deref()
+13 | #[cgp_auto_getter].as_deref()
    |                   +++++++++++
 
 For more information about this error, try `rustc --explain E0308`.

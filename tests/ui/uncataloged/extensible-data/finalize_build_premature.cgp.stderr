@@ -4,6 +4,8 @@ error[E0599]: no method named `finalize_build` found for struct `__PartialPerson
 19 | pub struct Person {
    | ----------------- method `finalize_build` not found for this struct
 ...
+25 |     let _: Person = Person::builder()
+26 |         .build_field(PhantomData::<Symbol!("first_name")>, "Alice".to_owned())
 27 |         .finalize_build();
    |          ^^^^^^^^^^^^^^ method not found in `__PartialPerson<IsPresent, IsNothing>`
    |

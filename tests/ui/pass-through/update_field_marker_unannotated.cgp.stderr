@@ -1,7 +1,7 @@
-error[E0284]: type annotations needed for `((), __PartialPerson<_, cgp::prelude::IsNothing>)`
-  --> src/main.rs:21:9
+error[E0284]: type annotations needed for `((), __PartialPerson<_, IsNothing>)`
+  --> src/main.rs:20:9
    |
-21 |     let _ = Person::builder().update_field(PhantomData::<Symbol!("first_name")>, "Alice".to_owned());
+20 |     let _ = Person::builder().update_field(PhantomData::<Symbol!("first_name")>, "Alice".to_owned());
    |         ^                     ------------ type must be known at this point
    |
    = note: cannot satisfy `<_ as MapType>::Map<String> == String`
@@ -13,7 +13,7 @@ note: required by a bound in `update_field`
    |                               ^^^^^^^ required by this bound in `update_field`
 help: consider giving this pattern a type, where the type for type parameter `M` is specified
    |
-21 |     let _: (_, __PartialPerson<M, _>) = Person::builder().update_field(PhantomData::<Symbol!("first_name")>, "Alice".to_owned());
+20 |     let _: (_, __PartialPerson<M, _>) = Person::builder().update_field(PhantomData::<Symbol!("first_name")>, "Alice".to_owned());
    |          ++++++++++++++++++++++++++++
 
 For more information about this error, try `rustc --explain E0284`.

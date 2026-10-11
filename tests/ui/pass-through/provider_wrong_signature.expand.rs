@@ -1,12 +1,11 @@
 #![feature(prelude_import)]
 //! A provider method whose signature differs from the provider trait's.
 //!
-//! The tool prints `fn(&__Context__, u32)` where plain `cargo check` prints `fn(&_, u32)`, an effect
-//! of the injected `--verbose`.
+//! The error is plain Rust: the method's type is incompatible with the trait (`E0053`). The tool
+//! must print what plain `cargo check` prints; under the injected `--verbose`, rustc prints the
+//! generated `__Context__` in the signature note where plain `cargo check` prints `_`.
 //!
-//! CGP error class: none; a driver path-printing defect affecting untransformed diagnostics.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

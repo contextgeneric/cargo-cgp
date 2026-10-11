@@ -1,7 +1,9 @@
-error[E0599]: no method named `finalize_extract_result` found for enum `std::result::Result<T, E>` in the current scope
-  --> src/main.rs:34:14
+error[E0599]: no method named `finalize_extract_result` found for enum `Result<T, E>` in the current scope
+  --> src/main.rs:30:14
    |
-34 |             .finalize_extract_result();
+28 |         let _ = remainder
+29 |             .extract_field(PhantomData::<Symbol!("Rectangle")>)
+30 |             .finalize_extract_result();
    |              ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `Result<Rectangle, __PartialShape<IsVoid, IsVoid>>`
    |
   ::: $CGP/crates/core/cgp-field/src/traits/extract_field.rs:57:8
@@ -12,7 +14,7 @@ error[E0599]: no method named `finalize_extract_result` found for enum `std::res
    = help: items from traits can only be used if the trait is in scope
 help: trait `FinalizeExtractResult` which provides `finalize_extract_result` is implemented but not in scope; perhaps you want to import it
    |
-12 + use cgp::cgp_core::cgp_field::traits::FinalizeExtractResult;
+ 8 + use cgp::cgp_core::cgp_field::traits::FinalizeExtractResult;
    |
 
 For more information about this error, try `rustc --explain E0599`.

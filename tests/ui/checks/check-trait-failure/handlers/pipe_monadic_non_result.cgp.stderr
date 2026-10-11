@@ -10,9 +10,8 @@ error[E0277]: [CGP-E002] the provider trait `Computer<(), u64>` with context `Ap
   --> src/main.rs:40:9
    |
 40 |         ComputerComponent: ((), u64),
-   |         ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |         ^^^^^^^^^^^^^^^^^ the trait `IsProviderFor<ComputerComponent, App, ((), u64)>` is not implemented for `BindErr<IdentMonadic, Double>`
    |
-   = help: the trait `IsProviderFor<ComputerComponent, App, ((), u64)>` is not implemented for `BindErr<IdentMonadic, Double>`
 help: `BindErr<M, Cont>` implements trait `IsProviderFor<Component, Context, Params>`
   --> $CGP/crates/extra/cgp-monad/src/monadic/err.rs:73:1
    |

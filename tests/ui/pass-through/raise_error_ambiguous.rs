@@ -1,13 +1,12 @@
 //! `raise_error` called by bare name where two traits provide it.
 //!
-//! rustc's `E0034` suggestions print `cgp::cgp_core::cgp_error::ErrorRaiser` under the tool and omit
-//! the provider trait's generics.
+//! The error is plain Rust: the call is ambiguous (`E0034`). The tool must print what plain
+//! `cargo check` prints; its module strip shortens the `cgp::prelude::CanRaiseError` path rustc
+//! prints in a note.
 //!
-//! CGP error class: none; a driver path-printing defect affecting untransformed diagnostics.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 
-//@rewrites-falsely: untransformed output prints full paths, because the driver does not set `trimmed_def_paths`
+//@rewrites-falsely: the module strip shortens a trait path rustc prints in full
 
 use cgp::core::error::{ErrorRaiser, ErrorRaiserComponent, ErrorTypeProviderComponent};
 use cgp::extra::error::RaiseFrom;

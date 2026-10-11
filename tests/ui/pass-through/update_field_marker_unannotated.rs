@@ -1,13 +1,12 @@
 //! A direct `update_field` call that leaves the target marker to inference.
 //!
-//! The `E0284` headline reads `cgp::prelude::IsNothing` where plain `cargo check` prints `IsNothing`,
-//! and the module strip shortens `UpdateField::update_field` to `update_field` in a label.
+//! The error is plain Rust: type annotations are needed (`E0284`). The tool must print what plain
+//! `cargo check` prints; its post-processing shortens `UpdateField::update_field` in a label and
+//! drops the unlabelled span on the method's definition.
 //!
-//! CGP error class: none; a driver path-printing defect affecting every untransformed diagnostic.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 
-//@rewrites-falsely: untransformed output prints full paths, because the driver does not set `trimmed_def_paths`
+//@rewrites-falsely: the post-processing shortens a label path and drops an unlabelled span
 
 use cgp::prelude::*;
 

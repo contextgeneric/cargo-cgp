@@ -1,12 +1,10 @@
 #![feature(prelude_import)]
 //! A `transform_map_fields` call whose transform and marker cannot be inferred.
 //!
-//! rustc's fully qualified suggestion spells `cgp::cgp_core::cgp_field::traits::TransformMapFields`
-//! and `cgp::prelude::IsPresent` under the tool, where plain `cargo check` suggests the short names.
+//! The error is plain Rust: type annotations are needed. The tool must print what plain
+//! `cargo check` prints, including the short paths in rustc's fully qualified suggestion.
 //!
-//! CGP error class: none; a driver path-printing defect affecting every untransformed diagnostic.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -23,6 +23,10 @@ pub struct CgpCallbacks {
 
 impl rustc_driver::Callbacks for CgpCallbacks {
     fn config(&mut self, config: &mut Config) {
+        // Print a path in its shortest unambiguous form (`Option<String>` rather than
+        // `std::option::Option<std::string::String>`), as rustc's own driver does; a compiler
+        // embedded through `rustc_driver` otherwise prints full paths.
+        config.opts.trimmed_def_paths = true;
         emitter::install(config);
     }
 

@@ -8,13 +8,13 @@
       },
       {
         "level": "help",
-        "message": "try using `.as_deref()` to convert `std::option::Option<&mut std::string::String>` to `std::option::Option<&std::string::String>`",
+        "message": "try using `.as_deref()` to convert `Option<&mut String>` to `Option<&String>`",
         "spans": [
           {
             "column": 19,
             "file": "src/main.rs",
             "label": null,
-            "line": 15,
+            "line": 13,
             "primary": true
           }
         ]
@@ -28,14 +28,14 @@
         "column": 1,
         "file": "src/main.rs",
         "label": "types differ in mutability",
-        "line": 15,
+        "line": 13,
         "primary": true
       },
       {
         "column": 31,
         "file": "src/main.rs",
         "label": "expected `Option<&String>` because of return type",
-        "line": 17,
+        "line": 15,
         "primary": false
       }
     ]

@@ -1,11 +1,10 @@
 #![feature(prelude_import)]
 //! A consumer method called where its trait is not imported.
 //!
-//! The tool prints `struct lib::Person` where plain `cargo check` prints `struct Person`.
+//! The error is plain Rust: the trait that provides `greet` is not in scope. The tool must print
+//! what plain `cargo check` prints, short paths included (`struct Person`, not `lib::Person`).
 //!
-//! CGP error class: none; a driver path-printing defect affecting untransformed diagnostics.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
