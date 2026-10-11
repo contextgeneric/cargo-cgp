@@ -22,14 +22,25 @@ pub fn strip_module_paths(text: &str) -> Option<String> {
     collapse_paths(text, |_, _| true)
 }
 
+/// The CGP type names the resugaring stages and the missing-field rewrite read in bare form, so a
+/// path ending in one always collapses, whatever crate re-exports it (`hypershell::prelude::Chars`).
+/// Some of them are ambiguous (`std::str::Chars`, `std::ops::Index`), but in a CGP diagnostic they
+/// are the encoding the later stages fold away.
+pub const CGP_ENCODING_NAMES: &[&str] = &[
+    "Symbol", "Chars", "Nil", "Cons", "Either", "Void", "PathCons", "Field", "Index", "HasField",
+];
+
 /// Strip module qualifiers from `text` except where they tell two items apart: collapse each
 /// `a::b::C` run to `C` unless `ambiguous` holds `C`, a type name that names more than one item in
 /// the build (`Error` for `std::io::Error` beside `backend::Error`). A run rooted at the `cgp` crate
-/// always collapses, since rustc qualifies CGP's names for the prelude glob import. Returns the
-/// rewritten text when any run was collapsed, `None` otherwise.
+/// always collapses, since rustc qualifies CGP's names for the prelude glob import, and so does a
+/// run ending in one of [`CGP_ENCODING_NAMES`]. Returns the rewritten text when any run was
+/// collapsed, `None` otherwise.
 pub fn strip_unambiguous_paths(text: &str, ambiguous: &AmbiguousNames) -> Option<String> {
     collapse_paths(text, |first_segment, last_segment| {
-        first_segment == "cgp" || !ambiguous.contains(last_segment)
+        first_segment == "cgp"
+            || CGP_ENCODING_NAMES.contains(&last_segment)
+            || !ambiguous.contains(last_segment)
     })
 }
 

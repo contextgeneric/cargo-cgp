@@ -696,6 +696,12 @@ fn unambiguous_path_strip_keeps_a_disambiguating_qualifier() {
         strip_unambiguous_paths("`shape_a::Rectangle`", &ambiguous),
         None
     );
+    // A CGP encoding type collapses through any crate's re-export, so the later stages fold it.
+    assert_eq!(
+        strip_unambiguous_paths("`app::prelude::Chars<'x', app::prelude::Nil>`", &ambiguous)
+            .as_deref(),
+        Some("`Chars<'x', Nil>`"),
+    );
     assert_eq!(
         strip_unambiguous_paths("Symbol!(\"a::B\")", &AmbiguousNames::default()),
         None
