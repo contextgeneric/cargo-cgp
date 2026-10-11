@@ -7,6 +7,7 @@ use crate::config::{DRIVER_BIN, NO_MANAGE_ENV, RUSTUP_TOOLCHAIN_ENV, SYSROOT_ENV
 use crate::launch::dylib::prepend_dylib_path;
 use crate::launch::invocation::cargo_invocation;
 use crate::launch::target_dir::default_target_dir;
+use crate::launch::workspace_wrapper::{WORKSPACE_WRAPPER_ENV, workspace_wrapper_warning};
 use crate::launch::{driver_path, preflight, sysroot};
 use crate::toolchain::pinned_toolchain;
 
@@ -46,8 +47,14 @@ pub fn wrapped_cargo(
     let mut command = Command::new("cargo");
 
     // Route only workspace crates through the driver (dependencies keep using plain
-    // rustc), exactly as `cargo clippy` does with `clippy-driver`.
-    command.env("RUSTC_WORKSPACE_WRAPPER", &driver.path);
+    // rustc), exactly as `cargo clippy` does with `clippy-driver`. A wrapper of the user's own in
+    // the same variable cannot run as well, so the user is told.
+    if let Some(warning) =
+        workspace_wrapper_warning(env::var_os(WORKSPACE_WRAPPER_ENV).as_deref(), &driver.path)
+    {
+        eprintln!("{warning}");
+    }
+    command.env(WORKSPACE_WRAPPER_ENV, &driver.path);
     command.env(SYSROOT_ENV, &sysroot);
     prepend_dylib_path(&mut command, &sysroot.join("lib"))?;
 

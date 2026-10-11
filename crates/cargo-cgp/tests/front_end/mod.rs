@@ -11,3 +11,4 @@ pub mod preflight;
 pub mod setup;
 pub mod sysroot;
 pub mod update;
+pub mod workspace_wrapper;
