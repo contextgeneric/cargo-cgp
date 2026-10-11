@@ -13,10 +13,15 @@
 //!
 //! This is the one text pass in the crate, and it is deliberately narrow: it only ever removes
 //! whitespace (joining a brace body replaces each line break with a single space), only inside the
-//! body of one of the CGP macros [`SUGAR_MACROS`] names, and never inside a literal. So it cannot
-//! alter the meaning of anything, and it cannot reach the surrounding program at all. (A
+//! body of a call to one of the CGP macros [`SUGAR_MACROS`] names, and never inside a literal. The
+//! search for those calls steps over literals and comments, so text that merely names a macro, such
+//! as `"Sum![a , b]"` in a string or a doc comment, is left alone. So it cannot alter the meaning of
+//! anything, and it cannot reach the surrounding program at all. (A
 //! `Product![…]` a programmer wrote themselves is tightened the same way, which is the same
 //! transformation and equally harmless.)
+
+use std::iter::Peekable;
+use std::str::CharIndices;
 
 /// How a macro body is laid out after tightening.
 #[derive(Clone, Copy)]
@@ -79,31 +84,116 @@ pub fn tighten_sugar_bodies(printed: &str) -> String {
 
 /// The next resugared macro call in `text`: its offset, its delimiter pair, and its layout. The
 /// name must stand alone rather than end a longer identifier, so a `MySum!` is not mistaken for a
-/// `Sum!`.
+/// `Sum!`, and it must sit in code: the scan steps over string, raw-string, and character literals
+/// and over comments (including the doc comments the printer writes), so text that merely names a
+/// macro is never edited.
 fn next_sugar(text: &str) -> Option<(usize, char, char, Layout)> {
-    let mut best: Option<(usize, char, char, Layout)> = None;
+    let mut chars = text.char_indices().peekable();
 
-    for (name, open, close, layout) in SUGAR_MACROS {
-        let mut from = 0;
-        while let Some(found) = text[from..].find(name) {
-            let index = from + found;
-            let preceded_by_ident = text[..index]
-                .chars()
-                .next_back()
-                .is_some_and(|c| c == '_' || c.is_alphanumeric());
-            // The printer may break between the name and its delimiter, so allow whitespace.
-            let after = text[index + name.len()..].trim_start();
-            if !preceded_by_ident && after.starts_with(*open) {
-                if best.is_none_or(|(current, ..)| index < current) {
-                    best = Some((index, *open, *close, *layout));
-                }
-                break;
+    while let Some((index, c)) = chars.next() {
+        let rest = &text[index..];
+        if rest.starts_with("//") {
+            skip_line(&mut chars);
+            continue;
+        }
+        if rest.starts_with("/*") {
+            skip_block_comment(&mut chars);
+            continue;
+        }
+        if let Some(hashes) = raw_string_start(text, index) {
+            skip_raw_string(&mut chars, hashes);
+            continue;
+        }
+        match c {
+            '"' => {
+                skip_string(&mut chars);
+                continue;
             }
-            from = index + name.len();
+            '\'' => {
+                skip_char_literal(&mut chars);
+                continue;
+            }
+            _ => {}
+        }
+
+        let preceded_by_ident = text[..index]
+            .chars()
+            .next_back()
+            .is_some_and(|c| c == '_' || c.is_alphanumeric());
+        if preceded_by_ident {
+            continue;
+        }
+        for (name, open, close, layout) in SUGAR_MACROS {
+            // The printer may break between the name and its delimiter, so allow whitespace.
+            if rest.starts_with(name) && rest[name.len()..].trim_start().starts_with(*open) {
+                return Some((index, *open, *close, *layout));
+            }
         }
     }
 
-    best
+    None
+}
+
+/// Whether a raw string literal (`r"…"`, `r#"…"#`, or the byte form `br"…"`) starts at `index`,
+/// and if so how many `#` it opens with.
+fn raw_string_start(text: &str, index: usize) -> Option<usize> {
+    let rest = &text[index..];
+    let after_r = rest.strip_prefix("br").or_else(|| rest.strip_prefix('r'))?;
+    let starts_a_token = !text[..index]
+        .chars()
+        .next_back()
+        .is_some_and(|c| c == '_' || c.is_alphanumeric());
+    let hashes = after_r.chars().take_while(|c| *c == '#').count();
+    (starts_a_token && after_r[hashes..].starts_with('"')).then_some(hashes)
+}
+
+/// Consume a raw string literal from its prefix through the closing `"` and `hashes` `#`s.
+fn skip_raw_string(chars: &mut Peekable<CharIndices<'_>>, hashes: usize) {
+    // Through the opening quote.
+    for (_, c) in chars.by_ref() {
+        if c == '"' {
+            break;
+        }
+    }
+    while let Some((_, c)) = chars.next() {
+        if c == '"' {
+            let mut closing = 0;
+            while closing < hashes && chars.next_if(|(_, c)| *c == '#').is_some() {
+                closing += 1;
+            }
+            if closing == hashes {
+                return;
+            }
+        }
+    }
+}
+
+/// Consume a line comment through the end of its line.
+fn skip_line(chars: &mut Peekable<CharIndices<'_>>) {
+    for (_, c) in chars.by_ref() {
+        if c == '\n' {
+            return;
+        }
+    }
+}
+
+/// Consume a block comment, which may nest, through its closing `*/`.
+fn skip_block_comment(chars: &mut Peekable<CharIndices<'_>>) {
+    // The opening `/` is consumed; take its `*` too.
+    chars.next();
+    let mut depth = 1usize;
+    while let Some((_, c)) = chars.next() {
+        match c {
+            '/' if chars.next_if(|(_, c)| *c == '*').is_some() => depth += 1,
+            '*' if chars.next_if(|(_, c)| *c == '/').is_some() => {
+                depth -= 1;
+                if depth == 0 {
+                    return;
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 /// The offset of the delimiter that closes a body starting at `text`, or `None` when the
@@ -131,7 +221,7 @@ fn body_end(text: &str, open: char, close: char) -> Option<usize> {
 }
 
 /// Consume the rest of a string literal, honouring escapes.
-fn skip_string(chars: &mut std::str::CharIndices<'_>) {
+fn skip_string(chars: &mut impl Iterator<Item = (usize, char)>) {
     while let Some((_, c)) = chars.next() {
         match c {
             '\\' => {
@@ -145,7 +235,7 @@ fn skip_string(chars: &mut std::str::CharIndices<'_>) {
 
 /// Consume the rest of a character literal. A lifetime (`'a`) has no closing quote, so the scan
 /// stops at anything that cannot be part of one rather than running to the end of the body.
-fn skip_char_literal(chars: &mut std::str::CharIndices<'_>) {
+fn skip_char_literal(chars: &mut (impl Iterator<Item = (usize, char)> + Clone)) {
     let mut lookahead = chars.clone();
     match lookahead.next() {
         // An escape is always a character literal: consume through the closing quote.

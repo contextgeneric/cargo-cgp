@@ -365,3 +365,46 @@ fn area(context: &Context) -> f64 {
         expand(source)
     );
 }
+
+#[test]
+fn a_string_literal_naming_a_sugar_macro_is_left_alone() {
+    // The spacing pass edits only the bodies of the calls this crate emits; text inside a literal
+    // is the program's data.
+    let source = "const HINT: &str = \"Sum![a , b]\";\n";
+
+    assert_eq!(expand(source), source);
+}
+
+#[test]
+fn a_raw_string_naming_a_sugar_macro_is_left_alone() {
+    let source = "const HINT: &str = r#\"Product![A , B] and \"Symbol!( x )\"\"#;\n";
+
+    assert_eq!(expand(source), source);
+}
+
+#[test]
+fn a_doc_comment_naming_a_sugar_macro_is_left_alone() {
+    let source = "\
+/// Spell it `Product![A , B]`.
+pub struct Marker;
+";
+
+    assert_eq!(expand(source), source);
+}
+
+#[test]
+fn a_sugar_call_after_a_literal_is_still_tightened() {
+    // Skipping the literal must not skip the code after it.
+    let source = "\
+const HINT: &str = \"Sum![a , b]\";
+type Stages = PipeHandlers<Cons<Multiply<Symbol<1, Chars<'f', Nil>>>, Nil>>;
+";
+
+    assert_eq!(
+        expand(source),
+        "\
+const HINT: &str = \"Sum![a , b]\";
+type Stages = PipeHandlers<Product![Multiply<Symbol!(\"f\")>]>;
+"
+    );
+}
