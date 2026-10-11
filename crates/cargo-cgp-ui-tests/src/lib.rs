@@ -171,7 +171,9 @@ fn run_passes(
         ("status", passes::status_check(rust.success, cgp.success)),
     ];
 
-    let exempt = name.starts_with("ok/") || name.starts_with("pass-through/");
+    let exempt = ["ok/", "pass-through/", "robustness/"]
+        .iter()
+        .any(|dir| name.starts_with(dir));
     let tool_output = normalize::normalize(
         &cgp.stderr,
         paths.harness_crate,

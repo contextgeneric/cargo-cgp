@@ -8,6 +8,8 @@
 //! - `//@rewrites-falsely: <reason>`: a `pass-through/` fixture whose tool output still differs
 //!   from plain rustc's, so its snapshots pin today's output instead of the equality check.
 //! - `//@json`: also run the JSON pass, pinning the diagnostics an editor reads.
+//! - `//@env: <KEY>=<VALUE>`: set an environment variable for the tool's runs (the check, JSON,
+//!   and expand passes); a fixture may declare several.
 //! - `//@codes: <CGP-Exxx ...>` (or `//@codes: none`): the exact set of `[CGP-Exxx]` codes the
 //!   tool's output carries, checked against it.
 //! - `//@quality: acceptable|usability|hidden`: how well the tool presents the error today:
@@ -22,7 +24,14 @@ use std::fs;
 use std::path::Path;
 
 /// The directive names, as they follow `//@`.
-const NAMES: &[&str] = &["aux-build", "rewrites-falsely", "json", "codes", "quality"];
+const NAMES: &[&str] = &[
+    "aux-build",
+    "rewrites-falsely",
+    "json",
+    "env",
+    "codes",
+    "quality",
+];
 
 /// The values `//@quality:` accepts.
 pub const QUALITIES: &[&str] = &["acceptable", "usability", "hidden"];
@@ -36,6 +45,8 @@ pub struct Directives {
     pub rewrites_falsely: Option<String>,
     /// Whether the JSON pass runs (`//@json`).
     pub json: bool,
+    /// Environment variables for the tool's runs, from `//@env:` lines, in declaration order.
+    pub env: Vec<(String, String)>,
     /// The `[CGP-Exxx]` codes the tool's output must carry, exactly (`//@codes:`); `None` when the
     /// fixture does not declare them, and an empty list for `//@codes: none`.
     pub codes: Option<Vec<String>>,
@@ -92,6 +103,15 @@ fn apply(directives: &mut Directives, rest: &str, line: &str, name: &str) {
         directives.rewrites_falsely = Some(reason.to_owned());
     } else if rest.trim_end() == "json" {
         directives.json = true;
+    } else if let Some(assignment) = rest.strip_prefix("env:") {
+        let assignment = assignment.trim();
+        let pair = assignment
+            .split_once('=')
+            .filter(|(key, _)| !key.is_empty());
+        let Some((key, value)) = pair else {
+            panic!("`//@env:` takes `KEY=VALUE` in {name}:\n  {line}");
+        };
+        directives.env.push((key.to_owned(), value.to_owned()));
     } else if let Some(codes) = rest.strip_prefix("codes:") {
         let codes: Vec<String> = codes.split_whitespace().map(str::to_owned).collect();
         let valid =

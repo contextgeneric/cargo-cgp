@@ -5,6 +5,7 @@ pub mod dedup;
 pub mod diagnosis;
 pub mod graph;
 pub mod group;
+pub mod internal_error;
 pub mod orphan;
 pub mod postprocess;
 pub mod rewrite;

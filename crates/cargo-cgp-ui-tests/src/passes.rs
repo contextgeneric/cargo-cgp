@@ -118,8 +118,9 @@ pub fn pass_through_check(baseline: &str, tool: &str, rewrites_falsely: Option<&
 
 /// Check an error fixture's structured header against the tool's output: it must declare its
 /// `//@quality:`, and its `//@codes:` must list exactly the `[CGP-Exxx]` codes in `tool_output`.
-/// Fixtures under `ok/` and `pass-through/` are `exempt`: a clean compile carries no codes, and a
-/// pass-through fixture is held to plain rustc's output instead.
+/// Fixtures under `ok/`, `pass-through/`, and `robustness/` are `exempt`: a clean compile carries no
+/// codes, a pass-through fixture is held to plain rustc's output instead, and a robustness fixture
+/// pins how the tool degrades when it fails, which no quality describes.
 pub fn header_check(exempt: bool, directives: &Directives, tool_output: &str) -> Outcome {
     if exempt {
         return Outcome::Ok;

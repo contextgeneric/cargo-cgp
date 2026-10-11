@@ -10,13 +10,24 @@
 //! rustc-free [`plan_resolved`](cargo_cgp_error_processing::plan_resolved) words the replacement;
 //! otherwise the wiring-message [`rewrite`](cargo_cgp_error_processing::rewrite) renames the notes
 //! in place. Either way the diagnostic then passes through the
-//! [`postprocess`](cargo_cgp_error_processing::postprocess) cleanup. The module is split into
-//! [`install`] (rebuilding the compiler's default emitter and wrapping it), [`cgp_emitter`] (the
-//! [`CgpEmitter`] type and its orchestration), and [`edit`] (the `DiagInner`-editing helpers).
+//! [`postprocess`](cargo_cgp_error_processing::postprocess) cleanup. A panic in that work, or in
+//! the flush that renders the buffered diagnostics, falls back to the diagnostics rustc built.
+//!
+//! The module is split into [`install`] (rebuilding the compiler's default emitter and wrapping
+//! it), [`cgp_emitter`] (the [`CgpEmitter`] type and its orchestration), [`edit`] (the
+//! `DiagInner`-editing helpers), [`buffer`] (the diagnostics held until the flush), [`output`]
+//! (the inner emitter and buffer the panic hook can reach), [`containment`] (containing a panic
+//! and the panic hooks), and [`test_panic`] (the panic a fixture raises on purpose).
 
+mod buffer;
 mod cgp_emitter;
+mod containment;
 mod edit;
 mod install;
+mod output;
+mod test_panic;
 
 pub use cgp_emitter::CgpEmitter;
+pub use containment::install_panic_hooks;
 pub use install::install;
+pub use test_panic::*;

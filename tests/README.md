@@ -39,11 +39,13 @@ mirror the error catalog:
   `extensible-data/`, `wiring-keys/`, `implicit-arguments/`, and `macro-defects/` (mistakes a `cgp`
   macro mishandles).
 
-Two more directories hold fixtures that belong to no error class:
+Three more directories hold fixtures that belong to no error class:
 
 - [`ui/ok/`](ui/ok): correctly wired programs that compile clean.
 - [`ui/pass-through/`](ui/pass-through): plain Rust errors in which nothing CGP is at fault, which
   the tool must render exactly as plain `cargo check` does.
+- [`ui/robustness/`](ui/robustness): how the tool degrades when it fails itself, such as a panic in
+  its emitter, which must still print every error.
 
 Every fixture name is unique across the tree, so `find tests/ui -name '<name>.rs'` locates any
 fixture.
@@ -52,7 +54,8 @@ fixture.
 
 A fixture opens with a `//!` comment stating what it demonstrates and the mistake behind it, then
 declares **directives**: line comments starting with `//@`, which the compiler ignores and the
-harness reads. Every error fixture (everything outside `ok/` and `pass-through/`) declares two:
+harness reads. Every error fixture (everything outside `ok/`, `pass-through/`, and `robustness/`)
+declares two:
 
 ```rust
 //@quality: acceptable
@@ -65,12 +68,14 @@ harness reads. Every error fixture (everything outside `ok/` and `pass-through/`
 - `//@codes:` lists the exact set of `[CGP-Exxx]` codes the tool's output carries, or `none`. The
   harness fails a fixture whose output gains or loses a code.
 
-Three more directives are used where they apply:
+Four more directives are used where they apply:
 
 - `//@aux-build: <crate>`: build an auxiliary crate and depend on it (see below).
 - `//@rewrites-falsely: <reason>`: a `pass-through/` fixture the tool still rewrites; its snapshots
   pin today's output until the fix removes the marker.
 - `//@json`: also run the JSON pass.
+- `//@env: <KEY>=<VALUE>`: set an environment variable for the tool's runs. The `robustness/`
+  fixtures set `CARGO_CGP_TEST_PANIC` this way to make the emitter panic on purpose.
 
 An unknown directive, or a known one written with a space after `//`, is rejected rather than
 ignored.
@@ -153,7 +158,8 @@ under the toolchain the repository pins, so a toolchain bump can require a re-bl
 ## Adding a fixture
 
 Put a new `<name>.rs` in the directory of the error class it reproduces (or `ok/` for a clean
-compile, `pass-through/` for a plain Rust error), with a name no other fixture uses. Give it a
+compile, `pass-through/` for a plain Rust error, `robustness/` for a failure of the tool itself), with
+a name no other fixture uses. Give it a
 `fn main`, since the harness compiles it as a binary. Open it with a `//!` comment stating what the
 scenario demonstrates and the mistake behind it, linking the
 [CGP error class](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md)

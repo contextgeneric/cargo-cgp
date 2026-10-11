@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
@@ -10,7 +11,7 @@ use cargo_cgp_error_processing::{
     Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider,
     OrphanConflict, PendingNote, Resolved, UndeclaredTrait, cause_signature, cgp_impl_misuse_help,
     coalesce_underived_fields, consumer_header, explain_footer_codes, fix_help_messages,
-    group_by_shared_cause, is_explain_footer_text, is_method_bounds_text,
+    group_by_shared_cause, internal_error_note, is_explain_footer_text, is_method_bounds_text,
     is_unbounded_type_param_item_text, mentions_orphan_param_text, missing_use_provider_help,
     orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
     plan_resolved, plan_undeclared_trait, plan_wiring_conflict, postprocess_message,
@@ -26,11 +27,16 @@ use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
 
 use crate::component_map::build_name_map_from_tls;
+use crate::config::BUG_REPORT_URL;
+use crate::emitter::buffer::{BufEntry, ResolvedEntry};
+use crate::emitter::containment::contain;
 use crate::emitter::edit::{
     diag_kind, diagnostic_spans, is_question_mark_cascade, main_message_text,
     mentions_hasfield_impls, mentions_wiring, message_signature, postprocess_messages,
     postprocess_multispan, replace_header, rewrite_messages, strip_method_probe_advice, subdiag,
 };
+use crate::emitter::output::{Output, lock_output, register_output};
+use crate::emitter::test_panic::{TestPanic, inject};
 use crate::resolve::{self, ConflictAction, ConflictTrait, DetectedCgpImplMisuse, ResolveCache};
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
@@ -38,7 +44,12 @@ use crate::resolve::{self, ConflictAction, ConflictTrait, DetectedCgpImplMisuse,
 /// compiler's default would build for the active error format — a `JsonEmitter` or an
 /// `AnnotateSnippetEmitter` — and render like vanilla `rustc` in either.
 pub struct CgpEmitter<E: Emitter> {
-    inner: E,
+    /// The compiler's own emitter and the diagnostics buffered for it, shared with the panic hook
+    /// so a compiler crash can print the buffer before its report (see [`Output`]).
+    output: Arc<Mutex<Output<E>>>,
+    /// The source map the inner emitter renders against, kept here as well because
+    /// [`Emitter::source_map`] lends it out, which a value behind the lock cannot be.
+    source_map: Option<Arc<SourceMap>>,
     /// The component-marker → trait-names map. A [`ComponentNameMap`] owns the laziness: its
     /// `fn`-pointer initializer ([`build_name_map_from_tls`]) runs the expensive
     /// whole-trait-graph walk at most once — on the first message that actually needs a
@@ -69,46 +80,15 @@ pub struct CgpEmitter<E: Emitter> {
     /// type — noise over the CGP error already shown. rustc emits the wiring failure before its
     /// cascade, so the span is recorded by the time the cascade arrives.
     cgp_spans: Vec<Span>,
-    /// Every diagnostic this emitter keeps, in arrival order, held until [`Drop`] so that separate
-    /// failures sharing one root cause can be coalesced into a single block. The compiler streams
-    /// diagnostics one at a time with no "end of compilation" hook, so listing every consumer a
-    /// mistake breaks in one headline is only possible once they have all arrived — which is why
-    /// the buffer is flushed from `Drop` (the inner emitter is still alive then), not eagerly. A
-    /// coalescible [`BufEntry::Resolved`] failure joins the group of every failure it shares a root
-    /// cause with; everything else — an untouched `rustc` error, a conflict, a declined fallback — is
-    /// a [`BufEntry::Plain`] emitted verbatim at its original position, so ordering is preserved.
-    buffer: Vec<BufEntry>,
     /// The `#[cgp_impl]` header-trait mistakes in the crate — a consumer trait or a non-CGP trait
     /// named where the provider trait belongs — detected once from the compiler and reused. `None`
     /// until first computed under an available `TyCtxt` (the macro-lowering errors this recognizes
     /// arrive before trait solving, so the first candidate may precede one); an empty `Vec` means
     /// "computed, none found". Owned data (names plus `Copy` spans), so it outlives the `TyCtxt`.
     cgp_impl_misuses: Option<Vec<DetectedCgpImplMisuse>>,
-}
-
-/// One buffered diagnostic awaiting the [`Drop`]-time flush.
-enum BufEntry {
-    /// Emitted verbatim at its arrival position. Boxed, like the variant below, so the buffer's
-    /// element stays a pointer rather than a whole `DiagInner`.
-    Plain(Box<DiagInner>),
-    /// A typed-resolution failure, whose `root cause:` note is rendered at *flush* rather than on
-    /// arrival: only there is the emission order known, so a note can `(*)`-elide the subtrees an
-    /// earlier block already drew. `diag` therefore carries the header and `help`s but no note yet.
-    ///
-    /// `coalescible` is set for a consumer-trait failure, which groups with every other failure it
-    /// shares a root cause with ([`group_by_shared_cause`]): a group of one emits `diag` alone, a
-    /// group of several emits a single merged block naming every affected consumer at the position of
-    /// the first. It is clear for a resolution that never coalesces — a wrapper trait, a mismatch, a
-    /// provider-side check.
-    Resolved(Box<ResolvedEntry>),
-}
-
-/// The payload of a [`BufEntry::Resolved`].
-struct ResolvedEntry {
-    coalescible: bool,
-    resolved: Resolved,
-    note: PendingNote,
-    diag: DiagInner,
+    /// The stage made to panic on purpose, set only by the UI fixtures that pin the panic fallback
+    /// (see [`TestPanic`]).
+    test_panic: Option<TestPanic>,
 }
 
 /// The subtrees a flush has already drawn, shared across its blocks so a later one `(*)`-elides
@@ -207,16 +187,37 @@ fn footer_note(template: &DiagInner, message: &str) -> DiagInner {
 }
 
 impl<E: Emitter> CgpEmitter<E> {
-    pub fn new(inner: E) -> Self {
-        Self {
+    /// Wrap `inner`, which renders against `source_map`, and register the shared output for the
+    /// panic hook on this thread.
+    pub fn new(inner: E, source_map: Option<Arc<SourceMap>>, test_panic: Option<TestPanic>) -> Self
+    where
+        E: 'static,
+    {
+        let output = Arc::new(Mutex::new(Output {
             inner,
+            buffer: Vec::new(),
+        }));
+        register_output(&output);
+        Self {
+            output,
+            source_map,
             names: ComponentNameMap::new(build_name_map_from_tls),
             dedup: DedupLedger::new(),
             resolve_cache: ResolveCache::new(),
             cgp_spans: Vec::new(),
-            buffer: Vec::new(),
             cgp_impl_misuses: None,
+            test_panic,
         }
+    }
+
+    /// The shared output, locked.
+    fn output(&self) -> MutexGuard<'_, Output<E>> {
+        lock_output(&self.output)
+    }
+
+    /// Buffer `entry` for the flush.
+    fn push(&self, entry: BufEntry) {
+        self.output().buffer.push(entry);
     }
 
     /// Build the one merged block for a coalesced group of several consumer failures sharing a root
@@ -295,12 +296,10 @@ impl<E: Emitter> CgpEmitter<E> {
         diag
     }
 
-    /// Flush the buffer to the inner emitter, coalescing each group of coalescible failures that
-    /// **share a root cause** into one block at the position of its first member. Called only from
-    /// [`Drop`], where the inner emitter is still alive.
-    fn flush(&mut self) {
-        let buffer = std::mem::take(&mut self.buffer);
-
+    /// Render the buffered diagnostics for the flush, coalescing each group of coalescible
+    /// failures that **share a root cause** into one block at the position of its first member.
+    /// Called only from [`Drop`], where the inner emitter is still alive to emit the result.
+    fn render(&self, buffer: &[BufEntry]) -> Vec<DiagInner> {
         // The coalescible entries in arrival order, grouped by the root causes they share. Grouping
         // on shared causes rather than on one whole-failure key is what keeps a single mistake in a
         // single block: the depths it surfaces at each see a different *subset* of its causes, so no
@@ -372,10 +371,7 @@ impl<E: Emitter> CgpEmitter<E> {
 
         // Now that the surviving set is final, make the "detailed explanations" footer agree with it.
         Self::rebuild_explain_footers(&mut to_emit);
-
-        for diag in to_emit {
-            self.inner.emit_diagnostic(diag);
-        }
+        to_emit
     }
 
     /// Record the primary spans of a recognized CGP wiring failure, so a later `?`-operator
@@ -820,8 +816,11 @@ impl<E: Emitter> CgpEmitter<E> {
     }
 }
 
-impl<E: Emitter> Emitter for CgpEmitter<E> {
-    fn emit_diagnostic(&mut self, mut diag: DiagInner) {
+impl<E: Emitter> CgpEmitter<E> {
+    /// Transform one diagnostic and buffer the result: the body of
+    /// [`emit_diagnostic`](Emitter::emit_diagnostic), which runs it contained. `original` is the
+    /// diagnostic as rustc built it, kept for the flush to fall back on.
+    fn transform(&mut self, mut diag: DiagInner, original: &DiagInner) {
         // A `#[cgp_impl]` header naming the wrong trait — the component's consumer trait, or a
         // non-CGP trait — makes the macro generate an inside-out impl of the wrong trait, producing
         // a burst of cryptic macro-lowering errors (E0425/E0107/E0186/E0207) plus a downstream check
@@ -862,10 +861,11 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     // Drop any sibling of this impl already buffered: E0425 (name resolution)
                     // arrives before this E0107 (type lowering), possibly before a `TyCtxt` was in
                     // scope to detect the mistake, so it was buffered verbatim.
-                    self.buffer
+                    self.output()
+                        .buffer
                         .retain(|entry| !is_cgp_impl_sibling_entry(entry, impl_span, macro_span));
                     self.record_cgp_spans(&diag);
-                    self.buffer.push(BufEntry::Plain(Box::new(diag)));
+                    self.push(BufEntry::Plain(Box::new(diag)));
                     return;
                 }
                 None => {}
@@ -886,7 +886,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                     // A rewritten diagnostic: bare `@…` paths.
                     self.postprocess(&mut diag, true);
                     self.record_cgp_spans(&diag);
-                    self.buffer.push(BufEntry::Plain(Box::new(diag)));
+                    self.push(BufEntry::Plain(Box::new(diag)));
                     return;
                 }
             }
@@ -908,7 +908,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
             // wrapper).
             self.postprocess(&mut diag, true);
             self.record_cgp_spans(&diag);
-            self.buffer.push(BufEntry::Plain(Box::new(diag)));
+            self.push(BufEntry::Plain(Box::new(diag)));
             return;
         }
         // A trait called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]`:
@@ -926,7 +926,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                 .push(subdiag(Sublevel::Help, undeclared_trait_help(&undeclared)));
             self.postprocess(&mut diag, true);
             self.record_cgp_spans(&diag);
-            self.buffer.push(BufEntry::Plain(Box::new(diag)));
+            self.push(BufEntry::Plain(Box::new(diag)));
             return;
         }
         // A higher-order provider calling an inner provider it never imported with `#[use_provider]`:
@@ -942,7 +942,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
                 .push(subdiag(Sublevel::Help, missing_use_provider_help(&missing)));
             self.postprocess(&mut diag, true);
             self.record_cgp_spans(&diag);
-            self.buffer.push(BufEntry::Plain(Box::new(diag)));
+            self.push(BufEntry::Plain(Box::new(diag)));
             return;
         }
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
@@ -1041,43 +1041,71 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
         // diagnostic has arrived.
         match resolution {
             Some((resolved, note, coalescing)) => {
-                self.buffer.push(BufEntry::Resolved(Box::new(ResolvedEntry {
+                self.push(BufEntry::Resolved(Box::new(ResolvedEntry {
                     coalescible: coalescing,
                     resolved,
                     note,
                     diag,
+                    original: original.clone(),
                 })));
             }
-            None => self.buffer.push(BufEntry::Plain(Box::new(diag))),
+            None => self.push(BufEntry::Plain(Box::new(diag))),
+        }
+    }
+}
+
+impl<E: Emitter> Emitter for CgpEmitter<E> {
+    /// Transform and buffer `diag`, containing a panic in the transform: the diagnostic is then
+    /// buffered as rustc built it, with a note saying why, and the compilation goes on.
+    fn emit_diagnostic(&mut self, diag: DiagInner) {
+        let original = diag.clone();
+        let armed = self.test_panic;
+        let transformed = contain(|| {
+            if original.is_error() {
+                inject(armed, TestPanic::Transform);
+            }
+            self.transform(diag, &original);
+        });
+        if let Err(detail) = transformed {
+            let mut diag = original;
+            diag.children.push(subdiag(
+                Sublevel::Note,
+                internal_error_note(&detail, BUG_REPORT_URL),
+            ));
+            self.push(BufEntry::Plain(Box::new(diag)));
         }
     }
 
     fn source_map(&self) -> Option<&SourceMap> {
-        self.inner.source_map()
+        self.source_map.as_deref()
     }
 
     fn emit_artifact_notification(&mut self, path: &Path, artifact_type: &str) {
-        self.inner.emit_artifact_notification(path, artifact_type);
+        self.output()
+            .inner
+            .emit_artifact_notification(path, artifact_type);
     }
 
     fn emit_timing_section(&mut self, record: TimingRecord, event: TimingEvent) {
-        self.inner.emit_timing_section(record, event);
+        self.output().inner.emit_timing_section(record, event);
     }
 
     fn emit_future_breakage_report(&mut self, diags: Vec<DiagInner>) {
-        self.inner.emit_future_breakage_report(diags);
+        self.output().inner.emit_future_breakage_report(diags);
     }
 
     fn emit_unused_externs(&mut self, lint_level: rustc_lint_defs::Level, unused_externs: &[&str]) {
-        self.inner.emit_unused_externs(lint_level, unused_externs);
+        self.output()
+            .inner
+            .emit_unused_externs(lint_level, unused_externs);
     }
 
     fn should_show_explain(&self) -> bool {
-        self.inner.should_show_explain()
+        self.output().inner.should_show_explain()
     }
 
     fn supports_color(&self) -> bool {
-        self.inner.supports_color()
+        self.output().inner.supports_color()
     }
 }
 
@@ -1088,7 +1116,33 @@ impl<E: Emitter> Drop for CgpEmitter<E> {
     /// the one place a "list every affected consumer" block can be built, since the `Emitter` trait
     /// offers no end-of-compilation hook. Diagnostics were counted by the `DiagCtxt` as they
     /// arrived, so deferring their *rendering* to here does not change the error count.
+    ///
+    /// The rendering is contained: if it panics, every buffered diagnostic is emitted as rustc built
+    /// it, a resolution carrying a note saying why. This runs while the thread unwinds from rustc's
+    /// fatal-error abort, which is how every failing compilation ends, and a panic contained there
+    /// does not escape the destructor, so it does not abort the process.
     fn drop(&mut self) {
-        self.flush();
+        let buffer = std::mem::take(&mut self.output().buffer);
+        if buffer.is_empty() {
+            return;
+        }
+        let armed = self.test_panic;
+        let to_emit = match contain(|| {
+            inject(armed, TestPanic::Flush);
+            self.render(&buffer)
+        }) {
+            Ok(rendered) => rendered,
+            Err(detail) => {
+                let note = internal_error_note(&detail, BUG_REPORT_URL);
+                buffer
+                    .into_iter()
+                    .map(|entry| entry.untransformed(Some(&note)))
+                    .collect()
+            }
+        };
+        let mut output = self.output();
+        for diag in to_emit {
+            output.inner.emit_diagnostic(diag);
+        }
     }
 }

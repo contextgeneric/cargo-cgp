@@ -16,7 +16,9 @@ use rustc_errors::json::JsonEmitter;
 use rustc_interface::interface::Config;
 use rustc_session::config::ErrorOutputType;
 
+use crate::config::TEST_PANIC_ENV;
 use crate::emitter::cgp_emitter::CgpEmitter;
+use crate::emitter::test_panic::TestPanic;
 
 /// Install the transforming emitter on the compiler session, replicating how rustc builds its
 /// default emitter so cargo's output is what vanilla `rustc` would produce apart from the CGP
@@ -47,6 +49,10 @@ pub fn install(config: &mut Config) {
     // Copy the format out (it is `Copy`) so the immutable borrow of `config.opts` ends
     // before `config.psess_created` is assigned.
     let error_format = sopts.error_format;
+    let test_panic = std::env::var(TEST_PANIC_ENV)
+        .ok()
+        .as_deref()
+        .and_then(TestPanic::parse);
 
     match error_format {
         ErrorOutputType::Json {
@@ -58,7 +64,7 @@ pub fn install(config: &mut Config) {
                 let source_map = (!link_only).then(|| psess.clone_source_map());
                 let inner = JsonEmitter::new(
                     Box::new(io::BufWriter::new(io::stderr())),
-                    source_map,
+                    source_map.clone(),
                     pretty,
                     json_rendered,
                     color_config,
@@ -70,7 +76,9 @@ pub fn install(config: &mut Config) {
                 .track_diagnostics(track_diagnostics)
                 .terminal_url(terminal_url);
 
-                psess.dcx().set_emitter(Box::new(CgpEmitter::new(inner)));
+                psess
+                    .dcx()
+                    .set_emitter(Box::new(CgpEmitter::new(inner, source_map, test_panic)));
             }));
         }
         ErrorOutputType::HumanReadable {
@@ -80,7 +88,7 @@ pub fn install(config: &mut Config) {
             config.psess_created = Some(Box::new(move |psess| {
                 let source_map = (!link_only).then(|| psess.clone_source_map());
                 let inner = AnnotateSnippetEmitter::new(stderr_destination(color_config))
-                    .sm(source_map)
+                    .sm(source_map.clone())
                     .short_message(short)
                     .diagnostic_width(diagnostic_width)
                     .macro_backtrace(macro_backtrace)
@@ -94,7 +102,9 @@ pub fn install(config: &mut Config) {
                     .ignored_directories_in_source_blocks(ignored_directories)
                     .ui_testing(ui_testing);
 
-                psess.dcx().set_emitter(Box::new(CgpEmitter::new(inner)));
+                psess
+                    .dcx()
+                    .set_emitter(Box::new(CgpEmitter::new(inner, source_map, test_panic)));
             }));
         }
     }

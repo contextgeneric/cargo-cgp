@@ -196,6 +196,8 @@ pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path) -> Run {
 /// recompile and re-emit diagnostics even when the same fixture was just built by another
 /// pass.
 ///
+/// The fixture's `//@env:` variables are set on the command (see [`crate::directives`]).
+///
 /// `CARGO_CGP_NO_MANAGE` turns off the front-end's provisioning preflight and toolchain
 /// forcing: the harness drives the freshly built driver under the toolchain `cargo test`
 /// already selected, so there is nothing to verify or install. Without it, `cargo cgp
@@ -208,6 +210,7 @@ fn run_cargo_cgp(harness_crate: &Path, fixture: &Path, args: &[&str]) -> std::pr
     Command::new(cargo_cgp_bin())
         .current_dir(harness_crate)
         .env("CARGO_CGP_NO_MANAGE", "1")
+        .envs(crate::directives::read(fixture).env)
         .args(args)
         .output()
         .expect("running cargo-cgp on a fixture")

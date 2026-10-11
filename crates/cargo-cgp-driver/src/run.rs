@@ -3,11 +3,16 @@
 use std::env;
 use std::process::ExitCode;
 
+use rustc_session::EarlyDiagCtxt;
+use rustc_session::config::ErrorOutputType;
+
 use crate::args::{is_wrapper_mode, rustc_args};
 use crate::callbacks::CgpCallbacks;
 use crate::config::{
-    EXPAND_FLAG, EXPAND_ITEM_FLAG, NEXT_SOLVER_FLAG, SYSROOT_ENV, SYSROOT_FLAG, VERBOSE_FLAG,
+    BUG_REPORT_URL, EXPAND_FLAG, EXPAND_ITEM_FLAG, NEXT_SOLVER_FLAG, SYSROOT_ENV, SYSROOT_FLAG,
+    VERBOSE_FLAG,
 };
+use crate::emitter::install_panic_hooks;
 use crate::expand::take_expand_request;
 use crate::help::{help_text, wants_help};
 use crate::version::{version_string, wants_version};
@@ -18,7 +23,9 @@ use crate::version::{version_string, wants_version};
 /// flag ([`NEXT_SOLVER_FLAG`]), and the diagnostic [`VERBOSE_FLAG`] are folded into the
 /// rustc arguments by [`rustc_args`]. [`rustc_driver::catch_with_exit_code`] runs the
 /// compiler and turns a compiler-signalled failure into the process exit code, matching
-/// what plain `rustc` would return.
+/// what plain `rustc` would return. Before it runs, the driver sets up what rustc's own
+/// driver does: the `RUSTC_LOG` logger, and an ICE hook, here naming cargo-cgp's issue tracker
+/// and wrapped so a panic the emitter contains is not reported (see [`install_panic_hooks`]).
 pub fn run() -> ExitCode {
     let mut raw: Vec<String> = env::args().collect();
 
@@ -49,6 +56,9 @@ pub fn run() -> ExitCode {
     } else {
         &[NEXT_SOLVER_FLAG, VERBOSE_FLAG]
     };
+
+    rustc_driver::init_rustc_env_logger(&EarlyDiagCtxt::new(ErrorOutputType::default()));
+    install_panic_hooks(BUG_REPORT_URL);
 
     let sysroot = env::var(SYSROOT_ENV).ok();
     let args = rustc_args(raw, sysroot, SYSROOT_FLAG, injected_flags);
