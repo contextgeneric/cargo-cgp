@@ -1,0 +1,17 @@
+error[E0271]: type mismatch resolving `<__PartialContext<_, _> as UpdateField<_, _>>::Mapper == IsOptional`
+  --> src/main.rs:22:36
+   |
+22 |     let _ = Context::builder().set(PhantomData::<Symbol!("foo")>, "foo".to_owned());
+   |                                --- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<__PartialContext<_, _> as UpdateField<_, _>>::Mapper == IsOptional`
+   |                                |
+   |                                required by a bound introduced by this call
+   |
+note: expected this to be `IsOptional`
+  --> src/main.rs:15:10
+   |
+15 | #[derive(CgpData)]
+   |          ^^^^^^^
+   = note: required for `__PartialContext<IsNothing, IsNothing>` to implement `SetOptional<Symbol<3, Chars<..>>>`
+   = note: this error originates in the derive macro `CgpData` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.

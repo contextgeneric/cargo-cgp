@@ -1,0 +1,19 @@
+error[E0599]: no method named `finalize_extract` found for enum `__PartialShape<__F0__, __F1__>` in the current scope
+  --> src/main.rs:33:37
+   |
+24 | pub enum Shape {
+   | -------------- method `finalize_extract` not found for this enum
+...
+33 |         Err(remainder) => remainder.finalize_extract(),
+   |                                     ^^^^^^^^^^^^^^^^ method not found in `__PartialShape<IsPresent, IsVoid>`
+   |
+note: the method `finalize_extract` exists on the type `<IsVoid as MapType>::Map<Rectangle>`
+  --> $CGP/crates/core/cgp-field/src/traits/extract_field.rs:39:5
+   |
+39 |     fn finalize_extract<T>(self) -> T;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `finalize_extract`, perhaps you need to implement it:
+           candidate #1: `FinalizeExtract`
+
+For more information about this error, try `rustc --explain E0599`.

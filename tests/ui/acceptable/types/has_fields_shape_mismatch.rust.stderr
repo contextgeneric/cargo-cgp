@@ -1,0 +1,33 @@
+error[E0271]: type mismatch resolving `<App as HasFields>::Fields == Cons<Field<Symbol<4, _>, String>, Nil>`
+  --> src/main.rs:38:9
+   |
+38 |         DescriberComponent,
+   |         ^^^^^^^^^^^^^^^^^^ type mismatch resolving `<App as HasFields>::Fields == Cons<Field<Symbol<4, _>, String>, Nil>`
+   |
+note: expected this to be `Cons<cgp::prelude::Field<Symbol<4, cgp::prelude::Chars<..>>, String>, Nil>`
+  --> src/main.rs:25:10
+   |
+25 | #[derive(HasFields)]
+   |          ^^^^^^^^^
+   = note: expected struct `Cons<Field<_, String>, _>`
+              found struct `Cons<Field<_, u32>, _>`
+note: required for `DescribeNamed` to implement `IsProviderFor<DescriberComponent, App>`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_impl(new DescribeNamed)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | #[uses(HasFields<Fields = Struct! { name: String }>)]
+   |                  --------------------------------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<DescriberComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:36:1
+   |
+36 | / check_components! {
+37 | |     App {
+38 | |         DescriberComponent,
+39 | |     }
+40 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the derive macro `HasFields` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.

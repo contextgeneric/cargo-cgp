@@ -1,0 +1,29 @@
+error[E0277]: the trait bound `Struct! { surname: String }: FieldsBuilder<__PartialPerson<IsNothing, IsPresent>, __PartialEmployee<IsPresent, IsNothing>>` is not satisfied
+  --> src/main.rs:30:21
+   |
+30 |         .build_from(Person { first_name: "A".into(), surname: "B".into() })
+   |          ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |          |
+   |          required by a bound introduced by this call
+   |
+   = help: the trait `FieldsBuilder<__PartialPerson<IsNothing, IsPresent>, __PartialEmployee<IsPresent, IsNothing>>` is not implemented for `Struct! { surname: String }`
+help: the trait `FieldsBuilder<Source, Target>` is conditionally implemented for `Cons<Field<Tag, Value>, RestFields>`
+  --> $CGP/crates/core/cgp-field/src/impls/build_from.rs:30:1
+   |
+30 | / impl<Source, Target, RestFields, Tag, Value> FieldsBuilder<Source, Target>
+31 | |     for Cons<Field<Tag, Value>, RestFields>
+32 | | where
+33 | |     Source: TakeField<Tag, Value = Value>,
+34 | |     Target: BuildField<Tag, Value = Value>,
+   | |             ------------------------------
+   | |             |               |
+   | |             |               unsatisfied requirement introduced here: `<_ as BuildField<_>>::Value == _`
+   | |             unsatisfied requirement introduced here: `_: BuildField<_>`
+35 | |     RestFields: FieldsBuilder<Source::Remainder, Target::Output>,
+   | |_________________------------------------------------------------^
+   |                   |
+   |                   unsatisfied requirement introduced here: `_: FieldsBuilder<<_ as TakeField<_>>::Remainder, <_ as BuildField<_>>::Output>`
+   = note: required for `Struct! { first_name: String, surname: String }` to implement `FieldsBuilder<__PartialPerson<IsPresent, IsPresent>, __PartialEmployee<IsNothing, IsNothing>>`
+   = note: required for `__PartialEmployee<IsNothing, IsNothing>` to implement `CanBuildFrom<Person>`
+
+For more information about this error, try `rustc --explain E0277`.

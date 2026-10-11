@@ -1,0 +1,39 @@
+error[E0277]: the trait bound `Shape: FromVariant<Symbol<6, Chars<..>>>` is not satisfied
+  --> src/main.rs:30:13
+   |
+30 |     let _ = Shape::from_variant(PhantomData::<Symbol!("circle")>, Circle { radius: 1.0 });
+   |             ^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::FromVariant<cgp::prelude::Symbol<6, cgp::prelude::Chars<..>>>` is not implemented for `Shape`
+  --> src/main.rs:24:1
+   |
+24 | pub enum Shape {
+   | ^^^^^^^^^^^^^^
+help: `Shape` implements trait `cgp::prelude::FromVariant<Tag>`
+  --> src/main.rs:25:5
+   |
+25 |     Circle(Circle),
+   |     ^^^^^^ `FromVariant<Symbol<6, Chars<..>>>`
+26 |     Rectangle(Rectangle),
+   |     ^^^^^^^^^ `FromVariant<Symbol<9, Chars<..>>>`
+
+error[E0277]: the trait bound `Shape: FromVariant<Symbol<6, Chars<..>>>` is not satisfied
+  --> src/main.rs:30:67
+   |
+30 |     let _ = Shape::from_variant(PhantomData::<Symbol!("circle")>, Circle { radius: 1.0 });
+   |                                                                   ^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::FromVariant<cgp::prelude::Symbol<6, cgp::prelude::Chars<..>>>` is not implemented for `Shape`
+  --> src/main.rs:24:1
+   |
+24 | pub enum Shape {
+   | ^^^^^^^^^^^^^^
+help: `Shape` implements trait `cgp::prelude::FromVariant<Tag>`
+  --> src/main.rs:25:5
+   |
+25 |     Circle(Circle),
+   |     ^^^^^^ `FromVariant<Symbol<6, Chars<..>>>`
+26 |     Rectangle(Rectangle),
+   |     ^^^^^^^^^ `FromVariant<Symbol<9, Chars<..>>>`
+
+For more information about this error, try `rustc --explain E0277`.

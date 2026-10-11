@@ -1,0 +1,13 @@
+error[E0282]: type annotations needed
+  --> src/main.rs:19:43
+   |
+19 |     let _ = Point { x: 1 }.into_builder().transform_map_fields();
+   |                                           ^^^^^^^^^^^^^^^^^^^^
+   |
+help: try using a fully qualified path to specify the expected types
+   |
+19 -     let _ = Point { x: 1 }.into_builder().transform_map_fields();
+19 +     let _ = <__PartialPoint<cgp::prelude::IsPresent> as cgp::cgp_core::cgp_field::traits::TransformMapFields<Transform, TargetMap>>::transform_map_fields(Point { x: 1 }.into_builder());
+   |
+
+For more information about this error, try `rustc --explain E0282`.

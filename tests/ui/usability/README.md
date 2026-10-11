@@ -20,12 +20,25 @@ class in [the usability issue document](https://github.com/contextgeneric/cgp-kn
   A cyclic `#[use_type]` routing used to sit here too and was resolved upstream instead — the cycle
   is decidable from the import list, so the macro now rejects it and nothing reaches the compiler for
   the tool to reshape.
+  It also pins two derive defects: an enum variant whose name collides with an associated type the
+  data derives generate (`Value`, `Remainder`, `Fields`, …), and a variant helper attribute that the
+  extractor's companion enums copy without the derive that owns it.
 - [`extensible-data/`](extensible-data) — a cast, builder, or extractor failure the resolver does
   not reshape at all (`upcast_missing_variant`), so the reader gets an internal `FromVariant` bound
   and the macro-generated extractor state instead of the variant one enum lacks. It also pins the
   post-processing that survives a decline: rustc's "similar impl" hint splits into styled fragments
   at every difference, and the fragments are read as one line so a shredded `Symbol!` still
-  resugars.
+  resugars. The other fixtures pin the rest of the family as rustc reports it: the record builder
+  (a field built twice, taken while absent, or unknown, and a premature finalize), merging records
+  with `build_from`, the defaulted and optional builders, extraction and construction by tag, the
+  casts, the `BuildAndMergeOutputs` builder dispatcher, and a shape bound for every lifetime. None of
+  them names the field or variant at fault.
+- [`misleading/`](misleading) — a rewrite that states something false: a field-tag typo reported as
+  a missing `#[derive(HasField)]` on a struct that has it, and the overflow cascading from an
+  unresolved `@`-path segment rewritten into the `[CGP-E010]` wiring-cycle message.
+- [`paths/`](paths) — an untransformed diagnostic that prints full paths (`cgp::prelude::IsNothing`,
+  `std::result::Result`) where plain `cargo check` prints short names, including inside a
+  machine-applicable suggestion.
 - [`wiring/constraints/`](wiring/constraints) — an unconstrained per-entry generic
   (`unconstrained_generic`), whose `E0207` fires twice with contradictory auto-fixes. The other
   structural conflicts have been reshaped and graduated: the duplicate delegate-key family into

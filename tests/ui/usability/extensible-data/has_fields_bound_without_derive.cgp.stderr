@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E001] the consumer trait `CanDescribe` is not implemented for context `App`
+  --> src/main.rs:40:9
+   |
+40 |         DescriberComponent,
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E201] the trait bound `App: HasFields` is not satisfied
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanDescribe` for context `App`
+             └─ [CGP-E102] provider trait impl `Describer` with context `App` for provider `DescribeNamed`
+               └─ the trait bound `App: HasFields` is not satisfied
+
+For more information about this error, try `rustc --explain E0277`.
