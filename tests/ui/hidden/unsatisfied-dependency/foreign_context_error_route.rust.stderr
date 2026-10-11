@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `ComposeHandlers<Call<Echo>, Call<Stdout>>: IsProviderFor<_, App, _>` is not satisfied
-  --> src/main.rs:26:16
+  --> src/main.rs:23:16
    |
-26 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
+23 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
    |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |         |
    |         required by a bound introduced by this call
@@ -46,9 +46,9 @@ help: `ComposeHandlers<ProviderA, ProviderB>` implements trait `IsProviderFor<Co
    = note: required for `App` to implement `CanHandle<Pipe<Cons<Echo, Cons<cgp_test_foreign_pipeline::Stdout, Nil>>>, _>`
 
 error[E0277]: the trait bound `ComposeHandlers<Call<Echo>, Call<Stdout>>: IsProviderFor<_, App, _>` is not satisfied
-  --> src/main.rs:26:5
+  --> src/main.rs:23:5
    |
-26 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
+23 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `IsProviderFor<HandlerComponent, App, (Pipe<Cons<Echo, Cons<cgp_test_foreign_pipeline::Stdout, Nil>>>, Vec<_>)>` is not implemented for `ComposeHandlers<Call<Echo>, Call<cgp_test_foreign_pipeline::Stdout>>`
@@ -101,22 +101,22 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
 
 error[E0277]: the `?` operator can only be applied to values that implement `Try`
-  --> src/main.rs:26:5
+  --> src/main.rs:23:5
    |
-26 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
+23 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `?` operator cannot be applied to type `<impl Future<Output = Result<_, _>> as Future>::Output`
    |
    = help: the nightly-only, unstable trait `Try` is not implemented for `<impl Future<Output = Result<_, _>> as Future>::Output`
 
 error[E0277]: the `?` operator can only be used in an async function that returns `Result` or `Option` (or another type that implements `FromResidual`)
-  --> src/main.rs:26:5
+  --> src/main.rs:23:5
    |
-25 |   pub async fn run() -> Result<(), backend::Error> {
+22 |   pub async fn run() -> Result<(), backend::Error> {
    |  __________________________________________________-
-26 | |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
+23 | |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
    | |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot use the `?` operator in an async function that returns `<impl Future<Output = Result<_, _>> as Future>::Output`
-27 | |     Ok(())
-28 | | }
+24 | |     Ok(())
+25 | | }
    | |_- this function should return `Result` or `Option` to accept `?`
    |
 

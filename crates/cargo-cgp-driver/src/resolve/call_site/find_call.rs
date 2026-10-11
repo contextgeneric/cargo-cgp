@@ -9,7 +9,7 @@ use rustc_span::{DesugaringKind, Span, Symbol};
 
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{receiver_context, seed_from_call};
-use crate::resolve::cgp_item::{is_blanket_trait, is_consumer_trait, is_local_adt};
+use crate::resolve::cgp_item::{is_blanket_trait, is_consumer_trait, is_context_adt};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
@@ -37,10 +37,10 @@ pub fn resolve_call_site(
         let Some(context) = receiver_context(tcx, call.receiver) else {
             continue;
         };
-        // Only a local, monomorphic ADT can be re-checked as a context: a foreign receiver is not
-        // a CGP context of this crate, and a generic one's arguments are exactly what the missing
-        // typeck results would have supplied.
-        if !is_local_adt(context) || context.has_param() {
+        // Only a monomorphic context ADT can be re-checked: a type with no wiring of its own is no
+        // context, and a generic one's arguments are exactly what the missing typeck results would
+        // have supplied.
+        if !is_context_adt(tcx, context) || context.has_param() {
             continue;
         }
         for (trait_did, method_did, is_cgp_consumer) in traits_with_method(tcx, call.method) {

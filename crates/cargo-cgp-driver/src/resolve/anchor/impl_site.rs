@@ -9,7 +9,7 @@ use rustc_span::def_id::DefId;
 use crate::resolve::anchor::{enclosing_trait_impls, is_about_impl};
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{
-    consumer_provider_trait, is_blanket_trait, is_local_adt, is_provider_trait,
+    consumer_provider_trait, is_blanket_trait, is_context_adt, is_local_adt, is_provider_trait,
 };
 use crate::resolve::walk::{holds, resolve_leaves};
 
@@ -64,11 +64,12 @@ pub fn resolve_impl_site(
             continue;
         }
         let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
-        // Only a local struct/enum is a context whose wiring we can re-check; skip an impl on a
-        // foreign type (e.g. `impl … for Router<Arc<App>>`) or a type parameter. Such a foreign
-        // wrapper — where the CGP consumer failure sits several `where`-clause hops down rather than
-        // in a direct supertrait — is [`resolve_wrapper_chain`](super::resolve_wrapper_chain)'s job.
-        if !is_local_adt(context) {
+        // Only a context struct/enum (local, or a wired one from another crate) is a context whose
+        // wiring we can re-check; skip an impl on another foreign type (e.g. `impl … for
+        // Router<Arc<App>>`) or a type parameter. Such a foreign wrapper — where the CGP consumer
+        // failure sits several `where`-clause hops down rather than in a direct supertrait — is
+        // [`resolve_wrapper_chain`](super::resolve_wrapper_chain)'s job.
+        if !is_context_adt(tcx, context) {
             continue;
         }
 
@@ -128,10 +129,10 @@ fn cross_context_where_bound<'tcx>(
 }
 
 /// Recover a cause per unmet CGP consumer supertrait of a wrapper obligation `Self: Wrapper` whose
-/// `Self` is a local context, each tree headed by the wrapper's own `trait impl` node. Returns
-/// whether the wrapper is itself a CGP consumer (for the header wording) and the causes, or `None`
-/// when `Self` is not a local ADT or no CGP consumer supertrait is unmet — so a plain bound like
-/// `Send`, or a wrapper on a foreign type, is skipped rather than mis-recovered.
+/// `Self` is a context ([`is_context_adt`]), each tree headed by the wrapper's own `trait impl` node.
+/// Returns whether the wrapper is itself a CGP consumer (for the header wording) and the causes, or
+/// `None` when `Self` is not a context or no CGP consumer supertrait is unmet — so a plain bound like
+/// `Send`, or a wrapper on a foreign type that is no context, is skipped rather than mis-recovered.
 fn wrapper_consumer_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
@@ -139,7 +140,7 @@ fn wrapper_consumer_causes<'tcx>(
 ) -> Option<(bool, Causes)> {
     let trait_ref = obligation.skip_binder().trait_ref;
     let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
-    if !is_local_adt(context) {
+    if !is_context_adt(tcx, context) {
         return None;
     }
     let wrapper = trait_ref.print_only_trait_path().to_string();

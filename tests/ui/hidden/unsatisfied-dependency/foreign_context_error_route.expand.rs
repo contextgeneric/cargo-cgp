@@ -3,17 +3,14 @@
 //!
 //! The upstream `App` routes every syntax of its pipeline language, but its open
 //! `ErrorRaiserComponent` table has no entry for `IoFailure`, which the `Echo` stage raises.
-//! Called from this crate, the failure is reported as two `[CGP-E002]` headlines about the
-//! whole pipeline with rustc's `IsProviderFor` notes and no tree. Neither the tool's output nor
-//! plain `cargo check`'s mentions `IoFailure` or `ErrorRaiserComponent`, so the root cause is
-//! absent from the text. The same program with the context defined locally is reshaped into a
-//! `[CGP-E107]` leaf naming `@ErrorRaiserComponent.IoFailure`. Distilled from a Hypershell
-//! program whose namespace lost its `std::io::Error` route.
+//! Plain `cargo check` reports two errors about the whole pipeline with rustc's `IsProviderFor`
+//! notes, and neither mentions `IoFailure` or `ErrorRaiserComponent`. The tool reads the call as it
+//! would on a local context, since `App` carries its own wiring, and reports one `[CGP-E001]`
+//! block whose `[CGP-E107]` leaf names `@ErrorRaiserComponent.IoFailure`. Distilled from a
+//! pipeline-language program whose context lost an error route.
 //!
 //! CGP error class: unsatisfied dependency, hidden
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/hidden-root-cause.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

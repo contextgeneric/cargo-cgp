@@ -11,7 +11,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::anchor::{enclosing_trait_impls, is_about_impl};
 use crate::resolve::cache::ResolveCache;
-use crate::resolve::cgp_item::{consumer_provider_trait, is_local_adt, is_provider_trait};
+use crate::resolve::cgp_item::{consumer_provider_trait, is_context_adt, is_provider_trait};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait for
@@ -20,18 +20,18 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// through a chain of ordinary user-trait `where`-clauses (`… CanAddRoute<MockApp, …>` → `MockApp:
 /// CanHandleApiSend<…>`) before it reaches a CGP consumer on the context. The context appears only
 /// as a type *argument* of the failing traits, never as the impl's `Self`, so
-/// [`resolve_impl_site`](super::resolve_impl_site)'s "direct supertrait on a local context" recovery
+/// [`resolve_impl_site`](super::resolve_impl_site)'s "direct supertrait on a context" recovery
 /// cannot fire.
 ///
 /// This entry starts from the enclosing impl's own unmet supertrait and walks *down* the ordinary
 /// trait obligations — via each impl's `where`-clauses — until one lands on a CGP consumer whose
-/// `Self` *is* a local context, at which point it hands off to [`consumer_handoff_causes`]. Every
+/// `Self` *is* a context ([`is_context_adt`]), at which point it hands off to [`consumer_handoff_causes`]. Every
 /// ordinary hop between the impl and that handoff becomes a `trait impl` node, so the tree reads
 /// from the code the programmer wrote (`CanAddApiRoutes → CanAddMainApiRoutes → CanAddRoute →
 /// CanHandleApiSend → CanHandleApi → …`) down to the root cause. Because it *re-evaluates* each
 /// obligation with the trait solver rather than trusting rustc's cascade-suppressed diagnostic, it
 /// recovers the cause even where rustc's own error names only the outermost unsatisfied bound.
-/// `None` when no enclosing impl's supertrait chain reaches a CGP consumer on a local context.
+/// `None` when no enclosing impl's supertrait chain reaches a CGP consumer on a context.
 ///
 /// `spans` are the diagnostic's primary spans, gated by [`is_about_impl`] as the impl-site anchor's
 /// are.
@@ -108,7 +108,7 @@ pub fn resolve_wrapper_chain(
 const MAX_WRAPPER_DEPTH: u32 = 32;
 
 /// Descend `obligation` — an unmet ordinary-trait bound — looking for the nearest CGP consumer on a
-/// local context beneath it, and append a cause per one found to `out`. Such a consumer obligation
+/// context beneath it, and append a cause per one found to `out`. Such a consumer obligation
 /// (`App: CanHandleApi<GreetApi>`) is the handoff: [`consumer_handoff_causes`] recovers its
 /// dependency tree, the descent stops there (that recovery walks the CGP chain the rest of the way),
 /// and the ordinary hops that led here are prepended as `trait impl` nodes. Anything else is
@@ -135,7 +135,7 @@ fn collect_wrapper_chain_causes<'tcx>(
         return;
     }
 
-    // The handoff: `obligation` is a CGP consumer on a local context. Recover its cause tree and
+    // The handoff: `obligation` is a CGP consumer on a context. Recover its cause tree and
     // prepend the chain of ordinary hops that led here.
     if let Some(causes) = consumer_handoff_causes(tcx, cache, obligation) {
         // Prepend the ordinary hops that led here to each path. `Causes` groups these by leaf at the
@@ -175,7 +175,7 @@ fn collect_wrapper_chain_causes<'tcx>(
 /// ordinary [walk](crate::resolve::walk). `obligation` already is the consumer obligation the walk
 /// wants — with its concrete component parameters preserved — so it is walked directly, with no
 /// `CanUseComponent`/`IsProviderFor` detour, and the returned trees are already headed by the
-/// consumer node. `None` when `obligation`'s `Self` is not a local ADT or its trait is not a CGP
+/// consumer node. `None` when `obligation`'s `Self` is not a context ADT or its trait is not a CGP
 /// consumer — so the descent keeps walking rather than stopping on an ordinary bound.
 fn consumer_handoff_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -184,7 +184,7 @@ fn consumer_handoff_causes<'tcx>(
 ) -> Option<Causes> {
     let trait_ref = obligation.skip_binder().trait_ref;
     let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
-    if !is_local_adt(context) {
+    if !is_context_adt(tcx, context) {
         return None;
     }
     // A CGP consumer trait pairs with a provider trait through its blanket impl; a plain trait does

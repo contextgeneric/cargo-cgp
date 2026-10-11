@@ -327,6 +327,30 @@ pub(crate) fn is_local_adt(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(def, _) if def.did().is_local())
 }
 
+/// Whether `ty` is a struct or enum the resolver can re-check as a context: one the crate being
+/// compiled defines, or one from another crate that carries CGP wiring of its own (a
+/// `DelegateComponent` impl keyed on it), as a context a library defines and exports does. The
+/// wiring evidence keeps a foreign type that is no context, such as `Vec`, from being read as one.
+pub(crate) fn is_context_adt(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    let ty::Adt(def, _) = ty.kind() else {
+        return false;
+    };
+    if def.did().is_local() {
+        return true;
+    }
+    let Some(delegate_component) =
+        find_cgp_trait(tcx, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+    else {
+        return false;
+    };
+    tcx.all_impls(delegate_component).any(|impl_did| {
+        matches!(
+            tcx.impl_trait_ref(impl_did).skip_binder().self_ty().kind(),
+            ty::Adt(self_def, _) if self_def.did() == def.did(),
+        )
+    })
+}
+
 /// Whether `ty` is a *provider* struct — the concrete `Self` of some provider-trait impl — rather
 /// than a context. A provider is never a context, so a use-site recovery must not treat one as the
 /// failing context even when it merely shares a diagnostic span (rustc names the provider in a

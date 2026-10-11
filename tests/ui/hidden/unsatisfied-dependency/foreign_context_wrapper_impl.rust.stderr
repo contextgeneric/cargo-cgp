@@ -1,0 +1,51 @@
+error[E0277]: the trait bound `ComposeHandlers<Call<Echo>, Call<Stdout>>: IsProviderFor<_, App, _>` is not satisfied
+  --> src/main.rs:25:21
+   |
+25 | impl CanRunEcho for App {}
+   |                     ^^^ unsatisfied trait bound
+   |
+   = help: the trait `IsProviderFor<HandlerComponent, App, (Pipe<Cons<Echo, Cons<cgp_test_foreign_pipeline::Stdout, Nil>>>, Vec<u8>)>` is not implemented for `ComposeHandlers<Call<Echo>, Call<cgp_test_foreign_pipeline::Stdout>>`
+help: `ComposeHandlers<ProviderA, ProviderB>` implements trait `IsProviderFor<Component, Context, Params>`
+  --> $CGP/crates/extra/cgp-handler/src/providers/compose.rs:11:1
+   |
+11 | / impl<Context, Code, Input, ProviderA, ProviderB> Computer<Context, Code, Input>
+12 | |     for ComposeHandlers<ProviderA, ProviderB>
+13 | | where
+14 | |     ProviderA: Computer<Context, Code, Input>,
+15 | |     ProviderB: Computer<Context, Code, ProviderA::Output>,
+   | |__________________________________________________________^ `IsProviderFor<ComputerComponent, Context, (Code, Input)>`
+...
+26 | / impl<Context, Code, Input, ProviderA, ProviderB> TryComputer<Context, Code, Input>
+27 | |     for ComposeHandlers<ProviderA, ProviderB>
+28 | | where
+29 | |     Context: HasErrorType,
+30 | |     ProviderA: TryComputer<Context, Code, Input>,
+31 | |     ProviderB: TryComputer<Context, Code, ProviderA::Output>,
+   | |_____________________________________________________________^ `IsProviderFor<TryComputerComponent, Context, (Code, Input)>`
+...
+46 | / impl<Context, Code, Input, ProviderA, ProviderB> AsyncComputer<Context, Code, Input>
+47 | |     for ComposeHandlers<ProviderA, ProviderB>
+48 | | where
+49 | |     ProviderA: AsyncComputer<Context, Code, Input>,
+50 | |     ProviderB: AsyncComputer<Context, Code, ProviderA::Output>,
+   | |_______________________________________________________________^ `IsProviderFor<AsyncComputerComponent, Context, (Code, Input)>`
+...
+65 | / impl<Context, Code, Input, ProviderA, ProviderB> Handler<Context, Code, Input>
+66 | |     for ComposeHandlers<ProviderA, ProviderB>
+67 | | where
+68 | |     Context: HasErrorType,
+69 | |     ProviderA: Handler<Context, Code, Input>,
+70 | |     ProviderB: Handler<Context, Code, ProviderA::Output>,
+   | |_________________________________________________________^ `IsProviderFor<HandlerComponent, Context, (Code, Input)>`
+   = note: required for `PipeHandlers<Cons<Call<Echo>, Cons<Call<cgp_test_foreign_pipeline::Stdout>, Nil>>>` to implement `IsProviderFor<HandlerComponent, App, (Pipe<Cons<Echo, _>>, _)>`
+   = note: 4 redundant requirements hidden
+   = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Pipe<Cons<Echo, _>>, _)>`
+   = note: required for `App` to implement `Handler<App, Pipe<Cons<Echo, Cons<cgp_test_foreign_pipeline::Stdout, Nil>>>, Vec<u8>>`
+   = note: required for `App` to implement `CanHandle<Pipe<Cons<Echo, Cons<cgp_test_foreign_pipeline::Stdout, Nil>>>, Vec<u8>>`
+note: required by a bound in `CanRunEcho`
+  --> src/main.rs:23:23
+   |
+23 | pub trait CanRunEcho: CanHandle<Pipe<Product![Echo, Stdout]>, Vec<u8>> {}
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `CanRunEcho`
+
+For more information about this error, try `rustc --explain E0277`.
