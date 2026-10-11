@@ -42,6 +42,7 @@ pub use anchor::{
 pub use cache::ResolveCache;
 pub use call_site::resolve_call_site;
 pub use cgp_impl_misuse::{DetectedCgpImplMisuse, detect_cgp_impl_misuses};
+pub use cgp_item::crate_uses_cgp;
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
 pub use missing_use_provider::detect_missing_use_provider;
 pub use orphan::classify_orphan_conflict;

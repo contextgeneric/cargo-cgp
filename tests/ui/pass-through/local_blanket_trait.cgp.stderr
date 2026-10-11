@@ -9,23 +9,23 @@ error[E0277]: [CGP-E009] the trait `Describe` is not implemented for context `Ap
              [CGP-E105] trait impl `Describe` for `App`
              └─ the trait bound `App: Display` is not satisfied
 
-error[E0599]: `App` doesn't implement `Display`
+error[E0599]: `App` doesn't implement `std::fmt::Display`
     --> src/main.rs:38:17
      |
   29 | pub struct App;
-     | -------------- method `describe` not found for this struct because it doesn't satisfy `App: Describe` or `App: Display`
+     | -------------- method `describe` not found for this struct because it doesn't satisfy `App: Describe` or `App: std::fmt::Display`
 ...
   38 |     let _ = app.describe();
      |                 ^^^^^^^^ method cannot be called on `App` due to unsatisfied trait bounds
      |
-note: trait bound `App: Display` was not satisfied
+note: trait bound `App: std::fmt::Display` was not satisfied
     --> src/main.rs:23:9
      |
   23 | impl<T: Display> Describe for T {
      |         ^^^^^^^  --------     -
      |         |
      |         unsatisfied trait bound introduced here
-note: the trait `Display` must be implemented
+note: the trait `std::fmt::Display` must be implemented
     --> $SYSROOT/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:1187:1
      |
 1187 | pub trait Display: PointeeSized {

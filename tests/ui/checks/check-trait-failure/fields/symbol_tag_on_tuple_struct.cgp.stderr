@@ -11,12 +11,12 @@ help: `#[derive(HasField)]` is required to access field `0` on `Pair`
    |
 19 | pub struct Pair(pub u32, pub String);
    | ^^^^^^^^^^^^^^^
-help: `Pair` implements trait `HasField<Tag>`
+help: `Pair` implements trait `cgp::prelude::HasField<Tag>`
   --> src/main.rs:19:17
    |
 19 | pub struct Pair(pub u32, pub String);
-   |                 ^^^^^^^  ^^^^^^^^^^ `HasField<Index<1>>`
+   |                 ^^^^^^^  ^^^^^^^^^^ `cgp::prelude::HasField<cgp::prelude::Index<1>>`
    |                 |
-   |                 `HasField<Index<0>>`
+   |                 `cgp::prelude::HasField<cgp::prelude::Index<0>>`
 
 For more information about this error, try `rustc --explain E0277`.

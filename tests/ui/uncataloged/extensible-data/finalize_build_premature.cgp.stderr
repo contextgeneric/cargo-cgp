@@ -11,6 +11,6 @@ error[E0599]: no method named `finalize_build` found for struct `__PartialPerson
    |
    = help: items from traits can only be used if the trait is implemented and in scope
    = note: the following trait defines an item `finalize_build`, perhaps you need to implement it:
-           candidate #1: `FinalizeBuild`
+           candidate #1: `cgp::prelude::FinalizeBuild`
 
 For more information about this error, try `rustc --explain E0599`.

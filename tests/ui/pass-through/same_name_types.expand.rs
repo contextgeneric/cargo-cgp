@@ -2,12 +2,10 @@
 //! Two distinct types with the same name, which only their module paths tell apart.
 //!
 //! Plain `cargo check` reports "expected `a::Foo`, found `b::Foo`" and notes that the two have
-//! similar names but are distinct types. The tool must print the same; its module strip rewrites the
-//! paths away, leaving "expected `Foo`, found `Foo`".
+//! similar names but are distinct types. The tool must print the same, keeping the paths that tell
+//! the two types apart.
 //!
 //! CGP error class: none; plain Rust the tool must pass through unchanged.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

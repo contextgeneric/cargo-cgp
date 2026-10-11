@@ -1,19 +1,19 @@
 error[E0277]: the trait bound `Ctx: HasField<Symbol<1, Chars<..>>>` is not satisfied
-  --> src/main.rs:32:12
+  --> src/main.rs:33:12
    |
-32 |     need::<Ctx>();
+33 |     need::<Ctx>();
    |            ^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<_, Chars<..>>>` is not implemented for `Ctx`
       but trait `HasField<Symbol<_, Chars<..>>>` is implemented for it
-  --> src/main.rs:25:1
+  --> src/main.rs:26:1
    |
-25 | impl HasField<Symbol<1, Chars<..>>> for Ctx {
+26 | impl HasField<Symbol<1, Chars<..>>> for Ctx {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required by a bound in `need`
-  --> src/main.rs:29:12
+  --> src/main.rs:30:12
    |
-29 | fn need<T: HasField<Symbol<1, Chars<..>>>>() {}
+30 | fn need<T: HasField<Symbol<1, Chars<..>>>>() {}
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `need`
 
 For more information about this error, try `rustc --explain E0277`.

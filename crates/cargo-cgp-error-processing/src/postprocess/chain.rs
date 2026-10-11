@@ -9,24 +9,37 @@ use crate::postprocess::resugar_symbol::resugar_symbol;
 use crate::postprocess::strip_modules::strip_module_paths;
 use crate::postprocess::strip_prefixes::strip_cgp_prefixes;
 
-/// Run the post-processing chain over one message string: strip CGP path prefixes, resugar
-/// `Symbol!`, resugar `Path!`, resugar `Product!`/`Sum!` (and their `Struct!`/`Enum!` forms), then
-/// rewrite an unmet `HasField` bound. The order matters — prefix stripping first so the later stages
-/// match the bare CGP names, `Symbol!` resugaring before `Path!` resugaring (which reads the
-/// already-resugared `Symbol!("…")` segments) and before the list resugaring (which reads a `Field`'s
-/// `Symbol!("…")` tag when naming a struct field or enum variant), and before the field rewrite
-/// (which matches the resugared `HasField<Symbol!("…")>` form). Returns the rewritten text when any
-/// stage changed it, `None` otherwise.
+/// Who built the message the chain cleans up, which decides how much of the chain applies.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Origin {
+    /// The tool built or rewrote the diagnostic, so every stage applies and a path shows as a bare
+    /// `@…`, the way the tool's own sentences name one.
+    Rewritten,
+    /// rustc built the diagnostic and the tool left it alone. The chain then changes a message only
+    /// where it recovers a CGP encoding (a `Symbol!`, a path, a type-level list, or an unmet
+    /// `HasField` bound), so a plain Rust message stays exactly as rustc printed it; a path shows in
+    /// its `Path!(@…)` form, since the reader meets it as a type.
+    Untransformed,
+}
+
+/// Run the post-processing chain over one message string: strip module qualifiers and CGP path
+/// prefixes, resugar `Symbol!`, resugar `Path!`, resugar `Product!`/`Sum!` (and their
+/// `Struct!`/`Enum!` forms), then rewrite an unmet `HasField` bound. The order matters — the strips
+/// first so the later stages match the bare CGP names, `Symbol!` resugaring before `Path!`
+/// resugaring (which reads the already-resugared `Symbol!("…")` segments) and before the list
+/// resugaring (which reads a `Field`'s `Symbol!("…")` tag when naming a struct field or enum
+/// variant), and before the field rewrite (which matches the resugared `HasField<Symbol!("…")>`
+/// form). Returns the rewritten text when the chain changed it, `None` otherwise.
+///
+/// For an [`Origin::Untransformed`] message the strips alone never count as a change: the result
+/// is kept only when a later stage recovered a CGP encoding, so a path rustc printed in full on
+/// purpose (two types sharing a name, a glob-imported trait) survives.
 ///
 /// `has_field_impls` is the whole-diagnostic fact the field rewrite needs (whether the
 /// context implements `HasField` for any field), which the caller computes once with
 /// [`context_has_hasfield_impls`](super::context_has_hasfield_impls) across every message
 /// before rewriting each.
-///
-/// `bare_paths` chooses the `Path!` form: a rewritten diagnostic (the tool constructed the message)
-/// shows a bare `@…` path, while an un-rewritten resugaring fallback shows the `Path!(@…)` macro
-/// form — so the caller passes `true` on the fallback and `false` on a rewrite.
-pub fn postprocess_message(text: &str, has_field_impls: bool, bare_paths: bool) -> Option<String> {
+pub fn postprocess_message(text: &str, has_field_impls: bool, origin: Origin) -> Option<String> {
     let mut current: Cow<str> = Cow::Borrowed(text);
     // Strip module qualifiers first (subsuming the CGP-prefix strip), so the resugaring stages
     // below match the bare `Symbol`/`Chars`/`PathCons` names and the output carries no module noise.
@@ -36,17 +49,27 @@ pub fn postprocess_message(text: &str, has_field_impls: bool, bare_paths: bool) 
     if let Some(stripped) = strip_cgp_prefixes(&current) {
         current = Cow::Owned(stripped);
     }
+
+    let mut recovered = false;
     if let Some(resugared) = resugar_symbol(&current) {
         current = Cow::Owned(resugared);
+        recovered = true;
     }
-    if let Some(resugared) = resugar_path(&current, !bare_paths) {
+    if let Some(resugared) = resugar_path(&current, origin == Origin::Untransformed) {
         current = Cow::Owned(resugared);
+        recovered = true;
     }
     if let Some(resugared) = resugar_lists(&current) {
         current = Cow::Owned(resugared);
+        recovered = true;
     }
     if let Some(rewritten) = rewrite_missing_fields(&current, has_field_impls) {
         current = Cow::Owned(rewritten);
+        recovered = true;
+    }
+
+    if origin == Origin::Untransformed && !recovered {
+        return None;
     }
     match current {
         Cow::Owned(text) => Some(text),
@@ -73,12 +96,12 @@ pub fn postprocess_message(text: &str, has_field_impls: bool, bare_paths: bool) 
 pub fn postprocess_fragments(
     fragments: &[&str],
     has_field_impls: bool,
-    bare_paths: bool,
+    origin: Origin,
 ) -> Option<String> {
     if fragments.len() < 2 {
         return None;
     }
     let joined = fragments.concat();
-    let rewritten = postprocess_message(&joined, has_field_impls, bare_paths)?;
+    let rewritten = postprocess_message(&joined, has_field_impls, origin)?;
     (rewritten != joined).then_some(rewritten)
 }

@@ -14,6 +14,6 @@ note: the method `finalize_extract` exists on the type `<IsVoid as MapType>::Map
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
    = note: the following trait defines an item `finalize_extract`, perhaps you need to implement it:
-           candidate #1: `FinalizeExtract`
+           candidate #1: `cgp::prelude::FinalizeExtract`
 
 For more information about this error, try `rustc --explain E0599`.

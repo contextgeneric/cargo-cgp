@@ -100,6 +100,11 @@ pub const HAS_FIELD_TRAIT: &str = "HasField";
 /// `HasField` lives in `cgp-field`, not `cgp-component`.
 pub const CGP_FIELD_CRATE: &str = "cgp_field";
 
+/// The umbrella crate a CGP program depends on and names (`use cgp::prelude::*`). Together with
+/// [`CGP_CRATES`], its presence among the crates a compilation uses is the evidence that the
+/// compilation's diagnostics can carry CGP constructs at all.
+pub const CGP_UMBRELLA_CRATE: &str = "cgp";
+
 /// The crates whose traits count as *CGP evidence* when deciding whether a blanket-impl trait
 /// from another crate is a `#[cgp_fn]`/`#[blanket_trait]` blanket trait rather than an ordinary
 /// blanket trait.

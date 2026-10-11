@@ -1,9 +1,10 @@
 #![feature(prelude_import)]
 //! A program with its own `Symbol`, `Chars`, `Nil`, and `HasField`, unrelated to CGP's.
 //!
-//! The program never uses `cgp`, so its unmet `HasField` bound is plain Rust. The tool must print
-//! what plain `cargo check` prints; its text pass matches the names alone, so it resugars the bound
-//! to `HasField<Symbol!("a")>` and rewords the help into a `#[derive(HasField)]` hint.
+//! The program never uses `cgp`, so its unmet `HasField` bound is plain Rust, and the tool must not
+//! resugar the bound or reword its help into a `#[derive(HasField)]` hint. It still differs from
+//! plain `cargo check`: the injected `--verbose` prints `Symbol<1, Chars<'a', Nil>>` in full where
+//! rustc elides it to `Symbol<1, Chars<..>>`.
 //!
 //! CGP error class: none; plain Rust the tool must pass through unchanged.
 //!

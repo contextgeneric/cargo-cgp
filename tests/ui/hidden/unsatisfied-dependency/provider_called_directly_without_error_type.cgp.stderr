@@ -28,6 +28,10 @@ note: required by a bound in `try_compute`
    |
  8 | #[cgp_component(TryComputer)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `try_compute`
+...
+13 | pub trait CanTryCompute<Code, Input> {
+...
+16 |     fn try_compute(&self, _code: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
    = note: this error originates in the attribute macro `cgp_type` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: ErrorTypeProvider<App>` is not satisfied

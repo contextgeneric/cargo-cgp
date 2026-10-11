@@ -14,7 +14,7 @@ note: trait bound `Person: HasField<Symbol!("name")>` was not satisfied
    | ^^^^^^^^^
 16 | pub fn greet(&self, #[implicit] name: &str) -> String {
    |        ^^^^^
-note: the trait `HasField` must be implemented
+note: the trait `cgp::prelude::HasField` must be implemented
   --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
    |
 46 | pub trait HasField<Tag> {

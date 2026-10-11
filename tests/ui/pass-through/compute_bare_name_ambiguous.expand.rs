@@ -2,8 +2,7 @@
 //! `compute` called by bare name where two traits provide it.
 //!
 //! The error is plain Rust: the call is ambiguous (`E0034`). The tool must print what plain
-//! `cargo check` prints; its module strip shortens the `cgp::prelude::Computer` path rustc prints in
-//! a note.
+//! `cargo check` prints, keeping the `cgp::prelude::Computer` path rustc prints in a note.
 //!
 //! CGP error class: none; plain Rust the tool must pass through unchanged.
 extern crate std;

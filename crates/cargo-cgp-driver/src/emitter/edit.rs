@@ -9,7 +9,7 @@ use std::borrow::Cow;
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{
-    DiagKind, context_has_hasfield_impls, is_method_probe_advice_text,
+    DiagKind, Origin, context_has_hasfield_impls, is_method_probe_advice_text,
     is_question_mark_cascade_text, mentions_wiring_text, postprocess_fragments,
     postprocess_message,
 };
@@ -110,8 +110,7 @@ pub(crate) fn strip_method_probe_advice(diag: &mut DiagInner) {
 
 /// Drop the labels of a [`MultiSpan`] whose text matches `drop`, keeping the spans themselves
 /// (an unlabelled primary span still renders its caret). The span is rebuilt only when a label
-/// actually matches, preserving the primary-span order as
-/// [`postprocess_multispan`] does.
+/// actually matches.
 fn strip_multispan_labels(span: &mut MultiSpan, drop: fn(&str) -> bool) {
     let labels: Vec<(Span, DiagMessage)> = span.span_labels_raw().to_vec();
     let kept: Vec<(Span, DiagMessage)> = labels
@@ -123,14 +122,24 @@ fn strip_multispan_labels(span: &mut MultiSpan, drop: fn(&str) -> bool) {
         return;
     }
 
+    *span = rebuilt_multispan(span, kept);
+}
+
+/// `span` with its labels replaced by `labels`, keeping its primary spans in order (rather than
+/// through `from_spans`, which sorts them) and its context spans, the unlabelled lines rustc shows
+/// around a label for orientation.
+fn rebuilt_multispan(span: &MultiSpan, labels: Vec<(Span, DiagMessage)>) -> MultiSpan {
     let mut rebuilt = MultiSpan::new();
     for primary in span.primary_spans() {
         rebuilt.push_primary_span(*primary);
     }
-    for (span, message) in kept {
-        rebuilt.push_span_diag(span, message);
+    for (label_span, message) in labels {
+        rebuilt.push_span_diag(label_span, message);
     }
-    *span = rebuilt;
+    for context in span.span_context() {
+        rebuilt.push_span_context(*context);
+    }
+    rebuilt
 }
 
 /// Every span a diagnostic carries — its primary and labelled spans plus each child's — the pool
@@ -220,11 +229,11 @@ pub(crate) fn rewrite_messages<S>(
 pub(crate) fn postprocess_messages(
     messages: &mut Vec<(DiagMessage, Style)>,
     has_field_impls: bool,
-    bare_paths: bool,
+    origin: Origin,
 ) {
     for (message, _) in messages.iter_mut() {
         if let DiagMessage::Str(text) = message
-            && let Some(rewritten) = postprocess_message(text, has_field_impls, bare_paths)
+            && let Some(rewritten) = postprocess_message(text, has_field_impls, origin)
         {
             *message = DiagMessage::Str(Cow::Owned(rewritten));
         }
@@ -243,17 +252,15 @@ pub(crate) fn postprocess_messages(
         return;
     }
 
-    if let Some(joined) = postprocess_fragments(&fragments, has_field_impls, bare_paths) {
+    if let Some(joined) = postprocess_fragments(&fragments, has_field_impls, origin) {
         *messages = vec![(DiagMessage::Str(Cow::Owned(joined)), Style::NoStyle)];
     }
 }
 
 /// Post-process each of a [`MultiSpan`]'s labels — the caret and secondary-label text the
 /// emitter renders alongside the source. The span is rebuilt only when a label actually
-/// changes, so an unaffected diagnostic keeps its exact `MultiSpan`; the primary spans are
-/// re-pushed in order (rather than through `from_spans`, which sorts them) so the rendering
-/// order is preserved.
-pub(crate) fn postprocess_multispan(span: &mut MultiSpan, has_field_impls: bool, bare_paths: bool) {
+/// changes, so an unaffected diagnostic keeps its exact `MultiSpan`.
+pub(crate) fn postprocess_multispan(span: &mut MultiSpan, has_field_impls: bool, origin: Origin) {
     let labels: Vec<(Span, DiagMessage)> = span.span_labels_raw().to_vec();
     if labels.is_empty() {
         return;
@@ -264,7 +271,7 @@ pub(crate) fn postprocess_multispan(span: &mut MultiSpan, has_field_impls: bool,
         .into_iter()
         .map(|(span, message)| {
             if let DiagMessage::Str(text) = &message
-                && let Some(rewritten) = postprocess_message(text, has_field_impls, bare_paths)
+                && let Some(rewritten) = postprocess_message(text, has_field_impls, origin)
             {
                 changed = true;
                 (span, DiagMessage::Str(Cow::Owned(rewritten)))
@@ -276,13 +283,5 @@ pub(crate) fn postprocess_multispan(span: &mut MultiSpan, has_field_impls: bool,
     if !changed {
         return;
     }
-
-    let mut rebuilt = MultiSpan::new();
-    for primary in span.primary_spans() {
-        rebuilt.push_primary_span(*primary);
-    }
-    for (span, message) in new_labels {
-        rebuilt.push_span_diag(span, message);
-    }
-    *span = rebuilt;
+    *span = rebuilt_multispan(span, new_labels);
 }

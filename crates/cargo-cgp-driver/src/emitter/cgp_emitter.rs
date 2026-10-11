@@ -1,5 +1,6 @@
 //! The wrapping [`Emitter`] that transforms CGP diagnostics before delegating.
 
+use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -8,7 +9,7 @@ use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
 };
 use cargo_cgp_error_processing::{
-    Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider,
+    Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf, MissingUseProvider, Origin,
     OrphanConflict, PendingNote, Resolved, UndeclaredTrait, cause_signature, cgp_impl_misuse_help,
     coalesce_underived_fields, consumer_header, explain_footer_codes, fix_help_messages,
     group_by_shared_cause, internal_error_note, is_explain_footer_text, is_method_bounds_text,
@@ -86,6 +87,10 @@ pub struct CgpEmitter<E: Emitter> {
     /// arrive before trait solving, so the first candidate may precede one); an empty `Vec` means
     /// "computed, none found". Owned data (names plus `Copy` spans), so it outlives the `TyCtxt`.
     cgp_impl_misuses: Option<Vec<DetectedCgpImplMisuse>>,
+    /// Whether the crate being compiled uses CGP ([`resolve::crate_uses_cgp`]), decided on the first
+    /// diagnostic for which the compiler can answer. A crate that does not use CGP can carry no CGP
+    /// encoding, so its untransformed diagnostics are left exactly as rustc built them.
+    cgp_used: OnceCell<bool>,
     /// The stage made to panic on purpose, set only by the UI fixtures that pin the panic fallback
     /// (see [`TestPanic`]).
     test_panic: Option<TestPanic>,
@@ -206,6 +211,7 @@ impl<E: Emitter> CgpEmitter<E> {
             resolve_cache: ResolveCache::new(),
             cgp_spans: Vec::new(),
             cgp_impl_misuses: None,
+            cgp_used: OnceCell::new(),
             test_panic,
         }
     }
@@ -292,7 +298,7 @@ impl<E: Emitter> CgpEmitter<E> {
         diag.suggestions = Suggestions::Enabled(Vec::new());
         // The header, notes, and helps are freshly built, so post-process them (resugar `Symbol!`,
         // strip CGP prefixes) as the streaming path does for a rewritten diagnostic.
-        self.postprocess(&mut diag, true);
+        self.postprocess(&mut diag, Origin::Rewritten);
         diag
     }
 
@@ -408,22 +414,42 @@ impl<E: Emitter> CgpEmitter<E> {
     }
 
     /// Post-process a diagnostic after transforming it — the final cleanup pass, over every
-    /// message and span label of the diagnostic and its children. It strips CGP path prefixes,
-    /// resugars `Symbol!` and `Path!`, and rewords an unmet `HasField` bound. Whether the
-    /// context implements `HasField` for any field is a fact of the whole diagnostic (the
-    /// "similar impl" landmark can sit far from the clause), so it is decided once up front and
-    /// passed into each per-message rewrite.
-    /// `bare_paths` distinguishes a rewritten diagnostic from a resugaring fallback: a message the
-    /// tool constructed (a wiring-conflict rewrite or a typed resolution) shows a bare `@…` path,
-    /// while an un-rewritten fallback keeps the `Path!(@…)` macro form.
-    fn postprocess(&self, diag: &mut DiagInner, bare_paths: bool) {
-        let has_field_impls = mentions_hasfield_impls(diag);
-        postprocess_messages(&mut diag.messages, has_field_impls, bare_paths);
-        postprocess_multispan(&mut diag.span, has_field_impls, bare_paths);
-        for child in &mut diag.children {
-            postprocess_messages(&mut child.messages, has_field_impls, bare_paths);
-            postprocess_multispan(&mut child.span, has_field_impls, bare_paths);
+    /// message and span label of the diagnostic and its children. It strips module paths,
+    /// resugars `Symbol!` and `Path!` and the type-level lists, and rewords an unmet `HasField`
+    /// bound. Whether the context implements `HasField` for any field is a fact of the whole
+    /// diagnostic (the "similar impl" landmark can sit far from the clause), so it is decided once
+    /// up front and passed into each per-message rewrite.
+    ///
+    /// `origin` says whether the tool rewrote the diagnostic. An untransformed one changes only
+    /// where the chain recovers a CGP encoding (see [`Origin`]), and only in a crate that loads
+    /// CGP, so a plain Rust error passes through exactly as rustc built it.
+    fn postprocess(&self, diag: &mut DiagInner, origin: Origin) {
+        if origin == Origin::Untransformed && !self.crate_uses_cgp() {
+            return;
         }
+        let has_field_impls = mentions_hasfield_impls(diag);
+        postprocess_messages(&mut diag.messages, has_field_impls, origin);
+        postprocess_multispan(&mut diag.span, has_field_impls, origin);
+        for child in &mut diag.children {
+            postprocess_messages(&mut child.messages, has_field_impls, origin);
+            postprocess_multispan(&mut child.span, has_field_impls, origin);
+        }
+    }
+
+    /// Whether the crate being compiled uses CGP, decided once the compiler can answer. Before then
+    /// (a parse or name-resolution error) the answer is `false`, which leaves the diagnostic as
+    /// rustc built it.
+    fn crate_uses_cgp(&self) -> bool {
+        if let Some(&known) = self.cgp_used.get() {
+            return known;
+        }
+        let Some(known) =
+            rustc_middle::ty::tls::with_opt(|tcx| tcx.and_then(resolve::crate_uses_cgp))
+        else {
+            return false;
+        };
+        let _ = self.cgp_used.set(known);
+        known
     }
 
     /// Recognize `diag` as a duplicate-key wiring conflict — the `E0119` coherence error a
@@ -810,7 +836,8 @@ impl<E: Emitter> CgpEmitter<E> {
         // nothing to match and the flag it needs is moot here.
         const HAS_FIELD_IMPLS: bool = false;
         for text in note.render(seen) {
-            let text = postprocess_message(&text, HAS_FIELD_IMPLS, true).unwrap_or(text);
+            let text =
+                postprocess_message(&text, HAS_FIELD_IMPLS, Origin::Rewritten).unwrap_or(text);
             diag.children.push(subdiag(Sublevel::Note, text));
         }
     }
@@ -857,7 +884,7 @@ impl<E: Emitter> CgpEmitter<E> {
                     }
                     diag.children = vec![subdiag(Sublevel::Help, cgp_impl_misuse_help(&misuse))];
                     diag.suggestions = Suggestions::Enabled(Vec::new());
-                    self.postprocess(&mut diag, true);
+                    self.postprocess(&mut diag, Origin::Rewritten);
                     // Drop any sibling of this impl already buffered: E0425 (name resolution)
                     // arrives before this E0107 (type lowering), possibly before a `TyCtxt` was in
                     // scope to detect the mistake, so it was buffered verbatim.
@@ -884,7 +911,7 @@ impl<E: Emitter> CgpEmitter<E> {
                         diag.children.push(subdiag(Sublevel::Help, help));
                     }
                     // A rewritten diagnostic: bare `@…` paths.
-                    self.postprocess(&mut diag, true);
+                    self.postprocess(&mut diag, Origin::Rewritten);
                     self.record_cgp_spans(&diag);
                     self.push(BufEntry::Plain(Box::new(diag)));
                     return;
@@ -906,7 +933,7 @@ impl<E: Emitter> CgpEmitter<E> {
                 .push(subdiag(Sublevel::Help, orphan_conflict_help(&conflict)));
             // A rewritten diagnostic: bare `@…` paths (a path key renders without the `Path!`
             // wrapper).
-            self.postprocess(&mut diag, true);
+            self.postprocess(&mut diag, Origin::Rewritten);
             self.record_cgp_spans(&diag);
             self.push(BufEntry::Plain(Box::new(diag)));
             return;
@@ -924,7 +951,7 @@ impl<E: Emitter> CgpEmitter<E> {
             diag.span = MultiSpan::from_span(primary_span);
             diag.children
                 .push(subdiag(Sublevel::Help, undeclared_trait_help(&undeclared)));
-            self.postprocess(&mut diag, true);
+            self.postprocess(&mut diag, Origin::Rewritten);
             self.record_cgp_spans(&diag);
             self.push(BufEntry::Plain(Box::new(diag)));
             return;
@@ -940,7 +967,7 @@ impl<E: Emitter> CgpEmitter<E> {
             diag.span = MultiSpan::from_span(primary_span);
             diag.children
                 .push(subdiag(Sublevel::Help, missing_use_provider_help(&missing)));
-            self.postprocess(&mut diag, true);
+            self.postprocess(&mut diag, Origin::Rewritten);
             self.record_cgp_spans(&diag);
             self.push(BufEntry::Plain(Box::new(diag)));
             return;
@@ -998,7 +1025,12 @@ impl<E: Emitter> CgpEmitter<E> {
         // Post-process the result either way, so no raw CGP construct leaks. A typed resolution
         // or a text rewrite constructs the message, so its paths render bare (`@…`); a diagnostic
         // the tool left untouched keeps the `Path!(@…)` resugaring form.
-        self.postprocess(&mut diag, rewritten);
+        let origin = if rewritten {
+            Origin::Rewritten
+        } else {
+            Origin::Untransformed
+        };
+        self.postprocess(&mut diag, origin);
         if rewritten {
             // Remember where this wiring failure landed, so a `?`-operator cascade on the same
             // expression can be dropped below. Recorded before de-duplication, so a re-report that

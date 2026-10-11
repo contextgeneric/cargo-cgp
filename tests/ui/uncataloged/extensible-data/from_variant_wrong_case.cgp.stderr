@@ -9,7 +9,7 @@ help: the trait `FromVariant<Symbol!("circle")>` is not implemented for `Shape`
    |
 27 | pub enum Shape {
    | ^^^^^^^^^^^^^^
-help: `Shape` implements trait `FromVariant<Tag>`
+help: `Shape` implements trait `cgp::prelude::FromVariant<Tag>`
   --> src/main.rs:28:5
    |
 28 |     Circle(Circle),
@@ -28,7 +28,7 @@ help: the trait `FromVariant<Symbol!("circle")>` is not implemented for `Shape`
    |
 27 | pub enum Shape {
    | ^^^^^^^^^^^^^^
-help: `Shape` implements trait `FromVariant<Tag>`
+help: `Shape` implements trait `cgp::prelude::FromVariant<Tag>`
   --> src/main.rs:28:5
    |
 28 |     Circle(Circle),

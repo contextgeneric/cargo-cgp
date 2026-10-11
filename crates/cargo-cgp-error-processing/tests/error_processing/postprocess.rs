@@ -4,7 +4,7 @@
 //! it is driven directly over the case under test — no diagnostic wrapper, no compiler.
 
 use cargo_cgp_error_processing::{
-    context_has_hasfield_impls, postprocess_fragments, postprocess_message, resugar_lists,
+    Origin, context_has_hasfield_impls, postprocess_fragments, postprocess_message, resugar_lists,
     resugar_path, resugar_symbol, rewrite_missing_fields, strip_cgp_prefixes, strip_module_paths,
 };
 
@@ -148,7 +148,7 @@ fn full_chain_resugars_a_raw_field_spine_to_a_struct() {
         postprocess_message(
             "Cons<Field<Symbol<1, Chars<'x', Nil>>, u64>, Nil>",
             false,
-            false,
+            Origin::Untransformed,
         )
         .as_deref(),
         Some("Struct! { x: u64 }"),
@@ -428,7 +428,7 @@ fn postprocess_message_resugars_an_expanded_path() {
     // resugared to a symbol and then folded into a `Path!`.
     let text = "PathCons<Symbol<3, Chars<'a', Chars<'p', Chars<'p', Nil>>>>, PathCons<GreeterComponent, Nil>>";
     assert_eq!(
-        postprocess_message(text, false, false).as_deref(),
+        postprocess_message(text, false, Origin::Untransformed).as_deref(),
         Some("Path!(@app.GreeterComponent)"),
     );
 }
@@ -440,7 +440,7 @@ fn postprocess_message_resugars_an_open_tailed_path() {
     // Stripped, resugared to symbols, then folded into a wildcard `Path!`.
     let text = "PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'f', cgp::prelude::Chars<'o', cgp::prelude::Chars<'o', Nil>>>>, PathCons<Symbol<3, Chars<'b', Chars<'a', Chars<'r', Nil>>>>, _>>";
     assert_eq!(
-        postprocess_message(text, false, false).as_deref(),
+        postprocess_message(text, false, Origin::Untransformed).as_deref(),
         Some("Path!(@foo.bar.*)"),
     );
 }
@@ -505,7 +505,7 @@ fn postprocess_message_chains_the_transforms() {
     // stripped, resugared, then rewritten as a missing derive in one pass.
     let text = "the trait `HasField<cgp::prelude::Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', Chars<'h', Nil>>>>>>>` is not implemented for `Rectangle`";
     assert_eq!(
-        postprocess_message(text, false, false).as_deref(),
+        postprocess_message(text, false, Origin::Untransformed).as_deref(),
         Some("`#[derive(HasField)]` is required to access field `width` on `Rectangle`"),
     );
 }
@@ -513,7 +513,11 @@ fn postprocess_message_chains_the_transforms() {
 #[test]
 fn postprocess_message_leaves_plain_rust_alone() {
     assert_eq!(
-        postprocess_message("the trait bound `Foo: Bar` is not satisfied", false, false),
+        postprocess_message(
+            "the trait bound `Foo: Bar` is not satisfied",
+            false,
+            Origin::Untransformed,
+        ),
         None,
     );
 }
@@ -538,7 +542,7 @@ fn a_spine_split_across_fragments_is_resugared_as_a_whole() {
     ];
 
     assert_eq!(
-        postprocess_fragments(&fragments, false, true).as_deref(),
+        postprocess_fragments(&fragments, false, Origin::Rewritten).as_deref(),
         Some("the trait `FromVariant<Symbol!(\"Bar\")>` is not implemented for `Big`")
     );
 }
@@ -550,12 +554,58 @@ fn fragments_needing_no_joining_keep_their_styling() {
     // highlighting for no gain.
     let fragments = ["the trait `", "Foo", "` is not implemented for `Bar`"];
 
-    assert_eq!(postprocess_fragments(&fragments, false, true), None);
+    assert_eq!(
+        postprocess_fragments(&fragments, false, Origin::Rewritten),
+        None
+    );
 }
 
 #[test]
 fn a_single_fragment_is_left_to_the_per_message_pass() {
     let fragments = ["Symbol<2, Chars<'x', Chars<'y', Nil>>>"];
 
-    assert_eq!(postprocess_fragments(&fragments, false, true), None);
+    assert_eq!(
+        postprocess_fragments(&fragments, false, Origin::Rewritten),
+        None
+    );
+}
+
+#[test]
+fn an_untransformed_message_keeps_the_paths_rustc_printed() {
+    // Two types sharing a name are told apart only by their paths, so a message rustc built and the
+    // tool left alone keeps them; so does a glob-imported trait's path in a note.
+    let same_name = "expected `a::Foo`, found `b::Foo`";
+    assert_eq!(
+        postprocess_message(same_name, false, Origin::Untransformed),
+        None
+    );
+    let glob = "candidate #1 is defined in an impl of the trait `cgp::prelude::CanRaiseError`";
+    assert_eq!(
+        postprocess_message(glob, false, Origin::Untransformed),
+        None
+    );
+}
+
+#[test]
+fn a_rewritten_message_strips_module_paths() {
+    // A message the tool built shows bare names, as its own wording does.
+    assert_eq!(
+        postprocess_message(
+            "the consumer trait `contexts::CanGreet` for `app::App`",
+            false,
+            Origin::Rewritten,
+        )
+        .as_deref(),
+        Some("the consumer trait `CanGreet` for `App`"),
+    );
+}
+
+#[test]
+fn an_untransformed_message_with_a_cgp_encoding_is_cleaned_whole() {
+    // Once a CGP encoding is recovered, the strips apply to the rest of that message too.
+    let text = "`app::App: cgp::prelude::HasField<Symbol<1, Chars<'x', Nil>>>` is not satisfied";
+    assert_eq!(
+        postprocess_message(text, false, Origin::Untransformed).as_deref(),
+        Some("`App: HasField<Symbol!(\"x\")>` is not satisfied"),
+    );
 }

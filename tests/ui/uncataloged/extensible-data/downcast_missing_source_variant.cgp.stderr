@@ -7,7 +7,7 @@ error[E0277]: the trait bound `Enum! { Qux(char) }: FieldsExtractor<__PartialFoo
    |                            required by a bound introduced by this call
    |
    = help: the trait `FieldsExtractor<__PartialFooBar<IsVoid, IsPresent>, FooQux>` is not implemented for `Enum! { Qux(char) }`
-help: the trait `FieldsExtractor<Source, Target>` is conditionally implemented for `Either<Field<Tag, Value>, RestFields>`
+help: the trait `FieldsExtractor<Source, Target>` is conditionally implemented for `Either<cgp::prelude::Field<Tag, Value>, RestFields>`
   --> $CGP/crates/core/cgp-field/src/impls/cast.rs:66:1
    |
 66 | / impl<Source, Target, Tag, Value, RestFields, Remainder> FieldsExtractor<Source, Target>
