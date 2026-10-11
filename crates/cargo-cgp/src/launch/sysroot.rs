@@ -17,18 +17,9 @@ use anyhow::{Context, bail};
 /// project's own toolchain or another `rustc` earlier on `PATH`; when `None` (unmanaged mode),
 /// the ambient compiler's sysroot is used.
 pub fn sysroot(rustc: &str, toolchain: Option<&str>) -> anyhow::Result<PathBuf> {
-    let mut command = match toolchain {
-        Some(toolchain) => {
-            let mut command = Command::new("rustup");
-            command.args(["run", toolchain, rustc]);
-            command
-        }
-        None => Command::new(rustc),
-    };
-
-    let output = command
-        .arg("--print")
-        .arg("sysroot")
+    let (program, args) = sysroot_command(rustc, toolchain);
+    let output = Command::new(program)
+        .args(args)
         .output()
         .with_context(|| format!("failed to run `{rustc} --print sysroot`"))?;
 
@@ -49,6 +40,23 @@ pub fn sysroot(rustc: &str, toolchain: Option<&str>) -> anyhow::Result<PathBuf> 
         .context("`rustc --print sysroot` produced non-UTF-8 output")?;
 
     Ok(PathBuf::from(path.trim()))
+}
+
+/// The program and arguments [`sysroot`] runs: `<rustc> --print sysroot`, through
+/// `rustup run <toolchain>` when a toolchain is forced.
+pub fn sysroot_command(rustc: &str, toolchain: Option<&str>) -> (String, Vec<String>) {
+    let print = ["--print", "sysroot"].map(str::to_owned);
+    match toolchain {
+        Some(toolchain) => (
+            "rustup".to_owned(),
+            ["run", toolchain, rustc]
+                .map(str::to_owned)
+                .into_iter()
+                .chain(print)
+                .collect(),
+        ),
+        None => (rustc.to_owned(), print.to_vec()),
+    }
 }
 
 /// A failed probe's stderr as a block to append to the error, or nothing when it is empty.

@@ -21,10 +21,18 @@ pub fn default_target_dir(wrapped: &Command, forwarded_args: &[String]) -> Optio
     if forwards_target_dir(forwarded_args) {
         return None;
     }
-    let dir = cargo_target_directory(wrapped, forwarded_args)
+    Some(cgp_target_dir(cargo_target_directory(
+        wrapped,
+        forwarded_args,
+    )))
+}
+
+/// The directory a wrapped build uses given the project's target directory as cargo reports it:
+/// its `cgp` subdirectory, or the relative [`CHECK_TARGET_DIR`] when cargo could not say.
+pub fn cgp_target_dir(project_target_dir: Option<PathBuf>) -> PathBuf {
+    project_target_dir
         .map(|dir| dir.join(CHECK_TARGET_SUBDIR))
-        .unwrap_or_else(|| PathBuf::from(CHECK_TARGET_DIR));
-    Some(dir)
+        .unwrap_or_else(|| PathBuf::from(CHECK_TARGET_DIR))
 }
 
 /// Whether the forwarded arguments already set `--target-dir` (in either `--target-dir X`

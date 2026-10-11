@@ -1,6 +1,6 @@
 //! Formatting a failed sysroot probe's stderr into its error message.
 
-use cargo_cgp::launch::format_stderr;
+use cargo_cgp::launch::{format_stderr, sysroot_command};
 
 #[test]
 fn a_loader_failure_is_appended_to_the_message() {
@@ -29,4 +29,22 @@ fn non_utf8_stderr_is_still_reported() {
 
     assert!(formatted.starts_with(":\n\ncannot open "));
     assert!(formatted.ends_with(" shared object file"));
+}
+
+#[test]
+fn a_forced_toolchain_is_queried_through_rustup() {
+    // `rustup run` answers for that toolchain whatever `rustc` is first on `PATH`.
+    let (program, args) = sysroot_command("rustc", Some("nightly-2026-10-10"));
+    assert_eq!(program, "rustup");
+    assert_eq!(
+        args,
+        ["run", "nightly-2026-10-10", "rustc", "--print", "sysroot"]
+    );
+}
+
+#[test]
+fn an_unforced_query_asks_the_ambient_compiler() {
+    let (program, args) = sysroot_command("/nix/store/x/bin/rustc", None);
+    assert_eq!(program, "/nix/store/x/bin/rustc");
+    assert_eq!(args, ["--print", "sysroot"]);
 }

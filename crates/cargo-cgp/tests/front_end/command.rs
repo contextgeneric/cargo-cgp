@@ -33,7 +33,9 @@ fn absent_target_dir_is_not_detected() {
 
 use std::path::PathBuf;
 
-use cargo_cgp::launch::{forwarded_manifest_path, metadata_query_args, parse_target_directory};
+use cargo_cgp::launch::{
+    cgp_target_dir, forwarded_manifest_path, metadata_query_args, parse_target_directory,
+};
 
 #[test]
 fn finds_a_forwarded_manifest_path_in_either_form() {
@@ -100,4 +102,13 @@ fn the_metadata_query_ignores_arguments_after_a_separator() {
         forwarded_manifest_path(&args(&["--", "--manifest-path", "a/Cargo.toml"])),
         None
     );
+}
+
+#[test]
+fn the_build_goes_to_the_cgp_subdirectory_or_the_relative_fallback() {
+    assert_eq!(
+        cgp_target_dir(Some(PathBuf::from("/build"))),
+        PathBuf::from("/build/cgp")
+    );
+    assert_eq!(cgp_target_dir(None), PathBuf::from("target/cgp"));
 }

@@ -7,8 +7,9 @@ use std::path::Path;
 use cargo_cgp::config::PINNED_TOOLCHAIN;
 use cargo_cgp::launch::{
     DriverLocation, DriverOrigin, DriverVersion, PreflightFailure, evaluate, failure_message,
-    parse_driver_version,
+    judge_driver_answer, parse_driver_version, toolchain_failure,
 };
+use cargo_cgp::toolchain::ToolchainError;
 
 /// The exact line format the driver prints (mirrors `cargo-cgp-driver`'s `version_string`).
 const DRIVER_OUTPUT: &str = "cargo-cgp-driver 0.1.0\n\
@@ -202,4 +203,61 @@ fn a_missing_rustup_says_so_instead_of_naming_setup() {
     );
     assert!(message.contains("Nix flake"), "{message}");
     assert!(!message.contains("cargo cgp setup"), "{message}");
+}
+
+#[test]
+fn a_driver_that_failed_keeps_its_stderr() {
+    let verdict = judge_driver_answer(
+        false,
+        b"",
+        b"cannot open shared object file\n",
+        "0.1.0",
+        "x",
+    );
+    assert_eq!(
+        verdict,
+        Err(PreflightFailure::DriverDidNotRun {
+            stderr: "cannot open shared object file\n".to_owned()
+        })
+    );
+}
+
+#[test]
+fn a_driver_answer_in_another_shape_is_unparsable() {
+    let verdict = judge_driver_answer(true, b"rustc 1.98.0\n", b"", "0.1.0", "x");
+    assert_eq!(verdict, Err(PreflightFailure::UnparsableVersion));
+}
+
+#[test]
+fn a_driver_answer_is_compared_with_the_front_end_and_the_toolchain() {
+    let installed = "rustc 1.98.0-nightly (4c9d2bfe4 2026-07-01)";
+    assert_eq!(
+        judge_driver_answer(true, DRIVER_OUTPUT.as_bytes(), b"", "0.1.0", installed),
+        Ok(())
+    );
+    assert_eq!(
+        judge_driver_answer(true, DRIVER_OUTPUT.as_bytes(), b"", "0.2.0", installed),
+        Err(PreflightFailure::VersionMismatch {
+            driver_version: "0.1.0".to_owned()
+        })
+    );
+}
+
+#[test]
+fn a_toolchain_query_failure_maps_to_its_preflight_failure() {
+    assert_eq!(
+        toolchain_failure(ToolchainError::RustupMissing).unwrap(),
+        PreflightFailure::RustupMissing
+    );
+    assert_eq!(
+        toolchain_failure(ToolchainError::QueryFailed {
+            stderr: "error: toolchain 'x' is not installed".to_owned()
+        })
+        .unwrap(),
+        PreflightFailure::ToolchainUnavailable {
+            stderr: "error: toolchain 'x' is not installed".to_owned()
+        }
+    );
+    // Any other failure has no `setup` to suggest, so it passes through as an error.
+    assert!(toolchain_failure(ToolchainError::Other(anyhow::anyhow!("unreadable"))).is_err());
 }

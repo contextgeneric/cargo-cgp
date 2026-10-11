@@ -65,11 +65,7 @@ pub fn run(driver: &DriverLocation, toolchain: &str) -> anyhow::Result<PathBuf> 
     // from a bad driver, and yields the compiler identity to compare the driver against.
     let installed_rustc = match rustc_version(toolchain) {
         Ok(version) => version,
-        Err(ToolchainError::RustupMissing) => return Err(fail(PreflightFailure::RustupMissing)),
-        Err(ToolchainError::QueryFailed { stderr }) => {
-            return Err(fail(PreflightFailure::ToolchainUnavailable { stderr }));
-        }
-        Err(ToolchainError::Other(error)) => return Err(error),
+        Err(error) => return Err(toolchain_failure(error).map_or_else(|error| error, fail)),
     };
 
     // The sysroot the check will force, also used as the driver's dylib search path below.
@@ -90,18 +86,49 @@ pub fn run(driver: &DriverLocation, toolchain: &str) -> anyhow::Result<PathBuf> 
         })
     })?;
 
-    if !output.status.success() {
-        return Err(fail(PreflightFailure::DriverDidNotRun {
-            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
-        }));
-    }
-
-    let reported = parse_driver_version(&String::from_utf8_lossy(&output.stdout))
-        .ok_or_else(|| fail(PreflightFailure::UnparsableVersion))?;
-
-    evaluate(TOOL_VERSION, &reported, &installed_rustc).map_err(fail)?;
+    judge_driver_answer(
+        output.status.success(),
+        &output.stdout,
+        &output.stderr,
+        TOOL_VERSION,
+        &installed_rustc,
+    )
+    .map_err(fail)?;
 
     Ok(sysroot)
+}
+
+/// The preflight failure a failed toolchain query stands for, or the error itself when it is
+/// neither a missing rustup nor a query rustup refused (an unreadable answer, say), which has no
+/// `setup` to suggest.
+pub fn toolchain_failure(error: ToolchainError) -> Result<PreflightFailure, anyhow::Error> {
+    match error {
+        ToolchainError::RustupMissing => Ok(PreflightFailure::RustupMissing),
+        ToolchainError::QueryFailed { stderr } => {
+            Ok(PreflightFailure::ToolchainUnavailable { stderr })
+        }
+        ToolchainError::Other(error) => Err(error),
+    }
+}
+
+/// Judge the answer of a driver that started for `--version`: whether it ran (`succeeded`), and
+/// what it printed. A failed run keeps its stderr, the loader's reason; a run whose output is not
+/// the driver's three lines is unparsable; otherwise [`evaluate`] compares its identity.
+pub fn judge_driver_answer(
+    succeeded: bool,
+    stdout: &[u8],
+    stderr: &[u8],
+    frontend_version: &str,
+    installed_rustc: &str,
+) -> Result<(), PreflightFailure> {
+    if !succeeded {
+        return Err(PreflightFailure::DriverDidNotRun {
+            stderr: String::from_utf8_lossy(stderr).into_owned(),
+        });
+    }
+    let reported = parse_driver_version(&String::from_utf8_lossy(stdout))
+        .ok_or(PreflightFailure::UnparsableVersion)?;
+    evaluate(frontend_version, &reported, installed_rustc)
 }
 
 /// Parse the driver's `--version` output into a [`DriverVersion`]. Returns `None` if the
