@@ -8,7 +8,7 @@ use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::anchor::{consumer_obligation, context_candidates_from_spans};
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{
-    find_cgp_trait, is_nil, is_path_cons, marker_to_consumer, path_cons_parts,
+    component_params, find_cgp_trait, is_nil, is_path_cons, marker_to_consumer, path_cons_parts,
 };
 use crate::resolve::walk::{holds, resolve_leaves};
 
@@ -132,11 +132,17 @@ fn delegated_check_targets<'tcx>(
             if !value.has_param() {
                 targets.push((comp, value));
             }
-        } else if !is_path_cons(tcx, key) && !dispatched.contains(&key) && !key.has_param() {
+        } else if !is_path_cons(tcx, key)
+            && !dispatched.contains(&key)
+            && !key.has_param()
+            && component_params(tcx, key).is_empty()
+        {
             // A bare marker with no free parameter is a concrete wired component. A key that *is*
             // (or contains) a free parameter is the `namespace …;` blanket forwarding (`__Key__`),
             // not a real component, so it is dropped rather than re-checked into `__Key__: Sized`
-            // noise.
+            // noise. A component with type parameters is skipped too: the bare marker carries no
+            // parameter values, and re-checking it with `()` as one would assert an obligation
+            // nothing in the program asks for (`CanRaiseError<()>`).
             targets.push((key, tcx.types.unit));
         }
     }

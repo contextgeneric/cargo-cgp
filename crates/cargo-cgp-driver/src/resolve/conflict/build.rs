@@ -3,8 +3,9 @@
 use cargo_cgp_error_processing::{WiringConflict, WiringKey};
 use rustc_middle::ty::TyCtxt;
 
+use crate::resolve::cgp_item::component_params;
 use crate::resolve::conflict::{
-    ConflictSide, DelegateImpl, EntryTarget, component_params, describe_key, redirect_path,
+    ConflictSide, DelegateImpl, EntryTarget, describe_key, redirect_path,
 };
 
 /// Word the recovered impls into a [`WiringConflict`], picking the shape from how the two entries

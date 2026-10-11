@@ -3,7 +3,6 @@
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 
-use crate::resolve::cgp_item::marker_provider_trait;
 use crate::resolve::conflict::{namespace_delegate, redirect_path, render_provider};
 
 /// One side of a conflict: the impl, the key it maps, and its written `Delegate`.
@@ -46,20 +45,4 @@ impl<'tcx> ConflictSide<'tcx> {
             None => EntryTarget::Provider(None),
         }
     }
-}
-
-/// The type parameters of the component `key` names, which a redirect appends to its path when it
-/// looks the component up. Empty when `key` is not a component marker or the component has none.
-/// They are the provider trait's type parameters after its `Self` (the provider) and its context.
-pub(crate) fn component_params(tcx: TyCtxt<'_>, key: Ty<'_>) -> Vec<String> {
-    let Some(provider_did) = marker_provider_trait(tcx, key) else {
-        return Vec::new();
-    };
-    tcx.generics_of(provider_did)
-        .own_params
-        .iter()
-        .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }))
-        .skip(2)
-        .map(|param| param.name.to_string())
-        .collect()
 }

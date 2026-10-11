@@ -500,3 +500,19 @@ pub(crate) fn decode_index(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<usize> {
         .to_target_usize(tcx);
     usize::try_from(index).ok()
 }
+
+/// The type parameters of the component `key` names, which a redirect appends to its path when it
+/// looks the component up. Empty when `key` is not a component marker or the component has none.
+/// They are the provider trait's type parameters after its `Self` (the provider) and its context.
+pub(crate) fn component_params(tcx: TyCtxt<'_>, key: Ty<'_>) -> Vec<String> {
+    let Some(provider_did) = marker_provider_trait(tcx, key) else {
+        return Vec::new();
+    };
+    tcx.generics_of(provider_did)
+        .own_params
+        .iter()
+        .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }))
+        .skip(2)
+        .map(|param| param.name.to_string())
+        .collect()
+}

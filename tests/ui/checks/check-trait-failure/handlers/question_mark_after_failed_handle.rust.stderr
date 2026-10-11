@@ -1,10 +1,10 @@
 error[E0599]: the method `handle` exists for struct `AppBuilder`, but its trait bounds were not satisfied
-  --> src/main.rs:90:27
+  --> src/main.rs:91:27
    |
-79 | pub struct AppBuilder;
+80 | pub struct AppBuilder;
    | --------------------- method `handle` not found for this struct because it doesn't satisfy `AppBuilder: CanHandle<_, _>`
 ...
-90 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
+91 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
    |                           ^^^^^^ this is an associated function, not a method
    |
   ::: $CGP/crates/extra/cgp-dispatch/src/providers/field_builders/build_and_merge.rs:7:1
@@ -26,8 +26,8 @@ note: the candidate is defined in the trait `Handler`
            candidate #1: `CanHandle`
 help: use associated function syntax instead
    |
-90 -     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
-90 +     let _app = AppBuilder::handle(PhantomData::<()>, ()).await?;
+91 -     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
+91 +     let _app = AppBuilder::handle(PhantomData::<()>, ()).await?;
    |
 
 For more information about this error, try `rustc --explain E0599`.

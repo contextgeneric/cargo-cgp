@@ -1,13 +1,17 @@
-error[E0599]: [CGP-E001] the consumer trait `CanRaiseError<()>` is not implemented for context `AppBuilder`
-  --> src/main.rs:90:27
+error[E0599]: [CGP-E001] the consumer trait `CanHandle<(), ()>` is not implemented for context `AppBuilder`
+  --> src/main.rs:91:27
    |
-90 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
+91 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
    |                           ^^^^^^
    |
-   = note: root cause: [CGP-E201] the trait bound `(): std::error::Error` is not satisfied
+   = note: root cause: [CGP-E201] the trait bound `__PartialApp<IsPresent>: CanBuildFrom<Http>` is not satisfied
            this is required through the dependency chain:
-             [CGP-E101] consumer trait impl `CanRaiseError<()>` for context `AppBuilder`
-             └─ [CGP-E102] provider trait impl `ErrorRaiser<()>` with context `AppBuilder` for provider `RaiseBackendError`
-               └─ the trait bound `(): std::error::Error` is not satisfied
+             [CGP-E101] consumer trait impl `CanHandle<(), ()>` for context `AppBuilder`
+             └─ [CGP-E102] provider trait impl `Handler<(), ()>` with context `AppBuilder` for provider `BuildAndMergeOutputs<App, Product![BuildDb, BuildHttp]>`
+               └─ [CGP-E102] provider trait impl `Handler<(), ()>` with context `AppBuilder` for provider `BuildWithHandlers<App, Product![BuildAndMerge<BuildDb>, BuildAndMerge<BuildHttp>]>`
+                 └─ [CGP-E102] provider trait impl `Handler<(), __PartialApp<IsNothing>>` with context `AppBuilder` for provider `PipeHandlers<Product![BuildAndMerge<BuildDb>, BuildAndMerge<BuildHttp>]>`
+                   └─ [CGP-E102] provider trait impl `Handler<(), __PartialApp<IsNothing>>` with context `AppBuilder` for provider `ComposeHandlers<BuildAndMerge<BuildDb>, BuildAndMerge<BuildHttp>>`
+                     └─ [CGP-E102] provider trait impl `Handler<(), __PartialApp<IsPresent>>` with context `AppBuilder` for provider `BuildAndMerge<BuildHttp>`
+                       └─ the trait bound `__PartialApp<IsPresent>: CanBuildFrom<Http>` is not satisfied
 
 For more information about this error, try `rustc --explain E0599`.

@@ -2,9 +2,10 @@
 //! A `BuildAndMergeOutputs` builder whose second output carries a field the target lacks, called with
 //! `?` and no check.
 //!
-//! The only error is `[CGP-E001] the consumer trait `CanRaiseError<()>` is not implemented` with root
-//! cause `(): std::error::Error`, a trait and a cause unrelated to the mistake; the missing `url` field on `App`
-//! is never mentioned. Distilled from the application builder with its `http_client` field removed.
+//! The call-site anchor recovers `[CGP-E001] the consumer trait `CanHandle<(), ()>`` and walks the
+//! builder pipeline to `__PartialApp<IsPresent>: CanBuildFrom<Http>`, the merge that needs the `url`
+//! field `App` lacks; the field itself is not named. Distilled from the application builder with its
+//! `http_client` field removed.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 //!
