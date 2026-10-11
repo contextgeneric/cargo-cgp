@@ -2,7 +2,7 @@
 //! ([`sparse_index_path`]), version extraction ([`parse_versions`]), and the
 //! channel-preserving update selection ([`select_update`]).
 
-use cargo_cgp::update::{parse_versions, select_update, sparse_index_path};
+use cargo_cgp::update::{frontend_install_args, parse_versions, select_update, sparse_index_path};
 
 fn versions(list: &[&str]) -> Vec<String> {
     list.iter().map(|s| s.to_string()).collect()
@@ -90,4 +90,12 @@ fn no_newer_version_does_not_update() {
 #[test]
 fn invalid_current_version_errors() {
     assert!(select_update(&versions(&["0.1.0"]), "not-a-version").is_err());
+}
+
+#[test]
+fn reinstalls_the_front_end_locked_at_the_chosen_version() {
+    assert_eq!(
+        frontend_install_args("0.2.0"),
+        ["install", "cargo-cgp", "--version", "0.2.0", "--locked"]
+    );
 }

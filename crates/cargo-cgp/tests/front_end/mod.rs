@@ -4,5 +4,6 @@ pub mod dispatch;
 pub mod expand;
 pub mod help;
 pub mod preflight;
+pub mod setup;
 pub mod sysroot;
 pub mod update;

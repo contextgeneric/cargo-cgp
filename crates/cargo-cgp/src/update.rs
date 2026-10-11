@@ -4,8 +4,8 @@
 //! front-end crate, picks the highest published version **the running version's channel allows**
 //! (a stable install moves only to stable releases; a pre-release install moves to any newer
 //! version, so `0.1.0-alpha` reaches `0.1.0`), and stops early unless that is strictly newer.
-//! Otherwise it reinstalls the front-end at exactly that version with `cargo install --version`
-//! and hands off to the freshly installed `cargo cgp setup`, which brings the driver and
+//! Otherwise it reinstalls the front-end at exactly that version with
+//! `cargo install --version <version> --locked` and hands off to the freshly installed `cargo cgp setup`, which brings the driver and
 //! toolchain up to the new version.
 //!
 //! There is no self-replacing installer: on Unix `cargo install` atomically replaces the
@@ -132,20 +132,28 @@ pub fn select_update(versions: &[String], current: &str) -> anyhow::Result<Optio
 /// where `cargo-cgp` is not running.
 fn reinstall_frontend(version: &str) -> anyhow::Result<()> {
     let status = Command::new("cargo")
-        .args(["install", FRONTEND_CRATE, "--version", version])
+        .args(frontend_install_args(version))
         .status()
         .context("failed to run `cargo install` (is cargo on PATH?)")?;
 
     if !status.success() {
         bail!(
-            "`cargo install {FRONTEND_CRATE} --version {version}` failed with status {status}.\n\
+            "`cargo install {FRONTEND_CRATE} --version {version} --locked` failed with status {status}.\n\
              On Windows the running executable is locked and cannot be replaced in place; \
              from a shell where cargo-cgp is not running, update by hand with:\n\
-             \x20   cargo install {FRONTEND_CRATE} --version {version}\n\
+             \x20   cargo install {FRONTEND_CRATE} --version {version} --locked\n\
              \x20   cargo cgp setup"
         );
     }
     Ok(())
+}
+
+/// The `cargo install` arguments that install the front-end at `version`. `--locked` builds the
+/// published lockfile, as `setup` does for the driver.
+pub fn frontend_install_args(version: &str) -> Vec<String> {
+    ["install", FRONTEND_CRATE, "--version", version, "--locked"]
+        .map(str::to_owned)
+        .to_vec()
 }
 
 /// Run the freshly installed front-end's `setup`. `exe` is the path the front-end was installed

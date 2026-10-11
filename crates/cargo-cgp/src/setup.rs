@@ -7,8 +7,9 @@
 //! front-end's own constants, so the user never types a nightly date or a version.
 
 use std::env;
+use std::ffi::OsString;
 use std::io::ErrorKind;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{Context, bail};
@@ -59,18 +60,10 @@ fn install_toolchain(toolchain: &str) -> anyhow::Result<()> {
 /// the front-end. `cargo install` is idempotent here: it exits successfully (a no-op) when
 /// that exact version is already installed, and replaces an older one when it is not.
 fn install_driver(toolchain: &str) -> anyhow::Result<()> {
-    let mut command = Command::new("cargo");
-    command
+    let root = install_root();
+    let status = Command::new("cargo")
         .env(RUSTUP_TOOLCHAIN_ENV, toolchain)
-        .arg("install")
-        .arg(DRIVER_CRATE)
-        .args(["--version", TOOL_VERSION]);
-
-    if let Some(root) = install_root() {
-        command.arg("--root").arg(root);
-    }
-
-    let status = command
+        .args(driver_install_args(TOOL_VERSION, root.as_deref()))
         .status()
         .context("failed to run `cargo install` for the driver (is cargo on PATH?)")?;
 
@@ -78,6 +71,21 @@ fn install_driver(toolchain: &str) -> anyhow::Result<()> {
         bail!("installing {DRIVER_CRATE} {TOOL_VERSION} failed with status {status}");
     }
     Ok(())
+}
+
+/// The `cargo install` arguments that install the driver at `version`, into `root` when one is
+/// given. `--locked` builds the published lockfile, the dependency versions the release was tested
+/// with, instead of re-resolving to the newest compatible ones.
+pub fn driver_install_args(version: &str, root: Option<&Path>) -> Vec<OsString> {
+    let mut args: Vec<OsString> = ["install", DRIVER_CRATE, "--version", version, "--locked"]
+        .into_iter()
+        .map(OsString::from)
+        .collect();
+    if let Some(root) = root {
+        args.push("--root".into());
+        args.push(root.into());
+    }
+    args
 }
 
 /// The `--root` for `cargo install` so the driver lands *next to* the front-end, since the
