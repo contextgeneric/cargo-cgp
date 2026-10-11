@@ -48,10 +48,10 @@ pub const NO_MANAGE_ENV: &str = "CARGO_CGP_NO_MANAGE";
 pub const TOOLCHAIN_ENV: &str = "CARGO_CGP_TOOLCHAIN";
 
 /// The subdirectory of the project's own target directory that `cargo cgp check` and `expand`
-/// build into, so `target/cgp` beside the normal `target/debug`. Isolating the artifacts (built
-/// under a forced nightly with extra flags) keeps them from contending with the project's normal
-/// builds and with Rust Analyzer. Overridable with an explicit `--target-dir` or
-/// `CARGO_TARGET_DIR`.
+/// build into, so `target/cgp` beside the normal `target/debug`, or `<dir>/cgp` under a
+/// `CARGO_TARGET_DIR` or configured `build.target-dir`. A directory of its own keeps the check from
+/// waiting on the lock cargo holds on a target directory while it builds there, as the project's
+/// normal builds and Rust Analyzer do. Only an explicit `--target-dir` replaces it.
 pub const CHECK_TARGET_SUBDIR: &str = "cgp";
 
 /// The fallback target directory, relative to the working directory, for when cargo cannot report

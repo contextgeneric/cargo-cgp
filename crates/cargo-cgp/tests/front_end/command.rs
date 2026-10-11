@@ -33,7 +33,7 @@ fn absent_target_dir_is_not_detected() {
 
 use std::path::PathBuf;
 
-use cargo_cgp::launch::{forwarded_manifest_path, parse_target_directory};
+use cargo_cgp::launch::{forwarded_manifest_path, metadata_query_args, parse_target_directory};
 
 #[test]
 fn finds_a_forwarded_manifest_path_in_either_form() {
@@ -57,4 +57,47 @@ fn reads_the_target_directory_from_cargo_metadata() {
     );
     assert_eq!(parse_target_directory("not json"), None);
     assert_eq!(parse_target_directory(r#"{"packages":[]}"#), None);
+}
+
+#[test]
+fn the_metadata_query_sees_the_forwarded_config() {
+    // A `build.target-dir` given with `--config` decides the target directory just as one in a
+    // config file does, so the query must see it, in either spelling and in order.
+    let query = metadata_query_args(&args(&[
+        "--config",
+        "build.target-dir=\"out\"",
+        "--workspace",
+        "--config=net.offline=true",
+        "--manifest-path",
+        "a/Cargo.toml",
+    ]));
+    assert_eq!(
+        query,
+        args(&[
+            "metadata",
+            "--no-deps",
+            "--format-version",
+            "1",
+            "--manifest-path",
+            "a/Cargo.toml",
+            "--config",
+            "build.target-dir=\"out\"",
+            "--config",
+            "net.offline=true",
+        ])
+    );
+}
+
+#[test]
+fn the_metadata_query_ignores_arguments_after_a_separator() {
+    // After `--`, arguments belong to rustc (`cargo cgp expand -- …`), not to cargo.
+    let query = metadata_query_args(&args(&["--lib", "--", "--config", "x"]));
+    assert_eq!(
+        query,
+        args(&["metadata", "--no-deps", "--format-version", "1"])
+    );
+    assert_eq!(
+        forwarded_manifest_path(&args(&["--", "--manifest-path", "a/Cargo.toml"])),
+        None
+    );
 }
