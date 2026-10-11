@@ -10,7 +10,7 @@ use crate::expand::item::take_item;
 use crate::expand::output::{ExpansionDir, read_expansion};
 use crate::expand::profile::forwards_profile;
 use crate::help::{expand_help_text, is_help_flag};
-use crate::launch::wrapped_cargo;
+use crate::launch::{split_forwarded, wrapped_cargo};
 
 /// Expand one target's CGP macros and print the result, returning the exit code to propagate.
 ///
@@ -40,21 +40,22 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
         ExpansionDir::create().context("failed to create a private directory for the expansion")?;
     let output = directory.output_path();
 
-    let mut command = wrapped_cargo("rustc", &cargo_args)?;
-
     // Expansion needs no codegen, so build under the `check` profile unless the caller chose a
     // profile of their own.
-    if !forwards_profile(&cargo_args) {
-        command.arg("--profile").arg("check");
+    let mut tool_cargo_args = Vec::new();
+    if !forwards_profile(split_forwarded(&cargo_args).0) {
+        tool_cargo_args.extend(["--profile".to_owned(), "check".to_owned()]);
     }
 
     // Everything after `--` reaches the selected target's rustc invocation, where the driver
-    // recognizes the flags and takes over — see `cargo-cgp-driver`'s `expand` module.
-    command.arg("--");
-    command.arg(format!("{EXPAND_FLAG}={}", output.display()));
+    // recognizes the flags and takes over — see `cargo-cgp-driver`'s `expand` module. They follow
+    // any rustc arguments of the user's own, after the same `--`.
+    let mut tool_rustc_args = vec![format!("{EXPAND_FLAG}={}", output.display())];
     if let Some(item) = &item {
-        command.arg(format!("{EXPAND_ITEM_FLAG}={item}"));
+        tool_rustc_args.push(format!("{EXPAND_ITEM_FLAG}={item}"));
     }
+
+    let mut command = wrapped_cargo("rustc", &cargo_args, &tool_cargo_args, &tool_rustc_args)?;
 
     let status = command
         .status()

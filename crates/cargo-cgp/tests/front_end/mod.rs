@@ -6,6 +6,7 @@ pub mod dylib;
 pub mod exit;
 pub mod expand;
 pub mod help;
+pub mod invocation;
 pub mod preflight;
 pub mod setup;
 pub mod sysroot;

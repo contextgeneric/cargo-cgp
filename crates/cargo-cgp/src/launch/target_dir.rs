@@ -4,9 +4,10 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 use crate::config::{CHECK_TARGET_DIR, CHECK_TARGET_SUBDIR, RUSTUP_TOOLCHAIN_ENV};
+use crate::launch::invocation::split_forwarded;
 
-/// Add `--target-dir <dir>` unless the caller forwarded a `--target-dir` (in either
-/// `--target-dir X` or `--target-dir=X` form), which is taken as given.
+/// The target directory the tool chooses for a wrapped command, or `None` when the caller forwarded
+/// a `--target-dir` (in either `--target-dir X` or `--target-dir=X` form), which is taken as given.
 ///
 /// The directory is the `cgp` subdirectory of the target directory cargo itself would use, so it
 /// lands beside the project's normal build wherever the command is run from, and follows a
@@ -14,37 +15,32 @@ use crate::config::{CHECK_TARGET_DIR, CHECK_TARGET_SUBDIR, RUSTUP_TOOLCHAIN_ENV}
 /// separate directory keeps the check from waiting on cargo's lock of the directory every other
 /// cargo run in the project holds. When cargo cannot say (no package here, or a broken manifest),
 /// the relative [`CHECK_TARGET_DIR`] is used and the wrapped command reports the problem itself.
-pub fn inject_target_dir(command: &mut Command, forwarded_args: &[String]) {
+///
+/// `wrapped` is the command the directory is for, whose toolchain the directory query runs under.
+pub fn default_target_dir(wrapped: &Command, forwarded_args: &[String]) -> Option<PathBuf> {
     if forwards_target_dir(forwarded_args) {
-        return;
+        return None;
     }
-    let dir = cargo_target_directory(command, forwarded_args)
+    let dir = cargo_target_directory(wrapped, forwarded_args)
         .map(|dir| dir.join(CHECK_TARGET_SUBDIR))
         .unwrap_or_else(|| PathBuf::from(CHECK_TARGET_DIR));
-    command.arg("--target-dir").arg(dir);
+    Some(dir)
 }
 
 /// Whether the forwarded arguments already set `--target-dir` (in either `--target-dir X`
 /// or `--target-dir=X` form), in which case the default is not injected.
 pub fn forwards_target_dir(args: &[String]) -> bool {
-    cargo_args(args)
+    split_forwarded(args)
+        .0
         .iter()
         .any(|arg| arg == "--target-dir" || arg.starts_with("--target-dir="))
-}
-
-/// The arguments cargo itself reads: those before a `--`, after which they belong to rustc.
-fn cargo_args(args: &[String]) -> &[String] {
-    match args.iter().position(|arg| arg == "--") {
-        Some(separator) => &args[..separator],
-        None => args,
-    }
 }
 
 /// The `--manifest-path` the caller forwarded, in either `--manifest-path X` or
 /// `--manifest-path=X` form, so the target-directory query asks about the same package the
 /// wrapped command builds.
 pub fn forwarded_manifest_path(args: &[String]) -> Option<String> {
-    let mut args = cargo_args(args).iter();
+    let mut args = split_forwarded(args).0.iter();
     while let Some(arg) = args.next() {
         if arg == "--manifest-path" {
             return args.next().cloned();
@@ -109,7 +105,7 @@ pub fn metadata_query_args(forwarded_args: &[String]) -> Vec<String> {
 /// value may change how cargo reads the project, so the query sees them all.
 pub fn forwarded_config(args: &[String]) -> Vec<String> {
     let mut values = Vec::new();
-    let mut args = cargo_args(args).iter();
+    let mut args = split_forwarded(args).0.iter();
     while let Some(arg) = args.next() {
         if arg == "--config" {
             values.extend(args.next().cloned());

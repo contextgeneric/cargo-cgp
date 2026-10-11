@@ -3,6 +3,7 @@
 mod command;
 mod driver_path;
 mod dylib;
+mod invocation;
 mod preflight;
 mod sysroot;
 mod target_dir;
@@ -10,6 +11,7 @@ mod target_dir;
 pub use command::*;
 pub use driver_path::*;
 pub use dylib::*;
+pub use invocation::*;
 pub use preflight::*;
 pub use sysroot::*;
 pub use target_dir::*;

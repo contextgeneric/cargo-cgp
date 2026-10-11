@@ -5,7 +5,8 @@ use std::process::Command;
 
 use crate::config::{DRIVER_BIN, NO_MANAGE_ENV, RUSTUP_TOOLCHAIN_ENV, SYSROOT_ENV};
 use crate::launch::dylib::prepend_dylib_path;
-use crate::launch::target_dir::inject_target_dir;
+use crate::launch::invocation::cargo_invocation;
+use crate::launch::target_dir::default_target_dir;
 use crate::launch::{driver_path, preflight, sysroot};
 use crate::toolchain::pinned_toolchain;
 
@@ -13,15 +14,21 @@ use crate::toolchain::pinned_toolchain;
 /// rustc wrapper, ready to run.
 ///
 /// `forwarded_args` are the arguments after the cargo-cgp subcommand; they pass straight
-/// through to cargo. The caller adds whatever else its own subcommand needs — `expand`
-/// appends the rustc arguments that put the driver in expand mode — and then runs it.
+/// through to cargo. `tool_cargo_args` and `tool_rustc_args` are what the subcommand adds for
+/// cargo and for rustc (`expand`'s `--profile check` and its marker flags); [`cargo_invocation`]
+/// places each on its side of a single `--`.
 ///
 /// Unless [`NO_MANAGE_ENV`] is set, the tool *manages* the toolchain: it runs the
 /// [`preflight`] to confirm a matching driver and the pinned toolchain are present, and
 /// forces `RUSTUP_TOOLCHAIN` to the pinned nightly so the sysroot and `librustc_driver`
 /// match the compiler the driver embeds — independent of the project's own toolchain. When
 /// the variable is set (local development), it skips both and trusts the environment.
-pub fn wrapped_cargo(subcommand: &str, forwarded_args: &[String]) -> anyhow::Result<Command> {
+pub fn wrapped_cargo(
+    subcommand: &str,
+    forwarded_args: &[String],
+    tool_cargo_args: &[String],
+    tool_rustc_args: &[String],
+) -> anyhow::Result<Command> {
     let managed = env::var_os(NO_MANAGE_ENV).is_none();
     let driver = driver_path(DRIVER_BIN)?;
 
@@ -37,7 +44,6 @@ pub fn wrapped_cargo(subcommand: &str, forwarded_args: &[String]) -> anyhow::Res
     };
 
     let mut command = Command::new("cargo");
-    command.arg(subcommand).args(forwarded_args);
 
     // Route only workspace crates through the driver (dependencies keep using plain
     // rustc), exactly as `cargo clippy` does with `clippy-driver`.
@@ -54,7 +60,14 @@ pub fn wrapped_cargo(subcommand: &str, forwarded_args: &[String]) -> anyhow::Res
     // Build into an isolated target directory so the run never contends with the project's
     // own builds (or Rust Analyzer's), unless the caller chose a directory. This comes after the
     // toolchain is forced, because the directory query runs under the same toolchain.
-    inject_target_dir(&mut command, forwarded_args);
+    let target_dir = default_target_dir(&command, forwarded_args);
+    command.args(cargo_invocation(
+        subcommand,
+        forwarded_args,
+        tool_cargo_args,
+        target_dir.as_deref(),
+        tool_rustc_args,
+    ));
 
     Ok(command)
 }

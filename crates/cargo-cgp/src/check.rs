@@ -15,7 +15,7 @@ use crate::launch::wrapped_cargo;
 /// [`wrapped_cargo`], which `expand` shares — and lets cargo's output stream to the terminal
 /// untouched.
 pub fn run_check(forwarded_args: &[String]) -> anyhow::Result<i32> {
-    let mut command = wrapped_cargo("check", forwarded_args)?;
+    let mut command = wrapped_cargo("check", forwarded_args, &[], &[])?;
 
     // Let cargo inherit our stdio so its output streams straight through untouched.
     let status = command
