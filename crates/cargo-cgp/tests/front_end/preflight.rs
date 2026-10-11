@@ -5,7 +5,10 @@
 use std::path::Path;
 
 use cargo_cgp::config::PINNED_TOOLCHAIN;
-use cargo_cgp::launch::{DriverVersion, evaluate, parse_driver_version};
+use cargo_cgp::launch::{
+    DriverLocation, DriverOrigin, DriverVersion, PreflightFailure, evaluate, failure_message,
+    parse_driver_version,
+};
 
 /// The exact line format the driver prints (mirrors `cargo-cgp-driver`'s `version_string`).
 const DRIVER_OUTPUT: &str = "cargo-cgp-driver 0.1.0\n\
@@ -78,4 +81,125 @@ fn pinned_toolchain_matches_the_toolchain_file() {
         })
         .expect("a channel in rust-toolchain.toml");
     assert_eq!(PINNED_TOOLCHAIN, channel);
+}
+
+fn sibling_driver() -> DriverLocation {
+    DriverLocation {
+        path: "/home/u/.cargo/bin/cargo-cgp-driver".into(),
+        origin: DriverOrigin::Sibling,
+    }
+}
+
+#[test]
+fn evaluate_reports_which_identity_differs() {
+    let driver = sample();
+    let installed = "rustc 1.98.0-nightly (0000000 2026-08-01)";
+    assert_eq!(
+        evaluate("0.2.0", &driver, installed),
+        Err(PreflightFailure::VersionMismatch {
+            driver_version: "0.1.0".to_owned()
+        })
+    );
+    assert_eq!(
+        evaluate("0.1.0", &driver, installed),
+        Err(PreflightFailure::RustcMismatch {
+            built_against: "rustc 1.98.0-nightly (4c9d2bfe4 2026-07-01)".to_owned(),
+            installed: installed.to_owned(),
+        })
+    );
+}
+
+#[test]
+fn a_rustc_mismatch_names_the_toolchain_that_was_queried() {
+    // The driver says it is pinned to `nightly-2026-07-02`, but the compiler it is compared against
+    // came from the toolchain the preflight queried, which an override can make another one.
+    let failure = PreflightFailure::RustcMismatch {
+        built_against: "rustc 1.98.0-nightly (4c9d2bfe4 2026-07-01)".to_owned(),
+        installed: "rustc 1.99.0-nightly (1111111 2026-08-01)".to_owned(),
+    };
+    let message = failure_message(&failure, "nightly-2026-08-02", &sibling_driver(), "0.1.0");
+
+    assert!(
+        message.contains("toolchain `nightly-2026-08-02` provides `rustc 1.99.0-nightly"),
+        "{message}"
+    );
+    assert!(!message.contains("nightly-2026-07-02"), "{message}");
+}
+
+#[test]
+fn a_driver_that_fails_to_load_keeps_the_loaders_reason() {
+    let failure = PreflightFailure::DriverDidNotRun {
+        stderr: "cargo-cgp-driver: error while loading shared libraries: librustc_driver-abc.so: \
+                 cannot open shared object file\n"
+            .to_owned(),
+    };
+    let message = failure_message(&failure, "nightly-2026-10-10", &sibling_driver(), "0.1.0");
+
+    assert!(message.contains("librustc_driver-abc.so"), "{message}");
+    assert!(message.ends_with("Run `cargo cgp setup`."), "{message}");
+}
+
+#[test]
+fn every_driver_message_names_the_driver_and_where_it_was_found() {
+    let on_path = DriverLocation {
+        path: "/nix/profile/bin/cargo-cgp-driver".into(),
+        origin: DriverOrigin::Path,
+    };
+    for failure in [
+        PreflightFailure::DriverDidNotStart {
+            error: "Permission denied (os error 13)".to_owned(),
+        },
+        PreflightFailure::DriverDidNotRun {
+            stderr: String::new(),
+        },
+        PreflightFailure::UnparsableVersion,
+        PreflightFailure::VersionMismatch {
+            driver_version: "0.0.9".to_owned(),
+        },
+        PreflightFailure::RustcMismatch {
+            built_against: "a".to_owned(),
+            installed: "b".to_owned(),
+        },
+    ] {
+        let message = failure_message(&failure, "nightly-2026-10-10", &on_path, "0.1.0");
+        assert!(
+            message.contains("/nix/profile/bin/cargo-cgp-driver")
+                && message.contains("found on PATH, since none is beside cargo-cgp"),
+            "{message}"
+        );
+        assert!(message.ends_with("Run `cargo cgp setup`."), "{message}");
+    }
+}
+
+#[test]
+fn a_missing_toolchain_keeps_rustups_reason() {
+    let failure = PreflightFailure::ToolchainUnavailable {
+        stderr: "error: toolchain 'nightly-2026-10-10' is not installed\n".to_owned(),
+    };
+    let message = failure_message(&failure, "nightly-2026-10-10", &sibling_driver(), "0.1.0");
+
+    assert_eq!(
+        message,
+        "toolchain `nightly-2026-10-10` is not available:\n\n\
+         error: toolchain 'nightly-2026-10-10' is not installed\n\n\
+         Run `cargo cgp setup`."
+    );
+}
+
+#[test]
+fn a_missing_rustup_says_so_instead_of_naming_setup() {
+    // `setup` needs rustup too, so naming it would send the user round in a circle.
+    let message = failure_message(
+        &PreflightFailure::RustupMissing,
+        "nightly-2026-10-10",
+        &sibling_driver(),
+        "0.1.0",
+    );
+
+    assert!(
+        message.contains("rustup was not found on PATH"),
+        "{message}"
+    );
+    assert!(message.contains("Nix flake"), "{message}");
+    assert!(!message.contains("cargo cgp setup"), "{message}");
 }

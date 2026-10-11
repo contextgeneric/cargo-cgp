@@ -1,6 +1,7 @@
 pub mod args;
 pub mod command;
 pub mod dispatch;
+pub mod driver_path;
 pub mod expand;
 pub mod help;
 pub mod preflight;

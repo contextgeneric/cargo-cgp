@@ -41,7 +41,7 @@ pub fn wrapped_cargo(subcommand: &str, forwarded_args: &[String]) -> anyhow::Res
 
     // Route only workspace crates through the driver (dependencies keep using plain
     // rustc), exactly as `cargo clippy` does with `clippy-driver`.
-    command.env("RUSTC_WORKSPACE_WRAPPER", &driver);
+    command.env("RUSTC_WORKSPACE_WRAPPER", &driver.path);
     command.env(SYSROOT_ENV, &sysroot);
     prepend_dylib_path(&mut command, &sysroot.join("lib"));
 
