@@ -113,14 +113,13 @@ pub(crate) fn is_consumer_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// the distinction test [`consumer_provider_trait`] separately.
 ///
 /// The blanket impl alone is far too broad a signal to accept, since `ToString`, `Into`, and
-/// `Borrow` all carry one and reshaping their failures into CGP errors would be an over-reach. So a
-/// trait qualifies one of two ways. A trait the **checked crate defines** qualifies outright:
-/// cargo-cgp runs on CGP workspaces, and a local blanket trait whose bound is failing is the shape
-/// `#[cgp_fn]` produces. A **foreign** trait must instead show that its blanket genuinely depends on
-/// CGP ([`blanket_depends_on_cgp`]) — which is what admits a trait a library publishes, the
-/// normal arrangement, while still excluding the std blankets the locality rule was aimed at.
+/// `Borrow` all carry one, and so does any ordinary blanket trait a CGP crate defines for itself
+/// (`impl<T: Clone> Describe for T`). Reshaping their failures into CGP errors would be an
+/// over-reach, so a trait qualifies only when its blanket genuinely depends on CGP
+/// ([`blanket_depends_on_cgp`]), wherever the trait is defined. That admits the `#[cgp_fn]` output
+/// of the checked crate and a trait a library publishes alike.
 pub(crate) fn is_blanket_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    has_blanket_impl(tcx, def_id) && (def_id.is_local() || blanket_depends_on_cgp(tcx, def_id, 0))
+    has_blanket_impl(tcx, def_id) && blanket_depends_on_cgp(tcx, def_id, 0)
 }
 
 /// Whether `def_id` is a trait carrying at least one blanket impl.
@@ -133,8 +132,8 @@ fn has_blanket_impl(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// also what stops a pair of traits that depend on each other from looping.
 const MAX_BLANKET_TRAIT_DEPTH: u32 = 4;
 
-/// Whether a blanket-impl trait's blanket actually depends on CGP — the positive evidence a
-/// *foreign* trait needs before it is read as a blanket trait. A bound qualifies when its trait comes
+/// Whether a blanket-impl trait's blanket actually depends on CGP — the positive evidence a trait
+/// needs before it is read as a blanket trait. A bound qualifies when its trait comes
 /// from one of [`CGP_CRATES`] (`HasField` above all), is a CGP consumer trait (recognized
 /// structurally in any crate), or is itself such a blanket trait, followed to
 /// [`MAX_BLANKET_TRAIT_DEPTH`].
@@ -268,7 +267,15 @@ pub(crate) fn abstract_type_component_marker<'tcx>(
 /// namespace trait (`MockNamespace`) lives in the user crate and shares no `DefId` with CGP's, yet
 /// must not be mistaken for a regular Rust trait: a failing namespace-lookup bound means the
 /// redirect path is unwired, not that some ordinary bound is unmet.
+///
+/// The shape alone is not enough, since any user trait can have a lone `type Delegate`, so the
+/// trait must also show it is a namespace ([`namespace_has_cgp_evidence`]).
 pub(crate) fn is_namespace_lookup_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    has_namespace_shape(tcx, def_id) && namespace_has_cgp_evidence(tcx, def_id, 0)
+}
+
+/// Whether `def_id` is a trait whose only associated item is a type named `Delegate`.
+fn has_namespace_shape(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     if !tcx.is_trait(def_id) {
         return false;
     }
@@ -279,6 +286,39 @@ pub(crate) fn is_namespace_lookup_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
     items.next().is_none()
         && first.kind.tag() == ty::AssocTag::Type
         && tcx.item_name(first.def_id).as_str() == "Delegate"
+}
+
+/// How far the namespace-evidence search follows a namespace to the parent it inherits. A real
+/// hierarchy is a few levels deep, and the bound also stops a cycle of namespaces from looping.
+const MAX_NAMESPACE_DEPTH: u32 = 8;
+
+/// Whether a namespace-shaped trait shows that CGP generated it: it is one of CGP's own
+/// ([`CGP_CRATES`], such as `DefaultNamespace`), an impl of it is keyed by a component marker or a
+/// `PathCons` path (the entries `cgp_namespace!` writes), or an impl's `where` clause names a parent
+/// namespace that shows the same evidence (the inheritance blanket every child namespace gets).
+fn namespace_has_cgp_evidence(tcx: TyCtxt<'_>, def_id: DefId, depth: u32) -> bool {
+    if is_cgp_crate_trait(tcx, def_id) {
+        return true;
+    }
+    if depth >= MAX_NAMESPACE_DEPTH {
+        return false;
+    }
+    tcx.all_impls(def_id).any(|impl_did| {
+        let key = tcx.impl_trait_ref(impl_did).skip_binder().self_ty();
+        is_path_cons(tcx, key)
+            || is_component_marker(tcx, key)
+            || tcx
+                .clauses_of(impl_did)
+                .clauses
+                .iter()
+                .filter_map(|(clause, _)| clause.as_trait_clause())
+                .any(|bound| {
+                    let parent = bound.def_id();
+                    parent != def_id
+                        && has_namespace_shape(tcx, parent)
+                        && namespace_has_cgp_evidence(tcx, parent, depth + 1)
+                })
+    })
 }
 
 /// Whether `ty` is a struct or enum defined in the crate being compiled — the only kind of type

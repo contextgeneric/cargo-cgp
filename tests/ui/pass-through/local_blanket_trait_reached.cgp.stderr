@@ -1,0 +1,48 @@
+error[E0277]: the trait bound `App: Describe` is not satisfied
+  --> src/main.rs:28:24
+   |
+28 | impl CheckDescribe for App {}
+   |                        ^^^ the trait `Clone` is not implemented for `App`
+   |
+note: required for `App` to implement `Describe`
+  --> src/main.rs:18:16
+   |
+18 | impl<T: Clone> Describe for T {
+   |         -----  ^^^^^^^^     ^
+   |         |
+   |         unsatisfied trait bound introduced here
+note: required by a bound in `CheckDescribe`
+  --> src/main.rs:24:26
+   |
+24 | pub trait CheckDescribe: Describe {}
+   |                          ^^^^^^^^ required by this bound in `CheckDescribe`
+help: consider annotating `App` with `#[derive(Clone)]`
+   |
+26 + #[derive(Clone)]
+27 | pub struct App;
+   |
+
+error[E0599]: the method `describe` exists for struct `App`, but its trait bounds were not satisfied
+  --> src/main.rs:32:17
+   |
+26 | pub struct App;
+   | -------------- method `describe` not found for this struct because it doesn't satisfy `App: Clone` or `App: Describe`
+...
+32 |     let _ = app.describe();
+   |                 ^^^^^^^^ method cannot be called on `App` due to unsatisfied trait bounds
+   |
+note: trait bound `App: Clone` was not satisfied
+  --> src/main.rs:18:9
+   |
+18 | impl<T: Clone> Describe for T {
+   |         ^^^^^  --------     -
+   |         |
+   |         unsatisfied trait bound introduced here
+help: consider annotating `App` with `#[derive(Clone)]`
+   |
+26 + #[derive(Clone)]
+27 | pub struct App;
+   |
+
+Some errors have detailed explanations: E0277, E0599.
+For more information about an error, try `rustc --explain E0277`.
