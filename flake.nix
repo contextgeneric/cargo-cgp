@@ -50,7 +50,8 @@
 
         # Only the files the build actually reads, so the derivation's input hash — and
         # thus a rebuild — turns solely on the crate sources, the manifests, the lockfile,
-        # and the pinned-toolchain file the `build.rs` scripts consume. Editing `docs/`, a
+        # the pinned-toolchain file the `build.rs` scripts consume, and the `LICENSE` each
+        # published crate links to (so the links do not dangle). Editing `docs/`, a
         # `tests/ui` fixture, `README.md`, or `AGENTS.md` leaves the source unchanged and
         # the built binaries cached. `crates/` is taken whole (it is small and all of it is
         # build input, including each workspace member's manifest that cargo must parse);
@@ -62,6 +63,7 @@
             ./Cargo.toml
             ./Cargo.lock
             ./rust-toolchain.toml
+            ./LICENSE
             ./crates
           ];
         };

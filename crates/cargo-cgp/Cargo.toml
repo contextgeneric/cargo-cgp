@@ -8,6 +8,7 @@ license      = { workspace = true }
 repository   = { workspace = true }
 authors      = { workspace = true }
 keywords     = { workspace = true }
+readme       = "../../README.md"
 
 # The cargo-subcommand front-end. It is deliberately a plain std/anyhow binary and
 # does *not* depend on `rustc_private`: it only launches `cargo check` with the driver
