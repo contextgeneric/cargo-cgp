@@ -1,7 +1,7 @@
 error[E0119]: conflicting implementations of trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` for type `Outer`
-  --> src/main.rs:25:9
+  --> src/main.rs:24:9
    |
-25 |     pub name: String,
+24 |     pub name: String,
    |         ^^^^
    |
    = note: conflicting implementation in crate `cgp_field`:

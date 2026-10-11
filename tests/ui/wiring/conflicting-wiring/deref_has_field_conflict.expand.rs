@@ -1,13 +1,12 @@
 #![feature(prelude_import)]
 //! A struct deriving `HasField` for a field its `Deref` target also has.
 //!
-//! The `E0119` overlap with `cgp`'s `Deref` blanket impl keeps its headline but loses rustc's note
-//! naming the blanket impl, and gains a `help` to use `#[derive(HasField)]` over a `[CGP-E108]` root
-//! cause saying the impl is missing. The impl exists twice; every added line is false.
+//! The derive's `HasField` impl overlaps `cgp`'s `Deref` blanket impl (`E0119`). The tool keeps
+//! rustc's diagnostic, with the field tag resugared in the headline and rustc's note naming the
+//! conflicting blanket impl. The resolver takes only an unmet obligation, and an overlap is not one,
+//! so it adds no missing-derive help or cause.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

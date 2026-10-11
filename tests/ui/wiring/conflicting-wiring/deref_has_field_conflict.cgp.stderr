@@ -1,13 +1,11 @@
 error[E0119]: conflicting implementations of trait `HasField<Symbol!("name")>` for type `Outer`
-  --> src/main.rs:25:9
+  --> src/main.rs:24:9
    |
-25 |     pub name: String,
+24 |     pub name: String,
    |         ^^^^
    |
-   = help: make sure that `#[derive(HasField)]` is used for `Outer`
-   = note: root cause: [CGP-E108] accessor trait `HasField` with field `name` is not implemented for `Outer`
-           this is required through the dependency chain:
-             [CGP-E105] trait impl `HasFieldMut<Symbol!("name")>` for `Outer`
-             └─ [CGP-E108] accessor trait `HasField` with field `name` is not implemented for `Outer`
+   = note: conflicting implementation in crate `cgp_field`:
+           - impl<Context, Tag, Target, Value> cgp::prelude::HasField<Tag> for Context
+             where <Context as Deref>::Target == Target, <Target as cgp::prelude::HasField<Tag>>::Value == Value, Context: cgp::cgp_core::cgp_field::traits::has_field::DerefMap, Target: cgp::prelude::HasField<Tag>;
 
 For more information about this error, try `rustc --explain E0119`.
