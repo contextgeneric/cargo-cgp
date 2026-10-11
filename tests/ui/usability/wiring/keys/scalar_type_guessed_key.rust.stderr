@@ -1,0 +1,18 @@
+error[E0425]: cannot find type `HasScalarTypeComponent` in this scope
+  --> src/main.rs:20:9
+   |
+20 |         HasScalarTypeComponent: UseType<f64>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+help: you might be missing a type parameter
+   |
+20 |         HasScalarTypeComponent<HasScalarTypeComponent>: UseType<f64>,
+   |                               ++++++++++++++++++++++++
+
+error[E0425]: cannot find type `HasScalarTypeComponent` in this scope
+  --> src/main.rs:20:9
+   |
+20 |         HasScalarTypeComponent: UseType<f64>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.

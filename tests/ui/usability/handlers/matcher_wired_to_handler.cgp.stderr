@@ -1,0 +1,14 @@
+error[E0277]: [CGP-E002] the provider trait `Handler<(), Shape>` with context `App` is not implemented for provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>`
+  --> src/main.rs:62:9
+   |
+62 |         HandlerComponent: ((), Shape),
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E111] the provider trait `Handler` is not implemented for `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanHandle<(), Shape>` for context `App`
+             └─ [CGP-E102] provider trait impl `Handler<(), Shape>` with context `App` for provider `UseInputDelegate<MatchWithFieldHandlersInputs<HandleFieldValue<ComputeArea>>>`
+               └─ [CGP-E102] provider trait impl `Handler<(), Shape>` with context `App` for provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>`
+                 └─ [CGP-E111] the provider trait `Handler` is not implemented for `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>`
+
+For more information about this error, try `rustc --explain E0277`.

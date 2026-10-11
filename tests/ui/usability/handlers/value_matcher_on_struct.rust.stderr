@@ -1,0 +1,34 @@
+error[E0277]: the trait bound `Cons<Field<Symbol<5, Chars<..>>, f64>, Nil>: ToFieldHandlers<_>` is not satisfied
+  --> src/main.rs:39:9
+   |
+39 |         ComputerComponent: ((), Scene),
+   |         ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `dispatch::providers::matchers::to_field_handlers::ToFieldHandlers<dispatch::providers::matchers::to_field_handlers::MapExtractFieldAndHandle<HandleFieldValue<ComputeArea>>>` is not implemented for `Cons<Field<Symbol<5, Chars<..>>, f64>, Nil>`
+help: the following other types implement trait `dispatch::providers::matchers::to_field_handlers::ToFieldHandlers<M>`
+  --> $CGP/crates/extra/cgp-dispatch/src/providers/matchers/to_field_handlers.rs:25:1
+   |
+25 | / impl<Tag, Value, RestFields, M> ToFieldHandlers<M> for Either<Field<Tag, Value>, RestFields>
+26 | | where
+27 | |     M: MapFieldHandler,
+28 | |     RestFields: ToFieldHandlers<M>,
+   | |___________________________________^ `Either<cgp::prelude::Field<Tag, Value>, RestFields>` implements `dispatch::providers::matchers::to_field_handlers::ToFieldHandlers<M>`
+...
+33 |   impl<Provider> ToFieldHandlers<Provider> for Void {
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Void` implements `dispatch::providers::matchers::to_field_handlers::ToFieldHandlers<Provider>`
+   = note: required for `Scene` to implement `HasFieldHandlers<MapExtractFieldAndHandle<HandleFieldValue<_>>>`
+   = note: required for `MatchWithFieldHandlersInputs<HandleFieldValue<ComputeArea>>` to implement `DelegateComponent<Scene>`
+   = note: required for `UseInputDelegate<MatchWithFieldHandlersInputs<HandleFieldValue<ComputeArea>>>` to implement `IsProviderFor<cgp::prelude::ComputerComponent, App, ((), Scene)>`
+   = note: required for `App` to implement `CanUseComponent<cgp::prelude::ComputerComponent, ((), Scene)>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:37:1
+   |
+37 | / check_components! {
+38 | |     App {
+39 | |         ComputerComponent: ((), Scene),
+40 | |     }
+41 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

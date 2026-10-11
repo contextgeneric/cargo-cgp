@@ -1,0 +1,40 @@
+error[E0284]: type annotations needed: cannot satisfy `<__Context__ as HasField<Symbol<5, Chars<..>>>>::Value == u32`
+  --> src/main.rs:18:16
+   |
+18 | #[cgp_impl(new ReadCount)]
+   |                ^^^^^^^^^ cannot satisfy `<__Context__ as HasField<Symbol<5, Chars<..>>>>::Value == u32`
+   |
+note: required for `ReadCount` to implement `Counter<__Context__>`
+  --> src/main.rs:18:1
+   |
+18 | #[cgp_impl(new ReadCount)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0284]: type annotations needed: cannot satisfy `<__Context__ as HasField<Symbol<5, Chars<..>>>>::Value == u32`
+  --> src/main.rs:18:16
+   |
+18 | #[cgp_impl(new ReadCount)]
+   |                ^^^^^^^^^ cannot satisfy `<__Context__ as HasField<Symbol<5, Chars<..>>>>::Value == u32`
+   |
+note: required for `ReadCount` to implement `IsProviderFor<CounterComponent, __Context__>`
+  --> src/main.rs:18:1
+   |
+18 | #[cgp_impl(new ReadCount)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0282]: type annotations needed
+  --> src/main.rs:18:1
+   |
+18 | #[cgp_impl(new ReadCount)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+   |
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0282, E0284.
+For more information about an error, try `rustc --explain E0282`.

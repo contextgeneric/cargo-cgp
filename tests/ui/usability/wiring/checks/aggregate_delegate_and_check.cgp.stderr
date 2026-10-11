@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `GreetBundle`
+  --> src/main.rs:26:9
+   |
+26 |         GreeterComponent: GreetHello,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E106] missing field `name` on `GreetBundle`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `GreetBundle`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `GreetBundle` for provider `GreetHello`
+               └─ [CGP-E106] missing field `name` on `GreetBundle`
+
+For more information about this error, try `rustc --explain E0277`.

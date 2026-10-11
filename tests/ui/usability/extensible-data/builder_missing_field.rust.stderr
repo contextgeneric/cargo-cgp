@@ -1,0 +1,30 @@
+error[E0277]: the trait bound `__PartialConfig<IsPresent, IsNothing>: FinalizeBuild` is not satisfied
+  --> src/main.rs:43:9
+   |
+43 |         ComputerComponent: ((), ()),
+   |         ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `FinalizeBuild` is not implemented for `__PartialConfig<IsPresent, IsNothing>`
+  --> src/main.rs:15:1
+   |
+15 | pub struct Config {
+   | ^^^^^^^^^^^^^^^^^
+help: the trait `FinalizeBuild` is implemented for `__PartialConfig<IsPresent, IsPresent>`
+  --> src/main.rs:15:12
+   |
+15 | pub struct Config {
+   |            ^^^^^^
+   = note: required for `BuildWithHandlers<Config, Cons<BuildAndSetField<_, _>, Nil>>` to implement `IsProviderFor<cgp::prelude::ComputerComponent, App, ((), ())>`
+   = note: required for `App` to implement `CanUseComponent<cgp::prelude::ComputerComponent, ((), ())>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:41:1
+   |
+41 | / check_components! {
+42 | |     App {
+43 | |         ComputerComponent: ((), ()),
+44 | |     }
+45 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

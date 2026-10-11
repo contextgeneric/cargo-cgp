@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E001] the consumer trait `CanShow<String>` is not implemented for context `App`
+  --> src/main.rs:36:9
+   |
+36 |         ShowImplComponent: String,
+   |         ^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@app.ShowImplComponent.ShowImplComponent.String`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanShow<String>` for context `App`
+             └─ [CGP-E104] redirect lookup to `@app.ShowImplComponent.ShowImplComponent` in `App`
+               └─ [CGP-E107] context `App` does not contain any delegate entry for `@app.ShowImplComponent.ShowImplComponent.String`
+
+For more information about this error, try `rustc --explain E0277`.

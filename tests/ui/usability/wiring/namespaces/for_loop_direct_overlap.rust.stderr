@@ -1,0 +1,22 @@
+error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol<4, cgp::prelude::Chars<..>>, PathCons<ShowImplComponent, PathCons<String, _>>>, _, _>` for type `App`
+  --> src/main.rs:46:10
+   |
+43 |             @test.ShowImplComponent.T: Provider,
+   |              ------------------------ first implementation here
+...
+46 |         @test.ShowImplComponent.String: ShowWithDisplay,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+   |
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<4, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<ShowImplComponent, cgp::prelude::PathCons<std::string::String, _>>>, _, _>` for type `ShowString`
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<4, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<ShowImplComponent, cgp::prelude::PathCons<std::string::String, _>>>, _, _>` for type `ShowWithDisplay`
+
+error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol<4, cgp::prelude::Chars<..>>, PathCons<ShowImplComponent, PathCons<String, _>>>>` for type `App`
+  --> src/main.rs:46:10
+   |
+43 |             @test.ShowImplComponent.T: Provider,
+   |              ------------------------ first implementation here
+...
+46 |         @test.ShowImplComponent.String: ShowWithDisplay,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

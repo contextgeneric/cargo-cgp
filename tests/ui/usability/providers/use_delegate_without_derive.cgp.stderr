@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E002] the provider trait `AreaCalculator<Square>` with context `App` is not implemented for provider `UseDelegate<AreaTable>`
+  --> src/main.rs:38:9
+   |
+38 |         AreaCalculatorComponent: Square,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E111] the provider trait `AreaCalculator` is not implemented for `UseDelegate<AreaTable>`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCalculateArea<Square>` for context `App`
+             └─ [CGP-E102] provider trait impl `AreaCalculator<Square>` with context `App` for provider `UseDelegate<AreaTable>`
+               └─ [CGP-E111] the provider trait `AreaCalculator` is not implemented for `UseDelegate<AreaTable>`
+
+For more information about this error, try `rustc --explain E0277`.

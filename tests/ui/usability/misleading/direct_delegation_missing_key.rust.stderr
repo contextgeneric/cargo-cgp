@@ -1,0 +1,63 @@
+error[E0277]: the trait bound `Bundle: DelegateComponent<GreeterComponent>` is not satisfied
+  --> src/main.rs:37:1
+   |
+37 | / delegate_components! {
+38 | |     Person {
+39 | |         GreeterComponent -> Bundle,
+40 | |     }
+41 | | }
+   | |_^ unsatisfied trait bound
+   |
+help: the trait `DelegateComponent<GreeterComponent>` is not implemented for `Bundle`
+      but trait `DelegateComponent<FarewellComponent>` is implemented for it
+  --> src/main.rs:31:9
+   |
+31 |         FarewellComponent: SayBye,
+   |         ^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `FarewellComponent`, found `GreeterComponent`
+   = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
+   |
+12 + #![feature(trivial_bounds)]
+   |
+
+error[E0277]: the size for values of type `<Bundle as DelegateComponent<GreeterComponent>>::Delegate` cannot be known
+  --> src/main.rs:37:1
+   |
+37 | / delegate_components! {
+38 | |     Person {
+39 | |         GreeterComponent -> Bundle,
+40 | |     }
+41 | | }
+   | |_^ doesn't have a known size
+   |
+   = help: the nightly-only, unstable trait `MetaSized` is not implemented for `<Bundle as DelegateComponent<GreeterComponent>>::Delegate`
+   = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
+   |
+12 + #![feature(trivial_bounds)]
+   |
+
+error[E0277]: the trait bound `Person: CanUseComponent<GreeterComponent>` is not satisfied
+  --> src/main.rs:45:9
+   |
+45 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `CanUseComponent<GreeterComponent>` is not implemented for `Person`
+  --> src/main.rs:35:1
+   |
+35 | pub struct Person;
+   | ^^^^^^^^^^^^^^^^^
+note: required by a bound in `__CheckPerson`
+  --> src/main.rs:43:1
+   |
+43 | / check_components! {
+44 | |     Person {
+45 | |         GreeterComponent,
+46 | |     }
+47 | | }
+   | |_^ required by this bound in `__CheckPerson`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

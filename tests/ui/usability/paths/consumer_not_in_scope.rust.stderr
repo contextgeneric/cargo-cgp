@@ -1,0 +1,19 @@
+error[E0599]: no method named `greet` found for struct `Person` in the current scope
+  --> src/main.rs:32:17
+   |
+14 |         fn greet(&self);
+   |            ----- the method is available for `Person` here
+...
+22 |     pub struct Person;
+   |     ----------------- method `greet` not found for this struct
+...
+32 |     lib::Person.greet();
+   |                 ^^^^^ method not found in `Person`
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `CanGreet` which provides `greet` is implemented but not in scope; perhaps you want to import it
+   |
+ 9 + use crate::lib::CanGreet;
+   |
+
+For more information about this error, try `rustc --explain E0599`.

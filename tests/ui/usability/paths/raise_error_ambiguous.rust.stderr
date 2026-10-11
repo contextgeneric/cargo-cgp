@@ -1,0 +1,18 @@
+error[E0034]: multiple applicable items in scope
+  --> src/main.rs:24:18
+   |
+24 |     let _ = App::raise_error(String::new());
+   |                  ^^^^^^^^^^^ multiple `raise_error` found
+   |
+   = note: candidate #1 is defined in an impl of the trait `cgp::prelude::CanRaiseError` for the type `__Context__`
+   = note: candidate #2 is defined in an impl of the trait `ErrorRaiser` for the type `__Provider__`
+help: use fully-qualified syntax to disambiguate
+   |
+24 -     let _ = App::raise_error(String::new());
+24 +     let _ = <App as ErrorRaiser>::raise_error(String::new());
+   |
+24 -     let _ = App::raise_error(String::new());
+24 +     let _ = <App as cgp::prelude::CanRaiseError>::raise_error(String::new());
+   |
+
+For more information about this error, try `rustc --explain E0034`.

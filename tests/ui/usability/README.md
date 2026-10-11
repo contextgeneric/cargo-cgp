@@ -33,14 +33,24 @@ class in [the usability issue document](https://github.com/contextgeneric/cgp-kn
   with `build_from`, the defaulted and optional builders, extraction and construction by tag, the
   casts, the `BuildAndMergeOutputs` builder dispatcher, and a shape bound for every lifetime. None of
   them names the field or variant at fault.
-- [`misleading/`](misleading) — a rewrite that states something false: a field-tag typo reported as
-  a missing `#[derive(HasField)]` on a struct that has it, and the overflow cascading from an
-  unresolved `@`-path segment rewritten into the `[CGP-E010]` wiring-cycle message.
+- [`misleading/`](misleading) — a rewrite that states something false: a wrong context, table, or
+  inner provider named, a derive or wiring fix that does not apply, a cascade reported as a cycle,
+  or a root cause built from an unresolved type. Each fixture's header names the false line.
+- [`fields/`](fields), [`providers/`](providers), [`types/`](types), [`handlers/`](handlers), and
+  [`use-site/`](use-site) — failures of those constructs that the tool passes through or reshapes
+  without the hint that names the fix, such as a getter wired to the wrong provider or a pipeline
+  stage whose types disagree.
 - [`paths/`](paths) — an untransformed diagnostic that prints full paths (`cgp::prelude::IsNothing`,
   `std::result::Result`) where plain `cargo check` prints short names, including inside a
   machine-applicable suggestion.
 - [`wiring/constraints/`](wiring/constraints) — an unconstrained per-entry generic
-  (`unconstrained_generic`), whose `E0207` fires twice with contradictory auto-fixes. The other
+  (`unconstrained_generic`), whose `E0207` fires twice with contradictory auto-fixes, and the
+  `for`-loop and `#[default_impl]` forms of the same `E0207`.
+- [`wiring/checks/`](wiring/checks), [`wiring/conflicts/`](wiring/conflicts),
+  [`wiring/cycles/`](wiring/cycles), [`wiring/keys/`](wiring/keys), and
+  [`wiring/namespaces/`](wiring/namespaces) — wiring mistakes left uncoded or unhinted: a check
+  table defined twice, a hand impl beside wiring, a cycle reached by a call, a key or value that
+  does not resolve, and a near-miss namespace path. The other
   structural conflicts have been reshaped and graduated: the duplicate delegate-key family into
   `[CGP-E004]`–`[CGP-E008]`, the duplicate `cgp_namespace!` path into `[CGP-E008]`, the duplicate
   provider name's redundant `IsProviderFor` half suppressed, and the `UseContext` cycle into

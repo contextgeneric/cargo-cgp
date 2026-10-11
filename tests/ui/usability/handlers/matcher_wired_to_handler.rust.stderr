@@ -1,0 +1,41 @@
+error[E0277]: the trait bound `MatchWithHandlers<Cons<_, _>>: IsProviderFor<_, App, _>` is not satisfied
+  --> src/main.rs:62:9
+   |
+62 |         HandlerComponent: ((), Shape),
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `IsProviderFor<cgp::prelude::HandlerComponent, App, ((), Shape)>` is not implemented for `MatchWithHandlers<Cons<ExtractFieldAndHandle<Symbol<6, _>, _>, _>>`
+help: `MatchWithHandlers<Handlers>` implements trait `IsProviderFor<Component, Context, Params>`
+  --> $CGP/crates/extra/cgp-dispatch/src/providers/with_handlers/match_with_handlers.rs:12:1
+   |
+12 | / impl<Context, Code, Input, Output, Remainder, Handlers> Computer<Context, Code, Input>
+13 | |     for MatchWithHandlers<Handlers>
+14 | | where
+15 | |     Input: HasExtractor,
+16 | |     DispatchMatchers<Handlers>:
+17 | |         Computer<Context, Code, Input::Extractor, Output = Result<Output, Remainder>>,
+18 | |     Remainder: FinalizeExtract,
+   | |_______________________________^ `IsProviderFor<cgp::prelude::ComputerComponent, Context, (Code, Input)>`
+...
+28 | / impl<Context, Code, Input, Output, Remainder, Handlers> AsyncComputer<Context, Code, Input>
+29 | |     for MatchWithHandlers<Handlers>
+30 | | where
+31 | |     Input: HasExtractor,
+32 | |     DispatchMatchers<Handlers>:
+33 | |         AsyncComputer<Context, Code, Input::Extractor, Output = Result<Output, Remainder>>,
+34 | |     Remainder: FinalizeExtract,
+   | |_______________________________^ `IsProviderFor<AsyncComputerComponent, Context, (Code, Input)>`
+   = note: required for `UseInputDelegate<MatchWithFieldHandlersInputs<HandleFieldValue<ComputeArea>>>` to implement `IsProviderFor<cgp::prelude::HandlerComponent, App, ((), Shape)>`
+   = note: required for `App` to implement `CanUseComponent<cgp::prelude::HandlerComponent, ((), Shape)>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:60:1
+   |
+60 | / check_components! {
+61 | |     App {
+62 | |         HandlerComponent: ((), Shape),
+63 | |     }
+64 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,0 +1,13 @@
+error[E0428]: the name `__CheckApp` is defined multiple times
+  --> src/main.rs:37:1
+   |
+31 | check_components! {
+   | ----------------- previous definition of the trait `__CheckApp` here
+...
+37 | check_components! {
+   | ^^^^^^^^^^^^^^^^^ `__CheckApp` redefined here
+   |
+   = note: `__CheckApp` must be defined only once in the type namespace of this module
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0428`.
