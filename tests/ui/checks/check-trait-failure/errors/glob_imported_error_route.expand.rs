@@ -4,7 +4,10 @@
 //!
 //! `App` routes `ParseIntError` through its open `ErrorRaiserComponent` table, and the check asks for
 //! `std::io::Error`. The crate glob-imports a prelude that re-exports `backend::Error`, so the bare
-//! name `Error` in this crate means `backend::Error`.
+//! name `Error` in this crate means `backend::Error`. rustc qualifies every glob-imported name, and
+//! the tool keeps the qualifier on `std::io::Error` because the glob brings in a different `Error`:
+//! the headline reads `CanRaiseError<std::io::Error>` and the leaf
+//! `@ErrorRaiserComponent.std::io::Error`.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;

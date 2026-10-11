@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProviderFor<_, App, Error>` is not satisfied
-  --> src/main.rs:44:9
+  --> src/main.rs:47:9
    |
-44 |         ErrorRaiserComponent: std::io::Error,
+47 |         ErrorRaiserComponent: std::io::Error,
    |         ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `IsProviderFor<ErrorRaiserComponent, App, std::io::Error>` is not implemented for `RedirectLookup<App, PathCons<ErrorRaiserComponent, Nil>>`
@@ -17,13 +17,13 @@ error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProvider
            and 9 others
    = note: required for `App` to implement `CanUseComponent<ErrorRaiserComponent, std::io::Error>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:42:1
+  --> src/main.rs:45:1
    |
-42 | / check_components! {
-43 | |     App {
-44 | |         ErrorRaiserComponent: std::io::Error,
-45 | |     }
-46 | | }
+45 | / check_components! {
+46 | |     App {
+47 | |         ErrorRaiserComponent: std::io::Error,
+48 | |     }
+49 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

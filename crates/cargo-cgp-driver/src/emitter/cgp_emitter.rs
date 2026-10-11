@@ -94,8 +94,11 @@ pub struct CgpEmitter<E: Emitter> {
     cgp_used: OnceCell<bool>,
     /// The type names that name more than one item ([`resolve::ambiguous_type_names`]), decided on
     /// the first diagnostic for which the compiler can answer, so the post-processing keeps the
-    /// qualifier that tells such a name's items apart.
+    /// qualifier that tells such a name's items apart. `ambiguous` knows the glob-imported names
+    /// alone; `ambiguous_with_glob_items` also knows the items those globs bring in, read from HIR,
+    /// so it serves only a diagnostic the tool rewrote, which arrives after lowering.
     ambiguous: OnceCell<AmbiguousNames>,
+    ambiguous_with_glob_items: OnceCell<AmbiguousNames>,
     /// The stage made to panic on purpose, set only by the UI fixtures that pin the panic fallback
     /// (see [`TestPanic`]).
     test_panic: Option<TestPanic>,
@@ -218,6 +221,7 @@ impl<E: Emitter> CgpEmitter<E> {
             cgp_impl_misuses: None,
             cgp_used: OnceCell::new(),
             ambiguous: OnceCell::new(),
+            ambiguous_with_glob_items: OnceCell::new(),
             test_panic,
         }
     }
@@ -447,7 +451,7 @@ impl<E: Emitter> CgpEmitter<E> {
             return;
         }
         let has_field_impls = mentions_hasfield_impls(diag);
-        let ambiguous = self.ambiguous_names();
+        let ambiguous = self.ambiguous_names(origin);
         postprocess_messages(&mut diag.messages, has_field_impls, origin, ambiguous);
         postprocess_multispan(&mut diag.span, has_field_impls, origin, ambiguous);
         for child in &mut diag.children {
@@ -457,14 +461,25 @@ impl<E: Emitter> CgpEmitter<E> {
     }
 
     /// The type names that name more than one item, decided once the compiler can answer. Before
-    /// then the set is empty, which strips every qualifier.
-    fn ambiguous_names(&self) -> &AmbiguousNames {
+    /// then the set is empty, which strips every qualifier. A message the tool rewrote also knows
+    /// which item each glob import brings in. Reading that needs the HIR, which an untransformed
+    /// diagnostic emitted during name resolution would force the compiler to build under the
+    /// emitter, so an untransformed message gets the glob-imported names alone.
+    fn ambiguous_names(&self, origin: Origin) -> &AmbiguousNames {
         static EMPTY: LazyLock<AmbiguousNames> = LazyLock::new(AmbiguousNames::default);
-        if let Some(names) = self.ambiguous.get() {
+        let read_glob_items = origin == Origin::Rewritten;
+        let cell = if read_glob_items {
+            &self.ambiguous_with_glob_items
+        } else {
+            &self.ambiguous
+        };
+        if let Some(names) = cell.get() {
             return names;
         }
-        match rustc_middle::ty::tls::with_opt(|tcx| tcx.and_then(resolve::ambiguous_type_names)) {
-            Some(names) => self.ambiguous.get_or_init(|| names),
+        match rustc_middle::ty::tls::with_opt(|tcx| {
+            tcx.and_then(|tcx| resolve::ambiguous_type_names(tcx, read_glob_items))
+        }) {
+            Some(names) => cell.get_or_init(|| names),
             None => &EMPTY,
         }
     }
@@ -884,7 +899,7 @@ impl<E: Emitter> CgpEmitter<E> {
                 &text,
                 HAS_FIELD_IMPLS,
                 Origin::Rewritten,
-                self.ambiguous_names(),
+                self.ambiguous_names(Origin::Rewritten),
             )
             .unwrap_or(text);
             diag.children.push(subdiag(Sublevel::Note, text));

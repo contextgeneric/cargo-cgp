@@ -19,7 +19,7 @@ use crate::postprocess::ambiguous::AmbiguousNames;
 /// Strip module qualifiers from `text`, collapsing each `a::b::C` identifier run to its last
 /// segment. Returns the rewritten text when any run was collapsed, `None` otherwise.
 pub fn strip_module_paths(text: &str) -> Option<String> {
-    collapse_paths(text, |_, _| true)
+    collapse_paths(text, |_, _, _| true)
 }
 
 /// The CGP type names the resugaring stages and the missing-field rewrite read in bare form, so a
@@ -31,22 +31,22 @@ pub const CGP_ENCODING_NAMES: &[&str] = &[
 ];
 
 /// Strip module qualifiers from `text` except where they tell two items apart: collapse each
-/// `a::b::C` run to `C` unless `ambiguous` holds `C`, a type name that names more than one item in
-/// the build (`Error` for `std::io::Error` beside `backend::Error`). A run rooted at the `cgp` crate
+/// `a::b::C` run to `C` unless [`AmbiguousNames::keeps_qualifier`] says the bare `C` would read as
+/// another item (`Error` for `std::io::Error` beside `backend::Error`). A run rooted at the `cgp` crate
 /// always collapses, since rustc qualifies CGP's names for the prelude glob import, and so does a
 /// run ending in one of [`CGP_ENCODING_NAMES`]. Returns the rewritten text when any run was
 /// collapsed, `None` otherwise.
 pub fn strip_unambiguous_paths(text: &str, ambiguous: &AmbiguousNames) -> Option<String> {
-    collapse_paths(text, |first_segment, last_segment| {
+    collapse_paths(text, |path, first_segment, last_segment| {
         first_segment == "cgp"
             || CGP_ENCODING_NAMES.contains(&last_segment)
-            || !ambiguous.contains(last_segment)
+            || !ambiguous.keeps_qualifier(path, last_segment)
     })
 }
 
-/// Collapse each `a::b::C` identifier run that `collapse` accepts, given its first and last
-/// segments, to its last segment, leaving string literals and every other run alone.
-fn collapse_paths(text: &str, collapse: impl Fn(&str, &str) -> bool) -> Option<String> {
+/// Collapse each `a::b::C` identifier run that `collapse` accepts, given the whole run and its first
+/// and last segments, to its last segment, leaving string literals and every other run alone.
+fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Option<String> {
     let bytes = text.as_bytes();
     let mut out = String::with_capacity(text.len());
     let mut i = 0;
@@ -99,7 +99,8 @@ fn collapse_paths(text: &str, collapse: impl Fn(&str, &str) -> bool) -> Option<S
                     j += 2;
                     continue;
                 }
-                if seg_start != i && collapse(&text[i..first_end], &text[seg_start..j]) {
+                if seg_start != i && collapse(&text[i..j], &text[i..first_end], &text[seg_start..j])
+                {
                     out.push_str(&text[seg_start..j]);
                     changed = true;
                 } else {

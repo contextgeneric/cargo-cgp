@@ -1,13 +1,13 @@
-error[E0277]: [CGP-E001] the consumer trait `CanRaiseError<Error>` is not implemented for context `App`
-  --> src/main.rs:44:9
+error[E0277]: [CGP-E001] the consumer trait `CanRaiseError<std::io::Error>` is not implemented for context `App`
+  --> src/main.rs:47:9
    |
-44 |         ErrorRaiserComponent: std::io::Error,
+47 |         ErrorRaiserComponent: std::io::Error,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@ErrorRaiserComponent.Error`
+   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@ErrorRaiserComponent.std::io::Error`
            this is required through the dependency chain:
-             [CGP-E101] consumer trait impl `CanRaiseError<Error>` for context `App`
+             [CGP-E101] consumer trait impl `CanRaiseError<std::io::Error>` for context `App`
              └─ [CGP-E104] redirect lookup to `@ErrorRaiserComponent` in `App`
-               └─ [CGP-E107] context `App` does not contain any delegate entry for `@ErrorRaiserComponent.Error`
+               └─ [CGP-E107] context `App` does not contain any delegate entry for `@ErrorRaiserComponent.std::io::Error`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -647,10 +647,31 @@ fn an_untransformed_message_keeps_the_paths_rustc_printed() {
 }
 
 #[test]
+fn a_glob_imported_name_keeps_the_qualifier_of_another_item() {
+    // The crate glob-imports `Error` naming `backend::Error`, so a bare `Error` reads as that item:
+    // its own path collapses, and `std::io::Error` keeps its qualifier.
+    let ambiguous = AmbiguousNames::new([("Error".to_owned(), vec!["backend::Error".to_owned()])]);
+    assert_eq!(
+        strip_unambiguous_paths(
+            "`CanRaiseError<std::io::Error>` and `backend::Error`",
+            &ambiguous
+        )
+        .as_deref(),
+        Some("`CanRaiseError<std::io::Error>` and `Error`"),
+    );
+    // A glob-imported name whose items could not be read keeps no qualifier.
+    let unknown = AmbiguousNames::new([("Error".to_owned(), Vec::new())]);
+    assert_eq!(
+        strip_unambiguous_paths("`std::io::Error`", &unknown).as_deref(),
+        Some("`Error`"),
+    );
+}
+
+#[test]
 fn a_rewritten_message_keeps_only_qualifiers_that_disambiguate() {
     // A message the tool built drops every qualifier except on a name that names several items,
     // where the qualifier tells them apart.
-    let ambiguous = AmbiguousNames::new(["App".to_owned()]);
+    let ambiguous = AmbiguousNames::new([("App".to_owned(), vec!["app::App".to_owned()])]);
     assert_eq!(
         postprocess_message(
             "the consumer trait `cgp::prelude::CanRaiseError<std::io::Error>` for `app::App`",
@@ -683,7 +704,8 @@ fn an_untransformed_message_with_a_cgp_encoding_is_cleaned_whole() {
 fn unambiguous_path_strip_keeps_a_disambiguating_qualifier() {
     // `cgp::prelude::HasErrorType` is CGP's and `Quantity` glob-imported, so both lose their
     // qualifier; `Error` and `Rectangle` are neither, so rustc qualified them for being ambiguous.
-    let ambiguous = AmbiguousNames::new(["Quantity".to_owned()]);
+    let ambiguous =
+        AmbiguousNames::new([("Quantity".to_owned(), vec!["finance::Quantity".to_owned()])]);
     assert_eq!(
         strip_unambiguous_paths(
             "`backend::Error` beside `cgp::prelude::HasErrorType` and `finance::Quantity`",
