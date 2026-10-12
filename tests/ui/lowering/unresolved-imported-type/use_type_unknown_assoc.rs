@@ -1,18 +1,19 @@
-//! `#[use_type]` imports an associated type name the owning
-//! trait does not declare, so the substituted `<Self as Trait>::WrongName` path
-//! names an associated type that does not exist and the compiler rejects it.
+//! `#[use_type]` imports an associated type name the owning trait does not declare, so the
+//! substituted `<Self as Trait>::WrongName` path names an associated type that does not exist and
+//! the compiler rejects it.
 //!
-//! `HasScalarType` declares `Scalar`, but the import names `Scalr` (a typo), so the
-//! bare `Scalr` in the signature is rewritten to `<Self as HasScalarType>::Scalr`.
-//! CGP cannot know the trait's associated types at expansion time — it performs a
-//! textual rewrite — so it lowers the name faithfully and defers to the compiler,
-//! which reports `E0576` "cannot find associated type `Scalr`". Because the
-//! substitution preserves the *span* of the identifier the user wrote, the caret
-//! lands on the `Scalr` in the signature, not on the macro attribute — so this
-//! fixture also guards that span behavior.
+//! `HasScalarType` declares `Scalar`, but the import names `Scalr` (a typo), so the bare `Scalr` in
+//! the signature is rewritten to `<Self as HasScalarType>::Scalr`. CGP cannot know the trait's
+//! associated types at expansion time, since it performs a textual rewrite, so it lowers the name
+//! faithfully and defers to the compiler, which reports `E0576` "cannot find associated type
+//! `Scalr`". The substitution preserves the span of the identifier the user wrote, so the caret
+//! lands on the `Scalr` in the signature, not on the macro attribute, and this fixture also guards
+//! that span behavior. rustc's suggestion respells the signature only, which leaves the attribute's
+//! `Scalr` in place and fails with `E0425` on `Scalar`; the tool passes the error through.
 //!
-//! See cgp-knowledge-base/cgp/reference/attributes/use_type.md and
-//! cgp-knowledge-base/cgp/errors/lowering/unresolved-imported-type.md.
+//! CGP error class: unresolved imported abstract type (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/unresolved-imported-type.md).
+//!
+//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: usability
 //@codes: none
