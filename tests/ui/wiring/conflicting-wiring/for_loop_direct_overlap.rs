@@ -7,7 +7,7 @@
 //!
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E011
 
 use core::fmt::Display;

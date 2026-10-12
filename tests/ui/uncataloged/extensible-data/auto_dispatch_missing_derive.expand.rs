@@ -6,7 +6,7 @@
 //!
 //! CGP error class: none yet.
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Issue: cgp-knowledge-base/cargo-cgp/issues/hidden-root-cause.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

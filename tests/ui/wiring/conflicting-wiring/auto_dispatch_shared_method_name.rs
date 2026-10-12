@@ -13,7 +13,7 @@
 //! Error class: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md, with the name clash itself
 //! under https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/error_codes/e0428.md.
 
-//@quality: acceptable
+//@quality: usability
 //@codes: none
 
 use cgp::prelude::*;

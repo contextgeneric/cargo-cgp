@@ -5,9 +5,9 @@
 //!
 //! CGP error class: none yet.
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Issue: cgp-knowledge-base/cargo-cgp/issues/hidden-root-cause.md.
 
-//@quality: usability
+//@quality: hidden
 //@codes: none
 
 use cgp::prelude::*;

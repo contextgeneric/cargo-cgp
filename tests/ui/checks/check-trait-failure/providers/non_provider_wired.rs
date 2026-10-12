@@ -17,7 +17,7 @@
 //! `[CGP-E002]` block naming the whole `WrapGreeter<NotAGreeter>` pipeline (and leaking rustc's giant
 //! implementor list), with the real cause nowhere.
 
-//@quality: acceptable
+//@quality: usability
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E115
 
 use cgp::prelude::*;

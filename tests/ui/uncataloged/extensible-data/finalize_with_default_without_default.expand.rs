@@ -8,7 +8,7 @@
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/extensible-records.md)
 //! is not in the upstream catalog.
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Issue: cgp-knowledge-base/cargo-cgp/issues/hidden-root-cause.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

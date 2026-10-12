@@ -116,7 +116,7 @@ declare several. The auxiliary crates and the fixtures they back:
   `[CGP-E022]`, and the clean [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs).
 - `cgp-test-foreign-pipeline`: a pipeline context and its wiring for
   [`foreign_context_error_route`](ui/hidden/unsatisfied-dependency/foreign_context_error_route.rs),
-  whose cause is lost because the context is foreign (its quality is `hidden`).
+  whose root cause the tool recovers though the context is defined in another crate.
 - `cgp-test-dispatch-traits` (upstream: `#[cgp_auto_dispatch]` traits with no implementor, plus a
   `#[cgp_computer]` and a `#[cgp_producer]`) and `cgp-test-dispatch-shapes` (payloads implementing
   those traits and an enum over them). They back the clean

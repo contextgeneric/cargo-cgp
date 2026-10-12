@@ -14,7 +14,7 @@
 //! See cgp-knowledge-base/cgp/reference/attributes/use_type.md and
 //! cgp-knowledge-base/cgp/errors/lowering/unresolved-imported-type.md.
 
-//@quality: acceptable
+//@quality: usability
 //@codes: none
 
 use cgp::prelude::*;

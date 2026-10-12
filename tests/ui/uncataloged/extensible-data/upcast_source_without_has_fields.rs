@@ -7,9 +7,9 @@
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/extensible-records.md)
 //! is not in the upstream catalog.
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Issue: cgp-knowledge-base/cargo-cgp/issues/hidden-root-cause.md.
 
-//@quality: usability
+//@quality: hidden
 //@codes: none
 
 use cgp::core::field::impls::CanUpcast;

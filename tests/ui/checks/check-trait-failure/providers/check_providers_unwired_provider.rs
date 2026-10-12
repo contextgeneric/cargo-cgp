@@ -9,7 +9,7 @@
 //!
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E002 CGP-E102 CGP-E110
 
 use cgp::prelude::*;

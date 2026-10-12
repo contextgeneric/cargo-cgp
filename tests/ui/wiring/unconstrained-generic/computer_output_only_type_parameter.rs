@@ -8,7 +8,7 @@
 //!
 //! Error class: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unconstrained-generic.md.
 
-//@quality: acceptable
+//@quality: usability
 //@codes: none
 
 use cgp::prelude::*;
