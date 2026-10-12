@@ -548,8 +548,9 @@ impl<E: Emitter> CgpEmitter<E> {
     /// Recognize `diag` as a structural mistake in a wiring or its checks, recovered from the
     /// generated items at its caret: an `E0119` between two identical check impls is a check table
     /// listing one entry twice, an `E0428` on a check trait is two tables whose check traits share a
-    /// name, and an `E0207` is a `for` loop whose key does not use its variable or a
-    /// `#[default_impl]` on a generic provider impl. `None` for any other diagnostic.
+    /// name, and an `E0207` is a `for` loop whose key does not use its variable, a
+    /// `#[default_impl]` on a generic provider impl, or a wiring entry whose key does not use its
+    /// generic parameters. `None` for any other diagnostic.
     fn structural_mistake(&self, diag: &DiagInner) -> Option<StructuralMistake> {
         let primary_span = diag.span.primary_span()?;
         match diag.code {
@@ -568,6 +569,7 @@ impl<E: Emitter> CgpEmitter<E> {
                 let tcx = tcx?;
                 resolve::detect_loop_key_without_variable(tcx, primary_span)
                     .or_else(|| resolve::detect_generic_default_impl(tcx, primary_span))
+                    .or_else(|| resolve::detect_entry_parameters_not_in_key(tcx, primary_span))
             }),
             _ => None,
         }
@@ -1052,8 +1054,9 @@ impl<E: Emitter> CgpEmitter<E> {
         // twice: the compiler names only the generated items, so reword the header to name the
         // mistake and carry the fix in a `help`, keeping rustc's carets on the two sites.
         if let Some(mistake) = self.structural_mistake(&diag) {
-            // One mistake can produce several errors (a loop's key variable and its value variable
-            // are each unconstrained, in an entry and in its `IsProviderFor` twin); report it once.
+            // One mistake can produce several errors (a loop's key variable and its value variable,
+            // or each parameter of an entry, are unconstrained in an entry and in its
+            // `IsProviderFor` twin); report it once.
             if self.structural_reported.contains(&mistake) {
                 return;
             }
@@ -1063,6 +1066,7 @@ impl<E: Emitter> CgpEmitter<E> {
                 mistake,
                 StructuralMistake::LoopKeyWithoutVariable { .. }
                     | StructuralMistake::GenericDefaultImpl { .. }
+                    | StructuralMistake::EntryParametersNotInKey { .. }
             ) && let Some(primary) = diag.span.primary_span()
             {
                 // rustc's suggestions to remove the parameter or add it to the context are not the

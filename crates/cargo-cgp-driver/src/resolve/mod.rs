@@ -53,7 +53,7 @@ pub use missing_use_provider::detect_missing_use_provider;
 pub use orphan::classify_orphan_conflict;
 pub use overflow::{OverflowWalk, overflow_walk};
 pub use structural::{
-    detect_duplicate_check, detect_duplicate_check_trait, detect_generic_default_impl,
-    detect_loop_key_without_variable,
+    detect_duplicate_check, detect_duplicate_check_trait, detect_entry_parameters_not_in_key,
+    detect_generic_default_impl, detect_loop_key_without_variable,
 };
 pub use undeclared::detect_undeclared_trait;

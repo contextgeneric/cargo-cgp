@@ -1,16 +1,16 @@
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:32:10
+  --> src/main.rs:31:10
    |
-32 |         <T> GreeterComponent: GreetWith<T>,
+31 |         <T> GreeterComponent: GreetWith<T>,
    |          ^ unconstrained type parameter
    |
 help: use the type parameter `T` in the `GreeterComponent` type and use it in the type definition
    |
-18 ~ #[cgp_component(Greeter<T>)]
-19 | pub trait CanGreet {
+17 ~ #[cgp_component(Greeter<T>)]
+18 | pub trait CanGreet {
 ...
-31 |     new AppNamespace {
-32 ~         <T> GreeterComponent<T>: GreetWith<T>,
+30 |     new AppNamespace {
+31 ~         <T> GreeterComponent<T>: GreetWith<T>,
    |
 
 For more information about this error, try `rustc --explain E0207`.

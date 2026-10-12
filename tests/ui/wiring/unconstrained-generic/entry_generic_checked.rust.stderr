@@ -1,32 +1,32 @@
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:34:10
+  --> src/main.rs:32:10
    |
-34 |         <T> GreeterComponent: GreetWith<T>,
+32 |         <T> GreeterComponent: GreetWith<T>,
    |          ^ unconstrained type parameter
    |
 help: use the type parameter `T` in the `Person` type and use it in the type definition
    |
-30 ~ pub struct Person<T>;
-31 |
-32 | delegate_and_check_components! {
-33 ~     Person<T> {
+28 ~ pub struct Person<T>;
+29 |
+30 | delegate_and_check_components! {
+31 ~     Person<T> {
    |
 
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:34:10
+  --> src/main.rs:32:10
    |
-32 | / delegate_and_check_components! {
-33 | |     Person {
-34 | |         <T> GreeterComponent: GreetWith<T>,
+30 | / delegate_and_check_components! {
+31 | |     Person {
+32 | |         <T> GreeterComponent: GreetWith<T>,
    | |          ^ unconstrained type parameter
-35 | |     }
-36 | | }
+33 | |     }
+34 | | }
    | |_- help: remove the unused type parameter `T`
 
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:34:10
+  --> src/main.rs:32:10
    |
-34 |         <T> GreeterComponent: GreetWith<T>,
+32 |         <T> GreeterComponent: GreetWith<T>,
    |         -^-
    |         ||
    |         |unconstrained type parameter

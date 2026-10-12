@@ -2,15 +2,18 @@
 //!
 //! Some mistakes are in the shape of what the macros were given rather than in what the wiring
 //! resolves to: a check table that lists one entry twice, two tables whose check traits share a
-//! name, a `for` loop whose key does not use its variable, or a `#[default_impl]` on a generic impl. The compiler rejects the code the
-//! macro generated from it with a bare coherence or name error about generated items (`__CheckApp`),
-//! which names neither the table nor the entry. The driver recovers the mistake from the generated
+//! name, a `for` loop whose key does not use its variable, a `#[default_impl]` on a generic impl,
+//! or a wiring entry whose generic parameters its key does not use. The compiler rejects the code
+//! the macro generated from it with a bare coherence or name error about generated items
+//! (`__CheckApp`, an impl's type parameter), which names neither the table nor the entry. The driver recovers the mistake from the generated
 //! items and fills [`StructuralMistake`] in; [`plan_structural_mistake`] words the header and
 //! [`structural_mistake_help`] the fix.
 
 use crate::code::{
-    DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT, GENERIC_DEFAULT_IMPL, LOOP_KEY_WITHOUT_VARIABLE,
+    DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT, ENTRY_PARAMETERS_NOT_IN_KEY, GENERIC_DEFAULT_IMPL,
+    LOOP_KEY_WITHOUT_VARIABLE,
 };
+use crate::diagnosis::wording::quoted_list;
 
 /// The label on the first of two `check_components!` tables whose check traits share a name.
 pub const FIRST_CHECK_TABLE_LABEL: &str = "the first table";
@@ -43,6 +46,36 @@ pub enum StructuralMistake {
         key: String,
         parameter: String,
     },
+    /// An entry for `key` in `table` binds generic `parameters` (in written order) that its key
+    /// does not use, so the impls it lowers to cannot bind them; `used` says what in the entry
+    /// uses them.
+    EntryParametersNotInKey {
+        table: EntryTable,
+        key: String,
+        parameters: Vec<String>,
+        used: ParameterUse,
+    },
+}
+
+/// The wiring table an entry belongs to.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EntryTable {
+    /// The wiring of a context, written with `delegate_components!` or
+    /// `delegate_and_check_components!`.
+    Context(String),
+    /// A namespace defined with `cgp_namespace!`.
+    Namespace(String),
+}
+
+/// What in an entry uses the generic parameters its key does not.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParameterUse {
+    /// The provider the entry maps its key to, as written (`GreetWith<T>`).
+    Provider(String),
+    /// Another part of the entry's value, such as the table a `->` entry forwards to.
+    Value,
+    /// Nothing: the entry declares the parameters and never uses them.
+    Unused,
 }
 
 /// The name two `check_components!` tables gave their check traits.
@@ -84,6 +117,22 @@ pub fn plan_structural_mistake(mistake: &StructuralMistake) -> String {
         } => format!(
             "[{GENERIC_DEFAULT_IMPL}] `#[default_impl]` cannot register `{provider}` for `{key}`, because the provider's impl is generic over `{parameter}`"
         ),
+        StructuralMistake::EntryParametersNotInKey {
+            table,
+            key,
+            parameters,
+            ..
+        } => {
+            let table = match table {
+                EntryTable::Context(context) => format!("the wiring of `{context}`"),
+                EntryTable::Namespace(namespace) => format!("the namespace `{namespace}`"),
+            };
+            let pronoun = if parameters.len() == 1 { "it" } else { "them" };
+            format!(
+                "[{ENTRY_PARAMETERS_NOT_IN_KEY}] the entry for `{key}` in {table} binds {}, but its key does not use {pronoun}",
+                quoted_list(parameters),
+            )
+        }
     }
 }
 
@@ -111,5 +160,27 @@ pub fn structural_mistake_help(mistake: &StructuralMistake) -> String {
         } => format!(
             "write `{provider}`'s impl for `{key}` alone, in the concise `#[cgp_impl]` form without `{parameter}`"
         ),
+        StructuralMistake::EntryParametersNotInKey {
+            parameters, used, ..
+        } => {
+            let names = quoted_list(parameters);
+            let remove = format!("remove {names} from the entry's generic parameters");
+            let (types, pronoun) = if parameters.len() == 1 {
+                ("a concrete type", "it")
+            } else {
+                ("concrete types", "them")
+            };
+            match used {
+                ParameterUse::Provider(provider) => {
+                    format!("write {types} in place of {names} in `{provider}`, and {remove}")
+                }
+                ParameterUse::Value => {
+                    format!(
+                        "write {types} in place of {names} where the entry uses {pronoun}, and {remove}"
+                    )
+                }
+                ParameterUse::Unused => remove,
+            }
+        }
     }
 }

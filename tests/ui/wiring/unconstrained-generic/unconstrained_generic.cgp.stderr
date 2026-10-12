@@ -1,27 +1,9 @@
-error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:42:10
+error[E0207]: [CGP-E019] the entry for `GreeterComponent` in the wiring of `Person` binds `T`, but its key does not use it
+  --> src/main.rs:44:10
    |
-42 |         <T> GreeterComponent: GreetWith<T>,
-   |          ^ unconstrained type parameter
+44 |         <T> GreeterComponent: GreetWith<T>,
+   |          ^
    |
-help: use the type parameter `T` in the `Person` type and use it in the type definition
-   |
-37 ~ pub struct Person<T>;
-38 |
-39 | // `T` is declared for the entry but only used in the value `GreetWith<T>`.
-40 | delegate_components! {
-41 ~     Person<T> {
-   |
-
-error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:42:10
-   |
-40 | / delegate_components! {
-41 | |     Person {
-42 | |         <T> GreeterComponent: GreetWith<T>,
-   | |          ^ unconstrained type parameter
-43 | |     }
-44 | | }
-   | |_- help: remove the unused type parameter `T`
+   = help: write a concrete type in place of `T` in `GreetWith<T>`, and remove `T` from the entry's generic parameters
 
 For more information about this error, try `rustc --explain E0207`.

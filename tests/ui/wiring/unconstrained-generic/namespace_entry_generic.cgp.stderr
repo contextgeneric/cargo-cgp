@@ -1,16 +1,9 @@
-error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:32:10
+error[E0207]: [CGP-E019] the entry for `GreeterComponent` in the namespace `AppNamespace` binds `T`, but its key does not use it
+  --> src/main.rs:31:10
    |
-32 |         <T> GreeterComponent: GreetWith<T>,
-   |          ^ unconstrained type parameter
+31 |         <T> GreeterComponent: GreetWith<T>,
+   |          ^
    |
-help: use the type parameter `T` in the `GreeterComponent` type and use it in the type definition
-   |
-18 ~ #[cgp_component(Greeter<T>)]
-19 | pub trait CanGreet {
-...
-31 |     new AppNamespace {
-32 ~         <T> GreeterComponent<T>: GreetWith<T>,
-   |
+   = help: write a concrete type in place of `T` in `GreetWith<T>`, and remove `T` from the entry's generic parameters
 
 For more information about this error, try `rustc --explain E0207`.

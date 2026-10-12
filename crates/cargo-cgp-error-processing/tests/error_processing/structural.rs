@@ -5,7 +5,8 @@
 //! same model in from the generated items an error lands on.
 
 use cargo_cgp_error_processing::{
-    CheckTraitName, StructuralMistake, plan_structural_mistake, structural_mistake_help,
+    CheckTraitName, EntryTable, ParameterUse, StructuralMistake, plan_structural_mistake,
+    structural_mistake_help,
 };
 
 #[test]
@@ -101,5 +102,83 @@ fn a_default_impl_on_a_generic_impl_names_the_parameter() {
     assert_eq!(
         structural_mistake_help(&mistake),
         "write `ShowWithDisplay`'s impl for `String` alone, in the concise `#[cgp_impl]` form without `T`",
+    );
+}
+
+#[test]
+fn an_entry_parameter_outside_the_key_names_the_entry_and_its_provider() {
+    let mistake = StructuralMistake::EntryParametersNotInKey {
+        table: EntryTable::Context("Person".to_owned()),
+        key: "GreeterComponent".to_owned(),
+        parameters: vec!["T".to_owned()],
+        used: ParameterUse::Provider("GreetWith<T>".to_owned()),
+    };
+    assert_eq!(
+        plan_structural_mistake(&mistake),
+        "[CGP-E019] the entry for `GreeterComponent` in the wiring of `Person` binds `T`, but its key does not use it",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "write a concrete type in place of `T` in `GreetWith<T>`, and remove `T` from the entry's generic parameters",
+    );
+}
+
+#[test]
+fn several_entry_parameters_are_named_together() {
+    let mistake = StructuralMistake::EntryParametersNotInKey {
+        table: EntryTable::Context("Person".to_owned()),
+        key: "GreeterComponent".to_owned(),
+        parameters: vec!["T".to_owned(), "U".to_owned()],
+        used: ParameterUse::Provider("GreetPair<T, U>".to_owned()),
+    };
+    assert_eq!(
+        plan_structural_mistake(&mistake),
+        "[CGP-E019] the entry for `GreeterComponent` in the wiring of `Person` binds `T` and `U`, but its key does not use them",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "write concrete types in place of `T` and `U` in `GreetPair<T, U>`, and remove `T` and `U` from the entry's generic parameters",
+    );
+}
+
+#[test]
+fn an_entry_parameter_used_outside_a_provider_points_at_its_uses() {
+    let mistake = StructuralMistake::EntryParametersNotInKey {
+        table: EntryTable::Context("Kiosk".to_owned()),
+        key: "GreeterComponent".to_owned(),
+        parameters: vec!["T".to_owned()],
+        used: ParameterUse::Value,
+    };
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "write a concrete type in place of `T` where the entry uses it, and remove `T` from the entry's generic parameters",
+    );
+}
+
+#[test]
+fn an_unused_entry_parameter_is_only_removed() {
+    let mistake = StructuralMistake::EntryParametersNotInKey {
+        table: EntryTable::Context("Robot".to_owned()),
+        key: "GreeterComponent".to_owned(),
+        parameters: vec!["T".to_owned()],
+        used: ParameterUse::Unused,
+    };
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "remove `T` from the entry's generic parameters",
+    );
+}
+
+#[test]
+fn a_namespace_entry_names_the_namespace() {
+    let mistake = StructuralMistake::EntryParametersNotInKey {
+        table: EntryTable::Namespace("AppNamespace".to_owned()),
+        key: "@app.GreeterComponent".to_owned(),
+        parameters: vec!["T".to_owned()],
+        used: ParameterUse::Provider("GreetWith<T>".to_owned()),
+    };
+    assert_eq!(
+        plan_structural_mistake(&mistake),
+        "[CGP-E019] the entry for `@app.GreeterComponent` in the namespace `AppNamespace` binds `T`, but its key does not use it",
     );
 }

@@ -6,12 +6,14 @@
 //! entry binds two such parameters, an entry binds one it never uses, and a `->` entry forwards to a
 //! table named with its parameter.
 //!
-//! CGP error class: unconstrained generic (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unconstrained-generic.md).
+//! Each entry becomes one `[CGP-E019]`: the two parameters are named together, the unused one is
+//! only removed, and the `->` entry's help points at where the entry uses its parameter. Each help
+//! compiles.
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: unconstrained generic (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unconstrained-generic.md).
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E019
 
 use core::marker::PhantomData;
 

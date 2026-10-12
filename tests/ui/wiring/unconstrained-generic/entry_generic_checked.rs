@@ -2,14 +2,12 @@
 //!
 //! The macro lowers the entry to a `DelegateComponent` impl, its `IsProviderFor` twin, and a check
 //! impl, and each copies the entry's generic list, so the compiler reports the unconstrained `T`
-//! three times at one caret.
+//! three times at one caret. The tool reports one `[CGP-E019]`.
 //!
 //! CGP error class: unconstrained generic (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unconstrained-generic.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E019
 
 use core::marker::PhantomData;
 

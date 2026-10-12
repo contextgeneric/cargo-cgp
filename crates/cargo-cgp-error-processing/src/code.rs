@@ -10,7 +10,7 @@
 //! class. The headline codes come in family blocks of ten:
 //!
 //! - `CGP-E001` to `CGP-E009`: a trait the context cannot use, and the two type mismatches;
-//! - `CGP-E010` to `CGP-E019`: conflicting wiring;
+//! - `CGP-E010` to `CGP-E019`: conflicting wiring, and structural mistakes;
 //! - `CGP-E020` to `CGP-E029`: wiring that never resolves, and the orphan rule;
 //! - `CGP-E030` to `CGP-E039`: mistakes in what a macro was given;
 //! - `CGP-E040` to `CGP-E049`: wiring keys and values that do not resolve;
@@ -98,6 +98,10 @@ pub const LOOP_KEY_WITHOUT_VARIABLE: &str = "CGP-E017";
 /// `CGP-E018`: a `#[default_impl]` on a provider impl that is generic over a parameter the
 /// registration cannot carry. Stamped on the `E0207` the parameter produces in the registration.
 pub const GENERIC_DEFAULT_IMPL: &str = "CGP-E018";
+
+/// `CGP-E019`: an entry in a wiring table binds generic parameters its key does not use. Stamped on
+/// the `E0207` each parameter produces in the impls the entry lowers to.
+pub const ENTRY_PARAMETERS_NOT_IN_KEY: &str = "CGP-E019";
 
 // Wiring that never resolves, and the orphan rule (`CGP-E020` to `CGP-E029`).
 

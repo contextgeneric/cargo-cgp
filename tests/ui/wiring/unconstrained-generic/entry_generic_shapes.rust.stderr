@@ -1,88 +1,88 @@
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:52:10
+  --> src/main.rs:54:10
    |
-52 |         <T, U> GreeterComponent: GreetPair<T, U>,
+54 |         <T, U> GreeterComponent: GreetPair<T, U>,
    |          ^ unconstrained type parameter
    |
 help: use the type parameter `T` in the `Person` type and use it in the type definition
    |
-47 ~ pub struct Person<T>;
-48 |
-49 | // Two parameters, both in the provider and neither in the key.
-50 | delegate_components! {
-51 ~     Person<T> {
+49 ~ pub struct Person<T>;
+50 |
+51 | // Two parameters, both in the provider and neither in the key.
+52 | delegate_components! {
+53 ~     Person<T> {
    |
 
 error[E0207]: the type parameter `U` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:52:13
+  --> src/main.rs:54:13
    |
-52 |         <T, U> GreeterComponent: GreetPair<T, U>,
+54 |         <T, U> GreeterComponent: GreetPair<T, U>,
    |             ^ unconstrained type parameter
    |
 help: use the type parameter `U` in the `Person` type and use it in the type definition
    |
-47 ~ pub struct Person<U>;
-48 |
-49 | // Two parameters, both in the provider and neither in the key.
-50 | delegate_components! {
-51 ~     Person<U> {
+49 ~ pub struct Person<U>;
+50 |
+51 | // Two parameters, both in the provider and neither in the key.
+52 | delegate_components! {
+53 ~     Person<U> {
    |
 
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:52:10
+  --> src/main.rs:54:10
    |
-52 |         <T, U> GreeterComponent: GreetPair<T, U>,
+54 |         <T, U> GreeterComponent: GreetPair<T, U>,
    |          ^--
    |          |
    |          unconstrained type parameter
    |          help: remove the unused type parameter `T`
 
 error[E0207]: the type parameter `U` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:52:13
+  --> src/main.rs:54:13
    |
-50 | / delegate_components! {
-51 | |     Person {
-52 | |         <T, U> GreeterComponent: GreetPair<T, U>,
+52 | / delegate_components! {
+53 | |     Person {
+54 | |         <T, U> GreeterComponent: GreetPair<T, U>,
    | |             ^ unconstrained type parameter
-53 | |     }
-54 | | }
+55 | |     }
+56 | | }
    | |_- help: remove the unused type parameter `U`
 
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:61:10
+  --> src/main.rs:63:10
    |
-59 | / delegate_components! {
-60 | |     Robot {
-61 | |         <T> GreeterComponent: GreetWith<u32>,
+61 | / delegate_components! {
+62 | |     Robot {
+63 | |         <T> GreeterComponent: GreetWith<u32>,
    | |          ^ unconstrained type parameter
-62 | |     }
-63 | | }
+64 | |     }
+65 | | }
    | |_- help: remove the unused type parameter `T`
 
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:70:10
+  --> src/main.rs:72:10
    |
-70 |         <T> GreeterComponent -> Table<T>,
+72 |         <T> GreeterComponent -> Table<T>,
    |          ^ unconstrained type parameter
    |
 help: use the type parameter `T` in the `Kiosk` type and use it in the type definition
    |
-65 ~ pub struct Kiosk<T>;
-66 |
-67 | // A parameter in the table the entry forwards to.
-68 | delegate_components! {
-69 ~     Kiosk<T> {
+67 ~ pub struct Kiosk<T>;
+68 |
+69 | // A parameter in the table the entry forwards to.
+70 | delegate_components! {
+71 ~     Kiosk<T> {
    |
 
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:70:10
+  --> src/main.rs:72:10
    |
-68 | / delegate_components! {
-69 | |     Kiosk {
-70 | |         <T> GreeterComponent -> Table<T>,
+70 | / delegate_components! {
+71 | |     Kiosk {
+72 | |         <T> GreeterComponent -> Table<T>,
    | |          ^ unconstrained type parameter
-71 | |     }
-72 | | }
+73 | |     }
+74 | | }
    | |_- help: remove the unused type parameter `T`
 
 For more information about this error, try `rustc --explain E0207`.
