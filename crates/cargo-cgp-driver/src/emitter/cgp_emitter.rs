@@ -578,11 +578,18 @@ impl<E: Emitter> CgpEmitter<E> {
     /// Recognize `diag` as an undeclared-trait failure — a CGP trait called in a
     /// `#[cgp_fn]`/`#[cgp_impl]` body without being declared via `#[uses(…)]`, so its method cannot
     /// resolve on the generated `__Context__` generic. Returns the trait to declare, or `None`
-    /// when it is not one. Gated to the method-bounds `E0599` shape, then confirmed structurally by
-    /// [`resolve::detect_undeclared_trait`] (a generated blanket impl with a bare-parameter
-    /// `Self`, a CGP trait method call, and no matching `where` bound).
+    /// when it is not one. Gated to the two `E0599` shapes a method call and a `Self::method(…)`
+    /// call produce, then confirmed structurally by [`resolve::detect_undeclared_trait`] (a
+    /// generated impl over a bare-parameter context, a CGP trait method called on it, and no
+    /// matching `where` bound).
     fn undeclared_trait(&self, diag: &DiagInner) -> Option<UndeclaredTrait> {
-        if diag.code != Some(E0599) || !main_message_text(diag).is_some_and(is_method_bounds_text) {
+        // A method call reports the method-bounds shape; an associated-function call on `Self`
+        // reports the unbounded type parameter, whose main message is a Fluent one, so its help is
+        // read instead.
+        if diag.code != Some(E0599)
+            || !(main_message_text(diag).is_some_and(is_method_bounds_text)
+                || diag_mentions(diag, is_unbounded_type_param_item_text))
+        {
             return None;
         }
         let primary_span = diag.span.primary_span()?;
@@ -1099,8 +1106,9 @@ impl<E: Emitter> CgpEmitter<E> {
         {
             replace_header(&mut diag, plan_undeclared_trait(&undeclared));
             diag.span = MultiSpan::from_span(primary_span);
-            diag.children
-                .push(subdiag(Sublevel::Help, undeclared_trait_help(&undeclared)));
+            if let Some(help) = undeclared_trait_help(&undeclared) {
+                diag.children.push(subdiag(Sublevel::Help, help));
+            }
             self.postprocess(&mut diag, Origin::Rewritten);
             self.record_cgp_spans(&diag);
             self.push(BufEntry::Plain(Box::new(diag)));

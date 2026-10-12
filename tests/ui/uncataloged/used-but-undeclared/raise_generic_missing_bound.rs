@@ -1,16 +1,16 @@
 //! A provider calling `Self::raise_error(…)` without declaring `CanRaiseError` in `#[uses]`.
 //!
-//! `Self` lowers to the provider impl's generated `__Context__` parameter, which the `[CGP-E031]`
-//! inner-provider check skips, so the tool keeps rustc's `E0599`: no `raise_error` found for the
-//! type parameter `__Context__`. It states nothing false, but it leaks `__Context__` and suggests a
-//! bound inside `#[use_type]`; the fix is `#[uses(CanRaiseError<String>)]`.
+//! `Self` lowers to the provider impl's generated `__Context__` parameter, so rustc reports
+//! `E0599`, no `raise_error` found for the type parameter `__Context__`, leaking the generated name
+//! and suggesting a bound spliced into `#[use_type(…)]`. The tool reshapes it into `[CGP-E030]`,
+//! naming `CanRaiseError`. The argument `"failed".to_owned()` does not write its type, so the help
+//! names `#[uses(CanRaiseError<SourceError>)]` and asks for the type in place of `SourceError`.
 //!
-//! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: a used-but-undeclared dependency, not yet in the catalog
+//! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md#a-gap-the-used-but-undeclared-and-wrong-half-classes).
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E030
 
 use cgp::prelude::*;
 

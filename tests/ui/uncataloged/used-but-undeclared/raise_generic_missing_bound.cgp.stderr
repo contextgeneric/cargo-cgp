@@ -1,18 +1,9 @@
-error[E0599]: no associated function or constant named `raise_error` found for type parameter `__Context__` in the current scope
+error[E0599]: [CGP-E030] the trait `CanRaiseError` is used but not declared as a dependency
   --> src/main.rs:27:19
    |
-23 | #[cgp_impl(new LoadOrFail)]
-   | --------------------------- associated function or constant `raise_error` not found for this type parameter
-...
 27 |         Err(Self::raise_error("failed".to_owned()))
-   |                   ^^^^^^^^^^^ associated function or constant cannot be called on `__Context__` due to unsatisfied trait bounds
+   |                   ^^^^^^^^^^^
    |
-   = help: items from traits can only be used if the type parameter is bounded by the trait
-help: the following traits define an item `raise_error`, perhaps you need to restrict type parameter `__Context__` with one of them:
-   |
-24 | #[use_type(HasErrorType + ErrorRaiser</* __Context__, SourceError */>.Error)]
-   |                         +++++++++++++++++++++++++++++++++++++++++++++
-24 | #[use_type(HasErrorType + cgp::prelude::CanRaiseError</* SourceError */>.Error)]
-   |                         ++++++++++++++++++++++++++++++++++++++++++++++++
+   = help: declare it as a dependency with `#[uses(CanRaiseError<SourceError>)]`, with the type the call uses in place of `SourceError`
 
 For more information about this error, try `rustc --explain E0599`.

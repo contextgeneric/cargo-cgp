@@ -3,8 +3,9 @@
 //!
 //! The associated-function form of an undeclared trait: `Self` lowers to the provider impl's
 //! generated `__Context__` parameter, so rustc reports `E0599`, no `raise_error` found for the type
-//! parameter `__Context__`, and suggests a bound spliced into `#[use_type(…)]`. The argument is the
-//! unit struct `LoadError`, so the dependency to declare is `CanRaiseError<LoadError>`.
+//! parameter `__Context__`, and suggests a bound spliced into `#[use_type(…)]`. The tool reshapes
+//! it into `[CGP-E030]`, naming `CanRaiseError`, and the argument is the unit struct `LoadError`,
+//! so the help names `#[uses(CanRaiseError<LoadError>)]`.
 //!
 //! CGP error class: a used-but-undeclared dependency, not yet in the catalog
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md#a-gap-the-used-but-undeclared-and-wrong-half-classes).

@@ -4,6 +4,6 @@ error[E0599]: [CGP-E030] the trait `CanFormatPair` is used but not declared as a
 22 |     self.format_pair(value)
    |          ^^^^^^^^^^^
    |
-   = help: declare it as a dependency with `#[uses(CanFormatPair)]`
+   = help: declare it as a dependency with `#[uses(CanFormatPair<u32>)]`
 
 For more information about this error, try `rustc --explain E0599`.
