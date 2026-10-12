@@ -52,12 +52,8 @@ use rustc_hir::{
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
+use crate::config::CGP_IMPL_CONTEXT_PARAM;
 use crate::resolve::cgp_item::{consumer_provider_trait, is_provider_trait};
-
-/// The reserved generic parameter `#[cgp_impl]` inserts as the leading context of the provider impl
-/// it generates. Its presence is the fingerprint of a macro-generated inside-out impl, telling it
-/// apart from a legitimate hand-written direct consumer-trait impl (`impl CanGreet for Person`).
-const CGP_IMPL_CONTEXT_PARAM: &str = "__Context__";
 
 /// A `#[cgp_impl]` provider impl whose header names the wrong trait. Carries the rustc-free wording
 /// model plus the spans the emitter needs to reshape the precise error and suppress the rest of the

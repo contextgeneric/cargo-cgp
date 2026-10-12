@@ -100,12 +100,27 @@ fn impl_projection_mismatch<'tcx>(
         return None;
     }
 
+    // Keep each projection un-normalized so its `<.. as Trait>::Assoc` alias survives;
+    // `skip_norm_wip` unwraps without normalizing, unlike the `ocx.normalize` the trait-clause walk
+    // uses.
+    let clauses = tcx
+        .clauses_of(impl_did)
+        .instantiate(tcx, impl_args)
+        .into_iter()
+        .map(|(predicate, _)| infcx.deeply_resolve_ignoring_regions(predicate.skip_norm_wip()));
+    // Unified with the impl; report whatever mismatch it carried, if any.
+    Some(unmet_projection(tcx, clauses))
+}
+
+/// The first unmet associated-type projection among an impl's instantiated `clauses`: a `HasField`
+/// value type before any other associated type, since its leaf can name the struct field to fix.
+/// `None` when every projection holds.
+pub(crate) fn unmet_projection<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    clauses: impl IntoIterator<Item = ty::Clause<'tcx>>,
+) -> Option<ProjectionMismatch<'tcx>> {
     let mut fallback: Option<ProjectionMismatch<'tcx>> = None;
-    for (predicate, _) in tcx.clauses_of(impl_did).instantiate(tcx, impl_args) {
-        // Keep the projection un-normalized so its `<.. as Trait>::Assoc` alias survives;
-        // `skip_norm_wip` unwraps without normalizing, unlike the `ocx.normalize` the trait-clause
-        // walk uses.
-        let clause = infcx.deeply_resolve_ignoring_regions(predicate.skip_norm_wip());
+    for clause in clauses {
         // An unconstrained impl parameter leaves inference vars behind; such a projection
         // cannot be re-checked in a fresh context, so skip it (regions are erased below).
         if clause.has_non_region_infer() {
@@ -147,10 +162,9 @@ fn impl_projection_mismatch<'tcx>(
             HAS_FIELD_TRAIT,
             CGP_FIELD_CRATE,
         ) {
-            return Some(Some(mismatch));
+            return Some(mismatch);
         }
         fallback.get_or_insert(mismatch);
     }
-    // Unified with the impl; report whatever non-`HasField` mismatch it carried, if any.
-    Some(fallback)
+    fallback
 }

@@ -152,6 +152,11 @@ pub const NIL_TYPE: &str = "Nil";
 /// so a rendered path leaves it out.
 pub const WILDCARD_PARAM: &str = "__Wildcard__";
 
+/// The reserved generic parameter `#[cgp_impl]` inserts as the leading context of the provider impl
+/// it generates. Its presence is the fingerprint of a macro-generated inside-out impl, telling it
+/// apart from a legitimate hand-written direct consumer-trait impl (`impl CanGreet for Person`).
+pub const CGP_IMPL_CONTEXT_PARAM: &str = "__Context__";
+
 /// The name of the type-level product-list cell (defined by [`CGP_BASE_TYPES_CRATE`]): a `Product!`
 /// expands to a right-nested `Cons<Head, Tail>` spine ended by [`NIL_TYPE`]. The dependency-tree
 /// renderer resugars such a spine back to `Product![…]`, anchored by `DefId` to this crate so a

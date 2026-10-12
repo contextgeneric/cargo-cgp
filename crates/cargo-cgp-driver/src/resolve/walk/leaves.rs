@@ -14,7 +14,8 @@ use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, redirect_lookup_args, render_ty, trait_generics};
 use crate::resolve::walk::{
     ProjectionMismatch, holds, impl_where_obligations, is_descendable, is_has_field,
-    is_workaround_plumbing, may_hold_for_some_unknown, projection_mismatch,
+    is_workaround_plumbing, may_hold_for_some_unknown, misdirected_impl_clauses,
+    projection_mismatch, unmet_projection,
 };
 
 /// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or
@@ -329,7 +330,30 @@ fn resolve_node<'tcx>(
 
     let descendable = is_descendable(tcx, erased, context);
 
-    let Some(children) = (if delegated.is_empty() {
+    // A provider whose `#[cgp_impl]` header names the consumer trait has no provider-trait impl, so
+    // the obligation would end at "not a provider", a consequence of the header `[CGP-E032]` already
+    // reports. That impl still states what the provider needs from the context, and a need that
+    // fails is a separate mistake that outlives the header fix, so the walk descends into it.
+    let mut misdirected: Vec<ty::PolyTraitClause<'tcx>> = Vec::new();
+    if delegated.is_empty()
+        && let Some(clauses) = misdirected_impl_clauses(tcx, leaf_ref)
+    {
+        misdirected = clauses
+            .iter()
+            .filter_map(|clause| clause.as_trait_clause())
+            .filter(|nested| !holds(tcx, *nested) && !is_workaround_plumbing(tcx, *nested))
+            .collect();
+        if misdirected.is_empty()
+            && let Some(mismatch) = unmet_projection(tcx, clauses)
+        {
+            let result = projection_result(tcx, erased, leaf_ref, context, mismatch, self_fp);
+            return cache_if_complete(cache, key, result);
+        }
+    }
+
+    let Some(children) = (if !misdirected.is_empty() {
+        Some(misdirected)
+    } else if delegated.is_empty() {
         impl_where_obligations(tcx, erased)
     } else {
         Some(delegated)

@@ -1,9 +1,23 @@
 error[E0107]: [CGP-E032] `CanCalculateArea` is a consumer trait, but a `#[cgp_impl]` provider must implement its provider trait `AreaCalculator`
-  --> src/main.rs:27:6
+  --> src/main.rs:28:6
    |
-27 | impl CanCalculateArea {
+28 | impl CanCalculateArea {
    |      ^^^^^^^^^^^^^^^^
    |
    = help: change the impl header to target the provider trait: `impl AreaCalculator` (not `impl CanCalculateArea`)
 
-For more information about this error, try `rustc --explain E0107`.
+error[E0277]: [CGP-E001] missing field `height` on `Rectangle`
+  --> src/main.rs:50:9
+   |
+50 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `height` on `Rectangle`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+             └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+               └─ [CGP-E110] missing field `height` on `Rectangle`
+   = help: add the field `height: f64` to `Rectangle`
+
+Some errors have detailed explanations: E0107, E0277.
+For more information about an error, try `rustc --explain E0107`.

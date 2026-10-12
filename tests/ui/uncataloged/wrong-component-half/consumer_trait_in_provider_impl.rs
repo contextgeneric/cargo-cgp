@@ -7,14 +7,15 @@
 //! `base_area_1_1`, which writes the header correctly.
 //!
 //! `Rectangle` also lacks the `height` field the provider reads, a second mistake the compiler
-//! reports on the check through the provider's requirements. The tool drops that error as a
-//! consequence of the header, so the missing field surfaces only once the header is fixed.
+//! reports on the check through the provider's requirements. The tool reads those requirements off
+//! the impl as written and reports the missing field as `[CGP-E001]`, the block the program gives
+//! once the header is fixed, so both mistakes show at once.
 //!
 //! CGP error class: the wrong half of a component, not yet in the catalog
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md#a-gap-the-used-but-undeclared-and-wrong-half-classes).
 
-//@quality: usability
-//@codes: CGP-E032
+//@quality: acceptable
+//@codes: CGP-E001 CGP-E032 CGP-E101 CGP-E102 CGP-E110
 
 use cgp::prelude::*;
 

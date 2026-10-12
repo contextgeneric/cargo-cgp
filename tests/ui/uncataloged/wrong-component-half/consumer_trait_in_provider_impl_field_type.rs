@@ -3,14 +3,14 @@
 //! Two mistakes: `impl CanCalculateArea` should be `impl AreaCalculator`, and `Rectangle`'s `height`
 //! is an `i32` where the provider reads an `f64`. The compiler reports the field type as an `E0271`
 //! on the check, through the provider's requirements. The tool reports the header as `[CGP-E032]`
-//! but drops the `E0271` as a consequence of the header, so the field type surfaces only once the
-//! header is fixed.
+//! and reads the requirements off the impl as written, so the field type is `[CGP-E004]`, the block
+//! the program gives once the header is fixed.
 //!
 //! CGP error class: the wrong half of a component, not yet in the catalog
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md#a-gap-the-used-but-undeclared-and-wrong-half-classes).
 
-//@quality: usability
-//@codes: CGP-E032
+//@quality: acceptable
+//@codes: CGP-E004 CGP-E032 CGP-E101 CGP-E102 CGP-E112
 
 use cgp::prelude::*;
 

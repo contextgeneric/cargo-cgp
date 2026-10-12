@@ -6,4 +6,16 @@ error[E0107]: [CGP-E032] `CanCalculateArea` is a consumer trait, but a `#[cgp_im
    |
    = help: change the impl header to target the provider trait: `impl AreaCalculator` (not `impl CanCalculateArea`)
 
-For more information about this error, try `rustc --explain E0107`.
+error[E0271]: [CGP-E004] field `height` on `Rectangle` has type `i32`, but `f64` is required
+  --> src/main.rs:44:9
+   |
+44 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+             └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+               └─ [CGP-E112] field `height` on `Rectangle` has type `i32`, but `f64` is required
+
+Some errors have detailed explanations: E0107, E0271.
+For more information about an error, try `rustc --explain E0107`.

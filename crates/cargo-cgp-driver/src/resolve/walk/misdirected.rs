@@ -1,0 +1,131 @@
+//! Reading the requirements of a provider impl whose `#[cgp_impl]` header names the consumer trait.
+
+use rustc_hir::def::DefKind;
+use rustc_middle::ty::{self, TyCtxt};
+use rustc_span::def_id::DefId;
+
+use crate::config::CGP_IMPL_CONTEXT_PARAM;
+use crate::resolve::cgp_item::{consumer_provider_trait, is_provider_trait};
+use crate::resolve::walk::written_order;
+
+/// The requirements the provider of `provider_ref` states in an impl it wrote with the component's
+/// consumer trait in its `#[cgp_impl]` header, the mistake `[CGP-E032]` reports: that impl's
+/// clauses, in written order and region-erased, with its context parameter set to the obligation's
+/// context.
+///
+/// Such an impl gives the provider no provider-trait impl, so the obligation fails as if the
+/// provider were not one, which is a consequence of the header. But the impl still states what the
+/// provider needs from the context, and a need that fails is a mistake of its own, such as a field
+/// the context lacks, that would remain once the header is fixed. `None` when `provider_ref` is not
+/// a provider-trait obligation on a local provider struct, when the provider implements the
+/// provider trait itself, or when it has no such impl, or several.
+pub(crate) fn misdirected_impl_clauses<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    provider_ref: ty::TraitRef<'tcx>,
+) -> Option<Vec<ty::Clause<'tcx>>> {
+    // The structural checks run before the trait lookups, since the walk asks this of every node.
+    let provider = tcx.erase_and_anonymize_regions(provider_ref.self_ty());
+    let ty::Adt(provider_def, _) = provider.kind() else {
+        return None;
+    };
+    if !provider_def.did().is_local() || !is_provider_trait(tcx, provider_ref.def_id) {
+        return None;
+    }
+    // A provider trait's arguments are its lifetimes, the context, then the component's own types,
+    // so the context is the first type argument after `Self`.
+    let context = provider_ref.args.types().nth(1)?;
+    if tcx.erase_and_anonymize_regions(context) == provider {
+        return None;
+    }
+    let implements_provider_trait = tcx.all_impls(provider_ref.def_id).any(|impl_did| {
+        matches!(
+            tcx.impl_trait_ref(impl_did).skip_binder().self_ty().kind(),
+            ty::Adt(def, _) if def.did() == provider_def.did()
+        )
+    });
+    if implements_provider_trait {
+        return None;
+    }
+
+    let mut found = tcx
+        .hir_crate_items(())
+        .definitions()
+        .map(|local| local.to_def_id())
+        .filter(|&impl_did| {
+            is_misdirected_impl(tcx, impl_did, provider_ref.def_id, provider_def.did())
+        });
+    let impl_did = found.next()?;
+    if found.next().is_some() {
+        return None;
+    }
+
+    // The impl's only type parameter is its context ([`is_misdirected_impl`]), and its lifetimes are
+    // erased like every obligation the walk reads.
+    let args = ty::GenericArgs::for_item(tcx, impl_did, |param, _| match param.kind {
+        ty::GenericParamDefKind::Lifetime => tcx.lifetimes.re_erased.into(),
+        _ => context.into(),
+    });
+    if tcx.erase_and_anonymize_regions(tcx.type_of(impl_did).instantiate(tcx, args).skip_norm_wip())
+        != provider
+    {
+        return None;
+    }
+    let generic = tcx.clauses_of(impl_did);
+    let instantiated: Vec<ty::Clause<'tcx>> = generic
+        .instantiate(tcx, args)
+        .into_iter()
+        .map(|(clause, _)| clause.skip_norm_wip())
+        .collect();
+    let ordered: Vec<ty::Clause<'tcx>> = if instantiated.len() == generic.clauses.len() {
+        written_order(tcx, generic.clauses)
+            .into_iter()
+            .map(|index| instantiated[index])
+            .collect()
+    } else {
+        instantiated
+    };
+    Some(
+        ordered
+            .into_iter()
+            .map(|clause| tcx.erase_and_anonymize_regions(clause))
+            .collect(),
+    )
+}
+
+/// Whether `impl_did` is a `#[cgp_impl]` impl on the provider `provider_did` whose header names the
+/// consumer trait paired with `provider_trait`: its `Self` is the provider, its trait is that
+/// consumer trait, and its type parameters are the context parameter `#[cgp_impl]` inserts alone.
+fn is_misdirected_impl(
+    tcx: TyCtxt<'_>,
+    impl_did: DefId,
+    provider_trait: DefId,
+    provider_did: DefId,
+) -> bool {
+    if !matches!(tcx.def_kind(impl_did), DefKind::Impl { of_trait: true }) {
+        return false;
+    }
+    let generics = tcx.generics_of(impl_did);
+    let mut has_context = false;
+    for param in &generics.own_params {
+        match param.kind {
+            ty::GenericParamDefKind::Lifetime => {}
+            ty::GenericParamDefKind::Type { .. }
+                if param.name.as_str() == CGP_IMPL_CONTEXT_PARAM =>
+            {
+                has_context = true
+            }
+            _ => return false,
+        }
+    }
+    if !has_context || generics.parent.is_some() {
+        return false;
+    }
+    if !matches!(
+        tcx.type_of(impl_did).skip_binder().kind(),
+        ty::Adt(def, _) if def.did() == provider_did
+    ) {
+        return false;
+    }
+    let header = tcx.impl_trait_ref(impl_did).skip_binder().def_id;
+    consumer_provider_trait(tcx, header) == Some(provider_trait)
+}

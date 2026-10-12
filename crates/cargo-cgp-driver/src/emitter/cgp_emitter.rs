@@ -660,7 +660,9 @@ impl<E: Emitter> CgpEmitter<E> {
     /// struct and the provider trait its header should have targeted. Such a failure is a pure
     /// consequence of the mistake already reported as `[CGP-E032]` (the provider struct cannot be a
     /// provider because its impl targets the wrong trait), so it is suppressed rather than shown as
-    /// its own `[CGP-E115]` block.
+    /// its own `[CGP-E115]` block. A requirement of that impl which fails on its own, such as a field
+    /// the context lacks, is a separate mistake: the walk resolves it to its own cause through the
+    /// impl as written, so a report carrying it is kept.
     fn is_cgp_impl_misuse_check_report(&self, resolved: &Resolved) -> bool {
         let Some(misuses) = self.cgp_impl_misuses.as_deref() else {
             return false;
@@ -1139,7 +1141,8 @@ impl<E: Emitter> CgpEmitter<E> {
             if let Some((resolved, span, at_call)) = self.try_resolve(&diag) {
                 // The downstream check re-report of a `#[cgp_impl]` consumer-trait mistake (its
                 // provider struct failing `NotAProvider` because its impl targets the wrong trait)
-                // is a pure consequence of the `[CGP-E032]` already shown, so drop it.
+                // is a pure consequence of the `[CGP-E032]` already shown, so drop it. A failing
+                // requirement of that impl resolves to a cause of its own and is kept.
                 if self.is_cgp_impl_misuse_check_report(&resolved) {
                     return;
                 }
