@@ -21,8 +21,14 @@ use crate::diagnosis::wording::dependency_tree_leaf;
 /// rustc-free concern.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DepNode {
-    /// `CGP-E101` — a hop through the context's own consumer-trait impl.
-    Consumer { trait_ref: String, context: String },
+    /// `CGP-E101` — a hop through a consumer-trait impl. `is_context` says whether the type the
+    /// trait is implemented for carries wiring of its own, which is what makes it a context; any
+    /// other type, such as a type argument the consumer is required of, is named plainly.
+    Consumer {
+        trait_ref: String,
+        context: String,
+        is_context: bool,
+    },
     /// `CGP-E102` — a hop through a provider's provider-trait impl.
     Provider {
         trait_ref: String,
@@ -49,9 +55,16 @@ impl DepNode {
     /// The rendered label — identical to the template this node replaced in `diagnosis::labels`.
     pub fn render(&self) -> String {
         match self {
-            DepNode::Consumer { trait_ref, context } => format!(
-                "[{DEP_CONSUMER_TRAIT_IMPL}] consumer trait impl `{trait_ref}` for context `{context}`"
-            ),
+            DepNode::Consumer {
+                trait_ref,
+                context,
+                is_context,
+            } => {
+                let subject = if *is_context { "context " } else { "" };
+                format!(
+                    "[{DEP_CONSUMER_TRAIT_IMPL}] consumer trait impl `{trait_ref}` for {subject}`{context}`"
+                )
+            }
             DepNode::Provider {
                 trait_ref,
                 context,

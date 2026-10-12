@@ -19,6 +19,7 @@ fn failure(context: &str, consumer: &str, fields: &[&str]) -> Resolved {
                     ChainNode::Hop(DepNode::Consumer {
                         trait_ref: consumer.to_owned(),
                         context: context.to_owned(),
+                        is_context: true,
                     }),
                     ChainNode::Leaf(leaf.clone()),
                 ]],

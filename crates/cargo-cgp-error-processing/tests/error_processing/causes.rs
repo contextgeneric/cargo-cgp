@@ -15,6 +15,7 @@ fn field_cause_via(consumer: &str, name: &str, owner: &str, issue: FieldIssue) -
             ChainNode::Hop(DepNode::Consumer {
                 trait_ref: consumer.to_owned(),
                 context: owner.to_owned(),
+                is_context: true,
             }),
             ChainNode::Leaf(leaf.clone()),
         ]],

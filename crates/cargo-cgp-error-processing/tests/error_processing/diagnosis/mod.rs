@@ -46,6 +46,7 @@ fn consumer(trait_ref: &str, context: &str) -> ChainNode {
     ChainNode::Hop(DepNode::Consumer {
         trait_ref: trait_ref.to_owned(),
         context: context.to_owned(),
+        is_context: true,
     })
 }
 

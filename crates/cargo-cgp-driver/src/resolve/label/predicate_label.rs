@@ -8,7 +8,7 @@ use crate::config::{
     REDIRECT_LOOKUP_TYPE,
 };
 use crate::resolve::cgp_item::{
-    is_cgp_item, is_consumer_trait, is_namespace_lookup_trait, is_provider_trait,
+    carries_wiring, is_cgp_item, is_consumer_trait, is_namespace_lookup_trait, is_provider_trait,
 };
 use crate::resolve::label::render_ty;
 
@@ -100,6 +100,7 @@ pub(crate) fn label_for<'tcx>(
         return Some(DepNode::Consumer {
             trait_ref: format!("{}{generics}", tcx.item_name(did)),
             context: render_ty(tcx, self_ty),
+            is_context: carries_wiring(tcx, self_ty),
         });
     }
 

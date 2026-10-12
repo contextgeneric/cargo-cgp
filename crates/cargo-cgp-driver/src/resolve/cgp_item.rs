@@ -335,9 +335,16 @@ pub(crate) fn is_context_adt(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     let ty::Adt(def, _) = ty.kind() else {
         return false;
     };
-    if def.did().is_local() {
-        return true;
-    }
+    def.did().is_local() || carries_wiring(tcx, ty)
+}
+
+/// Whether `ty` is a type with `DelegateComponent` wiring of its own, an impl whose `Self` is this
+/// type: what makes a type a *context*, the word a message uses only for such a type. A type
+/// argument a consumer trait is required of, with no wiring, is named plainly instead.
+pub(crate) fn carries_wiring(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    let ty::Adt(def, _) = ty.kind() else {
+        return false;
+    };
     let Some(delegate_component) =
         find_cgp_trait(tcx, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
     else {
