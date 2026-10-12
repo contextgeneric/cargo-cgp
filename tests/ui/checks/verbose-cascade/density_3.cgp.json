@@ -1,0 +1,42 @@
+[
+  {
+    "children": [
+      {
+        "level": "note",
+        "message": "root cause: [CGP-E110] missing field `height` on `Rectangle`\nthis is required through the dependency chain:\n  [CGP-E101] consumer trait impl `CanCalculateDensity` for context `Rectangle`\n  └─ [CGP-E102] provider trait impl `DensityCalculator` with context `Rectangle` for provider `DensityFromMassField`\n    └─ [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`\n      └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`\n        └─ [CGP-E104] trait impl `HasRectangleFields` for `Rectangle`\n          └─ [CGP-E110] missing field `height` on `Rectangle`",
+        "spans": []
+      },
+      {
+        "level": "help",
+        "message": "add the field `height: f64` to `Rectangle`",
+        "spans": []
+      }
+    ],
+    "code": "E0277",
+    "level": "error",
+    "message": "[CGP-E001] missing field `height` on `Rectangle`",
+    "spans": [
+      {
+        "column": 9,
+        "file": "src/main.rs",
+        "label": "also required here",
+        "line": 91,
+        "primary": false
+      },
+      {
+        "column": 9,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 90,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [],
+    "code": null,
+    "level": "failure-note",
+    "message": "For more information about this error, try `rustc --explain E0277`.",
+    "spans": []
+  }
+]

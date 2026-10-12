@@ -1,9 +1,9 @@
 error[E0277]: [CGP-E001] missing field `height` on `Rectangle`
-  --> src/main.rs:89:9
+  --> src/main.rs:90:9
    |
-89 |         AreaCalculatorComponent,
+90 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
-90 |         DensityCalculatorComponent,
+91 |         DensityCalculatorComponent,
    |         -------------------------- also required here
    |
    = note: root cause: [CGP-E110] missing field `height` on `Rectangle`
