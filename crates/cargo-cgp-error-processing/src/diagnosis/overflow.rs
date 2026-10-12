@@ -12,11 +12,11 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WiringOverflow {
     /// The lookup leads back to an obligation it already met. `closing` is the provider step that
-    /// requires it again, when that step is a provider's.
+    /// requires it again, when a wiring entry chose that provider.
     Cycle { closing: Option<OverflowStep> },
     /// Each step requires the consumer trait again for a larger type, so the lookup grows until the
     /// compiler gives up. `larger` is the first larger requirement (`CanShow<Vec<u32>>`), and
-    /// `growing` the provider step that requires it.
+    /// `growing` the provider step that requires it, when a wiring entry chose that provider.
     Growing {
         larger: Option<String>,
         growing: Option<OverflowStep>,

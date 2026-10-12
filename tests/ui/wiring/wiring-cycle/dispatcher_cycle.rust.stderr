@@ -1,36 +1,36 @@
 error[E0275]: overflow evaluating the requirement `Interp: CanUseComponent<ComputerComponent, (Eval, Expr)>`
-  --> src/main.rs:68:13
+  --> src/main.rs:73:13
    |
-68 |             (Eval, Expr),
+73 |             (Eval, Expr),
    |             ^^^^^^^^^^^^
    |
 note: required by a bound in `__CheckInterp`
-  --> src/main.rs:65:1
+  --> src/main.rs:70:1
    |
-65 | / check_components! {
-66 | |     Interp {
-67 | |         ComputerComponent: [
-68 | |             (Eval, Expr),
+70 | / check_components! {
+71 | |     Interp {
+72 | |         ComputerComponent: [
+73 | |             (Eval, Expr),
 ...  |
-72 | | }
+77 | | }
    | |_^ required by this bound in `__CheckInterp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0275]: overflow evaluating the requirement `Interp: CanUseComponent<ComputerComponent, (Eval, Plus<Expr>)>`
-  --> src/main.rs:69:13
+  --> src/main.rs:74:13
    |
-69 |             (Eval, Plus<Expr>),
+74 |             (Eval, Plus<Expr>),
    |             ^^^^^^^^^^^^^^^^^^
    |
 note: required by a bound in `__CheckInterp`
-  --> src/main.rs:65:1
+  --> src/main.rs:70:1
    |
-65 | / check_components! {
-66 | |     Interp {
-67 | |         ComputerComponent: [
-68 | |             (Eval, Expr),
+70 | / check_components! {
+71 | |     Interp {
+72 | |         ComputerComponent: [
+73 | |             (Eval, Expr),
 ...  |
-72 | | }
+77 | | }
    | |_^ required by this bound in `__CheckInterp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

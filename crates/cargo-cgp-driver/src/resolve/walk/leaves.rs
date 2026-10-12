@@ -11,7 +11,7 @@ use crate::resolve::cgp_item::{
     is_cgp_item, is_consumer_trait, is_local_adt, is_provider_trait, trim_unknown_path_tail,
 };
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
-use crate::resolve::label::{label_for, render_ty, trait_generics};
+use crate::resolve::label::{label_for, redirect_lookup_args, render_ty, trait_generics};
 use crate::resolve::walk::{
     ProjectionMismatch, holds, impl_where_obligations, is_descendable, is_has_field,
     is_workaround_plumbing, may_hold_for_some_unknown, projection_mismatch,
@@ -89,16 +89,27 @@ pub(crate) fn walk_overflow<'tcx>(
     resolve_node(tcx, cache, top, None, context, &[], 0).cut
 }
 
-/// The provider step `parent` that requires `required`, when `parent` is a provider's own
-/// provider-trait obligation (not the context's delegation routing, whose `Self` is the context).
+/// The provider step `parent` that requires `required`, when `parent` is the provider-trait
+/// obligation of a provider a wiring entry chose (not the context's delegation routing, whose
+/// `Self` is the context). `grandparent` is the obligation above `parent`: the entry's routing, on
+/// the context for a direct entry or on a `RedirectLookup` for an `open` or namespace entry. A
+/// provider a higher-order provider holds inside it, such as a dispatcher's inner `UseContext`, is
+/// below another provider instead, and no entry names it.
 fn provider_step<'tcx>(
     tcx: TyCtxt<'tcx>,
+    grandparent: Option<ty::PolyTraitClause<'tcx>>,
     parent: ty::TraitRef<'tcx>,
     required: ty::PolyTraitClause<'tcx>,
 ) -> Option<OverflowStep> {
     let required = required.skip_binder().trait_ref;
     let context = required.self_ty();
     if !is_provider_trait(tcx, parent.def_id) || parent.self_ty() == context {
+        return None;
+    }
+    let routing = grandparent?.skip_binder().trait_ref;
+    let chosen_by_entry = routing.def_id == parent.def_id
+        && (routing.self_ty() == context || redirect_lookup_args(tcx, routing.self_ty()).is_some());
+    if !chosen_by_entry {
         return None;
     }
     Some(OverflowStep {
@@ -145,9 +156,14 @@ fn growing_lookup<'tcx>(tcx: TyCtxt<'tcx>, prefix: &[ty::PolyTraitClause<'tcx>])
             tcx.item_name(larger_ref.def_id),
             trait_generics(tcx, larger_ref, 1)
         )),
-        growing: prefix[..larger]
-            .last()
-            .and_then(|parent| provider_step(tcx, parent.skip_binder().trait_ref, prefix[larger])),
+        growing: prefix[..larger].split_last().and_then(|(parent, above)| {
+            provider_step(
+                tcx,
+                above.last().copied(),
+                parent.skip_binder().trait_ref,
+                prefix[larger],
+            )
+        }),
     }
 }
 
@@ -230,7 +246,10 @@ fn resolve_node<'tcx>(
         .any(|ancestor| tcx.erase_and_anonymize_regions(*ancestor) == erased)
     {
         return SubResult::cut(WiringOverflow::Cycle {
-            closing: parent.and_then(|parent| provider_step(tcx, parent, erased)),
+            closing: parent.and_then(|parent| {
+                let grandparent = prefix.len().checked_sub(2).map(|at| prefix[at]);
+                provider_step(tcx, grandparent, parent, erased)
+            }),
         });
     }
 

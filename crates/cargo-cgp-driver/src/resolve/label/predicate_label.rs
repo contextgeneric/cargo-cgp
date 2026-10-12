@@ -155,7 +155,7 @@ pub(crate) fn trait_generics<'tcx>(
 /// The table and path of a `RedirectLookup<Table, Path>` provider, or `None` when `provider` is not
 /// a `RedirectLookup`. Anchored to the CGP crate that defines the type, so a same-named type
 /// elsewhere is never mistaken for it.
-fn redirect_lookup_args<'tcx>(
+pub(crate) fn redirect_lookup_args<'tcx>(
     tcx: TyCtxt<'tcx>,
     provider: Ty<'tcx>,
 ) -> Option<(Ty<'tcx>, Ty<'tcx>)> {

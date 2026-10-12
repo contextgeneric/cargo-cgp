@@ -1,17 +1,17 @@
 error[E0275]: [CGP-E020] the wiring for the consumer trait `CanCompute<Eval, Expr>` on context `Interp` never resolves, because the lookup leads back to itself
-  --> src/main.rs:68:13
+  --> src/main.rs:73:13
    |
-68 |             (Eval, Expr),
+73 |             (Eval, Expr),
    |             ^^^^^^^^^^^^
    |
    = help: wire a provider in place of `EvalAdd`, which provides `Computer<Eval, Plus<Expr>>` for `Interp` by requiring `CanCompute<Eval, Expr>` on `Interp` again
 
 error[E0275]: [CGP-E020] the wiring for the consumer trait `CanCompute<Eval, Plus<Expr>>` on context `Interp` never resolves, because the lookup leads back to itself
-  --> src/main.rs:69:13
+  --> src/main.rs:74:13
    |
-69 |             (Eval, Plus<Expr>),
+74 |             (Eval, Plus<Expr>),
    |             ^^^^^^^^^^^^^^^^^^
    |
-   = help: wire a provider in place of `UseContext`, which provides `Computer<Eval, Plus<Expr>>` for `Interp` by requiring `CanCompute<Eval, Plus<Expr>>` on `Interp` again
+   = help: wire the component to a provider that does not require the consumer trait it provides
 
 For more information about this error, try `rustc --explain E0275`.

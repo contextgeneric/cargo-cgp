@@ -8,6 +8,11 @@
 //! (`E0275`). The fix is a wrapper provider for `Expr` whose impl has no `where` clause and calls
 //! the dispatcher in its body, as the expression interpreter example does.
 //!
+//! Both checks are `[CGP-E020]`. The `Expr` check's help names `EvalAdd`, the entry whose
+//! requirement closes its loop. The `Plus<Expr>` check's loop closes at the dispatcher's inner
+//! `UseContext`, which no entry names, so its help names no provider. The output stays `usability`:
+//! neither help points at the `Expr` entry, the one to change.
+//!
 //! CGP error class: wiring cycle (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/wiring-cycle.md).
 extern crate std;
 #[prelude_import]
