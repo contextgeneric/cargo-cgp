@@ -1,0 +1,13 @@
+error[E0119]: conflicting implementations of trait `__CheckApp<ShowerComponent, u32>` for type `App`
+  --> src/main.rs:33:1
+   |
+33 | // check_components! {
+34 | ||     App {
+35 | ||         ShowerComponent: u32,
+   | ||_______________________- first implementation here
+36 | |          ShowerComponent: u32,
+   | |________________________^ conflicting implementation for `App`
+   |
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0119`.
