@@ -27,6 +27,7 @@
 use crate::code::{
     CONSUMER_TRAIT_IN_PROVIDER_BOUND, CONSUMER_TRAIT_IN_PROVIDER_IMPL, NON_CGP_TRAIT_IN_CGP_IMPL,
 };
+use crate::diagnosis::wording::quoted_list;
 
 /// A trait named where a `#[cgp_impl]` provider trait belongs: in the impl header, or in a
 /// higher-order provider's inner-provider bound.
@@ -82,12 +83,18 @@ pub fn cgp_impl_misuse_help(misuse: &CgpImplMisuse) -> String {
 }
 
 /// An inner provider a higher-order provider's body calls (`inner::method(self)`) without importing
-/// it, so the parameter carries no provider-trait bound. `inner` is the provider parameter's name
-/// and `provider_trait` the trait it should be imported as.
+/// it, so the parameter carries no provider-trait bound.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MissingUseProvider {
+    /// The inner provider parameter's name.
     pub inner: String,
+    /// The provider trait to import it as, as `#[use_provider]` writes it: with the component's
+    /// parameters after the context, which the attribute supplies (`AreaCalculator<Shape>`), each
+    /// one the call does not give away written as the trait's own parameter name.
     pub provider_trait: String,
+    /// The provider trait's parameters the call does not give away, named in `provider_trait` for
+    /// the reader to replace.
+    pub unresolved: Vec<String>,
 }
 
 /// Word a [`MissingUseProvider`] into the `[CGP-E031]` header that replaces the raw `E0599`, naming
@@ -104,10 +111,21 @@ pub fn plan_missing_use_provider(missing: &MissingUseProvider) -> String {
 /// provider with `#[use_provider]`, which supplies the leading context argument the provider trait
 /// needs.
 pub fn missing_use_provider_help(missing: &MissingUseProvider) -> String {
-    format!(
+    let import = format!(
         "import it with `#[use_provider({}: {})]`",
         missing.inner, missing.provider_trait,
-    )
+    );
+    match missing.unresolved.len() {
+        0 => import,
+        1 => format!(
+            "{import}, with the type the call uses in place of {}",
+            quoted_list(&missing.unresolved),
+        ),
+        _ => format!(
+            "{import}, with the types the call uses in place of {}",
+            quoted_list(&missing.unresolved),
+        ),
+    }
 }
 
 /// A provider trait named in `#[uses(…)]`, where a dependency on a component names its consumer

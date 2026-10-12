@@ -26,7 +26,7 @@ use cargo_cgp_error_processing::UndeclaredTrait;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{self as hir, Expr, ExprKind, HirId, Node, QPath};
-use rustc_infer::infer::{InferCtxt, TyCtxtInferExt as _};
+use rustc_infer::infer::{BoundRegionConversionTime, InferCtxt, TyCtxtInferExt as _};
 use rustc_middle::ty::print::{PrintTraitRefExt as _, with_forced_trimmed_paths};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode};
 use rustc_span::def_id::DefId;
@@ -354,7 +354,7 @@ fn written_bound<'tcx>(
 /// The type an argument expression has without typeck: the type it writes ([`expr_written_ty`]),
 /// or, for a path to a local binding, the type the binding is declared with (a fn parameter, or a
 /// `let` with an annotation).
-fn argument_ty<'tcx>(infcx: &InferCtxt<'tcx>, arg: &Expr<'tcx>) -> Option<Ty<'tcx>> {
+pub(crate) fn argument_ty<'tcx>(infcx: &InferCtxt<'tcx>, arg: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     if let Some(written) = expr_written_ty(infcx, arg) {
         return Some(written);
     }
@@ -370,19 +370,36 @@ fn argument_ty<'tcx>(infcx: &InferCtxt<'tcx>, arg: &Expr<'tcx>) -> Option<Ty<'tc
     {
         return lower_hir_ty(tcx, annotation);
     }
-    param_declared_input(tcx, binding).filter(|declared| !declared.has_escaping_bound_vars())
+    // A parameter's late-bound lifetimes (`shape: &Shape`) become fresh region variables, as they
+    // would at a call, so the type unifies with a declared input.
+    param_declared_input_binder(tcx, binding).map(|declared| {
+        infcx.instantiate_binder_with_fresh_vars(
+            DUMMY_SP,
+            BoundRegionConversionTime::FnCall,
+            declared,
+        )
+    })
 }
 
-/// The declared type of the fn parameter `binding` names, read from the enclosing function's
-/// signature rather than from typeck results, which do not exist yet for the body whose type
-/// checking is reporting the error, with its late-bound lifetimes left bound. `None` when `binding`
-/// is not a parameter. A `#[cgp_impl]` provider's renamed `self`, declared `&__Context__`, is the
-/// case this was written for.
+/// The declared type of the fn parameter `binding` names, with its late-bound lifetimes left bound
+/// ([`param_declared_input_binder`]). A `#[cgp_impl]` provider's renamed `self`, declared
+/// `&__Context__`, is the case this was written for.
+fn param_declared_input<'tcx>(tcx: TyCtxt<'tcx>, binding: HirId) -> Option<Ty<'tcx>> {
+    param_declared_input_binder(tcx, binding).map(ty::Binder::skip_binder)
+}
+
+/// The declared type of the fn parameter `binding` names, under the signature's binder of
+/// late-bound lifetimes, read from the enclosing function's signature rather than from typeck
+/// results, which do not exist yet for the body whose type checking is reporting the error. `None`
+/// when `binding` is not a parameter.
 ///
 /// An `async fn` body sees its parameters through fresh bindings, since lowering moves each into the
 /// future with an untyped `let __context__ = __context__;`, so such a forwarding `let` is followed
 /// back to the parameter it copies.
-fn param_declared_input<'tcx>(tcx: TyCtxt<'tcx>, mut binding: HirId) -> Option<Ty<'tcx>> {
+fn param_declared_input_binder<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    mut binding: HirId,
+) -> Option<ty::Binder<'tcx, Ty<'tcx>>> {
     let param = loop {
         match tcx.parent_hir_node(binding) {
             Node::Param(param) => break param,
@@ -417,9 +434,9 @@ fn param_declared_input<'tcx>(tcx: TyCtxt<'tcx>, mut binding: HirId) -> Option<T
     let sig = tcx
         .fn_sig(owner.to_def_id())
         .instantiate_identity()
-        .skip_norm_wip()
-        .skip_binder();
-    sig.inputs().get(index).copied()
+        .skip_norm_wip();
+    let input = *sig.skip_binder().inputs().get(index)?;
+    Some(sig.rebind(input))
 }
 
 /// The nearest enclosing trait impl of `did`, walking up the def-parent chain (through the

@@ -1,9 +1,9 @@
 error[E0599]: [CGP-E031] the inner provider `Inner` is used but not imported
-  --> src/main.rs:26:16
+  --> src/main.rs:24:16
    |
-26 |         Inner::area(self, shape) * 2.0
+24 |         Inner::area(self, shape) * 2.0
    |                ^^^^
    |
-   = help: import it with `#[use_provider(Inner: AreaCalculator)]`
+   = help: import it with `#[use_provider(Inner: AreaCalculator<Shape>)]`
 
 For more information about this error, try `rustc --explain E0599`.

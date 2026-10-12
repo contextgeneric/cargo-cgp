@@ -72,6 +72,7 @@ fn inner_provider_not_imported() {
     let missing = MissingUseProvider {
         inner: "InnerCalculator".to_owned(),
         provider_trait: "AreaCalculator".to_owned(),
+        unresolved: Vec::new(),
     };
     assert_eq!(
         plan_missing_use_provider(&missing),
@@ -80,6 +81,29 @@ fn inner_provider_not_imported() {
     assert_eq!(
         missing_use_provider_help(&missing),
         "import it with `#[use_provider(InnerCalculator: AreaCalculator)]`",
+    );
+}
+
+#[test]
+fn a_generic_component_is_imported_with_its_parameters() {
+    let missing = MissingUseProvider {
+        inner: "Inner".to_owned(),
+        provider_trait: "AreaCalculator<Shape>".to_owned(),
+        unresolved: Vec::new(),
+    };
+    assert_eq!(
+        missing_use_provider_help(&missing),
+        "import it with `#[use_provider(Inner: AreaCalculator<Shape>)]`",
+    );
+    let unresolved = MissingUseProvider {
+        inner: "Inner".to_owned(),
+        provider_trait: "AreaCalculator<Shape>".to_owned(),
+        unresolved: vec!["Shape".to_owned()],
+    };
+    assert_eq!(
+        missing_use_provider_help(&unresolved),
+        "import it with `#[use_provider(Inner: AreaCalculator<Shape>)]`, with the type the call \
+         uses in place of `Shape`",
     );
 }
 

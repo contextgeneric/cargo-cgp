@@ -13,17 +13,21 @@
 //! call `Param::method(…)` whose `Param` is a generic parameter of an enclosing provider-trait impl,
 //! the called method belongs to a CGP *provider* trait, and `Param` is not bounded by that provider
 //! trait. It fills the rustc-free [`MissingUseProvider`] the emitter words into a `[CGP-E031]` header
-//! and `#[use_provider(…)]` help.
+//! and `#[use_provider(…)]` help, with a generic component's parameters recovered from the call.
 
 use cargo_cgp_error_processing::MissingUseProvider;
 use rustc_hir::def::DefKind;
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Expr, ExprKind, QPath, TyKind};
-use rustc_middle::ty::{self, TyCtxt};
-use rustc_span::Span;
+use rustc_infer::infer::TyCtxtInferExt as _;
+use rustc_middle::ty::print::with_forced_trimmed_paths;
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode};
 use rustc_span::def_id::DefId;
+use rustc_span::{DUMMY_SP, Span};
+use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::cgp_item::is_provider_trait;
+use crate::resolve::undeclared::argument_ty;
 
 /// Recognize a missing-`#[use_provider]` failure and recover the inner provider and the provider
 /// trait to import it as, or `None` when the diagnostic is not one. Everything is keyed on
@@ -32,7 +36,13 @@ pub fn detect_missing_use_provider(
     tcx: TyCtxt<'_>,
     primary_span: Span,
 ) -> Option<MissingUseProvider> {
-    let (inner, inner_did, method, call_hir_id) = failing_assoc_fn_call_at(tcx, primary_span)?;
+    let FailingAssocFnCall {
+        inner,
+        inner_did,
+        method,
+        hir_id: call_hir_id,
+        args,
+    } = failing_assoc_fn_call_at(tcx, primary_span)?;
 
     // `inner` must be a generic type parameter — a higher-order provider's inner-provider slot — not
     // a concrete type (whose associated-function failure is a different mistake).
@@ -74,32 +84,131 @@ pub fn detect_missing_use_provider(
         only
     };
 
-    // If `inner` is already bounded by that provider trait, the call would resolve — so this `E0599`
+    // If `inner` is already bounded by that provider trait, the call would resolve, so this `E0599`
     // is some other failure, not a forgotten import.
     if impl_bounds_param_by(tcx, impl_did, provider_did, &inner) {
         return None;
     }
 
+    // The context the impl is over, which the inner provider is called with: the provider trait's
+    // first argument after its `Self`.
+    let context = is_provider_trait(tcx, impl_trait_did)
+        .then(|| impl_trait_ref.args.types().nth(1))
+        .flatten();
+    let method_did = tcx
+        .associated_items(provider_did)
+        .filter_by_name_unhygienic(method)
+        .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }))
+        .map(|item| item.def_id);
+    // The inner provider as a type: the impl's own generic parameter the call qualifies by.
+    let impl_generics = tcx.generics_of(impl_did);
+    let inner_ty = impl_generics
+        .param_def_id_to_index(tcx, inner_did)
+        .map(|index| tcx.mk_param_from_def(impl_generics.param_at(index as usize, tcx)))
+        .and_then(|arg| arg.as_type());
+    let (provider_trait, unresolved) = match (context, method_did, inner_ty) {
+        (Some(context), Some(method_did), Some(inner_ty)) => {
+            written_provider_bound(tcx, provider_did, method_did, inner_ty, context, args)
+        }
+        _ => (tcx.item_name(provider_did).to_string(), Vec::new()),
+    };
     Some(MissingUseProvider {
         inner,
-        provider_trait: tcx.item_name(provider_did).to_string(),
+        provider_trait,
+        unresolved,
     })
 }
 
-/// The inner-provider name, its `DefId`, the called method, and the call expression's `HirId` for
-/// the associated-function call `Param::method(…)` the primary span points at — matched precisely on
-/// the method segment's own span.
-fn failing_assoc_fn_call_at(
-    tcx: TyCtxt<'_>,
-    primary_span: Span,
-) -> Option<(String, DefId, rustc_span::Symbol, rustc_hir::HirId)> {
-    struct Finder {
-        span: Span,
-        found: Option<(String, DefId, rustc_span::Symbol, rustc_hir::HirId)>,
+/// The provider trait as `#[use_provider]` writes it, `AreaCalculator<Shape>`: the context argument
+/// left out, since the attribute supplies it, and each further argument the one the call fixes. The
+/// method's signature is instantiated with fresh variables, its `Self` pinned to the inner provider
+/// and its context to the impl's, and each declared input unified with the argument's type where
+/// that type can be read without typeck ([`argument_ty`]). An argument may be one of the impl's own
+/// generic parameters, which the attribute on the same impl can name. A parameter that stays unknown,
+/// or comes out holding a lifetime, is written as the trait's own parameter name for the reader to
+/// replace. The bare name when the trait takes a lifetime or const parameter.
+fn written_provider_bound<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    provider_did: DefId,
+    method_did: DefId,
+    inner: Ty<'tcx>,
+    context: Ty<'tcx>,
+    args: &[Expr<'tcx>],
+) -> (String, Vec<String>) {
+    let name = tcx.item_name(provider_did).to_string();
+    let generics = tcx.generics_of(provider_did);
+    if generics.own_params.len() <= 2
+        || generics.own_params[1..]
+            .iter()
+            .any(|param| !matches!(param.kind, ty::GenericParamDefKind::Type { .. }))
+    {
+        return (name, Vec::new());
     }
-    impl<'tcx> Visitor<'tcx> for Finder {
+    let param_env = ty::ParamEnv::empty();
+    let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
+    let ocx = ObligationCtxt::new(&infcx);
+    let method_args = infcx.fresh_args_for_item(DUMMY_SP, method_did);
+    let cause = ObligationCause::dummy();
+    let _ = ocx.eq(&cause, param_env, method_args.type_at(0), inner);
+    let _ = ocx.eq(&cause, param_env, method_args.type_at(1), context);
+    let sig = tcx
+        .fn_sig(method_did)
+        .instantiate(tcx, method_args)
+        .skip_norm_wip();
+    let sig = infcx.enter_forall_and_leak_universe(sig);
+    for (arg, declared) in std::iter::zip(args, sig.inputs()) {
+        if let Some(written) = argument_ty(&infcx, arg) {
+            // Best effort: an argument that does not unify leaves its parameter named.
+            let _ = ocx.eq(&cause, param_env, *declared, written);
+        }
+    }
+    let _ = ocx.try_evaluate_obligations();
+
+    let mut unresolved = Vec::new();
+    let rendered: Vec<String> = generics.own_params[2..]
+        .iter()
+        .map(|param| {
+            let resolved =
+                infcx.deeply_resolve_ignoring_regions(method_args.type_at(param.index as usize));
+            let writable = !resolved.has_infer()
+                && !resolved
+                    .walk()
+                    .any(|arg| matches!(arg.kind(), ty::GenericArgKind::Lifetime(_)));
+            if writable {
+                with_forced_trimmed_paths!(resolved.to_string())
+            } else {
+                unresolved.push(param.name.to_string());
+                param.name.to_string()
+            }
+        })
+        .collect();
+    (format!("{name}<{}>", rendered.join(", ")), unresolved)
+}
+
+/// The associated-function call `Param::method(…)` the primary span points at.
+struct FailingAssocFnCall<'tcx> {
+    /// The inner provider's name, as the call writes it.
+    inner: String,
+    /// The `DefId` the qualifying path resolves to.
+    inner_did: DefId,
+    /// The called function's name.
+    method: rustc_span::Symbol,
+    /// The call expression.
+    hir_id: rustc_hir::HirId,
+    /// The call's arguments.
+    args: &'tcx [Expr<'tcx>],
+}
+
+/// The associated-function call `Param::method(…)` the primary span points at, matched precisely on
+/// the method segment's own span.
+fn failing_assoc_fn_call_at(tcx: TyCtxt<'_>, primary_span: Span) -> Option<FailingAssocFnCall<'_>> {
+    struct Finder<'tcx> {
+        span: Span,
+        found: Option<FailingAssocFnCall<'tcx>>,
+    }
+    impl<'tcx> Visitor<'tcx> for Finder<'tcx> {
         fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-            if let ExprKind::Call(callee, _) = expr.kind
+            if let ExprKind::Call(callee, args) = expr.kind
                 && let ExprKind::Path(QPath::TypeRelative(qself, segment)) = callee.kind
                 && segment.ident.span.overlaps(self.span)
                 && let TyKind::Path(QPath::Resolved(_, path)) = qself.kind
@@ -110,7 +219,13 @@ fn failing_assoc_fn_call_at(
                     .last()
                     .map(|seg| seg.ident.name.to_string())
                     .unwrap_or_default();
-                self.found = Some((name, param_did, segment.ident.name, expr.hir_id));
+                self.found = Some(FailingAssocFnCall {
+                    inner: name,
+                    inner_did: param_did,
+                    method: segment.ident.name,
+                    hir_id: expr.hir_id,
+                    args,
+                });
             }
             intravisit::walk_expr(self, expr);
         }
