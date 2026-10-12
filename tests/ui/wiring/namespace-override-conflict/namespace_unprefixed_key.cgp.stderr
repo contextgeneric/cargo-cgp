@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E007] component `ErrorTypeProviderComponent` on `App` is redirected to `@cgp.core.error.ErrorTypeProviderComponent`
+error[E0119]: [CGP-E013] component `ErrorTypeProviderComponent` on `App` is redirected to `@cgp.core.error.ErrorTypeProviderComponent`
   --> src/main.rs:33:9
    |
 31 |         namespace DefaultNamespace;

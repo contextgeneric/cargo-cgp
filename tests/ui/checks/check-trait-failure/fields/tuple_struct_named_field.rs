@@ -1,7 +1,7 @@
 //! A tuple-struct context reached through an implicit argument that reads a named field.
 //!
 //! The resolver declines and rustc's `E0599` stays, resugared only; the named-field form of the same
-//! mistake becomes `[CGP-E009]` over `[CGP-E106]`.
+//! mistake becomes `[CGP-E003]` over `[CGP-E110]`.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 //!

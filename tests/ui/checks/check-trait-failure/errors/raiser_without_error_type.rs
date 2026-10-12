@@ -1,13 +1,13 @@
 //! An error raiser wired on a context with no error type, checked for `io::Error`.
 //!
-//! The headline reads `CanRaiseError<std::io::Error>` over the `[CGP-E107]` cause on
+//! The headline reads `CanRaiseError<std::io::Error>` over the `[CGP-E113]` cause on
 //! `ErrorTypeProviderComponent`: the tool keeps the qualifier rustc prints for the ambiguous
 //! `Error`, so the source error does not read as the abstract `Error`.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E107
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E113
 
 use std::io;
 

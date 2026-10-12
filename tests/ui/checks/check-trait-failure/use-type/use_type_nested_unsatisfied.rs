@@ -11,7 +11,7 @@
 //! cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E107
+//@codes: CGP-E001 CGP-E101 CGP-E113
 
 use cgp::prelude::*;
 

@@ -1,4 +1,4 @@
-error[E0107]: [CGP-E014] `#[cgp_impl]` can only implement a CGP component's provider trait, but `Greet` is not a CGP component
+error[E0107]: [CGP-E033] `#[cgp_impl]` can only implement a CGP component's provider trait, but `Greet` is not a CGP component
   --> src/main.rs:28:6
    |
 28 | impl Greet {

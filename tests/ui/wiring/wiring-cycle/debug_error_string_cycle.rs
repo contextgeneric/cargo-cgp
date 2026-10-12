@@ -1,6 +1,6 @@
 //! `DebugError` wired for the `String` key of an `open` error raiser, so it serves itself.
 //!
-//! `[CGP-E010]` fires, but its help names the `UseContext` case; neither the headline nor the help
+//! `[CGP-E020]` fires, but its help names the `UseContext` case; neither the headline nor the help
 //! names the `DebugError` loop.
 //!
 //! CGP error class: wiring cycle (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/wiring-cycle.md).
@@ -8,7 +8,7 @@
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: usability
-//@codes: CGP-E010
+//@codes: CGP-E020
 
 use core::num::ParseIntError;
 

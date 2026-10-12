@@ -12,7 +12,7 @@ fn reads_every_directive() {
 //@json
 //@env: CARGO_CGP_TEST_PANIC=flush
 //@env: RUSTFLAGS=-Ztreat-err-as-bug=1
-//@codes: CGP-E001 CGP-E106
+//@codes: CGP-E001 CGP-E110
 //@quality: acceptable
 fn main() {}
 ";
@@ -26,7 +26,7 @@ fn main() {}
                 ("CARGO_CGP_TEST_PANIC".into(), "flush".into()),
                 ("RUSTFLAGS".into(), "-Ztreat-err-as-bug=1".into()),
             ],
-            codes: Some(vec!["CGP-E001".into(), "CGP-E106".into()]),
+            codes: Some(vec!["CGP-E001".into(), "CGP-E110".into()]),
             quality: Some("acceptable".into()),
         }
     );

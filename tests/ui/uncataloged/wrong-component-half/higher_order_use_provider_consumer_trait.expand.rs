@@ -3,7 +3,7 @@
 //!
 //! `#[use_provider(InnerCalculator: CanCalculateArea)]` should name `AreaCalculator`. The attribute
 //! inserts the context as the trait's leading generic, so the consumer trait receives one argument
-//! too many and rustc reports `E0107`. The tool reshapes it into `[CGP-E015]`, naming the provider
+//! too many and rustc reports `E0107`. The tool reshapes it into `[CGP-E034]`, naming the provider
 //! trait to import.
 //!
 //! CGP error class: the wrong half of a component, not yet in the catalog

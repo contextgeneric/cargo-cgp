@@ -8,14 +8,14 @@
 //! ([delegate_duplicate_path_key.rs] maps the *same* path twice).
 //!
 //! The tool drops the redundant `IsProviderFor` half and rewrites the
-//! `DelegateComponent` half to `[CGP-E005] `App` cannot wire
+//! `DelegateComponent` half to `[CGP-E011] `App` cannot wire
 //! `@cgp.core.error.ErrorTypeProviderComponent.String.*` that is already set
 //! through `@cgp.core.error.ErrorTypeProviderComponent.*``, naming both
 //! overlapping paths in bare `@…` form (the wildcard tail is what makes the
 //! overlap visible).
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
-//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E005).
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E011).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

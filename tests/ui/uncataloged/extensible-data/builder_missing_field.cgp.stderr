@@ -7,6 +7,6 @@ error[E0277]: the trait bound `__PartialConfig<IsPresent, IsNothing>: FinalizeBu
    = note: this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanCompute<(), ()>` for context `App`
              └─ [CGP-E102] provider trait impl `Computer<(), ()>` with context `App` for provider `BuildWithHandlers<Config, Product![BuildAndSetField<Symbol!("host"), DefaultHost>]>`
-               └─ the trait bound `__PartialConfig<IsPresent, IsNothing>: FinalizeBuild` is not satisfied
+               └─ [CGP-E117] the trait bound `__PartialConfig<IsPresent, IsNothing>: FinalizeBuild` is not satisfied
 
 For more information about this error, try `rustc --explain E0277`.

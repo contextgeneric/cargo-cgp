@@ -10,7 +10,7 @@
 //! all have one), so a foreign trait qualifies only on positive evidence: its blanket must depend
 //! on a CGP construct, followed through composed traits. Here `Describe` depends on `HasName`,
 //! whose own blanket depends on `HasField`, so the chain is CGP's, and the call resolves to the
-//! same `[CGP-E009]` block over the missing field its local twin gives, rather than to rustc's
+//! same `[CGP-E003]` block over the missing field its local twin gives, rather than to rustc's
 //! `E0599` with the cause in a mid-stack note. `ToString` reaches no such construct and stays
 //! excluded.
 //!

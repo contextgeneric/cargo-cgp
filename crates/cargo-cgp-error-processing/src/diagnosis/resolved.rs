@@ -153,7 +153,7 @@ pub struct Resolved {
     /// Whether [`consumers`](Resolved::consumers) are CGP *consumer* traits (from a
     /// `check_components!` entry or a consumer-method call) rather than a hand-written wrapper trait
     /// implemented on the context. It selects the header wording: `the consumer trait` (`CGP-E001`)
-    /// when `true`, `the trait` (`CGP-E009`) when `false` — since a wrapper such as
+    /// when `true`, `the trait` (`CGP-E003`) when `false` — since a wrapper such as
     /// `CanHandleApiSend` is a plain trait the programmer wrote, not a CGP consumer.
     pub consumers_are_cgp: bool,
     /// Whether [`context`](Resolved::context) is the checked CGP context itself (`true`, the usual

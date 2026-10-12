@@ -1,4 +1,4 @@
-error[E0271]: [CGP-E017] expected the associated type `Fields` of `HasFields` on `App` to be `Struct! { name: String }`, but found `Struct! { name: u32 }`
+error[E0271]: [CGP-E005] expected the associated type `Fields` of `HasFields` on `App` to be `Struct! { name: String }`, but found `Struct! { name: u32 }`
   --> src/main.rs:41:9
    |
 41 |         DescriberComponent,
@@ -7,6 +7,6 @@ error[E0271]: [CGP-E017] expected the associated type `Fields` of `HasFields` on
    = note: this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanDescribe` for context `App`
              └─ [CGP-E102] provider trait impl `Describer` with context `App` for provider `DescribeNamed`
-               └─ [CGP-E112] associated type `Fields` of `HasFields` on `App` is `Struct! { name: u32 }`, but `Struct! { name: String }` is required
+               └─ [CGP-E116] associated type `Fields` of `HasFields` on `App` is `Struct! { name: u32 }`, but `Struct! { name: String }` is required
 
 For more information about this error, try `rustc --explain E0271`.

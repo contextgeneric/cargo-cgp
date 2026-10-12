@@ -2,14 +2,14 @@
 //!
 //! `DoFooWithBar` uses `CanUseBar`, whose provider `DoBar` uses `Clone`, and `App` does not derive
 //! `Clone`. `delegate_and_check_components!` checks both components, and the tool reports one
-//! `[CGP-E001]` naming both consumer traits over a `[CGP-E201]` root cause, `App: Clone`, with the
+//! `[CGP-E001]` naming both consumer traits over a `[CGP-E117]` root cause, `App: Clone`, with the
 //! chain through both providers.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E201
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E117
 
 use cgp::prelude::*;
 

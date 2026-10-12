@@ -2,7 +2,7 @@
 //! A component named with a parameter and a `#[cgp_impl]` that relies on the default component name.
 //!
 //! The `E0107` carries a garbage suggestion (`#[cgp_impl(new SquareArea)]<Shape>`); the
-//! `CGP-E013`/`CGP-E014` rewrites correctly stay off.
+//! `CGP-E032`/`CGP-E033` rewrites correctly stay off.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
 //!

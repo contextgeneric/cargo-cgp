@@ -24,7 +24,7 @@
 //! cgp-knowledge-base/cgp/guides/naming-a-type-dependency.md.
 
 //@quality: acceptable
-//@codes: CGP-E003 CGP-E101 CGP-E102 CGP-E109
+//@codes: CGP-E004 CGP-E101 CGP-E102 CGP-E112
 
 use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::prelude::*;

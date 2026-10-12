@@ -5,7 +5,7 @@
 //! `Person` is missing the `name` field `GreetHello` reads, so `CanGreetTwice`'s supertrait
 //! `CanGreet` fails. The forwarding `self.greet(...)` passes an `Rc` to a `Send` bound in its
 //! argument, a separate mistake inside the call. The tool reports both, as plain `cargo check` does:
-//! the `[CGP-E009]` block on the impl, and the `Send` error as rustc wrote it. The impl-site anchor
+//! the `[CGP-E003]` block on the impl, and the `Send` error as rustc wrote it. The impl-site anchor
 //! takes a caret inside a method body only on a call to a method of the impl's trait or its
 //! supertraits, by the rule `unrelated_error_in_call_argument` describes, so a caret strictly
 //! inside the forwarding call's argument stays with that code.

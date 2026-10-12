@@ -4,9 +4,9 @@ error[E0599]: [CGP-E001] the consumer trait `HasName` is not implemented for con
 26 |     let _ = Person { name: String::new() }.name();
    |                                            ^^^^
    |
-   = note: root cause: [CGP-E107] context `Person` does not contain any delegate entry for `NameGetterComponent`
+   = note: root cause: [CGP-E113] context `Person` does not contain any delegate entry for `NameGetterComponent`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `HasName` for context `Person`
-             └─ [CGP-E107] context `Person` does not contain any delegate entry for `NameGetterComponent`
+             └─ [CGP-E113] context `Person` does not contain any delegate entry for `NameGetterComponent`
 
 For more information about this error, try `rustc --explain E0599`.

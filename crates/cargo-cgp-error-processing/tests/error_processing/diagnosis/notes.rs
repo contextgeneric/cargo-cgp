@@ -4,22 +4,22 @@
 use super::*;
 
 #[test]
-fn dependency_tree_leaf_codes_rewritten_leaves_and_passes_bounds_through() {
-    // Each rewritten root-cause leaf carries its own `CGP-E1xx` code as a tree entry…
+fn dependency_tree_leaf_codes_every_root_cause() {
+    // Each root-cause leaf carries its own `CGP-E1xx` code as a tree entry.
     assert_eq!(
         dependency_tree_leaf(&field_leaf("name", "App", FieldIssue::Missing)),
-        "[CGP-E106] missing field `name` on `App`"
+        "[CGP-E110] missing field `name` on `App`"
     );
     assert_eq!(
         dependency_tree_leaf(&Leaf::MissingWiring {
             component: "BarProviderComponent".to_owned(),
             owner: "App".to_owned(),
         }),
-        "[CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`"
+        "[CGP-E113] context `App` does not contain any delegate entry for `BarProviderComponent`"
     );
     assert_eq!(
         dependency_tree_leaf(&field_leaf("name", "Person", FieldIssue::Present)),
-        "[CGP-E108] accessor trait `HasField` with field `name` is not implemented for `Person`"
+        "[CGP-E111] accessor trait `HasField` with field `name` is not implemented for `Person`"
     );
     assert_eq!(
         dependency_tree_leaf(&Leaf::FieldTypeMismatch {
@@ -29,21 +29,21 @@ fn dependency_tree_leaf_codes_rewritten_leaves_and_passes_bounds_through() {
             expected_normalized: None,
             actual: "i32".to_owned(),
         }),
-        "[CGP-E109] field `height` on `Rectangle` has type `i32`, but `f64` is required"
+        "[CGP-E112] field `height` on `Rectangle` has type `i32`, but `f64` is required"
     );
     assert_eq!(
         dependency_tree_leaf(&Leaf::MissingDispatchEntry {
             key: "Tagged<Bytes>".to_owned(),
             table: "SinkHandlers".to_owned(),
         }),
-        "[CGP-E110] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`"
+        "[CGP-E114] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`"
     );
     assert_eq!(
         dependency_tree_leaf(&Leaf::NotAProvider {
             provider: "QueryBalanceRequest".to_owned(),
             provider_trait: "ApiHandler".to_owned(),
         }),
-        "[CGP-E111] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`"
+        "[CGP-E115] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`"
     );
     assert_eq!(
         dependency_tree_leaf(&Leaf::AssocTypeMismatch {
@@ -55,27 +55,26 @@ fn dependency_tree_leaf_codes_rewritten_leaves_and_passes_bounds_through() {
             actual: "String".to_owned(),
             component: Some("ErrorTypeProviderComponent".to_owned()),
         }),
-        "[CGP-E112] abstract type `Error` of `HasErrorType` on `App` is `String`, but `AppError` is required"
+        "[CGP-E116] abstract type `Error` of `HasErrorType` on `App` is `String`, but `AppError` is required"
     );
-    // …but a pass-through ordinary bound keeps rustc's phrasing with no code.
+    // An ordinary bound keeps the compiler's phrasing, under its own code.
     assert_eq!(
         dependency_tree_leaf(&Leaf::Bound {
             summary: "f64: Eq".to_owned(),
         }),
-        "the trait bound `f64: Eq` is not satisfied"
+        "[CGP-E117] the trait bound `f64: Eq` is not satisfied"
     );
 
-    // The `root cause:` lead reuses the leaf's code, and falls back to the `CGP-E2xx` root-cause
-    // code only where the leaf is the uncoded pass-through bound.
+    // The `root cause:` lead carries the same code as the leaf it names.
     assert_eq!(
-        root_cause_code(&field_leaf("name", "App", FieldIssue::Missing)),
-        "CGP-E106"
+        dependency_leaf_code(&field_leaf("name", "App", FieldIssue::Missing)),
+        "CGP-E110"
     );
     assert_eq!(
-        root_cause_code(&Leaf::Bound {
+        dependency_leaf_code(&Leaf::Bound {
             summary: "f64: Eq".to_owned(),
         }),
-        "CGP-E201"
+        "CGP-E117"
     );
 }
 
@@ -131,7 +130,7 @@ fn wording_helpers_format_directly() {
 
     assert_eq!(
         field_mismatch_header("height", "Rectangle", "f64", None, "i32"),
-        "[CGP-E003] expected a `height` field of type `f64` on `Rectangle`, but found `i32`"
+        "[CGP-E004] expected a `height` field of type `f64` on `Rectangle`, but found `i32`"
     );
 
     // A required type that projects through the context's own wiring carries both forms: the
@@ -144,7 +143,7 @@ fn wording_helpers_format_directly() {
             Some("Pool<Postgres>"),
             "Pool<Sqlite>"
         ),
-        "[CGP-E003] expected a `database` field of type `Pool<<App as HasDbType>::Db>` \
+        "[CGP-E004] expected a `database` field of type `Pool<<App as HasDbType>::Db>` \
          (`Pool<Postgres>`) on `App`, but found `Pool<Sqlite>`"
     );
 
@@ -157,14 +156,14 @@ fn wording_helpers_format_directly() {
             expected_normalized: Some("Pool<Postgres>".to_owned()),
             actual: "Pool<Sqlite>".to_owned(),
         }),
-        "[CGP-E109] field `database` on `App` has type `Pool<Sqlite>`, but \
+        "[CGP-E112] field `database` on `App` has type `Pool<Sqlite>`, but \
          `Pool<<App as HasDbType>::Db>` (`Pool<Postgres>`) is required"
     );
 
     let cause = missing_field_cause();
     assert!(
         cause_note(&cause, None)
-            .starts_with("root cause: [CGP-E106] missing field `height` on `Rectangle`")
+            .starts_with("root cause: [CGP-E110] missing field `height` on `Rectangle`")
     );
     assert!(derive_help_messages(std::slice::from_ref(&cause)).is_empty());
 }
@@ -184,21 +183,21 @@ fn merges_two_causes_sharing_a_root_into_one_note() {
     assert_eq!(
         notes[0],
         "root causes:\n\
-         \x20 - [CGP-E106] missing field `first_name` on `Person`\n\
-         \x20 - [CGP-E106] missing field `last_name` on `Person`\n\
+         \x20 - [CGP-E110] missing field `first_name` on `Person`\n\
+         \x20 - [CGP-E110] missing field `last_name` on `Person`\n\
          this is required through the dependency chain:\n\
          \x20 [CGP-E101] consumer trait impl `CanGreet` for context `Person`\n\
          \x20 └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetFullName`\n\
-         \x20   ├─ [CGP-E105] trait impl `HasFirstName` for `Person`\n\
-         \x20   │ └─ [CGP-E106] missing field `first_name` on `Person`\n\
-         \x20   └─ [CGP-E105] trait impl `HasLastName` for `Person`\n\
-         \x20     └─ [CGP-E106] missing field `last_name` on `Person`"
+         \x20   ├─ [CGP-E104] trait impl `HasFirstName` for `Person`\n\
+         \x20   │ └─ [CGP-E110] missing field `first_name` on `Person`\n\
+         \x20   └─ [CGP-E104] trait impl `HasLastName` for `Person`\n\
+         \x20     └─ [CGP-E110] missing field `last_name` on `Person`"
     );
 
     // A single cause is not merged — it keeps the `root cause:` (singular) form.
     let single = cause_notes(std::slice::from_ref(&causes[0]), None);
     assert_eq!(single.len(), 1);
-    assert!(single[0].starts_with("root cause: [CGP-E106] missing field `first_name`"));
+    assert!(single[0].starts_with("root cause: [CGP-E110] missing field `first_name`"));
 }
 
 /// Two causes reached through *independent* consumer chains that share no node still collapse into
@@ -227,13 +226,13 @@ fn independent_root_causes_render_as_one_note_with_stacked_chains() {
     assert_eq!(
         notes[0],
         "root causes:\n\
-         \x20 - [CGP-E106] missing field `height` on `App`\n\
-         \x20 - [CGP-E106] missing field `width` on `App`\n\
+         \x20 - [CGP-E110] missing field `height` on `App`\n\
+         \x20 - [CGP-E110] missing field `width` on `App`\n\
          this is required through the dependency chain:\n\
          \x20 [CGP-E101] consumer trait impl `CanCalculateArea` for context `App`\n\
-         \x20 └─ [CGP-E106] missing field `height` on `App`\n\
+         \x20 └─ [CGP-E110] missing field `height` on `App`\n\
          \x20 [CGP-E101] consumer trait impl `CanReportWidth` for context `App`\n\
-         \x20 └─ [CGP-E106] missing field `width` on `App`"
+         \x20 └─ [CGP-E110] missing field `width` on `App`"
     );
 }
 

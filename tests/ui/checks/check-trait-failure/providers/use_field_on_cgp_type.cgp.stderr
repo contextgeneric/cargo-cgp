@@ -4,10 +4,10 @@ error[E0277]: [CGP-E002] the provider trait `ScalarTypeProvider` with context `R
 32 |         ScalarTypeProviderComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E111] the provider trait `ScalarTypeProvider` is not implemented for `UseField<Symbol!("width")>`
+   = note: root cause: [CGP-E115] the provider trait `ScalarTypeProvider` is not implemented for `UseField<Symbol!("width")>`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `HasScalarType` for context `Rectangle`
              └─ [CGP-E102] provider trait impl `ScalarTypeProvider` with context `Rectangle` for provider `UseField<Symbol!("width")>`
-               └─ [CGP-E111] the provider trait `ScalarTypeProvider` is not implemented for `UseField<Symbol!("width")>`
+               └─ [CGP-E115] the provider trait `ScalarTypeProvider` is not implemented for `UseField<Symbol!("width")>`
 
 For more information about this error, try `rustc --explain E0277`.

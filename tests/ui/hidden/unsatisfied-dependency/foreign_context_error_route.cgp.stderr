@@ -4,20 +4,20 @@ error[E0277]: [CGP-E001] the consumer trait `CanHandle<Pipe<Product![Echo, cgp_t
 23 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E107] context `App` does not contain any delegate entry for `@ErrorRaiserComponent.IoFailure`
+   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `@ErrorRaiserComponent.IoFailure`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanHandle<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, _>` for context `App`
-             └─ [CGP-E104] redirect lookup to `@HandlerComponent` in `App`
+             └─ [CGP-E103] redirect lookup to `@HandlerComponent` in `App`
                └─ [CGP-E102] provider trait impl `Handler<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, _>` with context `App` for provider `HandlePipe`
                  └─ [CGP-E102] provider trait impl `Handler<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, _>` with context `App` for provider `UseDelegate<RunPipeHandler>`
                    └─ [CGP-E102] provider trait impl `Handler<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, _>` with context `App` for provider `PipeHandlers<Product![Call<Echo>, Call<cgp_test_foreign_pipeline::Stdout>]>`
                      └─ [CGP-E102] provider trait impl `Handler<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, _>` with context `App` for provider `ComposeHandlers<Call<Echo>, Call<cgp_test_foreign_pipeline::Stdout>>`
                        └─ [CGP-E102] provider trait impl `Handler<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, _>` with context `App` for provider `Call<Echo>`
                          └─ [CGP-E101] consumer trait impl `CanHandle<Echo, _>` for context `App`
-                           └─ [CGP-E104] redirect lookup to `@HandlerComponent` in `App`
+                           └─ [CGP-E103] redirect lookup to `@HandlerComponent` in `App`
                              └─ [CGP-E102] provider trait impl `Handler<Echo, _>` with context `App` for provider `HandleEcho`
                                └─ [CGP-E101] consumer trait impl `CanRaiseError<IoFailure>` for context `App`
-                                 └─ [CGP-E104] redirect lookup to `@ErrorRaiserComponent` in `App`
-                                   └─ [CGP-E107] context `App` does not contain any delegate entry for `@ErrorRaiserComponent.IoFailure`
+                                 └─ [CGP-E103] redirect lookup to `@ErrorRaiserComponent` in `App`
+                                   └─ [CGP-E113] context `App` does not contain any delegate entry for `@ErrorRaiserComponent.IoFailure`
 
 For more information about this error, try `rustc --explain E0277`.

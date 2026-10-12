@@ -1,13 +1,13 @@
 //! `open` on a component that is prefixed into a joined namespace.
 //!
 //! The namespace already redirects `GreeterComponent` to `@app.GreeterComponent`, so `open`
-//! redirects it a second time. `[CGP-E008]` names both targets; the fix is to drop `open` and wire
+//! redirects it a second time. `[CGP-E014]` names both targets; the fix is to drop `open` and wire
 //! `@app.GreeterComponent: GreetHello`.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
 
 //@quality: acceptable
-//@codes: CGP-E008
+//@codes: CGP-E014
 
 use cgp::prelude::*;
 

@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! `MatchWithValueHandlers` applied to a struct.
 //!
-//! A `[CGP-E201]` leaf on `HasFieldHandlers<…>`; nothing says the matchers need an enum.
+//! A `[CGP-E117]` leaf on `HasFieldHandlers<…>`; nothing says the matchers need an enum.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 //!

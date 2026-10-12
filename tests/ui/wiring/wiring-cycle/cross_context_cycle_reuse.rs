@@ -19,7 +19,7 @@
 //! `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`.
 
 //@quality: usability
-//@codes: CGP-E001 CGP-E002 CGP-E101 CGP-E102 CGP-E105 CGP-E106 CGP-E201
+//@codes: CGP-E001 CGP-E002 CGP-E101 CGP-E102 CGP-E104 CGP-E110 CGP-E117
 
 use cgp::prelude::*;
 

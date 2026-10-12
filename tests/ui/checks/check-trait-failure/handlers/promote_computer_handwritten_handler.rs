@@ -1,6 +1,6 @@
 //! `PromoteComputer<Double>` wired as a handler for a hand-written `Computer` provider.
 //!
-//! `[CGP-E111]` says `Double` does not implement `TryComputer`, which is accurate; the documented
+//! `[CGP-E115]` says `Double` does not implement `TryComputer`, which is accurate; the documented
 //! fix, `PromoteAsync<Promote<Double>>`, is not hinted.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
@@ -8,7 +8,7 @@
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: usability
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E111
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E115
 
 use core::marker::PhantomData;
 

@@ -2,15 +2,15 @@
 //!
 //! The unresolved `backend::Error` makes the error type `{type error}`, which the walk does not
 //! descend, so no root cause names it. `@ErrorRaiserComponent.String: DebugError` is a real cycle
-//! (`DebugError` raises through `CanRaiseError<String>`), so the overflow is `[CGP-E010]`, beside the
-//! `E0433` for `backend`. The `[CGP-E010]` help still names `UseContext`.
+//! (`DebugError` raises through `CanRaiseError<String>`), so the overflow is `[CGP-E020]`, beside the
+//! `E0433` for `backend`. The `[CGP-E020]` help still names `UseContext`.
 //!
 //! CGP error class: wiring cycle (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/wiring-cycle.md).
 //!
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: usability
-//@codes: CGP-E010
+//@codes: CGP-E020
 
 use core::num::ParseIntError;
 

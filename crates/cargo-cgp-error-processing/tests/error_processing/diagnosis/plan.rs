@@ -26,7 +26,7 @@ fn plans_a_missing_field_check_failure() {
     assert_eq!(
         notes(&plan),
         vec![format!(
-            "root cause: [CGP-E106] missing field `height` on `Rectangle`\n\
+            "root cause: [CGP-E110] missing field `height` on `Rectangle`\n\
              this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
         )]
@@ -58,7 +58,7 @@ fn plans_a_missing_wiring_check_failure() {
     assert_eq!(
         notes(&plan),
         vec![format!(
-            "root cause: [CGP-E107] context `App` does not contain any delegate entry for `BarProviderComponent`\n\
+            "root cause: [CGP-E113] context `App` does not contain any delegate entry for `BarProviderComponent`\n\
              this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
         )]
@@ -85,7 +85,7 @@ fn plans_a_missing_dispatch_entry_check_failure() {
     assert_eq!(
         notes(&plan),
         vec![format!(
-            "root cause: [CGP-E110] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`\n\
+            "root cause: [CGP-E114] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`\n\
              this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
         )]
@@ -110,7 +110,7 @@ fn plans_a_not_a_provider_check_failure() {
     assert_eq!(
         notes(&plan),
         vec![format!(
-            "root cause: [CGP-E111] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`\n\
+            "root cause: [CGP-E115] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`\n\
              this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
         )]
@@ -138,7 +138,7 @@ fn plans_a_missing_redirect_wiring_check_failure() {
     assert_eq!(
         notes(&plan),
         vec![format!(
-            "root cause: [CGP-E107] context `App` does not contain any delegate entry for \
+            "root cause: [CGP-E113] context `App` does not contain any delegate entry for \
              `@app.finance.types.QuantityTypeProviderComponent`\n\
              this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
@@ -172,10 +172,10 @@ fn plans_a_field_type_mismatch() {
 
     assert_eq!(
         plan.header.as_deref(),
-        Some("[CGP-E003] expected a `height` field of type `f64` on `Rectangle`, but found `i32`")
+        Some("[CGP-E004] expected a `height` field of type `f64` on `Rectangle`, but found `i32`")
     );
     assert!(plan.helps.is_empty());
-    // The `[CGP-E003]` header states the leaf, so the note carries the chain alone.
+    // The `[CGP-E004]` header states the leaf, so the note carries the chain alone.
     assert_eq!(
         notes(&plan),
         vec![format!(
@@ -187,7 +187,7 @@ fn plans_a_field_type_mismatch() {
 }
 
 /// An abstract-type mismatch is the `HasField` mismatch's sibling: the same `E0271` projection
-/// failure on a CGP abstract type instead of a field value, so it takes the `[CGP-E017]` header and
+/// failure on a CGP abstract type instead of a field value, so it takes the `[CGP-E005]` header and
 /// carries the wiring fix in a `help`.
 #[test]
 fn plans_an_abstract_type_mismatch() {
@@ -213,7 +213,7 @@ fn plans_an_abstract_type_mismatch() {
     assert_eq!(
         plan.header.as_deref(),
         Some(
-            "[CGP-E017] expected the abstract type `Error` of `HasErrorType` on `App` to be `AppError`, but found `String`"
+            "[CGP-E005] expected the abstract type `Error` of `HasErrorType` on `App` to be `AppError`, but found `String`"
         )
     );
     assert_eq!(
@@ -222,7 +222,7 @@ fn plans_an_abstract_type_mismatch() {
             "wire `ErrorTypeProviderComponent` to `UseType<AppError>` in the wiring for `App`, or change the provider to work with `String`"
         ]
     );
-    // The `[CGP-E017]` header states the leaf, so the note carries the chain alone.
+    // The `[CGP-E005]` header states the leaf, so the note carries the chain alone.
     assert_eq!(
         notes(&plan),
         vec![format!(
@@ -262,7 +262,7 @@ fn plans_a_plain_associated_type_mismatch() {
     assert_eq!(
         plan.header.as_deref(),
         Some(
-            "[CGP-E017] expected the associated type `Item` of `Iterator` on `Feed` to be `u8`, but found `u16`"
+            "[CGP-E005] expected the associated type `Item` of `Iterator` on `Feed` to be `u8`, but found `u16`"
         )
     );
     assert!(plan.helps.is_empty());

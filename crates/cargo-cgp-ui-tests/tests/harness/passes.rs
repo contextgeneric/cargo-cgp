@@ -80,24 +80,24 @@ fn reduces_cargo_json_to_compiler_messages() {
 #[test]
 fn collects_the_distinct_codes_in_order() {
     let output =
-        "error[E0277]: [CGP-E001] x\n  [CGP-E106] y\n  [CGP-E101] z [CGP-E106]\n CGP-E1 short";
-    assert_eq!(cgp_codes(output), ["CGP-E001", "CGP-E101", "CGP-E106"]);
+        "error[E0277]: [CGP-E001] x\n  [CGP-E110] y\n  [CGP-E101] z [CGP-E110]\n CGP-E1 short";
+    assert_eq!(cgp_codes(output), ["CGP-E001", "CGP-E101", "CGP-E110"]);
 }
 
 #[test]
 fn the_header_must_list_the_output_codes_exactly() {
     let header = parse(
-        "//@quality: acceptable\n//@codes: CGP-E001 CGP-E106\n",
+        "//@quality: acceptable\n//@codes: CGP-E001 CGP-E110\n",
         "demo.rs",
     );
     assert!(is_ok(&header_check(
         false,
         &header,
-        "[CGP-E106] then [CGP-E001]"
+        "[CGP-E110] then [CGP-E001]"
     )));
     let text = mismatch(header_check(false, &header, "[CGP-E001] only"));
     assert!(
-        text.contains("`//@codes: CGP-E001 CGP-E106` but the output carries CGP-E001"),
+        text.contains("`//@codes: CGP-E001 CGP-E110` but the output carries CGP-E001"),
         "{text}"
     );
 }
@@ -120,5 +120,5 @@ fn an_error_fixture_must_declare_its_header() {
 fn codes_none_requires_an_uncoded_output() {
     let header = parse("//@quality: usability\n//@codes: none\n", "demo.rs");
     assert!(is_ok(&header_check(false, &header, "error[E0425]: plain")));
-    assert!(!is_ok(&header_check(false, &header, "[CGP-E010] coded")));
+    assert!(!is_ok(&header_check(false, &header, "[CGP-E020] coded")));
 }

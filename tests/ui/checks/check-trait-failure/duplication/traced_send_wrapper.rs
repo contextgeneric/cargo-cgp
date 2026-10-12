@@ -6,13 +6,13 @@
 //! no CGP trait. The resolver anchors it on the enclosing hand-written impl (whose `CanHandleApi`
 //! supertrait is a CGP consumer trait), traces the chain to the same missing-field root cause, and
 //! heads the tree with the wrapper the programmer wrote: `CanHandleApiSend`, then its `CanHandleApi`
-//! supertrait, down to the missing field. The header reads `[CGP-E009] the trait
+//! supertrait, down to the missing field. The header reads `[CGP-E003] the trait
 //! \`CanHandleApiSend<GreetApi>\`` — a wrapper is a plain trait, not a CGP consumer — with the
 //! `E0271` code kept. Being a distinct trait from the check entry's `CanHandleApi`, it is its own
 //! block. The `.rust.stderr` baseline shows the full un-traced cascade for contrast.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E009 CGP-E101 CGP-E102 CGP-E105 CGP-E106
+//@codes: CGP-E001 CGP-E003 CGP-E101 CGP-E102 CGP-E104 CGP-E110
 
 use core::future::Future;
 use core::marker::PhantomData;

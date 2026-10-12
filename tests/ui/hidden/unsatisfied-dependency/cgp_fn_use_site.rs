@@ -19,13 +19,13 @@
 //! it reads the receiver's context (`App`, off the `describe_app` parameter) and the called method
 //! name (`describe`), finds the local blanket-impl trait `Describe` declaring that method, and walks
 //! `App: Describe` to the missing field. Because a `#[cgp_fn]` trait is not a CGP *component*,
-//! the headline reads `[CGP-E009] the trait …` (as the impl-site anchor words such a trait), over a
-//! `root cause: [CGP-E106] missing field \`name\`` tree — the `GetName` branch that fails, with the
+//! the headline reads `[CGP-E003] the trait …` (as the impl-site anchor words such a trait), over a
+//! `root cause: [CGP-E110] missing field \`name\`` tree — the `GetName` branch that fails, with the
 //! holding `GetCount` branch omitted. Left to raw rustc this is an `E0599` whose real cause is a
 //! mid-stack note buried under a method-probe candidate list.
 
 //@quality: acceptable
-//@codes: CGP-E009 CGP-E105 CGP-E106
+//@codes: CGP-E003 CGP-E104 CGP-E110
 
 use cgp::prelude::*;
 

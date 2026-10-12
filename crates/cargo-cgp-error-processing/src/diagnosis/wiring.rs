@@ -76,18 +76,18 @@ impl WiringKey {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WiringConflict {
     /// Two entries wire the same key directly — the same component or the same `@`-path mapped
-    /// twice (`CGP-E004`).
+    /// twice (`CGP-E010`).
     Duplicate { context: String, key: WiringKey },
     /// Two entries wire *overlapping but distinct* keys, so one cannot claim what the other
     /// already covers — a generic entry over a specific one, or a path that is a prefix of
-    /// another (`CGP-E005`).
+    /// another (`CGP-E011`).
     Overlap {
         context: String,
         conflicting: WiringKey,
         first: WiringKey,
     },
     /// A context joins more than one namespace, so two blanket forwardings each cover every key
-    /// and overlap. `first` and `second` are the two namespace/table trait names (`CGP-E006`).
+    /// and overlap. `first` and `second` are the two namespace/table trait names (`CGP-E012`).
     MultipleNamespaces {
         context: String,
         first: String,
@@ -95,7 +95,7 @@ pub enum WiringConflict {
     },
     /// One entry redirects the key (via `open` or a namespace) while the other sets it directly to
     /// `provider`, so the direct wiring never takes effect; the fix is to wire `provider` under the
-    /// redirected `path` instead (`CGP-E007`). `provider` is `None` when the direct entry names no
+    /// redirected `path` instead (`CGP-E013`). `provider` is `None` when the direct entry names no
     /// provider a reader wrote. `params` are the component's type parameters, which the redirect
     /// appends to `path` when it looks the component up, so a generic component is wired one key
     /// per parameter value rather than at `path` itself.
@@ -107,7 +107,7 @@ pub enum WiringConflict {
         params: Vec<String>,
     },
     /// The same key is redirected more than once. `first_path` and `second_path` are the two
-    /// redirect targets, equal when both redirects point the same way (`CGP-E008`).
+    /// redirect targets, equal when both redirects point the same way (`CGP-E014`).
     DuplicateRedirect {
         context: String,
         key: WiringKey,

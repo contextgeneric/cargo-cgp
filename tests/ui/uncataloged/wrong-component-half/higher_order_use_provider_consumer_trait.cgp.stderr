@@ -1,4 +1,4 @@
-error[E0107]: [CGP-E015] `CanCalculateArea` is a consumer trait and cannot bound an inner provider; a higher-order provider imports its provider trait `AreaCalculator`
+error[E0107]: [CGP-E034] `CanCalculateArea` is a consumer trait and cannot bound an inner provider; a higher-order provider imports its provider trait `AreaCalculator`
   --> src/main.rs:33:33
    |
 33 | #[use_provider(InnerCalculator: CanCalculateArea)]

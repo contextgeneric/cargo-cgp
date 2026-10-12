@@ -90,7 +90,7 @@ pub fn resolve_wrapper_chain(
                 context: self_ty.to_string(),
                 consumers: vec![wrapper],
                 // The impl's own trait heads the header; a routing wrapper such as `CanAddApiRoutes`
-                // is a plain trait, not a CGP consumer, so it reads `the trait` (`CGP-E009`).
+                // is a plain trait, not a CGP consumer, so it reads `the trait` (`CGP-E003`).
                 consumers_are_cgp: consumer_provider_trait(tcx, trait_ref.def_id).is_some(),
                 // `Self` is a foreign wrapper holding the context, not the context itself — reached
                 // here only *because* it is not the context (else `resolve_impl_site` caught it).

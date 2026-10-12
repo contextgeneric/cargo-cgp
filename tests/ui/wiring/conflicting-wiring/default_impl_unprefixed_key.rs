@@ -12,16 +12,16 @@
 //!
 //! The mistake is the same one in both, though — a prefixed component is addressed by its
 //! path — so the tool reads the `RedirectLookup` straight off the prefix entry's `Delegate`
-//! and reports `[CGP-E007]`, naming `@app.GreeterComponent` as the key to register under.
+//! and reports `[CGP-E013]`, naming `@app.GreeterComponent` as the key to register under.
 //! Without that, the bare marker key leaves the conflict unclassified and rustc's raw
 //! `conflicting implementations of trait \`DefaultNamespace<_>\`` is all the reader gets.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md,
 //! cgp-knowledge-base/cgp/reference/attributes/default_impl.md (Known issues), and
-//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E007).
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E013).
 
 //@quality: acceptable
-//@codes: CGP-E007
+//@codes: CGP-E013
 
 use cgp::prelude::*;
 

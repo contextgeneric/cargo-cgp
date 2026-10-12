@@ -8,7 +8,7 @@
 //! per-component default needs the crate to own *either* the namespace or the
 //! component key; owning neither, this crate cannot.
 //!
-//! cargo-cgp reshapes the orphan class into a `[CGP-E011]` header naming the
+//! cargo-cgp reshapes the orphan class into a `[CGP-E022]` header naming the
 //! foreign namespace (`AppNamespace`) and the foreign key (`GreeterComponent`)
 //! instead of the machinery parameter `__Components__`, and carries the
 //! ownership-based fix in a `help` — own one end of the wiring, by keying it on a

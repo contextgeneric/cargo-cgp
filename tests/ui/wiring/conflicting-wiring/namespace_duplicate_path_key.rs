@@ -17,7 +17,7 @@
 //! cgp-knowledge-base/cgp/implementation/entrypoints/cgp_namespace.md.
 
 //@quality: acceptable
-//@codes: CGP-E008
+//@codes: CGP-E014
 
 use cgp::prelude::*;
 

@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! A context joining a namespace that does not inherit the namespace its component is prefixed into.
 //!
-//! `[CGP-E107]` on `GreeterComponent`, with no hint that the component is routed only through
+//! `[CGP-E113]` on `GreeterComponent`, with no hint that the component is routed only through
 //! `DefaultNamespace`.
 //!
 //! CGP error class: unregistered namespace path (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/unregistered-namespace-path.md).

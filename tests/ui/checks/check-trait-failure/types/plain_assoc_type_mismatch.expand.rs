@@ -8,7 +8,7 @@
 //! deliberately does not cover, since the trait is not an abstract-type component), while
 //! `Rectangle` supplies `u32`.
 //!
-//! The failure is reshaped into the same `[CGP-E017]` class — the mechanism is the projection, not
+//! The failure is reshaped into the same `[CGP-E005]` class — the mechanism is the projection, not
 //! the trait — but the wording turns on the trait's fingerprint, and that is what this fixture pins.
 //! Because `HasUnit`'s provider trait carries no `UseType` impl, it reads `associated type` rather
 //! than `abstract type` and carries **no** `help`: there is no wiring entry to change, so suggesting

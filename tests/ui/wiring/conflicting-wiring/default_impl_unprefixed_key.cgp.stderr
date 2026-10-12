@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E007] component `GreeterComponent` on `DefaultNamespace` is redirected to `@app.GreeterComponent`
+error[E0119]: [CGP-E013] component `GreeterComponent` on `DefaultNamespace` is redirected to `@app.GreeterComponent`
   --> src/main.rs:35:16
    |
 28 | #[cgp_component(Greeter)]

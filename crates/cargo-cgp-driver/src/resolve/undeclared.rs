@@ -16,7 +16,7 @@
 //! This module recognizes that shape off the compiler: the failing call sits inside a generated
 //! impl over a bare type-parameter context and is made on that context, the call names a method of
 //! a CGP trait, and that trait is *not* among the impl's `where` bounds. It fills the rustc-free
-//! [`UndeclaredTrait`] the emitter words into a `[CGP-E012]` header and `#[uses(…)]` help.
+//! [`UndeclaredTrait`] the emitter words into a `[CGP-E030]` header and `#[uses(…)]` help.
 
 use cargo_cgp_error_processing::UndeclaredTrait;
 use rustc_hir::def::{DefKind, Res};

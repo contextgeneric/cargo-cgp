@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E008] duplicate redirect for component `GreeterComponent` on `App`: redirected to both `@app.GreeterComponent` and `@GreeterComponent`
+error[E0119]: [CGP-E014] duplicate redirect for component `GreeterComponent` on `App`: redirected to both `@app.GreeterComponent` and `@GreeterComponent`
   --> src/main.rs:32:14
    |
 31 |         namespace DefaultNamespace;

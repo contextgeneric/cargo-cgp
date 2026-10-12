@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! A provider calling `Self::raise_error(…)` without declaring `CanRaiseError` in `#[uses]`.
 //!
-//! `Self` lowers to the provider impl's generated `__Context__` parameter, which the `[CGP-E016]`
+//! `Self` lowers to the provider impl's generated `__Context__` parameter, which the `[CGP-E031]`
 //! inner-provider check skips, so the tool keeps rustc's `E0599`: no `raise_error` found for the
 //! type parameter `__Context__`. It states nothing false, but it leaks `__Context__` and suggests a
 //! bound inside `#[use_type]`; the fix is `#[uses(CanRaiseError<String>)]`.

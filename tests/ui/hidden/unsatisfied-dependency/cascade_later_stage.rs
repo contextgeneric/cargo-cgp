@@ -17,7 +17,7 @@
 //! `_: Send`, which genuinely depends on the input, is filtered out as a placeholder leaf.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E105 CGP-E106
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E110
 
 use core::marker::PhantomData;
 

@@ -18,7 +18,7 @@
 //! mechanics: check_components.md.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E105 CGP-E106
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110
 
 use cgp::prelude::*;
 

@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! Calling a `#[cgp_getter]` method on a context that does not wire the getter.
 //!
-//! The tool reports `[CGP-E001]` for `HasName` on `Person` over a `[CGP-E107]` leaf naming the
+//! The tool reports `[CGP-E001]` for `HasName` on `Person` over a `[CGP-E113]` leaf naming the
 //! missing `NameGetterComponent` entry. rustc's notes point at the `#[cgp_getter]` attribute, under
 //! which the generated `NameGetterComponent` marker is defined; the use-site anchor skips a
 //! component marker as a context candidate, so it reads the context from `Person`'s definition.

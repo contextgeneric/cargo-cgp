@@ -18,10 +18,10 @@
 //! registration must read `@app.GreeterComponent`. The tool recovers that target by
 //! normalizing `<GreeterComponent as DefaultNamespace<AppNamespace's table>>::Delegate`
 //! through the trait solver, exactly as it does for the context-level shape, so this
-//! reads as a *redirect collision* (`[CGP-E007]`) naming the path to write instead.
+//! reads as a *redirect collision* (`[CGP-E013]`) naming the path to write instead.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/namespace-override-conflict.md and
-//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E007).
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E013).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

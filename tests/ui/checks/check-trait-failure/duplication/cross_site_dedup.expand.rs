@@ -5,7 +5,7 @@
 //! its header and its forwarding `self.greet()` call) — the transfer example's `Send`-recovery shape.
 //! The tool collapses the re-reports of each failing trait to one block: the check entry becomes a
 //! `[CGP-E001]` `CanGreet` consumer-trait error, and the `CanGreetSend` impl (header and call) a
-//! single `[CGP-E009]` error. A wrapper is a plain trait, not a CGP consumer, so its header reads
+//! single `[CGP-E003]` error. A wrapper is a plain trait, not a CGP consumer, so its header reads
 //! "the trait", and its tree is headed by `CanGreetSend` (the code the programmer wrote), descending
 //! through its `CanGreet` supertrait to the missing field rather than hiding the wrapper. The two
 //! blocks stay distinct because they are distinct traits; no re-report repeats. The `.rust.stderr`

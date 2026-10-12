@@ -424,7 +424,7 @@ impl<E: Emitter> CgpEmitter<E> {
     }
 
     /// Whether `diag` is an `E0275` overflow at a check entry whose wiring walk meets no cycle
-    /// ([`resolve::overflow_is_wiring_cycle`]), so the `[CGP-E010]` cycle rewrite would be false.
+    /// ([`resolve::overflow_is_wiring_cycle`]), so the `[CGP-E020]` cycle rewrite would be false.
     fn overflow_is_not_a_cycle(&self, diag: &DiagInner) -> bool {
         diag.code == Some(E0275)
             && diag.span.primary_span().is_some_and(|span| {
@@ -639,9 +639,9 @@ impl<E: Emitter> CgpEmitter<E> {
     /// Whether `resolved` is the downstream check re-report of a detected *consumer-trait*
     /// `#[cgp_impl]` mistake — every cause a `NotAProvider` leaf naming that mistake's provider
     /// struct and the provider trait its header should have targeted. Such a failure is a pure
-    /// consequence of the mistake already reported as `[CGP-E013]` (the provider struct cannot be a
+    /// consequence of the mistake already reported as `[CGP-E032]` (the provider struct cannot be a
     /// provider because its impl targets the wrong trait), so it is suppressed rather than shown as
-    /// its own `[CGP-E111]` block.
+    /// its own `[CGP-E115]` block.
     fn is_cgp_impl_misuse_check_report(&self, resolved: &Resolved) -> bool {
         let Some(misuses) = self.cgp_impl_misuses.as_deref() else {
             return false;
@@ -849,7 +849,7 @@ impl<E: Emitter> CgpEmitter<E> {
     /// note per cause, dropping rustc's own suggestions. A resolution anchored at the call
     /// expression (`at_call`) plans as a use-site failure whatever its rustc code, so its header
     /// names the consumer the call needs — except a genuine field-type mismatch, whose `E0271`
-    /// class words the more specific `[CGP-E003]` form.
+    /// class words the more specific `[CGP-E004]` form.
     fn transform_resolved(
         &self,
         diag: &mut DiagInner,
@@ -916,7 +916,7 @@ impl<E: Emitter> CgpEmitter<E> {
         // non-CGP trait — makes the macro generate an inside-out impl of the wrong trait, producing
         // a burst of cryptic macro-lowering errors (E0425/E0107/E0186/E0207) plus a downstream check
         // failure, none naming the mistake. Detect it structurally (once) and reshape the E0107
-        // whose caret is on the misused trait name into a `[CGP-E013]`/`[CGP-E014]` header with the
+        // whose caret is on the misused trait name into a `[CGP-E032]`/`[CGP-E033]` header with the
         // fix, suppressing the rest of the cascade — the sibling errors here, the check re-report
         // below.
         if matches!(
@@ -985,7 +985,7 @@ impl<E: Emitter> CgpEmitter<E> {
         // An orphan-rule namespace registration (E0210/E0117): a crate registering wiring into a
         // foreign namespace keyed on a foreign key. Reword the raw coherence error — which names
         // the machinery parameter and frames a CGP wiring decision as a bare coherence rule — into
-        // a `[CGP-E011]` header naming the namespace and key, re-aiming the caret at the offending
+        // a `[CGP-E022]` header naming the namespace and key, re-aiming the caret at the offending
         // macro alone (its "uncovered type parameter" label no longer applies), and carrying the
         // ownership-based fix in a `help`.
         if let Some(conflict) = self.orphan_conflict(&diag)
@@ -1058,7 +1058,7 @@ impl<E: Emitter> CgpEmitter<E> {
             if let Some((resolved, span, at_call)) = self.try_resolve(&diag) {
                 // The downstream check re-report of a `#[cgp_impl]` consumer-trait mistake (its
                 // provider struct failing `NotAProvider` because its impl targets the wrong trait)
-                // is a pure consequence of the `[CGP-E013]` already shown, so drop it.
+                // is a pure consequence of the `[CGP-E032]` already shown, so drop it.
                 if self.is_cgp_impl_misuse_check_report(&resolved) {
                     return;
                 }
@@ -1085,7 +1085,7 @@ impl<E: Emitter> CgpEmitter<E> {
                 // An overflow whose wiring walk meets no cycle (one that follows from an unresolved
                 // type, say) is not a wiring cycle, so it keeps rustc's wording.
                 let changed = !self.overflow_is_not_a_cycle(&diag) && self.rewrite(&mut diag);
-                // A rewritten wiring overflow (`E0275`, now a `[CGP-E010]` header) drops the
+                // A rewritten wiring overflow (`E0275`, now a `[CGP-E020]` header) drops the
                 // note pointing at the generated `__Check…` trait — a name the user never wrote,
                 // whose location the kept caret already covers — and carries the fix in a `help`.
                 if changed && diag.code == Some(E0275) {

@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E004] duplicate wiring for component `GreeterComponent` on `Person`
+error[E0119]: [CGP-E010] duplicate wiring for component `GreeterComponent` on `Person`
   --> src/main.rs:43:9
    |
 42 |         GreeterComponent: GreetHello,

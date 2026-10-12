@@ -14,7 +14,7 @@
 //! The driver resolves it the same way too: the walk reaches the provider impl whose every
 //! trait-clause dependency holds, finds the unmet projection it carries, normalizes
 //! `<Rectangle as HasScalarType>::Scalar` to read the type the context actually supplies (`u32`),
-//! and rewrites the main message into the `[CGP-E017]` abstract-type form over the dependency
+//! and rewrites the main message into the `[CGP-E005]` abstract-type form over the dependency
 //! chain. Because the trait is a `#[cgp_type]` component — recognized structurally, by its provider
 //! carrying the `UseType` blanket — a `help` names the wiring entry to change. Where rustc's raw
 //! output aims `expected this to be `f64`` at the `#[cgp_type]` attribute and never states the type
@@ -22,7 +22,7 @@
 //! code is kept.
 
 //@quality: acceptable
-//@codes: CGP-E017 CGP-E101 CGP-E102 CGP-E112
+//@codes: CGP-E005 CGP-E101 CGP-E102 CGP-E116
 
 use cgp::prelude::*;
 

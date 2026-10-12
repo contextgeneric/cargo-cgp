@@ -1,7 +1,7 @@
 //! An `open` error table missing the route for `std::io::Error`, in a crate with its own `Error`.
 //!
 //! `App` routes `ParseIntError` through its open `ErrorRaiserComponent` table, and the check asks for
-//! `std::io::Error`. The `[CGP-E107]` leaf names the missing path as
+//! `std::io::Error`. The `[CGP-E113]` leaf names the missing path as
 //! `@ErrorRaiserComponent.std::io::Error`, a segment `Path!` accepts as written. rustc prints the
 //! type qualified because `Error` names several types here, and the tool keeps the qualifier, so the
 //! path does not read as the crate's own `backend::Error` or the abstract `Error`.
@@ -9,7 +9,7 @@
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E104 CGP-E107
+//@codes: CGP-E001 CGP-E101 CGP-E103 CGP-E113
 
 use core::num::ParseIntError;
 

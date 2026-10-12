@@ -4,7 +4,7 @@
 //! failure is triggered by calling `greet` directly with no `check_components!`.
 //! Under a plain `cargo check` this is the hidden class — a bare `E0599` "method not
 //! found" that never names the cause. Under the next-generation solver the tool
-//! recovers it: one `[CGP-E001]` block over a `[CGP-E106]` root cause naming the missing
+//! recovers it: one `[CGP-E001]` block over a `[CGP-E110]` root cause naming the missing
 //! `name` field, without rustc's advice to use associated-function syntax. A passing
 //! snapshot is also the standing proof that the driver stands in as the compiler, since
 //! only a compilation through the tool can produce this cause.
@@ -14,7 +14,7 @@
 
 //@json
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E105 CGP-E106
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110
 
 use cgp::prelude::*;
 

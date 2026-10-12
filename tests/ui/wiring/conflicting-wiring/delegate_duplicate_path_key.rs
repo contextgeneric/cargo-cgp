@@ -16,7 +16,7 @@
 //! cgp-knowledge-base/cgp/implementation/entrypoints/delegate_components.md.
 
 //@quality: acceptable
-//@codes: CGP-E004
+//@codes: CGP-E010
 
 use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::prelude::*;

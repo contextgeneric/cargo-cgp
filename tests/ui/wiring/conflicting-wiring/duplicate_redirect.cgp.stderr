@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E008] duplicate redirect for component `FooComponent` on `App`: redirected to both `@app.foo` and `@app.bar`
+error[E0119]: [CGP-E014] duplicate redirect for component `FooComponent` on `App`: redirected to both `@app.foo` and `@app.bar`
   --> src/main.rs:33:9
    |
 31 |         FooComponent =>

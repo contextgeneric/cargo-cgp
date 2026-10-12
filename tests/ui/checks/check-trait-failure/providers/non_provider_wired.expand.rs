@@ -13,7 +13,7 @@
 //! The resolver tells this apart from a leaf-provider dead-end (a valid provider reached by an input
 //! mismatch, whose real cause runs through its concrete impl) by whether the owner has a concrete
 //! impl of the provider trait at all: `NotAGreeter` has *no* `Greeter` impl, so it is genuinely not
-//! a provider, reported as a [`CGP-E111`] `NotAProvider` leaf — `the provider trait \`Greeter\` is
+//! a provider, reported as a [`CGP-E115`] `NotAProvider` leaf — `the provider trait \`Greeter\` is
 //! not implemented for \`NotAGreeter\``. Before this, the resolver dropped the leaf and declined to a
 //! `[CGP-E002]` block naming the whole `WrapGreeter<NotAGreeter>` pipeline (and leaking rustc's giant
 //! implementor list), with the real cause nowhere.

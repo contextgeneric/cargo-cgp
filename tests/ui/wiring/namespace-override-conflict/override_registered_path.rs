@@ -22,7 +22,7 @@
 //! See cgp-knowledge-base/cgp/errors/wiring/namespace-override-conflict.md.
 
 //@quality: acceptable
-//@codes: CGP-E005
+//@codes: CGP-E011
 
 use cgp::prelude::*;
 

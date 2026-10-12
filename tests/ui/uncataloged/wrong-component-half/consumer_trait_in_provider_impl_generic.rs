@@ -2,14 +2,14 @@
 //!
 //! The same mistake as `consumer_trait_in_provider_impl`, on `CanCalculateArea<Shape>`: the
 //! consumer trait receives the inserted context as an extra argument, so rustc reports `E0107`.
-//! The tool reshapes it into the same `[CGP-E013]`, showing the class is independent of the
+//! The tool reshapes it into the same `[CGP-E032]`, showing the class is independent of the
 //! component's own parameters.
 //!
 //! CGP error class: the wrong half of a component, not yet in the catalog
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md#a-gap-the-used-but-undeclared-and-wrong-half-classes).
 
 //@quality: acceptable
-//@codes: CGP-E013
+//@codes: CGP-E032
 
 use cgp::prelude::*;
 

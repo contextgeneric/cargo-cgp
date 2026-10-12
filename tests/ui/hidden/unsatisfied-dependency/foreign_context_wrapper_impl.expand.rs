@@ -6,7 +6,7 @@
 //! `ErrorRaiserComponent` table has no entry for `IoFailure`, which the `Echo` stage raises. This
 //! crate asserts the pipeline through a wrapper trait, `CanRunEcho`, whose supertrait is the
 //! `CanHandle` consumer trait, and implements it on `App`. The impl-site anchor reads `App` as a
-//! context, since it carries its own wiring, so the impl reports the `[CGP-E107]` missing route a
+//! context, since it carries its own wiring, so the impl reports the `[CGP-E113]` missing route a
 //! local context would. The headline keeps rustc's provider-form bound on the `ComposeHandlers`
 //! plumbing, as it does for the same program on a local context.
 //!

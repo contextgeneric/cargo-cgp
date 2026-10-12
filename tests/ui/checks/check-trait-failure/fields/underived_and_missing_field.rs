@@ -13,7 +13,7 @@
 //! (derive-missing and missing-field variants together).
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E105 CGP-E106 CGP-E108
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110 CGP-E111
 
 use cgp::prelude::*;
 

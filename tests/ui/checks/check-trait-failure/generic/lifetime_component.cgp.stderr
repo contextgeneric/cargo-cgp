@@ -4,11 +4,11 @@ error[E0277]: [CGP-E001] the consumer trait `HasReference<str>` is not implement
 50 |         ReferenceGetterComponent: (Life<'a>, str),
    |         ^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E106] missing field `name` on `App<'_>`
+   = note: root cause: [CGP-E110] missing field `name` on `App<'_>`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `HasReference<str>` for context `App<'_>`
              └─ [CGP-E102] provider trait impl `ReferenceGetter<str>` with context `App<'_>` for provider `GetReference`
-               └─ [CGP-E105] trait impl `HasName` for `App<'_>`
-                 └─ [CGP-E106] missing field `name` on `App<'_>`
+               └─ [CGP-E104] trait impl `HasName` for `App<'_>`
+                 └─ [CGP-E110] missing field `name` on `App<'_>`
 
 For more information about this error, try `rustc --explain E0277`.

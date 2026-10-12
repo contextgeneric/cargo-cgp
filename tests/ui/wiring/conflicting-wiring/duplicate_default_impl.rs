@@ -13,7 +13,7 @@
 //! that dropped the re-span would move the carets back onto the macro attribute.
 //!
 //! The tool reads the collision off the two registration impls and rewrites the
-//! header to `[CGP-E004]`, naming the key and the table it is registered in. The
+//! header to `[CGP-E010]`, naming the key and the table it is registered in. The
 //! key here is an ordinary *type*, not a component marker, so it is worded as one
 //! — the classifier tells the two apart structurally, by whether a provider trait
 //! keys on it — and the subject is the lookup trait with its leading arguments,
@@ -21,10 +21,10 @@
 //! appends.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
-//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E004).
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E010).
 
 //@quality: acceptable
-//@codes: CGP-E004
+//@codes: CGP-E010
 
 use cgp::core::component::DefaultImpls1;
 use cgp::prelude::*;

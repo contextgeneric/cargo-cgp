@@ -8,7 +8,7 @@
 //! keyed on a *prefix path* can therefore only be written in the crate that owns
 //! the namespace.
 //!
-//! cargo-cgp reshapes the orphan class into a `[CGP-E011]` header naming the
+//! cargo-cgp reshapes the orphan class into a `[CGP-E022]` header naming the
 //! foreign namespace (`AppNamespace`) and the foreign *path* key
 //! (`@app.AnnouncerComponent`, resugared from the `PathCons<Symbol<…>>` spine)
 //! instead of the machinery parameter `__Components__`, with the ownership-based
@@ -20,7 +20,7 @@
 
 //@aux-build: cgp-test-crate-a
 //@quality: acceptable
-//@codes: CGP-E011
+//@codes: CGP-E022
 
 use cgp::prelude::*;
 use cgp_test_crate_a::{Announcer, AnnouncerComponent, AppNamespace, HasName};

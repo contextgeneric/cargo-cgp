@@ -13,7 +13,7 @@ fn hop(name: &str) -> ChainNode {
     trait_hop(name, "Ctx")
 }
 
-/// A terminal leaf rendered as `the trait bound \`name\` is not satisfied`.
+/// A terminal ordinary-bound leaf, rendered as `[CGP-E117] the trait bound \`name\` is not satisfied`.
 fn leaf(name: &str) -> ChainNode {
     ChainNode::Leaf(Leaf::Bound {
         summary: name.to_owned(),
@@ -31,10 +31,10 @@ fn render(paths: &[Vec<ChainNode>]) -> String {
 
 #[test]
 fn renders_a_linear_spine() {
-    insta::assert_snapshot!(render(&[vec![hop("A"), hop("B"), leaf("D")]]), @r"
-    [CGP-E105] trait impl `A` for `Ctx`
-    └─ [CGP-E105] trait impl `B` for `Ctx`
-      └─ the trait bound `D` is not satisfied
+    insta::assert_snapshot!(render(&[vec![hop("A"), hop("B"), leaf("D")]]), @"
+    [CGP-E104] trait impl `A` for `Ctx`
+    └─ [CGP-E104] trait impl `B` for `Ctx`
+      └─ [CGP-E117] the trait bound `D` is not satisfied
     ");
 }
 
@@ -46,13 +46,13 @@ fn merges_a_shared_prefix_into_one_branching_tree() {
         vec![hop("Con"), hop("Prov"), hop("HasFirst"), leaf("first")],
         vec![hop("Con"), hop("Prov"), hop("HasLast"), leaf("last")],
     ]);
-    insta::assert_snapshot!(out, @r"
-    [CGP-E105] trait impl `Con` for `Ctx`
-    └─ [CGP-E105] trait impl `Prov` for `Ctx`
-      ├─ [CGP-E105] trait impl `HasFirst` for `Ctx`
-      │ └─ the trait bound `first` is not satisfied
-      └─ [CGP-E105] trait impl `HasLast` for `Ctx`
-        └─ the trait bound `last` is not satisfied
+    insta::assert_snapshot!(out, @"
+    [CGP-E104] trait impl `Con` for `Ctx`
+    └─ [CGP-E104] trait impl `Prov` for `Ctx`
+      ├─ [CGP-E104] trait impl `HasFirst` for `Ctx`
+      │ └─ [CGP-E117] the trait bound `first` is not satisfied
+      └─ [CGP-E104] trait impl `HasLast` for `Ctx`
+        └─ [CGP-E117] the trait bound `last` is not satisfied
     ");
 }
 
@@ -64,10 +64,10 @@ fn a_subsuming_chain_drops_the_contained_root() {
         vec![hop("Density"), hop("Area"), leaf("D")],
         vec![hop("Area"), leaf("D")],
     ]);
-    insta::assert_snapshot!(out, @r"
-    [CGP-E105] trait impl `Density` for `Ctx`
-    └─ [CGP-E105] trait impl `Area` for `Ctx`
-      └─ the trait bound `D` is not satisfied
+    insta::assert_snapshot!(out, @"
+    [CGP-E104] trait impl `Density` for `Ctx`
+    └─ [CGP-E104] trait impl `Area` for `Ctx`
+      └─ [CGP-E117] the trait bound `D` is not satisfied
     ");
 }
 
@@ -76,11 +76,11 @@ fn independent_roots_converging_on_one_leaf_both_render() {
     // Two unrelated chains reach the same leaf `D`. Neither subsumes the other, so both are roots;
     // the shared leaf hides no subtree, so it is drawn in full under each (no `(*)`).
     let out = render(&[vec![hop("A"), leaf("D")], vec![hop("B"), leaf("D")]]);
-    insta::assert_snapshot!(out, @r"
-    [CGP-E105] trait impl `A` for `Ctx`
-    └─ the trait bound `D` is not satisfied
-    [CGP-E105] trait impl `B` for `Ctx`
-    └─ the trait bound `D` is not satisfied
+    insta::assert_snapshot!(out, @"
+    [CGP-E104] trait impl `A` for `Ctx`
+    └─ [CGP-E117] the trait bound `D` is not satisfied
+    [CGP-E104] trait impl `B` for `Ctx`
+    └─ [CGP-E117] the trait bound `D` is not satisfied
     ");
 }
 
@@ -93,12 +93,12 @@ fn a_diamond_shows_the_shared_subtree_once() {
         vec![hop("A"), hop("C"), leaf("D")],
         vec![hop("B"), hop("C"), leaf("D")],
     ]);
-    insta::assert_snapshot!(out, @r"
-    [CGP-E105] trait impl `A` for `Ctx`
-    └─ [CGP-E105] trait impl `C` for `Ctx`
-      └─ the trait bound `D` is not satisfied
-    [CGP-E105] trait impl `B` for `Ctx`
-    └─ [CGP-E105] trait impl `C` for `Ctx` (*)
+    insta::assert_snapshot!(out, @"
+    [CGP-E104] trait impl `A` for `Ctx`
+    └─ [CGP-E104] trait impl `C` for `Ctx`
+      └─ [CGP-E117] the trait bound `D` is not satisfied
+    [CGP-E104] trait impl `B` for `Ctx`
+    └─ [CGP-E104] trait impl `C` for `Ctx` (*)
     ");
 }
 
@@ -110,13 +110,13 @@ fn a_super_root_over_two_branches_shares_the_subtree() {
         vec![hop("S"), hop("A"), hop("C"), leaf("D")],
         vec![hop("S"), hop("B"), hop("C"), leaf("D")],
     ]);
-    insta::assert_snapshot!(out, @r"
-    [CGP-E105] trait impl `S` for `Ctx`
-    ├─ [CGP-E105] trait impl `A` for `Ctx`
-    │ └─ [CGP-E105] trait impl `C` for `Ctx`
-    │   └─ the trait bound `D` is not satisfied
-    └─ [CGP-E105] trait impl `B` for `Ctx`
-      └─ [CGP-E105] trait impl `C` for `Ctx` (*)
+    insta::assert_snapshot!(out, @"
+    [CGP-E104] trait impl `S` for `Ctx`
+    ├─ [CGP-E104] trait impl `A` for `Ctx`
+    │ └─ [CGP-E104] trait impl `C` for `Ctx`
+    │   └─ [CGP-E117] the trait bound `D` is not satisfied
+    └─ [CGP-E104] trait impl `B` for `Ctx`
+      └─ [CGP-E104] trait impl `C` for `Ctx` (*)
     ");
 }
 
@@ -139,10 +139,10 @@ fn a_repeated_trait_still_names_its_generics_in_full() {
     });
     let out = render(&[vec![parent, child, leaf("D")]]);
     assert!(!out.contains("<…>"), "no CGP construct is ever elided");
-    insta::assert_snapshot!(out, @r"
+    insta::assert_snapshot!(out, @"
     [CGP-E102] provider trait impl `Handler<Big>` with context `Ctx` for provider `P1`
     └─ [CGP-E102] provider trait impl `Handler<Big>` with context `Ctx` for provider `P2`
-      └─ the trait bound `D` is not satisfied
+      └─ [CGP-E117] the trait bound `D` is not satisfied
     ");
 }
 
@@ -163,10 +163,10 @@ fn a_hop_whose_generics_differ_from_its_parent_keeps_its_full_form() {
     });
     let out = render(&[vec![parent, child, leaf("D")]]);
     assert!(!out.contains("<…>"), "no CGP construct is ever elided");
-    insta::assert_snapshot!(out, @r"
+    insta::assert_snapshot!(out, @"
     [CGP-E102] provider trait impl `ValueEncoder<Outer>` with context `Ctx` for provider `EncodeRecord`
     └─ [CGP-E102] provider trait impl `ValueEncoder<Vec<Mid>>` with context `Ctx` for provider `EncodeIterator`
-      └─ the trait bound `D` is not satisfied
+      └─ [CGP-E117] the trait bound `D` is not satisfied
     ");
 }
 
@@ -177,11 +177,11 @@ fn a_within_path_label_repeat_stays_a_linear_chain() {
     // stay a distinct node: a linear chain, not a false cycle that would `(*)`-fold onto itself.
     let out = render(&[vec![hop("R"), hop("X"), hop("R"), leaf("D")]]);
     assert!(!out.contains("(*)"), "a within-path repeat is not a cycle");
-    insta::assert_snapshot!(out, @r"
-    [CGP-E105] trait impl `R` for `Ctx`
-    └─ [CGP-E105] trait impl `X` for `Ctx`
-      └─ [CGP-E105] trait impl `R` for `Ctx`
-        └─ the trait bound `D` is not satisfied
+    insta::assert_snapshot!(out, @"
+    [CGP-E104] trait impl `R` for `Ctx`
+    └─ [CGP-E104] trait impl `X` for `Ctx`
+      └─ [CGP-E104] trait impl `R` for `Ctx`
+        └─ [CGP-E117] the trait bound `D` is not satisfied
     ");
 }
 
@@ -206,13 +206,13 @@ fn cross_path_redirects_differing_only_by_key_stay_distinct() {
         !out.contains("(*)"),
         "distinct-key redirects are not a shared node"
     );
-    insta::assert_snapshot!(out, @r"
-    [CGP-E105] trait impl `Outer` for `Ctx`
-    └─ [CGP-E104] redirect lookup to `@VBC` in `App`
-      └─ the trait bound `outer-missing` is not satisfied
-    [CGP-E105] trait impl `Inner` for `Ctx`
-    └─ [CGP-E104] redirect lookup to `@VBC` in `App`
-      └─ the trait bound `inner-missing` is not satisfied
+    insta::assert_snapshot!(out, @"
+    [CGP-E104] trait impl `Outer` for `Ctx`
+    └─ [CGP-E103] redirect lookup to `@VBC` in `App`
+      └─ [CGP-E117] the trait bound `outer-missing` is not satisfied
+    [CGP-E104] trait impl `Inner` for `Ctx`
+    └─ [CGP-E103] redirect lookup to `@VBC` in `App`
+      └─ [CGP-E117] the trait bound `inner-missing` is not satisfied
     ");
 }
 
@@ -224,12 +224,12 @@ fn cross_path_redirects_with_the_same_key_merge() {
         vec![hop("A"), redirect("@VBC", "Key"), leaf("missing")],
         vec![hop("B"), redirect("@VBC", "Key"), leaf("missing")],
     ]);
-    insta::assert_snapshot!(out, @r"
-    [CGP-E105] trait impl `A` for `Ctx`
-    └─ [CGP-E104] redirect lookup to `@VBC` in `App`
-      └─ the trait bound `missing` is not satisfied
-    [CGP-E105] trait impl `B` for `Ctx`
-    └─ [CGP-E104] redirect lookup to `@VBC` in `App` (*)
+    insta::assert_snapshot!(out, @"
+    [CGP-E104] trait impl `A` for `Ctx`
+    └─ [CGP-E103] redirect lookup to `@VBC` in `App`
+      └─ [CGP-E117] the trait bound `missing` is not satisfied
+    [CGP-E104] trait impl `B` for `Ctx`
+    └─ [CGP-E103] redirect lookup to `@VBC` in `App` (*)
     ");
 }
 
@@ -262,10 +262,10 @@ fn a_second_graph_elides_what_the_first_drew() {
     let mut seen = HashSet::new();
 
     let first = DependencyGraph::from_paths(&[vec![hop("Check"), hop("Shared"), leaf("missing")]]);
-    insta::assert_snapshot!(first.render_seen(&mut seen), @r"
-    [CGP-E105] trait impl `Check` for `Ctx`
-    └─ [CGP-E105] trait impl `Shared` for `Ctx`
-      └─ the trait bound `missing` is not satisfied
+    insta::assert_snapshot!(first.render_seen(&mut seen), @"
+    [CGP-E104] trait impl `Check` for `Ctx`
+    └─ [CGP-E104] trait impl `Shared` for `Ctx`
+      └─ [CGP-E117] the trait bound `missing` is not satisfied
     ");
 
     // `Wrapper` is this graph's own hop and renders; `Shared` was drawn above, so its intervening
@@ -278,10 +278,10 @@ fn a_second_graph_elides_what_the_first_drew() {
         leaf("missing"),
     ]]);
     assert!(!second.fully_elided_by(&seen), "its own root is unseen");
-    insta::assert_snapshot!(second.render_seen(&mut seen), @r"
-    [CGP-E105] trait impl `Wrapper` for `Ctx`
-    └─ [CGP-E105] trait impl `Shared` for `Ctx` (*)
-      └─ the trait bound `missing` is not satisfied
+    insta::assert_snapshot!(second.render_seen(&mut seen), @"
+    [CGP-E104] trait impl `Wrapper` for `Ctx`
+    └─ [CGP-E104] trait impl `Shared` for `Ctx` (*)
+      └─ [CGP-E117] the trait bound `missing` is not satisfied
     ");
 }
 
@@ -294,13 +294,13 @@ fn a_within_render_reference_stays_bare() {
         vec![hop("Top"), hop("Left"), hop("Shared"), leaf("missing")],
         vec![hop("Top"), hop("Right"), hop("Shared"), leaf("missing")],
     ]);
-    insta::assert_snapshot!(out, @r"
-    [CGP-E105] trait impl `Top` for `Ctx`
-    ├─ [CGP-E105] trait impl `Left` for `Ctx`
-    │ └─ [CGP-E105] trait impl `Shared` for `Ctx`
-    │   └─ the trait bound `missing` is not satisfied
-    └─ [CGP-E105] trait impl `Right` for `Ctx`
-      └─ [CGP-E105] trait impl `Shared` for `Ctx` (*)
+    insta::assert_snapshot!(out, @"
+    [CGP-E104] trait impl `Top` for `Ctx`
+    ├─ [CGP-E104] trait impl `Left` for `Ctx`
+    │ └─ [CGP-E104] trait impl `Shared` for `Ctx`
+    │   └─ [CGP-E117] the trait bound `missing` is not satisfied
+    └─ [CGP-E104] trait impl `Right` for `Ctx`
+      └─ [CGP-E104] trait impl `Shared` for `Ctx` (*)
     ");
 }
 

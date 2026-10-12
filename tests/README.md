@@ -59,7 +59,7 @@ declares two:
 
 ```rust
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E106
+//@codes: CGP-E001 CGP-E101 CGP-E110
 ```
 
 - `//@quality:` records how well the tool presents the error today: `acceptable` (the tool leads
@@ -113,7 +113,7 @@ declare several. The auxiliary crates and the fixtures they back:
 - `cgp-test-crate-a` (upstream: a foreign namespace, component, and getter) and `cgp-test-crate-b`
   (downstream: the orphan-safe wirings against it). They back the three orphan-rule failures in
   [`ui/wiring/orphan-rule/`](ui/wiring/orphan-rule), which `cargo-cgp` reshapes into
-  `[CGP-E011]`, and the clean [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs).
+  `[CGP-E022]`, and the clean [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs).
 - `cgp-test-foreign-pipeline`: a pipeline context and its wiring for
   [`foreign_context_error_route`](ui/hidden/unsatisfied-dependency/foreign_context_error_route.rs),
   whose cause is lost because the context is foreign (its quality is `hidden`).

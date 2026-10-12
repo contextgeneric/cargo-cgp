@@ -71,7 +71,7 @@ cgp_namespace! {
 /// trait is normally consumed.
 ///
 /// It exists so a fixture can exercise a trait the checked crate does **not** define.
-/// Recognizing one is what earns the `[CGP-E009]` reshaping, and a blanket impl alone is far
+/// Recognizing one is what earns the `[CGP-E003]` reshaping, and a blanket impl alone is far
 /// too broad a signal to key on (`ToString` and `Into` have one), so recognition needs
 /// positive CGP evidence for a foreign trait — which this trait's `HasName`/`HasField`
 /// chain supplies.

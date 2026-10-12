@@ -22,17 +22,17 @@
 //! joining a namespace tries to override a path the namespace registers.
 //!
 //! The tool recognizes the shape by the namespace-trait impls at the two carets and
-//! rewrites the header to `[CGP-E005]`, naming the key the child binds and the parent
+//! rewrites the header to `[CGP-E011]`, naming the key the child binds and the parent
 //! that already sets it. The parent binds `GreeterComponent` to a provider rather than
 //! to a redirect, which is what separates this from namespace_inherited_unprefixed_key.rs:
 //! there the parent's value normalizes to a `RedirectLookup`, so the collision reads as
-//! `[CGP-E007]` and names the path to write instead.
+//! `[CGP-E013]` and names the path to write instead.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/namespace-override-conflict.md and
-//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E005).
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E011).
 
 //@quality: acceptable
-//@codes: CGP-E005
+//@codes: CGP-E011
 
 use cgp::prelude::*;
 

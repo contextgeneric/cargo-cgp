@@ -11,6 +11,6 @@ error[E0277]: the trait bound `__PartialApp<IsPresent, IsNothing>: CanBuildFrom<
                  └─ [CGP-E102] provider trait impl `Computer<(), __PartialApp<IsNothing, IsNothing>>` with context `AppBuilder` for provider `PipeHandlers<Product![BuildAndMerge<BuildDb>, BuildAndMerge<BuildHttp>]>`
                    └─ [CGP-E102] provider trait impl `Computer<(), __PartialApp<IsNothing, IsNothing>>` with context `AppBuilder` for provider `ComposeHandlers<BuildAndMerge<BuildDb>, BuildAndMerge<BuildHttp>>`
                      └─ [CGP-E102] provider trait impl `Computer<(), __PartialApp<IsPresent, IsNothing>>` with context `AppBuilder` for provider `BuildAndMerge<BuildHttp>`
-                       └─ the trait bound `__PartialApp<IsPresent, IsNothing>: CanBuildFrom<Http>` is not satisfied
+                       └─ [CGP-E117] the trait bound `__PartialApp<IsPresent, IsNothing>: CanBuildFrom<Http>` is not satisfied
 
 For more information about this error, try `rustc --explain E0277`.

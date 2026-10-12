@@ -15,7 +15,7 @@
 //! out on `T: Sized` noise — so the failure is traced to the real gap: the unwired `u64` encoder.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E107
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E113
 
 use cgp::prelude::*;
 

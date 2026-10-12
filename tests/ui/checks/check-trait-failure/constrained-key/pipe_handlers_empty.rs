@@ -12,7 +12,7 @@
 //! composition bound rather than the `IsProviderFor`/`DelegateComponent` scaffolding.
 
 //@quality: acceptable
-//@codes: CGP-E101 CGP-E102
+//@codes: CGP-E101 CGP-E102 CGP-E117
 
 use cgp::extra::handler::PipeHandlers;
 use cgp::prelude::*;

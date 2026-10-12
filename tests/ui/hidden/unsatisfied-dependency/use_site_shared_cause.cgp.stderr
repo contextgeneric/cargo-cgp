@@ -4,14 +4,14 @@ error[E0599]: [CGP-E001] the consumer traits `CanGreet` and `CanBidFarewell` are
 72 |     let _ = app.greet();
    |                 ^^^^^
    |
-   = note: root cause: [CGP-E106] missing field `name` on `App`
+   = note: root cause: [CGP-E110] missing field `name` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanGreet` for context `App`
              └─ [CGP-E102] provider trait impl `Greeter` with context `App` for provider `GreetWithName`
-               └─ [CGP-E105] trait impl `HasName` for `App`
-                 └─ [CGP-E106] missing field `name` on `App`
+               └─ [CGP-E104] trait impl `HasName` for `App`
+                 └─ [CGP-E110] missing field `name` on `App`
              [CGP-E101] consumer trait impl `CanBidFarewell` for context `App`
              └─ [CGP-E102] provider trait impl `Farewell` with context `App` for provider `FarewellWithName`
-               └─ [CGP-E105] trait impl `HasName` for `App` (*)
+               └─ [CGP-E104] trait impl `HasName` for `App` (*)
 
 For more information about this error, try `rustc --explain E0599`.

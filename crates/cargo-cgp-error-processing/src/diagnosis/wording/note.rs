@@ -6,7 +6,7 @@ use crate::diagnosis::graph::DependencyGraph;
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::node::ChainNode;
 use crate::diagnosis::resolved::Cause;
-use crate::diagnosis::wording::lead::{root_cause_code, root_cause_lead};
+use crate::diagnosis::wording::lead::{dependency_leaf_code, root_cause_lead};
 
 /// The `root cause:` note(s) for a resolved failure. Every path of every cause is folded into one
 /// [`DependencyGraph`], which merges the nodes they share and renders the whole as a `cargo
@@ -99,7 +99,7 @@ fn leaf_list(leaves: &[&Leaf]) -> String {
         .map(|leaf| {
             format!(
                 "  - [{code}] {lead}",
-                code = root_cause_code(leaf),
+                code = dependency_leaf_code(leaf),
                 lead = root_cause_lead(leaf),
             )
         })
@@ -121,7 +121,7 @@ fn leaf_lead(leaf: &Leaf, header_leaf: Option<&Leaf>) -> Option<String> {
     }
     Some(format!(
         "root cause: [{code}] {lead}",
-        code = root_cause_code(leaf),
+        code = dependency_leaf_code(leaf),
         lead = root_cause_lead(leaf),
     ))
 }

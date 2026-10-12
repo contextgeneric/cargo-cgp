@@ -4,13 +4,13 @@ error[E0599]: [CGP-E001] the consumer trait `CanHandle<(), _>` is not implemente
 78 |     app.handle(PhantomData::<()>, Vec::new()).await
    |         ^^^^^^
    |
-   = note: root cause: [CGP-E106] missing field `name` on `App`
+   = note: root cause: [CGP-E110] missing field `name` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanHandle<(), _>` for context `App`
              └─ [CGP-E102] provider trait impl `Handler<(), _>` with context `App` for provider `PipeHandlers<Product![ParseInput, GreetName]>`
                └─ [CGP-E102] provider trait impl `Handler<(), _>` with context `App` for provider `ComposeHandlers<ParseInput, GreetName>`
                  └─ [CGP-E102] provider trait impl `Handler<(), u64>` with context `App` for provider `GreetName`
-                   └─ [CGP-E105] trait impl `HasName` for `App`
-                     └─ [CGP-E106] missing field `name` on `App`
+                   └─ [CGP-E104] trait impl `HasName` for `App`
+                     └─ [CGP-E110] missing field `name` on `App`
 
 For more information about this error, try `rustc --explain E0599`.

@@ -4,7 +4,7 @@
 //! `ScaledArea<InnerCalculator>` calls `InnerCalculator::area(self)` without
 //! `#[use_provider(InnerCalculator: AreaCalculator)]`, so `InnerCalculator` carries no
 //! `AreaCalculator<Self>` bound and rustc reports `E0599` on a type parameter. The tool reshapes it
-//! into `[CGP-E016]`, naming the inner provider and the attribute that imports it.
+//! into `[CGP-E031]`, naming the inner provider and the attribute that imports it.
 //!
 //! CGP error class: a used-but-undeclared dependency, not yet in the catalog
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md#a-gap-the-used-but-undeclared-and-wrong-half-classes).

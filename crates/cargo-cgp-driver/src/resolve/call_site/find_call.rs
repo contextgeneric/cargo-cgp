@@ -24,7 +24,7 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// component). Both are consumed the same way — `app.describe()` — and both seed a walkable
 /// obligation `Ctx: Trait<…>` whose `Self` is the context; they differ only in the header the
 /// result gets. A blanket trait is not a CGP component, so — exactly as the impl-site anchor
-/// words such a trait — its failure reads `[CGP-E009] the trait …` rather than `[CGP-E001] the
+/// words such a trait — its failure reads `[CGP-E003] the trait …` rather than `[CGP-E001] the
 /// consumer trait …`, by clearing [`Resolved::consumers_are_cgp`] the walk sets.
 ///
 /// Tried last: a failure any span-matching anchor can recover keeps its more precise recovery.
@@ -52,7 +52,7 @@ pub fn resolve_call_site(
             }
             if let Some(mut resolved) = resolve_leaves(tcx, cache, top) {
                 // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait is consumed like a consumer trait
-                // but is not a CGP *component*, so it heads the diagnostic as `[CGP-E009] the trait
+                // but is not a CGP *component*, so it heads the diagnostic as `[CGP-E003] the trait
                 // …` — the same wording the impl-site anchor gives such a trait reached through a
                 // wrapper. A genuine consumer keeps the `consumers_are_cgp` the walk set.
                 if !is_cgp_consumer {

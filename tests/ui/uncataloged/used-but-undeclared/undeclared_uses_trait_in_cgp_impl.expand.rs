@@ -13,7 +13,7 @@
 //! generated impl's `Self` is the provider struct, not the bare `__Context__` parameter, so the
 //! failing call's receiver, a parameter declared as `&__Context__`, is what identifies the shape.
 //!
-//! The tool reshapes it into the same `[CGP-E012]` error as the `#[cgp_fn]` case, with a
+//! The tool reshapes it into the same `[CGP-E030]` error as the `#[cgp_fn]` case, with a
 //! `help: declare it as a dependency with `#[uses(PersonName)]``, recovered by
 //! `resolve::detect_undeclared_trait` from the receiver's declared type.
 //!

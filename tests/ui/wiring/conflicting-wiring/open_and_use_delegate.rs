@@ -1,13 +1,13 @@
 //! `open` plus a `UseDelegate` table for the same component.
 //!
 //! The opened route looks `AreaCalculatorComponent` up with its parameter `Shape` appended, so the
-//! `[CGP-E007]` help names `@AreaCalculatorComponent.<Shape>` keys in place of the direct
+//! `[CGP-E013]` help names `@AreaCalculatorComponent.<Shape>` keys in place of the direct
 //! `UseDelegate<AreaTable>` entry, rather than the bare path the lookup never reads.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
 
 //@quality: acceptable
-//@codes: CGP-E007
+//@codes: CGP-E013
 
 use cgp::prelude::*;
 

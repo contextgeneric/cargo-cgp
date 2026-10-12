@@ -9,7 +9,7 @@
 
 //@json
 //@quality: acceptable
-//@codes: CGP-E004
+//@codes: CGP-E010
 
 use cgp::prelude::*;
 

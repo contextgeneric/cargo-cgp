@@ -6,13 +6,13 @@
 //! entry for the `Digest` input the check asks for, so the root cause is the unmet
 //! `ByteSink: DelegateComponent<@ComputerComponent.Sink.Digest>`.
 //!
-//! The tree names the table each lookup runs in. The first `[CGP-E104]` hop is the context's own
+//! The tree names the table each lookup runs in. The first `[CGP-E103]` hop is the context's own
 //! redirect, `redirect lookup to @ComputerComponent in App`; the second runs inside the aggregate
-//! (`RedirectLookup<ByteSink, …>`) and reads `… in ByteSink`. The leaf is the `[CGP-E110]`
+//! (`RedirectLookup<ByteSink, …>`) and reads `… in ByteSink`. The leaf is the `[CGP-E114]`
 //! provider-table leaf, `provider ByteSink does not contain any delegate entry for
 //! @ComputerComponent.Sink.Digest`, so the reader adds the entry to `ByteSink` rather than to `App`.
 //!
-//! See cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E104, CGP-E110).
+//! See cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E103, CGP-E114).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

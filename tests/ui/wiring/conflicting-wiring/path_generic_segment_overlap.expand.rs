@@ -6,12 +6,12 @@
 //! the generic segment makes the two impls overlap with the coherence error E0119.
 //!
 //! The tool drops the redundant `IsProviderFor` half and rewrites the `DelegateComponent` half to
-//! `[CGP-E005] `App` cannot wire `@ComputerComponent.*.u64.*` that is already set through
+//! `[CGP-E011] `App` cannot wire `@ComputerComponent.*.u64.*` that is already set through
 //! `@ComputerComponent.Eval.*``: the generic segment renders as `*` in its own position, so the
 //! concrete `u64` segment after it still shows which key the entry names.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
-//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E005).
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E011).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

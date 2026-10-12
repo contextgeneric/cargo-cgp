@@ -10,7 +10,7 @@
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: usability
-//@codes: CGP-E101 CGP-E102
+//@codes: CGP-E101 CGP-E102 CGP-E117
 
 use core::marker::PhantomData;
 

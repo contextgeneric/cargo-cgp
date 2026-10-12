@@ -168,7 +168,7 @@ fn consumer_header_pluralizes_across_components() {
 #[test]
 fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
     // A hand-written wrapper trait (not a CGP consumer) fails through a traced CGP dependency: the
-    // header reads "the trait" with the `CGP-E009` code, not "the consumer trait".
+    // header reads "the trait" with the `CGP-E003` code, not "the consumer trait".
     let resolved = Resolved {
         context: "MockApp".to_owned(),
         consumers: vec!["CanHandleApiSend<QueryBalanceApi>".to_owned()],
@@ -178,7 +178,7 @@ fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
     };
     assert_eq!(
         consumer_header(&resolved),
-        "[CGP-E009] the trait `CanHandleApiSend<QueryBalanceApi>` is not implemented for context `MockApp`"
+        "[CGP-E003] the trait `CanHandleApiSend<QueryBalanceApi>` is not implemented for context `MockApp`"
     );
 }
 
@@ -196,6 +196,6 @@ fn wrapper_header_names_a_foreign_subject_plainly() {
     };
     assert_eq!(
         consumer_header(&resolved),
-        "[CGP-E009] the trait `CanAddApiRoutes` is not implemented for `Router<Arc<MockApp>>`"
+        "[CGP-E003] the trait `CanAddApiRoutes` is not implemented for `Router<Arc<MockApp>>`"
     );
 }

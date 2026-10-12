@@ -8,7 +8,7 @@ use crate::diagnosis::resolved::Cause;
 /// several underived fields on one struct are one mistake with one fix, and listing them as
 /// separate root causes overstates the work. The merged cause keeps every field's path, so the
 /// note's dependency graph still branches to the per-field leaves; only the heading is coalesced
-/// into one `[CGP-E108]` lead naming every field, and the derive `help` names the one fix.
+/// into one `[CGP-E111]` lead naming every field, and the derive `help` names the one fix.
 ///
 /// The coalescing keys on [`FieldIssue::Present`] deliberately: a *genuinely absent* field
 /// ([`FieldIssue::Missing`]) is its own fix (add the field), so a struct missing several fields

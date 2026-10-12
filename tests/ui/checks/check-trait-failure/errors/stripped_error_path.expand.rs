@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! An error raiser that pins the abstract error to a concrete type named `Error` from another module.
 //!
-//! The context wires `UseType<String>`, so `[CGP-E017]` fires: "expected the abstract type `Error`
+//! The context wires `UseType<String>`, so `[CGP-E005]` fires: "expected the abstract type `Error`
 //! … to be `backend::Error`", with a help naming `UseType<backend::Error>`. rustc prints the type
 //! qualified because `Error` names several types here, and the tool keeps that qualifier, since a
 //! bare `Error` would read as the abstract type itself.

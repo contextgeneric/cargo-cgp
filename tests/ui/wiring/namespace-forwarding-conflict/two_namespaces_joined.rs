@@ -22,7 +22,7 @@
 //! See cgp-knowledge-base/cgp/errors/wiring/namespace-forwarding-conflict.md.
 
 //@quality: acceptable
-//@codes: CGP-E006
+//@codes: CGP-E012
 
 use cgp::prelude::*;
 

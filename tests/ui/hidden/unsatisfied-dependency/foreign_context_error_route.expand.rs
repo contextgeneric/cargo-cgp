@@ -6,7 +6,7 @@
 //! Plain `cargo check` reports two errors about the whole pipeline with rustc's `IsProviderFor`
 //! notes, and neither mentions `IoFailure` or `ErrorRaiserComponent`. The tool reads the call as it
 //! would on a local context, since `App` carries its own wiring, and reports one `[CGP-E001]`
-//! block whose `[CGP-E107]` leaf names `@ErrorRaiserComponent.IoFailure`. Distilled from a
+//! block whose `[CGP-E113]` leaf names `@ErrorRaiserComponent.IoFailure`. Distilled from a
 //! pipeline-language program whose context lost an error route.
 //!
 //! CGP error class: unsatisfied dependency, hidden

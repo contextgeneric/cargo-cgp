@@ -45,7 +45,7 @@ pub enum Leaf {
     },
     /// A `HasField` bound whose field is present but carries the wrong type: the trait bound holds
     /// and only the `<owner as HasField<name>>::Value == expected` projection fails. The emitter
-    /// words this as a `[CGP-E003]` main message of its own.
+    /// words this as a `[CGP-E004]` main message of its own.
     FieldTypeMismatch {
         /// The field name, decoded from its `Symbol!`, e.g. `height`.
         name: String,
@@ -151,7 +151,7 @@ pub enum Leaf {
     /// the context binds `HasErrorType::Error` to one concrete type by wiring
     /// `ErrorTypeProviderComponent` to `UseType<T>`, while a provider pins it to another with the
     /// `#[use_type(HasErrorType.{Error = AppError})]` equality form. The emitter words this as a
-    /// `[CGP-E017]` main message of its own.
+    /// `[CGP-E005]` main message of its own.
     AssocTypeMismatch {
         /// The associated type's name, e.g. `Error`.
         assoc: String,

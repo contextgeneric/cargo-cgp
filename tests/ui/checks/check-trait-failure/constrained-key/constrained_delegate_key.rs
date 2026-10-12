@@ -11,7 +11,7 @@
 //! entry *exists* but its own bound is unmet — distinct from a component wired nowhere.
 
 //@quality: acceptable
-//@codes: CGP-E101 CGP-E102
+//@codes: CGP-E101 CGP-E102 CGP-E117
 
 use core::marker::PhantomData;
 

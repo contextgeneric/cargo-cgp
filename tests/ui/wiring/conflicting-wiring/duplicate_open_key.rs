@@ -17,7 +17,7 @@
 //! cgp-knowledge-base/cgp/implementation/entrypoints/delegate_components.md.
 
 //@quality: acceptable
-//@codes: CGP-E007
+//@codes: CGP-E013
 
 use cgp::prelude::*;
 

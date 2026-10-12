@@ -1,4 +1,4 @@
-error[E0271]: [CGP-E017] expected the abstract type `Error` of `HasErrorType` on `App` to be `backend::Error`, but found `String`
+error[E0271]: [CGP-E005] expected the abstract type `Error` of `HasErrorType` on `App` to be `backend::Error`, but found `String`
   --> src/main.rs:29:9
    |
 29 |         ErrorRaiserComponent: io::Error,
@@ -8,6 +8,6 @@ error[E0271]: [CGP-E017] expected the abstract type `Error` of `HasErrorType` on
    = note: this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanRaiseError<std::io::Error>` for context `App`
              └─ [CGP-E102] provider trait impl `ErrorRaiser<std::io::Error>` with context `App` for provider `RaiseBackendError`
-               └─ [CGP-E112] abstract type `Error` of `HasErrorType` on `App` is `String`, but `backend::Error` is required
+               └─ [CGP-E116] abstract type `Error` of `HasErrorType` on `App` is `String`, but `backend::Error` is required
 
 For more information about this error, try `rustc --explain E0271`.

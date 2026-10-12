@@ -43,7 +43,7 @@ pub fn resolve_use_site_consumer(
 /// the diagnostic names — the counterpart of [`resolve_use_site_consumer`] for a trait that
 /// is not a CGP *component* (a local blanket-impl trait with no provider trait or
 /// `DelegateComponent`). Its obligation `Ctx: BlanketTrait` is walkable exactly as a consumer's is,
-/// since its `Self` is the context; the result is headed `[CGP-E009] the trait …` rather than
+/// since its `Self` is the context; the result is headed `[CGP-E003] the trait …` rather than
 /// `[CGP-E001] the consumer trait …` by clearing [`Resolved::consumers_are_cgp`].
 ///
 /// This reaches the shape a trait required through a `where` **bound** or supertrait produces —
@@ -68,7 +68,7 @@ enum TraitKind {
     /// A CGP consumer trait — walked as-is, headed `[CGP-E001] the consumer trait …`.
     CgpConsumer,
     /// A `#[cgp_fn]`/`#[blanket_trait]` blanket trait that is not a CGP component — headed
-    /// `[CGP-E009] the trait …`.
+    /// `[CGP-E003] the trait …`.
     Blanket,
 }
 

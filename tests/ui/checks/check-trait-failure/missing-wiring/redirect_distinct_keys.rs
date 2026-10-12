@@ -19,7 +19,7 @@
 //! cross-path, keyed on the dispatched value).
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E107
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E113
 
 use cgp::prelude::*;
 

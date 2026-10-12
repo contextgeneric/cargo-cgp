@@ -7,11 +7,11 @@
 //! `@app.NamerComponent: DefaultNamespace<AppComponents>`.
 //!
 //! The tree names the table each lookup runs in: the context's namespace hop reads `in App`, the
-//! aggregate's reads `in AppComponents`, and the leaf is the `[CGP-E110]` provider-table leaf naming
+//! aggregate's reads `in AppComponents`, and the leaf is the `[CGP-E114]` provider-table leaf naming
 //! `AppComponents`, so the reader adds the entry to the aggregate rather than to the context.
 //!
 //! See cgp-knowledge-base/cgp/errors/checks/unregistered-namespace-path.md and
-//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E104, CGP-E110).
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E103, CGP-E114).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

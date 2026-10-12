@@ -9,7 +9,7 @@
     ],
     "code": "E0599",
     "level": "error",
-    "message": "[CGP-E012] the trait `GetCount` is used but not declared as a dependency",
+    "message": "[CGP-E030] the trait `GetCount` is used but not declared as a dependency",
     "spans": [
       {
         "column": 46,

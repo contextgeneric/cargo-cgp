@@ -9,7 +9,7 @@
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
 
 //@quality: acceptable
-//@codes: CGP-E004
+//@codes: CGP-E010
 
 use cgp::prelude::*;
 

@@ -11,7 +11,7 @@
 //!
 //! This model records what the driver recovers from the offending impl — the foreign namespace,
 //! the key, and which construct registered it — and [`plan_orphan_conflict`] words it into the
-//! `[CGP-E011]` header that replaces the raw message, with [`orphan_conflict_help`] carrying the
+//! `[CGP-E022]` header that replaces the raw message, with [`orphan_conflict_help`] carrying the
 //! ownership-based fix. Keeping the model and wording here, in owned `String` form, is what makes
 //! them unit-testable without a compiler; the driver's `resolve::orphan` module fills the model in
 //! from the live `TyCtxt`.
@@ -58,7 +58,7 @@ impl WiringKey {
     }
 }
 
-/// Word an [`OrphanConflict`] into the `[CGP-E011]` header that replaces the raw `E0210`/`E0117`
+/// Word an [`OrphanConflict`] into the `[CGP-E022]` header that replaces the raw `E0210`/`E0117`
 /// message, naming the foreign namespace and key rather than the machinery parameter. The kept
 /// caret (which the emitter leaves pointing at the offending macro) says *where*; this says *what*.
 pub fn plan_orphan_conflict(conflict: &OrphanConflict) -> String {

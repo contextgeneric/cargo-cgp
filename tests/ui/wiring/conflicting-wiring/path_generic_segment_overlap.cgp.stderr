@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E005] `App` cannot wire `@ComputerComponent.*.u64.*` that is already set through `@ComputerComponent.Eval.*`
+error[E0119]: [CGP-E011] `App` cannot wire `@ComputerComponent.*.u64.*` that is already set through `@ComputerComponent.Eval.*`
   --> src/main.rs:49:10
    |
 48 |         @ComputerComponent.Eval: Show,

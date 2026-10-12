@@ -2,8 +2,8 @@
 
 use crate::code::{
     DEP_ASSOC_TYPE_MISMATCH, DEP_FIELD_TYPE_MISMATCH, DEP_MISSING_DELEGATE_ENTRY,
-    DEP_MISSING_DISPATCH_ENTRY, DEP_MISSING_FIELD, DEP_NOT_A_PROVIDER, DEP_UNIMPLEMENTED_ACCESSOR,
-    ROOT_CAUSE_ORDINARY_BOUND,
+    DEP_MISSING_DISPATCH_ENTRY, DEP_MISSING_FIELD, DEP_NOT_A_PROVIDER, DEP_ORDINARY_BOUND,
+    DEP_UNIMPLEMENTED_ACCESSOR,
 };
 use crate::diagnosis::leaf::{FieldIssue, Leaf};
 use crate::diagnosis::wording::header::{quoted_list, required_type};
@@ -11,7 +11,7 @@ use crate::diagnosis::wording::header::{quoted_list, required_type};
 /// What an associated type is called in a message: `abstract type` when it belongs to a CGP
 /// abstract-type component (a context *chooses* its concrete type by wiring), and `associated type`
 /// for any other trait, where no such choice exists. Shared by the root-cause lead and the
-/// `[CGP-E017]` header so the two never drift.
+/// `[CGP-E005]` header so the two never drift.
 pub fn assoc_type_noun(component: Option<&str>) -> &'static str {
     match component {
         Some(_) => "abstract type",
@@ -91,44 +91,31 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
     }
 }
 
-/// The `CGP-E1xx` code for the terminal root-cause leaf as a dependency-tree entry, or `None` when
-/// the leaf is a pass-through of a non-CGP bound (`the trait bound … is not satisfied`), which
-/// carries no code. Keyed by leaf kind — a missing field, a present-but-underived field, a missing
-/// delegate entry (plain or redirect), a missing dispatch entry, a non-provider, and the two
-/// mismatch leaves (a `HasField` value type and any other associated type) each get their own code.
-pub fn dependency_leaf_code(leaf: &Leaf) -> Option<&'static str> {
+/// The `CGP-E1xx` code of a root-cause leaf, carried both by the tree's last entry and by the
+/// `root cause:` line that names it. Keyed by leaf kind: a missing field, a present-but-underived
+/// field, a missing delegate entry (plain or redirect), a missing dispatch entry, a non-provider,
+/// the two mismatch leaves (a `HasField` value type and any other associated type), and an ordinary
+/// trait bound each get their own code.
+pub fn dependency_leaf_code(leaf: &Leaf) -> &'static str {
     match leaf {
         Leaf::Field {
             issue: FieldIssue::Missing,
             ..
-        } => Some(DEP_MISSING_FIELD),
-        Leaf::Field { .. } | Leaf::UnderivedFields { .. } => Some(DEP_UNIMPLEMENTED_ACCESSOR),
+        } => DEP_MISSING_FIELD,
+        Leaf::Field { .. } | Leaf::UnderivedFields { .. } => DEP_UNIMPLEMENTED_ACCESSOR,
         Leaf::MissingWiring { .. } | Leaf::MissingRedirectWiring { .. } => {
-            Some(DEP_MISSING_DELEGATE_ENTRY)
+            DEP_MISSING_DELEGATE_ENTRY
         }
-        Leaf::MissingDispatchEntry { .. } => Some(DEP_MISSING_DISPATCH_ENTRY),
-        Leaf::NotAProvider { .. } => Some(DEP_NOT_A_PROVIDER),
-        Leaf::FieldTypeMismatch { .. } => Some(DEP_FIELD_TYPE_MISMATCH),
-        Leaf::AssocTypeMismatch { .. } => Some(DEP_ASSOC_TYPE_MISMATCH),
-        Leaf::Bound { .. } => None,
+        Leaf::MissingDispatchEntry { .. } => DEP_MISSING_DISPATCH_ENTRY,
+        Leaf::NotAProvider { .. } => DEP_NOT_A_PROVIDER,
+        Leaf::FieldTypeMismatch { .. } => DEP_FIELD_TYPE_MISMATCH,
+        Leaf::AssocTypeMismatch { .. } => DEP_ASSOC_TYPE_MISMATCH,
+        Leaf::Bound { .. } => DEP_ORDINARY_BOUND,
     }
 }
 
-/// The terminal root-cause leaf as it appears *in* the dependency tree — [`root_cause_lead`] with
-/// its `CGP-E1xx` code prefixed, or bare when the leaf is a pass-through non-CGP bound. This is the
-/// coded counterpart the driver appends as the tree's last node; the `root cause:` note lead
-/// ([`cause_note`](super::cause_note)) repeats the same text with the [`root_cause_code`] tag.
+/// The terminal root-cause leaf as it appears in the dependency tree: [`root_cause_lead`] with its
+/// [`dependency_leaf_code`] prefixed. The `root cause:` note lead repeats the same text and code.
 pub fn dependency_tree_leaf(leaf: &Leaf) -> String {
-    match dependency_leaf_code(leaf) {
-        Some(code) => format!("[{code}] {}", root_cause_lead(leaf)),
-        None => root_cause_lead(leaf),
-    }
-}
-
-/// The `CGP-Exxx` code the `root cause:` note lead carries. It reuses the terminal leaf's
-/// [`dependency_leaf_code`] where the leaf has one, so the lead and the tree's terminal show the
-/// same code; when the leaf is an uncoded pass-through bound it takes the `CGP-E2xx` root-cause code
-/// [`ROOT_CAUSE_ORDINARY_BOUND`] instead, since the lead still names a classified root cause.
-pub fn root_cause_code(leaf: &Leaf) -> &'static str {
-    dependency_leaf_code(leaf).unwrap_or(ROOT_CAUSE_ORDINARY_BOUND)
+    format!("[{}] {}", dependency_leaf_code(leaf), root_cause_lead(leaf))
 }

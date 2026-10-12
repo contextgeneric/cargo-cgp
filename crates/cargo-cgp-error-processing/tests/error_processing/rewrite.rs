@@ -474,7 +474,7 @@ fn rewrites_a_wiring_overflow_into_its_cycle_header() {
     assert_eq!(
         out.as_deref(),
         Some(
-            "[CGP-E010] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves — the lookup recurses without terminating"
+            "[CGP-E020] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves — the lookup recurses without terminating"
         )
     );
 }

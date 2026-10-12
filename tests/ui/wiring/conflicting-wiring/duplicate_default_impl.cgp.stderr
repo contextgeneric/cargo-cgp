@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E004] duplicate wiring for type `String` on `DefaultImpls1<ShowImplComponent>`
+error[E0119]: [CGP-E010] duplicate wiring for type `String` on `DefaultImpls1<ShowImplComponent>`
   --> src/main.rs:47:16
    |
 38 | #[default_impl(String in DefaultImpls1<ShowImplComponent>)]

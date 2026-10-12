@@ -10,7 +10,7 @@
 //! (a `HasField`) rather than the real fix: declaring the trait.
 //!
 //! This model records the trait the body used but did not declare, and
-//! [`plan_undeclared_trait`] words it into the `[CGP-E012]` header that replaces the raw
+//! [`plan_undeclared_trait`] words it into the `[CGP-E030]` header that replaces the raw
 //! message, with [`undeclared_trait_help`] carrying the `#[uses(…)]` fix. The driver's
 //! `resolve::undeclared` module fills the model in from the live `TyCtxt`; keeping the wording here
 //! in owned `String` form makes it unit-testable without a compiler.
@@ -25,7 +25,7 @@ pub struct UndeclaredTrait {
     pub trait_name: String,
 }
 
-/// Word an [`UndeclaredTrait`] into the `[CGP-E012]` header that replaces the raw `E0599`,
+/// Word an [`UndeclaredTrait`] into the `[CGP-E030]` header that replaces the raw `E0599`,
 /// naming the trait rather than the generated `__Context__` and its transitive `HasField`
 /// bound. The kept caret (left on the method call) says *where*; this says *what*.
 pub fn plan_undeclared_trait(undeclared: &UndeclaredTrait) -> String {

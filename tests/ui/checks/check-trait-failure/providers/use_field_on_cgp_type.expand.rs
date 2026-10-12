@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! `UseField` wired to a `#[cgp_type]` component.
 //!
-//! `[CGP-E111]` is accurate; the fix, `WithField`, is not hinted.
+//! `[CGP-E115]` is accurate; the fix, `WithField`, is not hinted.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 //!

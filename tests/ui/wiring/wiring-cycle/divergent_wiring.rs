@@ -3,7 +3,7 @@
 //! `CanShow<Vec<Vec<u32>>>`, and so on. The trait solver overflows (`E0275`). No obligation
 //! repeats, so the resolver's cycle guard never fires; its walk stops at the depth cap, which flags
 //! the walk as cut, and the flag lets the tool word the overflow as a wiring that never resolves
-//! (`[CGP-E010]`).
+//! (`[CGP-E020]`).
 //!
 //! The output is `usability`: the second help blames a delegation back to the context, as with
 //! `UseContext`, which is not this mistake.
@@ -13,7 +13,7 @@
 //! `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`.
 
 //@quality: usability
-//@codes: CGP-E010
+//@codes: CGP-E020
 
 use cgp::prelude::*;
 

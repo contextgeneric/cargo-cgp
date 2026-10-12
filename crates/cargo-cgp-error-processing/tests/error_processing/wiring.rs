@@ -17,7 +17,7 @@ fn duplicate_component_key() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E004] duplicate wiring for component `GreeterComponent` on `Person`",
+        "[CGP-E010] duplicate wiring for component `GreeterComponent` on `Person`",
     );
 }
 
@@ -29,7 +29,7 @@ fn duplicate_path_key() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E004] duplicate wiring for `@cgp.core.error.ErrorTypeProviderComponent.*` on `App`",
+        "[CGP-E010] duplicate wiring for `@cgp.core.error.ErrorTypeProviderComponent.*` on `App`",
     );
 }
 
@@ -42,7 +42,7 @@ fn duplicate_type_key() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E004] duplicate wiring for type `String` on `DefaultImpls1<ShowImplComponent>`",
+        "[CGP-E010] duplicate wiring for type `String` on `DefaultImpls1<ShowImplComponent>`",
     );
 }
 
@@ -59,7 +59,7 @@ fn redirect_collides_with_inherited_namespace_entry() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E007] component `GreeterComponent` on `AppNamespace` is redirected to `@app.GreeterComponent`",
+        "[CGP-E013] component `GreeterComponent` on `AppNamespace` is redirected to `@app.GreeterComponent`",
     );
     assert_eq!(
         wiring_conflict_help(&conflict).as_deref(),
@@ -76,7 +76,7 @@ fn overlap_bare_component_over_namespace() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E005] `App` cannot wire component `ErrorTypeProviderComponent` that is already set through `DefaultNamespace`",
+        "[CGP-E011] `App` cannot wire component `ErrorTypeProviderComponent` that is already set through `DefaultNamespace`",
     );
 }
 
@@ -89,7 +89,7 @@ fn overlap_path_over_namespace() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E005] `App` cannot wire `@app.GreeterComponent.*` that is already set through `AppNamespace`",
+        "[CGP-E011] `App` cannot wire `@app.GreeterComponent.*` that is already set through `AppNamespace`",
     );
 }
 
@@ -104,7 +104,7 @@ fn overlap_path_prefix_of_path() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E005] `App` cannot wire `@cgp.core.error.ErrorTypeProviderComponent.String.*` that is already set through `@cgp.core.error.ErrorTypeProviderComponent.*`",
+        "[CGP-E011] `App` cannot wire `@cgp.core.error.ErrorTypeProviderComponent.String.*` that is already set through `@cgp.core.error.ErrorTypeProviderComponent.*`",
     );
 }
 
@@ -119,7 +119,7 @@ fn multiple_namespaces() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E006] only one namespace can be used for each target type in `delegate_components!`, but `App` uses both `DefaultNamespace` and `GreeterTable`",
+        "[CGP-E012] only one namespace can be used for each target type in `delegate_components!`, but `App` uses both `DefaultNamespace` and `GreeterTable`",
     );
 }
 
@@ -135,7 +135,7 @@ fn redirect_collides_with_direct_wiring() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E007] component `GreeterComponent` on `Person` is redirected to `@GreeterComponent`",
+        "[CGP-E013] component `GreeterComponent` on `Person` is redirected to `@GreeterComponent`",
     );
     assert_eq!(
         wiring_conflict_help(&conflict).as_deref(),
@@ -210,7 +210,7 @@ fn duplicate_redirect_to_different_paths() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E008] duplicate redirect for component `FooComponent` on `App`: redirected to both `@app.foo` and `@app.bar`",
+        "[CGP-E014] duplicate redirect for component `FooComponent` on `App`: redirected to both `@app.foo` and `@app.bar`",
     );
 }
 
@@ -224,6 +224,6 @@ fn duplicate_redirect_to_same_path() {
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E008] duplicate redirect for component `GreeterComponent` on `Person` (redirected to `@GreeterComponent`)",
+        "[CGP-E014] duplicate redirect for component `GreeterComponent` on `Person` (redirected to `@GreeterComponent`)",
     );
 }

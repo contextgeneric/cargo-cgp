@@ -18,8 +18,8 @@ use cargo_cgp_error_processing::diagnosis::{assoc_mismatch_leaf, mismatch_leaf, 
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
     Cause, ChainNode, DepNode, DependencyGraph, DiagKind, FieldIssue, Leaf, PendingNote, Resolved,
-    cause_note, cause_notes, cause_signature, consumer_header, dependency_tree_leaf,
-    derive_help_messages, field_mismatch_header, plan_resolved, root_cause_code,
+    cause_note, cause_notes, cause_signature, consumer_header, dependency_leaf_code,
+    dependency_tree_leaf, derive_help_messages, field_mismatch_header, plan_resolved,
 };
 
 use super::support::{self, field_leaf, trait_hop};

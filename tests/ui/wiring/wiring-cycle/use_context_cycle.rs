@@ -12,7 +12,7 @@
 //! See cgp-knowledge-base/cgp/errors/wiring/wiring-cycle.md.
 
 //@quality: acceptable
-//@codes: CGP-E010
+//@codes: CGP-E020
 
 use cgp::prelude::*;
 

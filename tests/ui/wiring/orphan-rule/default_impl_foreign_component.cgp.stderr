@@ -1,4 +1,4 @@
-error[E0210]: [CGP-E011] cannot register the foreign component `GreeterComponent` into the foreign namespace `AppNamespace`
+error[E0210]: [CGP-E022] cannot register the foreign component `GreeterComponent` into the foreign namespace `AppNamespace`
   --> src/main.rs:28:1
    |
 28 | #[cgp_impl(new GreetPolitely)]

@@ -7,7 +7,7 @@
 //! with an untyped `let __context__ = __context__;`, so the failing call's receiver resolves to that
 //! fresh binding rather than to the parameter declared `&__Context__`. Raw rustc reports the same
 //! `E0599` about `&__Context__` as the sync case. The tool follows the forwarding `let` back to the
-//! parameter and reshapes it into the same `[CGP-E012]` error with the `#[uses(PersonName)]` help.
+//! parameter and reshapes it into the same `[CGP-E030]` error with the `#[uses(PersonName)]` help.
 //!
 //! CGP error class: a used-but-undeclared dependency, not yet in the catalog
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md#a-gap-the-used-but-undeclared-and-wrong-half-classes).

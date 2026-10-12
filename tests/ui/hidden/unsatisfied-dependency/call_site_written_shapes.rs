@@ -11,7 +11,7 @@
 //! See cgp-knowledge-base/cgp/errors/hidden/unsatisfied-dependency.md.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E105 CGP-E106
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E110
 
 use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::extra::handler::{CanHandle, Handler, HandlerComponent};

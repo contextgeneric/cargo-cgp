@@ -14,7 +14,7 @@
 //! the trait: `#[uses(GetName, GetCount)]`. The same shape arises for a forgotten CGP
 //! *consumer* trait used the same way.
 //!
-//! The tool reshapes it into `[CGP-E012] the trait `GetCount` is used but not declared as a
+//! The tool reshapes it into `[CGP-E030] the trait `GetCount` is used but not declared as a
 //! dependency` with a `help: declare it as a dependency with `#[uses(GetCount)]``, recovered by
 //! `resolve::detect_undeclared_trait`: the failing call sits in a generated blanket impl whose
 //! `Self` is the bare `__Context__` parameter, its method belongs to the blanket trait
@@ -24,7 +24,7 @@
 
 //@json
 //@quality: acceptable
-//@codes: CGP-E012
+//@codes: CGP-E030
 
 use cgp::prelude::*;
 

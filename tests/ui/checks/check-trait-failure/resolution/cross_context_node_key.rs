@@ -12,7 +12,7 @@
 //!     declining on the provider impl), so it de-duplicates into `Inner`'s own `[CGP-E001]` block
 //!     rather than leaving rustc's raw bound error — the two sites of one mistake collapse to one.
 //!   - `Outer`'s tree re-roots the `Inner: CanCompute` node at `Inner` while walking, so it decodes
-//!     to `[CGP-E106] missing field \`name\`` (not an opaque bound), its delegation-routing hop is
+//!     to `[CGP-E110] missing field \`name\`` (not an opaque bound), its delegation-routing hop is
 //!     dropped, and it reads as a consumer node `for context Inner`.
 //!   - The node renders as a `[CGP-E101] consumer trait impl … for context \`Inner\`` in both trees
 //!     precisely because the cache keys each node on `(obligation, context)`: `Outer`'s walk re-roots
@@ -24,7 +24,7 @@
 //! anchor and cross-context walk).
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E105 CGP-E106
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110
 
 use cgp::prelude::*;
 

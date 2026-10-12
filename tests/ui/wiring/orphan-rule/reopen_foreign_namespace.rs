@@ -8,7 +8,7 @@
 //! local namespace that *inherits* it (`new Local: AppNamespace { .. }`), which is
 //! orphan-safe because the emitted impls are for the local trait.
 //!
-//! cargo-cgp reshapes the orphan class into a `[CGP-E011]` header naming the
+//! cargo-cgp reshapes the orphan class into a `[CGP-E022]` header naming the
 //! foreign namespace (`AppNamespace`) and the foreign key (`GreeterComponent`)
 //! instead of the machinery parameter `__Table__`. Because the trigger is a
 //! `cgp_namespace!` re-open rather than a `#[default_impl]` registration — told
@@ -22,7 +22,7 @@
 
 //@aux-build: cgp-test-crate-a
 //@quality: acceptable
-//@codes: CGP-E011
+//@codes: CGP-E022
 
 use cgp::prelude::*;
 use cgp_test_crate_a::{AppNamespace, GreeterComponent};

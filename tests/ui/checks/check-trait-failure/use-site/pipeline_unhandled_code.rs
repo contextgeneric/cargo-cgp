@@ -12,7 +12,7 @@
 //! looks like a node to descend, and descending it reaches the namespace's own lookup machinery
 //! rather than a cause. The walk therefore treats an unmet delegation on the context as terminal
 //! whatever nominally matches it (had the context wired the key, the obligation would hold and be
-//! pruned before becoming a node), so this resolves to one `[CGP-E001]` block over a `[CGP-E107]`
+//! pruned before becoming a node), so this resolves to one `[CGP-E001]` block over a `[CGP-E113]`
 //! root cause naming the absent `@…HandlerComponent.Missing` entry, with the whole combinator
 //! chain beneath it, instead of `[CGP-E002]` blocks headed by `PipeHandlers` or `ComposeHandlers`
 //! plumbing that never name `Missing`.
@@ -31,7 +31,7 @@
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E107
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E113
 
 use core::marker::PhantomData;
 

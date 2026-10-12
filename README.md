@@ -89,11 +89,11 @@ error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemente
   |         AreaCalculatorComponent,
   |         ^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: root cause: [CGP-E106] missing field `height` on `Rectangle`
+  = note: root cause: [CGP-E110] missing field `height` on `Rectangle`
           this is required through the dependency chain:
             [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
             └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-              └─ [CGP-E106] missing field `height` on `Rectangle`
+              └─ [CGP-E110] missing field `height` on `Rectangle`
 ```
 
 The Rust error code (`E0277`) is always kept, so `rustc --explain` still works; the `[CGP-Exxx]`

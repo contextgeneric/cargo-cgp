@@ -9,7 +9,7 @@
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E106
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E110
 
 use std::rc::Rc;
 

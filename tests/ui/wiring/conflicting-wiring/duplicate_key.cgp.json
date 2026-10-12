@@ -3,7 +3,7 @@
     "children": [],
     "code": "E0119",
     "level": "error",
-    "message": "[CGP-E004] duplicate wiring for component `GreeterComponent` on `Person`",
+    "message": "[CGP-E010] duplicate wiring for component `GreeterComponent` on `Person`",
     "spans": [
       {
         "column": 9,

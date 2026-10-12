@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E006] only one namespace can be used for each target type in `delegate_components!`, but `App` uses both `NamespaceA` and `NamespaceB`
+error[E0119]: [CGP-E012] only one namespace can be used for each target type in `delegate_components!`, but `App` uses both `NamespaceA` and `NamespaceB`
   --> src/main.rs:56:19
    |
 55 |         namespace NamespaceA;

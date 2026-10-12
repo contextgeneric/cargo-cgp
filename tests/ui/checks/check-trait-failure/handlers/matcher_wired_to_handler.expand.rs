@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! A value matcher, `MatchWithValueHandlers`, wired as the context's `Handler`.
 //!
-//! `[CGP-E111]` is accurate but repeats a three-line provider type four times; the promotion fix is
+//! `[CGP-E115]` is accurate but repeats a three-line provider type four times; the promotion fix is
 //! not hinted.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).

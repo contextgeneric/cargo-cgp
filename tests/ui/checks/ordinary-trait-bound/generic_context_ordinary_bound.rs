@@ -13,7 +13,7 @@
 //! See cgp-knowledge-base/cgp/errors/checks/ordinary-trait-bound.md.
 
 //@quality: acceptable
-//@codes: CGP-E101 CGP-E102
+//@codes: CGP-E101 CGP-E102 CGP-E117
 
 use cgp::prelude::*;
 

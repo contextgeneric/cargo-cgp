@@ -3,14 +3,14 @@
 //! `App` wires both `FooProviderComponent` and `BarProviderComponent` to `CommonProvider`, which
 //! only has an entry for `FooProviderComponent`. Checking `FooProviderComponent` reaches
 //! `DoFooWithBar`, which needs `CanUseBar`, which `CommonProvider` cannot provide. The tool reports
-//! `[CGP-E002]` on `CommonProvider` over a `[CGP-E110]` root cause naming the missing
+//! `[CGP-E002]` on `CommonProvider` over a `[CGP-E114]` root cause naming the missing
 //! `BarProviderComponent` entry in the aggregate rather than in `App`.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.
 
 //@quality: acceptable
-//@codes: CGP-E002 CGP-E101 CGP-E102 CGP-E110
+//@codes: CGP-E002 CGP-E101 CGP-E102 CGP-E114
 
 use cgp::prelude::*;
 

@@ -1,6 +1,6 @@
 //! A provider of another component wired under the wrong key.
 //!
-//! `[CGP-E111]` says `SayBye` is not a `Greeter` but not that it is a provider for
+//! `[CGP-E115]` says `SayBye` is not a `Greeter` but not that it is a provider for
 //! `FarewellComponent`, the likely mix-up.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
@@ -8,7 +8,7 @@
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: usability
-//@codes: CGP-E002 CGP-E101 CGP-E102 CGP-E111
+//@codes: CGP-E002 CGP-E101 CGP-E102 CGP-E115
 
 use cgp::prelude::*;
 

@@ -4,12 +4,12 @@ error[E0277]: [CGP-E001] the consumer trait `CanCompute` is not implemented for 
 60 |     Inner: CanCompute,
    |     ^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E106] missing field `name` on `Inner`
+   = note: root cause: [CGP-E110] missing field `name` on `Inner`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanCompute` for context `Inner`
              └─ [CGP-E102] provider trait impl `Computer` with context `Inner` for provider `DoCompute`
-               └─ [CGP-E105] trait impl `HasName` for `Inner`
-                 └─ [CGP-E106] missing field `name` on `Inner`
+               └─ [CGP-E104] trait impl `HasName` for `Inner`
+                 └─ [CGP-E110] missing field `name` on `Inner`
 
 error[E0277]: [CGP-E001] the consumer trait `CanRun` is not implemented for context `Outer`
   --> src/main.rs:95:9
@@ -17,11 +17,11 @@ error[E0277]: [CGP-E001] the consumer trait `CanRun` is not implemented for cont
 95 |         RunnerComponent,
    |         ^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E106] missing field `name` on `Inner`
+   = note: root cause: [CGP-E110] missing field `name` on `Inner`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanRun` for context `Outer`
              └─ [CGP-E102] provider trait impl `Runner` with context `Outer` for provider `RunViaInner`
                └─ [CGP-E101] consumer trait impl `CanCompute` for context `Inner` (*)
-                 └─ [CGP-E106] missing field `name` on `Inner`
+                 └─ [CGP-E110] missing field `name` on `Inner`
 
 For more information about this error, try `rustc --explain E0277`.

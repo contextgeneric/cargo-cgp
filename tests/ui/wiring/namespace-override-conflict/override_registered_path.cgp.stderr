@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E005] `App` cannot wire `@app.GreeterComponent.*` that is already set through `AppNamespace`
+error[E0119]: [CGP-E011] `App` cannot wire `@app.GreeterComponent.*` that is already set through `AppNamespace`
   --> src/main.rs:60:10
    |
 58 |         namespace AppNamespace;

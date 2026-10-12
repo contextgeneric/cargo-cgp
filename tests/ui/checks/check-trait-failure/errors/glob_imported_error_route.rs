@@ -11,7 +11,7 @@
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E104 CGP-E107
+//@codes: CGP-E001 CGP-E101 CGP-E103 CGP-E113
 
 use core::num::ParseIntError;
 

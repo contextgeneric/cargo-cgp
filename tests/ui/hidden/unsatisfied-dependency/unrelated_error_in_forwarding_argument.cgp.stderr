@@ -1,15 +1,15 @@
-error[E0277]: [CGP-E009] the trait `CanGreetTwice` is not implemented for context `Person`
+error[E0277]: [CGP-E003] the trait `CanGreetTwice` is not implemented for context `Person`
   --> src/main.rs:52:24
    |
 52 | impl CanGreetTwice for Person {
    |                        ^^^^^^
    |
-   = note: root cause: [CGP-E106] missing field `name` on `Person`
+   = note: root cause: [CGP-E110] missing field `name` on `Person`
            this is required through the dependency chain:
-             [CGP-E105] trait impl `CanGreetTwice` for `Person`
+             [CGP-E104] trait impl `CanGreetTwice` for `Person`
              └─ [CGP-E101] consumer trait impl `CanGreet` for context `Person`
                └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
-                 └─ [CGP-E106] missing field `name` on `Person`
+                 └─ [CGP-E110] missing field `name` on `Person`
 
 error[E0277]: `Rc<{integer}>` cannot be sent between threads safely
   --> src/main.rs:54:26

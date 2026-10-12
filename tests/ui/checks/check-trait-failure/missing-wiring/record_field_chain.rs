@@ -26,7 +26,7 @@
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the walk).
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E105 CGP-E107
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E113
 
 use cgp::prelude::*;
 

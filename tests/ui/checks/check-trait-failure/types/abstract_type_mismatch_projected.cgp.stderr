@@ -1,4 +1,4 @@
-error[E0271]: [CGP-E017] expected the abstract type `Transaction` of `HasTransactionType` on `App` to be `Tx<<App as HasDbType>::Db>` (`Tx<Postgres>`), but found `Tx<Sqlite>`
+error[E0271]: [CGP-E005] expected the abstract type `Transaction` of `HasTransactionType` on `App` to be `Tx<<App as HasDbType>::Db>` (`Tx<Postgres>`), but found `Tx<Sqlite>`
   --> src/main.rs:87:9
    |
 87 |         TransactionNamerComponent,
@@ -8,6 +8,6 @@ error[E0271]: [CGP-E017] expected the abstract type `Transaction` of `HasTransac
    = note: this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanNameTransaction` for context `App`
              └─ [CGP-E102] provider trait impl `TransactionNamer` with context `App` for provider `NamePooledTransaction`
-               └─ [CGP-E112] abstract type `Transaction` of `HasTransactionType` on `App` is `Tx<Sqlite>`, but `Tx<<App as HasDbType>::Db>` (`Tx<Postgres>`) is required
+               └─ [CGP-E116] abstract type `Transaction` of `HasTransactionType` on `App` is `Tx<Sqlite>`, but `Tx<<App as HasDbType>::Db>` (`Tx<Postgres>`) is required
 
 For more information about this error, try `rustc --explain E0271`.

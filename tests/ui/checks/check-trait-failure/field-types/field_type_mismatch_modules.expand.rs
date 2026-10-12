@@ -3,7 +3,7 @@
 //! one per module, each derive `HasField` and each wire an area calculator whose `height()` getter
 //! needs `f64` — but `shape_a::Rectangle` carries `height: i32` and `shape_b::Rectangle` carries
 //! `height: i16`. Both fail with a `HasField<Symbol!("height")>::Value == f64` projection mismatch
-//! (`E0271`), so the resolver rewrites each into its `[CGP-E003]` field-type-mismatch form.
+//! (`E0271`), so the resolver rewrites each into its `[CGP-E004]` field-type-mismatch form.
 //!
 //! The point is that the *actual* field type in each message is read from the real struct by its
 //! `DefId`, not by matching the bare name `Rectangle`: `shape_a`'s error must report the actual type

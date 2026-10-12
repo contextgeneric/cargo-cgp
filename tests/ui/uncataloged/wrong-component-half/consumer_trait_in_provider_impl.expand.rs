@@ -4,7 +4,7 @@
 //! `impl CanCalculateArea` should be `impl AreaCalculator`. The macro inserts the context as the
 //! provider trait's leading generic, so the consumer trait receives one argument too many and
 //! rustc reports an `E0107` arity error among unrelated codes. The tool reshapes it into
-//! `[CGP-E013]`, naming both halves and the header to write. It is the one-line minimal pair of
+//! `[CGP-E032]`, naming both halves and the header to write. It is the one-line minimal pair of
 //! `base_area_1_1`, which writes the header correctly.
 //!
 //! CGP error class: the wrong half of a component, not yet in the catalog

@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E005] `App` cannot wire `@test.ShowImplComponent.String.*` that is already set through `@test.ShowImplComponent.*`
+error[E0119]: [CGP-E011] `App` cannot wire `@test.ShowImplComponent.String.*` that is already set through `@test.ShowImplComponent.*`
   --> src/main.rs:49:10
    |
 46 |             @test.ShowImplComponent.T: Provider,

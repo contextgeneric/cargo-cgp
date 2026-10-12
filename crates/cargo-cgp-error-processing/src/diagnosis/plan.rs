@@ -27,8 +27,8 @@ pub enum DiagKind {
     /// A check-trait or ordinary-bound failure — rustc's `E0277`, the default.
     Check,
     /// An associated-type mismatch — rustc's `E0271`, traced to a failing projection: a `HasField`
-    /// value type (the `[CGP-E003]` field form) or any other associated type, most often a CGP
-    /// abstract type (the `[CGP-E017]` form).
+    /// value type (the `[CGP-E004]` field form) or any other associated type, most often a CGP
+    /// abstract type (the `[CGP-E005]` form).
     TypeMismatch,
     /// A consumer-method call failure recovered at the use site — rustc's `E0599`, or an `E0277`
     /// whose obligation the resolver re-read from the call expression itself.
@@ -148,8 +148,8 @@ impl Header<'_> {
 /// The rewritten, `[CGP-Exxx]`-coded main message for a resolved failure — or `None` when the
 /// original main message is not an identified CGP error class and must be kept (an ordinary
 /// bound such as `f64: Eq` the solver already descended to). A projection mismatch
-/// ([`DiagKind::TypeMismatch`]) becomes the `[CGP-E003]` field form when the resolver traced it to a
-/// `HasField` projection, or the `[CGP-E017]` abstract-type form for any other associated type, each
+/// ([`DiagKind::TypeMismatch`]) becomes the `[CGP-E004]` field form when the resolver traced it to a
+/// `HasField` projection, or the `[CGP-E005]` abstract-type form for any other associated type, each
 /// worded from its mismatch leaf — and reported as the leaf it states, so its note drops the now
 /// redundant lead. An unsatisfied `CanUseComponent`
 /// bound and a consumer-method [`DiagKind::MethodNotFound`] (whose text names no wiring trait)
@@ -163,8 +163,8 @@ fn categorized_header<'a>(
     names: &ComponentNameMap,
 ) -> Header<'a> {
     // A projection mismatch (`E0271`) the resolver traced to a failing associated type is its own
-    // class, worded from the mismatch leaf rather than from the consumer trait: the `[CGP-E003]`
-    // field form for a `HasField` value, the `[CGP-E017]` abstract-type form for any other. The
+    // class, worded from the mismatch leaf rather than from the consumer trait: the `[CGP-E004]`
+    // field form for a `HasField` value, the `[CGP-E005]` abstract-type form for any other. The
     // field form is tried first, since a `HasField` value type is the more specific classification.
     if kind == DiagKind::TypeMismatch {
         if let Some(Leaf::FieldTypeMismatch {

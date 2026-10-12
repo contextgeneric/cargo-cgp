@@ -12,7 +12,7 @@
 //! This module recognizes that shape off the compiler: the failing call is an associated-function
 //! call `Param::method(…)` whose `Param` is a generic parameter of an enclosing provider-trait impl,
 //! the called method belongs to a CGP *provider* trait, and `Param` is not bounded by that provider
-//! trait. It fills the rustc-free [`MissingUseProvider`] the emitter words into a `[CGP-E016]` header
+//! trait. It fills the rustc-free [`MissingUseProvider`] the emitter words into a `[CGP-E031]` header
 //! and `#[use_provider(…)]` help.
 
 use cargo_cgp_error_processing::MissingUseProvider;

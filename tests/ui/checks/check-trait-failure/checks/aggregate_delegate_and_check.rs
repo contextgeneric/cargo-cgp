@@ -1,6 +1,6 @@
 //! `delegate_and_check_components!` on a `new` provider bundle.
 //!
-//! The check blames the bundle (`[CGP-E106] missing field `name` on `GreetBundle``); nothing says a
+//! The check blames the bundle (`[CGP-E110] missing field `name` on `GreetBundle``); nothing says a
 //! provider bundle was checked as a context.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
@@ -8,7 +8,7 @@
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: usability
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E106
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E110
 
 use cgp::prelude::*;
 

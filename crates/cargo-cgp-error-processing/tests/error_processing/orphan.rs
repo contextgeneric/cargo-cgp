@@ -3,7 +3,7 @@
 //! `plan_orphan_conflict` and `orphan_conflict_help` are pure functions over the rustc-free
 //! [`OrphanConflict`] model, so they are driven directly over hand-built conflicts — no compiler,
 //! no diagnostic wrapper. The driver fills the same model in from the live `TyCtxt`. The header is
-//! one `[CGP-E011]` shape for both triggers (the violation is identical); only the `help`'s fix
+//! one `[CGP-E022]` shape for both triggers (the violation is identical); only the `help`'s fix
 //! differs by whether the registration was a `#[default_impl]`/`#[prefix]` or a `cgp_namespace!`
 //! re-open. A path key renders in bare `@…` notation (no `Path!(…)` wrapper).
 
@@ -20,7 +20,7 @@ fn register_component_key() {
     };
     assert_eq!(
         plan_orphan_conflict(&conflict),
-        "[CGP-E011] cannot register the foreign component `GreeterComponent` into the foreign namespace `AppNamespace`",
+        "[CGP-E022] cannot register the foreign component `GreeterComponent` into the foreign namespace `AppNamespace`",
     );
     assert_eq!(
         orphan_conflict_help(&conflict),
@@ -37,7 +37,7 @@ fn register_path_key() {
     };
     assert_eq!(
         plan_orphan_conflict(&conflict),
-        "[CGP-E011] cannot register the foreign path `@app.AnnouncerComponent` into the foreign namespace `AppNamespace`",
+        "[CGP-E022] cannot register the foreign path `@app.AnnouncerComponent` into the foreign namespace `AppNamespace`",
     );
 }
 
@@ -52,7 +52,7 @@ fn reopen_gives_inheritance_fix() {
     };
     assert_eq!(
         plan_orphan_conflict(&conflict),
-        "[CGP-E011] cannot register the foreign component `GreeterComponent` into the foreign namespace `AppNamespace`",
+        "[CGP-E022] cannot register the foreign component `GreeterComponent` into the foreign namespace `AppNamespace`",
     );
     assert_eq!(
         orphan_conflict_help(&conflict),

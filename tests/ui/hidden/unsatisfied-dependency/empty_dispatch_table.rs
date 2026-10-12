@@ -8,7 +8,7 @@
 //! of `UseInputDelegate`'s own provider impl, a lookup into a *separate* table (`EmptySink` is a
 //! parameter of `UseInputDelegate<EmptySink>`), so it is unambiguously a missing dispatch entry —
 //! whether or not that table happens to wire any other key. The block therefore leads with
-//! `[CGP-E110] provider \`EmptySink\` does not contain any delegate entry for \`ByteStream\`` rather
+//! `[CGP-E114] provider \`EmptySink\` does not contain any delegate entry for \`ByteStream\`` rather
 //! than declining to raw `PipeHandlers`/`ComposeHandlers` plumbing.
 //!
 //! Stage 1, `Call<Fetch>`, produces a fixed `ByteStream` (its `where Input: Send` stalls under the
@@ -17,7 +17,7 @@
 //! empty table has no entry — `EmptySink: DelegateComponent<ByteStream>` is the root cause.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E114
 
 use core::marker::PhantomData;
 

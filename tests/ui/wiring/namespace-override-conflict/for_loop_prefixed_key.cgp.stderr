@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E005] `App` cannot wire `@cgp.core.error.ErrorRaiserComponent.*` that is already set through `AppDefaults`
+error[E0119]: [CGP-E011] `App` cannot wire `@cgp.core.error.ErrorRaiserComponent.*` that is already set through `AppDefaults`
   --> src/main.rs:52:14
    |
 49 |         namespace AppDefaults;

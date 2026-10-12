@@ -88,7 +88,7 @@ pub struct MissingUseProvider {
     pub provider_trait: String,
 }
 
-/// Word a [`MissingUseProvider`] into the `[CGP-E016]` header that replaces the raw `E0599`, naming
+/// Word a [`MissingUseProvider`] into the `[CGP-E031]` header that replaces the raw `E0599`, naming
 /// the inner provider rather than the generated `__Context__` scaffolding rustc's suggestion leaks.
 pub fn plan_missing_use_provider(missing: &MissingUseProvider) -> String {
     format!(

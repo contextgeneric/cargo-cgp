@@ -10,7 +10,7 @@
 //! `IsProviderFor`, so the resolved chain is one node shorter than
 //! [`field_type_mismatch`](field_type_mismatch.rs): `CanCalculateArea → AreaCalculator/RectangleArea
 //! → HasField height`. The driver still queries the struct by `DefId` for the actual type `i32` and
-//! rewrites the main message into the `[CGP-E003]` field-type-mismatch form, keeping the `E0271`
+//! rewrites the main message into the `[CGP-E004]` field-type-mismatch form, keeping the `E0271`
 //! Rust code.
 extern crate std;
 #[prelude_import]

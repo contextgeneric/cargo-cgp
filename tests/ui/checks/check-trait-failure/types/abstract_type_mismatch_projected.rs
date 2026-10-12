@@ -11,7 +11,7 @@
 //! This shape only became reachable once a pin grounded an alias *nested inside* its
 //! right-hand side, so the fixture is the mismatch counterpart of
 //! [`ok/use_type_pin_nested_alias`](../../../ok/use_type_pin_nested_alias.rs). It pins the
-//! dual rendering on the `[CGP-E017]` header and the `[CGP-E112]` leaf: the required type
+//! dual rendering on the `[CGP-E005]` header and the `[CGP-E116]` leaf: the required type
 //! appears as the projection the provider wrote, followed by what it reduces to, on the
 //! same rule the field leaf uses — the projection names the wiring to change, the
 //! reduction is what the reader compares against. A pin to a concrete type normalizes to
@@ -21,7 +21,7 @@
 //! cgp-knowledge-base/cargo-cgp/error-code.md.
 
 //@quality: acceptable
-//@codes: CGP-E017 CGP-E101 CGP-E102 CGP-E112
+//@codes: CGP-E005 CGP-E101 CGP-E102 CGP-E116
 
 use cgp::prelude::*;
 

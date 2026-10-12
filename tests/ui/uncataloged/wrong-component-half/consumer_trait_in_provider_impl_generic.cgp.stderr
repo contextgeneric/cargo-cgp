@@ -1,4 +1,4 @@
-error[E0107]: [CGP-E013] `CanCalculateArea` is a consumer trait, but a `#[cgp_impl]` provider must implement its provider trait `AreaCalculator`
+error[E0107]: [CGP-E032] `CanCalculateArea` is a consumer trait, but a `#[cgp_impl]` provider must implement its provider trait `AreaCalculator`
   --> src/main.rs:30:6
    |
 30 | impl CanCalculateArea<Rectangle> {

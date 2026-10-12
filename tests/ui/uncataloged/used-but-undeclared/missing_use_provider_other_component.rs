@@ -10,7 +10,7 @@
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md#a-gap-the-used-but-undeclared-and-wrong-half-classes).
 
 //@quality: acceptable
-//@codes: CGP-E016
+//@codes: CGP-E031
 
 use cgp::prelude::*;
 

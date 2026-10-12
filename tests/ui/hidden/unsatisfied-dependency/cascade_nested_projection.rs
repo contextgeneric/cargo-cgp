@@ -33,7 +33,7 @@
 //! root cause.
 //!
 //! The missing entry surfaces as an unmet `DelegateComponent` on the *dispatch table* `SinkHandlers`
-//! rather than on the context. The resolver reports it as a [`CGP-E110`] `MissingDispatchEntry` leaf
+//! rather than on the context. The resolver reports it as a [`CGP-E114`] `MissingDispatchEntry` leaf
 //! — a non-context delegation table (an aggregate provider or a `UseDelegate`/`UseInputDelegate`
 //! table) missing a key — so the block leads with `provider \`SinkHandlers\` does not contain any
 //! delegate entry for \`Tagged<Bytes>\`` over the dependency chain, rather than declining to
@@ -42,7 +42,7 @@
 //! that cannot handle it.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E114
 
 use core::marker::PhantomData;
 

@@ -1,6 +1,6 @@
 //! A provider bound on the context's `HasFields` shape, wired on a context without the derive.
 //!
-//! The check resolves to a `[CGP-E201]` leaf `App: HasFields` with no `#[derive(HasFields)]` help,
+//! The check resolves to a `[CGP-E117]` leaf `App: HasFields` with no `#[derive(HasFields)]` help,
 //! unlike the `HasField` leaves, which carry their derive help.
 //!
 //! CGP error class: none yet; the extensible-data family
@@ -10,7 +10,7 @@
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: usability
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E201
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E117
 
 use cgp::prelude::*;
 

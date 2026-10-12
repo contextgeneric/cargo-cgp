@@ -12,7 +12,7 @@
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E107
+//@codes: CGP-E001 CGP-E101 CGP-E113
 
 use cgp::prelude::*;
 

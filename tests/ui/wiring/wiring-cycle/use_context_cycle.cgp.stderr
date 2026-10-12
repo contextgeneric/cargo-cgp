@@ -1,4 +1,4 @@
-error[E0275]: [CGP-E010] the wiring for the consumer trait `CanGreet` on context `Person` never resolves — the lookup recurses without terminating
+error[E0275]: [CGP-E020] the wiring for the consumer trait `CanGreet` on context `Person` never resolves — the lookup recurses without terminating
   --> src/main.rs:43:9
    |
 43 |         GreeterComponent,

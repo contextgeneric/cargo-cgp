@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E007] component `GreeterComponent` on `Person` is redirected to `@GreeterComponent`
+error[E0119]: [CGP-E013] component `GreeterComponent` on `Person` is redirected to `@GreeterComponent`
   --> src/main.rs:40:9
    |
 38 |         open GreeterComponent;

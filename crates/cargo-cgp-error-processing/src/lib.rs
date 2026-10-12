@@ -44,8 +44,8 @@ pub use diagnosis::{
     derive_help_messages, field_mismatch_header, fix_help_messages, group_by_shared_cause,
     internal_error_note, missing_delegate_entry, missing_use_provider_help, orphan_conflict_help,
     plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict, plan_resolved,
-    plan_undeclared_trait, plan_wiring_conflict, root_cause_code, root_cause_lead,
-    undeclared_trait_help, wiring_conflict_help,
+    plan_undeclared_trait, plan_wiring_conflict, root_cause_lead, undeclared_trait_help,
+    wiring_conflict_help,
 };
 pub use postprocess::{
     AmbiguousNames, CGP_PREFIXES, Origin, context_has_hasfield_impls, postprocess_fragments,

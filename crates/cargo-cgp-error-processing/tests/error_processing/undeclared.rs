@@ -1,4 +1,4 @@
-//! Tests for the used-but-undeclared trait wording (`[CGP-E012]`).
+//! Tests for the used-but-undeclared trait wording (`[CGP-E030]`).
 //!
 //! `plan_undeclared_trait` and `undeclared_trait_help` are pure functions over the rustc-free
 //! [`UndeclaredTrait`] model, so they are driven directly over hand-built values. The driver fills
@@ -17,7 +17,7 @@ fn undeclared(trait_name: &str) -> UndeclaredTrait {
 fn the_header_names_the_trait_not_the_generated_context() {
     assert_eq!(
         plan_undeclared_trait(&undeclared("GetCount")),
-        "[CGP-E012] the trait `GetCount` is used but not declared as a dependency",
+        "[CGP-E030] the trait `GetCount` is used but not declared as a dependency",
     );
 }
 

@@ -29,7 +29,7 @@ pub enum DepNode {
         context: String,
         provider: String,
     },
-    /// `CGP-E104` — a hop through a namespace/`open` `RedirectLookup<Table, Path>`, labeled with
+    /// `CGP-E103` — a hop through a namespace/`open` `RedirectLookup<Table, Path>`, labeled with
     /// the `Table` the path is looked up in: the context for its own redirects, or an aggregate
     /// provider for one that opens its own components. `key` is the dispatched value (`<Outer>`);
     /// it is part of the node's *identity* — so two lookups along the same route for different keys
@@ -40,7 +40,7 @@ pub enum DepNode {
         table: String,
         key: String,
     },
-    /// `CGP-E105` — a hop through any other trait (a user's blanket trait, a wrapper, or an ordinary
+    /// `CGP-E104` — a hop through any other trait (a user's blanket trait, a wrapper, or an ordinary
     /// bound restated as an impl).
     Trait { trait_ref: String, self_ty: String },
 }

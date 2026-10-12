@@ -6,7 +6,7 @@
 //!
 //! The driver resolves this the way it resolves a missing field: it walks the wiring to the failing
 //! `HasField` projection, queries the struct (by `DefId`) for the field's actual type `i32`, and
-//! rewrites the main message into the `[CGP-E003]` field-type-mismatch form — `expected a `height`
+//! rewrites the main message into the `[CGP-E004]` field-type-mismatch form — `expected a `height`
 //! field of type `f64` on `Rectangle`, but found `i32`` — over the dependency chain, which here runs
 //! through the `HasRectangleFields` getter trait. The `E0271` Rust code is kept.
 //!
@@ -15,7 +15,7 @@
 //! module-path disambiguation is [`field_type_mismatch_modules`](field_type_mismatch_modules.rs).
 
 //@quality: acceptable
-//@codes: CGP-E003 CGP-E101 CGP-E102 CGP-E105 CGP-E109
+//@codes: CGP-E004 CGP-E101 CGP-E102 CGP-E104 CGP-E112
 
 use cgp::prelude::*;
 
