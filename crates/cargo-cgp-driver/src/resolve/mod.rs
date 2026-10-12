@@ -39,6 +39,7 @@ mod requirement;
 mod structural;
 mod undeclared;
 mod unimported;
+mod uses_misuse;
 mod walk;
 
 pub use ambiguous_names::ambiguous_type_names;
@@ -61,3 +62,4 @@ pub use structural::{
 };
 pub use undeclared::detect_undeclared_trait;
 pub use unimported::{DetectedUnimportedAbstractType, detect_unimported_abstract_type};
+pub use uses_misuse::detect_provider_trait_in_uses;

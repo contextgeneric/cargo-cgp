@@ -149,6 +149,9 @@ pub const ABSTRACT_TYPE_NOT_IMPORTED: &str = "CGP-E035";
 /// the context (from the component's `#[extend(…)]` or `#[use_type(…)]`). The Rust code stays
 /// `E0277`.
 pub const UNDECLARED_REQUIREMENT: &str = "CGP-E036";
+/// `CGP-E037`: `#[uses(…)]` names a component's provider trait where a dependency names its consumer
+/// trait. The Rust code stays `E0107`.
+pub const PROVIDER_TRAIT_IN_USES: &str = "CGP-E037";
 
 // The steps of a dependency chain (`CGP-E101` to `CGP-E109`).
 

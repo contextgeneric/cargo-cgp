@@ -1,12 +1,13 @@
 #![feature(prelude_import)]
-//! `#[uses(AreaCalculator)]`, naming a provider trait where the consumer trait belongs.
+//! `#[uses(AreaCalculator)]` on a `#[cgp_fn]`, naming a provider trait where the consumer trait
+//! belongs.
 //!
-//! The `E0107` "missing generics" keeps rustc's help `AreaCalculator<__Context__>`, which leaks the
-//! generated name and is the wrong fix.
+//! rustc reports `E0107`, missing generics for trait `AreaCalculator`, and suggests
+//! `AreaCalculator<__Context__>`, which leaks the generated name and is the wrong fix. The tool
+//! reshapes it into `[CGP-E037]`, naming the consumer trait `CanCalculateArea` to declare, with
+//! `#[uses(CanCalculateArea)]` in a `help`.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

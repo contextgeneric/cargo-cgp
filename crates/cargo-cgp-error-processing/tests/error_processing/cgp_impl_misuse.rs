@@ -8,8 +8,9 @@
 //! and a trait that is not a CGP component at all (`[CGP-E033]`, with no provider to suggest).
 
 use cargo_cgp_error_processing::{
-    CgpImplMisuse, MissingUseProvider, cgp_impl_misuse_help, missing_use_provider_help,
-    plan_cgp_impl_misuse, plan_missing_use_provider,
+    CgpImplMisuse, MissingUseProvider, ProviderTraitInUses, cgp_impl_misuse_help,
+    missing_use_provider_help, plan_cgp_impl_misuse, plan_missing_use_provider,
+    plan_provider_trait_in_uses, provider_trait_in_uses_help,
 };
 
 #[test]
@@ -77,5 +78,23 @@ fn inner_provider_not_imported() {
     assert_eq!(
         missing_use_provider_help(&missing),
         "import it with `#[use_provider(InnerCalculator: AreaCalculator)]`",
+    );
+}
+
+#[test]
+fn a_provider_trait_in_uses_names_the_consumer_trait_to_declare() {
+    let misuse = ProviderTraitInUses {
+        provider: "AreaCalculator".to_owned(),
+        consumer: "CanCalculateArea".to_owned(),
+    };
+    assert_eq!(
+        plan_provider_trait_in_uses(&misuse),
+        "[CGP-E037] `AreaCalculator` is a provider trait and cannot be a `#[uses]` dependency; a \
+         dependency names its consumer trait `CanCalculateArea`",
+    );
+    assert_eq!(
+        provider_trait_in_uses_help(&misuse),
+        "name the consumer trait instead: `#[uses(CanCalculateArea)]` (not the provider trait \
+         `AreaCalculator`)",
     );
 }

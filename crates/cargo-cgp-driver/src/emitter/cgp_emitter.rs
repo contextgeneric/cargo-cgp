@@ -10,17 +10,19 @@ use cargo_cgp_error_processing::rewrite::{
 };
 use cargo_cgp_error_processing::{
     AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf,
-    MissingUseProvider, Origin, OrphanConflict, PendingNote, Resolved, StructuralMistake,
-    UndeclaredRequirement, UndeclaredTrait, UnimportedAbstractType, WiringOverflow,
-    cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, coalesced_headline,
-    explain_footer_codes, fix_help_messages, group_by_shared_cause, internal_error_note,
-    is_explain_footer_text, is_method_bounds_text, is_recursion_limit_help_text,
-    is_unbounded_type_param_item_text, mentions_orphan_param_text, missing_use_provider_help,
-    orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
-    plan_resolved, plan_structural_mistake, plan_undeclared_requirement, plan_undeclared_trait,
+    MissingUseProvider, Origin, OrphanConflict, PendingNote, ProviderTraitInUses, Resolved,
+    StructuralMistake, UndeclaredRequirement, UndeclaredTrait, UnimportedAbstractType,
+    WiringOverflow, cause_signature, cgp_impl_misuse_help, coalesce_underived_fields,
+    coalesced_headline, explain_footer_codes, fix_help_messages, group_by_shared_cause,
+    internal_error_note, is_explain_footer_text, is_method_bounds_text,
+    is_recursion_limit_help_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
+    missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
+    plan_missing_use_provider, plan_orphan_conflict, plan_provider_trait_in_uses, plan_resolved,
+    plan_structural_mistake, plan_undeclared_requirement, plan_undeclared_trait,
     plan_unimported_abstract_type, plan_wiring_conflict, postprocess_message,
-    structural_mistake_help, undeclared_requirement_helps, undeclared_trait_help,
-    unimported_abstract_type_help, wiring_conflict_help, wiring_overflow_help,
+    provider_trait_in_uses_help, structural_mistake_help, undeclared_requirement_helps,
+    undeclared_trait_help, unimported_abstract_type_help, wiring_conflict_help,
+    wiring_overflow_help,
 };
 use rustc_errors::codes::{
     E0107, E0117, E0119, E0186, E0207, E0210, E0220, E0271, E0275, E0277, E0308, E0425, E0428,
@@ -664,6 +666,18 @@ impl<E: Emitter> CgpEmitter<E> {
         })
     }
 
+    /// Recognize `diag` as a provider trait named in `#[uses(…)]`: an `E0107` on the trait name,
+    /// confirmed by [`resolve::detect_provider_trait_in_uses`].
+    fn provider_trait_in_uses(&self, diag: &DiagInner) -> Option<ProviderTraitInUses> {
+        if diag.code != Some(E0107) {
+            return None;
+        }
+        let primary_span = diag.span.primary_span()?;
+        rustc_middle::ty::tls::with_opt(|tcx| {
+            resolve::detect_provider_trait_in_uses(tcx?, primary_span)
+        })
+    }
+
     /// Recognize `diag` as a requirement a provider trait places on the context that a `#[cgp_impl]`
     /// provider does not declare: an `E0277` on the generated `__Context__`, confirmed by
     /// [`resolve::detect_undeclared_requirement`].
@@ -1137,6 +1151,23 @@ impl<E: Emitter> CgpEmitter<E> {
                 }
                 None => {}
             }
+        }
+        // A provider trait named in `#[uses(…)]`, where a dependency names the consumer trait: rustc
+        // reports missing generics and suggests the generated `__Context__`. Reword it to name the
+        // consumer trait to declare, keeping the caret on the trait name.
+        if let Some(misuse) = self.provider_trait_in_uses(&diag)
+            && let Some(primary_span) = diag.span.primary_span()
+        {
+            replace_header(&mut diag, plan_provider_trait_in_uses(&misuse));
+            diag.span = MultiSpan::from_span(primary_span);
+            diag.children.push(subdiag(
+                Sublevel::Help,
+                provider_trait_in_uses_help(&misuse),
+            ));
+            self.postprocess(&mut diag, Origin::Rewritten);
+            self.record_cgp_spans(&diag);
+            self.push(BufEntry::Plain(Box::new(diag)));
+            return;
         }
         // A duplicate-key coherence conflict (E0119) is handled as one logical error: the
         // redundant `IsProviderFor` half of the pair is dropped, and the `DelegateComponent` half
