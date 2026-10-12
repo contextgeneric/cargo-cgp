@@ -102,7 +102,9 @@ pub fn detect_entry_parameters_not_in_key(
 /// The impl's own type and const parameters that nothing binds, each with its index, its span, and
 /// its name, in written order. A parameter is bound when the trait reference (its `Self` included)
 /// names it, or when the right-hand side of an associated-type bound names it and the bound's own
-/// arguments are bound, the rule rustc applies before reporting `E0207`.
+/// arguments are bound. rustc applies the same rule before reporting `E0207`, except that it does
+/// not count a bound on the impl's own trait; a parameter only such a bound names is treated as
+/// bound here, so its error is left as rustc wrote it.
 fn unconstrained_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     impl_did: DefId,
