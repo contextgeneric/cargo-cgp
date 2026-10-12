@@ -1,9 +1,9 @@
-error[E0275]: [CGP-E020] the wiring for the consumer trait `CanGreet` on context `Person` never resolves, because the lookup recurses without terminating
+error[E0275]: [CGP-E020] the wiring for the consumer trait `CanGreet` on context `Person` never resolves, because the lookup leads back to itself
   --> src/main.rs:43:9
    |
 43 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = help: a lookup that recurses usually means the component is delegated back to the context itself (for example, wired to `UseContext` with no direct implementation of the consumer trait), so wire a real provider, or implement the consumer trait directly on the context
+   = help: wire a provider in place of `UseContext`, which provides `Greeter` for `Person` by requiring `CanGreet` on `Person` again
 
 For more information about this error, try `rustc --explain E0275`.

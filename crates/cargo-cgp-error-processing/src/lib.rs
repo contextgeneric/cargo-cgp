@@ -42,14 +42,15 @@ pub use dedup::DedupLedger;
 pub use diagnosis::{
     Cause, Causes, CgpImplMisuse, ChainNode, DepNode, DependencyGraph, DiagKind, DiagnosisPlan,
     FieldFix, FieldIssue, Leaf, MissingUseProvider, NearMiss, OrphanConflict, OrphanTrigger,
-    PendingNote, Resolved, UndeclaredTrait, WiringConflict, WiringKey, cause_headline, cause_note,
-    cause_notes, cause_signature, cgp_impl_misuse_help, class_code, class_sentence,
-    coalesce_underived_fields, coalesced_headline, consumer_header, dependency_leaf_code,
-    dependency_tree_leaf, fix_help_messages, group_by_shared_cause, internal_error_note,
-    merged_cause, missing_use_provider_help, missing_wiring, orphan_conflict_help,
-    plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict, plan_resolved,
-    plan_undeclared_trait, plan_wiring_conflict, root_cause_lead, similar_key, similar_name,
-    undeclared_trait_help, wiring_conflict_help,
+    OverflowStep, PendingNote, Resolved, UndeclaredTrait, WiringConflict, WiringKey,
+    WiringOverflow, cause_headline, cause_note, cause_notes, cause_signature, cgp_impl_misuse_help,
+    class_code, class_sentence, coalesce_underived_fields, coalesced_headline, consumer_header,
+    dependency_leaf_code, dependency_tree_leaf, fix_help_messages, group_by_shared_cause,
+    internal_error_note, merged_cause, missing_use_provider_help, missing_wiring,
+    orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
+    plan_resolved, plan_undeclared_trait, plan_wiring_conflict, root_cause_lead, similar_key,
+    similar_name, undeclared_trait_help, wiring_conflict_help, wiring_overflow_help,
+    wiring_overflow_reason,
 };
 pub use postprocess::{
     AmbiguousNames, CGP_PREFIXES, Origin, context_has_hasfield_impls, postprocess_fragments,
@@ -60,7 +61,7 @@ pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use shape::{ShapeTag, render_enum_shape, render_struct_shape, render_variant, shape_name};
 pub use signals::{
     explain_footer_codes, is_explain_footer_text, is_method_bounds_text,
-    is_method_probe_advice_text, is_question_mark_cascade_text, is_unbounded_type_param_item_text,
-    mentions_orphan_param_text, mentions_wiring_text,
+    is_method_probe_advice_text, is_question_mark_cascade_text, is_recursion_limit_help_text,
+    is_unbounded_type_param_item_text, mentions_orphan_param_text, mentions_wiring_text,
 };
 pub use tree::{DependencyTree, render_dependency_tree};

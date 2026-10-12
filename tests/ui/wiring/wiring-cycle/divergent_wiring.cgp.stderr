@@ -1,10 +1,9 @@
-error[E0275]: [CGP-E020] the wiring for the consumer trait `CanShow<u32>` on context `App` never resolves, because the lookup recurses without terminating
+error[E0275]: [CGP-E021] the wiring for the consumer trait `CanShow<u32>` on context `App` never resolves, because each step requires it for a larger type (`CanShow<Vec<u32>>`, …)
   --> src/main.rs:43:9
    |
 43 |         ShowerComponent: u32,
    |         ^^^^^^^^^^^^^^^
    |
-   = help: consider increasing the recursion limit by adding a `#![recursion_limit = "256"]` attribute to your crate (`ui`)
-   = help: a lookup that recurses usually means the component is delegated back to the context itself (for example, wired to `UseContext` with no direct implementation of the consumer trait), so wire a real provider, or implement the consumer trait directly on the context
+   = help: wire a provider in place of `ShowNested`, which provides `Shower<u32>` for `App` by requiring `CanShow<Vec<u32>>` on `App`, a larger type at every step
 
 For more information about this error, try `rustc --explain E0275`.

@@ -1,8 +1,8 @@
 #![feature(prelude_import)]
 //! `DebugError` wired for the `String` key of an `open` error raiser, so it serves itself.
 //!
-//! `[CGP-E020]` fires, but its help names the `UseContext` case; neither the headline nor the help
-//! names the `DebugError` loop.
+//! `[CGP-E020]` says the lookup leads back to itself, and its help names `DebugError` as the
+//! provider that requires `CanRaiseError<String>` again.
 //!
 //! CGP error class: wiring cycle (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/wiring-cycle.md).
 //!

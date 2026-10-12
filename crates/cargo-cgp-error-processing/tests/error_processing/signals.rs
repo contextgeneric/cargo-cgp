@@ -4,8 +4,8 @@
 
 use cargo_cgp_error_processing::{
     explain_footer_codes, is_explain_footer_text, is_method_bounds_text,
-    is_method_probe_advice_text, is_question_mark_cascade_text, mentions_orphan_param_text,
-    mentions_wiring_text,
+    is_method_probe_advice_text, is_question_mark_cascade_text, is_recursion_limit_help_text,
+    mentions_orphan_param_text, mentions_wiring_text,
 };
 
 #[test]
@@ -129,4 +129,14 @@ fn yields_no_codes_when_the_wording_moved() {
     assert!(
         explain_footer_codes("For more information about this error, see the manual.").is_empty()
     );
+}
+
+#[test]
+fn recognizes_the_recursion_limit_help() {
+    assert!(is_recursion_limit_help_text(
+        "consider increasing the recursion limit by adding a `#![recursion_limit = \"256\"]` attribute to your crate (`ui`)"
+    ));
+    assert!(!is_recursion_limit_help_text(
+        "the trait `Foo` is not implemented for `Bar`"
+    ));
 }

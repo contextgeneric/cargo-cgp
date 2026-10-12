@@ -49,5 +49,5 @@ pub use cgp_item::crate_uses_cgp;
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
 pub use missing_use_provider::detect_missing_use_provider;
 pub use orphan::classify_orphan_conflict;
-pub use overflow::overflow_is_wiring_cycle;
+pub use overflow::{OverflowWalk, overflow_walk};
 pub use undeclared::detect_undeclared_trait;

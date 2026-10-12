@@ -17,7 +17,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
-use cargo_cgp_error_processing::{ChainNode, Leaf};
+use cargo_cgp_error_processing::{ChainNode, Leaf, WiringOverflow};
 use rustc_data_structures::fingerprint::Fingerprint;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_data_structures::stable_hash::{StableHash, StableHasher};
@@ -40,16 +40,20 @@ pub(crate) struct SubResult {
     pub(crate) causes: Vec<SubCause>,
     pub(crate) reachable: FxHashSet<Fingerprint>,
     pub(crate) incomplete: bool,
+    /// Why a guard cut the subtree, when one did: the obligation met again (a cycle), or the depth
+    /// cap reached without a repeat (a growing lookup). A wiring overflow is worded from it.
+    pub(crate) cut: Option<WiringOverflow>,
 }
 
 impl SubResult {
-    /// A branch the cycle guard or depth cap cut: no causes, and flagged incomplete so it is never
-    /// cached and taints every ancestor up the stack.
-    pub(crate) fn cut() -> Self {
+    /// A branch the cycle guard or depth cap cut, for `reason`: no causes, and flagged incomplete so
+    /// it is never cached and taints every ancestor up the stack.
+    pub(crate) fn cut(reason: WiringOverflow) -> Self {
         Self {
             causes: Vec::new(),
             reachable: FxHashSet::default(),
             incomplete: true,
+            cut: Some(reason),
         }
     }
 
@@ -61,6 +65,7 @@ impl SubResult {
             causes: Vec::new(),
             reachable,
             incomplete: false,
+            cut: None,
         }
     }
 }

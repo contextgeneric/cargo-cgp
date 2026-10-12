@@ -6,18 +6,19 @@ use std::path::Path;
 use std::sync::{Arc, LazyLock, Mutex, MutexGuard};
 
 use cargo_cgp_error_processing::rewrite::{
-    ComponentNameMap, rewrite_message, rewrite_required_for, wiring_overflow_help,
+    ComponentNameMap, rewrite_message, rewrite_required_for, rewrite_wiring_overflow,
 };
 use cargo_cgp_error_processing::{
     AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf,
     MissingUseProvider, Origin, OrphanConflict, PendingNote, Resolved, UndeclaredTrait,
-    cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, coalesced_headline,
-    explain_footer_codes, fix_help_messages, group_by_shared_cause, internal_error_note,
-    is_explain_footer_text, is_method_bounds_text, is_unbounded_type_param_item_text,
-    mentions_orphan_param_text, missing_use_provider_help, orphan_conflict_help,
-    plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict, plan_resolved,
-    plan_undeclared_trait, plan_wiring_conflict, postprocess_message, undeclared_trait_help,
-    wiring_conflict_help,
+    WiringOverflow, cause_signature, cgp_impl_misuse_help, coalesce_underived_fields,
+    coalesced_headline, explain_footer_codes, fix_help_messages, group_by_shared_cause,
+    internal_error_note, is_explain_footer_text, is_method_bounds_text,
+    is_recursion_limit_help_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
+    missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
+    plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_undeclared_trait,
+    plan_wiring_conflict, postprocess_message, undeclared_trait_help, wiring_conflict_help,
+    wiring_overflow_help,
 };
 use rustc_errors::codes::{
     E0107, E0117, E0119, E0186, E0207, E0210, E0271, E0275, E0277, E0308, E0425, E0599,
@@ -409,17 +410,21 @@ impl<E: Emitter> CgpEmitter<E> {
         changed
     }
 
-    /// Whether `diag` is an `E0275` overflow at a check entry whose wiring walk meets no cycle
-    /// ([`resolve::overflow_is_wiring_cycle`]), so the `[CGP-E020]` cycle rewrite would be false.
-    fn overflow_is_not_a_cycle(&self, diag: &DiagInner) -> bool {
-        diag.code == Some(E0275)
-            && diag.span.primary_span().is_some_and(|span| {
-                rustc_middle::ty::tls::with_opt(|tcx| {
-                    tcx.and_then(|tcx| {
-                        resolve::overflow_is_wiring_cycle(tcx, &self.resolve_cache, span)
-                    })
-                }) == Some(false)
-            })
+    /// Why the `E0275` overflow `diag` never resolves, when walking its check entry's wiring shows
+    /// it: a cycle, or a lookup that grows ([`resolve::overflow_walk`]). `None` for any other
+    /// diagnostic, and for an overflow the walk does not explain (one that follows from an
+    /// unresolved type, say), which keeps rustc's wording.
+    fn wiring_overflow(&self, diag: &DiagInner) -> Option<WiringOverflow> {
+        if diag.code != Some(E0275) {
+            return None;
+        }
+        let span = diag.span.primary_span()?;
+        rustc_middle::ty::tls::with_opt(|tcx| {
+            match resolve::overflow_walk(tcx?, &self.resolve_cache, span) {
+                resolve::OverflowWalk::Cut(reason) => Some(reason),
+                resolve::OverflowWalk::NotCut | resolve::OverflowWalk::NoEntry => None,
+            }
+        })
     }
 
     /// Post-process a diagnostic after transforming it — the final cleanup pass, over every
@@ -1099,24 +1104,33 @@ impl<E: Emitter> CgpEmitter<E> {
                 {
                     strip_method_probe_advice(&mut diag);
                 }
-                // An overflow whose wiring walk meets no cycle (one that follows from an unresolved
-                // type, say) is not a wiring cycle, so it keeps rustc's wording.
-                let changed = !self.overflow_is_not_a_cycle(&diag) && self.rewrite(&mut diag);
-                // A rewritten wiring overflow (`E0275`, now a `[CGP-E020]` header) drops the
-                // note pointing at the generated `__Check…` trait — a name the user never wrote,
-                // whose location the kept caret already covers — and carries the fix in a `help`.
-                if changed && diag.code == Some(E0275) {
+                // A wiring overflow is worded by why its lookup never resolves; one the walk does
+                // not explain (it follows from an unresolved type, say) keeps rustc's wording.
+                let overflow = self.wiring_overflow(&diag);
+                let mut changed =
+                    (diag.code != Some(E0275) || overflow.is_some()) && self.rewrite(&mut diag);
+                if let Some(overflow) = &overflow
+                    && let Some(header) = main_message_text(&diag)
+                        .and_then(|text| rewrite_wiring_overflow(text, &self.names, overflow))
+                {
+                    diag.messages = vec![(DiagMessage::Str(header.into()), Style::NoStyle)];
+                    changed = true;
+                    // The note pointing at the generated `__Check…` trait names something the user
+                    // never wrote, whose location the kept caret already covers, and rustc's advice
+                    // to raise the recursion limit cannot fix a lookup that never ends.
                     diag.children.retain(|child| {
                         !child.messages.iter().any(|(message, _)| {
                             matches!(
                                 message,
                                 DiagMessage::Str(text)
-                                    if text.contains("__Check") || text.contains("__CanUse")
+                                    if text.contains("__Check")
+                                        || text.contains("__CanUse")
+                                        || is_recursion_limit_help_text(text)
                             )
                         })
                     });
                     diag.children
-                        .push(subdiag(Sublevel::Help, wiring_overflow_help()));
+                        .push(subdiag(Sublevel::Help, wiring_overflow_help(overflow)));
                 }
                 (changed, None, None)
             };

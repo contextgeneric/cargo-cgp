@@ -8,8 +8,9 @@ use std::collections::HashMap;
 
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, ComponentTraitNames, parse_trait_bound, rewrite_message,
-    rewrite_required_for, rewrite_trait_bound, rewrite_wiring_overflow, wiring_overflow_help,
+    rewrite_required_for, rewrite_trait_bound, rewrite_wiring_overflow,
 };
+use cargo_cgp_error_processing::{OverflowStep, WiringOverflow, wiring_overflow_help};
 
 /// The fixed map every test's [`ComponentNameMap`] initializes to.
 fn names() -> HashMap<String, ComponentTraitNames> {
@@ -487,37 +488,87 @@ fn declines_a_marker_name_two_components_share() {
     );
 }
 
+/// A cycle the walk closed at `UseContext`'s `Greeter` step.
+fn use_context_cycle() -> WiringOverflow {
+    WiringOverflow::Cycle {
+        closing: Some(OverflowStep {
+            provider: "UseContext".to_owned(),
+            provider_trait: "Greeter".to_owned(),
+            context: "Person".to_owned(),
+            requires: "CanGreet".to_owned(),
+        }),
+    }
+}
+
 #[test]
-fn rewrites_a_wiring_overflow_into_its_cycle_header() {
+fn rewrites_a_wiring_cycle_into_its_cycle_header() {
     let out = rewrite_wiring_overflow(
         "overflow evaluating the requirement `Person: CanUseComponent<AreaCalculatorComponent>`",
         &name_map(),
+        &use_context_cycle(),
     );
     assert_eq!(
         out.as_deref(),
         Some(
-            "[CGP-E020] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because the lookup recurses without terminating"
+            "[CGP-E020] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because the lookup leads back to itself"
         )
     );
 }
 
 #[test]
-fn the_wiring_overflow_help_names_the_usual_cause_and_both_fixes() {
+fn rewrites_a_growing_lookup_into_its_own_header() {
+    let growing = WiringOverflow::Growing {
+        larger: Some("CanCalculateArea<Vec<u32>>".to_owned()),
+        growing: None,
+    };
+    let out = rewrite_wiring_overflow(
+        "overflow evaluating the requirement `Person: CanUseComponent<AreaCalculatorComponent>`",
+        &name_map(),
+        &growing,
+    );
     assert_eq!(
-        wiring_overflow_help(),
-        "a lookup that recurses usually means the component is delegated back to the context itself \
-         (for example, wired to `UseContext` with no direct implementation of the consumer trait), so \
-         wire a real provider, or implement the consumer trait directly on the context"
+        out.as_deref(),
+        Some(
+            "[CGP-E021] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because each step requires it for a larger type (`CanCalculateArea<Vec<u32>>`, …)"
+        )
+    );
+}
+
+#[test]
+fn the_wiring_overflow_help_names_the_provider_that_closes_or_grows_the_lookup() {
+    assert_eq!(
+        wiring_overflow_help(&use_context_cycle()),
+        "wire a provider in place of `UseContext`, which provides `Greeter` for `Person` by \
+         requiring `CanGreet` on `Person` again"
+    );
+    assert_eq!(
+        wiring_overflow_help(&WiringOverflow::Growing {
+            larger: Some("CanShow<Vec<u32>>".to_owned()),
+            growing: Some(OverflowStep {
+                provider: "ShowNested".to_owned(),
+                provider_trait: "Shower<u32>".to_owned(),
+                context: "App".to_owned(),
+                requires: "CanShow<Vec<u32>>".to_owned(),
+            }),
+        }),
+        "wire a provider in place of `ShowNested`, which provides `Shower<u32>` for `App` by \
+         requiring `CanShow<Vec<u32>>` on `App`, a larger type at every step"
+    );
+    // Without a provider step, the help says what the replacement must not do.
+    assert_eq!(
+        wiring_overflow_help(&WiringOverflow::Cycle { closing: None }),
+        "wire the component to a provider that does not require the consumer trait it provides"
     );
 }
 
 #[test]
 fn a_non_wiring_overflow_is_left_alone() {
-    // An `E0275` on an ordinary trait is not a wiring cycle, so it keeps rustc's own header.
+    // An `E0275` on an ordinary trait is not a wiring lookup, so it keeps rustc's own header.
     assert_eq!(
         rewrite_wiring_overflow(
             "overflow evaluating the requirement `Foo: Bar<Baz>`",
             &name_map(),
+            &use_context_cycle(),
         ),
         None
     );

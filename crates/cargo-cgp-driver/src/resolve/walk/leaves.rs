@@ -1,6 +1,6 @@
 //! Descending the failing obligation to every terminal root-cause leaf.
 
-use cargo_cgp_error_processing::{Causes, ChainNode, Resolved};
+use cargo_cgp_error_processing::{Causes, ChainNode, OverflowStep, Resolved, WiringOverflow};
 use rustc_data_structures::fingerprint::Fingerprint;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
@@ -8,7 +8,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::cache::{NodeKey, ResolveCache, SubCause, SubResult, pred_fingerprint};
 use crate::resolve::cgp_item::{
-    is_cgp_item, is_consumer_trait, is_local_adt, trim_unknown_path_tail,
+    is_cgp_item, is_consumer_trait, is_local_adt, is_provider_trait, trim_unknown_path_tail,
 };
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, render_ty, trait_generics};
@@ -76,16 +76,79 @@ pub(crate) fn resolve_provider_leaves<'tcx>(
     Some(resolved)
 }
 
-/// Whether walking `top` is cut short: the cycle guard met an obligation among its own ancestors,
-/// or a branch reached the depth cap. Either means the wiring's lookup never terminates.
-pub(crate) fn walk_is_cut<'tcx>(
+/// Why walking `top` was cut short, when a guard cut it: the obligation met again (a cycle in the
+/// wiring) or the depth cap reached without a repeat (a lookup that grows). `None` when the walk ran
+/// to its leaves, as it does through a type the compiler could not resolve.
+pub(crate) fn walk_overflow<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
     top: ty::PolyTraitClause<'tcx>,
-) -> bool {
+) -> Option<WiringOverflow> {
     let top = tcx.erase_and_anonymize_regions(top);
     let context = top.skip_binder().self_ty();
-    resolve_node(tcx, cache, top, None, context, &[], 0).incomplete
+    resolve_node(tcx, cache, top, None, context, &[], 0).cut
+}
+
+/// The provider step `parent` that requires `required`, when `parent` is a provider's own
+/// provider-trait obligation (not the context's delegation routing, whose `Self` is the context).
+fn provider_step<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    parent: ty::TraitRef<'tcx>,
+    required: ty::PolyTraitClause<'tcx>,
+) -> Option<OverflowStep> {
+    let required = required.skip_binder().trait_ref;
+    let context = required.self_ty();
+    if !is_provider_trait(tcx, parent.def_id) || parent.self_ty() == context {
+        return None;
+    }
+    Some(OverflowStep {
+        provider: tcx
+            .erase_and_anonymize_regions(parent.self_ty())
+            .to_string(),
+        provider_trait: format!(
+            "{}{}",
+            tcx.item_name(parent.def_id),
+            trait_generics(tcx, parent, 2)
+        ),
+        context: context.to_string(),
+        requires: format!(
+            "{}{}",
+            tcx.item_name(required.def_id),
+            trait_generics(tcx, required, 1)
+        ),
+    })
+}
+
+/// The growing lookup a depth cut ends: the first obligation in `prefix` that a later one repeats
+/// with other arguments on the same type, the later one being the first larger requirement, and the
+/// provider step just above it.
+fn growing_lookup<'tcx>(tcx: TyCtxt<'tcx>, prefix: &[ty::PolyTraitClause<'tcx>]) -> WiringOverflow {
+    let same_kind = |a: &ty::PolyTraitClause<'tcx>, b: &ty::PolyTraitClause<'tcx>| {
+        a.def_id() == b.def_id() && a.skip_binder().self_ty() == b.skip_binder().self_ty()
+    };
+    let larger = prefix.iter().enumerate().find_map(|(at, first)| {
+        prefix[at + 1..]
+            .iter()
+            .position(|later| same_kind(first, later) && later != first)
+            .map(|offset| at + 1 + offset)
+    });
+    let Some(larger) = larger else {
+        return WiringOverflow::Growing {
+            larger: None,
+            growing: None,
+        };
+    };
+    let larger_ref = prefix[larger].skip_binder().trait_ref;
+    WiringOverflow::Growing {
+        larger: Some(format!(
+            "{}{}",
+            tcx.item_name(larger_ref.def_id),
+            trait_generics(tcx, larger_ref, 1)
+        )),
+        growing: prefix[..larger]
+            .last()
+            .and_then(|parent| provider_step(tcx, parent.skip_binder().trait_ref, prefix[larger])),
+    }
 }
 
 /// Fold the root node's owned sub-causes into a [`Resolved`]: group by leaf into one [`Cause`] per
@@ -153,7 +216,7 @@ fn resolve_node<'tcx>(
     // Depth cap: a divergent wiring the cycle guard cannot catch (obligations that keep growing
     // without repeating) is cut here. The cut flags the subtree incomplete so it is never cached.
     if depth > MAX_DEPTH {
-        return SubResult::cut();
+        return SubResult::cut(growing_lookup(tcx, prefix));
     }
 
     // Cycle guard: if this exact obligation already appears among its own ancestors, the wiring
@@ -166,7 +229,9 @@ fn resolve_node<'tcx>(
         .iter()
         .any(|ancestor| tcx.erase_and_anonymize_regions(*ancestor) == erased)
     {
-        return SubResult::cut();
+        return SubResult::cut(WiringOverflow::Cycle {
+            closing: parent.and_then(|parent| provider_step(tcx, parent, erased)),
+        });
     }
 
     // Cross-context handoff: a consumer obligation whose `Self` is a *different* local context is the
@@ -307,6 +372,7 @@ fn resolve_node<'tcx>(
     let mut reachable: FxHashSet<Fingerprint> = FxHashSet::default();
     reachable.insert(self_fp);
     let mut incomplete = false;
+    let mut cut: Option<WiringOverflow> = None;
     for child in children {
         let sub = resolve_node(
             tcx,
@@ -318,6 +384,14 @@ fn resolve_node<'tcx>(
             depth + 1,
         );
         incomplete |= sub.incomplete;
+        // A cycle explains a lookup that never resolves better than a depth cut does, so it wins.
+        match (&cut, sub.cut) {
+            (None, found @ Some(_))
+            | (Some(WiringOverflow::Growing { .. }), found @ Some(WiringOverflow::Cycle { .. })) => {
+                cut = found
+            }
+            _ => {}
+        }
         reachable.extend(sub.reachable);
         for mut sc in sub.causes {
             if let Some(hop) = &node_hop {
@@ -334,6 +408,7 @@ fn resolve_node<'tcx>(
             causes,
             reachable,
             incomplete,
+            cut,
         },
     )
 }
@@ -447,6 +522,7 @@ fn terminal_result<'tcx>(
         }],
         reachable,
         incomplete: false,
+        cut: None,
     }
 }
 
@@ -484,5 +560,6 @@ fn projection_result<'tcx>(
         causes: vec![SubCause { leaf, path }],
         reachable,
         incomplete: false,
+        cut: None,
     }
 }

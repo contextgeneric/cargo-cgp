@@ -74,6 +74,13 @@ pub fn is_question_mark_cascade_text(text: &str) -> bool {
     text.contains("`?` operator")
 }
 
+/// Whether a `help` is rustc's advice to raise the recursion limit, which an `E0275` overflow
+/// carries. A wiring lookup that never resolves is not fixed by a higher limit, so the emitter drops
+/// it from a rewritten wiring overflow.
+pub fn is_recursion_limit_help_text(text: &str) -> bool {
+    text.contains("consider increasing the recursion limit")
+}
+
 /// Whether a message is one of rustc's trailing "detailed explanations" footer lines — the
 /// `Some errors have detailed explanations: E0277, E0599.` list or the
 /// `For more information about …, try `rustc --explain E0277`.` pointer that `print_error_count`

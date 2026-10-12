@@ -22,38 +22,44 @@
 //! ```
 //!
 //! [`rewrite_message`] is the entry point; it dispatches to the note-form rewrite
-//! ([`rewrite_required_for`]) and the header rewrites ([`rewrite_trait_bound`], and
-//! [`rewrite_wiring_overflow`] for the `E0275` a wiring cycle produces). The codes
+//! ([`rewrite_required_for`]) and the header rewrite ([`rewrite_trait_bound`]).
+//! [`rewrite_wiring_overflow`] rewrites the `E0275` a never-resolving lookup produces, with the
+//! reason the driver's walk found. The codes
 //! belong on *main* messages only — the driver applies the full dispatch to a
 //! diagnostic's header and [`rewrite_required_for`] to its sub-messages.
 //!
 //! Each form parses the message *before* consulting `names`, so a message that is not a CGP
 //! wiring form returns `None` without ever forcing the map's lazy initializer.
 
-use crate::code::{CONSUMER_TRAIT_UNIMPLEMENTED, PROVIDER_TRAIT_UNIMPLEMENTED, WIRING_OVERFLOW};
+use crate::code::{
+    CONSUMER_TRAIT_UNIMPLEMENTED, GROWING_LOOKUP, PROVIDER_TRAIT_UNIMPLEMENTED, WIRING_CYCLE,
+};
+use crate::diagnosis::{WiringOverflow, wiring_overflow_reason};
 use crate::rewrite::names::ComponentNameMap;
 use crate::rewrite::parse::parse_trait_bound;
 use crate::rewrite::text::{last_segment, split_generics, split_top_level};
 
 /// Rewrite one diagnostic message into its trait-named form, or return `None` to leave it
 /// unchanged. This is the entry point the emitter drives over every message; it tries each
-/// recognized CGP wiring form — the obligation-chain notes ([`rewrite_required_for`]), the
-/// primary `the trait bound … is not satisfied` header ([`rewrite_trait_bound`]), then the
-/// `overflow evaluating the requirement …` header ([`rewrite_wiring_overflow`]).
+/// recognized CGP wiring form: the obligation-chain notes ([`rewrite_required_for`]) and the
+/// primary `the trait bound … is not satisfied` header ([`rewrite_trait_bound`]). The
+/// `overflow evaluating the requirement …` header has its own entry point,
+/// [`rewrite_wiring_overflow`], since its wording depends on why the lookup never resolves.
 pub fn rewrite_message(message: &str, names: &ComponentNameMap) -> Option<String> {
-    rewrite_required_for(message, names)
-        .or_else(|| rewrite_trait_bound(message, names))
-        .or_else(|| rewrite_wiring_overflow(message, names))
+    rewrite_required_for(message, names).or_else(|| rewrite_trait_bound(message, names))
 }
 
-/// Rewrite the `overflow evaluating the requirement …` header (`E0275`) of a wiring cycle —
-/// stamping it [`WIRING_OVERFLOW`] — or return `None` for any other overflow. Only an overflow
-/// whose requirement is a `Self: CanUseComponent<Marker, …>` bound is a wiring cycle: the lookup
-/// for that component recurses without bottoming out, which almost always means the component is
-/// delegated back to the context itself (a `UseContext` delegation with no direct consumer-trait
-/// impl). The accompanying fix rides in [`wiring_overflow_help`], kept out of the header so the
+/// Rewrite the `overflow evaluating the requirement …` header (`E0275`) of a wiring lookup that
+/// never resolves, or return `None` for any other overflow. Only an overflow whose requirement is a
+/// `Self: CanUseComponent<Marker, …>` bound is a wiring lookup; `overflow` says how it never
+/// resolves, as the driver's walk found it: a cycle ([`WIRING_CYCLE`]) or a growing lookup
+/// ([`GROWING_LOOKUP`]). The fix rides in [`wiring_overflow_help`](crate::wiring_overflow_help), kept out of the header so the
 /// headline stays one sentence.
-pub fn rewrite_wiring_overflow(message: &str, names: &ComponentNameMap) -> Option<String> {
+pub fn rewrite_wiring_overflow(
+    message: &str,
+    names: &ComponentNameMap,
+    overflow: &WiringOverflow,
+) -> Option<String> {
     let rest = message.strip_prefix("overflow evaluating the requirement `")?;
     let (bound, _tail) = rest.split_once('`')?;
     let (subject, trait_ref) = bound.split_once(": ")?;
@@ -65,19 +71,15 @@ pub fn rewrite_wiring_overflow(message: &str, names: &ComponentNameMap) -> Optio
     let component = args.first()?.trim();
     let entry = names.get(component)?;
     let generics = render_trait_generics(&[], &args[1..], entry.params);
+    let code = match overflow {
+        WiringOverflow::Cycle { .. } => WIRING_CYCLE,
+        WiringOverflow::Growing { .. } => GROWING_LOOKUP,
+    };
     Some(format!(
-        "[{WIRING_OVERFLOW}] the wiring for the consumer trait `{}{generics}` on context `{subject}` never resolves, because the lookup recurses without terminating",
-        entry.consumer
+        "[{code}] the wiring for the consumer trait `{}{generics}` on context `{subject}` never resolves, because {}",
+        entry.consumer,
+        wiring_overflow_reason(overflow)
     ))
-}
-
-/// The `help` accompanying a rewritten wiring-overflow header ([`rewrite_wiring_overflow`]):
-/// what a non-terminating lookup usually means, and the two ways to fix it.
-pub fn wiring_overflow_help() -> String {
-    "a lookup that recurses usually means the component is delegated back to the context itself \
-     (for example, wired to `UseContext` with no direct implementation of the consumer trait), so \
-     wire a real provider, or implement the consumer trait directly on the context"
-        .to_owned()
 }
 
 /// Rewrite one `required for … to implement …` obligation-chain note into its trait-named

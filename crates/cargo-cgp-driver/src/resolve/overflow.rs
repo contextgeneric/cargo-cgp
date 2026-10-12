@@ -1,21 +1,32 @@
-//! Whether a wiring overflow is a cycle in the wiring.
+//! How a wiring overflow never resolves: a cycle in the wiring, or a lookup that grows.
 
+use cargo_cgp_error_processing::WiringOverflow;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::resolve::anchor::check_entry_obligation;
 use crate::resolve::cache::ResolveCache;
-use crate::resolve::walk::walk_is_cut;
+use crate::resolve::walk::walk_overflow;
 
-/// Whether the `E0275` overflow at the `check_components!` entry at `primary_span` comes from a
-/// lookup that never terminates in the wiring: walking the entry's consumer obligation meets a
-/// cycle or the depth cap. An overflow can also follow from a type the compiler could not resolve,
-/// whose walk ends without a cut, and that is no cycle. `None` when no check entry is at the span.
-pub fn overflow_is_wiring_cycle(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    primary_span: Span,
-) -> Option<bool> {
-    let obligation = check_entry_obligation(tcx, primary_span)?;
-    Some(walk_is_cut(tcx, cache, obligation))
+/// What walking the `check_components!` entry at `primary_span` shows about its `E0275` overflow.
+pub enum OverflowWalk {
+    /// No check entry sits at the span, so the walk cannot say why the lookup overflowed.
+    NoEntry,
+    /// The walk ran to its leaves: the overflow follows from something other than the wiring, such
+    /// as a type the compiler could not resolve.
+    NotCut,
+    /// The walk met an obligation again, or reached its depth cap, as the reason says.
+    Cut(WiringOverflow),
+}
+
+/// Walk the consumer obligation of the check entry at `primary_span` and report how its lookup
+/// never resolves (see [`OverflowWalk`]).
+pub fn overflow_walk(tcx: TyCtxt<'_>, cache: &ResolveCache, primary_span: Span) -> OverflowWalk {
+    let Some(obligation) = check_entry_obligation(tcx, primary_span) else {
+        return OverflowWalk::NoEntry;
+    };
+    match walk_overflow(tcx, cache, obligation) {
+        Some(reason) => OverflowWalk::Cut(reason),
+        None => OverflowWalk::NotCut,
+    }
 }
