@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `__CheckApp<ShowerComponent, u32>` for type `App`
+error[E0119]: [CGP-E015] `check_components!` checks `ShowerComponent: u32` twice for `App`
   --> src/main.rs:33:1
    |
 33 | // check_components! {
@@ -8,6 +8,7 @@ error[E0119]: conflicting implementations of trait `__CheckApp<ShowerComponent, 
 36 | |          ShowerComponent: u32,
    | |________________________^ conflicting implementation for `App`
    |
+   = help: remove one of the two `ShowerComponent: u32` entries
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0119`.

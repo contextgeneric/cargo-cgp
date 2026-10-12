@@ -20,7 +20,8 @@
 //! than a check failure: it reads the two conflicting `DelegateComponent` impls off the compiler
 //! and words which keys collide. A sibling [`orphan`] stage handles the orphan-rule coherence
 //! conflict (`E0210`/`E0117`) the same way: it reads the offending namespace-registration impl off
-//! the compiler and words which foreign namespace and key it names.
+//! the compiler and words which foreign namespace and key it names. A [`structural`] stage recovers
+//! the structural mistakes in a wiring or its checks, such as a check table listing an entry twice.
 
 mod ambiguous_names;
 mod anchor;
@@ -34,6 +35,7 @@ mod label;
 mod missing_use_provider;
 mod orphan;
 mod overflow;
+mod structural;
 mod undeclared;
 mod walk;
 
@@ -50,4 +52,5 @@ pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
 pub use missing_use_provider::detect_missing_use_provider;
 pub use orphan::classify_orphan_conflict;
 pub use overflow::{OverflowWalk, overflow_walk};
+pub use structural::detect_duplicate_check;
 pub use undeclared::detect_undeclared_trait;

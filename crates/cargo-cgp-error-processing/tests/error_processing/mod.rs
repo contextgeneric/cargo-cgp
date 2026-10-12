@@ -13,6 +13,7 @@ pub mod rewrite;
 pub mod shape;
 pub mod signals;
 pub mod similar;
+pub mod structural;
 pub mod support;
 pub mod tree;
 pub mod undeclared;

@@ -42,14 +42,15 @@ pub use dedup::DedupLedger;
 pub use diagnosis::{
     COALESCED_SITE_LABEL, Cause, Causes, CgpImplMisuse, ChainNode, DepNode, DependencyGraph,
     DiagKind, DiagnosisPlan, FieldFix, FieldIssue, Leaf, MissingUseProvider, NearMiss,
-    OrphanConflict, OrphanTrigger, OverflowStep, PendingNote, Resolved, UndeclaredTrait,
-    WiringConflict, WiringKey, WiringOverflow, cause_headline, cause_note, cause_notes,
-    cause_signature, cgp_impl_misuse_help, class_code, class_sentence, coalesce_underived_fields,
-    coalesced_headline, consumer_header, dependency_leaf_code, dependency_tree_leaf,
-    fix_help_messages, group_by_shared_cause, internal_error_note, merged_cause,
-    missing_use_provider_help, missing_wiring, orphan_conflict_help, plan_cgp_impl_misuse,
-    plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_undeclared_trait,
-    plan_wiring_conflict, root_cause_lead, similar_key, similar_name, undeclared_trait_help,
+    OrphanConflict, OrphanTrigger, OverflowStep, PendingNote, Resolved, StructuralMistake,
+    UndeclaredTrait, WiringConflict, WiringKey, WiringOverflow, cause_headline, cause_note,
+    cause_notes, cause_signature, cgp_impl_misuse_help, class_code, class_sentence,
+    coalesce_underived_fields, coalesced_headline, consumer_header, dependency_leaf_code,
+    dependency_tree_leaf, fix_help_messages, group_by_shared_cause, internal_error_note,
+    merged_cause, missing_use_provider_help, missing_wiring, orphan_conflict_help,
+    plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict, plan_resolved,
+    plan_structural_mistake, plan_undeclared_trait, plan_wiring_conflict, root_cause_lead,
+    similar_key, similar_name, structural_mistake_help, undeclared_trait_help,
     wiring_conflict_help, wiring_overflow_help, wiring_overflow_reason,
 };
 pub use postprocess::{

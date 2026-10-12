@@ -81,6 +81,12 @@ pub const REDIRECT_COLLISION: &str = "CGP-E013";
 /// `CGP-E014`: the same key is redirected more than once.
 pub const DUPLICATE_REDIRECT: &str = "CGP-E014";
 
+// Structural mistakes in the wiring and its checks, in the same block (`CGP-E015` onward).
+
+/// `CGP-E015`: one `check_components!` table checks the same entry twice. Stamped on the `E0119`
+/// between the two identical check impls the table generates.
+pub const DUPLICATE_CHECK: &str = "CGP-E015";
+
 // Wiring that never resolves, and the orphan rule (`CGP-E020` to `CGP-E029`).
 
 /// `CGP-E020`: resolving a component's wiring leads back to itself. Stamped on an `E0275` overflow

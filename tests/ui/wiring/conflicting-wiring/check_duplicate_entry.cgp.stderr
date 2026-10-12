@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `__CheckApp<GreeterComponent, ()>` for type `App`
+error[E0119]: [CGP-E015] `check_components!` checks `GreeterComponent` twice for `App`
   --> src/main.rs:34:1
    |
 34 | // check_components! {
@@ -8,6 +8,7 @@ error[E0119]: conflicting implementations of trait `__CheckApp<GreeterComponent,
 37 | |          GreeterComponent,
    | |_________________________^ conflicting implementation for `App`
    |
+   = help: remove one of the two `GreeterComponent` entries
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0119`.

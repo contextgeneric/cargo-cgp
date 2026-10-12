@@ -1,12 +1,12 @@
 //! The same entry of a generic component listed twice in one `check_components!` table.
 //!
 //! The two check impls the table generates for `ShowerComponent: u32` are identical, so the
-//! compiler rejects them with an `E0119` on the generated `__CheckApp`.
+//! compiler rejects them with an `E0119`, which becomes `[CGP-E015]` naming the entry as written.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E015
 
 use cgp::prelude::*;
 

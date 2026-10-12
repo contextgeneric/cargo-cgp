@@ -1,13 +1,13 @@
 //! The same component listed twice in one `check_components!` table.
 //!
-//! `E0119` on `__CheckApp<GreeterComponent, ()>`, passed through uncoded.
+//! The `E0119` between the two identical check impls becomes `[CGP-E015]`, with a removal help.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! The two carets cover the table from its start, where rustc puts each check impl's span.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E015
 
 use cgp::prelude::*;
 

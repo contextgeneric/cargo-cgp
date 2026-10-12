@@ -10,15 +10,15 @@ use cargo_cgp_error_processing::rewrite::{
 };
 use cargo_cgp_error_processing::{
     AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf,
-    MissingUseProvider, Origin, OrphanConflict, PendingNote, Resolved, UndeclaredTrait,
-    WiringOverflow, cause_signature, cgp_impl_misuse_help, coalesce_underived_fields,
-    coalesced_headline, explain_footer_codes, fix_help_messages, group_by_shared_cause,
-    internal_error_note, is_explain_footer_text, is_method_bounds_text,
+    MissingUseProvider, Origin, OrphanConflict, PendingNote, Resolved, StructuralMistake,
+    UndeclaredTrait, WiringOverflow, cause_signature, cgp_impl_misuse_help,
+    coalesce_underived_fields, coalesced_headline, explain_footer_codes, fix_help_messages,
+    group_by_shared_cause, internal_error_note, is_explain_footer_text, is_method_bounds_text,
     is_recursion_limit_help_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
     missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
-    plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_undeclared_trait,
-    plan_wiring_conflict, postprocess_message, undeclared_trait_help, wiring_conflict_help,
-    wiring_overflow_help,
+    plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_structural_mistake,
+    plan_undeclared_trait, plan_wiring_conflict, postprocess_message, structural_mistake_help,
+    undeclared_trait_help, wiring_conflict_help, wiring_overflow_help,
 };
 use rustc_errors::codes::{
     E0107, E0117, E0119, E0186, E0207, E0210, E0271, E0275, E0277, E0308, E0425, E0599,
@@ -539,6 +539,19 @@ impl<E: Emitter> CgpEmitter<E> {
         rustc_middle::ty::tls::with_opt(|tcx| resolve::classify_orphan_conflict(tcx?, primary_span))
     }
 
+    /// Recognize `diag` as a structural mistake in a wiring or its checks, recovered from the
+    /// generated items at its caret: an `E0119` between two identical check impls is a check table
+    /// listing one entry twice. `None` for any other diagnostic.
+    fn structural_mistake(&self, diag: &DiagInner) -> Option<StructuralMistake> {
+        let primary_span = diag.span.primary_span()?;
+        match diag.code {
+            Some(E0119) => rustc_middle::ty::tls::with_opt(|tcx| {
+                resolve::detect_duplicate_check(tcx?, primary_span)
+            }),
+            _ => None,
+        }
+    }
+
     /// Recognize `diag` as an undeclared-trait failure — a CGP trait called in a
     /// `#[cgp_fn]`/`#[cgp_impl]` body without being declared via `#[uses(…)]`, so its method cannot
     /// resolve on the generated `__Context__` generic. Returns the trait to declare, or `None`
@@ -1007,6 +1020,18 @@ impl<E: Emitter> CgpEmitter<E> {
                 .push(subdiag(Sublevel::Help, orphan_conflict_help(&conflict)));
             // A rewritten diagnostic: bare `@…` paths (a path key renders without the `Path!`
             // wrapper).
+            self.postprocess(&mut diag, Origin::Rewritten);
+            self.record_cgp_spans(&diag);
+            self.push(BufEntry::Plain(Box::new(diag)));
+            return;
+        }
+        // A structural mistake in a wiring or its checks, such as a check table listing one entry
+        // twice: the compiler names only the generated items, so reword the header to name the
+        // mistake and carry the fix in a `help`, keeping rustc's carets on the two sites.
+        if let Some(mistake) = self.structural_mistake(&diag) {
+            replace_header(&mut diag, plan_structural_mistake(&mistake));
+            diag.children
+                .push(subdiag(Sublevel::Help, structural_mistake_help(&mistake)));
             self.postprocess(&mut diag, Origin::Rewritten);
             self.record_cgp_spans(&diag);
             self.push(BufEntry::Plain(Box::new(diag)));
