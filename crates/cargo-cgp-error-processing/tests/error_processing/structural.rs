@@ -69,3 +69,20 @@ fn two_tables_with_a_given_check_trait_name_it() {
         "merge the two tables, or give one of them another `#[check_trait(...)]` name",
     );
 }
+
+#[test]
+fn a_loop_key_without_its_variable_names_both() {
+    let mistake = StructuralMistake::LoopKeyWithoutVariable {
+        context: "App".to_owned(),
+        variable: "T".to_owned(),
+        key: "@test.ShowImplComponent.String".to_owned(),
+    };
+    assert_eq!(
+        plan_structural_mistake(&mistake),
+        "[CGP-E017] the `for` loop in the wiring of `App` binds `T`, but its key `@test.ShowImplComponent.String` does not use it",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "write `T` in the key where the type the loop covers goes",
+    );
+}

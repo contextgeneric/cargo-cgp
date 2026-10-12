@@ -9,6 +9,8 @@
 
 mod duplicate_check;
 mod duplicate_check_trait;
+mod loop_key;
 
 pub use duplicate_check::*;
 pub use duplicate_check_trait::*;
+pub use loop_key::*;

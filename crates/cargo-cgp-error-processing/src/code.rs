@@ -91,6 +91,10 @@ pub const DUPLICATE_CHECK: &str = "CGP-E015";
 /// Stamped on the `E0428` the second definition produces.
 pub const DUPLICATE_CHECK_TRAIT: &str = "CGP-E016";
 
+/// `CGP-E017`: a `for` loop in a wiring table whose key does not use the loop's key variable.
+/// Stamped on the `E0207` the unconstrained variable produces.
+pub const LOOP_KEY_WITHOUT_VARIABLE: &str = "CGP-E017";
+
 // Wiring that never resolves, and the orphan rule (`CGP-E020` to `CGP-E029`).
 
 /// `CGP-E020`: resolving a component's wiring leads back to itself. Stamped on an `E0275` overflow

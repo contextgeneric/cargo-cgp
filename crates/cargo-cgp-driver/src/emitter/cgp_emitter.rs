@@ -86,6 +86,9 @@ pub struct CgpEmitter<E: Emitter> {
     /// type — noise over the CGP error already shown. rustc emits the wiring failure before its
     /// cascade, so the span is recorded by the time the cascade arrives.
     cgp_spans: Vec<Span>,
+    /// The structural mistakes already reported, so a mistake rustc reports as several errors
+    /// becomes one.
+    structural_reported: Vec<StructuralMistake>,
     /// The `#[cgp_impl]` header-trait mistakes in the crate — a consumer trait or a non-CGP trait
     /// named where the provider trait belongs — detected once from the compiler and reused. `None`
     /// until first computed under an available `TyCtxt` (the macro-lowering errors this recognizes
@@ -225,6 +228,7 @@ impl<E: Emitter> CgpEmitter<E> {
             dedup: DedupLedger::new(),
             resolve_cache: ResolveCache::new(),
             cgp_spans: Vec::new(),
+            structural_reported: Vec::new(),
             cgp_impl_misuses: None,
             cgp_used: OnceCell::new(),
             ambiguous: OnceCell::new(),
@@ -543,8 +547,9 @@ impl<E: Emitter> CgpEmitter<E> {
 
     /// Recognize `diag` as a structural mistake in a wiring or its checks, recovered from the
     /// generated items at its caret: an `E0119` between two identical check impls is a check table
-    /// listing one entry twice, and an `E0428` on a check trait is two tables whose check traits
-    /// share a name. `None` for any other diagnostic.
+    /// listing one entry twice, an `E0428` on a check trait is two tables whose check traits share a
+    /// name, and an `E0207` on a `for` loop's variable is a loop whose key does not use it. `None`
+    /// for any other diagnostic.
     fn structural_mistake(&self, diag: &DiagInner) -> Option<StructuralMistake> {
         let primary_span = diag.span.primary_span()?;
         match diag.code {
@@ -559,6 +564,9 @@ impl<E: Emitter> CgpEmitter<E> {
                 }
                 _ => None,
             },
+            Some(E0207) => rustc_middle::ty::tls::with_opt(|tcx| {
+                resolve::detect_loop_key_without_variable(tcx?, primary_span)
+            }),
             _ => None,
         }
     }
@@ -1040,7 +1048,22 @@ impl<E: Emitter> CgpEmitter<E> {
         // twice: the compiler names only the generated items, so reword the header to name the
         // mistake and carry the fix in a `help`, keeping rustc's carets on the two sites.
         if let Some(mistake) = self.structural_mistake(&diag) {
+            // One mistake can produce several errors (a loop's key variable and its value variable
+            // are each unconstrained, in an entry and in its `IsProviderFor` twin); report it once.
+            if self.structural_reported.contains(&mistake) {
+                return;
+            }
+            self.structural_reported.push(mistake.clone());
             replace_header(&mut diag, plan_structural_mistake(&mistake));
+            if matches!(mistake, StructuralMistake::LoopKeyWithoutVariable { .. })
+                && let Some(primary) = diag.span.primary_span()
+            {
+                // rustc's suggestions to remove the variable or add it to the context are not the
+                // fix; keep the caret on the variable alone.
+                diag.span = MultiSpan::from_span(primary);
+                diag.children.clear();
+                diag.suggestions = Suggestions::Enabled(Vec::new());
+            }
             if matches!(mistake, StructuralMistake::DuplicateCheckTrait { .. }) {
                 // rustc's labels and note name the generated check trait; label the two tables
                 // instead, the reported one as the second.

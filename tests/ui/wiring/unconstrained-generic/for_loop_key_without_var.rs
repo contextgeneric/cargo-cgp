@@ -1,13 +1,13 @@
 //! A `for` loop whose key does not mention the loop variable.
 //!
-//! Three `E0207`s with contradictory helps, the shape of `unconstrained_generic`.
+//! rustc's three `E0207`s, with contradictory helps, become one `[CGP-E017]` naming the variable.
 //!
 //! CGP error class: unconstrained generic (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unconstrained-generic.md).
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Its help, writing `T` in the key, compiles; the caret stays on the variable rustc named first.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E017
 
 use cgp::core::component::DefaultImpls1;
 use cgp::prelude::*;

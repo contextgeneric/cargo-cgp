@@ -52,5 +52,7 @@ pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
 pub use missing_use_provider::detect_missing_use_provider;
 pub use orphan::classify_orphan_conflict;
 pub use overflow::{OverflowWalk, overflow_walk};
-pub use structural::{detect_duplicate_check, detect_duplicate_check_trait};
+pub use structural::{
+    detect_duplicate_check, detect_duplicate_check_trait, detect_loop_key_without_variable,
+};
 pub use undeclared::detect_undeclared_trait;

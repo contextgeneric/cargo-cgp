@@ -1,14 +1,14 @@
 //! The rustc-free model and wording for the structural mistakes in a wiring or its checks.
 //!
 //! Some mistakes are in the shape of what the macros were given rather than in what the wiring
-//! resolves to: a check table that lists one entry twice, or two tables whose check traits share a
-//! name. The compiler rejects the code the
+//! resolves to: a check table that lists one entry twice, two tables whose check traits share a
+//! name, or a `for` loop whose key does not use its variable. The compiler rejects the code the
 //! macro generated from it with a bare coherence or name error about generated items (`__CheckApp`),
 //! which names neither the table nor the entry. The driver recovers the mistake from the generated
 //! items and fills [`StructuralMistake`] in; [`plan_structural_mistake`] words the header and
 //! [`structural_mistake_help`] the fix.
 
-use crate::code::{DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT};
+use crate::code::{DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT, LOOP_KEY_WITHOUT_VARIABLE};
 
 /// The label on the first of two `check_components!` tables whose check traits share a name.
 pub const FIRST_CHECK_TABLE_LABEL: &str = "the first table";
@@ -27,6 +27,13 @@ pub enum StructuralMistake {
     /// both derived from contexts whose paths end in `context` (`__Check{context}`) or both named
     /// `check_trait` by a `#[check_trait(...)]` attribute.
     DuplicateCheckTrait { name: CheckTraitName },
+    /// A `for <variable, …> in Table` loop in the wiring of `context` whose `key` does not use
+    /// `variable`, the loop's key variable, so the variable is bound to nothing.
+    LoopKeyWithoutVariable {
+        context: String,
+        variable: String,
+        key: String,
+    },
 }
 
 /// The name two `check_components!` tables gave their check traits.
@@ -54,6 +61,13 @@ pub fn plan_structural_mistake(mistake: &StructuralMistake) -> String {
         } => format!(
             "[{DUPLICATE_CHECK_TRAIT}] two `check_components!` tables in one module name their check trait `{check_trait}`"
         ),
+        StructuralMistake::LoopKeyWithoutVariable {
+            context,
+            variable,
+            key,
+        } => format!(
+            "[{LOOP_KEY_WITHOUT_VARIABLE}] the `for` loop in the wiring of `{context}` binds `{variable}`, but its key `{key}` does not use it"
+        ),
     }
 }
 
@@ -71,5 +85,8 @@ pub fn structural_mistake_help(mistake: &StructuralMistake) -> String {
             name: CheckTraitName::Given { .. },
         } => "merge the two tables, or give one of them another `#[check_trait(...)]` name"
             .to_owned(),
+        StructuralMistake::LoopKeyWithoutVariable { variable, .. } => {
+            format!("write `{variable}` in the key where the type the loop covers goes")
+        }
     }
 }
