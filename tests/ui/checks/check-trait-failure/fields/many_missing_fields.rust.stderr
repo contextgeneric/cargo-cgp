@@ -1,0 +1,30 @@
+error[E0277]: the trait bound `App: CanUseComponent<SummerComponent>` is not satisfied
+  --> src/main.rs:51:9
+   |
+51 |         SummerComponent,
+   |         ^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<5, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<4, Chars<..>>>` is implemented for it
+  --> src/main.rs:40:9
+   |
+40 |     pub name: String,
+   |         ^^^^
+note: required for `SumFields` to implement `IsProviderFor<SummerComponent, App>`
+  --> src/main.rs:23:1
+   |
+23 | #[cgp_impl(new SumFields)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `App` to implement `CanUseComponent<SummerComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:49:1
+   |
+49 | / check_components! {
+50 | |     App {
+51 | |         SummerComponent,
+52 | |     }
+53 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

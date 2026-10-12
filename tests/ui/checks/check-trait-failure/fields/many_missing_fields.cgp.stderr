@@ -1,0 +1,24 @@
+error[E0277]: [CGP-E001] missing fields `delta`, `beta`, `epsilon`, `alpha`, `zeta`, and `gamma` on `App`
+  --> src/main.rs:51:9
+   |
+51 |         SummerComponent,
+   |         ^^^^^^^^^^^^^^^
+   |
+   = note: root causes:
+             - [CGP-E110] missing field `delta` on `App`
+             - [CGP-E110] missing field `beta` on `App`
+             - [CGP-E110] missing field `epsilon` on `App`
+             - [CGP-E110] missing field `alpha` on `App`
+             - [CGP-E110] missing field `zeta` on `App`
+             - [CGP-E110] missing field `gamma` on `App`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanSum` for context `App`
+             └─ [CGP-E102] provider trait impl `Summer` with context `App` for provider `SumFields`
+               ├─ [CGP-E110] missing field `delta` on `App`
+               ├─ [CGP-E110] missing field `beta` on `App`
+               ├─ [CGP-E110] missing field `epsilon` on `App`
+               ├─ [CGP-E110] missing field `alpha` on `App`
+               ├─ [CGP-E110] missing field `zeta` on `App`
+               └─ [CGP-E110] missing field `gamma` on `App`
+
+For more information about this error, try `rustc --explain E0277`.
