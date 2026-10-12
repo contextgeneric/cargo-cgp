@@ -1,6 +1,6 @@
 //! The `help` lines a plan attaches: the fix each kind of cause calls for, merged per owner.
 
-use cargo_cgp_error_processing::{Causes, FieldFix};
+use cargo_cgp_error_processing::{Causes, FieldFix, NearMiss};
 
 use super::*;
 
@@ -11,8 +11,10 @@ fn typed_missing_field(name: &str, owner: &str, ty: Option<&str>) -> Leaf {
         name: name.to_owned(),
         owner: owner.to_owned(),
         issue: FieldIssue::Missing,
-        fix: FieldFix::AddField {
+        fix: FieldFix {
+            confirmed: true,
             ty: ty.map(str::to_owned),
+            similar: None,
         },
     }
 }
@@ -59,7 +61,7 @@ fn a_deref_target_help_points_at_the_target() {
         issue: FieldIssue::PresentViaDeref {
             target: "AppFields".to_owned(),
         },
-        fix: FieldFix::Unconfirmed,
+        fix: FieldFix::default(),
     };
     let resolved = cgp_resolved(
         "App",
@@ -104,12 +106,14 @@ fn missing_wiring_on_one_context_shares_one_help() {
     let wiring = |component: &str| Leaf::MissingWiring {
         component: component.to_owned(),
         owner: "App".to_owned(),
+        similar: NearMiss::default(),
     };
     let causes = [
         app_cause(wiring("FooComponent")),
         app_cause(Leaf::MissingRedirectWiring {
             path: "@app.BarComponent".to_owned(),
             context: "App".to_owned(),
+            similar: NearMiss::default(),
         }),
     ];
     assert_eq!(
@@ -147,6 +151,7 @@ fn mixed_causes_get_one_help_per_kind_in_cause_order() {
         app_cause(Leaf::MissingWiring {
             component: "FooComponent".to_owned(),
             owner: "App".to_owned(),
+            similar: NearMiss::default(),
         }),
         app_cause(typed_missing_field("name", "App", Some("String"))),
         app_cause(field_leaf("width", "Rectangle", FieldIssue::Present)),
@@ -213,7 +218,7 @@ fn a_missing_field_whose_fix_is_unconfirmed_gets_no_help() {
         name: "name".to_owned(),
         owner: "App".to_owned(),
         issue: FieldIssue::Missing,
-        fix: FieldFix::Unconfirmed,
+        fix: FieldFix::default(),
     };
     assert!(fix_help_messages(&[app_cause(leaf.clone())]).is_empty());
 
@@ -235,6 +240,7 @@ fn a_key_holding_a_reference_gets_no_help() {
         app_cause(Leaf::MissingRedirectWiring {
             path: "@ItemEncoderComponent.&u64".to_owned(),
             context: "App".to_owned(),
+            similar: NearMiss::default(),
         }),
         app_cause(Leaf::MissingDispatchEntry {
             key: "&str".to_owned(),
@@ -253,6 +259,7 @@ fn a_key_holding_a_reference_gets_no_help() {
         app_cause(Leaf::MissingRedirectWiring {
             path: "PathCons<Symbol<3, Chars<'a', Chars<'_', Chars<'b', Nil>>>>, Nil>".to_owned(),
             context: "App".to_owned(),
+            similar: NearMiss::default(),
         }),
     ];
     assert_eq!(
@@ -262,5 +269,61 @@ fn a_key_holding_a_reference_gets_no_help() {
              provider in the wiring of `App`"
                 .to_owned()
         ]
+    );
+}
+
+#[test]
+fn a_near_miss_is_named_before_the_fix() {
+    let field = Leaf::Field {
+        name: "frist_name".to_owned(),
+        owner: "Person".to_owned(),
+        issue: FieldIssue::Missing,
+        fix: FieldFix {
+            confirmed: true,
+            ty: Some("String".to_owned()),
+            similar: Some("first_name".to_owned()),
+        },
+    };
+    let path = Leaf::MissingRedirectWiring {
+        path: "@app.GreeterComponent".to_owned(),
+        context: "App".to_owned(),
+        similar: NearMiss(Some("@App.GreeterComponent".to_owned())),
+    };
+    let wiring = Leaf::MissingWiring {
+        component: "GreeterComponent".to_owned(),
+        owner: "App".to_owned(),
+        similar: NearMiss(Some("@app.GreeterComponent".to_owned())),
+    };
+    let causes = [app_cause(field), app_cause(path), app_cause(wiring)];
+    assert_eq!(
+        fix_help_messages(&causes),
+        vec![
+            "a similar field exists on `Person`: `first_name`".to_owned(),
+            "add the field `frist_name: String` to `Person`".to_owned(),
+            "a similar key exists in the wiring of `App`: `@App.GreeterComponent`".to_owned(),
+            "wire `@app.GreeterComponent` and `GreeterComponent` to providers in the wiring of \
+             `App`"
+                .to_owned(),
+            "a similar key exists in the wiring of `App`: `@app.GreeterComponent`".to_owned(),
+        ]
+    );
+}
+
+#[test]
+fn a_near_miss_needs_no_confirmed_fix() {
+    // A struct that does not derive `HasField` gets no add-field help, but its similar field is
+    // still named.
+    let field = Leaf::Field {
+        name: "widht".to_owned(),
+        owner: "Shape".to_owned(),
+        issue: FieldIssue::Missing,
+        fix: FieldFix {
+            similar: Some("width".to_owned()),
+            ..FieldFix::default()
+        },
+    };
+    assert_eq!(
+        fix_help_messages(&[app_cause(field)]),
+        vec!["a similar field exists on `Shape`: `width`".to_owned()]
     );
 }

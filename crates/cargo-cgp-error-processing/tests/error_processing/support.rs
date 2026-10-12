@@ -7,9 +7,9 @@ use cargo_cgp_error_processing::{ChainNode, DepNode, FieldFix, FieldIssue, Leaf}
 /// A missing field gets the usual fix: its struct derives `HasField` for its other fields, so
 /// adding the field is confirmed, with no stated type.
 pub fn field_leaf(name: &str, owner: &str, issue: FieldIssue) -> Leaf {
-    let fix = match issue {
-        FieldIssue::Missing => FieldFix::AddField { ty: None },
-        _ => FieldFix::Unconfirmed,
+    let fix = FieldFix {
+        confirmed: issue == FieldIssue::Missing,
+        ..FieldFix::default()
     };
     Leaf::Field {
         name: name.to_owned(),

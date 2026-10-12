@@ -9,6 +9,7 @@ error[E0599]: [CGP-E001] missing field `frist_name` on `Person`
              [CGP-E101] consumer trait impl `HasName` for context `Person`
              └─ [CGP-E102] provider trait impl `NameGetter` with context `Person` for provider `UseField<Symbol!("frist_name")>`
                └─ [CGP-E110] missing field `frist_name` on `Person`
+   = help: a similar field exists on `Person`: `first_name`
    = help: add the field `frist_name: String` to `Person`
 
 For more information about this error, try `rustc --explain E0599`.

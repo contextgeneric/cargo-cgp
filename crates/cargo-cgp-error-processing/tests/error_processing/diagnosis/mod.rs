@@ -18,9 +18,10 @@ use std::collections::HashMap;
 use cargo_cgp_error_processing::diagnosis::{assoc_mismatch_leaf, mismatch_leaf, quoted_list};
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
-    Cause, ChainNode, DepNode, DependencyGraph, DiagKind, FieldIssue, Leaf, PendingNote, Resolved,
-    cause_headline, cause_note, cause_notes, cause_signature, coalesced_headline, consumer_header,
-    dependency_leaf_code, dependency_tree_leaf, fix_help_messages, merged_cause, plan_resolved,
+    Cause, ChainNode, DepNode, DependencyGraph, DiagKind, FieldIssue, Leaf, NearMiss, PendingNote,
+    Resolved, cause_headline, cause_note, cause_notes, cause_signature, coalesced_headline,
+    consumer_header, dependency_leaf_code, dependency_tree_leaf, fix_help_messages, merged_cause,
+    plan_resolved,
 };
 
 use super::support::{self, field_leaf, trait_hop};

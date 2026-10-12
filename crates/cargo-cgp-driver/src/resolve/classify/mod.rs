@@ -5,17 +5,20 @@
 //! the classification, [`reportable`] decides whether a terminal is a real root cause or a routing
 //! dead-end to drop, [`field`] inspects the actual struct a `HasField` bound lands on (and its
 //! `Deref` chain) so a genuinely missing field is told apart from one present but underived,
-//! [`required_type`] reads the type a requirement gives a missing field, and [`assoc_type`] reads
-//! the type an owner actually supplies for any other projected associated type.
+//! [`required_type`] reads the type a requirement gives a missing field, [`near_miss`] finds a
+//! similar field or wiring key the program wrote, and [`assoc_type`] reads the type an owner
+//! actually supplies for any other projected associated type.
 
 mod assoc_type;
 mod field;
 mod leaf;
+mod near_miss;
 mod reportable;
 mod required_type;
 
 pub(crate) use assoc_type::*;
 pub(crate) use field::*;
 pub(crate) use leaf::*;
+pub(crate) use near_miss::*;
 pub(crate) use reportable::*;
 pub(crate) use required_type::*;

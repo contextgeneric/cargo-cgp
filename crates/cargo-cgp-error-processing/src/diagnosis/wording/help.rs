@@ -1,6 +1,6 @@
 //! The `help` messages a resolved failure carries: the fixes its causes call for.
 
-use crate::diagnosis::leaf::{FieldFix, FieldIssue, Leaf};
+use crate::diagnosis::leaf::{FieldIssue, Leaf, NearMiss};
 use crate::diagnosis::resolved::Cause;
 use crate::diagnosis::wording::header::quoted_list;
 
@@ -15,48 +15,84 @@ enum FixKind {
     Wire,
     /// Add entries to a provider's table.
     AddEntries,
-    /// Reconcile an abstract type, a `help` worded whole (its owner is the text itself).
+    /// A `help` worded whole, such as a near miss or an abstract type to reconcile (its owner is
+    /// the text itself).
     Whole,
 }
 
-/// The fix a cause's leaf calls for: its kind, the owner the fix lands on, and the item it names,
-/// or `None` for a cause whose fix the tool does not word.
-fn fix_for(leaf: &Leaf) -> Option<(FixKind, String, Option<String>)> {
-    Some(match leaf {
+/// The fixes a cause's leaf calls for, each as its kind, the owner it lands on, and the item it
+/// names: a near miss first, since a slipped name is the likelier mistake, then the fix the cause
+/// itself states. Empty for a cause whose fix the tool does not word.
+fn fixes_for(leaf: &Leaf) -> Vec<(FixKind, String, Option<String>)> {
+    let mut fixes = Vec::new();
+    match leaf {
         Leaf::Field {
             name,
             owner,
             issue: FieldIssue::Missing,
-            fix: FieldFix::AddField { ty },
+            fix,
         } => {
-            let field = match ty {
-                Some(ty) => format!("{name}: {ty}"),
-                None => name.clone(),
-            };
-            (FixKind::AddFields, owner.clone(), Some(field))
+            if let Some(similar) = &fix.similar {
+                fixes.push(whole(format!(
+                    "a similar field exists on `{owner}`: `{similar}`"
+                )));
+            }
+            if fix.confirmed {
+                let field = match &fix.ty {
+                    Some(ty) => format!("{name}: {ty}"),
+                    None => name.clone(),
+                };
+                fixes.push((FixKind::AddFields, owner.clone(), Some(field)));
+            }
         }
         Leaf::Field {
             owner,
             issue: FieldIssue::Present,
             ..
         }
-        | Leaf::UnderivedFields { owner, .. } => (FixKind::Derive, owner.clone(), None),
+        | Leaf::UnderivedFields { owner, .. } => fixes.push((FixKind::Derive, owner.clone(), None)),
         Leaf::Field {
             issue: FieldIssue::PresentViaDeref { target },
             ..
-        } => (FixKind::Derive, target.clone(), None),
-        Leaf::MissingWiring { component, owner } => {
-            (FixKind::Wire, owner.clone(), Some(component.clone()))
+        } => fixes.push((FixKind::Derive, target.clone(), None)),
+        Leaf::MissingWiring {
+            component,
+            owner,
+            similar,
+        } => {
+            fixes.extend(similar_key_fix(owner, similar));
+            fixes.push((FixKind::Wire, owner.clone(), Some(component.clone())));
         }
-        Leaf::MissingRedirectWiring { path, context } if is_typeable_key(path) => {
-            (FixKind::Wire, context.clone(), Some(path.clone()))
+        Leaf::MissingRedirectWiring {
+            path,
+            context,
+            similar,
+        } => {
+            fixes.extend(similar_key_fix(context, similar));
+            if is_typeable_key(path) {
+                fixes.push((FixKind::Wire, context.clone(), Some(path.clone())));
+            }
         }
         Leaf::MissingDispatchEntry { key, table } if is_typeable_key(key) => {
-            (FixKind::AddEntries, table.clone(), Some(key.clone()))
+            fixes.push((FixKind::AddEntries, table.clone(), Some(key.clone())));
         }
-        Leaf::AssocTypeMismatch { .. } => (FixKind::Whole, assoc_mismatch_help(leaf)?, None),
-        _ => return None,
-    })
+        Leaf::AssocTypeMismatch { .. } => fixes.extend(assoc_mismatch_help(leaf).map(whole)),
+        _ => {}
+    }
+    fixes
+}
+
+/// A `help` worded whole, never merged with another.
+fn whole(help: String) -> (FixKind, String, Option<String>) {
+    (FixKind::Whole, help, None)
+}
+
+/// The near-miss `help` for a key missing from `context`'s wiring, when it wires a similar one.
+fn similar_key_fix(context: &str, similar: &NearMiss) -> Option<(FixKind, String, Option<String>)> {
+    let similar = similar.0.as_ref()?;
+    Some(whole(format!(
+        "a similar key exists in the wiring of `{context}`: `{similar}`"
+    )))
 }
 
 /// Whether a wiring key reads as an entry the reader can paste. The key is the compiler's rendering
@@ -75,14 +111,15 @@ fn is_typeable_key(key: &str) -> bool {
 /// kind of fix on one owner: the fields to add to one struct, the derive one struct needs, the
 /// components to wire on one context, the entries to add to one table, and each abstract type to
 /// reconcile. A missing field is named with its type when its requirement states one, and gets no
-/// help when adding it is not confirmed to fix the cause (see [`FieldFix`]); a key the reader could
-/// not paste gets none either. Both the streaming plan and the emitter's coalesced block build
-/// their `help`s through this, so a block that merges several consumers carries the same fixes as
-/// the per-consumer one it replaces.
+/// help when adding it is not confirmed to fix the cause (see [`FieldFix`](crate::FieldFix)); a key
+/// the reader could not paste gets none either. A missing field or key that has a near miss, a
+/// similar name the program wrote, gets that named first. Both the streaming plan and the emitter's
+/// coalesced block build their `help`s through this, so a block that merges several consumers
+/// carries the same fixes as the per-consumer one it replaces.
 pub fn fix_help_messages(causes: &[Cause]) -> Vec<String> {
     // One group per help: its kind and owner, and the items it names in first-seen order.
     let mut groups: Vec<(FixKind, String, Vec<String>)> = Vec::new();
-    for (kind, owner, item) in causes.iter().filter_map(|cause| fix_for(&cause.leaf)) {
+    for (kind, owner, item) in causes.iter().flat_map(|cause| fixes_for(&cause.leaf)) {
         let group = match groups
             .iter_mut()
             .find(|(seen_kind, seen_owner, _)| *seen_kind == kind && *seen_owner == owner)

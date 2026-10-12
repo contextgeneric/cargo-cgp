@@ -1,6 +1,6 @@
 //! Turning a terminal predicate into the rustc-free [`Leaf`] the emitter words.
 
-use cargo_cgp_error_processing::{FieldFix, FieldIssue, Leaf};
+use cargo_cgp_error_processing::{FieldFix, FieldIssue, Leaf, NearMiss};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
@@ -13,8 +13,9 @@ use crate::resolve::cgp_item::{
 };
 use crate::resolve::classify::{
     field_issue, field_type, is_dispatch_lookup, owner_has_impl_of, projected_type,
-    required_field_type,
+    required_field_type, similar_field, similar_wired_key,
 };
+use crate::resolve::conflict::render_path;
 use crate::resolve::label::fold_empty_lists;
 use crate::resolve::walk::ProjectionMismatch;
 
@@ -73,6 +74,7 @@ pub(crate) fn classify_leaf<'tcx>(
             }
             return Leaf::MissingRedirectWiring {
                 path: tcx.erase_and_anonymize_regions(key).to_string(),
+                similar: wired_near_miss(tcx, self_ty, render_path(tcx, key)),
                 context: owner,
             };
         }
@@ -110,8 +112,10 @@ pub(crate) fn classify_leaf<'tcx>(
         // A bare `DelegateComponent<Marker>` on the context with no satisfying impl: the context does
         // not wire the component at all. The marker's own item name (`BarProviderComponent`) is what
         // the programmer writes to fix it, so it names the leaf.
+        let component = component_marker_name(tcx, key);
         return Leaf::MissingWiring {
-            component: component_marker_name(tcx, key),
+            similar: wired_near_miss(tcx, self_ty, Some(component.clone())),
+            component,
             owner,
         };
     }
@@ -139,10 +143,19 @@ pub(crate) fn classify_leaf<'tcx>(
                 table: table.to_string(),
             };
         }
+        let similar = wired_near_miss(
+            tcx,
+            table.unwrap_or(context),
+            render_path(tcx, leaf_ref.self_ty()),
+        );
         let context = table
             .map(|table| table.to_string())
             .unwrap_or_else(|| path.clone());
-        return Leaf::MissingRedirectWiring { path, context };
+        return Leaf::MissingRedirectWiring {
+            path,
+            context,
+            similar,
+        };
     }
     if is_cgp_item(tcx, leaf_ref.def_id, HAS_FIELD_TRAIT, CGP_FIELD_CRATE)
         && let Some(name) = decode_symbol(tcx, leaf_ref.args.type_at(1))
@@ -171,14 +184,14 @@ pub(crate) fn classify_leaf<'tcx>(
         let issue = field_issue(tcx, owner, &name);
         // Adding a missing field fixes the cause only when the struct derives `HasField`, which
         // it shows by implementing it for another field; the fix then names the type the
-        // requirement gives the field.
+        // requirement gives the field, and a similar field the struct carries, a likely typo.
         let fix = match issue {
-            FieldIssue::Missing if owner_has_impl_of(tcx, leaf_ref.def_id, owner) => {
-                FieldFix::AddField {
-                    ty: parent.and_then(|parent| required_field_type(tcx, parent, leaf_ref)),
-                }
-            }
-            _ => FieldFix::Unconfirmed,
+            FieldIssue::Missing => FieldFix {
+                confirmed: owner_has_impl_of(tcx, leaf_ref.def_id, owner),
+                ty: parent.and_then(|parent| required_field_type(tcx, parent, leaf_ref)),
+                similar: similar_field(owner, &name),
+            },
+            _ => FieldFix::default(),
         };
         return Leaf::Field {
             name,
@@ -241,4 +254,11 @@ fn component_marker_name<'tcx>(tcx: TyCtxt<'tcx>, marker: Ty<'tcx>) -> String {
         ty::Adt(def, _) => tcx.item_name(def.did()).to_string(),
         _ => marker.to_string(),
     }
+}
+
+/// The near miss for a key missing from `context`'s wiring: a key the context wires that is a likely
+/// slip of `target`, the missing key rendered as an entry writes it (`None` when it has no such
+/// rendering).
+fn wired_near_miss<'tcx>(tcx: TyCtxt<'tcx>, context: Ty<'tcx>, target: Option<String>) -> NearMiss {
+    NearMiss(target.and_then(|target| similar_wired_key(tcx, context, &target)))
 }

@@ -38,7 +38,9 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
             issue: FieldIssue::Missing,
             ..
         } => format!("missing field `{name}` on `{owner}`"),
-        Leaf::MissingWiring { component, owner } => missing_wiring(owner, component),
+        Leaf::MissingWiring {
+            component, owner, ..
+        } => missing_wiring(owner, component),
         Leaf::MissingDispatchEntry { key, table } => {
             format!("missing entry for `{key}` in provider `{table}`")
         }
@@ -46,7 +48,7 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
             provider,
             provider_trait,
         } => format!("`{provider}` is not a provider of `{provider_trait}`"),
-        Leaf::MissingRedirectWiring { path, context } => missing_wiring(context, path),
+        Leaf::MissingRedirectWiring { path, context, .. } => missing_wiring(context, path),
         Leaf::Field { name, owner, .. } => {
             format!("`HasField` not derived for field `{name}` of `{owner}`")
         }

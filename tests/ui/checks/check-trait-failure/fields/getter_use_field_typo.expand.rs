@@ -1,8 +1,8 @@
 #![feature(prelude_import)]
 //! `UseField<Symbol!("frist_name")>` for a field named `first_name`.
 //!
-//! `[CGP-E110] missing field `frist_name`` is right, but rustc's near-impl hint naming `first_name`
-//! is dropped, so the typo is not pointed out.
+//! `[CGP-E110] missing field `frist_name`` is right, and a `help` names the similar field
+//! `first_name`, so the typo is pointed out.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 //!

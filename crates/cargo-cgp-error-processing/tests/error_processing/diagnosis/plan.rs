@@ -47,6 +47,7 @@ fn plans_a_missing_wiring_check_failure() {
     let leaf = Leaf::MissingWiring {
         component: "BarProviderComponent".to_owned(),
         owner: "App".to_owned(),
+        similar: NearMiss::default(),
     };
     let cause = one_path(leaf, vec![consumer("CanUseFoo", "App")]);
     let path = cause.paths[0].clone();
@@ -136,6 +137,7 @@ fn plans_a_missing_redirect_wiring_check_failure() {
     let leaf = Leaf::MissingRedirectWiring {
         path: "@app.finance.types.QuantityTypeProviderComponent".to_owned(),
         context: "App".to_owned(),
+        similar: NearMiss::default(),
     };
     let cause = one_path(
         leaf,

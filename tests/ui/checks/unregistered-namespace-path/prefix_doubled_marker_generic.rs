@@ -1,12 +1,12 @@
 //! A prefix that repeats the component marker the path already appends.
 //!
-//! The doubled marker is visible in the `[CGP-E113]` path but not called out.
+//! The doubled marker shows in the `[CGP-E113]` path, and a `help` names the near-miss entry.
 //!
 //! CGP error class: unregistered namespace path (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/unregistered-namespace-path.md).
 //!
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E103 CGP-E113
 
 use cgp::prelude::*;

@@ -42,8 +42,8 @@ pub enum Leaf {
         owner: String,
         /// Whether the field is genuinely missing, present-but-underived, or behind a `Deref`.
         issue: FieldIssue,
-        /// Whether adding a missing field is confirmed to fix the cause, and the type to add it with.
-        /// It is not part of the leaf's identity (see [`FieldFix`]).
+        /// What the field's `help`s can name: whether adding it is confirmed to fix the cause, its
+        /// type, and a similar field. It is not part of the leaf's identity (see [`FieldFix`]).
         fix: FieldFix,
     },
     /// A `HasField` bound whose field is present but carries the wrong type: the trait bound holds
@@ -95,6 +95,8 @@ pub enum Leaf {
         component: String,
         /// The context that must wire the component, e.g. `App`.
         owner: String,
+        /// A key the context wires that is a likely slip of this one, for a `help`.
+        similar: NearMiss,
     },
     /// A non-context delegation table that has no entry for a key it is asked to resolve. The owner
     /// is a *provider* that delegates — an [aggregate
@@ -145,6 +147,8 @@ pub enum Leaf {
         /// The context the lookup is forwarded inside, e.g. `MockApp` — the table that carries no
         /// delegate entry for the path.
         context: String,
+        /// A key the context wires that is a likely slip of this path, for a `help`.
+        similar: NearMiss,
     },
     /// An associated type the wiring projects through that carries a different type from the one a
     /// provider requires. Like [`Leaf::FieldTypeMismatch`], the trait bound itself holds and only
@@ -192,56 +196,90 @@ pub enum Leaf {
     },
 }
 
-/// The fix a missing field's `help` names. It rides on a [`Leaf::Field`] but is not part of the
+/// What a missing field's `help`s can name. It rides on a [`Leaf::Field`] but is not part of the
 /// leaf's identity: every equality and hash treats two values alike, so one missing field reached
 /// through requirements that state its type differently stays one cause, and
 /// [`Leaf::reconcile_fix`] keeps only what every route agrees on.
 #[derive(Debug, Clone, Default)]
-pub enum FieldFix {
-    /// The tool cannot confirm that adding the field fixes the cause: the field is not missing, or
-    /// its struct implements `HasField` for no field, so the derive may be missing too.
-    #[default]
-    Unconfirmed,
-    /// Adding the field to its struct fixes the cause. `ty` is the type the requirement gives the
-    /// field (the `f64` of `HasField<Symbol!("height"), Value = f64>`), or `None` when no
-    /// requirement states a concrete one.
-    AddField { ty: Option<String> },
+pub struct FieldFix {
+    /// Whether adding the field is confirmed to fix the cause: its struct implements `HasField` for
+    /// another field, so it derives it. A struct with no `HasField` impl may lack the derive too.
+    pub confirmed: bool,
+    /// The type the requirement gives the field (the `f64` of
+    /// `HasField<Symbol!("height"), Value = f64>`), or `None` when no requirement states a concrete
+    /// one.
+    pub ty: Option<String>,
+    /// A field the struct carries whose name is a likely slip of the missing one
+    /// ([`similar_name`](super::similar_name)), such as `first_name` for `frist_name`.
+    pub similar: Option<String>,
 }
 
-impl PartialEq for FieldFix {
-    fn eq(&self, _: &Self) -> bool {
-        true
-    }
+/// A key the context wires that is a likely slip of a missing one
+/// ([`similar_key`](super::similar_key)), such as `@App.GreeterComponent` for
+/// `@app.GreeterComponent`. Like [`FieldFix`], it is carried for a `help` and is not part of the
+/// leaf's identity.
+#[derive(Debug, Clone, Default)]
+pub struct NearMiss(pub Option<String>);
+
+/// Equality and hashing that treat every value alike, for the facts a leaf carries for its `help`s
+/// alone.
+macro_rules! identity_free {
+    ($ty:ty) => {
+        impl PartialEq for $ty {
+            fn eq(&self, _: &Self) -> bool {
+                true
+            }
+        }
+
+        impl Eq for $ty {}
+
+        impl std::hash::Hash for $ty {
+            fn hash<H: std::hash::Hasher>(&self, _: &mut H) {}
+        }
+    };
 }
 
-impl Eq for FieldFix {}
-
-impl std::hash::Hash for FieldFix {
-    fn hash<H: std::hash::Hasher>(&self, _: &mut H) {}
-}
+identity_free!(FieldFix);
+identity_free!(NearMiss);
 
 impl Leaf {
-    /// Fold the fix of `other`, the same cause reached another way, into this leaf: adding the field
-    /// stays confirmed only when both routes confirm it, and keeps its type only when both state the
-    /// same one, since a help naming one route's type would not fix the other.
+    /// Fold the `help` facts of `other`, the same cause reached another way, into this leaf: adding
+    /// a field stays confirmed only when both routes confirm it, and a type or a near miss is kept
+    /// only when both routes name the same one, since a help naming one route's would not fix the
+    /// other.
     pub fn reconcile_fix(&mut self, other: &Leaf) {
-        let (Leaf::Field { fix, .. }, Leaf::Field { fix: theirs, .. }) = (self, other) else {
-            return;
-        };
-        match (&mut *fix, theirs) {
-            (FieldFix::AddField { ty }, FieldFix::AddField { ty: their_ty }) => {
-                if *ty != *their_ty {
-                    *ty = None;
-                }
+        fn agree(mine: &mut Option<String>, theirs: &Option<String>) {
+            if mine != theirs {
+                *mine = None;
             }
-            _ => *fix = FieldFix::Unconfirmed,
+        }
+        match (self, other) {
+            (Leaf::Field { fix, .. }, Leaf::Field { fix: theirs, .. }) => {
+                fix.confirmed &= theirs.confirmed;
+                agree(&mut fix.ty, &theirs.ty);
+                agree(&mut fix.similar, &theirs.similar);
+            }
+            (
+                Leaf::MissingWiring { similar, .. },
+                Leaf::MissingWiring {
+                    similar: theirs, ..
+                },
+            )
+            | (
+                Leaf::MissingRedirectWiring { similar, .. },
+                Leaf::MissingRedirectWiring {
+                    similar: theirs, ..
+                },
+            ) => agree(&mut similar.0, &theirs.0),
+            _ => {}
         }
     }
 }
 
 // A leaf carries no separate identity key: two causes are the same cause exactly when their leaves
-// are equal in every field but a field's fix, which is what the derived `PartialEq` above gives. An
-// earlier key named only the *thing to fix* — a field or associated-type name — which merged two leaves naming the
-// same thing on different owners into one cause whose heading could then name only the first of
-// them. Whole-leaf equality keeps the useful merge (one leaf genuinely reached by several paths,
-// which is how a diamond survives to the renderer) and separates the rest.
+// are equal in every field but the facts carried for a `help`, which is what the derived
+// `PartialEq` above gives. An earlier key named only the *thing to fix* (a field or associated-type
+// name), which merged two leaves naming the same thing on different owners into one cause whose
+// heading could then name only the first of them. Whole-leaf equality keeps the useful merge (one
+// leaf genuinely reached by several paths, which is how a diamond survives to the renderer) and
+// separates the rest.

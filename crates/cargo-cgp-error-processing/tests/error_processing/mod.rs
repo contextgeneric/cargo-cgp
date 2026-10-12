@@ -12,6 +12,7 @@ pub mod postprocess;
 pub mod rewrite;
 pub mod shape;
 pub mod signals;
+pub mod similar;
 pub mod support;
 pub mod tree;
 pub mod undeclared;

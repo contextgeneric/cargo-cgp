@@ -14,6 +14,7 @@ fn missing_wiring(component: &str, owner: &str) -> Cause {
         Leaf::MissingWiring {
             component: component.to_owned(),
             owner: owner.to_owned(),
+            similar: NearMiss::default(),
         },
         vec![consumer("CanUseFoo", owner)],
     )
@@ -69,6 +70,7 @@ fn causes_of_one_kind_on_one_owner_merge() {
             Leaf::MissingRedirectWiring {
                 path: "@app.Baz".to_owned(),
                 context: "App".to_owned(),
+                similar: NearMiss::default(),
             },
             vec![consumer("CanUseFoo", "App")],
         ),

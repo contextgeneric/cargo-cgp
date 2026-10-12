@@ -132,8 +132,12 @@ fn mergeable(leaf: &Leaf) -> Option<(MergeKind, &str, &str)> {
             issue: FieldIssue::Missing,
             ..
         } => Some((MergeKind::Field, owner, name)),
-        Leaf::MissingWiring { component, owner } => Some((MergeKind::Wiring, owner, component)),
-        Leaf::MissingRedirectWiring { path, context } => Some((MergeKind::Wiring, context, path)),
+        Leaf::MissingWiring {
+            component, owner, ..
+        } => Some((MergeKind::Wiring, owner, component)),
+        Leaf::MissingRedirectWiring { path, context, .. } => {
+            Some((MergeKind::Wiring, context, path))
+        }
         Leaf::MissingDispatchEntry { key, table } => Some((MergeKind::Entry, table, key)),
         _ => None,
     }

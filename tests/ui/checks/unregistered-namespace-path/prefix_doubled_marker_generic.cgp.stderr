@@ -9,6 +9,7 @@ error[E0277]: [CGP-E001] missing wiring for `@app.ShowImplComponent.ShowImplComp
              [CGP-E101] consumer trait impl `CanShow<String>` for context `App`
              └─ [CGP-E103] redirect lookup to `@app.ShowImplComponent.ShowImplComponent` in `App`
                └─ [CGP-E113] missing wiring for `@app.ShowImplComponent.ShowImplComponent.String` on `App`
+   = help: a similar key exists in the wiring of `App`: `@app.ShowImplComponent.String`
    = help: wire `@app.ShowImplComponent.ShowImplComponent.String` to a provider in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

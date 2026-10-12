@@ -99,6 +99,7 @@ fn promotes_a_mid_chain_symptom_bound_to_the_consumer_header() {
     let leaf = Leaf::MissingWiring {
         component: "CredentialTypeProviderComponent".to_owned(),
         owner: "App".to_owned(),
+        similar: NearMiss::default(),
     };
     let resolved = cgp_resolved(
         "App",

@@ -14,6 +14,7 @@ fn dependency_tree_leaf_codes_every_root_cause() {
         dependency_tree_leaf(&Leaf::MissingWiring {
             component: "BarProviderComponent".to_owned(),
             owner: "App".to_owned(),
+            similar: NearMiss::default(),
         }),
         "[CGP-E113] missing wiring for `BarProviderComponent` on `App`"
     );
