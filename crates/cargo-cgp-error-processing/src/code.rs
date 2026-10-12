@@ -95,6 +95,10 @@ pub const DUPLICATE_CHECK_TRAIT: &str = "CGP-E016";
 /// Stamped on the `E0207` the unconstrained variable produces.
 pub const LOOP_KEY_WITHOUT_VARIABLE: &str = "CGP-E017";
 
+/// `CGP-E018`: a `#[default_impl]` on a provider impl that is generic over a parameter the
+/// registration cannot carry. Stamped on the `E0207` the parameter produces in the registration.
+pub const GENERIC_DEFAULT_IMPL: &str = "CGP-E018";
+
 // Wiring that never resolves, and the orphan rule (`CGP-E020` to `CGP-E029`).
 
 /// `CGP-E020`: resolving a component's wiring leads back to itself. Stamped on an `E0275` overflow

@@ -548,8 +548,8 @@ impl<E: Emitter> CgpEmitter<E> {
     /// Recognize `diag` as a structural mistake in a wiring or its checks, recovered from the
     /// generated items at its caret: an `E0119` between two identical check impls is a check table
     /// listing one entry twice, an `E0428` on a check trait is two tables whose check traits share a
-    /// name, and an `E0207` on a `for` loop's variable is a loop whose key does not use it. `None`
-    /// for any other diagnostic.
+    /// name, and an `E0207` is a `for` loop whose key does not use its variable or a
+    /// `#[default_impl]` on a generic provider impl. `None` for any other diagnostic.
     fn structural_mistake(&self, diag: &DiagInner) -> Option<StructuralMistake> {
         let primary_span = diag.span.primary_span()?;
         match diag.code {
@@ -565,7 +565,9 @@ impl<E: Emitter> CgpEmitter<E> {
                 _ => None,
             },
             Some(E0207) => rustc_middle::ty::tls::with_opt(|tcx| {
-                resolve::detect_loop_key_without_variable(tcx?, primary_span)
+                let tcx = tcx?;
+                resolve::detect_loop_key_without_variable(tcx, primary_span)
+                    .or_else(|| resolve::detect_generic_default_impl(tcx, primary_span))
             }),
             _ => None,
         }
@@ -1055,11 +1057,14 @@ impl<E: Emitter> CgpEmitter<E> {
             }
             self.structural_reported.push(mistake.clone());
             replace_header(&mut diag, plan_structural_mistake(&mistake));
-            if matches!(mistake, StructuralMistake::LoopKeyWithoutVariable { .. })
-                && let Some(primary) = diag.span.primary_span()
+            if matches!(
+                mistake,
+                StructuralMistake::LoopKeyWithoutVariable { .. }
+                    | StructuralMistake::GenericDefaultImpl { .. }
+            ) && let Some(primary) = diag.span.primary_span()
             {
-                // rustc's suggestions to remove the variable or add it to the context are not the
-                // fix; keep the caret on the variable alone.
+                // rustc's suggestions to remove the parameter or add it to the context are not the
+                // fix; keep the caret on the parameter alone.
                 diag.span = MultiSpan::from_span(primary);
                 diag.children.clear();
                 diag.suggestions = Suggestions::Enabled(Vec::new());

@@ -2,7 +2,7 @@
 
 use cargo_cgp_error_processing::{StructuralMistake, WiringKey};
 use rustc_hir::def::DefKind;
-use rustc_middle::ty::print::with_no_trimmed_paths;
+use rustc_middle::ty::print::with_forced_trimmed_paths;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 
@@ -60,8 +60,9 @@ pub fn detect_loop_key_without_variable(
             .self_ty();
         // An `E0207` is emitted before anything has printed a type with trimmed paths, and the
         // first such print records itself on the diagnostic context, whose lock the emitter holds.
-        // So these print untrimmed; the post-processing strip shortens the paths afterwards.
-        return with_no_trimmed_paths!({
+        // So these print each type by its own name, which needs no such record; two same-named
+        // types in different modules then read alike.
+        return with_forced_trimmed_paths!({
             let key = match describe_key(tcx, key, impl_did)? {
                 WiringKey::Path(text) | WiringKey::Component(text) | WiringKey::Type(text) => text,
                 WiringKey::Blanket(_) => return None,

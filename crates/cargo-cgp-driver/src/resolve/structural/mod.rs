@@ -7,10 +7,12 @@
 //! the items at the error's caret and fills the rustc-free
 //! [`StructuralMistake`](cargo_cgp_error_processing::StructuralMistake) the emitter words.
 
+mod default_impl;
 mod duplicate_check;
 mod duplicate_check_trait;
 mod loop_key;
 
+pub use default_impl::*;
 pub use duplicate_check::*;
 pub use duplicate_check_trait::*;
 pub use loop_key::*;

@@ -2,13 +2,15 @@
 //!
 //! Some mistakes are in the shape of what the macros were given rather than in what the wiring
 //! resolves to: a check table that lists one entry twice, two tables whose check traits share a
-//! name, or a `for` loop whose key does not use its variable. The compiler rejects the code the
+//! name, a `for` loop whose key does not use its variable, or a `#[default_impl]` on a generic impl. The compiler rejects the code the
 //! macro generated from it with a bare coherence or name error about generated items (`__CheckApp`),
 //! which names neither the table nor the entry. The driver recovers the mistake from the generated
 //! items and fills [`StructuralMistake`] in; [`plan_structural_mistake`] words the header and
 //! [`structural_mistake_help`] the fix.
 
-use crate::code::{DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT, LOOP_KEY_WITHOUT_VARIABLE};
+use crate::code::{
+    DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT, GENERIC_DEFAULT_IMPL, LOOP_KEY_WITHOUT_VARIABLE,
+};
 
 /// The label on the first of two `check_components!` tables whose check traits share a name.
 pub const FIRST_CHECK_TABLE_LABEL: &str = "the first table";
@@ -33,6 +35,13 @@ pub enum StructuralMistake {
         context: String,
         variable: String,
         key: String,
+    },
+    /// A `#[default_impl(key in …)]` on the impl of `provider` that is generic over `parameter`,
+    /// which the registration copies but nothing in it uses.
+    GenericDefaultImpl {
+        provider: String,
+        key: String,
+        parameter: String,
     },
 }
 
@@ -68,6 +77,13 @@ pub fn plan_structural_mistake(mistake: &StructuralMistake) -> String {
         } => format!(
             "[{LOOP_KEY_WITHOUT_VARIABLE}] the `for` loop in the wiring of `{context}` binds `{variable}`, but its key `{key}` does not use it"
         ),
+        StructuralMistake::GenericDefaultImpl {
+            provider,
+            key,
+            parameter,
+        } => format!(
+            "[{GENERIC_DEFAULT_IMPL}] `#[default_impl]` cannot register `{provider}` for `{key}`, because the provider's impl is generic over `{parameter}`"
+        ),
     }
 }
 
@@ -88,5 +104,12 @@ pub fn structural_mistake_help(mistake: &StructuralMistake) -> String {
         StructuralMistake::LoopKeyWithoutVariable { variable, .. } => {
             format!("write `{variable}` in the key where the type the loop covers goes")
         }
+        StructuralMistake::GenericDefaultImpl {
+            provider,
+            key,
+            parameter,
+        } => format!(
+            "write `{provider}`'s impl for `{key}` alone, in the concise `#[cgp_impl]` form without `{parameter}`"
+        ),
     }
 }

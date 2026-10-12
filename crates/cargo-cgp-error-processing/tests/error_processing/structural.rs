@@ -86,3 +86,20 @@ fn a_loop_key_without_its_variable_names_both() {
         "write `T` in the key where the type the loop covers goes",
     );
 }
+
+#[test]
+fn a_default_impl_on_a_generic_impl_names_the_parameter() {
+    let mistake = StructuralMistake::GenericDefaultImpl {
+        provider: "ShowWithDisplay".to_owned(),
+        key: "String".to_owned(),
+        parameter: "T".to_owned(),
+    };
+    assert_eq!(
+        plan_structural_mistake(&mistake),
+        "[CGP-E018] `#[default_impl]` cannot register `ShowWithDisplay` for `String`, because the provider's impl is generic over `T`",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "write `ShowWithDisplay`'s impl for `String` alone, in the concise `#[cgp_impl]` form without `T`",
+    );
+}

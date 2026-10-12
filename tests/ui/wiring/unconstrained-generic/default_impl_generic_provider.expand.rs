@@ -1,11 +1,11 @@
 #![feature(prelude_import)]
 //! `#[default_impl]` on a provider impl generic over the dispatched type.
 //!
-//! `E0207` with rustc's "remove the unused type parameter" help, which is not the fix.
+//! The `E0207` on `T` becomes `[CGP-E018]`, with a help to write the impl for `String` alone.
 //!
 //! CGP error class: unconstrained generic (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unconstrained-generic.md).
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! rustc's "remove the unused type parameter" help, which is not the fix, is dropped.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
