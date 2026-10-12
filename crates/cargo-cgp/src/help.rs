@@ -55,8 +55,8 @@ the underlying `cargo check` options."
 /// one option that is cargo-cgp's own rather than cargo's.
 ///
 /// `expand` needs a help text of its own because it is the one subcommand with a flag cargo does not
-/// know. Its other arguments go to `cargo rustc`, so forwarding `--help` there — which is what
-/// `check` does, usefully — would answer with cargo's help and never mention `--item`.
+/// know. Its other arguments go to `cargo rustc`, so forwarding `--help` there (which is what
+/// `check` does, usefully) would answer with cargo's help and never mention `--item`.
 pub fn expand_help_text() -> String {
     format!(
         "cargo-cgp {TOOL_VERSION}
@@ -72,21 +72,21 @@ Options:
                    leading `crate::`. What it selects depends on what it names:
                      a module  the module's contents
                      a type    its declaration and every impl written for it
-                     a trait   its definition and every impl of it — for a component's
+                     a trait   its definition and every impl of it; for a component's
                                provider trait, everything wired to that component
     -h, --help     Print this help.
 
-Every other argument is forwarded to `cargo rustc`, so target selection is cargo's own —
-and because exactly one target is expanded, a package with both a library and a binary
-needs `--lib` or `--bin NAME`. Run `cargo rustc --help` for those options.
+Every other argument is forwarded to `cargo rustc`, so target selection is cargo's own.
+Because exactly one target is expanded, a package with both a library and a binary needs
+`--lib` or `--bin NAME`. Run `cargo rustc --help` for those options.
 
 Examples:
     cargo cgp expand --lib
     cargo cgp expand --lib --item contexts::app
     cargo cgp expand --bin server --item AreaCalculator
 
-The expansion is written to stdout, so redirect or pipe it. Note that `expand` is not a
-check: it stops once the macros are expanded, so it reports nothing about wiring — use
+The expansion is written to stdout, so redirect or pipe it. `expand` is not a check: it
+stops once the macros are expanded, so it reports nothing about wiring. Use
 `cargo cgp check` for that."
     )
 }

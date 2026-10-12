@@ -12,8 +12,12 @@ fn args(list: &[&str]) -> Vec<String> {
 fn unknown_subcommand_errors() {
     let err = dispatch(&args(&["frobnicate"])).unwrap_err().to_string();
     assert!(
-        err.contains("frobnicate"),
+        err.starts_with("no such command: `frobnicate`"),
         "message should name the bad subcommand: {err}"
+    );
+    assert!(
+        err.ends_with("help: the commands are `check`, `expand`, `setup`, and `update`"),
+        "message should list the commands in a help: {err}"
     );
 }
 

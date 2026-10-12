@@ -1,4 +1,4 @@
-//! The subcommand dispatcher — the entrypoint the `cargo-cgp` binary calls.
+//! The subcommand dispatcher, the entrypoint the `cargo-cgp` binary calls.
 
 use std::env;
 
@@ -62,7 +62,8 @@ pub fn dispatch(args: &[String]) -> anyhow::Result<i32> {
         }
         Some((subcommand, _)) => {
             bail!(
-                "unknown cargo-cgp subcommand `{subcommand}` (expected `check`, `expand`, `setup`, or `update`)"
+                "no such command: `{subcommand}`\n\n\
+                 help: the commands are `check`, `expand`, `setup`, and `update`"
             )
         }
     }
@@ -83,8 +84,8 @@ fn no_argument_command(
             Ok(Some(0))
         }
         Some(arg) => bail!(
-            "`cargo cgp {subcommand}` takes no arguments, but was given `{arg}` \
-             (run `cargo cgp {subcommand} --help` to see what it does)"
+            "`cargo cgp {subcommand}` takes no arguments, but was given `{arg}`\n\n\
+             help: run `cargo cgp {subcommand} --help` to see what it does"
         ),
     }
 }

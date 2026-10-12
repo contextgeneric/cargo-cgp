@@ -1,4 +1,4 @@
-//! `cargo cgp setup` — provisioning the toolchain and the driver.
+//! `cargo cgp setup`: provisioning the toolchain and the driver.
 //!
 //! This is the one command that does the heavyweight, stateful work `check` refuses to do:
 //! install the pinned nightly (with the `rustc-dev` and `llvm-tools` components the driver
@@ -15,6 +15,7 @@ use std::process::Command;
 use anyhow::{Context, bail};
 
 use crate::config::{DRIVER_CRATE, RUSTUP_TOOLCHAIN_ENV, TOOL_VERSION};
+use crate::report::{INSTALL_RUSTUP_HELP, status, warning};
 use crate::toolchain::pinned_toolchain;
 
 /// Install the pinned toolchain and the matching driver. Returns the exit code to
@@ -23,13 +24,25 @@ use crate::toolchain::pinned_toolchain;
 pub fn run_setup(_args: &[String]) -> anyhow::Result<i32> {
     let toolchain = pinned_toolchain();
 
-    eprintln!("cargo-cgp: installing toolchain `{toolchain}` (with rustc-dev, llvm-tools)…");
+    eprintln!(
+        "{}",
+        status(
+            "Installing",
+            &format!("toolchain `{toolchain}` with rustc-dev and llvm-tools")
+        )
+    );
     install_toolchain(&toolchain)?;
 
-    eprintln!("cargo-cgp: installing {DRIVER_CRATE} {TOOL_VERSION} under `{toolchain}`…");
+    eprintln!(
+        "{}",
+        status(
+            "Installing",
+            &format!("{DRIVER_CRATE} {TOOL_VERSION} under `{toolchain}`")
+        )
+    );
     install_driver(&toolchain)?;
 
-    eprintln!("cargo-cgp: setup complete.");
+    eprintln!("{}", status("Finished", "setup"));
     Ok(0)
 }
 
@@ -43,7 +56,8 @@ fn install_toolchain(toolchain: &str) -> anyhow::Result<()> {
         .map_err(|e| {
             if e.kind() == ErrorKind::NotFound {
                 anyhow::anyhow!(
-                    "rustup was not found on PATH; cargo-cgp requires rustup to manage toolchains"
+                    "rustup was not found on PATH, and `cargo cgp setup` installs the toolchain \
+                     `{toolchain}` through rustup\n\n{INSTALL_RUSTUP_HELP}"
                 )
             } else {
                 anyhow::Error::new(e).context("failed to run `rustup toolchain install`")
@@ -51,7 +65,7 @@ fn install_toolchain(toolchain: &str) -> anyhow::Result<()> {
         })?;
 
     if !status.success() {
-        bail!("`rustup toolchain install {toolchain}` failed with status {status}");
+        bail!("`rustup toolchain install {toolchain}` failed ({status})");
     }
     Ok(())
 }
@@ -68,7 +82,7 @@ fn install_driver(toolchain: &str) -> anyhow::Result<()> {
         .context("failed to run `cargo install` for the driver (is cargo on PATH?)")?;
 
     if !status.success() {
-        bail!("installing {DRIVER_CRATE} {TOOL_VERSION} failed with status {status}");
+        bail!("installing {DRIVER_CRATE} {TOOL_VERSION} failed ({status})");
     }
     Ok(())
 }
@@ -100,9 +114,12 @@ fn install_root() -> Option<PathBuf> {
         return dir.parent().map(PathBuf::from);
     }
     eprintln!(
-        "cargo-cgp: warning: cargo-cgp is not in a `bin` directory ({}); \
-         installing the driver to cargo's default location instead of beside it",
-        dir.display()
+        "{}",
+        warning(&format!(
+            "cargo-cgp is not in a `bin` directory ({}); installing the driver to cargo's \
+             default location instead of beside it",
+            dir.display()
+        ))
     );
     None
 }

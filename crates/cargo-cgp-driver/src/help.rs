@@ -1,7 +1,7 @@
 //! The driver's own `--help` text.
 //!
 //! When `cargo-cgp-driver` is run directly (not as cargo's rustc wrapper), a `--help` or
-//! `-h` flag — and a bare invocation with no arguments — prints this and exits, instead of
+//! `-h` flag, or a bare invocation with no arguments, prints this and exits, instead of
 //! running the compiler. In *wrapper* mode the same flags belong to the real compiler, so
 //! [`crate::run`] answers here only when not in wrapper mode, exactly as it does for
 //! [`crate::version`].
@@ -18,7 +18,7 @@ pub fn wants_help(args: &[String]) -> bool {
 pub fn help_text() -> String {
     format!(
         "cargo-cgp-driver {TOOL_VERSION}
-The rustc wrapper behind cargo-cgp — not meant to be run directly.
+The rustc wrapper behind cargo-cgp, not meant to be run directly.
 
 cargo runs this in place of rustc for each workspace crate (through
 RUSTC_WORKSPACE_WRAPPER), passing the real rustc path followed by its arguments.

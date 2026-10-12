@@ -8,6 +8,7 @@ pub mod expand;
 pub mod help;
 pub mod invocation;
 pub mod preflight;
+pub mod report;
 pub mod setup;
 pub mod sysroot;
 pub mod update;

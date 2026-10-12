@@ -16,6 +16,7 @@ pub mod exit;
 pub mod expand;
 pub mod help;
 pub mod launch;
+pub mod report;
 pub mod run;
 pub mod setup;
 pub mod toolchain;

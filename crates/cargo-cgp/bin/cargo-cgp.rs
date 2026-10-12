@@ -7,7 +7,7 @@ fn main() {
     match cargo_cgp::run::run() {
         Ok(code) => process::exit(code),
         Err(error) => {
-            eprintln!("cargo-cgp: {error:#}");
+            eprintln!("{}", cargo_cgp::report::error_report(&error));
             process::exit(1);
         }
     }

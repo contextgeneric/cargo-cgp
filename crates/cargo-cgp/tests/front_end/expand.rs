@@ -138,6 +138,15 @@ fn a_missing_or_repeated_item_filter_names_the_flag() {
 }
 
 #[test]
+fn a_repeated_item_filter_says_what_to_do_in_a_help() {
+    let error = take_item(&args(&["--item", "a", "--item", "b"])).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "`--item` was given twice (`a` and `b`)\n\nhelp: expand one path at a time"
+    );
+}
+
+#[test]
 fn a_crate_rooted_item_path_is_accepted() {
     // The front-end only checks the shape; the driver's parser strips the prefix.
     for spelling in [

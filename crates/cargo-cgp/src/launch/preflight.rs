@@ -2,7 +2,7 @@
 //!
 //! `cargo cgp check` never provisions anything itself; it runs this read-only preflight
 //! and, on any failure, stops with a message pointing at `cargo cgp setup`. The checks run
-//! in order — is the pinned toolchain installed, and does the driver run and match — so a
+//! in order (is the pinned toolchain installed, and does the driver run and match), so a
 //! failure of the driver can be told apart from a missing toolchain underneath it. The
 //! side-effecting [`run`] gathers the facts; the pure [`evaluate`] decides on them and
 //! [`failure_message`] words each failure, so both are unit-tested without spawning anything.
@@ -16,16 +16,17 @@ use crate::config::{RUSTUP_TOOLCHAIN_ENV, SYSROOT_ENV, TOOL_VERSION};
 use crate::launch::driver_path::DriverLocation;
 use crate::launch::dylib::prepend_dylib_path;
 use crate::launch::sysroot::{format_stderr, sysroot};
+use crate::report::{INSTALL_RUSTUP_HELP, RUN_SETUP_HELP};
 use crate::toolchain::{ToolchainError, rustc_version};
 
 /// The identity a `cargo-cgp-driver --version` reports, parsed from its output.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DriverVersion {
-    /// The driver crate's version — must equal the front-end's exactly.
+    /// The driver crate's version, which must equal the front-end's exactly.
     pub tool_version: String,
     /// The nightly channel the driver is pinned to.
     pub pinned_toolchain: String,
-    /// The `rustc --version` line of the compiler that built the driver — must equal the
+    /// The `rustc --version` line of the compiler that built the driver, which must equal the
     /// installed pinned toolchain's `rustc --version`.
     pub built_against_rustc: String,
 }
@@ -190,48 +191,47 @@ pub fn evaluate(
 /// `driver` the driver it ran, and `frontend_version` this front-end's version.
 ///
 /// Every message about the driver names its path and where it was found, and every failure
-/// `setup` can repair ends by naming it. A missing rustup is the exception: `setup` needs rustup
-/// too, so that message names the two ways forward instead.
+/// `setup` can repair ends with a `help` naming it. A missing rustup is the exception: `setup`
+/// needs rustup too, so that message's `help` names the two ways forward instead.
 pub fn failure_message(
     failure: &PreflightFailure,
     toolchain: &str,
     driver: &DriverLocation,
     frontend_version: &str,
 ) -> String {
-    const SETUP: &str = "\n\nRun `cargo cgp setup`.";
+    let setup = format!("\n\n{RUN_SETUP_HELP}");
     let driver = driver.describe();
 
     match failure {
         PreflightFailure::RustupMissing => format!(
             "rustup was not found on PATH, and cargo-cgp installs and selects its toolchain \
-             `{toolchain}` through rustup\n\nInstall rustup, or install cargo-cgp through its \
-             Nix flake, which needs no rustup."
+             `{toolchain}` through rustup\n\n{INSTALL_RUSTUP_HELP}"
         ),
         PreflightFailure::ToolchainUnavailable { stderr } => format!(
-            "toolchain `{toolchain}` is not available{}{SETUP}",
+            "toolchain `{toolchain}` is not available{}{setup}",
             format_stderr(stderr.as_bytes())
         ),
         PreflightFailure::DriverDidNotStart { error } => {
-            format!("failed to run {driver}: {error}{SETUP}")
+            format!("failed to run {driver}: {error}{setup}")
         }
         PreflightFailure::DriverDidNotRun { stderr } => format!(
             "{driver} could not run under toolchain `{toolchain}` (it was likely built against a \
-             different nightly){}{SETUP}",
+             different nightly){}{setup}",
             format_stderr(stderr.as_bytes())
         ),
         PreflightFailure::UnparsableVersion => {
-            format!("could not parse the `--version` output of {driver}{SETUP}")
+            format!("could not parse the `--version` output of {driver}{setup}")
         }
         PreflightFailure::VersionMismatch { driver_version } => format!(
             "{driver} is version {driver_version}, but this cargo-cgp is {frontend_version} \
-             (the two are out of lockstep){SETUP}"
+             (the two are out of lockstep){setup}"
         ),
         PreflightFailure::RustcMismatch {
             built_against,
             installed,
         } => format!(
             "{driver} was built against `{built_against}`, but toolchain `{toolchain}` provides \
-             `{installed}`{SETUP}"
+             `{installed}`{setup}"
         ),
     }
 }

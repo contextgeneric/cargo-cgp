@@ -1,4 +1,4 @@
-//! `cargo cgp update` — upgrading the tool to its latest published version.
+//! `cargo cgp update`: upgrading the tool to its latest published version.
 //!
 //! Update is a thin orchestrator over cargo. It reads the crates.io sparse index for the
 //! front-end crate, picks the highest published version **the running version's channel allows**
@@ -9,7 +9,7 @@
 //! toolchain up to the new version.
 //!
 //! There is no self-replacing installer: on Unix `cargo install` atomically replaces the
-//! running binary, and on Windows — where the running executable is locked — the reinstall
+//! running binary, and on Windows, where the running executable is locked, the reinstall
 //! fails and update prints the commands to run by hand instead.
 //!
 //! Enumerating *all* versions (rather than taking the single "latest" cargo would report)
@@ -28,6 +28,7 @@ use semver::Version;
 
 use crate::config::{FRONTEND_CRATE, TOOL_VERSION};
 use crate::exit::exit_code;
+use crate::report::status;
 
 /// Find a newer in-channel version and, if there is one, reinstall the front-end and run
 /// the new `setup`. Returns the exit code to propagate.
@@ -36,7 +37,7 @@ pub fn run_update(_args: &[String]) -> anyhow::Result<i32> {
     let versions = parse_versions(&index);
 
     let Some(latest) = select_update(&versions, TOOL_VERSION)? else {
-        println!("cargo-cgp is already up to date (v{TOOL_VERSION})");
+        eprintln!("note: cargo-cgp v{TOOL_VERSION} is already up to date");
         return Ok(0);
     };
 
@@ -45,7 +46,13 @@ pub fn run_update(_args: &[String]) -> anyhow::Result<i32> {
     // exist; read beforehand, it is the path the new binary is installed at.
     let exe = env::current_exe().context("failed to locate the cargo-cgp executable")?;
 
-    println!("cargo-cgp: updating v{TOOL_VERSION} → v{latest}…");
+    eprintln!(
+        "{}",
+        status(
+            "Updating",
+            &format!("cargo-cgp v{TOOL_VERSION} to v{latest}")
+        )
+    );
     reinstall_frontend(&latest)?;
 
     // Hand off to the newly installed front-end's setup, which knows the new pinned
@@ -139,9 +146,9 @@ fn reinstall_frontend(version: &str) -> anyhow::Result<()> {
 
     if !status.success() {
         bail!(
-            "`cargo install {FRONTEND_CRATE} --version {version} --locked` failed with status {status}.\n\
-             On Windows the running executable is locked and cannot be replaced in place; \
-             from a shell where cargo-cgp is not running, update by hand with:\n\
+            "`cargo install {FRONTEND_CRATE} --version {version} --locked` failed ({status})\n\n\
+             note: on Windows the running executable is locked and cannot be replaced in place\n\
+             help: from a shell where cargo-cgp is not running, update by hand with:\n\
              \x20   cargo install {FRONTEND_CRATE} --version {version} --locked\n\
              \x20   cargo cgp setup"
         );

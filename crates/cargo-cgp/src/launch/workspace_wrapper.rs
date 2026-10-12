@@ -3,6 +3,8 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
+use crate::report::warning;
+
 /// The environment variable through which cargo runs a wrapper for each workspace crate, and
 /// through which the front-end installs its driver.
 pub const WORKSPACE_WRAPPER_ENV: &str = "RUSTC_WORKSPACE_WRAPPER";
@@ -17,9 +19,9 @@ pub fn workspace_wrapper_warning(existing: Option<&OsStr>, driver: &Path) -> Opt
     if Path::new(existing) == driver {
         return None;
     }
-    Some(format!(
-        "cargo-cgp: warning: {WORKSPACE_WRAPPER_ENV} is set to `{}`; cargo-cgp replaces it with its \
-         driver for this run, so that wrapper does not run",
+    Some(warning(&format!(
+        "{WORKSPACE_WRAPPER_ENV} is set to `{}`; cargo-cgp replaces it with its driver for this \
+         run, so that wrapper does not run",
         existing.to_string_lossy()
-    ))
+    )))
 }

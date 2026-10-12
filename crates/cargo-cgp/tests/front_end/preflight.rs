@@ -137,7 +137,10 @@ fn a_driver_that_fails_to_load_keeps_the_loaders_reason() {
     let message = failure_message(&failure, "nightly-2026-10-10", &sibling_driver(), "0.1.0");
 
     assert!(message.contains("librustc_driver-abc.so"), "{message}");
-    assert!(message.ends_with("Run `cargo cgp setup`."), "{message}");
+    assert!(
+        message.ends_with("help: run `cargo cgp setup`"),
+        "{message}"
+    );
 }
 
 #[test]
@@ -168,7 +171,10 @@ fn every_driver_message_names_the_driver_and_where_it_was_found() {
                 && message.contains("found on PATH, since none is beside cargo-cgp"),
             "{message}"
         );
-        assert!(message.ends_with("Run `cargo cgp setup`."), "{message}");
+        assert!(
+            message.ends_with("help: run `cargo cgp setup`"),
+            "{message}"
+        );
     }
 }
 
@@ -181,9 +187,9 @@ fn a_missing_toolchain_keeps_rustups_reason() {
 
     assert_eq!(
         message,
-        "toolchain `nightly-2026-10-10` is not available:\n\n\
+        "toolchain `nightly-2026-10-10` is not available:\n\n  \
          error: toolchain 'nightly-2026-10-10' is not installed\n\n\
-         Run `cargo cgp setup`."
+         help: run `cargo cgp setup`"
     );
 }
 
@@ -201,7 +207,10 @@ fn a_missing_rustup_says_so_instead_of_naming_setup() {
         message.contains("rustup was not found on PATH"),
         "{message}"
     );
-    assert!(message.contains("Nix flake"), "{message}");
+    assert!(
+        message.contains("help: install rustup, or install cargo-cgp through its Nix flake"),
+        "{message}"
+    );
     assert!(!message.contains("cargo cgp setup"), "{message}");
 }
 

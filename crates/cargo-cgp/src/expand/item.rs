@@ -45,7 +45,8 @@ fn set_item(item: &mut Option<String>, path: String) -> anyhow::Result<()> {
     }
     if let Some(previous) = item {
         bail!(
-            "`{ITEM_FLAG}` was given twice (`{previous}` and `{path}`); expand one path at a time"
+            "`{ITEM_FLAG}` was given twice (`{previous}` and `{path}`)\n\n\
+             help: expand one path at a time"
         );
     }
     if !is_item_path(&path) {
