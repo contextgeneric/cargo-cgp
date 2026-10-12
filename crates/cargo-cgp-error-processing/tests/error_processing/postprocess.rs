@@ -172,14 +172,20 @@ fn resugars_a_path_bare_without_the_macro_wrapper() {
 }
 
 #[test]
-fn resugars_an_open_tailed_path_bare() {
+fn resugars_an_open_tailed_path_bare_as_its_key() {
+    // The bare form names a key, which the programmer wrote without the wildcard tail the macros
+    // append, so the tail is left out — the form the conflicting-wiring E0119 blocks show.
     assert_eq!(
         resugar_path(
             "PathCons<Symbol!(\"foo\"), PathCons<Symbol!(\"bar\"), _>>",
             false
         )
         .as_deref(),
-        Some("@foo.bar.*"),
+        Some("@foo.bar"),
+    );
+    assert_eq!(
+        resugar_path("PathCons<Symbol!(\"foo\"), _>", false).as_deref(),
+        Some("@foo"),
     );
 }
 
@@ -378,26 +384,18 @@ fn resugars_an_open_dispatch_path_with_a_reference_value_segment() {
 }
 
 #[test]
-fn resugars_an_open_tailed_path_as_a_wildcard() {
-    // An open-ended path ends in a generic "rest of path" parameter, which rustc renders as
-    // `_`. It resugars to a trailing `.*` wildcard segment — the form seen in the
-    // conflicting-wiring E0119 blocks over a duplicated `@`-path key.
+fn declines_an_open_tailed_path_in_the_macro_form() {
+    // An open-ended path ends in the macros' generic "rest of path" parameter, which rustc renders
+    // as `_`. `Path!(@foo.bar)` would name the closed path, a different type, so the macro form
+    // leaves the spine as it stands.
     assert_eq!(
         resugar_path(
             "PathCons<Symbol!(\"foo\"), PathCons<Symbol!(\"bar\"), _>>",
             true
-        )
-        .as_deref(),
-        Some("Path!(@foo.bar.*)"),
+        ),
+        None,
     );
-}
-
-#[test]
-fn resugars_a_single_segment_open_tailed_path() {
-    assert_eq!(
-        resugar_path("PathCons<Symbol!(\"foo\"), _>", true).as_deref(),
-        Some("Path!(@foo.*)"),
-    );
+    assert_eq!(resugar_path("PathCons<Symbol!(\"foo\"), _>", true), None);
 }
 
 #[test]
@@ -443,8 +441,13 @@ fn postprocess_message_resugars_an_expanded_path() {
 fn postprocess_message_resugars_an_open_tailed_path() {
     // The conflicting-wiring E0119 shape end to end: two prefixed, expanded `Symbol` spines
     // inside a `PathCons` whose open `_` tail is the impl's generic "rest of path" parameter.
-    // Stripped, resugared to symbols, then folded into a wildcard `Path!`.
+    // A rewritten message folds it into the key its entry wrote; an untransformed one has no
+    // `Path!` spelling for it, so it keeps the spine with its symbols resugared.
     let text = "PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<'f', cgp::prelude::Chars<'o', cgp::prelude::Chars<'o', Nil>>>>, PathCons<Symbol<3, Chars<'b', Chars<'a', Chars<'r', Nil>>>>, _>>";
+    assert_eq!(
+        postprocess_message(text, false, Origin::Rewritten, &AmbiguousNames::default()).as_deref(),
+        Some("@foo.bar"),
+    );
     assert_eq!(
         postprocess_message(
             text,
@@ -453,7 +456,7 @@ fn postprocess_message_resugars_an_open_tailed_path() {
             &AmbiguousNames::default()
         )
         .as_deref(),
-        Some("Path!(@foo.bar.*)"),
+        Some("PathCons<Symbol!(\"foo\"), PathCons<Symbol!(\"bar\"), _>>"),
     );
 }
 

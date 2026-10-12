@@ -147,10 +147,10 @@ fn both_passes_decline_the_same_non_constructs() {
 }
 
 #[test]
-fn only_the_diagnostic_shows_an_open_ended_path() {
-    // The one sanctioned divergence: a path whose tail is unknown reads `.*` in a diagnostic, which
-    // is not `Path!` syntax, so source output keeps the chain (resugaring only its segments).
+fn neither_pass_folds_an_open_ended_path() {
+    // A path whose tail is unknown has no `Path!` spelling, so both passes keep the chain and
+    // resugar only its segments.
     let raw = format!("PathCons<{}, _>", symbol("app"));
-    assert_eq!(text_pass(&raw), "Path!(@app.*)");
+    assert_eq!(text_pass(&raw), "PathCons<Symbol!(\"app\"), _>");
     assert_eq!(syntax_tree_pass(&raw), "PathCons<Symbol!(\"app\"), _>");
 }

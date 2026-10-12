@@ -21,12 +21,13 @@
 //! A path may also be **open-ended**: instead of terminating in `Nil`, its spine ends in a
 //! generic "rest of path" parameter, which rustc renders as the inference placeholder `_` in
 //! the trait references it prints (as in the conflicting-wiring `E0119` blocks over a
-//! duplicated `@`-path key). Such a tail is resugared to a trailing `.*` wildcard segment —
-//! `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>` becomes `Path!(@foo.bar.*)`. The
-//! `.*` is not real `Path!` syntax and would not parse back, but it reads far better than the
-//! raw spine and marks the path as matching any continuation. Only a bare `_` tail triggers
-//! this: `_` is never a concrete path segment, so it is the unambiguous signal of a generic
-//! placeholder, and any other non-`Nil` tail still declines.
+//! duplicated `@`-path key). That parameter is the `__Wildcard__` tail `cgp`'s macros end every
+//! `@`-path key and redirect target with, which the programmer never writes, so the bare form a
+//! rewritten message uses leaves it out: `PathCons<Symbol!("foo"), PathCons<Symbol!("bar"), _>>`
+//! reads `@foo.bar`, the key as its entry wrote it. The `Path!(…)` form declines on such a tail
+//! instead, since `Path!(@foo.bar)` would name the closed, `Nil`-terminated path, a different
+//! type. Only a bare `_` tail is open: `_` is never a concrete path segment, and any other
+//! non-`Nil` tail still declines.
 //!
 //! Runs after [`resugar_symbol`](super::resugar_symbol), so a symbol segment is already in its
 //! `Symbol!("…")` surface form by the time this matches it.
@@ -68,7 +69,8 @@ pub fn resugar_path(text: &str, wrap: bool) -> Option<String> {
 /// Parse a `PathCons<…>` chain at the start of `input` (which begins with `PathCons<`) and
 /// render it as `Path!(@…)`, returning that and the bytes consumed. `None` on any spine that
 /// is not `PathCons` all the way down to a `Nil` or an open `_` tail, or whose segments do
-/// not round-trip through `Path!`. An open `_` tail renders as a trailing `.*` wildcard.
+/// not round-trip through `Path!`. An open `_` tail is left out of the bare form, and declines the
+/// `Path!(…)` form.
 fn parse_path(input: &str, wrap: bool) -> Option<(String, usize)> {
     let after_open = input.strip_prefix("PathCons<")?;
     let (head, tail, inner_len) = scan_head_tail(after_open)?;
@@ -76,7 +78,6 @@ fn parse_path(input: &str, wrap: bool) -> Option<(String, usize)> {
 
     let mut segments = vec![head.trim().to_owned()];
     let mut tail = tail.trim();
-    let mut open_tailed = false;
     let mut guard = 0;
     loop {
         guard += 1;
@@ -86,10 +87,13 @@ fn parse_path(input: &str, wrap: bool) -> Option<(String, usize)> {
         if tail == "Nil" {
             break;
         }
-        // An open-ended path ends not in `Nil` but in a generic "rest of path" parameter,
-        // which rustc renders as `_`. Record it and stop; it becomes a trailing `.*` below.
+        // An open-ended path ends not in `Nil` but in the macros' generic "rest of path"
+        // parameter, which rustc renders as `_`: left out of the bare key form, while the
+        // `Path!(…)` form would name a different, closed path.
         if is_open_tail(tail) {
-            open_tailed = true;
+            if wrap {
+                return None;
+            }
             break;
         }
         let tail_after_open = tail.strip_prefix("PathCons<")?;
@@ -111,11 +115,6 @@ fn parse_path(input: &str, wrap: bool) -> Option<(String, usize)> {
             rendered.push('.');
         }
         rendered.push_str(&render_segment(segment)?);
-    }
-    // Append the wildcard for an open tail. Every path has at least the head segment before
-    // it, so the separating dot is always warranted.
-    if open_tailed {
-        rendered.push_str(".*");
     }
     if wrap {
         rendered.push(')');

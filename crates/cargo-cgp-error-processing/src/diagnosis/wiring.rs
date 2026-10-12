@@ -9,7 +9,7 @@
 //! the driver's `resolve::conflict` module fills the model in from the live `TyCtxt`.
 //!
 //! The wording names *which keys* collide, in the terms the programmer wrote them (an `@`-path
-//! renders in bare `@a.b.*` notation, not wrapped in `Path!(…)`), so the headline is the fix
+//! renders in bare `@a.b` notation, not wrapped in `Path!(…)`), so the headline is the fix
 //! rather than a screen of `DelegateComponent<…>` type spine. Each shape carries its own
 //! `[CGP-E0xx]` code, since each rewrites the message into a distinct form with its own fix.
 
@@ -29,8 +29,9 @@ pub enum WiringKey {
     /// An ordinary type used as a wiring key, e.g. the `String` of a per-type default or the
     /// `u64` of a dispatch table — a key that names no component.
     Type(String),
-    /// An `@`-path key, in bare surface notation (`@a.b.*`); a generic tail or loop parameter
-    /// collapses to the trailing `.*` wildcard.
+    /// An `@`-path key, in bare surface notation as its entry wrote it (`@a.b`,
+    /// `@ComputerComponent.Code.u64`): a generic segment keeps its parameter name, and the
+    /// wildcard tail the macros append is left out.
     Path(String),
     /// A blanket forwarding that covers *every* key, tagged by the namespace or table trait
     /// that keys it (e.g. `DefaultNamespace`) — the shape a `namespace …;` join or a bare-key

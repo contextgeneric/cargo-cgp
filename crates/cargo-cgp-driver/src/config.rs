@@ -140,6 +140,11 @@ pub const PATH_CONS_TYPE: &str = "PathCons";
 /// It is also the terminator of a `Product!` / `Cons` list, which the tree renderer resugars.
 pub const NIL_TYPE: &str = "Nil";
 
+/// The generic parameter `cgp`'s macros end an `@`-path key or redirect target with, the open
+/// "rest of the path" a lookup's appended parameters slot into. The programmer never writes it,
+/// so a rendered path leaves it out.
+pub const WILDCARD_PARAM: &str = "__Wildcard__";
+
 /// The name of the type-level product-list cell (defined by [`CGP_BASE_TYPES_CRATE`]): a `Product!`
 /// expands to a right-nested `Cons<Head, Tail>` spine ended by [`NIL_TYPE`]. The dependency-tree
 /// renderer resugars such a spine back to `Product![…]`, anchored by `DefId` to this crate so a

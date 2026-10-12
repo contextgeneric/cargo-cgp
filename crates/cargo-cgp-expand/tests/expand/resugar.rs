@@ -231,8 +231,8 @@ fn resugars_a_primitive_path_segment_as_a_type() {
 
 #[test]
 fn declines_an_open_tailed_path() {
-    // A diagnostic renders an open-ended path with a trailing `.*` wildcard, which is not `Path!`
-    // syntax. Source output emits only real syntax, so the chain is left as it stands.
+    // An open-ended path has no `Path!` spelling, so the chain is left as it stands, as the
+    // diagnostic text pass leaves it.
     let source =
         "type Route = PathCons<Symbol<3, Chars<'a', Chars<'p', Chars<'p', Nil>>>>, Rest>;\n";
 

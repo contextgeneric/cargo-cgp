@@ -25,11 +25,11 @@ fn duplicate_component_key() {
 fn duplicate_path_key() {
     let conflict = WiringConflict::Duplicate {
         context: "App".to_owned(),
-        key: WiringKey::Path("@cgp.core.error.ErrorTypeProviderComponent.*".to_owned()),
+        key: WiringKey::Path("@cgp.core.error.ErrorTypeProviderComponent".to_owned()),
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E010] duplicate wiring for `@cgp.core.error.ErrorTypeProviderComponent.*` on `App`",
+        "[CGP-E010] duplicate wiring for `@cgp.core.error.ErrorTypeProviderComponent` on `App`",
     );
 }
 
@@ -84,12 +84,12 @@ fn overlap_bare_component_over_namespace() {
 fn overlap_path_over_namespace() {
     let conflict = WiringConflict::Overlap {
         context: "App".to_owned(),
-        conflicting: WiringKey::Path("@app.GreeterComponent.*".to_owned()),
+        conflicting: WiringKey::Path("@app.GreeterComponent".to_owned()),
         first: WiringKey::Blanket("AppNamespace".to_owned()),
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E011] `App` cannot wire `@app.GreeterComponent.*` that is already set through `AppNamespace`",
+        "[CGP-E011] `App` cannot wire `@app.GreeterComponent` that is already set through `AppNamespace`",
     );
 }
 
@@ -98,13 +98,13 @@ fn overlap_path_prefix_of_path() {
     let conflict = WiringConflict::Overlap {
         context: "App".to_owned(),
         conflicting: WiringKey::Path(
-            "@cgp.core.error.ErrorTypeProviderComponent.String.*".to_owned(),
+            "@cgp.core.error.ErrorTypeProviderComponent.String".to_owned(),
         ),
-        first: WiringKey::Path("@cgp.core.error.ErrorTypeProviderComponent.*".to_owned()),
+        first: WiringKey::Path("@cgp.core.error.ErrorTypeProviderComponent".to_owned()),
     };
     assert_eq!(
         plan_wiring_conflict(&conflict),
-        "[CGP-E011] `App` cannot wire `@cgp.core.error.ErrorTypeProviderComponent.String.*` that is already set through `@cgp.core.error.ErrorTypeProviderComponent.*`",
+        "[CGP-E011] `App` cannot wire `@cgp.core.error.ErrorTypeProviderComponent.String` that is already set through `@cgp.core.error.ErrorTypeProviderComponent`",
     );
 }
 

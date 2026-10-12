@@ -8,10 +8,10 @@
 //!
 //! The tool drops the redundant `IsProviderFor` half and rewrites the
 //! `DelegateComponent` half to `[CGP-E011] `App` cannot wire
-//! `@cgp.core.error.ErrorTypeProviderComponent.String.*` that is already set
-//! through `@cgp.core.error.ErrorTypeProviderComponent.*``, naming both
-//! overlapping paths in bare `@…` form (the wildcard tail is what makes the
-//! overlap visible).
+//! `@cgp.core.error.ErrorTypeProviderComponent.String` that is already set
+//! through `@cgp.core.error.ErrorTypeProviderComponent``, naming both
+//! overlapping paths in bare `@…` form as the entries wrote them, without the
+//! wildcard tail the macro appends.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
 //! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E011).

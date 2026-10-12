@@ -2,8 +2,8 @@
 //! prefixed path `@cgp.core.error.ErrorRaiserComponent.Key`, beside a
 //! `namespace AppDefaults;` join that already registers
 //! `@cgp.core.error.ErrorRaiserComponent.String`. The loop lowers to a
-//! `DelegateComponent<PathCons<.., Key>>` whose generic-tailed key
-//! `@cgp.core.error.ErrorRaiserComponent.*` overlaps the namespace forwarding, so
+//! `DelegateComponent<PathCons<.., PathCons<Key, ..>>>` whose generic key
+//! `@cgp.core.error.ErrorRaiserComponent.Key` overlaps the namespace forwarding, so
 //! coherence rejects the pair with E0119.
 //!
 //! This is the *prefixed* `for`-key counterpart of the bare-key
@@ -16,9 +16,9 @@
 //!
 //! The tool drops the redundant `IsProviderFor` half and rewrites the
 //! `DelegateComponent` half to `[CGP-E011] `App` cannot wire
-//! `@cgp.core.error.ErrorRaiserComponent.*` that is already set through
-//! `AppDefaults``, exercising the typed path renderer's collapse of a `for`-loop key
-//! parameter to a trailing `.*` wildcard.
+//! `@cgp.core.error.ErrorRaiserComponent.Key` that is already set through
+//! `AppDefaults``, exercising the typed path renderer's naming of a `for`-loop key
+//! parameter as written.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/namespace-override-conflict.md and
 //! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E011).

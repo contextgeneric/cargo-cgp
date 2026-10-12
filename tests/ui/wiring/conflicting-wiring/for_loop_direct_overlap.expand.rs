@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! A direct entry overlapping a `for` loop over a `DefaultImpls1` registry.
 //!
-//! `[CGP-E011]` names the covering entry only as the path `@test.ShowImplComponent.*`, not as the
+//! `[CGP-E011]` names the covering entry only as the path `@test.ShowImplComponent.T`, not as the
 //! `for` loop.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
