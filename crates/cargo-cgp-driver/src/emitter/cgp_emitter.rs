@@ -49,6 +49,7 @@ use crate::emitter::edit::{
 };
 use crate::emitter::name_resolution::is_unresolved_wiring_overflow;
 use crate::emitter::output::{Output, lock_output, register_output};
+use crate::emitter::repeats::merge_repeats;
 use crate::emitter::shared_dispatch_method::pair_shared_dispatch_method;
 use crate::emitter::test_panic::{TestPanic, inject};
 use crate::resolve::{
@@ -400,6 +401,13 @@ impl<E: Emitter> CgpEmitter<E> {
             }
         }
 
+        // A diagnostic rustc reported twice is one mistake; merge the repeat, in a crate known to
+        // use CGP, so a plain Rust error is never touched.
+        if self.cgp_used.get() == Some(&true)
+            && let Some(source_map) = self.source_map.as_deref()
+        {
+            to_emit = merge_repeats(to_emit, source_map);
+        }
         // Now that the surviving set is final, make the "detailed explanations" footer agree with it.
         Self::rebuild_explain_footers(&mut to_emit);
         to_emit

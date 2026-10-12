@@ -1,7 +1,9 @@
 //! Constructing a variant through a tag with the wrong case.
 //!
-//! `Symbol!("circle")` for a `Circle` variant is an unsatisfied `FromVariant` bound, reported twice
-//! at two carets of one call. The near-miss `Circle` appears only in the impl list.
+//! `Symbol!("circle")` for a `Circle` variant is an unsatisfied `FromVariant` bound, which rustc
+//! reports twice, at two carets of one call; the tool merges the repeat, keeping its caret as a
+//! secondary one labelled "also required here". The near-miss `Circle` appears only in the impl
+//! list.
 //!
 //! CGP error class: none yet; the extensible-data family
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/extensible-records.md)

@@ -1,10 +1,10 @@
 #![feature(prelude_import)]
 //! An `@`-path segment that `Path!` reads as a type rather than a symbol.
 //!
-//! `@app.f` lowers `f` to a type, a documented `Path!` defect, so three `E0425`s report it. The
-//! overflow that follows keeps rustc's `E0275` wording: the context's wiring holds the unresolved
-//! type, so the tool does not report it as a `[CGP-E020]` cycle. Nothing names the `Path!` rule as
-//! the cause.
+//! `@app.f` lowers `f` to a type, a documented `Path!` defect, so rustc reports three `E0425`s, two
+//! at one caret, which the tool merges into one. The overflow that follows keeps rustc's `E0275`
+//! wording: the context's wiring holds the unresolved type, so the tool does not report it as a
+//! `[CGP-E020]` cycle. Nothing names the `Path!` rule as the cause.
 //!
 //! CGP error class: none; the `Path!` segment rule is a known issue of the macro.
 //!

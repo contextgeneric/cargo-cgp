@@ -27,6 +27,7 @@ mod edit;
 mod install;
 mod name_resolution;
 mod output;
+mod repeats;
 mod shared_dispatch_method;
 mod test_panic;
 

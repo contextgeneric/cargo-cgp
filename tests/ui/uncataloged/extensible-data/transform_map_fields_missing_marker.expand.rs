@@ -1,9 +1,10 @@
 #![feature(prelude_import)]
 //! A field transform with no conversion for one of the builder's markers.
 //!
-//! `OnlyAbsent` converts only absent fields, but `port` is already set. The output is the same
-//! `E0277` on `OnlyAbsent: TransformMap<IsPresent, IsPresent, u16>` twice, at two carets, with no
-//! de-duplication, and it names the field by its value type rather than its name.
+//! `OnlyAbsent` converts only absent fields, but `port` is already set. The output is an `E0277` on
+//! `OnlyAbsent: TransformMap<IsPresent, IsPresent, u16>`, which names the field by its value type
+//! rather than its name. rustc reports it twice, at the method name and at the whole call, and the
+//! tool merges the repeat into the first block, whose labels already cover the call.
 //!
 //! CGP error class: none yet; the extensible-data family
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/extensible-records.md)

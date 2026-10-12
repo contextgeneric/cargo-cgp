@@ -1,7 +1,8 @@
 //! `Add::try_compute(&App, …)` on a `#[cgp_computer]` provider, with no error type on `App`.
 //!
-//! The same uncoded `E0277` "`App: ErrorTypeProvider<App>`" twice, with rustc's implementor list; the
-//! missing `ErrorTypeProviderComponent` wiring is never stated.
+//! An uncoded `E0277` "`App: ErrorTypeProvider<App>`", with rustc's implementor list; the missing
+//! `ErrorTypeProviderComponent` wiring is never stated. rustc reports it twice on the call, and the
+//! tool merges the repeat into the first block.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 //!

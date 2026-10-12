@@ -1,8 +1,9 @@
 #![feature(prelude_import)]
 //! A `MatchWithHandlers` list missing the handler for one variant.
 //!
-//! Two near-identical `E0277`s on `__PartialShape<IsVoid, IsPresent>: FinalizeExtract`, not
-//! de-duplicated; neither names the missing variant.
+//! An `E0277` on `__PartialShape<IsVoid, IsPresent>: FinalizeExtract`, which names no missing
+//! variant. rustc reports it twice at one caret, and the tool merges the repeat into the first
+//! block.
 //!
 //! CGP error class: none yet.
 //!

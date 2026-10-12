@@ -1,7 +1,8 @@
 //! Two methods of one provider reading the same implicit field as two different types.
 //!
-//! Two `E0284`s that differ only in whether the tool renamed a note, plus an `E0282`, all on the
-//! provider name; nothing says the methods disagree on the field's type.
+//! An `E0284` and an `E0282`, both on the provider name; nothing says the methods disagree on the
+//! field's type. rustc reports the `E0284` twice, and the tool merges the repeat, which differed
+//! only in a note the tool renamed, into the first block.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
 //!

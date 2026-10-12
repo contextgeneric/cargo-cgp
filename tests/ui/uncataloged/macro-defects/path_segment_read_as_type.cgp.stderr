@@ -10,12 +10,6 @@ help: you might be missing a type parameter
    |                         +++
 
 error[E0425]: cannot find type `f` in this scope
-  --> src/main.rs:33:34
-   |
-33 |         GreeterComponent => @app.f,
-   |                                  ^ not found in this scope
-
-error[E0425]: cannot find type `f` in this scope
   --> src/main.rs:34:14
    |
 34 |         @app.f: GreetHello,
