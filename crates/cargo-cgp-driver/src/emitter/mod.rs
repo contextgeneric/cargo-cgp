@@ -16,7 +16,8 @@
 //! The module is split into [`install`] (rebuilding the compiler's default emitter and wrapping
 //! it), [`cgp_emitter`] (the [`CgpEmitter`] type and its orchestration), [`edit`] (the
 //! `DiagInner`-editing helpers), [`buffer`] (the diagnostics held until the flush), [`output`]
-//! (the inner emitter and buffer the panic hook can reach), [`containment`] (containing a panic
+//! (the inner emitter and buffer the panic hook can reach), [`name_resolution`] (the pass that
+//! reshapes a wiring entry's name-resolution errors once resolution is over), [`containment`] (containing a panic
 //! and the panic hooks), and [`test_panic`] (the panic a fixture raises on purpose).
 
 mod buffer;
@@ -24,10 +25,12 @@ mod cgp_emitter;
 mod containment;
 mod edit;
 mod install;
+mod name_resolution;
 mod output;
 mod test_panic;
 
 pub use cgp_emitter::CgpEmitter;
 pub use containment::install_panic_hooks;
 pub use install::install;
+pub use name_resolution::reshape_name_resolution_errors;
 pub use test_panic::*;

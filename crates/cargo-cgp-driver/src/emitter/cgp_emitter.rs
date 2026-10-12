@@ -19,14 +19,14 @@ use cargo_cgp_error_processing::{
     missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
     plan_missing_use_provider, plan_orphan_conflict, plan_provider_trait_in_uses, plan_resolved,
     plan_structural_mistake, plan_undeclared_requirement, plan_undeclared_trait,
-    plan_unimported_abstract_type, plan_wiring_conflict, postprocess_message,
-    provider_trait_in_uses_help, structural_mistake_help, undeclared_requirement_helps,
-    undeclared_trait_help, unimported_abstract_type_help, wiring_conflict_help,
-    wiring_overflow_help,
+    plan_unimported_abstract_type, plan_unresolved_wiring_name, plan_wiring_conflict,
+    postprocess_message, provider_trait_in_uses_help, structural_mistake_help,
+    undeclared_requirement_helps, undeclared_trait_help, unimported_abstract_type_help,
+    unresolved_wiring_name_help, wiring_conflict_help, wiring_overflow_help,
 };
 use rustc_errors::codes::{
     E0107, E0117, E0119, E0186, E0207, E0210, E0220, E0271, E0275, E0277, E0308, E0425, E0428,
-    E0599,
+    E0599, E0782,
 };
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
@@ -46,6 +46,7 @@ use crate::emitter::edit::{
     postprocess_messages, postprocess_multispan, replace_header, rewrite_messages,
     strip_method_probe_advice, subdiag,
 };
+use crate::emitter::name_resolution::is_unresolved_wiring_overflow;
 use crate::emitter::output::{Output, lock_output, register_output};
 use crate::emitter::test_panic::{TestPanic, inject};
 use crate::resolve::{
@@ -1164,6 +1165,29 @@ impl<E: Emitter> CgpEmitter<E> {
                 Sublevel::Help,
                 provider_trait_in_uses_help(&misuse),
             ));
+            self.postprocess(&mut diag, Origin::Rewritten);
+            self.record_cgp_spans(&diag);
+            self.push(BufEntry::Plain(Box::new(diag)));
+            return;
+        }
+        // An overflow on a requirement a wiring entry with an unresolved value left unprovable is
+        // that entry's consequence, already reported at the value.
+        if is_unresolved_wiring_overflow(&diag) {
+            return;
+        }
+        // A consumer trait written as a wiring key: rustc reports a trait where a type belongs and
+        // suggests `dyn`. Reword it to name the component the key should be.
+        if diag.code == Some(E0782)
+            && let Some(primary_span) = diag.span.primary_span()
+            && let Some(name) = rustc_middle::ty::tls::with_opt(|tcx| {
+                resolve::detect_consumer_trait_as_key(tcx?, primary_span)
+            })
+        {
+            replace_header(&mut diag, plan_unresolved_wiring_name(&name));
+            diag.span = MultiSpan::from_span(primary_span);
+            if let Some(help) = unresolved_wiring_name_help(&name) {
+                diag.children.push(subdiag(Sublevel::Help, help));
+            }
             self.postprocess(&mut diag, Origin::Rewritten);
             self.record_cgp_spans(&diag);
             self.push(BufEntry::Plain(Box::new(diag)));

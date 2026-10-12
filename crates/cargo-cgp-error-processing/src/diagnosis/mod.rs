@@ -24,6 +24,7 @@ mod structural;
 mod undeclared;
 mod unimported;
 mod wiring;
+mod wiring_name;
 mod wording;
 
 pub use cgp_impl_misuse::*;
@@ -43,4 +44,5 @@ pub use structural::*;
 pub use undeclared::*;
 pub use unimported::*;
 pub use wiring::*;
+pub use wiring_name::*;
 pub use wording::*;

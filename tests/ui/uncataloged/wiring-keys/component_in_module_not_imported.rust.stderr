@@ -1,7 +1,7 @@
 error[E0425]: cannot find type `GreeterComponent` in this scope
-  --> src/main.rs:38:13
+  --> src/main.rs:36:13
    |
-38 |             GreeterComponent: GreetHello,
+36 |             GreeterComponent: GreetHello,
    |             ^^^^^^^^^^^^^^^^ not found in this scope
    |
 note: similarly named struct `ComputerComponent` defined here
@@ -11,12 +11,12 @@ note: similarly named struct `ComputerComponent` defined here
    |                 ^^^^^^^^
 help: a struct with a similar name exists
    |
-38 -             GreeterComponent: GreetHello,
-38 +             ComputerComponent: GreetHello,
+36 -             GreeterComponent: GreetHello,
+36 +             ComputerComponent: GreetHello,
    |
 help: consider importing this struct
    |
-30 +     use crate::components::GreeterComponent;
+28 +     use crate::components::GreeterComponent;
    |
 
 For more information about this error, try `rustc --explain E0425`.

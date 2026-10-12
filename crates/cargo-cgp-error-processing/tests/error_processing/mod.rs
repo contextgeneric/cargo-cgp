@@ -20,3 +20,4 @@ pub mod tree;
 pub mod undeclared;
 pub mod unimported;
 pub mod wiring;
+pub mod wiring_name;

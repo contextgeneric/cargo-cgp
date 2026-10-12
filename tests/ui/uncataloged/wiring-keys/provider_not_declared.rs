@@ -1,14 +1,15 @@
 //! A provider used in wiring but never declared, then called.
 //!
-//! Two `E0425`s and a cascade `E0275` "overflow evaluating `Person: CanGreet`" at the call, all kept;
-//! the overflow is a consequence of the unresolved name.
+//! `#[cgp_impl(GreetHello)]` without `new` implements the provider trait for a struct nothing
+//! declares, so rustc reports `E0425` at the attribute and again at the wiring value, and the call
+//! then overflows (`E0275` "overflow evaluating the requirement `Person: CanGreet`"). The tool
+//! reshapes the first into `[CGP-E038]` with `#[cgp_impl(new GreetHello)]` in a `help`, and drops
+//! the second and the overflow as its consequences.
 //!
-//! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E038
 
 use cgp::prelude::*;
 

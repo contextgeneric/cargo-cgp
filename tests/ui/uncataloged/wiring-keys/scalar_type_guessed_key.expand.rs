@@ -1,11 +1,11 @@
 #![feature(prelude_import)]
 //! A wiring key guessed from the trait name, `HasScalarTypeComponent`.
 //!
-//! Two identical `E0425`s; the real key, `ScalarTypeProviderComponent`, is not suggested.
+//! The component of `HasScalarType` is `ScalarTypeProviderComponent`, so the guessed key is an
+//! `E0425` "cannot find type", reported twice. The tool reshapes it into one `[CGP-E042]` whose
+//! `help` names the real component.
 //!
-//! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

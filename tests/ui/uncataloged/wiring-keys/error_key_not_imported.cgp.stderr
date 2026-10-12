@@ -1,18 +1,9 @@
-error[E0425]: cannot find type `ErrorTypeProviderComponent` in this scope
-  --> src/main.rs:18:9
+error[E0425]: [CGP-E041] the component `ErrorTypeProviderComponent` is not in scope
+  --> src/main.rs:20:9
    |
-18 |         ErrorTypeProviderComponent: UseType<String>,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+20 |         ErrorTypeProviderComponent: UseType<String>,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: you might be missing a type parameter
-   |
-18 |         ErrorTypeProviderComponent<ErrorTypeProviderComponent>: UseType<String>,
-   |                                   ++++++++++++++++++++++++++++
-
-error[E0425]: cannot find type `ErrorTypeProviderComponent` in this scope
-  --> src/main.rs:18:9
-   |
-18 |         ErrorTypeProviderComponent: UseType<String>,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+   = help: import it with `use cgp::core::error::ErrorTypeProviderComponent;`
 
 For more information about this error, try `rustc --explain E0425`.

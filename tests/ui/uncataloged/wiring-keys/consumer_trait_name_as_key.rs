@@ -1,15 +1,14 @@
 //! A wiring key guessed from the consumer trait's name, `CanGreetComponent`.
 //!
 //! The component of `CanGreet` is named after its provider trait, `GreeterComponent`, so the guessed
-//! key is an `E0425` "cannot find type", reported twice. rustc suggests the trait `CanUseComponent`,
-//! which is not a component, and the real key is not suggested.
+//! key is an `E0425` "cannot find type", reported twice, with a suggestion of the trait
+//! `CanUseComponent`. The tool reshapes it into one `[CGP-E042]` whose `help` names the real
+//! component of `CanGreet`.
 //!
-//! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E042
 
 use cgp::prelude::*;
 

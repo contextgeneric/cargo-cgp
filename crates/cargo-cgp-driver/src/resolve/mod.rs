@@ -41,6 +41,7 @@ mod undeclared;
 mod unimported;
 mod uses_misuse;
 mod walk;
+mod wiring_name;
 
 pub use ambiguous_names::ambiguous_type_names;
 pub use anchor::{
@@ -63,3 +64,6 @@ pub use structural::{
 pub use undeclared::detect_undeclared_trait;
 pub use unimported::{DetectedUnimportedAbstractType, detect_unimported_abstract_type};
 pub use uses_misuse::detect_provider_trait_in_uses;
+pub use wiring_name::{
+    NameAction, UnresolvedNamesPlan, detect_consumer_trait_as_key, plan_unresolved_names,
+};

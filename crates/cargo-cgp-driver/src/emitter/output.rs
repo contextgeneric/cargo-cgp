@@ -4,7 +4,9 @@
 //! rustc's crash report before the diagnostics that preceded it, and an unwinding flush could print
 //! them only afterwards. To keep rustc's order, the panic hook must be able to emit the buffer
 //! before the report, so this state lives behind a shared lock that the emitter registers for the
-//! hook to reach ([`register_output`], [`flush_registered_output`]).
+//! hook to reach ([`register_output`], [`flush_registered_output`]). The pass that reshapes the
+//! name-resolution errors after resolution reaches the buffer the same way
+//! ([`with_registered_buffer`]).
 
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, Weak};
@@ -32,13 +34,17 @@ pub(crate) fn lock_output<T: ?Sized>(output: &Mutex<T>) -> MutexGuard<'_, T> {
     output.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// What the panic hook can do with a registered output without knowing its emitter type.
-trait FlushOnCrash {
+/// What the panic hook and the name-resolution pass can do with a registered output without knowing
+/// its emitter type.
+trait RegisteredOutput {
     /// Emit every buffered diagnostic as rustc built it, emptying the buffer.
     fn flush_on_crash(&mut self);
+
+    /// The buffered diagnostics, to reshape in place.
+    fn buffer_mut(&mut self) -> &mut Vec<BufEntry>;
 }
 
-impl<E: Emitter> FlushOnCrash for Output<E> {
+impl<E: Emitter> RegisteredOutput for Output<E> {
     fn flush_on_crash(&mut self) {
         // A crash leaves no room for the flush's own rendering, which could panic again and abort,
         // so every entry goes out untransformed.
@@ -46,17 +52,21 @@ impl<E: Emitter> FlushOnCrash for Output<E> {
             self.inner.emit_diagnostic(entry.untransformed(None));
         }
     }
+
+    fn buffer_mut(&mut self) -> &mut Vec<BufEntry> {
+        &mut self.buffer
+    }
 }
 
 thread_local! {
     /// The output of the emitter installed on this thread, for the panic hook. The compiler emits
     /// diagnostics on the thread that installed the emitter, which is also where its panics occur.
-    static REGISTERED: RefCell<Option<Weak<Mutex<dyn FlushOnCrash>>>> = const { RefCell::new(None) };
+    static REGISTERED: RefCell<Option<Weak<Mutex<dyn RegisteredOutput>>>> = const { RefCell::new(None) };
 }
 
 /// Register `output` as the one the panic hook flushes on this thread.
 pub(crate) fn register_output<E: Emitter + 'static>(output: &Arc<Mutex<Output<E>>>) {
-    let weak: Weak<Mutex<dyn FlushOnCrash>> = Arc::downgrade(output) as _;
+    let weak: Weak<Mutex<dyn RegisteredOutput>> = Arc::downgrade(output) as _;
     REGISTERED.with(|registered| *registered.borrow_mut() = Some(weak));
 }
 
@@ -78,4 +88,16 @@ pub(crate) fn flush_registered_output() {
         Err(std::sync::TryLockError::WouldBlock) => return,
     };
     guard.flush_on_crash();
+}
+
+/// Run `f` on the buffered diagnostics of the output registered on this thread, under its lock, or
+/// return `None` when no output is registered. `f` must not run compiler queries: one that emits a
+/// diagnostic would try to take the same lock.
+pub(crate) fn with_registered_buffer<R>(f: impl FnOnce(&mut Vec<BufEntry>) -> R) -> Option<R> {
+    let output = REGISTERED
+        .try_with(|registered| registered.borrow().as_ref().and_then(Weak::upgrade))
+        .ok()
+        .flatten()?;
+    let mut guard = lock_output(&output);
+    Some(f(guard.buffer_mut()))
 }

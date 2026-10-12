@@ -1,39 +1,9 @@
-error[E0425]: cannot find type `CanGreetComponent` in this scope
-  --> src/main.rs:30:9
+error[E0425]: [CGP-E042] the wiring key `CanGreetComponent` names no component
+  --> src/main.rs:29:9
    |
-30 |         CanGreetComponent: GreetHello,
-   |         ^^^^^^^^^^^^^^^^^ not found in this scope
+29 |         CanGreetComponent: GreetHello,
+   |         ^^^^^^^^^^^^^^^^^
    |
-note: similarly named trait `CanUseComponent` defined here
-  --> $CGP/crates/core/cgp-component/src/traits/can_use_component.rs:16:1
-   |
-16 | pub trait CanUseComponent<Component, Params: ?Sized = ()> {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: a trait with a similar name exists
-   |
-30 -         CanGreetComponent: GreetHello,
-30 +         CanUseComponent: GreetHello,
-   |
-help: you might be missing a type parameter
-   |
-30 |         CanGreetComponent<CanGreetComponent>: GreetHello,
-   |                          +++++++++++++++++++
-
-error[E0425]: cannot find type `CanGreetComponent` in this scope
-  --> src/main.rs:30:9
-   |
-30 |         CanGreetComponent: GreetHello,
-   |         ^^^^^^^^^^^^^^^^^ not found in this scope
-   |
-note: similarly named trait `CanUseComponent` defined here
-  --> $CGP/crates/core/cgp-component/src/traits/can_use_component.rs:16:1
-   |
-16 | pub trait CanUseComponent<Component, Params: ?Sized = ()> {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: a trait with a similar name exists
-   |
-30 -         CanGreetComponent: GreetHello,
-30 +         CanUseComponent: GreetHello,
-   |
+   = help: name the component of `CanGreet` instead: `GreeterComponent`
 
 For more information about this error, try `rustc --explain E0425`.

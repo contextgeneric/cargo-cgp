@@ -1,18 +1,18 @@
 error[E0425]: cannot find type `GreetHi` in this scope
-  --> src/main.rs:42:27
+  --> src/main.rs:41:27
    |
-42 |         GreeterComponent: GreetHi,
+41 |         GreeterComponent: GreetHi,
    |                           ^^^^^^^ not found in this scope
    |
 note: similarly named trait `Greeter` defined here
-  --> src/main.rs:16:1
+  --> src/main.rs:15:1
    |
-16 | pub trait CanGreet {
+15 | pub trait CanGreet {
    | ^^^^^^^^^^^^^^^^^^
 help: a trait with a similar name exists
    |
-42 -         GreeterComponent: GreetHi,
-42 +         GreeterComponent: Greeter,
+41 -         GreeterComponent: GreetHi,
+41 +         GreeterComponent: Greeter,
    |
 
 For more information about this error, try `rustc --explain E0425`.

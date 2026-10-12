@@ -1,22 +1,9 @@
-error[E0425]: cannot find type `GreeterComponent` in this scope
-  --> src/main.rs:38:13
+error[E0425]: [CGP-E041] the component `GreeterComponent` is not in scope
+  --> src/main.rs:36:13
    |
-38 |             GreeterComponent: GreetHello,
-   |             ^^^^^^^^^^^^^^^^ not found in this scope
+36 |             GreeterComponent: GreetHello,
+   |             ^^^^^^^^^^^^^^^^
    |
-note: similarly named struct `ComputerComponent` defined here
-  --> $CGP/crates/extra/cgp-handler/src/components/computer.rs:8:17
-   |
- 8 | #[cgp_component(Computer)]
-   |                 ^^^^^^^^
-help: a struct with a similar name exists
-   |
-38 -             GreeterComponent: GreetHello,
-38 +             ComputerComponent: GreetHello,
-   |
-help: consider importing this struct
-   |
-30 +     use crate::components::GreeterComponent;
-   |
+   = help: import it with `use crate::components::GreeterComponent;`
 
 For more information about this error, try `rustc --explain E0425`.

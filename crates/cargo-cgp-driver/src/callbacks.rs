@@ -14,8 +14,9 @@ use crate::expand::{ExpandRequest, print_expansion};
 /// component marker in the compiler's wiring notes. Everything else about a check is
 /// unchanged from plain `rustc`.
 ///
-/// When the front-end asked for an expansion, `after_expansion` prints the expanded crate and
-/// stops the compilation there instead; see [`crate::expand`].
+/// In a check, `after_expansion` reshapes the name-resolution errors of the crate's wiring entries
+/// ([`emitter::reshape_name_resolution_errors`]). When the front-end asked for an expansion, it
+/// prints the expanded crate and stops the compilation there instead; see [`crate::expand`].
 pub struct CgpCallbacks {
     /// Set when the invocation carried the expand-mode flag, holding where to write the result.
     pub expand: Option<ExpandRequest>,
@@ -32,6 +33,8 @@ impl rustc_driver::Callbacks for CgpCallbacks {
 
     fn after_expansion(&mut self, compiler: &Compiler, tcx: TyCtxt<'_>) -> Compilation {
         let Some(request) = &self.expand else {
+            // Name resolution is over, so the wiring entries its errors sit in can be read back.
+            emitter::reshape_name_resolution_errors(tcx);
             return Compilation::Continue;
         };
 

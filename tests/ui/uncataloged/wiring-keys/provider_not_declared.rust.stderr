@@ -1,19 +1,19 @@
 error[E0425]: cannot find type `GreetHello` in this scope
-  --> src/main.rs:20:12
+  --> src/main.rs:21:12
    |
-20 | #[cgp_impl(GreetHello)]
+21 | #[cgp_impl(GreetHello)]
    |            ^^^^^^^^^^ not found in this scope
 
 error[E0425]: cannot find type `GreetHello` in this scope
-  --> src/main.rs:29:27
+  --> src/main.rs:30:27
    |
-29 |         GreeterComponent: GreetHello,
+30 |         GreeterComponent: GreetHello,
    |                           ^^^^^^^^^^ not found in this scope
 
 error[E0275]: overflow evaluating the requirement `Person: CanGreet`
-  --> src/main.rs:34:12
+  --> src/main.rs:35:12
    |
-34 |     Person.greet();
+35 |     Person.greet();
    |            ^^^^^
 
 Some errors have detailed explanations: E0275, E0425.

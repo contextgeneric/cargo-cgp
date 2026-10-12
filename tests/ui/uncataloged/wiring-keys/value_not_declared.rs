@@ -1,14 +1,13 @@
 //! A wiring value naming a provider that was never declared.
 //!
-//! The `E0425` keeps rustc's suggestion to write the provider trait `Greeter` as the value, which is
-//! wrong.
+//! rustc's `E0425` suggests writing the provider trait `Greeter` as the value, which is wrong. The
+//! tool reshapes it into `[CGP-E043]`, naming the provider and the component it is wired for, and
+//! drops the suggestion. No provider of `GreeterComponent` has a similar name, so it adds no `help`.
 //!
-//! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E043
 
 use cgp::prelude::*;
 

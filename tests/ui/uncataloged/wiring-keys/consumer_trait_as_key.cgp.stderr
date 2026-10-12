@@ -1,12 +1,9 @@
-error[E0782]: expected a type, found a trait
-  --> src/main.rs:42:9
+error[E0782]: [CGP-E040] the wiring key `CanGreet` is a consumer trait, but a key names a component
+  --> src/main.rs:41:9
    |
-42 |         CanGreet: GreetHello,
+41 |         CanGreet: GreetHello,
    |         ^^^^^^^^
    |
-help: you can add the `dyn` keyword if you want a trait object
-   |
-42 |         dyn CanGreet: GreetHello,
-   |         +++
+   = help: name its component instead: `GreeterComponent`
 
 For more information about this error, try `rustc --explain E0782`.

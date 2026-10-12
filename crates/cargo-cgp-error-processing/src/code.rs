@@ -156,6 +156,28 @@ pub const UNDECLARED_REQUIREMENT: &str = "CGP-E036";
 /// trait. The Rust code stays `E0107`.
 pub const PROVIDER_TRAIT_IN_USES: &str = "CGP-E037";
 
+/// `CGP-E038`: `#[cgp_impl(Provider)]` names a provider struct that is never declared, where
+/// `#[cgp_impl(new Provider)]` declares it. The Rust code stays `E0425`.
+pub const CGP_IMPL_PROVIDER_NOT_DECLARED: &str = "CGP-E038";
+
+// Wiring keys and values that do not resolve (`CGP-E040` to `CGP-E049`).
+
+/// `CGP-E040`: a wiring key names a consumer trait where its component belongs. The Rust code stays
+/// `E0782`.
+pub const CONSUMER_TRAIT_AS_KEY: &str = "CGP-E040";
+
+/// `CGP-E041`: a wiring key names a component that exists but is not in scope. The Rust code stays
+/// `E0425`.
+pub const COMPONENT_NOT_IMPORTED: &str = "CGP-E041";
+
+/// `CGP-E042`: a wiring key names no component, and the name points at a consumer trait whose
+/// component is named differently. The Rust code stays `E0425`.
+pub const KEY_NAMES_NO_COMPONENT: &str = "CGP-E042";
+
+/// `CGP-E043`: a wiring value names a provider that is never declared. The Rust code stays
+/// `E0425`.
+pub const PROVIDER_NOT_DECLARED: &str = "CGP-E043";
+
 // The steps of a dependency chain (`CGP-E101` to `CGP-E109`).
 
 /// `CGP-E101`: a step through a context's consumer trait impl,

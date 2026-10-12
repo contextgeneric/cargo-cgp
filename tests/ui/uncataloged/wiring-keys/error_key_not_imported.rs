@@ -1,13 +1,15 @@
 //! The wiring key `ErrorTypeProviderComponent` used without its import from `cgp::core::error`.
 //!
-//! Two identical `E0425`s on the key, one with a garbage suggestion; the import is not suggested.
+//! rustc reports the `E0425` twice at the key, once with a suggestion to add a type parameter, and
+//! suggests no import. The tool reshapes it into one `[CGP-E041]` with the import in a `help`. The
+//! path is found by walking the public modules of the crate's dependencies, since the compiler's
+//! path printing names the re-exported `cgp_core` crate by its crate name, a path that does not
+//! compile.
 //!
-//! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E041
 
 use cgp::prelude::*;
 

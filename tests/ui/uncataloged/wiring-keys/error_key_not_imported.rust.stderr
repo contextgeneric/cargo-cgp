@@ -1,18 +1,18 @@
 error[E0425]: cannot find type `ErrorTypeProviderComponent` in this scope
-  --> src/main.rs:18:9
+  --> src/main.rs:20:9
    |
-18 |         ErrorTypeProviderComponent: UseType<String>,
+20 |         ErrorTypeProviderComponent: UseType<String>,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
    |
 help: you might be missing a type parameter
    |
-18 |         ErrorTypeProviderComponent<ErrorTypeProviderComponent>: UseType<String>,
+20 |         ErrorTypeProviderComponent<ErrorTypeProviderComponent>: UseType<String>,
    |                                   ++++++++++++++++++++++++++++
 
 error[E0425]: cannot find type `ErrorTypeProviderComponent` in this scope
-  --> src/main.rs:18:9
+  --> src/main.rs:20:9
    |
-18 |         ErrorTypeProviderComponent: UseType<String>,
+20 |         ErrorTypeProviderComponent: UseType<String>,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
 
 For more information about this error, try `rustc --explain E0425`.

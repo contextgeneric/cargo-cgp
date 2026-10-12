@@ -1,20 +1,9 @@
-error[E0425]: cannot find type `GreetHello` in this scope
-  --> src/main.rs:20:12
+error[E0425]: [CGP-E038] the provider `GreetHello` is not declared
+  --> src/main.rs:21:12
    |
-20 | #[cgp_impl(GreetHello)]
-   |            ^^^^^^^^^^ not found in this scope
-
-error[E0425]: cannot find type `GreetHello` in this scope
-  --> src/main.rs:29:27
+21 | #[cgp_impl(GreetHello)]
+   |            ^^^^^^^^^^
    |
-29 |         GreeterComponent: GreetHello,
-   |                           ^^^^^^^^^^ not found in this scope
+   = help: declare it with `#[cgp_impl(new GreetHello)]`
 
-error[E0275]: overflow evaluating the requirement `Person: CanGreet`
-  --> src/main.rs:34:12
-   |
-34 |     Person.greet();
-   |            ^^^^^
-
-Some errors have detailed explanations: E0275, E0425.
-For more information about an error, try `rustc --explain E0275`.
+For more information about this error, try `rustc --explain E0425`.
