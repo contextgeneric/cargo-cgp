@@ -1,25 +1,29 @@
-//! Post-processor: turn an unmet `HasField` bound into a field-oriented message.
+//! Post-processor: turn an unmet `HasField` bound into a missing-field message, where the text shows
+//! the field is missing.
 //!
 //! rustc reports a getter's unmet dependency as
 //! `the trait `HasField<Symbol!("name")>` is not implemented for `Context``. This rewrites
-//! that to `missing field `name` on `Context``. The rewritten clause carries no CGP error
-//! code: this acts on whatever sub-message the clause appears in, and codes classify only a
-//! rewritten *main* message (see `crate::code`).
+//! that to `missing field `name` on `Context`` when the same diagnostic shows the context
+//! implementing `HasField` for some other field: rustc's "similar impl" landmark, either inline
+//! (`but trait `HasField<…>` is implemented for it`, one other field) or as a separate
+//! `` `Context` implements trait `HasField<…>` `` note (several other fields). A struct that
+//! implements `HasField` for its other fields derives it, so the one field it lacks is missing.
+//! The rewritten clause carries no CGP error code: this acts on whatever sub-message the clause
+//! appears in, and codes classify only a rewritten *main* message (see `crate::code`).
 //!
-//! It distinguishes two cases, because their fixes differ, and the tell is within the same
-//! diagnostic (see the CGP `check-trait-failure` error-catalog document):
+//! Every other clause keeps rustc's wording, because the text cannot tell what the fix is:
 //!
-//! - The context implements `HasField` for *some* field but not the one asked for — a
-//!   single missing field. rustc shows a "similar impl" landmark, either inline
-//!   (`but trait `HasField<…>` is implemented for it`, one other field) or as a separate
-//!   `` `Context` implements trait `HasField<…>` `` note (several other fields).
-//! - The context implements `HasField` for *no* field — the whole `#[derive(HasField)]` is
-//!   missing. Neither landmark appears. The message instead points at the derive:
-//!   `` `#[derive(HasField)]` is required to access field `name` on `Context` ``.
+//! - **No landmark:** the context implements `HasField` for no field, and the text cannot tell a
+//!   struct that lacks the derive from one that lacks the field, or a fieldless struct whose derive
+//!   generates nothing.
+//! - **A numeric tag:** `Symbol!("0")` never names a field, since a field name cannot start with a
+//!   digit; a tuple struct's fields are keyed `Index<0>`, so the field is not missing.
+//! - **A generated parameter:** `__Context__` is the context a macro-generated impl is generic
+//!   over, not a struct, so the fix is a bound on it (`#[uses(…)]`), not a field.
 //!
-//! Whether the context has any `HasField` impl ([`context_has_hasfield_impls`]) is a
-//! property of the *whole* diagnostic — the landmark can sit far from the clause — so a
-//! caller decides it once across every message before rewriting each in turn.
+//! Whether the context has any `HasField` impl ([`context_has_hasfield_impls`]) is a property of
+//! the *whole* diagnostic, since the landmark can sit far from the clause, so a caller decides it
+//! once across every message before rewriting each in turn.
 //!
 //! Meant to run after [`strip_cgp_prefixes`](super::strip_cgp_prefixes) and
 //! [`resugar_symbol`](super::resugar_symbol), so it matches the bare, resugared
@@ -41,11 +45,16 @@ pub fn context_has_hasfield_impls(text: &str) -> bool {
     text.contains("is implemented for it") || text.contains("implements trait `HasField")
 }
 
-/// Rewrite every unmet-`HasField` clause in `text` to a field-oriented message, returning
-/// the rewritten text when any clause matched (and `None` otherwise). `has_field_impls`
-/// selects the single-missing-field wording from the missing-derive wording — the caller
-/// computes it across the whole diagnostic with [`context_has_hasfield_impls`].
+/// Rewrite every unmet-`HasField` clause in `text` that names a missing field into
+/// `missing field `name` on `Context``, returning the rewritten text when any clause matched (and
+/// `None` otherwise). `has_field_impls` says whether the diagnostic shows the context implementing
+/// `HasField` for another field, which the caller computes across the whole diagnostic with
+/// [`context_has_hasfield_impls`]; without it, or for a numeric tag or a generated context, the
+/// clause keeps rustc's wording (see the module documentation).
 pub fn rewrite_missing_fields(text: &str, has_field_impls: bool) -> Option<String> {
+    if !has_field_impls {
+        return None;
+    }
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     let mut changed = false;
@@ -54,31 +63,34 @@ pub fn rewrite_missing_fields(text: &str, has_field_impls: bool) -> Option<Strin
         out.push_str(&rest[..index]);
         let candidate = &rest[index..];
 
-        let Some((field, context, after_clause)) = parse_clause(candidate) else {
+        let Some((field, context, after_clause)) = parse_clause(candidate)
+            .filter(|(field, context, _)| names_a_missing_field(field, context))
+        else {
             out.push_str(ANCHOR);
             rest = &candidate[ANCHOR.len()..];
             continue;
         };
 
         changed = true;
-        let after = if has_field_impls {
-            out.push_str(&format!("missing field `{field}` on `{context}`"));
-            // Absorb the inline single-impl landmark when it directly follows the clause,
-            // so it does not dangle after the rewrite. The separate multi-impl note (when
-            // present instead) is left in place.
-            consume_inline_landmark(after_clause).unwrap_or(after_clause)
-        } else {
-            out.push_str(&format!(
-                "`#[derive(HasField)]` is required to access field `{field}` on `{context}`"
-            ));
-            after_clause
-        };
-
+        out.push_str(&format!("missing field `{field}` on `{context}`"));
+        // Absorb the inline single-impl landmark when it directly follows the clause, so it does
+        // not dangle after the rewrite. The separate multi-impl note (when present instead) is
+        // left in place.
+        let after = consume_inline_landmark(after_clause).unwrap_or(after_clause);
         rest = &candidate[candidate.len() - after.len()..];
     }
 
     out.push_str(rest);
     changed.then_some(out)
+}
+
+/// Whether a clause's tag and context can name a missing struct field: a tag a field could be
+/// named (not starting with a digit) on a context the program wrote (not a `__Name__` parameter a
+/// macro generated).
+fn names_a_missing_field(field: &str, context: &str) -> bool {
+    let numeric = field.starts_with(|c: char| c.is_ascii_digit());
+    let generated = context.len() > 4 && context.starts_with("__") && context.ends_with("__");
+    !numeric && !generated
 }
 
 /// Parse `the trait `HasField<Symbol!("FIELD")>` is not implemented for `CONTEXT`` at the

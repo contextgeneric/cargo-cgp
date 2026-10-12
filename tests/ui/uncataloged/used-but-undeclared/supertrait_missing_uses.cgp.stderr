@@ -4,7 +4,7 @@ error[E0277]: the trait bound `__Context__: HasName` is not satisfied
 26 | #[cgp_impl(new GreetHello)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-   = help: `#[derive(HasField)]` is required to access field `name` on `__Context__`
+   = help: the trait `HasField<Symbol!("name")>` is not implemented for `__Context__`
 note: required for `__Context__` to implement `HasName`
   --> src/main.rs:15:1
    |

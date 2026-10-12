@@ -1,9 +1,9 @@
 //! Reading a tuple-struct field with `Symbol!("0")` where `Index<0>` belongs.
 //!
-//! `Pair` derives `HasField`, keyed by `Index<N>`. The tool's help says "missing field `0` on
-//! `Pair`", reading the derive as present from rustc's separate "`Pair` implements trait
-//! `cgp::prelude::HasField<Tag>`" note, whose path the check strips first. The note's labels show
-//! the `Index<0>` and `Index<1>` tags, but nothing says that a tuple field takes an `Index` tag.
+//! `Pair` derives `HasField`, keyed by `Index<N>`. The help keeps rustc's "the trait
+//! `HasField<Symbol!("0")>` is not implemented for `Pair`", since a digit tag names no field. The
+//! note's labels show the `Index<0>` and `Index<1>` tags, but nothing says that a tuple field takes
+//! an `Index` tag.
 //!
 //! CGP error class: none yet.
 //!

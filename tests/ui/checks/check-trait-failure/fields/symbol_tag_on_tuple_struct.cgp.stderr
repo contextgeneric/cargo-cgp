@@ -6,7 +6,7 @@ error[E0277]: the trait bound `Pair: HasField<Symbol!("0")>` is not satisfied
    |           |
    |           required by a bound introduced by this call
    |
-help: missing field `0` on `Pair`
+help: the trait `HasField<Symbol!("0")>` is not implemented for `Pair`
   --> src/main.rs:21:1
    |
 21 | pub struct Pair(pub u32, pub String);

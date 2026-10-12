@@ -199,8 +199,8 @@ pub(crate) fn mentions_wiring(diag: &DiagInner) -> bool {
 }
 
 /// Whether any plain-string message or span label across `diag` and its children shows the
-/// context implementing `HasField` for a field — the whole-diagnostic fact the missing-field
-/// rewrite needs to tell a single missing field from a missing `#[derive(HasField)]`.
+/// context implementing `HasField` for a field: the whole-diagnostic fact the missing-field rewrite
+/// needs before it calls a field missing.
 pub(crate) fn mentions_hasfield_impls(diag: &DiagInner) -> bool {
     // A message's styled fragments are read joined: rustc highlights the `is` of `is implemented
     // for it` apart, so no single fragment carries the landmark.

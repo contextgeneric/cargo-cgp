@@ -1,8 +1,8 @@
 #![feature(prelude_import)]
 //! A provider for a component with `#[extend(HasName)]` that omits `#[uses(HasName)]`.
 //!
-//! The `E0277` on `__Context__: HasName` carries the getter's help "`#[derive(HasField)]` is required
-//! to access field `name` on `__Context__`", which is wrong advice; the fix is `#[uses(HasName)]`.
+//! The `E0277` on `__Context__: HasName` keeps rustc's help "the trait `HasField<Symbol!("name")>`
+//! is not implemented for `__Context__`"; nothing names the fix, `#[uses(HasName)]`.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
 //!

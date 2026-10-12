@@ -535,19 +535,26 @@ fn inline_landmark_is_recognized_with_its_path() {
 }
 
 #[test]
-fn missing_derive_when_no_impls_present() {
-    // No landmark at all: the context implements HasField for nothing, so the whole
-    // derive is missing and the message points at the derive, not a single field.
+fn no_landmark_keeps_the_clause() {
+    // No landmark at all: the context implements `HasField` for no field, so the text cannot tell
+    // a missing derive from a missing field, and the clause keeps rustc's wording.
     let text = "help: the trait `HasField<Symbol!(\"width\")>` is not implemented for `Rectangle`\n\
          \x20 --> src/main.rs:41:1";
     assert!(!context_has_hasfield_impls(text));
-    assert_eq!(
-        rewrite_missing_fields(text, false).as_deref(),
-        Some(
-            "help: `#[derive(HasField)]` is required to access field `width` on `Rectangle`\n\
-             \x20 --> src/main.rs:41:1"
-        ),
-    );
+    assert_eq!(rewrite_missing_fields(text, false), None);
+}
+
+#[test]
+fn a_numeric_tag_or_a_generated_context_keeps_the_clause() {
+    // `Symbol!("0")` names no field: a tuple struct keys its fields `Index<0>`.
+    let tuple = "help: the trait `HasField<Symbol!(\"0\")>` is not implemented for `Pair`\n\
+         help: `Pair` implements trait `HasField<Tag>`";
+    assert_eq!(rewrite_missing_fields(tuple, true), None);
+    // `__Context__` is a macro's generic context, whose fix is a bound, not a field.
+    let generated = "help: the trait `HasField<Symbol!(\"name\")>` is not implemented for \
+         `__Context__`\n\
+         but trait `HasField<Symbol!(\"age\")>` is implemented for it";
+    assert_eq!(rewrite_missing_fields(generated, true), None);
 }
 
 #[test]
@@ -559,8 +566,8 @@ fn missing_field_leaves_unrelated_diagnostics_alone() {
 
 #[test]
 fn postprocess_message_chains_the_transforms() {
-    // A prefixed, expanded `HasField<Symbol<…>>` clause with no similar-impl landmark:
-    // stripped, resugared, then rewritten as a missing derive in one pass.
+    // A prefixed, expanded `HasField<Symbol<…>>` clause with no similar-impl landmark: stripped
+    // and resugared in one pass, and left in rustc's wording, since nothing shows the fix.
     let text = "the trait `HasField<cgp::prelude::Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', Chars<'h', Nil>>>>>>>` is not implemented for `Rectangle`";
     assert_eq!(
         postprocess_message(
@@ -570,7 +577,7 @@ fn postprocess_message_chains_the_transforms() {
             &AmbiguousNames::default()
         )
         .as_deref(),
-        Some("`#[derive(HasField)]` is required to access field `width` on `Rectangle`"),
+        Some("the trait `HasField<Symbol!(\"width\")>` is not implemented for `Rectangle`"),
     );
 }
 
