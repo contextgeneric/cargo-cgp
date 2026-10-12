@@ -1,0 +1,47 @@
+error[E0428]: the name `__compute_area__` is defined multiple times
+  --> src/main.rs:22:1
+   |
+16 | #[cgp_auto_dispatch]
+   | -------------------- previous definition of the value `__compute_area__` here
+...
+22 | #[cgp_auto_dispatch]
+   | ^^^^^^^^^^^^^^^^^^^^ `__compute_area__` redefined here
+   |
+   = note: `__compute_area__` must be defined only once in the value namespace of this module
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0428]: the name `ComputeArea` is defined multiple times
+  --> src/main.rs:24:8
+   |
+18 |     fn area(&self) -> f64;
+   |        ---- previous definition of the type `ComputeArea` here
+...
+24 |     fn area(&self) -> f64;
+   |        ^^^^ `ComputeArea` redefined here
+   |
+   = note: `ComputeArea` must be defined only once in the type namespace of this module
+
+error[E0428]: the name `__compute_perimeter__` is defined multiple times
+  --> src/main.rs:22:1
+   |
+16 | #[cgp_auto_dispatch]
+   | -------------------- previous definition of the value `__compute_perimeter__` here
+...
+22 | #[cgp_auto_dispatch]
+   | ^^^^^^^^^^^^^^^^^^^^ `__compute_perimeter__` redefined here
+   |
+   = note: `__compute_perimeter__` must be defined only once in the value namespace of this module
+   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0428]: the name `ComputePerimeter` is defined multiple times
+  --> src/main.rs:25:8
+   |
+19 |     fn perimeter(&self) -> f64;
+   |        --------- previous definition of the type `ComputePerimeter` here
+...
+25 |     fn perimeter(&self) -> f64;
+   |        ^^^^^^^^^ `ComputePerimeter` redefined here
+   |
+   = note: `ComputePerimeter` must be defined only once in the type namespace of this module
+
+For more information about this error, try `rustc --explain E0428`.
