@@ -19,7 +19,7 @@ error[E0284]: type annotations needed: cannot satisfy `<__Context__ as HasField<
 21 | #[cgp_impl(new ReadCount)]
    |                ^^^^^^^^^ cannot satisfy `<__Context__ as HasField<Symbol!("count")>>::Value == u32`
    |
-note: required for the provider `ReadCount` to implement the provider trait `Counter` for the context `__Context__`
+note: required for the provider `ReadCount` to implement the provider trait `Counter`
   --> src/main.rs:21:1
    |
 21 | #[cgp_impl(new ReadCount)]

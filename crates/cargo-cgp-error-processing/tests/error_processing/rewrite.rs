@@ -45,6 +45,28 @@ fn rewrites_is_provider_for_note() {
 }
 
 #[test]
+fn a_generated_parameter_is_not_called_a_context() {
+    // `__Context__` is the parameter a provider impl is generic over, standing for every context,
+    // so the provider form leaves it out and the consumer form names it plainly.
+    assert_eq!(
+        rewrite_required_for(
+            "required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, __Context__>`",
+            &name_map(),
+        )
+        .as_deref(),
+        Some("required for the provider `RectangleArea` to implement the provider trait `AreaCalculator`"),
+    );
+    assert_eq!(
+        rewrite_required_for(
+            "required for `__Context__` to implement `CanUseComponent<AreaCalculatorComponent>`",
+            &name_map(),
+        )
+        .as_deref(),
+        Some("required for `__Context__` to implement the consumer trait `CanCalculateArea`"),
+    );
+}
+
+#[test]
 fn rewrites_can_use_component_note() {
     let out = rewrite_required_for(
         "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`",

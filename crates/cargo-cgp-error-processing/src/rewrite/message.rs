@@ -85,7 +85,9 @@ pub fn wiring_overflow_help() -> String {
 ///
 /// Returns `None` for any message that is not one of the two recognized note forms, and for a
 /// recognized form whose component marker is absent from `names` — so a message is only ever
-/// rewritten when the replacement names are known.
+/// rewritten when the replacement names are known. A type is called a context only when it is
+/// one: a generated parameter such as `__Context__` stands for every context a provider is generic
+/// over, so the provider form leaves its context out and the consumer form names it plainly.
 pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<String> {
     let rest = message.strip_prefix("required for `")?;
     let (subject, rest) = rest.split_once("` to implement `")?;
@@ -101,6 +103,12 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
             let component = args.first()?.trim();
             let context = args.get(1)?.trim();
             let entry = names.get(component)?;
+            if is_generated_name(context) {
+                return Some(format!(
+                    "required for the provider `{subject}` to implement the provider trait `{}`",
+                    entry.provider
+                ));
+            }
             Some(format!(
                 "required for the provider `{subject}` to implement the provider trait `{}` for the context `{context}`",
                 entry.provider
@@ -111,13 +119,24 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
             // the consumer trait behind `Component`.
             let component = args.first()?.trim();
             let entry = names.get(component)?;
+            let subject = if is_generated_name(subject) {
+                format!("`{subject}`")
+            } else {
+                format!("the context `{subject}`")
+            };
             Some(format!(
-                "required for the context `{subject}` to implement the consumer trait `{}`",
+                "required for {subject} to implement the consumer trait `{}`",
                 entry.consumer
             ))
         }
         _ => None,
     }
+}
+
+/// Whether `name` is a parameter a CGP macro generated (`__Context__`, `__Provider__`), named in
+/// the double-underscore form the macros reserve, rather than a type the programmer wrote.
+fn is_generated_name(name: &str) -> bool {
+    name.len() > 4 && name.starts_with("__") && name.ends_with("__")
 }
 
 /// Rewrite the primary "the trait bound `…` is not satisfied" header a wiring failure opens
