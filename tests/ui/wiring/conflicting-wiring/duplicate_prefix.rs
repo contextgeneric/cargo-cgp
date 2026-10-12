@@ -1,13 +1,13 @@
 //! Two `#[prefix]` attributes registering one component into one namespace.
 //!
-//! `E0119` with both carets on `#[cgp_component]`, passed through uncoded.
+//! `[CGP-E014]` names the namespace and both redirect paths, with both carets on `#[cgp_component]`.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! `cgp` gives both generated registrations the attribute's span, so the carets cannot split.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E014
 
 use cgp::prelude::*;
 

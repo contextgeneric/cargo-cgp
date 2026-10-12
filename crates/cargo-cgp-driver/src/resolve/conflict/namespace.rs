@@ -40,11 +40,22 @@ pub(crate) fn classify_namespace_conflict(
     primary_span: Span,
     label_spans: &[Span],
 ) -> Option<WiringConflict> {
-    let conflicting = namespace_entry_at(tcx, primary_span)?;
+    let mut at_caret = namespace_entries_at(tcx, primary_span).into_iter();
+    let first_at_caret = at_caret.next()?;
     let first = label_spans
         .iter()
         .filter(|&&span| !same_range(span, primary_span))
-        .find_map(|&span| namespace_entry_at(tcx, span));
+        .find_map(|&span| namespace_entries_at(tcx, span).into_iter().next());
+    // Two entries one macro emits from one attribute site, such as two `#[prefix]` attributes on
+    // one component, carry the same span, so rustc puts both carets on it: the first entry there is
+    // the first implementation, and the second the conflicting one.
+    let (conflicting, first) = match first {
+        Some(first) => (first_at_caret, Some(first)),
+        None => match at_caret.next() {
+            Some(second) => (second, Some(first_at_caret)),
+            None => (first_at_caret, None),
+        },
+    };
 
     let namespace = render_lookup_trait(tcx, conflicting.impl_did);
     let key = describe_key(tcx, conflicting.key, conflicting.impl_did)?;
@@ -72,10 +83,11 @@ pub(crate) fn classify_namespace_conflict(
     })
 }
 
-/// The namespace entry whose namespace-trait impl sits at `span` — matched by source range
-/// against the impl's def-span, exactly as the `DelegateComponent` classifier matches its carets —
-/// or `None` when no local namespace-trait impl is there.
-fn namespace_entry_at<'tcx>(tcx: TyCtxt<'tcx>, span: Span) -> Option<ConflictSide<'tcx>> {
+/// The namespace entries whose namespace-trait impls sit at `span`, in definition order — matched
+/// by source range against each impl's def-span, exactly as the `DelegateComponent` classifier
+/// matches its carets. Empty when no local namespace-trait impl is there.
+fn namespace_entries_at<'tcx>(tcx: TyCtxt<'tcx>, span: Span) -> Vec<ConflictSide<'tcx>> {
+    let mut entries = Vec::new();
     for local in tcx.hir_crate_items(()).definitions() {
         if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
             continue;
@@ -88,11 +100,11 @@ fn namespace_entry_at<'tcx>(tcx: TyCtxt<'tcx>, span: Span) -> Option<ConflictSid
         if !is_namespace_lookup_trait(tcx, trait_did) {
             continue;
         }
-        return Some(ConflictSide {
+        entries.push(ConflictSide {
             impl_did,
             key: tcx.type_of(impl_did).instantiate_identity().skip_norm_wip(),
             delegate: impl_delegate_type(tcx, impl_did),
         });
     }
-    None
+    entries
 }

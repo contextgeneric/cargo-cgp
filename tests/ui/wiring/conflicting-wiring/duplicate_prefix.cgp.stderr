@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `AppNamespace<_>` for type `GreeterComponent`
+error[E0119]: [CGP-E014] conflicting wiring: `AppNamespace` redirects component `GreeterComponent` twice, to `@app.GreeterComponent` and to `@other.GreeterComponent`
   --> src/main.rs:18:1
    |
 18 | #[cgp_component(Greeter)]
