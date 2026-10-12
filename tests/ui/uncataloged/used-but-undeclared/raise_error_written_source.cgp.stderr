@@ -1,9 +1,0 @@
-error[E0599]: [CGP-E030] the trait `CanRaiseError` is used but not declared as a dependency
-  --> src/main.rs:30:19
-   |
-30 |         Err(Self::raise_error(LoadError))
-   |                   ^^^^^^^^^^^
-   |
-   = help: declare it as a dependency with `#[uses(CanRaiseError<LoadError>)]`
-
-For more information about this error, try `rustc --explain E0599`.

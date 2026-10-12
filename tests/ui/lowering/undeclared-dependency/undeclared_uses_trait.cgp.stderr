@@ -1,0 +1,9 @@
+error[E0599]: [CGP-E030] the trait `GetCount` is used but not declared as a dependency
+  --> src/main.rs:49:46
+   |
+49 |     format!("{} ({})", self.get_name(), self.get_count())
+   |                                              ^^^^^^^^^
+   |
+   = help: declare it as a dependency with `#[uses(GetCount)]`
+
+For more information about this error, try `rustc --explain E0599`.

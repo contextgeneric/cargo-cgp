@@ -1,4 +1,4 @@
-//! Tests for the used-but-undeclared trait wording (`[CGP-E030]`).
+//! Tests for the undeclared-trait wording (`[CGP-E030]`).
 //!
 //! `plan_undeclared_trait` and `undeclared_trait_help` are pure functions over the rustc-free
 //! [`UndeclaredTrait`] model, so they are driven directly over hand-built values. The driver fills

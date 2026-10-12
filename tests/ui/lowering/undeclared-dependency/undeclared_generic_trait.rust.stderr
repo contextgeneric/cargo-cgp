@@ -1,0 +1,35 @@
+error[E0599]: the method `format_pair` exists for reference `&__Context__`, but its trait bounds were not satisfied
+  --> src/main.rs:23:10
+   |
+23 |     self.format_pair((1_u32, 2_u64))
+   |          ^^^^^^^^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `PairFormatter`
+  --> src/main.rs:18:5
+   |
+18 |     fn format_pair(&self, value: T) -> String;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: the following trait bounds were not satisfied:
+      `&__Context__: PairFormatter<&__Context__, _>`
+      `__Context__: PairFormatter<__Context__, _>`
+  --> src/main.rs:16:17
+   |
+16 |   #[cgp_component(PairFormatter)]
+   |  _----------------^--------------
+17 | | pub trait CanFormatPair<T> {
+   | |           ---------------^
+   | |__________________________|
+   |                            unsatisfied trait bound introduced here
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+help: use associated function syntax instead
+   |
+23 -     self.format_pair((1_u32, 2_u64))
+23 +     __Context__::format_pair((1_u32, 2_u64))
+   |
+help: the following trait defines an item `format_pair`, perhaps you need to restrict type parameter `__Context__` with it:
+   |
+21 | #[cgp_fn]: CanFormatPair</* T */>
+   |          ++++++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0599`.

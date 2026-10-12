@@ -1,0 +1,101 @@
+error[E0425]: cannot find type `CanCalculateAreaComponent` in this scope
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+note: similarly named struct `AreaCalculatorComponent` defined here
+  --> src/main.rs:16:17
+   |
+16 | #[cgp_component(AreaCalculator)]
+   |                 ^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: a struct with a similar name exists
+   |
+21 - #[cgp_impl(new RectangleArea)]
+21 + AreaCalculatorComponent
+   |
+
+error[E0107]: trait takes 0 generic arguments but 1 generic argument was supplied
+  --> src/main.rs:22:6
+   |
+21 |   #[cgp_impl(new RectangleArea)]
+   |  _______________________________-
+22 | | impl CanCalculateArea {
+   | |      ^^^^^^^^^^^^^^^-
+   | |______|______________|
+   |        |              help: remove the unnecessary generics
+   |        expected 0 generic arguments
+   |
+note: trait defined here, with 0 generic parameters
+  --> src/main.rs:17:11
+   |
+17 | pub trait CanCalculateArea {
+   |           ^^^^^^^^^^^^^^^^
+
+error[E0186]: method `area` has a `&self` declaration in the trait, but not in the impl
+  --> src/main.rs:23:5
+   |
+18 |     fn area(&self) -> f64;
+   |     ---------------------- `&self` used in trait
+...
+23 |     fn area(&self, #[implicit] width: f64, #[implicit] height: f64) -> f64 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&self` in impl
+
+error[E0207]: the type parameter `__Context__` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_impl(new RectangleArea)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unconstrained type parameter
+   |
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use the type parameter `__Context__` in the `RectangleArea` type and use it in the type definition
+   |
+21 | #[cgp_impl(new RectangleArea<__Context__>)]
+   |                             +++++++++++++
+
+error[E0599]: the method `area` exists for struct `Rectangle`, but its trait bounds were not satisfied
+  --> src/main.rs:52:23
+   |
+21 | #[cgp_impl(new RectangleArea)]
+   |                ------------- doesn't satisfy `RectangleArea: AreaCalculator<Rectangle>`
+...
+29 | pub struct Rectangle {
+   | -------------------- method `area` not found for this struct because it doesn't satisfy `Rectangle: CanCalculateArea`
+...
+52 |     let _ = rectangle.area();
+   |                       ^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `AreaCalculator`
+  --> src/main.rs:18:5
+   |
+18 |     fn area(&self) -> f64;
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+note: trait bound `RectangleArea: AreaCalculator<Rectangle>` was not satisfied
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_component(AreaCalculator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: the trait `AreaCalculator` must be implemented
+  --> src/main.rs:17:1
+   |
+17 | / pub trait CanCalculateArea {
+18 | |     fn area(&self) -> f64;
+19 | | }
+   | |_^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `CanCalculateArea` defines an item `area`, perhaps you need to implement it
+  --> src/main.rs:17:1
+   |
+17 | pub trait CanCalculateArea {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+   |
+52 -     let _ = rectangle.area();
+52 +     let _ = Rectangle::area();
+   |
+
+Some errors have detailed explanations: E0107, E0186, E0207, E0425, E0599.
+For more information about an error, try `rustc --explain E0107`.

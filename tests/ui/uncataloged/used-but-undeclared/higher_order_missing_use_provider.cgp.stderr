@@ -1,9 +1,0 @@
-error[E0599]: [CGP-E031] the inner provider `InnerCalculator` is used but not imported
-  --> src/main.rs:35:26
-   |
-35 |         InnerCalculator::area(self) * scale_factor * scale_factor
-   |                          ^^^^
-   |
-   = help: import it with `#[use_provider(InnerCalculator: AreaCalculator)]`
-
-For more information about this error, try `rustc --explain E0599`.

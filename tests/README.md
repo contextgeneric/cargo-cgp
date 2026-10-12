@@ -31,13 +31,15 @@ mirror the error catalog:
   concept sub-directories such as `fields/`, `providers/`, and `missing-wiring/`.
 - [`ui/hidden/unsatisfied-dependency/`](ui/hidden/unsatisfied-dependency): an unmet dependency
   reached by calling a method rather than through a check, whose cause plain `cargo check` hides.
-- [`ui/lowering/`](ui/lowering): failures in what a macro lowered the user's input into.
+- [`ui/lowering/`](ui/lowering): failures in what a macro lowered the user's input into, among
+  them `undeclared-dependency/` (a trait, inner provider, or abstract type a definition uses
+  without declaring it) and `wrong-component-half/` (a construct that names or sits on the wrong
+  half of a component, such as a consumer trait where its provider trait belongs).
 - [`ui/wiring/`](ui/wiring): structural wiring failures, such as conflicting wiring, orphan-rule
   violations, cycles, and unconstrained generics.
 - [`ui/uncataloged/`](ui/uncataloged): mistakes the catalog does not cover yet, one directory per
-  class: `used-but-undeclared/` and `wrong-component-half/` (the gap the catalog names),
-  `extensible-data/`, `wiring-keys/`, `implicit-arguments/`, and `macro-defects/` (mistakes a `cgp`
-  macro mishandles).
+  class: `extensible-data/`, `wiring-keys/`, `implicit-arguments/`, and `macro-defects/` (mistakes
+  a `cgp` macro mishandles).
 
 Three more directories hold fixtures that belong to no error class:
 

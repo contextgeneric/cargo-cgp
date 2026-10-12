@@ -1,0 +1,9 @@
+error[E0599]: [CGP-E031] the inner provider `InnerShape` is used but not imported
+  --> src/main.rs:30:21
+   |
+30 |         InnerShape::perimeter(self) * scale_factor
+   |                     ^^^^^^^^^
+   |
+   = help: import it with `#[use_provider(InnerShape: PerimeterCalculator)]`
+
+For more information about this error, try `rustc --explain E0599`.

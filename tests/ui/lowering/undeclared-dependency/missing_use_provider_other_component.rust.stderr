@@ -1,0 +1,18 @@
+error[E0599]: no associated function or constant named `perimeter` found for type parameter `InnerShape` in the current scope
+  --> src/main.rs:30:21
+   |
+28 | impl<InnerShape> AreaCalculator {
+   |      ---------- associated function or constant `perimeter` not found for this type parameter
+29 |     fn area(&self, #[implicit] scale_factor: f64) -> f64 {
+30 |         InnerShape::perimeter(self) * scale_factor
+   |                     ^^^^^^^^^ associated function or constant cannot be called on `InnerShape` due to unsatisfied trait bounds
+   |
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+help: the following traits define an item `perimeter`, perhaps you need to restrict type parameter `InnerShape` with one of them:
+   |
+28 | impl<InnerShape: CanCalculatePerimeter> AreaCalculator {
+   |                +++++++++++++++++++++++
+28 | impl<InnerShape: PerimeterCalculator</* __Context__ */>> AreaCalculator {
+   |                ++++++++++++++++++++++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0599`.

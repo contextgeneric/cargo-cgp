@@ -1,9 +1,0 @@
-error[E0599]: [CGP-E030] the trait `CanRaiseError` is used but not declared as a dependency
-  --> src/main.rs:21:11
-   |
-21 |     Self::raise_error("failed")
-   |           ^^^^^^^^^^^
-   |
-   = help: declare it as a dependency with `#[uses(CanRaiseError<SourceError>)]`, with the type the call uses in place of `SourceError`
-
-For more information about this error, try `rustc --explain E0599`.
