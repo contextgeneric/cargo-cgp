@@ -10,15 +10,17 @@ use crate::config::{
 use crate::resolve::cgp_item::is_cgp_item;
 
 /// `value` with every CGP empty list that stands on its own (a `PipeHandlers<Nil>` argument, a
-/// `Nil: ComposeProviders` bound's subject) replaced by a type that prints as `Product![]`, and every
-/// empty sum by one that prints as `Sum![]`, so a label or a bound reads as the program wrote it.
+/// `Nil: ComposeProviders` bound's subject) replaced by a type that prints as `Product![]`, and
+/// every empty sum by one that prints as `Sum![]`, so a label or a bound reads as the program
+/// wrote it.
 ///
 /// The `Nil` and `Void` are recognized by `DefId`, so a same-named type from another crate is left
 /// alone. Only a standalone one is replaced: the `Nil` that ends a `Cons` or `PathCons` spine, or a
 /// `Void` that ends an `Either` spine, is the spine's terminator, which the text resugaring folds
 /// with the rest of the spine; and a `Symbol` or `Field` is left whole, since a `Symbol`'s `Nil`
-/// ends a string and a `Field`'s `Nil` payload is a unit variant to the `Enum!` folding. The replacement is a type
-/// parameter named for the macro, which no other code sees: it exists only to be printed.
+/// ends a string and a `Field`'s `Nil` payload is a unit variant to the `Enum!` folding. The
+/// replacement is a type parameter named for the macro, which no other code sees: it exists only to
+/// be printed.
 pub(crate) fn fold_empty_lists<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
     tcx: TyCtxt<'tcx>,
     value: T,

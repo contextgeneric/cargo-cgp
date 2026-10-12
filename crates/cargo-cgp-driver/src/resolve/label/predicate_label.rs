@@ -115,7 +115,7 @@ pub(crate) fn label_for<'tcx>(
     })
 }
 
-/// Render a trait obligation's arguments as a generic list — `<u32, u64>`, `<'_, str>` — or the
+/// Render a trait obligation's arguments as a generic list (`<u32, u64>`, `<'_, str>`), or the
 /// empty string when there are none, dropping the first `skip` *type* arguments. For a consumer
 /// obligation `Ctx: C<A, B>` that is the `Self`=`Ctx` (skip 1), and for a provider obligation
 /// `P: T<Ctx, A, B>` the `Self` and the leading context (skip 2), so the component's own parameters

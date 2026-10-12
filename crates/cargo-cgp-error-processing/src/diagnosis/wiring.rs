@@ -174,8 +174,8 @@ pub fn plan_wiring_conflict(conflict: &WiringConflict) -> String {
 
 /// The `help` message accompanying a conflict's header, when it has one. A redirect collision names
 /// how to fix it: wire the direct entry's provider under the redirected key rather than setting the
-/// key directly, kept out of the header so the headline stays one short sentence. A redirect looks a
-/// component up with its type parameters appended to the path, so for a generic component the key
+/// key directly, kept out of the header so the headline stays one short sentence. A redirect looks
+/// a component up with its type parameters appended to the path, so for a generic component the key
 /// takes them as a generic segment each, `@AreaCalculatorComponent.<Shape> Shape`, which serves
 /// every parameter value the direct entry served. The help is omitted when the direct entry names
 /// no provider a reader wrote. Every other shape's carets are the fix, so they carry no help.

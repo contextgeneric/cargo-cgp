@@ -16,8 +16,8 @@ use crate::resolve::label::fold_empty_lists;
 /// crate that defines it (`Cons`/`Nil` in `cgp-base-types`, `Either`/`Void` in `cgp-field`), so a
 /// same-named type from another crate is never resugared. Each element is rendered recursively, so a
 /// nested list (a `Sum!` inside a `Product!`, say) is resugared too; a non-spine type falls back to
-/// its ordinary printed form (whose inner `Symbol!`/`Path!` the post-processing then resugars), with
-/// a standalone empty list written `Product![]` or `Sum![]` ([`fold_empty_lists`]).
+/// its ordinary printed form (whose inner `Symbol!`/`Path!` the post-processing then resugars),
+/// with a standalone empty list written `Product![]` or `Sum![]` ([`fold_empty_lists`]).
 ///
 /// A list whose elements are *all* `Field` cells resugars one step further to the CGP `Struct!` or
 /// `Enum!` shape it describes, when the shape has an exact spelling, so a `HasFields` field list reads

@@ -66,9 +66,9 @@ pub(crate) fn render_lookup_trait(tcx: TyCtxt<'_>, impl_did: DefId) -> String {
     }
 }
 
-/// Render a `PathCons<..>` key back to its bare `@a.b` surface form — the typed counterpart of the
-/// text `resugar_path`, done straight off the types so each generic parameter is read by name. A
-/// lowercase `Symbol` segment decodes to its string; a named segment keeps its type name, and any
+/// Render a `PathCons<..>` key back to its bare `@a.b` surface form. It is the typed counterpart of
+/// the text `resugar_path`, done straight off the types so each generic parameter is read by name.
+/// A lowercase `Symbol` segment decodes to its string; a named segment keeps its type name, and any
 /// other type prints as itself, arguments included (`Wrap<u64>`); a generic segment, such as an
 /// `open` key's per-entry generic or a `for`-loop key parameter, prints its parameter name
 /// (`@ComputerComponent.Code.u64`). The `__Wildcard__` tail `cgp`'s macros end a key with is left

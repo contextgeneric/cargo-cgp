@@ -250,8 +250,8 @@ fn categorized_header<'a>(
             // ordinary bound such as `f64: Eq` the solver descended to *is* the root cause — so
             // keep rustc's header, which already names that cause. (The matching note then drops
             // its `root cause:` lead so it does not repeat the header.) Where the leaf writes the
-            // bound as the program did and rustc does not (`Product![]` for CGP's `Nil`), the header
-            // takes the leaf's wording in rustc's sentence instead.
+            // bound as the program did and rustc does not (`Product![]` for CGP's `Nil`), the
+            // header takes the leaf's wording in rustc's sentence instead.
             if let Some(leaf) = bound_leaf(resolved, parsed.bound) {
                 return match leaf {
                     Leaf::Bound { summary } if summary != parsed.bound => Header {
@@ -281,12 +281,12 @@ fn categorized_header<'a>(
     Header::keep()
 }
 
-/// The recovered [`Leaf::Bound`] root cause that `bound` — the whole `Self: Trait<…>` restatement
-/// rustc's main message opened with — states, if any. When there is one, rustc's header already
-/// names the genuine root cause; when there is none, the header is a mid-chain symptom the solver
-/// stopped on. The leaf writes a CGP empty list as `Product![]` or `Sum![]` where rustc prints
-/// `Nil` or `Void`, the one difference between the two printings, so the comparison reads the leaf
-/// back in rustc's form.
+/// The recovered [`Leaf::Bound`] root cause that `bound` states, if any: `bound` is the whole
+/// `Self: Trait<…>` restatement rustc's main message opened with. When there is one, rustc's header
+/// already names the genuine root cause; when there is none, the header is a mid-chain symptom the
+/// solver stopped on. The leaf writes a CGP empty list as `Product![]` or `Sum![]` where rustc
+/// prints `Nil` or `Void`, the one difference between the two printings, so the comparison reads
+/// the leaf back in rustc's form.
 fn bound_leaf<'a>(resolved: &'a Resolved, bound: &str) -> Option<&'a Leaf> {
     resolved
         .causes
