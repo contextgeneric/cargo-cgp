@@ -17,7 +17,6 @@ use crate::code::{
     DUPLICATE_REDIRECT, DUPLICATE_WIRING, MULTIPLE_NAMESPACES, OVERLAPPING_WIRING,
     REDIRECT_COLLISION,
 };
-use crate::diagnosis::quoted_list;
 
 /// One key of a conflicting `delegate_components!` entry, rendered in the surface form the
 /// programmer wrote it. The driver decides which variant a key is by inspecting the impl the
@@ -174,10 +173,12 @@ pub fn plan_wiring_conflict(conflict: &WiringConflict) -> String {
 }
 
 /// The `help` message accompanying a conflict's header, when it has one. A redirect collision names
-/// how to fix it (wire the provider under the redirected key rather than setting the key directly),
-/// kept out of the header so the headline stays one short sentence. For a generic component the
-/// key is the path extended by the component's parameters, one entry per parameter value. Every
-/// other shape's carets are the fix, so they carry no help.
+/// how to fix it: wire the direct entry's provider under the redirected key rather than setting the
+/// key directly, kept out of the header so the headline stays one short sentence. A redirect looks a
+/// component up with its type parameters appended to the path, so for a generic component the key
+/// takes them as a generic segment each, `@AreaCalculatorComponent.<Shape> Shape`, which serves
+/// every parameter value the direct entry served. The help is omitted when the direct entry names
+/// no provider a reader wrote. Every other shape's carets are the fix, so they carry no help.
 pub fn wiring_conflict_help(conflict: &WiringConflict) -> Option<String> {
     let WiringConflict::Redirect {
         path,
@@ -188,26 +189,13 @@ pub fn wiring_conflict_help(conflict: &WiringConflict) -> Option<String> {
     else {
         return None;
     };
-    if params.is_empty() {
-        return provider
-            .as_ref()
-            .map(|provider| format!("wire the provider `{provider}` with the key `{path}`"));
-    }
-    let noun = if params.len() == 1 {
-        "parameter"
+    let provider = provider.as_ref()?;
+    let key = if params.is_empty() {
+        path.clone()
     } else {
-        "parameters"
+        format!("{path}.<{}> {}", params.join(", "), params.join("."))
     };
-    let keys = params
-        .iter()
-        .fold(path.clone(), |key, param| format!("{key}.<{param}>"));
-    let replaced = provider
-        .as_ref()
-        .map(|provider| format!(" in place of `{provider}`"))
-        .unwrap_or_default();
     Some(format!(
-        "the redirect appends the {noun} {} to `{path}`, so wire each provider with a `{keys}` \
-         key{replaced}",
-        quoted_list(params),
+        "wire the provider `{provider}` with the key `{key}`"
     ))
 }

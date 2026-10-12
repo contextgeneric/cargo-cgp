@@ -144,9 +144,10 @@ fn redirect_collides_with_direct_wiring() {
 }
 
 #[test]
-fn redirect_of_generic_component_names_per_parameter_keys() {
+fn redirect_of_generic_component_names_a_generic_key() {
     // The redirect appends the component's parameters to the path, so wiring the provider at the
-    // bare path would never be looked up.
+    // bare path would never be looked up; a generic segment per parameter serves every value the
+    // direct entry served.
     let conflict = WiringConflict::Redirect {
         context: "App".to_owned(),
         key: WiringKey::Component("AreaCalculatorComponent".to_owned()),
@@ -157,9 +158,8 @@ fn redirect_of_generic_component_names_per_parameter_keys() {
     assert_eq!(
         wiring_conflict_help(&conflict).as_deref(),
         Some(
-            "the redirect appends the parameter `Shape` to `@AreaCalculatorComponent`, so wire \
-             each provider with a `@AreaCalculatorComponent.<Shape>` key in place of \
-             `UseDelegate<AreaTable>`"
+            "wire the provider `UseDelegate<AreaTable>` with the key \
+             `@AreaCalculatorComponent.<Shape> Shape`"
         ),
     );
 
@@ -167,16 +167,23 @@ fn redirect_of_generic_component_names_per_parameter_keys() {
         context: "App".to_owned(),
         key: WiringKey::Component("PairComponent".to_owned()),
         path: "@PairComponent".to_owned(),
-        provider: None,
+        provider: Some("PairProvider".to_owned()),
         params: vec!["A".to_owned(), "B".to_owned()],
     };
     assert_eq!(
         wiring_conflict_help(&conflict).as_deref(),
-        Some(
-            "the redirect appends the parameters `A` and `B` to `@PairComponent`, so wire each \
-             provider with a `@PairComponent.<A>.<B>` key"
-        ),
+        Some("wire the provider `PairProvider` with the key `@PairComponent.<A, B> A.B`"),
     );
+
+    // With no provider a reader wrote, there is nothing to wire under the key.
+    let conflict = WiringConflict::Redirect {
+        context: "App".to_owned(),
+        key: WiringKey::Component("PairComponent".to_owned()),
+        path: "@PairComponent".to_owned(),
+        provider: None,
+        params: vec!["A".to_owned(), "B".to_owned()],
+    };
+    assert_eq!(wiring_conflict_help(&conflict), None);
 }
 
 #[test]

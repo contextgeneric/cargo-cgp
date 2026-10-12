@@ -7,6 +7,6 @@ error[E0119]: [CGP-E013] component `AreaCalculatorComponent` on `App` is redirec
 41 |         AreaCalculatorComponent: UseDelegate<new AreaTable {
    |         ^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
    |
-   = help: the redirect appends the parameter `Shape` to `@AreaCalculatorComponent`, so wire each provider with a `@AreaCalculatorComponent.<Shape>` key in place of `UseDelegate<AreaTable>`
+   = help: wire the provider `UseDelegate<AreaTable>` with the key `@AreaCalculatorComponent.<Shape> Shape`
 
 For more information about this error, try `rustc --explain E0119`.
