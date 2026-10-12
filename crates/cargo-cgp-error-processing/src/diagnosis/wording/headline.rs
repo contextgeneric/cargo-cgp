@@ -17,9 +17,13 @@ pub fn cause_headline(code: &str, class_sentence: &str, causes: &[Cause]) -> Str
     }
 }
 
+/// The most items a merged headline names before it counts the rest (see [`merged_cause`]).
+pub const MERGED_CAUSE_NAMES: usize = 3;
+
 /// One sentence stating every cause, when they can share one: a single cause, or several of one
 /// kind on one owner (fields missing from one struct, wiring missing from one context, entries
-/// missing from one provider's table). `None` for no causes or a mix.
+/// missing from one provider's table). A long list names its first [`MERGED_CAUSE_NAMES`] items
+/// and counts the rest, which the note lists in full. `None` for no causes or a mix.
 pub fn merged_cause(causes: &[Cause]) -> Option<String> {
     match causes {
         [] => None,
@@ -34,7 +38,7 @@ pub fn merged_cause(causes: &[Cause]) -> Option<String> {
                 }
                 items.push(item.to_owned());
             }
-            let items = quoted_list(&items);
+            let items = capped_list(&items);
             Some(match kind {
                 MergeKind::Field => format!("missing fields {items} on `{owner}`"),
                 MergeKind::Wiring => format!("missing wiring for {items} on `{owner}`"),
@@ -44,6 +48,24 @@ pub fn merged_cause(causes: &[Cause]) -> Option<String> {
             })
         }
     }
+}
+
+/// A [`quoted_list`] of `items`, or its first [`MERGED_CAUSE_NAMES`] items and a count of the rest
+/// when the list is longer. A list one item past the cap is named in full, since its count would
+/// take as much room as the item.
+fn capped_list(items: &[String]) -> String {
+    if items.len() <= MERGED_CAUSE_NAMES + 1 {
+        return quoted_list(items);
+    }
+    let named: Vec<String> = items[..MERGED_CAUSE_NAMES]
+        .iter()
+        .map(|item| format!("`{item}`"))
+        .collect();
+    format!(
+        "{}, and {} more",
+        named.join(", "),
+        items.len() - MERGED_CAUSE_NAMES
+    )
 }
 
 /// The headline of a block that coalesces several resolved failures sharing a root cause: the

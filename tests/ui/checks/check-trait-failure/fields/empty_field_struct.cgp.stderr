@@ -1,17 +1,17 @@
-error[E0277]: [CGP-E001] missing fields `height` and `width` on `Rectangle`
+error[E0277]: [CGP-E001] missing fields `width` and `height` on `Rectangle`
   --> src/main.rs:63:9
    |
 63 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root causes:
-             - [CGP-E110] missing field `height` on `Rectangle`
              - [CGP-E110] missing field `width` on `Rectangle`
+             - [CGP-E110] missing field `height` on `Rectangle`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
              └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
                └─ [CGP-E104] trait impl `HasRectangleFields` for `Rectangle`
-                 ├─ [CGP-E110] missing field `height` on `Rectangle`
-                 └─ [CGP-E110] missing field `width` on `Rectangle`
+                 ├─ [CGP-E110] missing field `width` on `Rectangle`
+                 └─ [CGP-E110] missing field `height` on `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

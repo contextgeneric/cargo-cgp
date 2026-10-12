@@ -33,6 +33,25 @@ fn one_cause_is_the_headline() {
 }
 
 #[test]
+fn a_long_merged_headline_names_the_first_causes_and_counts_the_rest() {
+    let fields = |names: &[&str]| -> Vec<Cause> {
+        names
+            .iter()
+            .map(|name| missing_field(name, "App", "App"))
+            .collect()
+    };
+    // One item past the cap is named in full, since its count would take as much room.
+    assert_eq!(
+        merged_cause(&fields(&["a", "b", "c", "d"])).as_deref(),
+        Some("missing fields `a`, `b`, `c`, and `d` on `App`")
+    );
+    assert_eq!(
+        merged_cause(&fields(&["a", "b", "c", "d", "e"])).as_deref(),
+        Some("missing fields `a`, `b`, `c`, and 2 more on `App`")
+    );
+}
+
+#[test]
 fn causes_of_one_kind_on_one_owner_merge() {
     let fields = vec![
         missing_field("first_name", "Person", "Person"),

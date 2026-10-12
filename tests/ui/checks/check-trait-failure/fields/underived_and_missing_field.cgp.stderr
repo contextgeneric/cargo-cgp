@@ -5,14 +5,14 @@ error[E0277]: [CGP-E001] the consumer trait `CanCalculateVolume` is not implemen
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root causes:
-             - [CGP-E110] missing field `depth` on `Shape`
              - [CGP-E111] `HasField` not derived for field `width` of `Shape`
+             - [CGP-E110] missing field `depth` on `Shape`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanCalculateVolume` for context `Shape`
              └─ [CGP-E102] provider trait impl `VolumeCalculator` with context `Shape` for provider `ShapeVolume`
                └─ [CGP-E104] trait impl `HasShapeFields` for `Shape`
-                 ├─ [CGP-E110] missing field `depth` on `Shape`
-                 └─ [CGP-E111] `HasField` not derived for field `width` of `Shape`
+                 ├─ [CGP-E111] `HasField` not derived for field `width` of `Shape`
+                 └─ [CGP-E110] missing field `depth` on `Shape`
    = help: make sure that `#[derive(HasField)]` is used for `Shape`
 
 For more information about this error, try `rustc --explain E0277`.

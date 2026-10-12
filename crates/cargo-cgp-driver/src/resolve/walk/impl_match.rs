@@ -7,7 +7,7 @@ use rustc_span::DUMMY_SP;
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::walk::{resolve_fixed_projections, unknowns_to_placeholders};
+use crate::resolve::walk::{resolve_fixed_projections, unknowns_to_placeholders, written_order};
 
 /// The instantiated `where`-clause trait obligations of the impl that would satisfy `obligation`
 /// — its direct dependencies — or `None` when no impl matches at all (so the caller can treat the
@@ -70,12 +70,22 @@ pub(crate) fn impl_where_obligations<'tcx>(
             continue;
         }
 
-        let raw: Vec<Unnormalized<ty::Clause<'tcx>>> = tcx
-            .clauses_of(impl_did)
+        // Read the clauses in written order, so the causes they lead to are reported in it.
+        let generic = tcx.clauses_of(impl_did);
+        let instantiated: Vec<Unnormalized<ty::Clause<'tcx>>> = generic
             .instantiate(tcx, impl_args)
             .into_iter()
             .map(|(clause, _)| clause)
             .collect();
+        let raw: Vec<Unnormalized<ty::Clause<'tcx>>> =
+            if instantiated.len() == generic.clauses.len() {
+                written_order(tcx, generic.clauses)
+                    .into_iter()
+                    .map(|index| instantiated[index])
+                    .collect()
+            } else {
+                instantiated
+            };
         // Register every predicate so the solver can propagate the constraints that *do* hold onto
         // the impl's otherwise-free parameters, before any single one is read. A record deserializer's
         // `Record: HasOptionalBuilder<Builder = Builder>` clause pins the free `Builder` param to the
