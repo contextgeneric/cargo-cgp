@@ -1,11 +1,11 @@
 //! Two `check_components!` tables whose `#[check_trait]` attributes give one name.
 //!
-//! The second definition of `CheckApp` is an `E0428`, named as rustc reports it.
+//! The second definition of `CheckApp` is an `E0428`, which becomes `[CGP-E016]` naming it.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E016
 
 use cgp::prelude::*;
 

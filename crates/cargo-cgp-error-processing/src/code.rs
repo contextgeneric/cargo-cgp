@@ -87,6 +87,10 @@ pub const DUPLICATE_REDIRECT: &str = "CGP-E014";
 /// between the two identical check impls the table generates.
 pub const DUPLICATE_CHECK: &str = "CGP-E015";
 
+/// `CGP-E016`: two `check_components!` tables in one module generate check traits of one name.
+/// Stamped on the `E0428` the second definition produces.
+pub const DUPLICATE_CHECK_TRAIT: &str = "CGP-E016";
+
 // Wiring that never resolves, and the orphan rule (`CGP-E020` to `CGP-E029`).
 
 /// `CGP-E020`: resolving a component's wiring leads back to itself. Stamped on an `E0275` overflow

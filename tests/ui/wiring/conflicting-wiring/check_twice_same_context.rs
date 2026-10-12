@@ -1,13 +1,13 @@
 //! Two `check_components!` tables for one context.
 //!
-//! `E0428` "`__CheckApp` is defined multiple times"; the `#[check_trait(Name)]` fix is not hinted.
+//! The `E0428` on the derived `__CheckApp` becomes `[CGP-E016]`, naming the context and the fix.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! The two carets are relabelled as the first and the second table, in place of rustc's labels.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E016
 
 use cgp::prelude::*;
 

@@ -1,13 +1,13 @@
-error[E0428]: the name `CheckApp` is defined multiple times
+error[E0428]: [CGP-E016] two `check_components!` tables in one module name their check trait `CheckApp`
   --> src/main.rs:39:1
    |
 32 | check_components! {
-   | ----------------- previous definition of the trait `CheckApp` here
+   | ----------------- the first table
 ...
 39 | check_components! {
-   | ^^^^^^^^^^^^^^^^^ `CheckApp` redefined here
+   | ^^^^^^^^^^^^^^^^^ the second table
    |
-   = note: `CheckApp` must be defined only once in the type namespace of this module
+   = help: merge the two tables, or give one of them another `#[check_trait(...)]` name
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0428`.

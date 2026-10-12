@@ -21,11 +21,13 @@ use cargo_cgp_error_processing::{
     undeclared_trait_help, wiring_conflict_help, wiring_overflow_help,
 };
 use rustc_errors::codes::{
-    E0107, E0117, E0119, E0186, E0207, E0210, E0271, E0275, E0277, E0308, E0425, E0599,
+    E0107, E0117, E0119, E0186, E0207, E0210, E0271, E0275, E0277, E0308, E0425, E0428, E0599,
 };
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
-use rustc_errors::{DiagInner, DiagMessage, Level, MultiSpan, Style, Sublevel, Suggestions};
+use rustc_errors::{
+    DiagArgValue, DiagInner, DiagMessage, Level, MultiSpan, Style, Sublevel, Suggestions,
+};
 use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
 
@@ -34,7 +36,7 @@ use crate::config::BUG_REPORT_URL;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
 use crate::emitter::containment::contain;
 use crate::emitter::edit::{
-    bound_candidate_lists, diag_kind, diagnostic_spans, is_question_mark_cascade,
+    bound_candidate_lists, check_table_span, diag_kind, diagnostic_spans, is_question_mark_cascade,
     main_message_text, mentions_hasfield_impls, mentions_wiring, merged_span, message_signature,
     postprocess_messages, postprocess_multispan, replace_header, rewrite_messages,
     strip_method_probe_advice, subdiag,
@@ -541,13 +543,22 @@ impl<E: Emitter> CgpEmitter<E> {
 
     /// Recognize `diag` as a structural mistake in a wiring or its checks, recovered from the
     /// generated items at its caret: an `E0119` between two identical check impls is a check table
-    /// listing one entry twice. `None` for any other diagnostic.
+    /// listing one entry twice, and an `E0428` on a check trait is two tables whose check traits
+    /// share a name. `None` for any other diagnostic.
     fn structural_mistake(&self, diag: &DiagInner) -> Option<StructuralMistake> {
         let primary_span = diag.span.primary_span()?;
         match diag.code {
             Some(E0119) => rustc_middle::ty::tls::with_opt(|tcx| {
                 resolve::detect_duplicate_check(tcx?, primary_span)
             }),
+            // Name resolution reports a name defined twice, and the derived diagnostic carries the
+            // name as an argument rather than in a plain-string message.
+            Some(E0428) => match diag.args.get("name") {
+                Some(DiagArgValue::Str(name)) => {
+                    resolve::detect_duplicate_check_trait(name, primary_span)
+                }
+                _ => None,
+            },
             _ => None,
         }
     }
@@ -1030,6 +1041,12 @@ impl<E: Emitter> CgpEmitter<E> {
         // mistake and carry the fix in a `help`, keeping rustc's carets on the two sites.
         if let Some(mistake) = self.structural_mistake(&diag) {
             replace_header(&mut diag, plan_structural_mistake(&mistake));
+            if matches!(mistake, StructuralMistake::DuplicateCheckTrait { .. }) {
+                // rustc's labels and note name the generated check trait; label the two tables
+                // instead, the reported one as the second.
+                diag.span = check_table_span(&diag.span);
+                diag.children.clear();
+            }
             diag.children
                 .push(subdiag(Sublevel::Help, structural_mistake_help(&mistake)));
             self.postprocess(&mut diag, Origin::Rewritten);

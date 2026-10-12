@@ -5,7 +5,7 @@
 //! same model in from the generated items an error lands on.
 
 use cargo_cgp_error_processing::{
-    StructuralMistake, plan_structural_mistake, structural_mistake_help,
+    CheckTraitName, StructuralMistake, plan_structural_mistake, structural_mistake_help,
 };
 
 #[test]
@@ -33,5 +33,39 @@ fn a_duplicate_check_names_a_generic_entry_as_the_table_wrote_it() {
     assert_eq!(
         plan_structural_mistake(&mistake),
         "[CGP-E015] `check_components!` checks `ShowerComponent: u32` twice for `App`",
+    );
+}
+
+#[test]
+fn two_tables_with_a_derived_check_trait_name_the_context() {
+    let mistake = StructuralMistake::DuplicateCheckTrait {
+        name: CheckTraitName::Derived {
+            context: "App".to_owned(),
+        },
+    };
+    assert_eq!(
+        plan_structural_mistake(&mistake),
+        "[CGP-E016] two `check_components!` tables in one module check `App`",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "merge the two tables, or name one table's check trait with `#[check_trait(...)]`",
+    );
+}
+
+#[test]
+fn two_tables_with_a_given_check_trait_name_it() {
+    let mistake = StructuralMistake::DuplicateCheckTrait {
+        name: CheckTraitName::Given {
+            check_trait: "CheckApp".to_owned(),
+        },
+    };
+    assert_eq!(
+        plan_structural_mistake(&mistake),
+        "[CGP-E016] two `check_components!` tables in one module name their check trait `CheckApp`",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "merge the two tables, or give one of them another `#[check_trait(...)]` name",
     );
 }
