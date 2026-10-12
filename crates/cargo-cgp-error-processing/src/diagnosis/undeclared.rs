@@ -1,13 +1,13 @@
 //! The rustc-free model and wording for an undeclared-trait failure.
 //!
 //! `#[cgp_fn]` and `#[cgp_impl]` lower a function into a blanket impl over a generated generic
-//! context — `impl<__Context__> Describe for __Context__ where __Context__: GetName { … }`. The
+//! context, `impl<__Context__> Describe for __Context__ where __Context__: GetName { … }`. The
 //! body may call *other* CGP traits on `self`, or as associated functions on `Self`, but each must
 //! be declared as a dependency (with `#[uses(…)]`) so it becomes a `where` bound on that generic
 //! context. When the body calls a trait the `#[uses]` list omits, the compiler reports a vague
-//! `E0599` — "the method `…` exists for reference `&__Context__`, but its trait bounds were not
-//! satisfied", or "no associated function … found for type parameter `__Context__`" — naming the
-//! generated `__Context__` the programmer never wrote and pointing at a transitive bound or a
+//! `E0599` ("the method `…` exists for reference `&__Context__`, but its trait bounds were not
+//! satisfied", or "no associated function … found for type parameter `__Context__`"). It names the
+//! generated `__Context__` the programmer never wrote and points at a transitive bound or a
 //! suggestion spliced into the macro attribute, rather than at the real fix: declaring the trait.
 //!
 //! This model records the trait the body used but did not declare, and
@@ -44,7 +44,7 @@ pub fn plan_undeclared_trait(undeclared: &UndeclaredTrait) -> String {
     )
 }
 
-/// The `help` accompanying the header — the fix the raw error never states: declare the trait
+/// The `help` accompanying the header, the fix the raw error never states: declare the trait
 /// with `#[uses(…)]` so it becomes a bound on the generated context and the call can resolve.
 /// `None` when the bound cannot be written. A parameter the call does not give away stays named,
 /// and the help says to replace it.

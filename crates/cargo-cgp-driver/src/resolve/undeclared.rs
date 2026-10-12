@@ -2,9 +2,9 @@
 //!
 //! `#[cgp_fn]` lowers a body into a blanket impl over a generated generic context
 //! (`impl<__Context__> Describe for __Context__ where __Context__: GetName`). A trait the body
-//! calls on `self`, or as an associated function on `Self`, must be a `where` bound on that context
-//! — declared with `#[uses(…)]`. When the body calls a trait the `#[uses]` list omits, the call
-//! cannot resolve and rustc reports a vague `E0599` on `&__Context__` pointing at a transitive
+//! calls on `self`, or as an associated function on `Self`, must be a `where` bound on that
+//! context, declared with `#[uses(…)]`. When the body calls a trait the `#[uses]` list omits, the
+//! call cannot resolve and rustc reports a vague `E0599` on `&__Context__` pointing at a transitive
 //! `HasField` bound, or, for `Self::method(…)`, no associated function found for the type parameter
 //! `__Context__`, with suggestions spliced into the macro attribute.
 //!
@@ -38,7 +38,7 @@ use crate::resolve::cgp_item::{is_blanket_trait, is_consumer_trait, is_provider_
 
 /// Recognize an undeclared-trait failure and recover the trait to declare, or
 /// `None` when the diagnostic is not one. Everything is keyed on `primary_span`, the failing method
-/// call — never on the diagnostic's note spans (which point at *other* generated impls, such as the
+/// call, never on the diagnostic's note spans (which point at *other* generated impls, such as the
 /// called trait's own definition).
 ///
 /// The three conditions, all read structurally off the compiler:
@@ -52,7 +52,7 @@ use crate::resolve::cgp_item::{is_blanket_trait, is_consumer_trait, is_provider_
 ///    containment: a generated impl's item span does not reliably cover its body;
 /// 2. the call names a method of a CGP trait (a consumer trait, or a
 ///    `#[cgp_fn]`/`#[blanket_trait]` blanket trait); and
-/// 3. that trait is *not* already a `where` bound of the impl — so this is a genuinely omitted
+/// 3. that trait is *not* already a `where` bound of the impl, so this is a genuinely omitted
 ///    dependency, not a trait whose own deeper wiring fails.
 pub fn detect_undeclared_trait(
     tcx: TyCtxt<'_>,
@@ -164,7 +164,7 @@ enum CallReceiver<'tcx> {
     Type(&'tcx hir::Ty<'tcx>),
 }
 
-/// Whether `trait_did`'s definition is among the diagnostic's spans — the "trait bound not
+/// Whether `trait_did`'s definition is among the diagnostic's spans. The "trait bound not
 /// satisfied" note lands on the failing trait's `#[cgp_fn]`/`#[cgp_component]` definition,
 /// which is how a same-named method on an unrelated trait in another module is told apart.
 fn is_referenced(tcx: TyCtxt<'_>, trait_did: DefId, spans: &[Span]) -> bool {
@@ -439,8 +439,8 @@ fn enclosing_trait_impl(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
     }
 }
 
-/// Whether `impl_did`'s `where` clause carries a trait bound of trait `trait_did` — i.e. the impl
-/// already declares that trait (via `#[uses]` or a hand-written bound).
+/// Whether `impl_did`'s `where` clause carries a trait bound of trait `trait_did`, so that the
+/// impl already declares that trait (via `#[uses]` or a hand-written bound).
 fn impl_bounds_by(tcx: TyCtxt<'_>, impl_did: DefId, trait_did: DefId) -> bool {
     tcx.clauses_of(impl_did)
         .clauses

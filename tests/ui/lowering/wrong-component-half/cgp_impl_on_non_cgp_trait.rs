@@ -3,8 +3,10 @@
 //! `Greet` has no `#[cgp_component]`, so it has no provider trait and no `GreetComponent` marker.
 //! `#[cgp_impl]` still turns the impl header inside out and names the missing marker, so rustc
 //! reports an `E0107` arity error among unrelated codes. The tool reshapes it into `[CGP-E033]`,
-//! with a help to make `Greet` a component or write a plain `impl`. It differs from naming the
-//! wrong half of a component (`consumer_trait_in_provider_impl`) in its fix.
+//! with a help to make `Greet` a component and implement the provider trait it generates, or to
+//! write a plain `impl`. Making `Greet` a component alone would leave its consumer trait in the
+//! header, the `[CGP-E032]` mistake, so the help names a provider trait for the header too. It
+//! differs from naming the wrong half of a component (`consumer_trait_in_provider_impl`) in its fix.
 //!
 //! CGP error class: wrong component half (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/wrong-component-half.md).
 

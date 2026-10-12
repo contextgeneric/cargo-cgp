@@ -1,9 +1,9 @@
 error[E0107]: [CGP-E033] `#[cgp_impl]` can only implement a CGP component's provider trait, but `Greet` is not a CGP component
-  --> src/main.rs:27:6
+  --> src/main.rs:29:6
    |
-27 | impl Greet {
+29 | impl Greet {
    |      ^^^^^
    |
-   = help: define `Greet` as a component with `#[cgp_component]`, or drop `#[cgp_impl]` and write a plain `impl` if it is an ordinary trait
+   = help: make `Greet` a component, as in `#[cgp_component(GreetProvider)]`, and implement its provider trait here (`impl GreetProvider`), or drop `#[cgp_impl]` and write a plain `impl` if it is an ordinary trait
 
 For more information about this error, try `rustc --explain E0107`.

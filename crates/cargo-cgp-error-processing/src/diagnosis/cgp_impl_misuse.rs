@@ -8,13 +8,14 @@
 //! - **A consumer trait.** Naming the component's *consumer* trait `CanCalculateArea` where its
 //!   *provider* trait `AreaCalculator` belongs. The macro then references a `CanCalculateAreaComponent`
 //!   marker that does not exist and implements the wrong trait, so one mistake produces a burst of
-//!   cryptic errors — E0425 (the missing marker), E0107 (the consumer trait takes one fewer generic
-//!   than the inserted context supplies), E0186 (`&self` mismatch), E0207 (`__Context__`
-//!   unconstrained) — plus a downstream check failure, none naming the real cause. The fix is to name
-//!   the provider trait the component pairs the consumer with.
+//!   cryptic errors (E0425 for the missing marker, E0107 because the consumer trait takes one fewer
+//!   generic than the inserted context supplies, E0186 for the `&self` mismatch, E0207 for the
+//!   unconstrained `__Context__`) plus a downstream check failure, none naming the real cause. The
+//!   fix is to name the provider trait the component pairs the consumer with.
 //! - **A non-CGP trait.** Applying `#[cgp_impl]` to a trait that is not a CGP component at all. There
-//!   is no provider trait to point at; the fix is to make the trait a component with
-//!   `#[cgp_component]`, or to drop `#[cgp_impl]` and write a plain `impl`.
+//!   is no provider trait to point at. The fix is to make the trait a component and name the
+//!   provider trait it generates in the header (making it a component alone leaves a consumer trait
+//!   in the header), or to drop `#[cgp_impl]` and write a plain `impl`.
 //!
 //! This model records which mistake it is, and [`plan_cgp_impl_misuse`] words it into the coded
 //! header ([`CONSUMER_TRAIT_IN_PROVIDER_IMPL`] / [`NON_CGP_TRAIT_IN_CGP_IMPL`]) that replaces the raw
@@ -27,14 +28,14 @@ use crate::code::{
     CONSUMER_TRAIT_IN_PROVIDER_BOUND, CONSUMER_TRAIT_IN_PROVIDER_IMPL, NON_CGP_TRAIT_IN_CGP_IMPL,
 };
 
-/// A trait named where a `#[cgp_impl]` provider trait belongs — in the impl header, or in a
+/// A trait named where a `#[cgp_impl]` provider trait belongs: in the impl header, or in a
 /// higher-order provider's inner-provider bound.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CgpImplMisuse {
     /// The impl header names the component's *consumer* trait; `provider` is the provider trait to
     /// use instead (recovered from the consumer↔provider fingerprint).
     ConsumerTrait { consumer: String, provider: String },
-    /// The impl header names a trait that is not a CGP component — there is no provider trait to
+    /// The impl header names a trait that is not a CGP component, so there is no provider trait to
     /// suggest.
     NonCgpTrait { trait_name: String },
     /// An inner-provider bound (typically written through `#[use_provider]`) names the component's
@@ -43,7 +44,7 @@ pub enum CgpImplMisuse {
 }
 
 /// Word a [`CgpImplMisuse`] into the coded header that replaces the raw `E0107`, naming the trait the
-/// programmer wrote and — for a consumer trait — the provider trait to use instead of the generated
+/// programmer wrote and, for a consumer trait, the provider trait to use instead of the generated
 /// `__Context__` scaffolding the raw errors talk about.
 pub fn plan_cgp_impl_misuse(misuse: &CgpImplMisuse) -> String {
     match misuse {
@@ -62,15 +63,16 @@ pub fn plan_cgp_impl_misuse(misuse: &CgpImplMisuse) -> String {
     }
 }
 
-/// The `help` accompanying the header — the fix the raw errors never state.
+/// The `help` accompanying the header: the fix the raw errors never state.
 pub fn cgp_impl_misuse_help(misuse: &CgpImplMisuse) -> String {
     match misuse {
         CgpImplMisuse::ConsumerTrait { consumer, provider } => format!(
             "change the impl header to target the provider trait: `impl {provider}` (not `impl {consumer}`)",
         ),
         CgpImplMisuse::NonCgpTrait { trait_name } => format!(
-            "define `{trait_name}` as a component with `#[cgp_component]`, or drop `#[cgp_impl]` and \
-             write a plain `impl` if it is an ordinary trait",
+            "make `{trait_name}` a component, as in `#[cgp_component({trait_name}Provider)]`, and \
+             implement its provider trait here (`impl {trait_name}Provider`), or drop \
+             `#[cgp_impl]` and write a plain `impl` if it is an ordinary trait",
         ),
         CgpImplMisuse::ConsumerProviderBound { consumer, provider } => format!(
             "name the provider trait in the bound, idiomatically `#[use_provider(… : {provider})]` \
@@ -80,8 +82,8 @@ pub fn cgp_impl_misuse_help(misuse: &CgpImplMisuse) -> String {
 }
 
 /// An inner provider a higher-order provider's body calls (`inner::method(self)`) without importing
-/// it — the parameter carries no provider-trait bound. `inner` is the provider parameter's name and
-/// `provider_trait` the trait it should be imported as.
+/// it, so the parameter carries no provider-trait bound. `inner` is the provider parameter's name
+/// and `provider_trait` the trait it should be imported as.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MissingUseProvider {
     pub inner: String,
@@ -98,8 +100,9 @@ pub fn plan_missing_use_provider(missing: &MissingUseProvider) -> String {
     )
 }
 
-/// The `help` accompanying the header — the fix the raw error never states: import the inner provider
-/// with `#[use_provider]`, which supplies the leading context argument the provider trait needs.
+/// The `help` accompanying the header, the fix the raw error never states: import the inner
+/// provider with `#[use_provider]`, which supplies the leading context argument the provider trait
+/// needs.
 pub fn missing_use_provider_help(missing: &MissingUseProvider) -> String {
     format!(
         "import it with `#[use_provider({}: {})]`",

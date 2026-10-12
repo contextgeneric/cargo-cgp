@@ -1,11 +1,12 @@
 //! Tests for the `#[cgp_impl]` header-trait misuse wording.
 //!
 //! `plan_cgp_impl_misuse` and `cgp_impl_misuse_help` are pure functions over the rustc-free
-//! [`CgpImplMisuse`] model, so they are driven directly over hand-built values — no compiler, no
-//! diagnostic wrapper. The driver fills the same model in from the live `TyCtxt` using the consumer-
-//! and provider-trait fingerprints. The two variants word to distinct codes and distinct fixes: a
-//! consumer trait named where the provider trait belongs (`[CGP-E032]`, naming the provider to use),
-//! and a trait that is not a CGP component at all (`[CGP-E033]`, with no provider to suggest).
+//! [`CgpImplMisuse`] model, so they are driven directly over hand-built values, with no compiler
+//! and no diagnostic wrapper. The driver fills the same model in from the live `TyCtxt` using the
+//! consumer- and provider-trait fingerprints. The two variants word to distinct codes and distinct
+//! fixes: a consumer trait named where the provider trait belongs (`[CGP-E032]`, naming the provider
+//! to use), and a trait that is not a CGP component at all (`[CGP-E033]`, with no provider trait to
+//! name).
 
 use cargo_cgp_error_processing::{
     CgpImplMisuse, MissingUseProvider, ProviderTraitInUses, cgp_impl_misuse_help,
@@ -42,8 +43,9 @@ fn non_cgp_trait_has_no_provider_to_suggest() {
     );
     assert_eq!(
         cgp_impl_misuse_help(&misuse),
-        "define `Greet` as a component with `#[cgp_component]`, or drop `#[cgp_impl]` and write a \
-         plain `impl` if it is an ordinary trait",
+        "make `Greet` a component, as in `#[cgp_component(GreetProvider)]`, and implement its \
+         provider trait here (`impl GreetProvider`), or drop `#[cgp_impl]` and write a plain \
+         `impl` if it is an ordinary trait",
     );
 }
 
