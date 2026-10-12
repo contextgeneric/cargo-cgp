@@ -9,5 +9,6 @@ error[E0277]: [CGP-E001] missing wiring for `@ItemEncoderComponent.Vec<u8>` on `
              [CGP-E101] consumer trait impl `CanEncodeItem<Vec<u8>>` for context `App`
              └─ [CGP-E103] redirect lookup to `@ItemEncoderComponent` in `App`
                └─ [CGP-E113] missing wiring for `@ItemEncoderComponent.Vec<u8>` on `App`
+   = help: wire `@ItemEncoderComponent.Vec<u8>` to a provider in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

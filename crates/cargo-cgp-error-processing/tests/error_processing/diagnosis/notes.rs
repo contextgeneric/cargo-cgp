@@ -147,7 +147,10 @@ fn wording_helpers_format_directly() {
         cause_note(&cause, None)
             .starts_with("root cause: [CGP-E110] missing field `height` on `Rectangle`")
     );
-    assert!(derive_help_messages(std::slice::from_ref(&cause)).is_empty());
+    assert_eq!(
+        fix_help_messages(std::slice::from_ref(&cause)),
+        vec!["add the field `height` to `Rectangle`".to_owned()]
+    );
 }
 
 /// Two causes sharing a dependency prefix collapse into a single `root causes:` note: the shared

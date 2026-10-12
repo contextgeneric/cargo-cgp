@@ -11,5 +11,6 @@ error[E0277]: [CGP-E001] missing entry for `@ComputerComponent.Sink.Digest` in p
                └─ [CGP-E102] provider trait impl `Computer<Sink, Digest>` with context `App` for provider `ByteSink`
                  └─ [CGP-E103] redirect lookup to `@ComputerComponent` in `ByteSink`
                    └─ [CGP-E114] missing entry for `@ComputerComponent.Sink.Digest` in provider `ByteSink`
+   = help: add an entry for `@ComputerComponent.Sink.Digest` to `ByteSink`
 
 For more information about this error, try `rustc --explain E0277`.

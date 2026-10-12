@@ -11,5 +11,6 @@ error[E0277]: [CGP-E001] missing wiring for `@end` on `App`
                └─ [CGP-E103] redirect lookup to `@middle` in `App`
                  └─ [CGP-E103] redirect lookup to `@end` in `App`
                    └─ [CGP-E113] missing wiring for `@end` on `App`
+   = help: wire `@end` to a provider in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

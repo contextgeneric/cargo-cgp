@@ -1,14 +1,21 @@
 //! Builders for the values several test modules construct by hand: field leaves, trait hops, and
 //! redirect hops. A module with fixed defaults wraps these in a shorter local helper.
 
-use cargo_cgp_error_processing::{ChainNode, DepNode, FieldIssue, Leaf};
+use cargo_cgp_error_processing::{ChainNode, DepNode, FieldFix, FieldIssue, Leaf};
 
 /// The leaf for `owner`'s `name` field, in the given state.
+/// A missing field gets the usual fix: its struct derives `HasField` for its other fields, so
+/// adding the field is confirmed, with no stated type.
 pub fn field_leaf(name: &str, owner: &str, issue: FieldIssue) -> Leaf {
+    let fix = match issue {
+        FieldIssue::Missing => FieldFix::AddField { ty: None },
+        _ => FieldFix::Unconfirmed,
+    };
     Leaf::Field {
         name: name.to_owned(),
         owner: owner.to_owned(),
         issue,
+        fix,
     }
 }
 

@@ -14,5 +14,6 @@ error[E0277]: [CGP-E001] missing wiring for `@cgp.extra.handler.HandlerComponent
                       └─ [CGP-E101] consumer trait impl `CanHandle<Missing, _>` for context `App`
                         └─ [CGP-E103] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
                           └─ [CGP-E113] missing wiring for `@cgp.extra.handler.HandlerComponent.Missing` on `App`
+    = help: wire `@cgp.extra.handler.HandlerComponent.Missing` to a provider in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

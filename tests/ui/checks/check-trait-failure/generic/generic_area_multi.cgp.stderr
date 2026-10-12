@@ -10,5 +10,6 @@ error[E0277]: [CGP-E001] missing field `width` on `Rectangle`
              └─ [CGP-E102] provider trait impl `AreaCalculator<u32, u64, bool>` with context `Rectangle` for provider `RectangleArea`
                └─ [CGP-E104] trait impl `HasWidth` for `Rectangle`
                  └─ [CGP-E110] missing field `width` on `Rectangle`
+   = help: add the field `width: f64` to `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

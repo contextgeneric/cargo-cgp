@@ -28,7 +28,10 @@ fn plans_a_missing_field_check_failure() {
         )
     );
     assert!(plan.coalesces());
-    assert!(plan.helps.is_empty());
+    assert_eq!(
+        plan.helps,
+        vec!["add the field `height` to `Rectangle`".to_owned()]
+    );
     assert_eq!(
         notes(&plan),
         vec![format!(
@@ -59,8 +62,10 @@ fn plans_a_missing_wiring_check_failure() {
         plan.header.as_deref(),
         Some("[CGP-E001] missing wiring for `BarProviderComponent` on `App`")
     );
-    // A missing wiring, like a genuinely missing field, carries no `help` — the note names the fix.
-    assert!(plan.helps.is_empty());
+    assert_eq!(
+        plan.helps,
+        vec!["wire `BarProviderComponent` to a provider in the wiring of `App`".to_owned()]
+    );
     assert_eq!(
         notes(&plan),
         vec![format!(
@@ -87,7 +92,10 @@ fn plans_a_missing_dispatch_entry_check_failure() {
         &empty_names(),
     );
 
-    assert!(plan.helps.is_empty());
+    assert_eq!(
+        plan.helps,
+        vec!["add an entry for `Tagged<Bytes>` to `SinkHandlers`".to_owned()]
+    );
     assert_eq!(
         notes(&plan),
         vec![format!(
@@ -140,7 +148,14 @@ fn plans_a_missing_redirect_wiring_check_failure() {
     let resolved = cgp_resolved("App", &["HasQuantityType"], vec![cause]);
     let plan = plan_resolved(DiagKind::Check, None, &resolved, &empty_names());
 
-    assert!(plan.helps.is_empty());
+    assert_eq!(
+        plan.helps,
+        vec![
+            "wire `@app.finance.types.QuantityTypeProviderComponent` to a provider in the wiring \
+             of `App`"
+                .to_owned()
+        ]
+    );
     assert_eq!(
         notes(&plan),
         vec![format!(

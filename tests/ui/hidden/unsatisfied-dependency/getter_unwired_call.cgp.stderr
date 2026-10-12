@@ -8,5 +8,6 @@ error[E0599]: [CGP-E001] missing wiring for `NameGetterComponent` on `Person`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `HasName` for `Person`
              └─ [CGP-E113] missing wiring for `NameGetterComponent` on `Person`
+   = help: wire `NameGetterComponent` to a provider in the wiring of `Person`
 
 For more information about this error, try `rustc --explain E0599`.

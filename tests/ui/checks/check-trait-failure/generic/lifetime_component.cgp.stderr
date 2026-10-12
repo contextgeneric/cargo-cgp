@@ -10,5 +10,6 @@ error[E0277]: [CGP-E001] missing field `name` on `App<'_>`
              └─ [CGP-E102] provider trait impl `ReferenceGetter<'_, str>` with context `App<'_>` for provider `GetReference`
                └─ [CGP-E104] trait impl `HasName` for `App<'_>`
                  └─ [CGP-E110] missing field `name` on `App<'_>`
+   = help: add the field `name: String` to `App<'_>`
 
 For more information about this error, try `rustc --explain E0277`.

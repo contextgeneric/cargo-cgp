@@ -16,5 +16,6 @@ error[E0277]: [CGP-E001] missing wiring for `@ValueBuilderComponent.Left` and `@
                └─ [CGP-E101] consumer trait impl `CanBuildValue<Right>` for context `App`
                  └─ [CGP-E103] redirect lookup to `@ValueBuilderComponent` in `App`
                    └─ [CGP-E113] missing wiring for `@ValueBuilderComponent.Right` on `App`
+   = help: wire `@ValueBuilderComponent.Left` and `@ValueBuilderComponent.Right` to providers in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

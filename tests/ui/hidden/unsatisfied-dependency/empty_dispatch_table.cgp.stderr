@@ -16,5 +16,6 @@ error[E0277]: [CGP-E001] missing entry for `ByteStream` in provider `EmptySink`
                           └─ [CGP-E102] provider trait impl `Handler<Sink, ByteStream>` with context `App` for provider `HandleSink`
                             └─ [CGP-E102] provider trait impl `Handler<Sink, ByteStream>` with context `App` for provider `UseInputDelegate<EmptySink>`
                               └─ [CGP-E114] missing entry for `ByteStream` in provider `EmptySink`
+    = help: add an entry for `ByteStream` to `EmptySink`
 
 For more information about this error, try `rustc --explain E0277`.

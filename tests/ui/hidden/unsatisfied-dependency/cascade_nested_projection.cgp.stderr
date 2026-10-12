@@ -17,5 +17,6 @@ error[E0277]: [CGP-E001] missing entry for `Tagged<Bytes>` in provider `SinkHand
                             └─ [CGP-E102] provider trait impl `Handler<Sink, Tagged<Bytes>>` with context `App` for provider `HandleSink`
                               └─ [CGP-E102] provider trait impl `Handler<Sink, Tagged<Bytes>>` with context `App` for provider `UseInputDelegate<SinkHandlers>`
                                 └─ [CGP-E114] missing entry for `Tagged<Bytes>` in provider `SinkHandlers`
+    = help: add an entry for `Tagged<Bytes>` to `SinkHandlers`
 
 For more information about this error, try `rustc --explain E0277`.

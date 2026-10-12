@@ -14,5 +14,6 @@ error[E0277]: [CGP-E001] missing wiring for `BarProviderComponent` and `BazProvi
                │ └─ [CGP-E113] missing wiring for `BarProviderComponent` on `App`
                └─ [CGP-E101] consumer trait impl `CanUseBaz` for context `App`
                  └─ [CGP-E113] missing wiring for `BazProviderComponent` on `App`
+   = help: wire `BarProviderComponent` and `BazProviderComponent` to providers in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

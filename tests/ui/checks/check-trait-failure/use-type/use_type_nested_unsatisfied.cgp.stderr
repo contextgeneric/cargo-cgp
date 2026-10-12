@@ -8,5 +8,6 @@ error[E0277]: [CGP-E001] missing wiring for `ScalarTypeProviderComponent` on `No
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `HasScalarType` for `NoScalar`
              └─ [CGP-E113] missing wiring for `ScalarTypeProviderComponent` on `NoScalar`
+   = help: wire `ScalarTypeProviderComponent` to a provider in the wiring of `NoScalar`
 
 For more information about this error, try `rustc --explain E0277`.

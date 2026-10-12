@@ -10,5 +10,6 @@ error[E0277]: [CGP-E001] missing wiring for `BarProviderComponent` on `App`
              └─ [CGP-E102] provider trait impl `FooProvider` with context `App` for provider `DoFooWithBar`
                └─ [CGP-E101] consumer trait impl `CanUseBar` for context `App`
                  └─ [CGP-E113] missing wiring for `BarProviderComponent` on `App`
+   = help: wire `BarProviderComponent` to a provider in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

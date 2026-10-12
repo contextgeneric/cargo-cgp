@@ -10,5 +10,6 @@ error[E0599]: [CGP-E001] missing field `separator` on `App`
              └─ [CGP-E102] provider trait impl `PairFormatter<(u32, u64)>` with context `App` for provider `FormatWithSeparator`
                └─ [CGP-E104] trait impl `HasSeparator` for `App`
                  └─ [CGP-E110] missing field `separator` on `App`
+   = help: add the field `separator: String` to `App`
 
 For more information about this error, try `rustc --explain E0599`.

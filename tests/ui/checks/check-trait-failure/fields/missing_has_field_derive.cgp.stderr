@@ -10,6 +10,6 @@ error[E0277]: [CGP-E001] `HasField` not derived for field `name` of `Person`
              └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
                └─ [CGP-E104] trait impl `HasName` for `Person`
                  └─ [CGP-E111] `HasField` not derived for field `name` of `Person`
-   = help: make sure that `#[derive(HasField)]` is used for `Person`
+   = help: add `#[derive(HasField)]` to `Person`
 
 For more information about this error, try `rustc --explain E0277`.

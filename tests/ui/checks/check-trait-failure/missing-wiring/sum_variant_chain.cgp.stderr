@@ -14,5 +14,6 @@ error[E0277]: [CGP-E001] missing wiring for `@VariantEncoderComponent.f64` on `A
                      └─ [CGP-E101] consumer trait impl `CanEncodeVariant<f64>` for context `App`
                        └─ [CGP-E103] redirect lookup to `@VariantEncoderComponent` in `App`
                          └─ [CGP-E113] missing wiring for `@VariantEncoderComponent.f64` on `App`
+   = help: wire `@VariantEncoderComponent.f64` to a provider in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

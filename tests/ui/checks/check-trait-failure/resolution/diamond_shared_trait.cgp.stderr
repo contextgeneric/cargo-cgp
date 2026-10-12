@@ -17,5 +17,6 @@ error[E0277]: [CGP-E001] missing field `name` on `App`
                 └─ [CGP-E101] consumer trait impl `CanRight` for context `App`
                   └─ [CGP-E102] provider trait impl `RightProvider` with context `App` for provider `ProvideRight`
                     └─ [CGP-E101] consumer trait impl `CanShared` for context `App` (*)
+    = help: add the field `name: String` to `App`
 
 For more information about this error, try `rustc --explain E0277`.

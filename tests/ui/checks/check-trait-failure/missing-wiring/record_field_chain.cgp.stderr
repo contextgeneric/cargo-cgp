@@ -14,5 +14,6 @@ error[E0277]: [CGP-E001] missing wiring for `@ValueBuilderComponent.Inner` on `A
                       └─ [CGP-E101] consumer trait impl `CanBuildValue<Inner>` for context `App`
                         └─ [CGP-E103] redirect lookup to `@ValueBuilderComponent` in `App`
                           └─ [CGP-E113] missing wiring for `@ValueBuilderComponent.Inner` on `App`
+    = help: wire `@ValueBuilderComponent.Inner` to a provider in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

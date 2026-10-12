@@ -15,5 +15,6 @@ error[E0277]: [CGP-E003] missing field `name` on `App`
              [CGP-E104] trait impl `CheckGreeting` for `App`
              └─ [CGP-E104] trait impl `Greeting` for `App`
                └─ [CGP-E104] trait impl `FormatName` for `App` (*)
+   = help: add the field `name: String` to `App`
 
 For more information about this error, try `rustc --explain E0277`.

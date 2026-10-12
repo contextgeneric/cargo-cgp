@@ -1,7 +1,7 @@
 //! Coalescing underived-field causes, over hand-built `Cause` values.
 
 use cargo_cgp_error_processing::{
-    Cause, ChainNode, FieldIssue, Leaf, coalesce_underived_fields, derive_help_messages,
+    Cause, ChainNode, FieldIssue, Leaf, coalesce_underived_fields, fix_help_messages,
     root_cause_lead,
 };
 
@@ -45,8 +45,8 @@ fn two_underived_fields_on_one_struct_become_one_cause() {
         "`HasField` not derived for fields `height` and `width` of `Rectangle`"
     );
     assert_eq!(
-        derive_help_messages(&coalesced),
-        vec!["make sure that `#[derive(HasField)]` is used for `Rectangle`".to_owned()]
+        fix_help_messages(&coalesced),
+        vec!["add `#[derive(HasField)]` to `Rectangle`".to_owned()]
     );
 }
 

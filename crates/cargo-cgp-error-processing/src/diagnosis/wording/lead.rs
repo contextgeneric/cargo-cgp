@@ -36,6 +36,7 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
             name,
             owner,
             issue: FieldIssue::Missing,
+            ..
         } => format!("missing field `{name}` on `{owner}`"),
         Leaf::MissingWiring { component, owner } => missing_wiring(owner, component),
         Leaf::MissingDispatchEntry { key, table } => {

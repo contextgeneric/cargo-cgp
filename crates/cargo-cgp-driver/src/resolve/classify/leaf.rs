@@ -1,6 +1,6 @@
 //! Turning a terminal predicate into the rustc-free [`Leaf`] the emitter words.
 
-use cargo_cgp_error_processing::Leaf;
+use cargo_cgp_error_processing::{FieldFix, FieldIssue, Leaf};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
@@ -13,6 +13,7 @@ use crate::resolve::cgp_item::{
 };
 use crate::resolve::classify::{
     field_issue, field_type, is_dispatch_lookup, owner_has_impl_of, projected_type,
+    required_field_type,
 };
 use crate::resolve::label::fold_empty_lists;
 use crate::resolve::walk::ProjectionMismatch;
@@ -168,10 +169,22 @@ pub(crate) fn classify_leaf<'tcx>(
             };
         }
         let issue = field_issue(tcx, owner, &name);
+        // Adding a missing field fixes the cause only when the struct derives `HasField`, which
+        // it shows by implementing it for another field; the fix then names the type the
+        // requirement gives the field.
+        let fix = match issue {
+            FieldIssue::Missing if owner_has_impl_of(tcx, leaf_ref.def_id, owner) => {
+                FieldFix::AddField {
+                    ty: parent.and_then(|parent| required_field_type(tcx, parent, leaf_ref)),
+                }
+            }
+            _ => FieldFix::Unconfirmed,
+        };
         return Leaf::Field {
             name,
             owner: owner.to_string(),
             issue,
+            fix,
         };
     }
     // An empty list in the bound reads as the `Product![]` the program wrote.

@@ -11,6 +11,6 @@ error[E0277]: [CGP-E001] `HasField` not derived for fields `width` and `height` 
                └─ [CGP-E104] trait impl `HasRectangleFields` for `Rectangle`
                  ├─ [CGP-E111] `HasField` not derived for field `width` of `Rectangle`
                  └─ [CGP-E111] `HasField` not derived for field `height` of `Rectangle`
-   = help: make sure that `#[derive(HasField)]` is used for `Rectangle`
+   = help: add `#[derive(HasField)]` to `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

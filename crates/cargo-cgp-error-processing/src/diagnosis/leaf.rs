@@ -42,6 +42,9 @@ pub enum Leaf {
         owner: String,
         /// Whether the field is genuinely missing, present-but-underived, or behind a `Deref`.
         issue: FieldIssue,
+        /// Whether adding a missing field is confirmed to fix the cause, and the type to add it with.
+        /// It is not part of the leaf's identity (see [`FieldFix`]).
+        fix: FieldFix,
     },
     /// A `HasField` bound whose field is present but carries the wrong type: the trait bound holds
     /// and only the `<owner as HasField<name>>::Value == expected` projection fails. The emitter
@@ -189,9 +192,56 @@ pub enum Leaf {
     },
 }
 
+/// The fix a missing field's `help` names. It rides on a [`Leaf::Field`] but is not part of the
+/// leaf's identity: every equality and hash treats two values alike, so one missing field reached
+/// through requirements that state its type differently stays one cause, and
+/// [`Leaf::reconcile_fix`] keeps only what every route agrees on.
+#[derive(Debug, Clone, Default)]
+pub enum FieldFix {
+    /// The tool cannot confirm that adding the field fixes the cause: the field is not missing, or
+    /// its struct implements `HasField` for no field, so the derive may be missing too.
+    #[default]
+    Unconfirmed,
+    /// Adding the field to its struct fixes the cause. `ty` is the type the requirement gives the
+    /// field (the `f64` of `HasField<Symbol!("height"), Value = f64>`), or `None` when no
+    /// requirement states a concrete one.
+    AddField { ty: Option<String> },
+}
+
+impl PartialEq for FieldFix {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+impl Eq for FieldFix {}
+
+impl std::hash::Hash for FieldFix {
+    fn hash<H: std::hash::Hasher>(&self, _: &mut H) {}
+}
+
+impl Leaf {
+    /// Fold the fix of `other`, the same cause reached another way, into this leaf: adding the field
+    /// stays confirmed only when both routes confirm it, and keeps its type only when both state the
+    /// same one, since a help naming one route's type would not fix the other.
+    pub fn reconcile_fix(&mut self, other: &Leaf) {
+        let (Leaf::Field { fix, .. }, Leaf::Field { fix: theirs, .. }) = (self, other) else {
+            return;
+        };
+        match (&mut *fix, theirs) {
+            (FieldFix::AddField { ty }, FieldFix::AddField { ty: their_ty }) => {
+                if *ty != *their_ty {
+                    *ty = None;
+                }
+            }
+            _ => *fix = FieldFix::Unconfirmed,
+        }
+    }
+}
+
 // A leaf carries no separate identity key: two causes are the same cause exactly when their leaves
-// are equal in every field, which is what the derived `PartialEq` above gives. An earlier key named
-// only the *thing to fix* — a field or associated-type name — which merged two leaves naming the
+// are equal in every field but a field's fix, which is what the derived `PartialEq` above gives. An
+// earlier key named only the *thing to fix* — a field or associated-type name — which merged two leaves naming the
 // same thing on different owners into one cause whose heading could then name only the first of
 // them. Whole-leaf equality keeps the useful merge (one leaf genuinely reached by several paths,
 // which is how a diamond survives to the renderer) and separates the rest.

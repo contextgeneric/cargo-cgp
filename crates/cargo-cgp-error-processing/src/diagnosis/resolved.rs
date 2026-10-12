@@ -106,6 +106,7 @@ impl Causes {
     fn add_cause(&mut self, cause: Cause) {
         match self.0.iter_mut().find(|seen| seen.leaf == cause.leaf) {
             Some(existing) => {
+                existing.leaf.reconcile_fix(&cause.leaf);
                 for path in cause.paths {
                     if !existing.paths.contains(&path) {
                         existing.paths.push(path);

@@ -16,5 +16,6 @@ error[E0277]: [CGP-E001] missing field `height` on `Rectangle`
              └─ [CGP-E102] provider trait impl `HeightReporter` with context `Rectangle` for provider `ReportHeight`
                └─ [CGP-E104] trait impl `HasHeight` for `Rectangle`
                  └─ [CGP-E110] missing field `height` on `Rectangle`
+   = help: add the field `height: f64` to `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -23,5 +23,6 @@ error[E0277]: [CGP-E001] missing wiring for `@EncoderComponent.Element<u32>` and
                 └─ [CGP-E101] consumer trait impl `CanEncode<Element<u64>>` for context `App`
                   └─ [CGP-E103] redirect lookup to `@EncoderComponent` in `App`
                     └─ [CGP-E113] missing wiring for `@EncoderComponent.Element<u64>` on `App`
+    = help: wire `@EncoderComponent.Element<u32>` and `@EncoderComponent.Element<u64>` to providers in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

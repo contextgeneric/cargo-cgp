@@ -13,5 +13,6 @@ error[E0599]: [CGP-E001] missing field `name` on `App`
              [CGP-E101] consumer trait impl `CanBidFarewell` for context `App`
              └─ [CGP-E102] provider trait impl `Farewell` with context `App` for provider `FarewellWithName`
                └─ [CGP-E104] trait impl `HasName` for `App` (*)
+   = help: add the field `name: String` to `App`
 
 For more information about this error, try `rustc --explain E0599`.

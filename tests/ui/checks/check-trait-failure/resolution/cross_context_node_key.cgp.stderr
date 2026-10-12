@@ -15,5 +15,6 @@ error[E0277]: [CGP-E001] missing field `name` on `Inner`
                   └─ [CGP-E102] provider trait impl `Computer` with context `Inner` for provider `DoCompute`
                     └─ [CGP-E104] trait impl `HasName` for `Inner`
                       └─ [CGP-E110] missing field `name` on `Inner`
+    = help: add the field `name: String` to `Inner`
 
 For more information about this error, try `rustc --explain E0277`.

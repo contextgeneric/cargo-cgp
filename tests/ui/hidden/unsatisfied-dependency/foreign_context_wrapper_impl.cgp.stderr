@@ -20,5 +20,6 @@ error[E0277]: [CGP-E003] missing wiring for `@ErrorRaiserComponent.IoFailure` on
                                  └─ [CGP-E101] consumer trait impl `CanRaiseError<IoFailure>` for context `App`
                                    └─ [CGP-E103] redirect lookup to `@ErrorRaiserComponent` in `App`
                                      └─ [CGP-E113] missing wiring for `@ErrorRaiserComponent.IoFailure` on `App`
+   = help: wire `@ErrorRaiserComponent.IoFailure` to a provider in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

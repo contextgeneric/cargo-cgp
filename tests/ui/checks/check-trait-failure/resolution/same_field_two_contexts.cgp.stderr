@@ -19,5 +19,7 @@ error[E0277]: [CGP-E001] the consumer trait `CanCompute` is not implemented for 
                │     └─ [CGP-E110] missing field `name` on `Inner`
                └─ [CGP-E104] trait impl `HasName` for `Outer`
                  └─ [CGP-E110] missing field `name` on `Outer`
+   = help: add the field `name: String` to `Inner`
+   = help: add the field `name: String` to `Outer`
 
 For more information about this error, try `rustc --explain E0277`.

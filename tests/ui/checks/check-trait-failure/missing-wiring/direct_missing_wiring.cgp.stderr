@@ -8,5 +8,6 @@ error[E0277]: [CGP-E001] missing wiring for `FooProviderComponent` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanUseFoo` for `App`
              └─ [CGP-E113] missing wiring for `FooProviderComponent` on `App`
+   = help: wire `FooProviderComponent` to a provider in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

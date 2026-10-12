@@ -9,5 +9,6 @@ error[E0277]: [CGP-E002] missing field `width_a` on `App`
              [CGP-E102] provider trait impl `MeasurerA` with context `App` for provider `MeasureWidthA`
              └─ [CGP-E104] trait impl `HasWidthA` for `App`
                └─ [CGP-E110] missing field `width_a` on `App`
+   = help: add the field `width_a: f64` to `App`
 
 For more information about this error, try `rustc --explain E0277`.

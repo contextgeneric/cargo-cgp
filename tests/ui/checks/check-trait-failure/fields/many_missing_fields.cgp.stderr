@@ -20,5 +20,6 @@ error[E0277]: [CGP-E001] missing fields `alpha`, `beta`, `gamma`, and 3 more on 
                ├─ [CGP-E110] missing field `delta` on `App`
                ├─ [CGP-E110] missing field `epsilon` on `App`
                └─ [CGP-E110] missing field `zeta` on `App`
+   = help: add the fields `alpha: u64`, `beta: u64`, `gamma: u64`, `delta: u64`, `epsilon: u64`, and `zeta: u64` to `App`
 
 For more information about this error, try `rustc --explain E0277`.

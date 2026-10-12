@@ -11,5 +11,6 @@ error[E0277]: [CGP-E001] missing entry for `@app.NamerComponent` in provider `Ap
                └─ [CGP-E102] provider trait impl `Namer` with context `App` for provider `AppComponents`
                  └─ [CGP-E103] redirect lookup to `@app.NamerComponent` in `AppComponents`
                    └─ [CGP-E114] missing entry for `@app.NamerComponent` in provider `AppComponents`
+   = help: add an entry for `@app.NamerComponent` to `AppComponents`
 
 For more information about this error, try `rustc --explain E0277`.

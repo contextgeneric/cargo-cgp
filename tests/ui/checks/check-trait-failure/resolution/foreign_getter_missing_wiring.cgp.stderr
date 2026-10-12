@@ -12,5 +12,6 @@ error[E0277]: [CGP-E001] missing wiring for `CredentialTypeProviderComponent` on
                │ └─ [CGP-E101] consumer trait impl `HasCredentialType` for context `App`
                │   └─ [CGP-E113] missing wiring for `CredentialTypeProviderComponent` on `App`
                └─ [CGP-E101] consumer trait impl `HasCredentialType` for context `App` (*)
+   = help: wire `CredentialTypeProviderComponent` to a provider in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

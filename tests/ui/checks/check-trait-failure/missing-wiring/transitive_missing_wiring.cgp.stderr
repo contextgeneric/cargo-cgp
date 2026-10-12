@@ -12,5 +12,6 @@ error[E0277]: [CGP-E001] missing entry for `BarProviderComponent` in provider `C
                  └─ [CGP-E101] consumer trait impl `CanUseBar` for context `App`
                    └─ [CGP-E102] provider trait impl `BarProvider` with context `App` for provider `CommonProvider`
                      └─ [CGP-E114] missing entry for `BarProviderComponent` in provider `CommonProvider`
+   = help: add an entry for `BarProviderComponent` to `CommonProvider`
 
 For more information about this error, try `rustc --explain E0277`.
