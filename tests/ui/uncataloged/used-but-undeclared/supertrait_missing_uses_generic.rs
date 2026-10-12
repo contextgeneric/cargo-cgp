@@ -1,16 +1,14 @@
 //! A provider for a component with `#[extend(TagFor<u32>)]` that omits `#[uses(TagFor<u32>)]`.
 //!
-//! The component requires the generic trait `TagFor<u32>` of every context, so its provider trait
-//! carries the bound, and a provider that does not declare it fails with `E0277` on
-//! `__Context__: TagFor<u32>` at the `#[cgp_impl]` attribute. rustc's help names the `HasField`
-//! bound inside `TagFor`, not the missing declaration.
+//! The component requires the generic trait `TagFor<u32>` of every context, so rustc reports
+//! `E0277` on `__Context__: TagFor<u32>` at the `#[cgp_impl]` attribute, with a help about the
+//! `HasField` bound inside `TagFor`. The tool reshapes it into `[CGP-E036]`, writing the requirement
+//! with its argument in the `#[uses(TagFor<u32>)]` help.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E036
 
 use cgp::prelude::*;
 

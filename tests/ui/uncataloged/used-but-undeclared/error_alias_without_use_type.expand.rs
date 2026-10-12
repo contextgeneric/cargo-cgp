@@ -1,12 +1,13 @@
 #![feature(prelude_import)]
 //! A provider writing the abstract `Error` without its own `#[use_type(HasErrorType.Error)]`.
 //!
-//! The `E0425` keeps rustc's import suggestions (`std::io::Error` and others, all wrong) beside two
-//! `E0277`s on `__Context__`.
+//! rustc reports three errors for the one missing import: an `E0425` on `Error` with import
+//! suggestions (`std::io::Error` and others, all wrong), and two `E0277`s on `__Context__`, since the
+//! component's `#[use_type]` requires `HasErrorType` of every context. The tool reports one
+//! `[CGP-E035]` on `Error` with the `#[use_type(HasErrorType.Error)]` import in a `help`, and drops
+//! the two `E0277`s, which the same import fixes.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

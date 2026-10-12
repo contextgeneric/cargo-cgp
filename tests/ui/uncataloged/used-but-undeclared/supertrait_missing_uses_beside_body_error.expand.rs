@@ -2,12 +2,11 @@
 //! A provider that omits `#[uses(HasName)]` and also holds an unrelated error in its body.
 //!
 //! The missing declaration fails with `E0277` on `__Context__: HasName` at the `#[cgp_impl]`
-//! attribute, and the body passes an `Rc` to a function that requires `Send`, a plain Rust
-//! `E0277` that must keep its own diagnostic.
+//! attribute, which the tool reshapes into `[CGP-E036]`, and the body passes an `Rc` to a function
+//! that requires `Send`, a plain Rust `E0277` the reshape leaves as rustc wrote it: an error inside
+//! a method body is about the body's own code.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

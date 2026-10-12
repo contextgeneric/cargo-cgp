@@ -1,12 +1,12 @@
 #![feature(prelude_import)]
 //! A provider for a component with `#[extend(HasName)]` that omits `#[uses(HasName)]`.
 //!
-//! The `E0277` on `__Context__: HasName` keeps rustc's help "the trait `HasField<Symbol!("name")>`
-//! is not implemented for `__Context__`"; nothing names the fix, `#[uses(HasName)]`.
+//! The component requires `HasName` of every context, so the provider trait carries the bound and
+//! rustc reports `E0277` on `__Context__: HasName` at the `#[cgp_impl]` attribute, with a help about
+//! the `HasField` bound inside `HasName`. The tool reshapes it into `[CGP-E036]`, naming the
+//! provider trait, the provider, and the requirement, with `#[uses(HasName)]` in a `help`.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

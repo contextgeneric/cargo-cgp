@@ -35,6 +35,7 @@ mod label;
 mod missing_use_provider;
 mod orphan;
 mod overflow;
+mod requirement;
 mod structural;
 mod undeclared;
 mod unimported;
@@ -53,6 +54,7 @@ pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
 pub use missing_use_provider::detect_missing_use_provider;
 pub use orphan::classify_orphan_conflict;
 pub use overflow::{OverflowWalk, overflow_walk};
+pub use requirement::{DetectedUndeclaredRequirement, detect_undeclared_requirement};
 pub use structural::{
     detect_duplicate_check, detect_duplicate_check_trait, detect_entry_parameters_not_in_key,
     detect_generic_default_impl, detect_loop_key_without_variable,

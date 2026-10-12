@@ -1,15 +1,14 @@
 #![feature(prelude_import)]
 //! A `UseDefault` provider whose default body calls a getter it does not declare in `#[uses]`.
 //!
-//! The tool keeps rustc's `E0277` that `__Context__: HasName` is not satisfied, required by the
-//! `#[extend(HasName)]` bound on `Greeter`. Nothing names the fix, `#[uses(HasName)]` on the
-//! provider, and the message leaks the generated `__Context__`. The resolver skips the
-//! `NameGetterComponent` marker, defined under the `#[cgp_getter]` attribute rustc points at, as a
-//! context candidate, so it states no false context.
+//! The component's `#[extend(HasName)]` requires `HasName` of every context, so rustc reports
+//! `E0277` on `__Context__: HasName` at the `#[cgp_impl(UseDefault)]` attribute, leaking the
+//! generated `__Context__`. The tool reshapes it into `[CGP-E036]`, naming `UseDefault` as the
+//! provider, with `#[uses(HasName)]` in a `help`. The resolver skips the `NameGetterComponent`
+//! marker, defined under the `#[cgp_getter]` attribute rustc points at, as a context candidate, so
+//! it states no false context.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

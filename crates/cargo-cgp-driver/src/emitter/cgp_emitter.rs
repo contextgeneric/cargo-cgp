@@ -11,14 +11,15 @@ use cargo_cgp_error_processing::rewrite::{
 use cargo_cgp_error_processing::{
     AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf,
     MissingUseProvider, Origin, OrphanConflict, PendingNote, Resolved, StructuralMistake,
-    UndeclaredTrait, UnimportedAbstractType, WiringOverflow, cause_signature, cgp_impl_misuse_help,
-    coalesce_underived_fields, coalesced_headline, explain_footer_codes, fix_help_messages,
-    group_by_shared_cause, internal_error_note, is_explain_footer_text, is_method_bounds_text,
-    is_recursion_limit_help_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
-    missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
-    plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_structural_mistake,
-    plan_undeclared_trait, plan_unimported_abstract_type, plan_wiring_conflict,
-    postprocess_message, structural_mistake_help, undeclared_trait_help,
+    UndeclaredRequirement, UndeclaredTrait, UnimportedAbstractType, WiringOverflow,
+    cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, coalesced_headline,
+    explain_footer_codes, fix_help_messages, group_by_shared_cause, internal_error_note,
+    is_explain_footer_text, is_method_bounds_text, is_recursion_limit_help_text,
+    is_unbounded_type_param_item_text, mentions_orphan_param_text, missing_use_provider_help,
+    orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
+    plan_resolved, plan_structural_mistake, plan_undeclared_requirement, plan_undeclared_trait,
+    plan_unimported_abstract_type, plan_wiring_conflict, postprocess_message,
+    structural_mistake_help, undeclared_requirement_helps, undeclared_trait_help,
     unimported_abstract_type_help, wiring_conflict_help, wiring_overflow_help,
 };
 use rustc_errors::codes::{
@@ -46,8 +47,8 @@ use crate::emitter::edit::{
 use crate::emitter::output::{Output, lock_output, register_output};
 use crate::emitter::test_panic::{TestPanic, inject};
 use crate::resolve::{
-    self, ConflictAction, ConflictTrait, DetectedCgpImplMisuse, DetectedUnimportedAbstractType,
-    ResolveCache,
+    self, ConflictAction, ConflictTrait, DetectedCgpImplMisuse, DetectedUndeclaredRequirement,
+    DetectedUnimportedAbstractType, ResolveCache,
 };
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
@@ -97,6 +98,9 @@ pub struct CgpEmitter<E: Emitter> {
     /// The abstract types already reported as used but not imported, so a second use of one in
     /// the same item, or the same use reported for another generated item, is not a second error.
     unimported_reported: Vec<UnimportedReport>,
+    /// The provider impls already reported for a requirement they do not declare, so the errors
+    /// one omission produces (at the attribute and at each signature) become one.
+    requirement_reported: Vec<rustc_span::def_id::DefId>,
     /// The `#[cgp_impl]` header-trait mistakes in the crate — a consumer trait or a non-CGP trait
     /// named where the provider trait belongs — detected once from the compiler and reused. `None`
     /// until first computed under an available `TyCtxt` (the macro-lowering errors this recognizes
@@ -247,6 +251,7 @@ impl<E: Emitter> CgpEmitter<E> {
             cgp_spans: Vec::new(),
             structural_reported: Vec::new(),
             unimported_reported: Vec::new(),
+            requirement_reported: Vec::new(),
             cgp_impl_misuses: None,
             cgp_used: OnceCell::new(),
             ambiguous: OnceCell::new(),
@@ -657,6 +662,81 @@ impl<E: Emitter> CgpEmitter<E> {
         rustc_middle::ty::tls::with_opt(|tcx| {
             resolve::detect_unimported_abstract_type(tcx?, primary_span, &type_name, &qself)
         })
+    }
+
+    /// Recognize `diag` as a requirement a provider trait places on the context that a `#[cgp_impl]`
+    /// provider does not declare: an `E0277` on the generated `__Context__`, confirmed by
+    /// [`resolve::detect_undeclared_requirement`].
+    fn undeclared_requirement(&self, diag: &DiagInner) -> Option<DetectedUndeclaredRequirement> {
+        if diag.code != Some(E0277)
+            || !main_message_text(diag).is_some_and(|text| text.contains("`__Context__: "))
+        {
+            return None;
+        }
+        let primary_span = diag.span.primary_span()?;
+        rustc_middle::ty::tls::with_opt(|tcx| {
+            resolve::detect_undeclared_requirement(tcx?, primary_span)
+        })
+    }
+
+    /// Turn the buffered `E0425` "cannot find type `name`" inside the provider impl at `impl_span`
+    /// into the `[CGP-E035]` report of the abstract type it names, which `trait_name` declares, and
+    /// drop the later ones for the same name in the impl: name resolution reports a bare `Error`
+    /// before the compiler can say which trait declares it, so the requirement that names the trait
+    /// is where the use is recognized. Returns whether one was found.
+    fn convert_unresolved_abstract_type(
+        &mut self,
+        name: &str,
+        trait_did: rustc_span::def_id::DefId,
+        trait_name: &str,
+        impl_did: rustc_span::def_id::DefId,
+        impl_span: Span,
+    ) -> bool {
+        let message = format!("cannot find type `{name}` in this scope");
+        let is_use = |diag: &DiagInner| {
+            diag.code == Some(E0425)
+                && main_message_text(diag) == Some(message.as_str())
+                && diag
+                    .span
+                    .primary_span()
+                    .is_some_and(|span| impl_span.contains(span))
+        };
+        let unimported = UnimportedAbstractType {
+            type_name: name.to_owned(),
+            trait_name: trait_name.to_owned(),
+        };
+        let mut reported = None;
+        self.output().buffer.retain_mut(|entry| {
+            let BufEntry::Plain(diag) = entry else {
+                return true;
+            };
+            if !is_use(diag) {
+                return true;
+            }
+            if reported.is_some() {
+                return false;
+            }
+            let primary_span = diag.span.primary_span();
+            replace_header(diag, plan_unimported_abstract_type(&unimported));
+            if let Some(primary_span) = primary_span {
+                diag.span = MultiSpan::from_span(primary_span);
+            }
+            diag.children.push(subdiag(
+                Sublevel::Help,
+                unimported_abstract_type_help(&unimported),
+            ));
+            reported = primary_span;
+            true
+        });
+        let Some(span) = reported else {
+            return false;
+        };
+        self.unimported_reported.push(UnimportedReport {
+            trait_did,
+            item: impl_did,
+            span,
+        });
+        true
     }
 
     /// Detect the crate's `#[cgp_impl]` header-trait mistakes once, memoizing the result. Runs only
@@ -1196,6 +1276,64 @@ impl<E: Emitter> CgpEmitter<E> {
                 Sublevel::Help,
                 unimported_abstract_type_help(&unimported),
             ));
+            self.postprocess(&mut diag, Origin::Rewritten);
+            self.record_cgp_spans(&diag);
+            self.push(BufEntry::Plain(Box::new(diag)));
+            return;
+        }
+        // A requirement the provider trait places on the context that a `#[cgp_impl]` provider does
+        // not declare: rustc reports an `E0277` on the generated `__Context__` at the attribute and
+        // at each signature. Reword the first into one block naming the provider trait, the
+        // provider, and each declaration, and drop the rest. An abstract type among them that the
+        // provider uses without importing is reported as that use instead.
+        if let Some(detected) = self.undeclared_requirement(&diag)
+            && let Some(primary_span) = diag.span.primary_span()
+        {
+            if self.requirement_reported.contains(&detected.impl_did) {
+                return;
+            }
+            self.requirement_reported.push(detected.impl_did);
+            let DetectedUndeclaredRequirement {
+                requirement,
+                impl_did,
+                impl_span,
+                traits,
+            } = detected;
+            let mut kept = Vec::new();
+            for (required, (trait_did, type_name)) in
+                requirement.requirements.into_iter().zip(traits)
+            {
+                let explained = type_name.is_some_and(|type_name| {
+                    self.unimported_reported
+                        .iter()
+                        .any(|report| report.trait_did == trait_did && report.item == impl_did)
+                        || self.convert_unresolved_abstract_type(
+                            &type_name,
+                            trait_did,
+                            &required.bound,
+                            impl_did,
+                            impl_span,
+                        )
+                });
+                if !explained {
+                    kept.push(required);
+                }
+            }
+            if kept.is_empty() {
+                return;
+            }
+            let requirement = UndeclaredRequirement {
+                requirements: kept,
+                ..requirement
+            };
+            replace_header(&mut diag, plan_undeclared_requirement(&requirement));
+            // The caret is often the `#[cgp_impl]` attribute through the macro's expansion; its
+            // call site is the same text, without rustc's note that the error originates in the
+            // macro, which says nothing about the missing declaration.
+            diag.span = MultiSpan::from_span(primary_span.source_callsite());
+            for help in undeclared_requirement_helps(&requirement) {
+                diag.children.push(subdiag(Sublevel::Help, help));
+            }
             self.postprocess(&mut diag, Origin::Rewritten);
             self.record_cgp_spans(&diag);
             self.push(BufEntry::Plain(Box::new(diag)));

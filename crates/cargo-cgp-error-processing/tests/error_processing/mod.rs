@@ -9,6 +9,7 @@ pub mod group;
 pub mod internal_error;
 pub mod orphan;
 pub mod postprocess;
+pub mod requirement;
 pub mod rewrite;
 pub mod shape;
 pub mod signals;
