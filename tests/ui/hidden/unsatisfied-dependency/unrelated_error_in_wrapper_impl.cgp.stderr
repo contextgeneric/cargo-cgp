@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E003] the trait `CanGreetTwice` is not implemented for context `Person`
+error[E0277]: [CGP-E003] missing field `name` on `Person`
   --> src/main.rs:48:24
    |
 48 | impl CanGreetTwice for Person {

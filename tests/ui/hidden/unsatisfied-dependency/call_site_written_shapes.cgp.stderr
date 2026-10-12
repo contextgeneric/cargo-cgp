@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer trait `CanHandle<Branch<ReadName>, ((&str, u8, bool, char, u8, f32), (Marker, u32, String, PhantomData<(u8, &[u16], Vec<String>)>))>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing field `name` on `App`
    --> src/main.rs:107:9
     |
 107 |     app.handle(

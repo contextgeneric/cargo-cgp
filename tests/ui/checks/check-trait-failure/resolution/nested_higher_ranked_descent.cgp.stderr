@@ -1,10 +1,10 @@
-error[E0277]: [CGP-E001] the consumer trait `CanEncodeValue<Outer>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `@ValueEncoderComponent.u64` on `App`
    --> src/main.rs:122:9
     |
 122 |         ValueEncoderComponent: [Outer],
     |         ^^^^^^^^^^^^^^^^^^^^^
     |
-    = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `@ValueEncoderComponent.u64`
+    = note: root cause: [CGP-E113] missing wiring for `@ValueEncoderComponent.u64` on `App`
             this is required through the dependency chain:
               [CGP-E101] consumer trait impl `CanEncodeValue<Outer>` for context `App`
               └─ [CGP-E103] redirect lookup to `@ValueEncoderComponent` in `App`
@@ -32,6 +32,6 @@ error[E0277]: [CGP-E001] the consumer trait `CanEncodeValue<Outer>` is not imple
                                                           └─ [CGP-E104] trait impl `EncodeFields` for `Struct! { value: u64 }`
                                                             └─ [CGP-E101] consumer trait impl `CanEncodeValue<u64>` for context `App`
                                                               └─ [CGP-E103] redirect lookup to `@ValueEncoderComponent` in `App`
-                                                                └─ [CGP-E113] context `App` does not contain any delegate entry for `@ValueEncoderComponent.u64`
+                                                                └─ [CGP-E113] missing wiring for `@ValueEncoderComponent.u64` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

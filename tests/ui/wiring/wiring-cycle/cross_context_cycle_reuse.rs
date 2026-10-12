@@ -7,19 +7,19 @@
 //! type is not descended, and caches the complete subtree. The walk from `Outer: CanR` descends
 //! `Outer: Linked` (a bound on its own context), reaches `Inner: CanN`, and finds that cached
 //! subtree. Its reachable set holds `Outer: Linked`, which is now an ancestor, so the walk resolves
-//! the node afresh and the cycle guard cuts the loop. Reusing the cached subtree would splice the
-//! looping `Outer: Linked` leaf into `Outer`'s tree.
+//! the node afresh and the cycle guard cuts the loop.
 //!
-//! The `Outer` error is `usability`: its headline rewords the deep obligation rustc reports,
-//! `Inner: IsProviderFor<ProviderNComponent, Inner>`, as a provider trait not implemented for
-//! provider `Inner`, under a tree rooted at `CanR`.
+//! Both errors bottom out on `Inner`'s missing `name` field, so they merge into one block with a
+//! caret at each check entry. The merged tree shows both routes, and with them `Inner`'s own
+//! `Outer: Linked` leaf, so the merged output no longer shows whether `Outer`'s walk reused the
+//! cached subtree; `cross_context_cycle_reuse_distinct` pins that rule instead.
 //!
 //! The error class is the wiring cycle
 //! (`cgp-knowledge-base/cgp/errors/wiring/wiring-cycle.md`); the reuse rule is in
 //! `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`.
 
 //@quality: usability
-//@codes: CGP-E001 CGP-E002 CGP-E101 CGP-E102 CGP-E104 CGP-E110 CGP-E117
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110 CGP-E117
 
 use cgp::prelude::*;
 

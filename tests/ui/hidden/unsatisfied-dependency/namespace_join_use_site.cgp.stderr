@@ -1,4 +1,4 @@
-error[E0599]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `App`
+error[E0599]: [CGP-E001] missing field `name` on `App`
   --> src/main.rs:61:9
    |
 61 |     app.greet();

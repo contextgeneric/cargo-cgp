@@ -1,10 +1,10 @@
-error[E0277]: [CGP-E001] the consumer trait `CanBuildValue<Outer>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `@ValueBuilderComponent.Inner` on `App`
    --> src/main.rs:123:9
     |
 123 |         ValueBuilderComponent: [
     |         ^^^^^^^^^^^^^^^^^^^^^
     |
-    = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `@ValueBuilderComponent.Inner`
+    = note: root cause: [CGP-E113] missing wiring for `@ValueBuilderComponent.Inner` on `App`
             this is required through the dependency chain:
               [CGP-E101] consumer trait impl `CanBuildValue<Outer>` for context `App`
               └─ [CGP-E103] redirect lookup to `@ValueBuilderComponent` in `App`
@@ -13,6 +13,6 @@ error[E0277]: [CGP-E001] the consumer trait `CanBuildValue<Outer>` is not implem
                     └─ [CGP-E104] trait impl `BuildFields` for `Struct! { inner: Inner }`
                       └─ [CGP-E101] consumer trait impl `CanBuildValue<Inner>` for context `App`
                         └─ [CGP-E103] redirect lookup to `@ValueBuilderComponent` in `App`
-                          └─ [CGP-E113] context `App` does not contain any delegate entry for `@ValueBuilderComponent.Inner`
+                          └─ [CGP-E113] missing wiring for `@ValueBuilderComponent.Inner` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

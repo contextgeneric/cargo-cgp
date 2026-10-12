@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea<f64>` is not implemented for context `Rectangle`
+error[E0277]: [CGP-E001] missing field `width` on `Rectangle`
   --> src/main.rs:53:9
    |
 53 |         AreaCalculatorComponent: f64,

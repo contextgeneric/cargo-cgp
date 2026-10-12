@@ -14,10 +14,9 @@
 //! unsatisfied `App: CanCalculateArea<Rectangle>` supertrait then fails *inside* the
 //! `impl CanCalculateAreaChecked<Rectangle> for App` block, at the impl header (`E0277`) and the
 //! forwarding `self.area(..)` call (`E0599`). Both recover the same cause and collapse to one
-//! block, headed `[CGP-E003] the trait \`CanCalculateAreaChecked<Rectangle>\`` — a wrapper is a
-//! plain trait, not a CGP consumer, so it reads "the trait", not "the consumer trait" — over a
-//! tree that leads with `CanCalculateAreaChecked`, then its `CanCalculateArea` supertrait, down to
-//! the missing field.
+//! block. A wrapper is a plain trait, not a CGP consumer, so the block takes the `[CGP-E003]` code;
+//! its headline states the missing field, over a tree that leads with `CanCalculateAreaChecked`,
+//! then its `CanCalculateArea` supertrait, down to the missing field.
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the impl-site
 //! path).

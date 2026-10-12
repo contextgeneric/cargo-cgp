@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer trait `HasReference<str>` is not implemented for context `App<'_>`
+error[E0277]: [CGP-E001] missing field `name` on `App<'_>`
   --> src/main.rs:50:9
    |
 50 |         ReferenceGetterComponent: (Life<'a>, str),

@@ -1,4 +1,4 @@
-error[E0599]: [CGP-E001] the consumer trait `CanHandle<(), ()>` is not implemented for context `AppBuilder`
+error[E0599]: [CGP-E001] the trait bound `__PartialApp<IsPresent>: CanBuildFrom<Http>` is not satisfied
   --> src/main.rs:91:27
    |
 91 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;

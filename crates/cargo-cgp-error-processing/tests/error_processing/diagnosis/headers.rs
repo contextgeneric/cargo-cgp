@@ -85,10 +85,15 @@ fn promotes_a_mid_chain_symptom_bound_to_the_consumer_header() {
         &empty_names(),
     );
     assert_eq!(
-        plan.header.as_deref(),
+        plan.class_header.as_deref(),
         Some(
             "[CGP-E001] the consumer trait `CanAuthenticate<LoginRequest>` is not implemented for context `App`"
         )
+    );
+    // The displayed headline states the cause instead.
+    assert_eq!(
+        plan.header.as_deref(),
+        Some("[CGP-E001] missing wiring for `CredentialTypeProviderComponent` on `App`")
     );
 }
 
@@ -113,10 +118,15 @@ fn plans_a_provider_header_via_text_rewrite() {
         &ComponentNameMap::new(foo_names),
     );
     assert_eq!(
-        plan.header.as_deref(),
+        plan.class_header.as_deref(),
         Some(
             "[CGP-E002] the provider trait `Fooer` with context `App` is not implemented for provider `FooProvider`"
         )
+    );
+    // The displayed headline keeps the provider class's code and states the cause.
+    assert_eq!(
+        plan.header.as_deref(),
+        Some("[CGP-E002] the trait bound `App: DefaultNamespace` is not satisfied")
     );
 }
 
@@ -149,7 +159,7 @@ fn redirect_lookup_provider_follows_through_to_consumer_header() {
             &ComponentNameMap::new(foo_names),
         );
         assert_eq!(
-            plan.header.as_deref(),
+            plan.class_header.as_deref(),
             Some("[CGP-E001] the consumer trait `CanFoo` is not implemented for context `App`"),
             "subject `{subject}` should follow through the redirect to the consumer header",
         );

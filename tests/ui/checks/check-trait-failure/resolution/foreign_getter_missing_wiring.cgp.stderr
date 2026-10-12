@@ -1,16 +1,16 @@
-error[E0277]: [CGP-E001] the consumer trait `CanAuthenticate<LoginRequest>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `CredentialTypeProviderComponent` on `App`
   --> src/main.rs:86:9
    |
 86 |         AuthenticatorComponent: LoginRequest,
    |         ^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `CredentialTypeProviderComponent`
+   = note: root cause: [CGP-E113] missing wiring for `CredentialTypeProviderComponent` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanAuthenticate<LoginRequest>` for context `App`
              └─ [CGP-E102] provider trait impl `Authenticator<LoginRequest>` with context `App` for provider `RequireCredential<AcceptAll>`
                ├─ [CGP-E104] trait impl `HasCredential` for `LoginRequest`
                │ └─ [CGP-E101] consumer trait impl `HasCredentialType` for context `App`
-               │   └─ [CGP-E113] context `App` does not contain any delegate entry for `CredentialTypeProviderComponent`
+               │   └─ [CGP-E113] missing wiring for `CredentialTypeProviderComponent` on `App`
                └─ [CGP-E101] consumer trait impl `HasCredentialType` for context `App` (*)
 
 For more information about this error, try `rustc --explain E0277`.

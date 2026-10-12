@@ -38,15 +38,15 @@ help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
 16 + #![feature(trivial_bounds)]
    |
 
-error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `Person`
+error[E0277]: [CGP-E001] missing entry for `GreeterComponent` in provider `Bundle`
   --> src/main.rs:49:9
    |
 49 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E114] provider `Bundle` does not contain any delegate entry for `GreeterComponent`
+   = note: root cause: [CGP-E114] missing entry for `GreeterComponent` in provider `Bundle`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanGreet` for context `Person`
-             └─ [CGP-E114] provider `Bundle` does not contain any delegate entry for `GreeterComponent`
+             └─ [CGP-E114] missing entry for `GreeterComponent` in provider `Bundle`
 
 For more information about this error, try `rustc --explain E0277`.

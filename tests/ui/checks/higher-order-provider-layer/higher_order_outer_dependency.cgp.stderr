@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`
+error[E0277]: [CGP-E001] missing field `scale_factor` on `Rectangle`
   --> src/main.rs:76:9
    |
 76 |         AreaCalculatorComponent,

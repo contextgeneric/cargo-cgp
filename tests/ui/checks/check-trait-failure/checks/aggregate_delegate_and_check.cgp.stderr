@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `GreetBundle`
+error[E0277]: [CGP-E001] missing field `name` on `GreetBundle`
   --> src/main.rs:29:9
    |
 29 |         GreeterComponent: GreetHello,

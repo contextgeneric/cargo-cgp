@@ -1,14 +1,14 @@
-error[E0599]: [CGP-E001] the consumer trait `CanTryCompute<(), (_, _)>` is not implemented for context `App`
+error[E0599]: [CGP-E001] missing wiring for `ErrorTypeProviderComponent` on `App`
   --> src/main.rs:32:17
    |
 32 |     let _ = App.try_compute(PhantomData::<()>, (1, 2));
    |                 ^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `ErrorTypeProviderComponent`
+   = note: root cause: [CGP-E113] missing wiring for `ErrorTypeProviderComponent` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanTryCompute<(), (_, _)>` for context `App`
              ├─ [CGP-E101] consumer trait impl `HasErrorType` for context `App`
-             │ └─ [CGP-E113] context `App` does not contain any delegate entry for `ErrorTypeProviderComponent`
+             │ └─ [CGP-E113] missing wiring for `ErrorTypeProviderComponent` on `App`
              └─ [CGP-E102] provider trait impl `TryComputer<(), (_, _)>` with context `App` for provider `Add`
                ├─ [CGP-E101] consumer trait impl `HasErrorType` for context `App` (*)
                └─ [CGP-E102] provider trait impl `TryComputer<(), (_, _)>` with context `App` for provider `Promote<Add>`

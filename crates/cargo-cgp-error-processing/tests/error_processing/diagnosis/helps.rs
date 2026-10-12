@@ -27,7 +27,7 @@ fn plans_a_missing_derive_with_a_help() {
         vec!["make sure that `#[derive(HasField)]` is used for `Rectangle`".to_owned()]
     );
     assert!(notes(&plan)[0].starts_with(
-        "root cause: [CGP-E111] accessor trait `HasField` with field `height` is not implemented for `Rectangle`"
+        "root cause: [CGP-E111] `HasField` not derived for field `height` of `Rectangle`"
     ));
 }
 

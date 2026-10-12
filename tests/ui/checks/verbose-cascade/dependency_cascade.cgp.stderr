@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer traits `CanBaz`, `CanBar`, and `CanFoo` are not implemented for context `App`
+error[E0277]: [CGP-E001] missing field `name` on `App`
   --> src/main.rs:88:9
    |
 88 |         BazComponent,

@@ -10,8 +10,7 @@ use crate::diagnosis::wording::header::{quoted_list, required_type};
 
 /// What an associated type is called in a message: `abstract type` when it belongs to a CGP
 /// abstract-type component (a context *chooses* its concrete type by wiring), and `associated type`
-/// for any other trait, where no such choice exists. Shared by the root-cause lead and the
-/// `[CGP-E005]` header so the two never drift.
+/// for any other trait, where no such choice exists.
 pub fn assoc_type_noun(component: Option<&str>) -> &'static str {
     match component {
         Some(_) => "abstract type",
@@ -19,22 +18,18 @@ pub fn assoc_type_noun(component: Option<&str>) -> &'static str {
     }
 }
 
-/// The statement that a context carries no delegate entry for a key — a component marker for a
-/// plain missing wiring, or a redirect path for an unterminated namespace lookup. Shared by the
-/// root-cause lead here and the terminal dependency-tree node the driver renders, so the two never
-/// drift: a missing delegate entry reads the same whether it heads the note or ends the chain.
-pub fn missing_delegate_entry(context: &str, key: &str) -> String {
-    format!("context `{context}` does not contain any delegate entry for `{key}`")
+/// The statement that a context wires nothing for a key: a component marker for a plain missing
+/// wiring, or a redirect path for an unterminated namespace lookup.
+pub fn missing_wiring(context: &str, key: &str) -> String {
+    format!("missing wiring for `{key}` on `{context}`")
 }
 
-/// The one root-cause statement for a leaf — what the note names before the dependency chain,
-/// and (repeated) the tree's terminal leaf the driver appends so the chain visibly bottoms out at
-/// the root cause. A genuinely missing field is said plainly (without a `context` qualifier, since
-/// `HasField` can land on any struct); a present-but-underived field is worded as the unimplemented
-/// accessor, with the fix (the derive) carried by a separate `help`; a missing wiring (plain or a
-/// redirect) names the missing delegate entry; a projection mismatch names both the type required
-/// and the one supplied, with an abstract type's wiring fix likewise carried by a separate `help`;
-/// any other leaf restates its unmet bound.
+/// The one sentence that states a root cause. It is the cause wherever the cause appears: the
+/// headline of a block with this one cause, the `root cause:` line, and the tree's last entry
+/// (see `cgp-knowledge-base/cargo-cgp/error-code.md`). A missing field, wiring, or table
+/// entry names what is missing and where; a present field without `HasField` names the derive that
+/// is missing, whose fix rides in a `help`; a projection mismatch names the type supplied and the
+/// type required; an ordinary bound keeps the compiler's wording.
 pub fn root_cause_lead(leaf: &Leaf) -> String {
     match leaf {
         Leaf::Field {
@@ -42,23 +37,21 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
             owner,
             issue: FieldIssue::Missing,
         } => format!("missing field `{name}` on `{owner}`"),
-        Leaf::MissingWiring { component, owner } => missing_delegate_entry(owner, component),
+        Leaf::MissingWiring { component, owner } => missing_wiring(owner, component),
         Leaf::MissingDispatchEntry { key, table } => {
-            format!("provider `{table}` does not contain any delegate entry for `{key}`")
+            format!("missing entry for `{key}` in provider `{table}`")
         }
         Leaf::NotAProvider {
             provider,
             provider_trait,
-        } => format!("the provider trait `{provider_trait}` is not implemented for `{provider}`"),
-        Leaf::MissingRedirectWiring { path, context } => missing_delegate_entry(context, path),
+        } => format!("`{provider}` is not a provider of `{provider_trait}`"),
+        Leaf::MissingRedirectWiring { path, context } => missing_wiring(context, path),
         Leaf::Field { name, owner, .. } => {
-            format!(
-                "accessor trait `HasField` with field `{name}` is not implemented for `{owner}`"
-            )
+            format!("`HasField` not derived for field `{name}` of `{owner}`")
         }
         Leaf::UnderivedFields { names, owner } => {
             format!(
-                "accessor trait `HasField` is not implemented for the fields {} of `{owner}`",
+                "`HasField` not derived for fields {} of `{owner}`",
                 quoted_list(names)
             )
         }

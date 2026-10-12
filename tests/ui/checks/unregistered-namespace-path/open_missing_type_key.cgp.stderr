@@ -1,13 +1,13 @@
-error[E0277]: [CGP-E001] the consumer trait `CanEncodeItem<Vec<u8>>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `@ItemEncoderComponent.Vec<u8>` on `App`
   --> src/main.rs:56:13
    |
 56 |             Vec<u8>,
    |             ^^^^^^^
    |
-   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `@ItemEncoderComponent.Vec<u8>`
+   = note: root cause: [CGP-E113] missing wiring for `@ItemEncoderComponent.Vec<u8>` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanEncodeItem<Vec<u8>>` for context `App`
              └─ [CGP-E103] redirect lookup to `@ItemEncoderComponent` in `App`
-               └─ [CGP-E113] context `App` does not contain any delegate entry for `@ItemEncoderComponent.Vec<u8>`
+               └─ [CGP-E113] missing wiring for `@ItemEncoderComponent.Vec<u8>` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

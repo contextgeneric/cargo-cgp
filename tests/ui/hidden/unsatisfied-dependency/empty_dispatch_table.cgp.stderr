@@ -1,10 +1,10 @@
-error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog, _>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing entry for `ByteStream` in provider `EmptySink`
    --> src/main.rs:103:9
     |
 103 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
     |         ^^^^^^
     |
-    = note: root cause: [CGP-E114] provider `EmptySink` does not contain any delegate entry for `ByteStream`
+    = note: root cause: [CGP-E114] missing entry for `ByteStream` in provider `EmptySink`
             this is required through the dependency chain:
               [CGP-E101] consumer trait impl `CanHandle<Prog, _>` for context `App`
               └─ [CGP-E103] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
@@ -15,6 +15,6 @@ error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog, _>` is not implemen
                         └─ [CGP-E103] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
                           └─ [CGP-E102] provider trait impl `Handler<Sink, ByteStream>` with context `App` for provider `HandleSink`
                             └─ [CGP-E102] provider trait impl `Handler<Sink, ByteStream>` with context `App` for provider `UseInputDelegate<EmptySink>`
-                              └─ [CGP-E114] provider `EmptySink` does not contain any delegate entry for `ByteStream`
+                              └─ [CGP-E114] missing entry for `ByteStream` in provider `EmptySink`
 
 For more information about this error, try `rustc --explain E0277`.

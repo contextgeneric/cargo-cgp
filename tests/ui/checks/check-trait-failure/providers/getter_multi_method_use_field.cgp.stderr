@@ -1,13 +1,13 @@
-error[E0277]: [CGP-E002] the provider trait `DimensionsGetter` with context `Rectangle` is not implemented for provider `UseField<Symbol!("width")>`
+error[E0277]: [CGP-E002] `UseField<Symbol!("width")>` is not a provider of `DimensionsGetter`
   --> src/main.rs:34:9
    |
 34 |         DimensionsGetterComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E115] the provider trait `DimensionsGetter` is not implemented for `UseField<Symbol!("width")>`
+   = note: root cause: [CGP-E115] `UseField<Symbol!("width")>` is not a provider of `DimensionsGetter`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `HasDimensions` for context `Rectangle`
              └─ [CGP-E102] provider trait impl `DimensionsGetter` with context `Rectangle` for provider `UseField<Symbol!("width")>`
-               └─ [CGP-E115] the provider trait `DimensionsGetter` is not implemented for `UseField<Symbol!("width")>`
+               └─ [CGP-E115] `UseField<Symbol!("width")>` is not a provider of `DimensionsGetter`
 
 For more information about this error, try `rustc --explain E0277`.

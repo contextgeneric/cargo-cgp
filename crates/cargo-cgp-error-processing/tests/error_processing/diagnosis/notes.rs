@@ -15,11 +15,11 @@ fn dependency_tree_leaf_codes_every_root_cause() {
             component: "BarProviderComponent".to_owned(),
             owner: "App".to_owned(),
         }),
-        "[CGP-E113] context `App` does not contain any delegate entry for `BarProviderComponent`"
+        "[CGP-E113] missing wiring for `BarProviderComponent` on `App`"
     );
     assert_eq!(
         dependency_tree_leaf(&field_leaf("name", "Person", FieldIssue::Present)),
-        "[CGP-E111] accessor trait `HasField` with field `name` is not implemented for `Person`"
+        "[CGP-E111] `HasField` not derived for field `name` of `Person`"
     );
     assert_eq!(
         dependency_tree_leaf(&Leaf::FieldTypeMismatch {
@@ -36,14 +36,14 @@ fn dependency_tree_leaf_codes_every_root_cause() {
             key: "Tagged<Bytes>".to_owned(),
             table: "SinkHandlers".to_owned(),
         }),
-        "[CGP-E114] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`"
+        "[CGP-E114] missing entry for `Tagged<Bytes>` in provider `SinkHandlers`"
     );
     assert_eq!(
         dependency_tree_leaf(&Leaf::NotAProvider {
             provider: "QueryBalanceRequest".to_owned(),
             provider_trait: "ApiHandler".to_owned(),
         }),
-        "[CGP-E115] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`"
+        "[CGP-E115] `QueryBalanceRequest` is not a provider of `ApiHandler`"
     );
     assert_eq!(
         dependency_tree_leaf(&Leaf::AssocTypeMismatch {
@@ -128,26 +128,8 @@ fn wording_helpers_format_directly() {
         "`a`, `b`, and `c`"
     );
 
-    assert_eq!(
-        field_mismatch_header("height", "Rectangle", "f64", None, "i32"),
-        "[CGP-E004] expected a `height` field of type `f64` on `Rectangle`, but found `i32`"
-    );
-
     // A required type that projects through the context's own wiring carries both forms: the
     // projection says where the requirement comes from, the reduction says what it resolves to.
-    assert_eq!(
-        field_mismatch_header(
-            "database",
-            "App",
-            "Pool<<App as HasDbType>::Db>",
-            Some("Pool<Postgres>"),
-            "Pool<Sqlite>"
-        ),
-        "[CGP-E004] expected a `database` field of type `Pool<<App as HasDbType>::Db>` \
-         (`Pool<Postgres>`) on `App`, but found `Pool<Sqlite>`"
-    );
-
-    // The leaf states the same requirement the same way, so the header and the tree cannot drift.
     assert_eq!(
         dependency_tree_leaf(&Leaf::FieldTypeMismatch {
             name: "database".to_owned(),

@@ -1,4 +1,4 @@
-error[E0271]: [CGP-E005] expected the abstract type `Scalar` of `HasScalarType` on `Rectangle` to be `f64`, but found `u32`
+error[E0271]: [CGP-E005] abstract type `Scalar` of `HasScalarType` on `Rectangle` is `u32`, but `f64` is required
   --> src/main.rs:66:9
    |
 66 |         AreaCalculatorComponent,

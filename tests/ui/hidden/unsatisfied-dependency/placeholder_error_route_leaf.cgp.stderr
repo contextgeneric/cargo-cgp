@@ -1,4 +1,4 @@
-error[E0599]: [CGP-E001] the consumer trait `CanHandle<(), _>` is not implemented for context `App`
+error[E0599]: [CGP-E001] missing field `name` on `App`
   --> src/main.rs:78:9
    |
 78 |     app.handle(PhantomData::<()>, Vec::new()).await

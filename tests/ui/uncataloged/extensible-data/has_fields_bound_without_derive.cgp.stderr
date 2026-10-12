@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer trait `CanDescribe` is not implemented for context `App`
+error[E0277]: [CGP-E001] the trait bound `App: HasFields` is not satisfied
   --> src/main.rs:43:9
    |
 43 |         DescriberComponent,

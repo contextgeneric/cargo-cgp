@@ -1,4 +1,4 @@
-error[E0599]: [CGP-E001] the consumer trait `CanCompareScalars` is not implemented for context `App`
+error[E0599]: [CGP-E001] the trait bound `f64: Eq` is not satisfied
   --> src/main.rs:57:17
    |
 57 |     let _ = app.scalars_equal(&1.0, &2.0);

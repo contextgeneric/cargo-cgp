@@ -1,16 +1,16 @@
-error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`
+error[E0277]: [CGP-E001] `HasField` not derived for fields `height` and `width` of `Rectangle`
   --> src/main.rs:60:9
    |
 60 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: make sure that `#[derive(HasField)]` is used for `Rectangle`
-   = note: root cause: [CGP-E111] accessor trait `HasField` is not implemented for the fields `height` and `width` of `Rectangle`
+   = note: root cause: [CGP-E111] `HasField` not derived for fields `height` and `width` of `Rectangle`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
              └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
                └─ [CGP-E104] trait impl `HasRectangleFields` for `Rectangle`
-                 ├─ [CGP-E111] accessor trait `HasField` with field `height` is not implemented for `Rectangle`
-                 └─ [CGP-E111] accessor trait `HasField` with field `width` is not implemented for `Rectangle`
+                 ├─ [CGP-E111] `HasField` not derived for field `height` of `Rectangle`
+                 └─ [CGP-E111] `HasField` not derived for field `width` of `Rectangle`
 
 For more information about this error, try `rustc --explain E0277`.

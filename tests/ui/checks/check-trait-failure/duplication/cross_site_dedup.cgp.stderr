@@ -1,26 +1,18 @@
-error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `App`
-  --> src/main.rs:48:9
+error[E0277]: [CGP-E001] missing field `name` on `App`
+  --> src/main.rs:47:9
    |
-48 |         GreeterComponent,
+47 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
-   |
-   = note: root cause: [CGP-E110] missing field `name` on `App`
-           this is required through the dependency chain:
-             [CGP-E101] consumer trait impl `CanGreet` for context `App`
-             └─ [CGP-E102] provider trait impl `Greeter` with context `App` for provider `GreetHello`
-               └─ [CGP-E104] trait impl `HasName` for `App`
-                 └─ [CGP-E110] missing field `name` on `App`
-
-error[E0277]: [CGP-E003] the trait `CanGreetSend` is not implemented for context `App`
-  --> src/main.rs:59:23
-   |
-59 | impl CanGreetSend for App {
+...
+58 | impl CanGreetSend for App {
    |                       ^^^
    |
    = note: root cause: [CGP-E110] missing field `name` on `App`
            this is required through the dependency chain:
              [CGP-E104] trait impl `CanGreetSend` for `App`
-             └─ [CGP-E101] consumer trait impl `CanGreet` for context `App` (*)
-               └─ [CGP-E110] missing field `name` on `App`
+             └─ [CGP-E101] consumer trait impl `CanGreet` for context `App`
+               └─ [CGP-E102] provider trait impl `Greeter` with context `App` for provider `GreetHello`
+                 └─ [CGP-E104] trait impl `HasName` for `App`
+                   └─ [CGP-E110] missing field `name` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

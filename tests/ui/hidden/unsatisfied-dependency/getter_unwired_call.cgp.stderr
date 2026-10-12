@@ -1,12 +1,12 @@
-error[E0599]: [CGP-E001] the consumer trait `HasName` is not implemented for context `Person`
+error[E0599]: [CGP-E001] missing wiring for `NameGetterComponent` on `Person`
   --> src/main.rs:26:44
    |
 26 |     let _ = Person { name: String::new() }.name();
    |                                            ^^^^
    |
-   = note: root cause: [CGP-E113] context `Person` does not contain any delegate entry for `NameGetterComponent`
+   = note: root cause: [CGP-E113] missing wiring for `NameGetterComponent` on `Person`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `HasName` for context `Person`
-             └─ [CGP-E113] context `Person` does not contain any delegate entry for `NameGetterComponent`
+             └─ [CGP-E113] missing wiring for `NameGetterComponent` on `Person`
 
 For more information about this error, try `rustc --explain E0599`.

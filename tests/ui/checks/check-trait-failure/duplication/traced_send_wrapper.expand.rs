@@ -7,10 +7,11 @@
 //! no CGP trait. The resolver anchors it on the enclosing hand-written impl (whose `CanHandleApi`
 //! supertrait is a CGP consumer trait), traces the chain to the same missing-field root cause, and
 //! heads the tree with the wrapper the programmer wrote: `CanHandleApiSend`, then its `CanHandleApi`
-//! supertrait, down to the missing field. The header reads `[CGP-E003] the trait
-//! \`CanHandleApiSend<GreetApi>\`` — a wrapper is a plain trait, not a CGP consumer — with the
-//! `E0271` code kept. Being a distinct trait from the check entry's `CanHandleApi`, it is its own
-//! block. The `.rust.stderr` baseline shows the full un-traced cascade for contrast.
+//! supertrait, down to the missing field. Both failures share that cause, so they coalesce into one
+//! block headed by the cause, with a caret at each site: the check entry comes first in the source,
+//! so the block takes its `[CGP-E001]` class and its `E0277` code, and the wrapper's chain, which
+//! runs through `CanHandleApi`, shows both routes in one tree. The `.rust.stderr` baseline shows the
+//! full un-traced cascade for contrast.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

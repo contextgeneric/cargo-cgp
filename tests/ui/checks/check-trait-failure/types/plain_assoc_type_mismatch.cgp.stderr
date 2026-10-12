@@ -1,4 +1,4 @@
-error[E0271]: [CGP-E005] expected the associated type `Unit` of `HasUnit` on `Rectangle` to be `f64`, but found `u32`
+error[E0271]: [CGP-E005] associated type `Unit` of `HasUnit` on `Rectangle` is `u32`, but `f64` is required
   --> src/main.rs:57:9
    |
 57 |         AreaCalculatorComponent,

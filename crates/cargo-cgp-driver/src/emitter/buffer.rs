@@ -14,11 +14,11 @@ pub(crate) enum BufEntry {
     /// arrival: only there is the emission order known, so a note can `(*)`-elide the subtrees an
     /// earlier block already drew. `diag` therefore carries the header and `help`s but no note yet.
     ///
-    /// `coalescible` is set for a consumer-trait failure, which groups with every other failure it
-    /// shares a root cause with (`group_by_shared_cause`): a group of one emits `diag` alone, a
-    /// group of several emits a single merged block naming every affected consumer at the position
-    /// of the first. It is clear for a resolution that never coalesces: a wrapper trait, a
-    /// mismatch, a provider-side check.
+    /// `coalescible` is set for a failure whose headline gives way to its cause, which groups with
+    /// every other failure it shares a root cause with (`group_by_shared_cause`): a group of one
+    /// emits `diag` alone, a group of several emits a single merged block stating the shared cause
+    /// at the position of the first. It is clear for a resolution that never coalesces: a type
+    /// mismatch, or a kept rustc headline.
     Resolved(Box<ResolvedEntry>),
 }
 

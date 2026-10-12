@@ -1,4 +1,4 @@
-error[E0599]: [CGP-E003] the trait `Describe` is not implemented for context `App`
+error[E0599]: [CGP-E003] missing field `name` on `App`
   --> src/main.rs:33:9
    |
 33 |     app.describe()

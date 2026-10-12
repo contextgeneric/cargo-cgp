@@ -1,4 +1,4 @@
-error[E0599]: [CGP-E001] the consumer traits `CanGreet` and `CanBidFarewell` are not implemented for context `App`
+error[E0599]: [CGP-E001] missing field `name` on `App`
   --> src/main.rs:72:17
    |
 72 |     let _ = app.greet();

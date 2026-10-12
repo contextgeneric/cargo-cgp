@@ -9,7 +9,7 @@
     ],
     "code": "E0599",
     "level": "error",
-    "message": "[CGP-E001] the consumer trait `CanGreet` is not implemented for context `Person`",
+    "message": "[CGP-E001] missing field `name` on `Person`",
     "spans": [
       {
         "column": 12,

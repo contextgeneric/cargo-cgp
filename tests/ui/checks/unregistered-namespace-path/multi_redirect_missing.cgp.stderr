@@ -1,15 +1,15 @@
-error[E0277]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `@end` on `App`
   --> src/main.rs:41:9
    |
 41 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `@end`
+   = note: root cause: [CGP-E113] missing wiring for `@end` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanGreet` for context `App`
              └─ [CGP-E103] redirect lookup to `@start.GreeterComponent` in `App`
                └─ [CGP-E103] redirect lookup to `@middle` in `App`
                  └─ [CGP-E103] redirect lookup to `@end` in `App`
-                   └─ [CGP-E113] context `App` does not contain any delegate entry for `@end`
+                   └─ [CGP-E113] missing wiring for `@end` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

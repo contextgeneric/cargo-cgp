@@ -1,4 +1,4 @@
-error[E0599]: [CGP-E001] the consumer trait `CanFormatPair<(u32, u64)>` is not implemented for context `App`
+error[E0599]: [CGP-E001] missing field `separator` on `App`
   --> src/main.rs:54:17
    |
 54 |     let _ = app.format_pair((1_u32, 2_u64));

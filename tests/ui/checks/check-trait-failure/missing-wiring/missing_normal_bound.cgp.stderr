@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer traits `CanUseFoo` and `CanUseBar` are not implemented for context `App`
+error[E0277]: [CGP-E001] the trait bound `App: Clone` is not satisfied
   --> src/main.rs:48:9
    |
 48 |         FooProviderComponent: DoFooWithBar,

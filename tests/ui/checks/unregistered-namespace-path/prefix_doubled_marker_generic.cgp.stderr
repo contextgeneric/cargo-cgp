@@ -1,13 +1,13 @@
-error[E0277]: [CGP-E001] the consumer trait `CanShow<String>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `@app.ShowImplComponent.ShowImplComponent.String` on `App`
   --> src/main.rs:39:9
    |
 39 |         ShowImplComponent: String,
    |         ^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `@app.ShowImplComponent.ShowImplComponent.String`
+   = note: root cause: [CGP-E113] missing wiring for `@app.ShowImplComponent.ShowImplComponent.String` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanShow<String>` for context `App`
              └─ [CGP-E103] redirect lookup to `@app.ShowImplComponent.ShowImplComponent` in `App`
-               └─ [CGP-E113] context `App` does not contain any delegate entry for `@app.ShowImplComponent.ShowImplComponent.String`
+               └─ [CGP-E113] missing wiring for `@app.ShowImplComponent.ShowImplComponent.String` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

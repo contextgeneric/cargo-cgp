@@ -1,13 +1,13 @@
-error[E0277]: [CGP-E002] the provider trait `NameGetter` with context `Account` is not implemented for provider `ReadDisplayName`
+error[E0277]: [CGP-E002] `ReadDisplayName` is not a provider of `NameGetter`
   --> src/main.rs:46:9
    |
 46 |         NameGetterComponent,
    |         ^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E115] the provider trait `NameGetter` is not implemented for `ReadDisplayName`
+   = note: root cause: [CGP-E115] `ReadDisplayName` is not a provider of `NameGetter`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `HasName` for context `Account`
              └─ [CGP-E102] provider trait impl `NameGetter` with context `Account` for provider `ReadDisplayName`
-               └─ [CGP-E115] the provider trait `NameGetter` is not implemented for `ReadDisplayName`
+               └─ [CGP-E115] `ReadDisplayName` is not a provider of `NameGetter`
 
 For more information about this error, try `rustc --explain E0277`.

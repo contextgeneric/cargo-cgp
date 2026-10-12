@@ -17,8 +17,8 @@
 //! expression (`app`, whose type is read off its binding — rustc puts the "not implemented for
 //! `App`" span on the `#[derive(HasField)]` attribute, outside `App`'s item span, so it cannot be
 //! recovered from a struct-definition span). Walking `App: GetName` reaches the missing field, and
-//! because `GetName` is not a CGP component the headline reads `[CGP-E003] the trait …` over a
-//! `root cause: [CGP-E110] missing field \`name\`` tree. This anchor is gated to the `E0277`
+//! because `GetName` is not a CGP component the block takes the `[CGP-E003]` code and states the
+//! cause, ``missing field `name` on `App` ``, over its tree. This anchor is gated to the `E0277`
 //! (trait-used-as-a-bound) shape and tried after the call-site anchor, so a direct method call
 //! still leads with the trait the programmer invoked. Left to raw rustc the field name is
 //! mangled to an unreadable `Symbol<4, Chars<..>>` buried in a `help`.

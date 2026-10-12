@@ -61,7 +61,7 @@ fn one_underived_field_never_reads_as_three() {
     let coalesced = coalesce_underived_fields(&causes);
     assert_eq!(
         root_cause_lead(&coalesced[0].leaf),
-        "accessor trait `HasField` with field `name` is not implemented for `App`"
+        "`HasField` not derived for field `name` of `App`"
     );
 }
 

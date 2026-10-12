@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer trait `CanFormatPair<(u32, u64)>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing field `separator` on `App`
   --> src/main.rs:47:9
    |
 47 |         PairFormatterComponent: (u32, u64),

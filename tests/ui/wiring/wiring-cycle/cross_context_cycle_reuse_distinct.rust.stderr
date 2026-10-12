@@ -1,0 +1,61 @@
+error[E0275]: overflow evaluating the requirement `Inner: CanUseComponent<ProviderNComponent>`
+  --> src/main.rs:97:9
+   |
+97 |         ProviderNComponent,
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+note: required by a bound in `__CheckInner`
+  --> src/main.rs:95:1
+   |
+95 | / check_components! {
+96 | |     Inner {
+97 | |         ProviderNComponent,
+98 | |     }
+99 | | }
+   | |_^ required by this bound in `__CheckInner`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Outer: CanUseComponent<ProviderRComponent>` is not satisfied
+   --> src/main.rs:103:9
+    |
+103 |         ProviderRComponent,
+    |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Outer`
+   --> src/main.rs:55:1
+    |
+ 55 | pub struct Outer {}
+    | ^^^^^^^^^^^^^^^^
+help: the trait `HasField<Symbol<4, Chars<..>>>` is implemented for `Inner`
+   --> src/main.rs:51:9
+    |
+ 51 |     pub name: String,
+    |         ^^^^
+note: required for `Outer` to implement `HasName`
+   --> src/main.rs:40:1
+    |
+ 40 | #[cgp_auto_getter]
+    | ^^^^^^^^^^^^^^^^^^
+ 41 | pub trait HasName {
+    |           ^^^^^^^
+note: required for `DoR` to implement `IsProviderFor<ProviderRComponent, Outer>`
+   --> src/main.rs:76:1
+    |
+ 76 | #[cgp_impl(new DoR)]
+    | ^^^^^^^^^^^^^^^^^^^^
+ 77 | #[uses(Linked, HasName)]
+    |                ------- unsatisfied trait bound introduced here
+    = note: required for `Outer` to implement `CanUseComponent<ProviderRComponent>`
+note: required by a bound in `__CheckOuter`
+   --> src/main.rs:101:1
+    |
+101 | / check_components! {
+102 | |     Outer {
+103 | |         ProviderRComponent,
+104 | |     }
+105 | | }
+    | |_^ required by this bound in `__CheckOuter`
+    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0275, E0277.
+For more information about an error, try `rustc --explain E0275`.

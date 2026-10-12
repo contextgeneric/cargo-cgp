@@ -1,12 +1,8 @@
-//! The coded main-message headers of a resolved failure.
+//! The class headline of a resolved failure, and the helpers the cause sentences share.
 
-use crate::code::{
-    ABSTRACT_TYPE_MISMATCH, CONSUMER_TRAIT_UNIMPLEMENTED, FIELD_TYPE_MISMATCH,
-    WRAPPER_TRAIT_UNIMPLEMENTED,
-};
+use crate::code::{CONSUMER_TRAIT_UNIMPLEMENTED, WRAPPER_TRAIT_UNIMPLEMENTED};
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
-use crate::diagnosis::wording::lead::assoc_type_noun;
 
 /// A `and`-joined, back-quoted list: `` `x` ``, `` `x` and `y` ``, or `` `x`, `y`, and `z` ``.
 pub fn quoted_list(items: &[String]) -> String {
@@ -19,14 +15,15 @@ pub fn quoted_list(items: &[String]) -> String {
     }
 }
 
-/// The main message for a resolved failure: the trait(s) the context fails to implement, taken
-/// from the typed resolution — which keys each component marker by its full path — so two same-named
-/// components in different modules can never be confused. A CGP consumer trait reads as `the consumer
-/// trait …` (`CGP-E001`); a hand-written wrapper trait (not a CGP consumer) reads as `the trait …`
-/// (`CGP-E003`), chosen by [`Resolved::consumers_are_cgp`]. The subject is named `context \`X\`` when
-/// it is the checked context, or plainly `` `X` `` when it is a foreign wrapper type that merely
-/// holds the context (`Router<Arc<MockApp>>`), chosen by [`Resolved::subject_is_context`].
-pub fn consumer_header(resolved: &Resolved) -> String {
+/// The class sentence of a resolved failure: the trait(s) the context fails to implement, taken
+/// from the typed resolution, which keys each component marker by its full path, so two same-named
+/// components in different modules can never be confused. A CGP consumer trait reads as
+/// `the consumer trait …`; a trait that is not a CGP consumer (a hand-written wrapper, or a
+/// `#[cgp_fn]` blanket trait) reads as `the trait …`, chosen by [`Resolved::consumers_are_cgp`].
+/// The subject is named `context \`X\`` when it is the checked context, or plainly `` `X` `` when
+/// it is a foreign type that merely holds the context (`Router<Arc<MockApp>>`), chosen by
+/// [`Resolved::subject_is_context`].
+pub fn class_sentence(resolved: &Resolved) -> String {
     let (noun, verb) = if resolved.consumers.len() == 1 {
         ("trait", "is")
     } else {
@@ -40,37 +37,34 @@ pub fn consumer_header(resolved: &Resolved) -> String {
     } else {
         format!("`{}`", resolved.context)
     };
-    if resolved.consumers_are_cgp {
-        format!(
-            "[{CONSUMER_TRAIT_UNIMPLEMENTED}] the consumer {noun} {list} {verb} not implemented for {subject}"
-        )
+    let kind = if resolved.consumers_are_cgp {
+        "consumer "
     } else {
-        format!(
-            "[{WRAPPER_TRAIT_UNIMPLEMENTED}] the {noun} {list} {verb} not implemented for {subject}"
-        )
+        ""
+    };
+    format!("the {kind}{noun} {list} {verb} not implemented for {subject}")
+}
+
+/// The class code of a resolved failure: `CGP-E001` for a CGP consumer trait, `CGP-E003` for a
+/// trait that is not one.
+pub fn class_code(resolved: &Resolved) -> &'static str {
+    if resolved.consumers_are_cgp {
+        CONSUMER_TRAIT_UNIMPLEMENTED
+    } else {
+        WRAPPER_TRAIT_UNIMPLEMENTED
     }
 }
 
-/// The `[CGP-E004]` main message for a field-type mismatch: the field the wiring reads carries
-/// the wrong type. The expected type comes from the failing projection and the actual from
-/// querying the struct by `DefId`, so the two are read from the real type, never a same-named
-/// one elsewhere.
-pub fn field_mismatch_header(
-    name: &str,
-    owner: &str,
-    expected: &str,
-    expected_normalized: Option<&str>,
-    actual: &str,
-) -> String {
-    let required = required_type(expected, expected_normalized);
-    format!(
-        "[{FIELD_TYPE_MISMATCH}] expected a `{name}` field of type {required} on `{owner}`, but found `{actual}`"
-    )
+/// The class headline of a resolved failure: its [`class_code`] and [`class_sentence`]. It is the
+/// internal headline that matches a re-report the resolver declined (whose text rewrite produces
+/// the same sentence), and the displayed one only when the causes are too mixed to state at once
+/// (see [`cause_headline`](super::cause_headline)).
+pub fn consumer_header(resolved: &Resolved) -> String {
+    format!("[{}] {}", class_code(resolved), class_sentence(resolved))
 }
 
 /// Render a required type: the un-normalized form, followed by what it reduces to in parentheses
-/// when that differs. Shared by the `[CGP-E004]` header and the `[CGP-E112]` leaf so the two cannot
-/// state the same requirement two ways.
+/// when that differs. Both mismatch cause sentences render their required type through it.
 ///
 /// The un-normalized form leads because it names *where* the requirement comes from — a provider
 /// reading `&Pool<Db>` under an imported abstract type requires
@@ -91,26 +85,6 @@ pub fn mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
         .iter()
         .map(|cause| &cause.leaf)
         .find(|leaf| matches!(leaf, Leaf::FieldTypeMismatch { .. }))
-}
-
-/// The `[CGP-E005]` main message for an associated-type mismatch: the type the owner supplies is not
-/// the one the wiring requires. Worded in the same shape as [`field_mismatch_header`] — required type
-/// first, actual second — and reading `abstract type` for a CGP abstract-type component, where the
-/// concrete type is a wiring choice, or `associated type` for any other trait.
-pub fn assoc_mismatch_header(
-    assoc: &str,
-    trait_name: &str,
-    owner: &str,
-    expected: &str,
-    expected_normalized: Option<&str>,
-    actual: &str,
-    component: Option<&str>,
-) -> String {
-    let noun = assoc_type_noun(component);
-    let required = required_type(expected, expected_normalized);
-    format!(
-        "[{ABSTRACT_TYPE_MISMATCH}] expected the {noun} `{assoc}` of `{trait_name}` on `{owner}` to be {required}, but found `{actual}`"
-    )
 }
 
 /// The first associated-type-mismatch cause of a resolution, if any — the leaf `[CGP-E005]` is

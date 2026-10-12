@@ -80,11 +80,11 @@ note: required by a bound in `__CheckRectangle`
    ...
 ```
 
-`cargo cgp check` rewrites the same failure to name the missing field outright and show the
+`cargo cgp check` rewrites the same failure to name the missing field in its headline and show the
 dependency chain that requires it, tagged with `[CGP-Exxx]` codes you can look up:
 
 ```text
-error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`
+error[E0277]: [CGP-E001] missing field `height` on `Rectangle`
   |
   |         AreaCalculatorComponent,
   |         ^^^^^^^^^^^^^^^^^^^^^^^

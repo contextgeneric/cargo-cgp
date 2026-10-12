@@ -9,7 +9,7 @@
     ],
     "code": "E0277",
     "level": "error",
-    "message": "[CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`",
+    "message": "[CGP-E001] missing field `height` on `Rectangle`",
     "spans": [
       {
         "column": 9,

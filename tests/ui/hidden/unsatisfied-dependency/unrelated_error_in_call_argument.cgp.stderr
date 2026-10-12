@@ -1,4 +1,4 @@
-error[E0599]: [CGP-E001] the consumer trait `CanGreet` is not implemented for context `Person`
+error[E0599]: [CGP-E001] missing field `name` on `Person`
   --> src/main.rs:47:12
    |
 47 |     person.greet(count(Rc::new(1)))

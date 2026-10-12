@@ -16,12 +16,18 @@ fn plans_a_missing_field_check_failure() {
         &empty_names(),
     );
 
+    // The headline states the cause; the class sentence stays as the internal headline.
     assert_eq!(
         plan.header.as_deref(),
+        Some("[CGP-E001] missing field `height` on `Rectangle`")
+    );
+    assert_eq!(
+        plan.class_header.as_deref(),
         Some(
             "[CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`"
         )
     );
+    assert!(plan.coalesces());
     assert!(plan.helps.is_empty());
     assert_eq!(
         notes(&plan),
@@ -51,14 +57,14 @@ fn plans_a_missing_wiring_check_failure() {
 
     assert_eq!(
         plan.header.as_deref(),
-        Some("[CGP-E001] the consumer trait `CanUseFoo` is not implemented for context `App`")
+        Some("[CGP-E001] missing wiring for `BarProviderComponent` on `App`")
     );
     // A missing wiring, like a genuinely missing field, carries no `help` — the note names the fix.
     assert!(plan.helps.is_empty());
     assert_eq!(
         notes(&plan),
         vec![format!(
-            "root cause: [CGP-E113] context `App` does not contain any delegate entry for `BarProviderComponent`\n\
+            "root cause: [CGP-E113] missing wiring for `BarProviderComponent` on `App`\n\
              this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
         )]
@@ -85,7 +91,7 @@ fn plans_a_missing_dispatch_entry_check_failure() {
     assert_eq!(
         notes(&plan),
         vec![format!(
-            "root cause: [CGP-E114] provider `SinkHandlers` does not contain any delegate entry for `Tagged<Bytes>`\n\
+            "root cause: [CGP-E114] missing entry for `Tagged<Bytes>` in provider `SinkHandlers`\n\
              this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
         )]
@@ -110,7 +116,7 @@ fn plans_a_not_a_provider_check_failure() {
     assert_eq!(
         notes(&plan),
         vec![format!(
-            "root cause: [CGP-E115] the provider trait `ApiHandler` is not implemented for `QueryBalanceRequest`\n\
+            "root cause: [CGP-E115] `QueryBalanceRequest` is not a provider of `ApiHandler`\n\
              this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
         )]
@@ -138,8 +144,8 @@ fn plans_a_missing_redirect_wiring_check_failure() {
     assert_eq!(
         notes(&plan),
         vec![format!(
-            "root cause: [CGP-E113] context `App` does not contain any delegate entry for \
-             `@app.finance.types.QuantityTypeProviderComponent`\n\
+            "root cause: [CGP-E113] missing wiring for \
+             `@app.finance.types.QuantityTypeProviderComponent` on `App`\n\
              this is required through the dependency chain:\n{}",
             indent2(&render_path(&path))
         )]
@@ -172,7 +178,7 @@ fn plans_a_field_type_mismatch() {
 
     assert_eq!(
         plan.header.as_deref(),
-        Some("[CGP-E004] expected a `height` field of type `f64` on `Rectangle`, but found `i32`")
+        Some("[CGP-E004] field `height` on `Rectangle` has type `i32`, but `f64` is required")
     );
     assert!(plan.helps.is_empty());
     // The `[CGP-E004]` header states the leaf, so the note carries the chain alone.
@@ -213,7 +219,7 @@ fn plans_an_abstract_type_mismatch() {
     assert_eq!(
         plan.header.as_deref(),
         Some(
-            "[CGP-E005] expected the abstract type `Error` of `HasErrorType` on `App` to be `AppError`, but found `String`"
+            "[CGP-E005] abstract type `Error` of `HasErrorType` on `App` is `String`, but `AppError` is required"
         )
     );
     assert_eq!(
@@ -262,7 +268,7 @@ fn plans_a_plain_associated_type_mismatch() {
     assert_eq!(
         plan.header.as_deref(),
         Some(
-            "[CGP-E005] expected the associated type `Item` of `Iterator` on `Feed` to be `u8`, but found `u16`"
+            "[CGP-E005] associated type `Item` of `Iterator` on `Feed` is `u16`, but `u8` is required"
         )
     );
     assert!(plan.helps.is_empty());
@@ -286,6 +292,6 @@ fn plans_a_use_site_method_failure() {
     );
     assert_eq!(
         plan.header.as_deref(),
-        Some("[CGP-E001] the consumer trait `CanGreet` is not implemented for context `Person`")
+        Some("[CGP-E001] missing field `name` on `Person`")
     );
 }

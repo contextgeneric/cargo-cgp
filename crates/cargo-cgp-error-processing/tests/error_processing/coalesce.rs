@@ -42,7 +42,7 @@ fn two_underived_fields_on_one_struct_become_one_cause() {
     // One lead, listing both fields; one derive help, naming the one fix.
     assert_eq!(
         root_cause_lead(&coalesced[0].leaf),
-        "accessor trait `HasField` is not implemented for the fields `height` and `width` of `Rectangle`"
+        "`HasField` not derived for fields `height` and `width` of `Rectangle`"
     );
     assert_eq!(
         derive_help_messages(&coalesced),

@@ -1,14 +1,14 @@
-error[E0277]: [CGP-E001] the consumer trait `CanRaiseError<std::io::Error>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `ErrorTypeProviderComponent` on `App`
   --> src/main.rs:27:9
    |
 27 |         ErrorRaiserComponent: io::Error,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `ErrorTypeProviderComponent`
+   = note: root cause: [CGP-E113] missing wiring for `ErrorTypeProviderComponent` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanRaiseError<std::io::Error>` for context `App`
              ├─ [CGP-E101] consumer trait impl `HasErrorType` for context `App`
-             │ └─ [CGP-E113] context `App` does not contain any delegate entry for `ErrorTypeProviderComponent`
+             │ └─ [CGP-E113] missing wiring for `ErrorTypeProviderComponent` on `App`
              └─ [CGP-E102] provider trait impl `ErrorRaiser<std::io::Error>` with context `App` for provider `RaiseBackendError`
                └─ [CGP-E101] consumer trait impl `HasErrorType` for context `App` (*)
 

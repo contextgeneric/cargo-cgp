@@ -6,7 +6,7 @@ use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
 
 /// Partition failures into groups that **share a root cause**, so the emitter can coalesce each
-/// group into one headline listing every affected consumer. Returns one `Vec` of indices into
+/// group into one block that states the shared cause once. Returns one `Vec` of indices into
 /// `resolveds` per group, each group in arrival order and the groups themselves ordered by their
 /// first member — so the caller emits each group where its first member arrived and overall ordering
 /// is preserved.
@@ -28,10 +28,14 @@ use crate::diagnosis::resolved::Resolved;
 /// have the same top-level roots by way of a shared cause — which is what made the whole-chain elision
 /// degenerate in the first place.
 ///
-/// A cause is identified by its context and its [`Leaf`] **structurally**, not by the rendered
-/// `root cause:` lead the leaf words. Keying on the wording would make a reword of a lead silently
-/// change which diagnostics coalesce; the leaf is the thing two failures either do or do not have in
-/// common. (The de-duplication ledger's [`cause_signature`](crate::cause_signature) stays textual for
+/// A cause is identified by its [`Leaf`] **structurally**, not by the rendered `root cause:` lead
+/// the leaf words. A leaf names its owner (the struct missing a field, the context missing a wiring
+/// entry, the provider missing a table entry), so failures on different contexts that bottom out on
+/// one owner's mistake group too: a context whose provider needs another context's missing field
+/// fails with that context, and one fix repairs both. An ordinary bound names no owner (`f64: Eq`
+/// can come from several contexts' own wiring), so it is identified together with the context it
+/// was reached from. Keying on the wording would make a reword of a lead silently change which
+/// diagnostics coalesce; the leaf is the thing two failures either do or do not have in common. (The de-duplication ledger's [`cause_signature`](crate::cause_signature) stays textual for
 /// its own reason — it shares a key space with rendered-message keys.)
 ///
 /// A failure with no causes shares nothing and forms its own group.
@@ -40,10 +44,12 @@ pub fn group_by_shared_cause(resolveds: &[&Resolved]) -> Vec<Vec<usize>> {
 
     // Union every failure carrying a cause with the first failure that carried it, so each cause
     // links its holders into one component.
-    let mut first_holder: HashMap<(&str, &Leaf), usize> = HashMap::new();
+    let mut first_holder: HashMap<(Option<&str>, &Leaf), usize> = HashMap::new();
     for (index, resolved) in resolveds.iter().enumerate() {
         for cause in resolved.causes.iter() {
-            let key = (resolved.context.as_str(), &cause.leaf);
+            let context =
+                matches!(cause.leaf, Leaf::Bound { .. }).then_some(resolved.context.as_str());
+            let key = (context, &cause.leaf);
             match first_holder.get(&key) {
                 Some(&holder) => union(&mut parent, index, holder),
                 None => {

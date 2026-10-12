@@ -1,10 +1,10 @@
-error[E0277]: [CGP-E001] the consumer trait `CanEncodeVariant<Choice>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `@VariantEncoderComponent.f64` on `App`
   --> src/main.rs:81:9
    |
 81 |         VariantEncoderComponent: [Choice],
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `@VariantEncoderComponent.f64`
+   = note: root cause: [CGP-E113] missing wiring for `@VariantEncoderComponent.f64` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanEncodeVariant<Choice>` for context `App`
              └─ [CGP-E103] redirect lookup to `@VariantEncoderComponent` in `App`
@@ -13,6 +13,6 @@ error[E0277]: [CGP-E001] the consumer trait `CanEncodeVariant<Choice>` is not im
                    └─ [CGP-E104] trait impl `EncodeVariants` for `Sum![f64]`
                      └─ [CGP-E101] consumer trait impl `CanEncodeVariant<f64>` for context `App`
                        └─ [CGP-E103] redirect lookup to `@VariantEncoderComponent` in `App`
-                         └─ [CGP-E113] context `App` does not contain any delegate entry for `@VariantEncoderComponent.f64`
+                         └─ [CGP-E113] missing wiring for `@VariantEncoderComponent.f64` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -1,0 +1,27 @@
+error[E0275]: overflow evaluating the requirement `Inner: CanUseComponent<ProviderNComponent>`
+  --> src/main.rs:97:9
+   |
+97 |         ProviderNComponent,
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E117] the trait bound `Outer: Linked` is not satisfied
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanN` for context `Inner`
+             └─ [CGP-E102] provider trait impl `ProviderN` with context `Inner` for provider `DoN<Outer>`
+               └─ [CGP-E117] the trait bound `Outer: Linked` is not satisfied
+
+error[E0277]: [CGP-E001] missing field `name` on `Outer`
+   --> src/main.rs:103:9
+    |
+103 |         ProviderRComponent,
+    |         ^^^^^^^^^^^^^^^^^^
+    |
+    = note: root cause: [CGP-E110] missing field `name` on `Outer`
+            this is required through the dependency chain:
+              [CGP-E101] consumer trait impl `CanR` for context `Outer`
+              └─ [CGP-E102] provider trait impl `ProviderR` with context `Outer` for provider `DoR`
+                └─ [CGP-E104] trait impl `HasName` for `Outer`
+                  └─ [CGP-E110] missing field `name` on `Outer`
+
+Some errors have detailed explanations: E0275, E0277.
+For more information about an error, try `rustc --explain E0275`.

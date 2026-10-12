@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog<Product![HandleConnect, HandleName]>, _>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing field `name` on `App`
   --> src/main.rs:95:16
    |
 95 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())

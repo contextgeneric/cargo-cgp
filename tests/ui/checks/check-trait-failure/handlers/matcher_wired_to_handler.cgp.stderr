@@ -1,14 +1,14 @@
-error[E0277]: [CGP-E002] the provider trait `Handler<(), Shape>` with context `App` is not implemented for provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>`
+error[E0277]: [CGP-E002] `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>` is not a provider of `Handler`
   --> src/main.rs:65:9
    |
 65 |         HandlerComponent: ((), Shape),
    |         ^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E115] the provider trait `Handler` is not implemented for `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>`
+   = note: root cause: [CGP-E115] `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>` is not a provider of `Handler`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanHandle<(), Shape>` for context `App`
              └─ [CGP-E102] provider trait impl `Handler<(), Shape>` with context `App` for provider `UseInputDelegate<MatchWithFieldHandlersInputs<HandleFieldValue<ComputeArea>>>`
                └─ [CGP-E102] provider trait impl `Handler<(), Shape>` with context `App` for provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>`
-                 └─ [CGP-E115] the provider trait `Handler` is not implemented for `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>`
+                 └─ [CGP-E115] `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>` is not a provider of `Handler`
 
 For more information about this error, try `rustc --explain E0277`.

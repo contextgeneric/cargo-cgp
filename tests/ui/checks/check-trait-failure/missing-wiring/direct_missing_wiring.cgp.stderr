@@ -1,12 +1,12 @@
-error[E0277]: [CGP-E001] the consumer trait `CanUseFoo` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `FooProviderComponent` on `App`
   --> src/main.rs:34:9
    |
 34 |         FooProviderComponent,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `FooProviderComponent`
+   = note: root cause: [CGP-E113] missing wiring for `FooProviderComponent` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanUseFoo` for context `App`
-             └─ [CGP-E113] context `App` does not contain any delegate entry for `FooProviderComponent`
+             └─ [CGP-E113] missing wiring for `FooProviderComponent` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -11,7 +11,7 @@ use cargo_cgp_error_processing::rewrite::{
 use cargo_cgp_error_processing::{
     AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf,
     MissingUseProvider, Origin, OrphanConflict, PendingNote, Resolved, UndeclaredTrait,
-    cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, consumer_header,
+    cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, coalesced_headline,
     explain_footer_codes, fix_help_messages, group_by_shared_cause, internal_error_note,
     is_explain_footer_text, is_method_bounds_text, is_unbounded_type_param_item_text,
     mentions_orphan_param_text, missing_use_provider_help, orphan_conflict_help,
@@ -108,11 +108,13 @@ pub struct CgpEmitter<E: Emitter> {
 /// what an earlier one showed rather than repeating it.
 type ChainNodeSet = HashSet<ChainNode>;
 
-/// Whether a resolution is a *consumer-trait* failure on the checked context itself — the only shape
-/// that coalesces. A field-type mismatch, a provider-side check, or a foreign-wrapper failure is
-/// left to emit on its own.
-fn is_consumer_shaped(resolved: &Resolved) -> bool {
-    resolved.consumers_are_cgp && resolved.subject_is_context && !resolved.consumers.is_empty()
+/// What [`CgpEmitter::transform_resolved`] leaves for the rest of the transform: the note the
+/// flush renders, the class headline the de-duplication ledger records, and whether the block may
+/// coalesce with others sharing its cause.
+struct TransformedResolution {
+    note: PendingNote,
+    class_header: Option<String>,
+    coalesces: bool,
 }
 
 /// The outcome of recognizing a diagnostic as part of the cascade a `#[cgp_impl]` header-trait
@@ -236,39 +238,19 @@ impl<E: Emitter> CgpEmitter<E> {
         self.output().buffer.push(entry);
     }
 
-    /// Build the one merged block for a coalesced group of several consumer failures sharing a root
-    /// cause: a `[CGP-E001]` header listing every affected consumer trait, a caret at each failing
-    /// entry, and one root-cause note built by folding *every* member's causes into a single
-    /// dependency graph — so a consumer whose chain runs through another collapses into it, while
-    /// independent chains to the shared cause render side by side, and no member's chain is dropped.
-    /// The single-consumer header rustc's per-entry rendering produced — even a provider-side
-    /// `[CGP-E002]` one — is dropped in favour of the consumer form, since a `check_components!`
-    /// entry failing *is* the consumer trait failing.
+    /// Build the one merged block for a coalesced group of several failures sharing a root cause: a
+    /// headline stating the cause once ([`coalesced_headline`]), a caret at each failing site, and
+    /// one root-cause note built by folding *every* member's causes into a single dependency graph,
+    /// so a chain that runs through another collapses into it, independent chains to the shared
+    /// cause render side by side, and no member's chain is dropped. The headline takes the first
+    /// member's class code; a provider-side `[CGP-E002]` member is worded as the consumer it checks,
+    /// since a `check_components!` entry failing *is* the consumer trait failing.
     fn merged_diag(
         &self,
         resolveds: &[&Resolved],
         diags: &[&DiagInner],
         seen: &mut ChainNodeSet,
     ) -> DiagInner {
-        let first = resolveds[0];
-        let mut consumers: Vec<String> = Vec::new();
-        for resolved in resolveds {
-            for consumer in &resolved.consumers {
-                if !consumers.contains(consumer) {
-                    consumers.push(consumer.clone());
-                }
-            }
-        }
-        let merged = Resolved {
-            context: first.context.clone(),
-            consumers,
-            consumers_are_cgp: true,
-            subject_is_context: true,
-            // Only the consumers and context matter for the header; the note is built from the
-            // causes below.
-            causes: Causes::default(),
-        };
-
         // Every cause across the coalesced consumers. The dependency graph then merges what they
         // share — a consumer whose chain runs through another collapses into it, while independent
         // chains to one cause render side by side — so no chain is dropped and every consumer appears.
@@ -277,6 +259,7 @@ impl<E: Emitter> CgpEmitter<E> {
         // one-cause-per-distinct-leaf invariant the wording below assumes, kept by construction.
         let causes = Causes::union(resolveds.iter().map(|resolved| resolved.causes.clone()));
         let causes = coalesce_underived_fields(&causes);
+        let headline = coalesced_headline(resolveds, &causes);
         let mut children: Vec<_> = fix_help_messages(&causes)
             .into_iter()
             .map(|help| subdiag(Sublevel::Help, help))
@@ -292,10 +275,7 @@ impl<E: Emitter> CgpEmitter<E> {
         );
 
         let mut diag = diags[0].clone();
-        diag.messages = vec![(
-            DiagMessage::Str(consumer_header(&merged).into()),
-            Style::NoStyle,
-        )];
+        diag.messages = vec![(DiagMessage::Str(headline.into()), Style::NoStyle)];
         // One caret per failing entry, in arrival (check) order.
         let mut span = MultiSpan::new();
         for member in diags {
@@ -372,13 +352,20 @@ impl<E: Emitter> CgpEmitter<E> {
                         self.append_note(&mut diag, &entry.note, &mut seen);
                         to_emit.push(diag);
                     } else {
-                        let (resolveds, diags): (Vec<&Resolved>, Vec<&DiagInner>) = members
+                        let mut pairs: Vec<(&Resolved, &DiagInner)> = members
                             .iter()
                             .map(|&index| match &buffer[index] {
                                 BufEntry::Resolved(member) => (&member.resolved, &member.diag),
                                 _ => unreachable!("indices came from the coalescible entries"),
                             })
-                            .unzip();
+                            .collect();
+                        // The block's code and first caret come from the member written first in
+                        // the source, so the code names the class of the entry the reader sees first.
+                        pairs.sort_by_key(|(_, diag)| {
+                            diag.span.primary_span().map(|span| span.lo())
+                        });
+                        let (resolveds, diags): (Vec<&Resolved>, Vec<&DiagInner>) =
+                            pairs.into_iter().unzip();
                         to_emit.push(self.merged_diag(&resolveds, &diags, &mut seen));
                     }
                 }
@@ -845,23 +832,24 @@ impl<E: Emitter> CgpEmitter<E> {
 
     /// Transform a resolved wiring failure in place from the rustc-free [`plan_resolved`]: replace
     /// the main message when the plan carries a coded header (re-aiming the caret at the failing
-    /// entry), then replace the sub-messages with the plan's derive `help`s and one root-cause
-    /// note per cause, dropping rustc's own suggestions. A resolution anchored at the call
-    /// expression (`at_call`) plans as a use-site failure whatever its rustc code, so its header
-    /// names the consumer the call needs — except a genuine field-type mismatch, whose `E0271`
-    /// class words the more specific `[CGP-E004]` form.
+    /// entry), then replace the sub-messages with the plan's fix `help`s, dropping rustc's own
+    /// suggestions; the `root cause:` note is returned for the flush to render. A resolution
+    /// anchored at the call expression (`at_call`) plans as a use-site failure whatever its rustc
+    /// code, so its class is the consumer the call needs, except a genuine field-type mismatch,
+    /// whose `E0271` class is the more specific `[CGP-E004]`.
     fn transform_resolved(
         &self,
         diag: &mut DiagInner,
         resolved: &Resolved,
         span: Span,
         at_call: bool,
-    ) -> PendingNote {
+    ) -> TransformedResolution {
         let kind = match diag_kind(diag) {
             kind if at_call && kind != DiagKind::TypeMismatch => DiagKind::MethodNotFound,
             kind => kind,
         };
         let plan = plan_resolved(kind, main_message_text(diag), resolved, &self.names);
+        let coalesces = plan.coalesces();
 
         if let Some(header) = plan.header {
             diag.messages = vec![(DiagMessage::Str(header.into()), Style::NoStyle)];
@@ -882,7 +870,11 @@ impl<E: Emitter> CgpEmitter<E> {
         // that includes the misleading "use associated function syntax instead".
         diag.suggestions = Suggestions::Enabled(vec![]);
 
-        plan.note
+        TransformedResolution {
+            note: plan.note,
+            class_header: plan.class_header,
+            coalesces,
+        }
     }
 
     /// Render a deferred [`PendingNote`] against the `seen` set shared by this flush and append it to
@@ -1054,6 +1046,7 @@ impl<E: Emitter> CgpEmitter<E> {
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
         // resolver declines, the wiring-message rename runs as the first fallback pass. A resolved
         // failure also yields its span-independent cause signature, for the de-duplication below.
+        let mut class_header = None;
         let (rewritten, cause_sig, resolution) =
             if let Some((resolved, span, at_call)) = self.try_resolve(&diag) {
                 // The downstream check re-report of a `#[cgp_impl]` consumer-trait mistake (its
@@ -1063,13 +1056,18 @@ impl<E: Emitter> CgpEmitter<E> {
                     return;
                 }
                 let sig = cause_signature(&resolved);
-                let note = self.transform_resolved(&mut diag, &resolved, span, at_call);
-                // A consumer-trait failure coalesces at flush with every failure it shares a
-                // root cause with; any other shape (a field mismatch, a provider check) emits on its
-                // own — but every resolution defers its note to the flush, so all of them elide
+                let transformed = self.transform_resolved(&mut diag, &resolved, span, at_call);
+                // A failure whose headline gives way to its cause coalesces at flush with every
+                // failure it shares a root cause with; a mismatch or a kept rustc headline emits on
+                // its own. Every resolution defers its note to the flush, so all of them elide
                 // against one another.
-                let coalescing = is_consumer_shaped(&resolved);
-                (true, Some(sig), Some((resolved, note, coalescing)))
+                class_header = transformed.class_header;
+                let coalescing = transformed.coalesces;
+                (
+                    true,
+                    Some(sig),
+                    Some((resolved, transformed.note, coalescing)),
+                )
             } else {
                 // A CGP consumer-method `E0599` the resolver declined still carries rustc's
                 // method-probe advice — the associated-function framing and the "use associated
@@ -1125,12 +1123,14 @@ impl<E: Emitter> CgpEmitter<E> {
         // first occurrence is shown; the key scheme lives with the [`DedupLedger`]. Only the tool's
         // own transformed diagnostics are de-duplicated; an untouched `rustc` error always passes
         // through. cargo re-counts the diagnostics the emitter produces, so a suppressed re-report
-        // drops out of its "N errors" summary as well, keeping the count consistent.
+        // drops out of its "N errors" summary as well, keeping the count consistent. A resolved
+        // failure records its class headline, not the cause it displays, since a declined re-report
+        // of the same failure is worded with the class sentence.
         if rewritten
             && self.dedup.check_and_record(
                 cause_sig.as_deref(),
                 || message_signature(&diag),
-                main_message_text(&diag),
+                class_header.as_deref().or_else(|| main_message_text(&diag)),
             )
         {
             return;

@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer trait `CanCalculateDensity` is not implemented for context `Rectangle`
+error[E0277]: [CGP-E001] missing fields `scale_factor` and `height` on `Rectangle`
   --> src/main.rs:97:9
    |
 97 |         DensityCalculatorComponent,

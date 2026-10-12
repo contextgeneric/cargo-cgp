@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog, _>` is not implemented for context `App`
+error[E0277]: [CGP-E001] the trait bound `ByteStream: AsRef<[u8]>` is not satisfied
    --> src/main.rs:135:9
     |
 135 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;

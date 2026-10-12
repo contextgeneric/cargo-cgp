@@ -1,4 +1,4 @@
-error[E0271]: [CGP-E005] expected the abstract type `Error` of `HasErrorType` on `App` to be `backend::Error`, but found `String`
+error[E0271]: [CGP-E005] abstract type `Error` of `HasErrorType` on `App` is `String`, but `backend::Error` is required
   --> src/main.rs:29:9
    |
 29 |         ErrorRaiserComponent: io::Error,

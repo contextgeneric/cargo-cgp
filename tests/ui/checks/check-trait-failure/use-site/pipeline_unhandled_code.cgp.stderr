@@ -1,10 +1,10 @@
-error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog, _>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `@cgp.extra.handler.HandlerComponent.Missing` on `App`
    --> src/main.rs:107:16
     |
 107 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
     |                ^^^^^^^^^^^^^^^^^^^
     |
-    = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `@cgp.extra.handler.HandlerComponent.Missing`
+    = note: root cause: [CGP-E113] missing wiring for `@cgp.extra.handler.HandlerComponent.Missing` on `App`
             this is required through the dependency chain:
               [CGP-E101] consumer trait impl `CanHandle<Prog, _>` for context `App`
               └─ [CGP-E103] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
@@ -13,6 +13,6 @@ error[E0277]: [CGP-E001] the consumer trait `CanHandle<Prog, _>` is not implemen
                     └─ [CGP-E102] provider trait impl `Handler<Prog, _>` with context `App` for provider `Call<Missing>`
                       └─ [CGP-E101] consumer trait impl `CanHandle<Missing, _>` for context `App`
                         └─ [CGP-E103] redirect lookup to `@cgp.extra.handler.HandlerComponent` in `App`
-                          └─ [CGP-E113] context `App` does not contain any delegate entry for `@cgp.extra.handler.HandlerComponent.Missing`
+                          └─ [CGP-E113] missing wiring for `@cgp.extra.handler.HandlerComponent.Missing` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -1,16 +1,16 @@
-error[E0277]: [CGP-E001] the consumer trait `CanEncodeItem<Seq<u64>>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `@ItemEncoderComponent.&u64` on `App`
   --> src/main.rs:57:9
    |
 57 |         ItemEncoderComponent: [Seq<u64>],
    |         ^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `@ItemEncoderComponent.&u64`
+   = note: root cause: [CGP-E113] missing wiring for `@ItemEncoderComponent.&u64` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanEncodeItem<Seq<u64>>` for context `App`
              └─ [CGP-E103] redirect lookup to `@ItemEncoderComponent` in `App`
                └─ [CGP-E102] provider trait impl `ItemEncoder<Seq<u64>>` with context `App` for provider `EncodeSeq`
                  └─ [CGP-E101] consumer trait impl `CanEncodeItem<&u64>` for context `App`
                    └─ [CGP-E103] redirect lookup to `@ItemEncoderComponent` in `App`
-                     └─ [CGP-E113] context `App` does not contain any delegate entry for `@ItemEncoderComponent.&u64`
+                     └─ [CGP-E113] missing wiring for `@ItemEncoderComponent.&u64` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

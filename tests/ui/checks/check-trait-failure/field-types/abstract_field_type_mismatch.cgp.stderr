@@ -1,4 +1,4 @@
-error[E0271]: [CGP-E004] expected a `database` field of type `Pool<<App as HasDbType>::Db>` (`Pool<Postgres>`) on `App`, but found `Pool<Sqlite>`
+error[E0271]: [CGP-E004] field `database` on `App` has type `Pool<Sqlite>`, but `Pool<<App as HasDbType>::Db>` (`Pool<Postgres>`) is required
   --> src/main.rs:85:9
    |
 85 |         RowCounterComponent,

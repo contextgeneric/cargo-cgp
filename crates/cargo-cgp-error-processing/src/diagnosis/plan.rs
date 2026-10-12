@@ -10,13 +10,14 @@
 
 use std::collections::HashSet;
 
+use crate::code::{ABSTRACT_TYPE_MISMATCH, FIELD_TYPE_MISMATCH};
 use crate::diagnosis::coalesce::coalesce_underived_fields;
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::node::ChainNode;
 use crate::diagnosis::resolved::{Cause, Resolved};
 use crate::diagnosis::wording::{
-    assoc_mismatch_header, assoc_mismatch_leaf, cause_notes_seen, consumer_header,
-    field_mismatch_header, fix_help_messages, mismatch_leaf,
+    assoc_mismatch_leaf, cause_headline, cause_notes_seen, consumer_header, fix_help_messages,
+    mismatch_leaf, root_cause_lead,
 };
 use crate::rewrite::{ComponentNameMap, parse_trait_bound, rewrite_trait_bound};
 
@@ -39,9 +40,14 @@ pub enum DiagKind {
 /// message (or `None` to keep rustc's own), the `help` sub-messages, and the `note` sub-messages.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiagnosisPlan {
-    /// The rewritten, `[CGP-Exxx]`-coded main message, or `None` when the original is not an
-    /// identified CGP class and must be kept.
+    /// The displayed main message: the `[CGP-Exxx]` code and the cause (see
+    /// [`cause_headline`](super::cause_headline)), or `None` when the original is not an identified
+    /// CGP class and must be kept.
     pub header: Option<String>,
+    /// The internal headline: the code and the class sentence, as a declined re-report of the same
+    /// failure would be worded by the text rewrite. The de-duplication ledger matches on it; it is
+    /// shown only when the causes are too mixed to state at once. `None` exactly when `header` is.
+    pub class_header: Option<String>,
     /// The `help` messages naming each fix the causes call for — a type that must derive
     /// `HasField`, or an abstract type whose wiring must change (see
     /// [`fix_help_messages`](super::fix_help_messages)).
@@ -65,6 +71,15 @@ pub struct PendingNote {
     pub header_leaf: Option<Leaf>,
 }
 
+impl DiagnosisPlan {
+    /// Whether the block may join a coalesced block at flush: its headline was rewritten and does
+    /// not state a single leaf of its own (a type mismatch, or a kept rustc headline over an
+    /// ordinary bound), so the block reads the same when merged with others sharing its cause.
+    pub fn coalesces(&self) -> bool {
+        self.header.is_some() && self.note.header_leaf.is_none()
+    }
+}
+
 impl PendingNote {
     /// Render the note against `seen`, the subtrees the compilation's earlier notes already drew. A
     /// caller with no such context — a unit test, or any single-diagnostic use — passes a fresh set.
@@ -75,13 +90,15 @@ impl PendingNote {
 }
 
 /// Build the [`DiagnosisPlan`] for a resolved failure. The main message is rewritten only when
-/// it is an identified CGP class (see [`categorized_header`]); the sub-messages are replaced
-/// either way. When the kept main message already states the leaf bound, the matching note drops
-/// its `root cause:` lead so it does not repeat the header. Causes that share one fix — several
-/// underived fields on one struct — are first coalesced into a single cause
-/// ([`coalesce_underived_fields`]), so the note lists one root cause per required fix. The note is
-/// returned unrendered, as a [`PendingNote`]; the caller renders it once it knows what earlier notes
-/// have drawn.
+/// it is an identified CGP class (see [`categorized_header`]), and then it states the cause: a
+/// mismatch headline is its cause sentence, and every other class gives way to
+/// [`cause_headline`], keeping the class sentence as the internal headline. The sub-messages are
+/// replaced either way. When the main message already states the leaf (a mismatch, or a kept
+/// rustc headline restating the ordinary bound), the note drops its `root cause:` lead so it does
+/// not repeat the header. Causes that share one fix (several underived fields on one struct) are
+/// first coalesced into a single cause ([`coalesce_underived_fields`]), so the note lists one root
+/// cause per required fix. The note is returned unrendered, as a [`PendingNote`]; the caller renders
+/// it once it knows what earlier notes have drawn.
 pub fn plan_resolved(
     kind: DiagKind,
     main_message: Option<&str>,
@@ -106,9 +123,18 @@ pub fn plan_resolved(
 
     let causes = coalesce_underived_fields(&resolved.causes);
     let helps = fix_help_messages(&causes);
+    // A mismatch headline already is its cause; every other class headline gives way to the cause.
+    let header = text.as_deref().map(|class| match states_leaf {
+        Some(_) => class.to_owned(),
+        None => match split_code(class) {
+            Some((code, sentence)) => cause_headline(code, sentence, &causes),
+            None => class.to_owned(),
+        },
+    });
 
     DiagnosisPlan {
-        header: text,
+        header,
+        class_header: text,
         helps,
         note: PendingNote {
             header_leaf: header_leaf.cloned(),
@@ -145,17 +171,16 @@ impl Header<'_> {
     }
 }
 
-/// The rewritten, `[CGP-Exxx]`-coded main message for a resolved failure — or `None` when the
-/// original main message is not an identified CGP error class and must be kept (an ordinary
-/// bound such as `f64: Eq` the solver already descended to). A projection mismatch
-/// ([`DiagKind::TypeMismatch`]) becomes the `[CGP-E004]` field form when the resolver traced it to a
-/// `HasField` projection, or the `[CGP-E005]` abstract-type form for any other associated type, each
-/// worded from its mismatch leaf — and reported as the leaf it states, so its note drops the now
-/// redundant lead. An unsatisfied `CanUseComponent`
-/// bound and a consumer-method [`DiagKind::MethodNotFound`] (whose text names no wiring trait)
-/// are both worded from the typed resolution, whose full-path marker keys make the consumer name
-/// exact; an unsatisfied `IsProviderFor` bound rewrites by its text, since the resolution does
-/// not carry the provider-side names.
+/// The class headline for a resolved failure, coded `[CGP-Exxx]`, or `None` when the original
+/// main message is not an identified CGP error class and must be kept (an ordinary bound such as
+/// `f64: Eq` the solver already descended to). A projection mismatch ([`DiagKind::TypeMismatch`])
+/// is the `[CGP-E004]` field class when the resolver traced it to a `HasField` projection, or the
+/// `[CGP-E005]` abstract-type class for any other associated type, each worded as its mismatch
+/// cause and reported as the leaf it states, so its note drops the now redundant lead. An
+/// unsatisfied `CanUseComponent` bound and a consumer-method [`DiagKind::MethodNotFound`] (whose
+/// text names no wiring trait) are both worded from the typed resolution, whose full-path marker
+/// keys make the consumer name exact; an unsatisfied `IsProviderFor` bound rewrites by its text,
+/// since the resolution does not carry the provider-side names.
 fn categorized_header<'a>(
     kind: DiagKind,
     main_message: Option<&str>,
@@ -167,46 +192,19 @@ fn categorized_header<'a>(
     // field form for a `HasField` value, the `[CGP-E005]` abstract-type form for any other. The
     // field form is tried first, since a `HasField` value type is the more specific classification.
     if kind == DiagKind::TypeMismatch {
-        if let Some(Leaf::FieldTypeMismatch {
-            name,
-            owner,
-            expected,
-            expected_normalized,
-            actual,
-        }) = mismatch_leaf(resolved)
-        {
+        if let Some(leaf) = mismatch_leaf(resolved) {
             return Header {
-                text: Some(field_mismatch_header(
-                    name,
-                    owner,
-                    expected,
-                    expected_normalized.as_deref(),
-                    actual,
-                )),
-                states_leaf: mismatch_leaf(resolved),
+                text: Some(format!("[{FIELD_TYPE_MISMATCH}] {}", root_cause_lead(leaf))),
+                states_leaf: Some(leaf),
             };
         }
-        if let Some(Leaf::AssocTypeMismatch {
-            assoc,
-            trait_name,
-            owner,
-            expected,
-            expected_normalized,
-            actual,
-            component,
-        }) = assoc_mismatch_leaf(resolved)
-        {
+        if let Some(leaf) = assoc_mismatch_leaf(resolved) {
             return Header {
-                text: Some(assoc_mismatch_header(
-                    assoc,
-                    trait_name,
-                    owner,
-                    expected,
-                    expected_normalized.as_deref(),
-                    actual,
-                    component.as_deref(),
+                text: Some(format!(
+                    "[{ABSTRACT_TYPE_MISMATCH}] {}",
+                    root_cause_lead(leaf)
                 )),
-                states_leaf: assoc_mismatch_leaf(resolved),
+                states_leaf: Some(leaf),
             };
         }
     }
@@ -305,4 +303,11 @@ fn bound_is_leaf(resolved: &Resolved, bound: &str) -> bool {
         .causes
         .iter()
         .any(|cause| matches!(&cause.leaf, Leaf::Bound { summary } if summary == bound))
+}
+
+/// Split a coded headline `[CGP-Exxx] sentence` into its code and its sentence.
+fn split_code(header: &str) -> Option<(&str, &str)> {
+    let rest = header.strip_prefix('[')?;
+    let (code, sentence) = rest.split_once("] ")?;
+    code.starts_with("CGP-E").then_some((code, sentence))
 }

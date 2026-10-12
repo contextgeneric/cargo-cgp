@@ -14,10 +14,15 @@
 //!   - `Outer`'s tree re-roots the `Inner: CanCompute` node at `Inner` while walking, so it decodes
 //!     to `[CGP-E110] missing field \`name\`` (not an opaque bound), its delegation-routing hop is
 //!     dropped, and it reads as a consumer node `for context Inner`.
-//!   - The node renders as a `[CGP-E101] consumer trait impl … for context \`Inner\`` in both trees
-//!     precisely because the cache keys each node on `(obligation, context)`: `Outer`'s walk re-roots
-//!     to `Inner` and thereby shares `Inner`'s own cached subtree, rather than borrowing `Outer`'s
-//!     context. Were the key the obligation alone, one tree would splice in the other's labels.
+//!   - The node renders as one `[CGP-E101] consumer trait impl … for context \`Inner\`` in both
+//!     walks precisely because the cache keys each node on `(obligation, context)`: `Outer`'s walk
+//!     re-roots to `Inner` and thereby shares `Inner`'s own cached subtree, rather than borrowing
+//!     `Outer`'s context. Were the key the obligation alone, one walk would splice in the other's
+//!     labels.
+//!
+//! The two failures share `Inner`'s missing field, so they coalesce into one block headed by it,
+//! with a caret at `Inner`'s bound and at `Outer`'s check entry, over a tree in which `Outer`'s chain
+//! runs through `Inner`'s.
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md (the cache key)
 //! and cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the impl-site

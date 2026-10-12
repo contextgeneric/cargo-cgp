@@ -1,10 +1,10 @@
-error[E0277]: [CGP-E001] the consumer trait `CanHandle<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, _>` is not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `@ErrorRaiserComponent.IoFailure` on `App`
   --> src/main.rs:23:16
    |
 23 |     App.handle(PhantomData::<Pipe<Product![Echo, Stdout]>>, Vec::new()).await?;
    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: root cause: [CGP-E113] context `App` does not contain any delegate entry for `@ErrorRaiserComponent.IoFailure`
+   = note: root cause: [CGP-E113] missing wiring for `@ErrorRaiserComponent.IoFailure` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanHandle<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, _>` for context `App`
              └─ [CGP-E103] redirect lookup to `@HandlerComponent` in `App`
@@ -18,6 +18,6 @@ error[E0277]: [CGP-E001] the consumer trait `CanHandle<Pipe<Product![Echo, cgp_t
                              └─ [CGP-E102] provider trait impl `Handler<Echo, _>` with context `App` for provider `HandleEcho`
                                └─ [CGP-E101] consumer trait impl `CanRaiseError<IoFailure>` for context `App`
                                  └─ [CGP-E103] redirect lookup to `@ErrorRaiserComponent` in `App`
-                                   └─ [CGP-E113] context `App` does not contain any delegate entry for `@ErrorRaiserComponent.IoFailure`
+                                   └─ [CGP-E113] missing wiring for `@ErrorRaiserComponent.IoFailure` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

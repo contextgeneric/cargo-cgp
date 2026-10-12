@@ -1,4 +1,4 @@
-error[E0271]: [CGP-E004] expected a `height` field of type `f64` on `shape_a::Rectangle`, but found `i32`
+error[E0271]: [CGP-E004] field `height` on `shape_a::Rectangle` has type `i32`, but `f64` is required
   --> src/main.rs:62:13
    |
 62 |             AreaCalculatorAComponent,
@@ -10,7 +10,7 @@ error[E0271]: [CGP-E004] expected a `height` field of type `f64` on `shape_a::Re
                └─ [CGP-E104] trait impl `HasRectangleFieldsA` for `shape_a::Rectangle`
                  └─ [CGP-E112] field `height` on `shape_a::Rectangle` has type `i32`, but `f64` is required
 
-error[E0271]: [CGP-E004] expected a `height` field of type `f64` on `shape_b::Rectangle`, but found `i16`
+error[E0271]: [CGP-E004] field `height` on `shape_b::Rectangle` has type `i16`, but `f64` is required
    --> src/main.rs:106:13
     |
 106 |             AreaCalculatorBComponent,

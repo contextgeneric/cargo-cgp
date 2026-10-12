@@ -6,7 +6,8 @@
 //! sit on different structs — and need two separate fixes.
 //!
 //! Causes are grouped by whole-leaf equality, so the two stay distinct and the note heads a
-//! `root causes:` list naming both owners. Grouping them by the field name alone would merge them
+//! `root causes:` list naming both owners. `Inner`'s own failure shares one of them, so it joins the
+//! same block, whose headline names both failing traits and the cause count. Grouping them by the field name alone would merge them
 //! into one cause whose singular heading named only the first struct, while the tree below it still
 //! branched to both — a heading that understates the work.
 //!

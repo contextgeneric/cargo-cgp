@@ -1,4 +1,4 @@
-error[E0271]: [CGP-E004] expected a `height` field of type `f64` on `Rectangle`, but found `i32`
+error[E0271]: [CGP-E004] field `height` on `Rectangle` has type `i32`, but `f64` is required
   --> src/main.rs:58:9
    |
 58 |         AreaCalculatorComponent,

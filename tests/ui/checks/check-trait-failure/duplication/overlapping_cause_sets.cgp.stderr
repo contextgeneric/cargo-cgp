@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E001] the consumer traits `CanReportFirst` and `CanReportSecond` are not implemented for context `App`
+error[E0277]: [CGP-E001] missing wiring for `@EncoderComponent.Element<u32>` and `@EncoderComponent.Element<u64>` on `App`
    --> src/main.rs:97:9
     |
  97 |         FirstReporterComponent,
@@ -10,18 +10,18 @@ error[E0277]: [CGP-E001] the consumer traits `CanReportFirst` and `CanReportSeco
     |                 ^^^^^^^^^^^^
     |
     = note: root causes:
-              - [CGP-E113] context `App` does not contain any delegate entry for `@EncoderComponent.Element<u32>`
-              - [CGP-E113] context `App` does not contain any delegate entry for `@EncoderComponent.Element<u64>`
+              - [CGP-E113] missing wiring for `@EncoderComponent.Element<u32>` on `App`
+              - [CGP-E113] missing wiring for `@EncoderComponent.Element<u64>` on `App`
             this is required through the dependency chain:
               [CGP-E101] consumer trait impl `CanReportFirst` for context `App`
               └─ [CGP-E102] provider trait impl `FirstReporter` with context `App` for provider `ReportFirst`
                 └─ [CGP-E101] consumer trait impl `CanEncode<Element<u32>>` for context `App`
                   └─ [CGP-E103] redirect lookup to `@EncoderComponent` in `App`
-                    └─ [CGP-E113] context `App` does not contain any delegate entry for `@EncoderComponent.Element<u32>`
+                    └─ [CGP-E113] missing wiring for `@EncoderComponent.Element<u32>` on `App`
               [CGP-E101] consumer trait impl `CanReportSecond` for context `App`
               └─ [CGP-E102] provider trait impl `SecondReporter` with context `App` for provider `ReportSecond`
                 └─ [CGP-E101] consumer trait impl `CanEncode<Element<u64>>` for context `App`
                   └─ [CGP-E103] redirect lookup to `@EncoderComponent` in `App`
-                    └─ [CGP-E113] context `App` does not contain any delegate entry for `@EncoderComponent.Element<u64>`
+                    └─ [CGP-E113] missing wiring for `@EncoderComponent.Element<u64>` on `App`
 
 For more information about this error, try `rustc --explain E0277`.

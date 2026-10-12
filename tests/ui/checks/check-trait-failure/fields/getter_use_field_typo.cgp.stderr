@@ -1,4 +1,4 @@
-error[E0599]: [CGP-E001] the consumer trait `HasName` is not implemented for context `Person`
+error[E0599]: [CGP-E001] missing field `frist_name` on `Person`
   --> src/main.rs:32:50
    |
 32 |     let _ = Person { first_name: String::new() }.name();
