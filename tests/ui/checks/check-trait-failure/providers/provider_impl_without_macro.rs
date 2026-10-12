@@ -1,7 +1,7 @@
 //! A provider-trait impl written without `#[cgp_provider]`.
 //!
-//! A `[CGP-E002]` headline, then rustc's list of every `IsProviderFor` implementor in scope; the fix,
-//! `#[cgp_provider]` or `#[cgp_impl]`, is not hinted.
+//! A `[CGP-E002]` headline, then rustc's list of `IsProviderFor` implementors, eight and a count as
+//! rustc prints it; the fix, `#[cgp_provider]` or `#[cgp_impl]`, is not hinted.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 //!

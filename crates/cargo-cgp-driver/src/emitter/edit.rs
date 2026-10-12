@@ -9,9 +9,9 @@ use std::borrow::Cow;
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{
-    AmbiguousNames, DiagKind, Origin, context_has_hasfield_impls, is_method_probe_advice_text,
-    is_question_mark_cascade_text, mentions_wiring_text, postprocess_fragments,
-    postprocess_message,
+    AmbiguousNames, DiagKind, Origin, bound_candidate_list, context_has_hasfield_impls,
+    is_method_probe_advice_text, is_question_mark_cascade_text, mentions_wiring_text,
+    postprocess_fragments, postprocess_message,
 };
 use rustc_errors::codes::{E0271, E0599};
 use rustc_errors::{DiagInner, DiagMessage, MultiSpan, Style, Subdiag, Sublevel, Suggestions};
@@ -106,6 +106,21 @@ pub(crate) fn strip_method_probe_advice(diag: &mut DiagInner) {
         })
     });
     strip_multispan_labels(&mut diag.span, is_method_probe_advice_text);
+}
+
+/// Cut each candidate list among `diag`'s sub-messages back to the length rustc prints outside a
+/// verbose session ([`bound_candidate_list`]), undoing the one list the driver's injected
+/// `--verbose` un-elides.
+pub(crate) fn bound_candidate_lists(diag: &mut DiagInner) {
+    for child in &mut diag.children {
+        for (message, _) in child.messages.iter_mut() {
+            if let DiagMessage::Str(text) = message
+                && let Some(bounded) = bound_candidate_list(text)
+            {
+                *message = DiagMessage::Str(Cow::Owned(bounded));
+            }
+        }
+    }
 }
 
 /// Drop the labels of a [`MultiSpan`] whose text matches `drop`, keeping the spans themselves

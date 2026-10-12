@@ -1,3 +1,4 @@
+pub mod candidates;
 pub mod causes;
 pub mod cgp_impl_misuse;
 pub mod coalesce;

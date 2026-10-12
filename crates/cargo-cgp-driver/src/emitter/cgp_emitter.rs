@@ -33,9 +33,10 @@ use crate::config::BUG_REPORT_URL;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
 use crate::emitter::containment::contain;
 use crate::emitter::edit::{
-    diag_kind, diagnostic_spans, is_question_mark_cascade, main_message_text,
-    mentions_hasfield_impls, mentions_wiring, message_signature, postprocess_messages,
-    postprocess_multispan, replace_header, rewrite_messages, strip_method_probe_advice, subdiag,
+    bound_candidate_lists, diag_kind, diagnostic_spans, is_question_mark_cascade,
+    main_message_text, mentions_hasfield_impls, mentions_wiring, message_signature,
+    postprocess_messages, postprocess_multispan, replace_header, rewrite_messages,
+    strip_method_probe_advice, subdiag,
 };
 use crate::emitter::output::{Output, lock_output, register_output};
 use crate::emitter::test_panic::{TestPanic, inject};
@@ -919,6 +920,9 @@ impl<E: Emitter> CgpEmitter<E> {
     /// [`emit_diagnostic`](Emitter::emit_diagnostic), which runs it contained. `original` is the
     /// diagnostic as rustc built it, kept for the flush to fall back on.
     fn transform(&mut self, mut diag: DiagInner, original: &DiagInner) {
+        // The injected `--verbose` lists every implementor in a failed bound's help; cut the list
+        // back to rustc's own length before anything else reads the diagnostic.
+        bound_candidate_lists(&mut diag);
         // A `#[cgp_impl]` header naming the wrong trait — the component's consumer trait, or a
         // non-CGP trait — makes the macro generate an inside-out impl of the wrong trait, producing
         // a burst of cryptic macro-lowering errors (E0425/E0107/E0186/E0207) plus a downstream check
