@@ -103,29 +103,46 @@ pub(crate) fn label_for<'tcx>(
         });
     }
 
-    // A user's own blanket or getter trait, or a terminal ordinary bound.
+    // A user's own blanket or getter trait, or a terminal ordinary bound, with its arguments.
     Some(DepNode::Trait {
-        trait_ref: tcx.item_name(did).to_string(),
+        trait_ref: format!(
+            "{}{}",
+            tcx.item_name(did),
+            trait_generics(tcx, trait_ref, 1)
+        ),
         self_ty: render_ty(tcx, self_ty),
     })
 }
 
-/// Render a trait obligation's type arguments after `skip` leading ones as a generic list —
-/// `<u32, u64>` — or the empty string when there are none. For a consumer obligation `Ctx:
-/// C<A, B>` the arguments are spread (skip the `Self`=`Ctx`), and for a provider obligation `P:
-/// T<Ctx, A, B>` likewise (skip `Self` and the leading context), so the component's extra
-/// parameters reattach to the trait exactly as written — read straight off the obligation rather
-/// than from a `CanUseComponent`/`IsProviderFor` params tuple.
+/// Render a trait obligation's arguments as a generic list — `<u32, u64>`, `<'_, str>` — or the
+/// empty string when there are none, dropping the first `skip` *type* arguments. For a consumer
+/// obligation `Ctx: C<A, B>` that is the `Self`=`Ctx` (skip 1), and for a provider obligation
+/// `P: T<Ctx, A, B>` the `Self` and the leading context (skip 2), so the component's own parameters
+/// reattach to the trait exactly as written, read straight off the obligation rather than from a
+/// `CanUseComponent`/`IsProviderFor` params tuple. Lifetime arguments are kept in place: the walk
+/// erases regions, so an unnamed one reads `'_`, as it does in a rendered type (`App<'_>`).
 pub(crate) fn trait_generics<'tcx>(
     tcx: TyCtxt<'tcx>,
     trait_ref: ty::TraitRef<'tcx>,
     skip: usize,
 ) -> String {
+    let mut types = 0;
     let params: Vec<String> = trait_ref
         .args
-        .types()
-        .skip(skip)
-        .map(|ty| render_ty(tcx, ty))
+        .iter()
+        .filter_map(|arg| {
+            if let Some(ty) = arg.as_type() {
+                types += 1;
+                (types > skip).then(|| render_ty(tcx, ty))
+            } else if let Some(region) = arg.as_region() {
+                Some(match region.get_name(tcx) {
+                    Some(name) => name.to_string(),
+                    None => "'_".to_owned(),
+                })
+            } else {
+                Some(arg.to_string())
+            }
+        })
         .collect();
     if params.is_empty() {
         String::new()

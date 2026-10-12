@@ -9,7 +9,7 @@ error[E0277]: [CGP-E001] missing wiring for `@ValueEncoderComponent.u64` on `App
               [CGP-E101] consumer trait impl `CanEncodeValue<Outer>` for context `App`
               └─ [CGP-E103] redirect lookup to `@ValueEncoderComponent` in `App`
                 └─ [CGP-E102] provider trait impl `ValueEncoder<Outer>` with context `App` for provider `EncodeRecord`
-                  └─ [CGP-E104] trait impl `EncodeFields` for `Struct! { mids: Vec<Mid> }`
+                  └─ [CGP-E104] trait impl `EncodeFields<App, Outer>` for `Struct! { mids: Vec<Mid> }`
                     └─ [CGP-E101] consumer trait impl `CanEncodeValue<Vec<Mid>>` for context `App`
                       └─ [CGP-E103] redirect lookup to `@ValueEncoderComponent` in `App`
                         └─ [CGP-E102] provider trait impl `ValueEncoder<Vec<Mid>>` with context `App` for provider `EncodeIterator`
@@ -19,7 +19,7 @@ error[E0277]: [CGP-E001] missing wiring for `@ValueEncoderComponent.u64` on `App
                                 └─ [CGP-E101] consumer trait impl `CanEncodeValue<Mid>` for context `App`
                                   └─ [CGP-E103] redirect lookup to `@ValueEncoderComponent` in `App`
                                     └─ [CGP-E102] provider trait impl `ValueEncoder<Mid>` with context `App` for provider `EncodeRecord`
-                                      └─ [CGP-E104] trait impl `EncodeFields` for `Struct! { inners: Vec<Inner> }`
+                                      └─ [CGP-E104] trait impl `EncodeFields<App, Mid>` for `Struct! { inners: Vec<Inner> }`
                                         └─ [CGP-E101] consumer trait impl `CanEncodeValue<Vec<Inner>>` for context `App`
                                           └─ [CGP-E103] redirect lookup to `@ValueEncoderComponent` in `App`
                                             └─ [CGP-E102] provider trait impl `ValueEncoder<Vec<Inner>>` with context `App` for provider `EncodeIterator`
@@ -29,7 +29,7 @@ error[E0277]: [CGP-E001] missing wiring for `@ValueEncoderComponent.u64` on `App
                                                     └─ [CGP-E101] consumer trait impl `CanEncodeValue<Inner>` for context `App`
                                                       └─ [CGP-E103] redirect lookup to `@ValueEncoderComponent` in `App`
                                                         └─ [CGP-E102] provider trait impl `ValueEncoder<Inner>` with context `App` for provider `EncodeRecord`
-                                                          └─ [CGP-E104] trait impl `EncodeFields` for `Struct! { value: u64 }`
+                                                          └─ [CGP-E104] trait impl `EncodeFields<App, Inner>` for `Struct! { value: u64 }`
                                                             └─ [CGP-E101] consumer trait impl `CanEncodeValue<u64>` for context `App`
                                                               └─ [CGP-E103] redirect lookup to `@ValueEncoderComponent` in `App`
                                                                 └─ [CGP-E113] missing wiring for `@ValueEncoderComponent.u64` on `App`
