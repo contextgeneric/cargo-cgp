@@ -133,6 +133,13 @@ pub const CGP_BASE_TYPES_CRATE: &str = "cgp_base_types";
 /// whole path rather than reading only its ADT item name (`PathCons`).
 pub const PATH_CONS_TYPE: &str = "PathCons";
 
+/// The type-level string `Symbol!` expands to, in `cgp-base-types`, whose `Chars` spine ends in
+/// `Nil` as a string terminator rather than an empty list.
+pub const SYMBOL_TYPE: &str = "Symbol";
+
+/// The character cell of a `Symbol`'s spine, in `cgp-base-types`.
+pub const CHARS_TYPE: &str = "Chars";
+
 /// The name of the type-level empty-path/empty-list terminator (defined by
 /// [`CGP_BASE_TYPES_CRATE`]) that closes a `PathCons` spine. The use-site resolver reads it to
 /// recognize a simple two-segment `open`-dispatch key `PathCons<Component, PathCons<Value, Nil>>`,

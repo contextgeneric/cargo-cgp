@@ -14,6 +14,7 @@ use crate::resolve::cgp_item::{
 use crate::resolve::classify::{
     field_issue, field_type, is_dispatch_lookup, owner_has_impl_of, projected_type,
 };
+use crate::resolve::label::fold_empty_lists;
 use crate::resolve::walk::ProjectionMismatch;
 
 /// Classify the terminal predicate a dependency chain bottoms out on. A `HasField` whose branch
@@ -173,6 +174,8 @@ pub(crate) fn classify_leaf<'tcx>(
             issue,
         };
     }
+    // An empty list in the bound reads as the `Product![]` the program wrote.
+    let leaf_ref = fold_empty_lists(tcx, leaf_ref);
     Leaf::Bound {
         summary: format!(
             "{}: {}",

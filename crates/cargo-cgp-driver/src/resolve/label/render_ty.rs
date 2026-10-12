@@ -7,6 +7,7 @@ use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_FIELD_CRATE, CONS_TYPE, EITHER_TYPE, FIELD_TYPE, NIL_TYPE, VOID_TYPE,
 };
 use crate::resolve::cgp_item::{decode_index, decode_symbol, is_cgp_item, is_nil};
+use crate::resolve::label::fold_empty_lists;
 
 /// Render a type to its dependency-tree form, resugaring CGP's type-level list and sum spines back
 /// to their surface macros: a `Cons<A, Cons<B, Nil>>` product spine to `Product![A, B]` and an
@@ -15,7 +16,8 @@ use crate::resolve::cgp_item::{decode_index, decode_symbol, is_cgp_item, is_nil}
 /// crate that defines it (`Cons`/`Nil` in `cgp-base-types`, `Either`/`Void` in `cgp-field`), so a
 /// same-named type from another crate is never resugared. Each element is rendered recursively, so a
 /// nested list (a `Sum!` inside a `Product!`, say) is resugared too; a non-spine type falls back to
-/// its ordinary printed form (whose inner `Symbol!`/`Path!` the post-processing then resugars).
+/// its ordinary printed form (whose inner `Symbol!`/`Path!` the post-processing then resugars), with
+/// a standalone empty list written `Product![]` or `Sum![]` ([`fold_empty_lists`]).
 ///
 /// A list whose elements are *all* `Field` cells resugars one step further to the CGP `Struct!` or
 /// `Enum!` shape it describes, when the shape has an exact spelling, so a `HasFields` field list reads
@@ -82,7 +84,7 @@ pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         }
         return format!("Sum![{}]", render_ty_list(tcx, &elems));
     }
-    ty.to_string()
+    fold_empty_lists(tcx, ty).to_string()
 }
 
 /// Interpret every element of a resugared list as a `Field<Tag, Value>` cell, returning each tag

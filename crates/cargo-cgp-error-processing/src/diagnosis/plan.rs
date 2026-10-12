@@ -121,12 +121,7 @@ pub fn plan_resolved(
         if text.is_some() {
             return None;
         }
-        let bound = parse_trait_bound(main_message?)?.bound;
-        resolved
-            .causes
-            .iter()
-            .map(|cause| &cause.leaf)
-            .find(|leaf| matches!(leaf, Leaf::Bound { summary } if summary == bound))
+        bound_leaf(resolved, parse_trait_bound(main_message?)?.bound)
     });
 
     let causes = coalesce_underived_fields(&resolved.causes);
@@ -254,9 +249,18 @@ fn categorized_header<'a>(
             // rustc opened the diagnostic on a bound that restates a genuine recovered leaf — an
             // ordinary bound such as `f64: Eq` the solver descended to *is* the root cause — so
             // keep rustc's header, which already names that cause. (The matching note then drops
-            // its `root cause:` lead so it does not repeat the header.)
-            if bound_is_leaf(resolved, parsed.bound) {
-                return Header::keep();
+            // its `root cause:` lead so it does not repeat the header.) Where the leaf writes the
+            // bound as the program did and rustc does not (`Product![]` for CGP's `Nil`), the header
+            // takes the leaf's wording in rustc's sentence instead.
+            if let Some(leaf) = bound_leaf(resolved, parsed.bound) {
+                return match leaf {
+                    Leaf::Bound { summary } if summary != parsed.bound => Header {
+                        text: Some(root_cause_lead(leaf)),
+                        states_leaf: Some(leaf),
+                        declined: None,
+                    },
+                    _ => Header::keep(),
+                };
             }
         }
         // A failure recovered at the use site reports the consumer trait the *call* needs.
@@ -277,16 +281,25 @@ fn categorized_header<'a>(
     Header::keep()
 }
 
-/// Whether `bound` — the whole `Self: Trait<…>` restatement rustc's main message opened with —
-/// matches a recovered [`Leaf::Bound`] root cause. When it does, rustc's header already names the
-/// genuine root cause and should be kept; when it does not, the header is a mid-chain symptom the
-/// solver stopped on. Compared against the same [`Leaf::Bound::summary`] the note wording uses, so
-/// the two stay in step.
-fn bound_is_leaf(resolved: &Resolved, bound: &str) -> bool {
+/// The recovered [`Leaf::Bound`] root cause that `bound` — the whole `Self: Trait<…>` restatement
+/// rustc's main message opened with — states, if any. When there is one, rustc's header already
+/// names the genuine root cause; when there is none, the header is a mid-chain symptom the solver
+/// stopped on. The leaf writes a CGP empty list as `Product![]` or `Sum![]` where rustc prints
+/// `Nil` or `Void`, the one difference between the two printings, so the comparison reads the leaf
+/// back in rustc's form.
+fn bound_leaf<'a>(resolved: &'a Resolved, bound: &str) -> Option<&'a Leaf> {
     resolved
         .causes
         .iter()
-        .any(|cause| matches!(&cause.leaf, Leaf::Bound { summary } if summary == bound))
+        .map(|cause| &cause.leaf)
+        .find(|leaf| matches!(leaf, Leaf::Bound { summary } if as_rustc_prints(summary) == bound))
+}
+
+/// A bound as rustc prints it: the leaf's `Product![]` and `Sum![]` back to `Nil` and `Void`.
+fn as_rustc_prints(summary: &str) -> String {
+    summary
+        .replace("Product![]", "Nil")
+        .replace("Sum![]", "Void")
 }
 
 /// Split a coded headline `[CGP-Exxx] sentence` into its code and its sentence.

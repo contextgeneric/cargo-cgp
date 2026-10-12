@@ -8,8 +8,10 @@
 //! a [`DependencyTree`](cargo_cgp_error_processing::tree::DependencyTree) spine that the
 //! [wording](cargo_cgp_error_processing::diagnosis) renders as `cargo tree`-style text.
 
+mod empty_lists;
 mod predicate_label;
 mod render_ty;
 
+pub(crate) use empty_lists::*;
 pub(crate) use predicate_label::*;
 pub(crate) use render_ty::*;

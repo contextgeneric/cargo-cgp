@@ -62,6 +62,36 @@ fn keeps_an_ordinary_bound_header_and_drops_the_repeated_lead() {
 }
 
 #[test]
+fn an_ordinary_bound_header_writes_an_empty_list_as_the_leaf_does() {
+    // rustc prints CGP's empty list as `Nil`; the leaf, which knows the type, writes `Product![]`.
+    // The header still restates the leaf, so it takes the leaf's wording in rustc's sentence, uncoded.
+    let leaf = Leaf::Bound {
+        summary: "Product![]: PickFirst".to_owned(),
+    };
+    let cause = one_path(leaf, vec![consumer("CanGreet", "App")]);
+    let path = cause.paths[0].clone();
+    let resolved = cgp_resolved("App", &["CanGreet"], vec![cause]);
+    let plan = plan_resolved(
+        DiagKind::Check,
+        Some("the trait bound `Nil: PickFirst` is not satisfied"),
+        &resolved,
+        &empty_names(),
+    );
+    assert_eq!(
+        plan.header.as_deref(),
+        Some("the trait bound `Product![]: PickFirst` is not satisfied")
+    );
+    assert!(!plan.coalesces());
+    assert_eq!(
+        notes(&plan),
+        vec![format!(
+            "this is required through the dependency chain:\n{}",
+            indent2(&render_path(&path))
+        )]
+    );
+}
+
+#[test]
 fn promotes_a_mid_chain_symptom_bound_to_the_consumer_header() {
     // rustc opened the diagnostic on a getter bound (`LoginRequest: HasCredential<App>`) that is a
     // symptom, not the recovered root cause (a missing wiring). It is not a recovered leaf, so the
