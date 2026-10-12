@@ -4,9 +4,9 @@ error[E0277]: [CGP-E001] missing field `name` on `App`
 88 |         BazComponent,
    |         ^^^^^^^^^^^^
 89 |         BarComponent,
-   |         ^^^^^^^^^^^^
+   |         ------------ also required here
 90 |         FooComponent,
-   |         ^^^^^^^^^^^^
+   |         ------------ also required here
    |
    = note: root cause: [CGP-E110] missing field `name` on `App`
            this is required through the dependency chain:

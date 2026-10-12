@@ -11,9 +11,9 @@
 //! the node afresh and the cycle guard cuts the loop.
 //!
 //! Both errors bottom out on `Inner`'s missing `name` field, so they merge into one block with a
-//! caret at each check entry. The merged tree shows both routes, and with them `Inner`'s own
-//! `Outer: Linked` leaf, so the merged output no longer shows whether `Outer`'s walk reused the
-//! cached subtree; `cross_context_cycle_reuse_distinct` pins that rule instead.
+//! caret on one check entry and a label on the other. The merged tree shows both routes and
+//! `Inner`'s own `Outer: Linked` leaf, so the merged output does not show whether `Outer`'s walk
+//! reused the cached subtree; `cross_context_cycle_reuse_distinct` pins that rule instead.
 //!
 //! The error class is the wiring cycle
 //! (`cgp-knowledge-base/cgp/errors/wiring/wiring-cycle.md`); the reuse rule is in

@@ -4,8 +4,8 @@
 //! single missing `height` field breaks both. Left to rustc that is two full `E0277`
 //! blocks — an error count reflecting the depth of the wiring graph, not the number of
 //! mistakes. cargo-cgp coalesces the two: they share one root cause, so they collapse
-//! into a single `[CGP-E001]` headline naming both consumer traits, with one caret per
-//! failing check entry and the shared root cause shown once. This is the *different
+//! into a single `[CGP-E001]` headline naming both consumer traits, its caret on the first
+//! check entry and the second labelled, and the shared cause shown once. This is the *different
 //! consumers, one cause* coalescing — distinct from the same-consumer de-duplication
 //! `duplication/cross_site_dedup.rs` pins.
 //!

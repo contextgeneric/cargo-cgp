@@ -4,10 +4,10 @@ error[E0277]: [CGP-E001] missing wiring for `@EncoderComponent.Element<u32>` and
  97 |         FirstReporterComponent,
     |         ^^^^^^^^^^^^^^^^^^^^^^
  98 |         SecondReporterComponent,
-    |         ^^^^^^^^^^^^^^^^^^^^^^^
+    |         ----------------------- also required here
 ...
 105 |     let _ = app.report_first();
-    |                 ^^^^^^^^^^^^
+    |                 ------------ also required here
     |
     = note: root causes:
               - [CGP-E113] missing wiring for `@EncoderComponent.Element<u32>` on `App`

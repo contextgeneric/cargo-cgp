@@ -25,8 +25,8 @@
 //! The one mistake is the missing `name` field `HandleGreet` reads. It surfaces both at the
 //! hand-written `impl CanHandleApiSend<GreetApi> for App` (traced by the impl-site anchor) and (the
 //! case this fixture pins) at the foreign `impl CanAddAppRoutes for Box<App>` several hops removed.
-//! The two share their root cause, so they coalesce into one block headed by it, with a caret at
-//! each impl, and the tree shows both routes to the field.
+//! The two share their root cause, so they coalesce into one block headed by it, its caret on the
+//! first impl and the other labelled, and the tree shows both routes to the field.
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the
 //! wrapper-chain path).

@@ -7,7 +7,7 @@
 //! component — more than three, since the deeper providers also emit intermediate
 //! provider-bound failures. cargo-cgp coalesces them: the three consumer failures
 //! share the one missing-`name` root cause, so they collapse into a single
-//! `[CGP-E001]` headline naming `CanBaz`, `CanBar`, and `CanFoo`, a caret at each check
+//! `[CGP-E001]` headline naming `CanBaz`, `CanBar`, and `CanFoo`, a caret or label on each check
 //! entry, and one representative dependency chain down to the missing field (`CanBaz`,
 //! whose chain is the deepest and subsumes the others, chosen regardless of check
 //! order). Fixing

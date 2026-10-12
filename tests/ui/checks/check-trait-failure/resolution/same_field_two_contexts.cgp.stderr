@@ -5,7 +5,7 @@ error[E0277]: [CGP-E001] the consumer trait `CanCompute` is not implemented for 
    |     ^^^^^^^^^^^^^^^^^
 ...
 83 |         RunnerComponent,
-   |         ^^^^^^^^^^^^^^^
+   |         --------------- also required here
    |
    = note: root causes:
              - [CGP-E110] missing field `name` on `Inner`

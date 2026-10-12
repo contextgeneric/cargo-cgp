@@ -8,10 +8,10 @@
 //! supertrait is a CGP consumer trait), traces the chain to the same missing-field root cause, and
 //! heads the tree with the wrapper the programmer wrote: `CanHandleApiSend`, then its `CanHandleApi`
 //! supertrait, down to the missing field. Both failures share that cause, so they coalesce into one
-//! block headed by the cause, with a caret at each site: the check entry comes first in the source,
-//! so the block takes its `[CGP-E001]` class and its `E0277` code, and the wrapper's chain, which
-//! runs through `CanHandleApi`, shows both routes in one tree. The `.rust.stderr` baseline shows the
-//! full un-traced cascade for contrast.
+//! block headed by the cause, its caret on the check entry, which comes first in the source, and
+//! the wrapper labelled. The block takes its `[CGP-E001]` class and `E0277` code from the check, and
+//! the wrapper's chain, which runs through `CanHandleApi`, shows both routes in one tree. The baseline
+//! `.rust.stderr` shows the full un-traced cascade for contrast.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

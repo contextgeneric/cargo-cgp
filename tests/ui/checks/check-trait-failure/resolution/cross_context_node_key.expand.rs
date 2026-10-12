@@ -22,8 +22,8 @@
 //!     labels.
 //!
 //! The two failures share `Inner`'s missing field, so they coalesce into one block headed by it,
-//! with a caret at `Inner`'s bound and at `Outer`'s check entry, over a tree in which `Outer`'s chain
-//! runs through `Inner`'s.
+//! its caret on `Inner`'s bound and a label on `Outer`'s check entry, over a tree in which `Outer`'s
+//! chain runs through `Inner`'s.
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md (the cache key)
 //! and cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the impl-site

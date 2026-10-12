@@ -3,10 +3,10 @@
 //! `CanGreetSend` impl (both its header and its forwarding `self.greet()` call), the `Send`-recovery
 //! shape of a wrapper trait over a CGP consumer. The re-reports of each failing trait collapse first,
 //! and the two failing traits then share their root cause, so they coalesce into one block headed by
-//! that cause, with a caret at the check entry and at the impl. The check entry comes first in the
-//! source, so the block takes its `[CGP-E001]` code. Its tree is headed by `CanGreetSend` (the code
-//! the programmer wrote), descending through its `CanGreet` supertrait to the missing field, so the
-//! wrapper's route and the check's route are one chain. The `.rust.stderr` baseline shows the full
+//! that cause: its caret is on the check entry, and the impl is labelled "also required here". The
+//! check entry comes first in the source, so the block takes its `[CGP-E001]` code. Its tree is
+//! headed by `CanGreetSend` (the code the programmer wrote), then `CanGreet`, down to the missing
+//! field, so the wrapper's and the check's routes are one chain. The `.rust.stderr` shows the full
 //! cascade for contrast.
 
 //@quality: acceptable

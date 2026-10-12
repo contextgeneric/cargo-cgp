@@ -4,7 +4,7 @@ error[E0277]: [CGP-E001] missing field `width` on `App`
 61 |         ProviderAComponent,
    |         ^^^^^^^^^^^^^^^^^^
 62 |         ProviderBComponent,
-   |         ^^^^^^^^^^^^^^^^^^
+   |         ------------------ also required here
    |
    = note: root cause: [CGP-E110] missing field `width` on `App`
            this is required through the dependency chain:

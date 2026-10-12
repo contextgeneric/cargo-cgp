@@ -9,15 +9,37 @@ use std::borrow::Cow;
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{
-    AmbiguousNames, DiagKind, Origin, bound_candidate_list, context_has_hasfield_impls,
-    is_method_probe_advice_text, is_question_mark_cascade_text, mentions_wiring_text,
-    postprocess_fragments, postprocess_message,
+    AmbiguousNames, COALESCED_SITE_LABEL, DiagKind, Origin, bound_candidate_list,
+    context_has_hasfield_impls, is_method_probe_advice_text, is_question_mark_cascade_text,
+    mentions_wiring_text, postprocess_fragments, postprocess_message,
 };
 use rustc_errors::codes::{E0271, E0599};
 use rustc_errors::{
     CodeSuggestion, DiagInner, DiagMessage, MultiSpan, Style, Subdiag, Sublevel, Suggestions,
 };
 use rustc_span::Span;
+
+/// The span of a block that coalesces `members`, ordered by source position: the first member's
+/// caret is the block's one primary span, and each other member's caret is a secondary span labelled
+/// [`COALESCED_SITE_LABEL`], so an editor shows the block as one diagnostic with related locations
+/// rather than one diagnostic per caret. A site repeated across members is labelled once.
+pub(crate) fn merged_span(members: &[&DiagInner]) -> MultiSpan {
+    let mut sites = members
+        .iter()
+        .filter_map(|member| member.span.primary_span());
+    let Some(first) = sites.next() else {
+        return MultiSpan::new();
+    };
+    let mut span = MultiSpan::from_span(first);
+    let mut labelled = vec![first];
+    for site in sites {
+        if !labelled.contains(&site) {
+            labelled.push(site);
+            span.push_span_label(site, COALESCED_SITE_LABEL);
+        }
+    }
+    span
+}
 
 /// The text of the diagnostic's main message, when it is a plain string.
 pub(crate) fn main_message_text(diag: &DiagInner) -> Option<&str> {

@@ -5,7 +5,7 @@ error[E0277]: [CGP-E001] the consumer trait `CanN` is not implemented for contex
     |         ^^^^^^^^^^^^^^^^^^
 ...
 102 |         ProviderRComponent,
-    |         ^^^^^^^^^^^^^^^^^^
+    |         ------------------ also required here
     |
     = note: root causes:
               - [CGP-E117] the trait bound `Outer: Linked` is not satisfied

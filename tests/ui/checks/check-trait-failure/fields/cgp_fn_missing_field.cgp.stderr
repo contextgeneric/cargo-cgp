@@ -5,7 +5,7 @@ error[E0277]: [CGP-E003] missing field `name` on `App`
    |                          ^^^
 ...
 47 | impl CheckGreeting for App {}
-   |                        ^^^
+   |                        --- also required here
    |
    = note: root cause: [CGP-E110] missing field `name` on `App`
            this is required through the dependency chain:

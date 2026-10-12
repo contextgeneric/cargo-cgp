@@ -5,7 +5,7 @@ error[E0277]: [CGP-E001] missing field `name` on `App`
    |         ^^^^^^^^^^^^^^^^^^^
 ...
 75 |     ) -> impl Future<Output = Self::Response> + Send {
-   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |          ------------------------------------------- also required here
    |
    = note: root cause: [CGP-E110] missing field `name` on `App`
            this is required through the dependency chain:

@@ -4,7 +4,7 @@
 //! `CanCalculateArea` and `CanReportHeight` are unrelated — neither depends on the other
 //! — yet both read the `height` field the `Rectangle` context is missing, so both fail
 //! with the same root cause. cargo-cgp coalesces them into a single `[CGP-E001]` block
-//! naming both consumers, with a caret per check entry and the shared cause shown once.
+//! naming both consumers, its caret on one check entry and a label on the other, and the cause once.
 //!
 //! Unlike `duplication/density_3.rs`, where `CanCalculateDensity`'s chain *subsumes*
 //! `CanCalculateArea`'s (density depends on area) and the merged block must lead with the

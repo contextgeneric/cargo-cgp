@@ -35,7 +35,7 @@ use crate::emitter::buffer::{BufEntry, ResolvedEntry};
 use crate::emitter::containment::contain;
 use crate::emitter::edit::{
     bound_candidate_lists, diag_kind, diagnostic_spans, is_question_mark_cascade,
-    main_message_text, mentions_hasfield_impls, mentions_wiring, message_signature,
+    main_message_text, mentions_hasfield_impls, mentions_wiring, merged_span, message_signature,
     postprocess_messages, postprocess_multispan, replace_header, rewrite_messages,
     strip_method_probe_advice, subdiag,
 };
@@ -242,7 +242,8 @@ impl<E: Emitter> CgpEmitter<E> {
     }
 
     /// Build the one merged block for a coalesced group of several failures sharing a root cause: a
-    /// headline stating the cause once ([`coalesced_headline`]), a caret at each failing site, and
+    /// headline stating the cause once ([`coalesced_headline`]), the first failing site in the source
+    /// as its caret and every other site as a labelled secondary span ([`merged_span`]), and
     /// one root-cause note built by folding *every* member's causes into a single dependency graph,
     /// so a chain that runs through another collapses into it, independent chains to the shared
     /// cause render side by side, and no member's chain is dropped. The headline takes the class
@@ -276,14 +277,7 @@ impl<E: Emitter> CgpEmitter<E> {
 
         let mut diag = diags[0].clone();
         diag.messages = vec![(DiagMessage::Str(headline.into()), Style::NoStyle)];
-        // One caret per failing entry, in arrival (check) order.
-        let mut span = MultiSpan::new();
-        for member in diags {
-            if let Some(primary) = member.span.primary_span() {
-                span.push_primary_span(primary);
-            }
-        }
-        diag.span = span;
+        diag.span = merged_span(diags);
         diag.children = children;
         diag.suggestions = Suggestions::Enabled(Vec::new());
         // The header, notes, and helps are freshly built, so post-process them (resugar `Symbol!`,

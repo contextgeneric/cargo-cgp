@@ -12,7 +12,7 @@
 //!
 //! Pins the shared-cause grouping that replaced it: the three failures form one group because each
 //! shares a cause with the union block, so a single `[CGP-E001]` block names both affected consumers,
-//! carets all three sites, lists both root causes, and renders both chains in full.
+//! points at all three sites (the first as its caret), lists both causes, and renders both chains.
 //!
 //! Reproduces the [check-trait failure] class.
 //!

@@ -68,6 +68,11 @@ fn capped_list(items: &[String]) -> String {
     )
 }
 
+/// The label on each failing site of a coalesced block after the first, which is the block's caret.
+/// An editor publishes one diagnostic per primary span, so the other sites ride as labelled
+/// secondary spans and the block stays one diagnostic.
+pub const COALESCED_SITE_LABEL: &str = "also required here";
+
 /// The headline of a block that coalesces several resolved failures sharing a root cause: the
 /// first member's class code, then the merged cause, or, for mixed causes, every member's class
 /// sentence with the cause count.

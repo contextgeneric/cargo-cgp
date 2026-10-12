@@ -4,9 +4,9 @@ error[E0277]: [CGP-E001] `HasField` not derived for field `name` of `App`
 88 |         BazComponent,
    |         ^^^^^^^^^^^^
 89 |         BarComponent,
-   |         ^^^^^^^^^^^^
+   |         ------------ also required here
 90 |         FooComponent,
-   |         ^^^^^^^^^^^^
+   |         ------------ also required here
    |
    = note: root cause: [CGP-E111] `HasField` not derived for field `name` of `App`
            this is required through the dependency chain:
