@@ -50,6 +50,13 @@ fn method_probe_advice_signal_matches_each_artifact() {
     assert!(is_method_probe_advice_text(
         "the candidates are defined in the trait `PairFormatter`"
     ));
+    // The structured suggestion's message, dropped while rustc's other suggestions stay.
+    assert!(is_method_probe_advice_text(
+        "use associated function syntax instead"
+    ));
+    assert!(!is_method_probe_advice_text(
+        "the following trait defines an item `describe`, perhaps you need to restrict type parameter `Value` with it:"
+    ));
     // The real unmet bound the same diagnostic carries is not probe advice — it must survive.
     assert!(!is_method_probe_advice_text(
         "trait bound `App: HasField<Symbol!(\"separator\")>` was not satisfied"

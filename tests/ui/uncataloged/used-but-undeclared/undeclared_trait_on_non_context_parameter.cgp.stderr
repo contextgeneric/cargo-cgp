@@ -15,5 +15,9 @@ note: the following trait bounds were not satisfied:
    |    ^^^^^^^^
    = help: items from traits can only be used if the type parameter is bounded by the trait
    = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: the following trait defines an item `describe`, perhaps you need to restrict type parameter `Value` with it:
+   |
+32 | impl<Value: Describe> Reporter<Value> {
+   |           ++++++++++
 
 For more information about this error, try `rustc --explain E0599`.

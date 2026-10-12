@@ -14,7 +14,9 @@ use cargo_cgp_error_processing::{
     postprocess_fragments, postprocess_message,
 };
 use rustc_errors::codes::{E0271, E0599};
-use rustc_errors::{DiagInner, DiagMessage, MultiSpan, Style, Subdiag, Sublevel, Suggestions};
+use rustc_errors::{
+    CodeSuggestion, DiagInner, DiagMessage, MultiSpan, Style, Subdiag, Sublevel, Suggestions,
+};
 use rustc_span::Span;
 
 /// The text of the diagnostic's main message, when it is a plain string.
@@ -94,12 +96,26 @@ pub(crate) fn is_question_mark_cascade(diag: &DiagInner) -> bool {
 /// "this is an associated function, not a method" caret label, the "found the following
 /// associated functions …" note with its "the candidate is defined in …" follow-up, and the
 /// "use associated function syntax instead" structured suggestion. All are artifacts of CGP's
-/// `self`-less provider methods ([`is_method_probe_advice_text`]) — the probe blames the call
-/// syntax, and the suggestion it offers is actively wrong — while the unmet wiring bound the
-/// diagnostic also names is the real cause, which this leaves in place (with the notes gone, it
-/// is the first thing after the caret).
+/// `self`-less provider methods ([`is_method_probe_advice_text`]): the probe blames the call
+/// syntax, and the suggestion it offers is wrong, while the unmet wiring bound the diagnostic
+/// also names is the real cause, which this leaves in place (with the notes gone, it is the first
+/// thing after the caret). rustc's other suggestions stay, such as the bound to restrict a type
+/// parameter with.
 pub(crate) fn strip_method_probe_advice(diag: &mut DiagInner) {
-    diag.suggestions = Suggestions::Enabled(Vec::new());
+    let is_advice = |suggestion: &CodeSuggestion| matches!(&suggestion.msg, DiagMessage::Str(text) if is_method_probe_advice_text(text));
+    match &mut diag.suggestions {
+        Suggestions::Enabled(suggestions) => {
+            suggestions.retain(|suggestion| !is_advice(suggestion))
+        }
+        Suggestions::Sealed(suggestions) => {
+            *suggestions = suggestions
+                .iter()
+                .filter(|suggestion| !is_advice(suggestion))
+                .cloned()
+                .collect();
+        }
+        Suggestions::Disabled => {}
+    }
     diag.children.retain(|child| {
         !child.messages.iter().any(|(message, _)| {
             matches!(message, DiagMessage::Str(text) if is_method_probe_advice_text(text))

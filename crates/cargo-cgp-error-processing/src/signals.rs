@@ -36,19 +36,21 @@ pub fn is_unbounded_type_param_item_text(text: &str) -> bool {
     text.contains("the type parameter is bounded by the trait")
 }
 
-/// Whether a message is part of rustc's method-probe advice on a CGP consumer-method failure —
-/// the "this is an associated function, not a method" caret label and the "found the following
-/// associated functions …" note (with its "the candidate is defined in …" follow-up). Both are
-/// artifacts of CGP's `self`-less provider methods: the probe sees the provider trait's
-/// associated fn and concludes the *call syntax* is wrong, when the real fault is an unmet
-/// wiring bound the same diagnostic already names. The emitter drops messages matching this on a
-/// method-bounds `E0599` that mentions a CGP wiring trait, so the misleading advice never
-/// outranks the real cause.
+/// Whether a message is part of rustc's method-probe advice on a CGP consumer-method failure: the
+/// "this is an associated function, not a method" caret label, the "found the following
+/// associated functions …" note (with its "the candidate is defined in …" follow-up), and the
+/// "use associated function syntax instead" suggestion. All are artifacts of CGP's `self`-less
+/// provider methods: the probe sees the provider trait's associated fn and concludes the *call
+/// syntax* is wrong, when the real fault is an unmet wiring bound the same diagnostic already
+/// names. The emitter drops messages matching this on a method-bounds `E0599` that mentions a CGP
+/// wiring trait, so the misleading advice never outranks the real cause, and keeps rustc's other
+/// suggestions.
 pub fn is_method_probe_advice_text(text: &str) -> bool {
     text.contains("this is an associated function, not a method")
         || text.starts_with("found the following associated functions")
         || text.starts_with("the candidate is defined in")
         || text.starts_with("the candidates are defined in")
+        || text.starts_with("use associated function syntax instead")
 }
 
 /// Whether a main message is the orphan-rule `E0210` naming a CGP machinery type parameter —
