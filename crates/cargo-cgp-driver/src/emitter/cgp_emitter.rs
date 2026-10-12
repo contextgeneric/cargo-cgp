@@ -1251,8 +1251,8 @@ impl<E: Emitter> CgpEmitter<E> {
         // its method cannot resolve on the generated `__Context__` generic, and rustc reports a
         // vague `E0599` pointing at a transitive `HasField` bound. Reword it to name the trait
         // and carry the `#[uses(…)]` fix in a `help`, keeping the caret on the failing call. Recording
-        // the span drops the unsized-`[u8]` cascade the failed method resolution trails on the same
-        // expression.
+        // the span lets a `?`-operator cascade on the same expression be dropped; an unsized-`[T]`
+        // cascade the failed resolution trails is left in place (see the `?` cascade below).
         if let Some(undeclared) = self.undeclared_trait(&diag)
             && let Some(primary_span) = diag.span.primary_span()
         {
