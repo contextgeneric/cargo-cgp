@@ -1,7 +1,7 @@
 error[E0107]: [CGP-E032] `CanCalculateArea` is a consumer trait, but a `#[cgp_impl]` provider must implement its provider trait `AreaCalculator`
-  --> src/main.rs:23:6
+  --> src/main.rs:27:6
    |
-23 | impl CanCalculateArea {
+27 | impl CanCalculateArea {
    |      ^^^^^^^^^^^^^^^^
    |
    = help: change the impl header to target the provider trait: `impl AreaCalculator` (not `impl CanCalculateArea`)

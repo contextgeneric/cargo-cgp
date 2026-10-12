@@ -6,10 +6,14 @@
 //! `[CGP-E032]`, naming both halves and the header to write. It is the one-line minimal pair of
 //! `base_area_1_1`, which writes the header correctly.
 //!
+//! `Rectangle` also lacks the `height` field the provider reads, a second mistake the compiler
+//! reports on the check through the provider's requirements. The tool drops that error as a
+//! consequence of the header, so the missing field surfaces only once the header is fixed.
+//!
 //! CGP error class: the wrong half of a component, not yet in the catalog
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md#a-gap-the-used-but-undeclared-and-wrong-half-classes).
 
-//@quality: acceptable
+//@quality: usability
 //@codes: CGP-E032
 
 use cgp::prelude::*;
