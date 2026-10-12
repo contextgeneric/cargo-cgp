@@ -201,6 +201,34 @@ fn strips_module_paths_to_the_final_segment() {
 }
 
 #[test]
+fn strip_module_paths_keeps_the_type_an_item_belongs_to() {
+    // A module is named in lowercase and a type or trait in uppercase, so only the module segments
+    // go: a trait's method keeps its trait, and `Self::Output` keeps `Self`.
+    assert_eq!(
+        strip_module_paths("required by a bound in `cgp::prelude::TryComputer::try_compute`")
+            .as_deref(),
+        Some("required by a bound in `TryComputer::try_compute`"),
+    );
+    assert_eq!(strip_module_paths("`Self::Output`"), None);
+    // A run with no uppercase segment, such as a free function's path, keeps its last segment.
+    assert_eq!(
+        strip_module_paths("`std::mem::swap`").as_deref(),
+        Some("`swap`")
+    );
+}
+
+#[test]
+fn unambiguous_path_strip_reads_the_item_a_method_belongs_to() {
+    // The ambiguity check reads the path to the type, `finance::Quantity`, not the whole run.
+    let ambiguous =
+        AmbiguousNames::new([("Quantity".to_owned(), vec!["finance::Quantity".to_owned()])]);
+    assert_eq!(
+        strip_unambiguous_paths("`finance::Quantity::new`", &ambiguous).as_deref(),
+        Some("`Quantity::new`"),
+    );
+}
+
+#[test]
 fn strip_module_paths_keeps_generics_and_bare_names() {
     // A qualified type inside generics is collapsed to its tail; a bare name and a primitive are
     // left alone; a turbofish and an associated-type `>::Assoc` tail are not identifier runs.

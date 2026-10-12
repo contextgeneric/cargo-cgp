@@ -1,10 +1,14 @@
-//! Post-processor: strip module qualifiers from every path, leaving the bare final segment.
+//! Post-processor: strip module qualifiers from every path, leaving the item the path names.
 //!
 //! rustc prints types and traits fully qualified — `contexts::app::MockApp`,
 //! `interfaces::types::QuantityTypeProviderComponent`, `std::cmp::Eq` — which is noise in a CGP
 //! diagnostic, where the bare name (`MockApp`, `QuantityTypeProviderComponent`, `Eq`) is what the
-//! programmer wrote and reads. This collapses each `a::b::C` run to its last segment `C`, in both
-//! the rewritten CGP messages and the resugaring fallback, so the two read the same. It subsumes
+//! programmer wrote and reads. This drops the module segments of each `a::b::C` run, in both
+//! the rewritten CGP messages and the resugaring fallback, so the two read the same. A module is
+//! named in lowercase and a type or trait in uppercase, so the run keeps everything from its first
+//! uppercase segment: an item inside a trait or type keeps its qualifier
+//! (`cgp::prelude::TryComputer::try_compute` reads `TryComputer::try_compute`), while a run with
+//! no uppercase segment, such as a free function's path, keeps only its last segment. It subsumes
 //! [`strip_cgp_prefixes`](super::strip_prefixes) (a `cgp::prelude::Chars` is just one such run) and
 //! runs first, before the resugaring stages, so they match the bare names.
 //!
@@ -44,8 +48,10 @@ pub fn strip_unambiguous_paths(text: &str, ambiguous: &AmbiguousNames) -> Option
     })
 }
 
-/// Collapse each `a::b::C` identifier run that `collapse` accepts, given the whole run and its first
-/// and last segments, to its last segment, leaving string literals and every other run alone.
+/// Collapse each `a::b::C` identifier run that `collapse` accepts, given the path to the item the run
+/// names, its first segment, and that item's name, to the run's tail from the item: the run from its first uppercase
+/// segment (`TryComputer::try_compute`), or its last segment when no earlier segment is uppercase.
+/// String literals and every other run are left alone.
 fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Option<String> {
     let bytes = text.as_bytes();
     let mut out = String::with_capacity(text.len());
@@ -83,12 +89,17 @@ fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Op
             // the module qualifiers before it.
             let mut j = i;
             let mut first_end = None;
+            // Where the item path begins: the first segment named in uppercase, if any.
+            let mut item_start: Option<usize> = None;
             loop {
                 let seg_start = j;
                 while j < bytes.len() && is_ident_char(bytes[j]) {
                     j += 1;
                 }
                 let first_end = *first_end.get_or_insert(j);
+                if item_start.is_none() && bytes[seg_start].is_ascii_uppercase() {
+                    item_start = Some(seg_start);
+                }
                 // Continue the run only across a `::` that is followed by another identifier —
                 // not a turbofish `::<` and not a trailing `::` before a non-identifier.
                 if j + 2 < bytes.len()
@@ -99,9 +110,18 @@ fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Op
                     j += 2;
                     continue;
                 }
-                if seg_start != i && collapse(&text[i..j], &text[i..first_end], &text[seg_start..j])
+                let tail_start = item_start.unwrap_or(seg_start);
+                let name_end = text[tail_start..j]
+                    .find("::")
+                    .map_or(j, |at| tail_start + at);
+                if tail_start != i
+                    && collapse(
+                        &text[i..name_end],
+                        &text[i..first_end],
+                        &text[tail_start..name_end],
+                    )
                 {
-                    out.push_str(&text[seg_start..j]);
+                    out.push_str(&text[tail_start..j]);
                     changed = true;
                 } else {
                     out.push_str(&text[i..j]);

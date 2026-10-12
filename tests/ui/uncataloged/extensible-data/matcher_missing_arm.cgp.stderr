@@ -17,7 +17,7 @@ help: the trait `FinalizeExtract` is implemented for `__PartialShape<IsVoid, IsV
 27 | pub enum Shape {
    |          ^^^^^
    = note: required for the provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>]>` to implement the provider trait `Computer` for the context `()`
-note: required by a bound in `compute`
+note: required by a bound in `Computer::compute`
   --> $CGP/crates/extra/cgp-handler/src/components/computer.rs:8:1
    |
  8 | #[cgp_component(Computer)]
