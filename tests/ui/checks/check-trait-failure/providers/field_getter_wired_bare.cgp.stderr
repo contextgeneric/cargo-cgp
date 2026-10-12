@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] `ReadDisplayName` is not a provider of `NameGetter`
+error[E0277]: [CGP-E001] `ReadDisplayName` is not a provider of `NameGetter`
   --> src/main.rs:46:9
    |
 46 |         NameGetterComponent,

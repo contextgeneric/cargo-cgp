@@ -1,6 +1,8 @@
 //! The class headline of a resolved failure, and the helpers the cause sentences share.
 
-use crate::code::{CONSUMER_TRAIT_UNIMPLEMENTED, WRAPPER_TRAIT_UNIMPLEMENTED};
+use crate::code::{
+    CONSUMER_TRAIT_UNIMPLEMENTED, PROVIDER_TRAIT_UNIMPLEMENTED, WRAPPER_TRAIT_UNIMPLEMENTED,
+};
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
 
@@ -22,8 +24,16 @@ pub fn quoted_list(items: &[String]) -> String {
 /// `#[cgp_fn]` blanket trait) reads as `the trait …`, chosen by [`Resolved::consumers_are_cgp`].
 /// The subject is named `context \`X\`` when it is the checked context, or plainly `` `X` `` when
 /// it is a foreign type that merely holds the context (`Router<Arc<MockApp>>`), chosen by
-/// [`Resolved::subject_is_context`].
+/// [`Resolved::subject_is_context`]. A `#[check_providers]` entry reads as the provider trait the
+/// listed provider fails to implement for the context.
 pub fn class_sentence(resolved: &Resolved) -> String {
+    if let Some(provider) = &resolved.provider {
+        return format!(
+            "the provider trait {} with context `{}` is not implemented for provider `{provider}`",
+            quoted_list(&resolved.consumers),
+            resolved.context,
+        );
+    }
     let (noun, verb) = if resolved.consumers.len() == 1 {
         ("trait", "is")
     } else {
@@ -45,10 +55,13 @@ pub fn class_sentence(resolved: &Resolved) -> String {
     format!("the {kind}{noun} {list} {verb} not implemented for {subject}")
 }
 
-/// The class code of a resolved failure: `CGP-E001` for a CGP consumer trait, `CGP-E003` for a
+/// The class code of a resolved failure, chosen by the anchor that matched the caret: `CGP-E002`
+/// for a `#[check_providers]` entry, `CGP-E001` for a CGP consumer trait, and `CGP-E003` for a
 /// trait that is not one.
 pub fn class_code(resolved: &Resolved) -> &'static str {
-    if resolved.consumers_are_cgp {
+    if resolved.provider.is_some() {
+        PROVIDER_TRAIT_UNIMPLEMENTED
+    } else if resolved.consumers_are_cgp {
         CONSUMER_TRAIT_UNIMPLEMENTED
     } else {
         WRAPPER_TRAIT_UNIMPLEMENTED

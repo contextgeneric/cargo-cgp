@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] `SayBye` is not a provider of `Greeter`
+error[E0277]: [CGP-E001] `SayBye` is not a provider of `Greeter`
   --> src/main.rs:58:9
    |
 58 |         GreeterComponent,

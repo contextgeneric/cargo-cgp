@@ -87,6 +87,7 @@ fn cgp_resolved(context: &str, consumers: &[&str], causes: Vec<Cause>) -> Resolv
         consumers: consumers.iter().map(|c| (*c).to_owned()).collect(),
         consumers_are_cgp: true,
         subject_is_context: true,
+        provider: None,
         causes: causes.into_iter().collect(),
     }
 }

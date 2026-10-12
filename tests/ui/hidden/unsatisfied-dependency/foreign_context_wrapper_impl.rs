@@ -14,7 +14,7 @@
 
 //@aux-build: cgp-test-foreign-pipeline
 //@quality: acceptable
-//@codes: CGP-E002 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E113
+//@codes: CGP-E003 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E113
 
 use cgp::extra::handler::CanHandle;
 use cgp::prelude::*;

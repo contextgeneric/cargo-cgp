@@ -1,13 +1,16 @@
 //! `#[check_providers(GreetHello)]` on a fieldless context.
 //!
-//! A raw `E0277` on `App: HasField<Symbol!("name")>` with the derive help, no code and no tree.
+//! The entry checks `GreetHello` directly, whatever `App` wires, so the tool anchors on it and walks
+//! `GreetHello: Greeter<App>`: a `[CGP-E002]` block stating the missing `name` field over a tree that
+//! starts at the provider. Plain rustc reports the `HasField` bound with a `#[derive(HasField)]` help
+//! that does not fit a struct without the field.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 //!
 //! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: usability
-//@codes: none
+//@codes: CGP-E002 CGP-E102 CGP-E110
 
 use cgp::prelude::*;
 

@@ -1,16 +1,16 @@
 //! A `#[check_providers(...)]` per-layer assertion failing on the outer layer.
 //!
 //! The provider-side check form asserts `IsProviderFor` on each listed provider
-//! directly, so a broken layer of a higher-order stack errors on its own line. The
-//! diagnostic opens on the `IsProviderFor` bound itself, with no `CanUseComponent` check
-//! impl to anchor on, but the use-site anchor still reaches it: the tool resolves it into a
-//! `[CGP-E001]` tree whose chain runs through the failing layer to its missing field.
+//! directly, so a broken layer of a higher-order stack errors on its own line. The tool anchors
+//! on the entry's generated check impl, whose `Self` is the listed provider, and walks the provider
+//! obligation, so the block is the provider class `[CGP-E002]` and its tree starts at the failing
+//! layer and runs to its missing field.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/higher-order-provider-layer.md.
 
 //@quality: acceptable
-//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110
+//@codes: CGP-E002 CGP-E102 CGP-E104 CGP-E110
 
 use cgp::prelude::*;
 

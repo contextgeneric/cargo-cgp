@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] missing field `width` on `App`
+error[E0277]: [CGP-E001] missing field `width` on `App`
   --> src/main.rs:55:9
    |
 55 |         ProviderAComponent,

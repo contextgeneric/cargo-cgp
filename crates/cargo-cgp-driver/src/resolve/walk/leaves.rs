@@ -11,7 +11,7 @@ use crate::resolve::cgp_item::{
     is_cgp_item, is_consumer_trait, is_local_adt, trim_unknown_path_tail,
 };
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
-use crate::resolve::label::{label_for, trait_generics};
+use crate::resolve::label::{label_for, render_ty, trait_generics};
 use crate::resolve::walk::{
     ProjectionMismatch, holds, impl_where_obligations, is_descendable, is_has_field,
     is_workaround_plumbing, may_hold_for_some_unknown, projection_mismatch,
@@ -50,6 +50,30 @@ pub(crate) fn resolve_leaves<'tcx>(
     let top = tcx.erase_and_anonymize_regions(top);
     let context = top.skip_binder().self_ty();
     compute_leaves(tcx, cache, top, context)
+}
+
+/// Walk the dependency graph of `top`, the provider obligation `Provider: ProviderTrait<Ctx, …>` a
+/// `#[check_providers]` entry asserts, with `context` as the walk's root context. The result is the
+/// provider class: its trait is the provider trait (named without the provider and the context),
+/// and its [`provider`](Resolved::provider) is the provider the entry lists. `None` when no branch
+/// reaches a resolvable leaf.
+pub(crate) fn resolve_provider_leaves<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    cache: &ResolveCache,
+    top: ty::PolyTraitClause<'tcx>,
+    context: Ty<'tcx>,
+) -> Option<Resolved> {
+    let top = tcx.erase_and_anonymize_regions(top);
+    let context = tcx.erase_and_anonymize_regions(context);
+    let mut resolved = compute_leaves(tcx, cache, top, context)?;
+    let top_ref = top.skip_binder().trait_ref;
+    resolved.consumers = vec![format!(
+        "{}{}",
+        tcx.item_name(top_ref.def_id),
+        trait_generics(tcx, top_ref, 2)
+    )];
+    resolved.provider = Some(render_ty(tcx, top_ref.self_ty()));
+    Some(resolved)
 }
 
 /// Whether walking `top` is cut short: the cycle guard met an obligation among its own ancestors,
@@ -104,6 +128,7 @@ fn compute_leaves<'tcx>(
         consumers_are_cgp: true,
         // The subject is the checked context itself.
         subject_is_context: true,
+        provider: None,
         causes,
     })
 }

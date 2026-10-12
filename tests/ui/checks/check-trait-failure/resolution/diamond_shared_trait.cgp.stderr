@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] missing field `name` on `App`
+error[E0277]: [CGP-E001] missing field `name` on `App`
    --> src/main.rs:102:9
     |
 102 |         TopProviderComponent,

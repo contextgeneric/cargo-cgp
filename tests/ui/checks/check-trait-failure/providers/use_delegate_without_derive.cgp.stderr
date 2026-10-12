@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] `UseDelegate<AreaTable>` is not a provider of `AreaCalculator`
+error[E0277]: [CGP-E001] `UseDelegate<AreaTable>` is not a provider of `AreaCalculator`
   --> src/main.rs:41:9
    |
 41 |         AreaCalculatorComponent: Square,

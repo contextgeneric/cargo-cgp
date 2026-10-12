@@ -21,7 +21,7 @@
 //! cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md (diamond reuse).
 
 //@quality: acceptable
-//@codes: CGP-E002 CGP-E101 CGP-E102 CGP-E104 CGP-E110
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110
 
 use cgp::prelude::*;
 

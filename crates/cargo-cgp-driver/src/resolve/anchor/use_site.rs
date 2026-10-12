@@ -58,6 +58,7 @@ pub fn resolve_use_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -
                 consumers_are_cgp: true,
                 // The subject is the checked context itself.
                 subject_is_context: true,
+                provider: None,
                 causes: Causes::union(causes),
             });
         }

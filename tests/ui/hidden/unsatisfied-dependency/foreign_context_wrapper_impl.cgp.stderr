@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] missing wiring for `@ErrorRaiserComponent.IoFailure` on `App`
+error[E0277]: [CGP-E003] missing wiring for `@ErrorRaiserComponent.IoFailure` on `App`
   --> src/main.rs:25:21
    |
 25 | impl CanRunEcho for App {}

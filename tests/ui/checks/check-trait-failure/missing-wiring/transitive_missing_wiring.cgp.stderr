@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] missing entry for `BarProviderComponent` in provider `CommonProvider`
+error[E0277]: [CGP-E001] missing entry for `BarProviderComponent` in provider `CommonProvider`
   --> src/main.rs:57:9
    |
 57 |         FooProviderComponent,

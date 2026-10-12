@@ -1,8 +1,10 @@
 //! Recovering the starting obligation of a check failure.
 //!
-//! Five entry points recover the obligation differently, then feed the same
+//! Six entry points recover the obligation differently, then feed the same
 //! [walk](crate::resolve::walk): [`resolve_check_failure`] anchors on a `check_components!` entry
-//! (by matching the failing diagnostic's caret to the check impl's `Self`-type span);
+//! (by matching the failing diagnostic's caret to the check impl's `Self`-type span), and
+//! [`resolve_provider_check`] on a `#[check_providers]` entry the same way, seeding the walk with
+//! the provider obligation it asserts;
 //! [`resolve_impl_site`] handles a wiring failure surfaced *inside a hand-written `impl Trait for
 //! Context` block* (by recovering the exact failing obligation — with its concrete component
 //! parameters — from the impl's CGP consumer supertrait); [`resolve_wrapper_chain`] handles the same
@@ -12,7 +14,7 @@
 //! consumer-method `E0599` (by recovering the context ADT from the diagnostic's spans and
 //! re-checking the parameterless form of every component that context wires); and
 //! [`resolve_use_site_consumer`] anchors on the consumer trait the diagnostic names, which is what
-//! reaches a namespace-joined context. A sixth anchor lives in its own module,
+//! reaches a namespace-joined context. A seventh anchor lives in its own module,
 //! [`call_site`](crate::resolve::call_site): the last resort that re-reads the failing call
 //! expression itself.
 //!
@@ -21,6 +23,7 @@
 
 mod check_failure;
 mod impl_site;
+mod provider_check;
 mod seed;
 mod spans;
 mod use_site;
@@ -29,6 +32,7 @@ mod wrapper_chain;
 
 pub use check_failure::*;
 pub use impl_site::*;
+pub use provider_check::*;
 pub(crate) use seed::*;
 pub(crate) use spans::*;
 pub use use_site::*;

@@ -162,6 +162,11 @@ pub struct Resolved {
     /// header calls the subject a `context` or names it plainly, so a foreign wrapper is not
     /// mislabelled a context.
     pub subject_is_context: bool,
+    /// The provider a `#[check_providers]` entry checks, when the failure is that entry's: the
+    /// block is then the provider class (`CGP-E002`), and [`consumers`](Resolved::consumers) holds
+    /// the provider trait the provider fails to implement for [`context`](Resolved::context).
+    /// `None` for every other anchor.
+    pub provider: Option<String>,
     /// The root causes, one entry per distinct leaf, in first-seen order.
     pub causes: Causes,
 }

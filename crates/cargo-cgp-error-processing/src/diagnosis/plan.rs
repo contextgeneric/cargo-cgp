@@ -48,6 +48,10 @@ pub struct DiagnosisPlan {
     /// failure would be worded by the text rewrite. The de-duplication ledger matches on it; it is
     /// shown only when the causes are too mixed to state at once. `None` exactly when `header` is.
     pub class_header: Option<String>,
+    /// The headline a declined re-report of the same failure would carry when it differs from the
+    /// class headline: the provider form the text rewrite gives an `IsProviderFor` headline the
+    /// resolver classed by its consumer. The ledger records it as a second key.
+    pub declined_header: Option<String>,
     /// The `help` messages naming each fix the causes call for — a type that must derive
     /// `HasField`, or an abstract type whose wiring must change (see
     /// [`fix_help_messages`](super::fix_help_messages)).
@@ -105,7 +109,11 @@ pub fn plan_resolved(
     resolved: &Resolved,
     names: &ComponentNameMap,
 ) -> DiagnosisPlan {
-    let Header { text, states_leaf } = categorized_header(kind, main_message, resolved, names);
+    let Header {
+        text,
+        states_leaf,
+        declined,
+    } = categorized_header(kind, main_message, resolved, names);
     // The leaf the main message already states, whether because the header was *rewritten* from
     // that leaf or because rustc's kept header restates the ordinary bound the walk descended to.
     // Its note then drops the `root cause:` lead rather than repeating the header.
@@ -135,6 +143,7 @@ pub fn plan_resolved(
     DiagnosisPlan {
         header,
         class_header: text,
+        declined_header: declined,
         helps,
         note: PendingNote {
             header_leaf: header_leaf.cloned(),
@@ -150,6 +159,9 @@ struct Header<'a> {
     /// The leaf the rewritten message states in full, when it was worded from one — so the note can
     /// drop that leaf's now-redundant `root cause:` lead.
     states_leaf: Option<&'a Leaf>,
+    /// The headline the text rewrite gives rustc's own message, when it is a different class
+    /// sentence a declined re-report of the same failure would carry.
+    declined: Option<String>,
 }
 
 impl Header<'_> {
@@ -158,6 +170,7 @@ impl Header<'_> {
         Header {
             text: None,
             states_leaf: None,
+            declined: None,
         }
     }
 
@@ -167,6 +180,7 @@ impl Header<'_> {
         Header {
             text: Some(text),
             states_leaf: None,
+            declined: None,
         }
     }
 }
@@ -176,11 +190,10 @@ impl Header<'_> {
 /// `f64: Eq` the solver already descended to). A projection mismatch ([`DiagKind::TypeMismatch`])
 /// is the `[CGP-E004]` field class when the resolver traced it to a `HasField` projection, or the
 /// `[CGP-E005]` abstract-type class for any other associated type, each worded as its mismatch
-/// cause and reported as the leaf it states, so its note drops the now redundant lead. An
-/// unsatisfied `CanUseComponent` bound and a consumer-method [`DiagKind::MethodNotFound`] (whose
-/// text names no wiring trait) are both worded from the typed resolution, whose full-path marker
-/// keys make the consumer name exact; an unsatisfied `IsProviderFor` bound rewrites by its text,
-/// since the resolution does not carry the provider-side names.
+/// cause and reported as the leaf it states, so its note drops the now redundant lead. Every other
+/// class is worded from the typed resolution, whose anchor decides it: the provider class for a
+/// `#[check_providers]` entry, the consumer class for a CGP consumer trait, and the plain-trait
+/// class for any other trait, whatever bound rustc's own headline stopped on.
 fn categorized_header<'a>(
     kind: DiagKind,
     main_message: Option<&str>,
@@ -196,6 +209,7 @@ fn categorized_header<'a>(
             return Header {
                 text: Some(format!("[{FIELD_TYPE_MISMATCH}] {}", root_cause_lead(leaf))),
                 states_leaf: Some(leaf),
+                declined: None,
             };
         }
         if let Some(leaf) = assoc_mismatch_leaf(resolved) {
@@ -205,6 +219,7 @@ fn categorized_header<'a>(
                     root_cause_lead(leaf)
                 )),
                 states_leaf: Some(leaf),
+                declined: None,
             };
         }
     }
@@ -224,17 +239,17 @@ fn categorized_header<'a>(
             if parsed.trait_name == "CanUseComponent" {
                 return Header::rewritten(consumer_header(resolved));
             }
-            // An `IsProviderFor` bound whose subject is a `RedirectLookup` names only redirect
-            // plumbing — the lookup resolved to *no* provider at all (the wiring is missing), so
-            // there is no real provider to report. Naming `RedirectLookup<Ctx, @Path>` as the
-            // "provider" leaks a type the programmer never wrote and stops at the redirect rather
-            // than following through it. The resolution already recovered the consumer the redirect
-            // stands for and the missing-wiring cause beneath it, so word the header from that
-            // consumer instead — the same `[CGP-E001]` form the use-site path uses. (A real wired
-            // provider whose dependency fails — `SerializeIterator`, say — keeps the provider form
-            // below, since it names something the programmer chose.)
-            if parsed.trait_name == "IsProviderFor" && subject_is_redirect_lookup(parsed.subject) {
-                return Header::rewritten(consumer_header(resolved));
+            // The class follows the anchor, never the provider rustc's bound happened to stop on:
+            // that may be dispatch plumbing, a `RedirectLookup`, or a provider deep in the chain,
+            // none of which the programmer asserted on. Only a `#[check_providers]` entry, whose
+            // anchor records its provider, is the provider class. The provider form the text
+            // rewrite gives rustc's own headline is kept as a second key, since a declined
+            // re-report of the same failure is worded with it.
+            if parsed.trait_name == "IsProviderFor" {
+                return Header {
+                    declined: rewrite_trait_bound(text, names),
+                    ..Header::rewritten(consumer_header(resolved))
+                };
             }
             // rustc opened the diagnostic on a bound that restates a genuine recovered leaf — an
             // ordinary bound such as `f64: Eq` the solver descended to *is* the root cause — so
@@ -244,17 +259,9 @@ fn categorized_header<'a>(
                 return Header::keep();
             }
         }
-        // A failure recovered at the use site reports the consumer trait the *call* needs. rustc's
-        // own headline names whichever provider bound its solver stopped on — at a use site that is
-        // usually dispatch plumbing (`PipeHandlers`, `ComposeHandlers`) the programmer never
-        // asserted on, so the provider-form rewrite below would leak internals the call never
-        // mentions. (A provider-side headline the programmer *did* assert — a `#[check_providers]`
-        // layer — arrives as a `Check`, not a use-site kind, and keeps the provider form.)
+        // A failure recovered at the use site reports the consumer trait the *call* needs.
         if kind == DiagKind::MethodNotFound {
             return Header::rewritten(consumer_header(resolved));
-        }
-        if let Some(rewritten) = rewrite_trait_bound(text, names) {
-            return Header::rewritten(rewritten);
         }
         // The main message is a trait bound, but not a recognized CGP wiring bound and not a
         // recovered leaf: rustc descended to a mid-chain *symptom* (a getter bound on a request,
@@ -268,29 +275,6 @@ fn categorized_header<'a>(
         return Header::rewritten(consumer_header(resolved));
     }
     Header::keep()
-}
-
-/// Whether a trait bound's subject (self type) is CGP's `RedirectLookup` provider — the redirect
-/// plumbing an `open`/namespace lookup routes through. Strips a leading `for<…>` higher-ranked
-/// binder (a higher-ranked obligation prints as `for<'a> RedirectLookup<…>`), then the type's own
-/// generic arguments and any module path, so it matches on the bare head segment.
-fn subject_is_redirect_lookup(subject: &str) -> bool {
-    let subject = subject.trim();
-    // Drop a leading `for<'a, …>` binder; its `>` is the first one, since a lifetime list carries
-    // no nested `<`.
-    let ty = subject
-        .strip_prefix("for<")
-        .and_then(|rest| rest.split_once('>'))
-        .map(|(_, rest)| rest.trim())
-        .unwrap_or(subject);
-    ty.split('<')
-        .next()
-        .unwrap_or("")
-        .rsplit("::")
-        .next()
-        .unwrap_or("")
-        .trim()
-        == "RedirectLookup"
 }
 
 /// Whether `bound` — the whole `Self: Trait<…>` restatement rustc's main message opened with —

@@ -113,7 +113,8 @@ type ChainNodeSet = HashSet<ChainNode>;
 /// coalesce with others sharing its cause.
 struct TransformedResolution {
     note: PendingNote,
-    class_header: Option<String>,
+    /// The class headline, and the provider form a declined re-report may carry instead.
+    headers: Vec<String>,
     coalesces: bool,
 }
 
@@ -242,9 +243,8 @@ impl<E: Emitter> CgpEmitter<E> {
     /// headline stating the cause once ([`coalesced_headline`]), a caret at each failing site, and
     /// one root-cause note built by folding *every* member's causes into a single dependency graph,
     /// so a chain that runs through another collapses into it, independent chains to the shared
-    /// cause render side by side, and no member's chain is dropped. The headline takes the first
-    /// member's class code; a provider-side `[CGP-E002]` member is worded as the consumer it checks,
-    /// since a `check_components!` entry failing *is* the consumer trait failing.
+    /// cause render side by side, and no member's chain is dropped. The headline takes the class
+    /// code of the member written first in the source.
     fn merged_diag(
         &self,
         resolveds: &[&Resolved],
@@ -793,6 +793,8 @@ impl<E: Emitter> CgpEmitter<E> {
             // as a consumer-method call, whose obligation no check impl carries — recover the
             // context from the diagnostic's spans.
             let resolved = resolve::resolve_check_failure(tcx, cache, primary_span)
+                // A `#[check_providers]` entry is anchored the same way, on the provider it lists.
+                .or_else(|| resolve::resolve_provider_check(tcx, cache, primary_span))
                 .or_else(|| resolve::resolve_impl_site(tcx, cache, primary))
                 .or_else(|| resolve::resolve_wrapper_chain(tcx, cache, primary))
                 .or_else(|| resolve::resolve_use_site(tcx, cache, &spans))
@@ -872,7 +874,11 @@ impl<E: Emitter> CgpEmitter<E> {
 
         TransformedResolution {
             note: plan.note,
-            class_header: plan.class_header,
+            headers: plan
+                .class_header
+                .into_iter()
+                .chain(plan.declined_header)
+                .collect(),
             coalesces,
         }
     }
@@ -1046,7 +1052,7 @@ impl<E: Emitter> CgpEmitter<E> {
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
         // resolver declines, the wiring-message rename runs as the first fallback pass. A resolved
         // failure also yields its span-independent cause signature, for the de-duplication below.
-        let mut class_header = None;
+        let mut class_headers: Vec<String> = Vec::new();
         let (rewritten, cause_sig, resolution) =
             if let Some((resolved, span, at_call)) = self.try_resolve(&diag) {
                 // The downstream check re-report of a `#[cgp_impl]` consumer-trait mistake (its
@@ -1061,7 +1067,7 @@ impl<E: Emitter> CgpEmitter<E> {
                 // failure it shares a root cause with; a mismatch or a kept rustc headline emits on
                 // its own. Every resolution defers its note to the flush, so all of them elide
                 // against one another.
-                class_header = transformed.class_header;
+                class_headers = transformed.headers;
                 let coalescing = transformed.coalesces;
                 (
                     true,
@@ -1124,13 +1130,18 @@ impl<E: Emitter> CgpEmitter<E> {
         // own transformed diagnostics are de-duplicated; an untouched `rustc` error always passes
         // through. cargo re-counts the diagnostics the emitter produces, so a suppressed re-report
         // drops out of its "N errors" summary as well, keeping the count consistent. A resolved
-        // failure records its class headline, not the cause it displays, since a declined re-report
-        // of the same failure is worded with the class sentence.
+        // failure records its class headlines, not the cause it displays, since a declined re-report
+        // of the same failure is worded with a class sentence.
+        let headers: Vec<&str> = if class_headers.is_empty() {
+            main_message_text(&diag).into_iter().collect()
+        } else {
+            class_headers.iter().map(String::as_str).collect()
+        };
         if rewritten
             && self.dedup.check_and_record(
                 cause_sig.as_deref(),
                 || message_signature(&diag),
-                class_header.as_deref().or_else(|| main_message_text(&diag)),
+                &headers,
             )
         {
             return;

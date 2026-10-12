@@ -32,6 +32,7 @@ fn failure(context: &str, consumer: &str, fields: &[&str]) -> Resolved {
         consumers: vec![consumer.to_owned()],
         consumers_are_cgp: true,
         subject_is_context: true,
+        provider: None,
         causes,
     }
 }

@@ -95,6 +95,7 @@ pub fn resolve_wrapper_chain(
                 // `Self` is a foreign wrapper holding the context, not the context itself — reached
                 // here only *because* it is not the context (else `resolve_impl_site` caught it).
                 subject_is_context: false,
+                provider: None,
                 causes,
             });
         }

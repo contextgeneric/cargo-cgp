@@ -60,3 +60,30 @@ fn life_region<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<ty::Region<'tcx>
     }
     args.regions().next()
 }
+
+/// Build `Provider: ProviderTrait<Context, Params…>` from a provider, its component's provider and
+/// consumer traits, the context, and the component's `Params` slot. The slot is ungrouped against
+/// the consumer trait by [`consumer_obligation`], whose arguments the provider trait shares: a
+/// `#[cgp_component]` provider trait takes the consumer's lifetimes first, then the context, then
+/// the consumer's type parameters. `None` when that layout does not match the provider trait's
+/// own generics, so the caller declines rather than hand the solver a malformed obligation.
+pub(crate) fn provider_obligation<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    provider: Ty<'tcx>,
+    provider_did: DefId,
+    context: Ty<'tcx>,
+    consumer_did: DefId,
+    params: Ty<'tcx>,
+) -> Option<ty::PolyTraitClause<'tcx>> {
+    let consumer = consumer_obligation(tcx, context, consumer_did, params)?;
+    let consumer_args = &consumer.skip_binder().trait_ref.args[1..];
+    let mut args: Vec<ty::GenericArg<'tcx>> = vec![provider.into()];
+    args.extend(consumer_args.iter().filter(|arg| arg.as_region().is_some()));
+    args.push(context.into());
+    args.extend(consumer_args.iter().filter(|arg| arg.as_region().is_none()));
+    if args.len() != tcx.generics_of(provider_did).count() {
+        return None;
+    }
+    let trait_ref = ty::TraitRef::new(tcx, provider_did, args);
+    Some(ty::Binder::dummy(trait_ref).upcast(tcx))
+}

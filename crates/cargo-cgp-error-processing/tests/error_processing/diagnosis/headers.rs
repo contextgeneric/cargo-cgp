@@ -98,7 +98,7 @@ fn promotes_a_mid_chain_symptom_bound_to_the_consumer_header() {
 }
 
 #[test]
-fn plans_a_provider_header_via_text_rewrite() {
+fn an_is_provider_for_headline_is_classed_by_its_anchor() {
     let resolved = cgp_resolved(
         "App",
         &["CanFoo"],
@@ -109,8 +109,9 @@ fn plans_a_provider_header_via_text_rewrite() {
             vec![consumer("CanFoo", "App")],
         )],
     );
-    // A *real* wired provider (not the `RedirectLookup` plumbing) keeps the provider form, since it
-    // names something the programmer chose.
+    // rustc's headline names a provider's `IsProviderFor`, but the anchor recovered a consumer, so
+    // the class is the consumer's; the provider form the text rewrite gives rustc's headline is
+    // kept as a second key for a declined re-report.
     let plan = plan_resolved(
         DiagKind::Check,
         Some("the trait bound `FooProvider: IsProviderFor<FooComponent, App>` is not satisfied"),
@@ -119,14 +120,51 @@ fn plans_a_provider_header_via_text_rewrite() {
     );
     assert_eq!(
         plan.class_header.as_deref(),
+        Some("[CGP-E001] the consumer trait `CanFoo` is not implemented for context `App`")
+    );
+    assert_eq!(
+        plan.declined_header.as_deref(),
         Some(
             "[CGP-E002] the provider trait `Fooer` with context `App` is not implemented for provider `FooProvider`"
         )
     );
-    // The displayed headline keeps the provider class's code and states the cause.
     assert_eq!(
         plan.header.as_deref(),
-        Some("[CGP-E002] the trait bound `App: DefaultNamespace` is not satisfied")
+        Some("[CGP-E001] the trait bound `App: DefaultNamespace` is not satisfied")
+    );
+}
+
+#[test]
+fn a_check_providers_entry_is_the_provider_class() {
+    let mut resolved = cgp_resolved(
+        "Rectangle",
+        &["AreaCalculator"],
+        vec![one_path(
+            field_leaf("scale_factor", "Rectangle", FieldIssue::Missing),
+            vec![provider(
+                "AreaCalculator",
+                "Rectangle",
+                "ScaledArea<RectangleArea>",
+            )],
+        )],
+    );
+    resolved.provider = Some("ScaledArea<RectangleArea>".to_owned());
+    let plan = plan_resolved(
+        DiagKind::Check,
+        Some("the trait bound `Rectangle: HasField<Symbol!(\"scale_factor\")>` is not satisfied"),
+        &resolved,
+        &empty_names(),
+    );
+    assert_eq!(
+        plan.class_header.as_deref(),
+        Some(
+            "[CGP-E002] the provider trait `AreaCalculator` with context `Rectangle` is not \
+             implemented for provider `ScaledArea<RectangleArea>`"
+        )
+    );
+    assert_eq!(
+        plan.header.as_deref(),
+        Some("[CGP-E002] missing field `scale_factor` on `Rectangle`")
     );
 }
 
@@ -184,6 +222,7 @@ fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
         consumers: vec!["CanHandleApiSend<QueryBalanceApi>".to_owned()],
         consumers_are_cgp: false,
         subject_is_context: true,
+        provider: None,
         causes: [missing_field_cause()].into_iter().collect(),
     };
     assert_eq!(
@@ -202,6 +241,7 @@ fn wrapper_header_names_a_foreign_subject_plainly() {
         consumers: vec!["CanAddApiRoutes".to_owned()],
         consumers_are_cgp: false,
         subject_is_context: false,
+        provider: None,
         causes: [missing_field_cause()].into_iter().collect(),
     };
     assert_eq!(

@@ -1,4 +1,4 @@
-error[E0277]: [CGP-E002] `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>` is not a provider of `Handler`
+error[E0277]: [CGP-E001] `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>` is not a provider of `Handler`
   --> src/main.rs:65:9
    |
 65 |         HandlerComponent: ((), Shape),
