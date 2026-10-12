@@ -16,9 +16,9 @@ use rustc_hir::{ImplItemKind, ItemKind};
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_infer::traits::Obligation;
 use rustc_middle::ty::print::{PrintTraitRefExt as _, with_forced_trimmed_paths};
-use rustc_middle::ty::{self, TyCtxt, TypingMode};
-use rustc_span::Span;
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable as _, TypingMode};
 use rustc_span::def_id::{DefId, LocalDefId};
+use rustc_span::{Span, kw};
 use rustc_trait_selection::traits::ObligationCause;
 use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
 
@@ -97,8 +97,11 @@ pub fn detect_undeclared_requirement(
                 continue;
             }
             let import_type = abstract_type_import(tcx, bound_ref.def_id);
-            let rendered =
-                with_forced_trimmed_paths!(bound_ref.print_only_trait_path().to_string());
+            let rendered = with_forced_trimmed_paths!(
+                context_as_self(tcx, bound_ref, context)
+                    .print_only_trait_path()
+                    .to_string()
+            );
             requirements.push(Requirement {
                 bound: rendered.clone(),
                 import: import_type
@@ -123,6 +126,22 @@ pub fn detect_undeclared_requirement(
         });
     }
     None
+}
+
+/// `bound` with the generated context written as `Self`, the name the provider's `#[uses(…)]` gives
+/// it, so a requirement such as `CanCompareWith<__Context__>` reads `CanCompareWith<Self>`.
+fn context_as_self<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bound: ty::TraitRef<'tcx>,
+    context: Ty<'tcx>,
+) -> ty::TraitRef<'tcx> {
+    let self_ty = Ty::new_param(tcx, 0, kw::SelfUpper);
+    bound.fold_with(&mut ty::BottomUpFolder {
+        tcx,
+        ty_op: |ty| if ty == context { self_ty } else { ty },
+        lt_op: |region| region,
+        ct_op: |ct| ct,
+    })
 }
 
 /// Whether `span` lies in the body of one of the impl's methods, where an error is about the body's

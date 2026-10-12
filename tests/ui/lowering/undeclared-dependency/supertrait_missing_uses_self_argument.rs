@@ -2,15 +2,13 @@
 //! `#[uses]`, where the requirement's argument is the context itself.
 //!
 //! The provider trait requires `__Context__: CanCompareWith<__Context__>`, and the provider declares
-//! nothing, so rustc reports `E0277` on that bound. The tool reshapes it into `[CGP-E036]`, but the
-//! requirement is written as the compiler sees it, with the generated `__Context__` in the header
-//! and in the `#[uses(CanCompareWith<__Context__>)]` help, where the provider writes `Self`.
+//! nothing, so rustc reports `E0277` on that bound. The tool reshapes it into `[CGP-E036]` and
+//! writes the context as `Self`, the name the provider uses, in the header and in the
+//! `#[uses(CanCompareWith<Self>)]` help, so the generated `__Context__` never shows.
 //!
 //! CGP error class: undeclared dependency (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/undeclared-dependency.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E036
 
 use cgp::prelude::*;
