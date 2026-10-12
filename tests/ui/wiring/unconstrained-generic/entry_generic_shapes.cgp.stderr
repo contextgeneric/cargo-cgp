@@ -1,0 +1,88 @@
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:52:10
+   |
+52 |         <T, U> GreeterComponent: GreetPair<T, U>,
+   |          ^ unconstrained type parameter
+   |
+help: use the type parameter `T` in the `Person` type and use it in the type definition
+   |
+47 ~ pub struct Person<T>;
+48 |
+49 | // Two parameters, both in the provider and neither in the key.
+50 | delegate_components! {
+51 ~     Person<T> {
+   |
+
+error[E0207]: the type parameter `U` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:52:13
+   |
+52 |         <T, U> GreeterComponent: GreetPair<T, U>,
+   |             ^ unconstrained type parameter
+   |
+help: use the type parameter `U` in the `Person` type and use it in the type definition
+   |
+47 ~ pub struct Person<U>;
+48 |
+49 | // Two parameters, both in the provider and neither in the key.
+50 | delegate_components! {
+51 ~     Person<U> {
+   |
+
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:52:10
+   |
+52 |         <T, U> GreeterComponent: GreetPair<T, U>,
+   |          ^--
+   |          |
+   |          unconstrained type parameter
+   |          help: remove the unused type parameter `T`
+
+error[E0207]: the type parameter `U` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:52:13
+   |
+50 | / delegate_components! {
+51 | |     Person {
+52 | |         <T, U> GreeterComponent: GreetPair<T, U>,
+   | |             ^ unconstrained type parameter
+53 | |     }
+54 | | }
+   | |_- help: remove the unused type parameter `U`
+
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:61:10
+   |
+59 | / delegate_components! {
+60 | |     Robot {
+61 | |         <T> GreeterComponent: GreetWith<u32>,
+   | |          ^ unconstrained type parameter
+62 | |     }
+63 | | }
+   | |_- help: remove the unused type parameter `T`
+
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:70:10
+   |
+70 |         <T> GreeterComponent -> Table<T>,
+   |          ^ unconstrained type parameter
+   |
+help: use the type parameter `T` in the `Kiosk` type and use it in the type definition
+   |
+65 ~ pub struct Kiosk<T>;
+66 |
+67 | // A parameter in the table the entry forwards to.
+68 | delegate_components! {
+69 ~     Kiosk<T> {
+   |
+
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:70:10
+   |
+68 | / delegate_components! {
+69 | |     Kiosk {
+70 | |         <T> GreeterComponent -> Table<T>,
+   | |          ^ unconstrained type parameter
+71 | |     }
+72 | | }
+   | |_- help: remove the unused type parameter `T`
+
+For more information about this error, try `rustc --explain E0207`.
