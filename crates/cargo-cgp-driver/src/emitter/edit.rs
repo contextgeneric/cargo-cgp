@@ -9,10 +9,9 @@ use std::borrow::Cow;
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{
-    AmbiguousNames, COALESCED_SITE_LABEL, DiagKind, FIRST_CHECK_TABLE_LABEL, Origin,
-    SECOND_CHECK_TABLE_LABEL, bound_candidate_list, context_has_hasfield_impls,
-    is_method_probe_advice_text, is_question_mark_cascade_text, mentions_wiring_text,
-    postprocess_fragments, postprocess_message,
+    AmbiguousNames, COALESCED_SITE_LABEL, DiagKind, Origin, bound_candidate_list,
+    context_has_hasfield_impls, is_method_probe_advice_text, is_question_mark_cascade_text,
+    mentions_wiring_text, postprocess_fragments, postprocess_message,
 };
 use rustc_errors::codes::{E0271, E0599};
 use rustc_errors::{
@@ -42,18 +41,18 @@ pub(crate) fn merged_span(members: &[&DiagInner]) -> MultiSpan {
     span
 }
 
-/// The span of an `E0428` on a `check_components!` check trait, relabelled: the reported caret is
-/// [`SECOND_CHECK_TABLE_LABEL`], and the span rustc labels as the previous definition is
-/// [`FIRST_CHECK_TABLE_LABEL`]. rustc's own labels name the generated check trait.
-pub(crate) fn check_table_span(span: &MultiSpan) -> MultiSpan {
+/// The span of an `E0428` on a generated name defined twice, relabelled to name what the program
+/// wrote: the reported caret takes `second`, and the span rustc labels as the previous definition
+/// takes `first`. rustc's own labels name the generated item.
+pub(crate) fn two_definitions_span(span: &MultiSpan, first: &str, second: &str) -> MultiSpan {
     let Some(primary) = span.primary_span() else {
         return span.clone();
     };
     let mut relabelled = MultiSpan::from_span(primary);
-    relabelled.push_span_label(primary, SECOND_CHECK_TABLE_LABEL);
+    relabelled.push_span_label(primary, second.to_owned());
     for label in span.span_labels() {
         if !label.is_primary {
-            relabelled.push_span_label(label.span, FIRST_CHECK_TABLE_LABEL);
+            relabelled.push_span_label(label.span, first.to_owned());
         }
     }
     relabelled

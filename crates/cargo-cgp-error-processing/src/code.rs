@@ -186,6 +186,10 @@ pub const PROVIDER_NOT_DECLARED: &str = "CGP-E043";
 /// component at the unit parameters `()`. The Rust code stays `E0277`.
 pub const CHECK_AT_UNIT_PARAMETERS: &str = "CGP-E060";
 
+/// `CGP-E061`: two `#[cgp_auto_dispatch]` traits in one module declare a method of one name, so the
+/// macro generates the method's helper and computer twice. The Rust code stays `E0428`.
+pub const SHARED_DISPATCH_METHOD: &str = "CGP-E061";
+
 // The steps of a dependency chain (`CGP-E101` to `CGP-E109`).
 
 /// `CGP-E101`: a step through a context's consumer trait impl,

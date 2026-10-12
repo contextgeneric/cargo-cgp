@@ -1,47 +1,25 @@
-error[E0428]: the name `__compute_area__` is defined multiple times
-  --> src/main.rs:22:1
-   |
-16 | #[cgp_auto_dispatch]
-   | -------------------- previous definition of the value `__compute_area__` here
-...
-22 | #[cgp_auto_dispatch]
-   | ^^^^^^^^^^^^^^^^^^^^ `__compute_area__` redefined here
-   |
-   = note: `__compute_area__` must be defined only once in the value namespace of this module
-   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0428]: the name `ComputeArea` is defined multiple times
-  --> src/main.rs:24:8
-   |
-18 |     fn area(&self) -> f64;
-   |        ---- previous definition of the type `ComputeArea` here
-...
-24 |     fn area(&self) -> f64;
-   |        ^^^^ `ComputeArea` redefined here
-   |
-   = note: `ComputeArea` must be defined only once in the type namespace of this module
-
-error[E0428]: the name `__compute_perimeter__` is defined multiple times
-  --> src/main.rs:22:1
-   |
-16 | #[cgp_auto_dispatch]
-   | -------------------- previous definition of the value `__compute_perimeter__` here
-...
-22 | #[cgp_auto_dispatch]
-   | ^^^^^^^^^^^^^^^^^^^^ `__compute_perimeter__` redefined here
-   |
-   = note: `__compute_perimeter__` must be defined only once in the value namespace of this module
-   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0428]: the name `ComputePerimeter` is defined multiple times
+error[E0428]: [CGP-E061] two `#[cgp_auto_dispatch]` traits in one module declare the method `area`
   --> src/main.rs:25:8
    |
-19 |     fn perimeter(&self) -> f64;
-   |        --------- previous definition of the type `ComputePerimeter` here
+19 |     fn area(&self) -> f64;
+   |        ---- declared first here
 ...
-25 |     fn perimeter(&self) -> f64;
-   |        ^^^^^^^^^ `ComputePerimeter` redefined here
+25 |     fn area(&self) -> f64;
+   |        ^^^^ declared again here
    |
-   = note: `ComputePerimeter` must be defined only once in the type namespace of this module
+   = note: `#[cgp_auto_dispatch]` names the items it generates after the method alone, so both traits generate `ComputeArea` and `__compute_area__`
+   = help: rename `area` in one of the two traits, or declare the traits in different modules
+
+error[E0428]: [CGP-E061] two `#[cgp_auto_dispatch]` traits in one module declare the method `perimeter`
+  --> src/main.rs:26:8
+   |
+20 |     fn perimeter(&self) -> f64;
+   |        --------- declared first here
+...
+26 |     fn perimeter(&self) -> f64;
+   |        ^^^^^^^^^ declared again here
+   |
+   = note: `#[cgp_auto_dispatch]` names the items it generates after the method alone, so both traits generate `ComputePerimeter` and `__compute_perimeter__`
+   = help: rename `perimeter` in one of the two traits, or declare the traits in different modules
 
 For more information about this error, try `rustc --explain E0428`.

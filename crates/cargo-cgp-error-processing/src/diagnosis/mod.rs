@@ -9,6 +9,7 @@
 
 mod cgp_impl_misuse;
 mod coalesce;
+mod dispatch_names;
 mod graph;
 mod group;
 mod internal_error;
@@ -29,6 +30,7 @@ mod wording;
 
 pub use cgp_impl_misuse::*;
 pub use coalesce::*;
+pub use dispatch_names::*;
 pub use graph::*;
 pub use group::*;
 pub use internal_error::*;

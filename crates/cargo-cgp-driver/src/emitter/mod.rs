@@ -27,6 +27,7 @@ mod edit;
 mod install;
 mod name_resolution;
 mod output;
+mod shared_dispatch_method;
 mod test_panic;
 
 pub use cgp_emitter::CgpEmitter;

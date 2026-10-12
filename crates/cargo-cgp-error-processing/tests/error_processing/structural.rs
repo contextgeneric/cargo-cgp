@@ -6,7 +6,7 @@
 
 use cargo_cgp_error_processing::{
     CheckForm, CheckTraitName, EntryTable, ParameterUse, StructuralMistake,
-    plan_structural_mistake, structural_mistake_help,
+    plan_structural_mistake, structural_mistake_help, structural_mistake_note,
 };
 
 #[test]
@@ -219,4 +219,37 @@ fn a_check_at_unit_parameters_names_the_parameters_to_check() {
         )),
         "check it at the parameters its provider implements: `#[check_params(Rectangle, Circle)]`",
     );
+}
+
+#[test]
+fn a_shared_dispatch_method_names_the_method_and_the_generated_items() {
+    let mistake = StructuralMistake::SharedDispatchMethod {
+        method: "area".to_owned(),
+        helper: "__compute_area__".to_owned(),
+        computer: "ComputeArea".to_owned(),
+    };
+    assert_eq!(
+        plan_structural_mistake(&mistake),
+        "[CGP-E061] two `#[cgp_auto_dispatch]` traits in one module declare the method `area`",
+    );
+    assert_eq!(
+        structural_mistake_note(&mistake).as_deref(),
+        Some(
+            "`#[cgp_auto_dispatch]` names the items it generates after the method alone, so both \
+             traits generate `ComputeArea` and `__compute_area__`"
+        ),
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "rename `area` in one of the two traits, or declare the traits in different modules",
+    );
+}
+
+#[test]
+fn only_a_shared_dispatch_method_carries_a_note() {
+    let mistake = StructuralMistake::DuplicateCheck {
+        context: "App".to_owned(),
+        entry: "GreeterComponent".to_owned(),
+    };
+    assert_eq!(structural_mistake_note(&mistake), None);
 }

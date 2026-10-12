@@ -60,7 +60,7 @@ pub use requirement::{DetectedUndeclaredRequirement, detect_undeclared_requireme
 pub use structural::{
     detect_check_at_unit_parameters, detect_duplicate_check, detect_duplicate_check_trait,
     detect_entry_parameters_not_in_key, detect_generic_default_impl,
-    detect_loop_key_without_variable,
+    detect_loop_key_without_variable, is_from_auto_dispatch,
 };
 pub use undeclared::detect_undeclared_trait;
 pub use unimported::{DetectedUnimportedAbstractType, detect_unimported_abstract_type};

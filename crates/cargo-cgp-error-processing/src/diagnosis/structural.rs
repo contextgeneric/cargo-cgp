@@ -12,7 +12,7 @@
 
 use crate::code::{
     CHECK_AT_UNIT_PARAMETERS, DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT, ENTRY_PARAMETERS_NOT_IN_KEY,
-    GENERIC_DEFAULT_IMPL, LOOP_KEY_WITHOUT_VARIABLE,
+    GENERIC_DEFAULT_IMPL, LOOP_KEY_WITHOUT_VARIABLE, SHARED_DISPATCH_METHOD,
 };
 use crate::diagnosis::wording::quoted_list;
 
@@ -22,6 +22,13 @@ pub const FIRST_CHECK_TABLE_LABEL: &str = "the first table";
 /// The label on the second of two `check_components!` tables whose check traits share a name, the
 /// one the compiler reports.
 pub const SECOND_CHECK_TABLE_LABEL: &str = "the second table";
+
+/// The label on the first of two `#[cgp_auto_dispatch]` methods of one name in one module.
+pub const FIRST_DISPATCH_METHOD_LABEL: &str = "declared first here";
+
+/// The label on the second of two `#[cgp_auto_dispatch]` methods of one name in one module, the one
+/// the compiler reports.
+pub const SECOND_DISPATCH_METHOD_LABEL: &str = "declared again here";
 
 /// A structural mistake the driver recovered from the generated items an error lands on.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -38,6 +45,13 @@ pub enum StructuralMistake {
         entry: String,
         parameters: Vec<String>,
         form: CheckForm,
+    },
+    /// Two `#[cgp_auto_dispatch]` traits in one module declare `method`, so the macro generates its
+    /// `helper` function and its `computer` provider twice.
+    SharedDispatchMethod {
+        method: String,
+        helper: String,
+        computer: String,
     },
     /// Two `check_components!` tables in one module generate check traits of the same name, either
     /// both derived from contexts whose paths end in `context` (`__Check{context}`) or both named
@@ -116,6 +130,9 @@ pub fn plan_structural_mistake(mistake: &StructuralMistake) -> String {
         StructuralMistake::CheckAtUnitParameters { context, entry, .. } => format!(
             "[{CHECK_AT_UNIT_PARAMETERS}] the check of `{entry}` on `{context}` names no parameters, so it checks the component at the unit parameters `()`"
         ),
+        StructuralMistake::SharedDispatchMethod { method, .. } => format!(
+            "[{SHARED_DISPATCH_METHOD}] two `#[cgp_auto_dispatch]` traits in one module declare the method `{method}`"
+        ),
         StructuralMistake::DuplicateCheckTrait {
             name: CheckTraitName::Derived { context },
         } => format!(
@@ -182,6 +199,9 @@ pub fn structural_mistake_help(mistake: &StructuralMistake) -> String {
             };
             format!("check it at the parameters its provider implements: `{check}`")
         }
+        StructuralMistake::SharedDispatchMethod { method, .. } => format!(
+            "rename `{method}` in one of the two traits, or declare the traits in different modules"
+        ),
         StructuralMistake::DuplicateCheckTrait {
             name: CheckTraitName::Derived { .. },
         } => "merge the two tables, or name one table's check trait with `#[check_trait(...)]`"
@@ -222,5 +242,18 @@ pub fn structural_mistake_help(mistake: &StructuralMistake) -> String {
                 ParameterUse::Unused => remove,
             }
         }
+    }
+}
+
+/// The `note` explaining a structural mistake, for the mistakes whose header alone does not say why
+/// the program fails.
+pub fn structural_mistake_note(mistake: &StructuralMistake) -> Option<String> {
+    match mistake {
+        StructuralMistake::SharedDispatchMethod {
+            helper, computer, ..
+        } => Some(format!(
+            "`#[cgp_auto_dispatch]` names the items it generates after the method alone, so both traits generate `{computer}` and `{helper}`"
+        )),
+        _ => None,
     }
 }

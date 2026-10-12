@@ -1,24 +1,13 @@
-error[E0428]: the name `__compute_area__` is defined multiple times
-  --> src/main.rs:26:1
+error[E0428]: [CGP-E061] two `#[cgp_auto_dispatch]` traits in one module declare the method `area`
+  --> src/main.rs:27:8
    |
-21 | #[cgp_auto_dispatch]
-   | -------------------- previous definition of the value `__compute_area__` here
+22 |     fn area(&self) -> f64;
+   |        ---- declared first here
 ...
-26 | #[cgp_auto_dispatch]
-   | ^^^^^^^^^^^^^^^^^^^^ `__compute_area__` redefined here
+27 |     fn area(&self) -> f64;
+   |        ^^^^ declared again here
    |
-   = note: `__compute_area__` must be defined only once in the value namespace of this module
-   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0428]: the name `ComputeArea` is defined multiple times
-  --> src/main.rs:28:8
-   |
-23 |     fn area(&self) -> f64;
-   |        ---- previous definition of the type `ComputeArea` here
-...
-28 |     fn area(&self) -> f64;
-   |        ^^^^ `ComputeArea` redefined here
-   |
-   = note: `ComputeArea` must be defined only once in the type namespace of this module
+   = note: `#[cgp_auto_dispatch]` names the items it generates after the method alone, so both traits generate `ComputeArea` and `__compute_area__`
+   = help: rename `area` in one of the two traits, or declare the traits in different modules
 
 For more information about this error, try `rustc --explain E0428`.

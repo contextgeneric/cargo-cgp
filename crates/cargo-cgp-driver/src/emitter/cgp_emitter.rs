@@ -9,20 +9,21 @@ use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, rewrite_wiring_overflow,
 };
 use cargo_cgp_error_processing::{
-    AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf,
-    MissingUseProvider, Origin, OrphanConflict, PendingNote, ProviderTraitInUses, Resolved,
-    StructuralMistake, UndeclaredRequirement, UndeclaredTrait, UnimportedAbstractType,
-    WiringOverflow, cause_signature, cgp_impl_misuse_help, coalesce_underived_fields,
-    coalesced_headline, explain_footer_codes, fix_help_messages, group_by_shared_cause,
-    internal_error_note, is_explain_footer_text, is_method_bounds_text,
-    is_recursion_limit_help_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
-    missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
-    plan_missing_use_provider, plan_orphan_conflict, plan_provider_trait_in_uses, plan_resolved,
-    plan_structural_mistake, plan_undeclared_requirement, plan_undeclared_trait,
-    plan_unimported_abstract_type, plan_unresolved_wiring_name, plan_wiring_conflict,
-    postprocess_message, provider_trait_in_uses_help, structural_mistake_help,
-    undeclared_requirement_helps, undeclared_trait_help, unimported_abstract_type_help,
-    unresolved_wiring_name_help, wiring_conflict_help, wiring_overflow_help,
+    AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind,
+    FIRST_CHECK_TABLE_LABEL, Leaf, MissingUseProvider, Origin, OrphanConflict, PendingNote,
+    ProviderTraitInUses, Resolved, SECOND_CHECK_TABLE_LABEL, StructuralMistake,
+    UndeclaredRequirement, UndeclaredTrait, UnimportedAbstractType, WiringOverflow,
+    cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, coalesced_headline,
+    explain_footer_codes, fix_help_messages, group_by_shared_cause, internal_error_note,
+    is_explain_footer_text, is_method_bounds_text, is_recursion_limit_help_text,
+    is_unbounded_type_param_item_text, mentions_orphan_param_text, missing_use_provider_help,
+    orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
+    plan_provider_trait_in_uses, plan_resolved, plan_structural_mistake,
+    plan_undeclared_requirement, plan_undeclared_trait, plan_unimported_abstract_type,
+    plan_unresolved_wiring_name, plan_wiring_conflict, postprocess_message,
+    provider_trait_in_uses_help, structural_mistake_help, undeclared_requirement_helps,
+    undeclared_trait_help, unimported_abstract_type_help, unresolved_wiring_name_help,
+    wiring_conflict_help, wiring_overflow_help,
 };
 use rustc_errors::codes::{
     E0107, E0117, E0119, E0186, E0207, E0210, E0220, E0271, E0275, E0277, E0308, E0425, E0428,
@@ -41,13 +42,14 @@ use crate::config::BUG_REPORT_URL;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
 use crate::emitter::containment::contain;
 use crate::emitter::edit::{
-    bound_candidate_lists, check_table_span, diag_kind, diagnostic_spans, is_question_mark_cascade,
+    bound_candidate_lists, diag_kind, diagnostic_spans, is_question_mark_cascade,
     main_message_text, mentions_hasfield_impls, mentions_wiring, merged_span, message_signature,
     postprocess_messages, postprocess_multispan, replace_header, rewrite_messages,
-    strip_method_probe_advice, subdiag,
+    strip_method_probe_advice, subdiag, two_definitions_span,
 };
 use crate::emitter::name_resolution::is_unresolved_wiring_overflow;
 use crate::emitter::output::{Output, lock_output, register_output};
+use crate::emitter::shared_dispatch_method::pair_shared_dispatch_method;
 use crate::emitter::test_panic::{TestPanic, inject};
 use crate::resolve::{
     self, ConflictAction, ConflictTrait, DetectedCgpImplMisuse, DetectedUndeclaredRequirement,
@@ -574,9 +576,10 @@ impl<E: Emitter> CgpEmitter<E> {
     /// Recognize `diag` as a structural mistake in a wiring or its checks, recovered from the
     /// generated items at its caret: an `E0119` between two identical check impls is a check table
     /// listing one entry twice, an `E0428` on a check trait is two tables whose check traits share a
-    /// name, and an `E0207` is a `for` loop whose key does not use its variable, a
-    /// `#[default_impl]` on a generic provider impl, or a wiring entry whose key does not use its
-    /// generic parameters. `None` for any other diagnostic.
+    /// name, an `E0277` on a check entry checked at the unit parameters is an entry that names no
+    /// parameters for a component that takes some, and an `E0207` is a `for` loop whose key does
+    /// not use its variable, a `#[default_impl]` on a generic provider impl, or a wiring entry whose
+    /// key does not use its generic parameters. `None` for any other diagnostic.
     fn structural_mistake(&self, diag: &DiagInner) -> Option<StructuralMistake> {
         let primary_span = diag.span.primary_span()?;
         match diag.code {
@@ -1236,6 +1239,16 @@ impl<E: Emitter> CgpEmitter<E> {
             self.push(BufEntry::Plain(Box::new(diag)));
             return;
         }
+        // Two `#[cgp_auto_dispatch]` traits in one module sharing a method name: the computer's
+        // `E0428` and the helper's before it become one report on the two method names.
+        if diag.code == Some(E0428) {
+            let paired = pair_shared_dispatch_method(&mut self.output().buffer, &mut diag);
+            if paired {
+                self.postprocess(&mut diag, Origin::Rewritten);
+                self.push(BufEntry::Plain(Box::new(diag)));
+                return;
+            }
+        }
         // A structural mistake in a wiring or its checks, such as a check table listing one entry
         // twice: the compiler names only the generated items, so reword the header to name the
         // mistake and carry the fix in a `help`, keeping rustc's carets on the two sites.
@@ -1266,7 +1279,11 @@ impl<E: Emitter> CgpEmitter<E> {
             if matches!(mistake, StructuralMistake::DuplicateCheckTrait { .. }) {
                 // rustc's labels and note name the generated check trait; label the two tables
                 // instead, the reported one as the second.
-                diag.span = check_table_span(&diag.span);
+                diag.span = two_definitions_span(
+                    &diag.span,
+                    FIRST_CHECK_TABLE_LABEL,
+                    SECOND_CHECK_TABLE_LABEL,
+                );
                 diag.children.clear();
             }
             diag.children
