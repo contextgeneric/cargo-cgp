@@ -1,29 +1,29 @@
 error[E0277]: the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, App>` is not satisfied
-  --> src/main.rs:40:9
+  --> src/main.rs:38:9
    |
-40 |         AreaCalculatorComponent: RectangleArea,
+38 |         AreaCalculatorComponent: RectangleArea,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `IsProviderFor<AreaCalculatorComponent, App, ()>` is not implemented for `RectangleArea`
       but trait `IsProviderFor<AreaCalculatorComponent, App, Rectangle>` is implemented for it
-  --> src/main.rs:29:1
+  --> src/main.rs:27:1
    |
-29 | / impl AreaCalculator<Rectangle> {
-30 | |     fn area(&self, shape: &Rectangle) -> f64 {
-31 | |         shape.width * shape.height
-32 | |     }
-33 | | }
+27 | / impl AreaCalculator<Rectangle> {
+28 | |     fn area(&self, shape: &Rectangle) -> f64 {
+29 | |         shape.width * shape.height
+30 | |     }
+31 | | }
    | |_^
    = help: for that trait implementation, expected `Rectangle`, found `()`
    = note: required for `App` to implement `CanUseComponent<AreaCalculatorComponent>`
 note: required by a bound in `__CanUseApp`
-  --> src/main.rs:38:1
+  --> src/main.rs:36:1
    |
-38 | / delegate_and_check_components! {
-39 | |     App {
-40 | |         AreaCalculatorComponent: RectangleArea,
-41 | |     }
-42 | | }
+36 | / delegate_and_check_components! {
+37 | |     App {
+38 | |         AreaCalculatorComponent: RectangleArea,
+39 | |     }
+40 | | }
    | |_^ required by this bound in `__CanUseApp`
    = note: this error originates in the macro `delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

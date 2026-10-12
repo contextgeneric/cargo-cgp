@@ -5,8 +5,8 @@
 //! same model in from the generated items an error lands on.
 
 use cargo_cgp_error_processing::{
-    CheckTraitName, EntryTable, ParameterUse, StructuralMistake, plan_structural_mistake,
-    structural_mistake_help,
+    CheckForm, CheckTraitName, EntryTable, ParameterUse, StructuralMistake,
+    plan_structural_mistake, structural_mistake_help,
 };
 
 #[test]
@@ -180,5 +180,43 @@ fn a_namespace_entry_names_the_namespace() {
     assert_eq!(
         plan_structural_mistake(&mistake),
         "[CGP-E019] the entry for `@app.GreeterComponent` in the namespace `AppNamespace` binds `T`, but its key does not use it",
+    );
+}
+
+#[test]
+fn a_check_at_unit_parameters_names_the_parameters_to_check() {
+    let mistake = |form, parameters: &[&str]| StructuralMistake::CheckAtUnitParameters {
+        context: "App".to_owned(),
+        entry: "AreaCalculatorComponent".to_owned(),
+        parameters: parameters.iter().map(|&p| p.to_owned()).collect(),
+        form,
+    };
+    let delegate_and_check = mistake(CheckForm::DelegateAndCheckComponents, &["Rectangle"]);
+    assert_eq!(
+        plan_structural_mistake(&delegate_and_check),
+        "[CGP-E060] the check of `AreaCalculatorComponent` on `App` names no parameters, so it \
+         checks the component at the unit parameters `()`",
+    );
+    assert_eq!(
+        structural_mistake_help(&delegate_and_check),
+        "check it at the parameters its provider implements: `#[check_params(Rectangle)]`",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake(CheckForm::CheckComponents, &["Rectangle"])),
+        "check it at the parameters its provider implements: `AreaCalculatorComponent: Rectangle`",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake(
+            CheckForm::CheckComponents,
+            &["Rectangle", "Circle"]
+        )),
+        "check it at the parameters its provider implements: `AreaCalculatorComponent: [Rectangle, Circle]`",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake(
+            CheckForm::DelegateAndCheckComponents,
+            &["Rectangle", "Circle"],
+        )),
+        "check it at the parameters its provider implements: `#[check_params(Rectangle, Circle)]`",
     );
 }

@@ -1,30 +1,9 @@
-error[E0277]: [CGP-E002] the provider trait `AreaCalculator` with context `App` is not implemented for provider `RectangleArea`
-  --> src/main.rs:40:9
+error[E0277]: [CGP-E060] the check of `AreaCalculatorComponent` on `App` names no parameters, so it checks the component at the unit parameters `()`
+  --> src/main.rs:38:9
    |
-40 |         AreaCalculatorComponent: RectangleArea,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+38 |         AreaCalculatorComponent: RectangleArea,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: the trait `IsProviderFor<AreaCalculatorComponent, App, ()>` is not implemented for `RectangleArea`
-      but trait `IsProviderFor<AreaCalculatorComponent, App, Rectangle>` is implemented for it
-  --> src/main.rs:29:1
-   |
-29 | / impl AreaCalculator<Rectangle> {
-30 | |     fn area(&self, shape: &Rectangle) -> f64 {
-31 | |         shape.width * shape.height
-32 | |     }
-33 | | }
-   | |_^
-   = help: for that trait implementation, expected `Rectangle`, found `()`
-   = note: required for the context `App` to implement the consumer trait `CanCalculateArea`
-note: required by a bound in `__CanUseApp`
-  --> src/main.rs:38:1
-   |
-38 | / delegate_and_check_components! {
-39 | |     App {
-40 | |         AreaCalculatorComponent: RectangleArea,
-41 | |     }
-42 | | }
-   | |_^ required by this bound in `__CanUseApp`
-   = note: this error originates in the macro `delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = help: check it at the parameters its provider implements: `#[check_params(Rectangle)]`
 
 For more information about this error, try `rustc --explain E0277`.

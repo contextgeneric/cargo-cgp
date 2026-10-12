@@ -1,28 +1,9 @@
-error[E0277]: the trait bound `AnyFoo: IsProviderFor<FooKeyComponent<I>, App>` is not satisfied
-  --> src/main.rs:39:13
+error[E0277]: [CGP-E060] the check of `FooKeyComponent<I>` on `App` names no parameters, so it checks the component at the unit parameters `()`
+  --> src/main.rs:38:13
    |
-39 |         <I> FooKeyComponent<I>: AnyFoo,
-   |             ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+38 |         <I> FooKeyComponent<I>: AnyFoo,
+   |             ^^^^^^^^^^^^^^^^^^
    |
-help: the trait `IsProviderFor<FooKeyComponent<I>, App>` is not implemented for `AnyFoo`
-  --> src/main.rs:27:16
-   |
-27 | #[cgp_impl(new AnyFoo: FooKeyComponent<I>)]
-   |                ^^^^^^
-   = note: required for `App` to implement `CanUseComponent<FooKeyComponent<I>>`
-note: required by a bound in `__CanUseApp`
-  --> src/main.rs:37:1
-   |
-37 | / delegate_and_check_components! {
-38 | |     App {
-39 | |         <I> FooKeyComponent<I>: AnyFoo,
-40 | |     }
-41 | | }
-   | |_^ required by this bound in `__CanUseApp`
-   = note: this error originates in the macro `delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
-help: consider introducing a `where` clause, but there might be an alternative better way to express this requirement
-   |
-39 |         <I> FooKeyComponent<I> where AnyFoo: IsProviderFor<FooKeyComponent<I>, App>: AnyFoo,
-   |                                ++++++++++++++++++++++++++++++++++++++++++++++++++++
+   = help: check it at the parameters its provider implements: `#[check_params(I)]`
 
 For more information about this error, try `rustc --explain E0277`.

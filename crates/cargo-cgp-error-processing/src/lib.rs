@@ -40,10 +40,10 @@ pub mod tree;
 pub use candidates::{RUSTC_CANDIDATE_LIMIT, bound_candidate_list};
 pub use dedup::DedupLedger;
 pub use diagnosis::{
-    COALESCED_SITE_LABEL, Cause, Causes, CgpImplMisuse, ChainNode, CheckTraitName, DepNode,
-    DependencyGraph, DiagKind, DiagnosisPlan, EntryTable, FIRST_CHECK_TABLE_LABEL, FieldFix,
-    FieldIssue, Leaf, MissingUseProvider, NearMiss, OrphanConflict, OrphanTrigger, OverflowStep,
-    ParameterUse, PendingNote, ProviderTraitInUses, Requirement, Resolved,
+    COALESCED_SITE_LABEL, Cause, Causes, CgpImplMisuse, ChainNode, CheckForm, CheckTraitName,
+    DepNode, DependencyGraph, DiagKind, DiagnosisPlan, EntryTable, FIRST_CHECK_TABLE_LABEL,
+    FieldFix, FieldIssue, Leaf, MissingUseProvider, NearMiss, OrphanConflict, OrphanTrigger,
+    OverflowStep, ParameterUse, PendingNote, ProviderTraitInUses, Requirement, Resolved,
     SECOND_CHECK_TABLE_LABEL, StructuralMistake, UndeclaredRequirement, UndeclaredTrait,
     UnimportedAbstractType, UnresolvedWiringName, WiringConflict, WiringKey, WiringOverflow,
     cause_headline, cause_note, cause_notes, cause_signature, cgp_impl_misuse_help, class_code,

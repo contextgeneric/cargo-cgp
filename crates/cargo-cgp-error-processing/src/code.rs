@@ -14,7 +14,8 @@
 //! - `CGP-E020` to `CGP-E029`: wiring that never resolves, and the orphan rule;
 //! - `CGP-E030` to `CGP-E039`: mistakes in what a macro was given;
 //! - `CGP-E040` to `CGP-E049`: wiring keys and values that do not resolve;
-//! - `CGP-E050` to `CGP-E059`: extensible data.
+//! - `CGP-E050` to `CGP-E059`: extensible data;
+//! - `CGP-E060` to `CGP-E069`: structural mistakes, continued from `CGP-E015`.
 //!
 //! A **`CGP-E1xx`** code labels an entry of the `root cause:` note's dependency tree, one code per
 //! rendering template: `CGP-E101` to `CGP-E109` for the steps of the chain, and `CGP-E110` onward
@@ -177,6 +178,13 @@ pub const KEY_NAMES_NO_COMPONENT: &str = "CGP-E042";
 /// `CGP-E043`: a wiring value names a provider that is never declared. The Rust code stays
 /// `E0425`.
 pub const PROVIDER_NOT_DECLARED: &str = "CGP-E043";
+
+// Structural mistakes, continued (`CGP-E060` to `CGP-E069`): the family outgrew `CGP-E015` to
+// `CGP-E019`, and `CGP-E050` to `CGP-E059` holds extensible data.
+
+/// `CGP-E060`: a check entry names no parameters for a component that takes some, so it checks the
+/// component at the unit parameters `()`. The Rust code stays `E0277`.
+pub const CHECK_AT_UNIT_PARAMETERS: &str = "CGP-E060";
 
 // The steps of a dependency chain (`CGP-E101` to `CGP-E109`).
 

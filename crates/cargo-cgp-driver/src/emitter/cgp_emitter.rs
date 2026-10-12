@@ -591,6 +591,9 @@ impl<E: Emitter> CgpEmitter<E> {
                 }
                 _ => None,
             },
+            Some(E0277) => rustc_middle::ty::tls::with_opt(|tcx| {
+                resolve::detect_check_at_unit_parameters(tcx?, primary_span)
+            }),
             Some(E0207) => rustc_middle::ty::tls::with_opt(|tcx| {
                 let tcx = tcx?;
                 resolve::detect_loop_key_without_variable(tcx, primary_span)
@@ -1250,10 +1253,12 @@ impl<E: Emitter> CgpEmitter<E> {
                 StructuralMistake::LoopKeyWithoutVariable { .. }
                     | StructuralMistake::GenericDefaultImpl { .. }
                     | StructuralMistake::EntryParametersNotInKey { .. }
+                    | StructuralMistake::CheckAtUnitParameters { .. }
             ) && let Some(primary) = diag.span.primary_span()
             {
-                // rustc's suggestions to remove the parameter or add it to the context are not the
-                // fix; keep the caret on the parameter alone.
+                // rustc's suggestions to remove the parameter or add it to the context, or to add a
+                // `where` clause to a check entry, are not the fix; keep the caret on the parameter
+                // or the entry alone.
                 diag.span = MultiSpan::from_span(primary);
                 diag.children.clear();
                 diag.suggestions = Suggestions::Enabled(Vec::new());

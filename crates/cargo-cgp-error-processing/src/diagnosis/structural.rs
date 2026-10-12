@@ -2,16 +2,17 @@
 //!
 //! Some mistakes are in the shape of what the macros were given rather than in what the wiring
 //! resolves to: a check table that lists one entry twice, two tables whose check traits share a
-//! name, a `for` loop whose key does not use its variable, a `#[default_impl]` on a generic impl,
-//! or a wiring entry whose generic parameters its key does not use. The compiler rejects the code
-//! the macro generated from it with a bare coherence or name error about generated items
-//! (`__CheckApp`, an impl's type parameter), which names neither the table nor the entry. The driver recovers the mistake from the generated
-//! items and fills [`StructuralMistake`] in; [`plan_structural_mistake`] words the header and
-//! [`structural_mistake_help`] the fix.
+//! name, a check entry that names no parameters for a component that takes some, a `for` loop whose
+//! key does not use its variable, a `#[default_impl]` on a generic impl, or a wiring entry whose
+//! generic parameters its key does not use. The compiler rejects the code the macro generated from
+//! it with a bare coherence, name, or trait error about generated items (`__CheckApp`, an impl's
+//! type parameter), which names neither the table nor the entry. The driver recovers the mistake
+//! from the generated items and fills [`StructuralMistake`] in; [`plan_structural_mistake`] words
+//! the header and [`structural_mistake_help`] the fix.
 
 use crate::code::{
-    DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT, ENTRY_PARAMETERS_NOT_IN_KEY, GENERIC_DEFAULT_IMPL,
-    LOOP_KEY_WITHOUT_VARIABLE,
+    CHECK_AT_UNIT_PARAMETERS, DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT, ENTRY_PARAMETERS_NOT_IN_KEY,
+    GENERIC_DEFAULT_IMPL, LOOP_KEY_WITHOUT_VARIABLE,
 };
 use crate::diagnosis::wording::quoted_list;
 
@@ -28,6 +29,16 @@ pub enum StructuralMistake {
     /// One `check_components!` table checks `entry` (a component, with its parameters when it
     /// takes any, as the table wrote them) twice for `context`.
     DuplicateCheck { context: String, entry: String },
+    /// A check entry for `entry` on `context`, written in `form`, names no parameters for a
+    /// component that takes some, so it checks the component at the unit parameters `()`;
+    /// `parameters` are those a provider implements and the context passes the check at, each as
+    /// `#[check_params(…)]` writes one check's parameters (a tuple for several).
+    CheckAtUnitParameters {
+        context: String,
+        entry: String,
+        parameters: Vec<String>,
+        form: CheckForm,
+    },
     /// Two `check_components!` tables in one module generate check traits of the same name, either
     /// both derived from contexts whose paths end in `context` (`__Check{context}`) or both named
     /// `check_trait` by a `#[check_trait(...)]` attribute.
@@ -55,6 +66,15 @@ pub enum StructuralMistake {
         parameters: Vec<String>,
         used: ParameterUse,
     },
+}
+
+/// The macro a check entry is written in, which decides how its parameters are written.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CheckForm {
+    /// `check_components!`, which writes them after the component (`Component: Params`).
+    CheckComponents,
+    /// `delegate_and_check_components!`, which writes them in a `#[check_params(…)]` attribute.
+    DelegateAndCheckComponents,
 }
 
 /// The wiring table an entry belongs to.
@@ -92,6 +112,9 @@ pub fn plan_structural_mistake(mistake: &StructuralMistake) -> String {
     match mistake {
         StructuralMistake::DuplicateCheck { context, entry } => format!(
             "[{DUPLICATE_CHECK}] `check_components!` checks `{entry}` twice for `{context}`"
+        ),
+        StructuralMistake::CheckAtUnitParameters { context, entry, .. } => format!(
+            "[{CHECK_AT_UNIT_PARAMETERS}] the check of `{entry}` on `{context}` names no parameters, so it checks the component at the unit parameters `()`"
         ),
         StructuralMistake::DuplicateCheckTrait {
             name: CheckTraitName::Derived { context },
@@ -141,6 +164,23 @@ pub fn structural_mistake_help(mistake: &StructuralMistake) -> String {
     match mistake {
         StructuralMistake::DuplicateCheck { entry, .. } => {
             format!("remove one of the two `{entry}` entries")
+        }
+        StructuralMistake::CheckAtUnitParameters {
+            entry,
+            parameters,
+            form,
+            ..
+        } => {
+            let check = match (form, parameters.as_slice()) {
+                (CheckForm::DelegateAndCheckComponents, _) => {
+                    format!("#[check_params({})]", parameters.join(", "))
+                }
+                (CheckForm::CheckComponents, [single]) => format!("{entry}: {single}"),
+                (CheckForm::CheckComponents, _) => {
+                    format!("{entry}: [{}]", parameters.join(", "))
+                }
+            };
+            format!("check it at the parameters its provider implements: `{check}`")
         }
         StructuralMistake::DuplicateCheckTrait {
             name: CheckTraitName::Derived { .. },

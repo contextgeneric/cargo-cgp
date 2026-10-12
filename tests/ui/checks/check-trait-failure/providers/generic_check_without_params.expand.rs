@@ -1,12 +1,12 @@
 #![feature(prelude_import)]
 //! A generic component checked without its parameter.
 //!
-//! A `[CGP-E002]` headline over rustc's "expected `Square`, found `()`" help, with no tree and no hint
-//! that the check entry needs the parameter.
+//! The `check_components!` entry names no parameters, so it checks `CanCalculateArea` at the unit
+//! parameters `()`, which `SquareArea`, written for `Square`, does not provide. The tool reports
+//! `[CGP-E060]` with `AreaCalculatorComponent: Square` in the help, where rustc reports
+//! `SquareArea: IsProviderFor<AreaCalculatorComponent, App>`, which reads like a broken provider.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
