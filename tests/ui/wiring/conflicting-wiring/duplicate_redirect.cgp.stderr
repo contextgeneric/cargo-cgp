@@ -1,10 +1,10 @@
-error[E0119]: [CGP-E014] duplicate redirect for component `FooComponent` on `App`: redirected to both `@app.foo` and `@app.bar`
-  --> src/main.rs:33:9
+error[E0119]: [CGP-E014] conflicting wiring: `App` redirects component `FooComponent` twice, to `@app.foo` and to `@app.bar`
+  --> src/main.rs:34:9
    |
-31 |         FooComponent =>
+32 |         FooComponent =>
    |         ------------ first implementation here
-32 |             @app.foo,
-33 |         FooComponent =>
+33 |             @app.foo,
+34 |         FooComponent =>
    |         ^^^^^^^^^^^^ conflicting implementation for `App`
 
 For more information about this error, try `rustc --explain E0119`.

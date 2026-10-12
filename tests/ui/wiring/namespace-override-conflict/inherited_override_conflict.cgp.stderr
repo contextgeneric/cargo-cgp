@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E011] `ChildNs` cannot wire component `GreeterComponent` that is already set through `BaseNs`
+error[E0119]: [CGP-E011] conflicting wiring: `ChildNs` wires component `GreeterComponent`, which `BaseNs` already covers
   --> src/main.rs:66:9
    |
 65 |     new ChildNs: BaseNs {

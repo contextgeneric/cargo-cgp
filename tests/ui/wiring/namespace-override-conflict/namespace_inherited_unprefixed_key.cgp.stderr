@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E013] component `GreeterComponent` on `AppNamespace` is redirected to `@app.GreeterComponent`
+error[E0119]: [CGP-E013] conflicting wiring: `AppNamespace` wires component `GreeterComponent` directly, but it is redirected to `@app.GreeterComponent`
   --> src/main.rs:41:16
    |
 37 |     new AppNamespace: DefaultNamespace

@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E010] duplicate wiring for component `GreeterComponent` on `Wrapper<u64>`
+error[E0119]: [CGP-E010] conflicting wiring: `Wrapper<u64>` wires component `GreeterComponent` twice
   --> src/main.rs:38:9
    |
 31 |         GreeterComponent: GreetHello,

@@ -5,8 +5,8 @@
 //! the generic segment makes the two impls overlap with the coherence error E0119.
 //!
 //! The tool drops the redundant `IsProviderFor` half and rewrites the `DelegateComponent` half to
-//! `[CGP-E011] `App` cannot wire `@ComputerComponent.Code.u64` that is already set through
-//! `@ComputerComponent.Eval``: the generic segment is named by its parameter, so the key reads as
+//! `[CGP-E011] conflicting wiring: `App` wires `@ComputerComponent.Code.u64`, which
+//! `@ComputerComponent.Eval` already covers`: the generic segment is named by its parameter, so the key reads as
 //! the entry wrote it.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and

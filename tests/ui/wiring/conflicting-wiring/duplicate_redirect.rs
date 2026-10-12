@@ -6,7 +6,8 @@
 //!
 //! The tool recognizes that *both* conflicting entries redirect the same key: it drops the
 //! redundant `IsProviderFor` half and rewrites the `DelegateComponent` half to `[CGP-E014]
-//! duplicate redirect for component `FooComponent` … redirected to both `@app.foo` and `@app.bar``,
+//! conflicting wiring: `App` redirects component `FooComponent` twice, to `@app.foo` and to
+//! `@app.bar``,
 //! naming both redirect targets, while keeping rustc's two carets on the `FooComponent =>` lines.
 //! If the redirect detection in `resolve/conflict.rs` regresses (counting one redirect instead of
 //! two), the header reverts to the single-redirect `[CGP-E013]` form.

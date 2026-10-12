@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E011] `App` cannot wire `@test.ShowImplComponent.String` that is already set through `@test.ShowImplComponent.T`
+error[E0119]: [CGP-E011] conflicting wiring: `App` wires `@test.ShowImplComponent.String`, which `@test.ShowImplComponent.T` already covers
   --> src/main.rs:49:10
    |
 46 |             @test.ShowImplComponent.T: Provider,

@@ -4,8 +4,9 @@
 //! `@DescriberComponent.Wrap<u64>` entry beside it, and the two `DelegateComponent<PathCons<..>>`
 //! impls conflict with the coherence error E0119.
 //!
-//! The tool rewrites the conflict to `[CGP-E011] `App` cannot wire `@DescriberComponent.Wrap<u64>`
-//! that is already set through `@DescriberComponent.Wrap<T>``: each type segment keeps its
+//! The tool rewrites the conflict to `[CGP-E011] conflicting wiring: `App` wires
+//! `@DescriberComponent.Wrap<u64>`, which `@DescriberComponent.Wrap<T>` already covers`: each type
+//! segment keeps its
 //! arguments, which is what tells the two keys apart. Dropping them would render both keys the
 //! same and misreport the overlap as a duplicate.
 //!

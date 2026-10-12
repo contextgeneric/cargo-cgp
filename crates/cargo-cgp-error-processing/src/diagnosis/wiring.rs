@@ -39,7 +39,7 @@ pub enum WiringKey {
 }
 
 impl WiringKey {
-    /// The key as the subject of a "duplicate wiring for …" sentence.
+    /// The key as the object of "wires … twice" or "redirects … twice".
     fn noun(&self) -> String {
         match self {
             WiringKey::Component(name) => format!("component `{name}`"),
@@ -49,7 +49,8 @@ impl WiringKey {
         }
     }
 
-    /// The key as the object of "cannot wire …" — the entry that introduces the overlap.
+    /// The key as the object of "wires …, which … already covers": the entry that introduces the
+    /// overlap.
     fn conflicting_phrase(&self) -> String {
         match self {
             WiringKey::Component(name) => format!("component `{name}`"),
@@ -59,7 +60,7 @@ impl WiringKey {
         }
     }
 
-    /// The key as the source in "already set through …" — the entry that already claims it.
+    /// The key as the subject of "which … already covers": the entry that already claims it.
     fn source_phrase(&self) -> String {
         match self {
             WiringKey::Component(name) => format!("component `{name}`"),
@@ -117,13 +118,15 @@ pub enum WiringConflict {
 }
 
 /// Word a [`WiringConflict`] into the `[CGP-E0xx]` header the emitter puts on the surviving
-/// `E0119`, naming the colliding key(s) in the programmer's own terms. The compiler's two
-/// carets ("first implementation here" / "conflicting implementation") are kept alongside, so
-/// the header says *what* collided and the carets say *where*.
+/// `E0119`, naming the colliding key(s) in the programmer's own terms. Every shape opens with
+/// `conflicting wiring:`, so a reader meets the class before the detail, then states the subject,
+/// the key, and how the entries collide. The compiler's two carets ("first implementation here" /
+/// "conflicting implementation") are kept alongside, so the header says *what* collided and the
+/// carets say *where*.
 pub fn plan_wiring_conflict(conflict: &WiringConflict) -> String {
     match conflict {
         WiringConflict::Duplicate { context, key } => format!(
-            "[{DUPLICATE_WIRING}] duplicate wiring for {} on `{context}`",
+            "[{DUPLICATE_WIRING}] conflicting wiring: `{context}` wires {} twice",
             key.noun(),
         ),
         WiringConflict::Overlap {
@@ -131,7 +134,7 @@ pub fn plan_wiring_conflict(conflict: &WiringConflict) -> String {
             conflicting,
             first,
         } => format!(
-            "[{OVERLAPPING_WIRING}] `{context}` cannot wire {} that is already set through {}",
+            "[{OVERLAPPING_WIRING}] conflicting wiring: `{context}` wires {}, which {} already covers",
             conflicting.conflicting_phrase(),
             first.source_phrase(),
         ),
@@ -140,13 +143,14 @@ pub fn plan_wiring_conflict(conflict: &WiringConflict) -> String {
             first,
             second,
         } => format!(
-            "[{MULTIPLE_NAMESPACES}] only one namespace can be used for each target type in \
-             `delegate_components!`, but `{context}` uses both `{first}` and `{second}`",
+            "[{MULTIPLE_NAMESPACES}] conflicting wiring: `{context}` joins both `{first}` and \
+             `{second}`, but a target type in `delegate_components!` can join only one namespace",
         ),
         WiringConflict::Redirect {
             context, key, path, ..
         } => format!(
-            "[{REDIRECT_COLLISION}] {} on `{context}` is redirected to `{path}`",
+            "[{REDIRECT_COLLISION}] conflicting wiring: `{context}` wires {} directly, but it is \
+             redirected to `{path}`",
             key.noun(),
         ),
         WiringConflict::DuplicateRedirect {
@@ -157,14 +161,14 @@ pub fn plan_wiring_conflict(conflict: &WiringConflict) -> String {
         } => {
             if first_path == second_path {
                 format!(
-                    "[{DUPLICATE_REDIRECT}] duplicate redirect for {} on `{context}` \
-                     (redirected to `{first_path}`)",
+                    "[{DUPLICATE_REDIRECT}] conflicting wiring: `{context}` redirects {} twice, \
+                     both times to `{first_path}`",
                     key.noun(),
                 )
             } else {
                 format!(
-                    "[{DUPLICATE_REDIRECT}] duplicate redirect for {} on `{context}`: redirected \
-                     to both `{first_path}` and `{second_path}`",
+                    "[{DUPLICATE_REDIRECT}] conflicting wiring: `{context}` redirects {} twice, to \
+                     `{first_path}` and to `{second_path}`",
                     key.noun(),
                 )
             }

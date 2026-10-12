@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E011] `App` cannot wire `@cgp.core.error.ErrorTypeProviderComponent.String` that is already set through `@cgp.core.error.ErrorTypeProviderComponent`
+error[E0119]: [CGP-E011] conflicting wiring: `App` wires `@cgp.core.error.ErrorTypeProviderComponent.String`, which `@cgp.core.error.ErrorTypeProviderComponent` already covers
   --> src/main.rs:32:10
    |
 31 |         @cgp.core.error.ErrorTypeProviderComponent: UseType<String>,

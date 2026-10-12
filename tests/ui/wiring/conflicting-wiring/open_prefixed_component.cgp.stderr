@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E014] duplicate redirect for component `GreeterComponent` on `App`: redirected to both `@app.GreeterComponent` and `@GreeterComponent`
+error[E0119]: [CGP-E014] conflicting wiring: `App` redirects component `GreeterComponent` twice, to `@app.GreeterComponent` and to `@GreeterComponent`
   --> src/main.rs:32:14
    |
 31 |         namespace DefaultNamespace;

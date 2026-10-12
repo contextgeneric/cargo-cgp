@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E011] `App` cannot wire `@cgp.core.error.ErrorRaiserComponent.Key` that is already set through `AppDefaults`
+error[E0119]: [CGP-E011] conflicting wiring: `App` wires `@cgp.core.error.ErrorRaiserComponent.Key`, which `AppDefaults` already covers
   --> src/main.rs:52:14
    |
 49 |         namespace AppDefaults;

@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E013] component `AreaCalculatorComponent` on `App` is redirected to `@AreaCalculatorComponent`
+error[E0119]: [CGP-E013] conflicting wiring: `App` wires component `AreaCalculatorComponent` directly, but it is redirected to `@AreaCalculatorComponent`
   --> src/main.rs:41:9
    |
 33 |         open AreaCalculatorComponent;

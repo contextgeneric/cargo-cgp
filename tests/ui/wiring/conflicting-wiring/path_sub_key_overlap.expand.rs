@@ -8,9 +8,9 @@
 //! ([delegate_duplicate_path_key.rs] maps the *same* path twice).
 //!
 //! The tool drops the redundant `IsProviderFor` half and rewrites the
-//! `DelegateComponent` half to `[CGP-E011] `App` cannot wire
-//! `@cgp.core.error.ErrorTypeProviderComponent.String` that is already set
-//! through `@cgp.core.error.ErrorTypeProviderComponent``, naming both
+//! `DelegateComponent` half to `[CGP-E011] conflicting wiring: `App` wires
+//! `@cgp.core.error.ErrorTypeProviderComponent.String`, which
+//! `@cgp.core.error.ErrorTypeProviderComponent` already covers`, naming both
 //! overlapping paths in bare `@…` form as the entries wrote them, without the
 //! wildcard tail the macro appends.
 //!
