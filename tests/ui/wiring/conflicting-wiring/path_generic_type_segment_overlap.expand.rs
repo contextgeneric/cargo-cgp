@@ -4,9 +4,10 @@
 //! `@DescriberComponent.Wrap<u64>` entry beside it, and the two `DelegateComponent<PathCons<..>>`
 //! impls conflict with the coherence error E0119.
 //!
-//! The tool names each type segment by its type alone, dropping its arguments, so the two keys
-//! render the same and the overlap is misreported as `[CGP-E010] duplicate wiring for
-//! `@DescriberComponent.Wrap` on `App``, a statement the program contradicts.
+//! The tool rewrites the conflict to `[CGP-E011] `App` cannot wire `@DescriberComponent.Wrap<u64>`
+//! that is already set through `@DescriberComponent.Wrap<T>``: each type segment keeps its
+//! arguments, which is what tells the two keys apart. Dropping them would render both keys the
+//! same and misreport the overlap as a duplicate.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
 //! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E011).

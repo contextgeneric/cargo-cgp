@@ -69,11 +69,12 @@ pub(crate) fn render_lookup_trait(tcx: TyCtxt<'_>, impl_did: DefId) -> String {
 /// Render a `PathCons<..>` key back to its bare `@a.b` surface form — the typed counterpart of the
 /// text `resugar_path`, done straight off the types so each generic parameter is read by name. A
 /// lowercase `Symbol` segment decodes to its string; a named segment keeps its type name, and any
-/// other type prints as itself; a generic segment, such as an `open` key's per-entry generic or a
-/// `for`-loop key parameter, prints its parameter name (`@ComputerComponent.Code.u64`). The
-/// `__Wildcard__` tail `cgp`'s macros end a key with is left out, since the programmer never wrote
-/// it, so a key reads exactly as its entry wrote it. The bare `@…` form (no `Path!(…)` wrapper) is
-/// what the rewritten conflict message uses. `None` on a spine that is not `PathCons`/`Nil`.
+/// other type prints as itself, arguments included (`Wrap<u64>`); a generic segment, such as an
+/// `open` key's per-entry generic or a `for`-loop key parameter, prints its parameter name
+/// (`@ComputerComponent.Code.u64`). The `__Wildcard__` tail `cgp`'s macros end a key with is left
+/// out, since the programmer never wrote it, so a key reads exactly as its entry wrote it. The bare
+/// `@…` form (no `Path!(…)` wrapper) is what the rewritten conflict message uses. `None` on a spine
+/// that is not `PathCons`/`Nil`.
 pub(crate) fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
     let mut segments: Vec<String> = Vec::new();
     let mut current = path;
@@ -99,16 +100,17 @@ pub(crate) fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<Str
                 }
                 let head = args.type_at(0);
                 match head.kind() {
-                    ty::Adt(head_def, _) => {
-                        if let Some(symbol) = decode_symbol(tcx, head) {
-                            segments.push(symbol);
-                        } else {
-                            segments.push(tcx.item_name(head_def.did()).to_string());
-                        }
+                    ty::Adt(_, _) if let Some(symbol) = decode_symbol(tcx, head) => {
+                        segments.push(symbol);
                     }
-                    // A generic segment prints its parameter name, and a primitive, reference, or
-                    // tuple segment, such as the `u64` an input-keyed `open` entry names, the type
-                    // itself.
+                    // A component marker or other plain type reads as its name.
+                    ty::Adt(head_def, head_args) if head_args.is_empty() => {
+                        segments.push(tcx.item_name(head_def.did()).to_string());
+                    }
+                    // Any other segment prints as the type itself: a generic segment as its
+                    // parameter name, a primitive such as the `u64` an input-keyed `open` entry
+                    // names, and a type with arguments with all of them (`Wrap<u64>`), which is
+                    // what tells two keys over one type apart.
                     _ => segments.push(tcx.erase_and_anonymize_regions(head).to_string()),
                 }
                 current = args.type_at(1);

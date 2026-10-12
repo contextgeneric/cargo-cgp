@@ -1,9 +1,9 @@
-error[E0119]: [CGP-E010] duplicate wiring for `@DescriberComponent.Wrap` on `App`
-  --> src/main.rs:39:10
+error[E0119]: [CGP-E011] `App` cannot wire `@DescriberComponent.Wrap<u64>` that is already set through `@DescriberComponent.Wrap<T>`
+  --> src/main.rs:40:10
    |
-38 |         @DescriberComponent.<T> Wrap<T>: DescribeAny,
+39 |         @DescriberComponent.<T> Wrap<T>: DescribeAny,
    |          ------------------------------ first implementation here
-39 |         @DescriberComponent.Wrap<u64>: DescribeAny,
+40 |         @DescriberComponent.Wrap<u64>: DescribeAny,
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
 For more information about this error, try `rustc --explain E0119`.
