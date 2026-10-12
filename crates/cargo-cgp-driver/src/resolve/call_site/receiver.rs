@@ -12,8 +12,9 @@ use crate::resolve::call_site::{call_output_ty, item_ty, lower_hir_ty, peel_hir_
 /// context in a consumer-method call, so this is the anchor's one source of it. The type is read
 /// syntactically: a path to a binding follows the binding (a `let` typed by its annotation or its
 /// initializer, a fn parameter typed by the enclosing signature); a struct literal, unit-struct
-/// value, const, or static names its type directly; a plain constructor call (`MyApp::new()`)
-/// takes the callee's declared return type; references are peeled on the way. `None` for a
+/// value, const, or static names its type directly; a plain constructor call (`MyApp::new()`, or a
+/// tuple-struct or variant constructor such as `Shape::Circle(…)`) takes the callee's declared
+/// return type; references are peeled on the way. `None` for a
 /// receiver whose type only typeck could know (a method call's result, a field access).
 pub(crate) fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     match expr.kind {

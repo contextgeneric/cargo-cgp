@@ -104,8 +104,9 @@ pub(crate) fn instantiate_written<'tcx>(
     Some(Ty::new_adt(tcx, tcx.adt_def(did), args))
 }
 
-/// The declared return type of a call to a non-generic fn named by path — the one expression
-/// shape whose type a (collection-cached) signature supplies without typeck. `None` for a generic
+/// The declared return type of a call to a non-generic fn named by path, or to a tuple-struct or
+/// enum-variant constructor (`Shape::Circle(…)`), the expression shapes whose type a
+/// (collection-cached) signature supplies without typeck. `None` for a generic
 /// callee (its instantiation is exactly what inference would have decided), a type-relative path
 /// (`Vec::new`, whose resolution lives only in typeck results), or an output that still carries a
 /// late-bound region (relating it would leak an escaping bound var).
