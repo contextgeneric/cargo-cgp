@@ -36,10 +36,11 @@ mirror the error catalog:
   without declaring it) and `wrong-component-half/` (a construct that names or sits on the wrong
   half of a component, such as a consumer trait where its provider trait belongs).
 - [`ui/wiring/`](ui/wiring): structural wiring failures, such as conflicting wiring, orphan-rule
-  violations, cycles, and unconstrained generics.
+  violations, cycles, and unconstrained generics, and `unresolved-wiring-name/` (a wiring key,
+  value, or provider that names nothing, or the wrong kind of item).
 - [`ui/uncataloged/`](ui/uncataloged): mistakes the catalog does not cover yet, one directory per
-  class: `extensible-data/`, `wiring-keys/`, `implicit-arguments/`, and `macro-defects/` (mistakes
-  a `cgp` macro mishandles).
+  class: `extensible-data/`, `implicit-arguments/`, and `macro-defects/` (mistakes a `cgp` macro
+  mishandles).
 
 Three more directories hold fixtures that belong to no error class:
 
