@@ -4,12 +4,12 @@ error[E0277]: [CGP-E001] `HasField` not derived for field `name` of `App`
 70 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
-   = help: make sure that `#[derive(HasField)]` is used for `AppFields`
    = note: root cause: [CGP-E111] `HasField` not derived for field `name` of `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanGreet` for context `App`
              └─ [CGP-E102] provider trait impl `Greeter` with context `App` for provider `GreetHello`
                └─ [CGP-E104] trait impl `HasName` for `App`
                  └─ [CGP-E111] `HasField` not derived for field `name` of `App`
+   = help: make sure that `#[derive(HasField)]` is used for `AppFields`
 
 For more information about this error, try `rustc --explain E0277`.

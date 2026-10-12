@@ -11,7 +11,7 @@
 pub fn internal_error_note(detail: &str, report_url: &str) -> String {
     format!(
         "cargo-cgp could not transform this diagnostic because of an internal error, so it is \
-         shown as rustc reported it: {detail}\n\
+         shown as the compiler reported it: {detail}\n\
          this is a bug in cargo-cgp; please report it at {report_url}"
     )
 }

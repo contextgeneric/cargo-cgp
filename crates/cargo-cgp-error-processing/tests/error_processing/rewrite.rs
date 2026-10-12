@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, ComponentTraitNames, parse_trait_bound, rewrite_message,
-    rewrite_required_for, rewrite_trait_bound, rewrite_wiring_overflow,
+    rewrite_required_for, rewrite_trait_bound, rewrite_wiring_overflow, wiring_overflow_help,
 };
 
 /// The fixed map every test's [`ComponentNameMap`] initializes to.
@@ -496,8 +496,18 @@ fn rewrites_a_wiring_overflow_into_its_cycle_header() {
     assert_eq!(
         out.as_deref(),
         Some(
-            "[CGP-E020] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves — the lookup recurses without terminating"
+            "[CGP-E020] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because the lookup recurses without terminating"
         )
+    );
+}
+
+#[test]
+fn the_wiring_overflow_help_names_the_usual_cause_and_both_fixes() {
+    assert_eq!(
+        wiring_overflow_help(),
+        "a lookup that recurses usually means the component is delegated back to the context itself \
+         (for example, wired to `UseContext` with no direct implementation of the consumer trait), so \
+         wire a real provider, or implement the consumer trait directly on the context"
     );
 }
 

@@ -66,7 +66,7 @@ pub fn rewrite_wiring_overflow(message: &str, names: &ComponentNameMap) -> Optio
     let entry = names.get(component)?;
     let generics = render_trait_generics(&[], &args[1..], entry.params);
     Some(format!(
-        "[{WIRING_OVERFLOW}] the wiring for the consumer trait `{}{generics}` on context `{subject}` never resolves — the lookup recurses without terminating",
+        "[{WIRING_OVERFLOW}] the wiring for the consumer trait `{}{generics}` on context `{subject}` never resolves, because the lookup recurses without terminating",
         entry.consumer
     ))
 }
@@ -75,8 +75,8 @@ pub fn rewrite_wiring_overflow(message: &str, names: &ComponentNameMap) -> Optio
 /// what a non-terminating lookup usually means, and the two ways to fix it.
 pub fn wiring_overflow_help() -> String {
     "a lookup that recurses usually means the component is delegated back to the context itself \
-     — e.g. wired to `UseContext` with no direct implementation of the consumer trait — so wire \
-     a real provider, or implement the consumer trait directly on the context"
+     (for example, wired to `UseContext` with no direct implementation of the consumer trait), so \
+     wire a real provider, or implement the consumer trait directly on the context"
         .to_owned()
 }
 

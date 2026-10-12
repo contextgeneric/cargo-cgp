@@ -260,19 +260,17 @@ impl<E: Emitter> CgpEmitter<E> {
         let causes = Causes::union(resolveds.iter().map(|resolved| resolved.causes.clone()));
         let causes = coalesce_underived_fields(&causes);
         let headline = coalesced_headline(resolveds, &causes);
-        let mut children: Vec<_> = fix_help_messages(&causes)
-            .into_iter()
-            .map(|help| subdiag(Sublevel::Help, help))
-            .collect();
-        children.extend(
-            PendingNote {
-                causes,
-                header_leaf: None,
-            }
-            .render(seen)
-            .into_iter()
-            .map(|note| subdiag(Sublevel::Note, note)),
-        );
+        // The fixes follow the note that explains them, as they do in a block of its own.
+        let helps = fix_help_messages(&causes);
+        let mut children: Vec<_> = PendingNote {
+            causes,
+            header_leaf: None,
+        }
+        .render(seen)
+        .into_iter()
+        .map(|note| subdiag(Sublevel::Note, note))
+        .collect();
+        children.extend(helps.into_iter().map(|help| subdiag(Sublevel::Help, help)));
 
         let mut diag = diags[0].clone();
         diag.messages = vec![(DiagMessage::Str(headline.into()), Style::NoStyle)];
@@ -338,7 +336,7 @@ impl<E: Emitter> CgpEmitter<E> {
                     let Some(&group) = group_of.get(&index) else {
                         // A resolution that never coalesces: render its own note and emit it here.
                         let mut diag = entry.diag.clone();
-                        self.append_note(&mut diag, &entry.note, &mut seen);
+                        self.insert_note(&mut diag, &entry.note, &mut seen);
                         to_emit.push(diag);
                         continue;
                     };
@@ -349,7 +347,7 @@ impl<E: Emitter> CgpEmitter<E> {
                     if members.len() == 1 {
                         // A group's first member is where it is emitted, so that member is `entry`.
                         let mut diag = entry.diag.clone();
-                        self.append_note(&mut diag, &entry.note, &mut seen);
+                        self.insert_note(&mut diag, &entry.note, &mut seen);
                         to_emit.push(diag);
                     } else {
                         let mut pairs: Vec<(&Resolved, &DiagInner)> = members
@@ -861,8 +859,8 @@ impl<E: Emitter> CgpEmitter<E> {
         }
 
         // The `help`s are applied now; the `root cause:` note is not, because rendering it needs the
-        // emission order the flush establishes (see [`PendingNote`]). It is appended there, after
-        // these children, which preserves the help-then-note order this built directly before.
+        // emission order the flush establishes (see [`PendingNote`]). The flush puts it ahead of
+        // these `help`s, so a fix follows the cause it repairs.
         diag.children = plan
             .helps
             .into_iter()
@@ -883,25 +881,36 @@ impl<E: Emitter> CgpEmitter<E> {
         }
     }
 
-    /// Render a deferred [`PendingNote`] against the `seen` set shared by this flush and append it to
-    /// `diag`. The note is post-processed on its own, since the rest of the diagnostic was already
-    /// processed when it arrived and re-running the chain over it could compound.
-    fn append_note(&self, diag: &mut DiagInner, note: &PendingNote, seen: &mut ChainNodeSet) {
+    /// Render a deferred [`PendingNote`] against the `seen` set shared by this flush and add it to
+    /// `diag`, ahead of its `help`s, so each fix follows the cause it repairs. The note is
+    /// post-processed on its own, since the rest of the diagnostic was already processed when it
+    /// arrived and re-running the chain over it could compound.
+    fn insert_note(&self, diag: &mut DiagInner, note: &PendingNote, seen: &mut ChainNodeSet) {
         // A resolver-built note never carries the `` `HasField<…>` is not implemented `` clause the
         // missing-field reword keys on (see
         // cgp-knowledge-base/cargo-cgp/implementation/error-processing.md), so that branch has
         // nothing to match and the flag it needs is moot here.
         const HAS_FIELD_IMPLS: bool = false;
-        for text in note.render(seen) {
-            let text = postprocess_message(
-                &text,
-                HAS_FIELD_IMPLS,
-                Origin::Rewritten,
-                self.ambiguous_names(Origin::Rewritten),
-            )
-            .unwrap_or(text);
-            diag.children.push(subdiag(Sublevel::Note, text));
-        }
+        let notes: Vec<_> = note
+            .render(seen)
+            .into_iter()
+            .map(|text| {
+                let text = postprocess_message(
+                    &text,
+                    HAS_FIELD_IMPLS,
+                    Origin::Rewritten,
+                    self.ambiguous_names(Origin::Rewritten),
+                )
+                .unwrap_or(text);
+                subdiag(Sublevel::Note, text)
+            })
+            .collect();
+        let first_help = diag
+            .children
+            .iter()
+            .position(|child| child.level == Sublevel::Help)
+            .unwrap_or(diag.children.len());
+        diag.children.splice(first_help..first_help, notes);
     }
 }
 

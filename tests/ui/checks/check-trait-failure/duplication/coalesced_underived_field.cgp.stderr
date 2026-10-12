@@ -8,7 +8,6 @@ error[E0277]: [CGP-E001] `HasField` not derived for field `name` of `App`
 90 |         FooComponent,
    |         ^^^^^^^^^^^^
    |
-   = help: make sure that `#[derive(HasField)]` is used for `App`
    = note: root cause: [CGP-E111] `HasField` not derived for field `name` of `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanBaz` for context `App`
@@ -19,5 +18,6 @@ error[E0277]: [CGP-E001] `HasField` not derived for field `name` of `App`
                      └─ [CGP-E102] provider trait impl `Foo` with context `App` for provider `ProvideFoo`
                        └─ [CGP-E104] trait impl `HasName` for `App`
                          └─ [CGP-E111] `HasField` not derived for field `name` of `App`
+   = help: make sure that `#[derive(HasField)]` is used for `App`
 
 For more information about this error, try `rustc --explain E0277`.

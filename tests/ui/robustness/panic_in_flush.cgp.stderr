@@ -34,7 +34,7 @@ note: required by a bound in `__CheckRectangle`
 52 | |     }
 53 | | }
    | |_^ required by this bound in `__CheckRectangle`
-   = note: cargo-cgp could not transform this diagnostic because of an internal error, so it is shown as rustc reported it: injected test panic in the Flush stage (at crates/cargo-cgp-driver/src/emitter/test_panic.rs:31:9)
+   = note: cargo-cgp could not transform this diagnostic because of an internal error, so it is shown as the compiler reported it: injected test panic in the Flush stage (at crates/cargo-cgp-driver/src/emitter/test_panic.rs:31:9)
            this is a bug in cargo-cgp; please report it at https://github.com/contextgeneric/cargo-cgp/issues
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
