@@ -1,7 +1,9 @@
-error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:31:6
+error[E0207]: [CGP-E018] `#[default_impl]` cannot register `ShowWith<T>` for `String`, because the provider's impl is generic over `T`
+  --> src/main.rs:29:6
    |
-31 | impl<T: Display> ShowImpl<T> {
-   |      ^ unconstrained type parameter
+29 | impl<T: Display> ShowImpl<T> {
+   |      ^
+   |
+   = help: write the impl for `String` alone, as `#[cgp_impl(ShowWith<String>)]` with `String` in place of `T`
 
 For more information about this error, try `rustc --explain E0207`.

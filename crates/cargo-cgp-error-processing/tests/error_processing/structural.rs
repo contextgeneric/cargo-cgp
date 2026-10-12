@@ -94,6 +94,7 @@ fn a_default_impl_on_a_generic_impl_names_the_parameter() {
         provider: "ShowWithDisplay".to_owned(),
         key: "String".to_owned(),
         parameter: "T".to_owned(),
+        provider_at_key: None,
     };
     assert_eq!(
         plan_structural_mistake(&mistake),
@@ -102,6 +103,24 @@ fn a_default_impl_on_a_generic_impl_names_the_parameter() {
     assert_eq!(
         structural_mistake_help(&mistake),
         "write `ShowWithDisplay`'s impl for `String` alone, in the concise `#[cgp_impl]` form without `T`",
+    );
+}
+
+#[test]
+fn a_default_impl_on_a_generic_provider_struct_names_the_provider_at_the_key() {
+    let mistake = StructuralMistake::GenericDefaultImpl {
+        provider: "ShowWith<T>".to_owned(),
+        key: "String".to_owned(),
+        parameter: "T".to_owned(),
+        provider_at_key: Some("ShowWith<String>".to_owned()),
+    };
+    assert_eq!(
+        plan_structural_mistake(&mistake),
+        "[CGP-E018] `#[default_impl]` cannot register `ShowWith<T>` for `String`, because the provider's impl is generic over `T`",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "write the impl for `String` alone, as `#[cgp_impl(ShowWith<String>)]` with `String` in place of `T`",
     );
 }
 

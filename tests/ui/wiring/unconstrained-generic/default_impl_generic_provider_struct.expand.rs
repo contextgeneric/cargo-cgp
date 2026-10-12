@@ -4,12 +4,10 @@
 //!
 //! The registration copies the impl's parameter `T` and names the provider `ShowWith<T>`, but its
 //! key `String` and the table do not use `T`, so the compiler rejects it with `E0207`. The tool
-//! passes the error through: the `#[default_impl]` reshaping covers a provider whose struct does not
-//! use the parameter, and the per-entry reshaping covers entries a wiring table names.
+//! reports `[CGP-E018]`, as for a provider struct that does not use the parameter, with a help that
+//! registers the provider at the key: `#[cgp_impl(ShowWith<String>)]` with `String` in place of `T`.
 //!
 //! CGP error class: unconstrained generic (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unconstrained-generic.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

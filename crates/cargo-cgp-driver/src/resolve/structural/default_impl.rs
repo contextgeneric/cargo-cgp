@@ -3,7 +3,7 @@
 use cargo_cgp_error_processing::{StructuralMistake, WiringKey};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::print::with_forced_trimmed_paths;
-use rustc_middle::ty::{self, TyCtxt};
+use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _};
 use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
@@ -15,8 +15,9 @@ use crate::resolve::conflict::{describe_key, impl_delegate_type, same_range};
 /// copies the provider impl's generic parameters, so a parameter the key and the table do not
 /// mention is unconstrained; the caret is on that parameter in the provider's impl. Recognized as
 /// a local impl of a namespace lookup trait (not `DelegateComponent`) declaring the parameter at the
-/// caret, which neither its key, its trait arguments, nor the provider it registers uses. `None`
-/// otherwise.
+/// caret, which neither its key nor its trait arguments use. A provider struct that uses the
+/// parameter (`ShowWith<T>`) is recognized only for a type key, whose type then stands in for the
+/// parameter in the fix (`ShowWith<String>`). `None` otherwise.
 pub fn detect_generic_default_impl(
     tcx: TyCtxt<'_>,
     primary_span: Span,
@@ -59,22 +60,46 @@ pub fn detect_generic_default_impl(
         if trait_ref.args.iter().any(uses_param) {
             continue;
         }
-        // The registration names the provider struct, which the copied parameter is not part of.
+        // The registration names the provider struct. When the struct itself uses the parameter,
+        // the fix registers it at the key, with the key's type in the parameter's place.
         let provider = impl_delegate_type(tcx, impl_did)?;
-        if !matches!(provider.kind(), ty::Adt(..)) || uses_param(provider.into()) {
+        if !matches!(provider.kind(), ty::Adt(..)) {
             continue;
         }
+        let provider_at_key = if uses_param(provider.into()) {
+            let key_ty = trait_ref.self_ty();
+            let args = ty::GenericArgs::for_item(tcx, impl_did, |def, _| {
+                if def.index == param.index {
+                    key_ty.into()
+                } else {
+                    tcx.mk_param_from_def(def)
+                }
+            });
+            let at_key = ty::EarlyBinder::bind(tcx, provider)
+                .instantiate(tcx, args)
+                .skip_norm_wip();
+            if at_key.has_param() {
+                continue;
+            }
+            Some(at_key)
+        } else {
+            None
+        };
         // Printed by each type's own name, as an `E0207` arrives before a trimmed print is safe
         // (see the loop detector).
         return with_forced_trimmed_paths!({
             let key = match describe_key(tcx, trait_ref.self_ty(), impl_did)? {
-                WiringKey::Path(text) | WiringKey::Component(text) | WiringKey::Type(text) => text,
-                WiringKey::Blanket(_) => return None,
+                WiringKey::Type(text) => text,
+                WiringKey::Path(text) | WiringKey::Component(text) if provider_at_key.is_none() => {
+                    text
+                }
+                _ => return None,
             };
             Some(StructuralMistake::GenericDefaultImpl {
                 provider: provider.to_string(),
                 key,
                 parameter: param.name.to_string(),
+                provider_at_key: provider_at_key.map(|at_key| at_key.to_string()),
             })
         });
     }

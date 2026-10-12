@@ -65,11 +65,14 @@ pub enum StructuralMistake {
         key: String,
     },
     /// A `#[default_impl(key in …)]` on the impl of `provider` that is generic over `parameter`,
-    /// which the registration copies but nothing in it uses.
+    /// which the registration copies but nothing in it uses. `provider_at_key` is the provider with
+    /// `key` in place of `parameter`, when the provider struct itself uses the parameter
+    /// (`ShowWith<String>` for `ShowWith<T>`).
     GenericDefaultImpl {
         provider: String,
         key: String,
         parameter: String,
+        provider_at_key: Option<String>,
     },
     /// An entry for `key` in `table` binds generic `parameters` (in written order) that its key
     /// does not use, so the impls it lowers to cannot bind them; `used` says what in the entry
@@ -154,6 +157,7 @@ pub fn plan_structural_mistake(mistake: &StructuralMistake) -> String {
             provider,
             key,
             parameter,
+            ..
         } => format!(
             "[{GENERIC_DEFAULT_IMPL}] `#[default_impl]` cannot register `{provider}` for `{key}`, because the provider's impl is generic over `{parameter}`"
         ),
@@ -217,8 +221,17 @@ pub fn structural_mistake_help(mistake: &StructuralMistake) -> String {
             provider,
             key,
             parameter,
+            provider_at_key: None,
         } => format!(
             "write `{provider}`'s impl for `{key}` alone, in the concise `#[cgp_impl]` form without `{parameter}`"
+        ),
+        StructuralMistake::GenericDefaultImpl {
+            key,
+            parameter,
+            provider_at_key: Some(provider_at_key),
+            ..
+        } => format!(
+            "write the impl for `{key}` alone, as `#[cgp_impl({provider_at_key})]` with `{key}` in place of `{parameter}`"
         ),
         StructuralMistake::EntryParametersNotInKey {
             parameters, used, ..
