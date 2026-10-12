@@ -1,14 +1,13 @@
 //! A provider naming `Self::Error` twice without importing the abstract error type.
 //!
-//! rustc reports one `E0220` per use, each "associated type `Error` not found for `__Context__`",
-//! though one import, `#[use_type(HasErrorType.Error)]`, fixes both.
+//! rustc reports one `E0220` per use, each "associated type `Error` not found for `__Context__`".
+//! One import, `#[use_type(HasErrorType.Error)]`, fixes both, so the tool reports one
+//! `[CGP-E035]` at the first use and drops the second.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E035
 
 use cgp::prelude::*;
 

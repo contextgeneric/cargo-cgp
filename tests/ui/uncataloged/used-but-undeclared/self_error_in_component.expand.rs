@@ -3,12 +3,11 @@
 //!
 //! The signature is copied into the consumer trait, where `Self` is the context, and into the
 //! provider trait, where `#[cgp_component]` writes it as `__Context__`, so rustc reports the same
-//! `E0220` twice at one caret, once for `Self` and once for `__Context__`. The fix is
-//! `#[use_type(HasErrorType.Error)]` on the component.
+//! `E0220` twice at one caret, once for `Self` and once for `__Context__`. The tool reports one
+//! `[CGP-E035]` with the `#[use_type(HasErrorType.Error)]` import, and drops the copy at the same
+//! caret.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

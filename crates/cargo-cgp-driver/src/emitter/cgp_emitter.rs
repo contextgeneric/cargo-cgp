@@ -11,17 +11,19 @@ use cargo_cgp_error_processing::rewrite::{
 use cargo_cgp_error_processing::{
     AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind, Leaf,
     MissingUseProvider, Origin, OrphanConflict, PendingNote, Resolved, StructuralMistake,
-    UndeclaredTrait, WiringOverflow, cause_signature, cgp_impl_misuse_help,
+    UndeclaredTrait, UnimportedAbstractType, WiringOverflow, cause_signature, cgp_impl_misuse_help,
     coalesce_underived_fields, coalesced_headline, explain_footer_codes, fix_help_messages,
     group_by_shared_cause, internal_error_note, is_explain_footer_text, is_method_bounds_text,
     is_recursion_limit_help_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
     missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
     plan_missing_use_provider, plan_orphan_conflict, plan_resolved, plan_structural_mistake,
-    plan_undeclared_trait, plan_wiring_conflict, postprocess_message, structural_mistake_help,
-    undeclared_trait_help, wiring_conflict_help, wiring_overflow_help,
+    plan_undeclared_trait, plan_unimported_abstract_type, plan_wiring_conflict,
+    postprocess_message, structural_mistake_help, undeclared_trait_help,
+    unimported_abstract_type_help, wiring_conflict_help, wiring_overflow_help,
 };
 use rustc_errors::codes::{
-    E0107, E0117, E0119, E0186, E0207, E0210, E0271, E0275, E0277, E0308, E0425, E0428, E0599,
+    E0107, E0117, E0119, E0186, E0207, E0210, E0220, E0271, E0275, E0277, E0308, E0425, E0428,
+    E0599,
 };
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
@@ -43,7 +45,10 @@ use crate::emitter::edit::{
 };
 use crate::emitter::output::{Output, lock_output, register_output};
 use crate::emitter::test_panic::{TestPanic, inject};
-use crate::resolve::{self, ConflictAction, ConflictTrait, DetectedCgpImplMisuse, ResolveCache};
+use crate::resolve::{
+    self, ConflictAction, ConflictTrait, DetectedCgpImplMisuse, DetectedUnimportedAbstractType,
+    ResolveCache,
+};
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
 /// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
@@ -89,6 +94,9 @@ pub struct CgpEmitter<E: Emitter> {
     /// The structural mistakes already reported, so a mistake rustc reports as several errors
     /// becomes one.
     structural_reported: Vec<StructuralMistake>,
+    /// The abstract types already reported as used but not imported, so a second use of one in
+    /// the same item, or the same use reported for another generated item, is not a second error.
+    unimported_reported: Vec<UnimportedReport>,
     /// The `#[cgp_impl]` header-trait mistakes in the crate — a consumer trait or a non-CGP trait
     /// named where the provider trait belongs — detected once from the compiler and reused. `None`
     /// until first computed under an available `TyCtxt` (the macro-lowering errors this recognizes
@@ -114,6 +122,15 @@ pub struct CgpEmitter<E: Emitter> {
 /// The subtrees a flush has already drawn, shared across its blocks so a later one `(*)`-elides
 /// what an earlier one showed rather than repeating it.
 type ChainNodeSet = HashSet<ChainNode>;
+
+/// An abstract type reported as used but not imported: the trait declaring it, the generated item
+/// the use sits in, and the use's caret. A later report of the same type is the same mistake when
+/// it shares the item (a second use) or the caret (one signature the macro copied into two items).
+struct UnimportedReport {
+    trait_did: rustc_span::def_id::DefId,
+    item: rustc_span::def_id::DefId,
+    span: Span,
+}
 
 /// What [`CgpEmitter::transform_resolved`] leaves for the rest of the transform: the note the
 /// flush renders, the class headline the de-duplication ledger records, and whether the block may
@@ -229,6 +246,7 @@ impl<E: Emitter> CgpEmitter<E> {
             resolve_cache: ResolveCache::new(),
             cgp_spans: Vec::new(),
             structural_reported: Vec::new(),
+            unimported_reported: Vec::new(),
             cgp_impl_misuses: None,
             cgp_used: OnceCell::new(),
             ambiguous: OnceCell::new(),
@@ -615,6 +633,29 @@ impl<E: Emitter> CgpEmitter<E> {
         let primary_span = diag.span.primary_span()?;
         rustc_middle::ty::tls::with_opt(|tcx| {
             resolve::detect_missing_use_provider(tcx?, primary_span)
+        })
+    }
+
+    /// Recognize `diag` as an abstract type a CGP definition uses but does not import: an `E0220`
+    /// for an associated type of the generated context, confirmed by
+    /// [`resolve::detect_unimported_abstract_type`]. The type and its context are read from the
+    /// diagnostic's arguments, since its main message is a Fluent one.
+    fn unimported_abstract_type(&self, diag: &DiagInner) -> Option<DetectedUnimportedAbstractType> {
+        if diag.code != Some(E0220) {
+            return None;
+        }
+        let arg = |name: &str| match diag.args.get(name) {
+            Some(DiagArgValue::Str(value)) => Some(value.to_string()),
+            _ => None,
+        };
+        if arg("assoc_kind")? != "type" {
+            return None;
+        }
+        let type_name = arg("assoc_ident")?;
+        let qself = arg("qself")?;
+        let primary_span = diag.span.primary_span()?;
+        rustc_middle::ty::tls::with_opt(|tcx| {
+            resolve::detect_unimported_abstract_type(tcx?, primary_span, &type_name, &qself)
         })
     }
 
@@ -1125,6 +1166,36 @@ impl<E: Emitter> CgpEmitter<E> {
             diag.span = MultiSpan::from_span(primary_span);
             diag.children
                 .push(subdiag(Sublevel::Help, missing_use_provider_help(&missing)));
+            self.postprocess(&mut diag, Origin::Rewritten);
+            self.record_cgp_spans(&diag);
+            self.push(BufEntry::Plain(Box::new(diag)));
+            return;
+        }
+        // An abstract type used without its `#[use_type(…)]` import: rustc reports an `E0220` on
+        // the generated context, naming no fix. Reword it to name the type and carry the import in
+        // a `help`, once per mistake.
+        if let Some(detected) = self.unimported_abstract_type(&diag)
+            && let Some(primary_span) = diag.span.primary_span()
+        {
+            let repeated = self.unimported_reported.iter().any(|report| {
+                report.trait_did == detected.trait_did
+                    && (report.item == detected.item || report.span == primary_span)
+            });
+            if repeated {
+                return;
+            }
+            self.unimported_reported.push(UnimportedReport {
+                trait_did: detected.trait_did,
+                item: detected.item,
+                span: primary_span,
+            });
+            let unimported: UnimportedAbstractType = detected.unimported;
+            replace_header(&mut diag, plan_unimported_abstract_type(&unimported));
+            diag.span = MultiSpan::from_span(primary_span);
+            diag.children.push(subdiag(
+                Sublevel::Help,
+                unimported_abstract_type_help(&unimported),
+            ));
             self.postprocess(&mut diag, Origin::Rewritten);
             self.record_cgp_spans(&diag);
             self.push(BufEntry::Plain(Box::new(diag)));

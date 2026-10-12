@@ -1,7 +1,9 @@
-error[E0220]: associated type `Error` not found for `Self`
-  --> src/main.rs:18:30
+error[E0220]: [CGP-E035] the abstract type `Error` is used but not imported
+  --> src/main.rs:17:30
    |
-18 |     let _error: Option<Self::Error> = None;
-   |                              ^^^^^ associated type `Error` not found
+17 |     let _error: Option<Self::Error> = None;
+   |                              ^^^^^
+   |
+   = help: import it with `#[use_type(HasErrorType.Error)]`
 
 For more information about this error, try `rustc --explain E0220`.

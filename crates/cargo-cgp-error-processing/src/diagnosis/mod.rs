@@ -21,6 +21,7 @@ mod resolved;
 mod similar;
 mod structural;
 mod undeclared;
+mod unimported;
 mod wiring;
 mod wording;
 
@@ -38,5 +39,6 @@ pub use resolved::*;
 pub use similar::*;
 pub use structural::*;
 pub use undeclared::*;
+pub use unimported::*;
 pub use wiring::*;
 pub use wording::*;

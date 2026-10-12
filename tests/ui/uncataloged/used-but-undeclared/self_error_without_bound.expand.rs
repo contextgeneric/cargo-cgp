@@ -1,12 +1,12 @@
 #![feature(prelude_import)]
 //! `Self::Error` in a provider without importing the abstract error type.
 //!
-//! `E0220` "associated type `Error` not found for `__Context__`"; the fix is
-//! `#[use_type(HasErrorType.Error)]`.
+//! `#[cgp_impl]` writes the body's `Self` as the generated `__Context__`, which carries no
+//! `HasErrorType` bound, so rustc reports `E0220`, "associated type `Error` not found for
+//! `__Context__`". The tool reshapes it into `[CGP-E035]`, naming the abstract type, with the
+//! `#[use_type(HasErrorType.Error)]` import in a `help`.
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

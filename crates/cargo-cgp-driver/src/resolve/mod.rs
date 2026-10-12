@@ -37,6 +37,7 @@ mod orphan;
 mod overflow;
 mod structural;
 mod undeclared;
+mod unimported;
 mod walk;
 
 pub use ambiguous_names::ambiguous_type_names;
@@ -57,3 +58,4 @@ pub use structural::{
     detect_generic_default_impl, detect_loop_key_without_variable,
 };
 pub use undeclared::detect_undeclared_trait;
+pub use unimported::{DetectedUnimportedAbstractType, detect_unimported_abstract_type};

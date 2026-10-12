@@ -1,7 +1,7 @@
 error[E0220]: associated type `Error` not found for `Self`
-  --> src/main.rs:18:30
+  --> src/main.rs:17:30
    |
-18 |     let _error: Option<Self::Error> = None;
+17 |     let _error: Option<Self::Error> = None;
    |                              ^^^^^ associated type `Error` not found
 
 For more information about this error, try `rustc --explain E0220`.

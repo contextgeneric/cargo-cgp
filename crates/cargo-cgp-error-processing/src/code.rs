@@ -141,6 +141,10 @@ pub const NON_CGP_TRAIT_IN_CGP_IMPL: &str = "CGP-E033";
 /// `#[use_provider]`) names the component's consumer trait where its provider trait belongs. The
 /// Rust code stays `E0107`.
 pub const CONSUMER_TRAIT_IN_PROVIDER_BOUND: &str = "CGP-E034";
+/// `CGP-E035`: an abstract type is used in a CGP definition (`Self::Error`, or a bare `Error`) that
+/// does not import it with `#[use_type(…)]`, so the generated context carries no bound declaring
+/// it. The Rust code stays `E0220` (or `E0425` for the bare name).
+pub const ABSTRACT_TYPE_NOT_IMPORTED: &str = "CGP-E035";
 
 // The steps of a dependency chain (`CGP-E101` to `CGP-E109`).
 

@@ -17,4 +17,5 @@ pub mod structural;
 pub mod support;
 pub mod tree;
 pub mod undeclared;
+pub mod unimported;
 pub mod wiring;

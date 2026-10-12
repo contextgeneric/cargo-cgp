@@ -1,13 +1,9 @@
-error[E0220]: associated type `Error` not found for `Self`
-  --> src/main.rs:19:44
+error[E0220]: [CGP-E035] the abstract type `Error` is used but not imported
+  --> src/main.rs:18:44
    |
-19 |     fn load(&self) -> Result<String, Self::Error>;
-   |                                            ^^^^^ associated type `Error` not found
-
-error[E0220]: associated type `Error` not found for `__Context__`
-  --> src/main.rs:19:44
+18 |     fn load(&self) -> Result<String, Self::Error>;
+   |                                            ^^^^^
    |
-19 |     fn load(&self) -> Result<String, Self::Error>;
-   |                                            ^^^^^ associated type `Error` not found
+   = help: import it with `#[use_type(HasErrorType.Error)]`
 
 For more information about this error, try `rustc --explain E0220`.
