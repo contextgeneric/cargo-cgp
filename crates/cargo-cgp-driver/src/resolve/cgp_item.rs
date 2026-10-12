@@ -118,8 +118,15 @@ pub(crate) fn is_consumer_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// over-reach, so a trait qualifies only when its blanket genuinely depends on CGP
 /// ([`blanket_depends_on_cgp`]), wherever the trait is defined. That admits the `#[cgp_fn]` output
 /// of the checked crate and a trait a library publishes alike.
+///
+/// A blanket trait one of CGP's own crates defines ([`CGP_CRATES`]) is excluded: those are the
+/// extensible-data casts and builders (`CanUpcast`, `CanBuildFrom`), whose failures end on the
+/// extractor and builder recursions the walk cannot yet word as the field or variant at fault,
+/// while the compiler's own headline names it (`Big: FromVariant<Symbol!("Bar")>`).
 pub(crate) fn is_blanket_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    has_blanket_impl(tcx, def_id) && blanket_depends_on_cgp(tcx, def_id, 0)
+    !CGP_CRATES.contains(&tcx.crate_name(def_id.krate).as_str())
+        && has_blanket_impl(tcx, def_id)
+        && blanket_depends_on_cgp(tcx, def_id, 0)
 }
 
 /// Whether `def_id` is a trait carrying at least one blanket impl.

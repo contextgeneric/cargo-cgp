@@ -45,6 +45,27 @@ pub(crate) fn is_descendable<'tcx>(
         || is_provider_trait(tcx, did)
 }
 
+/// Whether `pred` is a provider-trait obligation for a context other than `context`, such as a
+/// dispatch matcher called with the unit context. Such a step belongs to another context's
+/// wiring, so a non-context bound's blanket impl is not followed into it: that impl does not
+/// depend on the context the walk is resolving. The context is the provider trait's first type
+/// argument after `Self`, read by type position as the labels read it.
+pub(crate) fn is_other_context_provider<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    pred: ty::PolyTraitClause<'tcx>,
+    context: Ty<'tcx>,
+) -> bool {
+    let trait_ref = pred.skip_binder().trait_ref;
+    is_provider_trait(tcx, trait_ref.def_id)
+        && trait_ref
+            .args
+            .types()
+            .nth(1)
+            .is_some_and(|provider_context| {
+                tcx.erase_and_anonymize_regions(provider_context) != context
+            })
+}
+
 /// Whether a trait predicate is a genuine CGP `HasField` bound — the missing-field leaf.
 pub(crate) fn is_has_field(tcx: TyCtxt<'_>, pred: ty::PolyTraitClause<'_>) -> bool {
     is_cgp_item(

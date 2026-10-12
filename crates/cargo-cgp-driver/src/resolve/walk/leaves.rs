@@ -14,8 +14,8 @@ use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, redirect_lookup_args, render_ty, trait_generics};
 use crate::resolve::walk::{
     ProjectionMismatch, holds, impl_where_obligations, is_descendable, is_has_field,
-    is_workaround_plumbing, may_hold_for_some_unknown, misdirected_impl_clauses,
-    projection_mismatch, unmet_projection,
+    is_other_context_provider, is_workaround_plumbing, may_hold_for_some_unknown,
+    misdirected_impl_clauses, projection_mismatch, unmet_projection,
 };
 
 /// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or
@@ -376,14 +376,21 @@ fn resolve_node<'tcx>(
     let children: Vec<ty::PolyTraitClause<'tcx>> = if !descendable {
         // A foreign-type bound is normally the terminal root cause, and the descent must not wander
         // into whatever `std` blanket impl happens to satisfy it. Two exceptions are followed: a CGP
-        // getter or blanket trait on a non-context type whose blanket impl depends on the *context* (so the
-        // real cause surfaces and de-duplicates), and a same-trait recursion over a type-level list
-        // (a record's `Cons<..>: HandleMapEntry<..>` whose tail is another `Cons<.., Nil>: …`). A
-        // foreign `f64: FnPtr` step is neither, so the bound stays the leaf.
+        // getter or blanket trait on a non-context type whose blanket impl depends on the *context*
+        // (so the real cause surfaces and de-duplicates), and a same-trait recursion over a
+        // type-level list (a record's `Cons<..>: HandleMapEntry<..>` whose tail is another
+        // `Cons<.., Nil>: …`). A foreign `f64: FnPtr` step is neither, so the bound stays the leaf,
+        // and so is a blanket impl that only reaches another context's provider: a dispatch payload
+        // missing its own impl of the dispatched trait is the cause, not the enum-matching blanket
+        // its type cannot use.
         let this_trait = erased.def_id();
         let followable: Vec<_> = unmet
             .into_iter()
-            .filter(|nested| is_descendable(tcx, *nested, context) || nested.def_id() == this_trait)
+            .filter(|nested| {
+                nested.def_id() == this_trait
+                    || (is_descendable(tcx, *nested, context)
+                        && !is_other_context_provider(tcx, *nested, context))
+            })
             .collect();
         if followable.is_empty() {
             return terminal_result(tcx, erased, leaf_ref, parent, context, self_fp);

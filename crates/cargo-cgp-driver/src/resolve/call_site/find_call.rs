@@ -9,7 +9,9 @@ use rustc_span::{Span, Symbol};
 
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{receiver_context, seed_from_call};
-use crate::resolve::cgp_item::{is_blanket_trait, is_consumer_trait, is_context_adt};
+use crate::resolve::cgp_item::{
+    carries_wiring, is_blanket_trait, is_consumer_trait, is_context_adt,
+};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
@@ -54,9 +56,12 @@ pub fn resolve_call_site(
                 // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait is consumed like a consumer trait
                 // but is not a CGP *component*, so it heads the diagnostic as `[CGP-E003] the trait
                 // …` — the same wording the impl-site anchor gives such a trait reached through a
-                // wrapper. A genuine consumer keeps the `consumers_are_cgp` the walk set.
+                // wrapper. A genuine consumer keeps the `consumers_are_cgp` the walk set. The trait
+                // is called on a type that is a context only when it carries wiring, so a type with
+                // none is named plainly.
                 if !is_cgp_consumer {
                     resolved.consumers_are_cgp = false;
+                    resolved.subject_is_context = carries_wiring(tcx, context);
                 }
                 return Some(resolved);
             }

@@ -182,12 +182,14 @@ pub(crate) fn classify_leaf<'tcx>(
             };
         }
         let issue = field_issue(tcx, owner, &name);
-        // Adding a missing field fixes the cause only when the struct derives `HasField`, which
-        // it shows by implementing it for another field; the fix then names the type the
-        // requirement gives the field, and a similar field the struct carries, a likely typo.
+        // Adding a missing field fixes the cause only when the struct has named fields, which a
+        // tuple struct cannot gain one of, and derives `HasField`, which it shows by implementing
+        // it for another field; the fix then names the type the requirement gives the field, and
+        // a similar field the struct carries, a likely typo.
         let fix = match issue {
             FieldIssue::Missing => FieldFix {
-                confirmed: owner_has_impl_of(tcx, leaf_ref.def_id, owner),
+                confirmed: has_named_fields(owner)
+                    && owner_has_impl_of(tcx, leaf_ref.def_id, owner),
                 ty: parent.and_then(|parent| required_field_type(tcx, parent, leaf_ref)),
                 similar: similar_field(owner, &name),
             },
@@ -261,4 +263,9 @@ fn component_marker_name<'tcx>(tcx: TyCtxt<'tcx>, marker: Ty<'tcx>) -> String {
 /// rendering).
 fn wired_near_miss<'tcx>(tcx: TyCtxt<'tcx>, context: Ty<'tcx>, target: Option<String>) -> NearMiss {
     NearMiss(target.and_then(|target| similar_wired_key(tcx, context, &target)))
+}
+
+/// Whether `ty` is a struct whose fields are named, the only shape a named field can be added to.
+fn has_named_fields(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().ctor_kind().is_none())
 }

@@ -1,35 +1,21 @@
-error[E0599]: the method `area` exists for enum `Shape`, but its trait bounds were not satisfied
+error[E0599]: [CGP-E003] the trait bound `Square: HasArea` is not satisfied
   --> src/main.rs:42:35
    |
-25 | pub enum Shape {
-   | -------------- method `area` not found for this enum because it doesn't satisfy `Shape: HasArea`
-...
 42 |     let _ = Shape::Circle(Circle).area();
-   |                                   ^^^^ method cannot be called on `Shape` due to unsatisfied trait bounds
+   |                                   ^^^^
    |
-  ::: $CGP/crates/extra/cgp-dispatch/src/providers/matchers/match_with_field_handlers.rs:19:1
-   |
-19 | pub struct MatchWithValueHandlersRef<Provider = UseContext>(pub PhantomData<Provider>);
-   | ----------------------------------------------------------- doesn't satisfy `<_ as Computer<(), (), &Shape>>::Output = f64`
-   |
-note: trait bound `<MatchWithValueHandlersRef<ComputeArea> as Computer<(), (), &'__a__ Shape>>::Output = f64` was not satisfied
-  --> src/main.rs:30:1
-   |
-30 | #[cgp_auto_dispatch]
-   | ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound introduced here
-31 | pub trait HasArea {
-   |           -------
-note: the method `area` exists on the type `Circle`
-  --> src/main.rs:32:5
-   |
-32 |     fn area(&self) -> f64;
-   |     ^^^^^^^^^^^^^^^^^^^^^^
-   = help: items from traits can only be used if the trait is implemented and in scope
-note: `HasArea` defines an item `area`, perhaps you need to implement it
-  --> src/main.rs:31:1
-   |
-31 | pub trait HasArea {
-   | ^^^^^^^^^^^^^^^^^
-   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: root cause: [CGP-E117] the trait bound `Square: HasArea` is not satisfied
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `HasArea` for `Shape`
+             └─ [CGP-E102] provider trait impl `Computer<(), &Shape>` with context `()` for provider `MatchWithValueHandlersRef<ComputeArea>`
+               └─ [CGP-E102] provider trait impl `Computer<(), &Shape>` with context `()` for provider `UseInputDelegate<MatchWithFieldHandlersInputsRef<HandleFieldValue<ComputeArea>>>`
+                 └─ [CGP-E102] provider trait impl `Computer<(), &Shape>` with context `()` for provider `MatchWithHandlersRef<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Square"), HandleFieldValue<ComputeArea>>]>`
+                   └─ [CGP-E102] provider trait impl `Computer<(), __PartialRefShape<'_, IsRef, IsPresent, IsPresent>>` with context `()` for provider `PipeMonadic<OkMonadic, Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Square"), HandleFieldValue<ComputeArea>>]>`
+                     └─ [CGP-E102] provider trait impl `Computer<(), __PartialRefShape<'_, IsRef, IsPresent, IsPresent>>` with context `()` for provider `ComposeHandlers<ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, BindOk<IdentMonadic, ExtractFieldAndHandle<Symbol!("Square"), HandleFieldValue<ComputeArea>>>>`
+                       └─ [CGP-E102] provider trait impl `Computer<(), Result<f64, __PartialRefShape<'_, IsRef, IsVoid, IsPresent>>>` with context `()` for provider `BindOk<IdentMonadic, ExtractFieldAndHandle<Symbol!("Square"), HandleFieldValue<ComputeArea>>>`
+                         └─ [CGP-E102] provider trait impl `Computer<(), __PartialRefShape<'_, IsRef, IsVoid, IsPresent>>` with context `()` for provider `ExtractFieldAndHandle<Symbol!("Square"), HandleFieldValue<ComputeArea>>`
+                           └─ [CGP-E102] provider trait impl `Computer<(), Field<Symbol!("Square"), &Square>>` with context `()` for provider `HandleFieldValue<ComputeArea>`
+                             └─ [CGP-E102] provider trait impl `Computer<(), &Square>` with context `()` for provider `ComputeArea`
+                               └─ [CGP-E117] the trait bound `Square: HasArea` is not satisfied
 
 For more information about this error, try `rustc --explain E0599`.

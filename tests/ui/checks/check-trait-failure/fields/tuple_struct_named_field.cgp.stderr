@@ -1,30 +1,12 @@
-error[E0599]: the method `greet` exists for struct `Person`, but its trait bounds were not satisfied
+error[E0599]: [CGP-E003] missing field `name` on `Person`
   --> src/main.rs:24:35
    |
-21 | pub struct Person(pub String);
-   | ----------------- method `greet` not found for this struct because it doesn't satisfy `Person: Greet` or `_: HasField<Symbol!("name")>`
-...
 24 |     let _ = Person(String::new()).greet();
-   |                                   ^^^^^ method cannot be called on `Person` due to unsatisfied trait bounds
+   |                                   ^^^^^
    |
-note: trait bound `Person: HasField<Symbol!("name")>` was not satisfied
-  --> src/main.rs:15:1
-   |
-15 | #[cgp_fn]
-   | ^^^^^^^^^
-16 | pub fn greet(&self, #[implicit] name: &str) -> String {
-   |        ^^^^^
-note: the trait `cgp::prelude::HasField` must be implemented
-  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
-   |
-46 | pub trait HasField<Tag> {
-   | ^^^^^^^^^^^^^^^^^^^^^^^
-   = help: items from traits can only be used if the trait is implemented and in scope
-note: `Greet` defines an item `greet`, perhaps you need to implement it
-  --> src/main.rs:15:1
-   |
-15 | #[cgp_fn]
-   | ^^^^^^^^^
-   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: root cause: [CGP-E110] missing field `name` on `Person`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `Greet` for `Person`
+             └─ [CGP-E110] missing field `name` on `Person`
 
 For more information about this error, try `rustc --explain E0599`.

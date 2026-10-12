@@ -9,7 +9,9 @@ use rustc_span::def_id::DefId;
 use crate::resolve::anchor::{consumer_obligation, context_candidates_from_spans};
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::contexts_at_spans;
-use crate::resolve::cgp_item::{consumer_provider_trait, is_blanket_trait, is_local_adt};
+use crate::resolve::cgp_item::{
+    carries_wiring, consumer_provider_trait, is_blanket_trait, is_local_adt,
+};
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by anchoring on the **consumer trait** the diagnostic names, rather
@@ -107,6 +109,7 @@ fn resolve_from_named_trait(
             if let Some(mut resolved) = resolve_leaves(tcx, cache, top) {
                 if kind == TraitKind::Blanket {
                     resolved.consumers_are_cgp = false;
+                    resolved.subject_is_context = carries_wiring(tcx, context);
                 }
                 return Some(resolved);
             }

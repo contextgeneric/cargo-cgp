@@ -1,14 +1,14 @@
 #![feature(prelude_import)]
-//! A `#[cgp_auto_dispatch]` trait implemented for only one of an enum's two
-//! payload types. The generated blanket impl requires every variant's payload to
-//! implement the trait, so calling the method on the enum fails with `E0599` at
-//! the call, whose notes list the matcher's unsatisfied `Computer` bound rather
-//! than naming the payload, `Square`, that lacks the impl.
+//! A `#[cgp_auto_dispatch]` trait implemented for only one of an enum's two payload types.
 //!
-//! The tool passes the error through as rustc wrote it, so a reader is told only
-//! that `HasArea` exists on `Circle` and that a bound on the generated matcher
-//! `MatchWithValueHandlersRef<ComputeArea>` failed. Naming the variant whose
-//! payload lacks the impl is the presentation work outstanding.
+//! The generated blanket impl requires every variant's payload to implement the trait, so calling
+//! the method on the enum fails with `E0599` at the call, whose notes list the matcher's
+//! unsatisfied `Computer` bound rather than naming the payload, `Square`, that lacks the impl.
+//!
+//! The call-site anchor reads the enum off the variant constructor and walks the matcher down to
+//! the per-variant computer, whose requirement `Square: HasArea` is the cause: the walk stops there
+//! rather than following the enum-matching blanket impl, which `Square` cannot use, so the block
+//! leads with ``[CGP-E003] the trait bound `Square: HasArea` is not satisfied``.
 //!
 //! Error class: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md, with the headline under
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/error_codes/e0599.md.

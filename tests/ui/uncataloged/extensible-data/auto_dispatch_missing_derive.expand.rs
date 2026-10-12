@@ -1,12 +1,15 @@
 #![feature(prelude_import)]
 //! A `#[cgp_auto_dispatch]` call on an enum without `#[derive(CgpData)]`.
 //!
-//! A raw `E0599` naming `MatchWithValueHandlersRef<ComputeArea>` and a source path in
-//! `cgp-dispatch`; nothing says the derive is missing.
+//! rustc's `E0599` names `MatchWithValueHandlersRef<ComputeArea>` and a source path in
+//! `cgp-dispatch`. The tool resolves the call to its two unmet requirements on the enum,
+//! `Shape: HasFields` and `Shape: HasExtractor`, the traits the derive supplies, but nothing names
+//! the derive itself, and a step of the tree names the matcher's private
+//! `dispatch::providers::matchers::to_field_handlers` path.
 //!
 //! CGP error class: none yet.
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/hidden-root-cause.md.
+//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

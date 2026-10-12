@@ -1,35 +1,18 @@
-error[E0599]: the method `area` exists for enum `Shape`, but its trait bounds were not satisfied
-  --> src/main.rs:35:51
+error[E0599]: [CGP-E003] the trait `HasArea` is not implemented for `Shape`: 2 root causes
+  --> src/main.rs:38:51
    |
-19 | pub enum Shape {
-   | -------------- method `area` not found for this enum because it doesn't satisfy `Shape: HasArea`
-...
-35 |     let _ = Shape::Circle(Circle { radius: 1.0 }).area();
-   |                                                   ^^^^ method cannot be called on `Shape` due to unsatisfied trait bounds
+38 |     let _ = Shape::Circle(Circle { radius: 1.0 }).area();
+   |                                                   ^^^^
    |
-  ::: $CGP/crates/extra/cgp-dispatch/src/providers/matchers/match_with_field_handlers.rs:19:1
-   |
-19 | pub struct MatchWithValueHandlersRef<Provider = UseContext>(pub PhantomData<Provider>);
-   | ----------------------------------------------------------- doesn't satisfy `<_ as Computer<(), (), &Shape>>::Output = f64`
-   |
-note: trait bound `<MatchWithValueHandlersRef<ComputeArea> as Computer<(), (), &'__a__ Shape>>::Output = f64` was not satisfied
-  --> src/main.rs:23:1
-   |
-23 | #[cgp_auto_dispatch]
-   | ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound introduced here
-24 | pub trait HasArea {
-   |           -------
-note: the method `area` exists on the type `Circle`
-  --> src/main.rs:25:5
-   |
-25 |     fn area(&self) -> f64;
-   |     ^^^^^^^^^^^^^^^^^^^^^^
-   = help: items from traits can only be used if the trait is implemented and in scope
-note: `HasArea` defines an item `area`, perhaps you need to implement it
-  --> src/main.rs:24:1
-   |
-24 | pub trait HasArea {
-   | ^^^^^^^^^^^^^^^^^
-   = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: root causes:
+             - [CGP-E117] the trait bound `Shape: HasFields` is not satisfied
+             - [CGP-E117] the trait bound `Shape: HasExtractor` is not satisfied
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `HasArea` for `Shape`
+             ├─ [CGP-E102] provider trait impl `Computer<(), &Shape>` with context `()` for provider `MatchWithValueHandlersRef<ComputeArea>`
+             │ └─ [CGP-E102] provider trait impl `Computer<(), &Shape>` with context `()` for provider `UseInputDelegate<MatchWithFieldHandlersInputsRef<HandleFieldValue<ComputeArea>>>`
+             │   └─ [CGP-E104] trait impl `HasFieldHandlers<dispatch::providers::matchers::to_field_handlers::MapExtractFieldAndHandle<HandleFieldValue<ComputeArea>>>` for `Shape`
+             │     └─ [CGP-E117] the trait bound `Shape: HasFields` is not satisfied
+             └─ [CGP-E117] the trait bound `Shape: HasExtractor` is not satisfied
 
 For more information about this error, try `rustc --explain E0599`.

@@ -5,7 +5,7 @@
 //! resolved this very type to produce the diagnostic) and composes the rest by hand, declining
 //! anything beyond it rather than guessing.
 
-use rustc_hir::def::{DefKind, Res};
+use rustc_hir::def::{CtorKind, DefKind, Res};
 use rustc_hir::{self as hir, Expr, ExprKind, QPath};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
@@ -113,7 +113,8 @@ pub(crate) fn call_output_ty<'tcx>(tcx: TyCtxt<'tcx>, callee: &Expr<'tcx>) -> Op
     let ExprKind::Path(QPath::Resolved(None, path)) = callee.kind else {
         return None;
     };
-    let Res::Def(DefKind::Fn | DefKind::AssocFn, did) = path.res else {
+    let Res::Def(DefKind::Fn | DefKind::AssocFn | DefKind::Ctor(_, CtorKind::Fn), did) = path.res
+    else {
         return None;
     };
     if !tcx.generics_of(did).is_empty() {
