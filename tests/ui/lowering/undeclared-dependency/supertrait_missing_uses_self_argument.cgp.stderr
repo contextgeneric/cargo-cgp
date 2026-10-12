@@ -1,0 +1,9 @@
+error[E0277]: [CGP-E036] the provider trait `Checker` requires `CanCompareWith<__Context__>` of the context, but the provider `CheckSelf` does not declare it
+  --> src/main.rs:34:1
+   |
+34 | #[cgp_impl(new CheckSelf)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: declare it as a dependency with `#[uses(CanCompareWith<__Context__>)]`
+
+For more information about this error, try `rustc --explain E0277`.
