@@ -1,12 +1,8 @@
 error[E0277]: the trait bound `Bundle: DelegateComponent<GreeterComponent>` is not satisfied
-  --> src/main.rs:41:1
+  --> src/main.rs:43:26
    |
-41 | / delegate_components! {
-42 | |     Person {
-43 | |         GreeterComponent -> Bundle,
-44 | |     }
-45 | | }
-   | |_^ unsatisfied trait bound
+43 |         GreeterComponent -> Bundle,
+   |                          ^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `DelegateComponent<GreeterComponent>` is not implemented for `Bundle`
       but trait `DelegateComponent<FarewellComponent>` is implemented for it
@@ -15,24 +11,18 @@ help: the trait `DelegateComponent<GreeterComponent>` is not implemented for `Bu
 35 |         FarewellComponent: SayBye,
    |         ^^^^^^^^^^^^^^^^^
    = help: for that trait implementation, expected `FarewellComponent`, found `GreeterComponent`
-   = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
    |
 16 + #![feature(trivial_bounds)]
    |
 
 error[E0277]: the size for values of type `<Bundle as DelegateComponent<GreeterComponent>>::Delegate` cannot be known
-  --> src/main.rs:41:1
+  --> src/main.rs:43:26
    |
-41 | / delegate_components! {
-42 | |     Person {
-43 | |         GreeterComponent -> Bundle,
-44 | |     }
-45 | | }
-   | |_^ doesn't have a known size
+43 |         GreeterComponent -> Bundle,
+   |                          ^^^^^^^^^ doesn't have a known size
    |
    = help: the nightly-only, unstable trait `MetaSized` is not implemented for `<Bundle as DelegateComponent<GreeterComponent>>::Delegate`
-   = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
    |
 16 + #![feature(trivial_bounds)]
