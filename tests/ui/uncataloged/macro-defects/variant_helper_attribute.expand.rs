@@ -33,7 +33,7 @@ impl HasFieldsRef for Mode {
         Self: '__a;
 }
 impl FromFields for Mode {
-    fn from_fields(rest: Self::Fields) -> Self {
+    fn from_fields(rest: <Self as HasFields>::Fields) -> Self {
         match rest {
             Either::Left(field) => {
                 let Nil = field.value;
@@ -52,7 +52,7 @@ impl FromFields for Mode {
     }
 }
 impl ToFields for Mode {
-    fn to_fields(self) -> Self::Fields {
+    fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
             Self::Off => Either::Left(Nil.into()),
             Self::On(field) => Either::Right(Either::Left(field.into())),
@@ -60,7 +60,7 @@ impl ToFields for Mode {
     }
 }
 impl ToFieldsRef for Mode {
-    fn to_fields_ref<'__a>(&'__a self) -> Self::FieldsRef<'__a>
+    fn to_fields_ref<'__a>(&'__a self) -> <Self as HasFieldsRef>::FieldsRef<'__a>
     where
         Self: '__a,
     {
@@ -74,7 +74,7 @@ impl FromVariant<Symbol!("Off")> for Mode {
     type Value = Nil;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Off")>,
-        _: Self::Value,
+        _: <Self as FromVariant<Symbol!("Off")>>::Value,
     ) -> Self {
         Self::Off {}
     }
@@ -83,7 +83,7 @@ impl FromVariant<Symbol!("On")> for Mode {
     type Value = u64;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("On")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("On")>>::Value,
     ) -> Self {
         Self::On(value)
     }
@@ -107,13 +107,13 @@ for __PartialRefMode<'__a__, __R__, __F0__, __F1__> {
 }
 impl HasExtractor for Mode {
     type Extractor = __PartialMode<IsPresent, IsPresent>;
-    fn to_extractor(self) -> Self::Extractor {
+    fn to_extractor(self) -> <Self as HasExtractor>::Extractor {
         match self {
             Self::Off { .. } => __PartialMode::Off(Nil),
             Self::On(value) => __PartialMode::On(value),
         }
     }
-    fn from_extractor(extractor: Self::Extractor) -> Self {
+    fn from_extractor(extractor: <Self as HasExtractor>::Extractor) -> Self {
         match extractor {
             __PartialMode::Off(_) => Self::Off {},
             __PartialMode::On(value) => Self::On(value),
@@ -124,7 +124,9 @@ impl HasExtractorRef for Mode {
     type ExtractorRef<'__a__> = __PartialRefMode<'__a__, IsRef, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_ref<'__a__>(&'__a__ self) -> Self::ExtractorRef<'__a__> {
+    fn extractor_ref<'__a__>(
+        &'__a__ self,
+    ) -> <Self as HasExtractorRef>::ExtractorRef<'__a__> {
         match self {
             Self::Off { .. } => __PartialRefMode::Off(&Nil),
             Self::On(value) => __PartialRefMode::On(value),
@@ -135,7 +137,9 @@ impl HasExtractorMut for Mode {
     type ExtractorMut<'__a__> = __PartialRefMode<'__a__, IsMut, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_mut<'__a__>(&'__a__ mut self) -> Self::ExtractorMut<'__a__> {
+    fn extractor_mut<'__a__>(
+        &'__a__ mut self,
+    ) -> <Self as HasExtractorMut>::ExtractorMut<'__a__> {
         match self {
             Self::Off { .. } => __PartialRefMode::Off(Box::leak(Box::new(Nil))),
             Self::On(value) => __PartialRefMode::On(value),
@@ -159,7 +163,10 @@ impl<__F1__: MapType> ExtractField<Symbol!("Off")> for __PartialMode<IsPresent, 
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Off")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Off")>>::Value,
+        <Self as ExtractField<Symbol!("Off")>>::Remainder,
+    > {
         match self {
             __PartialMode::Off(value) => Ok(value),
             __PartialMode::On(value) => Err(__PartialMode::On(value)),
@@ -172,7 +179,10 @@ impl<__F0__: MapType> ExtractField<Symbol!("On")> for __PartialMode<__F0__, IsPr
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("On")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("On")>>::Value,
+        <Self as ExtractField<Symbol!("On")>>::Remainder,
+    > {
         match self {
             __PartialMode::Off(value) => Err(__PartialMode::Off(value)),
             __PartialMode::On(value) => Ok(value),
@@ -186,7 +196,10 @@ for __PartialRefMode<'__a__, __R__, IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Off")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Off")>>::Value,
+        <Self as ExtractField<Symbol!("Off")>>::Remainder,
+    > {
         match self {
             __PartialRefMode::Off(value) => Ok(value),
             __PartialRefMode::On(value) => Err(__PartialRefMode::On(value)),
@@ -200,7 +213,10 @@ for __PartialRefMode<'__a__, __R__, __F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("On")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("On")>>::Value,
+        <Self as ExtractField<Symbol!("On")>>::Remainder,
+    > {
         match self {
             __PartialRefMode::Off(value) => Err(__PartialRefMode::Off(value)),
             __PartialRefMode::On(value) => Ok(value),

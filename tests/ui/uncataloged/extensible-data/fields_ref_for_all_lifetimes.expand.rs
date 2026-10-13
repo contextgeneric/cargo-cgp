@@ -134,7 +134,7 @@ impl<'a> HasFieldsRef for Token<'a> {
         Self: '__a;
 }
 impl<'a> FromFields for Token<'a> {
-    fn from_fields(rest: Self::Fields) -> Self {
+    fn from_fields(rest: <Self as HasFields>::Fields) -> Self {
         match rest {
             Either::Left(field) => {
                 let field = field.value;
@@ -153,7 +153,7 @@ impl<'a> FromFields for Token<'a> {
     }
 }
 impl<'a> ToFields for Token<'a> {
-    fn to_fields(self) -> Self::Fields {
+    fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
             Self::Word(field) => Either::Left(field.into()),
             Self::Number(field) => Either::Right(Either::Left(field.into())),
@@ -161,7 +161,7 @@ impl<'a> ToFields for Token<'a> {
     }
 }
 impl<'a> ToFieldsRef for Token<'a> {
-    fn to_fields_ref<'__a>(&'__a self) -> Self::FieldsRef<'__a>
+    fn to_fields_ref<'__a>(&'__a self) -> <Self as HasFieldsRef>::FieldsRef<'__a>
     where
         Self: '__a,
     {
@@ -175,7 +175,7 @@ impl<'a> FromVariant<Symbol!("Word")> for Token<'a> {
     type Value = &'a str;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Word")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Word")>>::Value,
     ) -> Self {
         Self::Word(value)
     }
@@ -184,7 +184,7 @@ impl<'a> FromVariant<Symbol!("Number")> for Token<'a> {
     type Value = u64;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Number")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Number")>>::Value,
     ) -> Self {
         Self::Number(value)
     }
@@ -213,13 +213,13 @@ for __PartialRefToken<'__a__, 'a, __R__, __F0__, __F1__> {
 }
 impl<'a> HasExtractor for Token<'a> {
     type Extractor = __PartialToken<'a, IsPresent, IsPresent>;
-    fn to_extractor(self) -> Self::Extractor {
+    fn to_extractor(self) -> <Self as HasExtractor>::Extractor {
         match self {
             Self::Word(value) => __PartialToken::Word(value),
             Self::Number(value) => __PartialToken::Number(value),
         }
     }
-    fn from_extractor(extractor: Self::Extractor) -> Self {
+    fn from_extractor(extractor: <Self as HasExtractor>::Extractor) -> Self {
         match extractor {
             __PartialToken::Word(value) => Self::Word(value),
             __PartialToken::Number(value) => Self::Number(value),
@@ -236,7 +236,9 @@ impl<'a> HasExtractorRef for Token<'a> {
     >
     where
         Self: '__a__;
-    fn extractor_ref<'__a__>(&'__a__ self) -> Self::ExtractorRef<'__a__> {
+    fn extractor_ref<'__a__>(
+        &'__a__ self,
+    ) -> <Self as HasExtractorRef>::ExtractorRef<'__a__> {
         match self {
             Self::Word(value) => __PartialRefToken::Word(value),
             Self::Number(value) => __PartialRefToken::Number(value),
@@ -253,7 +255,9 @@ impl<'a> HasExtractorMut for Token<'a> {
     >
     where
         Self: '__a__;
-    fn extractor_mut<'__a__>(&'__a__ mut self) -> Self::ExtractorMut<'__a__> {
+    fn extractor_mut<'__a__>(
+        &'__a__ mut self,
+    ) -> <Self as HasExtractorMut>::ExtractorMut<'__a__> {
         match self {
             Self::Word(value) => __PartialRefToken::Word(value),
             Self::Number(value) => __PartialRefToken::Number(value),
@@ -278,7 +282,10 @@ for __PartialToken<'a, IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Word")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Word")>>::Value,
+        <Self as ExtractField<Symbol!("Word")>>::Remainder,
+    > {
         match self {
             __PartialToken::Word(value) => Ok(value),
             __PartialToken::Number(value) => Err(__PartialToken::Number(value)),
@@ -292,7 +299,10 @@ for __PartialToken<'a, __F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Number")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Number")>>::Value,
+        <Self as ExtractField<Symbol!("Number")>>::Remainder,
+    > {
         match self {
             __PartialToken::Word(value) => Err(__PartialToken::Word(value)),
             __PartialToken::Number(value) => Ok(value),
@@ -306,7 +316,10 @@ for __PartialRefToken<'__a__, 'a, __R__, IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Word")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Word")>>::Value,
+        <Self as ExtractField<Symbol!("Word")>>::Remainder,
+    > {
         match self {
             __PartialRefToken::Word(value) => Ok(value),
             __PartialRefToken::Number(value) => Err(__PartialRefToken::Number(value)),
@@ -320,7 +333,10 @@ for __PartialRefToken<'__a__, 'a, __R__, __F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Number")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Number")>>::Value,
+        <Self as ExtractField<Symbol!("Number")>>::Remainder,
+    > {
         match self {
             __PartialRefToken::Word(value) => Err(__PartialRefToken::Word(value)),
             __PartialRefToken::Number(value) => Ok(value),

@@ -39,7 +39,7 @@ impl HasFieldsRef for Expr {
         Self: '__a;
 }
 impl FromFields for Expr {
-    fn from_fields(rest: Self::Fields) -> Self {
+    fn from_fields(rest: <Self as HasFields>::Fields) -> Self {
         match rest {
             Either::Left(field) => {
                 let field = field.value;
@@ -58,7 +58,7 @@ impl FromFields for Expr {
     }
 }
 impl ToFields for Expr {
-    fn to_fields(self) -> Self::Fields {
+    fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
             Self::Plus(field) => Either::Left(field.into()),
             Self::Literal(field) => Either::Right(Either::Left(field.into())),
@@ -66,7 +66,7 @@ impl ToFields for Expr {
     }
 }
 impl ToFieldsRef for Expr {
-    fn to_fields_ref<'__a>(&'__a self) -> Self::FieldsRef<'__a>
+    fn to_fields_ref<'__a>(&'__a self) -> <Self as HasFieldsRef>::FieldsRef<'__a>
     where
         Self: '__a,
     {
@@ -80,7 +80,7 @@ impl FromVariant<Symbol!("Plus")> for Expr {
     type Value = Plus<Expr>;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Plus")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Plus")>>::Value,
     ) -> Self {
         Self::Plus(value)
     }
@@ -89,7 +89,7 @@ impl FromVariant<Symbol!("Literal")> for Expr {
     type Value = Literal;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Literal")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Literal")>>::Value,
     ) -> Self {
         Self::Literal(value)
     }
@@ -111,13 +111,13 @@ for __PartialRefExpr<'__a__, __R__, __F0__, __F1__> {
 }
 impl HasExtractor for Expr {
     type Extractor = __PartialExpr<IsPresent, IsPresent>;
-    fn to_extractor(self) -> Self::Extractor {
+    fn to_extractor(self) -> <Self as HasExtractor>::Extractor {
         match self {
             Self::Plus(value) => __PartialExpr::Plus(value),
             Self::Literal(value) => __PartialExpr::Literal(value),
         }
     }
-    fn from_extractor(extractor: Self::Extractor) -> Self {
+    fn from_extractor(extractor: <Self as HasExtractor>::Extractor) -> Self {
         match extractor {
             __PartialExpr::Plus(value) => Self::Plus(value),
             __PartialExpr::Literal(value) => Self::Literal(value),
@@ -128,7 +128,9 @@ impl HasExtractorRef for Expr {
     type ExtractorRef<'__a__> = __PartialRefExpr<'__a__, IsRef, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_ref<'__a__>(&'__a__ self) -> Self::ExtractorRef<'__a__> {
+    fn extractor_ref<'__a__>(
+        &'__a__ self,
+    ) -> <Self as HasExtractorRef>::ExtractorRef<'__a__> {
         match self {
             Self::Plus(value) => __PartialRefExpr::Plus(value),
             Self::Literal(value) => __PartialRefExpr::Literal(value),
@@ -139,7 +141,9 @@ impl HasExtractorMut for Expr {
     type ExtractorMut<'__a__> = __PartialRefExpr<'__a__, IsMut, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_mut<'__a__>(&'__a__ mut self) -> Self::ExtractorMut<'__a__> {
+    fn extractor_mut<'__a__>(
+        &'__a__ mut self,
+    ) -> <Self as HasExtractorMut>::ExtractorMut<'__a__> {
         match self {
             Self::Plus(value) => __PartialRefExpr::Plus(value),
             Self::Literal(value) => __PartialRefExpr::Literal(value),
@@ -164,7 +168,10 @@ for __PartialExpr<IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Plus")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Plus")>>::Value,
+        <Self as ExtractField<Symbol!("Plus")>>::Remainder,
+    > {
         match self {
             __PartialExpr::Plus(value) => Ok(value),
             __PartialExpr::Literal(value) => Err(__PartialExpr::Literal(value)),
@@ -178,7 +185,10 @@ for __PartialExpr<__F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Literal")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Literal")>>::Value,
+        <Self as ExtractField<Symbol!("Literal")>>::Remainder,
+    > {
         match self {
             __PartialExpr::Plus(value) => Err(__PartialExpr::Plus(value)),
             __PartialExpr::Literal(value) => Ok(value),
@@ -192,7 +202,10 @@ for __PartialRefExpr<'__a__, __R__, IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Plus")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Plus")>>::Value,
+        <Self as ExtractField<Symbol!("Plus")>>::Remainder,
+    > {
         match self {
             __PartialRefExpr::Plus(value) => Ok(value),
             __PartialRefExpr::Literal(value) => Err(__PartialRefExpr::Literal(value)),
@@ -206,7 +219,10 @@ for __PartialRefExpr<'__a__, __R__, __F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Literal")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Literal")>>::Value,
+        <Self as ExtractField<Symbol!("Literal")>>::Remainder,
+    > {
         match self {
             __PartialRefExpr::Plus(value) => Err(__PartialRefExpr::Plus(value)),
             __PartialRefExpr::Literal(value) => Ok(value),

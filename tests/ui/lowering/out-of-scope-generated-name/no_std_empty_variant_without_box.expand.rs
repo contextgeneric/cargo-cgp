@@ -27,7 +27,7 @@ impl HasFieldsRef for Status {
         Self: '__a;
 }
 impl FromFields for Status {
-    fn from_fields(rest: Self::Fields) -> Self {
+    fn from_fields(rest: <Self as HasFields>::Fields) -> Self {
         match rest {
             Either::Left(field) => {
                 let field = field.value;
@@ -46,7 +46,7 @@ impl FromFields for Status {
     }
 }
 impl ToFields for Status {
-    fn to_fields(self) -> Self::Fields {
+    fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
             Self::Active(field) => Either::Left(field.into()),
             Self::Closed => Either::Right(Either::Left(Nil.into())),
@@ -54,7 +54,7 @@ impl ToFields for Status {
     }
 }
 impl ToFieldsRef for Status {
-    fn to_fields_ref<'__a>(&'__a self) -> Self::FieldsRef<'__a>
+    fn to_fields_ref<'__a>(&'__a self) -> <Self as HasFieldsRef>::FieldsRef<'__a>
     where
         Self: '__a,
     {
@@ -68,7 +68,7 @@ impl FromVariant<Symbol!("Active")> for Status {
     type Value = u64;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Active")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Active")>>::Value,
     ) -> Self {
         Self::Active(value)
     }
@@ -77,7 +77,7 @@ impl FromVariant<Symbol!("Closed")> for Status {
     type Value = Nil;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Closed")>,
-        _: Self::Value,
+        _: <Self as FromVariant<Symbol!("Closed")>>::Value,
     ) -> Self {
         Self::Closed {}
     }
@@ -104,13 +104,13 @@ for __PartialRefStatus<'__a__, __R__, __F0__, __F1__> {
 }
 impl HasExtractor for Status {
     type Extractor = __PartialStatus<IsPresent, IsPresent>;
-    fn to_extractor(self) -> Self::Extractor {
+    fn to_extractor(self) -> <Self as HasExtractor>::Extractor {
         match self {
             Self::Active(value) => __PartialStatus::Active(value),
             Self::Closed { .. } => __PartialStatus::Closed(Nil),
         }
     }
-    fn from_extractor(extractor: Self::Extractor) -> Self {
+    fn from_extractor(extractor: <Self as HasExtractor>::Extractor) -> Self {
         match extractor {
             __PartialStatus::Active(value) => Self::Active(value),
             __PartialStatus::Closed(_) => Self::Closed {},
@@ -121,7 +121,9 @@ impl HasExtractorRef for Status {
     type ExtractorRef<'__a__> = __PartialRefStatus<'__a__, IsRef, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_ref<'__a__>(&'__a__ self) -> Self::ExtractorRef<'__a__> {
+    fn extractor_ref<'__a__>(
+        &'__a__ self,
+    ) -> <Self as HasExtractorRef>::ExtractorRef<'__a__> {
         match self {
             Self::Active(value) => __PartialRefStatus::Active(value),
             Self::Closed { .. } => __PartialRefStatus::Closed(&Nil),
@@ -132,7 +134,9 @@ impl HasExtractorMut for Status {
     type ExtractorMut<'__a__> = __PartialRefStatus<'__a__, IsMut, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_mut<'__a__>(&'__a__ mut self) -> Self::ExtractorMut<'__a__> {
+    fn extractor_mut<'__a__>(
+        &'__a__ mut self,
+    ) -> <Self as HasExtractorMut>::ExtractorMut<'__a__> {
         match self {
             Self::Active(value) => __PartialRefStatus::Active(value),
             Self::Closed { .. } => __PartialRefStatus::Closed(Box::leak(Box::new(Nil))),
@@ -157,7 +161,10 @@ for __PartialStatus<IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Active")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Active")>>::Value,
+        <Self as ExtractField<Symbol!("Active")>>::Remainder,
+    > {
         match self {
             __PartialStatus::Active(value) => Ok(value),
             __PartialStatus::Closed(value) => Err(__PartialStatus::Closed(value)),
@@ -171,7 +178,10 @@ for __PartialStatus<__F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Closed")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Closed")>>::Value,
+        <Self as ExtractField<Symbol!("Closed")>>::Remainder,
+    > {
         match self {
             __PartialStatus::Active(value) => Err(__PartialStatus::Active(value)),
             __PartialStatus::Closed(value) => Ok(value),
@@ -185,7 +195,10 @@ for __PartialRefStatus<'__a__, __R__, IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Active")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Active")>>::Value,
+        <Self as ExtractField<Symbol!("Active")>>::Remainder,
+    > {
         match self {
             __PartialRefStatus::Active(value) => Ok(value),
             __PartialRefStatus::Closed(value) => Err(__PartialRefStatus::Closed(value)),
@@ -199,7 +212,10 @@ for __PartialRefStatus<'__a__, __R__, __F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Closed")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Closed")>>::Value,
+        <Self as ExtractField<Symbol!("Closed")>>::Remainder,
+    > {
         match self {
             __PartialRefStatus::Active(value) => Err(__PartialRefStatus::Active(value)),
             __PartialRefStatus::Closed(value) => Ok(value),

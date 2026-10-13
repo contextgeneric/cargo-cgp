@@ -29,7 +29,7 @@ impl HasFieldsRef for Shape {
         Self: '__a;
 }
 impl FromFields for Shape {
-    fn from_fields(rest: Self::Fields) -> Self {
+    fn from_fields(rest: <Self as HasFields>::Fields) -> Self {
         match rest {
             Either::Left(field) => {
                 let field = field.value;
@@ -48,7 +48,7 @@ impl FromFields for Shape {
     }
 }
 impl ToFields for Shape {
-    fn to_fields(self) -> Self::Fields {
+    fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
             Self::Circle(field) => Either::Left(field.into()),
             Self::Rectangle(field) => Either::Right(Either::Left(field.into())),
@@ -56,7 +56,7 @@ impl ToFields for Shape {
     }
 }
 impl ToFieldsRef for Shape {
-    fn to_fields_ref<'__a>(&'__a self) -> Self::FieldsRef<'__a>
+    fn to_fields_ref<'__a>(&'__a self) -> <Self as HasFieldsRef>::FieldsRef<'__a>
     where
         Self: '__a,
     {
@@ -70,7 +70,7 @@ impl FromVariant<Symbol!("Circle")> for Shape {
     type Value = Circle;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Circle")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Circle")>>::Value,
     ) -> Self {
         Self::Circle(value)
     }
@@ -79,7 +79,7 @@ impl FromVariant<Symbol!("Rectangle")> for Shape {
     type Value = Rectangle;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Rectangle")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Rectangle")>>::Value,
     ) -> Self {
         Self::Rectangle(value)
     }
@@ -101,13 +101,13 @@ for __PartialRefShape<'__a__, __R__, __F0__, __F1__> {
 }
 impl HasExtractor for Shape {
     type Extractor = __PartialShape<IsPresent, IsPresent>;
-    fn to_extractor(self) -> Self::Extractor {
+    fn to_extractor(self) -> <Self as HasExtractor>::Extractor {
         match self {
             Self::Circle(value) => __PartialShape::Circle(value),
             Self::Rectangle(value) => __PartialShape::Rectangle(value),
         }
     }
-    fn from_extractor(extractor: Self::Extractor) -> Self {
+    fn from_extractor(extractor: <Self as HasExtractor>::Extractor) -> Self {
         match extractor {
             __PartialShape::Circle(value) => Self::Circle(value),
             __PartialShape::Rectangle(value) => Self::Rectangle(value),
@@ -118,7 +118,9 @@ impl HasExtractorRef for Shape {
     type ExtractorRef<'__a__> = __PartialRefShape<'__a__, IsRef, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_ref<'__a__>(&'__a__ self) -> Self::ExtractorRef<'__a__> {
+    fn extractor_ref<'__a__>(
+        &'__a__ self,
+    ) -> <Self as HasExtractorRef>::ExtractorRef<'__a__> {
         match self {
             Self::Circle(value) => __PartialRefShape::Circle(value),
             Self::Rectangle(value) => __PartialRefShape::Rectangle(value),
@@ -129,7 +131,9 @@ impl HasExtractorMut for Shape {
     type ExtractorMut<'__a__> = __PartialRefShape<'__a__, IsMut, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_mut<'__a__>(&'__a__ mut self) -> Self::ExtractorMut<'__a__> {
+    fn extractor_mut<'__a__>(
+        &'__a__ mut self,
+    ) -> <Self as HasExtractorMut>::ExtractorMut<'__a__> {
         match self {
             Self::Circle(value) => __PartialRefShape::Circle(value),
             Self::Rectangle(value) => __PartialRefShape::Rectangle(value),
@@ -154,7 +158,10 @@ for __PartialShape<IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Circle")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Circle")>>::Value,
+        <Self as ExtractField<Symbol!("Circle")>>::Remainder,
+    > {
         match self {
             __PartialShape::Circle(value) => Ok(value),
             __PartialShape::Rectangle(value) => Err(__PartialShape::Rectangle(value)),
@@ -168,7 +175,10 @@ for __PartialShape<__F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Rectangle")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Rectangle")>>::Value,
+        <Self as ExtractField<Symbol!("Rectangle")>>::Remainder,
+    > {
         match self {
             __PartialShape::Circle(value) => Err(__PartialShape::Circle(value)),
             __PartialShape::Rectangle(value) => Ok(value),
@@ -182,7 +192,10 @@ for __PartialRefShape<'__a__, __R__, IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Circle")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Circle")>>::Value,
+        <Self as ExtractField<Symbol!("Circle")>>::Remainder,
+    > {
         match self {
             __PartialRefShape::Circle(value) => Ok(value),
             __PartialRefShape::Rectangle(value) => {
@@ -198,7 +211,10 @@ for __PartialRefShape<'__a__, __R__, __F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Rectangle")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Rectangle")>>::Value,
+        <Self as ExtractField<Symbol!("Rectangle")>>::Remainder,
+    > {
         match self {
             __PartialRefShape::Circle(value) => Err(__PartialRefShape::Circle(value)),
             __PartialRefShape::Rectangle(value) => Ok(value),

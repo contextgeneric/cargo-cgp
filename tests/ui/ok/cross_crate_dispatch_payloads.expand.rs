@@ -27,7 +27,7 @@ impl HasFieldsRef for Tile {
         Self: '__a;
 }
 impl FromFields for Tile {
-    fn from_fields(rest: Self::Fields) -> Self {
+    fn from_fields(rest: <Self as HasFields>::Fields) -> Self {
         match rest {
             Either::Left(field) => {
                 let field = field.value;
@@ -46,7 +46,7 @@ impl FromFields for Tile {
     }
 }
 impl ToFields for Tile {
-    fn to_fields(self) -> Self::Fields {
+    fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
             Self::Square(field) => Either::Left(field.into()),
             Self::Circle(field) => Either::Right(Either::Left(field.into())),
@@ -54,7 +54,7 @@ impl ToFields for Tile {
     }
 }
 impl ToFieldsRef for Tile {
-    fn to_fields_ref<'__a>(&'__a self) -> Self::FieldsRef<'__a>
+    fn to_fields_ref<'__a>(&'__a self) -> <Self as HasFieldsRef>::FieldsRef<'__a>
     where
         Self: '__a,
     {
@@ -68,7 +68,7 @@ impl FromVariant<Symbol!("Square")> for Tile {
     type Value = Square;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Square")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Square")>>::Value,
     ) -> Self {
         Self::Square(value)
     }
@@ -77,7 +77,7 @@ impl FromVariant<Symbol!("Circle")> for Tile {
     type Value = Circle;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Circle")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Circle")>>::Value,
     ) -> Self {
         Self::Circle(value)
     }
@@ -99,13 +99,13 @@ for __PartialRefTile<'__a__, __R__, __F0__, __F1__> {
 }
 impl HasExtractor for Tile {
     type Extractor = __PartialTile<IsPresent, IsPresent>;
-    fn to_extractor(self) -> Self::Extractor {
+    fn to_extractor(self) -> <Self as HasExtractor>::Extractor {
         match self {
             Self::Square(value) => __PartialTile::Square(value),
             Self::Circle(value) => __PartialTile::Circle(value),
         }
     }
-    fn from_extractor(extractor: Self::Extractor) -> Self {
+    fn from_extractor(extractor: <Self as HasExtractor>::Extractor) -> Self {
         match extractor {
             __PartialTile::Square(value) => Self::Square(value),
             __PartialTile::Circle(value) => Self::Circle(value),
@@ -116,7 +116,9 @@ impl HasExtractorRef for Tile {
     type ExtractorRef<'__a__> = __PartialRefTile<'__a__, IsRef, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_ref<'__a__>(&'__a__ self) -> Self::ExtractorRef<'__a__> {
+    fn extractor_ref<'__a__>(
+        &'__a__ self,
+    ) -> <Self as HasExtractorRef>::ExtractorRef<'__a__> {
         match self {
             Self::Square(value) => __PartialRefTile::Square(value),
             Self::Circle(value) => __PartialRefTile::Circle(value),
@@ -127,7 +129,9 @@ impl HasExtractorMut for Tile {
     type ExtractorMut<'__a__> = __PartialRefTile<'__a__, IsMut, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_mut<'__a__>(&'__a__ mut self) -> Self::ExtractorMut<'__a__> {
+    fn extractor_mut<'__a__>(
+        &'__a__ mut self,
+    ) -> <Self as HasExtractorMut>::ExtractorMut<'__a__> {
         match self {
             Self::Square(value) => __PartialRefTile::Square(value),
             Self::Circle(value) => __PartialRefTile::Circle(value),
@@ -152,7 +156,10 @@ for __PartialTile<IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Square")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Square")>>::Value,
+        <Self as ExtractField<Symbol!("Square")>>::Remainder,
+    > {
         match self {
             __PartialTile::Square(value) => Ok(value),
             __PartialTile::Circle(value) => Err(__PartialTile::Circle(value)),
@@ -166,7 +173,10 @@ for __PartialTile<__F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Circle")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Circle")>>::Value,
+        <Self as ExtractField<Symbol!("Circle")>>::Remainder,
+    > {
         match self {
             __PartialTile::Square(value) => Err(__PartialTile::Square(value)),
             __PartialTile::Circle(value) => Ok(value),
@@ -180,7 +190,10 @@ for __PartialRefTile<'__a__, __R__, IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Square")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Square")>>::Value,
+        <Self as ExtractField<Symbol!("Square")>>::Remainder,
+    > {
         match self {
             __PartialRefTile::Square(value) => Ok(value),
             __PartialRefTile::Circle(value) => Err(__PartialRefTile::Circle(value)),
@@ -194,7 +207,10 @@ for __PartialRefTile<'__a__, __R__, __F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Circle")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Circle")>>::Value,
+        <Self as ExtractField<Symbol!("Circle")>>::Remainder,
+    > {
         match self {
             __PartialRefTile::Square(value) => Err(__PartialRefTile::Square(value)),
             __PartialRefTile::Circle(value) => Ok(value),

@@ -83,7 +83,7 @@ impl HasFieldsRef for Shape {
         Self: '__a;
 }
 impl FromFields for Shape {
-    fn from_fields(rest: Self::Fields) -> Self {
+    fn from_fields(rest: <Self as HasFields>::Fields) -> Self {
         match rest {
             Either::Left(field) => {
                 let Nil = field.value;
@@ -121,7 +121,7 @@ impl FromFields for Shape {
     }
 }
 impl ToFields for Shape {
-    fn to_fields(self) -> Self::Fields {
+    fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
             Self::Empty => Either::Left(Nil.into()),
             Self::Rect { width, height } => {
@@ -145,7 +145,7 @@ impl ToFields for Shape {
     }
 }
 impl ToFieldsRef for Shape {
-    fn to_fields_ref<'__a>(&'__a self) -> Self::FieldsRef<'__a>
+    fn to_fields_ref<'__a>(&'__a self) -> <Self as HasFieldsRef>::FieldsRef<'__a>
     where
         Self: '__a,
     {

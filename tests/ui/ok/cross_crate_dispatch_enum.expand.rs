@@ -37,7 +37,7 @@ impl HasFieldsRef for Polygon {
         Self: '__a;
 }
 impl FromFields for Polygon {
-    fn from_fields(rest: Self::Fields) -> Self {
+    fn from_fields(rest: <Self as HasFields>::Fields) -> Self {
         match rest {
             Either::Left(field) => {
                 let field = field.value;
@@ -56,7 +56,7 @@ impl FromFields for Polygon {
     }
 }
 impl ToFields for Polygon {
-    fn to_fields(self) -> Self::Fields {
+    fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
             Self::Triangle(field) => Either::Left(field.into()),
             Self::Hexagon(field) => Either::Right(Either::Left(field.into())),
@@ -64,7 +64,7 @@ impl ToFields for Polygon {
     }
 }
 impl ToFieldsRef for Polygon {
-    fn to_fields_ref<'__a>(&'__a self) -> Self::FieldsRef<'__a>
+    fn to_fields_ref<'__a>(&'__a self) -> <Self as HasFieldsRef>::FieldsRef<'__a>
     where
         Self: '__a,
     {
@@ -78,7 +78,7 @@ impl FromVariant<Symbol!("Triangle")> for Polygon {
     type Value = Triangle;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Triangle")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Triangle")>>::Value,
     ) -> Self {
         Self::Triangle(value)
     }
@@ -87,7 +87,7 @@ impl FromVariant<Symbol!("Hexagon")> for Polygon {
     type Value = Hexagon;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Hexagon")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Hexagon")>>::Value,
     ) -> Self {
         Self::Hexagon(value)
     }
@@ -114,13 +114,13 @@ for __PartialRefPolygon<'__a__, __R__, __F0__, __F1__> {
 }
 impl HasExtractor for Polygon {
     type Extractor = __PartialPolygon<IsPresent, IsPresent>;
-    fn to_extractor(self) -> Self::Extractor {
+    fn to_extractor(self) -> <Self as HasExtractor>::Extractor {
         match self {
             Self::Triangle(value) => __PartialPolygon::Triangle(value),
             Self::Hexagon(value) => __PartialPolygon::Hexagon(value),
         }
     }
-    fn from_extractor(extractor: Self::Extractor) -> Self {
+    fn from_extractor(extractor: <Self as HasExtractor>::Extractor) -> Self {
         match extractor {
             __PartialPolygon::Triangle(value) => Self::Triangle(value),
             __PartialPolygon::Hexagon(value) => Self::Hexagon(value),
@@ -131,7 +131,9 @@ impl HasExtractorRef for Polygon {
     type ExtractorRef<'__a__> = __PartialRefPolygon<'__a__, IsRef, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_ref<'__a__>(&'__a__ self) -> Self::ExtractorRef<'__a__> {
+    fn extractor_ref<'__a__>(
+        &'__a__ self,
+    ) -> <Self as HasExtractorRef>::ExtractorRef<'__a__> {
         match self {
             Self::Triangle(value) => __PartialRefPolygon::Triangle(value),
             Self::Hexagon(value) => __PartialRefPolygon::Hexagon(value),
@@ -142,7 +144,9 @@ impl HasExtractorMut for Polygon {
     type ExtractorMut<'__a__> = __PartialRefPolygon<'__a__, IsMut, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_mut<'__a__>(&'__a__ mut self) -> Self::ExtractorMut<'__a__> {
+    fn extractor_mut<'__a__>(
+        &'__a__ mut self,
+    ) -> <Self as HasExtractorMut>::ExtractorMut<'__a__> {
         match self {
             Self::Triangle(value) => __PartialRefPolygon::Triangle(value),
             Self::Hexagon(value) => __PartialRefPolygon::Hexagon(value),
@@ -167,7 +171,10 @@ for __PartialPolygon<IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Triangle")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Triangle")>>::Value,
+        <Self as ExtractField<Symbol!("Triangle")>>::Remainder,
+    > {
         match self {
             __PartialPolygon::Triangle(value) => Ok(value),
             __PartialPolygon::Hexagon(value) => Err(__PartialPolygon::Hexagon(value)),
@@ -181,7 +188,10 @@ for __PartialPolygon<__F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Hexagon")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Hexagon")>>::Value,
+        <Self as ExtractField<Symbol!("Hexagon")>>::Remainder,
+    > {
         match self {
             __PartialPolygon::Triangle(value) => Err(__PartialPolygon::Triangle(value)),
             __PartialPolygon::Hexagon(value) => Ok(value),
@@ -195,7 +205,10 @@ for __PartialRefPolygon<'__a__, __R__, IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Triangle")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Triangle")>>::Value,
+        <Self as ExtractField<Symbol!("Triangle")>>::Remainder,
+    > {
         match self {
             __PartialRefPolygon::Triangle(value) => Ok(value),
             __PartialRefPolygon::Hexagon(value) => {
@@ -211,7 +224,10 @@ for __PartialRefPolygon<'__a__, __R__, __F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Hexagon")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Hexagon")>>::Value,
+        <Self as ExtractField<Symbol!("Hexagon")>>::Remainder,
+    > {
         match self {
             __PartialRefPolygon::Triangle(value) => {
                 Err(__PartialRefPolygon::Triangle(value))

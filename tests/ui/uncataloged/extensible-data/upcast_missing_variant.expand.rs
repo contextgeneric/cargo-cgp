@@ -41,7 +41,7 @@ impl HasFieldsRef for Small {
         Self: '__a;
 }
 impl FromFields for Small {
-    fn from_fields(rest: Self::Fields) -> Self {
+    fn from_fields(rest: <Self as HasFields>::Fields) -> Self {
         match rest {
             Either::Left(field) => {
                 let field = field.value;
@@ -60,7 +60,7 @@ impl FromFields for Small {
     }
 }
 impl ToFields for Small {
-    fn to_fields(self) -> Self::Fields {
+    fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
             Self::Foo(field) => Either::Left(field.into()),
             Self::Bar(field) => Either::Right(Either::Left(field.into())),
@@ -68,7 +68,7 @@ impl ToFields for Small {
     }
 }
 impl ToFieldsRef for Small {
-    fn to_fields_ref<'__a>(&'__a self) -> Self::FieldsRef<'__a>
+    fn to_fields_ref<'__a>(&'__a self) -> <Self as HasFieldsRef>::FieldsRef<'__a>
     where
         Self: '__a,
     {
@@ -82,7 +82,7 @@ impl FromVariant<Symbol!("Foo")> for Small {
     type Value = u64;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Foo")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Foo")>>::Value,
     ) -> Self {
         Self::Foo(value)
     }
@@ -91,7 +91,7 @@ impl FromVariant<Symbol!("Bar")> for Small {
     type Value = String;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Bar")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Bar")>>::Value,
     ) -> Self {
         Self::Bar(value)
     }
@@ -113,13 +113,13 @@ for __PartialRefSmall<'__a__, __R__, __F0__, __F1__> {
 }
 impl HasExtractor for Small {
     type Extractor = __PartialSmall<IsPresent, IsPresent>;
-    fn to_extractor(self) -> Self::Extractor {
+    fn to_extractor(self) -> <Self as HasExtractor>::Extractor {
         match self {
             Self::Foo(value) => __PartialSmall::Foo(value),
             Self::Bar(value) => __PartialSmall::Bar(value),
         }
     }
-    fn from_extractor(extractor: Self::Extractor) -> Self {
+    fn from_extractor(extractor: <Self as HasExtractor>::Extractor) -> Self {
         match extractor {
             __PartialSmall::Foo(value) => Self::Foo(value),
             __PartialSmall::Bar(value) => Self::Bar(value),
@@ -130,7 +130,9 @@ impl HasExtractorRef for Small {
     type ExtractorRef<'__a__> = __PartialRefSmall<'__a__, IsRef, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_ref<'__a__>(&'__a__ self) -> Self::ExtractorRef<'__a__> {
+    fn extractor_ref<'__a__>(
+        &'__a__ self,
+    ) -> <Self as HasExtractorRef>::ExtractorRef<'__a__> {
         match self {
             Self::Foo(value) => __PartialRefSmall::Foo(value),
             Self::Bar(value) => __PartialRefSmall::Bar(value),
@@ -141,7 +143,9 @@ impl HasExtractorMut for Small {
     type ExtractorMut<'__a__> = __PartialRefSmall<'__a__, IsMut, IsPresent, IsPresent>
     where
         Self: '__a__;
-    fn extractor_mut<'__a__>(&'__a__ mut self) -> Self::ExtractorMut<'__a__> {
+    fn extractor_mut<'__a__>(
+        &'__a__ mut self,
+    ) -> <Self as HasExtractorMut>::ExtractorMut<'__a__> {
         match self {
             Self::Foo(value) => __PartialRefSmall::Foo(value),
             Self::Bar(value) => __PartialRefSmall::Bar(value),
@@ -166,7 +170,10 @@ for __PartialSmall<IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Foo")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Foo")>>::Value,
+        <Self as ExtractField<Symbol!("Foo")>>::Remainder,
+    > {
         match self {
             __PartialSmall::Foo(value) => Ok(value),
             __PartialSmall::Bar(value) => Err(__PartialSmall::Bar(value)),
@@ -180,7 +187,10 @@ for __PartialSmall<__F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Bar")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Bar")>>::Value,
+        <Self as ExtractField<Symbol!("Bar")>>::Remainder,
+    > {
         match self {
             __PartialSmall::Foo(value) => Err(__PartialSmall::Foo(value)),
             __PartialSmall::Bar(value) => Ok(value),
@@ -194,7 +204,10 @@ for __PartialRefSmall<'__a__, __R__, IsPresent, __F1__> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Foo")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Foo")>>::Value,
+        <Self as ExtractField<Symbol!("Foo")>>::Remainder,
+    > {
         match self {
             __PartialRefSmall::Foo(value) => Ok(value),
             __PartialRefSmall::Bar(value) => Err(__PartialRefSmall::Bar(value)),
@@ -208,7 +221,10 @@ for __PartialRefSmall<'__a__, __R__, __F0__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Bar")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Bar")>>::Value,
+        <Self as ExtractField<Symbol!("Bar")>>::Remainder,
+    > {
         match self {
             __PartialRefSmall::Foo(value) => Err(__PartialRefSmall::Foo(value)),
             __PartialRefSmall::Bar(value) => Ok(value),
@@ -227,7 +243,7 @@ impl HasFieldsRef for Big {
         Self: '__a;
 }
 impl FromFields for Big {
-    fn from_fields(rest: Self::Fields) -> Self {
+    fn from_fields(rest: <Self as HasFields>::Fields) -> Self {
         match rest {
             Either::Left(field) => {
                 let field = field.value;
@@ -238,14 +254,14 @@ impl FromFields for Big {
     }
 }
 impl ToFields for Big {
-    fn to_fields(self) -> Self::Fields {
+    fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
             Self::Foo(field) => Either::Left(field.into()),
         }
     }
 }
 impl ToFieldsRef for Big {
-    fn to_fields_ref<'__a>(&'__a self) -> Self::FieldsRef<'__a>
+    fn to_fields_ref<'__a>(&'__a self) -> <Self as HasFieldsRef>::FieldsRef<'__a>
     where
         Self: '__a,
     {
@@ -258,7 +274,7 @@ impl FromVariant<Symbol!("Foo")> for Big {
     type Value = u64;
     fn from_variant(
         _tag: ::core::marker::PhantomData<Symbol!("Foo")>,
-        value: Self::Value,
+        value: <Self as FromVariant<Symbol!("Foo")>>::Value,
     ) -> Self {
         Self::Foo(value)
     }
@@ -278,12 +294,12 @@ for __PartialRefBig<'__a__, __R__, __F0__> {
 }
 impl HasExtractor for Big {
     type Extractor = __PartialBig<IsPresent>;
-    fn to_extractor(self) -> Self::Extractor {
+    fn to_extractor(self) -> <Self as HasExtractor>::Extractor {
         match self {
             Self::Foo(value) => __PartialBig::Foo(value),
         }
     }
-    fn from_extractor(extractor: Self::Extractor) -> Self {
+    fn from_extractor(extractor: <Self as HasExtractor>::Extractor) -> Self {
         match extractor {
             __PartialBig::Foo(value) => Self::Foo(value),
         }
@@ -293,7 +309,9 @@ impl HasExtractorRef for Big {
     type ExtractorRef<'__a__> = __PartialRefBig<'__a__, IsRef, IsPresent>
     where
         Self: '__a__;
-    fn extractor_ref<'__a__>(&'__a__ self) -> Self::ExtractorRef<'__a__> {
+    fn extractor_ref<'__a__>(
+        &'__a__ self,
+    ) -> <Self as HasExtractorRef>::ExtractorRef<'__a__> {
         match self {
             Self::Foo(value) => __PartialRefBig::Foo(value),
         }
@@ -303,7 +321,9 @@ impl HasExtractorMut for Big {
     type ExtractorMut<'__a__> = __PartialRefBig<'__a__, IsMut, IsPresent>
     where
         Self: '__a__;
-    fn extractor_mut<'__a__>(&'__a__ mut self) -> Self::ExtractorMut<'__a__> {
+    fn extractor_mut<'__a__>(
+        &'__a__ mut self,
+    ) -> <Self as HasExtractorMut>::ExtractorMut<'__a__> {
         match self {
             Self::Foo(value) => __PartialRefBig::Foo(value),
         }
@@ -326,7 +346,10 @@ impl ExtractField<Symbol!("Foo")> for __PartialBig<IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Foo")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Foo")>>::Value,
+        <Self as ExtractField<Symbol!("Foo")>>::Remainder,
+    > {
         match self {
             __PartialBig::Foo(value) => Ok(value),
         }
@@ -339,7 +362,10 @@ for __PartialRefBig<'__a__, __R__, IsPresent> {
     fn extract_field(
         self,
         _tag: ::core::marker::PhantomData<Symbol!("Foo")>,
-    ) -> Result<Self::Value, Self::Remainder> {
+    ) -> Result<
+        <Self as ExtractField<Symbol!("Foo")>>::Value,
+        <Self as ExtractField<Symbol!("Foo")>>::Remainder,
+    > {
         match self {
             __PartialRefBig::Foo(value) => Ok(value),
         }
