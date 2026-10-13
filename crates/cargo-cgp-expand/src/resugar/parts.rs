@@ -73,18 +73,30 @@ pub(crate) fn is_ident(s: &str) -> bool {
     chars.all(|c| c == '_' || c.is_ascii_alphanumeric())
 }
 
-/// Whether `ident` names a primitive type, matching the `Path!` macro's own rule
-/// (`cgp-macro-core`'s `path_element::is_primitive_type`): an `i`/`u`/`f` followed by digits,
-/// or one of `char`/`bool`/`usize`/`isize`/`str`. Kept in step with the same rule in the
-/// diagnostic resugarers, so a path segment classifies identically wherever it is met.
+/// Whether `ident` is a Rust primitive type name, matching the `Path!` macro's own rule
+/// (`cgp-macro-core`'s `path_element::is_primitive_type`): only the real names, so `f` or `u2`
+/// is a symbol. Kept in step with the same rule in the diagnostic resugarers, so a path segment
+/// classifies identically wherever it is met.
 pub(crate) fn is_primitive_type(ident: &str) -> bool {
-    if (ident.starts_with('i') || ident.starts_with('u') || ident.starts_with('f'))
-        && ident.len() > 1
-        && ident[1..].chars().all(|c| c.is_ascii_digit())
-    {
-        return true;
-    }
-    matches!(ident, "char" | "bool" | "usize" | "isize" | "str")
+    matches!(
+        ident,
+        "u8" | "u16"
+            | "u32"
+            | "u64"
+            | "u128"
+            | "usize"
+            | "i8"
+            | "i16"
+            | "i32"
+            | "i64"
+            | "i128"
+            | "isize"
+            | "f32"
+            | "f64"
+            | "char"
+            | "bool"
+            | "str"
+    )
 }
 
 /// The keywords a field or variant name can only be written as with `r#`: the strict keywords and

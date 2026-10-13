@@ -230,6 +230,15 @@ fn resugars_a_primitive_path_segment_as_a_type() {
 }
 
 #[test]
+fn declines_a_path_segment_named_like_a_primitive() {
+    // `u2` looks like a primitive but is none, so `Path!(@…u2)` would read it as a symbol; a type
+    // named `u2` has no `Path!` spelling, and the chain is left as it stands.
+    let source = "type Key = PathCons<ItemEncoderComponent, PathCons<u2, Nil>>;\n";
+
+    assert_eq!(expand(source), source);
+}
+
+#[test]
 fn declines_an_open_tailed_path() {
     // An open-ended path has no `Path!` spelling, so the chain is left as it stands, as the
     // diagnostic text pass leaves it.

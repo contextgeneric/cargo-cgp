@@ -384,6 +384,14 @@ fn resugars_a_primitive_segment_as_a_type() {
 }
 
 #[test]
+fn resugar_path_declines_a_type_named_like_a_primitive() {
+    // `f` and `u2` look like primitives but are none, so `Path!` would read either as a symbol: a
+    // type of that name has no `Path!` spelling, and the path declines.
+    assert_eq!(resugar_path("PathCons<f, Nil>", true), None);
+    assert_eq!(resugar_path("PathCons<u2, Nil>", true), None);
+}
+
+#[test]
 fn resugars_an_open_dispatch_path_with_a_generic_value_segment() {
     // An `open` statement dispatches a component on a *value type* segment that may carry generics
     // (`Vec<u8>`). `Path!` keeps it verbatim as a type, so it round-trips bare rather than declining

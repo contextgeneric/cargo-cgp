@@ -1,14 +1,12 @@
 #![feature(prelude_import)]
-//! An `@`-path segment that `Path!` reads as a type rather than a symbol.
+//! An `@`-path segment naming a type that was never declared, redirected to and wired.
 //!
-//! `@app.f` lowers `f` to a type, a documented `Path!` defect, so rustc reports three `E0425`s, two
-//! at one caret, which the tool merges into one. The overflow that follows keeps rustc's `E0275`
-//! wording: the context's wiring holds the unresolved type, so the tool does not report it as a
-//! `[CGP-E020]` cycle. Nothing names the `Path!` rule as the cause.
+//! `@app.Missing` keeps `Missing` as a type segment, which does not resolve, so rustc reports an
+//! `E0425` at each use. The check that follows overflows on the lookup through the unresolved key,
+//! and the tool keeps rustc's `E0275` wording rather than reporting a `[CGP-E020]` cycle: the wiring
+//! holds a `{type error}`, the earlier error is the one to fix, and the wiring has no cycle.
 //!
-//! CGP error class: none; the `Path!` segment rule is a known issue of the macro.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
@@ -86,7 +84,7 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetHell
 pub struct GreetHello;
 pub struct App;
 impl DelegateComponent<GreeterComponent> for App {
-    type Delegate = RedirectLookup<App, PathCons<Symbol!("app"), PathCons<f, Nil>>>;
+    type Delegate = RedirectLookup<App, Path!(@app.Missing)>;
 }
 impl<
     __Context__,
@@ -95,11 +93,12 @@ impl<
 where
     RedirectLookup<
         App,
-        PathCons<Symbol!("app"), PathCons<f, Nil>>,
+        Path!(@app.Missing),
     >: IsProviderFor<GreeterComponent, __Context__, __Params__>,
 {}
-impl<__Wildcard__> DelegateComponent<PathCons<Symbol!("app"), PathCons<f, __Wildcard__>>>
-for App {
+impl<
+    __Wildcard__,
+> DelegateComponent<PathCons<Symbol!("app"), PathCons<Missing, __Wildcard__>>> for App {
     type Delegate = GreetHello;
 }
 impl<
@@ -107,13 +106,13 @@ impl<
     __Context__,
     __Params__: ?Sized,
 > IsProviderFor<
-    PathCons<Symbol!("app"), PathCons<f, __Wildcard__>>,
+    PathCons<Symbol!("app"), PathCons<Missing, __Wildcard__>>,
     __Context__,
     __Params__,
 > for App
 where
     GreetHello: IsProviderFor<
-        PathCons<Symbol!("app"), PathCons<f, __Wildcard__>>,
+        PathCons<Symbol!("app"), PathCons<Missing, __Wildcard__>>,
         __Context__,
         __Params__,
     >,

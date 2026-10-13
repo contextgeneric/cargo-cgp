@@ -1,0 +1,42 @@
+error[E0425]: cannot find type `Missing` in this scope
+  --> src/main.rs:31:34
+   |
+31 |         GreeterComponent => @app.Missing,
+   |                                  ^^^^^^^ not found in this scope
+   |
+help: you might be missing a type parameter
+   |
+31 |         GreeterComponent<Missing> => @app.Missing,
+   |                         +++++++++
+
+error[E0425]: cannot find type `Missing` in this scope
+  --> src/main.rs:31:34
+   |
+31 |         GreeterComponent => @app.Missing,
+   |                                  ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `Missing` in this scope
+  --> src/main.rs:32:14
+   |
+32 |         @app.Missing: GreetHello,
+   |              ^^^^^^^ not found in this scope
+
+error[E0275]: overflow evaluating the requirement `App: CanUseComponent<GreeterComponent>`
+  --> src/main.rs:38:9
+   |
+38 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:36:1
+   |
+36 | / check_components! {
+37 | |     App {
+38 | |         GreeterComponent,
+39 | |     }
+40 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0275, E0425.
+For more information about an error, try `rustc --explain E0275`.
