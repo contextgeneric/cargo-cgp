@@ -1,13 +1,9 @@
 #![feature(prelude_import)]
-//! A variant helper attribute of another derive on a `#[derive(CgpData)]` enum.
+//! Clean compile: a variant helper attribute of another derive on a `#[derive(CgpData)]` enum.
 //!
-//! `#[default]` belongs to `#[derive(Default)]`, which the enum has, but the extractor's companion
-//! enums copy the variant attribute without the derive. The output says the attribute cannot be found
-//! and twice suggests adding the `#[derive(Default)]` that is already there.
-//!
-//! CGP error class: none; a `cgp` derive defect recorded in the extractor's Known issues.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! `#[default]` belongs to `#[derive(Default)]`, which the enum has. The extractor's companion enums
+//! copy each variant but keep only its `#[cfg]` and documentation attributes, so the `#[default]`
+//! stays on `Mode`, as the expansion shows.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
@@ -89,12 +85,10 @@ impl FromVariant<Symbol!("On")> for Mode {
     }
 }
 pub enum __PartialMode<__F0__: MapType, __F1__: MapType> {
-    #[default]
     Off(<__F0__ as MapType>::Map<Nil>),
     On(<__F1__ as MapType>::Map<u64>),
 }
 pub enum __PartialRefMode<'__a__, __R__: MapTypeRef, __F0__: MapType, __F1__: MapType> {
-    #[default]
     Off(<__F0__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, Nil>>),
     On(<__F1__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, u64>>),
 }
