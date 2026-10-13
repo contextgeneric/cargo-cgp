@@ -1,12 +1,11 @@
 #![feature(prelude_import)]
-//! `Self::LIMIT` inside a `#[cgp_impl]` body, which the macro rewrites to the context.
+//! Clean compile: a provider reads its own associated const as `Self::LIMIT` inside a
+//! `#[cgp_impl]` body.
 //!
-//! The `E0599` names `__Context__`, with suggestions spliced after the attribute. A `cgp` fix that
-//! exempts associated constants from the rewrite would remove the error.
-//!
-//! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! `#[cgp_impl]` rewrites `Self` to the context, but a `Self::LIMIT` naming a const the block
+//! declares means the provider's own const. The macro rewrites it to the qualified
+//! `<AllowUnderLimit as RateLimiter<__Context__>>::LIMIT`, which the expansion shows, since a bare
+//! `Self::LIMIT` on the provider would be ambiguous with the consumer trait's `LIMIT`.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
@@ -92,7 +91,7 @@ where
 impl<__Context__> RateLimiter<__Context__> for AllowUnderLimit {
     const LIMIT: u32 = 10;
     fn allow(__context__: &__Context__, count: u32) -> bool {
-        count < __Context__::LIMIT
+        count < <AllowUnderLimit as RateLimiter<__Context__>>::LIMIT
     }
 }
 impl<__Context__> IsProviderFor<RateLimiterComponent, __Context__, ()>
