@@ -1,0 +1,5 @@
+error: the namespace `SelfNs` cannot inherit from itself; name another namespace as its parent, or omit the parent
+  --> src/main.rs:13:17
+   |
+13 |     new SelfNs: SelfNs {}
+   |                 ^^^^^^
