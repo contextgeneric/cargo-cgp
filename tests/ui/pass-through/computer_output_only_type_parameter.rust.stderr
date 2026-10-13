@@ -1,0 +1,5 @@
+error: the parameter `T` appears in no argument type, so the generated `Computer` impl cannot determine it; take an argument whose type names `T`, or write the provider by hand as a `Computer` impl on a provider generic over `T`
+  --> src/main.rs:14:10
+   |
+14 | fn parse<T: core::str::FromStr>(value: String) -> Option<T> {
+   |          ^
