@@ -10,6 +10,7 @@ use crate::config::{
 use crate::resolve::cgp_item::{
     carries_wiring, is_cgp_item, is_consumer_trait, is_namespace_lookup_trait, is_provider_trait,
 };
+use crate::resolve::data::{is_data_list_recursion, read_partial};
 use crate::resolve::label::render_ty;
 
 /// The human-readable label for one predicate in a dependency path, replacing each CGP wiring
@@ -30,7 +31,9 @@ use crate::resolve::label::render_ty;
 ///
 /// The steps that carry no information for a reader return `None` and are dropped: the
 /// `CanUseComponent`/`IsProviderFor` scaffolding, a provider-trait obligation *for the context
-/// itself* (delegation routing), the `DelegateComponent` table lookup, and a namespace lookup. The
+/// itself* (delegation routing), the `DelegateComponent` table lookup, a namespace lookup, and an
+/// extensible-data trait's recursion over a type-level list. A trait implemented for a builder or an
+/// extractor names that partial value in words. The
 /// missing-delegate leaf a wiring chain bottoms out on is not rendered here — the caller
 /// ([`resolve_leaves`](crate::resolve::walk::resolve_leaves)) re-states the root cause as the
 /// terminal leaf.
@@ -50,6 +53,7 @@ pub(crate) fn label_for<'tcx>(
         || is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
         || is_cgp_item(tcx, did, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         || is_namespace_lookup_trait(tcx, did)
+        || is_data_list_recursion(tcx, pred)
     {
         return None;
     }
@@ -104,13 +108,22 @@ pub(crate) fn label_for<'tcx>(
         });
     }
 
-    // A user's own blanket or getter trait, or a terminal ordinary bound, with its arguments.
+    // A user's own blanket or getter trait, or a terminal ordinary bound, with its arguments. A
+    // builder or an extractor is named in words, since its type is a derive's generated partial
+    // value.
+    let trait_ref = format!(
+        "{}{}",
+        tcx.item_name(did),
+        trait_generics(tcx, trait_ref, 1)
+    );
+    if let Some(partial) = read_partial(tcx, self_ty) {
+        return Some(DepNode::PartialTrait {
+            trait_ref,
+            value: partial.value(),
+        });
+    }
     Some(DepNode::Trait {
-        trait_ref: format!(
-            "{}{}",
-            tcx.item_name(did),
-            trait_generics(tcx, trait_ref, 1)
-        ),
+        trait_ref,
         self_ty: render_ty(tcx, self_ty),
     })
 }

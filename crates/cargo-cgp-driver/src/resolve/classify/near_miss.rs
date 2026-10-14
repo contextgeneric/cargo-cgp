@@ -25,6 +25,23 @@ pub(crate) fn similar_field(owner: Ty<'_>, field: &str) -> Option<String> {
     similar_name(field, names.iter().map(String::as_str)).map(str::to_owned)
 }
 
+/// A variant of `owner`'s enum whose name is a likely slip of the missing `variant`, such as
+/// `Circle` for `circle`. `None` when `owner` is not an enum or carries no such variant.
+pub(crate) fn similar_variant(owner: Ty<'_>, variant: &str) -> Option<String> {
+    let ty::Adt(def, _) = owner.kind() else {
+        return None;
+    };
+    if !def.is_enum() {
+        return None;
+    }
+    let names: Vec<String> = def
+        .variants()
+        .iter()
+        .map(|variant| variant.name.to_string())
+        .collect();
+    similar_name(variant, names.iter().map(String::as_str)).map(str::to_owned)
+}
+
 /// A key `context` wires that is a likely slip of `target`, a component name or an `@`-path such
 /// as `@App.GreeterComponent` for `@app.GreeterComponent`. The candidates are the context's own
 /// `DelegateComponent` entries, each key rendered as its entry wrote it.

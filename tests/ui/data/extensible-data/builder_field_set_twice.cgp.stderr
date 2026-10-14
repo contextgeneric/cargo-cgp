@@ -1,0 +1,18 @@
+error[E0277]: [CGP-E001] field `host` of `Config` is already set
+  --> src/main.rs:62:9
+   |
+62 |         ComputerComponent: ((), ()),
+   |         ^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E118] field `host` of `Config` is already set
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCompute<(), ()>` for context `App`
+             └─ [CGP-E102] provider trait impl `Computer<(), ()>` with context `App` for provider `BuildWithHandlers<Config, Product![BuildAndSetField<Symbol!("host"), DefaultHost>, BuildAndSetField<Symbol!("port"), DefaultPort>, BuildAndSetField<Symbol!("host"), DefaultHost>]>`
+               └─ [CGP-E102] provider trait impl `Computer<(), __PartialConfig<IsNothing, IsNothing>>` with context `App` for provider `PipeHandlers<Product![BuildAndSetField<Symbol!("host"), DefaultHost>, BuildAndSetField<Symbol!("port"), DefaultPort>, BuildAndSetField<Symbol!("host"), DefaultHost>]>`
+                 └─ [CGP-E102] provider trait impl `Computer<(), __PartialConfig<IsNothing, IsNothing>>` with context `App` for provider `ComposeHandlers<BuildAndSetField<Symbol!("host"), DefaultHost>, ComposeHandlers<BuildAndSetField<Symbol!("port"), DefaultPort>, BuildAndSetField<Symbol!("host"), DefaultHost>>>`
+                   └─ [CGP-E102] provider trait impl `Computer<(), __PartialConfig<IsPresent, IsNothing>>` with context `App` for provider `ComposeHandlers<BuildAndSetField<Symbol!("port"), DefaultPort>, BuildAndSetField<Symbol!("host"), DefaultHost>>`
+                     └─ [CGP-E102] provider trait impl `Computer<(), __PartialConfig<IsPresent, IsPresent>>` with context `App` for provider `BuildAndSetField<Symbol!("host"), DefaultHost>`
+                       └─ [CGP-E104] trait impl `BuildField<Symbol!("host")>` for the builder of `Config` with `host` and `port` set
+                         └─ [CGP-E118] field `host` of `Config` is already set
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,7 +1,8 @@
 //! The class headline of a resolved failure, and the helpers the cause sentences share.
 
 use crate::code::{
-    CONSUMER_TRAIT_UNIMPLEMENTED, PROVIDER_TRAIT_UNIMPLEMENTED, WRAPPER_TRAIT_UNIMPLEMENTED,
+    CONSUMER_TRAIT_UNIMPLEMENTED, DATA_OPERATION_UNIMPLEMENTED, PROVIDER_TRAIT_UNIMPLEMENTED,
+    WRAPPER_TRAIT_UNIMPLEMENTED,
 };
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
@@ -56,11 +57,13 @@ pub fn class_sentence(resolved: &Resolved) -> String {
 }
 
 /// The class code of a resolved failure, chosen by the anchor that matched the caret: `CGP-E002`
-/// for a `#[check_providers]` entry, `CGP-E001` for a CGP consumer trait, and `CGP-E003` for a
-/// trait that is not one.
+/// for a `#[check_providers]` entry, `CGP-E050` for a call to one of CGP's extensible-data traits,
+/// `CGP-E001` for a CGP consumer trait, and `CGP-E003` for any other trait.
 pub fn class_code(resolved: &Resolved) -> &'static str {
     if resolved.provider.is_some() {
         PROVIDER_TRAIT_UNIMPLEMENTED
+    } else if resolved.data_operation {
+        DATA_OPERATION_UNIMPLEMENTED
     } else if resolved.consumers_are_cgp {
         CONSUMER_TRAIT_UNIMPLEMENTED
     } else {
@@ -108,4 +111,14 @@ pub fn assoc_mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
         .iter()
         .map(|cause| &cause.leaf)
         .find(|leaf| matches!(leaf, Leaf::AssocTypeMismatch { .. }))
+}
+
+/// The first variant-payload-mismatch cause of a resolution, if any: the extensible-data
+/// counterpart of [`mismatch_leaf`], which an `E0271` block states as its headline.
+pub fn variant_mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
+    resolved
+        .causes
+        .iter()
+        .map(|cause| &cause.leaf)
+        .find(|leaf| matches!(leaf, Leaf::VariantTypeMismatch { .. }))
 }

@@ -186,6 +186,69 @@ pub enum Leaf {
         /// wiring `help`; `None` for an ordinary trait's associated type, which has no such fix.
         component: Option<String>,
     },
+    /// A field of a record builder that an operation needs unset, which the builder already holds:
+    /// a second `build_field`, or a second source of one field in a merge. The builder's partial
+    /// type tracks each field's state in a marker, so the operation's `UpdateField` bound finds the
+    /// field present where it requires it absent.
+    FieldAlreadySet {
+        /// The field set twice, e.g. `first_name`.
+        name: String,
+        /// The struct the builder builds, e.g. `Person`.
+        owner: String,
+    },
+    /// Fields of a record builder that an operation needs set, which the builder lacks: a
+    /// `finalize_build` before every field is built, or a `take_field` of a field never built.
+    FieldsNotSet {
+        /// The unset fields, in declaration order, e.g. `["port"]`.
+        names: Vec<String>,
+        /// The struct the builder builds, e.g. `Config`.
+        owner: String,
+    },
+    /// A variant an extensible-data operation names that the enum does not declare: a cast whose
+    /// other enum lacks one of the variants it moves, or a construction by a tag the enum lacks.
+    MissingVariant {
+        /// The variant the operation names, e.g. `Bar`.
+        name: String,
+        /// The enum that lacks it, e.g. `Big`.
+        owner: String,
+        /// A variant the enum declares whose name is a likely slip of this one, for a `help`.
+        similar: NearMiss,
+    },
+    /// Variants an extractor still holds when it is finalized. A match extracts variants one at a
+    /// time, and the remainder finalizes only once every variant is ruled out, so these variants
+    /// are the ones the match never handles.
+    VariantsNotExtracted {
+        /// The variants not yet extracted, in declaration order, e.g. `["Rectangle"]`.
+        names: Vec<String>,
+        /// The enum the extractor matches, e.g. `Shape`.
+        owner: String,
+    },
+    /// A variant whose payload is not the type an extensible-data operation requires: a cast
+    /// between two enums whose variants of one name carry different payloads. The variant
+    /// counterpart of [`Leaf::FieldTypeMismatch`].
+    VariantTypeMismatch {
+        /// The variant, e.g. `Foo`.
+        name: String,
+        /// The enum whose variant carries the payload, e.g. `FooBarBaz`.
+        owner: String,
+        /// The payload type the operation requires, e.g. `u64`.
+        expected: String,
+        /// The payload type the variant declares, e.g. `u32`.
+        actual: String,
+    },
+    /// A type that does not implement a trait an extensible-data operation needs and a data derive
+    /// supplies: `HasFields` (from `#[derive(HasFields)]`), `HasExtractor` (from
+    /// `#[derive(ExtractField)]`), `HasBuilder` (from `#[derive(BuildField)]`), and the rest.
+    DataTraitUnimplemented {
+        /// The type, e.g. `Shape`.
+        owner: String,
+        /// The trait it does not implement, e.g. `HasFields`.
+        trait_name: String,
+        /// The derive that implements the trait, named for the `help` when `owner` is a struct or
+        /// enum the crate defines (so a derive can be added to it), e.g. `HasFields`. `None` when the
+        /// derive cannot be added there. Like [`NearMiss`], it is not part of the leaf's identity.
+        derive: DeriveFix,
+    },
     /// Any other terminal unmet bound — an ordinary trait bound such as `f64: Eq`, or a trait
     /// bound the walk cannot descend further. The emitter keeps rustc's own header for these and
     /// only replaces the sub-notes with the dependency tree.
@@ -221,6 +284,11 @@ pub struct FieldFix {
 #[derive(Debug, Clone, Default)]
 pub struct NearMiss(pub Option<String>);
 
+/// The derive a `help` names for a [`Leaf::DataTraitUnimplemented`], when one can be added to the
+/// type. Like [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
+#[derive(Debug, Clone, Default)]
+pub struct DeriveFix(pub Option<String>);
+
 /// Equality and hashing that treat every value alike, for the facts a leaf carries for its `help`s
 /// alone.
 macro_rules! identity_free {
@@ -241,6 +309,7 @@ macro_rules! identity_free {
 
 identity_free!(FieldFix);
 identity_free!(NearMiss);
+identity_free!(DeriveFix);
 
 impl Leaf {
     /// Fold the `help` facts of `other`, the same cause reached another way, into this leaf: adding
@@ -270,7 +339,17 @@ impl Leaf {
                 Leaf::MissingRedirectWiring {
                     similar: theirs, ..
                 },
+            )
+            | (
+                Leaf::MissingVariant { similar, .. },
+                Leaf::MissingVariant {
+                    similar: theirs, ..
+                },
             ) => agree(&mut similar.0, &theirs.0),
+            (
+                Leaf::DataTraitUnimplemented { derive, .. },
+                Leaf::DataTraitUnimplemented { derive: theirs, .. },
+            ) => agree(&mut derive.0, &theirs.0),
             _ => {}
         }
     }

@@ -22,7 +22,7 @@ pub const MERGED_CAUSE_NAMES: usize = 3;
 
 /// One sentence stating every cause, when they can share one: a single cause, or several of one
 /// kind on one owner (fields missing from one struct, wiring missing from one context, entries
-/// missing from one provider's table). A long list names its first [`MERGED_CAUSE_NAMES`] items
+/// missing from one provider's table, data traits one type lacks). A long list names its first [`MERGED_CAUSE_NAMES`] items
 /// and counts the rest, which the note lists in full. `None` for no causes or a mix.
 pub fn merged_cause(causes: &[Cause]) -> Option<String> {
     match causes {
@@ -45,6 +45,7 @@ pub fn merged_cause(causes: &[Cause]) -> Option<String> {
                 MergeKind::Entry => {
                     format!("missing entries for {items} in provider `{owner}`")
                 }
+                MergeKind::DataTrait => format!("`{owner}` does not implement {items}"),
             })
         }
     }
@@ -93,6 +94,7 @@ fn coalesced_class_sentence(members: &[&Resolved]) -> String {
             subject.context == member.context
                 && subject.subject_is_context == member.subject_is_context
                 && subject.consumers_are_cgp == member.consumers_are_cgp
+                && subject.data_operation == member.data_operation
                 && subject.provider == member.provider
         };
         match subjects.iter_mut().find(|subject| same_subject(subject)) {
@@ -119,12 +121,13 @@ fn coalesced_class_sentence(members: &[&Resolved]) -> String {
 }
 
 /// The kinds of missing thing that several of, on one owner, state as one: fields, wiring entries,
-/// and table entries.
+/// table entries, and the data traits a type lacks.
 #[derive(PartialEq, Eq)]
 enum MergeKind {
     Field,
     Wiring,
     Entry,
+    DataTrait,
 }
 
 /// A cause's merge kind, its owner, and the item it names, or `None` for a cause that is never
@@ -144,6 +147,9 @@ fn mergeable(leaf: &Leaf) -> Option<(MergeKind, &str, &str)> {
             Some((MergeKind::Wiring, context, path))
         }
         Leaf::MissingDispatchEntry { key, table } => Some((MergeKind::Entry, table, key)),
+        Leaf::DataTraitUnimplemented {
+            owner, trait_name, ..
+        } => Some((MergeKind::DataTrait, owner, trait_name)),
         _ => None,
     }
 }

@@ -11,7 +11,7 @@ use crate::code::{
     DEP_CONSUMER_TRAIT_IMPL, DEP_PROVIDER_TRAIT_IMPL, DEP_REDIRECT_LOOKUP, DEP_TRAIT_IMPL,
 };
 use crate::diagnosis::leaf::Leaf;
-use crate::diagnosis::wording::dependency_tree_leaf;
+use crate::diagnosis::wording::{dependency_tree_leaf, quoted_list};
 
 /// One interior hop of a dependency chain — a wiring step the walk descended — tagged by the
 /// `CGP-E1xx` rendering template it takes. The trait-bearing variants keep the trait reference *with*
@@ -49,6 +49,80 @@ pub enum DepNode {
     /// `CGP-E104` — a hop through any other trait (a user's blanket trait, a wrapper, or an ordinary
     /// bound restated as an impl).
     Trait { trait_ref: String, self_ty: String },
+    /// `CGP-E104` — a hop through a trait implemented for a partial value of extensible data, a
+    /// builder or an extractor, named in words since its type is generated.
+    PartialTrait {
+        trait_ref: String,
+        value: PartialValue,
+    },
+}
+
+/// A partial value an extensible-data operation runs on (a record builder or an enum extractor),
+/// described by what it builds or matches and the state of each field or variant. Its type is one a
+/// derive generates (`__PartialPerson<IsPresent, IsNothing>`), whose markers record each field's
+/// state, so a chain names it in words instead: ``the builder of `Person` with `first_name` set``.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PartialValue {
+    /// Whether it builds a record or matches an enum, and how it holds an enum's payloads.
+    pub kind: PartialKind,
+    /// The struct or enum it builds or matches, e.g. `Person`.
+    pub target: String,
+    /// The fields a builder holds, or the variants an extractor has ruled out, in declaration order.
+    pub marked: Vec<String>,
+    /// The fields a builder holds as optional (the optional builder's state), in declaration order.
+    pub optional: Vec<String>,
+}
+
+/// What kind of partial value a [`PartialValue`] is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PartialKind {
+    /// A record builder, from `builder()` or `into_builder()`.
+    Builder,
+    /// An enum extractor that owns its payloads, from `to_extractor()`.
+    Extractor,
+    /// An enum extractor over shared references, from `extractor_ref()`.
+    RefExtractor,
+    /// An enum extractor over mutable references, from `extractor_mut()`.
+    MutExtractor,
+}
+
+impl PartialValue {
+    /// The value in words: ``the builder of `Person` with `first_name` set``, or ``the extractor of
+    /// `Shape` with `Circle` ruled out``.
+    pub fn describe(&self) -> String {
+        let target = &self.target;
+        match self.kind {
+            PartialKind::Builder => {
+                let mut states = Vec::new();
+                if !self.marked.is_empty() {
+                    states.push(format!("{} set", quoted_list(&self.marked)));
+                }
+                if !self.optional.is_empty() {
+                    states.push(format!("{} optional", quoted_list(&self.optional)));
+                }
+                if states.is_empty() {
+                    format!("the builder of `{target}` with no field set")
+                } else {
+                    format!("the builder of `{target}` with {}", states.join(" and "))
+                }
+            }
+            PartialKind::Extractor | PartialKind::RefExtractor | PartialKind::MutExtractor => {
+                let noun = match self.kind {
+                    PartialKind::RefExtractor => "reference extractor",
+                    PartialKind::MutExtractor => "mutable reference extractor",
+                    _ => "extractor",
+                };
+                if self.marked.is_empty() {
+                    format!("the {noun} of `{target}`")
+                } else {
+                    format!(
+                        "the {noun} of `{target}` with {} ruled out",
+                        quoted_list(&self.marked)
+                    )
+                }
+            }
+        }
+    }
 }
 
 impl DepNode {
@@ -77,6 +151,12 @@ impl DepNode {
             }
             DepNode::Trait { trait_ref, self_ty } => {
                 format!("[{DEP_TRAIT_IMPL}] trait impl `{trait_ref}` for `{self_ty}`")
+            }
+            DepNode::PartialTrait { trait_ref, value } => {
+                format!(
+                    "[{DEP_TRAIT_IMPL}] trait impl `{trait_ref}` for {}",
+                    value.describe()
+                )
             }
         }
     }

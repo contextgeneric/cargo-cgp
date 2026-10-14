@@ -92,6 +92,7 @@ pub fn resolve_impl_site(
                 consumers_are_cgp,
                 // The wrapper is implemented directly on the context, so the subject is the context.
                 subject_is_context: true,
+                data_operation: false,
                 provider: None,
                 causes,
             });

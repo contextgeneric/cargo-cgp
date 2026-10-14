@@ -38,9 +38,10 @@ mirror the error catalog:
 - [`ui/wiring/`](ui/wiring): structural wiring failures, such as conflicting wiring, orphan-rule
   violations, cycles, and unconstrained generics, and `unresolved-wiring-name/` (a wiring key,
   value, or provider that names nothing, or the wrong kind of item).
+- [`ui/data/extensible-data/`](ui/data/extensible-data): a builder, extractor, or cast applied in a
+  state its value does not allow, or to a type without the data derive it needs.
 - [`ui/uncataloged/`](ui/uncataloged): mistakes the catalog does not cover yet, one directory per
-  class: `extensible-data/`, `implicit-arguments/`, and `macro-defects/` (mistakes a `cgp` macro
-  mishandles).
+  class: `implicit-arguments/` and `macro-defects/` (mistakes a `cgp` macro mishandles).
 
 Three more directories hold fixtures that belong to no error class:
 

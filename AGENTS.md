@@ -295,8 +295,8 @@ the worker count, which otherwise defaults to the machine's parallelism capped a
 capture `cargo-cgp`'s own output end to end, so they are what changes once the tool reformats
 diagnostics; a passing suite is also the standing end-to-end proof that the driver runs as the
 compiler. The fixtures are grouped under `tests/ui/` by the *error class* they reproduce,
-mirroring the knowledge base's error catalog (`checks/`, `hidden/`, `lowering/`, `wiring/`, and
-`uncataloged/` for classes the catalog lacks), beside `ok/` for clean compiles, `pass-through/`
+mirroring the knowledge base's error catalog (`checks/`, `hidden/`, `lowering/`, `wiring/`, `data/`,
+and `uncataloged/` for classes the catalog lacks), beside `ok/` for clean compiles, `pass-through/`
 for plain Rust errors the tool must leave as rustc renders them, and `robustness/` for how the tool
 degrades when it fails itself. How well the tool presents a
 fixture's error is a header directive, not a directory: `//@quality: acceptable`, `usability`, or

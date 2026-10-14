@@ -16,8 +16,8 @@ use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::node::ChainNode;
 use crate::diagnosis::resolved::{Cause, Resolved};
 use crate::diagnosis::wording::{
-    assoc_mismatch_leaf, cause_headline, cause_notes_seen, consumer_header, fix_help_messages,
-    mismatch_leaf, root_cause_lead,
+    assoc_mismatch_leaf, cause_headline, cause_notes_seen, class_code, consumer_header,
+    fix_help_messages, mismatch_leaf, root_cause_lead, variant_mismatch_leaf,
 };
 use crate::rewrite::{ComponentNameMap, parse_trait_bound, rewrite_trait_bound};
 
@@ -211,6 +211,20 @@ fn categorized_header<'a>(
             return Header {
                 text: Some(format!(
                     "[{ABSTRACT_TYPE_MISMATCH}] {}",
+                    root_cause_lead(leaf)
+                )),
+                states_leaf: Some(leaf),
+                declined: None,
+            };
+        }
+        // A variant payload of the wrong type is an extensible-data cause, not a class of its own:
+        // the block keeps its anchor's class code and states the mismatch, as the two classes
+        // above do.
+        if let Some(leaf) = variant_mismatch_leaf(resolved) {
+            return Header {
+                text: Some(format!(
+                    "[{}] {}",
+                    class_code(resolved),
                     root_cause_lead(leaf)
                 )),
                 states_leaf: Some(leaf),

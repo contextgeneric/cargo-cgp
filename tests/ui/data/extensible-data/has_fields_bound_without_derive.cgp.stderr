@@ -1,0 +1,14 @@
+error[E0277]: [CGP-E001] `App` does not implement `HasFields`
+  --> src/main.rs:39:9
+   |
+39 |         DescriberComponent,
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E123] `App` does not implement `HasFields`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanDescribe` for context `App`
+             └─ [CGP-E102] provider trait impl `Describer` with context `App` for provider `DescribeNamed`
+               └─ [CGP-E123] `App` does not implement `HasFields`
+   = help: add `#[derive(HasFields)]` to `App`
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,0 +1,12 @@
+error[E0277]: [CGP-E050] missing variant `Qux` on `FooBar`
+  --> src/main.rs:28:37
+   |
+28 |     let _ = FooBar::Foo(1).downcast(PhantomData::<FooQux>);
+   |                                     ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E120] missing variant `Qux` on `FooBar`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `CanDowncast<FooQux>` for `FooBar`
+             └─ [CGP-E120] missing variant `Qux` on `FooBar`
+
+For more information about this error, try `rustc --explain E0277`.

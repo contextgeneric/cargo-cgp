@@ -10,6 +10,7 @@
 //! actually supplies for any other projected associated type.
 
 mod assoc_type;
+mod data;
 mod field;
 mod leaf;
 mod near_miss;
@@ -17,6 +18,7 @@ mod reportable;
 mod required_type;
 
 pub(crate) use assoc_type::*;
+pub(crate) use data::*;
 pub(crate) use field::*;
 pub(crate) use leaf::*;
 pub(crate) use near_miss::*;

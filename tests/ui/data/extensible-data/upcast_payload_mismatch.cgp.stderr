@@ -1,0 +1,11 @@
+error[E0271]: [CGP-E050] variant `Foo` on `FooBarBaz` has type `u32`, but `u64` is required
+  --> src/main.rs:29:35
+   |
+29 |     let _ = FooBar::Foo(1).upcast(PhantomData::<FooBarBaz>);
+   |                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this is required through the dependency chain:
+             [CGP-E104] trait impl `CanUpcast<FooBarBaz>` for `FooBar`
+             └─ [CGP-E122] variant `Foo` on `FooBarBaz` has type `u32`, but `u64` is required
+
+For more information about this error, try `rustc --explain E0271`.

@@ -1,9 +1,11 @@
 //! The one-sentence root-cause statement of a leaf, and the codes it carries.
 
 use crate::code::{
-    DEP_ASSOC_TYPE_MISMATCH, DEP_FIELD_TYPE_MISMATCH, DEP_MISSING_DELEGATE_ENTRY,
-    DEP_MISSING_DISPATCH_ENTRY, DEP_MISSING_FIELD, DEP_NOT_A_PROVIDER, DEP_ORDINARY_BOUND,
-    DEP_UNIMPLEMENTED_ACCESSOR,
+    DEP_ASSOC_TYPE_MISMATCH, DEP_DATA_TRAIT_UNIMPLEMENTED, DEP_FIELD_ALREADY_SET,
+    DEP_FIELD_TYPE_MISMATCH, DEP_FIELDS_NOT_SET, DEP_MISSING_DELEGATE_ENTRY,
+    DEP_MISSING_DISPATCH_ENTRY, DEP_MISSING_FIELD, DEP_MISSING_VARIANT, DEP_NOT_A_PROVIDER,
+    DEP_ORDINARY_BOUND, DEP_UNIMPLEMENTED_ACCESSOR, DEP_VARIANT_TYPE_MISMATCH,
+    DEP_VARIANTS_NOT_EXTRACTED,
 };
 use crate::diagnosis::leaf::{FieldIssue, Leaf};
 use crate::diagnosis::wording::header::{quoted_list, required_type};
@@ -29,7 +31,8 @@ pub fn missing_wiring(context: &str, key: &str) -> String {
 /// (see `cgp-knowledge-base/cargo-cgp/error-code.md`). A missing field, wiring, or table
 /// entry names what is missing and where; a present field without `HasField` names the derive that
 /// is missing, whose fix rides in a `help`; a projection mismatch names the type supplied and the
-/// type required; an ordinary bound keeps the compiler's wording.
+/// type required; an extensible-data cause names the field or variant whose state the operation
+/// does not allow, or the data trait a type lacks; an ordinary bound keeps the compiler's wording.
 pub fn root_cause_lead(leaf: &Leaf) -> String {
     match leaf {
         Leaf::Field {
@@ -83,6 +86,34 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
                 "{noun} `{assoc}` of `{trait_name}` on `{owner}` is `{actual}`, but {required} is required"
             )
         }
+        Leaf::FieldAlreadySet { name, owner } => {
+            format!("field `{name}` of `{owner}` is already set")
+        }
+        Leaf::FieldsNotSet { names, owner } => match names.as_slice() {
+            [one] => format!("field `{one}` of `{owner}` is not set"),
+            _ => format!("fields {} of `{owner}` are not set", quoted_list(names)),
+        },
+        Leaf::MissingVariant { name, owner, .. } => {
+            format!("missing variant `{name}` on `{owner}`")
+        }
+        Leaf::VariantsNotExtracted { names, owner } => match names.as_slice() {
+            [one] => format!("variant `{one}` of `{owner}` is not extracted"),
+            _ => format!(
+                "variants {} of `{owner}` are not extracted",
+                quoted_list(names)
+            ),
+        },
+        Leaf::VariantTypeMismatch {
+            name,
+            owner,
+            expected,
+            actual,
+        } => format!(
+            "variant `{name}` on `{owner}` has type `{actual}`, but `{expected}` is required"
+        ),
+        Leaf::DataTraitUnimplemented {
+            owner, trait_name, ..
+        } => format!("`{owner}` does not implement `{trait_name}`"),
         Leaf::Bound { summary } => format!("the trait bound `{summary}` is not satisfied"),
     }
 }
@@ -90,8 +121,8 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
 /// The `CGP-E1xx` code of a root-cause leaf, carried both by the tree's last entry and by the
 /// `root cause:` line that names it. Keyed by leaf kind: a missing field, a present-but-underived
 /// field, a missing delegate entry (plain or redirect), a missing dispatch entry, a non-provider,
-/// the two mismatch leaves (a `HasField` value type and any other associated type), and an ordinary
-/// trait bound each get their own code.
+/// the two mismatch leaves (a `HasField` value type and any other associated type), each
+/// extensible-data cause, and an ordinary trait bound each get their own code.
 pub fn dependency_leaf_code(leaf: &Leaf) -> &'static str {
     match leaf {
         Leaf::Field {
@@ -106,6 +137,12 @@ pub fn dependency_leaf_code(leaf: &Leaf) -> &'static str {
         Leaf::NotAProvider { .. } => DEP_NOT_A_PROVIDER,
         Leaf::FieldTypeMismatch { .. } => DEP_FIELD_TYPE_MISMATCH,
         Leaf::AssocTypeMismatch { .. } => DEP_ASSOC_TYPE_MISMATCH,
+        Leaf::FieldAlreadySet { .. } => DEP_FIELD_ALREADY_SET,
+        Leaf::FieldsNotSet { .. } => DEP_FIELDS_NOT_SET,
+        Leaf::MissingVariant { .. } => DEP_MISSING_VARIANT,
+        Leaf::VariantsNotExtracted { .. } => DEP_VARIANTS_NOT_EXTRACTED,
+        Leaf::VariantTypeMismatch { .. } => DEP_VARIANT_TYPE_MISMATCH,
+        Leaf::DataTraitUnimplemented { .. } => DEP_DATA_TRAIT_UNIMPLEMENTED,
         Leaf::Bound { .. } => DEP_ORDINARY_BOUND,
     }
 }

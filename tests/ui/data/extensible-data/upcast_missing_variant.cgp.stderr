@@ -1,0 +1,12 @@
+error[E0277]: [CGP-E050] missing variant `Bar` on `Big`
+  --> src/main.rs:29:39
+   |
+29 |     let _: Big = Small::Foo(1).upcast(PhantomData::<Big>);
+   |                                       ^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E120] missing variant `Bar` on `Big`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `CanUpcast<Big>` for `Small`
+             └─ [CGP-E120] missing variant `Bar` on `Big`
+
+For more information about this error, try `rustc --explain E0277`.

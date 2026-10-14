@@ -191,6 +191,72 @@ pub const FIELD_TYPE: &str = "Field";
 /// field list resugar to the tuple form `Struct!(A, B)`.
 pub const INDEX_TYPE: &str = "Index";
 
+/// The crate that defines CGP's extra extensible-data operations: the optional and defaulted
+/// builders (`SetOptional`, `CanBuildWithDefault`, `CanFinalizeWithDefault`, `HasOptionalBuilder`).
+/// Its traits, like those of [`CGP_FIELD_CRATE`], are extensible-data traits the walk descends.
+pub const CGP_FIELD_EXTRA_CRATE: &str = "cgp_field_extra";
+
+/// The trait (defined by [`CGP_FIELD_CRATE`]) every partial record or enum a data derive generates
+/// implements, naming the struct or enum it builds or matches as its `Target`. Its impl is what
+/// marks `__PartialPerson<…>` as a partial value rather than an ordinary type.
+pub const PARTIAL_DATA_TRAIT: &str = "PartialData";
+
+/// The associated type of [`PARTIAL_DATA_TRAIT`] that names a partial value's struct or enum.
+pub const PARTIAL_DATA_TARGET: &str = "Target";
+
+/// The presence-marker trait (defined by [`CGP_FIELD_CRATE`]): a partial value's field or variant
+/// is stored as `<M as MapType>::Map<T>`, so its marker parameter `M` records the field's state.
+pub const MAP_TYPE_TRAIT: &str = "MapType";
+
+/// The presence markers (defined by [`CGP_FIELD_CRATE`]): a field held (`IsPresent`), not yet set
+/// (`IsNothing`), ruled out of an extractor (`IsVoid`), or optional (`IsOptional`).
+pub const IS_PRESENT_TYPE: &str = "IsPresent";
+/// See [`IS_PRESENT_TYPE`].
+pub const IS_NOTHING_TYPE: &str = "IsNothing";
+/// See [`IS_PRESENT_TYPE`].
+pub const IS_VOID_TYPE: &str = "IsVoid";
+/// See [`IS_PRESENT_TYPE`].
+pub const IS_OPTIONAL_TYPE: &str = "IsOptional";
+
+/// The borrow markers (defined by [`CGP_FIELD_CRATE`]) a reference extractor's partial enum carries
+/// first, saying whether it holds shared (`IsRef`) or mutable (`IsMut`) references to its payloads.
+pub const IS_REF_TYPE: &str = "IsRef";
+/// See [`IS_REF_TYPE`].
+pub const IS_MUT_TYPE: &str = "IsMut";
+
+/// The extensible-data traits (defined by [`CGP_FIELD_CRATE`]) whose unmet obligation the data
+/// leaf reads: a builder's per-field update and finalize, an extractor's per-variant extraction and
+/// finalize, and an enum's construction by variant.
+pub const UPDATE_FIELD_TRAIT: &str = "UpdateField";
+/// See [`UPDATE_FIELD_TRAIT`].
+pub const FINALIZE_BUILD_TRAIT: &str = "FinalizeBuild";
+/// See [`UPDATE_FIELD_TRAIT`].
+pub const EXTRACT_FIELD_TRAIT: &str = "ExtractField";
+/// See [`UPDATE_FIELD_TRAIT`].
+pub const FINALIZE_EXTRACT_TRAIT: &str = "FinalizeExtract";
+/// See [`UPDATE_FIELD_TRAIT`].
+pub const FROM_VARIANT_TRAIT: &str = "FromVariant";
+
+/// The associated type of [`UPDATE_FIELD_TRAIT`] that names a field's state before the update, and
+/// of [`FROM_VARIANT_TRAIT`] that names a variant's payload.
+pub const MAPPER_ASSOC: &str = "Mapper";
+/// See [`MAPPER_ASSOC`].
+pub const VALUE_ASSOC: &str = "Value";
+
+/// Each extensible-data trait a type implements only through a derive, paired with that derive:
+/// the traits the data leaf reports as unimplemented on a struct or enum, naming the derive to add.
+/// All are defined by [`CGP_FIELD_CRATE`].
+pub const DATA_DERIVES: &[(&str, &str)] = &[
+    ("HasFields", "HasFields"),
+    ("HasFieldsRef", "HasFields"),
+    ("HasExtractor", "ExtractField"),
+    ("HasExtractorRef", "ExtractField"),
+    ("HasExtractorMut", "ExtractField"),
+    ("HasBuilder", "BuildField"),
+    ("IntoBuilder", "BuildField"),
+    ("FromVariant", "FromVariant"),
+];
+
 /// The stable `--verbose` flag, injected into every workspace-crate compilation to stop
 /// the diagnostic machinery from *eliding* the parts of a type it deems uninteresting.
 ///

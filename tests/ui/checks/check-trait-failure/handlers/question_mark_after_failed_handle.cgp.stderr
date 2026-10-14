@@ -1,10 +1,10 @@
-error[E0599]: [CGP-E001] the trait bound `__PartialApp<IsPresent>: CanBuildFrom<Http>` is not satisfied
-  --> src/main.rs:91:27
+error[E0599]: [CGP-E001] missing field `url` on `App`
+  --> src/main.rs:89:27
    |
-91 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
+89 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
    |                           ^^^^^^
    |
-   = note: root cause: [CGP-E117] the trait bound `__PartialApp<IsPresent>: CanBuildFrom<Http>` is not satisfied
+   = note: root cause: [CGP-E110] missing field `url` on `App`
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanHandle<(), ()>` for context `AppBuilder`
              └─ [CGP-E102] provider trait impl `Handler<(), ()>` with context `AppBuilder` for provider `BuildAndMergeOutputs<App, Product![BuildDb, BuildHttp]>`
@@ -12,6 +12,8 @@ error[E0599]: [CGP-E001] the trait bound `__PartialApp<IsPresent>: CanBuildFrom<
                  └─ [CGP-E102] provider trait impl `Handler<(), __PartialApp<IsNothing>>` with context `AppBuilder` for provider `PipeHandlers<Product![BuildAndMerge<BuildDb>, BuildAndMerge<BuildHttp>]>`
                    └─ [CGP-E102] provider trait impl `Handler<(), __PartialApp<IsNothing>>` with context `AppBuilder` for provider `ComposeHandlers<BuildAndMerge<BuildDb>, BuildAndMerge<BuildHttp>>`
                      └─ [CGP-E102] provider trait impl `Handler<(), __PartialApp<IsPresent>>` with context `AppBuilder` for provider `BuildAndMerge<BuildHttp>`
-                       └─ [CGP-E117] the trait bound `__PartialApp<IsPresent>: CanBuildFrom<Http>` is not satisfied
+                       └─ [CGP-E104] trait impl `CanBuildFrom<Http>` for the builder of `App` with `db_path` set
+                         └─ [CGP-E104] trait impl `BuildField<Symbol!("url")>` for the builder of `App` with `db_path` set
+                           └─ [CGP-E110] missing field `url` on `App`
 
 For more information about this error, try `rustc --explain E0599`.

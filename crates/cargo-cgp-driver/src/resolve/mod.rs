@@ -31,6 +31,7 @@ mod cgp_impl_misuse;
 mod cgp_item;
 mod classify;
 mod conflict;
+mod data;
 mod label;
 mod missing_use_provider;
 mod orphan;

@@ -1,0 +1,17 @@
+error[E0271]: type mismatch resolving `<__PartialPerson<IsNothing, IsNothing> as UpdateField<Symbol!("first_name"), IsNothing>>::Mapper == IsPresent`
+  --> src/main.rs:23:42
+   |
+23 |     let _ = Person::builder().take_field(PhantomData::<Symbol!("first_name")>);
+   |                               ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<__PartialPerson<IsNothing, IsNothing> as UpdateField<Symbol!("first_name"), IsNothing>>::Mapper == IsPresent`
+   |                               |
+   |                               required by a bound introduced by this call
+   |
+note: expected this to be `IsPresent`
+  --> src/main.rs:16:10
+   |
+16 | #[derive(CgpData)]
+   |          ^^^^^^^
+   = note: required for `__PartialPerson<IsNothing, IsNothing>` to implement `TakeField<Symbol!("first_name")>`
+   = note: this error originates in the derive macro `CgpData` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.

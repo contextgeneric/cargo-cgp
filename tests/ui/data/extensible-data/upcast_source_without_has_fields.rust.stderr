@@ -1,0 +1,14 @@
+error[E0599]: no method named `upcast` found for enum `Small` in the current scope
+  --> src/main.rs:28:27
+   |
+17 | pub enum Small {
+   | -------------- method `upcast` not found for this enum
+...
+28 |     let _ = Small::Foo(1).upcast(PhantomData::<Big>);
+   |                           ^^^^^^ method not found in `Small`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `upcast`, perhaps you need to implement it:
+           candidate #1: `CanUpcast`
+
+For more information about this error, try `rustc --explain E0599`.

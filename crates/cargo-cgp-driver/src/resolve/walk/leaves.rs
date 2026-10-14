@@ -13,8 +13,8 @@ use crate::resolve::cgp_item::{
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
 use crate::resolve::label::{label_for, redirect_lookup_args, render_ty, trait_generics};
 use crate::resolve::walk::{
-    ProjectionMismatch, holds, impl_where_obligations, is_descendable, is_has_field,
-    is_other_context_provider, is_workaround_plumbing, may_hold_for_some_unknown,
+    ProjectionMismatch, holds, impl_where_obligations, is_context_side, is_descendable,
+    is_has_field, is_other_context_provider, is_workaround_plumbing, may_hold_for_some_unknown,
     misdirected_impl_clauses, projection_mismatch, unmet_projection,
 };
 
@@ -208,6 +208,7 @@ fn compute_leaves<'tcx>(
         consumers_are_cgp: true,
         // The subject is the checked context itself.
         subject_is_context: true,
+        data_operation: false,
         provider: None,
         causes,
     })
@@ -388,7 +389,7 @@ fn resolve_node<'tcx>(
             .into_iter()
             .filter(|nested| {
                 nested.def_id() == this_trait
-                    || (is_descendable(tcx, *nested, context)
+                    || (is_context_side(tcx, *nested, context)
                         && !is_other_context_provider(tcx, *nested, context))
             })
             .collect();

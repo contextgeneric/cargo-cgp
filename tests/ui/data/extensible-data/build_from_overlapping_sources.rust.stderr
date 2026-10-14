@@ -1,0 +1,28 @@
+error[E0277]: the trait bound `Cons<Field<Symbol<3, Chars<..>>, String>, _>: FieldsBuilder<_, _>` is not satisfied
+  --> src/main.rs:39:21
+   |
+39 |         .build_from(BarBaz { bar: "bar".into(), baz: true })
+   |          ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |          |
+   |          required by a bound introduced by this call
+   |
+   = help: the trait `cgp::cgp_core::cgp_field::impls::build_from::FieldsBuilder<__PartialBarBaz<IsPresent, IsPresent>, __PartialFooBarBaz<IsPresent, IsPresent, IsNothing>>` is not implemented for `Cons<Field<Symbol<3, Chars<..>>, String>, _>`
+help: the trait `cgp::cgp_core::cgp_field::impls::build_from::FieldsBuilder<Source, Target>` is conditionally implemented for `Cons<cgp::prelude::Field<Tag, Value>, RestFields>`
+  --> $CGP/crates/core/cgp-field/src/impls/build_from.rs:30:1
+   |
+30 | / impl<Source, Target, RestFields, Tag, Value> FieldsBuilder<Source, Target>
+31 | |     for Cons<Field<Tag, Value>, RestFields>
+32 | | where
+33 | |     Source: TakeField<Tag, Value = Value>,
+34 | |     Target: BuildField<Tag, Value = Value>,
+   | |             ------------------------------
+   | |             |               |
+   | |             |               unsatisfied requirement introduced here: `<_ as BuildField<_>>::Value == _`
+   | |             unsatisfied requirement introduced here: `_: BuildField<_>`
+35 | |     RestFields: FieldsBuilder<Source::Remainder, Target::Output>,
+   | |_________________------------------------------------------------^
+   |                   |
+   |                   unsatisfied requirement introduced here: `_: FieldsBuilder<<_ as TakeField<_>>::Remainder, _>`
+   = note: required for `__PartialFooBarBaz<IsPresent, IsPresent, IsNothing>` to implement `CanBuildFrom<BarBaz>`
+
+For more information about this error, try `rustc --explain E0277`.

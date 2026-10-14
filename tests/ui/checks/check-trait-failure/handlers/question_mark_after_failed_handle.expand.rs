@@ -3,13 +3,11 @@
 //! `?` and no check.
 //!
 //! The call-site anchor recovers the consumer trait `CanHandle<(), ()>` and walks the
-//! builder pipeline to `__PartialApp<IsPresent>: CanBuildFrom<Http>`, the merge that needs the `url`
-//! field `App` lacks; the field itself is not named. Distilled from the application builder with its
+//! builder pipeline into the merge of `Http`, whose `url` field `App` lacks:
+//! ``[CGP-E001] missing field `url` on `App` ``. Distilled from the application builder with its
 //! `http_client` field removed.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -179,6 +179,14 @@ pub const KEY_NAMES_NO_COMPONENT: &str = "CGP-E042";
 /// `E0425`.
 pub const PROVIDER_NOT_DECLARED: &str = "CGP-E043";
 
+// Extensible data (`CGP-E050` to `CGP-E059`).
+
+/// `CGP-E050`: an extensible-data operation (a builder, an extractor, or a cast, such as
+/// `build_field`, `downcast`, or `upcast`) is not implemented for the value it is called on,
+/// because a field or variant is not in the state the operation needs, or a data derive is missing.
+/// The headline states that cause. The Rust code stays whatever rustc assigned.
+pub const DATA_OPERATION_UNIMPLEMENTED: &str = "CGP-E050";
+
 // Structural mistakes, continued (`CGP-E060` to `CGP-E069`): the family outgrew `CGP-E015` to
 // `CGP-E019`, and `CGP-E050` to `CGP-E059` holds extensible data.
 
@@ -238,3 +246,27 @@ pub const DEP_ASSOC_TYPE_MISMATCH: &str = "CGP-E116";
 /// `CGP-E117`: an ordinary trait bound that does not hold, worded as the compiler words it
 /// (`the trait bound \`f64: Eq\` is not satisfied`).
 pub const DEP_ORDINARY_BOUND: &str = "CGP-E117";
+
+/// `CGP-E118`: a field a record builder already holds, set again,
+/// `field \`f\` of \`T\` is already set`.
+pub const DEP_FIELD_ALREADY_SET: &str = "CGP-E118";
+
+/// `CGP-E119`: fields of a record builder an operation needs set, such as a finalize, but the
+/// builder lacks, `field \`f\` of \`T\` is not set`.
+pub const DEP_FIELDS_NOT_SET: &str = "CGP-E119";
+
+/// `CGP-E120`: a variant an extensible-data operation names that the enum does not have,
+/// `missing variant \`V\` on \`T\``.
+pub const DEP_MISSING_VARIANT: &str = "CGP-E120";
+
+/// `CGP-E121`: variants an extractor still holds when it is finalized, which a match must extract
+/// first, `variant \`V\` of \`T\` is not extracted`.
+pub const DEP_VARIANTS_NOT_EXTRACTED: &str = "CGP-E121";
+
+/// `CGP-E122`: a variant whose payload is not the type an extensible-data operation requires,
+/// `variant \`V\` on \`T\` has type \`A\`, but \`B\` is required`.
+pub const DEP_VARIANT_TYPE_MISMATCH: &str = "CGP-E122";
+
+/// `CGP-E123`: a type that does not implement a trait a data derive supplies (`HasFields`,
+/// `HasExtractor`, `HasBuilder`, `FromVariant`), `\`T\` does not implement \`HasFields\``.
+pub const DEP_DATA_TRAIT_UNIMPLEMENTED: &str = "CGP-E123";

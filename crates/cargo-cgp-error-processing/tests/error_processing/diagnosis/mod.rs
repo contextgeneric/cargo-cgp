@@ -7,6 +7,7 @@
 //! graph's own rendering is pinned separately in `graph.rs`, so here the focus is the note
 //! assembly (lead, heading, indentation, singular vs plural) around it.
 
+mod data;
 mod headers;
 mod headline;
 mod helps;
@@ -89,6 +90,7 @@ fn cgp_resolved(context: &str, consumers: &[&str], causes: Vec<Cause>) -> Resolv
         consumers: consumers.iter().map(|c| (*c).to_owned()).collect(),
         consumers_are_cgp: true,
         subject_is_context: true,
+        data_operation: false,
         provider: None,
         causes: causes.into_iter().collect(),
     }

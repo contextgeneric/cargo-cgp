@@ -163,6 +163,11 @@ pub struct Resolved {
     /// header calls the subject a `context` or names it plainly, so a foreign wrapper is not
     /// mislabelled a context.
     pub subject_is_context: bool,
+    /// Whether [`consumers`](Resolved::consumers) are CGP's extensible-data traits (a cast such as
+    /// `CanUpcast`, a builder operation such as `BuildField`, an extractor operation), reached by a
+    /// call to one. The block is then the extensible-data class (`CGP-E050`), worded with the plain
+    /// trait sentence, since these traits are not components. `false` for every other anchor.
+    pub data_operation: bool,
     /// The provider a `#[check_providers]` entry checks, when the failure is that entry's: the
     /// block is then the provider class (`CGP-E002`), and [`consumers`](Resolved::consumers) holds
     /// the provider trait the provider fails to implement for [`context`](Resolved::context).

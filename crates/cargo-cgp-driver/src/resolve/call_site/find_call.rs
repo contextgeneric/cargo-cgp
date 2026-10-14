@@ -12,6 +12,7 @@ use crate::resolve::call_site::{receiver_context, seed_from_call};
 use crate::resolve::cgp_item::{
     carries_wiring, is_blanket_trait, is_consumer_trait, is_context_adt,
 };
+use crate::resolve::data::is_data_trait;
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
@@ -45,7 +46,7 @@ pub fn resolve_call_site(
         if !is_context_adt(tcx, context) || context.has_param() {
             continue;
         }
-        for (trait_did, method_did, is_cgp_consumer) in traits_with_method(tcx, call.method) {
+        for (trait_did, method_did, kind) in traits_with_method(tcx, call.method) {
             let Some(top) = seed_from_call(tcx, context, trait_did, method_did, call.args) else {
                 continue;
             };
@@ -56,11 +57,13 @@ pub fn resolve_call_site(
                 // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait is consumed like a consumer trait
                 // but is not a CGP *component*, so it heads the diagnostic as `[CGP-E003] the trait
                 // …` — the same wording the impl-site anchor gives such a trait reached through a
-                // wrapper. A genuine consumer keeps the `consumers_are_cgp` the walk set. The trait
-                // is called on a type that is a context only when it carries wiring, so a type with
-                // none is named plainly.
-                if !is_cgp_consumer {
+                // wrapper. One of CGP's extensible-data traits is not a component either, and heads
+                // it as `[CGP-E050]`. A genuine consumer keeps the `consumers_are_cgp` the walk set.
+                // The trait is called on a type that is a context only when it carries wiring, so a
+                // type with none is named plainly.
+                if kind != CallTrait::Consumer {
                     resolved.consumers_are_cgp = false;
+                    resolved.data_operation = kind == CallTrait::Data;
                     resolved.subject_is_context = carries_wiring(tcx, context);
                 }
                 return Some(resolved);
@@ -128,26 +131,41 @@ fn is_about_call(span: Span, call: Span, receiver: &Expr<'_>, args: &[Expr<'_>])
             .any(|operand| operand.span.contains(span) && operand.span != span)
 }
 
+/// What kind of trait a call resolves through, which decides the class its failure is headed with.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CallTrait {
+    /// A CGP consumer trait (`[CGP-E001]`).
+    Consumer,
+    /// A `#[cgp_fn]` / `#[blanket_trait]` blanket trait (`[CGP-E003]`).
+    Blanket,
+    /// One of CGP's extensible-data traits, such as `CanUpcast` (`[CGP-E050]`).
+    Data,
+}
+
 /// Every trait declaring a `self`-receiver associated fn named `method` that a call by that name
 /// could resolve through — the candidates [`resolve_call_site`] tries — each paired with that
 /// method's `DefId` (whose declared signature [`seed_from_call`](super::seed_from_call) unifies the
-/// call's arguments against) and whether the trait is a CGP *consumer* trait.
+/// call's arguments against) and the [kind](CallTrait) of trait it is.
 ///
-/// Two kinds qualify, and CGP consumer traits come **first** so a directly-wired consumer keeps its
-/// precise `[CGP-E001]` recovery before any blanket trait is tried:
+/// Three kinds qualify, and CGP consumer traits come **first** so a directly-wired consumer keeps
+/// its precise `[CGP-E001]` recovery before any other trait is tried:
 ///
-/// - a **CGP consumer trait** (recognized structurally, in any crate); and
-/// - a **local blanket-impl trait** that is not a consumer — the shape `#[cgp_fn]` /
-///   `#[blanket_trait]` generate (`impl<Context> Describe for Context where Self: …`). Its
+/// - a **CGP consumer trait** (recognized structurally, in any crate);
+/// - a **blanket-impl trait** that is not a consumer and shows CGP evidence — the shape `#[cgp_fn]`
+///   / `#[blanket_trait]` generate (`impl<Context> Describe for Context where Self: …`). Its
 ///   obligation `Ctx: Describe` is walkable exactly as a consumer's is, since its `Self` is the
-///   context.
+///   context; and
+/// - one of CGP's **extensible-data traits** (a cast such as `CanUpcast`, a builder or extractor
+///   operation), whose blanket impl the walk descends to the field or variant at fault.
 ///
-/// Restricting the second kind to *local* traits excludes foreign blanket traits (`Into`, `From`);
-/// the `self`-method requirement and the failing-obligation gate in [`resolve_call_site`] keep a
-/// wrong guess from fabricating a diagnostic.
-pub(crate) fn traits_with_method(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId, DefId, bool)> {
-    let mut consumers = Vec::new();
-    let mut blanket_traits = Vec::new();
+/// Requiring CGP evidence of the second kind excludes ordinary blanket traits (`Into`, `From`); the
+/// `self`-method requirement and the failing-obligation gate in [`resolve_call_site`] keep a wrong
+/// guess from fabricating a diagnostic.
+pub(crate) fn traits_with_method(
+    tcx: TyCtxt<'_>,
+    method: Symbol,
+) -> Vec<(DefId, DefId, CallTrait)> {
+    let mut found: Vec<(DefId, DefId, CallTrait)> = Vec::new();
     for trait_did in tcx.all_traits_including_private() {
         let Some(method_did) = tcx
             .associated_items(trait_did)
@@ -158,10 +176,14 @@ pub(crate) fn traits_with_method(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId,
             continue;
         };
         if is_consumer_trait(tcx, trait_did) {
-            consumers.push((trait_did, method_did, true));
+            found.push((trait_did, method_did, CallTrait::Consumer));
         } else if is_blanket_trait(tcx, trait_did) {
-            blanket_traits.push((trait_did, method_did, false));
+            found.push((trait_did, method_did, CallTrait::Blanket));
+        } else if is_data_trait(tcx, trait_did) {
+            found.push((trait_did, method_did, CallTrait::Data));
         }
     }
-    consumers.into_iter().chain(blanket_traits).collect()
+    // A stable sort keeps each kind in the order the traits were listed.
+    found.sort_by_key(|&(_, _, kind)| kind as u8);
+    found
 }

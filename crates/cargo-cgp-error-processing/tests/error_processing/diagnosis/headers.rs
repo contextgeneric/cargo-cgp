@@ -253,6 +253,7 @@ fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
         consumers: vec!["CanHandleApiSend<QueryBalanceApi>".to_owned()],
         consumers_are_cgp: false,
         subject_is_context: true,
+        data_operation: false,
         provider: None,
         causes: [missing_field_cause()].into_iter().collect(),
     };
@@ -272,6 +273,7 @@ fn wrapper_header_names_a_foreign_subject_plainly() {
         consumers: vec!["CanAddApiRoutes".to_owned()],
         consumers_are_cgp: false,
         subject_is_context: false,
+        data_operation: false,
         provider: None,
         causes: [missing_field_cause()].into_iter().collect(),
     };

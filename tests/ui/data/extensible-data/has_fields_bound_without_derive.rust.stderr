@@ -1,0 +1,31 @@
+error[E0277]: the trait bound `App: CanUseComponent<DescriberComponent>` is not satisfied
+  --> src/main.rs:39:9
+   |
+39 |         DescriberComponent,
+   |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasFields` is not implemented for `App`
+  --> src/main.rs:27:1
+   |
+27 | pub struct App {
+   | ^^^^^^^^^^^^^^
+note: required for `DescribeNamed` to implement `IsProviderFor<DescriberComponent, App>`
+  --> src/main.rs:18:1
+   |
+18 | #[cgp_impl(new DescribeNamed)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 | #[uses(HasFields<Fields = Struct! { name: String }>)]
+   |                  --------------------------------- unsatisfied trait bound introduced here
+   = note: required for `App` to implement `CanUseComponent<DescriberComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:37:1
+   |
+37 | / check_components! {
+38 | |     App {
+39 | |         DescriberComponent,
+40 | |     }
+41 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,0 +1,19 @@
+error[E0277]: the trait bound `Big: FromVariant<Symbol!("Bar")>` is not satisfied
+  --> src/main.rs:26:17
+   |
+26 |     needs_bar::<Big>();
+   |                 ^^^ unsatisfied trait bound
+   |
+help: the trait `FromVariant<Symbol!("Bar")>` is not implemented for `Big`
+      but trait `FromVariant<Symbol!("Foo")>` is implemented for it
+  --> src/main.rs:20:5
+   |
+20 |     Foo(u64),
+   |     ^^^
+note: required by a bound in `needs_bar`
+  --> src/main.rs:23:17
+   |
+23 | fn needs_bar<T: FromVariant<Symbol!("Bar")>>() {}
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `needs_bar`
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,0 +1,17 @@
+error[E0271]: type mismatch resolving `<FooBarBaz as FromVariant<Symbol<3, Chars<..>>>>::Value == u64`
+  --> src/main.rs:29:35
+   |
+29 |     let _ = FooBar::Foo(1).upcast(PhantomData::<FooBarBaz>);
+   |                            ------ ^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<FooBarBaz as FromVariant<Symbol<3, Chars<..>>>>::Value == u64`
+   |                            |
+   |                            required by a bound introduced by this call
+   |
+note: expected this to be `u64`
+  --> src/main.rs:23:9
+   |
+23 |     Foo(u32),
+   |         ^^^
+   = note: required for `Either<Field<Symbol<3, Chars<..>>, u64>, _>` to implement `FieldsExtractor<__PartialFooBar<IsPresent, IsPresent>, FooBarBaz>`
+   = note: required for `FooBar` to implement `CanUpcast<FooBarBaz>`
+
+For more information about this error, try `rustc --explain E0271`.

@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E001] field `port` of `Config` is not set
+  --> src/main.rs:45:9
+   |
+45 |         ComputerComponent: ((), ()),
+   |         ^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E119] field `port` of `Config` is not set
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCompute<(), ()>` for context `App`
+             └─ [CGP-E102] provider trait impl `Computer<(), ()>` with context `App` for provider `BuildWithHandlers<Config, Product![BuildAndSetField<Symbol!("host"), DefaultHost>]>`
+               └─ [CGP-E119] field `port` of `Config` is not set
+
+For more information about this error, try `rustc --explain E0277`.

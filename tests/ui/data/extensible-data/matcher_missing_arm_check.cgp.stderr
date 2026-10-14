@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E001] variant `Rectangle` of `Shape` is not extracted
+  --> src/main.rs:56:9
+   |
+56 |         ComputerComponent: ((), Shape),
+   |         ^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E121] variant `Rectangle` of `Shape` is not extracted
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCompute<(), Shape>` for context `App`
+             └─ [CGP-E102] provider trait impl `Computer<(), Shape>` with context `App` for provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>]>`
+               └─ [CGP-E121] variant `Rectangle` of `Shape` is not extracted
+
+For more information about this error, try `rustc --explain E0277`.

@@ -12,8 +12,8 @@ use crate::resolve::cgp_item::{
     is_path_cons,
 };
 use crate::resolve::classify::{
-    field_issue, field_type, is_dispatch_lookup, owner_has_impl_of, projected_type,
-    required_field_type, similar_field, similar_wired_key,
+    classify_data_leaf, field_issue, field_type, is_dispatch_lookup, owner_has_impl_of,
+    projected_type, required_field_type, similar_field, similar_wired_key,
 };
 use crate::resolve::conflict::render_path;
 use crate::resolve::label::fold_empty_lists;
@@ -39,6 +39,11 @@ pub(crate) fn classify_leaf<'tcx>(
     parent: Option<ty::TraitRef<'tcx>>,
     mismatch: Option<ProjectionMismatch<'tcx>>,
 ) -> Leaf {
+    // An extensible-data operation's bound names the field or variant whose state its partial value
+    // records, read off the presence markers before the generic shapes below claim it.
+    if let Some(leaf) = classify_data_leaf(tcx, leaf_ref, mismatch) {
+        return leaf;
+    }
     // A projection mismatch on a trait that is *not* `HasField` — most often a CGP abstract type the
     // context binds one way and a provider pins another. Classified before the trait-keyed branches
     // below, since the leaf is about the projected type rather than the trait bound (which holds).

@@ -1,0 +1,19 @@
+error[E0277]: [CGP-E001] missing field `timeout_url` on `App`
+  --> src/main.rs:60:9
+   |
+60 |         ComputerComponent: ((), ()),
+   |         ^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `timeout_url` on `App`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCompute<(), ()>` for context `AppBuilder`
+             └─ [CGP-E102] provider trait impl `Computer<(), ()>` with context `AppBuilder` for provider `BuildAndMergeOutputs<App, Product![BuildDb, BuildHttp]>`
+               └─ [CGP-E102] provider trait impl `Computer<(), ()>` with context `AppBuilder` for provider `BuildWithHandlers<App, Product![BuildAndMerge<BuildDb>, BuildAndMerge<BuildHttp>]>`
+                 └─ [CGP-E102] provider trait impl `Computer<(), __PartialApp<IsNothing, IsNothing>>` with context `AppBuilder` for provider `PipeHandlers<Product![BuildAndMerge<BuildDb>, BuildAndMerge<BuildHttp>]>`
+                   └─ [CGP-E102] provider trait impl `Computer<(), __PartialApp<IsNothing, IsNothing>>` with context `AppBuilder` for provider `ComposeHandlers<BuildAndMerge<BuildDb>, BuildAndMerge<BuildHttp>>`
+                     └─ [CGP-E102] provider trait impl `Computer<(), __PartialApp<IsPresent, IsNothing>>` with context `AppBuilder` for provider `BuildAndMerge<BuildHttp>`
+                       └─ [CGP-E104] trait impl `CanBuildFrom<Http>` for the builder of `App` with `db_path` set
+                         └─ [CGP-E104] trait impl `BuildField<Symbol!("timeout_url")>` for the builder of `App` with `db_path` set
+                           └─ [CGP-E110] missing field `timeout_url` on `App`
+
+For more information about this error, try `rustc --explain E0277`.

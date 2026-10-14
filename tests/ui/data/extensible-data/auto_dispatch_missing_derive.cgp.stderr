@@ -1,0 +1,19 @@
+error[E0599]: [CGP-E003] `Shape` does not implement `HasFields` and `HasExtractor`
+  --> src/main.rs:36:51
+   |
+36 |     let _ = Shape::Circle(Circle { radius: 1.0 }).area();
+   |                                                   ^^^^
+   |
+   = note: root causes:
+             - [CGP-E123] `Shape` does not implement `HasFields`
+             - [CGP-E123] `Shape` does not implement `HasExtractor`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `HasArea` for `Shape`
+             ├─ [CGP-E102] provider trait impl `Computer<(), &Shape>` with context `()` for provider `MatchWithValueHandlersRef<ComputeArea>`
+             │ └─ [CGP-E102] provider trait impl `Computer<(), &Shape>` with context `()` for provider `UseInputDelegate<MatchWithFieldHandlersInputsRef<HandleFieldValue<ComputeArea>>>`
+             │   └─ [CGP-E104] trait impl `HasFieldHandlers<dispatch::providers::matchers::to_field_handlers::MapExtractFieldAndHandle<HandleFieldValue<ComputeArea>>>` for `Shape`
+             │     └─ [CGP-E123] `Shape` does not implement `HasFields`
+             └─ [CGP-E123] `Shape` does not implement `HasExtractor`
+   = help: add `#[derive(HasFields, ExtractField)]` to `Shape`
+
+For more information about this error, try `rustc --explain E0599`.

@@ -33,7 +33,7 @@ use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::call_site::{expr_written_ty, lower_hir_ty, traits_with_method};
+use crate::resolve::call_site::{CallTrait, expr_written_ty, lower_hir_ty, traits_with_method};
 use crate::resolve::cgp_item::{is_blanket_trait, is_consumer_trait, is_provider_trait};
 
 /// Recognize an undeclared-trait failure and recover the trait to declare, or
@@ -114,6 +114,7 @@ pub fn detect_undeclared_trait(
     let candidates: Vec<(DefId, DefId)> = match call.receiver {
         CallReceiver::Value(_) => traits_with_method(tcx, call.method)
             .into_iter()
+            .filter(|&(_, _, kind)| kind != CallTrait::Data)
             .map(|(trait_did, method_did, _)| (trait_did, method_did))
             .collect(),
         CallReceiver::Type(_) => traits_with_assoc_fn(tcx, call.method),

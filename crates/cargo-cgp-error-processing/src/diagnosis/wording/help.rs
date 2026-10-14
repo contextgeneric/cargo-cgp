@@ -1,6 +1,6 @@
 //! The `help` messages a resolved failure carries: the fixes its causes call for.
 
-use crate::diagnosis::leaf::{FieldIssue, Leaf, NearMiss};
+use crate::diagnosis::leaf::{DeriveFix, FieldIssue, Leaf, NearMiss};
 use crate::diagnosis::resolved::Cause;
 use crate::diagnosis::wording::header::quoted_list;
 
@@ -15,6 +15,8 @@ enum FixKind {
     Wire,
     /// Add entries to a provider's table.
     AddEntries,
+    /// Add data derives (`HasFields`, `ExtractField`, …) to a struct or enum.
+    DeriveData,
     /// A `help` worded whole, such as a near miss or an abstract type to reconcile (its owner is
     /// the text itself).
     Whole,
@@ -77,6 +79,18 @@ fn fixes_for(leaf: &Leaf) -> Vec<(FixKind, String, Option<String>)> {
             fixes.push((FixKind::AddEntries, table.clone(), Some(key.clone())));
         }
         Leaf::AssocTypeMismatch { .. } => fixes.extend(assoc_mismatch_help(leaf).map(whole)),
+        Leaf::MissingVariant { owner, similar, .. } => {
+            if let Some(similar) = &similar.0 {
+                fixes.push(whole(format!(
+                    "a similar variant exists on `{owner}`: `{similar}`"
+                )));
+            }
+        }
+        Leaf::DataTraitUnimplemented {
+            owner,
+            derive: DeriveFix(Some(derive)),
+            ..
+        } => fixes.push((FixKind::DeriveData, owner.clone(), Some(derive.clone()))),
         _ => {}
     }
     fixes
@@ -109,8 +123,8 @@ fn is_typeable_key(key: &str) -> bool {
 
 /// Every `help` a resolved failure's causes call for, in the order the causes are listed, one per
 /// kind of fix on one owner: the fields to add to one struct, the derive one struct needs, the
-/// components to wire on one context, the entries to add to one table, and each abstract type to
-/// reconcile. A missing field is named with its type when its requirement states one, and gets no
+/// components to wire on one context, the entries to add to one table, the data derives one type
+/// needs (named in one attribute), and each abstract type to reconcile. A missing field is named with its type when its requirement states one, and gets no
 /// help when adding it is not confirmed to fix the cause (see [`FieldFix`](crate::FieldFix)); a key
 /// the reader could not paste gets none either. A missing field or key that has a near miss, a
 /// similar name the program wrote, gets that named first. Both the streaming plan and the emitter's
@@ -140,6 +154,7 @@ pub fn fix_help_messages(causes: &[Cause]) -> Vec<String> {
         .into_iter()
         .map(|(kind, owner, items)| {
             let one = items.len() == 1;
+            let derives = items.join(", ");
             let items = quoted_list(&items);
             match kind {
                 FixKind::AddFields => {
@@ -155,6 +170,7 @@ pub fn fix_help_messages(causes: &[Cause]) -> Vec<String> {
                     let entry = if one { "an entry" } else { "entries" };
                     format!("add {entry} for {items} to `{owner}`")
                 }
+                FixKind::DeriveData => format!("add `#[derive({derives})]` to `{owner}`"),
                 FixKind::Whole => owner,
             }
         })
