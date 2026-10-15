@@ -131,6 +131,19 @@ pub(crate) fn is_question_mark_cascade(diag: &DiagInner) -> bool {
     main_message_text(diag).is_some_and(is_question_mark_cascade_text)
 }
 
+/// Whether `diag` is the method probe's "no method named `…` found" `E0599` (or "no associated
+/// function or constant named `…`" for a type-relative path call), the probe having found no impl
+/// of a trait that declares the item. Its main message is a translatable one, so it is recognized by the arguments
+/// that message names (`item_kind`, `item_ident`), which the resolution-class `E0599`s ("no variant
+/// named …") do not carry. The probe builds the method-bounds `E0599` from the same diagnostic and
+/// replaces its message with a plain string, so a plain-string message rules this shape out.
+pub(crate) fn is_no_matching_item(diag: &DiagInner) -> bool {
+    diag.code == Some(E0599)
+        && main_message_text(diag).is_none()
+        && diag.args.contains_key("item_kind")
+        && diag.args.contains_key("item_ident")
+}
+
 /// Strip rustc's method-probe advice from a method-bounds `E0599` the resolver declined: the
 /// "this is an associated function, not a method" caret label, the "found the following
 /// associated functions …" note with its "the candidate is defined in …" follow-up, and the

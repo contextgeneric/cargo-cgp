@@ -1,14 +1,15 @@
-error[E0277]: the trait bound `__PartialServer<IsPresent, IsNothing>: CanFinalizeWithDefault` is not satisfied
+error[E0277]: [CGP-E050] the trait bound `Port: Default` is not satisfied
   --> src/main.rs:31:13
    |
 31 |     let _ = Server::build_with_default(Host { host: "h".into() });
-   |             ^^^^^^ unsatisfied trait bound
+   |             ^^^^^^
    |
-help: the trait `CanFinalizeWithDefault` is not implemented for `__PartialServer<IsPresent, IsNothing>`
-  --> src/main.rs:25:1
-   |
-25 | pub struct Server {
-   | ^^^^^^^^^^^^^^^^^
-   = note: required for `Server` to implement `CanBuildWithDefault<Host>`
+   = note: root cause: [CGP-E117] the trait bound `Port: Default` is not satisfied
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `CanBuildWithDefault<Host>` for `Server`
+             └─ [CGP-E104] trait impl `CanFinalizeWithDefault` for the builder of `Server` with `host` set
+               └─ [CGP-E104] trait impl `TransformMapFields<TransformMapDefault, IsPresent>` for the builder of `Server` with `host` set
+                 └─ [CGP-E104] trait impl `TransformMap<IsNothing, IsPresent, Port>` for `TransformMapDefault`
+                   └─ [CGP-E117] the trait bound `Port: Default` is not satisfied
 
 For more information about this error, try `rustc --explain E0277`.

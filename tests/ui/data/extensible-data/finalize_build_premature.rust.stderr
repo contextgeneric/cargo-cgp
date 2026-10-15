@@ -1,12 +1,12 @@
 error[E0599]: no method named `finalize_build` found for struct `__PartialPerson<__F0__, __F1__>` in the current scope
-  --> src/main.rs:25:10
+  --> src/main.rs:24:10
    |
-17 | pub struct Person {
+16 | pub struct Person {
    | ----------------- method `finalize_build` not found for this struct
 ...
-23 |     let _: Person = Person::builder()
-24 |         .build_field(PhantomData::<Symbol!("first_name")>, "Alice".to_owned())
-25 |         .finalize_build();
+22 |     let _: Person = Person::builder()
+23 |         .build_field(PhantomData::<Symbol!("first_name")>, "Alice".to_owned())
+24 |         .finalize_build();
    |          ^^^^^^^^^^^^^^ method not found in `__PartialPerson<IsPresent, IsNothing>`
    |
    = help: items from traits can only be used if the trait is implemented and in scope

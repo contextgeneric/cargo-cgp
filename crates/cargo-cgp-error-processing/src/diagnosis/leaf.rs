@@ -5,6 +5,8 @@
 //! no compiler handles, so they outlive the inference contexts the driver reads them from
 //! and are exercised by plain unit tests.
 
+use crate::diagnosis::node::PartialKind;
+
 /// Why a required `HasField` bound is unmet — the distinction that tells a genuinely missing
 /// field apart from one some struct actually carries but has not derived. CGP's `HasField`
 /// follows `Deref` (a blanket impl forwards to the target), so a field on a `Deref` target
@@ -214,6 +216,14 @@ pub enum Leaf {
         /// A variant the enum declares whose name is a likely slip of this one, for a `help`.
         similar: NearMiss,
     },
+    /// A variant an extractor has already ruled out, extracted again: the remainder of an
+    /// extraction that did not yield the variant, asked for it a second time.
+    VariantAlreadyExtracted {
+        /// The variant extracted again, e.g. `Circle`.
+        name: String,
+        /// The enum the extractor matches, e.g. `Shape`.
+        owner: String,
+    },
     /// Variants an extractor still holds when it is finalized. A match extracts variants one at a
     /// time, and the remainder finalizes only once every variant is ruled out, so these variants
     /// are the ones the match never handles.
@@ -248,6 +258,32 @@ pub enum Leaf {
         /// enum the crate defines (so a derive can be added to it), e.g. `HasFields`. `None` when the
         /// derive cannot be added there. Like [`NearMiss`], it is not part of the leaf's identity.
         derive: DeriveFix,
+    },
+    /// A field an operation on an optional builder needs held as optional (`set`, `set_optional`),
+    /// which the builder holds plainly: the builder is a record's core builder, whose fields are
+    /// set or unset, not an optional one.
+    FieldNotOptional {
+        /// The field, e.g. `foo`.
+        name: String,
+        /// The struct the builder builds, e.g. `Context`.
+        owner: String,
+        /// The conversion to an optional builder (`to_optional`), when the builder takes it, for
+        /// the `help`. Like [`NearMiss`], it is not part of the leaf's identity.
+        convert: MethodFix,
+    },
+    /// A partial value (a record builder or an enum extractor) given to an operation that needs a
+    /// trait the struct or enum itself implements, which no partial value does: `downcast` called on
+    /// the remainder of an earlier downcast, where an extractor takes `downcast_fields`.
+    PartialLacksDataTrait {
+        /// What the partial value is.
+        kind: PartialKind,
+        /// The struct or enum it builds or matches, e.g. `FooBarBaz`.
+        target: String,
+        /// The trait it does not implement, e.g. `HasExtractor`.
+        trait_name: String,
+        /// The method a partial value takes in place of the one called, for the `help`. Like
+        /// [`NearMiss`], it is not part of the leaf's identity.
+        replacement: MethodFix,
     },
     /// Any other terminal unmet bound — an ordinary trait bound such as `f64: Eq`, or a trait
     /// bound the walk cannot descend further. The emitter keeps rustc's own header for these and
@@ -289,6 +325,24 @@ pub struct NearMiss(pub Option<String>);
 #[derive(Debug, Clone, Default)]
 pub struct DeriveFix(pub Option<String>);
 
+/// A method a `help` tells the reader to call: `to_optional` on a core builder before an optional
+/// one's `set`, or `downcast_fields` on an extractor in place of `downcast`. Like [`NearMiss`], it
+/// is carried for the `help` and is not part of the leaf's identity.
+#[derive(Debug, Clone, Default)]
+pub struct MethodFix(pub Option<SuggestedCall>);
+
+/// The method a [`MethodFix`] names.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SuggestedCall {
+    /// The method to call, e.g. `downcast_fields`.
+    pub method: String,
+    /// The method the call replaces, e.g. `downcast`, or `None` for a call made first.
+    pub replaces: Option<String>,
+    /// The path that imports the method's trait, e.g. `cgp::core::field::impls::CanDowncastFields`,
+    /// since the data traits are not in the prelude. `None` when no public path is found.
+    pub trait_path: Option<String>,
+}
+
 /// Equality and hashing that treat every value alike, for the facts a leaf carries for its `help`s
 /// alone.
 macro_rules! identity_free {
@@ -310,8 +364,26 @@ macro_rules! identity_free {
 identity_free!(FieldFix);
 identity_free!(NearMiss);
 identity_free!(DeriveFix);
+identity_free!(MethodFix);
 
 impl Leaf {
+    /// Whether this cause is the state of a field or variant that an extensible-data operation does
+    /// not allow (set twice, not set, extracted twice, not extracted, not optional), a variant the
+    /// operation names that the enum lacks, or a partial value given where its struct or enum
+    /// belongs: a cause read off a partial value's presence markers or a variant list.
+    pub fn is_data_state(&self) -> bool {
+        matches!(
+            self,
+            Leaf::FieldAlreadySet { .. }
+                | Leaf::FieldsNotSet { .. }
+                | Leaf::FieldNotOptional { .. }
+                | Leaf::MissingVariant { .. }
+                | Leaf::VariantAlreadyExtracted { .. }
+                | Leaf::VariantsNotExtracted { .. }
+                | Leaf::PartialLacksDataTrait { .. }
+        )
+    }
+
     /// Fold the `help` facts of `other`, the same cause reached another way, into this leaf: adding
     /// a field stays confirmed only when both routes confirm it, and a type or a near miss is kept
     /// only when both routes name the same one, since a help naming one route's would not fix the
@@ -350,6 +422,21 @@ impl Leaf {
                 Leaf::DataTraitUnimplemented { derive, .. },
                 Leaf::DataTraitUnimplemented { derive: theirs, .. },
             ) => agree(&mut derive.0, &theirs.0),
+            (
+                Leaf::FieldNotOptional { convert: fix, .. },
+                Leaf::FieldNotOptional {
+                    convert: theirs, ..
+                },
+            )
+            | (
+                Leaf::PartialLacksDataTrait {
+                    replacement: fix, ..
+                },
+                Leaf::PartialLacksDataTrait {
+                    replacement: theirs,
+                    ..
+                },
+            ) if fix.0 != theirs.0 => fix.0 = None,
             _ => {}
         }
     }

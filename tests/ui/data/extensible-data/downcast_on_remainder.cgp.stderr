@@ -1,26 +1,13 @@
-error[E0599]: the method `downcast` exists for enum `__PartialFooBarBaz<IsVoid, IsVoid, IsPresent>`, but its trait bounds were not satisfied
-  --> src/main.rs:37:27
+error[E0599]: [CGP-E050] an extractor of `FooBarBaz` does not implement `HasExtractor`
+  --> src/main.rs:35:27
    |
-24 | pub enum FooBarBaz {
-   | ------------------ method `downcast` not found for this enum because it doesn't satisfy `_: CanDowncast<_>` or `_: HasExtractor`
-...
-37 |         let _ = remainder.downcast(PhantomData::<Baz>);
+35 |         let _ = remainder.downcast(PhantomData::<Baz>);
    |                           ^^^^^^^^
    |
-   = note: the following trait bounds were not satisfied:
-           `__PartialFooBarBaz<IsVoid, IsVoid, IsPresent>: HasExtractor`
-           which is required by `__PartialFooBarBaz<IsVoid, IsVoid, IsPresent>: CanDowncast<_>`
-           `&__PartialFooBarBaz<IsVoid, IsVoid, IsPresent>: HasExtractor`
-           which is required by `&__PartialFooBarBaz<IsVoid, IsVoid, IsPresent>: CanDowncast<_>`
-           `&mut __PartialFooBarBaz<IsVoid, IsVoid, IsPresent>: HasExtractor`
-           which is required by `&mut __PartialFooBarBaz<IsVoid, IsVoid, IsPresent>: CanDowncast<_>`
-note: the trait `HasExtractor` must be implemented
-  --> $CGP/crates/core/cgp-field/src/traits/extract_field.rs:6:1
-   |
- 6 | pub trait HasExtractor {
-   | ^^^^^^^^^^^^^^^^^^^^^^
-   = help: items from traits can only be used if the trait is implemented and in scope
-   = note: the following trait defines an item `downcast`, perhaps you need to implement it:
-           candidate #1: `CanDowncast`
+   = note: root cause: [CGP-E126] an extractor of `FooBarBaz` does not implement `HasExtractor`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `CanDowncast<Baz>` for the extractor of `FooBarBaz` with `Foo` and `Bar` ruled out
+             └─ [CGP-E126] an extractor of `FooBarBaz` does not implement `HasExtractor`
+   = help: call `downcast_fields` in place of `downcast` on an extractor, with `use cgp::core::field::impls::CanDowncastFields;` in scope
 
 For more information about this error, try `rustc --explain E0599`.

@@ -15,8 +15,9 @@
 //! It rewrites **only** a run of plain identifiers joined by `::` — `foo::Bar`, `a::b::c::D` — and
 //! leaves everything else alone: a lone identifier keeps its name, a turbofish (`foo::<T>`) is not
 //! an identifier run so it is untouched, an associated-type projection's `>::Assoc` tail has no
-//! identifier before its `::` so it stays, and text inside a string literal is skipped so a
-//! `Symbol!("a::b")` (were one to arise) is never mangled.
+//! identifier before its `::` so it stays, a `use` statement's path keeps every segment since the
+//! reader types it as written (`use cgp::core::field::impls::CanDowncastFields;`), and text inside
+//! a string literal is skipped so a `Symbol!("a::b")` (were one to arise) is never mangled.
 
 use crate::postprocess::ambiguous::AmbiguousNames;
 
@@ -85,6 +86,10 @@ fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Op
             continue;
         }
         if is_ident_start(b) {
+            // A `use` statement's path is code the reader types, so it keeps every segment.
+            let in_use = text[..i]
+                .strip_suffix("use ")
+                .is_some_and(|before| !before.bytes().last().is_some_and(is_ident_char));
             // Walk an identifier run joined by `::`; only the final segment is emitted, dropping
             // the module qualifiers before it.
             let mut j = i;
@@ -115,6 +120,7 @@ fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Op
                     .find("::")
                     .map_or(j, |at| tail_start + at);
                 if tail_start != i
+                    && !in_use
                     && collapse(
                         &text[i..name_end],
                         &text[i..first_end],

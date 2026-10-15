@@ -1,16 +1,14 @@
 //! Extracting a variant again from the remainder that already ruled it out.
 //!
 //! With only the `Rectangle` impl left, rustc settles on it and reports the tag argument as an
-//! `E0308` labelled "expected `9`, found `6`", the lengths of the two `Symbol` tags. The note below
-//! reads `Symbol!("Rectangle")` against `Symbol!("Circle")`, but the label stays cryptic and nothing
-//! says `Circle` was already extracted.
+//! `E0308` labelled "expected `9`, found `6`". The data-call anchor types the remainder the
+//! `Err(remainder)` pattern binds and reads its markers:
+//! ``[CGP-E050] variant `Circle` of `Shape` is already extracted``.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E050 CGP-E104 CGP-E124
 
 use cgp::prelude::*;
 

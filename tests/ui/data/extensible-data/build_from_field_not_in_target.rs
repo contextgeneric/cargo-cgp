@@ -1,15 +1,14 @@
 //! Merging a source record with a field the target does not declare.
 //!
 //! `Person { first_name, surname }` merged into `Employee { first_name, last_name }` fails on the
-//! private `FieldsBuilder` recursion over the remaining `Struct! { surname: String }`, with a long
-//! help pointing into `cgp-field`. The output never says `Employee` has no `surname` field.
+//! private `FieldsBuilder` recursion over the source's fields, which the chain drops:
+//! ``[CGP-E050] missing field `surname` on `Employee` ``, under the `BuildField` step that names
+//! the field.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E050 CGP-E104 CGP-E110
 
 use cgp::core::field::impls::CanBuildFrom;
 use cgp::prelude::*;

@@ -1,13 +1,13 @@
 #![feature(prelude_import)]
 //! Building with defaults when a field the source lacks has no `Default`.
 //!
-//! `Server::build_with_default(Host { … })` fails on `CanFinalizeWithDefault` for
-//! `__PartialServer<IsPresent, IsNothing>`. The output never names `port` or the missing
-//! `Port: Default`, which the optional-field reference quotes as the error.
+//! `Server::build_with_default(Host { … })` fails on `CanFinalizeWithDefault` for the builder with
+//! `host` set. The data-call anchor reads the type-relative call and walks the defaulted finalize
+//! to the bound it needs for the unset `port`:
+//! ``[CGP-E050] the trait bound `Port: Default` is not satisfied``. A step of the chain names the
+//! internal `TransformMapDefault` transform.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/hidden-root-cause.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

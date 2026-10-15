@@ -7,17 +7,18 @@
 
 use rustc_hir::def::{CtorKind, DefKind, Res};
 use rustc_hir::{self as hir, Expr, ExprKind, QPath};
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 
 /// Lower a *written* type to its `ty::Ty`, syntactically — a path to an ADT or alias (with
-/// written arguments, defaulted parameters filled in, lifetimes erased), a primitive, a tuple, a
-/// reference, or a slice. `None` for any shape beyond it, declining the anchor rather than
-/// guessing.
+/// written arguments, a literal const argument among them, defaulted parameters filled in, lifetimes
+/// erased), a primitive, a tuple, a reference, or a slice. `None` for any shape beyond it, declining
+/// the anchor rather than guessing.
 pub(crate) fn lower_hir_ty<'tcx>(tcx: TyCtxt<'tcx>, hir_ty: &hir::Ty<'tcx>) -> Option<Ty<'tcx>> {
     match hir_ty.kind {
         hir::TyKind::Path(QPath::Resolved(None, path)) => {
-            let written = written_type_args(tcx, path)?;
+            let written = written_args(tcx, path)?;
             match path.res {
                 Res::PrimTy(prim) if written.is_empty() => Some(prim_ty(tcx, prim)),
                 Res::Def(
@@ -45,13 +46,20 @@ pub(crate) fn lower_hir_ty<'tcx>(tcx: TyCtxt<'tcx>, hir_ty: &hir::Ty<'tcx>) -> O
     }
 }
 
-/// The written type arguments of a path's last segment, each lowered; lifetimes are skipped
-/// (they are re-supplied erased) and a const or inferred argument declines. An argument-less
-/// path yields the empty list.
-pub(crate) fn written_type_args<'tcx>(
+/// One written generic argument of a path: a lowered type, or a const argument, which is lowered
+/// once the parameter it fills, and so its type, is known.
+pub(crate) enum WrittenArg<'a, 'tcx> {
+    Type(Ty<'tcx>),
+    Const(&'a hir::ConstArg<'tcx>),
+}
+
+/// The written generic arguments of a path's last segment, each type lowered; lifetimes are
+/// skipped (they are re-supplied erased) and an inferred argument declines. An argument-less path
+/// yields the empty list.
+pub(crate) fn written_args<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
-    path: &hir::Path<'tcx>,
-) -> Option<Vec<Ty<'tcx>>> {
+    path: &'a hir::Path<'tcx>,
+) -> Option<Vec<WrittenArg<'a, 'tcx>>> {
     let Some(args) = path.segments.last()?.args else {
         return Some(Vec::new());
     };
@@ -59,19 +67,23 @@ pub(crate) fn written_type_args<'tcx>(
         .iter()
         .filter(|arg| !matches!(arg, hir::GenericArg::Lifetime(_)))
         .map(|arg| match arg {
-            hir::GenericArg::Type(ty) => lower_hir_ty(tcx, ty.as_unambig_ty()),
+            hir::GenericArg::Type(ty) => {
+                Some(WrittenArg::Type(lower_hir_ty(tcx, ty.as_unambig_ty())?))
+            }
+            hir::GenericArg::Const(ct) => Some(WrittenArg::Const(ct.as_unambig_ct())),
             _ => None,
         })
         .collect()
 }
 
-/// Instantiate an ADT or type alias with its written type arguments: lifetimes are erased,
-/// missing trailing parameters take their declared defaults, and a const parameter or an arity
-/// mismatch declines.
+/// Instantiate an ADT or type alias with its written arguments: lifetimes are erased, a const
+/// parameter takes its written literal (the `3` and `'a'` of `Symbol<3, Chars<'a', …>>`, what
+/// `Symbol!` expands to), missing trailing type parameters take their declared defaults, and any
+/// other const argument or an arity mismatch declines.
 pub(crate) fn instantiate_written<'tcx>(
     tcx: TyCtxt<'tcx>,
     did: DefId,
-    written: Vec<Ty<'tcx>>,
+    written: Vec<WrittenArg<'_, 'tcx>>,
 ) -> Option<Ty<'tcx>> {
     if tcx.generics_of(did).parent.is_some() {
         return None;
@@ -80,19 +92,32 @@ pub(crate) fn instantiate_written<'tcx>(
     let mut lowered = true;
     let args = ty::GenericArgs::for_item(tcx, did, |param, args_so_far| match param.kind {
         ty::GenericParamDefKind::Lifetime => tcx.lifetimes.re_erased.into(),
-        ty::GenericParamDefKind::Type { .. } => {
-            if let Some(ty) = written.next() {
-                ty.into()
-            } else if let Some(default) = param.default_value(tcx) {
+        ty::GenericParamDefKind::Type { .. } => match written.next() {
+            Some(WrittenArg::Type(ty)) => ty.into(),
+            None if let Some(default) = param.default_value(tcx) => {
                 default.instantiate(tcx, args_so_far).skip_norm_wip()
-            } else {
+            }
+            _ => {
                 lowered = false;
                 tcx.types.unit.into()
             }
-        }
+        },
         ty::GenericParamDefKind::Const { .. } => {
-            lowered = false;
-            tcx.types.unit.into()
+            let ty = tcx
+                .type_of(param.def_id)
+                .instantiate(tcx, args_so_far)
+                .skip_norm_wip();
+            match written.next() {
+                Some(WrittenArg::Const(arg)) if let Some(ct) = lower_const_lit(tcx, arg, ty) => {
+                    ct.into()
+                }
+                // A stand-in the decline below discards. An error constant would register a delayed
+                // bug with the diagnostic context the emitter is inside.
+                _ => {
+                    lowered = false;
+                    tcx.consts.unit.into()
+                }
+            }
         }
     });
     if !lowered || written.next().is_some() {
@@ -102,6 +127,43 @@ pub(crate) fn instantiate_written<'tcx>(
         return Some(tcx.type_of(did).instantiate(tcx, args).skip_norm_wip());
     }
     Some(Ty::new_adt(tcx, tcx.adt_def(did), args))
+}
+
+/// A literal const argument of type `ty` (`3`, `'a'`, `-1`), written directly or as an anonymous
+/// constant whose body is the literal, as the compiler's own type lowering reads it. The
+/// `lit_to_const` query builds the value without evaluating anything, so it reports nothing.
+fn lower_const_lit<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    arg: &hir::ConstArg<'tcx>,
+    ty: Ty<'tcx>,
+) -> Option<ty::Const<'tcx>> {
+    let (lit, neg) = match arg.kind {
+        hir::ConstArgKind::Literal { lit, negated } => (lit, negated),
+        hir::ConstArgKind::Anon(anon) => {
+            let mut expr = tcx.hir_body(anon.body).value;
+            if let ExprKind::Block(block, _) = expr.kind
+                && block.stmts.is_empty()
+                && let Some(inner) = block.expr
+            {
+                expr = inner;
+            }
+            match expr.kind {
+                ExprKind::Lit(lit) => (lit.node, false),
+                ExprKind::Unary(hir::UnOp::Neg, inner) => match inner.kind {
+                    ExprKind::Lit(lit) => (lit.node, true),
+                    _ => return None,
+                },
+                _ => return None,
+            }
+        }
+        _ => return None,
+    };
+    let value = tcx.lit_to_const(ty::LitToConstInput {
+        lit,
+        ty: Some(ty),
+        neg,
+    })?;
+    Some(ty::Const::new_value(tcx, value.valtree, value.ty))
 }
 
 /// The declared return type of a call to a non-generic fn named by path, or to a tuple-struct or

@@ -1,0 +1,33 @@
+error[E0599]: no associated function or constant named `builder` found for struct `Config` in the current scope
+  --> src/main.rs:24:17
+   |
+19 |     pub struct Config {
+   |     ----------------- associated function or constant `builder` not found for this struct
+...
+24 |         Config::builder()
+   |                 ^^^^^^^ associated function or constant not found in `Config`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `builder`, perhaps you need to implement it:
+           candidate #1: `HasBuilder`
+
+error[E0599]: no method named `set` found for struct `Config` in the current scope
+    --> src/main.rs:28:16
+     |
+  19 |     pub struct Config {
+     |     ----------------- method `set` not found for this struct
+...
+  28 |         config.set(80);
+     |                ^^^ method not found in `Config`
+     |
+    ::: $SYSROOT/lib/rustlib/src/rust/library/core/src/pin.rs:1485:12
+     |
+1485 |     pub fn set(&mut self, value: Ptr::Target)
+     |            --- the method is available for `Pin<&mut Config>` here
+     |
+help: consider wrapping the receiver expression with the appropriate type
+     |
+  28 |         Pin::new(&mut config).set(80);
+     |         +++++++++++++       +
+
+For more information about this error, try `rustc --explain E0599`.

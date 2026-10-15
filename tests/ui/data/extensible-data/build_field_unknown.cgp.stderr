@@ -1,23 +1,12 @@
-error[E0277]: the trait bound `__PartialPerson<IsNothing, IsNothing>: UpdateField<Symbol!("age"), IsPresent>` is not satisfied
-  --> src/main.rs:23:43
+error[E0277]: [CGP-E050] missing field `age` on `Person`
+  --> src/main.rs:21:43
    |
-23 |     let _ = Person::builder().build_field(PhantomData::<Symbol!("age")>, 42_u8);
-   |                               ----------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-   |                               |
-   |                               required by a bound introduced by this call
+21 |     let _ = Person::builder().build_field(PhantomData::<Symbol!("age")>, 42_u8);
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: the trait `UpdateField<Symbol!("age"), IsPresent>` is not implemented for `__PartialPerson<IsNothing, IsNothing>`
-  --> src/main.rs:17:1
-   |
-17 | pub struct Person {
-   | ^^^^^^^^^^^^^^^^^
-help: the following other types implement trait `UpdateField<Tag, M>`
-  --> src/main.rs:18:9
-   |
-18 |     pub first_name: String,
-   |         ^^^^^^^^^^ `__PartialPerson<__M1__, __F1__>` implements `UpdateField<Symbol!("first_name"), __M2__>`
-19 |     pub last_name: String,
-   |         ^^^^^^^^^ `__PartialPerson<__F0__, __M1__>` implements `UpdateField<Symbol!("last_name"), __M2__>`
-   = note: required for `__PartialPerson<IsNothing, IsNothing>` to implement `BuildField<Symbol!("age")>`
+   = note: root cause: [CGP-E110] missing field `age` on `Person`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `BuildField<Symbol!("age")>` for the builder of `Person` with no field set
+             └─ [CGP-E110] missing field `age` on `Person`
 
 For more information about this error, try `rustc --explain E0277`.

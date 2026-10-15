@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `Cons<Field<Symbol<3, Chars<..>>, String>, _>: FieldsBuilder<_, _>` is not satisfied
-  --> src/main.rs:39:21
+  --> src/main.rs:37:21
    |
-39 |         .build_from(BarBaz { bar: "bar".into(), baz: true })
+37 |         .build_from(BarBaz { bar: "bar".into(), baz: true })
    |          ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |          |
    |          required by a bound introduced by this call

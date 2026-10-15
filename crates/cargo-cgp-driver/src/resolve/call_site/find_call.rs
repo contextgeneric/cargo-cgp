@@ -8,11 +8,10 @@ use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
 use crate::resolve::cache::ResolveCache;
-use crate::resolve::call_site::{receiver_context, seed_from_call};
+use crate::resolve::call_site::{CallForm, receiver_context, seed_from_call};
 use crate::resolve::cgp_item::{
     carries_wiring, is_blanket_trait, is_consumer_trait, is_context_adt,
 };
-use crate::resolve::data::is_data_trait;
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
@@ -47,7 +46,14 @@ pub fn resolve_call_site(
             continue;
         }
         for (trait_did, method_did, kind) in traits_with_method(tcx, call.method) {
-            let Some(top) = seed_from_call(tcx, context, trait_did, method_did, call.args) else {
+            let Some(top) = seed_from_call(
+                tcx,
+                context,
+                trait_did,
+                method_did,
+                call.args,
+                CallForm::Method,
+            ) else {
                 continue;
             };
             if holds(tcx, top) {
@@ -57,13 +63,11 @@ pub fn resolve_call_site(
                 // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait is consumed like a consumer trait
                 // but is not a CGP *component*, so it heads the diagnostic as `[CGP-E003] the trait
                 // …` — the same wording the impl-site anchor gives such a trait reached through a
-                // wrapper. One of CGP's extensible-data traits is not a component either, and heads
-                // it as `[CGP-E050]`. A genuine consumer keeps the `consumers_are_cgp` the walk set.
-                // The trait is called on a type that is a context only when it carries wiring, so a
-                // type with none is named plainly.
-                if kind != CallTrait::Consumer {
+                // wrapper. A genuine consumer keeps the `consumers_are_cgp` the walk set. The trait
+                // is called on a type that is a context only when it carries wiring, so a type with
+                // none is named plainly.
+                if kind == CallTrait::Blanket {
                     resolved.consumers_are_cgp = false;
-                    resolved.data_operation = kind == CallTrait::Data;
                     resolved.subject_is_context = carries_wiring(tcx, context);
                 }
                 return Some(resolved);
@@ -109,7 +113,7 @@ impl<'tcx> Visitor<'tcx> for CallFinder<'_, 'tcx> {
             && self
                 .spans
                 .iter()
-                .any(|&span| is_about_call(span, expr.span, receiver, args))
+                .any(|&span| is_about_call(span, expr.span, std::iter::once(receiver).chain(args)))
         {
             self.calls.push(MethodCall {
                 method: segment.ident.name,
@@ -121,13 +125,18 @@ impl<'tcx> Visitor<'tcx> for CallFinder<'_, 'tcx> {
     }
 }
 
-/// Whether a diagnostic's primary `span` is about the method call spanning `call`: it overlaps the
-/// call and does not lie strictly inside the receiver or one of the arguments. A span equal to a
-/// whole argument (the `PhantomData` tag a failing handler call is reported on) is about the call.
-fn is_about_call(span: Span, call: Span, receiver: &Expr<'_>, args: &[Expr<'_>]) -> bool {
+/// Whether a diagnostic's primary `span` is about the call spanning `call`: it overlaps the call
+/// and does not lie strictly inside one of its `operands` (a method call's receiver and arguments,
+/// or a path call's arguments). A span equal to a whole argument (the `PhantomData` tag a failing
+/// handler call is reported on) is about the call.
+pub(crate) fn is_about_call<'a, 'tcx: 'a>(
+    span: Span,
+    call: Span,
+    operands: impl IntoIterator<Item = &'a Expr<'tcx>>,
+) -> bool {
     span.overlaps(call)
-        && !std::iter::once(receiver)
-            .chain(args)
+        && !operands
+            .into_iter()
             .any(|operand| operand.span.contains(span) && operand.span != span)
 }
 
@@ -138,8 +147,6 @@ pub(crate) enum CallTrait {
     Consumer,
     /// A `#[cgp_fn]` / `#[blanket_trait]` blanket trait (`[CGP-E003]`).
     Blanket,
-    /// One of CGP's extensible-data traits, such as `CanUpcast` (`[CGP-E050]`).
-    Data,
 }
 
 /// Every trait declaring a `self`-receiver associated fn named `method` that a call by that name
@@ -147,16 +154,17 @@ pub(crate) enum CallTrait {
 /// method's `DefId` (whose declared signature [`seed_from_call`](super::seed_from_call) unifies the
 /// call's arguments against) and the [kind](CallTrait) of trait it is.
 ///
-/// Three kinds qualify, and CGP consumer traits come **first** so a directly-wired consumer keeps
+/// Two kinds qualify, and CGP consumer traits come **first** so a directly-wired consumer keeps
 /// its precise `[CGP-E001]` recovery before any other trait is tried:
 ///
-/// - a **CGP consumer trait** (recognized structurally, in any crate);
+/// - a **CGP consumer trait** (recognized structurally, in any crate); and
 /// - a **blanket-impl trait** that is not a consumer and shows CGP evidence — the shape `#[cgp_fn]`
 ///   / `#[blanket_trait]` generate (`impl<Context> Describe for Context where Self: …`). Its
 ///   obligation `Ctx: Describe` is walkable exactly as a consumer's is, since its `Self` is the
-///   context; and
-/// - one of CGP's **extensible-data traits** (a cast such as `CanUpcast`, a builder or extractor
-///   operation), whose blanket impl the walk descends to the field or variant at fault.
+///   context.
+///
+/// CGP's extensible-data traits are left to the [data-call anchor](super::resolve_data_call),
+/// which types a receiver through a chain of data operations.
 ///
 /// Requiring CGP evidence of the second kind excludes ordinary blanket traits (`Into`, `From`); the
 /// `self`-method requirement and the failing-obligation gate in [`resolve_call_site`] keep a wrong
@@ -179,8 +187,6 @@ pub(crate) fn traits_with_method(
             found.push((trait_did, method_did, CallTrait::Consumer));
         } else if is_blanket_trait(tcx, trait_did) {
             found.push((trait_did, method_did, CallTrait::Blanket));
-        } else if is_data_trait(tcx, trait_did) {
-            found.push((trait_did, method_did, CallTrait::Data));
         }
     }
     // A stable sort keeps each kind in the order the traits were listed.

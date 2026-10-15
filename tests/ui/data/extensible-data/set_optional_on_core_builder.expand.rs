@@ -1,12 +1,12 @@
 #![feature(prelude_import)]
 //! Calling the optional builder's `set` on a core builder.
 //!
-//! `Context::builder().set(…)` is an `E0271` on `Mapper == IsOptional`. The output never suggests
-//! starting from `optional_builder()`, which is what `set` needs.
+//! `Context::builder().set(…)` fails on `Mapper == IsOptional`, since a core builder holds `foo`
+//! unset rather than optional: ``[CGP-E050] field `foo` of `Context` is not optional``. The `help`
+//! names the conversion with the import its trait needs, since rustc's own import suggestion names
+//! a path that does not compile.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

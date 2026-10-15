@@ -251,6 +251,25 @@ fn strip_module_paths_skips_string_literals() {
 }
 
 #[test]
+fn strip_keeps_a_use_statement_path_whole() {
+    // A `use` path is code the reader types, so its module segments stay, while the same path
+    // elsewhere in the message, and a word merely ending in `use`, still collapse.
+    let text = "call `downcast_fields` (from `use cgp::core::field::impls::CanDowncastFields;`) on \
+                `cgp::core::field::impls::CanDowncastFields`, reuse a::B";
+    assert_eq!(
+        strip_unambiguous_paths(text, &AmbiguousNames::default()).as_deref(),
+        Some(
+            "call `downcast_fields` (from `use cgp::core::field::impls::CanDowncastFields;`) on \
+             `CanDowncastFields`, reuse B"
+        ),
+    );
+    assert_eq!(
+        strip_module_paths("`use crate::components::GreeterComponent;`"),
+        None
+    );
+}
+
+#[test]
 fn strip_module_paths_preserves_multibyte_box_drawing() {
     // The dependency tree's `└─` characters are multi-byte UTF-8; stripping a module path on the
     // same line must copy them whole, never split them into invalid bytes.

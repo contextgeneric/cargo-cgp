@@ -1,13 +1,11 @@
 #![feature(prelude_import)]
 //! Building a field the record does not declare.
 //!
-//! `build_field` for `age` on a `Person` without that field is an `E0277` on
-//! `UpdateField<Symbol!("age"), IsPresent>`, followed by the impls that do exist, one per declared
-//! field. The output never states that `Person` has no field `age`.
+//! `build_field` for `age` on a `Person` without that field has no `UpdateField` impl to use. The
+//! data-call anchor names the field: ``[CGP-E050] missing field `age` on `Person` ``, with no
+//! `help`, since the tag may be the mistake instead.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

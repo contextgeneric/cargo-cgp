@@ -564,13 +564,20 @@ fn terminal_result<'tcx>(
         return SubResult::empty(self_fp);
     }
     let leaf = classify_leaf(tcx, leaf_ref, context, parent, None);
+    let mut path = Vec::new();
+    // A seed that is itself the cause (a data operation with no impl at all, such as a finalize on
+    // a builder with a field unset) heads the chain with its own step, so the chain names the
+    // operation the cause is about rather than restating the cause alone.
+    if parent.is_none()
+        && let Some(hop) = label_for(tcx, erased, context)
+    {
+        path.push(ChainNode::Hop(hop));
+    }
+    path.push(ChainNode::Leaf(leaf.clone()));
     let mut reachable = FxHashSet::default();
     reachable.insert(self_fp);
     SubResult {
-        causes: vec![SubCause {
-            path: vec![ChainNode::Leaf(leaf.clone())],
-            leaf,
-        }],
+        causes: vec![SubCause { path, leaf }],
         reachable,
         incomplete: false,
         cut: None,

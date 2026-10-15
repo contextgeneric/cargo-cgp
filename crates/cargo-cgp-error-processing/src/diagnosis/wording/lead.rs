@@ -2,9 +2,10 @@
 
 use crate::code::{
     DEP_ASSOC_TYPE_MISMATCH, DEP_DATA_TRAIT_UNIMPLEMENTED, DEP_FIELD_ALREADY_SET,
-    DEP_FIELD_TYPE_MISMATCH, DEP_FIELDS_NOT_SET, DEP_MISSING_DELEGATE_ENTRY,
-    DEP_MISSING_DISPATCH_ENTRY, DEP_MISSING_FIELD, DEP_MISSING_VARIANT, DEP_NOT_A_PROVIDER,
-    DEP_ORDINARY_BOUND, DEP_UNIMPLEMENTED_ACCESSOR, DEP_VARIANT_TYPE_MISMATCH,
+    DEP_FIELD_NOT_OPTIONAL, DEP_FIELD_TYPE_MISMATCH, DEP_FIELDS_NOT_SET,
+    DEP_MISSING_DELEGATE_ENTRY, DEP_MISSING_DISPATCH_ENTRY, DEP_MISSING_FIELD, DEP_MISSING_VARIANT,
+    DEP_NOT_A_PROVIDER, DEP_ORDINARY_BOUND, DEP_PARTIAL_LACKS_DATA_TRAIT,
+    DEP_UNIMPLEMENTED_ACCESSOR, DEP_VARIANT_ALREADY_EXTRACTED, DEP_VARIANT_TYPE_MISMATCH,
     DEP_VARIANTS_NOT_EXTRACTED,
 };
 use crate::diagnosis::leaf::{FieldIssue, Leaf};
@@ -114,6 +115,21 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
         Leaf::DataTraitUnimplemented {
             owner, trait_name, ..
         } => format!("`{owner}` does not implement `{trait_name}`"),
+        Leaf::VariantAlreadyExtracted { name, owner } => {
+            format!("variant `{name}` of `{owner}` is already extracted")
+        }
+        Leaf::FieldNotOptional { name, owner, .. } => {
+            format!("field `{name}` of `{owner}` is not optional")
+        }
+        Leaf::PartialLacksDataTrait {
+            kind,
+            target,
+            trait_name,
+            ..
+        } => format!(
+            "{} of `{target}` does not implement `{trait_name}`",
+            kind.with_article()
+        ),
         Leaf::Bound { summary } => format!("the trait bound `{summary}` is not satisfied"),
     }
 }
@@ -143,6 +159,9 @@ pub fn dependency_leaf_code(leaf: &Leaf) -> &'static str {
         Leaf::VariantsNotExtracted { .. } => DEP_VARIANTS_NOT_EXTRACTED,
         Leaf::VariantTypeMismatch { .. } => DEP_VARIANT_TYPE_MISMATCH,
         Leaf::DataTraitUnimplemented { .. } => DEP_DATA_TRAIT_UNIMPLEMENTED,
+        Leaf::VariantAlreadyExtracted { .. } => DEP_VARIANT_ALREADY_EXTRACTED,
+        Leaf::FieldNotOptional { .. } => DEP_FIELD_NOT_OPTIONAL,
+        Leaf::PartialLacksDataTrait { .. } => DEP_PARTIAL_LACKS_DATA_TRAIT,
         Leaf::Bound { .. } => DEP_ORDINARY_BOUND,
     }
 }

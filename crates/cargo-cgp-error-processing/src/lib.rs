@@ -42,10 +42,10 @@ pub use dedup::DedupLedger;
 pub use diagnosis::{
     COALESCED_SITE_LABEL, Cause, Causes, CgpImplMisuse, ChainNode, CheckForm, CheckTraitName,
     DepNode, DependencyGraph, DeriveFix, DiagKind, DiagnosisPlan, EntryTable,
-    FIRST_CHECK_TABLE_LABEL, FIRST_DISPATCH_METHOD_LABEL, FieldFix, FieldIssue, Leaf,
+    FIRST_CHECK_TABLE_LABEL, FIRST_DISPATCH_METHOD_LABEL, FieldFix, FieldIssue, Leaf, MethodFix,
     MissingUseProvider, NearMiss, OrphanConflict, OrphanTrigger, OverflowStep, ParameterUse,
     PartialKind, PartialValue, PendingNote, ProviderTraitInUses, Requirement, Resolved,
-    SECOND_CHECK_TABLE_LABEL, SECOND_DISPATCH_METHOD_LABEL, StructuralMistake,
+    SECOND_CHECK_TABLE_LABEL, SECOND_DISPATCH_METHOD_LABEL, StructuralMistake, SuggestedCall,
     UndeclaredRequirement, UndeclaredTrait, UnimportedAbstractType, UnresolvedWiringName,
     WiringConflict, WiringKey, WiringOverflow, cause_headline, cause_note, cause_notes,
     cause_signature, cgp_impl_misuse_help, class_code, class_sentence, coalesce_underived_fields,

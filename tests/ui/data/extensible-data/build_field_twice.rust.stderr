@@ -1,15 +1,15 @@
 error[E0271]: type mismatch resolving `<__PartialPerson<_, _> as UpdateField<_, _>>::Mapper == IsNothing`
-  --> src/main.rs:25:22
+  --> src/main.rs:24:22
    |
-25 |         .build_field(PhantomData::<Symbol!("first_name")>, "Bob".to_owned());
+24 |         .build_field(PhantomData::<Symbol!("first_name")>, "Bob".to_owned());
    |          ----------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<__PartialPerson<_, _> as UpdateField<_, _>>::Mapper == IsNothing`
    |          |
    |          required by a bound introduced by this call
    |
 note: expected this to be `IsNothing`
-  --> src/main.rs:16:10
+  --> src/main.rs:15:10
    |
-16 | #[derive(CgpData)]
+15 | #[derive(CgpData)]
    |          ^^^^^^^
    = note: required for `__PartialPerson<IsPresent, IsNothing>` to implement `BuildField<Symbol<10, Chars<..>>>`
    = note: this error originates in the derive macro `CgpData` (in Nightly builds, run with -Z macro-backtrace for more info)

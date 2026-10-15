@@ -1,6 +1,6 @@
 //! The `help` messages a resolved failure carries: the fixes its causes call for.
 
-use crate::diagnosis::leaf::{DeriveFix, FieldIssue, Leaf, NearMiss};
+use crate::diagnosis::leaf::{DeriveFix, FieldIssue, Leaf, MethodFix, NearMiss, SuggestedCall};
 use crate::diagnosis::resolved::Cause;
 use crate::diagnosis::wording::header::quoted_list;
 
@@ -91,9 +91,41 @@ fn fixes_for(leaf: &Leaf) -> Vec<(FixKind, String, Option<String>)> {
             derive: DeriveFix(Some(derive)),
             ..
         } => fixes.push((FixKind::DeriveData, owner.clone(), Some(derive.clone()))),
+        Leaf::FieldNotOptional {
+            convert: MethodFix(Some(call)),
+            ..
+        } => fixes.push(whole(format!(
+            "call `{}` on the builder first to hold each field as optional{}",
+            call.method,
+            trait_note(call)
+        ))),
+        Leaf::PartialLacksDataTrait {
+            kind,
+            replacement: MethodFix(Some(call)),
+            ..
+        } => {
+            if let Some(replaces) = &call.replaces {
+                fixes.push(whole(format!(
+                    "call `{}` in place of `{replaces}` on {}{}",
+                    call.method,
+                    kind.with_article(),
+                    trait_note(call)
+                )));
+            }
+        }
         _ => {}
     }
     fixes
+}
+
+/// The import a `help`'s method needs, `, with `use cgp::…::Trait;` in scope`, since a data
+/// trait is not in the prelude and the compiler's own import suggestion can name a path that does
+/// not compile. Empty when no import path is known.
+fn trait_note(call: &SuggestedCall) -> String {
+    match &call.trait_path {
+        Some(path) => format!(", with `use {path};` in scope"),
+        None => String::new(),
+    }
 }
 
 /// A `help` worded whole, never merged with another.

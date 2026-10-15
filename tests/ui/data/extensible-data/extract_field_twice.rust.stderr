@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
-  --> src/main.rs:35:41
+  --> src/main.rs:33:41
    |
-35 |         let _ = remainder.extract_field(PhantomData::<Symbol!("Circle")>);
+33 |         let _ = remainder.extract_field(PhantomData::<Symbol!("Circle")>);
    |                           ------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `9`, found `6`
    |                           |
    |                           arguments to this method are incorrect

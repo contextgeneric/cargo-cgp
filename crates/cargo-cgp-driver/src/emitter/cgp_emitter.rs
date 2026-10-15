@@ -42,10 +42,10 @@ use crate::config::BUG_REPORT_URL;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
 use crate::emitter::containment::contain;
 use crate::emitter::edit::{
-    bound_candidate_lists, diag_kind, diagnostic_spans, is_question_mark_cascade,
-    main_message_text, mentions_hasfield_impls, mentions_wiring, merged_span, message_signature,
-    postprocess_messages, postprocess_multispan, replace_header, rewrite_messages,
-    strip_method_probe_advice, subdiag, two_definitions_span,
+    bound_candidate_lists, diag_kind, diagnostic_spans, is_no_matching_item,
+    is_question_mark_cascade, main_message_text, mentions_hasfield_impls, mentions_wiring,
+    merged_span, message_signature, postprocess_messages, postprocess_multispan, replace_header,
+    rewrite_messages, strip_method_probe_advice, subdiag, two_definitions_span,
 };
 use crate::emitter::name_resolution::is_unresolved_wiring_overflow;
 use crate::emitter::output::{Output, lock_output, register_output};
@@ -940,25 +940,41 @@ impl<E: Emitter> CgpEmitter<E> {
     /// it), and [`resolve`] traces the dependency chain to find out. It yields `None` for everything whose chain does not reach a CGP cause. Returns the
     /// primary span alongside the resolution so the caret can be re-aimed at the entry.
     ///
-    /// The `E0599` arm is narrowed to the "the method `…` exists … but its trait bounds were not
-    /// satisfied" shape — the consumer-method call the use-site anchor handles. A *resolution*-class
-    /// `E0599` (`no variant named …`, `no associated item …`) is not a wiring failure and, worse, is
-    /// emitted *during* type lowering / `clauses_of`, while that query is mid-flight: running the
-    /// resolver's trait solver on it re-forces an emitting query and re-enters the already-held
-    /// `DiagCtxt` lock, aborting the compiler (`lock was already held`). Declining such an `E0599`
-    /// before any solving both keeps the tool from crashing and is correct, since the resolver has
-    /// nothing to say about a name-resolution error. (`E0271`/`E0277` are trait-solving failures
-    /// reported after collection, where the queries the solver forces are already cached.)
+    /// Two more shapes reach the data-call anchor alone: the method probe's "no method named `…`"
+    /// `E0599`, and an `E0308` on a call's argument, each of which a call to one of CGP's
+    /// extensible-data operations can fail with before its bounds are checked; an `E0308` is taken
+    /// only when the walk finds the field or variant state the operation rejects.
+    ///
+    /// The `E0599` arm is otherwise narrowed to the "the method `…` exists … but its trait bounds
+    /// were not satisfied" shape, the consumer-method call the use-site anchor handles. A
+    /// *resolution*-class `E0599` (`no variant named …`, `no associated item …`) is not a wiring
+    /// failure and, worse, is emitted *during* type lowering / `clauses_of`, while that query is
+    /// mid-flight: running the resolver's trait solver on it re-forces an emitting query and
+    /// re-enters the already-held `DiagCtxt` lock, aborting the compiler (`lock was already held`).
+    /// Declining such an `E0599` before any solving both keeps the tool from crashing and is
+    /// correct, since the resolver has nothing to say about a name-resolution error.
+    /// (`E0271`/`E0277` are trait-solving failures reported after collection, where the queries the
+    /// solver forces are already cached.)
     fn try_resolve(&self, diag: &DiagInner) -> Option<(Resolved, Span, bool)> {
-        // A method-bounds `E0599` (not a resolution-class one) is the only `E0599` the resolver
-        // handles; see the re-entrancy note above.
+        // A method-bounds `E0599` (not a resolution-class one) is the `E0599` the anchors handle,
+        // beside the data-call shape below; see the re-entrancy note above.
         let e0599_method_bounds =
             diag.code == Some(E0599) && main_message_text(diag).is_some_and(is_method_bounds_text);
+        // A call to one of CGP's extensible-data operations can also fail before its bounds are
+        // checked: the method probe finds no impl of the operation's trait at all (a builder
+        // finalized too early has no `finalize_build`), or settles on the one impl left and rejects
+        // the call's tag argument (a variant extracted twice is an `E0308`). Both are reported while
+        // the calling body is type-checked, as the method-bounds `E0599` is, so the solver may run,
+        // and only the data-call anchor takes them.
+        let data_call_only = is_no_matching_item(diag) || diag.code == Some(E0308);
         // Only a diagnostic reporting an unmet obligation has a chain to walk: a projection or
         // trait-bound failure, an overflow evaluating a requirement, or a method whose bounds fail.
         // A coherence conflict (`E0119`) names CGP traits too, but two impls overlapping is not a
         // bound left unmet, so walking it would invent a missing-impl cause.
-        if !matches!(diag.code, Some(E0271) | Some(E0275) | Some(E0277)) && !e0599_method_bounds {
+        if !matches!(diag.code, Some(E0271) | Some(E0275) | Some(E0277))
+            && !e0599_method_bounds
+            && !data_call_only
+        {
             return None;
         }
         // A `?`-operator error is about `Try` on the call's result, not about the call's bounds; the
@@ -969,6 +985,22 @@ impl<E: Emitter> CgpEmitter<E> {
         }
         let primary_span = diag.span.primary_span()?;
         let cache = &self.resolve_cache;
+        if data_call_only {
+            let resolved = rustc_middle::ty::tls::with_opt(|tcx| {
+                resolve::resolve_data_call(tcx?, cache, diag.span.primary_spans())
+            })?;
+            // A mismatched argument is a plain type error unless the walk finds the field or
+            // variant state the operation rejects behind it.
+            if diag.code == Some(E0308)
+                && !resolved
+                    .causes
+                    .iter()
+                    .all(|cause| cause.leaf.is_data_state())
+            {
+                return None;
+            }
+            return Some((resolved, primary_span, true));
+        }
         let (resolved, at_call) = rustc_middle::ty::tls::with_opt(|tcx| {
             let tcx = tcx?;
             let spans = diagnostic_spans(diag);
@@ -1006,6 +1038,12 @@ impl<E: Emitter> CgpEmitter<E> {
             // header is worded from the trait the call needs rather than from whichever provider
             // bound rustc's headline stopped on.
             if let Some(resolved) = resolve::resolve_call_site(tcx, cache, primary) {
+                return Some((resolved, true));
+            }
+            // A call to one of CGP's extensible-data operations, whose value is often another data
+            // operation's result (a builder chain, a remainder bound by a pattern) or named by a
+            // type-relative path (`Shape::from_variant(…)`).
+            if let Some(resolved) = resolve::resolve_data_call(tcx, cache, primary) {
                 return Some((resolved, true));
             }
             // Last: a `#[cgp_fn]` / `#[blanket_trait]` blanket trait the diagnostic names in its

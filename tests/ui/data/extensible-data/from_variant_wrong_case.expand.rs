@@ -2,9 +2,9 @@
 //! Constructing a variant through a tag with the wrong case.
 //!
 //! `Symbol!("circle")` for a `Circle` variant is an unsatisfied `FromVariant` bound, which rustc
-//! reports twice, at two carets of one call; the tool merges the repeat, keeping its caret as a
-//! secondary one labelled "also required here". The near-miss `Circle` appears only in the impl
-//! list.
+//! reports twice, at two carets of one call. The data-call anchor reads the type-relative call:
+//! ``[CGP-E050] missing variant `circle` on `Shape` ``, with a near-miss `help` naming `Circle`,
+//! and the repeat merges into it.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
 extern crate std;

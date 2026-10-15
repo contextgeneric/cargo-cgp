@@ -6,7 +6,7 @@ use rustc_infer::infer::InferCtxt;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::DUMMY_SP;
 
-use crate::resolve::call_site::{call_output_ty, instantiate_written, item_ty, written_type_args};
+use crate::resolve::call_site::{call_output_ty, instantiate_written, item_ty, written_args};
 
 /// The type an argument expression *writes*, syntactically — the call-side information the
 /// signature unification consumes. Covered shapes: a unit-struct or unit-variant value path with
@@ -30,7 +30,7 @@ pub(crate) fn expr_written_ty<'tcx>(
                     CtorOf::Struct => tcx.parent(ctor_did),
                     CtorOf::Variant => tcx.parent(tcx.parent(ctor_did)),
                 };
-                instantiate_written(tcx, adt_did, written_type_args(tcx, path)?)
+                instantiate_written(tcx, adt_did, written_args(tcx, path)?)
             }
             Res::Def(DefKind::Const, did) if tcx.generics_of(did).is_empty() => item_ty(tcx, did),
             _ => None,
@@ -42,7 +42,7 @@ pub(crate) fn expr_written_ty<'tcx>(
             let Res::Def(DefKind::Struct, did) = path.res else {
                 return None;
             };
-            instantiate_written(tcx, did, written_type_args(tcx, path)?)
+            instantiate_written(tcx, did, written_args(tcx, path)?)
         }
         ExprKind::AddrOf(_, mutbl, inner) => Some(Ty::new_ref(
             tcx,

@@ -1,13 +1,11 @@
 #![feature(prelude_import)]
 //! Merging two source records that both carry the same field.
 //!
-//! The second `build_from` brings `bar` again, which the builder already holds. The output is an
-//! `E0277` on `FieldsBuilder` over `Struct! { bar: String, baz: bool }`; it never says `bar` is set
-//! twice. The reference documents quote an `E0271` on `Mapper == IsNothing` instead.
+//! The second `build_from` brings `bar` again, which the builder already holds. The data-call
+//! anchor types the builder after the first merge and walks the second to the field:
+//! ``[CGP-E050] field `bar` of `FooBarBaz` is already set``.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

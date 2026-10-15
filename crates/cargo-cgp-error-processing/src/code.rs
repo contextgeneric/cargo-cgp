@@ -270,3 +270,15 @@ pub const DEP_VARIANT_TYPE_MISMATCH: &str = "CGP-E122";
 /// `CGP-E123`: a type that does not implement a trait a data derive supplies (`HasFields`,
 /// `HasExtractor`, `HasBuilder`, `FromVariant`), `\`T\` does not implement \`HasFields\``.
 pub const DEP_DATA_TRAIT_UNIMPLEMENTED: &str = "CGP-E123";
+
+/// `CGP-E124`: a variant an extractor has already ruled out, extracted again,
+/// `variant \`V\` of \`T\` is already extracted`.
+pub const DEP_VARIANT_ALREADY_EXTRACTED: &str = "CGP-E124";
+
+/// `CGP-E125`: a field an optional-builder operation (`set`) needs held as optional, which a core
+/// builder holds plainly, `field \`f\` of \`T\` is not optional`.
+pub const DEP_FIELD_NOT_OPTIONAL: &str = "CGP-E125";
+
+/// `CGP-E126`: a builder or an extractor given to an operation that needs a trait only the struct
+/// or enum itself implements, `an extractor of \`T\` does not implement \`HasExtractor\``.
+pub const DEP_PARTIAL_LACKS_DATA_TRAIT: &str = "CGP-E126";

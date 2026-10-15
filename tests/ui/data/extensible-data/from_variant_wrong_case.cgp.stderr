@@ -1,20 +1,13 @@
-error[E0277]: the trait bound `Shape: FromVariant<Symbol!("circle")>` is not satisfied
+error[E0277]: [CGP-E050] missing variant `circle` on `Shape`
   --> src/main.rs:31:13
    |
 31 |     let _ = Shape::from_variant(PhantomData::<Symbol!("circle")>, Circle { radius: 1.0 });
-   |             ^^^^^ unsatisfied trait bound                         ---------------------- also required here
+   |             ^^^^^
    |
-help: the trait `FromVariant<Symbol!("circle")>` is not implemented for `Shape`
-  --> src/main.rs:25:1
-   |
-25 | pub enum Shape {
-   | ^^^^^^^^^^^^^^
-help: `Shape` implements trait `cgp::prelude::FromVariant<Tag>`
-  --> src/main.rs:26:5
-   |
-26 |     Circle(Circle),
-   |     ^^^^^^ `FromVariant<Symbol!("Circle")>`
-27 |     Rectangle(Rectangle),
-   |     ^^^^^^^^^ `FromVariant<Symbol!("Rectangle")>`
+   = note: root cause: [CGP-E120] missing variant `circle` on `Shape`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `FromVariant<Symbol!("circle")>` for `Shape`
+             └─ [CGP-E120] missing variant `circle` on `Shape`
+   = help: a similar variant exists on `Shape`: `Circle`
 
 For more information about this error, try `rustc --explain E0277`.

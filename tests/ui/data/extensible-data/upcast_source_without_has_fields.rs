@@ -1,14 +1,13 @@
 //! Upcasting from an enum that derives only `ExtractField`.
 //!
-//! An upcast walks the source's `HasFields` list, so the source needs `#[derive(HasFields)]` too. The
-//! output is "no method named `upcast` found for enum `Small`"; `HasFields` is never mentioned.
+//! An upcast walks the source's `HasFields` list, so the source needs `#[derive(HasFields)]` too.
+//! rustc reports "no method named `upcast` found for enum `Small`"; the tool names the missing
+//! trait and its derive: ``[CGP-E050] `Small` does not implement `HasFields` ``.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/hidden-root-cause.md.
 
-//@quality: hidden
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E050 CGP-E104 CGP-E123
 
 use cgp::core::field::impls::CanUpcast;
 use cgp::prelude::*;

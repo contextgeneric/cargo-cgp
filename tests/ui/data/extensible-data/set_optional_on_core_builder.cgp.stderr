@@ -1,17 +1,13 @@
-error[E0271]: type mismatch resolving `<__PartialContext<IsNothing, IsNothing> as UpdateField<Symbol!("foo"), IsOptional>>::Mapper == IsOptional`
+error[E0271]: [CGP-E050] field `foo` of `Context` is not optional
   --> src/main.rs:23:36
    |
 23 |     let _ = Context::builder().set(PhantomData::<Symbol!("foo")>, "foo".to_owned());
-   |                                --- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<__PartialContext<IsNothing, IsNothing> as UpdateField<Symbol!("foo"), IsOptional>>::Mapper == IsOptional`
-   |                                |
-   |                                required by a bound introduced by this call
+   |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-note: expected this to be `IsOptional`
-  --> src/main.rs:16:10
-   |
-16 | #[derive(CgpData)]
-   |          ^^^^^^^
-   = note: required for `__PartialContext<IsNothing, IsNothing>` to implement `SetOptional<Symbol!("foo")>`
-   = note: this error originates in the derive macro `CgpData` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: root cause: [CGP-E125] field `foo` of `Context` is not optional
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `SetOptional<Symbol!("foo")>` for the builder of `Context` with no field set
+             └─ [CGP-E125] field `foo` of `Context` is not optional
+   = help: call `to_optional` on the builder first to hold each field as optional, with `use cgp::extra::field::impls::ToOptional;` in scope
 
 For more information about this error, try `rustc --explain E0271`.

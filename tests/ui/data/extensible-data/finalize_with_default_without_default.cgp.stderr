@@ -1,16 +1,14 @@
-error[E0599]: no method named `finalize_with_default` found for struct `__PartialServer<__F0__, __F1__>` in the current scope
+error[E0599]: [CGP-E050] the trait bound `Port: Default` is not satisfied
   --> src/main.rs:27:10
    |
-19 | pub struct Server {
-   | ----------------- method `finalize_with_default` not found for this struct
-...
-25 |     let _ = Server::builder()
-26 |         .build_field(PhantomData::<Symbol!("host")>, "localhost".to_owned())
 27 |         .finalize_with_default();
-   |          ^^^^^^^^^^^^^^^^^^^^^ method not found in `__PartialServer<IsPresent, IsNothing>`
+   |          ^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: items from traits can only be used if the trait is implemented and in scope
-   = note: the following trait defines an item `finalize_with_default`, perhaps you need to implement it:
-           candidate #1: `CanFinalizeWithDefault`
+   = note: root cause: [CGP-E117] the trait bound `Port: Default` is not satisfied
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `CanFinalizeWithDefault` for the builder of `Server` with `host` set
+             └─ [CGP-E104] trait impl `TransformMapFields<TransformMapDefault, IsPresent>` for the builder of `Server` with `host` set
+               └─ [CGP-E104] trait impl `TransformMap<IsNothing, IsPresent, Port>` for `TransformMapDefault`
+                 └─ [CGP-E117] the trait bound `Port: Default` is not satisfied
 
 For more information about this error, try `rustc --explain E0599`.

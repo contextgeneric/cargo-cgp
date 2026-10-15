@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `Cons<Field<Symbol<7, _>, String>, Nil>: FieldsBuilder<_, _>` is not satisfied
-  --> src/main.rs:31:21
+  --> src/main.rs:30:21
    |
-31 |         .build_from(Person { first_name: "A".into(), surname: "B".into() })
+30 |         .build_from(Person { first_name: "A".into(), surname: "B".into() })
    |          ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |          |
    |          required by a bound introduced by this call

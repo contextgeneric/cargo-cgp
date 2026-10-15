@@ -86,6 +86,26 @@ pub enum PartialKind {
     MutExtractor,
 }
 
+impl PartialKind {
+    /// What a partial value of this kind is called: `builder`, `extractor`, `reference extractor`,
+    /// or `mutable reference extractor`.
+    pub fn noun(self) -> &'static str {
+        match self {
+            PartialKind::Builder => "builder",
+            PartialKind::Extractor => "extractor",
+            PartialKind::RefExtractor => "reference extractor",
+            PartialKind::MutExtractor => "mutable reference extractor",
+        }
+    }
+
+    /// The [noun](Self::noun) with its indefinite article: `a builder`, `an extractor`.
+    pub fn with_article(self) -> String {
+        let noun = self.noun();
+        let article = if noun.starts_with('e') { "an" } else { "a" };
+        format!("{article} {noun}")
+    }
+}
+
 impl PartialValue {
     /// The value in words: ``the builder of `Person` with `first_name` set``, or ``the extractor of
     /// `Shape` with `Circle` ruled out``.
@@ -107,11 +127,7 @@ impl PartialValue {
                 }
             }
             PartialKind::Extractor | PartialKind::RefExtractor | PartialKind::MutExtractor => {
-                let noun = match self.kind {
-                    PartialKind::RefExtractor => "reference extractor",
-                    PartialKind::MutExtractor => "mutable reference extractor",
-                    _ => "extractor",
-                };
+                let noun = self.kind.noun();
                 if self.marked.is_empty() {
                     format!("the {noun} of `{target}`")
                 } else {

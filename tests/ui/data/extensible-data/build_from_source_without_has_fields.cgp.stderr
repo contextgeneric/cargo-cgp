@@ -1,15 +1,13 @@
-error[E0277]: the trait bound `__PartialFooBarBaz<IsNothing, IsNothing, IsNothing>: CanBuildFrom<FooBar>` is not satisfied
-  --> src/main.rs:32:21
+error[E0277]: [CGP-E050] `FooBar` does not implement `HasFields`
+  --> src/main.rs:31:21
    |
-32 |         .build_from(FooBar { foo: 1, bar: "bar".into() })
-   |          ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-   |          |
-   |          required by a bound introduced by this call
+31 |         .build_from(FooBar { foo: 1, bar: "bar".into() })
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: the trait `CanBuildFrom<FooBar>` is not implemented for `__PartialFooBarBaz<IsNothing, IsNothing, IsNothing>`
-  --> src/main.rs:24:1
-   |
-24 | pub struct FooBarBaz {
-   | ^^^^^^^^^^^^^^^^^^^^
+   = note: root cause: [CGP-E123] `FooBar` does not implement `HasFields`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `CanBuildFrom<FooBar>` for the builder of `FooBarBaz` with no field set
+             └─ [CGP-E123] `FooBar` does not implement `HasFields`
+   = help: add `#[derive(HasFields)]` to `FooBar`
 
 For more information about this error, try `rustc --explain E0277`.

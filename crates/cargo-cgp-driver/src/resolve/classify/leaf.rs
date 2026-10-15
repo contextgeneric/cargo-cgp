@@ -41,7 +41,7 @@ pub(crate) fn classify_leaf<'tcx>(
 ) -> Leaf {
     // An extensible-data operation's bound names the field or variant whose state its partial value
     // records, read off the presence markers before the generic shapes below claim it.
-    if let Some(leaf) = classify_data_leaf(tcx, leaf_ref, mismatch) {
+    if let Some(leaf) = classify_data_leaf(tcx, leaf_ref, parent, mismatch) {
         return leaf;
     }
     // A projection mismatch on a trait that is *not* `HasField` — most often a CGP abstract type the

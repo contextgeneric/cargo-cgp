@@ -7,8 +7,23 @@ use rustc_span::DUMMY_SP;
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::call_site::expr_written_ty;
+use crate::resolve::call_site::{data_expr_ty, expr_written_ty};
 use crate::resolve::walk::unknowns_to_placeholders;
+
+/// How a call passes its arguments, and how their types are read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CallForm {
+    /// A method call on a consumer or blanket trait (`app.greet(…)`): the arguments follow the
+    /// `self` input, each typed as the call writes it.
+    Method,
+    /// A method call on one of CGP's extensible-data traits (`builder.build_field(…)`): as a
+    /// method call, and an argument may also be a data value ([`data_expr_ty`]), such as the
+    /// source a `build_from` merges.
+    DataMethod,
+    /// A type-relative call to a data operation (`Shape::from_variant(…)`): the arguments are every
+    /// input, `Self` named by the path, and typed as for [`CallForm::DataMethod`].
+    DataPath,
+}
 
 /// Build the seed obligation `Ctx: Consumer<…>` by unifying the call's arguments against the
 /// method's own declared signature — no calling convention assumed; the signature's own use of
@@ -26,6 +41,7 @@ pub(crate) fn seed_from_call<'tcx>(
     consumer_did: DefId,
     method_did: DefId,
     args: &[Expr<'tcx>],
+    form: CallForm,
 ) -> Option<ty::PolyTraitClause<'tcx>> {
     let param_env = ty::ParamEnv::empty();
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
@@ -49,10 +65,17 @@ pub(crate) fn seed_from_call<'tcx>(
         .instantiate(tcx, method_args)
         .skip_norm_wip();
     let sig = infcx.enter_forall_and_leak_universe(sig);
-    // `inputs()[0]` is the `self` receiver (the caller requires one), already pinned above, so the
-    // call's arguments line up with the declared inputs from position 1.
-    for (arg, declared) in std::iter::zip(args, sig.inputs().iter().skip(1)) {
-        if let Some(written) = expr_written_ty(&infcx, arg) {
+    // A method call's `inputs()[0]` is the `self` receiver, already pinned above, so its arguments
+    // line up with the declared inputs from position 1; a path call's arguments are every input.
+    let skip = usize::from(form != CallForm::DataPath);
+    for (arg, declared) in std::iter::zip(args, sig.inputs().iter().skip(skip)) {
+        let written = match form {
+            CallForm::Method => expr_written_ty(&infcx, arg),
+            CallForm::DataMethod | CallForm::DataPath => {
+                expr_written_ty(&infcx, arg).or_else(|| data_expr_ty(tcx, arg))
+            }
+        };
+        if let Some(written) = written {
             // Best effort: a written type that does not unify (a mis-guessed consumer candidate,
             // a coerced argument) just leaves its parameter unknown — the seed is gated on
             // failing, and the walk reports nothing it cannot prove.

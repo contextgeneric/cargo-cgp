@@ -1,14 +1,13 @@
 //! Finalizing an extraction while a variant is still possible.
 //!
-//! `finalize_extract` on `__PartialShape<IsPresent, IsVoid>` is an `E0599` with a stray note that the
-//! method exists on `<IsVoid as MapType>::Map<Rectangle>`. The unhandled `Circle` is never named.
+//! `finalize_extract` on the remainder a `match` arm binds is an `E0599`, since only the
+//! all-ruled-out extractor implements `FinalizeExtract`:
+//! ``[CGP-E050] variant `Circle` of `Shape` is not extracted``.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E050 CGP-E104 CGP-E121
 
 use cgp::prelude::*;
 

@@ -1,10 +1,10 @@
 error[E0599]: no method named `finalize_extract` found for enum `__PartialShape<__F0__, __F1__>` in the current scope
-  --> src/main.rs:34:37
+  --> src/main.rs:33:37
    |
-25 | pub enum Shape {
+24 | pub enum Shape {
    | -------------- method `finalize_extract` not found for this enum
 ...
-34 |         Err(remainder) => remainder.finalize_extract(),
+33 |         Err(remainder) => remainder.finalize_extract(),
    |                                     ^^^^^^^^^^^^^^^^ method not found in `__PartialShape<IsPresent, IsVoid>`
    |
 note: the method `finalize_extract` exists on the type `<IsVoid as MapType>::Map<Rectangle>`

@@ -14,14 +14,20 @@
 //! The recovery is split by stage: [`find_call`] locates the failing call and the candidate
 //! consumer traits, [`receiver`] reads the context off the receiver expression, [`seed`] builds
 //! the obligation by signature unification, [`written_ty`] reads the types the call's arguments
-//! write, and [`lower`] is the small syntactic type lowering they all stand on.
+//! write, and [`lower`] is the small syntactic type lowering they all stand on. A call to one of
+//! CGP's extensible-data operations has its own anchor, [`data_call`], whose receiver is often
+//! another data operation's result, typed by [`chain`].
 
+mod chain;
+mod data_call;
 mod find_call;
 mod lower;
 mod receiver;
 mod seed;
 mod written_ty;
 
+pub(crate) use chain::*;
+pub use data_call::*;
 pub use find_call::*;
 pub(crate) use lower::*;
 pub(crate) use receiver::*;

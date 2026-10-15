@@ -243,6 +243,21 @@ pub const MAPPER_ASSOC: &str = "Mapper";
 /// See [`MAPPER_ASSOC`].
 pub const VALUE_ASSOC: &str = "Value";
 
+/// The field-access traits (defined by [`CGP_FIELD_CRATE`]) beside its extensible-data
+/// operations: reading or writing one field of a value by its tag, which is not an operation on a
+/// whole record or enum.
+pub const FIELD_ACCESS_TRAITS: &[&str] =
+    &["HasField", "HasFieldMut", "FieldGetter", "MutFieldGetter"];
+
+/// The conversion (defined by [`CGP_FIELD_EXTRA_CRATE`]) that turns a record's core builder into an
+/// optional one, whose fields `set` and `set_optional` update.
+pub const TO_OPTIONAL_TRAIT: &str = "ToOptional";
+
+/// Each extensible-data operation on a struct or enum value paired with its counterpart on a
+/// partial value, both defined by [`CGP_FIELD_CRATE`]: a downcast of an enum, and a downcast of an
+/// extractor (the remainder of an earlier downcast).
+pub const PARTIAL_VALUE_OPERATIONS: &[(&str, &str)] = &[("CanDowncast", "CanDowncastFields")];
+
 /// Each extensible-data trait a type implements only through a derive, paired with that derive:
 /// the traits the data leaf reports as unimplemented on a struct or enum, naming the derive to add.
 /// All are defined by [`CGP_FIELD_CRATE`].

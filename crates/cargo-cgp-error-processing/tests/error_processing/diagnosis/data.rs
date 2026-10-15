@@ -1,7 +1,7 @@
-//! The extensible-data causes: their sentences and codes, how several merge, the derive `help`, the
-//! data class headline, and the partial value a chain hop names in words.
+//! The extensible-data causes: their sentences and codes, how several merge, the derive and method
+//! `help`s, the data class headline, and the partial value a chain hop names in words.
 
-use cargo_cgp_error_processing::{DeriveFix, PartialKind, PartialValue};
+use cargo_cgp_error_processing::{DeriveFix, MethodFix, PartialKind, PartialValue, SuggestedCall};
 
 use super::*;
 
@@ -11,6 +11,21 @@ fn unimplemented(owner: &str, trait_name: &str, derive: Option<&str>) -> Leaf {
         owner: owner.to_owned(),
         trait_name: trait_name.to_owned(),
         derive: DeriveFix(derive.map(str::to_owned)),
+    }
+}
+
+/// An extractor of `FooBarBaz` given where the enum itself belongs, with the method a `help` names
+/// in place of `downcast`.
+fn partial_lacks(kind: PartialKind, replacement: Option<&str>) -> Leaf {
+    Leaf::PartialLacksDataTrait {
+        kind,
+        target: "FooBarBaz".to_owned(),
+        trait_name: "HasExtractor".to_owned(),
+        replacement: MethodFix(replacement.map(|method| SuggestedCall {
+            method: method.to_owned(),
+            replaces: Some("downcast".to_owned()),
+            trait_path: Some("cgp::core::field::impls::CanDowncastFields".to_owned()),
+        })),
     }
 }
 
@@ -86,6 +101,29 @@ fn data_leaves_have_their_sentences_and_codes() {
             unimplemented("Shape", "HasFields", Some("HasFields")),
             "[CGP-E123] `Shape` does not implement `HasFields`",
         ),
+        (
+            Leaf::VariantAlreadyExtracted {
+                name: "Circle".to_owned(),
+                owner: "Shape".to_owned(),
+            },
+            "[CGP-E124] variant `Circle` of `Shape` is already extracted",
+        ),
+        (
+            Leaf::FieldNotOptional {
+                name: "foo".to_owned(),
+                owner: "Context".to_owned(),
+                convert: MethodFix::default(),
+            },
+            "[CGP-E125] field `foo` of `Context` is not optional",
+        ),
+        (
+            partial_lacks(PartialKind::Extractor, None),
+            "[CGP-E126] an extractor of `FooBarBaz` does not implement `HasExtractor`",
+        ),
+        (
+            partial_lacks(PartialKind::RefExtractor, None),
+            "[CGP-E126] a reference extractor of `FooBarBaz` does not implement `HasExtractor`",
+        ),
     ];
     for (leaf, expected) in cases {
         assert_eq!(dependency_tree_leaf(&leaf), expected);
@@ -139,6 +177,70 @@ fn a_missing_variant_names_a_similar_one() {
     assert_eq!(
         fix_help_messages(&causes),
         vec!["a similar variant exists on `Shape`: `Circle`".to_owned()]
+    );
+}
+
+#[test]
+fn a_method_help_names_the_call_and_its_import() {
+    // The extractor takes `downcast_fields` in place of `downcast`, and the help writes the `use`
+    // its trait needs, since the data traits are not in the prelude.
+    let causes = vec![one_path(
+        partial_lacks(PartialKind::Extractor, Some("downcast_fields")),
+        vec![],
+    )];
+    assert_eq!(
+        fix_help_messages(&causes),
+        vec![
+            "call `downcast_fields` in place of `downcast` on an extractor, with \
+             `use cgp::core::field::impls::CanDowncastFields;` in scope"
+                .to_owned()
+        ]
+    );
+    // A core builder converts to an optional one first.
+    let causes = vec![one_path(
+        Leaf::FieldNotOptional {
+            name: "foo".to_owned(),
+            owner: "Context".to_owned(),
+            convert: MethodFix(Some(SuggestedCall {
+                method: "to_optional".to_owned(),
+                replaces: None,
+                trait_path: Some("cgp::extra::field::impls::ToOptional".to_owned()),
+            })),
+        },
+        vec![],
+    )];
+    assert_eq!(
+        fix_help_messages(&causes),
+        vec![
+            "call `to_optional` on the builder first to hold each field as optional, with \
+             `use cgp::extra::field::impls::ToOptional;` in scope"
+                .to_owned()
+        ]
+    );
+    // Without a method that holds, the cause carries no help.
+    let causes = vec![one_path(
+        partial_lacks(PartialKind::Extractor, None),
+        vec![],
+    )];
+    assert!(fix_help_messages(&causes).is_empty());
+}
+
+#[test]
+fn the_data_states_are_told_apart_from_other_causes() {
+    assert!(
+        Leaf::VariantAlreadyExtracted {
+            name: "Circle".to_owned(),
+            owner: "Shape".to_owned(),
+        }
+        .is_data_state()
+    );
+    assert!(partial_lacks(PartialKind::Extractor, None).is_data_state());
+    assert!(!unimplemented("Shape", "HasFields", Some("HasFields")).is_data_state());
+    assert!(
+        !Leaf::Bound {
+            summary: "Port: Default".to_owned()
+        }
+        .is_data_state()
     );
 }
 
