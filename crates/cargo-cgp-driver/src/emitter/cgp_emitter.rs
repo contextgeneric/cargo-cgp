@@ -1071,6 +1071,13 @@ impl<E: Emitter> CgpEmitter<E> {
             {
                 return Some((resolved, false));
             }
+            // A `Key -> Table` wiring entry whose table lacks the key: the compiler reports the
+            // entry's own forwarding bound, and the consumer the entry wires names the cause.
+            if diag.code == Some(E0277)
+                && let Some(resolved) = resolve::resolve_forwarding_entry(tcx, cache, primary)
+            {
+                return Some((resolved, true));
+            }
             None
         })?;
         Some((resolved, primary_span, at_call))

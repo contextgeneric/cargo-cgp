@@ -1,16 +1,15 @@
 //! A `->` delegation to a table that lacks the key.
 //!
-//! `GreeterComponent -> Bundle` where `Bundle` has no `GreeterComponent` entry. The check's
-//! `[CGP-E001]` block ends at `[CGP-E114]` "missing entry for `GreeterComponent` in provider
-//! `Bundle`": `Person` has the entry, and the walk follows its forwarding bound to the table that
-//! lacks the key. Two raw `E0277`s still precede it, on the `->` entry the generated
-//! bounds are spanned onto, each with a wrong `trivial_bounds` suggestion.
+//! `GreeterComponent -> Bundle` where `Bundle` has no `GreeterComponent` entry. The compiler first
+//! reports the entry's own forwarding bound, `Bundle: DelegateComponent<GreeterComponent>`, and
+//! the unsized `Delegate` projection it leaves, at the `-> Bundle` the bound is spanned onto. The
+//! forwarding-entry anchor seeds `Person: CanGreet`, the consumer the entry wires, so the first of
+//! them reads ``[CGP-E001] missing entry for `GreeterComponent` in provider `Bundle` `` over the
+//! check's chain, and the second and the check's own report drop as the same failure.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E114
 
 use cgp::prelude::*;
