@@ -87,6 +87,13 @@ fn fixes_for(leaf: &Leaf) -> Vec<(FixKind, String, Option<String>)> {
         } => fixes.push(whole(format!(
             "replace the hand-written `DelegateComponent` impl with `delegate_components! {{ {owner} {{ {component}: {delegate} }} }}`"
         ))),
+        Leaf::UnboundedParameter {
+            param,
+            trait_name,
+            item,
+        } => fixes.push(whole(format!(
+            "add the bound `{param}: {trait_name}` to `{item}`"
+        ))),
         Leaf::AssocTypeMismatch { .. } => fixes.extend(assoc_mismatch_help(leaf).map(whole)),
         Leaf::MissingVariant { owner, similar, .. } => {
             if let Some(similar) = &similar.0 {

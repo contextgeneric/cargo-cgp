@@ -28,6 +28,7 @@ mod lower;
 mod provider_call;
 mod receiver;
 mod seed;
+mod unbounded;
 mod written_ty;
 
 pub use bound_call::*;
@@ -38,4 +39,5 @@ pub(crate) use lower::*;
 pub use provider_call::*;
 pub(crate) use receiver::*;
 pub(crate) use seed::*;
+pub(crate) use unbounded::*;
 pub(crate) use written_ty::*;

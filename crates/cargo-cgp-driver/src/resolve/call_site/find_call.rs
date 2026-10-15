@@ -2,13 +2,13 @@
 
 use cargo_cgp_error_processing::Resolved;
 use rustc_hir::intravisit::{self, Visitor};
-use rustc_hir::{Expr, ExprKind};
+use rustc_hir::{Expr, ExprKind, HirId};
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
 use crate::resolve::cache::ResolveCache;
-use crate::resolve::call_site::{CallForm, receiver_context, seed_from_call};
+use crate::resolve::call_site::{CallForm, receiver_context, seed_from_call, unbounded_receiver};
 use crate::resolve::cgp_item::{
     carries_wiring, is_blanket_trait, is_consumer_trait, is_context_adt,
 };
@@ -37,6 +37,11 @@ pub fn resolve_call_site(
 ) -> Option<Resolved> {
     for call in method_calls_at(tcx, spans) {
         let Some(context) = receiver_context(tcx, call.receiver) else {
+            // A receiver typed by a type parameter of the enclosing item is no context, but a
+            // consumer method called on it fails for a bound the item does not declare.
+            if let Some(resolved) = unbounded_receiver(tcx, &call) {
+                return Some(resolved);
+            }
             continue;
         };
         // Only a monomorphic context ADT can be re-checked: a type with no wiring of its own is no
@@ -78,11 +83,13 @@ pub fn resolve_call_site(
 }
 
 /// One method call found at the diagnostic's primary spans: the method name, the receiver expression,
-/// and the call's argument expressions.
+/// the call's argument expressions, and the call expression's id, for which the compiler records
+/// the traits in scope.
 pub(crate) struct MethodCall<'tcx> {
     pub(crate) method: Symbol,
     pub(crate) receiver: &'tcx Expr<'tcx>,
     pub(crate) args: &'tcx [Expr<'tcx>],
+    pub(crate) hir_id: HirId,
 }
 
 /// Every method-call expression in a local body that one of the diagnostic's primary spans is about.
@@ -119,6 +126,7 @@ impl<'tcx> Visitor<'tcx> for CallFinder<'_, 'tcx> {
                 method: segment.ident.name,
                 receiver,
                 args,
+                hir_id: expr.hir_id,
             });
         }
         intravisit::walk_expr(self, expr);

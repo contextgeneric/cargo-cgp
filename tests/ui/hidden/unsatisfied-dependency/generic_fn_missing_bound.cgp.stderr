@@ -1,34 +1,13 @@
-error[E0599]: the method `greet` exists for reference `&Context`, but its trait bounds were not satisfied
-  --> src/main.rs:36:13
+error[E0599]: [CGP-E001] the type parameter `Context` of `run` is not bounded by `CanGreet`
+  --> src/main.rs:37:13
    |
-36 |     context.greet();
-   |             ^^^^^ this is an associated function, not a method
+37 |     context.greet();
+   |             ^^^^^
    |
-   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
-note: the candidate is defined in the trait `Greeter`
-  --> src/main.rs:17:5
-   |
-17 |     fn greet(&self);
-   |     ^^^^^^^^^^^^^^^^
-note: the following trait bounds were not satisfied:
-      `&Context: Greeter<&Context>`
-      `Context: Greeter<Context>`
-  --> src/main.rs:15:1
-   |
-15 | #[cgp_component(Greeter)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-16 | pub trait CanGreet {
-   |           ^^^^^^^^
-   = help: items from traits can only be used if the type parameter is bounded by the trait
-   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
-help: use associated function syntax instead
-   |
-36 -     context.greet();
-36 +     Context::greet();
-   |
-help: the following trait defines an item `greet`, perhaps you need to restrict type parameter `Context` with it:
-   |
-35 | fn run<Context: CanGreet>(context: &Context) {
-   |               ++++++++++
+   = note: root cause: [CGP-E129] the type parameter `Context` of `run` is not bounded by `CanGreet`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for `Context`
+             └─ [CGP-E129] the type parameter `Context` of `run` is not bounded by `CanGreet`
+   = help: add the bound `Context: CanGreet` to `run`
 
 For more information about this error, try `rustc --explain E0599`.

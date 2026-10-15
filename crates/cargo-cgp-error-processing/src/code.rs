@@ -290,3 +290,7 @@ pub const DEP_PROVIDER_FOR_OTHER_ARGUMENTS: &str = "CGP-E127";
 /// `CGP-E128`: a component the context wires through a hand-written `DelegateComponent` impl with
 /// no `IsProviderFor` impl beside it, `the wiring of \`C\` on \`X\` has no \`IsProviderFor\` impl`.
 pub const DEP_WIRING_WITHOUT_PROVIDER_FOR: &str = "CGP-E128";
+
+/// `CGP-E129`: a consumer-trait method called on a type parameter its generic item does not bound
+/// by the consumer trait, `the type parameter \`T\` of \`f\` is not bounded by \`Trait\``.
+pub const DEP_UNBOUNDED_PARAMETER: &str = "CGP-E129";

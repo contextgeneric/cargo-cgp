@@ -358,3 +358,20 @@ fn a_hand_written_wiring_names_the_entry_to_write_when_its_delegate_is_known() {
     // the cause carries no help.
     assert!(fix_help_messages(&[app_cause(leaf(None))]).is_empty());
 }
+
+#[test]
+fn an_unbounded_parameter_names_the_bound_to_add() {
+    let leaf = Leaf::UnboundedParameter {
+        param: "Context".to_owned(),
+        trait_name: "CanGreet".to_owned(),
+        item: "run".to_owned(),
+    };
+    assert_eq!(
+        dependency_tree_leaf(&leaf),
+        "[CGP-E129] the type parameter `Context` of `run` is not bounded by `CanGreet`"
+    );
+    assert_eq!(
+        fix_help_messages(&[app_cause(leaf)]),
+        vec!["add the bound `Context: CanGreet` to `run`".to_owned()]
+    );
+}

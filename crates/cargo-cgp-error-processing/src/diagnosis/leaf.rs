@@ -165,6 +165,17 @@ pub enum Leaf {
         /// the program wrote. Like [`NearMiss`], it is not part of the leaf's identity.
         delegate: EntryFix,
     },
+    /// A consumer-trait method called on a value of a generic item's type parameter that the item
+    /// does not bound by the consumer trait: the method exists only where the parameter has the
+    /// bound, so the call needs it, and the fix is the bound, not wiring.
+    UnboundedParameter {
+        /// The type parameter, e.g. `Context`.
+        param: String,
+        /// The consumer trait whose method the call names, e.g. `CanGreet`.
+        trait_name: String,
+        /// The generic item that declares the parameter, e.g. `run`.
+        item: String,
+    },
     /// A namespace redirect whose target path has no delegate entry in the context. A
     /// `RedirectLookup<Ctx, Path>` provider resolves a component by forwarding the lookup to `Path`
     /// inside `Ctx`'s wiring (through the namespace lookup trait every joined namespace supplies),
