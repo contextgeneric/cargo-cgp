@@ -152,6 +152,19 @@ pub enum Leaf {
         /// The argument the wiring gives that parameter, e.g. `Robot`.
         required: String,
     },
+    /// A component the context wires through a hand-written `DelegateComponent` impl, with no
+    /// `IsProviderFor` impl beside it. `delegate_components!` writes both, and a consumer call needs
+    /// the context's `IsProviderFor` as well as its delegate, so a check of the component passes
+    /// while every call fails.
+    WiringWithoutProviderFor {
+        /// The component the context wires, e.g. `GreeterComponent`.
+        component: String,
+        /// The context, e.g. `App`.
+        owner: String,
+        /// The provider the hand-written impl delegates to, for the `help`, when the impl is one
+        /// the program wrote. Like [`NearMiss`], it is not part of the leaf's identity.
+        delegate: EntryFix,
+    },
     /// A namespace redirect whose target path has no delegate entry in the context. A
     /// `RedirectLookup<Ctx, Path>` provider resolves a component by forwarding the lookup to `Path`
     /// inside `Ctx`'s wiring (through the namespace lookup trait every joined namespace supplies),
@@ -344,6 +357,12 @@ pub struct NearMiss(pub Option<String>);
 #[derive(Debug, Clone, Default)]
 pub struct DeriveFix(pub Option<String>);
 
+/// The provider a `help` names for a [`Leaf::WiringWithoutProviderFor`], to write the entry that
+/// replaces a hand-written `DelegateComponent` impl. Like [`NearMiss`], it is carried for the `help`
+/// and is not part of the leaf's identity.
+#[derive(Debug, Clone, Default)]
+pub struct EntryFix(pub Option<String>);
+
 /// A method a `help` tells the reader to call: `to_optional` on a core builder before an optional
 /// one's `set`, or `downcast_fields` on an extractor in place of `downcast`. Like [`NearMiss`], it
 /// is carried for the `help` and is not part of the leaf's identity.
@@ -383,6 +402,7 @@ macro_rules! identity_free {
 identity_free!(FieldFix);
 identity_free!(NearMiss);
 identity_free!(DeriveFix);
+identity_free!(EntryFix);
 identity_free!(MethodFix);
 
 impl Leaf {
@@ -441,6 +461,12 @@ impl Leaf {
                 Leaf::DataTraitUnimplemented { derive, .. },
                 Leaf::DataTraitUnimplemented { derive: theirs, .. },
             ) => agree(&mut derive.0, &theirs.0),
+            (
+                Leaf::WiringWithoutProviderFor { delegate, .. },
+                Leaf::WiringWithoutProviderFor {
+                    delegate: theirs, ..
+                },
+            ) => agree(&mut delegate.0, &theirs.0),
             (
                 Leaf::FieldNotOptional { convert: fix, .. },
                 Leaf::FieldNotOptional {

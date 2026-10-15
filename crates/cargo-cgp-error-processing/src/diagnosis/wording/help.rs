@@ -1,6 +1,8 @@
 //! The `help` messages a resolved failure carries: the fixes its causes call for.
 
-use crate::diagnosis::leaf::{DeriveFix, FieldIssue, Leaf, MethodFix, NearMiss, SuggestedCall};
+use crate::diagnosis::leaf::{
+    DeriveFix, EntryFix, FieldIssue, Leaf, MethodFix, NearMiss, SuggestedCall,
+};
 use crate::diagnosis::resolved::Cause;
 use crate::diagnosis::wording::header::quoted_list;
 
@@ -78,6 +80,13 @@ fn fixes_for(leaf: &Leaf) -> Vec<(FixKind, String, Option<String>)> {
         Leaf::MissingDispatchEntry { key, table } if is_typeable_key(key) => {
             fixes.push((FixKind::AddEntries, table.clone(), Some(key.clone())));
         }
+        Leaf::WiringWithoutProviderFor {
+            component,
+            owner,
+            delegate: EntryFix(Some(delegate)),
+        } => fixes.push(whole(format!(
+            "replace the hand-written `DelegateComponent` impl with `delegate_components! {{ {owner} {{ {component}: {delegate} }} }}`"
+        ))),
         Leaf::AssocTypeMismatch { .. } => fixes.extend(assoc_mismatch_help(leaf).map(whole)),
         Leaf::MissingVariant { owner, similar, .. } => {
             if let Some(similar) = &similar.0 {

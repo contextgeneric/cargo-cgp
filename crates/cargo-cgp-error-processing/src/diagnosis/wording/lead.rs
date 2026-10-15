@@ -6,7 +6,7 @@ use crate::code::{
     DEP_MISSING_DELEGATE_ENTRY, DEP_MISSING_DISPATCH_ENTRY, DEP_MISSING_FIELD, DEP_MISSING_VARIANT,
     DEP_NOT_A_PROVIDER, DEP_ORDINARY_BOUND, DEP_PARTIAL_LACKS_DATA_TRAIT,
     DEP_PROVIDER_FOR_OTHER_ARGUMENTS, DEP_UNIMPLEMENTED_ACCESSOR, DEP_VARIANT_ALREADY_EXTRACTED,
-    DEP_VARIANT_TYPE_MISMATCH, DEP_VARIANTS_NOT_EXTRACTED,
+    DEP_VARIANT_TYPE_MISMATCH, DEP_VARIANTS_NOT_EXTRACTED, DEP_WIRING_WITHOUT_PROVIDER_FOR,
 };
 use crate::diagnosis::leaf::{FieldIssue, Leaf};
 use crate::diagnosis::wording::header::{quoted_list, required_type};
@@ -75,6 +75,9 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
             )
         }
         Leaf::MissingRedirectWiring { path, context, .. } => missing_wiring(context, path),
+        Leaf::WiringWithoutProviderFor {
+            component, owner, ..
+        } => format!("the wiring of `{component}` on `{owner}` has no `IsProviderFor` impl"),
         Leaf::Field { name, owner, .. } => {
             format!("`HasField` not derived for field `{name}` of `{owner}`")
         }
@@ -174,6 +177,7 @@ pub fn dependency_leaf_code(leaf: &Leaf) -> &'static str {
         Leaf::MissingDispatchEntry { .. } => DEP_MISSING_DISPATCH_ENTRY,
         Leaf::NotAProvider { .. } => DEP_NOT_A_PROVIDER,
         Leaf::ProviderForOtherArguments { .. } => DEP_PROVIDER_FOR_OTHER_ARGUMENTS,
+        Leaf::WiringWithoutProviderFor { .. } => DEP_WIRING_WITHOUT_PROVIDER_FOR,
         Leaf::FieldTypeMismatch { .. } => DEP_FIELD_TYPE_MISMATCH,
         Leaf::AssocTypeMismatch { .. } => DEP_ASSOC_TYPE_MISMATCH,
         Leaf::FieldAlreadySet { .. } => DEP_FIELD_ALREADY_SET,

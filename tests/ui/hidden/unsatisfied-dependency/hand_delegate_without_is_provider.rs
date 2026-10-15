@@ -1,13 +1,16 @@
 //! A hand-written `DelegateComponent` impl without the forwarding `IsProviderFor`.
 //!
-//! A raw `E0599` leaking `IsProviderFor` and its source path in `cgp`; the resolver declines.
+//! A check of `GreeterComponent` on `App` passes, since it needs only `GreetHello`'s
+//! `IsProviderFor`; the call fails, because the delegation blanket a consumer call routes through
+//! also needs `App: IsProviderFor<GreeterComponent, App>`, which only `delegate_components!`
+//! writes:
+//! ``[CGP-E128] the wiring of `GreeterComponent` on `App` has no `IsProviderFor` impl``, with a
+//! `help` naming the `delegate_components!` entry to write.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E001 CGP-E101 CGP-E128
 
 use cgp::prelude::*;
 

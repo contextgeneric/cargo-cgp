@@ -1,6 +1,6 @@
 //! The `help` lines a plan attaches: the fix each kind of cause calls for, merged per owner.
 
-use cargo_cgp_error_processing::{Causes, FieldFix, NearMiss};
+use cargo_cgp_error_processing::{Causes, EntryFix, FieldFix, NearMiss};
 
 use super::*;
 
@@ -334,4 +334,27 @@ fn a_near_miss_needs_no_confirmed_fix() {
         fix_help_messages(&[app_cause(field)]),
         vec!["a similar field exists on `Shape`: `width`".to_owned()]
     );
+}
+
+#[test]
+fn a_hand_written_wiring_names_the_entry_to_write_when_its_delegate_is_known() {
+    let leaf = |delegate: Option<&str>| Leaf::WiringWithoutProviderFor {
+        component: "GreeterComponent".to_owned(),
+        owner: "App".to_owned(),
+        delegate: EntryFix(delegate.map(str::to_owned)),
+    };
+    assert_eq!(
+        dependency_tree_leaf(&leaf(Some("GreetHello"))),
+        "[CGP-E128] the wiring of `GreeterComponent` on `App` has no `IsProviderFor` impl"
+    );
+    assert_eq!(
+        fix_help_messages(&[app_cause(leaf(Some("GreetHello")))]),
+        vec![
+            "replace the hand-written `DelegateComponent` impl with `delegate_components! { App { GreeterComponent: GreetHello } }`"
+                .to_owned()
+        ]
+    );
+    // A `DelegateComponent` impl a macro wrote, or one from another crate, names no delegate, so
+    // the cause carries no help.
+    assert!(fix_help_messages(&[app_cause(leaf(None))]).is_empty());
 }

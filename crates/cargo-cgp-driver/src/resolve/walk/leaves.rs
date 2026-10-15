@@ -1,6 +1,6 @@
 //! Descending the failing obligation to every terminal root-cause leaf.
 
-use cargo_cgp_error_processing::{Causes, ChainNode, OverflowStep, Resolved, WiringOverflow};
+use cargo_cgp_error_processing::{Causes, ChainNode, Leaf, OverflowStep, Resolved, WiringOverflow};
 use rustc_data_structures::fingerprint::Fingerprint;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
@@ -10,7 +10,7 @@ use crate::resolve::cache::{NodeKey, ResolveCache, SubCause, SubResult, pred_fin
 use crate::resolve::cgp_item::{
     is_cgp_item, is_consumer_trait, is_local_adt, is_provider_trait, trim_unknown_path_tail,
 };
-use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
+use crate::resolve::classify::{classify_leaf, is_reportable_leaf, wiring_without_provider_for};
 use crate::resolve::label::{label_for, redirect_lookup_args, render_ty, trait_generics};
 use crate::resolve::walk::{
     ProjectionMismatch, holds, impl_where_obligations, is_context_side, is_descendable,
@@ -363,13 +363,17 @@ fn resolve_node<'tcx>(
         return terminal_result(tcx, erased, leaf_ref, parent, context, self_fp);
     };
 
-    let unmet: Vec<_> = children
+    let failing: Vec<_> = children
         .into_iter()
         .filter(|nested| !holds(tcx, *nested))
-        // Drop the check-trait scaffolding wherever it appears as a dependency: the generated
-        // blanket impls carry a `CanUseComponent`/`IsProviderFor` bound *beside* the real consumer
-        // or provider-trait obligation, and only the latter is walked — the `IsProviderFor` bound
-        // just re-states the provider's `where` clause, which the real provider impl already carries.
+        .collect();
+    // Drop the check-trait scaffolding wherever it appears as a dependency: the generated blanket
+    // impls carry a `CanUseComponent`/`IsProviderFor` bound *beside* the real consumer or
+    // provider-trait obligation, and only the latter is walked — the `IsProviderFor` bound just
+    // re-states the provider's `where` clause, which the real provider impl already carries.
+    let unmet: Vec<_> = failing
+        .iter()
+        .copied()
         .filter(|nested| !is_workaround_plumbing(tcx, *nested))
         .collect();
 
@@ -398,6 +402,12 @@ fn resolve_node<'tcx>(
         }
         followable
     } else if unmet.is_empty() {
+        // Only scaffolding fails: the context's own `IsProviderFor` beside its delegate, which a
+        // hand-written `DelegateComponent` impl leaves out.
+        if let Some(leaf) = wiring_without_provider_for(tcx, &failing, context) {
+            let result = cause_result(tcx, erased, context, leaf, self_fp);
+            return cache_if_complete(cache, key, result);
+        }
         // Matched an impl, yet every trait-clause `where`-obligation holds: the fault is a projection
         // the trait-clause walk cannot see — a `HasField::Value` mismatch (a field present with the
         // wrong type), or any other associated type the owner supplies differently from what the impl
@@ -578,6 +588,30 @@ fn terminal_result<'tcx>(
     reachable.insert(self_fp);
     SubResult {
         causes: vec![SubCause { path, leaf }],
+        reachable,
+        incomplete: false,
+        cut: None,
+    }
+}
+
+/// Build the sub-result for a cause the node itself states, already classified as `leaf`: the node
+/// is a chain hop (its label, when it has one) and `leaf` ends the path.
+fn cause_result<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    erased: ty::PolyTraitClause<'tcx>,
+    context: Ty<'tcx>,
+    leaf: Leaf,
+    self_fp: Fingerprint,
+) -> SubResult {
+    let mut path = Vec::new();
+    if let Some(node_hop) = label_for(tcx, erased, context) {
+        path.push(ChainNode::Hop(node_hop));
+    }
+    path.push(ChainNode::Leaf(leaf.clone()));
+    let mut reachable = FxHashSet::default();
+    reachable.insert(self_fp);
+    SubResult {
+        causes: vec![SubCause { leaf, path }],
         reachable,
         incomplete: false,
         cut: None,

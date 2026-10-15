@@ -286,3 +286,7 @@ pub const DEP_PARTIAL_LACKS_DATA_TRAIT: &str = "CGP-E126";
 /// `CGP-E127`: a provider that implements the provider trait for other arguments than the wiring
 /// gives it, `\`P\` implements \`Trait\` only for \`A\`, not \`B\``.
 pub const DEP_PROVIDER_FOR_OTHER_ARGUMENTS: &str = "CGP-E127";
+
+/// `CGP-E128`: a component the context wires through a hand-written `DelegateComponent` impl with
+/// no `IsProviderFor` impl beside it, `the wiring of \`C\` on \`X\` has no \`IsProviderFor\` impl`.
+pub const DEP_WIRING_WITHOUT_PROVIDER_FOR: &str = "CGP-E128";
