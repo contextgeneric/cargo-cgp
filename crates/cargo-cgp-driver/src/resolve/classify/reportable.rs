@@ -7,6 +7,7 @@ use crate::config::{
     CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT,
 };
 use crate::resolve::cgp_item::is_cgp_item;
+use crate::resolve::classify::provider_for_other_arguments;
 
 /// Whether a terminal leaf is a real root cause worth reporting, rather than pure wiring plumbing.
 /// A `CanUseComponent` or `IsProviderFor` that bottoms out unmet is a routing dead-end (the real
@@ -45,8 +46,11 @@ use crate::resolve::cgp_item::is_cgp_item;
 /// parent provider trait `T` (owner == parent `Self`), reached because no concrete `impl T for
 /// owner` unified. Two sub-cases, told apart by whether such a concrete impl *exists*:
 ///
-/// - the owner **has** a concrete impl of `T` that merely did not unify (a leaf provider fed the
-///   wrong input, the `HandleShout` dead-end) — dropped, its real cause runs through that impl;
+/// - the owner **has** a concrete impl of `T` that merely did not unify. When the parent is fully
+///   known and one argument explains the mismatch (a provider written for another context, a
+///   stage whose input is another stage's output type), the owner implements `T` for other
+///   arguments, a [`Leaf::ProviderForOtherArguments`](cargo_cgp_error_processing::Leaf::ProviderForOtherArguments)
+///   ([`provider_for_other_arguments`]). Otherwise it is the `HandleShout` dead-end, dropped;
 /// - the owner has **no** concrete impl of `T` at all — it is genuinely not a provider, wired where
 ///   one was expected (`UseBasicAuth<QueryBalanceRequest>`, a request type in a handler slot) —
 ///   reported as a [`Leaf::NotAProvider`](cargo_cgp_error_processing::Leaf::NotAProvider).
@@ -71,13 +75,13 @@ pub(crate) fn is_reportable_leaf<'tcx>(
         // Reached via the generic blanket for the parent provider trait, which keys on the owner
         // itself. An owner with a concrete impl of that trait can never wire its key too (the
         // blanket and the impl would overlap), so the blanket was reached only because that impl
-        // did not unify: a dead-end, even when the owner wires other keys, as a `#[cgp_computer]`
-        // provider wires its promotions.
-        if parent.is_some_and(|p| {
-            tcx.erase_and_anonymize_regions(p.self_ty()) == self_ty
-                && owner_has_impl_of(tcx, p.def_id, self_ty)
-        }) {
-            return false;
+        // did not unify, even when the owner wires other keys, as a `#[cgp_computer]` provider
+        // wires its promotions. That is the cause when the parent is fully known and one argument
+        // explains it ([`provider_for_other_arguments`]), and a dead-end otherwise.
+        if let Some(parent) = parent
+            && is_blanket_dead_end(tcx, self_ty, parent)
+        {
+            return provider_for_other_arguments(tcx, parent).is_some();
         }
         // Otherwise an owner that wires some key is a table missing this one, and an owner that
         // wires none is a genuine non-provider.
@@ -85,6 +89,18 @@ pub(crate) fn is_reportable_leaf<'tcx>(
     }
     !is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
         && !is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
+}
+
+/// Whether an unmet `DelegateComponent` on `owner` was reached through the delegation blanket of
+/// `parent`, an obligation on `owner` itself, although `owner` has a concrete impl of `parent`'s
+/// trait: the blanket was tried only because that impl did not unify.
+pub(crate) fn is_blanket_dead_end<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    owner: Ty<'tcx>,
+    parent: ty::TraitRef<'tcx>,
+) -> bool {
+    tcx.erase_and_anonymize_regions(parent.self_ty()) == owner
+        && owner_has_impl_of(tcx, parent.def_id, owner)
 }
 
 /// Whether an unmet `DelegateComponent` on `owner` is a **dispatch lookup into a separate table**:

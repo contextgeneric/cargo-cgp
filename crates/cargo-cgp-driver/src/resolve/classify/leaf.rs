@@ -12,8 +12,9 @@ use crate::resolve::cgp_item::{
     is_path_cons,
 };
 use crate::resolve::classify::{
-    classify_data_leaf, field_issue, field_type, is_dispatch_lookup, owner_has_impl_of,
-    projected_type, required_field_type, similar_field, similar_wired_key,
+    classify_data_leaf, field_issue, field_type, is_blanket_dead_end, is_dispatch_lookup,
+    owner_has_impl_of, projected_type, provider_for_other_arguments, required_field_type,
+    similar_field, similar_wired_key,
 };
 use crate::resolve::conflict::render_path;
 use crate::resolve::label::fold_empty_lists;
@@ -84,6 +85,14 @@ pub(crate) fn classify_leaf<'tcx>(
             };
         }
         if self_ty != context {
+            // A provider reached through its own delegation blanket, although it implements the
+            // parent's trait, implements that trait for other arguments than the wiring gives it.
+            if let Some(parent) = parent
+                && is_blanket_dead_end(tcx, self_ty, parent)
+                && let Some(leaf) = provider_for_other_arguments(tcx, parent)
+            {
+                return leaf;
+            }
             // A `DelegateComponent<Key>` on a *non-context* type splits two ways (both let through
             // by `is_reportable_leaf`). If the owner is a delegation table — a separate-table
             // dispatch lookup ([`is_dispatch_lookup`]) or an owner that wires some other key

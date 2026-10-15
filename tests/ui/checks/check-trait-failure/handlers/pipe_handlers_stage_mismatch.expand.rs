@@ -1,12 +1,11 @@
 #![feature(prelude_import)]
 //! A pipeline stage taking `u64` after one returning `String`.
 //!
-//! A `[CGP-E002]` headline with rustc's "expected `u64`, found `String`" help, no tree, and no mention
-//! of which stages disagree.
+//! The walk reaches `Double: Computer<App, (), String>`, which no impl of `Double` matches, since
+//! `Double` takes only `u64`, and names that argument:
+//! ``[CGP-E127] `Double` implements `Computer` only with `Input = u64`, not `Input = String` ``.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

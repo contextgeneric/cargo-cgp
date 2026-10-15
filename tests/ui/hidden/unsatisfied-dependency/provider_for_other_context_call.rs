@@ -1,14 +1,13 @@
 //! A provider written for one context, wired on another, and reached by a call.
 //!
-//! The resolver declines, so the call is a raw `E0599` that leaks `IsProviderFor` and its source path
-//! in `cgp`.
+//! The use-site anchor re-checks `Robot`'s wiring, and the walk reaches `GreetPerson: Greeter<Robot>`,
+//! which no impl of `GreetPerson` matches:
+//! ``[CGP-E127] `GreetPerson` implements `Greeter` only for `Person`, not `Robot` ``.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E127
 
 use cgp::prelude::*;
 

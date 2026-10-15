@@ -1,12 +1,11 @@
 #![feature(prelude_import)]
 //! `PromoteRef<Double>` for a `Double` that takes its input by value.
 //!
-//! A raw `E0271` on `<Double as Computer<App, (), &u64>>::Output == _`, passed through except for
-//! the renamed notes.
+//! `PromoteRef` calls its inner provider with a reference, so the walk reaches
+//! `Double: Computer<App, (), &u64>`, and the compiler's `E0271` on its output becomes
+//! ``[CGP-E127] `Double` implements `Computer` only with `Input = u64`, not `Input = &u64` ``.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

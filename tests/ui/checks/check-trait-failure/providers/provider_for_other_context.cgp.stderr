@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E001] `GreetPerson` implements `Greeter` only for `Person`, not `Robot`
+  --> src/main.rs:36:9
+   |
+36 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E127] `GreetPerson` implements `Greeter` only for `Person`, not `Robot`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `Robot`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `Robot` for provider `GreetPerson`
+               └─ [CGP-E127] `GreetPerson` implements `Greeter` only for `Person`, not `Robot`
+
+For more information about this error, try `rustc --explain E0277`.

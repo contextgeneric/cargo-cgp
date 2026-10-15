@@ -80,6 +80,32 @@ fn dependency_tree_leaf_codes_every_root_cause() {
 }
 
 #[test]
+fn a_provider_for_other_arguments_names_the_argument_it_takes() {
+    // The context reads as the `for` of a `#[cgp_impl]` header.
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::ProviderForOtherArguments {
+            provider: "GreetPerson".to_owned(),
+            provider_trait: "Greeter".to_owned(),
+            param: None,
+            provided: vec!["Person".to_owned()],
+            required: "Robot".to_owned(),
+        }),
+        "[CGP-E127] `GreetPerson` implements `Greeter` only for `Person`, not `Robot`"
+    );
+    // A component argument reads as the parameter it binds, and several impls as alternatives.
+    assert_eq!(
+        dependency_tree_leaf(&Leaf::ProviderForOtherArguments {
+            provider: "ComputeArea".to_owned(),
+            provider_trait: "Computer".to_owned(),
+            param: Some("Input".to_owned()),
+            provided: vec!["Circle".to_owned(), "Rectangle".to_owned()],
+            required: "Square".to_owned(),
+        }),
+        "[CGP-E127] `ComputeArea` implements `Computer` only with `Input = Circle` or `Input = Rectangle`, not `Input = Square`"
+    );
+}
+
+#[test]
 fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
     let missing_name = || {
         one_path(

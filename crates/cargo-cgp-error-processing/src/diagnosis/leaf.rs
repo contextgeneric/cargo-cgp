@@ -133,6 +133,25 @@ pub enum Leaf {
         /// The provider trait it fails to implement, e.g. `ApiHandler`.
         provider_trait: String,
     },
+    /// A provider that implements the provider trait, but not for the context or the component
+    /// arguments the wiring uses it with: a provider written for one context and wired on another,
+    /// or a pipeline stage whose input type is not the type the stage before it produces. Distinct
+    /// from [`Leaf::NotAProvider`]: the provider does implement the trait, for other arguments, so
+    /// the fix is a provider for these arguments, or other arguments for this provider.
+    ProviderForOtherArguments {
+        /// The provider, e.g. `GreetPerson`.
+        provider: String,
+        /// The provider trait it implements for other arguments, e.g. `Greeter`.
+        provider_trait: String,
+        /// The parameter whose argument no impl of the provider accepts: `None` for the context,
+        /// or the provider trait's name for a component parameter, e.g. `Input`.
+        param: Option<String>,
+        /// The arguments the provider's impls take for that parameter, as the impls write them and
+        /// in their order, e.g. `["Person"]`.
+        provided: Vec<String>,
+        /// The argument the wiring gives that parameter, e.g. `Robot`.
+        required: String,
+    },
     /// A namespace redirect whose target path has no delegate entry in the context. A
     /// `RedirectLookup<Ctx, Path>` provider resolves a component by forwarding the lookup to `Path`
     /// inside `Ctx`'s wiring (through the namespace lookup trait every joined namespace supplies),

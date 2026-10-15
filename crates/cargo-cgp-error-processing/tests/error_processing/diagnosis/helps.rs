@@ -162,8 +162,16 @@ fn mixed_causes_get_one_help_per_kind_in_cause_order() {
             provider: "Request".to_owned(),
             provider_trait: "Handler".to_owned(),
         }),
+        app_cause(Leaf::ProviderForOtherArguments {
+            provider: "Double".to_owned(),
+            provider_trait: "Computer".to_owned(),
+            param: Some("Input".to_owned()),
+            provided: vec!["u64".to_owned()],
+            required: "String".to_owned(),
+        }),
     ];
-    // An ordinary bound and a non-provider carry no help of their own.
+    // An ordinary bound, a non-provider, and a provider for other arguments carry no help of their
+    // own.
     assert_eq!(
         fix_help_messages(&causes),
         vec![

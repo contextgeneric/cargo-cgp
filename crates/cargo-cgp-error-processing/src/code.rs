@@ -282,3 +282,7 @@ pub const DEP_FIELD_NOT_OPTIONAL: &str = "CGP-E125";
 /// `CGP-E126`: a builder or an extractor given to an operation that needs a trait only the struct
 /// or enum itself implements, `an extractor of \`T\` does not implement \`HasExtractor\``.
 pub const DEP_PARTIAL_LACKS_DATA_TRAIT: &str = "CGP-E126";
+
+/// `CGP-E127`: a provider that implements the provider trait for other arguments than the wiring
+/// gives it, `\`P\` implements \`Trait\` only for \`A\`, not \`B\``.
+pub const DEP_PROVIDER_FOR_OTHER_ARGUMENTS: &str = "CGP-E127";

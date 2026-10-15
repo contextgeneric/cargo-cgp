@@ -1,12 +1,11 @@
 #![feature(prelude_import)]
 //! `PipeMonadic<ErrMonadic, …>` over stages that do not return `Result`.
 //!
-//! `[CGP-E002]` on `BindErr<IdentMonadic, Double>` with a help quoting `cgp-monad` source; nothing says
-//! the stages must return `Result`.
+//! The error monad binds each later stage with `BindErr`, which takes a `Result` input, so the walk
+//! reaches `BindErr<IdentMonadic, Double>` given the first stage's `u64`:
+//! ``[CGP-E127] `BindErr<IdentMonadic, Double>` implements `Computer` only with `Input = Result<_, _>`, not `Input = u64` ``.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

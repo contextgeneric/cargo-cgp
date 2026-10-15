@@ -5,8 +5,8 @@ use crate::code::{
     DEP_FIELD_NOT_OPTIONAL, DEP_FIELD_TYPE_MISMATCH, DEP_FIELDS_NOT_SET,
     DEP_MISSING_DELEGATE_ENTRY, DEP_MISSING_DISPATCH_ENTRY, DEP_MISSING_FIELD, DEP_MISSING_VARIANT,
     DEP_NOT_A_PROVIDER, DEP_ORDINARY_BOUND, DEP_PARTIAL_LACKS_DATA_TRAIT,
-    DEP_UNIMPLEMENTED_ACCESSOR, DEP_VARIANT_ALREADY_EXTRACTED, DEP_VARIANT_TYPE_MISMATCH,
-    DEP_VARIANTS_NOT_EXTRACTED,
+    DEP_PROVIDER_FOR_OTHER_ARGUMENTS, DEP_UNIMPLEMENTED_ACCESSOR, DEP_VARIANT_ALREADY_EXTRACTED,
+    DEP_VARIANT_TYPE_MISMATCH, DEP_VARIANTS_NOT_EXTRACTED,
 };
 use crate::diagnosis::leaf::{FieldIssue, Leaf};
 use crate::diagnosis::wording::header::{quoted_list, required_type};
@@ -32,7 +32,8 @@ pub fn missing_wiring(context: &str, key: &str) -> String {
 /// (see `cgp-knowledge-base/cargo-cgp/error-code.md`). A missing field, wiring, or table
 /// entry names what is missing and where; a present field without `HasField` names the derive that
 /// is missing, whose fix rides in a `help`; a projection mismatch names the type supplied and the
-/// type required; an extensible-data cause names the field or variant whose state the operation
+/// type required, as a provider for other arguments names the arguments its impls take and the one
+/// the wiring gives; an extensible-data cause names the field or variant whose state the operation
 /// does not allow, or the data trait a type lacks; an ordinary bound keeps the compiler's wording.
 pub fn root_cause_lead(leaf: &Leaf) -> String {
     match leaf {
@@ -52,6 +53,27 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
             provider,
             provider_trait,
         } => format!("`{provider}` is not a provider of `{provider_trait}`"),
+        Leaf::ProviderForOtherArguments {
+            provider,
+            provider_trait,
+            param,
+            provided,
+            required,
+        } => {
+            // The context reads as the `for` of the `#[cgp_impl]` header that names it; a component
+            // argument reads as the parameter it binds.
+            let argument = |ty: &str| match param {
+                Some(param) => format!("`{param} = {ty}`"),
+                None => format!("`{ty}`"),
+            };
+            let provided: Vec<String> = provided.iter().map(|ty| argument(ty)).collect();
+            let preposition = if param.is_some() { "with" } else { "for" };
+            format!(
+                "`{provider}` implements `{provider_trait}` only {preposition} {}, not {}",
+                provided.join(" or "),
+                argument(required)
+            )
+        }
         Leaf::MissingRedirectWiring { path, context, .. } => missing_wiring(context, path),
         Leaf::Field { name, owner, .. } => {
             format!("`HasField` not derived for field `{name}` of `{owner}`")
@@ -136,8 +158,8 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
 
 /// The `CGP-E1xx` code of a root-cause leaf, carried both by the tree's last entry and by the
 /// `root cause:` line that names it. Keyed by leaf kind: a missing field, a present-but-underived
-/// field, a missing delegate entry (plain or redirect), a missing dispatch entry, a non-provider,
-/// the two mismatch leaves (a `HasField` value type and any other associated type), each
+/// field, a missing delegate entry (plain or redirect), a missing dispatch entry, a non-provider, a
+/// provider for other arguments, the two mismatch leaves (a `HasField` value type and any other associated type), each
 /// extensible-data cause, and an ordinary trait bound each get their own code.
 pub fn dependency_leaf_code(leaf: &Leaf) -> &'static str {
     match leaf {
@@ -151,6 +173,7 @@ pub fn dependency_leaf_code(leaf: &Leaf) -> &'static str {
         }
         Leaf::MissingDispatchEntry { .. } => DEP_MISSING_DISPATCH_ENTRY,
         Leaf::NotAProvider { .. } => DEP_NOT_A_PROVIDER,
+        Leaf::ProviderForOtherArguments { .. } => DEP_PROVIDER_FOR_OTHER_ARGUMENTS,
         Leaf::FieldTypeMismatch { .. } => DEP_FIELD_TYPE_MISMATCH,
         Leaf::AssocTypeMismatch { .. } => DEP_ASSOC_TYPE_MISMATCH,
         Leaf::FieldAlreadySet { .. } => DEP_FIELD_ALREADY_SET,
