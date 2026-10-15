@@ -83,18 +83,31 @@ pub(crate) fn contexts_at_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<
     finder.found
 }
 
-/// The type of the binding a receiver path resolves to. A `let` with a type annotation supplies
-/// it directly; a `let` without one is typed by its initializer expression (a struct literal,
-/// usually); a fn parameter is typed by the matching input of the enclosing signature. All three
-/// are syntactic — no typeck results are consulted.
+/// The type of the binding a receiver path resolves to, its references peeled, since a receiver's
+/// context is the ADT beneath them. A `let` with a type annotation supplies it directly; a `let`
+/// without one is typed by its initializer expression (a struct literal, usually); a fn parameter
+/// is typed by the matching input of the enclosing signature. All three are syntactic — no typeck
+/// results are consulted.
 fn local_binding_context<'tcx>(tcx: TyCtxt<'tcx>, binding: hir::HirId) -> Option<Ty<'tcx>> {
+    if let hir::Node::LetStmt(let_stmt) = tcx.parent_hir_node(binding)
+        && let_stmt.ty.is_none()
+    {
+        return receiver_context(tcx, let_stmt.init?);
+    }
+    declared_binding_ty(tcx, binding)
+        .map(|ty| peel_hir_refs(ty))
+        .and_then(|ty| lower_hir_ty(tcx, ty))
+}
+
+/// The type a binding is declared with, references kept: a fn parameter's input type, or a `let`'s
+/// annotation. `None` for any other binding. An argument passed on by reference (`greet_all(app)`
+/// for `app: &App`) needs the reference to line up with the declared input it fills.
+pub(crate) fn declared_binding_ty<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    binding: hir::HirId,
+) -> Option<&'tcx hir::Ty<'tcx>> {
     match tcx.parent_hir_node(binding) {
-        hir::Node::LetStmt(let_stmt) => {
-            if let Some(ty) = let_stmt.ty {
-                return lower_hir_ty(tcx, peel_hir_refs(ty));
-            }
-            receiver_context(tcx, let_stmt.init?)
-        }
+        hir::Node::LetStmt(let_stmt) => let_stmt.ty,
         hir::Node::Param(param) => {
             let owner = tcx.hir_enclosing_body_owner(binding);
             let body = tcx.hir_body_owned_by(owner);
@@ -103,7 +116,7 @@ fn local_binding_context<'tcx>(tcx: TyCtxt<'tcx>, binding: hir::HirId) -> Option
                 .iter()
                 .position(|candidate| candidate.pat.hir_id == param.pat.hir_id)?;
             let decl = tcx.hir_node_by_def_id(owner).fn_decl()?;
-            lower_hir_ty(tcx, peel_hir_refs(decl.inputs.get(index)?))
+            decl.inputs.get(index)
         }
         _ => None,
     }

@@ -50,7 +50,9 @@ pub use anchor::{
     resolve_use_site_blanket_trait, resolve_use_site_consumer, resolve_wrapper_chain,
 };
 pub use cache::ResolveCache;
-pub use call_site::{resolve_call_site, resolve_data_call, resolve_provider_call};
+pub use call_site::{
+    resolve_bound_call, resolve_call_site, resolve_data_call, resolve_provider_call,
+};
 pub use cgp_impl_misuse::{DetectedCgpImplMisuse, detect_cgp_impl_misuses};
 pub use cgp_item::crate_uses_cgp;
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};

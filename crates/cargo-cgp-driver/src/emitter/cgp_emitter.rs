@@ -1058,6 +1058,14 @@ impl<E: Emitter> CgpEmitter<E> {
             // trait bound is a note (not the failure the diagnostic is about) must stay declined
             // when its dispatch parameter is unrecoverable, rather than latch onto that transitive
             // trait (see `generic_consumer_unwritten_arg`).
+            // A bound of a generic function the call instantiates (`fail::<App>()`), read off the
+            // function's own `where` clauses: an `E0277` whose trait no span names and whose
+            // context no receiver carries.
+            if diag.code == Some(E0277)
+                && let Some(resolved) = resolve::resolve_bound_call(tcx, cache, primary)
+            {
+                return Some((resolved, true));
+            }
             if diag.code == Some(E0277)
                 && let Some(resolved) = resolve::resolve_use_site_blanket_trait(tcx, cache, &spans)
             {

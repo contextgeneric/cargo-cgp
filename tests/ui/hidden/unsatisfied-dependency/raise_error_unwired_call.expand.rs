@@ -1,12 +1,12 @@
 #![feature(prelude_import)]
 //! A generic function bounded on `CanRaiseError<String>`, called on a context with no raiser wired.
 //!
-//! A raw `E0277` listing nine `ErrorRaiser` implementors; the resolver declines and the missing
-//! `ErrorRaiserComponent` entry is never stated.
+//! `fail::<App>()` requires `App: CanRaiseError<String>`. The bound-call anchor reads the bound off
+//! `fail`'s own `where` clauses, with `App` from the turbofish, and the walk reaches the missing
+//! entry: ``[CGP-E001] missing wiring for `ErrorRaiserComponent` on `App` ``, with the wiring
+//! `help`.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

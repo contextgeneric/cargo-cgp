@@ -17,8 +17,10 @@
 //! write, and [`lower`] is the small syntactic type lowering they all stand on. A call to one of
 //! CGP's extensible-data operations has its own anchor, [`data_call`], whose receiver is often
 //! another data operation's result, typed by [`chain`]; a call to a provider trait's method through
-//! the provider's own path has another, [`provider_call`].
+//! the provider's own path has another, [`provider_call`]; and a failing bound of a generic
+//! function, at the call that instantiates it, has a last one, [`bound_call`].
 
+mod bound_call;
 mod chain;
 mod data_call;
 mod find_call;
@@ -28,6 +30,7 @@ mod receiver;
 mod seed;
 mod written_ty;
 
+pub use bound_call::*;
 pub(crate) use chain::*;
 pub use data_call::*;
 pub use find_call::*;

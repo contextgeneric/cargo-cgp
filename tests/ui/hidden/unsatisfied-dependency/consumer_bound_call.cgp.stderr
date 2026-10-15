@@ -1,0 +1,15 @@
+error[E0277]: [CGP-E001] missing field `name` on `Person`
+  --> src/main.rs:52:17
+   |
+52 |     greet_twice(&person);
+   |                 ^^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `name` on `Person`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `Person`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
+               └─ [CGP-E104] trait impl `HasName` for `Person`
+                 └─ [CGP-E110] missing field `name` on `Person`
+   = help: add the field `name: String` to `Person`
+
+For more information about this error, try `rustc --explain E0277`.
