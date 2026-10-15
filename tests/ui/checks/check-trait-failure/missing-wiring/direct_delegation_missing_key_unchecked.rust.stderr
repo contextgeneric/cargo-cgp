@@ -1,0 +1,31 @@
+error[E0277]: the trait bound `Bundle: DelegateComponent<GreeterComponent>` is not satisfied
+  --> src/main.rs:43:26
+   |
+43 |         GreeterComponent -> Bundle,
+   |                          ^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `DelegateComponent<GreeterComponent>` is not implemented for `Bundle`
+      but trait `DelegateComponent<FarewellComponent>` is implemented for it
+  --> src/main.rs:35:9
+   |
+35 |         FarewellComponent: SayBye,
+   |         ^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `FarewellComponent`, found `GreeterComponent`
+help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
+   |
+16 + #![feature(trivial_bounds)]
+   |
+
+error[E0277]: the size for values of type `<Bundle as DelegateComponent<GreeterComponent>>::Delegate` cannot be known
+  --> src/main.rs:43:26
+   |
+43 |         GreeterComponent -> Bundle,
+   |                          ^^^^^^^^^ doesn't have a known size
+   |
+   = help: the nightly-only, unstable trait `MetaSized` is not implemented for `<Bundle as DelegateComponent<GreeterComponent>>::Delegate`
+help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
+   |
+16 + #![feature(trivial_bounds)]
+   |
+
+For more information about this error, try `rustc --explain E0277`.

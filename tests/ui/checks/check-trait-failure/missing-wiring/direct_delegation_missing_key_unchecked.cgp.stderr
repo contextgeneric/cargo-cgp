@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E001] missing entry for `GreeterComponent` in provider `Bundle`
+  --> src/main.rs:43:26
+   |
+43 |         GreeterComponent -> Bundle,
+   |                          ^^^^^^^^^
+   |
+   = note: root cause: [CGP-E114] missing entry for `GreeterComponent` in provider `Bundle`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `Person`
+             └─ [CGP-E114] missing entry for `GreeterComponent` in provider `Bundle`
+   = help: add an entry for `GreeterComponent` to `Bundle`
+
+For more information about this error, try `rustc --explain E0277`.
