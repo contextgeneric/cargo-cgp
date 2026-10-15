@@ -1,10 +1,10 @@
 error[E0599]: the associated function or constant `compute` exists for struct `PipeHandlers<Cons<Increment, Cons<Increment, Nil>>>`, but its trait bounds were not satisfied
-   --> src/main.rs:24:61
+   --> src/main.rs:23:61
     |
- 17 | pub fn increment(value: u8) -> Result<u8, &'static str> {
+ 16 | pub fn increment(value: u8) -> Result<u8, &'static str> {
     |        --------- doesn't satisfy `_: IsProviderFor<ComputerComponent, _, (_, Result<u8, &str>)>`
 ...
- 24 |     let _ = PipeHandlers::<Product![Increment, Increment]>::compute(&(), PhantomData::<()>, 1u8);
+ 23 |     let _ = PipeHandlers::<Product![Increment, Increment]>::compute(&(), PhantomData::<()>, 1u8);
     |                                                             ^^^^^^^ associated function or constant cannot be called due to unsatisfied trait bounds
     |
    ::: $CGP/crates/extra/cgp-handler/src/providers/pipe.rs:7:1

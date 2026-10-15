@@ -1,31 +1,14 @@
-error[E0277]: the trait bound `__PartialShape<IsVoid, IsPresent>: FinalizeExtract` is not satisfied
+error[E0277]: [CGP-E002] variant `Rectangle` of `Shape` is not extracted
   --> src/main.rs:56:5
    |
 56 | /     MatchWithHandlers::<
 57 | |         Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>],
 58 | |     >::compute(&(), PhantomData::<()>, shape)
-   | |_____^ unsatisfied trait bound
+   | |_____^
    |
-help: the trait `FinalizeExtract` is not implemented for `__PartialShape<IsVoid, IsPresent>`
-  --> src/main.rs:28:1
-   |
-28 | pub enum Shape {
-   | ^^^^^^^^^^^^^^
-help: the trait `FinalizeExtract` is implemented for `__PartialShape<IsVoid, IsVoid>`
-  --> src/main.rs:28:10
-   |
-28 | pub enum Shape {
-   |          ^^^^^
-   = note: required for the provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>]>` to implement the provider trait `Computer` for the context `()`
-note: required by a bound in `Computer::compute`
-  --> $CGP/crates/extra/cgp-handler/src/components/computer.rs:8:1
-   |
- 8 | #[cgp_component(Computer)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Computer::compute`
-...
-12 | pub trait CanCompute<Code, Input> {
-...
-15 |     fn compute(&self, _code: PhantomData<Code>, input: Input) -> Self::Output;
-   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: root cause: [CGP-E121] variant `Rectangle` of `Shape` is not extracted
+           this is required through the dependency chain:
+             [CGP-E102] provider trait impl `Computer<(), Shape>` with context `()` for provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>]>`
+             └─ [CGP-E121] variant `Rectangle` of `Shape` is not extracted
 
 For more information about this error, try `rustc --explain E0277`.

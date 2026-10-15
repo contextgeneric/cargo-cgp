@@ -54,9 +54,9 @@ pub(crate) fn resolve_leaves<'tcx>(
 }
 
 /// Walk the dependency graph of `top`, the provider obligation `Provider: ProviderTrait<Ctx, …>` a
-/// `#[check_providers]` entry asserts, with `context` as the walk's root context. The result is the
-/// provider class: its trait is the provider trait (named without the provider and the context),
-/// and its [`provider`](Resolved::provider) is the provider the entry lists. `None` when no branch
+/// `#[check_providers]` entry or a call to the provider's own method asserts, with `context` as the
+/// walk's root context. The result is the provider class: its trait is the provider trait (named
+/// without the provider and the context), and its [`provider`](Resolved::provider) is that provider. `None` when no branch
 /// reaches a resolvable leaf.
 pub(crate) fn resolve_provider_leaves<'tcx>(
     tcx: TyCtxt<'tcx>,

@@ -187,7 +187,7 @@ impl Header<'_> {
 /// `[CGP-E005]` abstract-type class for any other associated type, each worded as its mismatch
 /// cause and reported as the leaf it states, so its note drops the now redundant lead. Every other
 /// class is worded from the typed resolution, whose anchor decides it: the provider class for a
-/// `#[check_providers]` entry, the consumer class for a CGP consumer trait, and the plain-trait
+/// `#[check_providers]` entry or a provider's own method called directly, the consumer class for a CGP consumer trait, and the plain-trait
 /// class for any other trait, whatever bound rustc's own headline stopped on.
 fn categorized_header<'a>(
     kind: DiagKind,
@@ -250,8 +250,8 @@ fn categorized_header<'a>(
             }
             // The class follows the anchor, never the provider rustc's bound happened to stop on:
             // that may be dispatch plumbing, a `RedirectLookup`, or a provider deep in the chain,
-            // none of which the programmer asserted on. Only a `#[check_providers]` entry, whose
-            // anchor records its provider, is the provider class. The provider form the text
+            // none of which the programmer asserted on. Only a `#[check_providers]` entry or a call
+            // to a provider's own method, whose anchor records its provider, is the provider class. The provider form the text
             // rewrite gives rustc's own headline is kept as a second key, since a declined
             // re-report of the same failure is worded with it.
             if parsed.trait_name == "IsProviderFor" {

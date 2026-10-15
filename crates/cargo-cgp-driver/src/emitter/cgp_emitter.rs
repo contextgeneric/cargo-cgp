@@ -1046,6 +1046,11 @@ impl<E: Emitter> CgpEmitter<E> {
             if let Some(resolved) = resolve::resolve_data_call(tcx, cache, primary) {
                 return Some((resolved, true));
             }
+            // A provider trait's method called through the provider's own path
+            // (`PipeHandlers::<…>::compute(&(), …)`), which asserts the provider trait directly.
+            if let Some(resolved) = resolve::resolve_provider_call(tcx, cache, primary) {
+                return Some((resolved, true));
+            }
             // Last: a `#[cgp_fn]` / `#[blanket_trait]` blanket trait the diagnostic names in its
             // spans, required through a `where` bound or supertrait rather than a direct call. This
             // is gated to `E0277` — a trait *used as a bound* — deliberately: an `E0599` method

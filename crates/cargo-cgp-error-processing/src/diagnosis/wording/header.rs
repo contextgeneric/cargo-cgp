@@ -25,8 +25,8 @@ pub fn quoted_list(items: &[String]) -> String {
 /// `#[cgp_fn]` blanket trait) reads as `the trait …`, chosen by [`Resolved::consumers_are_cgp`].
 /// The subject is named `context \`X\`` when it is the checked context, or plainly `` `X` `` when
 /// it is a foreign type that merely holds the context (`Router<Arc<MockApp>>`), chosen by
-/// [`Resolved::subject_is_context`]. A `#[check_providers]` entry reads as the provider trait the
-/// listed provider fails to implement for the context.
+/// [`Resolved::subject_is_context`]. A `#[check_providers]` entry, or a provider's own method called
+/// directly, reads as the provider trait the provider fails to implement for the context.
 pub fn class_sentence(resolved: &Resolved) -> String {
     if let Some(provider) = &resolved.provider {
         return format!(
@@ -57,7 +57,8 @@ pub fn class_sentence(resolved: &Resolved) -> String {
 }
 
 /// The class code of a resolved failure, chosen by the anchor that matched the caret: `CGP-E002`
-/// for a `#[check_providers]` entry, `CGP-E050` for a call to one of CGP's extensible-data traits,
+/// for a `#[check_providers]` entry or a provider's own method called directly, `CGP-E050` for a
+/// call to one of CGP's extensible-data traits,
 /// `CGP-E001` for a CGP consumer trait, and `CGP-E003` for any other trait.
 pub fn class_code(resolved: &Resolved) -> &'static str {
     if resolved.provider.is_some() {

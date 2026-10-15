@@ -168,10 +168,10 @@ pub struct Resolved {
     /// call to one. The block is then the extensible-data class (`CGP-E050`), worded with the plain
     /// trait sentence, since these traits are not components. `false` for every other anchor.
     pub data_operation: bool,
-    /// The provider a `#[check_providers]` entry checks, when the failure is that entry's: the
-    /// block is then the provider class (`CGP-E002`), and [`consumers`](Resolved::consumers) holds
-    /// the provider trait the provider fails to implement for [`context`](Resolved::context).
-    /// `None` for every other anchor.
+    /// The provider a `#[check_providers]` entry checks, or whose own method a call names, when the
+    /// failure is that entry's or that call's: the block is then the provider class (`CGP-E002`),
+    /// and [`consumers`](Resolved::consumers) holds the provider trait the provider fails to
+    /// implement for [`context`](Resolved::context). `None` for every other anchor.
     pub provider: Option<String>,
     /// The root causes, one entry per distinct leaf, in first-seen order.
     pub causes: Causes,

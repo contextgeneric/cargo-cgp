@@ -1,14 +1,13 @@
 //! `PipeHandlers::<Product![…]>::compute(…)` called directly over stages returning `Result`.
 //!
-//! A raw `E0599` naming the unmet `IsProviderFor` bound and pointing into `cgp-handler`; nothing says
-//! the stages' `Result` outputs do not compose without the monadic pipeline.
+//! The provider-call anchor seeds the pipeline's `Computer` from the call, and the walk reaches the
+//! second `Increment`, given the first one's `Result<u8, &str>` output where it takes `u8`:
+//! ``[CGP-E127] `Increment` implements `Computer` only with `Input = u8`, not `Input = Result<u8, &str>` ``.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E002 CGP-E102 CGP-E127
 
 use cgp::extra::handler::{Computer, PipeHandlers};
 use cgp::prelude::*;

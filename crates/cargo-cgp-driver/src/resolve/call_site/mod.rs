@@ -16,12 +16,14 @@
 //! the obligation by signature unification, [`written_ty`] reads the types the call's arguments
 //! write, and [`lower`] is the small syntactic type lowering they all stand on. A call to one of
 //! CGP's extensible-data operations has its own anchor, [`data_call`], whose receiver is often
-//! another data operation's result, typed by [`chain`].
+//! another data operation's result, typed by [`chain`]; a call to a provider trait's method through
+//! the provider's own path has another, [`provider_call`].
 
 mod chain;
 mod data_call;
 mod find_call;
 mod lower;
+mod provider_call;
 mod receiver;
 mod seed;
 mod written_ty;
@@ -30,6 +32,7 @@ pub(crate) use chain::*;
 pub use data_call::*;
 pub use find_call::*;
 pub(crate) use lower::*;
+pub use provider_call::*;
 pub(crate) use receiver::*;
 pub(crate) use seed::*;
 pub(crate) use written_ty::*;

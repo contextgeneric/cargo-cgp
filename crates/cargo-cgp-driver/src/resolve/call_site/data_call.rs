@@ -118,7 +118,7 @@ impl<'tcx> Visitor<'tcx> for DataCallFinder<'_, 'tcx> {
                         name: segment.ident.name,
                         subject: lower_hir_ty(self.tcx, peel_hir_refs(qself)),
                         args,
-                        form: CallForm::DataPath,
+                        form: CallForm::Path,
                         scope: callee.hir_id,
                     })
                 }

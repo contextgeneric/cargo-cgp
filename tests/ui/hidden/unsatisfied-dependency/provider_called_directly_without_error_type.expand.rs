@@ -1,13 +1,13 @@
 #![feature(prelude_import)]
 //! `Add::try_compute(&App, …)` on a `#[cgp_computer]` provider, with no error type on `App`.
 //!
-//! An uncoded `E0277` "`App: ErrorTypeProvider<App>`", with rustc's implementor list; the missing
-//! `ErrorTypeProviderComponent` wiring is never stated. rustc reports it twice on the call, and the
-//! tool merges the repeat into the first block.
+//! The provider-call anchor seeds `Add: TryComputer<App, (), (_, _)>` from the call, and the walk
+//! reaches `App: HasErrorType` through `Add` and its `Promote<Add>` promotion:
+//! ``[CGP-E002] missing wiring for `ErrorTypeProviderComponent` on `App` ``, with the wiring
+//! `help`. rustc reports it twice on the call, and the repeat resolves to the same cause and is
+//! dropped.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 //! `docs/reference/macros/cgp_computer.md`, *Common Mistakes*: the fallible members need an error
 //! type on the context, while `compute` does not.
 extern crate std;

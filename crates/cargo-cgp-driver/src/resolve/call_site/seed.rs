@@ -20,9 +20,10 @@ pub(crate) enum CallForm {
     /// method call, and an argument may also be a data value ([`data_expr_ty`]), such as the
     /// source a `build_from` merges.
     DataMethod,
-    /// A type-relative call to a data operation (`Shape::from_variant(…)`): the arguments are every
-    /// input, `Self` named by the path, and typed as for [`CallForm::DataMethod`].
-    DataPath,
+    /// A type-relative call (`Shape::from_variant(…)` on a data operation, `Provider::compute(…)` on
+    /// a provider trait): the arguments are every input, `Self` named by the path, and typed as for
+    /// [`CallForm::DataMethod`], since a provider method's context argument is often a binding.
+    Path,
 }
 
 /// Build the seed obligation `Ctx: Consumer<…>` by unifying the call's arguments against the
@@ -67,11 +68,11 @@ pub(crate) fn seed_from_call<'tcx>(
     let sig = infcx.enter_forall_and_leak_universe(sig);
     // A method call's `inputs()[0]` is the `self` receiver, already pinned above, so its arguments
     // line up with the declared inputs from position 1; a path call's arguments are every input.
-    let skip = usize::from(form != CallForm::DataPath);
+    let skip = usize::from(form != CallForm::Path);
     for (arg, declared) in std::iter::zip(args, sig.inputs().iter().skip(skip)) {
         let written = match form {
             CallForm::Method => expr_written_ty(&infcx, arg),
-            CallForm::DataMethod | CallForm::DataPath => {
+            CallForm::DataMethod | CallForm::Path => {
                 expr_written_ty(&infcx, arg).or_else(|| data_expr_ty(tcx, arg))
             }
         };

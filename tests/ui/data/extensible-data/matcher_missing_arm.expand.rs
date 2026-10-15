@@ -1,13 +1,13 @@
 #![feature(prelude_import)]
-//! A `MatchWithHandlers` list missing the handler for one variant.
+//! A `MatchWithHandlers` list missing the handler for one variant, its `compute` called through
+//! the provider's own path.
 //!
-//! An `E0277` on `__PartialShape<IsVoid, IsPresent>: FinalizeExtract`, which names no missing
-//! variant. rustc reports it twice at one caret, and the tool merges the repeat into the first
-//! block.
+//! The provider-call anchor seeds `MatchWithHandlers<…>: Computer<(), (), Shape>` from the call,
+//! and the walk reads the extractor's presence markers behind the failing `FinalizeExtract`:
+//! ``[CGP-E002] variant `Rectangle` of `Shape` is not extracted``. rustc reports the failure twice
+//! at one caret, and the repeat resolves to the same cause and is dropped.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
