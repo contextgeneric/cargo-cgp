@@ -34,6 +34,9 @@ pub struct UnresolvedNamesPlan {
 pub enum NameAction {
     /// Reword it into the coded form of this mistake.
     Reword(UnresolvedWiringName),
+    /// Reword only its header into the coded form of this mistake, keeping the compiler's own notes
+    /// and suggestions, which are right for the mistake except for a type parameter to add.
+    RewordHeader(UnresolvedWiringName),
     /// Drop it: a repeat of a diagnostic at the same span, or the consequence of another's mistake.
     Drop,
 }
@@ -69,7 +72,8 @@ pub fn detect_consumer_trait_as_key(tcx: TyCtxt<'_>, span: Span) -> Option<Unres
 /// `None` and stays as the compiler wrote it, repeats included. Within them, a repeat of an earlier
 /// diagnostic at the same span is dropped, a wiring value naming the provider a `#[cgp_impl]` header
 /// also fails to declare is dropped as that header's consequence, and a name no rule explains gets
-/// `None`.
+/// `None`. A type inside an `@`-path of a key or value is a component that needs an import or a type
+/// never declared, and a later one of the same name is dropped as a repeat.
 pub fn plan_unresolved_names(
     tcx: TyCtxt<'_>,
     candidates: &[(Span, String)],
@@ -86,6 +90,7 @@ pub fn plan_unresolved_names(
         .collect();
     let mut markers: Option<Vec<(DefId, DefId)>> = None;
     let mut overflow_requirements = Vec::new();
+    let mut reported_in_paths: Vec<&str> = Vec::new();
 
     let actions = candidates
         .iter()
@@ -105,9 +110,7 @@ pub fn plan_unresolved_names(
                     unresolved_key(tcx, name, markers).map(NameAction::Reword)
                 }
                 NameSlot::Value { key, impl_did } => {
-                    if let Some(requirement) = unprovable_requirement(tcx, key, *impl_did) {
-                        overflow_requirements.push(requirement);
-                    }
+                    overflow_requirements.extend(unprovable_requirements(tcx, key, *impl_did));
                     if undeclared_in_cgp_impl.contains(&name.as_str()) {
                         return Some(NameAction::Drop);
                     }
@@ -129,6 +132,32 @@ pub fn plan_unresolved_names(
                         provider: name.clone(),
                     },
                 )),
+                NameSlot::Inside {
+                    key,
+                    impl_did,
+                    in_value,
+                    whole_segment,
+                } => {
+                    if reported_in_paths.contains(&name.as_str()) {
+                        return Some(NameAction::Drop);
+                    }
+                    reported_in_paths.push(name.as_str());
+                    if *in_value {
+                        overflow_requirements.extend(unprovable_requirements(tcx, key, *impl_did));
+                    }
+                    let markers = markers.get_or_insert_with(|| component_markers(tcx));
+                    if *whole_segment
+                        && let Some(not_imported) = component_not_imported(tcx, name, markers)
+                    {
+                        return Some(NameAction::Reword(not_imported));
+                    }
+                    Some(NameAction::RewordHeader(
+                        UnresolvedWiringName::PathTypeNotDeclared {
+                            name: name.clone(),
+                            whole_segment: *whole_segment,
+                        },
+                    ))
+                }
             }
         })
         .collect();
@@ -138,25 +167,36 @@ pub fn plan_unresolved_names(
     }
 }
 
-/// The requirement a wiring entry with an unresolved value leaves unprovable, as the compiler
-/// prints it: the entry's context implementing the consumer trait of the component its key names
-/// (`Person: CanGreet`).
-fn unprovable_requirement(
+/// The requirements a wiring entry with an unresolved value leaves unprovable, as the compiler
+/// prints them: the entry's context implementing the consumer trait of the component its key names
+/// (`Person: CanGreet`, what a call reports), and using the component (`Person:
+/// CanUseComponent<GreeterComponent>`, what a check reports).
+fn unprovable_requirements(
     tcx: TyCtxt<'_>,
     key: &rustc_hir::Ty<'_>,
     impl_did: rustc_hir::def_id::LocalDefId,
-) -> Option<String> {
+) -> Vec<String> {
     let TyKind::Path(QPath::Resolved(None, path)) = key.kind else {
-        return None;
+        return Vec::new();
     };
-    let marker_did = path.res.opt_def_id()?;
+    let Some(marker_did) = path.res.opt_def_id() else {
+        return Vec::new();
+    };
     let marker = tcx
         .type_of(marker_did)
         .instantiate_identity()
         .skip_norm_wip();
-    let (consumer_did, _) = marker_to_consumer(tcx, marker)?;
+    let Some((consumer_did, _)) = marker_to_consumer(tcx, marker) else {
+        return Vec::new();
+    };
     let context = tcx.type_of(impl_did).instantiate_identity().skip_norm_wip();
-    Some(format!("{context}: {}", tcx.def_path_str(consumer_did)))
+    vec![
+        format!("{context}: {}", tcx.def_path_str(consumer_did)),
+        format!(
+            "{context}: CanUseComponent<{}>",
+            tcx.def_path_str(marker_did)
+        ),
+    ]
 }
 
 /// A wiring key `name` that does not resolve: the one component of that name elsewhere, which needs
@@ -167,17 +207,8 @@ fn unresolved_key(
     name: &str,
     markers: &[(DefId, DefId)],
 ) -> Option<UnresolvedWiringName> {
-    let mut named = markers
-        .iter()
-        .filter(|(marker_did, _)| tcx.item_name(*marker_did).as_str() == name);
-    if let Some(&(marker_did, _)) = named.next() {
-        if named.next().is_some() {
-            return None;
-        }
-        return Some(UnresolvedWiringName::ComponentNotImported {
-            component: name.to_owned(),
-            path: import_path(tcx, marker_did)?,
-        });
+    if is_component_name(tcx, name, markers) {
+        return component_not_imported(tcx, name, markers);
     }
     let consumer = name.strip_suffix("Component")?;
     let consumer_did = consumer_trait_named(tcx, consumer)?;
@@ -217,4 +248,31 @@ fn providers_of_key(
             )
             .collect(),
     )
+}
+
+/// Whether some component marker is named `name`.
+fn is_component_name(tcx: TyCtxt<'_>, name: &str, markers: &[(DefId, DefId)]) -> bool {
+    markers
+        .iter()
+        .any(|(marker_did, _)| tcx.item_name(*marker_did).as_str() == name)
+}
+
+/// The component `name` names, when exactly one marker is so named, as one that needs an import.
+/// `None` when no marker, several markers, or no public path to the one, so the import is ambiguous.
+fn component_not_imported(
+    tcx: TyCtxt<'_>,
+    name: &str,
+    markers: &[(DefId, DefId)],
+) -> Option<UnresolvedWiringName> {
+    let mut named = markers
+        .iter()
+        .filter(|(marker_did, _)| tcx.item_name(*marker_did).as_str() == name);
+    let &(marker_did, _) = named.next()?;
+    if named.next().is_some() {
+        return None;
+    }
+    Some(UnresolvedWiringName::ComponentNotImported {
+        component: name.to_owned(),
+        path: import_path(tcx, marker_did)?,
+    })
 }

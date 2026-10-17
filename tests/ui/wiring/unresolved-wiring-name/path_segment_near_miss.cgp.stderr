@@ -1,0 +1,17 @@
+error[E0425]: [CGP-E044] the type `Squre` in a wiring path is not declared
+  --> src/main.rs:33:34
+   |
+33 |         GreeterComponent => @app.Squre,
+   |                                  ^^^^^ not found in this scope
+   |
+note: similarly named struct `Square` defined here
+  --> src/main.rs:29:1
+   |
+29 | pub struct Square;
+   | ^^^^^^^^^^^^^^^^^^
+help: a struct with a similar name exists
+   |
+33 |         GreeterComponent => @app.Square,
+   |                                     +
+
+For more information about this error, try `rustc --explain E0425`.

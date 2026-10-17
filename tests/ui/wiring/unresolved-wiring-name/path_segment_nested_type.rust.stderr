@@ -1,0 +1,7 @@
+error[E0425]: cannot find type `Missing` in this scope
+  --> src/main.rs:31:18
+   |
+31 |         @app.Vec<Missing>: GreetHello,
+   |                  ^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.

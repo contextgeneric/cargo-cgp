@@ -179,6 +179,10 @@ pub const KEY_NAMES_NO_COMPONENT: &str = "CGP-E042";
 /// `E0425`.
 pub const PROVIDER_NOT_DECLARED: &str = "CGP-E043";
 
+/// `CGP-E044`: a type written inside a wiring entry's `@`-path (a key, or a redirect's value) is
+/// never declared. The Rust code stays `E0425`.
+pub const PATH_TYPE_NOT_DECLARED: &str = "CGP-E044";
+
 // Extensible data (`CGP-E050` to `CGP-E059`).
 
 /// `CGP-E050`: an extensible-data operation (a builder, an extractor, or a cast, such as

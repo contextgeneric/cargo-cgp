@@ -1,0 +1,37 @@
+error[E0425]: cannot find type `Squre` in this scope
+  --> src/main.rs:33:34
+   |
+33 |         GreeterComponent => @app.Squre,
+   |                                  ^^^^^ not found in this scope
+   |
+note: similarly named struct `Square` defined here
+  --> src/main.rs:29:1
+   |
+29 | pub struct Square;
+   | ^^^^^^^^^^^^^^^^^^
+help: a struct with a similar name exists
+   |
+33 |         GreeterComponent => @app.Square,
+   |                                     +
+help: you might be missing a type parameter
+   |
+33 |         GreeterComponent<Squre> => @app.Squre,
+   |                         +++++++
+
+error[E0425]: cannot find type `Squre` in this scope
+  --> src/main.rs:33:34
+   |
+33 |         GreeterComponent => @app.Squre,
+   |                                  ^^^^^ not found in this scope
+   |
+note: similarly named struct `Square` defined here
+  --> src/main.rs:29:1
+   |
+29 | pub struct Square;
+   | ^^^^^^^^^^^^^^^^^^
+help: a struct with a similar name exists
+   |
+33 |         GreeterComponent => @app.Square,
+   |                                     +
+
+For more information about this error, try `rustc --explain E0425`.

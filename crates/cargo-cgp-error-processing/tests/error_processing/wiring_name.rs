@@ -1,5 +1,5 @@
 //! Tests for the wording of a wiring key or value that does not resolve (`[CGP-E038]`,
-//! `[CGP-E040]` to `[CGP-E043]`).
+//! `[CGP-E040]` to `[CGP-E044]`).
 //!
 //! `plan_unresolved_wiring_name` and `unresolved_wiring_name_help` are pure functions over the
 //! rustc-free [`UnresolvedWiringName`] model, driven here over hand-built values.
@@ -93,4 +93,32 @@ fn a_cgp_impl_provider_not_declared_names_the_new_keyword() {
         unresolved_wiring_name_help(&name).as_deref(),
         Some("declare it with `#[cgp_impl(new GreetHello)]`"),
     );
+}
+
+#[test]
+fn an_undeclared_path_type_has_a_help_only_for_a_whole_segment() {
+    let segment = UnresolvedWiringName::PathTypeNotDeclared {
+        name: "Missing".to_owned(),
+        whole_segment: true,
+    };
+    assert_eq!(
+        plan_unresolved_wiring_name(&segment),
+        "[CGP-E044] the type `Missing` in a wiring path is not declared",
+    );
+    assert_eq!(
+        unresolved_wiring_name_help(&segment).as_deref(),
+        Some(
+            "declare or import the type `Missing`, or write the segment in lowercase to make it a \
+             symbol"
+        ),
+    );
+    let nested = UnresolvedWiringName::PathTypeNotDeclared {
+        name: "Missing".to_owned(),
+        whole_segment: false,
+    };
+    assert_eq!(
+        plan_unresolved_wiring_name(&nested),
+        "[CGP-E044] the type `Missing` in a wiring path is not declared",
+    );
+    assert_eq!(unresolved_wiring_name_help(&nested), None);
 }

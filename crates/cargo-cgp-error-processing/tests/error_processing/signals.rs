@@ -4,8 +4,9 @@
 
 use cargo_cgp_error_processing::{
     explain_footer_codes, is_explain_footer_text, is_method_bounds_text,
-    is_method_probe_advice_text, is_question_mark_cascade_text, is_recursion_limit_help_text,
-    mentions_orphan_param_text, mentions_wiring_text, reserved_names,
+    is_method_probe_advice_text, is_missing_type_parameter_help_text,
+    is_question_mark_cascade_text, is_recursion_limit_help_text, mentions_orphan_param_text,
+    mentions_wiring_text, reserved_names,
 };
 
 #[test]
@@ -160,4 +161,17 @@ fn reserved_names_are_the_double_underscore_words() {
     assert!(reserved_names("my__a__b").is_empty());
     assert!(reserved_names("___x___").is_empty());
     assert!(reserved_names("'_ and _").is_empty());
+}
+
+#[test]
+fn the_missing_type_parameter_signal_matches_only_that_help() {
+    assert!(is_missing_type_parameter_help_text(
+        "you might be missing a type parameter"
+    ));
+    assert!(!is_missing_type_parameter_help_text(
+        "a struct with a similar name exists"
+    ));
+    assert!(!is_missing_type_parameter_help_text(
+        "consider importing this struct"
+    ));
 }

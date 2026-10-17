@@ -1,10 +1,12 @@
 #![feature(prelude_import)]
 //! An `@`-path segment naming a type that was never declared, redirected to and wired.
 //!
-//! `@app.Missing` keeps `Missing` as a type segment, which does not resolve, so rustc reports an
-//! `E0425` at each use. The check that follows overflows on the lookup through the unresolved key,
-//! and the tool keeps rustc's `E0275` wording rather than reporting a `[CGP-E020]` cycle: the wiring
-//! holds a `{type error}`, the earlier error is the one to fix, and the wiring has no cycle.
+//! `@app.Missing` keeps `Missing` as a type segment, which does not resolve, so the compiler reports
+//! an `E0425` at each use, the first with a "missing a type parameter" suggestion no wiring entry
+//! can take. The tool reshapes the first into `[CGP-E044]`, which names the type and says a
+//! lowercase segment would be a symbol, and drops the repeat and the suggestion. The `E0275` the
+//! check then reports on the lookup through the unresolved key is the entry's consequence, so it
+//! drops as well.
 //!
 //! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 extern crate std;

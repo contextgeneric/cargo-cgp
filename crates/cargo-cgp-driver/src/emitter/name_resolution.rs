@@ -18,15 +18,18 @@
 
 use std::cell::RefCell;
 
-use cargo_cgp_error_processing::{plan_unresolved_wiring_name, unresolved_wiring_name_help};
+use cargo_cgp_error_processing::{
+    UnresolvedWiringName, is_missing_type_parameter_help_text, plan_unresolved_wiring_name,
+    unresolved_wiring_name_help,
+};
 use rustc_errors::codes::{E0275, E0425};
-use rustc_errors::{DiagInner, MultiSpan, Sublevel};
+use rustc_errors::{DiagInner, DiagMessage, MultiSpan, Style, Sublevel, Suggestions};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::containment::contain;
-use crate::emitter::edit::{main_message_text, replace_header, subdiag};
+use crate::emitter::edit::{main_message_text, replace_header, retain_suggestions, subdiag};
 use crate::emitter::output::with_registered_buffer;
 use crate::resolve::{self, NameAction};
 
@@ -100,6 +103,12 @@ pub fn reshape_name_resolution_errors(tcx: TyCtxt<'_>) {
                         diag.children.push(subdiag(Sublevel::Help, help));
                     }
                 }
+                Some(NameAction::RewordHeader(name)) => {
+                    let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
+                        continue;
+                    };
+                    reword_header_keeping_advice(diag, &name);
+                }
                 Some(NameAction::Drop) => dropped.push(*index),
                 None => {}
             }
@@ -108,6 +117,31 @@ pub fn reshape_name_resolution_errors(tcx: TyCtxt<'_>) {
             buffer.remove(index);
         }
     });
+}
+
+/// Replace the header of `diag` with the coded form of `name`, keeping the compiler's notes and
+/// suggestions except the one to add a type parameter, which no wiring entry can take. The coded
+/// help is added only when nothing else is left that says how to fix the name.
+fn reword_header_keeping_advice(diag: &mut DiagInner, name: &UnresolvedWiringName) {
+    diag.messages = vec![(
+        DiagMessage::Str(plan_unresolved_wiring_name(name).into()),
+        Style::NoStyle,
+    )];
+    retain_suggestions(
+        diag,
+        |suggestion| !matches!(&suggestion.msg, DiagMessage::Str(text) if is_missing_type_parameter_help_text(text)),
+    );
+    let has_suggestion = match &diag.suggestions {
+        Suggestions::Enabled(suggestions) => !suggestions.is_empty(),
+        Suggestions::Sealed(suggestions) => !suggestions.is_empty(),
+        Suggestions::Disabled => false,
+    };
+    if !has_suggestion
+        && diag.children.is_empty()
+        && let Some(help) = unresolved_wiring_name_help(name)
+    {
+        diag.children.push(subdiag(Sublevel::Help, help));
+    }
 }
 
 /// Each buffered `E0425` "cannot find type `name` in this scope", as its buffer index, primary

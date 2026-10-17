@@ -53,6 +53,14 @@ pub fn is_method_probe_advice_text(text: &str) -> bool {
         || text.starts_with("use associated function syntax instead")
 }
 
+/// Whether a message is rustc's "you might be missing a type parameter" suggestion, which an
+/// unresolved name gets when it could be a generic parameter of the item around it. A wiring
+/// entry's key or value is the argument of a generated impl, which has no generics to add the name
+/// to, so on a type written in an entry's `@`-path the suggestion is wrong.
+pub fn is_missing_type_parameter_help_text(text: &str) -> bool {
+    text.starts_with("you might be missing a type parameter")
+}
+
 /// Whether a main message is the orphan-rule `E0210` naming a CGP machinery type parameter —
 /// "type parameter `__Components__` must be used as an argument to some local type". The
 /// double-underscore parameter (`__Components__` from a `#[default_impl]`/`#[prefix]` registration,
