@@ -135,6 +135,9 @@ pub enum Leaf {
         /// The adapter types that make it a provider of the trait, for the `help`. Not part of the
         /// leaf's identity.
         adapter: AdapterFix,
+        /// The other components the wired type is a provider of, for the `help`. Not part of the
+        /// leaf's identity.
+        provides: ProvidesFix,
     },
     /// A provider that implements the provider trait, but not for the context or the component
     /// arguments the wiring uses it with: a provider written for one context and wired on another,
@@ -387,6 +390,21 @@ pub struct Adapter {
     pub import: Option<String>,
 }
 
+/// The other components a [`Leaf::NotAProvider`]'s wired type is a provider of, each confirmed by
+/// the solver for the same context: the likely mix-up of a provider wired under the wrong key. Like
+/// [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
+#[derive(Debug, Clone, Default)]
+pub struct ProvidesFix(pub Vec<ProvidedComponent>);
+
+/// A component a wired type provides.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProvidedComponent {
+    /// The component's provider trait, e.g. `Farewell`.
+    pub provider_trait: String,
+    /// The component's marker, the key to wire it under, e.g. `FarewellComponent`.
+    pub component: String,
+}
+
 /// The derive a `help` names for a [`Leaf::DataTraitUnimplemented`], when one can be added to the
 /// type. Like [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
 #[derive(Debug, Clone, Default)]
@@ -436,6 +454,7 @@ macro_rules! identity_free {
 
 identity_free!(FieldFix);
 identity_free!(AdapterFix);
+identity_free!(ProvidesFix);
 identity_free!(NearMiss);
 identity_free!(DeriveFix);
 identity_free!(EntryFix);
@@ -471,13 +490,20 @@ impl Leaf {
         }
         match (self, other) {
             (
-                Leaf::NotAProvider { adapter, .. },
                 Leaf::NotAProvider {
-                    adapter: theirs, ..
+                    adapter, provides, ..
+                },
+                Leaf::NotAProvider {
+                    adapter: their_adapter,
+                    provides: their_provides,
+                    ..
                 },
             ) => {
-                if adapter.0 != theirs.0 {
+                if adapter.0 != their_adapter.0 {
                     adapter.0.clear();
+                }
+                if provides.0 != their_provides.0 {
+                    provides.0.clear();
                 }
             }
             (Leaf::Field { fix, .. }, Leaf::Field { fix: theirs, .. }) => {

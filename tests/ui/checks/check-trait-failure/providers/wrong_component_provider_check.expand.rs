@@ -1,12 +1,11 @@
 #![feature(prelude_import)]
 //! A provider of another component wired under the wrong key.
 //!
-//! `[CGP-E115]` says `SayBye` is not a `Greeter` but not that it is a provider for
-//! `FarewellComponent`, the likely mix-up.
+//! `[CGP-E115]` says `SayBye` is not a `Greeter`, and its `help` says it is a `Farewell` provider
+//! (confirmed by the solver for `Person`), so it belongs under `FarewellComponent`, or a `Greeter`
+//! provider belongs here.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

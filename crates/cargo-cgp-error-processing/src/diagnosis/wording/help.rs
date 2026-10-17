@@ -1,7 +1,8 @@
 //! The `help` messages a resolved failure carries: the fixes its causes call for.
 
 use crate::diagnosis::leaf::{
-    AdapterFix, DeriveFix, EntryFix, FieldIssue, Leaf, MethodFix, NearMiss, SuggestedCall,
+    Adapter, AdapterFix, DeriveFix, EntryFix, FieldIssue, Leaf, MethodFix, NearMiss,
+    ProvidedComponent, ProvidesFix, SuggestedCall,
 };
 use crate::diagnosis::resolved::Cause;
 use crate::diagnosis::wording::header::quoted_list;
@@ -101,27 +102,12 @@ fn fixes_for(leaf: &Leaf) -> Vec<(FixKind, String, Option<String>)> {
         ))),
         Leaf::NotAProvider {
             provider,
+            provider_trait,
             adapter: AdapterFix(adapters),
-            ..
-        } if !adapters.is_empty() => {
-            let named: Vec<String> = adapters
-                .iter()
-                .map(|adapter| format!("`{}`", adapter.ty))
-                .collect();
-            let imports: Vec<String> = adapters
-                .iter()
-                .filter_map(|adapter| adapter.import.as_ref())
-                .map(|path| format!("`use {path};`"))
-                .collect();
-            let scope = if imports.is_empty() {
-                String::new()
-            } else {
-                format!(", with {} in scope", imports.join(" and "))
-            };
-            fixes.push(whole(format!(
-                "wire {} in place of `{provider}`{scope}",
-                named.join(" or ")
-            )));
+            provides: ProvidesFix(provides),
+        } => {
+            fixes.extend(other_component_help(provider, provider_trait, provides));
+            fixes.extend(adapter_help(provider, adapters));
         }
         Leaf::AssocTypeMismatch { .. } => fixes.extend(assoc_mismatch_help(leaf).map(whole)),
         Leaf::MissingVariant { owner, similar, .. } => {
@@ -161,6 +147,58 @@ fn fixes_for(leaf: &Leaf) -> Vec<(FixKind, String, Option<String>)> {
         _ => {}
     }
     fixes
+}
+
+/// The `help` for a wired type an adapter makes a provider: the adapters to wire in its place, with
+/// the `use` each needs when the prelude does not export it. `None` when no adapter is confirmed.
+fn adapter_help(provider: &str, adapters: &[Adapter]) -> Option<(FixKind, String, Option<String>)> {
+    if adapters.is_empty() {
+        return None;
+    }
+    let named: Vec<String> = adapters
+        .iter()
+        .map(|adapter| format!("`{}`", adapter.ty))
+        .collect();
+    let imports: Vec<String> = adapters
+        .iter()
+        .filter_map(|adapter| adapter.import.as_ref())
+        .map(|path| format!("`use {path};`"))
+        .collect();
+    let scope = if imports.is_empty() {
+        String::new()
+    } else {
+        format!(", with {} in scope", imports.join(" and "))
+    };
+    Some(whole(format!(
+        "wire {} in place of `{provider}`{scope}",
+        named.join(" or ")
+    )))
+}
+
+/// The `help` for a wired type that is a provider of other components, when it is not a provider of
+/// the slot's own: it belongs under one of those components' keys, or a provider of this trait
+/// belongs here.
+fn other_component_help(
+    provider: &str,
+    provider_trait: &str,
+    provides: &[ProvidedComponent],
+) -> Option<(FixKind, String, Option<String>)> {
+    if provides.is_empty() {
+        return None;
+    }
+    let keys: Vec<String> = provides
+        .iter()
+        .map(|provided| format!("`{}`", provided.component))
+        .collect();
+    Some(whole(format!(
+        "`{provider}` provides {}: wire it under {}, or wire a provider of `{provider_trait}` here",
+        provides
+            .iter()
+            .map(|provided| format!("`{}`", provided.provider_trait))
+            .collect::<Vec<_>>()
+            .join(" and "),
+        keys.join(" or ")
+    )))
 }
 
 /// The import a `help`'s method needs, `, with `use cgp::…::Trait;` in scope`, since a data

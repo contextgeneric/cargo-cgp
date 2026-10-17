@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `SayBye` is not a provider of `Greeter`
-  --> src/main.rs:58:9
+  --> src/main.rs:57:9
    |
-58 |         GreeterComponent,
+57 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E115] `SayBye` is not a provider of `Greeter`
@@ -9,5 +9,6 @@ error[E0277]: [CGP-E001] `SayBye` is not a provider of `Greeter`
              [CGP-E101] consumer trait impl `CanGreet` for context `Person`
              └─ [CGP-E102] provider trait `Greeter` required of provider `SayBye` with context `Person`
                └─ [CGP-E115] `SayBye` is not a provider of `Greeter`
+   = help: `SayBye` provides `Farewell`: wire it under `FarewellComponent`, or wire a provider of `Greeter` here
 
 For more information about this error, try `rustc --explain E0277`.
