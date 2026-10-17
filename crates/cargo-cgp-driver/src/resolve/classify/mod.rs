@@ -8,27 +8,34 @@
 //! [`required_type`] reads the type a requirement gives a missing field, [`near_miss`] finds a
 //! similar field or wiring key the program wrote, [`assoc_type`] reads the type an owner actually
 //! supplies for any other projected associated type, [`other_arguments`] names the argument a
-//! provider does not implement its provider trait for, and [`hand_wiring`] recognizes a component
-//! wired by a hand-written `DelegateComponent` impl without its `IsProviderFor`.
+//! provider does not implement its provider trait for, [`hand_wiring`] recognizes a component
+//! wired by a hand-written `DelegateComponent` impl without its `IsProviderFor`, and the hints for a
+//! type wired where a provider belongs: [`adapter`] names the adapter that makes it one,
+//! [`provided_components`] the other components it provides, and [`core_provider`] what serves the
+//! slot a misused CGP core provider cannot.
 
 mod adapter;
 mod assoc_type;
+mod core_provider;
 mod data;
 mod field;
 mod hand_wiring;
 mod leaf;
 mod near_miss;
 mod other_arguments;
+mod provided_components;
 mod reportable;
 mod required_type;
 
 pub(crate) use adapter::*;
 pub(crate) use assoc_type::*;
+pub(crate) use core_provider::*;
 pub(crate) use data::*;
 pub(crate) use field::*;
 pub(crate) use hand_wiring::*;
 pub(crate) use leaf::*;
 pub(crate) use near_miss::*;
 pub(crate) use other_arguments::*;
+pub(crate) use provided_components::*;
 pub(crate) use reportable::*;
 pub(crate) use required_type::*;
