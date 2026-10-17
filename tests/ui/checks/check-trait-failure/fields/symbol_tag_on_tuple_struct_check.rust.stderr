@@ -1,0 +1,39 @@
+error[E0277]: the trait bound `Pair: CanUseComponent<GreeterComponent>` is not satisfied
+  --> src/main.rs:42:9
+   |
+42 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<1, cgp::prelude::Chars<..>>>` is not implemented for `Pair`
+  --> src/main.rs:32:1
+   |
+32 | pub struct Pair(pub u32, pub String);
+   | ^^^^^^^^^^^^^^^
+help: `Pair` implements trait `cgp::prelude::HasField<Tag>`
+  --> src/main.rs:32:17
+   |
+32 | pub struct Pair(pub u32, pub String);
+   |                 ^^^^^^^  ^^^^^^^^^^ `cgp::prelude::HasField<cgp::prelude::Index<1>>`
+   |                 |
+   |                 `cgp::prelude::HasField<cgp::prelude::Index<0>>`
+note: required for `GreetFirst` to implement `IsProviderFor<GreeterComponent, Pair>`
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_impl(new GreetFirst)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+24 |     Self: HasField<Symbol!("0"), Value = u32>,
+   |                                  ----------- unsatisfied trait bound introduced here
+   = note: required for `Pair` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckPair`
+  --> src/main.rs:40:1
+   |
+40 | / check_components! {
+41 | |     Pair {
+42 | |         GreeterComponent,
+43 | |     }
+44 | | }
+   | |_^ required by this bound in `__CheckPair`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

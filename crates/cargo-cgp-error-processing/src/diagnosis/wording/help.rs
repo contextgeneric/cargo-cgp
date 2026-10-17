@@ -41,6 +41,11 @@ fn fixes_for(leaf: &Leaf) -> Vec<(FixKind, String, Option<String>)> {
                     "a similar field exists on `{owner}`: `{similar}`"
                 )));
             }
+            if let Some(tag) = &fix.index_tag {
+                fixes.push(whole(format!(
+                    "a field of the tuple struct `{owner}` is keyed by `{tag}`, not by `Symbol!(\"{name}\")`"
+                )));
+            }
             if fix.confirmed {
                 let field = match &fix.ty {
                     Some(ty) => format!("{name}: {ty}"),

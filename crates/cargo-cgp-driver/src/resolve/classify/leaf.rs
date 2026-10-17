@@ -14,7 +14,7 @@ use crate::resolve::cgp_item::{
 use crate::resolve::classify::{
     classify_data_leaf, field_issue, field_type, is_blanket_dead_end, is_dispatch_lookup,
     owner_has_impl_of, projected_type, provider_for_other_arguments, required_field_type,
-    similar_field, similar_wired_key,
+    similar_field, similar_wired_key, tuple_index_tag,
 };
 use crate::resolve::conflict::render_path;
 use crate::resolve::label::fold_empty_lists;
@@ -206,6 +206,7 @@ pub(crate) fn classify_leaf<'tcx>(
                     && owner_has_impl_of(tcx, leaf_ref.def_id, owner),
                 ty: parent.and_then(|parent| required_field_type(tcx, parent, leaf_ref)),
                 similar: similar_field(owner, &name),
+                index_tag: tuple_index_tag(owner, &name),
             },
             _ => FieldFix::default(),
         };

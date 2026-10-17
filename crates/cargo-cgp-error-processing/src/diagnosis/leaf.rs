@@ -354,6 +354,9 @@ pub struct FieldFix {
     /// A field the struct carries whose name is a likely slip of the missing one
     /// ([`similar_name`](super::similar_name)), such as `first_name` for `frist_name`.
     pub similar: Option<String>,
+    /// The `Index<N>` tag of the tuple field the missing field's name is the position of, when the
+    /// struct is a tuple struct and the tag was written as `Symbol!("N")`.
+    pub index_tag: Option<String>,
 }
 
 /// A key the context wires that is a likely slip of a missing one
@@ -449,6 +452,7 @@ impl Leaf {
                 fix.confirmed &= theirs.confirmed;
                 agree(&mut fix.ty, &theirs.ty);
                 agree(&mut fix.similar, &theirs.similar);
+                agree(&mut fix.index_tag, &theirs.index_tag);
             }
             (
                 Leaf::MissingWiring { similar, .. },

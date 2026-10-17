@@ -15,6 +15,7 @@ fn typed_missing_field(name: &str, owner: &str, ty: Option<&str>) -> Leaf {
             confirmed: true,
             ty: ty.map(str::to_owned),
             similar: None,
+            index_tag: None,
         },
     }
 }
@@ -290,6 +291,7 @@ fn a_near_miss_is_named_before_the_fix() {
             confirmed: true,
             ty: Some("String".to_owned()),
             similar: Some("first_name".to_owned()),
+            index_tag: None,
         },
     };
     let path = Leaf::MissingRedirectWiring {
@@ -333,6 +335,27 @@ fn a_near_miss_needs_no_confirmed_fix() {
     assert_eq!(
         fix_help_messages(&[app_cause(field)]),
         vec!["a similar field exists on `Shape`: `width`".to_owned()]
+    );
+}
+
+#[test]
+fn a_tuple_field_tagged_by_a_string_names_its_index_tag() {
+    // A tuple struct cannot gain a named field, so only the `Index` tag is named.
+    let field = Leaf::Field {
+        name: "0".to_owned(),
+        owner: "Pair".to_owned(),
+        issue: FieldIssue::Missing,
+        fix: FieldFix {
+            index_tag: Some("Index<0>".to_owned()),
+            ..FieldFix::default()
+        },
+    };
+    assert_eq!(
+        fix_help_messages(&[app_cause(field)]),
+        vec![
+            "a field of the tuple struct `Pair` is keyed by `Index<0>`, not by `Symbol!(\"0\")`"
+                .to_owned()
+        ]
     );
 }
 

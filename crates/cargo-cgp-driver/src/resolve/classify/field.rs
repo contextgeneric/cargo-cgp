@@ -49,11 +49,12 @@ pub(crate) fn field_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, field: &str) -> 
     Some(tcx.erase_and_anonymize_regions(field_ty).to_string())
 }
 
-/// Whether `ty` is a struct with a named field called `field`. Only a struct can carry named
-/// fields a `HasField` derive would key on, so an enum, tuple, or non-ADT is never a match.
+/// Whether `ty` is a struct with a named field called `field`. Only a struct with named fields can
+/// carry a field a `Symbol!` tag names, so an enum, a tuple struct (whose fields are keyed by
+/// `Index<N>`, never by a string of their position), or a non-ADT is never a match.
 fn adt_has_field(ty: Ty<'_>, field: &str) -> bool {
     match ty.kind() {
-        ty::Adt(def, _) if def.is_struct() => def
+        ty::Adt(def, _) if def.is_struct() && def.non_enum_variant().ctor_kind().is_none() => def
             .non_enum_variant()
             .fields
             .iter()

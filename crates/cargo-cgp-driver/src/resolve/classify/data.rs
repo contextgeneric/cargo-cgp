@@ -66,6 +66,7 @@ pub(crate) fn classify_data_leaf<'tcx>(
                     confirmed: false,
                     ty: None,
                     similar: similar_field(partial.target, &name),
+                    index_tag: None,
                 },
                 name,
                 owner,
