@@ -5,7 +5,7 @@
 use cargo_cgp_error_processing::{
     explain_footer_codes, is_explain_footer_text, is_method_bounds_text,
     is_method_probe_advice_text, is_question_mark_cascade_text, is_recursion_limit_help_text,
-    mentions_orphan_param_text, mentions_wiring_text,
+    mentions_orphan_param_text, mentions_wiring_text, reserved_names,
 };
 
 #[test]
@@ -139,4 +139,25 @@ fn recognizes_the_recursion_limit_help() {
     assert!(!is_recursion_limit_help_text(
         "the trait `Foo` is not implemented for `Bar`"
     ));
+}
+
+#[test]
+fn reserved_names_are_the_double_underscore_words() {
+    // A generated lifetime, without its quote, and a generated type parameter.
+    assert_eq!(reserved_names("Cow<'__a__, str>"), vec!["__a__"]);
+    assert_eq!(
+        reserved_names("'__a0__ and `__Context__`"),
+        vec!["__a0__", "__Context__"]
+    );
+    assert_eq!(
+        reserved_names("__compute_area__()"),
+        vec!["__compute_area__"]
+    );
+    // A name with underscores only inside, a leading pair alone, a word that merely contains a
+    // pair, and a triple underscore are not reserved names.
+    assert!(reserved_names("snake_case_name").is_empty());
+    assert!(reserved_names("__private").is_empty());
+    assert!(reserved_names("my__a__b").is_empty());
+    assert!(reserved_names("___x___").is_empty());
+    assert!(reserved_names("'_ and _").is_empty());
 }

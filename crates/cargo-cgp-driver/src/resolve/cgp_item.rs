@@ -180,10 +180,16 @@ pub fn crate_uses_cgp(tcx: TyCtxt<'_>) -> Option<bool> {
     if !tcx.untracked().cstore.is_frozen() {
         return None;
     }
-    Some(tcx.used_crates(()).iter().any(|&krate| {
+    Some(links_cgp(tcx))
+}
+
+/// Whether the crate links CGP, the answer [`crate_uses_cgp`] gives once the crate store is safe to
+/// freeze. Call it only when name resolution is over, such as from the `after_expansion` callback.
+pub fn links_cgp(tcx: TyCtxt<'_>) -> bool {
+    tcx.used_crates(()).iter().any(|&krate| {
         let name = tcx.crate_name(krate);
         name.as_str() == CGP_UMBRELLA_CRATE || CGP_CRATES.contains(&name.as_str())
-    }))
+    })
 }
 
 /// Whether `def_id` is defined by one of CGP's own crates ([`CGP_CRATES`]) — anchored to the

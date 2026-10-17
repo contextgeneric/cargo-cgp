@@ -154,26 +154,31 @@ pub(crate) fn is_no_matching_item(diag: &DiagInner) -> bool {
 /// thing after the caret). rustc's other suggestions stay, such as the bound to restrict a type
 /// parameter with.
 pub(crate) fn strip_method_probe_advice(diag: &mut DiagInner) {
-    let is_advice = |suggestion: &CodeSuggestion| matches!(&suggestion.msg, DiagMessage::Str(text) if is_method_probe_advice_text(text));
-    match &mut diag.suggestions {
-        Suggestions::Enabled(suggestions) => {
-            suggestions.retain(|suggestion| !is_advice(suggestion))
-        }
-        Suggestions::Sealed(suggestions) => {
-            *suggestions = suggestions
-                .iter()
-                .filter(|suggestion| !is_advice(suggestion))
-                .cloned()
-                .collect();
-        }
-        Suggestions::Disabled => {}
-    }
+    retain_suggestions(
+        diag,
+        |suggestion| !matches!(&suggestion.msg, DiagMessage::Str(text) if is_method_probe_advice_text(text)),
+    );
     diag.children.retain(|child| {
         !child.messages.iter().any(|(message, _)| {
             matches!(message, DiagMessage::Str(text) if is_method_probe_advice_text(text))
         })
     });
     strip_multispan_labels(&mut diag.span, is_method_probe_advice_text);
+}
+
+/// Keep only the structured suggestions of `diag` that `keep` accepts, whichever state they are in.
+pub(crate) fn retain_suggestions(diag: &mut DiagInner, keep: impl Fn(&CodeSuggestion) -> bool) {
+    match &mut diag.suggestions {
+        Suggestions::Enabled(suggestions) => suggestions.retain(|suggestion| keep(suggestion)),
+        Suggestions::Sealed(suggestions) => {
+            *suggestions = suggestions
+                .iter()
+                .filter(|suggestion| keep(suggestion))
+                .cloned()
+                .collect();
+        }
+        Suggestions::Disabled => {}
+    }
 }
 
 /// Cut each candidate list among `diag`'s sub-messages back to the length rustc prints outside a

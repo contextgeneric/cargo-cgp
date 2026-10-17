@@ -117,3 +117,32 @@ pub fn explain_footer_codes(text: &str) -> Vec<String> {
         .into_iter()
         .collect()
 }
+
+/// The reserved identifiers in `text`: names wrapped in double underscores, the convention every
+/// CGP macro follows for the names it invents (`__Context__`, and the lifetimes `'__a__` and
+/// `'__a0__` `#[cgp_auto_dispatch]` generates), each returned without a lifetime's quote. A
+/// suggestion that inserts one names something the program cannot write, since only the
+/// expansion declares it.
+pub fn reserved_names(text: &str) -> Vec<&str> {
+    let is_ident = |c: char| c.is_ascii_alphanumeric() || c == '_';
+    let mut names = Vec::new();
+    let mut rest = text;
+    while let Some(start) = rest.find("__") {
+        let preceded = rest[..start].chars().next_back().is_some_and(is_ident);
+        let word_end = rest[start..]
+            .find(|c: char| !is_ident(c))
+            .map_or(rest.len(), |len| start + len);
+        let word = &rest[start..word_end];
+        let inner = word.trim_start_matches('_').trim_end_matches('_');
+        if !preceded
+            && word.len() > 4
+            && word.ends_with("__")
+            && !inner.is_empty()
+            && word.len() - inner.len() == 4
+        {
+            names.push(word);
+        }
+        rest = &rest[word_end.max(start + 2)..];
+    }
+    names
+}

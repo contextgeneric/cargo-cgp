@@ -1,23 +1,18 @@
 error[E0106]: missing lifetime specifier
-  --> src/main.rs:20:32
+  --> src/main.rs:19:32
    |
-20 |     fn label(&self, prefix: Cow<str>) -> String;
+19 |     fn label(&self, prefix: Cow<str>) -> String;
    |                                ^ expected named lifetime parameter
-   |
-help: consider using the `'__a__` lifetime
-   |
-20 |     fn label(&self, prefix: Cow<'__a__, str>) -> String;
-   |                                 +++++++
 
 error[E0726]: implicit elided lifetime not allowed here
-  --> src/main.rs:20:29
+  --> src/main.rs:19:29
    |
-20 |     fn label(&self, prefix: Cow<str>) -> String;
+19 |     fn label(&self, prefix: Cow<str>) -> String;
    |                             ^^^^^^^^ expected lifetime parameter
    |
 help: indicate the anonymous lifetime
    |
-20 |     fn label(&self, prefix: Cow<'_, str>) -> String;
+19 |     fn label(&self, prefix: Cow<'_, str>) -> String;
    |                                 +++
 
 Some errors have detailed explanations: E0106, E0726.
