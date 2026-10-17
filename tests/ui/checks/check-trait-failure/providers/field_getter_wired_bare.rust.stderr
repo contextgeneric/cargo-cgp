@@ -1,13 +1,13 @@
 error[E0277]: the trait bound `ReadDisplayName: IsProviderFor<NameGetterComponent, Account>` is not satisfied
-  --> src/main.rs:46:9
+  --> src/main.rs:45:9
    |
-46 |         NameGetterComponent,
+45 |         NameGetterComponent,
    |         ^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `IsProviderFor<NameGetterComponent, Account>` is not implemented for `ReadDisplayName`
-  --> src/main.rs:28:1
+  --> src/main.rs:27:1
    |
-28 | pub struct ReadDisplayName;
+27 | pub struct ReadDisplayName;
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: the following other types implement trait `IsProviderFor<Component, Context, Params>`:
              `Account` implements `IsProviderFor<NameGetterComponent, __Context__, __Params__>`
@@ -21,13 +21,13 @@ help: the trait `IsProviderFor<NameGetterComponent, Account>` is not implemented
            and 204 others
    = note: required for `Account` to implement `CanUseComponent<NameGetterComponent>`
 note: required by a bound in `__CheckAccount`
-  --> src/main.rs:44:1
+  --> src/main.rs:43:1
    |
-44 | / check_components! {
-45 | |     Account {
-46 | |         NameGetterComponent,
-47 | |     }
-48 | | }
+43 | / check_components! {
+44 | |     Account {
+45 | |         NameGetterComponent,
+46 | |     }
+47 | | }
    | |_^ required by this bound in `__CheckAccount`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

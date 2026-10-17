@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `ReadDisplayName` is not a provider of `NameGetter`
-  --> src/main.rs:46:9
+  --> src/main.rs:45:9
    |
-46 |         NameGetterComponent,
+45 |         NameGetterComponent,
    |         ^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E115] `ReadDisplayName` is not a provider of `NameGetter`
@@ -9,5 +9,6 @@ error[E0277]: [CGP-E001] `ReadDisplayName` is not a provider of `NameGetter`
              [CGP-E101] consumer trait impl `HasName` for context `Account`
              └─ [CGP-E102] provider trait `NameGetter` required of provider `ReadDisplayName` with context `Account`
                └─ [CGP-E115] `ReadDisplayName` is not a provider of `NameGetter`
+   = help: wire `WithProvider<ReadDisplayName>` in place of `ReadDisplayName`
 
 For more information about this error, try `rustc --explain E0277`.

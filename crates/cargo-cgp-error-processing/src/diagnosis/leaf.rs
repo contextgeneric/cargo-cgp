@@ -132,6 +132,9 @@ pub enum Leaf {
         provider: String,
         /// The provider trait it fails to implement, e.g. `ApiHandler`.
         provider_trait: String,
+        /// The adapter types that make it a provider of the trait, for the `help`. Not part of the
+        /// leaf's identity.
+        adapter: AdapterFix,
     },
     /// A provider that implements the provider trait, but not for the context or the component
     /// arguments the wiring uses it with: a provider written for one context and wired on another,
@@ -366,6 +369,24 @@ pub struct FieldFix {
 #[derive(Debug, Clone, Default)]
 pub struct NearMiss(pub Option<String>);
 
+/// The adapter types a `help` names for a [`Leaf::NotAProvider`]: each wraps the wired type, and the
+/// solver confirmed the result is a provider of the slot's trait (`WithProvider<ReadName>` for a
+/// hand-written getter). Like [`NearMiss`], it is carried for the `help` and is not part of the
+/// leaf's identity.
+#[derive(Debug, Clone, Default)]
+pub struct AdapterFix(pub Vec<Adapter>);
+
+/// An adapter type applied to a wired type, with the `use` path its name needs when the prelude does
+/// not export it (`Promote` comes from `cgp::extra::handler`, `WithProvider` from the prelude).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Adapter {
+    /// The adapter applied to the wired type, e.g. `Promote<Double>`.
+    pub ty: String,
+    /// The path a `use` imports the adapter by, or `None` when the prelude exports it or no public
+    /// path is found.
+    pub import: Option<String>,
+}
+
 /// The derive a `help` names for a [`Leaf::DataTraitUnimplemented`], when one can be added to the
 /// type. Like [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
 #[derive(Debug, Clone, Default)]
@@ -414,6 +435,7 @@ macro_rules! identity_free {
 }
 
 identity_free!(FieldFix);
+identity_free!(AdapterFix);
 identity_free!(NearMiss);
 identity_free!(DeriveFix);
 identity_free!(EntryFix);
@@ -448,6 +470,16 @@ impl Leaf {
             }
         }
         match (self, other) {
+            (
+                Leaf::NotAProvider { adapter, .. },
+                Leaf::NotAProvider {
+                    adapter: theirs, ..
+                },
+            ) => {
+                if adapter.0 != theirs.0 {
+                    adapter.0.clear();
+                }
+            }
             (Leaf::Field { fix, .. }, Leaf::Field { fix: theirs, .. }) => {
                 fix.confirmed &= theirs.confirmed;
                 agree(&mut fix.ty, &theirs.ty);

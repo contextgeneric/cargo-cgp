@@ -1,7 +1,7 @@
 //! The `help` messages a resolved failure carries: the fixes its causes call for.
 
 use crate::diagnosis::leaf::{
-    DeriveFix, EntryFix, FieldIssue, Leaf, MethodFix, NearMiss, SuggestedCall,
+    AdapterFix, DeriveFix, EntryFix, FieldIssue, Leaf, MethodFix, NearMiss, SuggestedCall,
 };
 use crate::diagnosis::resolved::Cause;
 use crate::diagnosis::wording::header::quoted_list;
@@ -99,6 +99,30 @@ fn fixes_for(leaf: &Leaf) -> Vec<(FixKind, String, Option<String>)> {
         } => fixes.push(whole(format!(
             "add the bound `{param}: {trait_name}` to `{item}`"
         ))),
+        Leaf::NotAProvider {
+            provider,
+            adapter: AdapterFix(adapters),
+            ..
+        } if !adapters.is_empty() => {
+            let named: Vec<String> = adapters
+                .iter()
+                .map(|adapter| format!("`{}`", adapter.ty))
+                .collect();
+            let imports: Vec<String> = adapters
+                .iter()
+                .filter_map(|adapter| adapter.import.as_ref())
+                .map(|path| format!("`use {path};`"))
+                .collect();
+            let scope = if imports.is_empty() {
+                String::new()
+            } else {
+                format!(", with {} in scope", imports.join(" and "))
+            };
+            fixes.push(whole(format!(
+                "wire {} in place of `{provider}`{scope}",
+                named.join(" or ")
+            )));
+        }
         Leaf::AssocTypeMismatch { .. } => fixes.extend(assoc_mismatch_help(leaf).map(whole)),
         Leaf::MissingVariant { owner, similar, .. } => {
             if let Some(similar) = &similar.0 {

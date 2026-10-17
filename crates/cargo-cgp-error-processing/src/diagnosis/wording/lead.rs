@@ -53,6 +53,7 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
         Leaf::NotAProvider {
             provider,
             provider_trait,
+            ..
         } => format!("`{provider}` is not a provider of `{provider_trait}`"),
         Leaf::ProviderForOtherArguments {
             provider,

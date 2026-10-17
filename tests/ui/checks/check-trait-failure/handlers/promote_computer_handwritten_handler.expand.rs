@@ -1,12 +1,10 @@
 #![feature(prelude_import)]
 //! `PromoteComputer<Double>` wired as a handler for a hand-written `Computer` provider.
 //!
-//! `[CGP-E115]` says `Double` does not implement `TryComputer`, which is accurate; the documented
-//! fix, `PromoteAsync<Promote<Double>>`, is not hinted.
+//! `[CGP-E115]` says `Double` does not implement `TryComputer`, and its `help` names the adapter
+//! that makes it one, `Promote<Double>`, with the `use` it needs, which the solver confirms.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

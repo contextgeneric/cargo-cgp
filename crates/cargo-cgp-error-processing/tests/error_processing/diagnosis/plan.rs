@@ -111,6 +111,7 @@ fn plans_a_missing_dispatch_entry_check_failure() {
 fn plans_a_not_a_provider_check_failure() {
     let leaf = Leaf::NotAProvider {
         provider: "QueryBalanceRequest".to_owned(),
+        adapter: AdapterFix::default(),
         provider_trait: "ApiHandler".to_owned(),
     };
     let cause = one_path(

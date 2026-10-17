@@ -11,6 +11,7 @@
 //! provider does not implement its provider trait for, and [`hand_wiring`] recognizes a component
 //! wired by a hand-written `DelegateComponent` impl without its `IsProviderFor`.
 
+mod adapter;
 mod assoc_type;
 mod data;
 mod field;
@@ -21,6 +22,7 @@ mod other_arguments;
 mod reportable;
 mod required_type;
 
+pub(crate) use adapter::*;
 pub(crate) use assoc_type::*;
 pub(crate) use data::*;
 pub(crate) use field::*;

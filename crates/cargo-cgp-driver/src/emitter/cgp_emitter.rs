@@ -833,7 +833,7 @@ impl<E: Emitter> CgpEmitter<E> {
         resolved.causes.iter().all(|cause| {
             matches!(
                 &cause.leaf,
-                Leaf::NotAProvider { provider, provider_trait }
+                Leaf::NotAProvider { provider, provider_trait, .. }
                     if misuses.iter().any(|misuse| matches!(
                         &misuse.misuse,
                         CgpImplMisuse::ConsumerTrait { provider: expected, .. }

@@ -42,6 +42,7 @@ fn dependency_tree_leaf_codes_every_root_cause() {
     assert_eq!(
         dependency_tree_leaf(&Leaf::NotAProvider {
             provider: "QueryBalanceRequest".to_owned(),
+            adapter: AdapterFix::default(),
             provider_trait: "ApiHandler".to_owned(),
         }),
         "[CGP-E115] `QueryBalanceRequest` is not a provider of `ApiHandler`"

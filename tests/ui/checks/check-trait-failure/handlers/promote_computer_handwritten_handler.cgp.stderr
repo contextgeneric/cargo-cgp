@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `Double` is not a provider of `TryComputer`
-  --> src/main.rs:38:9
+  --> src/main.rs:36:9
    |
-38 |         HandlerComponent: ((), u64),
+36 |         HandlerComponent: ((), u64),
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E115] `Double` is not a provider of `TryComputer`
@@ -11,5 +11,6 @@ error[E0277]: [CGP-E001] `Double` is not a provider of `TryComputer`
                └─ [CGP-E102] provider trait impl `Handler<(), u64>` with context `App` for provider `PromoteAsync<Double>`
                  └─ [CGP-E102] provider trait `TryComputer<(), u64>` required of provider `Double` with context `App`
                    └─ [CGP-E115] `Double` is not a provider of `TryComputer`
+   = help: wire `Promote<Double>` in place of `Double`, with `use cgp::extra::handler::Promote;` in scope
 
 For more information about this error, try `rustc --explain E0277`.

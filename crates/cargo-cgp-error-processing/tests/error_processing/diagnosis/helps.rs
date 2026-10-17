@@ -1,6 +1,6 @@
 //! The `help` lines a plan attaches: the fix each kind of cause calls for, merged per owner.
 
-use cargo_cgp_error_processing::{Causes, EntryFix, FieldFix, NearMiss};
+use cargo_cgp_error_processing::{Adapter, AdapterFix, Causes, EntryFix, FieldFix, NearMiss};
 
 use super::*;
 
@@ -161,6 +161,7 @@ fn mixed_causes_get_one_help_per_kind_in_cause_order() {
         }),
         app_cause(Leaf::NotAProvider {
             provider: "Request".to_owned(),
+            adapter: AdapterFix::default(),
             provider_trait: "Handler".to_owned(),
         }),
         app_cause(Leaf::ProviderForOtherArguments {
@@ -336,6 +337,52 @@ fn a_near_miss_needs_no_confirmed_fix() {
         fix_help_messages(&[app_cause(field)]),
         vec!["a similar field exists on `Shape`: `width`".to_owned()]
     );
+}
+
+fn not_a_provider(adapters: Vec<(&str, Option<&str>)>) -> Leaf {
+    Leaf::NotAProvider {
+        provider: "Double".to_owned(),
+        provider_trait: "TryComputer".to_owned(),
+        adapter: AdapterFix(
+            adapters
+                .into_iter()
+                .map(|(ty, import)| Adapter {
+                    ty: ty.to_owned(),
+                    import: import.map(str::to_owned),
+                })
+                .collect(),
+        ),
+    }
+}
+
+#[test]
+fn a_non_provider_names_the_adapter_that_makes_it_one_with_its_import() {
+    let leaf = not_a_provider(vec![(
+        "Promote<Double>",
+        Some("cgp::extra::handler::Promote"),
+    )]);
+    assert_eq!(
+        fix_help_messages(&[app_cause(leaf)]),
+        vec!["wire `Promote<Double>` in place of `Double`, with `use cgp::extra::handler::Promote;` in scope"
+            .to_owned()]
+    );
+}
+
+#[test]
+fn several_adapters_are_named_alternatives_and_a_prelude_adapter_needs_no_import() {
+    let leaf = not_a_provider(vec![
+        ("WithProvider<Double>", None),
+        ("Promote<Double>", None),
+    ]);
+    assert_eq!(
+        fix_help_messages(&[app_cause(leaf)]),
+        vec!["wire `WithProvider<Double>` or `Promote<Double>` in place of `Double`".to_owned()]
+    );
+}
+
+#[test]
+fn a_non_provider_with_no_confirmed_adapter_gets_no_help() {
+    assert!(fix_help_messages(&[app_cause(not_a_provider(Vec::new()))]).is_empty());
 }
 
 #[test]
