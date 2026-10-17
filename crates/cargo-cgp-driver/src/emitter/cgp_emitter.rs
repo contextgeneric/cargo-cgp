@@ -39,6 +39,7 @@ use rustc_span::source_map::SourceMap;
 
 use crate::component_map::build_name_map_from_tls;
 use crate::config::BUG_REPORT_URL;
+use crate::emitter::attribute_splice::drop_attribute_splices;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
 use crate::emitter::containment::contain;
 use crate::emitter::edit::{
@@ -1574,6 +1575,9 @@ impl<E: Emitter> CgpEmitter<E> {
             Origin::Untransformed
         };
         self.postprocess(&mut diag, origin);
+        if self.crate_uses_cgp() {
+            drop_attribute_splices(&mut diag);
+        }
         if rewritten {
             // Remember where this wiring failure landed, so a later `?`-operator cascade on the same
             // expression is dropped. Recorded before de-duplication, so a re-report that is itself

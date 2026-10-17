@@ -5,19 +5,6 @@
         "level": "note",
         "message": "expected enum `Option<&String>`\n   found enum `Option<&mut String>`",
         "spans": []
-      },
-      {
-        "level": "help",
-        "message": "try using `.as_deref()` to convert `Option<&mut String>` to `Option<&String>`",
-        "spans": [
-          {
-            "column": 19,
-            "file": "src/main.rs",
-            "label": null,
-            "line": 13,
-            "primary": true
-          }
-        ]
       }
     ],
     "code": "E0308",
@@ -28,14 +15,14 @@
         "column": 1,
         "file": "src/main.rs",
         "label": "types differ in mutability",
-        "line": 13,
+        "line": 16,
         "primary": true
       },
       {
         "column": 31,
         "file": "src/main.rs",
         "label": "expected `Option<&String>` because of return type",
-        "line": 15,
+        "line": 18,
         "primary": false
       }
     ]
