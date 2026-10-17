@@ -161,6 +161,11 @@ pub const PROVIDER_TRAIT_IN_USES: &str = "CGP-E037";
 /// `#[cgp_impl(new Provider)]` declares it. The Rust code stays `E0425`.
 pub const CGP_IMPL_PROVIDER_NOT_DECLARED: &str = "CGP-E038";
 
+/// `CGP-E039`: a provider trait is implemented for a provider struct by a plain `impl`, without
+/// `#[cgp_provider]` or `#[cgp_impl]`, so the provider has no `IsProviderFor` impl and fails the
+/// provider trait's own supertrait. The Rust code stays `E0277`.
+pub const PROVIDER_IMPL_WITHOUT_MACRO: &str = "CGP-E039";
+
 // Wiring keys and values that do not resolve (`CGP-E040` to `CGP-E049`).
 
 /// `CGP-E040`: a wiring key names a consumer trait where its component belongs. The Rust code stays

@@ -8,6 +8,7 @@ pub mod dispatch_names;
 pub mod graph;
 pub mod group;
 pub mod internal_error;
+pub mod macro_less_provider;
 pub mod orphan;
 pub mod postprocess;
 pub mod requirement;

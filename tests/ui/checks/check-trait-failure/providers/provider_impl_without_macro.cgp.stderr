@@ -1,29 +1,9 @@
-error[E0277]: [CGP-E002] the provider trait `Greeter` with context `Context` is not implemented for provider `GreetHello`
-  --> src/main.rs:22:36
+error[E0277]: [CGP-E039] the impl of `Greeter` for `GreetHello` is written without `#[cgp_provider]`
+  --> src/main.rs:23:36
    |
-22 | impl<Context> Greeter<Context> for GreetHello {
-   |                                    ^^^^^^^^^^ unsatisfied trait bound
+23 | impl<Context> Greeter<Context> for GreetHello {
+   |                                    ^^^^^^^^^^
    |
-help: the trait `IsProviderFor<GreeterComponent, Context>` is not implemented for `GreetHello`
-  --> src/main.rs:20:1
-   |
-20 | pub struct GreetHello;
-   | ^^^^^^^^^^^^^^^^^^^^^
-   = help: the following other types implement trait `IsProviderFor<Component, Context, Params>`:
-             `BindErr<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
-             `BindErr<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T1, E>)>`
-             `BindOk<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T, E1>)>`
-             `BindOk<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T, E1>)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<ComputerComponent, Context, (Code, Builder)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<HandlerComponent, Context, (Code, Builder)>`
-             `BuildAndMerge<Provider>` implements `IsProviderFor<TryComputerComponent, Context, (Code, Builder)>`
-             `BuildAndMergeOutputs<Output, Handlers>` implements `IsProviderFor<ComputerComponent, __Context__, __Params__>`
-           and 200 others
-note: required by a bound in `Greeter`
-  --> src/main.rs:15:1
-   |
-15 | #[cgp_component(Greeter)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Greeter`
-   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = help: add `#[cgp_provider]` to the impl of `Greeter`, or write the provider with `#[cgp_impl]`
 
 For more information about this error, try `rustc --explain E0277`.

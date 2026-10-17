@@ -1,12 +1,13 @@
 #![feature(prelude_import)]
 //! A provider-trait impl written without `#[cgp_provider]`.
 //!
-//! A `[CGP-E002]` headline, then rustc's list of `IsProviderFor` implementors, eight and a count as
-//! rustc prints it; the fix, `#[cgp_provider]` or `#[cgp_impl]`, is not hinted.
+//! The provider has no `IsProviderFor` impl, which the provider trait requires as a supertrait, so
+//! the compiler rejects the impl on that bound and lists every unrelated implementor of
+//! `IsProviderFor` beside it. The tool recognizes the impl structurally, words it as `[CGP-E039]`
+//! with a `help` to add `#[cgp_provider]` or write the provider with `#[cgp_impl]`, and drops the
+//! implementor list.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

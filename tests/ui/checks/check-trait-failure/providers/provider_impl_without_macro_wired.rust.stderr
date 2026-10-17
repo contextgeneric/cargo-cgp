@@ -1,0 +1,62 @@
+error[E0277]: the trait bound `GreetHello: IsProviderFor<GreeterComponent, Context>` is not satisfied
+  --> src/main.rs:24:36
+   |
+24 | impl<Context> Greeter<Context> for GreetHello {
+   |                                    ^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<GreeterComponent, Context>` is not implemented for `GreetHello`
+  --> src/main.rs:22:1
+   |
+22 | pub struct GreetHello;
+   | ^^^^^^^^^^^^^^^^^^^^^
+   = help: the following other types implement trait `IsProviderFor<Component, Context, Params>`:
+             `App` implements `IsProviderFor<GreeterComponent, __Context__, __Params__>`
+             `BindErr<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
+             `BindErr<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T1, E>)>`
+             `BindOk<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T, E1>)>`
+             `BindOk<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T, E1>)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<ComputerComponent, Context, (Code, Builder)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<HandlerComponent, Context, (Code, Builder)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<TryComputerComponent, Context, (Code, Builder)>`
+           and 201 others
+note: required by a bound in `Greeter`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Greeter`
+   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `GreetHello: IsProviderFor<GreeterComponent, App>` is not satisfied
+  --> src/main.rs:40:9
+   |
+40 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<GreeterComponent, App>` is not implemented for `GreetHello`
+  --> src/main.rs:22:1
+   |
+22 | pub struct GreetHello;
+   | ^^^^^^^^^^^^^^^^^^^^^
+   = help: the following other types implement trait `IsProviderFor<Component, Context, Params>`:
+             `App` implements `IsProviderFor<GreeterComponent, __Context__, __Params__>`
+             `BindErr<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
+             `BindErr<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T1, E>)>`
+             `BindOk<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T, E1>)>`
+             `BindOk<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T, E1>)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<ComputerComponent, Context, (Code, Builder)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<HandlerComponent, Context, (Code, Builder)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<TryComputerComponent, Context, (Code, Builder)>`
+           and 201 others
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:38:1
+   |
+38 | / check_components! {
+39 | |     App {
+40 | |         GreeterComponent,
+41 | |     }
+42 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

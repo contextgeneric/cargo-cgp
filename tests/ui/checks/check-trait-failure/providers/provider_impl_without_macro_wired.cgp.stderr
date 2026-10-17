@@ -1,0 +1,9 @@
+error[E0277]: [CGP-E039] the impl of `Greeter` for `GreetHello` is written without `#[cgp_provider]`
+  --> src/main.rs:24:36
+   |
+24 | impl<Context> Greeter<Context> for GreetHello {
+   |                                    ^^^^^^^^^^
+   |
+   = help: add `#[cgp_provider]` to the impl of `Greeter`, or write the provider with `#[cgp_impl]`
+
+For more information about this error, try `rustc --explain E0277`.

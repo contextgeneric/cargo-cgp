@@ -11,19 +11,20 @@ use cargo_cgp_error_processing::rewrite::{
 use cargo_cgp_error_processing::{
     AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind,
     FIRST_CHECK_TABLE_LABEL, Leaf, MissingUseProvider, Origin, OrphanConflict, PendingNote,
-    ProviderTraitInUses, Resolved, SECOND_CHECK_TABLE_LABEL, StructuralMistake,
-    UndeclaredRequirement, UndeclaredTrait, UnimportedAbstractType, WiringOverflow,
-    cause_signature, cgp_impl_misuse_help, coalesce_underived_fields, coalesced_headline,
-    explain_footer_codes, fix_help_messages, group_by_shared_cause, internal_error_note,
-    is_explain_footer_text, is_method_bounds_text, is_recursion_limit_help_text,
-    is_unbounded_type_param_item_text, mentions_orphan_param_text, missing_use_provider_help,
-    orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
+    ProviderImplWithoutMacro, ProviderTraitInUses, Resolved, SECOND_CHECK_TABLE_LABEL,
+    StructuralMistake, UndeclaredRequirement, UndeclaredTrait, UnimportedAbstractType,
+    WiringOverflow, cause_signature, cgp_impl_misuse_help, coalesce_underived_fields,
+    coalesced_headline, explain_footer_codes, fix_help_messages, group_by_shared_cause,
+    internal_error_note, is_explain_footer_text, is_method_bounds_text,
+    is_recursion_limit_help_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
+    missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
+    plan_missing_use_provider, plan_orphan_conflict, plan_provider_impl_without_macro,
     plan_provider_trait_in_uses, plan_resolved, plan_structural_mistake,
     plan_undeclared_requirement, plan_undeclared_trait, plan_unimported_abstract_type,
     plan_unresolved_wiring_name, plan_wiring_conflict, postprocess_message,
-    provider_trait_in_uses_help, structural_mistake_help, undeclared_requirement_helps,
-    undeclared_trait_help, unimported_abstract_type_help, unresolved_wiring_name_help,
-    wiring_conflict_help, wiring_overflow_help,
+    provider_impl_without_macro_help, provider_trait_in_uses_help, structural_mistake_help,
+    undeclared_requirement_helps, undeclared_trait_help, unimported_abstract_type_help,
+    unresolved_wiring_name_help, wiring_conflict_help, wiring_overflow_help,
 };
 use rustc_errors::codes::{
     E0107, E0117, E0119, E0186, E0207, E0210, E0220, E0271, E0275, E0277, E0308, E0425, E0428,
@@ -114,6 +115,9 @@ pub struct CgpEmitter<E: Emitter> {
     /// arrive before trait solving, so the first candidate may precede one); an empty `Vec` means
     /// "computed, none found". Owned data (names plus `Copy` spans), so it outlives the `TyCtxt`.
     cgp_impl_misuses: Option<Vec<DetectedCgpImplMisuse>>,
+    /// The provider structs whose provider-trait impl was reported as written without
+    /// `#[cgp_provider]`, so a later `IsProviderFor` failure on one is that report's consequence.
+    macroless_providers: Vec<String>,
     /// Whether the crate being compiled uses CGP ([`resolve::crate_uses_cgp`]), decided on the first
     /// diagnostic for which the compiler can answer. A crate that does not use CGP can carry no CGP
     /// encoding, so its untransformed diagnostics are left exactly as rustc built them.
@@ -260,6 +264,7 @@ impl<E: Emitter> CgpEmitter<E> {
             unimported_reported: Vec::new(),
             requirement_reported: Vec::new(),
             cgp_impl_misuses: None,
+            macroless_providers: Vec::new(),
             cgp_used: OnceCell::new(),
             ambiguous: OnceCell::new(),
             ambiguous_with_glob_items: OnceCell::new(),
@@ -656,6 +661,32 @@ impl<E: Emitter> CgpEmitter<E> {
         let primary_span = diag.span.primary_span()?;
         rustc_middle::ty::tls::with_opt(|tcx| {
             resolve::detect_missing_use_provider(tcx?, primary_span)
+        })
+    }
+
+    /// Whether `diag` is an `E0277` on the `IsProviderFor` bound of a provider that was reported as
+    /// written without `#[cgp_provider]`.
+    fn is_macroless_provider_consequence(&self, diag: &DiagInner) -> bool {
+        diag.code == Some(E0277)
+            && main_message_text(diag).is_some_and(|text| {
+                self.macroless_providers
+                    .iter()
+                    .any(|provider| text.contains(&format!("`{provider}: IsProviderFor<")))
+            })
+    }
+
+    /// Recognize `diag` as a provider-trait impl written without `#[cgp_provider]`: an `E0277` whose
+    /// message names the missing `IsProviderFor` and whose caret is the impl's `Self` type, confirmed
+    /// structurally by [`resolve::detect_provider_impl_without_macro`].
+    fn provider_impl_without_macro(&self, diag: &DiagInner) -> Option<ProviderImplWithoutMacro> {
+        if diag.code != Some(E0277)
+            || !main_message_text(diag).is_some_and(|text| text.contains("IsProviderFor"))
+        {
+            return None;
+        }
+        let primary_span = diag.span.primary_span()?;
+        rustc_middle::ty::tls::with_opt(|tcx| {
+            resolve::detect_provider_impl_without_macro(tcx?, primary_span)
         })
     }
 
@@ -1395,6 +1426,24 @@ impl<E: Emitter> CgpEmitter<E> {
             self.push(BufEntry::Plain(Box::new(diag)));
             return;
         }
+        // A provider-trait impl written without `#[cgp_provider]`: rustc rejects it on the provider
+        // trait's `IsProviderFor` supertrait and lists every unrelated implementor beside it. Reword
+        // it to name the provider and carry the macro in a `help`, keeping the caret on the impl.
+        if let Some(mistake) = self.provider_impl_without_macro(&diag)
+            && let Some(primary_span) = diag.span.primary_span()
+        {
+            self.macroless_providers.push(mistake.provider.clone());
+            replace_header(&mut diag, plan_provider_impl_without_macro(&mistake));
+            diag.span = MultiSpan::from_span(primary_span);
+            diag.children.push(subdiag(
+                Sublevel::Help,
+                provider_impl_without_macro_help(&mistake),
+            ));
+            self.postprocess(&mut diag, Origin::Rewritten);
+            self.record_cgp_spans(&diag);
+            self.push(BufEntry::Plain(Box::new(diag)));
+            return;
+        }
         // An abstract type used without its `#[use_type(…)]` import: rustc reports an `E0220` on
         // the generated context, naming no fix. Reword it to name the type and carry the import in
         // a `help`, once per mistake.
@@ -1496,6 +1545,11 @@ impl<E: Emitter> CgpEmitter<E> {
             // pattern, or a later statement the unresolved type flows into), where a span-overlap
             // check misses it and a broader check would risk suppressing an unrelated error — so
             // those are left in place rather than dropped unreliably.
+            return;
+        }
+        // A check or call that fails on the `IsProviderFor` bound of a provider already reported as
+        // written without `#[cgp_provider]` restates that one mistake, so it is dropped.
+        if self.is_macroless_provider_consequence(&diag) {
             return;
         }
         // A resolvable wiring failure is transformed around its dependency tree(s); when the
