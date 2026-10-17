@@ -79,6 +79,17 @@ pub const DELEGATE_COMPONENT_TRAIT: &str = "DelegateComponent";
 /// `Path` (the second argument) to tell the user which redirected key to set.
 pub const REDIRECT_LOOKUP_TYPE: &str = "RedirectLookup";
 
+/// The dispatch provider a component wires per parameter value when it declares
+/// `#[derive_delegate]`, defined by [`CGP_COMPONENT_CRATE`].
+pub const USE_DELEGATE_TYPE: &str = "UseDelegate";
+
+/// The getter provider of a multi-method getter, which reads each method's field by the method's
+/// name, defined by [`CGP_COMPONENT_CRATE`].
+pub const USE_FIELDS_TYPE: &str = "UseFields";
+
+/// The getter provider that reads one named field, defined by [`CGP_FIELD_CRATE`].
+pub const USE_FIELD_TYPE: &str = "UseField";
+
 /// The name of the provider type a context wires to bind an abstract type to a concrete one —
 /// `UseType<T>`, the blanket provider `#[cgp_type]` generates so no bespoke provider is needed. The
 /// leaf classifier looks for an impl of a provider trait *for* this type to confirm that a

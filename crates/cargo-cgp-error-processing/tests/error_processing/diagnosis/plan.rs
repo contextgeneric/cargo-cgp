@@ -113,6 +113,7 @@ fn plans_a_not_a_provider_check_failure() {
         provider: "QueryBalanceRequest".to_owned(),
         adapter: AdapterFix::default(),
         provides: ProvidesFix::default(),
+        core: CoreProviderFix::default(),
         provider_trait: "ApiHandler".to_owned(),
     };
     let cause = one_path(

@@ -9,5 +9,6 @@ error[E0277]: [CGP-E001] `UseField<Symbol!("width")>` is not a provider of `Dime
              [CGP-E101] consumer trait impl `HasDimensions` for context `Rectangle`
              └─ [CGP-E102] provider trait `DimensionsGetter` required of provider `UseField<Symbol!("width")>` with context `Rectangle`
                └─ [CGP-E115] `UseField<Symbol!("width")>` is not a provider of `DimensionsGetter`
+   = help: wire `UseFields` in place of `UseField<Symbol!("width")>`, which reads each method's field by the method's name
 
 For more information about this error, try `rustc --explain E0277`.

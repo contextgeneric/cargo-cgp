@@ -1,8 +1,8 @@
 //! The `help` messages a resolved failure carries: the fixes its causes call for.
 
 use crate::diagnosis::leaf::{
-    Adapter, AdapterFix, DeriveFix, EntryFix, FieldIssue, Leaf, MethodFix, NearMiss,
-    ProvidedComponent, ProvidesFix, SuggestedCall,
+    Adapter, AdapterFix, CoreProviderFix, CoreProviderHint, DeriveFix, EntryFix, FieldIssue, Leaf,
+    MethodFix, NearMiss, ProvidedComponent, ProvidesFix, SuggestedCall,
 };
 use crate::diagnosis::resolved::Cause;
 use crate::diagnosis::wording::header::quoted_list;
@@ -105,9 +105,11 @@ fn fixes_for(leaf: &Leaf) -> Vec<(FixKind, String, Option<String>)> {
             provider_trait,
             adapter: AdapterFix(adapters),
             provides: ProvidesFix(provides),
+            core: CoreProviderFix(core),
         } => {
             fixes.extend(other_component_help(provider, provider_trait, provides));
             fixes.extend(adapter_help(provider, adapters));
+            fixes.extend(core.as_ref().map(|hint| core_provider_help(provider, hint)));
         }
         Leaf::AssocTypeMismatch { .. } => fixes.extend(assoc_mismatch_help(leaf).map(whole)),
         Leaf::MissingVariant { owner, similar, .. } => {
@@ -173,6 +175,22 @@ fn adapter_help(provider: &str, adapters: &[Adapter]) -> Option<(FixKind, String
         "wire {} in place of `{provider}`{scope}",
         named.join(" or ")
     )))
+}
+
+/// The `help` for a misused CGP core provider: what serves the slot in its place.
+fn core_provider_help(
+    provider: &str,
+    hint: &CoreProviderHint,
+) -> (FixKind, String, Option<String>) {
+    match hint {
+        CoreProviderHint::UseFields => whole(format!(
+            "wire `UseFields` in place of `{provider}`, which reads each method's field by the method's name"
+        )),
+        CoreProviderHint::OpenDispatch { component, params } => whole(format!(
+            "dispatch with `open {component};` and one `@{component}.{}: <provider>` entry per type, in place of `{provider}`",
+            params.join(".")
+        )),
+    }
 }
 
 /// The `help` for a wired type that is a provider of other components, when it is not a provider of

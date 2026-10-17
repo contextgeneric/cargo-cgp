@@ -1,7 +1,8 @@
 //! The `help` lines a plan attaches: the fix each kind of cause calls for, merged per owner.
 
 use cargo_cgp_error_processing::{
-    Adapter, AdapterFix, Causes, EntryFix, FieldFix, NearMiss, ProvidedComponent, ProvidesFix,
+    Adapter, AdapterFix, Causes, CoreProviderFix, CoreProviderHint, EntryFix, FieldFix, NearMiss,
+    ProvidedComponent, ProvidesFix,
 };
 
 use super::*;
@@ -165,6 +166,7 @@ fn mixed_causes_get_one_help_per_kind_in_cause_order() {
             provider: "Request".to_owned(),
             adapter: AdapterFix::default(),
             provides: ProvidesFix::default(),
+            core: CoreProviderFix::default(),
             provider_trait: "Handler".to_owned(),
         }),
         app_cause(Leaf::ProviderForOtherArguments {
@@ -347,6 +349,7 @@ fn not_a_provider(adapters: Vec<(&str, Option<&str>)>) -> Leaf {
         provider: "Double".to_owned(),
         provider_trait: "TryComputer".to_owned(),
         provides: ProvidesFix::default(),
+        core: CoreProviderFix::default(),
         adapter: AdapterFix(
             adapters
                 .into_iter()
@@ -394,6 +397,7 @@ fn a_non_provider_that_provides_another_component_names_its_key() {
             provider_trait: "Farewell".to_owned(),
             component: "FarewellComponent".to_owned(),
         }]),
+        core: CoreProviderFix::default(),
     };
     assert_eq!(
         fix_help_messages(&[app_cause(leaf)]),
@@ -401,6 +405,34 @@ fn a_non_provider_that_provides_another_component_names_its_key() {
             "`SayBye` provides `Farewell`: wire it under `FarewellComponent`, or wire a provider of `Greeter` here"
                 .to_owned()
         ]
+    );
+}
+
+fn core_hint(hint: CoreProviderHint) -> Leaf {
+    Leaf::NotAProvider {
+        provider: "Wired".to_owned(),
+        provider_trait: "Slot".to_owned(),
+        adapter: AdapterFix::default(),
+        provides: ProvidesFix::default(),
+        core: CoreProviderFix(Some(hint)),
+    }
+}
+
+#[test]
+fn a_misused_core_provider_names_what_serves_the_slot() {
+    assert_eq!(
+        fix_help_messages(&[app_cause(core_hint(CoreProviderHint::UseFields))]),
+        vec!["wire `UseFields` in place of `Wired`, which reads each method's field by the method's name"
+            .to_owned()]
+    );
+    let open = CoreProviderHint::OpenDispatch {
+        component: "AreaCalculatorComponent".to_owned(),
+        params: vec!["Shape".to_owned()],
+    };
+    assert_eq!(
+        fix_help_messages(&[app_cause(core_hint(open))]),
+        vec!["dispatch with `open AreaCalculatorComponent;` and one `@AreaCalculatorComponent.Shape: <provider>` entry per type, in place of `Wired`"
+            .to_owned()]
     );
 }
 

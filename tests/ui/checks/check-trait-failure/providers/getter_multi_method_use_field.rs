@@ -1,12 +1,12 @@
 //! A multi-method `#[cgp_getter]` trait wired to `UseField`.
 //!
-//! `[CGP-E115]` is accurate but does not say that a multi-method getter has no `UseField` impl.
+//! `[CGP-E115]` says `UseField` is not a provider of the getter, and its `help` names `UseFields`,
+//! which reads each method's field by the method's name and which the solver confirms implements
+//! the getter for `Rectangle`.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E115
 
 use cgp::prelude::*;

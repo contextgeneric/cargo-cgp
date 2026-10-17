@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `cgp::prelude::UseDelegate<AreaTable>: IsProviderFor<AreaCalculatorComponent, App, Square>` is not satisfied
-  --> src/main.rs:41:9
+  --> src/main.rs:39:9
    |
-41 |         AreaCalculatorComponent: Square,
+39 |         AreaCalculatorComponent: Square,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ the trait `IsProviderFor<AreaCalculatorComponent, App, Square>` is not implemented for `cgp::prelude::UseDelegate<AreaTable>`
    |
    = help: `cgp::prelude::UseDelegate<__Components__>` implements trait `IsProviderFor<Component, Context, Params>`:
@@ -16,13 +16,13 @@ error[E0277]: the trait bound `cgp::prelude::UseDelegate<AreaTable>: IsProviderF
            and 6 others
    = note: required for `App` to implement `CanUseComponent<AreaCalculatorComponent, Square>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:39:1
+  --> src/main.rs:37:1
    |
-39 | / check_components! {
-40 | |     App {
-41 | |         AreaCalculatorComponent: Square,
-42 | |     }
-43 | | }
+37 | / check_components! {
+38 | |     App {
+39 | |         AreaCalculatorComponent: Square,
+40 | |     }
+41 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

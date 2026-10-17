@@ -1,7 +1,7 @@
 //! The `Causes` set and the *one cause per distinct leaf* invariant it enforces by construction.
 
 use cargo_cgp_error_processing::{
-    AdapterFix, Cause, Causes, ChainNode, DepNode, FieldIssue, Leaf, ProvidesFix,
+    AdapterFix, Cause, Causes, ChainNode, CoreProviderFix, DepNode, FieldIssue, Leaf, ProvidesFix,
     coalesce_underived_fields, root_cause_lead,
 };
 
@@ -219,6 +219,7 @@ fn not_a_provider(provider: &str) -> Leaf {
         provider: provider.to_owned(),
         adapter: AdapterFix::default(),
         provides: ProvidesFix::default(),
+        core: CoreProviderFix::default(),
         provider_trait: "Greeter".to_owned(),
     }
 }

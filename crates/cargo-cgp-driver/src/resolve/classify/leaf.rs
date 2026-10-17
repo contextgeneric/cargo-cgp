@@ -1,6 +1,8 @@
 //! Turning a terminal predicate into the rustc-free [`Leaf`] the emitter words.
 
-use cargo_cgp_error_processing::{AdapterFix, FieldFix, FieldIssue, Leaf, NearMiss, ProvidesFix};
+use cargo_cgp_error_processing::{
+    AdapterFix, CoreProviderFix, FieldFix, FieldIssue, Leaf, NearMiss, ProvidesFix,
+};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
@@ -12,9 +14,10 @@ use crate::resolve::cgp_item::{
     is_path_cons,
 };
 use crate::resolve::classify::{
-    classify_data_leaf, field_issue, field_type, is_blanket_dead_end, is_dispatch_lookup,
-    owner_has_impl_of, projected_type, provided_components, provider_for_other_arguments,
-    required_field_type, similar_field, similar_wired_key, tuple_index_tag, wrapping_adapters,
+    classify_data_leaf, core_provider_hint, field_issue, field_type, is_blanket_dead_end,
+    is_dispatch_lookup, owner_has_impl_of, projected_type, provided_components,
+    provider_for_other_arguments, required_field_type, similar_field, similar_wired_key,
+    tuple_index_tag, wrapping_adapters,
 };
 use crate::resolve::conflict::render_path;
 use crate::resolve::label::fold_empty_lists;
@@ -116,6 +119,7 @@ pub(crate) fn classify_leaf<'tcx>(
                     provider_trait: tcx.item_name(parent.def_id).to_string(),
                     adapter: AdapterFix(wrapping_adapters(tcx, parent)),
                     provides: ProvidesFix(provided_components(tcx, parent)),
+                    core: CoreProviderFix(core_provider_hint(tcx, parent)),
                 };
             }
             // No parent trait to name (a root-level `DelegateComponent`); fall back to the

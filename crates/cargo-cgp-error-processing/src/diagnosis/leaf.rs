@@ -138,6 +138,9 @@ pub enum Leaf {
         /// The other components the wired type is a provider of, for the `help`. Not part of the
         /// leaf's identity.
         provides: ProvidesFix,
+        /// The CGP core provider that serves the slot where the wired one cannot, for the `help`.
+        /// Not part of the leaf's identity.
+        core: CoreProviderFix,
     },
     /// A provider that implements the provider trait, but not for the context or the component
     /// arguments the wiring uses it with: a provider written for one context and wired on another,
@@ -405,6 +408,26 @@ pub struct ProvidedComponent {
     pub component: String,
 }
 
+/// The fix a `help` names for a [`Leaf::NotAProvider`] that is a misused CGP core provider. Like
+/// [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
+#[derive(Debug, Clone, Default)]
+pub struct CoreProviderFix(pub Option<CoreProviderHint>);
+
+/// What serves a slot a CGP core provider cannot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CoreProviderHint {
+    /// `UseField` is wired for a multi-method getter, which has no `UseField` impl; `UseFields`
+    /// serves it.
+    UseFields,
+    /// `UseDelegate` is wired for a component that does not declare `#[derive_delegate]`; an `open`
+    /// statement dispatches on the component's parameters without it. `component` is the key to
+    /// open, and `params` the names of the parameters the entries' paths end in.
+    OpenDispatch {
+        component: String,
+        params: Vec<String>,
+    },
+}
+
 /// The derive a `help` names for a [`Leaf::DataTraitUnimplemented`], when one can be added to the
 /// type. Like [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
 #[derive(Debug, Clone, Default)]
@@ -455,6 +478,7 @@ macro_rules! identity_free {
 identity_free!(FieldFix);
 identity_free!(AdapterFix);
 identity_free!(ProvidesFix);
+identity_free!(CoreProviderFix);
 identity_free!(NearMiss);
 identity_free!(DeriveFix);
 identity_free!(EntryFix);
@@ -491,11 +515,15 @@ impl Leaf {
         match (self, other) {
             (
                 Leaf::NotAProvider {
-                    adapter, provides, ..
+                    adapter,
+                    provides,
+                    core,
+                    ..
                 },
                 Leaf::NotAProvider {
                     adapter: their_adapter,
                     provides: their_provides,
+                    core: their_core,
                     ..
                 },
             ) => {
@@ -504,6 +532,9 @@ impl Leaf {
                 }
                 if provides.0 != their_provides.0 {
                     provides.0.clear();
+                }
+                if core.0 != their_core.0 {
+                    core.0 = None;
                 }
             }
             (Leaf::Field { fix, .. }, Leaf::Field { fix: theirs, .. }) => {
