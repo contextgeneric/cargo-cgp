@@ -1,7 +1,7 @@
 //! The `Causes` set and the *one cause per distinct leaf* invariant it enforces by construction.
 
 use cargo_cgp_error_processing::{
-    Cause, Causes, ChainNode, DepNode, FieldIssue, coalesce_underived_fields, root_cause_lead,
+    Cause, Causes, ChainNode, DepNode, FieldIssue, Leaf, coalesce_underived_fields, root_cause_lead,
 };
 
 use super::support::field_leaf;
@@ -203,4 +203,59 @@ fn heading_commutes_with_grouping() {
         .collect();
 
     assert_eq!(grouped_first, headed_first);
+}
+
+fn provider_hop(provider: &str) -> ChainNode {
+    ChainNode::Hop(DepNode::Provider {
+        trait_ref: "Greeter".to_owned(),
+        context: "App".to_owned(),
+        provider: provider.to_owned(),
+    })
+}
+
+fn not_a_provider(provider: &str) -> Leaf {
+    Leaf::NotAProvider {
+        provider: provider.to_owned(),
+        provider_trait: "Greeter".to_owned(),
+    }
+}
+
+#[test]
+fn the_hop_above_a_not_a_provider_leaf_reads_as_a_requirement() {
+    let leaf = not_a_provider("NotAGreeter");
+    let causes = Causes::from_sub_chains([(
+        leaf.clone(),
+        vec![
+            provider_hop("WrapGreeter<NotAGreeter>"),
+            provider_hop("NotAGreeter"),
+            ChainNode::Leaf(leaf),
+        ],
+    )]);
+
+    let rendered: Vec<String> = causes[0].paths[0].iter().map(ChainNode::render).collect();
+    assert_eq!(
+        rendered[0],
+        "[CGP-E102] provider trait impl `Greeter` with context `App` for provider `WrapGreeter<NotAGreeter>`"
+    );
+    assert_eq!(
+        rendered[1],
+        "[CGP-E102] provider trait `Greeter` required of provider `NotAGreeter` with context `App`"
+    );
+}
+
+#[test]
+fn a_hop_for_another_provider_above_a_not_a_provider_leaf_keeps_its_impl_form() {
+    let leaf = not_a_provider("NotAGreeter");
+    let causes = Causes::from_sub_chains([(
+        leaf.clone(),
+        vec![
+            provider_hop("WrapGreeter<NotAGreeter>"),
+            ChainNode::Leaf(leaf),
+        ],
+    )]);
+
+    assert_eq!(
+        causes[0].paths[0][0].render(),
+        "[CGP-E102] provider trait impl `Greeter` with context `App` for provider `WrapGreeter<NotAGreeter>`"
+    );
 }

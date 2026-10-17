@@ -35,6 +35,14 @@ pub enum DepNode {
         context: String,
         provider: String,
     },
+    /// `CGP-E102` — a requirement of a provider trait on a provider that has no impl of it: the
+    /// step reads as what is required, not as an impl the program has, and the leaf beneath it
+    /// states that the provider is not one.
+    ProviderRequired {
+        trait_ref: String,
+        context: String,
+        provider: String,
+    },
     /// `CGP-E103` — a hop through a namespace/`open` `RedirectLookup<Table, Path>`, labeled with
     /// the `Table` the path is looked up in: the context for its own redirects, or an aggregate
     /// provider for one that opens its own components. `key` is the dispatched value (`<Outer>`);
@@ -161,6 +169,13 @@ impl DepNode {
                 provider,
             } => format!(
                 "[{DEP_PROVIDER_TRAIT_IMPL}] provider trait impl `{trait_ref}` with context `{context}` for provider `{provider}`"
+            ),
+            DepNode::ProviderRequired {
+                trait_ref,
+                context,
+                provider,
+            } => format!(
+                "[{DEP_PROVIDER_TRAIT_IMPL}] provider trait `{trait_ref}` required of provider `{provider}` with context `{context}`"
             ),
             DepNode::Redirect { path, table, .. } => {
                 format!("[{DEP_REDIRECT_LOOKUP}] redirect lookup to `{path}` in `{table}`")

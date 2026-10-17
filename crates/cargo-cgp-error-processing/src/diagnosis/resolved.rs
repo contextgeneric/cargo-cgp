@@ -92,7 +92,8 @@ impl Causes {
     }
 
     /// File one `(leaf, path)` sub-chain under its leaf.
-    fn add(&mut self, leaf: Leaf, path: Vec<ChainNode>) {
+    fn add(&mut self, leaf: Leaf, mut path: Vec<ChainNode>) {
+        reword_unimplemented_provider_hop(&mut path);
         self.add_cause(Cause {
             leaf,
             paths: vec![path],
@@ -175,4 +176,35 @@ pub struct Resolved {
     pub provider: Option<String>,
     /// The root causes, one entry per distinct leaf, in first-seen order.
     pub causes: Causes,
+}
+
+/// Reword the provider-trait hop directly above a [`Leaf::NotAProvider`] of the same provider. The
+/// hop reads as a step through the provider's impl of the trait, which the leaf beneath says does
+/// not exist, so it becomes the requirement it is ([`DepNode::ProviderRequired`]). It stays a step of
+/// the chain with every fact it carried.
+fn reword_unimplemented_provider_hop(path: &mut [ChainNode]) {
+    let [
+        ..,
+        ChainNode::Hop(hop),
+        ChainNode::Leaf(Leaf::NotAProvider {
+            provider: leaf_provider,
+            ..
+        }),
+    ] = path
+    else {
+        return;
+    };
+    if let DepNode::Provider {
+        trait_ref,
+        context,
+        provider,
+    } = hop
+        && provider == leaf_provider
+    {
+        *hop = DepNode::ProviderRequired {
+            trait_ref: std::mem::take(trait_ref),
+            context: std::mem::take(context),
+            provider: std::mem::take(provider),
+        };
+    }
 }

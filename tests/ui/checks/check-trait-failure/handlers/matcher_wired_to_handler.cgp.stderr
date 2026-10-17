@@ -8,7 +8,7 @@ error[E0277]: [CGP-E001] `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbo
            this is required through the dependency chain:
              [CGP-E101] consumer trait impl `CanHandle<(), Shape>` for context `App`
              └─ [CGP-E102] provider trait impl `Handler<(), Shape>` with context `App` for provider `UseInputDelegate<MatchWithFieldHandlersInputs<HandleFieldValue<ComputeArea>>>`
-               └─ [CGP-E102] provider trait impl `Handler<(), Shape>` with context `App` for provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>`
+               └─ [CGP-E102] provider trait `Handler<(), Shape>` required of provider `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>` with context `App`
                  └─ [CGP-E115] `MatchWithHandlers<Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>, ExtractFieldAndHandle<Symbol!("Rectangle"), HandleFieldValue<ComputeArea>>]>` is not a provider of `Handler`
 
 For more information about this error, try `rustc --explain E0277`.
