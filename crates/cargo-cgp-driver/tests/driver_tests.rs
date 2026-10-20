@@ -1,5 +1,5 @@
 //! The unit tests of the driver: rustc argument preparation, the expand marker flags, the help
-//! and version answers, and the panic containment.
+//! and version answers, the panic containment, and the merge of a diagnostic rustc reports twice.
 //!
 //! One test target per crate, with a module per subject, keeps the crate to a single test binary.
 
@@ -9,5 +9,6 @@
 
 extern crate rustc_data_structures;
 extern crate rustc_errors;
+extern crate rustc_span;
 
 pub mod driver;

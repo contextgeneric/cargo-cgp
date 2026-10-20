@@ -17,7 +17,7 @@ use crate::emitter::edit::main_message_text;
 
 /// `diags` with each repeat of an earlier diagnostic merged into it: the same level, code, and
 /// plain-string message, with a primary caret on the same line of the same file.
-pub(crate) fn merge_repeats(diags: Vec<DiagInner>, source_map: &SourceMap) -> Vec<DiagInner> {
+pub fn merge_repeats(diags: Vec<DiagInner>, source_map: &SourceMap) -> Vec<DiagInner> {
     let mut kept: Vec<DiagInner> = Vec::with_capacity(diags.len());
     for diag in diags {
         let Some(caret) = diag.span.primary_span() else {

@@ -41,4 +41,5 @@ pub use fallback::*;
 pub use generated_names::drop_generated_name_suggestions;
 pub use install::install;
 pub use name_resolution::reshape_name_resolution_errors;
+pub use repeats::merge_repeats;
 pub use use_type_misspelling::reshape_use_type_misspellings;
