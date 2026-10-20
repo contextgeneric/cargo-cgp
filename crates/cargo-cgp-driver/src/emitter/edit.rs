@@ -242,9 +242,9 @@ pub(crate) fn diagnostic_spans(diag: &DiagInner) -> Vec<Span> {
     spans
 }
 
-/// Whether any of `diag`'s messages — its header or a child's — mentions a CGP wiring trait
-/// ([`mentions_wiring_text`]). This is the cheap pre-filter that decides whether to attempt the
-/// (expensive) typed resolution at all, so that any wiring diagnostic is considered.
+/// Whether any of `diag`'s messages, its header or a child's, mentions a CGP wiring trait
+/// ([`mentions_wiring_text`]): the evidence that a method-bounds `E0599` the resolver declined is a
+/// CGP failure, so its method-probe advice is stripped.
 pub(crate) fn mentions_wiring(diag: &DiagInner) -> bool {
     fn any(messages: &[(DiagMessage, Style)]) -> bool {
         messages.iter().any(|(message, _)| match message {

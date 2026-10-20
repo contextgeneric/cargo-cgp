@@ -21,8 +21,9 @@
 
 use crate::postprocess::ambiguous::AmbiguousNames;
 
-/// Strip module qualifiers from `text`, collapsing each `a::b::C` identifier run to its last
-/// segment. Returns the rewritten text when any run was collapsed, `None` otherwise.
+/// Strip module qualifiers from `text`, collapsing each `a::b::C` identifier run to its tail from
+/// its first uppercase segment, or to its last segment when none is uppercase. Returns the
+/// rewritten text when any run was collapsed, `None` otherwise.
 pub fn strip_module_paths(text: &str) -> Option<String> {
     collapse_paths(text, |_, _, _| true)
 }
@@ -49,10 +50,10 @@ pub fn strip_unambiguous_paths(text: &str, ambiguous: &AmbiguousNames) -> Option
     })
 }
 
-/// Collapse each `a::b::C` identifier run that `collapse` accepts, given the path to the item the run
-/// names, its first segment, and that item's name, to the run's tail from the item: the run from its first uppercase
-/// segment (`TryComputer::try_compute`), or its last segment when no earlier segment is uppercase.
-/// String literals and every other run are left alone.
+/// Collapse each `a::b::C` identifier run that `collapse` accepts, given the path to the item the
+/// run names, its first segment, and that item's name, to the run's tail from the item: the run
+/// from its first uppercase segment (`TryComputer::try_compute`), or its last segment when no
+/// earlier segment is uppercase. String literals and every other run are left alone.
 fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Option<String> {
     let bytes = text.as_bytes();
     let mut out = String::with_capacity(text.len());
