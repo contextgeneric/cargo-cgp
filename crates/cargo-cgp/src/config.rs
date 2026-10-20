@@ -1,10 +1,10 @@
 //! Well-known names shared across the front-end.
 //!
-//! These are the few string constants the subcommand cannot avoid hardcoding — the
-//! cargo subcommand name, the driver executable name, and the environment variable
-//! used to hand the sysroot to the driver. They live in one place so the functions
-//! that use them take them as parameters rather than embedding literals, keeping the
-//! call sites loosely coupled.
+//! These are the string constants the front-end cannot avoid hardcoding: the cargo subcommand
+//! name, the executable and crate names, the environment variables it reads or sets, the target
+//! subdirectory, and the marker flags it hands the driver. They live in one place so the functions
+//! that use them take them as parameters rather than embedding literals, keeping the call sites
+//! loosely coupled.
 
 /// The name cargo passes as the first argument when the binary is invoked as
 /// `cargo cgp <...>`. Cargo runs `cargo-cgp cgp <...>`, so the leading `cgp` is
@@ -33,13 +33,14 @@ pub const PINNED_TOOLCHAIN: &str = env!("CARGO_CGP_PINNED_TOOLCHAIN");
 /// the compiler the driver embeds; it outranks a project's `rust-toolchain.toml`.
 pub const RUSTUP_TOOLCHAIN_ENV: &str = "RUSTUP_TOOLCHAIN";
 
-/// Escape hatch: an explicit path to the driver executable, bypassing the sibling lookup.
-/// The UI test harness sets it to the freshly built `target/debug/cargo-cgp-driver`.
+/// Escape hatch: an explicit path to the driver executable, bypassing the sibling lookup, for a
+/// driver installed somewhere the lookup does not search.
 pub const DRIVER_ENV: &str = "CARGO_CGP_DRIVER";
 
 /// Escape hatch: when set (to any value), `cargo cgp check` skips the preflight and the
 /// toolchain forcing and trusts whatever driver and toolchain the environment provides.
-/// Used for local development inside the source checkout under the pinned toolchain.
+/// The Nix package sets it, since Nix provides the toolchain, and so does the UI test harness,
+/// which runs the binaries it builds under the toolchain `cargo test` selected.
 pub const NO_MANAGE_ENV: &str = "CARGO_CGP_NO_MANAGE";
 
 /// Escape hatch: overrides [`PINNED_TOOLCHAIN`] at runtime, for testing a toolchain bump

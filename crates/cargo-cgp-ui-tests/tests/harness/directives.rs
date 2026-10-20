@@ -88,3 +88,27 @@ fn an_unknown_quality_is_rejected() {
 fn an_env_directive_needs_an_assignment() {
     let _ = parse("//@env: CARGO_CGP_TEST_PANIC\nfn main() {}\n", "demo.rs");
 }
+
+#[test]
+#[should_panic(expected = "a directive declared twice")]
+fn a_second_codes_directive_is_rejected() {
+    let _ = parse(
+        "//@codes: CGP-E001\n//@codes: CGP-E002\nfn main() {}\n",
+        "demo.rs",
+    );
+}
+
+#[test]
+#[should_panic(expected = "a directive declared twice")]
+fn a_second_quality_directive_is_rejected() {
+    let _ = parse(
+        "//@quality: acceptable\n//@quality: usability\nfn main() {}\n",
+        "demo.rs",
+    );
+}
+
+#[test]
+#[should_panic(expected = "needs a crate name")]
+fn an_aux_build_directive_needs_a_crate() {
+    let _ = parse("//@aux-build:\nfn main() {}\n", "demo.rs");
+}

@@ -51,13 +51,13 @@ pub fn dispatch(args: &[String]) -> anyhow::Result<i32> {
         Some((subcommand, rest)) if subcommand == "setup" => {
             match no_argument_command(subcommand, rest, setup_help_text)? {
                 Some(code) => Ok(code),
-                None => run_setup(rest),
+                None => run_setup(),
             }
         }
         Some((subcommand, rest)) if subcommand == "update" => {
             match no_argument_command(subcommand, rest, update_help_text)? {
                 Some(code) => Ok(code),
-                None => run_update(rest),
+                None => run_update(),
             }
         }
         Some((subcommand, _)) => {

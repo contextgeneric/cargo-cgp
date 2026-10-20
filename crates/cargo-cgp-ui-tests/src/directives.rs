@@ -18,7 +18,9 @@
 //! A misspelled directive would be a silent no-op, so an unknown `//@name` is rejected, and so is
 //! a known name written in another comment form (`// @aux-build:` with a space, or `//! @json`):
 //! a stray space after `//` is the mistake that has actually happened. A comment that merely
-//! starts with an `@`-path, such as commented-out wiring, stays legal.
+//! starts with an `@`-path, such as commented-out wiring, stays legal. A directive that holds one
+//! value (`//@codes:`, `//@quality:`, `//@rewrites-falsely:`) is rejected when declared twice, since
+//! the second would silently replace the first.
 
 use std::fs;
 use std::path::Path;
@@ -91,15 +93,18 @@ pub fn parse(text: &str, name: &str) -> Directives {
 fn apply(directives: &mut Directives, rest: &str, line: &str, name: &str) {
     if let Some(value) = rest.strip_prefix("aux-build:") {
         let value = value.trim();
-        if !value.is_empty() {
-            directives.aux_build.push(value.to_owned());
-        }
+        assert!(
+            !value.is_empty(),
+            "`//@aux-build:` needs a crate name in {name}:\n  {line}"
+        );
+        directives.aux_build.push(value.to_owned());
     } else if let Some(reason) = rest.strip_prefix("rewrites-falsely:") {
         let reason = reason.trim();
         assert!(
             !reason.is_empty(),
             "`//@rewrites-falsely:` needs a reason in {name}:\n  {line}"
         );
+        once(directives.rewrites_falsely.is_some(), name, line);
         directives.rewrites_falsely = Some(reason.to_owned());
     } else if rest.trim_end() == "json" {
         directives.json = true;
@@ -120,6 +125,7 @@ fn apply(directives: &mut Directives, rest: &str, line: &str, name: &str) {
             valid,
             "`//@codes:` takes `none` or `CGP-Exxx` codes in {name}:\n  {line}"
         );
+        once(directives.codes.is_some(), name, line);
         directives.codes = Some(if codes == ["none"] { Vec::new() } else { codes });
     } else if let Some(quality) = rest.strip_prefix("quality:") {
         let quality = quality.trim();
@@ -127,10 +133,19 @@ fn apply(directives: &mut Directives, rest: &str, line: &str, name: &str) {
             QUALITIES.contains(&quality),
             "`//@quality:` takes one of {QUALITIES:?} in {name}:\n  {line}"
         );
+        once(directives.quality.is_some(), name, line);
         directives.quality = Some(quality.to_owned());
     } else {
         panic!("unknown `//@` directive in {name}:\n  {line}");
     }
+}
+
+/// Reject a second directive that holds one value, which would otherwise silently replace the first.
+fn once(already_declared: bool, name: &str, line: &str) {
+    assert!(
+        !already_declared,
+        "a directive declared twice in {name}:\n  {line}\na fixture states each one once"
+    );
 }
 
 /// Whether `text` is a `CGP-Exxx` code: `CGP-E` followed by three digits.

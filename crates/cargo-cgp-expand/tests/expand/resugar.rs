@@ -386,7 +386,9 @@ fn a_string_literal_naming_a_sugar_macro_is_left_alone() {
 
 #[test]
 fn a_raw_string_naming_a_sugar_macro_is_left_alone() {
-    let source = "const HINT: &str = r#\"Product![A , B] and \"Symbol!( x )\"\"#;\n";
+    // The quote inside it ends a plain string early, so a scan that missed the raw form would
+    // take the `Sum![a , b]` after that quote for code and tighten it.
+    let source = "const HINT: &str = r#\"say \"Sum![a , b]\" now\"#;\n";
 
     assert_eq!(expand(source), source);
 }

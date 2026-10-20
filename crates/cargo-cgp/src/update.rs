@@ -3,7 +3,7 @@
 //! Update is a thin orchestrator over cargo. It reads the crates.io sparse index for the
 //! front-end crate, picks the highest published version **the running version's channel allows**
 //! (a stable install moves only to stable releases; a pre-release install moves to any newer
-//! version, so `0.1.0-alpha` reaches `0.1.0`), and stops early unless that is strictly newer.
+//! version, so a `1.1.0-beta` reaches `1.1.0`), and stops early unless that is strictly newer.
 //! Otherwise it reinstalls the front-end at exactly that version with
 //! `cargo install --version <version> --locked` and hands off to the freshly installed `cargo cgp setup`, which brings the driver and
 //! toolchain up to the new version.
@@ -32,7 +32,7 @@ use crate::report::status;
 
 /// Find a newer in-channel version and, if there is one, reinstall the front-end and run
 /// the new `setup`. Returns the exit code to propagate.
-pub fn run_update(_args: &[String]) -> anyhow::Result<i32> {
+pub fn run_update() -> anyhow::Result<i32> {
     let index = fetch_sparse_index(FRONTEND_CRATE)?;
     let versions = parse_versions(&index);
 
@@ -116,7 +116,7 @@ pub fn parse_versions(index_body: &str) -> Vec<String> {
 /// Pick the highest version that `current`'s channel allows and that is strictly newer than
 /// it, or `None` when there is nothing to move to. A stable current (no pre-release) considers
 /// only stable candidates, so it never jumps to a pre-release. A pre-release current considers
-/// every candidate, pre-release or stable: semver orders `0.1.0-alpha` below `0.1.0`, so a
+/// every candidate, pre-release or stable: semver orders `1.1.0-beta` below `1.1.0`, so a
 /// pre-release install reaches the release it previewed, and moves on from there.
 pub fn select_update(versions: &[String], current: &str) -> anyhow::Result<Option<String>> {
     let current = Version::parse(current)

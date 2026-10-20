@@ -182,3 +182,13 @@ fn a_trait_selects_the_blocks_implementing_it() {
     assert!(out.contains("for Circle"), "{out}");
     assert!(!out.contains("pub struct"), "{out}");
 }
+
+#[test]
+fn an_unnamed_constant_without_a_block_is_never_selected() {
+    // `const _` also holds compile-time assertions, which carry no impl to select.
+    let source = "pub struct Rectangle;\nconst _: () = ();\nimpl Rectangle {}\n";
+    let out = expand_item(source, "Rectangle");
+
+    assert!(out.contains("impl Rectangle"), "{out}");
+    assert!(!out.contains("const _"), "{out}");
+}

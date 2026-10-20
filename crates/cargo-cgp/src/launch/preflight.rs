@@ -19,13 +19,13 @@ use crate::launch::sysroot::{format_stderr, sysroot};
 use crate::report::{INSTALL_RUSTUP_HELP, RUN_SETUP_HELP};
 use crate::toolchain::{ToolchainError, rustc_version};
 
-/// The identity a `cargo-cgp-driver --version` reports, parsed from its output.
+/// The identity a `cargo-cgp-driver --version` reports, parsed from its output: the two fields the
+/// preflight compares. The driver also prints its `pinned-toolchain:`, for a reader; the preflight
+/// names the toolchain it queried instead, which [`crate::config::TOOLCHAIN_ENV`] can change.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DriverVersion {
     /// The driver crate's version, which must equal the front-end's exactly.
     pub tool_version: String,
-    /// The nightly channel the driver is pinned to.
-    pub pinned_toolchain: String,
     /// The `rustc --version` line of the compiler that built the driver, which must equal the
     /// installed pinned toolchain's `rustc --version`.
     pub built_against_rustc: String,
@@ -113,8 +113,9 @@ pub fn toolchain_failure(error: ToolchainError) -> Result<PreflightFailure, anyh
 }
 
 /// Judge the answer of a driver that started for `--version`: whether it ran (`succeeded`), and
-/// what it printed. A failed run keeps its stderr, the loader's reason; a run whose output is not
-/// the driver's three lines is unparsable; otherwise [`evaluate`] compares its identity.
+/// what it printed. A failed run keeps its stderr, the loader's reason; a run whose output lacks the
+/// driver's version line or its `built-against-rustc:` line is unparsable; otherwise [`evaluate`]
+/// compares its identity.
 pub fn judge_driver_answer(
     succeeded: bool,
     stdout: &[u8],
@@ -146,20 +147,14 @@ pub fn parse_driver_version(output: &str) -> Option<DriverVersion> {
         return None;
     }
 
-    let mut pinned_toolchain = None;
-    let mut built_against_rustc = None;
-    for line in lines {
-        if let Some(value) = line.strip_prefix("pinned-toolchain:") {
-            pinned_toolchain = Some(value.trim().to_owned());
-        } else if let Some(value) = line.strip_prefix("built-against-rustc:") {
-            built_against_rustc = Some(value.trim().to_owned());
-        }
-    }
+    let built_against_rustc = lines
+        .find_map(|line| line.strip_prefix("built-against-rustc:"))?
+        .trim()
+        .to_owned();
 
     Some(DriverVersion {
         tool_version,
-        pinned_toolchain: pinned_toolchain?,
-        built_against_rustc: built_against_rustc?,
+        built_against_rustc,
     })
 }
 

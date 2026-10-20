@@ -21,7 +21,7 @@ use crate::toolchain::pinned_toolchain;
 /// Install the pinned toolchain and the matching driver. Returns the exit code to
 /// propagate (0 on success). Progress streams to the terminal, since both steps can take a
 /// while.
-pub fn run_setup(_args: &[String]) -> anyhow::Result<i32> {
+pub fn run_setup() -> anyhow::Result<i32> {
     let toolchain = pinned_toolchain();
 
     eprintln!(

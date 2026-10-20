@@ -85,8 +85,8 @@ pub fn tighten_sugar_bodies(printed: &str) -> String {
 /// The next resugared macro call in `text`: its offset, its delimiter pair, and its layout. The
 /// name must stand alone rather than end a longer identifier, so a `MySum!` is not mistaken for a
 /// `Sum!`, and it must sit in code: the scan steps over string, raw-string, and character literals
-/// and over comments (including the doc comments the printer writes), so text that merely names a
-/// macro is never edited.
+/// and over line comments (the printer writes every doc comment as one, and drops the rest), so
+/// text that merely names a macro is never edited.
 fn next_sugar(text: &str) -> Option<(usize, char, char, Layout)> {
     let mut chars = text.char_indices().peekable();
 
@@ -94,10 +94,6 @@ fn next_sugar(text: &str) -> Option<(usize, char, char, Layout)> {
         let rest = &text[index..];
         if rest.starts_with("//") {
             skip_line(&mut chars);
-            continue;
-        }
-        if rest.starts_with("/*") {
-            skip_block_comment(&mut chars);
             continue;
         }
         if let Some(hashes) = raw_string_start(text, index) {
@@ -173,25 +169,6 @@ fn skip_line(chars: &mut Peekable<CharIndices<'_>>) {
     for (_, c) in chars.by_ref() {
         if c == '\n' {
             return;
-        }
-    }
-}
-
-/// Consume a block comment, which may nest, through its closing `*/`.
-fn skip_block_comment(chars: &mut Peekable<CharIndices<'_>>) {
-    // The opening `/` is consumed; take its `*` too.
-    chars.next();
-    let mut depth = 1usize;
-    while let Some((_, c)) = chars.next() {
-        match c {
-            '/' if chars.next_if(|(_, c)| *c == '*').is_some() => depth += 1,
-            '*' if chars.next_if(|(_, c)| *c == '/').is_some() => {
-                depth -= 1;
-                if depth == 0 {
-                    return;
-                }
-            }
-            _ => {}
         }
     }
 }

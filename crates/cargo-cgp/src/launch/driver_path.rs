@@ -50,8 +50,8 @@ impl DriverLocation {
 
 /// Resolve the `cargo-cgp-driver` executable.
 ///
-/// An explicit [`DRIVER_ENV`] override wins, so local development and the UI test harness can point
-/// at a freshly built driver. Otherwise, since cargo and rustup lay the driver next to the
+/// An explicit [`DRIVER_ENV`] override wins, so a driver installed elsewhere can be named. Otherwise,
+/// since cargo and rustup lay the driver next to the
 /// `cargo-cgp` binary that is running (both end up in the same `target/<profile>` or `~/.cargo/bin`
 /// directory), we look for a sibling of the current executable, and failing that on `PATH`.
 ///

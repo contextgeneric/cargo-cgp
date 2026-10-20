@@ -24,7 +24,6 @@ fn sample() -> DriverVersion {
 fn parses_driver_version() {
     let parsed = sample();
     assert_eq!(parsed.tool_version, "0.1.0");
-    assert_eq!(parsed.pinned_toolchain, "nightly-2026-07-02");
     assert_eq!(
         parsed.built_against_rustc,
         "rustc 1.98.0-nightly (4c9d2bfe4 2026-07-01)"

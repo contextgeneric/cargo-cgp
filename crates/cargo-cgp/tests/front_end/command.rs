@@ -31,6 +31,17 @@ fn absent_target_dir_is_not_detected() {
     ])));
 }
 
+#[test]
+fn a_target_dir_after_a_separator_is_not_cargos() {
+    // Under `expand`, arguments after a user's `--` go to rustc, so they choose no target directory.
+    assert!(!forwards_target_dir(&args(&[
+        "--lib",
+        "--",
+        "--target-dir",
+        "elsewhere"
+    ])));
+}
+
 use std::path::PathBuf;
 
 use cargo_cgp::launch::{
