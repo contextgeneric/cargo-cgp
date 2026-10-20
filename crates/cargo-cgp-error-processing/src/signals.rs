@@ -141,13 +141,13 @@ pub fn reserved_names(text: &str) -> Vec<&str> {
             .find(|c: char| !is_ident(c))
             .map_or(rest.len(), |len| start + len);
         let word = &rest[start..word_end];
-        let inner = word.trim_start_matches('_').trim_end_matches('_');
-        if !preceded
-            && word.len() > 4
-            && word.ends_with("__")
-            && !inner.is_empty()
-            && word.len() - inner.len() == 4
-        {
+        let reserved = word
+            .strip_prefix("__")
+            .and_then(|tail| tail.strip_suffix("__"))
+            .is_some_and(|inner| {
+                !inner.is_empty() && !inner.starts_with('_') && !inner.ends_with('_')
+            });
+        if !preceded && reserved {
             names.push(word);
         }
         rest = &rest[word_end.max(start + 2)..];
