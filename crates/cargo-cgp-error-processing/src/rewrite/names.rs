@@ -88,4 +88,11 @@ impl ComponentNameMap {
             .all(|entry| entry == first)
             .then(|| (*first).clone())
     }
+
+    /// Whether some component's consumer trait is named `name`, as rustc printed it (a bare name,
+    /// or a path whose last segment is the name). Forces the lazy build on first use.
+    pub fn is_consumer(&self, name: &str) -> bool {
+        let name = last_segment(name);
+        self.name_map.values().any(|entry| entry.consumer == name)
+    }
 }

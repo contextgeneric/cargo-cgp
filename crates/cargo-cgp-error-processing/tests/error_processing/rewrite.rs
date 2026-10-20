@@ -562,6 +562,33 @@ fn the_wiring_overflow_help_names_the_provider_that_closes_or_grows_the_lookup()
 }
 
 #[test]
+fn rewrites_a_consumer_overflow_at_a_call_into_its_cycle_header() {
+    // A call reports the overflow on the consumer trait itself, with or without its arguments.
+    assert_eq!(
+        rewrite_wiring_overflow(
+            "overflow evaluating the requirement `Person: CanCalculateArea`",
+            &name_map(),
+            &use_context_cycle(),
+        )
+        .as_deref(),
+        Some(
+            "[CGP-E020] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because the lookup leads back to itself"
+        )
+    );
+    assert_eq!(
+        rewrite_wiring_overflow(
+            "overflow evaluating the requirement `Person: app::CanCalculateArea<Square>`",
+            &name_map(),
+            &use_context_cycle(),
+        )
+        .as_deref(),
+        Some(
+            "[CGP-E020] the wiring for the consumer trait `CanCalculateArea<Square>` on context `Person` never resolves, because the lookup leads back to itself"
+        )
+    );
+}
+
+#[test]
 fn a_non_wiring_overflow_is_left_alone() {
     // An `E0275` on an ordinary trait is not a wiring lookup, so it keeps rustc's own header.
     assert_eq!(

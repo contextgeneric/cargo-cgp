@@ -1,12 +1,12 @@
 #![feature(prelude_import)]
 //! A component wired to `UseContext` with no other implementation, reached by a method call.
 //!
-//! The call fails with a raw `E0275` "overflow evaluating `Person: CanGreet`", passed through. The
-//! `[CGP-E020]` rewrite fires only on a `CanUseComponent` overflow at a check.
+//! The call fails with an `E0275` "overflow evaluating the requirement `Person: CanGreet`", on the
+//! consumer trait itself rather than the `CanUseComponent` bound a check reports. The tool walks the
+//! call's consumer obligation as it walks a check entry's, so the block is `[CGP-E020]` with the
+//! help naming `UseContext`, as the check in `use_context_cycle` is.
 //!
 //! CGP error class: wiring cycle (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/wiring-cycle.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

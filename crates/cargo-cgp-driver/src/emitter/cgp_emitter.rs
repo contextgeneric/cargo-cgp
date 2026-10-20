@@ -452,17 +452,22 @@ impl<E: Emitter> CgpEmitter<E> {
         changed
     }
 
-    /// Why the `E0275` overflow `diag` never resolves, when walking its check entry's wiring shows
-    /// it: a cycle, or a lookup that grows ([`resolve::overflow_walk`]). `None` for any other
-    /// diagnostic, and for an overflow the walk does not explain (one that follows from an
-    /// unresolved type, say), which keeps rustc's wording.
+    /// Why the `E0275` overflow `diag` never resolves, when walking the wiring of its check entry, or
+    /// of the consumer-method call at its caret, shows it: a cycle, or a lookup that grows
+    /// ([`resolve::overflow_walk`]). `None` for any other diagnostic, and for an overflow the walk
+    /// does not explain (one that follows from an unresolved type, say), which keeps rustc's
+    /// wording.
     fn wiring_overflow(&self, diag: &DiagInner) -> Option<WiringOverflow> {
         if diag.code != Some(E0275) {
             return None;
         }
         let span = diag.span.primary_span()?;
+        let requirement = main_message_text(diag)?
+            .strip_prefix("overflow evaluating the requirement `")?
+            .split_once('`')?
+            .0;
         rustc_middle::ty::tls::with_opt(|tcx| {
-            match resolve::overflow_walk(tcx?, &self.resolve_cache, span) {
+            match resolve::overflow_walk(tcx?, &self.resolve_cache, span, requirement) {
                 resolve::OverflowWalk::Cut(reason) => Some(reason),
                 resolve::OverflowWalk::NotCut | resolve::OverflowWalk::NoEntry => None,
             }

@@ -1,0 +1,9 @@
+error[E0275]: [CGP-E021] the wiring for the consumer trait `CanShow<u32>` on context `App` never resolves, because each step requires it for a larger type (`CanShow<Vec<u32>>`, …)
+  --> src/main.rs:39:9
+   |
+39 |     App.show(1u32);
+   |         ^^^^
+   |
+   = help: wire a provider in place of `ShowNested`, which provides `Shower<u32>` for `App` by requiring `CanShow<Vec<u32>>` on `App`, a larger type at every step
+
+For more information about this error, try `rustc --explain E0275`.
