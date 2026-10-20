@@ -129,3 +129,36 @@ fn an_error_without_a_code_is_kept() {
         assert_eq!(merge_repeats(diags, map).len(), 2);
     });
 }
+
+#[test]
+fn an_error_with_an_inline_message_is_kept() {
+    with_source(|map, span| {
+        let inline = |caret| {
+            let mut diag = DiagInner::new(Level::Error, DiagMessage::Inline(MESSAGE.into()));
+            diag.code = Some(E0277);
+            diag.span = MultiSpan::from_span(caret);
+            diag
+        };
+        let diags = vec![inline(span(SHAPE)), inline(span(CIRCLE))];
+
+        assert_eq!(merge_repeats(diags, map).len(), 2);
+    });
+}
+
+#[test]
+fn the_same_error_on_the_same_line_of_another_file_is_kept() {
+    create_default_session_globals_then(|| {
+        let map = SourceMap::new(FilePathMapping::empty());
+        let shape_at = |name: &str| {
+            let file = map.new_source_file(FileName::Custom(name.to_owned()), SOURCE.to_owned());
+            let (lo, hi) = SHAPE;
+            Span::with_root_ctxt(file.start_pos + BytePos(lo), file.start_pos + BytePos(hi))
+        };
+        let diags = vec![
+            error(Some(E0277), MESSAGE, shape_at("main.rs")),
+            error(Some(E0277), MESSAGE, shape_at("lib.rs")),
+        ];
+
+        assert_eq!(merge_repeats(diags, &map).len(), 2);
+    });
+}
