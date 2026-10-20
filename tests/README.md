@@ -126,6 +126,12 @@ declare several. The auxiliary crates and the fixtures they back:
   those traits and an enum over them). They back the clean
   [`ui/ok/cross_crate_dispatch_enum.rs`](ui/ok/cross_crate_dispatch_enum.rs) and
   [`ui/ok/cross_crate_dispatch_payloads.rs`](ui/ok/cross_crate_dispatch_payloads.rs).
+- `cgp-test-plain-macros`: attribute macros of a crate with no `cgp` dependency, whose expansions
+  fail the way a CGP macro's can. They back
+  [`ui/pass-through/generated_lifetime_without_cgp.rs`](ui/pass-through/generated_lifetime_without_cgp.rs)
+  and
+  [`ui/pass-through/attribute_splice_without_cgp.rs`](ui/pass-through/attribute_splice_without_cgp.rs),
+  which pin that a crate without CGP keeps the suggestions the tool drops in one with it.
 
 One class compiles clean under the tool: two namespaces that inherit from each other, pinned by
 [`namespace_inheritance_cycle`](ui/wiring/namespace-inheritance-cycle/namespace_inheritance_cycle.rs).

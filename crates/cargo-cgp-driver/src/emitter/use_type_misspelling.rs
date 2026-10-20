@@ -39,8 +39,8 @@ pub fn reshape_use_type_misspellings(tcx: TyCtxt<'_>) {
     let Ok(misspellings) = contain(|| {
         candidates
             .iter()
-            .map(|(_, span, type_name, trait_name)| {
-                resolve::detect_use_type_misspelling(tcx, *span, type_name, trait_name)
+            .map(|(_, span, type_name, trait_name, notes)| {
+                resolve::detect_use_type_misspelling(tcx, *span, type_name, trait_name, notes)
             })
             .collect::<Vec<_>>()
     }) else {
@@ -78,8 +78,8 @@ fn edits_span(suggestion: &CodeSuggestion, span: Span) -> bool {
 }
 
 /// Each buffered `E0576` "cannot find associated type `name` in trait `Trait`", as its buffer
-/// index, primary span, type name, and trait name, in buffer order.
-fn missing_associated_types(buffer: &[BufEntry]) -> Vec<(usize, Span, String, String)> {
+/// index, primary span, type name, trait name, and the spans its notes point at, in buffer order.
+fn missing_associated_types(buffer: &[BufEntry]) -> Vec<(usize, Span, String, String, Vec<Span>)> {
     buffer
         .iter()
         .enumerate()
@@ -94,11 +94,17 @@ fn missing_associated_types(buffer: &[BufEntry]) -> Vec<(usize, Span, String, St
                 .strip_prefix("cannot find associated type `")?
                 .strip_suffix('`')?
                 .split_once("` in trait `")?;
+            let notes = diag
+                .children
+                .iter()
+                .flat_map(|child| child.span.primary_spans().iter().copied())
+                .collect();
             Some((
                 index,
                 diag.span.primary_span()?,
                 type_name.to_owned(),
                 trait_name.to_owned(),
+                notes,
             ))
         })
         .collect()

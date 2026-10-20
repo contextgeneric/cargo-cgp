@@ -3,8 +3,9 @@
 //!
 //! `HasScalarType` declares `Scalar`, and the import names `Scalr`, as in
 //! `use_type_unknown_assoc`. A second trait named `HasScalarType` sits in module `plain`, so the
-//! name in the compiler's message does not say which trait the import names, and the tool keeps
-//! the compiler's output rather than guess.
+//! name in the compiler's message does not say which trait the import names. The compiler's note on
+//! the similarly named `Scalar` points at the trait it resolved, so the tool takes that trait,
+//! drops the helps that respell the alias, and names the rename in the import.
 //!
 //! CGP error class: unresolved imported abstract type (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/unresolved-imported-type.md).
 extern crate std;
