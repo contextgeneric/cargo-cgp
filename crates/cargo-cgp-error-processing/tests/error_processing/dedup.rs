@@ -56,8 +56,10 @@ fn a_kept_rustc_header_is_never_a_dedup_key() {
     let mut ledger = DedupLedger::new();
     let rustc_header = "the trait bound `f64: Eq` is not satisfied";
     assert!(!ledger.check_and_record(Some("cause-a"), no_text, &[rustc_header]));
-    // A different failure whose kept header happens to match is still reported.
+    // A different failure whose kept header happens to match is still reported, resolved or
+    // declined: only a declined report consults the headers others recorded.
     assert!(!ledger.check_and_record(Some("cause-b"), no_text, &[rustc_header]));
+    assert!(!ledger.check_and_record(None, || "another body".to_owned(), &[rustc_header]));
 }
 
 #[test]
