@@ -1,0 +1,49 @@
+error[E0277]: the trait bound `Shape: FromTag<CircleTag>` is not satisfied
+  --> src/main.rs:40:13
+   |
+40 |     let _ = Shape::from_tag(PhantomData::<CircleTag>, Circle);
+   |             ^^^^^ unsatisfied trait bound
+   |
+help: the trait `FromTag<CircleTag>` is not implemented for `Shape`
+  --> src/main.rs:17:1
+   |
+17 | pub struct Shape;
+   | ^^^^^^^^^^^^^^^^
+help: `Shape` implements trait `FromTag<Tag>`
+  --> src/main.rs:25:1
+   |
+25 | impl FromTag<SquareTag> for Shape {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FromTag<SquareTag>`
+...
+32 | impl FromTag<TriangleTag> for Shape {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FromTag<TriangleTag>`
+
+error[E0277]: the trait bound `Shape: FromTag<CircleTag>` is not satisfied
+  --> src/main.rs:40:55
+   |
+40 |     let _ = Shape::from_tag(PhantomData::<CircleTag>, Circle);
+   |                                                       ^^^^^^ unsatisfied trait bound
+   |
+help: the trait `FromTag<CircleTag>` is not implemented for `Shape`
+  --> src/main.rs:17:1
+   |
+17 | pub struct Shape;
+   | ^^^^^^^^^^^^^^^^
+help: `Shape` implements trait `FromTag<Tag>`
+  --> src/main.rs:25:1
+   |
+25 | impl FromTag<SquareTag> for Shape {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FromTag<SquareTag>`
+...
+32 | impl FromTag<TriangleTag> for Shape {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `FromTag<TriangleTag>`
+
+For more information about this error, try `rustc --explain E0277`.
+warning: unused dependency `cgp`
+ --> Cargo.toml:8:1
+  |
+8 | cgp = { path = "$CGP/crates/main/cgp" }
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `cargo::unused_dependencies` is set to `warn` by default
+help: consider removing the dependency on `cgp`
