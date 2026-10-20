@@ -163,6 +163,7 @@ fn reserved_names_are_the_double_underscore_words() {
     assert!(reserved_names("my__a__").is_empty());
     assert!(reserved_names("___x___").is_empty());
     assert!(reserved_names("___a_").is_empty());
+    assert!(reserved_names("__a___").is_empty());
     assert!(reserved_names("______").is_empty());
     assert!(reserved_names("'_ and _").is_empty());
 }
