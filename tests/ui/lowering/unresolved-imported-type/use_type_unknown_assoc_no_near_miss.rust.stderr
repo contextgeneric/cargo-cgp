@@ -1,0 +1,18 @@
+error[E0576]: cannot find associated type `Weight` in trait `HasScalarType`
+  --> src/main.rs:24:29
+   |
+24 | pub fn get_weight(&self) -> Weight {
+   |                             ^^^^^^ not found in `HasScalarType`
+   |
+note: associated type `Scalar` defined here
+  --> src/main.rs:19:5
+   |
+19 |     type Scalar;
+   |     ^^^^^^^^^^^^
+help: maybe you meant this associated type
+   |
+24 - pub fn get_weight(&self) -> Weight {
+24 + pub fn get_weight(&self) -> Scalar {
+   |
+
+For more information about this error, try `rustc --explain E0576`.
