@@ -21,5 +21,6 @@ pub mod support;
 pub mod tree;
 pub mod undeclared;
 pub mod unimported;
+pub mod use_type_misspelling;
 pub mod wiring;
 pub mod wiring_name;

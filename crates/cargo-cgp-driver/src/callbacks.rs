@@ -15,7 +15,8 @@ use crate::expand::{ExpandRequest, print_expansion};
 /// unchanged from plain `rustc`.
 ///
 /// In a check, `after_expansion` reshapes the name-resolution errors of the crate's wiring entries
-/// ([`emitter::reshape_name_resolution_errors`]) and drops the suggestions that name a generated
+/// ([`emitter::reshape_name_resolution_errors`]) and of a misspelled `#[use_type]` import
+/// ([`emitter::reshape_use_type_misspellings`]), and drops the suggestions that name a generated
 /// identifier ([`emitter::drop_generated_name_suggestions`]). When the front-end asked for an expansion, it
 /// prints the expanded crate and stops the compilation there instead; see [`crate::expand`].
 pub struct CgpCallbacks {
@@ -36,6 +37,7 @@ impl rustc_driver::Callbacks for CgpCallbacks {
         let Some(request) = &self.expand else {
             // Name resolution is over, so the wiring entries its errors sit in can be read back.
             emitter::reshape_name_resolution_errors(tcx);
+            emitter::reshape_use_type_misspellings(tcx);
             emitter::drop_generated_name_suggestions(tcx);
             return Compilation::Continue;
         };

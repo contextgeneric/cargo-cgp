@@ -1,0 +1,19 @@
+error[E0576]: cannot find associated type `Scalr` in trait `HasScalarType`
+  --> src/main.rs:22:29
+   |
+22 | pub fn get_scalar(&self) -> Value {
+   |                             ^^^^^ not found in `HasScalarType`
+   |
+note: similarly named associated type `Scalar` defined here
+  --> src/main.rs:17:5
+   |
+17 |     type Scalar;
+   |     ^^^^^^^^^^^^
+note: associated type `Scalar` defined here
+  --> src/main.rs:17:5
+   |
+17 |     type Scalar;
+   |     ^^^^^^^^^^^^
+   = help: rename `Scalr` to `Scalar` in the `#[use_type]` import from `HasScalarType`
+
+For more information about this error, try `rustc --explain E0576`.

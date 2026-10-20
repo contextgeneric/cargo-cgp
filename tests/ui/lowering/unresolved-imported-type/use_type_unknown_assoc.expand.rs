@@ -10,11 +10,10 @@
 //! `Scalr`". The substitution preserves the span of the identifier the user wrote, so the caret
 //! lands on the `Scalr` in the signature, not on the macro attribute, and this fixture also guards
 //! that span behavior. rustc's suggestion respells the signature only, which leaves the attribute's
-//! `Scalr` in place and fails with `E0425` on `Scalar`; the tool passes the error through.
+//! `Scalr` in place and fails with `E0425` on `Scalar`, so the tool drops it and keeps rustc's
+//! header, with a `help` naming the rename in the import and in each use of the alias.
 //!
 //! CGP error class: unresolved imported abstract type (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/unresolved-imported-type.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

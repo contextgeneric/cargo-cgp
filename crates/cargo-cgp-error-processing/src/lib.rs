@@ -48,9 +48,9 @@ pub use diagnosis::{
     PendingNote, ProvidedComponent, ProviderImplWithoutMacro, ProviderTraitInUses, ProvidesFix,
     Requirement, Resolved, SECOND_CHECK_TABLE_LABEL, SECOND_DISPATCH_METHOD_LABEL,
     StructuralMistake, SuggestedCall, UndeclaredRequirement, UndeclaredTrait,
-    UnimportedAbstractType, UnresolvedWiringName, WiringConflict, WiringKey, WiringOverflow,
-    cause_headline, cause_note, cause_notes, cause_signature, cgp_impl_misuse_help, class_code,
-    class_sentence, coalesce_underived_fields, coalesced_headline, consumer_header,
+    UnimportedAbstractType, UnresolvedWiringName, UseTypeMisspelling, WiringConflict, WiringKey,
+    WiringOverflow, cause_headline, cause_note, cause_notes, cause_signature, cgp_impl_misuse_help,
+    class_code, class_sentence, coalesce_underived_fields, coalesced_headline, consumer_header,
     dependency_leaf_code, dependency_tree_leaf, dispatch_computer_name, dispatch_helper_method,
     fix_help_messages, group_by_shared_cause, internal_error_note, merged_cause,
     missing_use_provider_help, missing_wiring, orphan_conflict_help, plan_cgp_impl_misuse,
@@ -61,7 +61,7 @@ pub use diagnosis::{
     provider_trait_in_uses_help, root_cause_lead, similar_key, similar_name,
     structural_mistake_help, structural_mistake_note, undeclared_requirement_helps,
     undeclared_trait_help, unimported_abstract_type_help, unresolved_wiring_name_help,
-    wiring_conflict_help, wiring_overflow_help, wiring_overflow_reason,
+    use_type_misspelling_help, wiring_conflict_help, wiring_overflow_help, wiring_overflow_reason,
 };
 pub use postprocess::{
     AmbiguousNames, CGP_PREFIXES, Origin, context_has_hasfield_impls, postprocess_fragments,

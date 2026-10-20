@@ -65,7 +65,7 @@ pub fn detect_unimported_abstract_type(
 /// over the `__Context__` parameter `#[cgp_impl]`, `#[cgp_fn]`, and `#[cgp_component]` give their
 /// generated impls, a consumer or provider trait, or a `#[cgp_fn]` trait, recognized by its blanket
 /// impl over that parameter.
-fn enclosing_cgp_item(tcx: TyCtxt<'_>, span: Span) -> Option<DefId> {
+pub(crate) fn enclosing_cgp_item(tcx: TyCtxt<'_>, span: Span) -> Option<DefId> {
     let items = tcx.hir_crate_items(());
     let methods = items
         .trait_items()
