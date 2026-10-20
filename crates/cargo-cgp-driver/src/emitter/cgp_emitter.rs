@@ -1642,11 +1642,12 @@ impl<E: Emitter> CgpEmitter<E> {
         // references the broken component, and each call. A transformed diagnostic whose signature
         // the ledger has already recorded is such a re-report, so it is suppressed and only the
         // first occurrence is shown; the key scheme lives with the [`DedupLedger`]. Only the tool's
-        // own transformed diagnostics are de-duplicated; an untouched `rustc` error always passes
-        // through. cargo re-counts the diagnostics the emitter produces, so a suppressed re-report
-        // drops out of its "N errors" summary as well, keeping the count consistent. A resolved
-        // failure records its class headlines, not the cause it displays, since a declined re-report
-        // of the same failure is worded with a class sentence.
+        // own transformed diagnostics are de-duplicated here; an untouched `rustc` error is merged
+        // only at the flush, when rustc reports it twice on one line ([`merge_repeats`]). cargo
+        // re-counts the diagnostics the emitter produces, so a suppressed re-report drops out of
+        // its "N errors" summary as well, keeping the count consistent. A resolved failure records
+        // its class headlines, not the cause it displays, since a declined re-report of the same
+        // failure is worded with a class sentence.
         let headers: Vec<&str> = if class_headers.is_empty() {
             main_message_text(&diag).into_iter().collect()
         } else {
