@@ -44,6 +44,7 @@ mod use_type_misspelling;
 
 pub use cgp_emitter::CgpEmitter;
 pub use containment::{contain, install_panic_hooks};
+pub use edit::postprocess_multispan;
 pub use fallback::*;
 pub use generated_names::drop_generated_name_suggestions;
 pub use install::install;

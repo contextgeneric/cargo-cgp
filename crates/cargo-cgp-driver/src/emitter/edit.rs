@@ -355,7 +355,7 @@ pub(crate) fn postprocess_messages(
 /// Post-process each of a [`MultiSpan`]'s labels — the caret and secondary-label text the
 /// emitter renders alongside the source. The span is rebuilt only when a label actually
 /// changes, so an unaffected diagnostic keeps its exact `MultiSpan`.
-pub(crate) fn postprocess_multispan(
+pub fn postprocess_multispan(
     span: &mut MultiSpan,
     has_field_impls: bool,
     origin: Origin,
