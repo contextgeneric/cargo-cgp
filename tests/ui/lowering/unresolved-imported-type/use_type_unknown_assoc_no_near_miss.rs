@@ -4,12 +4,12 @@
 //! `HasScalarType` declares only `Scalar`, but the import names `Weight`, so the bare `Weight` in
 //! the signature is rewritten to `<Self as HasScalarType>::Weight` and the compiler reports `E0576`
 //! at it. rustc suggests the trait's one associated type in the signature, which leaves the
-//! import's `Weight` in place, so the edit does not compile. The tool keeps that suggestion: it
-//! names the rename in the import only for a name that is a slip of a declared type.
+//! import's `Weight` in place. That type is the one name an import of the trait can give, so the
+//! tool drops the suggestion and names the rename in the import instead.
 //!
 //! CGP error class: unresolved imported abstract type (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/unresolved-imported-type.md).
 
-//@quality: usability
+//@quality: acceptable
 //@codes: none
 
 use cgp::prelude::*;

@@ -9,10 +9,6 @@ note: associated type `Scalar` defined here
    |
 19 |     type Scalar;
    |     ^^^^^^^^^^^^
-help: maybe you meant this associated type
-   |
-24 - pub fn get_weight(&self) -> Weight {
-24 + pub fn get_weight(&self) -> Scalar {
-   |
+   = help: rename `Weight` to `Scalar` in the `#[use_type]` import from `HasScalarType` and in each use of `Weight`
 
 For more information about this error, try `rustc --explain E0576`.

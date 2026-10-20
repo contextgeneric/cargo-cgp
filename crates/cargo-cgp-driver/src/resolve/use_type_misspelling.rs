@@ -4,7 +4,7 @@
 //! `<Self as HasScalarType>::Scalr`, keeping the span of the alias the program wrote, so name
 //! resolution reports the missing associated type (`E0576`) at that alias. The compiler's help
 //! respells the alias, while the misspelling is in the import. This module confirms that the path
-//! came from such an import and finds the associated type the name is a slip of.
+//! came from such an import and finds the associated type the import meant.
 
 use cargo_cgp_error_processing::{UseTypeMisspelling, similar_name};
 use rustc_middle::ty::{self, TyCtxt};
@@ -17,9 +17,9 @@ use crate::resolve::unimported::enclosing_cgp_item;
 /// `primary_span` as a misspelled `#[use_type]` import. `None` unless the caret sits in an item a
 /// CGP macro generated and the source writes the name bare there (a path the program qualified
 /// itself, `<Self as Trait>::Name`, is respelled where it stands, as the compiler's help says),
-/// one trait of the reported name is the one meant, and it declares an associated type the name is
-/// a slip of. `notes` are the spans the diagnostic's notes point at, which tell apart two traits
-/// that share the name.
+/// one trait of the reported name is the one meant, and the import can be taken to mean one of its
+/// associated types (`meant_associated_type`). `notes` are the spans the diagnostic's notes point
+/// at, which tell apart two traits that share the name.
 pub fn detect_use_type_misspelling(
     tcx: TyCtxt<'_>,
     primary_span: Span,
@@ -34,7 +34,7 @@ pub fn detect_use_type_misspelling(
     }
     let alias = source_map.span_to_snippet(primary_span).ok()?;
     enclosing_cgp_item(tcx, primary_span)?;
-    let similar = similar_associated_type(tcx, type_name, trait_name, notes)?;
+    let similar = meant_associated_type(tcx, type_name, trait_name, notes)?;
     Some(UseTypeMisspelling {
         type_name: type_name.to_owned(),
         trait_name: trait_name.to_owned(),
@@ -43,11 +43,13 @@ pub fn detect_use_type_misspelling(
     })
 }
 
-/// The associated type of the trait named `trait_name` that `type_name` is a slip of. When several
-/// traits share the name, the one meant is the one whose associated type a note of the diagnostic
-/// points at: the compiler's "similarly named associated type … defined here" names the trait it
+/// The associated type of the trait named `trait_name` that an import naming `type_name` meant: the
+/// trait's only associated type, which is the one name an import of the trait can give and the one
+/// the compiler suggests whatever its spelling, or else the one `type_name` is a slip of. When
+/// several traits share the name, the one meant is the one whose associated type a note of the
+/// diagnostic points at: the compiler's "associated type … defined here" names the trait it
 /// resolved.
-fn similar_associated_type(
+fn meant_associated_type(
     tcx: TyCtxt<'_>,
     type_name: &str,
     trait_name: &str,
@@ -77,5 +79,8 @@ fn similar_associated_type(
         .filter(|item| item.kind.tag() == ty::AssocTag::Type)
         .map(|item| item.name().to_string())
         .collect();
-    similar_name(type_name, declared.iter().map(String::as_str)).map(str::to_owned)
+    match declared.as_slice() {
+        [only] => Some(only.clone()),
+        _ => similar_name(type_name, declared.iter().map(String::as_str)).map(str::to_owned),
+    }
 }
