@@ -1,13 +1,13 @@
 //! `delegate_and_check_components!` on a `new` provider bundle.
 //!
-//! The check blames the bundle (`[CGP-E110] missing field `name` on `GreetBundle``); nothing says a
-//! provider bundle was checked as a context.
+//! The macro checks the bundle as the context of its own entries, so the check reports
+//! ``[CGP-E001] missing field `name` on `GreetBundle` ``. That is true of the check as written: a
+//! `new` table also declares a fieldless context, and neither the macro nor the tool can tell the
+//! two apart, so nothing says that a bundle is checked through a context that delegates to it.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E110
 
 use cgp::prelude::*;
