@@ -133,7 +133,9 @@ declare several. The auxiliary crates and the fixtures they back:
   [`ui/pass-through/attribute_splice_without_cgp.rs`](ui/pass-through/attribute_splice_without_cgp.rs),
   which pin that a crate without CGP keeps the suggestions the tool drops in one with it, and
   [`ui/pass-through/respanned_token_suggestion.rs`](ui/pass-through/respanned_token_suggestion.rs),
-  which pins that a CGP crate keeps a suggestion at a token an attribute macro re-spanned.
+  which pins that a CGP crate keeps a suggestion at a token an attribute macro re-spanned, and
+  [`ui/pass-through/function_macro_suggestion.rs`](ui/pass-through/function_macro_suggestion.rs),
+  which pins that it keeps one at the end of a function-like macro's call.
 
 One class compiles clean under the tool: two namespaces that inherit from each other, pinned by
 [`namespace_inheritance_cycle`](ui/wiring/namespace-inheritance-cycle/namespace_inheritance_cycle.rs).

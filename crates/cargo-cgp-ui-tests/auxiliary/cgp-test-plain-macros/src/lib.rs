@@ -46,6 +46,14 @@ pub fn generated_body(_attr: TokenStream, item: TokenStream) -> TokenStream {
         .collect()
 }
 
+/// Expand to `holder.name.as_mut()`, an `Option<&mut String>`, with every token at the macro call,
+/// so a caller expecting `Option<&String>` makes rustc suggest a conversion right after the call,
+/// where the edit applies.
+#[proc_macro]
+pub fn holder_name_mut(_input: TokenStream) -> TokenStream {
+    parse("holder.name.as_mut()")
+}
+
 /// Re-emit an item with every identifier and group moved into the attribute's expansion while
 /// keeping its own location, as a macro does when it re-spans the tokens the user wrote. A
 /// suggestion rustc makes at such a token edits the user's own code, so it stays.
