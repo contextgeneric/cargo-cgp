@@ -155,11 +155,15 @@ fn reserved_names_are_the_double_underscore_words() {
         vec!["__compute_area__"]
     );
     // A name with underscores only inside, a leading pair alone, a word that merely contains a
-    // pair, and a triple underscore are not reserved names.
+    // pair or ends in one, a triple underscore, uneven ends, and underscores alone are not
+    // reserved names.
     assert!(reserved_names("snake_case_name").is_empty());
     assert!(reserved_names("__private").is_empty());
     assert!(reserved_names("my__a__b").is_empty());
+    assert!(reserved_names("my__a__").is_empty());
     assert!(reserved_names("___x___").is_empty());
+    assert!(reserved_names("___a_").is_empty());
+    assert!(reserved_names("______").is_empty());
     assert!(reserved_names("'_ and _").is_empty());
 }
 
