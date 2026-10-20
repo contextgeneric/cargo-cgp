@@ -7,7 +7,7 @@
 //! implementor list. The check that then fails on the provider's `IsProviderFor` bound restates the
 //! same mistake, so the tool drops it.
 //!
-//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
+//! CGP error class: provider impl without the macro (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/provider-impl-without-macro.md).
 
 //@quality: acceptable
 //@codes: CGP-E039

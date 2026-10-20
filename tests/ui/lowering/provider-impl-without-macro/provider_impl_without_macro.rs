@@ -6,7 +6,7 @@
 //! with a `help` to add `#[cgp_provider]` or write the provider with `#[cgp_impl]`, and drops the
 //! implementor list.
 //!
-//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
+//! CGP error class: provider impl without the macro (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/provider-impl-without-macro.md).
 
 //@quality: acceptable
 //@codes: CGP-E039
