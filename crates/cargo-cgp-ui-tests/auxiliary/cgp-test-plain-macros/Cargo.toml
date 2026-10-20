@@ -1,0 +1,15 @@
+# Auxiliary crate for the UI suite: attribute macros of a crate that knows nothing of CGP, whose
+# expansions provoke the suggestions the tool drops in a CGP crate, so the `pass-through/` fixtures
+# that use them pin that a plain Rust crate keeps them. It has no `cgp` dependency, so its manifest
+# carries no placeholder. The empty `[workspace]` table detaches it from the cargo-cgp workspace
+# above `target/`.
+[package]
+name    = "cgp-test-plain-macros"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+proc-macro = true
+
+[workspace]

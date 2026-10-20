@@ -1,0 +1,12 @@
+error[E0106]: missing lifetime specifier
+  --> src/main.rs:13:16
+   |
+13 |     pub first: &str,
+   |                ^ expected named lifetime parameter
+   |
+help: consider using the `'__a__` lifetime
+   |
+13 |     pub first: &'__a__ str,
+   |                 ++++++
+
+For more information about this error, try `rustc --explain E0106`.

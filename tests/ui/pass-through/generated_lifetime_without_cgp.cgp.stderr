@@ -1,0 +1,20 @@
+error[E0106]: missing lifetime specifier
+  --> src/main.rs:17:16
+   |
+17 |     pub first: &str,
+   |                ^ expected named lifetime parameter
+   |
+help: consider using the `'__a__` lifetime
+   |
+17 |     pub first: &'__a__ str,
+   |                 ++++++
+
+For more information about this error, try `rustc --explain E0106`.
+warning: unused dependency `cgp`
+ --> Cargo.toml:8:1
+  |
+8 | cgp = { path = "$CGP/crates/main/cgp" }
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `cargo::unused_dependencies` is set to `warn` by default
+help: consider removing the dependency on `cgp`
