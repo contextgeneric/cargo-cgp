@@ -1,8 +1,8 @@
 //! The `help` lines a plan attaches: the fix each kind of cause calls for, merged per owner.
 
 use cargo_cgp_error_processing::{
-    Adapter, AdapterFix, Causes, CoreProviderFix, CoreProviderHint, EntryFix, FieldFix, NearMiss,
-    ProvidedComponent, ProvidesFix,
+    Adapter, AdapterFix, Causes, CoreProviderFix, CoreProviderHint, DeriveFix, EntryFix, FieldFix,
+    MethodFix, NearMiss, PartialKind, ProvidedComponent, ProvidesFix, SuggestedCall,
 };
 
 use super::*;
@@ -499,5 +499,87 @@ fn an_unbounded_parameter_names_the_bound_to_add() {
     assert_eq!(
         fix_help_messages(&[app_cause(leaf)]),
         vec!["add the bound `Context: CanGreet` to `run`".to_owned()]
+    );
+}
+
+/// The `help`s of one cause reached by two routes, one ending at each of `leaves`.
+fn helps_of_two_routes(leaves: [Leaf; 2]) -> Vec<String> {
+    let [first, second] = leaves;
+    let causes = Causes::from_sub_chains([
+        (first, vec![consumer("CanRun", "App")]),
+        (second, vec![consumer("CanWalk", "App")]),
+    ]);
+    assert_eq!(causes.len(), 1, "the two routes are one cause");
+    fix_help_messages(&causes)
+}
+
+#[test]
+fn routes_that_disagree_on_a_fix_drop_its_help() {
+    let provides = |component: &str| Leaf::NotAProvider {
+        provider: "SayBye".to_owned(),
+        provider_trait: "Greeter".to_owned(),
+        adapter: AdapterFix::default(),
+        provides: ProvidesFix(vec![ProvidedComponent {
+            provider_trait: "Farewell".to_owned(),
+            component: component.to_owned(),
+        }]),
+        core: CoreProviderFix::default(),
+    };
+    let derive = |derive: &str| Leaf::DataTraitUnimplemented {
+        owner: "Shape".to_owned(),
+        trait_name: "HasFields".to_owned(),
+        derive: DeriveFix(Some(derive.to_owned())),
+    };
+    let delegate = |provider: &str| Leaf::WiringWithoutProviderFor {
+        component: "GreeterComponent".to_owned(),
+        owner: "App".to_owned(),
+        delegate: EntryFix(Some(provider.to_owned())),
+    };
+    let call = |method: &str| {
+        MethodFix(Some(SuggestedCall {
+            method: method.to_owned(),
+            replaces: None,
+            trait_path: None,
+        }))
+    };
+    let not_optional = |method: &str| Leaf::FieldNotOptional {
+        name: "port".to_owned(),
+        owner: "Config".to_owned(),
+        convert: call(method),
+    };
+    let partial = |method: &str| Leaf::PartialLacksDataTrait {
+        kind: PartialKind::Extractor,
+        target: "Shape".to_owned(),
+        trait_name: "HasExtractor".to_owned(),
+        replacement: call(method),
+    };
+    let open = CoreProviderHint::OpenDispatch {
+        component: "AreaCalculatorComponent".to_owned(),
+        params: vec!["Shape".to_owned()],
+    };
+
+    // Each pair differs only in the fix one route found, so a help naming either would not fix the
+    // other route's requirement.
+    let disagreeing = [
+        [
+            not_a_provider(vec![("Promote<Double>", None)]),
+            not_a_provider(vec![("WithProvider<Double>", None)]),
+        ],
+        [provides("FarewellComponent"), provides("ByeComponent")],
+        [core_hint(CoreProviderHint::UseFields), core_hint(open)],
+        [derive("HasFields"), derive("CgpData")],
+        [delegate("GreetHello"), delegate("GreetBye")],
+        [not_optional("to_optional"), not_optional("into_optional")],
+        [partial("downcast_fields"), partial("downcast_variants")],
+    ];
+    for leaves in disagreeing {
+        let helps = helps_of_two_routes(leaves.clone());
+        assert!(helps.is_empty(), "{leaves:?} kept {helps:?}");
+    }
+
+    // Routes that agree keep the fix.
+    assert_eq!(
+        helps_of_two_routes([derive("HasFields"), derive("HasFields")]),
+        vec!["add `#[derive(HasFields)]` to `Shape`".to_owned()]
     );
 }
