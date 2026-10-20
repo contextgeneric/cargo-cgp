@@ -15,11 +15,6 @@ pub const SYSROOT_FLAG: &str = "--sysroot";
 /// own.
 pub const BUG_REPORT_URL: &str = "https://github.com/contextgeneric/cargo-cgp/issues";
 
-/// The environment variable that makes the emitter panic on purpose, at the stage its value names
-/// (`transform` or `flush`). It exists for the UI fixtures that prove a panic in the emitter falls
-/// back to rustc's own diagnostics instead of losing them; nothing else sets it.
-pub const TEST_PANIC_ENV: &str = "CARGO_CGP_TEST_PANIC";
-
 /// The flag through which `cargo cgp expand` puts the driver in expand mode, carrying the path
 /// the expansion is written to (`--cgp-expand=<path>`).
 ///

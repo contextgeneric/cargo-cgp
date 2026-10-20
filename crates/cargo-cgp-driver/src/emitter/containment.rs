@@ -29,7 +29,7 @@ thread_local! {
 /// Run `f`, containing a panic in it: `Err` carries the panic's message and location. A
 /// `FatalErrorMarker` unwind is rustc aborting on a fatal error, not a panic of ours, so it
 /// continues unwinding.
-pub(crate) fn contain<R>(f: impl FnOnce() -> R) -> Result<R, String> {
+pub fn contain<R>(f: impl FnOnce() -> R) -> Result<R, String> {
     let outer = CONTAINING.with(|containing| containing.replace(true));
     let result = panic::catch_unwind(AssertUnwindSafe(f));
     CONTAINING.with(|containing| containing.set(outer));

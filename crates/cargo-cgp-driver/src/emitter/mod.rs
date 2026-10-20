@@ -18,26 +18,27 @@
 //! `DiagInner`-editing helpers), [`buffer`] (the diagnostics held until the flush), [`output`]
 //! (the inner emitter and buffer the panic hook can reach), [`name_resolution`] (the pass that
 //! reshapes a wiring entry's name-resolution errors once resolution is over), [`generated_names`] (the pass that drops a suggestion naming a generated identifier), [`attribute_splice`] (the drop of a suggestion spliced after an attribute macro), [`use_type_misspelling`] (the pass that names the rename a misspelled `#[use_type]` import needs), [`containment`] (containing a panic
-//! and the panic hooks), and [`test_panic`] (the panic a fixture raises on purpose).
+//! and the panic hooks), and [`fallback`] (the diagnostics emitted when a transform or the flush
+//! panics).
 
 mod attribute_splice;
 mod buffer;
 mod cgp_emitter;
 mod containment;
 mod edit;
+mod fallback;
 mod generated_names;
 mod install;
 mod name_resolution;
 mod output;
 mod repeats;
 mod shared_dispatch_method;
-mod test_panic;
 mod use_type_misspelling;
 
 pub use cgp_emitter::CgpEmitter;
-pub use containment::install_panic_hooks;
+pub use containment::{contain, install_panic_hooks};
+pub use fallback::*;
 pub use generated_names::drop_generated_name_suggestions;
 pub use install::install;
 pub use name_resolution::reshape_name_resolution_errors;
-pub use test_panic::*;
 pub use use_type_misspelling::reshape_use_type_misspellings;

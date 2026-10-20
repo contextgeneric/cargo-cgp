@@ -48,8 +48,9 @@ Three more directories hold fixtures that belong to no error class:
 - [`ui/ok/`](ui/ok): correctly wired programs that compile clean.
 - [`ui/pass-through/`](ui/pass-through): plain Rust errors in which nothing CGP is at fault, which
   the tool must render exactly as plain `cargo check` does.
-- [`ui/robustness/`](ui/robustness): how the tool degrades when it fails itself, such as a panic in
-  its emitter, which must still print every error.
+- [`ui/robustness/`](ui/robustness): how the tool degrades when the compilation fails under it, such
+  as a compiler crash or a fatal error while it holds diagnostics, which must still print every
+  error. A panic in the tool's own emitter is pinned by the driver's unit tests instead.
 
 Every fixture name is unique across the tree, so `find tests/ui -name '<name>.rs'` locates any
 fixture.
@@ -79,9 +80,8 @@ Four more directives are used where they apply:
   rustc's, for a fix still to come or a documented limitation; its snapshots pin today's output, and
   a fix that closes the difference removes the marker.
 - `//@json`: also run the JSON pass.
-- `//@env: <KEY>=<VALUE>`: set an environment variable for the tool's runs. The `robustness/`
-  fixtures set `CARGO_CGP_TEST_PANIC` this way to make the emitter panic on purpose, and
-  `RUSTFLAGS=-Ztreat-err-as-bug=2` to make the compiler crash.
+- `//@env: <KEY>=<VALUE>`: set an environment variable for the tool's runs. A `robustness/`
+  fixture sets `RUSTFLAGS=-Ztreat-err-as-bug=2` this way to make the compiler crash.
 
 An unknown directive, or a known one written with a space after `//`, is rejected rather than
 ignored.

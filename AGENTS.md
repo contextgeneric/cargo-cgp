@@ -232,6 +232,13 @@ rendering — lives in the helper crate. Reach for a newtype, a small enum, or a
 truly need it. When you move code across the boundary, add the unit test that its new rustc-free home
 makes possible.
 
+Keep test-only switches out of the shipped code. No environment variable, Cargo feature, `cfg`, or
+command-line flag may exist only so a test can reach a path. A test reaches the code through public
+functions and their parameters instead: pass the step under test as a closure or a value, as the
+driver tests do with the emitter's panic fallbacks (`emitter/fallback.rs`). A setting with a real use
+in development, debugging, or a custom deployment, such as `CARGO_CGP_DRIVER` or
+`CARGO_CGP_NO_MANAGE`, is configuration rather than a test switch, and stays.
+
 Keep tests out of `src/`. Do not write inline `#[cfg(test)] mod tests` blocks; every test lives in
 the crate's `tests/` directory alongside `src/`, as an integration test exercising the crate's
 public API. This keeps source files focused on the code, and it means a function worth testing is
@@ -289,28 +296,28 @@ cargo test -q -p cargo-cgp-ui-tests --test ui -- --list           # every fixtur
 ```
 
 Passing an argument to the harness needs `--test ui`, so the flag is not also handed to the crate's
-other (libtest) tests. The harness checks fixtures in parallel across a pool of workers, each with its
-own throwaway crate (so they never share a `src/main.rs` or a cargo target lock); `--jobs`/`-j` sets
-the worker count, which otherwise defaults to the machine's parallelism capped at 8. The snapshots
-capture `cargo-cgp`'s own output end to end, so they are what changes once the tool reformats
-diagnostics; a passing suite is also the standing end-to-end proof that the driver runs as the
-compiler. The fixtures are grouped under `tests/ui/` by the *error class* they reproduce,
+other (libtest) tests. The harness checks fixtures in parallel across a pool of workers, each with
+its own throwaway crate (so they never share a `src/main.rs` or a cargo target lock); `--jobs`/`-j`
+sets the worker count, which otherwise defaults to the machine's parallelism capped at 8. The
+snapshots capture `cargo-cgp`'s own output end to end, so they are what changes once the tool
+reformats diagnostics; a passing suite is also the standing end-to-end proof that the driver runs as
+the compiler. The fixtures are grouped under `tests/ui/` by the *error class* they reproduce,
 mirroring the knowledge base's error catalog (`checks/`, `hidden/`, `lowering/`, `wiring/`, `data/`,
 and `uncataloged/` for classes the catalog lacks), beside `ok/` for clean compiles, `pass-through/`
 for plain Rust errors the tool must leave as rustc renders them, and `robustness/` for how the tool
-degrades when it fails itself. How well the tool presents a
-fixture's error is a header directive, not a directory: `//@quality: acceptable`, `usability`, or
-`hidden`, next to `//@codes:`, the exact `[CGP-Exxx]` codes its output carries, which the harness
-checks. Add a scenario by dropping a `<name>.rs` file (with a `fn main`, a `//!` header, and those
-two directives) into its class directory and running
+degrades when the compilation fails under it (a compiler crash, a fatal error). How well the tool
+presents a fixture's error is a header directive, not a directory: `//@quality: acceptable`,
+`usability`, or `hidden`, next to `//@codes:`, the exact `[CGP-Exxx]` codes its output carries,
+which the harness checks. Add a scenario by dropping a `<name>.rs` file (with a `fn main`, a `//!`
+header, and those two directives) into its class directory and running
 `cargo test -p cargo-cgp-ui-tests --test ui -- --bless` (which writes the snapshots); see
 [`tests/README.md`](tests/README.md) for the header and the checks. A fixture whose output improves
 enough to clear the usability bar changes its `//@quality:` to `acceptable` and stays where it is.
-Snapshots are blessed under the pinned toolchain, so a toolchain bump can require a re-bless. The full
-testing picture — the harness structure, why it drives the whole tool rather than the driver
+Snapshots are blessed under the pinned toolchain, so a toolchain bump can require a re-bless. The
+full testing picture — the harness structure, why it drives the whole tool rather than the driver
 directly, and the comparison with Clippy — is documented in
-[Testing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/testing.md); read it before adding tests, and keep it in sync when the
-test setup changes.
+[Testing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/testing.md);
+read it before adding tests, and keep it in sync when the test setup changes.
 
 ### Checking a CGP project elsewhere with Nix
 

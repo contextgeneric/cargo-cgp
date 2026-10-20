@@ -16,9 +16,7 @@ use rustc_errors::json::JsonEmitter;
 use rustc_interface::interface::Config;
 use rustc_session::config::ErrorOutputType;
 
-use crate::config::TEST_PANIC_ENV;
 use crate::emitter::cgp_emitter::CgpEmitter;
-use crate::emitter::test_panic::TestPanic;
 
 /// Install the transforming emitter on the compiler session, replicating how rustc builds its
 /// default emitter so cargo's output is what vanilla `rustc` would produce apart from the CGP
@@ -49,11 +47,6 @@ pub fn install(config: &mut Config) {
     // Copy the format out (it is `Copy`) so the immutable borrow of `config.opts` ends
     // before `config.psess_created` is assigned.
     let error_format = sopts.error_format;
-    let test_panic = std::env::var(TEST_PANIC_ENV)
-        .ok()
-        .as_deref()
-        .and_then(TestPanic::parse);
-
     match error_format {
         ErrorOutputType::Json {
             pretty,
@@ -78,7 +71,7 @@ pub fn install(config: &mut Config) {
 
                 psess
                     .dcx()
-                    .set_emitter(Box::new(CgpEmitter::new(inner, source_map, test_panic)));
+                    .set_emitter(Box::new(CgpEmitter::new(inner, source_map)));
             }));
         }
         ErrorOutputType::HumanReadable {
@@ -104,7 +97,7 @@ pub fn install(config: &mut Config) {
 
                 psess
                     .dcx()
-                    .set_emitter(Box::new(CgpEmitter::new(inner, source_map, test_panic)));
+                    .set_emitter(Box::new(CgpEmitter::new(inner, source_map)));
             }));
         }
     }

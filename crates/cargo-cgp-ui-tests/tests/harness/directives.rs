@@ -10,7 +10,7 @@ fn reads_every_directive() {
 //@aux-build: cgp-test-crate-b
 //@rewrites-falsely: the module strip drops the paths
 //@json
-//@env: CARGO_CGP_TEST_PANIC=flush
+//@env: RUST_BACKTRACE=0
 //@env: RUSTFLAGS=-Ztreat-err-as-bug=1
 //@codes: CGP-E001 CGP-E110
 //@quality: acceptable
@@ -23,7 +23,7 @@ fn main() {}
             rewrites_falsely: Some("the module strip drops the paths".into()),
             json: true,
             env: vec![
-                ("CARGO_CGP_TEST_PANIC".into(), "flush".into()),
+                ("RUST_BACKTRACE".into(), "0".into()),
                 ("RUSTFLAGS".into(), "-Ztreat-err-as-bug=1".into()),
             ],
             codes: Some(vec!["CGP-E001".into(), "CGP-E110".into()]),
@@ -86,7 +86,7 @@ fn an_unknown_quality_is_rejected() {
 #[test]
 #[should_panic(expected = "`//@env:` takes `KEY=VALUE`")]
 fn an_env_directive_needs_an_assignment() {
-    let _ = parse("//@env: CARGO_CGP_TEST_PANIC\nfn main() {}\n", "demo.rs");
+    let _ = parse("//@env: RUST_BACKTRACE\nfn main() {}\n", "demo.rs");
 }
 
 #[test]

@@ -15,16 +15,16 @@ use cargo_cgp_error_processing::{
     StructuralMistake, UndeclaredRequirement, UndeclaredTrait, UnimportedAbstractType,
     WiringOverflow, cause_signature, cgp_impl_misuse_help, coalesce_underived_fields,
     coalesced_headline, explain_footer_codes, fix_help_messages, group_by_shared_cause,
-    internal_error_note, is_explain_footer_text, is_method_bounds_text,
-    is_recursion_limit_help_text, is_unbounded_type_param_item_text, mentions_orphan_param_text,
-    missing_use_provider_help, orphan_conflict_help, plan_cgp_impl_misuse,
-    plan_missing_use_provider, plan_orphan_conflict, plan_provider_impl_without_macro,
-    plan_provider_trait_in_uses, plan_resolved, plan_structural_mistake,
-    plan_undeclared_requirement, plan_undeclared_trait, plan_unimported_abstract_type,
-    plan_unresolved_wiring_name, plan_wiring_conflict, postprocess_message,
-    provider_impl_without_macro_help, provider_trait_in_uses_help, structural_mistake_help,
-    undeclared_requirement_helps, undeclared_trait_help, unimported_abstract_type_help,
-    unresolved_wiring_name_help, wiring_conflict_help, wiring_overflow_help,
+    is_explain_footer_text, is_method_bounds_text, is_recursion_limit_help_text,
+    is_unbounded_type_param_item_text, mentions_orphan_param_text, missing_use_provider_help,
+    orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
+    plan_provider_impl_without_macro, plan_provider_trait_in_uses, plan_resolved,
+    plan_structural_mistake, plan_undeclared_requirement, plan_undeclared_trait,
+    plan_unimported_abstract_type, plan_unresolved_wiring_name, plan_wiring_conflict,
+    postprocess_message, provider_impl_without_macro_help, provider_trait_in_uses_help,
+    structural_mistake_help, undeclared_requirement_helps, undeclared_trait_help,
+    unimported_abstract_type_help, unresolved_wiring_name_help, wiring_conflict_help,
+    wiring_overflow_help,
 };
 use rustc_errors::codes::{
     E0107, E0117, E0119, E0186, E0207, E0210, E0220, E0271, E0275, E0277, E0308, E0425, E0428,
@@ -39,21 +39,19 @@ use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
 
 use crate::component_map::build_name_map_from_tls;
-use crate::config::BUG_REPORT_URL;
 use crate::emitter::attribute_splice::drop_attribute_splices;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
-use crate::emitter::containment::contain;
 use crate::emitter::edit::{
     bound_candidate_lists, diag_kind, diagnostic_spans, is_no_matching_item,
     is_question_mark_cascade, main_message_text, mentions_hasfield_impls, mentions_wiring,
     merged_span, message_signature, postprocess_messages, postprocess_multispan, replace_header,
     rewrite_messages, strip_method_probe_advice, subdiag, two_definitions_span,
 };
+use crate::emitter::fallback::{render_or_untransformed, transform_or_original};
 use crate::emitter::name_resolution::is_unresolved_wiring_overflow;
 use crate::emitter::output::{Output, lock_output, register_output};
 use crate::emitter::repeats::merge_repeats;
 use crate::emitter::shared_dispatch_method::pair_shared_dispatch_method;
-use crate::emitter::test_panic::{TestPanic, inject};
 use crate::resolve::{
     self, ConflictAction, ConflictTrait, DetectedCgpImplMisuse, DetectedUndeclaredRequirement,
     DetectedUnimportedAbstractType, ResolveCache,
@@ -129,9 +127,6 @@ pub struct CgpEmitter<E: Emitter> {
     /// so it serves only a diagnostic the tool rewrote, which arrives after lowering.
     ambiguous: OnceCell<AmbiguousNames>,
     ambiguous_with_glob_items: OnceCell<AmbiguousNames>,
-    /// The stage made to panic on purpose, set only by the UI fixtures that pin the panic fallback
-    /// (see [`TestPanic`]).
-    test_panic: Option<TestPanic>,
 }
 
 /// The subtrees a flush has already drawn, shared across its blocks so a later one `(*)`-elides
@@ -244,7 +239,7 @@ fn footer_note(template: &DiagInner, message: &str) -> DiagInner {
 impl<E: Emitter> CgpEmitter<E> {
     /// Wrap `inner`, which renders against `source_map`, and register the shared output for the
     /// panic hook on this thread.
-    pub fn new(inner: E, source_map: Option<Arc<SourceMap>>, test_panic: Option<TestPanic>) -> Self
+    pub fn new(inner: E, source_map: Option<Arc<SourceMap>>) -> Self
     where
         E: 'static,
     {
@@ -268,7 +263,6 @@ impl<E: Emitter> CgpEmitter<E> {
             cgp_used: OnceCell::new(),
             ambiguous: OnceCell::new(),
             ambiguous_with_glob_items: OnceCell::new(),
-            test_panic,
         }
     }
 
@@ -1691,21 +1685,10 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
     /// Transform and buffer `diag`, containing a panic in the transform: the diagnostic is then
     /// buffered as rustc built it, with a note saying why, and the compilation goes on.
     fn emit_diagnostic(&mut self, diag: DiagInner) {
-        let original = diag.clone();
-        let armed = self.test_panic;
-        let transformed = contain(|| {
-            if original.is_error() {
-                inject(armed, TestPanic::Transform);
-            }
-            self.transform(diag, &original);
-        });
-        if let Err(detail) = transformed {
-            let mut diag = original;
-            diag.children.push(subdiag(
-                Sublevel::Note,
-                internal_error_note(&detail, BUG_REPORT_URL),
-            ));
-            self.push(BufEntry::Plain(Box::new(diag)));
+        if let Some(original) =
+            transform_or_original(diag, |diag, original| self.transform(diag, original))
+        {
+            self.push(BufEntry::Plain(Box::new(original)));
         }
     }
 
@@ -1759,20 +1742,11 @@ impl<E: Emitter> Drop for CgpEmitter<E> {
         if buffer.is_empty() {
             return;
         }
-        let armed = self.test_panic;
-        let to_emit = match contain(|| {
-            inject(armed, TestPanic::Flush);
-            self.render(&buffer)
-        }) {
-            Ok(rendered) => rendered,
-            Err(detail) => {
-                let note = internal_error_note(&detail, BUG_REPORT_URL);
-                buffer
-                    .into_iter()
-                    .map(|entry| entry.untransformed(Some(&note)))
-                    .collect()
-            }
-        };
+        let to_emit = render_or_untransformed(
+            buffer,
+            |buffer| self.render(buffer),
+            |entry, note| entry.untransformed(Some(note)),
+        );
         let mut output = self.output();
         for diag in to_emit {
             output.inner.emit_diagnostic(diag);
