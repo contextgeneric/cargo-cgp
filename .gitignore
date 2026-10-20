@@ -2,3 +2,6 @@ target/
 *.pending-snap
 *.snap.new
 /result
+
+# The crash report rustc (and a panicking test of the driver) writes into the working directory
+rustc-ice-*.txt
