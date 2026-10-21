@@ -4,7 +4,7 @@
 //! `App` wires both `FooProviderComponent` and `BarProviderComponent` to `CommonProvider`, which
 //! only has an entry for `FooProviderComponent`. Checking `FooProviderComponent` reaches
 //! `DoFooWithBar`, which needs `CanUseBar`, which `CommonProvider` cannot provide. The tool reports
-//! `[CGP-E002]` on `CommonProvider` over a `[CGP-E114]` root cause naming the missing
+//! the check as `[CGP-E001]`, its headline the `[CGP-E114]` root cause, which names the missing
 //! `BarProviderComponent` entry in the aggregate rather than in `App`.
 //!
 //! CGP error class:
