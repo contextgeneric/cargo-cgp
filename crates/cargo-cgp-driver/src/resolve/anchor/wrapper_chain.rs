@@ -25,8 +25,9 @@ use crate::resolve::walk::{holds, resolve_leaves};
 ///
 /// This entry starts from the enclosing impl's own unmet supertrait and walks *down* the ordinary
 /// trait obligations — via each impl's `where`-clauses — until one lands on a CGP consumer whose
-/// `Self` *is* a context ([`is_context_adt`]), at which point it hands off to [`consumer_handoff_causes`]. Every
-/// ordinary hop between the impl and that handoff becomes a `trait impl` node, so the tree reads
+/// `Self` *is* a context ([`is_context_adt`]), at which point it hands off to
+/// [`consumer_handoff_causes`]. Every ordinary hop between the impl and that handoff becomes a
+/// `trait impl` node, so the tree reads
 /// from the code the programmer wrote (`CanAddApiRoutes → CanAddMainApiRoutes → CanAddRoute →
 /// CanHandleApiSend → CanHandleApi → …`) down to the root cause. Because it *re-evaluates* each
 /// obligation with the trait solver rather than trusting rustc's cascade-suppressed diagnostic, it
@@ -172,8 +173,8 @@ fn collect_wrapper_chain_causes<'tcx>(
     }
 }
 
-/// Recover a cause per root cause of `obligation` when it *is* a CGP consumer trait on a local
-/// context (`App: CanHandleApi<GreetApi>`) — the handoff the wrapper-chain descent hands off to the
+/// Recover a cause per root cause of `obligation` when it *is* a CGP consumer trait on a context
+/// (`App: CanHandleApi<GreetApi>`) — the handoff the wrapper-chain descent hands off to the
 /// ordinary [walk](crate::resolve::walk). `obligation` already is the consumer obligation the walk
 /// wants — with its concrete component parameters preserved — so it is walked directly, with no
 /// `CanUseComponent`/`IsProviderFor` detour, and the returned trees are already headed by the

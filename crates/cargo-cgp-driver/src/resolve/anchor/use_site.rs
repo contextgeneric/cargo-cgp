@@ -74,13 +74,14 @@ pub fn resolve_use_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -
 /// - A **bare component marker** (`ItemEncoderComponent`) re-checks with the unit parameter `()`,
 ///   the parameterless form an ordinary component's use-site failure exercises — *unless* the same
 ///   component is `open`-dispatched (below), in which case its `()` form is meaningless (there is no
-///   unit-keyed value) and would report a spurious `@Component.()` redirect, so it is skipped.
+///   unit-keyed value) and would report a spurious `@Component.()` redirect, or the component has
+///   type parameters, whose values a bare marker does not carry, so it is skipped.
 /// - An **`open`-dispatch redirect path** (`PathCons<ItemEncoderComponent, PathCons<Value, Nil>>`,
 ///   emitted by an `@Component.Value:` entry) is *not* a component marker — re-checking it as one
 ///   reports the internal `PathCons` spine as a bogus consumer trait. Instead the real dispatch
-///   parameter is recovered from the path, re-checking `CanUseComponent<Component, Value>` so the
-///   failure is traced with the value the context actually wired (a longer, non-two-segment path is
-///   skipped rather than mis-rendered).
+///   parameter is recovered from the path, re-checking the consumer obligation `Ctx:
+///   Consumer<Value>` so the failure is traced with the value the context actually wired (a longer,
+///   non-two-segment path is skipped rather than mis-rendered).
 /// - A **blanket-forwarding key** — a bare type parameter (`__Key__`) — is the impl a `namespace …;`
 ///   join emits (`impl<__Key__> DelegateComponent<__Key__> for Ctx`), which forwards *every* lookup
 ///   to the namespace rather than naming a concrete component. It is not a real wired key, and
@@ -128,7 +129,7 @@ fn delegated_check_targets<'tcx>(
     for &key in &keys {
         if let Some((comp, value)) = open_dispatch_target(tcx, key) {
             // A generic catch-all open entry (`<'a, T> &'a T: SerializeDeref`) keeps a free type
-            // parameter in its recovered value; re-checking `CanUseComponent<Comp, &T>` bottoms out
+            // parameter in its recovered value; re-checking `Ctx: Consumer<&T>` bottoms out
             // on `T: Sized` noise rather than a real gap, and every concrete value the entry serves
             // is re-checked through its own entry, so skip it.
             if !value.has_param() {

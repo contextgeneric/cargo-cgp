@@ -1087,13 +1087,6 @@ impl<E: Emitter> CgpEmitter<E> {
             if let Some(resolved) = resolve::resolve_provider_call(tcx, cache, primary) {
                 return Some((resolved, true));
             }
-            // Last: a `#[cgp_fn]` / `#[blanket_trait]` blanket trait the diagnostic names in its
-            // spans, required through a `where` bound or supertrait rather than a direct call. This
-            // is gated to `E0277` — a trait *used as a bound* — deliberately: an `E0599` method
-            // call is the call-site anchor's domain, and a *generic consumer* method call whose deep
-            // trait bound is a note (not the failure the diagnostic is about) must stay declined
-            // when its dispatch parameter is unrecoverable, rather than latch onto that transitive
-            // trait (see `generic_consumer_unwritten_arg`).
             // A bound of a generic function the call instantiates (`fail::<App>()`), read off the
             // function's own `where` clauses: an `E0277` whose trait no span names and whose
             // context no receiver carries.
@@ -1102,6 +1095,13 @@ impl<E: Emitter> CgpEmitter<E> {
             {
                 return Some((resolved, true));
             }
+            // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait the diagnostic names in its spans,
+            // required through a `where` bound or supertrait rather than a direct call. This is
+            // gated to `E0277` — a trait *used as a bound* — deliberately: an `E0599` method call
+            // is the call-site anchor's domain, and a *generic consumer* method call whose deep
+            // trait bound is a note (not the failure the diagnostic is about) must stay declined
+            // when its dispatch parameter is unrecoverable, rather than latch onto that transitive
+            // trait (see `generic_consumer_unwritten_arg`).
             if diag.code == Some(E0277)
                 && let Some(resolved) = resolve::resolve_use_site_blanket_trait(tcx, cache, &spans)
             {

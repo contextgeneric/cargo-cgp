@@ -334,8 +334,8 @@ fn namespace_has_cgp_evidence(tcx: TyCtxt<'_>, def_id: DefId, depth: u32) -> boo
     })
 }
 
-/// Whether `ty` is a struct or enum defined in the crate being compiled — the only kind of type
-/// whose wiring the resolver re-checks as a context.
+/// Whether `ty` is a struct or enum defined in the crate being compiled. A context may also come
+/// from another crate ([`is_context_adt`]).
 pub(crate) fn is_local_adt(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(def, _) if def.did().is_local())
 }

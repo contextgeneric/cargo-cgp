@@ -22,14 +22,16 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// placeholder-free root cause is found.
 ///
 /// The called method resolves through either a CGP **consumer trait** or a `#[cgp_fn]` /
-/// `#[blanket_trait]` **blanket trait** (a local blanket-impl trait that is not a CGP
-/// component). Both are consumed the same way — `app.describe()` — and both seed a walkable
-/// obligation `Ctx: Trait<…>` whose `Self` is the context; they differ only in the header the
-/// result gets. A blanket trait is not a CGP component, so — exactly as the impl-site anchor
-/// words such a trait — its failure reads `[CGP-E003] the trait …` rather than `[CGP-E001] the
-/// consumer trait …`, by clearing [`Resolved::consumers_are_cgp`] the walk sets.
+/// `#[blanket_trait]` **blanket trait** (a blanket-impl trait, in any crate, that is not a CGP
+/// component and whose blanket depends on CGP). Both are consumed the same way —
+/// `app.describe()` — and both seed a walkable obligation `Ctx: Trait<…>` whose `Self` is the
+/// context; they differ only in the header the result gets. A blanket trait is not a CGP
+/// component, so — exactly as the impl-site anchor words such a trait — its failure reads
+/// `[CGP-E003] the trait …` rather than `[CGP-E001] the consumer trait …`, by clearing
+/// [`Resolved::consumers_are_cgp`] the walk sets.
 ///
-/// Tried last: a failure any span-matching anchor can recover keeps its more precise recovery.
+/// Tried after the six span-matching anchors, so a failure any of them can recover keeps its more
+/// precise recovery.
 pub fn resolve_call_site(
     tcx: TyCtxt<'_>,
     cache: &ResolveCache,
