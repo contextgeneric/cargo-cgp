@@ -5,10 +5,10 @@
 //! The upstream `App` routes every syntax of its pipeline language, but its open
 //! `ErrorRaiserComponent` table has no entry for `IoFailure`, which the `Echo` stage raises. This
 //! crate implements `HasEchoRunner` on `Box<App>` where `App` can run the pipeline, a concrete
-//! bound the compiler checks at the impl. The tool leaves the error to the text rewrite, which names
-//! the `ComposeHandlers` plumbing as the provider at fault and keeps rustc's suggestion to enable
-//! `trivial_bounds`, which does not fix the program. The same impl on a local context reports its
-//! root cause.
+//! bound the compiler checks at the impl. The impl-site anchor reads the bound the caret is on as
+//! the consumer obligation it names, on `App`, which carries its own wiring, so the bound reports
+//! the `[CGP-E113]` missing route a local context would, without rustc's suggestion to enable
+//! `trivial_bounds`, which does not fix the program.
 //!
 //! CGP error class: unsatisfied dependency, hidden
 //! (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).

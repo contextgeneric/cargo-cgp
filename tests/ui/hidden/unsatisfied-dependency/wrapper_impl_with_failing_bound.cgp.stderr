@@ -1,8 +1,20 @@
-error[E0277]: [CGP-E003] missing field `name` on `Person`
+error[E0277]: [CGP-E001] missing wiring for `WaverComponent` on `Person`
   --> src/main.rs:51:37
    |
 51 | impl CanGreetTwice for Person where Person: CanWave {}
    |                                     ^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E113] missing wiring for `WaverComponent` on `Person`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanWave` for context `Person`
+             └─ [CGP-E113] missing wiring for `WaverComponent` on `Person`
+   = help: wire `WaverComponent` to a provider in the wiring of `Person`
+
+error[E0277]: [CGP-E003] missing field `name` on `Person`
+  --> src/main.rs:51:24
+   |
+51 | impl CanGreetTwice for Person where Person: CanWave {}
+   |                        ^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `name` on `Person`
            this is required through the dependency chain:

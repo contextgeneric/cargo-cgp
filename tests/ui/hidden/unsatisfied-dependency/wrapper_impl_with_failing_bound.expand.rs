@@ -4,9 +4,9 @@
 //! `CanGreetTwice` has the consumer trait `CanGreet` as its supertrait, which fails because
 //! `Person` lacks the `name` field `GreetHello` reads. The impl also requires `Person: CanWave`, and
 //! `Person` wires no waver. rustc reports the supertrait at the impl's `Self` type and the bound at
-//! the bound. The tool reports one block, at the bound, naming the supertrait's missing field, and
-//! drops the missing waver wiring: the impl-site anchor reads every caret on the impl's header as
-//! the supertrait's failure.
+//! the bound. The tool reports each cause on its own caret: the missing waver wiring on the bound,
+//! which the impl-site anchor reads as the consumer obligation it names, and the missing field on
+//! the impl's `Self` type, from the supertrait.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;

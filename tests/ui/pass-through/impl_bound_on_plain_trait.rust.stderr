@@ -1,0 +1,17 @@
+error[E0277]: the trait bound `Person: Clone` is not satisfied
+  --> src/main.rs:36:39
+   |
+36 | impl CanCopyGreeting for Person where Person: Clone {}
+   |                                       ^^^^^^^^^^^^^ the trait `Clone` is not implemented for `Person`
+   |
+help: consider annotating `Person` with `#[derive(Clone)]`
+   |
+26 + #[derive(Clone)]
+27 | pub struct Person;
+   |
+help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
+   |
+12 + #![feature(trivial_bounds)]
+   |
+
+For more information about this error, try `rustc --explain E0277`.

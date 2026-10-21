@@ -9,7 +9,7 @@ use rustc_span::def_id::DefId;
 use crate::resolve::anchor::{can_use_component_supertrait, enclosing_trait_impls, is_about_impl};
 use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{
-    consumer_provider_trait, is_blanket_trait, is_context_adt, is_local_adt, is_provider_trait,
+    consumer_provider_trait, is_blanket_trait, is_context_adt, is_provider_trait,
 };
 use crate::resolve::walk::{holds, resolve_leaves};
 
@@ -25,14 +25,14 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// This entry recovers the context from the enclosing impl's `Self` type, and — crucially — the
 /// *exact* failing obligation from the impl's CGP consumer supertrait, so a generic component
 /// carries its concrete parameter (`CanCalculateArea<Rectangle>`, not the `()` form the use-site
-/// re-check would substitute). It reconstructs the `Ctx: CanUseComponent<Marker, Params>`
-/// obligation that supertrait stands for and walks it exactly as a check entry would. The recovered
-/// tree is then headed by the impl's *own* trait — the wrapper the programmer wrote — so the
-/// diagnostic points at their code and the CGP consumer it reduces to follows beneath: the failure
-/// reads `CanHandleApiSend → CanHandleApi → …`, not `CanHandleApi → …` with the wrapper dropped.
-/// Because the wrapper is a distinct trait from that supertrait, its error stands on its own rather
-/// than de-duplicating into the `check_components!` entry. `None` when no enclosing impl on a local
-/// context carries an unmet, reconstructable CGP consumer supertrait.
+/// re-check would substitute), and walks that supertrait obligation directly. The recovered tree is
+/// then headed by the impl's *own* trait — the wrapper the programmer wrote — so the diagnostic
+/// points at their code and the CGP consumer it reduces to follows beneath: the failure reads
+/// `CanHandleApiSend → CanHandleApi → …`, not `CanHandleApi → …` with the wrapper dropped. Because
+/// the wrapper is a distinct trait from that supertrait, its error stands on its own rather than
+/// de-duplicating into the `check_components!` entry. A caret on a bound of the impl's own `where`
+/// clause is read as that bound instead ([`where_bound_on_context`]). `None` when no enclosing impl
+/// on a context carries an unmet CGP consumer supertrait or such a bound.
 ///
 /// `spans` are the diagnostic's primary spans, and an impl counts only when one of them is about the
 /// impl itself ([`is_about_impl`]), so an unrelated error inside a method body is left alone.
@@ -50,22 +50,23 @@ pub fn resolve_impl_site(
         if !is_about_impl(tcx, impl_did, trait_ref.def_id, spans) {
             continue;
         }
-        // A provider-trait impl (`impl Runner<Ctx> for RunViaInner`) has a *provider* struct as its
-        // `Self`, not a context, and its only supertrait is `IsProviderFor` — so the supertrait
-        // recovery below would reach a consumer only via the `IsProviderFor` workaround this resolver
-        // sheds (leaking `IsProviderFor` and the trait's `__Context__` into the tree). Skip that. But
-        // the provider's own `where` clause can name a cross-context dependency on a *concrete* local
-        // context (`where Inner: CanCompute`); such a bound failing is a real wiring failure, so
-        // recover it as the consumer obligation it is — de-duplicating into that context's own check.
         // A `check_components!` check impl (its trait's supertrait is `CanUseComponent`) is the
         // check anchor's to read; its generated trait is no wrapper the programmer wrote.
         if can_use_component_supertrait(tcx, trait_ref.def_id).is_some() {
             continue;
         }
+        // The impl's own `where` clause can name a concrete context (`where Inner: CanCompute` on a
+        // provider, `where App: CanRun` on a wrapper of a foreign type), and the compiler reports
+        // such a bound failing at the bound itself. That is a real wiring failure, so recover it as
+        // the consumer obligation it is — de-duplicating into that context's own check.
+        if let Some(resolved) = where_bound_on_context(tcx, cache, impl_did, spans) {
+            return Some(resolved);
+        }
+        // A provider-trait impl (`impl Runner<Ctx> for RunViaInner`) has a *provider* struct as its
+        // `Self`, not a context, and its only supertrait is `IsProviderFor` — so the supertrait
+        // recovery below would reach a consumer only via the `IsProviderFor` workaround this resolver
+        // sheds (leaking `IsProviderFor` and the trait's `__Context__` into the tree). Skip that.
         if is_provider_trait(tcx, trait_ref.def_id) {
-            if let Some(resolved) = cross_context_where_bound(tcx, cache, impl_did) {
-                return Some(resolved);
-            }
             continue;
         }
         let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
@@ -85,7 +86,9 @@ pub fn resolve_impl_site(
         // a distinct trait from that supertrait, the wrapper's error is reported on its own rather
         // than de-duplicated into the `check_components!` entry for the supertrait.
         let obligation: ty::PolyTraitClause<'_> = ty::Binder::dummy(trait_ref).upcast(tcx);
-        if let Some((consumers_are_cgp, causes)) = wrapper_consumer_causes(tcx, cache, obligation) {
+        if let Some((consumers_are_cgp, causes)) =
+            wrapper_consumer_causes(tcx, cache, obligation, context)
+        {
             return Some(Resolved {
                 context: context.to_string(),
                 consumers: vec![trait_ref.print_only_trait_path().to_string()],
@@ -101,25 +104,29 @@ pub fn resolve_impl_site(
     None
 }
 
-/// Recover a cross-context dependency named directly in a provider impl's own `where` clause: an
-/// unmet `Ctx: Consumer` bound whose `Ctx` is a *concrete* local context and whose trait is a CGP
-/// consumer (`where Inner: CanCompute`). Such a bound is a real wiring failure the provider imposes
-/// on another context; walked as the consumer obligation it is, it yields that context's own
-/// root-cause tree — the same `Resolved` the context's `check_components!` entry produces, so the two
-/// de-duplicate. `None` when the impl's `where` clause carries no such bound. A normal provider's
-/// dependencies bind the *generic* context (`Ctx: HasName`, `Self` a type parameter), whose `self_ty`
-/// is not a local ADT, so this fires only on the cross-context shape.
-fn cross_context_where_bound<'tcx>(
+/// Recover a dependency named directly in an impl's own `where` clause, at the bound one of the
+/// primary `spans` lies on: an unmet `Ctx: Consumer` bound whose `Ctx` is a *concrete* context
+/// ([`is_context_adt`]) and whose trait is a CGP consumer (`where Inner: CanCompute` on a provider,
+/// `where App: CanRun` on a wrapper of another type). Walked as the consumer obligation it is, it
+/// yields that context's own root-cause tree — the same `Resolved` the context's
+/// `check_components!` entry produces, so the two de-duplicate. `None` when no such bound lies at
+/// the caret. A normal provider's dependencies bind the *generic* context (`Ctx: HasName`, `Self` a
+/// type parameter), which is no context ADT, so this fires only on a concrete one.
+fn where_bound_on_context<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
     impl_did: DefId,
+    spans: &[Span],
 ) -> Option<Resolved> {
-    for &(clause, _) in tcx.clauses_of(impl_did).clauses {
+    for &(clause, bound_span) in tcx.clauses_of(impl_did).clauses {
+        if !spans.iter().any(|&span| bound_span.overlaps(span)) {
+            continue;
+        }
         let Some(bound) = clause.as_trait_clause() else {
             continue;
         };
         let trait_ref = bound.skip_binder().trait_ref;
-        if !is_local_adt(trait_ref.self_ty()) {
+        if !is_context_adt(tcx, trait_ref.self_ty()) {
             continue;
         }
         if consumer_provider_trait(tcx, trait_ref.def_id).is_none() {
@@ -136,20 +143,17 @@ fn cross_context_where_bound<'tcx>(
 }
 
 /// Recover a cause per unmet CGP consumer supertrait of a wrapper obligation `Self: Wrapper` whose
-/// `Self` is a context ([`is_context_adt`]), each tree headed by the wrapper's own `trait impl` node.
-/// Returns whether the wrapper is itself a CGP consumer (for the header wording) and the causes, or
-/// `None` when `Self` is not a context or no CGP consumer supertrait is unmet — so a plain bound like
-/// `Send`, or a wrapper on a foreign type that is no context, is skipped rather than mis-recovered.
+/// `Self` is the `context` [`resolve_impl_site`] read, each tree headed by the wrapper's own
+/// `trait impl` node. Returns whether the wrapper is itself a CGP consumer (for the header wording)
+/// and the causes, or `None` when no CGP consumer supertrait is unmet — so a plain bound like
+/// `Send` is skipped rather than mis-recovered.
 fn wrapper_consumer_causes<'tcx>(
     tcx: TyCtxt<'tcx>,
     cache: &ResolveCache,
     obligation: ty::PolyTraitClause<'tcx>,
+    context: ty::Ty<'tcx>,
 ) -> Option<(bool, Causes)> {
     let trait_ref = obligation.skip_binder().trait_ref;
-    let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
-    if !is_context_adt(tcx, context) {
-        return None;
-    }
     let wrapper = trait_ref.print_only_trait_path().to_string();
     let wrapper_node = DepNode::Trait {
         trait_ref: wrapper,
