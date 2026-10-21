@@ -1,0 +1,18 @@
+error[E0275]: overflow evaluating the requirement `App: CanUseComponent<ShowerComponent, u32>`
+  --> src/main.rs:48:9
+   |
+48 |         ShowerComponent: u32,
+   |         ^^^^^^^^^^^^^^^
+   |
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:46:1
+   |
+46 | / check_components! {
+47 | |     App {
+48 | |         ShowerComponent: u32,
+49 | |     }
+50 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0275`.

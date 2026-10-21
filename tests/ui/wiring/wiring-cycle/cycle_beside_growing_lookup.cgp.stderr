@@ -1,0 +1,9 @@
+error[E0275]: [CGP-E020] the wiring for the consumer trait `CanShow<u32>` on context `App` never resolves, because the lookup leads back to itself
+  --> src/main.rs:48:9
+   |
+48 |         ShowerComponent: u32,
+   |         ^^^^^^^^^^^^^^^
+   |
+   = help: wire a provider in place of `UseContext`, which provides `Greeter` for `App` by requiring `CanGreet` on `App` again
+
+For more information about this error, try `rustc --explain E0275`.
