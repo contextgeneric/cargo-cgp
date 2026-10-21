@@ -1,0 +1,26 @@
+error[E0277]: [CGP-E003] missing wiring for `@ErrorRaiserComponent.IoFailure` on `App`
+  --> src/main.rs:32:22
+   |
+32 | impl CanRunBoxed for Box<App> {}
+   |                      ^^^^^^^^
+   |
+   = note: root cause: [CGP-E113] missing wiring for `@ErrorRaiserComponent.IoFailure` on `App`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `CanRunBoxed` for `Box<App>`
+             └─ [CGP-E104] trait impl `HasEchoRunner` for `Box<App>`
+               └─ [CGP-E101] consumer trait impl `CanHandle<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, Vec<u8>>` for context `App`
+                 └─ [CGP-E103] redirect lookup to `@HandlerComponent` in `App`
+                   └─ [CGP-E102] provider trait impl `Handler<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, Vec<u8>>` with context `App` for provider `HandlePipe`
+                     └─ [CGP-E102] provider trait impl `Handler<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, Vec<u8>>` with context `App` for provider `UseDelegate<RunPipeHandler>`
+                       └─ [CGP-E102] provider trait impl `Handler<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, Vec<u8>>` with context `App` for provider `PipeHandlers<Product![Call<Echo>, Call<cgp_test_foreign_pipeline::Stdout>]>`
+                         └─ [CGP-E102] provider trait impl `Handler<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, Vec<u8>>` with context `App` for provider `ComposeHandlers<Call<Echo>, Call<cgp_test_foreign_pipeline::Stdout>>`
+                           └─ [CGP-E102] provider trait impl `Handler<Pipe<Product![Echo, cgp_test_foreign_pipeline::Stdout]>, Vec<u8>>` with context `App` for provider `Call<Echo>`
+                             └─ [CGP-E101] consumer trait impl `CanHandle<Echo, Vec<u8>>` for context `App`
+                               └─ [CGP-E103] redirect lookup to `@HandlerComponent` in `App`
+                                 └─ [CGP-E102] provider trait impl `Handler<Echo, Vec<u8>>` with context `App` for provider `HandleEcho`
+                                   └─ [CGP-E101] consumer trait impl `CanRaiseError<IoFailure>` for context `App`
+                                     └─ [CGP-E103] redirect lookup to `@ErrorRaiserComponent` in `App`
+                                       └─ [CGP-E113] missing wiring for `@ErrorRaiserComponent.IoFailure` on `App`
+   = help: wire `@ErrorRaiserComponent.IoFailure` to a provider in the wiring of `App`
+
+For more information about this error, try `rustc --explain E0277`.
