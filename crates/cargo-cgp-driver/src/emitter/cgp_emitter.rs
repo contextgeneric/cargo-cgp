@@ -964,12 +964,17 @@ impl<E: Emitter> CgpEmitter<E> {
 
     /// Resolve `diag`'s failure to its root-cause dependency tree(s), or `None` when the resolver
     /// cannot trace it to a CGP component failure (so the caller falls back to the in-place text
-    /// rewrite). A candidate is every diagnostic that reports an unmet obligation (`E0271`,
-    /// `E0275`, `E0277`, and a *method-bounds* `E0599`), whether or not it names a CGP trait —
-    /// because a failure *not* worded in CGP terms can still be a consequence of a CGP component
-    /// failing (a manual `impl` that forwards to a wired method, a downstream trait bound that needs
-    /// it), and [`resolve`] traces the dependency chain to find out. It yields `None` for everything whose chain does not reach a CGP cause. Returns the
-    /// primary span alongside the resolution so the caret can be re-aimed at the entry.
+    /// rewrite). A candidate is every diagnostic that reports an unmet obligation (`E0271`, `E0277`,
+    /// and a *method-bounds* `E0599`), whether or not it names a CGP trait — because a failure *not*
+    /// worded in CGP terms can still be a consequence of a CGP component failing (a manual `impl`
+    /// that forwards to a wired method, a downstream trait bound that needs it), and [`resolve`]
+    /// traces the dependency chain to find out. It yields `None` for everything whose chain does not
+    /// reach a CGP cause. Returns the primary span alongside the resolution so the caret can be
+    /// re-aimed at the entry.
+    ///
+    /// An `E0275` overflow is no candidate: the walk explains it only by a cut, a cycle or a lookup
+    /// that grows, which [`wiring_overflow`](Self::wiring_overflow) words, and a leaf the walk stops
+    /// at instead is a bound whose own evaluation overflowed, which no root cause states truly.
     ///
     /// Two more shapes reach the data-call anchor alone: the method probe's "no method named `…`"
     /// `E0599`, and an `E0308` on a call's argument, each of which a call to one of CGP's
@@ -999,10 +1004,10 @@ impl<E: Emitter> CgpEmitter<E> {
         // and only the data-call anchor takes them.
         let data_call_only = is_no_matching_item(diag) || diag.code == Some(E0308);
         // Only a diagnostic reporting an unmet obligation has a chain to walk: a projection or
-        // trait-bound failure, an overflow evaluating a requirement, or a method whose bounds fail.
-        // A coherence conflict (`E0119`) names CGP traits too, but two impls overlapping is not a
-        // bound left unmet, so walking it would invent a missing-impl cause.
-        if !matches!(diag.code, Some(E0271) | Some(E0275) | Some(E0277))
+        // trait-bound failure, or a method whose bounds fail. A coherence conflict (`E0119`) names
+        // CGP traits too, but two impls overlapping is not a bound left unmet, so walking it would
+        // invent a missing-impl cause.
+        if !matches!(diag.code, Some(E0271) | Some(E0277))
             && !e0599_method_bounds
             && !data_call_only
         {

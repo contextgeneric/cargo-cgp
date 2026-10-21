@@ -15,7 +15,8 @@ pub enum WiringOverflow {
     /// requires it again, when a wiring entry chose that provider.
     Cycle { closing: Option<OverflowStep> },
     /// Each step requires the consumer trait again for a larger type, so the lookup grows until the
-    /// compiler gives up. `larger` is the first larger requirement (`CanShow<Vec<u32>>`), and
+    /// compiler gives up. `larger` is the first larger requirement (`CanShow<Vec<u32>>`), or the
+    /// larger type itself when the consumer trait is required of a type that grows (`Vec<u32>`), and
     /// `growing` the provider step that requires it, when a wiring entry chose that provider.
     Growing {
         larger: Option<String>,
@@ -25,13 +26,15 @@ pub enum WiringOverflow {
 
 /// A provider step of a lookup that never resolves: `provider` implements `provider_trait` (its
 /// arguments after the context, as `ErrorRaiser<String>`) for `context` by requiring `requires`
-/// (a consumer trait with its arguments, as `CanRaiseError<String>`) of `context` again.
+/// (a consumer trait with its arguments, as `CanRaiseError<String>`) of `required_of`: the context
+/// again, or a larger type when the lookup grows in the type the trait is required of.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OverflowStep {
     pub provider: String,
     pub provider_trait: String,
     pub context: String,
     pub requires: String,
+    pub required_of: String,
 }
 
 /// The clause that ends a never-resolving headline, after "never resolves, because": the lookup
@@ -58,7 +61,7 @@ pub fn wiring_overflow_help(overflow: &WiringOverflow) -> String {
             closing: Some(step),
         } => format!(
             "wire a provider in place of `{}`, which provides `{}` for `{}` by requiring `{}` on `{}` again",
-            step.provider, step.provider_trait, step.context, step.requires, step.context
+            step.provider, step.provider_trait, step.context, step.requires, step.required_of
         ),
         WiringOverflow::Cycle { closing: None } => {
             "wire the component to a provider that does not require the consumer trait it provides"
@@ -69,7 +72,7 @@ pub fn wiring_overflow_help(overflow: &WiringOverflow) -> String {
             ..
         } => format!(
             "wire a provider in place of `{}`, which provides `{}` for `{}` by requiring `{}` on `{}`, a larger type at every step",
-            step.provider, step.provider_trait, step.context, step.requires, step.context
+            step.provider, step.provider_trait, step.context, step.requires, step.required_of
         ),
         WiringOverflow::Growing { growing: None, .. } => {
             "wire the component to a provider whose requirements do not grow with each step"

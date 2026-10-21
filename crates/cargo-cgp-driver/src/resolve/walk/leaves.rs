@@ -8,7 +8,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::cache::{NodeKey, ResolveCache, SubCause, SubResult, pred_fingerprint};
 use crate::resolve::cgp_item::{
-    is_cgp_item, is_consumer_trait, is_local_adt, is_provider_trait, trim_unknown_path_tail,
+    is_cgp_item, is_consumer_trait, is_context_adt, is_provider_trait, trim_unknown_path_tail,
 };
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf, wiring_without_provider_for};
 use crate::resolve::label::{label_for, redirect_lookup_args, render_ty, trait_generics};
@@ -95,7 +95,9 @@ pub(crate) fn walk_overflow<'tcx>(
 /// `Self` is the context). `grandparent` is the obligation above `parent`: the entry's routing, on
 /// the context for a direct entry or on a `RedirectLookup` for an `open` or namespace entry. A
 /// provider a higher-order provider holds inside it, such as a dispatcher's inner `UseContext`, is
-/// below another provider instead, and no entry names it.
+/// below another provider instead, and no entry names it. The context is the provider trait's own
+/// context argument, since `required` can be on another type: a lookup that grows in the type the
+/// consumer trait is required of.
 fn provider_step<'tcx>(
     tcx: TyCtxt<'tcx>,
     grandparent: Option<ty::PolyTraitClause<'tcx>>,
@@ -103,8 +105,11 @@ fn provider_step<'tcx>(
     required: ty::PolyTraitClause<'tcx>,
 ) -> Option<OverflowStep> {
     let required = required.skip_binder().trait_ref;
-    let context = required.self_ty();
-    if !is_provider_trait(tcx, parent.def_id) || parent.self_ty() == context {
+    if !is_provider_trait(tcx, parent.def_id) {
+        return None;
+    }
+    let context = parent.args.types().nth(1)?;
+    if parent.self_ty() == context {
         return None;
     }
     let routing = grandparent?.skip_binder().trait_ref;
@@ -128,35 +133,40 @@ fn provider_step<'tcx>(
             tcx.item_name(required.def_id),
             trait_generics(tcx, required, 1)
         ),
+        required_of: required.self_ty().to_string(),
     })
 }
 
 /// The growing lookup a depth cut ends: the first obligation in `prefix` that a later one repeats
-/// with other arguments on the same type, the later one being the first larger requirement, and the
-/// provider step just above it.
+/// for the same trait with other arguments, its `Self` type included, the later one being the
+/// first larger requirement, and the provider step just above it. The requirement is named by its
+/// trait and arguments when it grows in its arguments (`CanShow<Vec<u32>>`), and by its `Self` type
+/// when that is what grows (`Vec<u32>`).
 fn growing_lookup<'tcx>(tcx: TyCtxt<'tcx>, prefix: &[ty::PolyTraitClause<'tcx>]) -> WiringOverflow {
-    let same_kind = |a: &ty::PolyTraitClause<'tcx>, b: &ty::PolyTraitClause<'tcx>| {
-        a.def_id() == b.def_id() && a.skip_binder().self_ty() == b.skip_binder().self_ty()
-    };
     let larger = prefix.iter().enumerate().find_map(|(at, first)| {
         prefix[at + 1..]
             .iter()
-            .position(|later| same_kind(first, later) && later != first)
-            .map(|offset| at + 1 + offset)
+            .position(|later| later.def_id() == first.def_id() && later != first)
+            .map(|offset| (at, at + 1 + offset))
     });
-    let Some(larger) = larger else {
+    let Some((first, larger)) = larger else {
         return WiringOverflow::Growing {
             larger: None,
             growing: None,
         };
     };
     let larger_ref = prefix[larger].skip_binder().trait_ref;
+    let grows_in_self = larger_ref.self_ty() != prefix[first].skip_binder().self_ty();
     WiringOverflow::Growing {
-        larger: Some(format!(
-            "{}{}",
-            tcx.item_name(larger_ref.def_id),
-            trait_generics(tcx, larger_ref, 1)
-        )),
+        larger: Some(if grows_in_self {
+            larger_ref.self_ty().to_string()
+        } else {
+            format!(
+                "{}{}",
+                tcx.item_name(larger_ref.def_id),
+                trait_generics(tcx, larger_ref, 1)
+            )
+        }),
         growing: prefix[..larger].split_last().and_then(|(parent, above)| {
             provider_step(
                 tcx,
@@ -264,7 +274,7 @@ fn resolve_node<'tcx>(
     // context's own walk, so the two share the cache. This only fires cross-context; in single-context
     // wiring every consumer obligation is already on the root context.
     let context = if erased.skip_binder().self_ty() != context
-        && is_local_adt(erased.skip_binder().self_ty())
+        && is_context_adt(tcx, erased.skip_binder().self_ty())
         && is_consumer_trait(tcx, erased.skip_binder().trait_ref.def_id)
     {
         erased.skip_binder().self_ty()

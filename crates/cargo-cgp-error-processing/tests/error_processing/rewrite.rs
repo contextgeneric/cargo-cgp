@@ -496,6 +496,7 @@ fn use_context_cycle() -> WiringOverflow {
             provider_trait: "Greeter".to_owned(),
             context: "Person".to_owned(),
             requires: "CanGreet".to_owned(),
+            required_of: "Person".to_owned(),
         }),
     }
 }
@@ -565,10 +566,26 @@ fn the_wiring_overflow_help_names_the_provider_that_closes_or_grows_the_lookup()
                 provider_trait: "Shower<u32>".to_owned(),
                 context: "App".to_owned(),
                 requires: "CanShow<Vec<u32>>".to_owned(),
+                required_of: "App".to_owned(),
             }),
         }),
         "wire a provider in place of `ShowNested`, which provides `Shower<u32>` for `App` by \
          requiring `CanShow<Vec<u32>>` on `App`, a larger type at every step"
+    );
+    // A lookup that grows in the type the consumer trait is required of names that type.
+    assert_eq!(
+        wiring_overflow_help(&WiringOverflow::Growing {
+            larger: Some("Vec<u32>".to_owned()),
+            growing: Some(OverflowStep {
+                provider: "ShowWrapped".to_owned(),
+                provider_trait: "Shower".to_owned(),
+                context: "u32".to_owned(),
+                requires: "CanShow".to_owned(),
+                required_of: "Vec<u32>".to_owned(),
+            }),
+        }),
+        "wire a provider in place of `ShowWrapped`, which provides `Shower` for `u32` by requiring \
+         `CanShow` on `Vec<u32>`, a larger type at every step"
     );
     // Without a provider step, the help says what the replacement must not do.
     assert_eq!(

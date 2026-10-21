@@ -1,19 +1,24 @@
 error[E0275]: overflow evaluating the requirement `Inner: CanUseComponent<ProviderNComponent>`
-  --> src/main.rs:97:9
-   |
-97 |         ProviderNComponent,
-   |         ^^^^^^^^^^^^^^^^^^
-   |
-   = note: root cause: [CGP-E117] the trait bound `Outer: Linked` is not satisfied
-           this is required through the dependency chain:
-             [CGP-E101] consumer trait impl `CanN` for context `Inner`
-             └─ [CGP-E102] provider trait impl `ProviderN` with context `Inner` for provider `DoN<Outer>`
-               └─ [CGP-E117] the trait bound `Outer: Linked` is not satisfied
+   --> src/main.rs:98:9
+    |
+ 98 |         ProviderNComponent,
+    |         ^^^^^^^^^^^^^^^^^^
+    |
+note: required by a bound in `__CheckInner`
+   --> src/main.rs:96:1
+    |
+ 96 | / check_components! {
+ 97 | |     Inner {
+ 98 | |         ProviderNComponent,
+ 99 | |     }
+100 | | }
+    | |_^ required by this bound in `__CheckInner`
+    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: [CGP-E001] missing field `name` on `Outer`
-   --> src/main.rs:103:9
+   --> src/main.rs:104:9
     |
-103 |         ProviderRComponent,
+104 |         ProviderRComponent,
     |         ^^^^^^^^^^^^^^^^^^
     |
     = note: root cause: [CGP-E110] missing field `name` on `Outer`
