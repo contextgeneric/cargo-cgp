@@ -52,9 +52,8 @@ pub struct DiagnosisPlan {
     /// class headline: the provider form the text rewrite gives an `IsProviderFor` headline the
     /// resolver classed by its consumer. The ledger records it as a second key.
     pub declined_header: Option<String>,
-    /// The `help` messages naming each fix the causes call for — a type that must derive
-    /// `HasField`, or an abstract type whose wiring must change (see
-    /// [`fix_help_messages`](super::fix_help_messages)).
+    /// The `help` messages naming each fix the causes call for, in the order the causes are listed
+    /// (see [`fix_help_messages`](super::fix_help_messages)).
     pub helps: Vec<String>,
     /// The `root cause:` note, **not yet rendered** — see [`PendingNote`].
     pub note: PendingNote,
@@ -187,8 +186,9 @@ impl Header<'_> {
 /// `[CGP-E005]` abstract-type class for any other associated type, each worded as its mismatch
 /// cause and reported as the leaf it states, so its note drops the now redundant lead. Every other
 /// class is worded from the typed resolution, whose anchor decides it: the provider class for a
-/// `#[check_providers]` entry or a provider's own method called directly, the consumer class for a CGP consumer trait, and the plain-trait
-/// class for any other trait, whatever bound rustc's own headline stopped on.
+/// `#[check_providers]` entry or a provider's own method called directly, the consumer class for a
+/// CGP consumer trait, and the plain-trait class for any other trait, whatever bound rustc's own
+/// headline stopped on.
 fn categorized_header<'a>(
     kind: DiagKind,
     main_message: Option<&str>,
@@ -243,52 +243,48 @@ fn categorized_header<'a>(
     if kind == DiagKind::TypeMismatch {
         return Header::rewritten(consumer_header(resolved));
     }
-    if let Some(text) = main_message {
-        if let Some(parsed) = parse_trait_bound(text) {
-            if parsed.trait_name == "CanUseComponent" {
-                return Header::rewritten(consumer_header(resolved));
-            }
-            // The class follows the anchor, never the provider rustc's bound happened to stop on:
-            // that may be dispatch plumbing, a `RedirectLookup`, or a provider deep in the chain,
-            // none of which the programmer asserted on. Only a `#[check_providers]` entry or a call
-            // to a provider's own method, whose anchor records its provider, is the provider class. The provider form the text
-            // rewrite gives rustc's own headline is kept as a second key, since a declined
-            // re-report of the same failure is worded with it.
-            if parsed.trait_name == "IsProviderFor" {
-                return Header {
-                    declined: rewrite_trait_bound(text, names),
-                    ..Header::rewritten(consumer_header(resolved))
-                };
-            }
-            // rustc opened the diagnostic on a bound that restates a genuine recovered leaf — an
-            // ordinary bound such as `f64: Eq` the solver descended to *is* the root cause — so
-            // keep rustc's header, which already names that cause. (The matching note then drops
-            // its `root cause:` lead so it does not repeat the header.) Where the leaf writes the
-            // bound as the program did and rustc does not (`Product![]` for CGP's `Nil`), the
-            // header takes the leaf's wording in rustc's sentence instead.
-            if let Some(leaf) = bound_leaf(resolved, parsed.bound) {
-                return match leaf {
-                    Leaf::Bound { summary } if summary != parsed.bound => Header {
-                        text: Some(root_cause_lead(leaf)),
-                        states_leaf: Some(leaf),
-                        declined: None,
-                    },
-                    _ => Header::keep(),
-                };
-            }
-        }
-        // A failure recovered at the use site reports the consumer trait the *call* needs.
-        if kind == DiagKind::MethodNotFound {
+    if let Some(text) = main_message
+        && let Some(parsed) = parse_trait_bound(text)
+    {
+        if parsed.trait_name == "CanUseComponent" {
             return Header::rewritten(consumer_header(resolved));
+        }
+        // The class follows the anchor, never the provider rustc's bound happened to stop on:
+        // that may be dispatch plumbing, a `RedirectLookup`, or a provider deep in the chain,
+        // none of which the programmer asserted on. Only a `#[check_providers]` entry or a call
+        // to a provider's own method, whose anchor records its provider, is the provider class.
+        // The provider form the text rewrite gives rustc's own headline is kept as a second
+        // key, since a declined re-report of the same failure is worded with it.
+        if parsed.trait_name == "IsProviderFor" {
+            return Header {
+                declined: rewrite_trait_bound(text, names),
+                ..Header::rewritten(consumer_header(resolved))
+            };
+        }
+        // rustc opened the diagnostic on a bound that restates a genuine recovered leaf — an
+        // ordinary bound such as `f64: Eq` the solver descended to *is* the root cause — so
+        // keep rustc's header, which already names that cause. (The matching note then drops
+        // its `root cause:` lead so it does not repeat the header.) Where the leaf writes the
+        // bound as the program did and rustc does not (`Product![]` for CGP's `Nil`), the
+        // header takes the leaf's wording in rustc's sentence instead.
+        if let Some(leaf) = bound_leaf(resolved, parsed.bound) {
+            return match leaf {
+                Leaf::Bound { summary } if summary != parsed.bound => Header {
+                    text: Some(root_cause_lead(leaf)),
+                    states_leaf: Some(leaf),
+                    declined: None,
+                },
+                _ => Header::keep(),
+            };
         }
         // The main message is a trait bound, but not a recognized CGP wiring bound and not a
-        // recovered leaf: rustc descended to a mid-chain *symptom* (a getter bound on a request,
-        // say, whose real cause is a missing wiring one level down). Naming the consumer trait the
-        // context fails to implement is truer than leaking that symptom bound as the headline.
-        if parse_trait_bound(text).is_some() {
-            return Header::rewritten(consumer_header(resolved));
-        }
+        // recovered leaf: rustc descended to a mid-chain *symptom* (a getter bound on a
+        // request, say, whose real cause is a missing wiring one level down). Naming the
+        // consumer trait the context fails to implement is truer than leaking that symptom
+        // bound as the headline.
+        return Header::rewritten(consumer_header(resolved));
     }
+    // A failure recovered at the use site reports the consumer trait the *call* needs.
     if kind == DiagKind::MethodNotFound {
         return Header::rewritten(consumer_header(resolved));
     }

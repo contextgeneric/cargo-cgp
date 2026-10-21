@@ -26,7 +26,7 @@ use crate::resolve::label::render_ty;
 ///   (its trait, context, provider struct, and the component's extra parameters). A
 ///   `RedirectLookup<Table, Path>` provider is a namespace/`open` redirection hop instead, so a
 ///   chain of them reads as its successive hops, each naming the table it looks the path up in.
-/// - `HasField` becomes the field-trait impl (the field and the struct that must carry it).
+/// - A `HasField` obligation never reaches here: the walk classifies it as a root-cause leaf first.
 /// - Any other trait — a user's own blanket trait or getter — is shown as a trait impl for its self.
 ///
 /// The steps that carry no information for a reader return `None` and are dropped: the

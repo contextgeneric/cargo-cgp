@@ -35,8 +35,9 @@ use crate::diagnosis::resolved::Resolved;
 /// fails with that context, and one fix repairs both. An ordinary bound names no owner (`f64: Eq`
 /// can come from several contexts' own wiring), so it is identified together with the context it
 /// was reached from. Keying on the wording would make a reword of a lead silently change which
-/// diagnostics coalesce; the leaf is the thing two failures either do or do not have in common. (The de-duplication ledger's [`cause_signature`](crate::cause_signature) stays textual for
-/// its own reason — it shares a key space with rendered-message keys.)
+/// diagnostics coalesce; the leaf is the thing two failures either do or do not have in common.
+/// (The de-duplication ledger's [`cause_signature`](crate::cause_signature) stays textual for its
+/// own reason: it shares a key space with rendered-message keys.)
 ///
 /// A failure with no causes shares nothing and forms its own group.
 pub fn group_by_shared_cause(resolveds: &[&Resolved]) -> Vec<Vec<usize>> {

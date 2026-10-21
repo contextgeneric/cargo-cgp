@@ -254,15 +254,18 @@ fn is_typeable_key(key: &str) -> bool {
     !key.contains('&') && !erased_lifetime
 }
 
-/// Every `help` a resolved failure's causes call for, in the order the causes are listed, one per
-/// kind of fix on one owner: the fields to add to one struct, the derive one struct needs, the
-/// components to wire on one context, the entries to add to one table, the data derives one type
-/// needs (named in one attribute), and each abstract type to reconcile. A missing field is named with its type when its requirement states one, and gets no
-/// help when adding it is not confirmed to fix the cause (see [`FieldFix`](crate::FieldFix)); a key
-/// the reader could not paste gets none either. A missing field or key that has a near miss, a
-/// similar name the program wrote, gets that named first. Both the streaming plan and the emitter's
-/// coalesced block build their `help`s through this, so a block that merges several consumers
-/// carries the same fixes as the per-consumer one it replaces.
+/// Every `help` a resolved failure's causes call for, in the order the causes are listed. The fixes
+/// of one kind on one owner merge into one `help`: the fields to add to one struct, the derive one
+/// struct needs, the components to wire on one context, the entries to add to one table, and the
+/// data derives one type needs (named in one attribute). Every other fix is worded whole: a near
+/// miss, a tuple field's tag, an abstract type to reconcile, a non-provider's adapter, component, or
+/// core provider, a hand-written wiring to replace, a bound to add, and a method to call. A missing
+/// field is named with its type when its requirement states one, and gets no help when adding it is
+/// not confirmed to fix the cause (see [`FieldFix`](crate::FieldFix)); a key the reader could not
+/// paste gets none either. A near miss, a similar name the program wrote, comes before the fix of
+/// its cause. Both the streaming plan and the emitter's coalesced block build their `help`s through
+/// this, so a block that merges several consumers carries the same fixes as the per-consumer one it
+/// replaces.
 pub fn fix_help_messages(causes: &[Cause]) -> Vec<String> {
     // One group per help: its kind and owner, and the items it names in first-seen order.
     let mut groups: Vec<(FixKind, String, Vec<String>)> = Vec::new();

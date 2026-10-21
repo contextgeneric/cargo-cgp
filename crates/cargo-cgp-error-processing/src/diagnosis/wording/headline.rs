@@ -22,8 +22,9 @@ pub const MERGED_CAUSE_NAMES: usize = 3;
 
 /// One sentence stating every cause, when they can share one: a single cause, or several of one
 /// kind on one owner (fields missing from one struct, wiring missing from one context, entries
-/// missing from one provider's table, data traits one type lacks). A long list names its first [`MERGED_CAUSE_NAMES`] items
-/// and counts the rest, which the note lists in full. `None` for no causes or a mix.
+/// missing from one provider's table, data traits one type lacks). A long list names its first
+/// [`MERGED_CAUSE_NAMES`] items and counts the rest, which the note lists in full. `None` for no
+/// causes or a mix.
 pub fn merged_cause(causes: &[Cause]) -> Option<String> {
     match causes {
         [] => None,
@@ -115,7 +116,6 @@ fn coalesced_class_sentence(members: &[&Resolved]) -> String {
     match clauses.as_slice() {
         [] => String::new(),
         [one] => one.clone(),
-        [a, b] => format!("{a}, and {b}"),
         [rest @ .., last] => format!("{}, and {last}", rest.join(", ")),
     }
 }

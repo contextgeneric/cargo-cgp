@@ -29,14 +29,16 @@
 
 // A trait the context cannot use, and the two type mismatches (`CGP-E001` to `CGP-E009`).
 
-/// `CGP-E001`: the consumer trait behind a component is not implemented for the context. Stamped
-/// on a failed `CanUseComponent` check bound, and on a consumer-method call that fails because the
-/// context cannot use a component it wires.
+/// `CGP-E001`: the consumer trait behind a component is not implemented for the context. Stamped on
+/// a resolved failure whose anchor recovered a CGP consumer trait (a check entry, a consumer-method
+/// call, or a bound on a called function), and by the text rewrite on a declined `CanUseComponent`
+/// bound.
 pub const CONSUMER_TRAIT_UNIMPLEMENTED: &str = "CGP-E001";
 
 /// `CGP-E002`: the provider trait behind a component is not implemented for a provider. Stamped on
-/// a failed `IsProviderFor` bound (a `#[check_providers(...)]` assertion, or a provider the wiring
-/// routes through).
+/// a resolved failure whose anchor records that provider (a `#[check_providers(...)]` entry, or a
+/// provider's own method called directly), and by the text rewrite on a declined `IsProviderFor`
+/// bound.
 pub const PROVIDER_TRAIT_UNIMPLEMENTED: &str = "CGP-E002";
 
 /// `CGP-E003`: a trait that is not a CGP component, implemented on or required of the context, is

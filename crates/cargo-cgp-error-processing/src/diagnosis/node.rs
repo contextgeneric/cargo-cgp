@@ -2,10 +2,9 @@
 //!
 //! A dependency chain is a sequence of these nodes rather than pre-rendered strings, so the
 //! [graph](super::graph) can compare nodes for identity (merging a hop or leaf several paths reach
-//! in common). Each [`DepNode`] variant is one
-//! `CGP-E1xx` chain-hop class carrying the names that class needs; the terminal root cause is the
-//! existing [`Leaf`], and a [`ChainNode`] is one or the other. Rendering reproduces exactly the
-//! label templates these replaced.
+//! in common). Each [`DepNode`] variant is one `CGP-E1xx` chain-hop class carrying the names that
+//! class needs; the terminal root cause is the [`Leaf`], and a [`ChainNode`] is one or the other.
+//! Each node renders to the label template of its code.
 
 use crate::code::{
     DEP_CONSUMER_TRAIT_IMPL, DEP_PROVIDER_TRAIT_IMPL, DEP_REDIRECT_LOOKUP, DEP_TRAIT_IMPL,
@@ -13,12 +12,10 @@ use crate::code::{
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::wording::{dependency_tree_leaf, quoted_list};
 
-/// One interior hop of a dependency chain — a wiring step the walk descended — tagged by the
-/// `CGP-E1xx` rendering template it takes. The trait-bearing variants keep the trait reference *with*
-/// its generic arguments (`CanCalculateArea<f64>`), rendered in full — every CGP construct a chain
-/// names is shown as written, since the type a reader is tracing is the point of the chain. Rendering
-/// is a
-/// rustc-free concern.
+/// One interior hop of a dependency chain (a wiring step the walk descended), tagged by the
+/// `CGP-E1xx` rendering template it takes. The trait-bearing variants keep the trait reference
+/// *with* its generic arguments (`CanCalculateArea<f64>`), rendered in full: every CGP construct a
+/// chain names is shown as written, since the type a reader is tracing is the point of the chain.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DepNode {
     /// `CGP-E101` — a hop through a consumer-trait impl. `is_context` says whether the type the
@@ -150,7 +147,7 @@ impl PartialValue {
 }
 
 impl DepNode {
-    /// The rendered label — identical to the template this node replaced in `diagnosis::labels`.
+    /// The rendered label: the `CGP-E1xx` code and the template of the node's class.
     pub fn render(&self) -> String {
         match self {
             DepNode::Consumer {

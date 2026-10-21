@@ -7,7 +7,7 @@ use crate::code::{
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
 
-/// A `and`-joined, back-quoted list: `` `x` ``, `` `x` and `y` ``, or `` `x`, `y`, and `z` ``.
+/// An `and`-joined, back-quoted list: `` `x` ``, `` `x` and `y` ``, or `` `x`, `y`, and `z` ``.
 pub fn quoted_list(items: &[String]) -> String {
     let quoted: Vec<String> = items.iter().map(|item| format!("`{item}`")).collect();
     match quoted.as_slice() {

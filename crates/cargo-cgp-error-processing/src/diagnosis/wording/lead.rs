@@ -167,10 +167,11 @@ pub fn root_cause_lead(leaf: &Leaf) -> String {
 }
 
 /// The `CGP-E1xx` code of a root-cause leaf, carried both by the tree's last entry and by the
-/// `root cause:` line that names it. Keyed by leaf kind: a missing field, a present-but-underived
-/// field, a missing delegate entry (plain or redirect), a missing dispatch entry, a non-provider, a
-/// provider for other arguments, the two mismatch leaves (a `HasField` value type and any other associated type), each
-/// extensible-data cause, and an ordinary trait bound each get their own code.
+/// `root cause:` line that names it. Each kind of leaf has its own code: a missing field, a
+/// present-but-underived field, a missing delegate entry (plain or redirect), a missing dispatch
+/// entry, a non-provider, a provider for other arguments, the two mismatch leaves (a `HasField`
+/// value type and any other associated type), each extensible-data cause, a wiring without
+/// `IsProviderFor`, an unbounded type parameter, and an ordinary trait bound.
 pub fn dependency_leaf_code(leaf: &Leaf) -> &'static str {
     match leaf {
         Leaf::Field {
