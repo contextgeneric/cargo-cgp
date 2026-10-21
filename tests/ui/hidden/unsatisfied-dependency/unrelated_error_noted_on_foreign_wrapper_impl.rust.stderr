@@ -1,0 +1,174 @@
+error[E0277]: the trait bound `Person: CanGreet` is not satisfied
+  --> src/main.rs:54:5
+   |
+54 |     Person: CanGreet,
+   |     ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Person`
+  --> src/main.rs:40:1
+   |
+40 | pub struct Person {}
+   | ^^^^^^^^^^^^^^^^^
+note: required for `Person` to implement `HasName`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+27 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, Person>`
+  --> src/main.rs:31:1
+   |
+31 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+32 | #[uses(HasName)]
+   |        ------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `Person` to implement `IsProviderFor<GreeterComponent, Person>`
+note: required for `Person` to implement `Greeter<Person>`
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Person` to implement `CanGreet`
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+22 | pub trait CanGreet {
+   |           ^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
+   |
+17 + #![feature(trivial_bounds)]
+   |
+
+error[E0277]: the trait bound `Person: HasField<Symbol<4, Chars<..>>>` is not satisfied
+  --> src/main.rs:65:34
+   |
+65 | impl<T: Send> CanGreetVia<T> for Box<Person> {
+   |                                  ^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Person`
+  --> src/main.rs:40:1
+   |
+40 | pub struct Person {}
+   | ^^^^^^^^^^^^^^^^^
+help: the trait `HasInner` is conditionally implemented for `Box<Person>`
+  --> src/main.rs:52:1
+   |
+52 | / impl HasInner for Box<Person>
+53 | | where
+54 | |     Person: CanGreet,
+   | |_____________--------^
+   |               |
+   |               unsatisfied requirement introduced here: `Person: CanGreet`
+note: required for `Person` to implement `HasName`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+27 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, Person>`
+  --> src/main.rs:31:1
+   |
+31 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+32 | #[uses(HasName)]
+   |        ------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `Person` to implement `IsProviderFor<GreeterComponent, Person>`
+note: required for `Person` to implement `Greeter<Person>`
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Person` to implement `CanGreet`
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+22 | pub trait CanGreet {
+   |           ^^^^^^^^
+note: required for `Box<Person>` to implement `HasInner`
+  --> src/main.rs:52:6
+   |
+52 | impl HasInner for Box<Person>
+   |      ^^^^^^^^     ^^^^^^^^^^^
+53 | where
+54 |     Person: CanGreet,
+   |             -------- unsatisfied trait bound introduced here
+note: required by a bound in `CanGreetVia`
+  --> src/main.rs:61:27
+   |
+61 | pub trait CanGreetVia<T>: HasInner {
+   |                           ^^^^^^^^ required by this bound in `CanGreetVia`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `inner_greeting` exists for reference `&Box<Person>`, but its trait bounds were not satisfied
+   --> src/main.rs:67:14
+    |
+ 40 |   pub struct Person {}
+    |   ----------------- doesn't satisfy `_: HasField<Symbol<4, Chars<..>>>`
+...
+ 67 |           self.inner_greeting()
+    |                ^^^^^^^^^^^^^^ method cannot be called on `&Box<Person>` due to unsatisfied trait bounds
+    |
+   ::: $SYSROOT/lib/rustlib/src/rust/library/alloc/src/boxed.rs:236:1
+    |
+236 | / pub struct Box<
+237 | |     T: ?Sized,
+238 | |     #[stable(feature = "allocator_api", since = "1.100.0")] A: Allocator = Global,
+239 | | >(Unique<T>, A);
+    | |_- doesn't satisfy `Box<Person>: HasInner`
+    |
+note: trait bound `Person: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+   --> src/main.rs:26:1
+    |
+ 26 | #[cgp_auto_getter]
+    | ^^^^^^^^^^^^^^^^^^
+ 27 | pub trait HasName {
+    |           ^^^^^^^
+note: the trait `cgp::prelude::HasField` must be implemented
+   --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+    |
+ 46 | pub trait HasField<Tag> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^
+    = help: items from traits can only be used if the trait is implemented and in scope
+note: `HasInner` defines an item `inner_greeting`, perhaps you need to implement it
+   --> src/main.rs:48:1
+    |
+ 48 | pub trait HasInner {
+    | ^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `Rc<u8>` cannot be sent between threads safely
+  --> src/main.rs:74:13
+   |
+74 |     needs::<Box<Person>>();
+   |             ^^^^^^^^^^^ `Rc<u8>` cannot be sent between threads safely
+   |
+   = help: the trait `Send` is not implemented for `Rc<u8>`
+help: the trait `CanGreetVia<T>` is conditionally implemented for `Box<Person>`
+  --> src/main.rs:65:1
+   |
+65 | impl<T: Send> CanGreetVia<T> for Box<Person> {
+   | ^^^^^^^^----^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |         |
+   |         unsatisfied requirement introduced here: `_: Send`
+note: required for `Box<Person>` to implement `CanGreetVia<Rc<u8>>`
+  --> src/main.rs:65:15
+   |
+65 | impl<T: Send> CanGreetVia<T> for Box<Person> {
+   |         ----  ^^^^^^^^^^^^^^     ^^^^^^^^^^^
+   |         |
+   |         unsatisfied trait bound introduced here
+note: required by a bound in `needs`
+  --> src/main.rs:71:19
+   |
+71 | fn needs<Context: CanGreetVia<Rc<u8>>>() {}
+   |                   ^^^^^^^^^^^^^^^^^^^ required by this bound in `needs`
+
+Some errors have detailed explanations: E0277, E0599.
+For more information about an error, try `rustc --explain E0277`.

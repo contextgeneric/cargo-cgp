@@ -1,0 +1,122 @@
+error[E0277]: the trait bound `Person: CanGreet` is not satisfied
+  --> src/main.rs:50:35
+   |
+50 | impl<T: Send> CanGreetWith<T> for Person {
+   |                                   ^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Person`
+  --> src/main.rs:38:1
+   |
+38 | pub struct Person {}
+   | ^^^^^^^^^^^^^^^^^
+note: required for `Person` to implement `HasName`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+25 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, Person>`
+  --> src/main.rs:29:1
+   |
+29 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+30 | #[uses(HasName)]
+   |        ------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `Person` to implement `IsProviderFor<GreeterComponent, Person>`
+note: required for `Person` to implement `Greeter<Person>`
+  --> src/main.rs:19:1
+   |
+19 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Person` to implement `CanGreet`
+  --> src/main.rs:19:1
+   |
+19 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+20 | pub trait CanGreet {
+   |           ^^^^^^^^
+note: required by a bound in `CanGreetWith`
+  --> src/main.rs:46:28
+   |
+46 | pub trait CanGreetWith<T>: CanGreet {
+   |                            ^^^^^^^^ required by this bound in `CanGreetWith`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `greet` exists for reference `&Person`, but its trait bounds were not satisfied
+  --> src/main.rs:52:14
+   |
+38 | pub struct Person {}
+   | ----------------- doesn't satisfy `Person: CanGreet` or `_: HasField<Symbol<4, Chars<..>>>`
+...
+52 |         self.greet()
+   |              ^^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `Greeter`
+  --> src/main.rs:21:5
+   |
+21 |     fn greet(&self) -> String;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: trait bound `&Person: Greeter<&Person>` was not satisfied
+  --> src/main.rs:19:1
+   |
+19 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+20 | pub trait CanGreet {
+   |           ^^^^^^^^
+note: trait bound `Person: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+25 | pub trait HasName {
+   |           ^^^^^^^
+note: the trait `cgp::prelude::HasField` must be implemented
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+   |
+46 | pub trait HasField<Tag> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `CanGreet` defines an item `greet`, perhaps you need to implement it
+  --> src/main.rs:20:1
+   |
+20 | pub trait CanGreet {
+   | ^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+   |
+52 -         self.greet()
+52 +         Person::greet()
+   |
+
+error[E0277]: `Rc<u8>` cannot be sent between threads safely
+  --> src/main.rs:59:13
+   |
+59 |     needs::<Person>();
+   |             ^^^^^^ `Rc<u8>` cannot be sent between threads safely
+   |
+   = help: the trait `Send` is not implemented for `Rc<u8>`
+help: the trait `CanGreetWith<T>` is conditionally implemented for `Person`
+  --> src/main.rs:50:1
+   |
+50 | impl<T: Send> CanGreetWith<T> for Person {
+   | ^^^^^^^^----^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |         |
+   |         unsatisfied requirement introduced here: `_: Send`
+note: required for `Person` to implement `CanGreetWith<Rc<u8>>`
+  --> src/main.rs:50:15
+   |
+50 | impl<T: Send> CanGreetWith<T> for Person {
+   |         ----  ^^^^^^^^^^^^^^^     ^^^^^^
+   |         |
+   |         unsatisfied trait bound introduced here
+note: required by a bound in `needs`
+  --> src/main.rs:56:19
+   |
+56 | fn needs<Context: CanGreetWith<Rc<u8>>>() {}
+   |                   ^^^^^^^^^^^^^^^^^^^^ required by this bound in `needs`
+
+Some errors have detailed explanations: E0277, E0599.
+For more information about an error, try `rustc --explain E0277`.

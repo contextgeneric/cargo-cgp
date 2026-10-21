@@ -1,0 +1,42 @@
+error[E0277]: [CGP-E003] missing field `name` on `Person`
+  --> src/main.rs:50:35
+   |
+50 | impl<T: Send> CanGreetWith<T> for Person {
+   |                                   ^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `name` on `Person`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `CanGreetWith<T>` for `Person`
+             └─ [CGP-E101] consumer trait impl `CanGreet` for context `Person`
+               └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
+                 └─ [CGP-E104] trait impl `HasName` for `Person`
+                   └─ [CGP-E110] missing field `name` on `Person`
+
+error[E0277]: `Rc<u8>` cannot be sent between threads safely
+  --> src/main.rs:59:13
+   |
+59 |     needs::<Person>();
+   |             ^^^^^^ `Rc<u8>` cannot be sent between threads safely
+   |
+   = help: the trait `Send` is not implemented for `Rc<u8>`
+help: the trait `CanGreetWith<T>` is conditionally implemented for `Person`
+  --> src/main.rs:50:1
+   |
+50 | impl<T: Send> CanGreetWith<T> for Person {
+   | ^^^^^^^^----^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |         |
+   |         unsatisfied requirement introduced here: `_: Send`
+note: required for `Person` to implement `CanGreetWith<Rc<u8>>`
+  --> src/main.rs:50:15
+   |
+50 | impl<T: Send> CanGreetWith<T> for Person {
+   |         ----  ^^^^^^^^^^^^^^^     ^^^^^^
+   |         |
+   |         unsatisfied trait bound introduced here
+note: required by a bound in `needs`
+  --> src/main.rs:56:19
+   |
+56 | fn needs<Context: CanGreetWith<Rc<u8>>>() {}
+   |                   ^^^^^^^^^^^^^^^^^^^^ required by this bound in `needs`
+
+For more information about this error, try `rustc --explain E0277`.

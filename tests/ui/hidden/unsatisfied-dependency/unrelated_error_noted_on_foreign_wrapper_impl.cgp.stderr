@@ -1,0 +1,46 @@
+error[E0277]: [CGP-E001] missing field `name` on `Person`
+  --> src/main.rs:54:5
+   |
+54 |     Person: CanGreet,
+   |     ^^^^^^^^^^^^^^^^
+...
+65 | impl<T: Send> CanGreetVia<T> for Box<Person> {
+   |                                  ----------- also required here
+   |
+   = note: root cause: [CGP-E110] missing field `name` on `Person`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `CanGreetVia<T>` for `Box<Person>`
+             └─ [CGP-E104] trait impl `HasInner` for `Box<Person>`
+               └─ [CGP-E101] consumer trait impl `CanGreet` for context `Person`
+                 └─ [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
+                   └─ [CGP-E104] trait impl `HasName` for `Person`
+                     └─ [CGP-E110] missing field `name` on `Person`
+
+error[E0277]: `Rc<u8>` cannot be sent between threads safely
+  --> src/main.rs:74:13
+   |
+74 |     needs::<Box<Person>>();
+   |             ^^^^^^^^^^^ `Rc<u8>` cannot be sent between threads safely
+   |
+   = help: the trait `Send` is not implemented for `Rc<u8>`
+help: the trait `CanGreetVia<T>` is conditionally implemented for `Box<Person>`
+  --> src/main.rs:65:1
+   |
+65 | impl<T: Send> CanGreetVia<T> for Box<Person> {
+   | ^^^^^^^^----^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |         |
+   |         unsatisfied requirement introduced here: `_: Send`
+note: required for `Box<Person>` to implement `CanGreetVia<Rc<u8>>`
+  --> src/main.rs:65:15
+   |
+65 | impl<T: Send> CanGreetVia<T> for Box<Person> {
+   |         ----  ^^^^^^^^^^^^^^     ^^^^^^^^^^^
+   |         |
+   |         unsatisfied trait bound introduced here
+note: required by a bound in `needs`
+  --> src/main.rs:71:19
+   |
+71 | fn needs<Context: CanGreetVia<Rc<u8>>>() {}
+   |                   ^^^^^^^^^^^^^^^^^^^ required by this bound in `needs`
+
+For more information about this error, try `rustc --explain E0277`.
