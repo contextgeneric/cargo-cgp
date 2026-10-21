@@ -1,8 +1,10 @@
 //! Two `check_components!` tables in one module whose check traits share a name.
 
-use cargo_cgp_error_processing::{CheckTraitName, StructuralMistake};
+use cargo_cgp_error_processing::{CheckTraitName, StructuralMistake, invokes_macro};
 use rustc_span::Span;
 use rustc_span::hygiene::{ExpnKind, MacroKind};
+
+use crate::config::{CHECK_COMPONENTS_MACRO, DELEGATE_AND_CHECK_COMPONENTS_MACRO};
 
 /// The prefix `check_components!` puts before the context's last path segment to name the check
 /// trait it derives.
@@ -16,7 +18,8 @@ const DERIVED_CHECK_TRAIT_PREFIX: &str = "__Check";
 pub fn detect_duplicate_check_trait(name: &str, primary_span: Span) -> Option<StructuralMistake> {
     let from_check_macro = primary_span.macro_backtrace().any(|expansion| {
         matches!(expansion.kind, ExpnKind::Macro(MacroKind::Bang, macro_name)
-            if macro_name.as_str().ends_with("check_components"))
+            if invokes_macro(macro_name.as_str(), CHECK_COMPONENTS_MACRO)
+                || invokes_macro(macro_name.as_str(), DELEGATE_AND_CHECK_COMPONENTS_MACRO))
     });
     if !from_check_macro {
         return None;

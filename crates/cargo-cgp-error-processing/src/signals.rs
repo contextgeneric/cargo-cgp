@@ -126,6 +126,14 @@ pub fn explain_footer_codes(text: &str) -> Vec<String> {
         .collect()
 }
 
+/// Whether `path`, a macro invocation's path as the compiler records it in an expansion
+/// (`check_components`, or `cgp::prelude::check_components` for a call written by its path), names
+/// the macro `name`: its last segment is `name` exactly. A crate's own macro whose name only ends
+/// the same way, such as `table_check_components`, is a different macro.
+pub fn invokes_macro(path: &str, name: &str) -> bool {
+    path.rsplit("::").next() == Some(name)
+}
+
 /// The reserved identifiers in `text`: names wrapped in double underscores, the convention every
 /// CGP macro follows for the names it invents (`__Context__`, and the lifetimes `'__a__` and
 /// `'__a0__` `#[cgp_auto_dispatch]` generates), each returned without a lifetime's quote. A

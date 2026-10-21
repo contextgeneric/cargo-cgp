@@ -6,8 +6,6 @@
 //!
 //! CGP error class: none; plain Rust the tool passes through.
 
-//@rewrites-falsely: the `[CGP-E016]` reshape matches any bang macro whose name ends in `check_components`
-
 macro_rules! table_check_components {
     () => {
         pub trait Dup {}

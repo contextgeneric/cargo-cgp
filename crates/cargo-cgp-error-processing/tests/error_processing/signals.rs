@@ -3,7 +3,7 @@
 //! matches and, as importantly, the near-misses it must not.
 
 use cargo_cgp_error_processing::{
-    explain_footer_codes, is_explain_footer_text, is_method_bounds_text,
+    explain_footer_codes, invokes_macro, is_explain_footer_text, is_method_bounds_text,
     is_method_probe_advice_text, is_missing_type_parameter_help_text,
     is_question_mark_cascade_text, is_recursion_limit_help_text, mentions_orphan_param_text,
     mentions_wiring_text, reserved_names,
@@ -139,6 +139,26 @@ fn recognizes_the_recursion_limit_help() {
     ));
     assert!(!is_recursion_limit_help_text(
         "the trait `Foo` is not implemented for `Bar`"
+    ));
+}
+
+#[test]
+fn a_macro_is_named_by_the_last_segment_of_its_path() {
+    // A bare call, and a call written by its path.
+    assert!(invokes_macro("check_components", "check_components"));
+    assert!(invokes_macro(
+        "cgp::prelude::delegate_and_check_components",
+        "delegate_and_check_components"
+    ));
+    // A macro whose name only ends the same way is another macro, as is a path the name only ends.
+    assert!(!invokes_macro("table_check_components", "check_components"));
+    assert!(!invokes_macro(
+        "delegate_and_check_components",
+        "check_components"
+    ));
+    assert!(!invokes_macro(
+        "my::table_check_components",
+        "check_components"
     ));
 }
 

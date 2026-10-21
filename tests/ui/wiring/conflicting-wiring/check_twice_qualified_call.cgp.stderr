@@ -1,0 +1,13 @@
+error[E0428]: [CGP-E016] two `check_components!` tables in one module check `App`
+  --> src/main.rs:42:1
+   |
+36 | check_components! {
+   | ----------------- the first table
+...
+42 | cgp::prelude::check_components! {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the second table
+   |
+   = help: merge the two tables, or name one table's check trait with `#[check_trait(...)]`
+   = note: this error originates in the macro `cgp::prelude::check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0428`.

@@ -2,14 +2,14 @@
 //! without `#[check_params(...)]`.
 //!
 //! The table is written `cgp::prelude::delegate_and_check_components! { … }`, so the compiler
-//! records the macro under that whole path. The tool reports `[CGP-E060]`, but its help names the
-//! `check_components!` form, `AreaCalculatorComponent: Rectangle`, which in this table would wire
-//! `Rectangle` as the provider; the bare call (`generic_component_unit_params`) gets
-//! `#[check_params(Rectangle)]`.
+//! records the macro under that whole path. The tool reads the macro by the path's last
+//! segment, so its `[CGP-E060]` help names `#[check_params(Rectangle)]`, the form this macro takes,
+//! as for the bare call (`generic_component_unit_params`), and not the `check_components!` form
+//! `AreaCalculatorComponent: Rectangle`, which in this table would wire `Rectangle` as the provider.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E060
 
 use cgp::prelude::*;

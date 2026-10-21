@@ -1,0 +1,24 @@
+error[E0428]: the name `__compute_area__` is defined multiple times
+  --> src/main.rs:21:1
+   |
+16 | #[cgp::prelude::cgp_auto_dispatch]
+   | ---------------------------------- previous definition of the value `__compute_area__` here
+...
+21 | #[cgp::prelude::cgp_auto_dispatch]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `__compute_area__` redefined here
+   |
+   = note: `__compute_area__` must be defined only once in the value namespace of this module
+   = note: this error originates in the attribute macro `cgp::prelude::cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0428]: the name `ComputeArea` is defined multiple times
+  --> src/main.rs:23:8
+   |
+18 |     fn area(&self) -> f64;
+   |        ---- previous definition of the type `ComputeArea` here
+...
+23 |     fn area(&self) -> f64;
+   |        ^^^^ `ComputeArea` redefined here
+   |
+   = note: `ComputeArea` must be defined only once in the type namespace of this module
+
+For more information about this error, try `rustc --explain E0428`.

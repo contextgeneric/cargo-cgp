@@ -4,6 +4,6 @@ error[E0277]: [CGP-E060] the check of `AreaCalculatorComponent` on `App` names n
 38 |         AreaCalculatorComponent: RectangleArea,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: check it at the parameters its provider implements: `AreaCalculatorComponent: Rectangle`
+   = help: check it at the parameters its provider implements: `#[check_params(Rectangle)]`
 
 For more information about this error, try `rustc --explain E0277`.

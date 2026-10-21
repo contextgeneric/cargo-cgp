@@ -7,7 +7,7 @@
 //! provider written for particular parameters does not serve, so the check fails with an `E0277` on
 //! `Provider: IsProviderFor<Marker, Context>` that reads like a broken provider.
 
-use cargo_cgp_error_processing::{CheckForm, StructuralMistake};
+use cargo_cgp_error_processing::{CheckForm, StructuralMistake, invokes_macro};
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_infer::traits::Obligation;
 use rustc_middle::ty::print::with_forced_trimmed_paths;
@@ -18,7 +18,9 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::config::{CGP_COMPONENT_CRATE, IS_PROVIDER_FOR_TRAIT};
+use crate::config::{
+    CGP_COMPONENT_CRATE, DELEGATE_AND_CHECK_COMPONENTS_MACRO, IS_PROVIDER_FOR_TRAIT,
+};
 use crate::resolve::anchor::{can_use_component_supertrait, impl_self_ty_span};
 use crate::resolve::cgp_item::{find_cgp_trait, marker_to_consumer};
 
@@ -135,7 +137,7 @@ fn checkable_parameters<'tcx>(
 fn check_form(tcx: TyCtxt<'_>, trait_did: DefId) -> CheckForm {
     let from_delegate_and_check = tcx.def_span(trait_did).macro_backtrace().any(|expansion| {
         matches!(expansion.kind, ExpnKind::Macro(MacroKind::Bang, name)
-            if name.as_str() == "delegate_and_check_components")
+            if invokes_macro(name.as_str(), DELEGATE_AND_CHECK_COMPONENTS_MACRO))
     });
     if from_delegate_and_check {
         CheckForm::DelegateAndCheckComponents

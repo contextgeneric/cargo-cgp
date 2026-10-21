@@ -1,14 +1,14 @@
 error[E0428]: the name `Dup` is defined multiple times
-  --> src/main.rs:14:9
+  --> src/main.rs:12:9
    |
-11 | macro_rules! table_check_components {
-12 |     () => {
-13 |         pub trait Dup {}
+ 9 | macro_rules! table_check_components {
+10 |     () => {
+11 |         pub trait Dup {}
    |         ------------- previous definition of the trait `Dup` here
-14 |         pub trait Dup {}
+12 |         pub trait Dup {}
    |         ^^^^^^^^^^^^^ `Dup` redefined here
 ...
-18 | table_check_components!();
+16 | table_check_components!();
    | ------------------------- in this macro invocation
    |
    = note: `Dup` must be defined only once in the type namespace of this module

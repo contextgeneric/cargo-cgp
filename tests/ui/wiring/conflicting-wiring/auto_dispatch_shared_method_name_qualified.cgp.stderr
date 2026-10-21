@@ -1,0 +1,13 @@
+error[E0428]: [CGP-E061] two `#[cgp_auto_dispatch]` traits in one module declare the method `area`
+  --> src/main.rs:23:8
+   |
+18 |     fn area(&self) -> f64;
+   |        ---- declared first here
+...
+23 |     fn area(&self) -> f64;
+   |        ^^^^ declared again here
+   |
+   = note: `#[cgp_auto_dispatch]` names the items it generates after the method alone, so both traits generate `ComputeArea` and `__compute_area__`
+   = help: rename `area` in one of the two traits, or declare the traits in different modules
+
+For more information about this error, try `rustc --explain E0428`.

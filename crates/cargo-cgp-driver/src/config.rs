@@ -74,6 +74,19 @@ pub const DELEGATE_COMPONENT_TRAIT: &str = "DelegateComponent";
 /// `Path` (the second argument) to tell the user which redirected key to set.
 pub const REDIRECT_LOOKUP_TYPE: &str = "RedirectLookup";
 
+/// The name of the `check_components!` macro. An `E0428` arrives from name resolution, before any
+/// query can read the crate a macro comes from, so its expansion is recognized by this name, the
+/// last segment of the path the call was written with.
+pub const CHECK_COMPONENTS_MACRO: &str = "check_components";
+
+/// The name of the `delegate_and_check_components!` macro, recognized like
+/// [`CHECK_COMPONENTS_MACRO`]; its check entries write their parameters in `#[check_params(…)]`.
+pub const DELEGATE_AND_CHECK_COMPONENTS_MACRO: &str = "delegate_and_check_components";
+
+/// The name of the `#[cgp_auto_dispatch]` attribute macro, recognized like
+/// [`CHECK_COMPONENTS_MACRO`] in the `E0428`s of two dispatch traits that share a method name.
+pub const CGP_AUTO_DISPATCH_MACRO: &str = "cgp_auto_dispatch";
+
 /// The dispatch provider a component wires per parameter value when it declares
 /// `#[derive_delegate]`, defined by [`CGP_COMPONENT_CRATE`].
 pub const USE_DELEGATE_TYPE: &str = "UseDelegate";
