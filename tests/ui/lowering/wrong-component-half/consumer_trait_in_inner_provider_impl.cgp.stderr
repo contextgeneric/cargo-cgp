@@ -1,0 +1,27 @@
+error[E0107]: [CGP-E032] `CanCalculateArea` is a consumer trait, but a `#[cgp_impl]` provider must implement its provider trait `AreaCalculator`
+  --> src/main.rs:23:6
+   |
+23 | impl CanCalculateArea {
+   |      ^^^^^^^^^^^^^^^^
+   |
+   = help: change the impl header to target the provider trait: `impl AreaCalculator` (not `impl CanCalculateArea`)
+
+error[E0277]: [CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`: 2 root causes
+  --> src/main.rs:51:9
+   |
+51 |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root causes:
+             - [CGP-E110] missing field `scale` on `Rectangle`
+             - [CGP-E115] `RectangleArea` is not a provider of `AreaCalculator`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+             └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `ScaledArea<RectangleArea>`
+               ├─ [CGP-E110] missing field `scale` on `Rectangle`
+               └─ [CGP-E102] provider trait `AreaCalculator` required of provider `RectangleArea` with context `Rectangle`
+                 └─ [CGP-E115] `RectangleArea` is not a provider of `AreaCalculator`
+   = help: add the field `scale: f64` to `Rectangle`
+
+Some errors have detailed explanations: E0107, E0277.
+For more information about an error, try `rustc --explain E0107`.

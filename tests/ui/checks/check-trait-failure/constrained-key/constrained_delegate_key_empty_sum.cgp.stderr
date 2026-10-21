@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `Sum![]: PickFirstVariant` is not satisfied
+  --> src/main.rs:58:9
+   |
+58 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `App`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `App` for provider `PickFirstVariantProvider<Sum![]>`
+               └─ [CGP-E117] the trait bound `Sum![]: PickFirstVariant` is not satisfied
+
+For more information about this error, try `rustc --explain E0277`.

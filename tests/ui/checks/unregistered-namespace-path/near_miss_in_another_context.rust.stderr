@@ -1,0 +1,57 @@
+error[E0277]: the trait bound `RedirectLookup<App, PathCons<Symbol<3, _>, _>>: IsProviderFor<_, App>` is not satisfied
+  --> src/main.rs:48:9
+   |
+48 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `IsProviderFor<GreeterComponent, App>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
+   |
+   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorTypeProviderComponent, __Context__>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+             IsProviderFor<GreeterComponent, __Context__>
+           and 10 others
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:46:1
+   |
+46 | / check_components! {
+47 | |     App {
+48 | |         GreeterComponent,
+49 | |     }
+50 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RedirectLookup<Other, PathCons<_, _>>: IsProviderFor<_, Other>` is not satisfied
+  --> src/main.rs:54:9
+   |
+54 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `IsProviderFor<GreeterComponent, Other>` is not implemented for `RedirectLookup<Other, PathCons<Symbol<3, Chars<..>>, _>>`
+   |
+   = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorTypeProviderComponent, __Context__>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+             IsProviderFor<GreeterComponent, __Context__>
+           and 10 others
+   = note: required for `Other` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckOther`
+  --> src/main.rs:52:1
+   |
+52 | / check_components! {
+53 | |     Other {
+54 | |         GreeterComponent,
+55 | |     }
+56 | | }
+   | |_^ required by this bound in `__CheckOther`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

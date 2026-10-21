@@ -1,0 +1,28 @@
+error[E0277]: [CGP-E001] missing wiring for `@app.GreeterComponent` on `App`
+  --> src/main.rs:48:9
+   |
+48 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E113] missing wiring for `@app.GreeterComponent` on `App`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `App`
+             └─ [CGP-E103] redirect lookup to `@app.GreeterComponent` in `App`
+               └─ [CGP-E113] missing wiring for `@app.GreeterComponent` on `App`
+   = help: wire `@app.GreeterComponent` to a provider in the wiring of `App`
+
+error[E0277]: [CGP-E001] missing wiring for `@app.GreeterComponent` on `Other`
+  --> src/main.rs:54:9
+   |
+54 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E113] missing wiring for `@app.GreeterComponent` on `Other`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `Other`
+             └─ [CGP-E103] redirect lookup to `@app.GreeterComponent` in `Other`
+               └─ [CGP-E113] missing wiring for `@app.GreeterComponent` on `Other`
+   = help: a similar key exists in the wiring of `Other`: `@App.GreeterComponent`
+   = help: wire `@app.GreeterComponent` to a provider in the wiring of `Other`
+
+For more information about this error, try `rustc --explain E0277`.

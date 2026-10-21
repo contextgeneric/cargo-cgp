@@ -1,0 +1,14 @@
+error[E0277]: [CGP-E001] missing field `database` on `App`
+  --> src/main.rs:72:9
+   |
+72 |         RowCounterComponent,
+   |         ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `database` on `App`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCountRows` for context `App`
+             └─ [CGP-E102] provider trait impl `RowCounter` with context `App` for provider `CountPooledRows`
+               └─ [CGP-E110] missing field `database` on `App`
+   = help: add the field `database` to `App`
+
+For more information about this error, try `rustc --explain E0277`.
