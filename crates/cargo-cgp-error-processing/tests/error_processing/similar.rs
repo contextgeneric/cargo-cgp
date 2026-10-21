@@ -9,6 +9,11 @@ fn a_transposed_or_recased_name_is_a_near_miss() {
         Some("first_name")
     );
     assert_eq!(similar_name("Height", ["width", "height"]), Some("height"));
+    // Case alone is never too far, however many letters it changes.
+    assert_eq!(
+        similar_name("FIRST_NAME", ["last_name", "first_name"]),
+        Some("first_name")
+    );
 }
 
 #[test]

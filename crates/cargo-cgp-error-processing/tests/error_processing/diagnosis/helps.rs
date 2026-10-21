@@ -577,6 +577,50 @@ fn routes_that_disagree_on_a_fix_drop_its_help() {
         assert!(helps.is_empty(), "{leaves:?} kept {helps:?}");
     }
 
+    // A near miss or a tuple field's tag one route names and the other does not, or names
+    // differently, is dropped the same way.
+    let field = |similar: Option<&str>, index_tag: Option<&str>| Leaf::Field {
+        name: "frist".to_owned(),
+        owner: "Person".to_owned(),
+        issue: FieldIssue::Missing,
+        fix: FieldFix {
+            confirmed: false,
+            ty: None,
+            similar: similar.map(str::to_owned),
+            index_tag: index_tag.map(str::to_owned),
+        },
+    };
+    let near = |name: Option<&str>| NearMiss(name.map(str::to_owned));
+    let wiring = |similar: Option<&str>| Leaf::MissingWiring {
+        component: "GreeterComponent".to_owned(),
+        owner: "App".to_owned(),
+        similar: near(similar),
+    };
+    let redirect = |similar: Option<&str>| Leaf::MissingRedirectWiring {
+        path: "@app.Greeter&".to_owned(),
+        context: "App".to_owned(),
+        similar: near(similar),
+    };
+    let variant = |similar: Option<&str>| Leaf::MissingVariant {
+        name: "circle".to_owned(),
+        owner: "Shape".to_owned(),
+        similar: near(similar),
+    };
+    let disagreeing_near_misses = [
+        [field(Some("first"), None), field(Some("frisk"), None)],
+        [field(None, Some("Index<0>")), field(None, None)],
+        [wiring(Some("GreeterComponen")), wiring(None)],
+        [redirect(Some("@App.Greeter&")), redirect(None)],
+        [variant(Some("Circle")), variant(None)],
+    ];
+    for leaves in disagreeing_near_misses {
+        let helps = helps_of_two_routes(leaves.clone());
+        assert!(
+            helps.iter().all(|help| !help.starts_with("a ")),
+            "{leaves:?} kept {helps:?}"
+        );
+    }
+
     // Routes that agree keep the fix, and a call with no import path known names none.
     assert_eq!(
         helps_of_two_routes([derive("HasFields"), derive("HasFields")]),

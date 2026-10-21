@@ -155,6 +155,24 @@ fn a_coalesced_block_names_each_subject_when_its_causes_are_mixed() {
         coalesced_headline(&[&inner, &outer], &causes[..1]),
         "[CGP-E001] missing field `name` on `Inner`"
     );
+    // Two providers checked on one context and failing for different causes are two subjects.
+    let provider_check = |provider: &str, cause: Cause| Resolved {
+        provider: Some(provider.to_owned()),
+        ..cgp_resolved("App", &["Greeter"], vec![cause])
+    };
+    let hello = provider_check("GreetHello", missing_field("name", "App", "App"));
+    let bye = provider_check("GreetBye", missing_wiring("FarewellComponent", "App"));
+    let two_causes: Vec<Cause> = hello
+        .causes
+        .iter()
+        .chain(bye.causes.iter())
+        .cloned()
+        .collect();
+    let headline = coalesced_headline(&[&hello, &bye], &two_causes);
+    assert!(
+        headline.contains("`GreetHello`") && headline.contains("`GreetBye`"),
+        "{headline}"
+    );
     // A third subject joins the list before its last clause.
     let third = cgp_resolved(
         "Third",
