@@ -1,0 +1,79 @@
+error[E0277]: the trait bound `Person: CanWave` is not satisfied
+  --> src/main.rs:51:37
+   |
+51 | impl CanGreetTwice for Person where Person: CanWave {}
+   |                                     ^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `Waver<Person>` is not implemented for `Person`
+  --> src/main.rs:41:1
+   |
+41 | pub struct Person {}
+   | ^^^^^^^^^^^^^^^^^
+help: the following other types implement trait `Waver<__Context__>`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Waver)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   | |
+   | `RedirectLookup<__Components__, __Path__>`
+   | `UseContext`
+note: required for `Person` to implement `CanWave`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_component(Waver)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+23 | pub trait CanWave {
+   |           ^^^^^^^
+   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
+   |
+15 + #![feature(trivial_bounds)]
+   |
+
+error[E0277]: the trait bound `Person: CanGreet` is not satisfied
+  --> src/main.rs:51:24
+   |
+51 | impl CanGreetTwice for Person where Person: CanWave {}
+   |                        ^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Person`
+  --> src/main.rs:41:1
+   |
+41 | pub struct Person {}
+   | ^^^^^^^^^^^^^^^^^
+note: required for `Person` to implement `HasName`
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+28 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, Person>`
+  --> src/main.rs:32:1
+   |
+32 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+33 | #[uses(HasName)]
+   |        ------- unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `Person` to implement `IsProviderFor<GreeterComponent, Person>`
+note: required for `Person` to implement `Greeter<Person>`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Person` to implement `CanGreet`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | pub trait CanGreet {
+   |           ^^^^^^^^
+note: required by a bound in `CanGreetTwice`
+  --> src/main.rs:49:26
+   |
+49 | pub trait CanGreetTwice: CanGreet {}
+   |                          ^^^^^^^^ required by this bound in `CanGreetTwice`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
