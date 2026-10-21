@@ -1,0 +1,13 @@
+error[E0275]: overflow evaluating the requirement `u32: CanUseComponent<ShowerComponent>`
+  --> src/main.rs:50:9
+   |
+50 |         ShowerComponent,
+   |         ^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E117] the trait bound `Vec<u32>: CanShow` is not satisfied
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanShow` for `u32`
+             └─ [CGP-E102] provider trait impl `Shower` with context `u32` for provider `ShowWrapped`
+               └─ [CGP-E117] the trait bound `Vec<u32>: CanShow` is not satisfied
+
+For more information about this error, try `rustc --explain E0275`.
