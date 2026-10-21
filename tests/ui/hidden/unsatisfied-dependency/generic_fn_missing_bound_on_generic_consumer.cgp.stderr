@@ -1,0 +1,35 @@
+error[E0599]: the method `show` exists for reference `&Context`, but its trait bounds were not satisfied
+  --> src/main.rs:20:13
+   |
+20 |     context.show(1u32);
+   |             ^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `Shower`
+  --> src/main.rs:16:5
+   |
+16 |     fn show(&self, value: T);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: the following trait bounds were not satisfied:
+      `&Context: Shower<&Context, _>`
+      `Context: Shower<Context, _>`
+  --> src/main.rs:14:17
+   |
+14 |   #[cgp_component(Shower)]
+   |  _----------------^-------
+15 | | pub trait CanShow<T> {
+   | |           ---------^
+   | |____________________|
+   |                      unsatisfied trait bound introduced here
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+help: use associated function syntax instead
+   |
+20 -     context.show(1u32);
+20 +     Context::show(1u32);
+   |
+help: the following trait defines an item `show`, perhaps you need to restrict type parameter `Context` with it:
+   |
+19 | fn run<Context: CanShow</* T */>>(context: &Context) {
+   |               ++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0599`.

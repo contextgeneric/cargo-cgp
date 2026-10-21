@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E002] missing field `name` on `Person`
+  --> src/main.rs:48:13
+   |
+48 |     let _ = GreetHello::run(&Person {});
+   |             ^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `name` on `Person`
+           this is required through the dependency chain:
+             [CGP-E102] provider trait impl `Greeter` with context `Person` for provider `GreetHello`
+             └─ [CGP-E104] trait impl `HasName` for `Person`
+               └─ [CGP-E110] missing field `name` on `Person`
+
+For more information about this error, try `rustc --explain E0277`.

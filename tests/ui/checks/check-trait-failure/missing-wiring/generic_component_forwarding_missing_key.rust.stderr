@@ -1,0 +1,31 @@
+error[E0277]: the trait bound `Bundle: DelegateComponent<ShowerComponent>` is not satisfied
+  --> src/main.rs:41:25
+   |
+41 |         ShowerComponent -> Bundle,
+   |                         ^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `DelegateComponent<ShowerComponent>` is not implemented for `Bundle`
+      but trait `DelegateComponent<FarewellComponent>` is implemented for it
+  --> src/main.rs:33:9
+   |
+33 |         FarewellComponent: SayBye,
+   |         ^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `FarewellComponent`, found `ShowerComponent`
+help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
+   |
+14 + #![feature(trivial_bounds)]
+   |
+
+error[E0277]: the size for values of type `<Bundle as DelegateComponent<ShowerComponent>>::Delegate` cannot be known
+  --> src/main.rs:41:25
+   |
+41 |         ShowerComponent -> Bundle,
+   |                         ^^^^^^^^^ doesn't have a known size
+   |
+   = help: the nightly-only, unstable trait `MetaSized` is not implemented for `<Bundle as DelegateComponent<ShowerComponent>>::Delegate`
+help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
+   |
+14 + #![feature(trivial_bounds)]
+   |
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,0 +1,32 @@
+error[E0277]: [CGP-E001] missing entry for `GreeterComponent` in provider `Bundle`
+  --> src/main.rs:42:26
+   |
+42 |         GreeterComponent -> Bundle,
+   |                          ^^^^^^^^^
+   |
+   = note: root cause: [CGP-E114] missing entry for `GreeterComponent` in provider `Bundle`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `Person`
+             └─ [CGP-E114] missing entry for `GreeterComponent` in provider `Bundle`
+   = help: add an entry for `GreeterComponent` to `Bundle`
+
+error[E0277]: `Rc<{integer}>` cannot be sent between threads safely
+  --> src/main.rs:49:16
+   |
+49 |     needs_send(Rc::new(1));
+   |     ---------- ^^^^^^^^^^ `Rc<{integer}>` cannot be sent between threads safely
+   |     |
+   |     required by a bound introduced by this call
+   |
+   = help: the trait `Send` is not implemented for `Rc<{integer}>`
+note: required by a bound in `needs_send`
+  --> src/main.rs:46:18
+   |
+46 | fn needs_send<T: Send>(_value: T) {}
+   |                  ^^^^ required by this bound in `needs_send`
+help: consider dereferencing here
+   |
+49 |     needs_send(*Rc::new(1));
+   |                +
+
+For more information about this error, try `rustc --explain E0277`.

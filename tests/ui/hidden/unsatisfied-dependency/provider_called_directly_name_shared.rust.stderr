@@ -1,0 +1,46 @@
+error[E0277]: the trait bound `Person: HasField<Symbol<4, Chars<..>>>` is not satisfied
+  --> src/main.rs:48:13
+   |
+48 |     let _ = GreetHello::run(&Person {});
+   |             ^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Person`
+  --> src/main.rs:45:1
+   |
+45 | pub struct Person {}
+   | ^^^^^^^^^^^^^^^^^
+help: the trait `IsProviderFor<GreeterComponent, __Context__>` is conditionally implemented for `GreetHello`
+  --> src/main.rs:38:1
+   |
+37 |   #[uses(HasName)]
+   |          ------- unsatisfied requirement introduced here: `_: HasName`
+38 | / impl Greeter {
+39 | |     fn run(&self) -> String {
+40 | |         self.name().to_owned()
+41 | |     }
+42 | | }
+   | |_^
+note: required for `Person` to implement `HasName`
+  --> src/main.rs:31:1
+   |
+31 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+32 | pub trait HasName {
+   |           ^^^^^^^
+note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, Person>`
+  --> src/main.rs:36:1
+   |
+36 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+37 | #[uses(HasName)]
+   |        ------- unsatisfied trait bound introduced here
+note: required by a bound in `Greeter::run`
+  --> src/main.rs:26:1
+   |
+26 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Greeter::run`
+27 | pub trait CanGreet {
+28 |     fn run(&self) -> String;
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
