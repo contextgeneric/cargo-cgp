@@ -1,0 +1,15 @@
+error[E0599]: no method named `greet` found for reference `&Context` in the current scope
+  --> src/main.rs:26:13
+   |
+26 |     context.greet();
+   |             ^^^^^ method not found in `&Context`
+   |
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+help: the following traits define an item `greet`, perhaps you need to restrict type parameter `Context` with one of them:
+   |
+25 | fn run<Context: CanGreet>(context: &Context) {
+   |               ++++++++++
+25 | fn run<Context: Greeter</* __Context__ */>>(context: &Context) {
+   |               ++++++++++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0599`.

@@ -1,0 +1,25 @@
+error[E0277]: [CGP-E002] the provider trait `Computer<(), u16>` with context `Robot` is not implemented for provider `Describe`
+  --> src/main.rs:39:9
+   |
+39 |         ComputerComponent: ((), u16),
+   |         ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<ComputerComponent, Robot, ((), u16)>` is not implemented for `Describe`
+      but trait `IsProviderFor<ComputerComponent, Person, ((), u8)>` is implemented for it
+  --> src/main.rs:24:1
+   |
+24 | impl<Code> Computer<Person, Code, u8> for Describe {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for the context `Robot` to implement the consumer trait `CanCompute`
+note: required by a bound in `__CheckRobot`
+  --> src/main.rs:37:1
+   |
+37 | / check_components! {
+38 | |     Robot {
+39 | |         ComputerComponent: ((), u16),
+40 | |     }
+41 | | }
+   | |_^ required by this bound in `__CheckRobot`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
