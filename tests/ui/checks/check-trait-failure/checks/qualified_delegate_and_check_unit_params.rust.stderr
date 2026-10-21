@@ -1,0 +1,30 @@
+error[E0277]: the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, App>` is not satisfied
+  --> src/main.rs:38:9
+   |
+38 |         AreaCalculatorComponent: RectangleArea,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<AreaCalculatorComponent, App, ()>` is not implemented for `RectangleArea`
+      but trait `IsProviderFor<AreaCalculatorComponent, App, Rectangle>` is implemented for it
+  --> src/main.rs:28:1
+   |
+28 | / impl AreaCalculator<Rectangle> {
+29 | |     fn area(&self, shape: &Rectangle) -> f64 {
+30 | |         shape.width * shape.height
+31 | |     }
+32 | | }
+   | |_^
+   = help: for that trait implementation, expected `Rectangle`, found `()`
+   = note: required for `App` to implement `CanUseComponent<AreaCalculatorComponent>`
+note: required by a bound in `__CanUseApp`
+  --> src/main.rs:36:1
+   |
+36 | / cgp::prelude::delegate_and_check_components! {
+37 | |     App {
+38 | |         AreaCalculatorComponent: RectangleArea,
+39 | |     }
+40 | | }
+   | |_^ required by this bound in `__CanUseApp`
+   = note: this error originates in the macro `cgp::prelude::delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

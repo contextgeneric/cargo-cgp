@@ -1,0 +1,9 @@
+error[E0277]: [CGP-E060] the check of `AreaCalculatorComponent` on `App` names no parameters, so it checks the component at the unit parameters `()`
+  --> src/main.rs:38:9
+   |
+38 |         AreaCalculatorComponent: RectangleArea,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: check it at the parameters its provider implements: `AreaCalculatorComponent: Rectangle`
+
+For more information about this error, try `rustc --explain E0277`.
