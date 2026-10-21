@@ -532,6 +532,22 @@ fn rewrites_a_growing_lookup_into_its_own_header() {
             "[CGP-E021] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because each step requires it for a larger type (`CanCalculateArea<Vec<u32>>`, …)"
         )
     );
+    // Without the first larger requirement, the reason names none.
+    let unnamed = WiringOverflow::Growing {
+        larger: None,
+        growing: None,
+    };
+    assert_eq!(
+        rewrite_wiring_overflow(
+            "overflow evaluating the requirement `Person: CanUseComponent<AreaCalculatorComponent>`",
+            &name_map(),
+            &unnamed,
+        )
+        .as_deref(),
+        Some(
+            "[CGP-E021] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because each step requires it for a larger type"
+        )
+    );
 }
 
 #[test]
@@ -558,6 +574,13 @@ fn the_wiring_overflow_help_names_the_provider_that_closes_or_grows_the_lookup()
     assert_eq!(
         wiring_overflow_help(&WiringOverflow::Cycle { closing: None }),
         "wire the component to a provider that does not require the consumer trait it provides"
+    );
+    assert_eq!(
+        wiring_overflow_help(&WiringOverflow::Growing {
+            larger: Some("CanShow<Vec<u32>>".to_owned()),
+            growing: None,
+        }),
+        "wire the component to a provider whose requirements do not grow with each step"
     );
 }
 

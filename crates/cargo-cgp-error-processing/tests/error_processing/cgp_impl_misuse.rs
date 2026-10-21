@@ -105,6 +105,16 @@ fn a_generic_component_is_imported_with_its_parameters() {
         "import it with `#[use_provider(Inner: AreaCalculator<Shape>)]`, with the type the call \
          uses in place of `Shape`",
     );
+    let several = MissingUseProvider {
+        inner: "Inner".to_owned(),
+        provider_trait: "Combiner<A, B>".to_owned(),
+        unresolved: vec!["A".to_owned(), "B".to_owned()],
+    };
+    assert_eq!(
+        missing_use_provider_help(&several),
+        "import it with `#[use_provider(Inner: Combiner<A, B>)]`, with the types the call uses in \
+         place of `A` and `B`",
+    );
 }
 
 #[test]

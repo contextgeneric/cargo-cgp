@@ -124,6 +124,15 @@ fn data_leaves_have_their_sentences_and_codes() {
             partial_lacks(PartialKind::RefExtractor, None),
             "[CGP-E126] a reference extractor of `FooBarBaz` does not implement `HasExtractor`",
         ),
+        (
+            partial_lacks(PartialKind::MutExtractor, None),
+            "[CGP-E126] a mutable reference extractor of `FooBarBaz` does not implement \
+             `HasExtractor`",
+        ),
+        (
+            partial_lacks(PartialKind::Builder, None),
+            "[CGP-E126] a builder of `FooBarBaz` does not implement `HasExtractor`",
+        ),
     ];
     for (leaf, expected) in cases {
         assert_eq!(dependency_tree_leaf(&leaf), expected);

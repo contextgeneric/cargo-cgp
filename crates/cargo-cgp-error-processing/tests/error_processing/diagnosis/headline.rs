@@ -155,4 +155,16 @@ fn a_coalesced_block_names_each_subject_when_its_causes_are_mixed() {
         coalesced_headline(&[&inner, &outer], &causes[..1]),
         "[CGP-E001] missing field `name` on `Inner`"
     );
+    // A third subject joins the list before its last clause.
+    let third = cgp_resolved(
+        "Third",
+        &["CanShow"],
+        vec![missing_field("name", "Inner", "Third")],
+    );
+    assert_eq!(
+        coalesced_headline(&[&inner, &outer, &third], &causes),
+        "[CGP-E001] the consumer trait `CanCompute` is not implemented for context `Inner`, the \
+         consumer trait `CanRun` is not implemented for context `Outer`, and the consumer trait \
+         `CanShow` is not implemented for context `Third`: 2 root causes"
+    );
 }

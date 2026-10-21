@@ -77,6 +77,11 @@ fn different_types_or_a_dropped_last_segment_are_not_near_misses() {
     );
     // The last segment names what is looked up, so a key without it is another key.
     assert_eq!(similar_key("@app.GreeterComponent", ["@app"]), None);
+    // Two segments more is two slips, not one.
+    assert_eq!(
+        similar_key("GreeterComponent", ["@app.inner.GreeterComponent"]),
+        None
+    );
     assert_eq!(
         similar_key("@app.GreeterComponent", ["@app.GreeterComponent"]),
         None

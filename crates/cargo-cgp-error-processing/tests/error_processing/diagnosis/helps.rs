@@ -535,23 +535,23 @@ fn routes_that_disagree_on_a_fix_drop_its_help() {
         owner: "App".to_owned(),
         delegate: EntryFix(Some(provider.to_owned())),
     };
-    let call = |method: &str| {
+    let call = |method: &str, replaces: Option<&str>| {
         MethodFix(Some(SuggestedCall {
             method: method.to_owned(),
-            replaces: None,
+            replaces: replaces.map(str::to_owned),
             trait_path: None,
         }))
     };
     let not_optional = |method: &str| Leaf::FieldNotOptional {
         name: "port".to_owned(),
         owner: "Config".to_owned(),
-        convert: call(method),
+        convert: call(method, None),
     };
     let partial = |method: &str| Leaf::PartialLacksDataTrait {
         kind: PartialKind::Extractor,
         target: "Shape".to_owned(),
         trait_name: "HasExtractor".to_owned(),
-        replacement: call(method),
+        replacement: call(method, Some("downcast")),
     };
     let open = CoreProviderHint::OpenDispatch {
         component: "AreaCalculatorComponent".to_owned(),
@@ -577,9 +577,13 @@ fn routes_that_disagree_on_a_fix_drop_its_help() {
         assert!(helps.is_empty(), "{leaves:?} kept {helps:?}");
     }
 
-    // Routes that agree keep the fix.
+    // Routes that agree keep the fix, and a call with no import path known names none.
     assert_eq!(
         helps_of_two_routes([derive("HasFields"), derive("HasFields")]),
         vec!["add `#[derive(HasFields)]` to `Shape`".to_owned()]
+    );
+    assert_eq!(
+        helps_of_two_routes([partial("downcast_fields"), partial("downcast_fields")]),
+        vec!["call `downcast_fields` in place of `downcast` on an extractor".to_owned()]
     );
 }
