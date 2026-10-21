@@ -1,0 +1,16 @@
+error[E0428]: [CGP-E016] two `check_components!` tables in one module name their check trait `Dup`
+  --> src/main.rs:14:9
+   |
+11 | macro_rules! table_check_components {
+12 |     () => {
+13 |         pub trait Dup {}
+   |         ------------- the first table
+14 |         pub trait Dup {}
+   |         ^^^^^^^^^^^^^ the second table
+...
+18 | table_check_components!();
+   | ------------------------- in this macro invocation
+   |
+   = help: merge the two tables, or give one of them another `#[check_trait(...)]` name
+
+For more information about this error, try `rustc --explain E0428`.
