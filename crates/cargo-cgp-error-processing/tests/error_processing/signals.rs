@@ -5,8 +5,8 @@
 use cargo_cgp_error_processing::{
     explain_footer_codes, invokes_macro, is_explain_footer_text, is_method_bounds_text,
     is_method_probe_advice_text, is_missing_type_parameter_help_text,
-    is_question_mark_cascade_text, is_recursion_limit_help_text, mentions_orphan_param_text,
-    mentions_wiring_text, reserved_names,
+    is_question_mark_cascade_text, is_recursion_limit_help_text, is_reserved_name,
+    mentions_orphan_param_text, mentions_wiring_text, reserved_names,
 };
 
 #[test]
@@ -160,6 +160,21 @@ fn a_macro_is_named_by_the_last_segment_of_its_path() {
         "my::table_check_components",
         "check_components"
     ));
+}
+
+#[test]
+fn a_reserved_name_has_two_underscores_at_each_end() {
+    assert!(is_reserved_name("__Context__"));
+    assert!(is_reserved_name("__a0__"));
+    assert!(is_reserved_name("__compute_area__"));
+    // A name the program wrote: a pair at one end only, a pair inside, a third underscore at an
+    // end, or underscores alone.
+    assert!(!is_reserved_name("__init"));
+    assert!(!is_reserved_name("snake__case"));
+    assert!(!is_reserved_name("___Context__"));
+    assert!(!is_reserved_name("__Context___"));
+    assert!(!is_reserved_name("____"));
+    assert!(!is_reserved_name("Context"));
 }
 
 #[test]

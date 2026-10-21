@@ -30,6 +30,7 @@
 //! `HasField<Symbol!("…")>` form.
 
 use crate::postprocess::strip_modules::strip_module_paths;
+use crate::signals::is_reserved_name;
 
 /// The text that opens the unmet-`HasField` clause, once prefixes are stripped and the
 /// symbol resugared.
@@ -89,7 +90,7 @@ pub fn rewrite_missing_fields(text: &str, has_field_impls: bool) -> Option<Strin
 /// macro generated).
 fn names_a_missing_field(field: &str, context: &str) -> bool {
     let numeric = field.starts_with(|c: char| c.is_ascii_digit());
-    let generated = context.len() > 4 && context.starts_with("__") && context.ends_with("__");
+    let generated = is_reserved_name(context);
     !numeric && !generated
 }
 

@@ -38,6 +38,7 @@ use crate::diagnosis::{WiringOverflow, wiring_overflow_reason};
 use crate::rewrite::names::ComponentNameMap;
 use crate::rewrite::parse::parse_trait_bound;
 use crate::rewrite::text::{last_segment, split_generics, split_top_level};
+use crate::signals::is_reserved_name;
 
 /// Rewrite one diagnostic message into its trait-named form, or return `None` to leave it
 /// unchanged. This is the entry point the emitter drives over every message; it tries each
@@ -115,7 +116,7 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
             let component = args.first()?.trim();
             let context = args.get(1)?.trim();
             let entry = names.get(component)?;
-            if is_generated_name(context) {
+            if is_reserved_name(context) {
                 return Some(format!(
                     "required for the provider `{subject}` to implement the provider trait `{}`",
                     entry.provider
@@ -131,7 +132,7 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
             // the consumer trait behind `Component`.
             let component = args.first()?.trim();
             let entry = names.get(component)?;
-            let subject = if is_generated_name(subject) {
+            let subject = if is_reserved_name(subject) {
                 format!("`{subject}`")
             } else {
                 format!("the context `{subject}`")
@@ -143,12 +144,6 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
         }
         _ => None,
     }
-}
-
-/// Whether `name` is a parameter a CGP macro generated (`__Context__`, `__Provider__`), named in
-/// the double-underscore form the macros reserve, rather than a type the programmer wrote.
-fn is_generated_name(name: &str) -> bool {
-    name.len() > 4 && name.starts_with("__") && name.ends_with("__")
 }
 
 /// Rewrite the primary "the trait bound `…` is not satisfied" header a wiring failure opens
