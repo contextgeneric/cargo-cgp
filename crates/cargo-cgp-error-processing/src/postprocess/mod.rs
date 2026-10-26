@@ -16,6 +16,7 @@ mod missing_field;
 mod resugar_list;
 mod resugar_path;
 mod resugar_symbol;
+mod spine;
 mod strip_modules;
 mod strip_prefixes;
 
@@ -25,5 +26,6 @@ pub use missing_field::*;
 pub use resugar_list::*;
 pub use resugar_path::*;
 pub use resugar_symbol::*;
+pub use spine::*;
 pub use strip_modules::*;
 pub use strip_prefixes::*;

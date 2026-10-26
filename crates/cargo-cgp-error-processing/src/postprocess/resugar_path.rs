@@ -32,6 +32,8 @@
 //! Runs after [`resugar_symbol`](super::resugar_symbol), so a symbol segment is already in its
 //! `Symbol!("…")` surface form by the time this matches it.
 
+use crate::postprocess::scan_head_tail;
+
 /// Rewrite every well-formed `PathCons<…>` spine in `text` to its surface path form, returning
 /// the rewritten text when any was rewritten (and `None` otherwise). A `PathCons<` that does not
 /// parse as an exact, round-trippable path is emitted unchanged and scanning resumes after it.
@@ -128,42 +130,6 @@ fn parse_path(input: &str, wrap: bool) -> Option<(String, usize)> {
 /// round-trippable signal of an open tail — no other tail is treated as a wildcard.
 fn is_open_tail(tail: &str) -> bool {
     tail == "_"
-}
-
-/// Split the content after a `PathCons<` into its `Head` and `Tail`, returning them and the
-/// byte offset just past the matching `>`. Angle, paren, and bracket nesting is balanced and
-/// string literals are skipped, so a comma or `>` inside a segment does not mislead the scan.
-fn scan_head_tail(s: &str) -> Option<(&str, &str, usize)> {
-    let mut depth: i32 = 0;
-    let mut comma: Option<usize> = None;
-    let mut in_string = false;
-    let mut escaped = false;
-
-    for (index, c) in s.char_indices() {
-        if in_string {
-            if escaped {
-                escaped = false;
-            } else if c == '\\' {
-                escaped = true;
-            } else if c == '"' {
-                in_string = false;
-            }
-            continue;
-        }
-        match c {
-            '"' => in_string = true,
-            '<' | '(' | '[' => depth += 1,
-            ')' | ']' => depth -= 1,
-            '>' if depth == 0 => {
-                let comma = comma?;
-                return Some((&s[..comma], &s[comma + 1..index], index + 1));
-            }
-            '>' => depth -= 1,
-            ',' if depth == 0 && comma.is_none() => comma = Some(index),
-            _ => {}
-        }
-    }
-    None
 }
 
 /// Render one spine segment back to its `Path!` surface form, or `None` when it would not

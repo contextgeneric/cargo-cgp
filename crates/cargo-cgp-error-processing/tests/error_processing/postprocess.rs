@@ -5,9 +5,27 @@
 
 use cargo_cgp_error_processing::{
     AmbiguousNames, Origin, context_has_hasfield_impls, postprocess_fragments, postprocess_message,
-    resugar_lists, resugar_path, resugar_symbol, rewrite_missing_fields, strip_cgp_prefixes,
-    strip_module_paths, strip_unambiguous_paths,
+    resugar_lists, resugar_path, resugar_symbol, rewrite_missing_fields, scan_head_tail,
+    strip_cgp_prefixes, strip_module_paths, strip_unambiguous_paths,
 };
+
+#[test]
+fn scan_head_tail_splits_at_the_top_level_comma() {
+    // The scan reads the text after a cell's opening token; nesting and string literals hide their
+    // commas and closing brackets, and the offset points just past the cell's own `>`.
+    let after = "Symbol<3, Chars<'a', Nil>>, Cons<(u8, u16), Nil>> rest";
+    let (head, tail, end) = scan_head_tail(after).unwrap();
+    assert_eq!(head, "Symbol<3, Chars<'a', Nil>>");
+    assert_eq!(tail, " Cons<(u8, u16), Nil>");
+    assert_eq!(&after[end..], " rest");
+
+    let (head, tail, _) = scan_head_tail(r#"Name<"a, >b">, Nil>"#).unwrap();
+    assert_eq!((head, tail), (r#"Name<"a, >b">"#, " Nil"));
+
+    // No top-level comma, or no matching close, declines.
+    assert_eq!(scan_head_tail("Nil>"), None);
+    assert_eq!(scan_head_tail("u8, Nil"), None);
+}
 
 #[test]
 fn resugars_a_product_of_bare_types() {
