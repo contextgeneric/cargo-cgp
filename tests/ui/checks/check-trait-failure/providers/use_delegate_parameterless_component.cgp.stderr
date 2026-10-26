@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E001] `UseDelegate<GreeterTable>` is not a provider of `Greeter`
+  --> src/main.rs:37:9
+   |
+37 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E115] `UseDelegate<GreeterTable>` is not a provider of `Greeter`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `App`
+             └─ [CGP-E102] provider trait `Greeter` required of provider `UseDelegate<GreeterTable>` with context `App`
+               └─ [CGP-E115] `UseDelegate<GreeterTable>` is not a provider of `Greeter`
+
+For more information about this error, try `rustc --explain E0277`.

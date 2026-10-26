@@ -1,0 +1,13 @@
+error[E0599]: [CGP-E050] `Shape` does not implement `FromVariant`
+  --> src/main.rs:24:20
+   |
+24 |     let _ = Shape::from_variant(PhantomData::<Symbol!("Circle")>, Circle { radius: 1.0 });
+   |                    ^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E123] `Shape` does not implement `FromVariant`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `FromVariant<Symbol!("Circle")>` for `Shape`
+             └─ [CGP-E123] `Shape` does not implement `FromVariant`
+   = help: add `#[derive(FromVariant)]` to `Shape`
+
+For more information about this error, try `rustc --explain E0599`.

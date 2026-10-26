@@ -1,0 +1,14 @@
+error[E0599]: no variant, associated function, or constant named `from_variant` found for enum `Shape` in the current scope
+  --> src/main.rs:24:20
+   |
+19 | pub enum Shape {
+   | -------------- variant, associated function, or constant `from_variant` not found for this enum
+...
+24 |     let _ = Shape::from_variant(PhantomData::<Symbol!("Circle")>, Circle { radius: 1.0 });
+   |                    ^^^^^^^^^^^^ variant, associated function, or constant not found in `Shape`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `from_variant`, perhaps you need to implement it:
+           candidate #1: `cgp::prelude::FromVariant`
+
+For more information about this error, try `rustc --explain E0599`.

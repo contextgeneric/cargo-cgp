@@ -1,0 +1,42 @@
+error[E0277]: the trait bound `GreetHello: IsProviderFor<GreeterComponent, Context>` is not satisfied
+  --> src/main.rs:25:44
+   |
+21 | / macro_rules! greeter_provider {
+22 | |     ($provider:ident) => {
+23 | |         pub struct $provider;
+24 | |
+25 | |         impl<Context> Greeter<Context> for $provider {
+   | |                                            ^^^^^^^^^ unsatisfied trait bound
+...  |
+30 | |     };
+31 | | }
+   | |_- this error originates in the macro `greeter_provider` which comes from the expansion of the attribute macro `cgp_component`
+32 |
+33 |   greeter_provider!(GreetHello);
+   |   ----------------------------- in this macro invocation
+   |
+help: the trait `IsProviderFor<GreeterComponent, Context>` is not implemented for `GreetHello`
+  --> src/main.rs:23:9
+   |
+23 |         pub struct $provider;
+   |         ^^^^^^^^^^^^^^^^^^^^^
+...
+33 | greeter_provider!(GreetHello);
+   | ----------------------------- in this macro invocation
+   = help: the following other types implement trait `IsProviderFor<Component, Context, Params>`:
+             `BindErr<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
+             `BindErr<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T1, E>)>`
+             `BindOk<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T, E1>)>`
+             `BindOk<M, Cont>` implements `IsProviderFor<ComputerComponent, Context, (Code, Result<T, E1>)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<ComputerComponent, Context, (Code, Builder)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<HandlerComponent, Context, (Code, Builder)>`
+             `BuildAndMerge<Provider>` implements `IsProviderFor<TryComputerComponent, Context, (Code, Builder)>`
+             `BuildAndMergeOutputs<Output, Handlers>` implements `IsProviderFor<ComputerComponent, __Context__, __Params__>`
+           and 200 others
+note: required by a bound in `Greeter`
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Greeter`
+
+For more information about this error, try `rustc --explain E0277`.

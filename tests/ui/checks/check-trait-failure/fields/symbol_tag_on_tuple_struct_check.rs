@@ -2,8 +2,8 @@
 //!
 //! `Pair` derives `HasField`, keyed by `Index<N>`, so `HasField<Symbol!("0")>` does not hold: a
 //! digit string names no field. The block states the field is missing, and its `help` names the
-//! `Index<0>` tag the field takes. The classifier used to read a tuple struct's fields as named `0`
-//! and `1`, so it took the tag for a field `Pair` carries without the derive and blamed the derive,
+//! `Index<0>` tag the field takes. A tuple struct's positions are no field names, so the block does
+//! not take the tag for a field `Pair` carries without the derive, and does not blame the derive,
 //! which `Pair` has.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).

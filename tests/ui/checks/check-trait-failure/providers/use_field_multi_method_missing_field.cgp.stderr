@@ -1,0 +1,13 @@
+error[E0277]: [CGP-E001] `UseField<Symbol!("width")>` is not a provider of `DimensionsGetter`
+  --> src/main.rs:35:9
+   |
+35 |         DimensionsGetterComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E115] `UseField<Symbol!("width")>` is not a provider of `DimensionsGetter`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `HasDimensions` for context `Rectangle`
+             └─ [CGP-E102] provider trait `DimensionsGetter` required of provider `UseField<Symbol!("width")>` with context `Rectangle`
+               └─ [CGP-E115] `UseField<Symbol!("width")>` is not a provider of `DimensionsGetter`
+
+For more information about this error, try `rustc --explain E0277`.

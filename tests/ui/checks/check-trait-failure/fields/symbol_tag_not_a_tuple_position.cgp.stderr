@@ -1,0 +1,25 @@
+error[E0277]: [CGP-E001] missing field `2` on `Pair`
+  --> src/main.rs:60:9
+   |
+60 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `2` on `Pair`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `Pair`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `Pair` for provider `GreetThird`
+               └─ [CGP-E110] missing field `2` on `Pair`
+
+error[E0277]: [CGP-E001] missing field `01` on `Couple`
+  --> src/main.rs:67:9
+   |
+67 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `01` on `Couple`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `Couple`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `Couple` for provider `GreetPadded`
+               └─ [CGP-E110] missing field `01` on `Couple`
+
+For more information about this error, try `rustc --explain E0277`.

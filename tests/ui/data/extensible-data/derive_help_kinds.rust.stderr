@@ -1,0 +1,33 @@
+error[E0599]: no method named `to_extractor` found for struct `Person` in the current scope
+  --> src/main.rs:32:20
+   |
+17 | pub struct Person {
+   | ----------------- method `to_extractor` not found for this struct
+...
+32 |     let _ = person.to_extractor();
+   |                    ^^^^^^^^^^^^ method not found in `Person`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `to_extractor`, perhaps you need to implement it:
+           candidate #1: `cgp::prelude::HasExtractor`
+
+error[E0599]: no variant, associated function, or constant named `builder` found for enum `Shape` in the current scope
+  --> src/main.rs:36:20
+   |
+22 | pub enum Shape {
+   | -------------- variant, associated function, or constant `builder` not found for this enum
+...
+36 |     let _ = Shape::builder();
+   |                    ^^^^^^^ variant, associated function, or constant not found in `Shape`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `builder`, perhaps you need to implement it:
+           candidate #1: `cgp::prelude::HasBuilder`
+
+error[E0599]: no method named `upcast` found for enum `Option<T>` in the current scope
+  --> src/main.rs:41:24
+   |
+41 |     let _: Big = value.upcast(PhantomData::<Big>);
+   |                        ^^^^^^ method not found in `Option<u64>`
+
+For more information about this error, try `rustc --explain E0599`.

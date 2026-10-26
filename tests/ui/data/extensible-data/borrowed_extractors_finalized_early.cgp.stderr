@@ -1,0 +1,17 @@
+error[E0599]: [CGP-E050] variant `Circle` of `Shape` is not extracted
+  --> src/main.rs:33:37
+   |
+33 |         Err(remainder) => remainder.finalize_extract(),
+   |                                     ^^^^^^^^^^^^^^^^
+...
+40 |         Err(remainder) => remainder.finalize_extract(),
+   |                                     ---------------- also required here
+   |
+   = note: root cause: [CGP-E121] variant `Circle` of `Shape` is not extracted
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `FinalizeExtract` for the reference extractor of `Shape` with `Rectangle` ruled out
+             └─ [CGP-E121] variant `Circle` of `Shape` is not extracted
+             [CGP-E104] trait impl `FinalizeExtract` for the mutable reference extractor of `Shape` with `Rectangle` ruled out
+             └─ [CGP-E121] variant `Circle` of `Shape` is not extracted
+
+For more information about this error, try `rustc --explain E0599`.

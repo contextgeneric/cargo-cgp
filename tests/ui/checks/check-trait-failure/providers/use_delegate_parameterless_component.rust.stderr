@@ -1,0 +1,29 @@
+error[E0277]: the trait bound `cgp::prelude::UseDelegate<GreeterTable>: IsProviderFor<GreeterComponent, App>` is not satisfied
+  --> src/main.rs:37:9
+   |
+37 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ the trait `IsProviderFor<GreeterComponent, App>` is not implemented for `cgp::prelude::UseDelegate<GreeterTable>`
+   |
+   = help: `cgp::prelude::UseDelegate<__Components__>` implements trait `IsProviderFor<Component, Context, Params>`:
+             IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerComponent, __Context__, (Code, Input)>
+             IsProviderFor<ComputerRefComponent, __Context__, (Code, Input)>
+             IsProviderFor<ErrorRaiserComponent, __Context__, SourceError>
+             IsProviderFor<ErrorWrapperComponent, __Context__, Detail>
+             IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
+             IsProviderFor<HandlerRefComponent, __Context__, (Code, Input)>
+           and 6 others
+   = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:35:1
+   |
+35 | / check_components! {
+36 | |     App {
+37 | |         GreeterComponent,
+38 | |     }
+39 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
