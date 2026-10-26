@@ -1,0 +1,9 @@
+error[E0119]: [CGP-E011] conflicting wiring: `App` wires `@app.Wrap<_>.Bar`, which `@app.Wrap<X>` already covers
+  --> src/main.rs:30:10
+   |
+29 |         @app.<X> Wrap<X>: First,
+   |          --------------- first implementation here
+30 |         @app.<T> T.Bar: Second,
+   |          ^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

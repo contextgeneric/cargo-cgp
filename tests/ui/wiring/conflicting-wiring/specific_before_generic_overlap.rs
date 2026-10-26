@@ -2,16 +2,15 @@
 //! type: `@DescriberComponent.Wrap<u64>`, then `@DescriberComponent.<T> Wrap<T>`, which covers it.
 //! The two `DelegateComponent<PathCons<..>>` impls conflict with the coherence error E0119.
 //!
-//! The tool reports `App` wiring `@DescriberComponent.Wrap<T>`, "which
-//! `@DescriberComponent.Wrap<u64>` already covers", which is false: the generic key covers the
-//! specific one, not the reverse. The wording follows the order of the entries.
-//!
-//! The reversed counterpart of
+//! The tool names the generic key as the one that covers the other, whichever is written first:
+//! `[CGP-E011] conflicting wiring: `App` wires `@DescriberComponent.Wrap<u64>`, which
+//! `@DescriberComponent.Wrap<T>` already covers`, as for the reversed order in
 //! [path_generic_type_segment_overlap.rs](path_generic_type_segment_overlap.rs).
 //!
-//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E011).
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E011
 
 use cgp::prelude::*;

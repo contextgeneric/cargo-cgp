@@ -25,16 +25,16 @@ use rustc_span::Span;
 
 use crate::resolve::cgp_item::is_namespace_lookup_trait;
 use crate::resolve::conflict::{
-    ConflictSide, describe_key, impl_delegate_type, redirect_conflict, render_lookup_trait,
-    same_range,
+    ConflictSide, describe_key, impl_delegate_type, maps_one_key, overlap_conflict,
+    redirect_conflict, render_lookup_trait, same_range,
 };
 
 /// Classify an `E0119` on a namespace lookup trait as a duplicate-entry conflict, or `None` when
 /// no namespace-trait impl sits at the caret (leaving the diagnostic to the ordinary fallback).
-/// The shapes mirror [`build_conflict`](super::build_conflict): both entries redirecting is a
-/// duplicate redirect (naming both targets), one redirecting — written, or inherited through a
-/// parent namespace — is a redirect collision, and two plain entries are a duplicate or an overlap
-/// by whether their rendered keys agree.
+/// The shapes mirror [`build_conflict`](super::build_conflict): of two entries over one key, both
+/// redirecting is a duplicate redirect (naming both targets), one redirecting — written, or
+/// inherited through a parent namespace — is a redirect collision, and two plain entries are a
+/// duplicate; two distinct keys are an overlap.
 pub(crate) fn classify_namespace_conflict(
     tcx: TyCtxt<'_>,
     primary_span: Span,
@@ -65,22 +65,20 @@ pub(crate) fn classify_namespace_conflict(
     // An entry can also collide with the namespace's own *inheritance* blanket, whose `Delegate`
     // is a projection rather than a written redirect; `redirect_conflict` resolves what the parent
     // maps the colliding key to.
-    if let Some(conflict) = redirect_conflict(tcx, &namespace, &first, &conflicting) {
+    if maps_one_key(tcx, &first, &conflicting)
+        && let Some(conflict) = redirect_conflict(tcx, &namespace, &first, &conflicting)
+    {
         return Some(conflict);
     }
     let first_key = describe_key(tcx, first.key, first.impl_did)?;
-    Some(if first_key == key {
-        WiringConflict::Duplicate {
+    if first_key == key {
+        Some(WiringConflict::Duplicate {
             context: namespace,
             key,
-        }
+        })
     } else {
-        WiringConflict::Overlap {
-            context: namespace,
-            conflicting: key,
-            first: first_key,
-        }
-    })
+        overlap_conflict(tcx, namespace, (&first, first_key), (&conflicting, key))
+    }
 }
 
 /// The namespace entries whose namespace-trait impls sit at `span`, in definition order — matched

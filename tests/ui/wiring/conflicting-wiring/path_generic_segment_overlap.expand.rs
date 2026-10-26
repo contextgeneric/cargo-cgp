@@ -5,10 +5,10 @@
 //! claims. Each path entry lowers to a `DelegateComponent<PathCons<..>>` with a wildcard tail, and
 //! the generic segment makes the two impls overlap with the coherence error E0119.
 //!
-//! The tool drops the redundant `IsProviderFor` half and rewrites the `DelegateComponent` half to
-//! `[CGP-E011] conflicting wiring: `App` wires `@ComputerComponent.Code.u64`, which
-//! `@ComputerComponent.Eval` already covers`: the generic segment is named by its parameter, so the key reads as
-//! the entry wrote it.
+//! Neither key covers the other, so the tool names the key they share: it drops the redundant
+//! `IsProviderFor` half and rewrites the `DelegateComponent` half to `[CGP-E011] conflicting
+//! wiring: `App` wires `@ComputerComponent.Eval.u64`, which `@ComputerComponent.Eval` already
+//! covers`.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
 //! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E011).

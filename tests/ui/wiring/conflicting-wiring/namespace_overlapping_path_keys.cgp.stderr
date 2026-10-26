@@ -1,9 +1,9 @@
-error[E0119]: [CGP-E014] conflicting wiring: `MyNamespace` redirects `@foo.T` twice, to `@baz` and to `@qux`
-  --> src/main.rs:22:10
+error[E0119]: [CGP-E011] conflicting wiring: `MyNamespace` wires `@foo.Bar`, which `@foo.T` already covers
+  --> src/main.rs:24:10
    |
-21 |         @foo.Bar => @baz,
+23 |         @foo.Bar => @baz,
    |          ------- first implementation here
-22 |         @foo.<T> T => @qux,
+24 |         @foo.<T> T => @qux,
    |          ^^^^^^^^^ conflicting implementation for `@foo.Bar`
 
 For more information about this error, try `rustc --explain E0119`.

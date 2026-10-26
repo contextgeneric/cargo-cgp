@@ -1,4 +1,4 @@
-error[E0119]: [CGP-E011] conflicting wiring: `App` wires `@ComputerComponent.Code.u64`, which `@ComputerComponent.Eval` already covers
+error[E0119]: [CGP-E011] conflicting wiring: `App` wires `@ComputerComponent.Eval.u64`, which `@ComputerComponent.Eval` already covers
   --> src/main.rs:49:10
    |
 48 |         @ComputerComponent.Eval: Show,

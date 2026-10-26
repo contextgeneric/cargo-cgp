@@ -1,0 +1,10 @@
+error[E0119]: conflicting implementations of trait `AppNamespace<_>` for type `GreeterComponent`
+  --> src/main.rs:34:23
+   |
+26 | #[default_impl(GreeterComponent in AppNamespace)]
+   |                ---------------- first implementation here
+...
+34 |     new AppNamespace: DefaultNamespace
+   |                       ^^^^^^^^^^^^^^^^ conflicting implementation for `GreeterComponent`
+
+For more information about this error, try `rustc --explain E0119`.

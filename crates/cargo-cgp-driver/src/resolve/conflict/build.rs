@@ -4,12 +4,15 @@ use cargo_cgp_error_processing::{WiringConflict, WiringKey};
 use rustc_middle::ty::TyCtxt;
 
 use crate::resolve::cgp_item::component_params;
-use crate::resolve::conflict::{ConflictSide, DelegateImpl, EntryTarget, describe_key};
+use crate::resolve::conflict::{
+    ConflictSide, DelegateImpl, EntryTarget, describe_key, maps_one_key, overlap_conflict,
+};
 
 /// Word the recovered impls into a [`WiringConflict`], picking the shape from how the two entries
-/// relate: a redirect (one or both map the key to a `RedirectLookup`), or a plain duplicate or
-/// overlap otherwise. `None` when a key cannot be rendered to a surface form, or when the first
-/// entry is not a local impl.
+/// relate: a redirect when they map one key and one or both map it to a `RedirectLookup`, a plain
+/// duplicate, or an overlap of two distinct keys. `None` when a key cannot be rendered to a surface
+/// form, when the first entry is not a local impl, or when neither of two distinct keys covers the
+/// other.
 pub(crate) fn build_conflict<'tcx>(
     tcx: TyCtxt<'tcx>,
     conflicting: &DelegateImpl<'tcx>,
@@ -33,34 +36,38 @@ pub(crate) fn build_conflict<'tcx>(
         key: first.key,
         delegate: first.delegate,
     };
-    if let Some(conflict) = redirect_conflict(tcx, &context, &first_side, &conflicting_side) {
+    if maps_one_key(tcx, &first_side, &conflicting_side)
+        && let Some(conflict) = redirect_conflict(tcx, &context, &first_side, &conflicting_side)
+    {
         return Some(conflict);
     }
 
     let key = describe_key(tcx, conflicting.key, conflicting.impl_did)?;
     let first_key = describe_key(tcx, first.key, first.impl_did)?;
-    Some(match (&first_key, &key) {
+    match (&first_key, &key) {
         // Two blanket forwardings, each over every key — a context joining more than one
         // namespace (`namespace` desugars to a bare-key `for` loop, so the two are the same shape).
         (WiringKey::Blanket(first_ns), WiringKey::Blanket(second_ns)) => {
-            WiringConflict::MultipleNamespaces {
+            Some(WiringConflict::MultipleNamespaces {
                 context,
                 first: first_ns.clone(),
                 second: second_ns.clone(),
-            }
+            })
         }
-        _ if first_key == key => WiringConflict::Duplicate { context, key },
-        _ => WiringConflict::Overlap {
+        _ if first_key == key => Some(WiringConflict::Duplicate { context, key }),
+        _ => overlap_conflict(
+            tcx,
             context,
-            conflicting: key,
-            first: first_key,
-        },
-    })
+            (&first_side, first_key),
+            (&conflicting_side, key),
+        ),
+    }
 }
 
-/// Recognize a collision in which at least one entry redirects the key: both redirecting is a
-/// duplicate redirect (naming both targets), one is a redirect collision whose fix names the other
-/// entry's provider. A blanket forwarding (a namespace join, or a namespace's inheritance blanket)
+/// Recognize a collision over one key in which at least one entry redirects it: both redirecting
+/// is a duplicate redirect (naming both targets), one is a redirect collision whose fix names the
+/// other entry's provider. The caller asks only for entries that map one key
+/// ([`maps_one_key`]). A blanket forwarding (a namespace join, or a namespace's inheritance blanket)
 /// redirects when it maps the other entry's concrete key to a `RedirectLookup`, and the message then
 /// names that concrete key. `None` when neither entry redirects. `subject` is the context or the
 /// namespace the collision is reported on.

@@ -3,17 +3,19 @@
 //! `DelegateComponent<PathCons<..>>` impls conflict with the coherence error E0119 over the one key
 //! they share.
 //!
-//! Both entries redirect, so the tool takes the pair for one key redirected twice and reports `App`
-//! redirecting `@app.T` twice, which is false: each path is redirected once.
+//! Both entries redirect, but each redirects its own path once, so the tool words the pair as an
+//! overlap, `[CGP-E011] conflicting wiring: `App` wires `@app.Bar`, which `@app.T` already covers`,
+//! rather than as one key redirected twice ([duplicate_redirect.rs](duplicate_redirect.rs)).
 //!
 //! The redirect counterpart of
 //! [path_generic_type_segment_overlap.rs](path_generic_type_segment_overlap.rs), whose two entries
 //! name providers.
 //!
-//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E011).
 
-//@quality: usability
-//@codes: CGP-E014
+//@quality: acceptable
+//@codes: CGP-E011
 
 use cgp::prelude::*;
 

@@ -81,7 +81,8 @@ pub enum WiringConflict {
     Duplicate { context: String, key: WiringKey },
     /// Two entries wire *overlapping but distinct* keys, so one cannot claim what the other
     /// already covers — a generic entry over a specific one, or a path that is a prefix of
-    /// another (`CGP-E011`).
+    /// another (`CGP-E011`). `first` is the key that covers `conflicting`, which may be the key the
+    /// two entries share when neither covers the other.
     Overlap {
         context: String,
         conflicting: WiringKey,

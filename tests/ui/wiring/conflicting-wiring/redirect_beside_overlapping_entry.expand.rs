@@ -3,13 +3,13 @@
 //! overlapping `@DescriberComponent.<T> Wrap<T>`. The two `DelegateComponent<PathCons<..>>` impls
 //! conflict with the coherence error E0119 over `Wrap<u64>`.
 //!
-//! One entry redirects, so the tool reads the pair as a redirect collision on one key and reports
-//! `App` wiring `@DescriberComponent.Wrap<T>` directly, which is false: that entry is the redirect.
+//! The two entries map different keys, so the tool words the pair as an overlap,
+//! `[CGP-E011] conflicting wiring: `App` wires `@DescriberComponent.Wrap<u64>`, which
+//! `@DescriberComponent.Wrap<T>` already covers`, rather than as a key wired directly beside its
+//! own redirect ([open_prefixed_component.rs](open_prefixed_component.rs)).
 //!
-//! The overlapping counterpart of [open_prefixed_component.rs](open_prefixed_component.rs), whose
-//! two entries map one key.
-//!
-//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
+//! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and
+//! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E011).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

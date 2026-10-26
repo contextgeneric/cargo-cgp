@@ -26,6 +26,7 @@ mod classify;
 mod delegate_impls;
 mod keys;
 mod namespace;
+mod overlap;
 mod redirect;
 mod target;
 
@@ -34,5 +35,6 @@ pub use classify::*;
 pub(crate) use delegate_impls::*;
 pub(crate) use keys::*;
 pub(crate) use namespace::*;
+pub(crate) use overlap::*;
 pub(crate) use redirect::*;
 pub(crate) use target::*;
