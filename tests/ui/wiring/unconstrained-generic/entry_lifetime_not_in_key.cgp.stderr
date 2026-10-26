@@ -1,0 +1,15 @@
+error[E0207]: the lifetime parameter `'a` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:34:10
+   |
+34 |         <'a> GreeterComponent: GreetRef<'a>,
+   |          ^^ unconstrained lifetime parameter
+   |
+help: use the lifetime parameter `'a` in the `Person` type and use it in the type definition
+   |
+30 ~ pub struct Person<'a>;
+31 |
+32 | delegate_components! {
+33 ~     Person<'a> {
+   |
+
+For more information about this error, try `rustc --explain E0207`.

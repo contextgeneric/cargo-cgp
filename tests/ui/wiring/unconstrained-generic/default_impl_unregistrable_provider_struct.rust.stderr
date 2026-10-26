@@ -1,0 +1,19 @@
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:36:6
+   |
+36 | impl<T: Display> ShowImpl<T> {
+   |      ^ unconstrained type parameter
+
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:46:6
+   |
+46 | impl<T: Display, U> ShowImpl<T> {
+   |      ^ unconstrained type parameter
+
+error[E0207]: the type parameter `U` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:46:18
+   |
+46 | impl<T: Display, U> ShowImpl<T> {
+   |                  ^ unconstrained type parameter
+
+For more information about this error, try `rustc --explain E0207`.

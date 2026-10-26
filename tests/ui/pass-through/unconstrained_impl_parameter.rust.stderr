@@ -1,0 +1,10 @@
+error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:18:6
+   |
+18 | impl<T> Describe for Person {
+   |     -^-
+   |     ||
+   |     |unconstrained type parameter
+   |     help: remove the unused type parameter `T`
+
+For more information about this error, try `rustc --explain E0207`.

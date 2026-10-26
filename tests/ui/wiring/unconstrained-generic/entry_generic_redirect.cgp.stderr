@@ -1,0 +1,9 @@
+error[E0207]: [CGP-E019] the entry for `GreeterComponent` in the wiring of `Person` binds `T`, but its key does not use it
+  --> src/main.rs:25:10
+   |
+25 |         <T> GreeterComponent => @app.T,
+   |          ^
+   |
+   = help: write a concrete type in place of `T` where the entry uses it, and remove `T` from the entry's generic parameters
+
+For more information about this error, try `rustc --explain E0207`.
