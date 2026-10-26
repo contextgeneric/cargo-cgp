@@ -16,7 +16,7 @@ fn text_pass(raw: &str) -> String {
         raw,
         false,
         Origin::Untransformed,
-        &AmbiguousNames::new(Vec::new()),
+        &AmbiguousNames::new(Vec::new(), Vec::new()),
     )
     .unwrap_or_else(|| raw.to_owned())
 }

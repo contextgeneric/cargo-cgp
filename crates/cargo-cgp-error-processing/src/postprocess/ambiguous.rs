@@ -6,9 +6,9 @@ use std::collections::{HashMap, HashSet};
 /// item (`std::io::Error` beside `backend::Error`). With trimmed paths rustc prints a name qualified
 /// only when the name is not unique or the crate glob-imports it, so a qualified name the crate
 /// does not glob-import is ambiguous. A glob-imported name is qualified whether or not it collides,
-/// so for each one the set records the paths of the items the crate's globs bring in under it: a
-/// printed path among them is that item and reads the same bare, and any other path names a
-/// different item. The default knows nothing and keeps no qualifier.
+/// so for each one the set records the paths of the items the crate's globs bring in under it, in
+/// each form rustc prints them: a printed path among them is that item and reads the same bare, and
+/// any other path names a different item. The default knows nothing and keeps no qualifier.
 #[derive(Clone, Debug, Default)]
 pub struct AmbiguousNames {
     glob_imported: HashMap<String, HashSet<String>>,
@@ -16,12 +16,22 @@ pub struct AmbiguousNames {
 }
 
 impl AmbiguousNames {
-    /// The set implied by the names the crate glob-imports, each with the paths of the items its
-    /// globs bring in (empty when they could not be read, which keeps no qualifier on the name).
-    pub fn new(glob_imported: impl IntoIterator<Item = (String, Vec<String>)>) -> Self {
+    /// The set implied by the names the crate glob-imports, each with the full paths of the items
+    /// its globs bring in (empty when they could not be read, which keeps no qualifier on the
+    /// name), and `root_names`, the first segments of a path rustc prints from the crate root or
+    /// from another crate: the crate root's children and the crates' names.
+    pub fn new(
+        glob_imported: impl IntoIterator<Item = (String, Vec<String>)>,
+        root_names: impl IntoIterator<Item = String>,
+    ) -> Self {
+        let root_names: HashSet<String> = root_names.into_iter().collect();
         let mut map: HashMap<String, HashSet<String>> = HashMap::new();
         for (name, paths) in glob_imported {
-            map.entry(name).or_default().extend(paths);
+            let printed = map.entry(name).or_default();
+            for path in paths {
+                printed.extend(printed_tails(&path, &root_names));
+                printed.insert(path);
+            }
         }
         Self {
             glob_imported: map,
@@ -41,4 +51,17 @@ impl AmbiguousNames {
             Some(paths) => !paths.is_empty() && !paths.contains(path),
         }
     }
+}
+
+/// The shorter paths rustc prints for the item at the full `path`: it prints a parent module by its
+/// name alone when no other item shares that name, so the item can print from any enclosing module
+/// on (`add::EvalAdd` for `providers::eval::add::EvalAdd`). A tail starting at one of `root_names`
+/// is left out, since a printed path starting there is one from the crate root or another crate,
+/// which names a different item.
+fn printed_tails(path: &str, root_names: &HashSet<String>) -> Vec<String> {
+    let segments: Vec<&str> = path.split("::").collect();
+    (1..segments.len().saturating_sub(1))
+        .filter(|&start| !root_names.contains(segments[start]))
+        .map(|start| segments[start..].join("::"))
+        .collect()
 }

@@ -5,9 +5,8 @@
 //! through `pub use add::*` and `pub use eval::*`. It provides `Greeter` by requiring `CanGreet` on
 //! the context, so wiring it as `App`'s greeter loops back (`E0275`). The compiler qualifies every
 //! glob-imported name, and prints an item's path from its nearest enclosing module whose name is
-//! unique, so the provider prints as `add::EvalAdd`. The tool keeps that qualifier, since the path
-//! it records for the glob's item is the full `providers::eval::add::EvalAdd`: the `[CGP-E020]`
-//! help names `add::EvalAdd`, a path no `use` in the crate spells.
+//! unique, so the provider prints as `add::EvalAdd`. That path names the item the globs bring in
+//! under `EvalAdd`, so the `[CGP-E020]` help names the provider bare, as `EvalAdd`.
 //!
 //! CGP error class: wiring cycle (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/wiring-cycle.md).
 extern crate std;

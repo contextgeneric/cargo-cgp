@@ -242,12 +242,31 @@ fn strip_module_paths_keeps_the_type_an_item_belongs_to() {
 #[test]
 fn unambiguous_path_strip_reads_the_item_a_method_belongs_to() {
     // The ambiguity check reads the path to the type, `finance::Quantity`, not the whole run.
-    let ambiguous =
-        AmbiguousNames::new([("Quantity".to_owned(), vec!["finance::Quantity".to_owned()])]);
+    let ambiguous = AmbiguousNames::new(
+        [("Quantity".to_owned(), vec!["finance::Quantity".to_owned()])],
+        [],
+    );
     assert_eq!(
         strip_unambiguous_paths("`finance::Quantity::new`", &ambiguous).as_deref(),
         Some("`Quantity::new`"),
     );
+}
+
+#[test]
+fn a_glob_item_reads_bare_from_each_path_rustc_prints() {
+    // rustc prints a glob-imported item from any enclosing module whose name it trims, so each such
+    // tail names the item; a tail starting at a crate-root name is the root item's own path.
+    let ambiguous = AmbiguousNames::new(
+        [(
+            "EvalAdd".to_owned(),
+            vec!["providers::eval::add::EvalAdd".to_owned()],
+        )],
+        ["eval".to_owned()],
+    );
+    assert!(!ambiguous.keeps_qualifier("providers::eval::add::EvalAdd", "EvalAdd"));
+    assert!(!ambiguous.keeps_qualifier("add::EvalAdd", "EvalAdd"));
+    assert!(ambiguous.keeps_qualifier("eval::add::EvalAdd", "EvalAdd"));
+    assert!(ambiguous.keeps_qualifier("other::add::EvalAdd", "EvalAdd"));
 }
 
 #[test]
@@ -747,7 +766,10 @@ fn an_untransformed_message_keeps_the_paths_rustc_printed() {
 fn a_glob_imported_name_keeps_the_qualifier_of_another_item() {
     // The crate glob-imports `Error` naming `backend::Error`, so a bare `Error` reads as that item:
     // its own path collapses, and `std::io::Error` keeps its qualifier.
-    let ambiguous = AmbiguousNames::new([("Error".to_owned(), vec!["backend::Error".to_owned()])]);
+    let ambiguous = AmbiguousNames::new(
+        [("Error".to_owned(), vec!["backend::Error".to_owned()])],
+        [],
+    );
     assert_eq!(
         strip_unambiguous_paths(
             "`CanRaiseError<std::io::Error>` and `backend::Error`",
@@ -757,7 +779,7 @@ fn a_glob_imported_name_keeps_the_qualifier_of_another_item() {
         Some("`CanRaiseError<std::io::Error>` and `Error`"),
     );
     // A glob-imported name whose items could not be read keeps no qualifier.
-    let unknown = AmbiguousNames::new([("Error".to_owned(), Vec::new())]);
+    let unknown = AmbiguousNames::new([("Error".to_owned(), Vec::new())], []);
     assert_eq!(
         strip_unambiguous_paths("`std::io::Error`", &unknown).as_deref(),
         Some("`Error`"),
@@ -768,7 +790,7 @@ fn a_glob_imported_name_keeps_the_qualifier_of_another_item() {
 fn a_rewritten_message_keeps_only_qualifiers_that_disambiguate() {
     // A message the tool built drops every qualifier except on a name that names several items,
     // where the qualifier tells them apart.
-    let ambiguous = AmbiguousNames::new([("App".to_owned(), vec!["app::App".to_owned()])]);
+    let ambiguous = AmbiguousNames::new([("App".to_owned(), vec!["app::App".to_owned()])], []);
     assert_eq!(
         postprocess_message(
             "the consumer trait `cgp::prelude::CanRaiseError<std::io::Error>` for `app::App`",
@@ -801,8 +823,10 @@ fn an_untransformed_message_with_a_cgp_encoding_is_cleaned_whole() {
 fn unambiguous_path_strip_keeps_a_disambiguating_qualifier() {
     // `cgp::prelude::HasErrorType` is CGP's and `Quantity` glob-imported, so both lose their
     // qualifier; `Error` and `Rectangle` are neither, so rustc qualified them for being ambiguous.
-    let ambiguous =
-        AmbiguousNames::new([("Quantity".to_owned(), vec!["finance::Quantity".to_owned()])]);
+    let ambiguous = AmbiguousNames::new(
+        [("Quantity".to_owned(), vec!["finance::Quantity".to_owned()])],
+        [],
+    );
     assert_eq!(
         strip_unambiguous_paths(
             "`backend::Error` beside `cgp::prelude::HasErrorType` and `finance::Quantity`",

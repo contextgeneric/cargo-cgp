@@ -1,17 +1,17 @@
 error[E0275]: overflow evaluating the requirement `App: CanUseComponent<components::GreeterComponent>`
-  --> src/main.rs:61:9
+  --> src/main.rs:60:9
    |
-61 |         GreeterComponent,
+60 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:59:1
+  --> src/main.rs:58:1
    |
-59 | / check_components! {
-60 | |     App {
-61 | |         GreeterComponent,
-62 | |     }
-63 | | }
+58 | / check_components! {
+59 | |     App {
+60 | |         GreeterComponent,
+61 | |     }
+62 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
