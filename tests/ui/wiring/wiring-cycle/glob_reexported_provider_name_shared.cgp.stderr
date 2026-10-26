@@ -1,0 +1,17 @@
+error[E0275]: [CGP-E020] the wiring for the consumer trait `CanGreet` on context `App` never resolves, because the lookup leads back to itself
+  --> src/main.rs:78:9
+   |
+78 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = help: wire a provider in place of `eval::add::EvalAdd`, which provides `Greeter` for `App` by requiring `CanGreet` on `App` again
+
+error[E0275]: [CGP-E020] the wiring for the consumer trait `CanGreet` on context `Other` never resolves, because the lookup leads back to itself
+  --> src/main.rs:92:9
+   |
+92 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = help: wire a provider in place of `EvalAdd`, which provides `Greeter` for `Other` by requiring `CanGreet` on `Other` again
+
+For more information about this error, try `rustc --explain E0275`.
