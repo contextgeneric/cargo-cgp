@@ -1,0 +1,18 @@
+error[E0599]: no associated function or constant named `area` found for type parameter `Inner` in the current scope
+  --> src/main.rs:29:16
+   |
+27 | impl<Inner> AreaCalculator<Square> {
+   |      ----- associated function or constant `area` not found for this type parameter
+28 |     fn area(&self, _shape: &Square) -> f64 {
+29 |         Inner::area(self, &Some(make_square()).unwrap())
+   |                ^^^^ associated function or constant cannot be called on `Inner` due to unsatisfied trait bounds
+   |
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+help: the following traits define an item `area`, perhaps you need to restrict type parameter `Inner` with one of them:
+   |
+27 | impl<Inner: AreaCalculator</* __Context__, Shape */>> AreaCalculator<Square> {
+   |           ++++++++++++++++++++++++++++++++++++++++++
+27 | impl<Inner: CanCalculateArea</* Shape */>> AreaCalculator<Square> {
+   |           +++++++++++++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0599`.

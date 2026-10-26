@@ -1,0 +1,9 @@
+error[E0599]: [CGP-E031] the inner provider `Inner` is used but not imported
+  --> src/main.rs:22:16
+   |
+22 |         Inner::name(self, prefix).trim()
+   |                ^^^^
+   |
+   = help: import it with `#[use_provider(Inner: NameGetter)]`
+
+For more information about this error, try `rustc --explain E0599`.

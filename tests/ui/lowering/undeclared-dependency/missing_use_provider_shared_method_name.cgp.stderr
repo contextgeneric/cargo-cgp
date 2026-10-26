@@ -1,0 +1,30 @@
+error[E0599]: [CGP-E031] the inner provider `Inner` is used but not imported
+  --> src/main.rs:35:16
+   |
+35 |         Inner::area(self) * 2.0
+   |                ^^^^
+   |
+   = help: import it with `#[use_provider(Inner: AreaCalculator)]`
+
+error[E0599]: no associated function or constant named `area` found for type parameter `Inner` in the current scope
+  --> src/main.rs:43:30
+   |
+41 | impl<Inner> Describer {
+   |      ----- associated function or constant `area` not found for this type parameter
+42 |     fn describe(&self) -> String {
+43 |         format!("{}", Inner::area(self))
+   |                              ^^^^ associated function or constant cannot be called on `Inner` due to unsatisfied trait bounds
+   |
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+help: the following traits define an item `area`, perhaps you need to restrict type parameter `Inner` with one of them:
+   |
+41 | impl<Inner: AreaCalculator</* __Context__ */>> Describer {
+   |           +++++++++++++++++++++++++++++++++++
+41 | impl<Inner: CanCalculateArea> Describer {
+   |           ++++++++++++++++++
+41 | impl<Inner: CanCalculateFloorArea> Describer {
+   |           +++++++++++++++++++++++
+41 | impl<Inner: FloorAreaCalculator</* __Context__ */>> Describer {
+   |           ++++++++++++++++++++++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0599`.
