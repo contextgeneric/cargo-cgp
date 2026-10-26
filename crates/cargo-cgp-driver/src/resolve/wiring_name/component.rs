@@ -69,6 +69,39 @@ pub(crate) fn import_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
             tcx.def_path_str(def_id)
         )));
     }
+    let path = public_dependency_path(tcx, |_, child_did, _| child_did == def_id)?;
+    let segments: Vec<&str> = path.iter().map(Symbol::as_str).collect();
+    Some(segments.join("::"))
+}
+
+/// Whether a type named `name` is declared where the crate could import it from: in any module of
+/// the crate, or public in a direct dependency. A wiring name that does not resolve but names such
+/// a type was not imported, rather than never declared.
+pub(crate) fn is_type_declared(tcx: TyCtxt<'_>, name: &str) -> bool {
+    let local = tcx.hir_crate_items(()).definitions().any(|local| {
+        is_type_kind(tcx.def_kind(local)) && tcx.item_name(local.to_def_id()).as_str() == name
+    });
+    local
+        || public_dependency_path(tcx, |kind, _, child_name| {
+            is_type_kind(kind) && child_name.as_str() == name
+        })
+        .is_some()
+}
+
+/// Whether an item of `kind` is a type a path can name.
+fn is_type_kind(kind: DefKind) -> bool {
+    matches!(
+        kind,
+        DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias | DefKind::ForeignTy
+    )
+}
+
+/// The shortest public path, from a direct dependency's root and following re-exports, to an item
+/// `wanted` accepts by its kind, its `DefId`, and the name it is exported under.
+fn public_dependency_path(
+    tcx: TyCtxt<'_>,
+    mut wanted: impl FnMut(DefKind, DefId, Symbol) -> bool,
+) -> Option<Vec<Symbol>> {
     let mut queue: VecDeque<(DefId, Vec<Symbol>)> = tcx
         .crates(())
         .iter()
@@ -92,9 +125,8 @@ pub(crate) fn import_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
             };
             let mut child_path = path.clone();
             child_path.push(child.ident.name);
-            if child_did == def_id {
-                let segments: Vec<&str> = child_path.iter().map(Symbol::as_str).collect();
-                return Some(segments.join("::"));
+            if wanted(kind, child_did, child.ident.name) {
+                return Some(child_path);
             }
             if kind == DefKind::Mod {
                 queue.push_back((child_did, child_path));

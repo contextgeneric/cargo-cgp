@@ -15,7 +15,7 @@ use rustc_span::def_id::DefId;
 
 use crate::resolve::cgp_item::{is_consumer_trait, marker_to_consumer};
 use crate::resolve::wiring_name::component::{
-    component_markers, consumer_component, consumer_trait_named, import_path,
+    component_markers, consumer_component, consumer_trait_named, import_path, is_type_declared,
 };
 use crate::resolve::wiring_name::slot::{NameSlot, name_slot_at};
 
@@ -73,7 +73,8 @@ pub fn detect_consumer_trait_as_key(tcx: TyCtxt<'_>, span: Span) -> Option<Unres
 /// diagnostic at the same span is dropped, a wiring value naming the provider a `#[cgp_impl]` header
 /// also fails to declare is dropped as that header's consequence, and a name no rule explains gets
 /// `None`. A type inside an `@`-path of a key or value is a component that needs an import or a type
-/// never declared, and a later one of the same name is dropped as a repeat.
+/// never declared, and a later one of the same name is dropped as a repeat. A value, a `#[cgp_impl]`
+/// provider, or a path type that names a type declared elsewhere was not imported, so it gets `None`.
 pub fn plan_unresolved_names(
     tcx: TyCtxt<'_>,
     candidates: &[(Span, String)],
@@ -82,11 +83,13 @@ pub fn plan_unresolved_names(
         .iter()
         .map(|(span, _)| name_slot_at(tcx, *span))
         .collect();
+    let mut declared = DeclaredNames::default();
     let undeclared_in_cgp_impl: Vec<&str> = candidates
         .iter()
         .zip(&slots)
         .filter(|(_, slot)| matches!(slot, Some(NameSlot::CgpImplProvider)))
         .map(|((_, name), _)| name.as_str())
+        .filter(|name| !declared.is_declared(tcx, name))
         .collect();
     let mut markers: Option<Vec<(DefId, DefId)>> = None;
     let mut overflow_requirements = Vec::new();
@@ -114,6 +117,9 @@ pub fn plan_unresolved_names(
                     if undeclared_in_cgp_impl.contains(&name.as_str()) {
                         return Some(NameAction::Drop);
                     }
+                    if declared.is_declared(tcx, name) {
+                        return None;
+                    }
                     let markers = markers.get_or_insert_with(|| component_markers(tcx));
                     let key_text = tcx.sess.source_map().span_to_snippet(key.span).ok()?;
                     let near_miss = providers_of_key(tcx, key, markers).and_then(|providers| {
@@ -127,30 +133,34 @@ pub fn plan_unresolved_names(
                         },
                     ))
                 }
-                NameSlot::CgpImplProvider => Some(NameAction::Reword(
-                    UnresolvedWiringName::CgpImplProviderNotDeclared {
+                NameSlot::CgpImplProvider => (!declared.is_declared(tcx, name)).then(|| {
+                    NameAction::Reword(UnresolvedWiringName::CgpImplProviderNotDeclared {
                         provider: name.clone(),
-                    },
-                )),
+                    })
+                }),
                 NameSlot::Inside {
                     key,
                     impl_did,
                     in_value,
                     whole_segment,
                 } => {
-                    if reported_in_paths.contains(&name.as_str()) {
-                        return Some(NameAction::Drop);
-                    }
-                    reported_in_paths.push(name.as_str());
                     if *in_value {
                         overflow_requirements.extend(unprovable_requirements(tcx, key, *impl_did));
+                    }
+                    if reported_in_paths.contains(&name.as_str()) {
+                        return Some(NameAction::Drop);
                     }
                     let markers = markers.get_or_insert_with(|| component_markers(tcx));
                     if *whole_segment
                         && let Some(not_imported) = component_not_imported(tcx, name, markers)
                     {
+                        reported_in_paths.push(name.as_str());
                         return Some(NameAction::Reword(not_imported));
                     }
+                    if declared.is_declared(tcx, name) {
+                        return None;
+                    }
+                    reported_in_paths.push(name.as_str());
                     Some(NameAction::RewordHeader(
                         UnresolvedWiringName::PathTypeNotDeclared {
                             name: name.clone(),
@@ -168,9 +178,10 @@ pub fn plan_unresolved_names(
 }
 
 /// The requirements a wiring entry with an unresolved value leaves unprovable, as the compiler
-/// prints them: the entry's context implementing the consumer trait of the component its key names
-/// (`Person: CanGreet`, what a call reports), and using the component (`Person:
-/// CanUseComponent<GreeterComponent>`, what a check reports).
+/// prints them up to the component's parameters: the entry's context implementing the consumer
+/// trait of the component its key names (`Person: CanGreet`, what a call reports), and using the
+/// component (`Person: CanUseComponent<GreeterComponent`, what a check reports, closed by `>` or
+/// followed by the parameters it checks).
 fn unprovable_requirements(
     tcx: TyCtxt<'_>,
     key: &rustc_hir::Ty<'_>,
@@ -193,7 +204,7 @@ fn unprovable_requirements(
     vec![
         format!("{context}: {}", tcx.def_path_str(consumer_did)),
         format!(
-            "{context}: CanUseComponent<{}>",
+            "{context}: CanUseComponent<{}",
             tcx.def_path_str(marker_did)
         ),
     ]
@@ -275,4 +286,20 @@ fn component_not_imported(
         component: name.to_owned(),
         path: import_path(tcx, marker_did)?,
     })
+}
+
+/// Whether a type of each name asked about is declared where the crate could import it from,
+/// remembered per name, since the answer walks the crate and its dependencies.
+#[derive(Default)]
+struct DeclaredNames(Vec<(String, bool)>);
+
+impl DeclaredNames {
+    fn is_declared(&mut self, tcx: TyCtxt<'_>, name: &str) -> bool {
+        if let Some(&(_, declared)) = self.0.iter().find(|(known, _)| known == name) {
+            return declared;
+        }
+        let declared = is_type_declared(tcx, name);
+        self.0.push((name.to_owned(), declared));
+        declared
+    }
 }

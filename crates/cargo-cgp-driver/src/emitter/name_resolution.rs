@@ -41,7 +41,8 @@ thread_local! {
 
 /// Whether `diag` is an `E0275` overflow on a requirement a wiring entry with an unresolved value
 /// left unprovable (`overflow evaluating the requirement `Person: CanGreet``), the consequence of
-/// the entry's own error.
+/// the entry's own error. A recorded requirement stops before the component's parameters, so the
+/// overflow's may go on with a consumer trait's arguments (`<`) or the rest of a check's (`>`, `,`).
 pub(crate) fn is_unresolved_wiring_overflow(diag: &DiagInner) -> bool {
     if diag.code != Some(E0275) {
         return false;
@@ -57,7 +58,7 @@ pub(crate) fn is_unresolved_wiring_overflow(diag: &DiagInner) -> bool {
             recorded.borrow().iter().any(|unprovable| {
                 requirement
                     .strip_prefix(unprovable.as_str())
-                    .is_some_and(|rest| rest.is_empty() || rest.starts_with('<'))
+                    .is_some_and(|rest| rest.is_empty() || rest.starts_with(['<', '>', ',']))
             })
         })
         .unwrap_or(false)

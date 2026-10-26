@@ -6,22 +6,4 @@ error[E0425]: [CGP-E044] the type `Missing` in a wiring path is not declared
    |
    = help: declare or import the type `Missing`, or write the segment in lowercase to make it a symbol
 
-error[E0275]: overflow evaluating the requirement `App: CanUseComponent<AreaCalculatorComponent, Rectangle>`
-  --> src/main.rs:42:9
-   |
-42 |         AreaCalculatorComponent: Rectangle,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^
-   |
-note: required by a bound in `__CheckApp`
-  --> src/main.rs:40:1
-   |
-40 | / check_components! {
-41 | |     App {
-42 | |         AreaCalculatorComponent: Rectangle,
-43 | |     }
-44 | | }
-   | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-Some errors have detailed explanations: E0275, E0425.
-For more information about an error, try `rustc --explain E0275`.
+For more information about this error, try `rustc --explain E0425`.

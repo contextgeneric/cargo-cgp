@@ -3,11 +3,11 @@
 //! dependency, but not imported where they are written.
 //!
 //! `GreetHello` and `GreetBye` are declared in `providers`, `Square` in `shapes`, and `RaiseFrom` in
-//! `cgp::extra::error`, and none is imported at the crate root. rustc reports an `E0425` for each
-//! name, with a suggestion to import it where it finds one. The tool rewords them as names that are
-//! not declared: `[CGP-E043]` for the two values, dropping the import suggestion, `[CGP-E038]` for
-//! the `#[cgp_impl(GreetBye)]` header, with a help to declare a second `GreetBye`, and `[CGP-E044]`
-//! for the path segment. Each statement is false, since every name is declared.
+//! `cgp::extra::error`, and none is imported at the crate root, where `GreetBye` is also wired as
+//! `Robot`'s provider. rustc reports an `E0425` for each name, with a suggestion to import it where
+//! it finds one, which it does for the crate's own types.
+//! Each name is declared, so the tool does not call any of them undeclared: it leaves every `E0425`
+//! as rustc wrote it, the import suggestions included.
 //!
 //! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 extern crate std;
@@ -106,6 +106,17 @@ impl<
 > IsProviderFor<GreeterComponent, __Context__, __Params__> for Person
 where
     GreetHello: IsProviderFor<GreeterComponent, __Context__, __Params__>,
+{}
+pub struct Robot;
+impl DelegateComponent<GreeterComponent> for Robot {
+    type Delegate = GreetBye;
+}
+impl<
+    __Context__,
+    __Params__: ?Sized,
+> IsProviderFor<GreeterComponent, __Context__, __Params__> for Robot
+where
+    GreetBye: IsProviderFor<GreeterComponent, __Context__, __Params__>,
 {}
 pub struct App;
 impl DelegateComponent<ErrorTypeProviderComponent> for App {

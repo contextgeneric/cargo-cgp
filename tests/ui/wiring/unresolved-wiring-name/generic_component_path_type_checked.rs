@@ -4,12 +4,12 @@
 //! `AreaCalculatorComponent => @app.Missing` names a type nothing declares, so rustc reports an
 //! `E0425` at each use of the path, and the check then overflows (`E0275`) on
 //! `App: CanUseComponent<AreaCalculatorComponent, Rectangle>`, a requirement the redirect leaves
-//! unprovable. The tool reports one `[CGP-E044]` at the redirect but keeps the overflow, though it
-//! drops the same overflow for a component without parameters (`path_segment_not_declared`).
+//! unprovable. The tool reports one `[CGP-E044]` at the redirect and drops the overflow as its
+//! consequence, the parameters the check names following the component in the requirement.
 //!
 //! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E044
 
 use cgp::prelude::*;
