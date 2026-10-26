@@ -1,0 +1,17 @@
+error[E0599]: [CGP-E003] the trait `Describe` is not implemented for `Person`: 2 root causes
+  --> src/main.rs:36:12
+   |
+36 |     person.describe()
+   |            ^^^^^^^^
+   |
+   = note: root causes:
+             - [CGP-E117] the trait bound `Person: Clone` is not satisfied
+             - [CGP-E110] missing field `name` on `Person`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `Describe` for `Person`
+             ├─ [CGP-E117] the trait bound `Person: Clone` is not satisfied
+             └─ [CGP-E104] trait impl `GetName` for `Person`
+               └─ [CGP-E110] missing field `name` on `Person`
+   = help: add the field `name: String` to `Person`
+
+For more information about this error, try `rustc --explain E0599`.
