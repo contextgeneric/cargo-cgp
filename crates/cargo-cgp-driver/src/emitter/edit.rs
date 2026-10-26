@@ -15,7 +15,8 @@ use cargo_cgp_error_processing::{
 };
 use rustc_errors::codes::{E0271, E0599};
 use rustc_errors::{
-    CodeSuggestion, DiagInner, DiagMessage, MultiSpan, Style, Subdiag, Sublevel, Suggestions,
+    CodeSuggestion, DiagInner, DiagMessage, MultiSpan, Style, Subdiag, Sublevel, Substitution,
+    Suggestions,
 };
 use rustc_span::Span;
 
@@ -176,6 +177,31 @@ pub(crate) fn retain_suggestions(diag: &mut DiagInner, keep: impl Fn(&CodeSugges
                 .filter(|suggestion| keep(suggestion))
                 .cloned()
                 .collect();
+        }
+        Suggestions::Disabled => {}
+    }
+}
+
+/// Keep only the substitutions of `diag`'s structured suggestions that `keep` accepts, whichever
+/// state the suggestions are in, and drop a suggestion left with none. rustc offers several
+/// alternatives as one suggestion's substitutions (each trait that would bound a parameter), so a
+/// wrong alternative goes without the right ones beside it.
+pub(crate) fn retain_substitutions(diag: &mut DiagInner, keep: impl Fn(&Substitution) -> bool) {
+    let filter = |mut suggestion: CodeSuggestion| {
+        suggestion
+            .substitutions
+            .retain(|substitution| keep(substitution));
+        (!suggestion.substitutions.is_empty()).then_some(suggestion)
+    };
+    match &mut diag.suggestions {
+        Suggestions::Enabled(suggestions) => {
+            *suggestions = std::mem::take(suggestions)
+                .into_iter()
+                .filter_map(filter)
+                .collect();
+        }
+        Suggestions::Sealed(suggestions) => {
+            *suggestions = suggestions.iter().cloned().filter_map(filter).collect();
         }
         Suggestions::Disabled => {}
     }

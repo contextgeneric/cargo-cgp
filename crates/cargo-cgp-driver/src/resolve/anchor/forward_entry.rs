@@ -12,9 +12,8 @@ use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve an error the compiler raises on a `Key -> Table` entry of `delegate_components!`. The
 /// entry lowers to `impl DelegateComponent<Key> for Context where Table: DelegateComponent<Key>`,
-/// with the bound spanned onto the entry's `->`, inside the `-> Table` caret the compiler reports
-/// it under, so when the table lacks the key
-/// the compiler reports the unprovable bound there (and the `Delegate` projection it leaves
+/// with the bound spanned onto the entry's `->`. When the table lacks the key, the compiler reports
+/// the unprovable bound under the entry's `-> Table` caret (and the `Delegate` projection it leaves
 /// unsized), before any check or call that uses the entry. The entry wires `Key` on the context, so
 /// its failure is the consumer obligation that wiring serves, seeded and walked as a check of the
 /// component would be; the cause and the chain are then the check's, and a later report of the

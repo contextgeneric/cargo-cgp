@@ -1,0 +1,45 @@
+[
+  {
+    "children": [
+      {
+        "level": "note",
+        "message": "trait defined here, with 1 generic parameter: `__Context__`",
+        "spans": [
+          {
+            "column": 1,
+            "file": "src/main.rs",
+            "label": "",
+            "line": 17,
+            "primary": false
+          },
+          {
+            "column": 17,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 17,
+            "primary": true
+          }
+        ]
+      }
+    ],
+    "code": "E0107",
+    "level": "error",
+    "message": "missing generics for trait `AreaCalculator`",
+    "spans": [
+      {
+        "column": 12,
+        "file": "src/main.rs",
+        "label": "expected 1 generic argument",
+        "line": 25,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [],
+    "code": null,
+    "level": "failure-note",
+    "message": "For more information about this error, try `rustc --explain E0107`.",
+    "spans": []
+  }
+]

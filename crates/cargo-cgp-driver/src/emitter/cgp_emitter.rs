@@ -48,6 +48,7 @@ use crate::emitter::edit::{
     rewrite_messages, strip_method_probe_advice, subdiag, two_definitions_span,
 };
 use crate::emitter::fallback::{render_or_untransformed, transform_or_original};
+use crate::emitter::generated_names::drop_generated_names;
 use crate::emitter::name_resolution::is_unresolved_wiring_overflow;
 use crate::emitter::output::{Output, lock_output, register_output};
 use crate::emitter::repeats::merge_repeats;
@@ -1636,6 +1637,9 @@ impl<E: Emitter> CgpEmitter<E> {
         self.postprocess(&mut diag, origin);
         if self.crate_uses_cgp() {
             drop_attribute_splices(&mut diag);
+            if let Some(source_map) = self.source_map.as_deref() {
+                drop_generated_names(&mut diag, source_map);
+            }
         }
         if rewritten {
             // Remember where this wiring failure landed, so a later `?`-operator cascade on the same

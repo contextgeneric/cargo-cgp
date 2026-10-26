@@ -4,8 +4,11 @@
 //!
 //! `ScaledArea` implements `AreaCalculator`, which declares `area`, so the tool reports `[CGP-E031]`
 //! naming that trait. `DescribeArea` implements `Describer`, which does not, so the tool cannot tell
-//! which of the two traits is meant, and leaves rustc's `E0599`, whose suggestions include the two
-//! provider traits with the context parameter their macro generated, a name no program can write.
+//! which of the two traits is meant, and leaves rustc's `E0599`. The compiler suggests bounding
+//! `Inner` by each trait that declares `area`, the two provider traits with the context parameter
+//! their macro generated, a name no program can write; the tool drops those two bounds and keeps
+//! the consumer traits. The output stays `usability`: neither bound left is the `#[use_provider]`
+//! import the provider needs.
 //!
 //! CGP error class: undeclared dependency (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/undeclared-dependency.md).
 extern crate std;
