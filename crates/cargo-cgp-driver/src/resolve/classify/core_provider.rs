@@ -1,13 +1,14 @@
 //! What serves a slot a misused CGP core provider cannot.
 
 use cargo_cgp_error_processing::CoreProviderHint;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, Upcast as _};
+use rustc_middle::ty::{self, Ty, TyCtxt, Upcast as _};
 
 use crate::config::{
     CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, REDIRECT_LOOKUP_TYPE, USE_DELEGATE_TYPE, USE_FIELD_TYPE,
     USE_FIELDS_TYPE,
 };
 use crate::resolve::cgp_item::{is_cgp_item, provider_blanket_marker};
+use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
 use crate::resolve::walk::holds;
 
@@ -26,15 +27,7 @@ pub(crate) fn core_provider_hint<'tcx>(
     tcx: TyCtxt<'tcx>,
     parent: ty::TraitRef<'tcx>,
 ) -> Option<CoreProviderHint> {
-    let parent = tcx.erase_and_anonymize_regions(parent);
-    if parent.has_non_region_infer()
-        || parent.has_placeholders()
-        || parent.has_param()
-        || parent.has_aliases()
-        || parent.references_error()
-    {
-        return None;
-    }
+    let parent = known_obligation(tcx, parent)?;
     let ty::Adt(provider_def, _) = parent.self_ty().kind() else {
         return None;
     };

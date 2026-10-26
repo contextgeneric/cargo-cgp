@@ -1,10 +1,11 @@
 //! The adapter types that make a wired type a provider of the trait its slot needs.
 
 use cargo_cgp_error_processing::Adapter;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, Upcast as _};
+use rustc_middle::ty::{self, Ty, TyCtxt, Upcast as _};
 use rustc_span::def_id::DefId;
 
 use crate::resolve::cgp_item::is_provider_trait;
+use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
 use crate::resolve::walk::holds;
 use crate::resolve::wiring_name::import_path;
@@ -33,15 +34,9 @@ pub(crate) fn wrapping_adapters<'tcx>(
     if !is_provider_trait(tcx, parent.def_id) {
         return Vec::new();
     }
-    let parent = tcx.erase_and_anonymize_regions(parent);
-    if parent.has_non_region_infer()
-        || parent.has_placeholders()
-        || parent.has_param()
-        || parent.has_aliases()
-        || parent.references_error()
-    {
+    let Some(parent) = known_obligation(tcx, parent) else {
         return Vec::new();
-    }
+    };
     let provider = parent.self_ty();
     let mut adapters: Vec<Adapter> = Vec::new();
     for impl_did in tcx.all_impls(parent.def_id) {

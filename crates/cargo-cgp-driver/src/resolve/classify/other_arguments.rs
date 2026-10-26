@@ -2,12 +2,13 @@
 
 use cargo_cgp_error_processing::Leaf;
 use rustc_infer::infer::TyCtxtInferExt as _;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypingMode};
 use rustc_span::DUMMY_SP;
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::cgp_item::is_provider_trait;
+use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
 
 /// The [`Leaf::ProviderForOtherArguments`] behind `parent`, a provider-trait obligation the walk
@@ -25,15 +26,7 @@ pub(crate) fn provider_for_other_arguments<'tcx>(
     if !is_provider_trait(tcx, parent.def_id) {
         return None;
     }
-    let parent = tcx.erase_and_anonymize_regions(parent);
-    if parent.has_non_region_infer()
-        || parent.has_placeholders()
-        || parent.has_param()
-        || parent.has_aliases()
-        || parent.references_error()
-    {
-        return None;
-    }
+    let parent = known_obligation(tcx, parent)?;
     let provider = parent.self_ty();
     let ty::Adt(provider_def, _) = provider.kind() else {
         return None;

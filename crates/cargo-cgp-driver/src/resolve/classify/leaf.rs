@@ -28,12 +28,12 @@ use crate::resolve::walk::ProjectionMismatch;
 /// actual field type queried from the struct; a plain `HasField` becomes a [`Leaf::Field`]
 /// (inspecting the struct so the emitter can tell missing from underived); a branch whose unmet
 /// projection is on any *other* associated type becomes a [`Leaf::AssocTypeMismatch`]; an unmet
-/// `DelegateComponent<Marker>` — a component the context does not wire — becomes a
+/// `DelegateComponent<Marker>`, a component the context does not wire, becomes a
 /// [`Leaf::MissingWiring`] naming that component marker (or, for a redirect path, a
 /// [`Leaf::MissingRedirectWiring`] on the context and a [`Leaf::MissingDispatchEntry`] on an
 /// aggregate provider); an unmet namespace lookup
-/// (`Path: DefaultNamespace<Table>` or a user `cgp_namespace!` trait) — a `RedirectLookup` whose
-/// path the table does not terminate — becomes a [`Leaf::MissingRedirectWiring`] naming the path
+/// (`Path: DefaultNamespace<Table>` or a user `cgp_namespace!` trait), a `RedirectLookup` whose
+/// path the table does not terminate, becomes a [`Leaf::MissingRedirectWiring`] naming the path
 /// when the table is the context, and a [`Leaf::MissingDispatchEntry`] when it is an aggregate
 /// provider; any other bound becomes a [`Leaf::Bound`] restating it as `self: Trait`.
 pub(crate) fn classify_leaf<'tcx>(
@@ -48,7 +48,7 @@ pub(crate) fn classify_leaf<'tcx>(
     if let Some(leaf) = classify_data_leaf(tcx, leaf_ref, parent, mismatch) {
         return leaf;
     }
-    // A projection mismatch on a trait that is *not* `HasField` — most often a CGP abstract type the
+    // A projection mismatch on a trait that is *not* `HasField`, most often a CGP abstract type the
     // context binds one way and a provider pins another. Classified before the trait-keyed branches
     // below, since the leaf is about the projected type rather than the trait bound (which holds).
     if let Some(mismatch) = mismatch
@@ -97,9 +97,9 @@ pub(crate) fn classify_leaf<'tcx>(
                 return leaf;
             }
             // A `DelegateComponent<Key>` on a *non-context* type splits two ways (both let through
-            // by `is_reportable_leaf`). If the owner is a delegation table — a separate-table
+            // by `is_reportable_leaf`). If the owner is a delegation table (a separate-table
             // dispatch lookup ([`is_dispatch_lookup`]) or an owner that wires some other key
-            // ([`owner_has_impl_of`] for `DelegateComponent`) — it is an aggregate provider or a
+            // ([`owner_has_impl_of`] for `DelegateComponent`)), it is an aggregate provider or a
             // `UseDelegate`/`UseInputDelegate` table missing this entry: a [`Leaf::MissingDispatchEntry`]
             // naming the table and the key (named in full, since it may be a dispatched-on type).
             let is_dispatch = parent.is_some_and(|p| is_dispatch_lookup(tcx, self_ty, p.self_ty()))
@@ -185,10 +185,10 @@ pub(crate) fn classify_leaf<'tcx>(
             let expected = mismatch.expected.to_string();
 
             // A required type read off the projection may itself project through the context's own
-            // wiring — `Pool<<App as HasDbType>::Db>` when a provider reads a field whose type is
-            // expressed through an abstract type it imports. Keep that form, since it names where
-            // the requirement comes from, and carry what it reduces to alongside; a requirement
-            // that is already concrete normalizes to itself and gets nothing extra.
+            // wiring, as `Pool<<App as HasDbType>::Db>` does when a provider reads a field whose
+            // type is expressed through an abstract type it imports. Keep that form, since it names
+            // where the requirement comes from, and carry what it reduces to alongside; a
+            // requirement that is already concrete normalizes to itself and gets nothing extra.
             let expected_normalized = projected_type(tcx, mismatch.expected)
                 .map(|ty| ty.to_string())
                 .filter(|normalized| *normalized != expected);
@@ -236,7 +236,7 @@ pub(crate) fn classify_leaf<'tcx>(
 
 /// Build the [`Leaf::AssocTypeMismatch`] for a projection mismatch on a trait other than `HasField`:
 /// the associated type and its trait named off the projection, the *expected* type read from the
-/// failing projection's right-hand side, and the *actual* one read by normalizing the projection —
+/// failing projection's right-hand side, and the *actual* one read by normalizing the projection,
 /// the same query for a `UseType<T>` wiring and a hand-written impl alike. When the trait is a CGP
 /// abstract-type component, its wiring marker rides along so the emitter can offer the `UseType<…>`
 /// fix and call the type an *abstract* rather than a plain associated type. An actual type that does
@@ -249,8 +249,8 @@ fn assoc_type_mismatch<'tcx>(tcx: TyCtxt<'tcx>, mismatch: ProjectionMismatch<'tc
         .unwrap_or_else(|| "_".to_owned());
     let expected = mismatch.expected.to_string();
 
-    // A required type read off the projection may itself project through another abstract type —
-    // the unification pin form produces exactly that — so carry what it reduces to alongside the
+    // A required type read off the projection may itself project through another abstract type, as
+    // the unification pin form produces, so carry what it reduces to alongside the
     // form the provider wrote, on the same rule as the field leaf.
     let expected_normalized = projected_type(tcx, mismatch.expected)
         .map(|ty| ty.to_string())
@@ -268,8 +268,8 @@ fn assoc_type_mismatch<'tcx>(tcx: TyCtxt<'tcx>, mismatch: ProjectionMismatch<'tc
     }
 }
 
-/// The plain item name of a component marker type — `BarProviderComponent` for the
-/// `DelegateComponent<BarProviderComponent>` key — which is the identifier a programmer writes on
+/// The plain item name of a component marker type (`BarProviderComponent` for the
+/// `DelegateComponent<BarProviderComponent>` key), which is the identifier a programmer writes on
 /// the left of a `delegate_components!` entry. Falls back to the marker's printed form when it is
 /// not an ADT (which a real component marker always is).
 fn component_marker_name<'tcx>(tcx: TyCtxt<'tcx>, marker: Ty<'tcx>) -> String {

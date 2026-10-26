@@ -1,9 +1,10 @@
 //! The other components a wired provider is a provider of.
 
 use cargo_cgp_error_processing::ProvidedComponent;
-use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _, Upcast as _};
+use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 
 use crate::resolve::cgp_item::provider_blanket_marker;
+use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
 use crate::resolve::walk::holds;
 
@@ -20,15 +21,9 @@ pub(crate) fn provided_components<'tcx>(
     tcx: TyCtxt<'tcx>,
     parent: ty::TraitRef<'tcx>,
 ) -> Vec<ProvidedComponent> {
-    let parent = tcx.erase_and_anonymize_regions(parent);
-    if parent.has_non_region_infer()
-        || parent.has_placeholders()
-        || parent.has_param()
-        || parent.has_aliases()
-        || parent.references_error()
-    {
+    let Some(parent) = known_obligation(tcx, parent) else {
         return Vec::new();
-    }
+    };
     let (provider, context) = (parent.self_ty(), parent.args.type_at(1));
     let mut provided: Vec<ProvidedComponent> = Vec::new();
     for trait_did in tcx.all_traits_including_private() {
