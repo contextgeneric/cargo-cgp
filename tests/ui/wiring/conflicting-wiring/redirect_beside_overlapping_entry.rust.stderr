@@ -1,0 +1,20 @@
+error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<DescriberComponent, PathCons<Wrap<u64>, _>>, _, _>` for type `App`
+  --> src/main.rs:37:10
+   |
+36 |         @DescriberComponent.Wrap<u64>: DescribeAny,
+   |          ---------------------------- first implementation here
+37 |         @DescriberComponent.<T> Wrap<T> => @app.describer,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+   |
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<DescriberComponent, cgp::prelude::PathCons<Wrap<u64>, _>>, _, _>` for type `DescribeAny`
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<DescriberComponent, cgp::prelude::PathCons<Wrap<u64>, _>>, _, _>` for type `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<9, cgp::prelude::Chars<..>>, _>>>`
+
+error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<DescriberComponent, PathCons<Wrap<u64>, _>>>` for type `App`
+  --> src/main.rs:37:10
+   |
+36 |         @DescriberComponent.Wrap<u64>: DescribeAny,
+   |          ---------------------------- first implementation here
+37 |         @DescriberComponent.<T> Wrap<T> => @app.describer,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.

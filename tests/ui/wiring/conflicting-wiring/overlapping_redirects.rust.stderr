@@ -1,0 +1,20 @@
+error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Bar, _>>>` for type `App`
+  --> src/main.rs:27:10
+   |
+26 |         @app.Bar => @app.first,
+   |          ------- first implementation here
+27 |         @app.<T> T => @app.second,
+   |          ^^^^^^^^^ conflicting implementation for `App`
+
+error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Bar, _>>, _, _>` for type `App`
+  --> src/main.rs:27:10
+   |
+26 |         @app.Bar => @app.first,
+   |          ------- first implementation here
+27 |         @app.<T> T => @app.second,
+   |          ^^^^^^^^^ conflicting implementation for `App`
+   |
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<Bar, _>>, _, _>` for type `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<5, cgp::prelude::Chars<..>>, _>>>`
+   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<Bar, _>>, _, _>` for type `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<6, cgp::prelude::Chars<..>>, _>>>`
+
+For more information about this error, try `rustc --explain E0119`.

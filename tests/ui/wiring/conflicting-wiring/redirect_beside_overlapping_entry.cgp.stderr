@@ -1,0 +1,11 @@
+error[E0119]: [CGP-E013] conflicting wiring: `App` wires `@DescriberComponent.Wrap<T>` directly, but it is redirected to `@app.describer`
+  --> src/main.rs:37:10
+   |
+36 |         @DescriberComponent.Wrap<u64>: DescribeAny,
+   |          ---------------------------- first implementation here
+37 |         @DescriberComponent.<T> Wrap<T> => @app.describer,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+   |
+   = help: wire the provider `DescribeAny` with the key `@app.describer`
+
+For more information about this error, try `rustc --explain E0119`.
