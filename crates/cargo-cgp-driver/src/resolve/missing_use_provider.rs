@@ -27,7 +27,7 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::cgp_item::is_provider_trait;
-use crate::resolve::undeclared::argument_ty;
+use crate::resolve::undeclared::{argument_ty, enclosing_trait_impl};
 
 /// Recognize a missing-`#[use_provider]` failure and recover the inner provider and the provider
 /// trait to import it as, or `None` when the diagnostic is not one. Everything is keyed on
@@ -252,21 +252,6 @@ fn trait_has_method(tcx: TyCtxt<'_>, trait_did: DefId, method: rustc_span::Symbo
     tcx.associated_items(trait_did)
         .filter_by_name_unhygienic(method)
         .any(|item| matches!(item.kind, ty::AssocKind::Fn { .. }))
-}
-
-/// The nearest enclosing trait impl of `did`, walking up the def-parent chain (as
-/// `resolve::undeclared` does), or `None` before the crate root.
-fn enclosing_trait_impl(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
-    loop {
-        if matches!(tcx.def_kind(did), DefKind::Impl { of_trait: true }) {
-            return Some(did);
-        }
-        let parent = tcx.opt_parent(did)?;
-        if parent == did {
-            return None;
-        }
-        did = parent;
-    }
 }
 
 /// Whether `impl_did`'s `where` clause bounds a type parameter named `param` by trait `trait_did` —

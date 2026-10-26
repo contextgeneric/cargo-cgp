@@ -443,7 +443,7 @@ fn param_declared_input_binder<'tcx>(
 /// intervening `#[async_trait]` coroutine body and its method), or `None` if none is reached before
 /// the crate root. This is what lets the detection work uniformly for a sync `#[cgp_fn]` body (impl
 /// one hop up) and an async one (impl two hops up, past the async-block coroutine).
-fn enclosing_trait_impl(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
+pub(crate) fn enclosing_trait_impl(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
     loop {
         if matches!(tcx.def_kind(did), DefKind::Impl { of_trait: true }) {
             return Some(did);
