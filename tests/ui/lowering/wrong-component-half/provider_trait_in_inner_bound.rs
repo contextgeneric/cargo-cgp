@@ -1,10 +1,10 @@
 //! A higher-order provider bounds its inner provider by the provider trait without the context
 //! argument, `where Inner: AreaCalculator`.
 //!
-//! The tool leaves rustc's `E0107`, whose help adds the generated `__Context__` to the bound, which
-//! names a generated parameter where `#[use_provider(Inner: AreaCalculator)]` is the idiomatic
-//! import. `[CGP-E037]` covers a provider trait in `#[uses]` on the context, not a bound on another
-//! parameter.
+//! The tool leaves rustc's `E0107`, whose help adds the context parameter the macro generated to the
+//! bound, a name no program can write, where `#[use_provider(Inner: AreaCalculator)]` is the
+//! idiomatic import. `[CGP-E037]` covers a provider trait in `#[uses]` on the context, not a bound on
+//! another parameter.
 //!
 //! CGP error class: wrong component half (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/wrong-component-half.md).
 

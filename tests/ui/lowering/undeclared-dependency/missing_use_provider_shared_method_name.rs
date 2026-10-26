@@ -3,8 +3,8 @@
 //!
 //! `ScaledArea` implements `AreaCalculator`, which declares `area`, so the tool reports `[CGP-E031]`
 //! naming that trait. `DescribeArea` implements `Describer`, which does not, so the tool cannot tell
-//! which of the two traits is meant, and leaves rustc's `E0599`, whose suggestions name the generated
-//! `__Context__`.
+//! which of the two traits is meant, and leaves rustc's `E0599`, whose suggestions include the two
+//! provider traits with the context parameter their macro generated, a name no program can write.
 //!
 //! CGP error class: undeclared dependency (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/undeclared-dependency.md).
 
