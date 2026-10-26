@@ -1,1 +1,11 @@
+error: the namespace `FixedNs` cannot inherit from itself; name another namespace as its parent, or omit the parent
+  --> src/main.rs:16:25
+   |
+16 |     <T> new FixedNs<T>: FixedNs<u32> {}
+   |                         ^^^^^^^
 
+error: the namespace `GrowingNs` cannot inherit from itself; name another namespace as its parent, or omit the parent
+  --> src/main.rs:20:27
+   |
+20 |     <T> new GrowingNs<T>: GrowingNs<Vec<T>> {}
+   |                           ^^^^^^^^^
