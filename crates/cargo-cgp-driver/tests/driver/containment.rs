@@ -57,6 +57,22 @@ fn a_contained_panic_names_its_message_and_where_it_was_raised() {
 }
 
 #[test]
+fn a_contained_panic_reads_a_formatted_or_a_non_string_payload() {
+    // A `panic!` that formats a runtime value carries a `String`, the form most real bugs take (literal
+    // arguments fold into a `&str`); any other payload has no text to show.
+    hooks();
+    let step = String::from("a step");
+    let detail = contain(|| -> u32 { panic!("emitter bug in {step}") }).unwrap_err();
+    assert!(detail.starts_with("emitter bug in a step (at "), "{detail}");
+
+    let detail = contain(|| -> u32 { panic::panic_any(7_u32) }).unwrap_err();
+    assert!(
+        detail.starts_with("a panic with a non-string payload"),
+        "{detail}"
+    );
+}
+
+#[test]
 fn a_fatal_error_keeps_unwinding() {
     // rustc ends a failing compilation by unwinding with this marker; it is not the emitter's panic.
     hooks();

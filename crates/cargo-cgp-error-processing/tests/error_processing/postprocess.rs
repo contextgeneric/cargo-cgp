@@ -22,6 +22,10 @@ fn scan_head_tail_splits_at_the_top_level_comma() {
     let (head, tail, _) = scan_head_tail(r#"Name<"a, >b">, Nil>"#).unwrap();
     assert_eq!((head, tail), (r#"Name<"a, >b">"#, " Nil"));
 
+    // An escaped quote does not end the string literal.
+    let (head, tail, _) = scan_head_tail(r#"Name<"a\", >b">, Nil>"#).unwrap();
+    assert_eq!((head, tail), (r#"Name<"a\", >b">"#, " Nil"));
+
     // No top-level comma, or no matching close, declines.
     assert_eq!(scan_head_tail("Nil>"), None);
     assert_eq!(scan_head_tail("u8, Nil"), None);
