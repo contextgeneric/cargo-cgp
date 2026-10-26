@@ -221,21 +221,35 @@ fn resugars_an_open_dispatch_path_with_a_compound_value_segment() {
 
 #[test]
 fn resugars_a_primitive_path_segment_as_a_type() {
-    let source = "type Key = PathCons<ItemEncoderComponent, PathCons<u64, Nil>>;\n";
+    // Every primitive segment is kept as the named type by `Path!`, so each round-trips bare.
+    for primitive in PRIMITIVE_NAMES {
+        let source =
+            format!("type Key = PathCons<ItemEncoderComponent, PathCons<{primitive}, Nil>>;\n");
 
-    assert_eq!(
-        expand(source),
-        "type Key = Path!(@ItemEncoderComponent.u64);\n"
-    );
+        assert_eq!(
+            expand(&source),
+            format!("type Key = Path!(@ItemEncoderComponent.{primitive});\n"),
+            "{primitive}",
+        );
+    }
 }
+
+/// The names `Path!` keeps as types, as `cgp`'s path segment rule lists them.
+const PRIMITIVE_NAMES: &[&str] = &[
+    "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f32",
+    "f64", "char", "bool", "str",
+];
 
 #[test]
 fn declines_a_path_segment_named_like_a_primitive() {
-    // `u2` looks like a primitive but is none, so `Path!(@…u2)` would read it as a symbol; a type
-    // named `u2` has no `Path!` spelling, and the chain is left as it stands.
-    let source = "type Key = PathCons<ItemEncoderComponent, PathCons<u2, Nil>>;\n";
+    // `f`, `u2`, and `i7` look like primitives but are none, so `Path!` would read each as a
+    // symbol; a type of that name has no `Path!` spelling, and the chain is left as it stands.
+    for near_miss in ["f", "u2", "i7"] {
+        let source =
+            format!("type Key = PathCons<ItemEncoderComponent, PathCons<{near_miss}, Nil>>;\n");
 
-    assert_eq!(expand(source), source);
+        assert_eq!(expand(&source), source, "{near_miss}");
+    }
 }
 
 #[test]

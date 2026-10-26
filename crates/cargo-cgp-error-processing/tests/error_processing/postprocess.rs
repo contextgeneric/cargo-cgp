@@ -395,19 +395,29 @@ fn resugar_path_skips_a_qualified_segment_with_generics() {
 
 #[test]
 fn resugars_a_primitive_segment_as_a_type() {
-    // A primitive segment is kept as the named type by `Path!`, so it round-trips bare.
-    assert_eq!(
-        resugar_path("PathCons<u32, Nil>", true).as_deref(),
-        Some("Path!(@u32)"),
-    );
+    // Every primitive segment is kept as the named type by `Path!`, so each round-trips bare.
+    for primitive in PRIMITIVE_NAMES {
+        assert_eq!(
+            resugar_path(&format!("PathCons<{primitive}, Nil>"), true),
+            Some(format!("Path!(@{primitive})")),
+            "{primitive}",
+        );
+    }
 }
+
+/// The names `Path!` keeps as types, as `cgp`'s path segment rule lists them.
+const PRIMITIVE_NAMES: &[&str] = &[
+    "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize", "f32",
+    "f64", "char", "bool", "str",
+];
 
 #[test]
 fn resugar_path_declines_a_type_named_like_a_primitive() {
-    // `f` and `u2` look like primitives but are none, so `Path!` would read either as a symbol: a
-    // type of that name has no `Path!` spelling, and the path declines.
+    // `f`, `u2`, and `i7` look like primitives but are none, so `Path!` would read each as a
+    // symbol: a type of that name has no `Path!` spelling, and the path declines.
     assert_eq!(resugar_path("PathCons<f, Nil>", true), None);
     assert_eq!(resugar_path("PathCons<u2, Nil>", true), None);
+    assert_eq!(resugar_path("PathCons<i7, Nil>", true), None);
 }
 
 #[test]
