@@ -1,0 +1,25 @@
+error[E0425]: cannot find type `GreetHi` in this scope
+  --> src/main.rs:31:27
+   |
+31 |         GreeterComponent: GreetHi,
+   |                           ^^^^^^^ not found in this scope
+   |
+note: similarly named trait `Greeter` defined here
+  --> src/main.rs:18:1
+   |
+18 | pub trait CanGreet {
+   | ^^^^^^^^^^^^^^^^^^
+help: a trait with a similar name exists
+   |
+31 -         GreeterComponent: GreetHi,
+31 +         GreeterComponent: Greeter,
+   |
+
+error[E0275]: overflow evaluating the requirement `Person: CanGreetTwice`
+  --> src/main.rs:37:12
+   |
+37 |     Person.greet_twice();
+   |            ^^^^^^^^^^^
+
+Some errors have detailed explanations: E0275, E0425.
+For more information about an error, try `rustc --explain E0275`.

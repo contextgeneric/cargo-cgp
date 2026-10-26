@@ -1,0 +1,7 @@
+error[E0425]: [CGP-E043] the provider `RectangleAreaa` wired for `AreaCalculatorComponent` is not declared
+  --> src/main.rs:28:34
+   |
+28 |         AreaCalculatorComponent: RectangleAreaa,
+   |                                  ^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0425`.

@@ -1,0 +1,14 @@
+error[E0425]: cannot find type `RectangleAreaa` in this scope
+  --> src/main.rs:28:34
+   |
+28 |         AreaCalculatorComponent: RectangleAreaa,
+   |                                  ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0275]: overflow evaluating the requirement `App: CanCalculateArea<Rectangle>`
+  --> src/main.rs:33:17
+   |
+33 |     let _ = App.area(&Rectangle);
+   |                 ^^^^
+
+Some errors have detailed explanations: E0275, E0425.
+For more information about an error, try `rustc --explain E0275`.

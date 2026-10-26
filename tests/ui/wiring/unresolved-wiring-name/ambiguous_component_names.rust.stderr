@@ -1,0 +1,62 @@
+error[E0425]: cannot find type `GreeterComponent` in this scope
+  --> src/main.rs:64:9
+   |
+64 |         GreeterComponent: a::GreetHello,
+   |         ^^^^^^^^^^^^^^^^ not found in this scope
+   |
+note: similarly named struct `ComputerComponent` defined here
+  --> $CGP/crates/extra/cgp-handler/src/components/computer.rs:8:17
+   |
+ 8 | #[cgp_component(Computer)]
+   |                 ^^^^^^^^
+help: a struct with a similar name exists
+   |
+64 -         GreeterComponent: a::GreetHello,
+64 +         ComputerComponent: a::GreetHello,
+   |
+help: consider importing one of these structs
+   |
+19 + use crate::a::GreeterComponent;
+   |
+19 + use crate::c::GreeterComponent;
+   |
+
+error[E0425]: cannot find type `CanGreetComponent` in this scope
+  --> src/main.rs:70:9
+   |
+70 |         CanGreetComponent: b::WelcomeHello,
+   |         ^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+note: similarly named trait `CanUseComponent` defined here
+  --> $CGP/crates/core/cgp-component/src/traits/can_use_component.rs:16:1
+   |
+16 | pub trait CanUseComponent<Component, Params: ?Sized = ()> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: a trait with a similar name exists
+   |
+70 -         CanGreetComponent: b::WelcomeHello,
+70 +         CanUseComponent: b::WelcomeHello,
+   |
+help: you might be missing a type parameter
+   |
+70 |         CanGreetComponent<CanGreetComponent>: b::WelcomeHello,
+   |                          +++++++++++++++++++
+
+error[E0425]: cannot find type `CanGreetComponent` in this scope
+  --> src/main.rs:70:9
+   |
+70 |         CanGreetComponent: b::WelcomeHello,
+   |         ^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+note: similarly named trait `CanUseComponent` defined here
+  --> $CGP/crates/core/cgp-component/src/traits/can_use_component.rs:16:1
+   |
+16 | pub trait CanUseComponent<Component, Params: ?Sized = ()> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: a trait with a similar name exists
+   |
+70 -         CanGreetComponent: b::WelcomeHello,
+70 +         CanUseComponent: b::WelcomeHello,
+   |
+
+For more information about this error, try `rustc --explain E0425`.

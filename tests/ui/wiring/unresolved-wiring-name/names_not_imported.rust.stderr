@@ -1,0 +1,51 @@
+error[E0425]: cannot find type `GreetBye` in this scope
+  --> src/main.rs:41:12
+   |
+41 | #[cgp_impl(GreetBye)]
+   |            ^^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+16 + use crate::providers::GreetBye;
+   |
+
+error[E0425]: cannot find type `GreetHello` in this scope
+  --> src/main.rs:50:27
+   |
+50 |         GreeterComponent: GreetHello,
+   |                           ^^^^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+16 + use crate::providers::GreetHello;
+   |
+
+error[E0425]: cannot find type `RaiseFrom` in this scope
+  --> src/main.rs:59:31
+   |
+59 |         ErrorRaiserComponent: RaiseFrom,
+   |                               ^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `Square` in this scope
+  --> src/main.rs:60:34
+   |
+60 |         GreeterComponent => @app.Square,
+   |                                  ^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+16 + use crate::shapes::Square;
+   |
+
+error[E0425]: cannot find type `Square` in this scope
+  --> src/main.rs:61:14
+   |
+61 |         @app.Square: providers::GreetHello,
+   |              ^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+16 + use crate::shapes::Square;
+   |
+
+For more information about this error, try `rustc --explain E0425`.

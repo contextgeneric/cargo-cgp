@@ -1,0 +1,78 @@
+error[E0425]: cannot find type `Error` in this scope
+  --> src/main.rs:25:25
+   |
+25 | pub fn describe(_error: Error) {}
+   |                         ^^^^^ not found in this scope
+   |
+help: consider importing one of these items
+   |
+15 + use std::error::Error;
+   |
+15 + use std::fmt::Error;
+   |
+15 + use std::io::Error;
+   |
+
+error[E0425]: cannot find type `Error` in this scope
+  --> src/main.rs:29:38
+   |
+29 |     fn load(&self) -> Result<String, Error> {
+   |                                      ^^^^^ not found in this scope
+   |
+help: consider importing one of these items
+   |
+15 + use std::error::Error;
+   |
+15 + use std::fmt::Error;
+   |
+15 + use std::io::Error;
+   |
+
+error[E0425]: cannot find type `Error` in this scope
+  --> src/main.rs:33:40
+   |
+33 |     fn reload(&self) -> Result<String, Error> {
+   |                                        ^^^^^ not found in this scope
+   |
+help: consider importing one of these items
+   |
+15 + use std::error::Error;
+   |
+15 + use std::fmt::Error;
+   |
+15 + use std::io::Error;
+   |
+
+error[E0277]: the trait bound `__Context__: ErrorTypeProvider<__Context__>` is not satisfied
+  --> src/main.rs:29:5
+   |
+29 |     fn load(&self) -> Result<String, Error> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `ErrorTypeProvider<__Context__>` is not implemented for `__Context__`
+   |
+   = note: required for `__Context__` to implement `cgp::prelude::HasErrorType`
+
+error[E0277]: the trait bound `__Context__: ErrorTypeProvider<__Context__>` is not satisfied
+  --> src/main.rs:33:5
+   |
+33 |     fn reload(&self) -> Result<String, Error> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `ErrorTypeProvider<__Context__>` is not implemented for `__Context__`
+   |
+   = note: required for `__Context__` to implement `cgp::prelude::HasErrorType`
+
+error[E0277]: the trait bound `__Context__: cgp::prelude::HasErrorType` is not satisfied
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_impl(new LoadNothing)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `ErrorTypeProvider<__Context__>` is not implemented for `__Context__`
+   |
+   = note: required for `__Context__` to implement `cgp::prelude::HasErrorType`
+note: required by a bound in `Loader`
+  --> src/main.rs:18:12
+   |
+17 | #[cgp_component(Loader)]
+18 | #[use_type(HasErrorType.Error)]
+   |            ^^^^^^^^^^^^ required by this bound in `Loader`
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0277, E0425.
+For more information about an error, try `rustc --explain E0277`.

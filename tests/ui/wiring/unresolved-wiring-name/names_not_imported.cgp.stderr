@@ -1,0 +1,32 @@
+error[E0425]: [CGP-E038] the provider `GreetBye` is not declared
+  --> src/main.rs:41:12
+   |
+41 | #[cgp_impl(GreetBye)]
+   |            ^^^^^^^^
+   |
+   = help: declare it with `#[cgp_impl(new GreetBye)]`
+
+error[E0425]: [CGP-E043] the provider `GreetHello` wired for `GreeterComponent` is not declared
+  --> src/main.rs:50:27
+   |
+50 |         GreeterComponent: GreetHello,
+   |                           ^^^^^^^^^^
+
+error[E0425]: [CGP-E043] the provider `RaiseFrom` wired for `ErrorRaiserComponent` is not declared
+  --> src/main.rs:59:31
+   |
+59 |         ErrorRaiserComponent: RaiseFrom,
+   |                               ^^^^^^^^^
+
+error[E0425]: [CGP-E044] the type `Square` in a wiring path is not declared
+  --> src/main.rs:60:34
+   |
+60 |         GreeterComponent => @app.Square,
+   |                                  ^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+16 + use crate::shapes::Square;
+   |
+
+For more information about this error, try `rustc --explain E0425`.

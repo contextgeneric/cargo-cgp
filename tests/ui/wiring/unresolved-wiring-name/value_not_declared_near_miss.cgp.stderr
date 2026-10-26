@@ -1,0 +1,9 @@
+error[E0425]: [CGP-E043] the provider `GreetHelo` wired for `GreeterComponent` is not declared
+  --> src/main.rs:40:27
+   |
+40 |         GreeterComponent: GreetHelo,
+   |                           ^^^^^^^^^
+   |
+   = help: a provider of `GreeterComponent` with a similar name exists: `GreetHello`
+
+For more information about this error, try `rustc --explain E0425`.

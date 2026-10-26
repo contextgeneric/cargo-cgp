@@ -1,0 +1,18 @@
+error[E0425]: cannot find type `GreetHelo` in this scope
+  --> src/main.rs:40:27
+   |
+40 |         GreeterComponent: GreetHelo,
+   |                           ^^^^^^^^^ not found in this scope
+   |
+note: similarly named struct `Greethelo` defined here
+  --> src/main.rs:31:16
+   |
+31 | #[cgp_impl(new Greethelo)]
+   |                ^^^^^^^^^
+help: a struct with a similar name exists
+   |
+40 -         GreeterComponent: GreetHelo,
+40 +         GreeterComponent: Greethelo,
+   |
+
+For more information about this error, try `rustc --explain E0425`.

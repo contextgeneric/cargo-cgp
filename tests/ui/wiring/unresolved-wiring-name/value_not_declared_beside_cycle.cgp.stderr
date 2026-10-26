@@ -1,0 +1,16 @@
+error[E0425]: [CGP-E043] the provider `GreetHi` wired for `GreeterComponent` is not declared
+  --> src/main.rs:31:27
+   |
+31 |         GreeterComponent: GreetHi,
+   |                           ^^^^^^^
+
+error[E0275]: [CGP-E020] the wiring for the consumer trait `CanGreetTwice` on context `Person` never resolves, because the lookup leads back to itself
+  --> src/main.rs:37:12
+   |
+37 |     Person.greet_twice();
+   |            ^^^^^^^^^^^
+   |
+   = help: wire a provider in place of `UseContext`, which provides `TwiceGreeter` for `Person` by requiring `CanGreetTwice` on `Person` again
+
+Some errors have detailed explanations: E0275, E0425.
+For more information about an error, try `rustc --explain E0275`.
