@@ -110,7 +110,7 @@ pub fn detect_missing_use_provider(
         (Some(context), Some(method_did), Some(inner_ty)) => {
             written_provider_bound(tcx, provider_did, method_did, inner_ty, context, args)
         }
-        _ => (tcx.item_name(provider_did).to_string(), Vec::new()),
+        _ => (bare_provider_bound(tcx, provider_did), Vec::new()),
     };
     Some(MissingUseProvider {
         inner,
@@ -126,7 +126,7 @@ pub fn detect_missing_use_provider(
 /// that type can be read without typeck ([`argument_ty`]). An argument may be one of the impl's own
 /// generic parameters, which the attribute on the same impl can name. A parameter that stays unknown,
 /// or comes out holding a lifetime, is written as the trait's own parameter name for the reader to
-/// replace. The bare name when the trait takes a lifetime or const parameter.
+/// replace. `None` when the trait takes a lifetime or const parameter, which the help cannot write.
 fn written_provider_bound<'tcx>(
     tcx: TyCtxt<'tcx>,
     provider_did: DefId,
@@ -134,7 +134,7 @@ fn written_provider_bound<'tcx>(
     inner: Ty<'tcx>,
     context: Ty<'tcx>,
     args: &[Expr<'tcx>],
-) -> (String, Vec<String>) {
+) -> (Option<String>, Vec<String>) {
     let name = tcx.item_name(provider_did).to_string();
     let generics = tcx.generics_of(provider_did);
     if generics.own_params.len() <= 2
@@ -142,7 +142,7 @@ fn written_provider_bound<'tcx>(
             .iter()
             .any(|param| !matches!(param.kind, ty::GenericParamDefKind::Type { .. }))
     {
-        return (name, Vec::new());
+        return (bare_provider_bound(tcx, provider_did), Vec::new());
     }
     let param_env = ty::ParamEnv::empty();
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
@@ -182,7 +182,14 @@ fn written_provider_bound<'tcx>(
             }
         })
         .collect();
-    (format!("{name}<{}>", rendered.join(", ")), unresolved)
+    (Some(format!("{name}<{}>", rendered.join(", "))), unresolved)
+}
+
+/// The provider trait by its name alone, which `#[use_provider]` completes with the context: valid
+/// only for a trait whose one parameter besides `Self` is the context.
+fn bare_provider_bound(tcx: TyCtxt<'_>, provider_did: DefId) -> Option<String> {
+    (tcx.generics_of(provider_did).own_params.len() <= 2)
+        .then(|| tcx.item_name(provider_did).to_string())
 }
 
 /// The associated-function call `Param::method(…)` the primary span points at.

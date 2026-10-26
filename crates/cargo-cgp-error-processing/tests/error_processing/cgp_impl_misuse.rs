@@ -71,7 +71,7 @@ fn consumer_trait_in_a_provider_bound() {
 fn inner_provider_not_imported() {
     let missing = MissingUseProvider {
         inner: "InnerCalculator".to_owned(),
-        provider_trait: "AreaCalculator".to_owned(),
+        provider_trait: Some("AreaCalculator".to_owned()),
         unresolved: Vec::new(),
     };
     assert_eq!(
@@ -79,8 +79,8 @@ fn inner_provider_not_imported() {
         "[CGP-E031] the inner provider `InnerCalculator` is used but not imported",
     );
     assert_eq!(
-        missing_use_provider_help(&missing),
-        "import it with `#[use_provider(InnerCalculator: AreaCalculator)]`",
+        missing_use_provider_help(&missing).as_deref(),
+        Some("import it with `#[use_provider(InnerCalculator: AreaCalculator)]`"),
     );
 }
 
@@ -88,33 +88,47 @@ fn inner_provider_not_imported() {
 fn a_generic_component_is_imported_with_its_parameters() {
     let missing = MissingUseProvider {
         inner: "Inner".to_owned(),
-        provider_trait: "AreaCalculator<Shape>".to_owned(),
+        provider_trait: Some("AreaCalculator<Shape>".to_owned()),
         unresolved: Vec::new(),
     };
     assert_eq!(
-        missing_use_provider_help(&missing),
-        "import it with `#[use_provider(Inner: AreaCalculator<Shape>)]`",
+        missing_use_provider_help(&missing).as_deref(),
+        Some("import it with `#[use_provider(Inner: AreaCalculator<Shape>)]`"),
     );
     let unresolved = MissingUseProvider {
         inner: "Inner".to_owned(),
-        provider_trait: "AreaCalculator<Shape>".to_owned(),
+        provider_trait: Some("AreaCalculator<Shape>".to_owned()),
         unresolved: vec!["Shape".to_owned()],
     };
     assert_eq!(
-        missing_use_provider_help(&unresolved),
-        "import it with `#[use_provider(Inner: AreaCalculator<Shape>)]`, with the type the call \
-         uses in place of `Shape`",
+        missing_use_provider_help(&unresolved).as_deref(),
+        Some(
+            "import it with `#[use_provider(Inner: AreaCalculator<Shape>)]`, with the type the \
+             call uses in place of `Shape`"
+        ),
     );
     let several = MissingUseProvider {
         inner: "Inner".to_owned(),
-        provider_trait: "Combiner<A, B>".to_owned(),
+        provider_trait: Some("Combiner<A, B>".to_owned()),
         unresolved: vec!["A".to_owned(), "B".to_owned()],
     };
     assert_eq!(
-        missing_use_provider_help(&several),
-        "import it with `#[use_provider(Inner: Combiner<A, B>)]`, with the types the call uses in \
-         place of `A` and `B`",
+        missing_use_provider_help(&several).as_deref(),
+        Some(
+            "import it with `#[use_provider(Inner: Combiner<A, B>)]`, with the types the call \
+             uses in place of `A` and `B`"
+        ),
     );
+}
+
+#[test]
+fn an_inner_provider_whose_bound_cannot_be_written_gets_no_help() {
+    let missing = MissingUseProvider {
+        inner: "Inner".to_owned(),
+        provider_trait: None,
+        unresolved: Vec::new(),
+    };
+    assert_eq!(missing_use_provider_help(&missing), None);
 }
 
 #[test]

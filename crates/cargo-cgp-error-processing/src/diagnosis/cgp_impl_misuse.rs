@@ -90,8 +90,9 @@ pub struct MissingUseProvider {
     pub inner: String,
     /// The provider trait to import it as, as `#[use_provider]` writes it: with the component's
     /// parameters after the context, which the attribute supplies (`AreaCalculator<Shape>`), each
-    /// one the call does not give away written as the trait's own parameter name.
-    pub provider_trait: String,
+    /// one the call does not give away written as the trait's own parameter name. `None` when the
+    /// tool cannot write the bound, as for a trait with a lifetime or const parameter.
+    pub provider_trait: Option<String>,
     /// The provider trait's parameters the call does not give away, named in `provider_trait` for
     /// the reader to replace.
     pub unresolved: Vec<String>,
@@ -109,13 +110,14 @@ pub fn plan_missing_use_provider(missing: &MissingUseProvider) -> String {
 
 /// The `help` accompanying the header, the fix the raw error never states: import the inner
 /// provider with `#[use_provider]`, which supplies the leading context argument the provider trait
-/// needs.
-pub fn missing_use_provider_help(missing: &MissingUseProvider) -> String {
+/// needs. `None` when the bound cannot be written.
+pub fn missing_use_provider_help(missing: &MissingUseProvider) -> Option<String> {
+    let provider_trait = missing.provider_trait.as_ref()?;
     let import = format!(
-        "import it with `#[use_provider({}: {})]`",
-        missing.inner, missing.provider_trait,
+        "import it with `#[use_provider({}: {provider_trait})]`",
+        missing.inner,
     );
-    match missing.unresolved.len() {
+    Some(match missing.unresolved.len() {
         0 => import,
         1 => format!(
             "{import}, with the type the call uses in place of {}",
@@ -125,7 +127,7 @@ pub fn missing_use_provider_help(missing: &MissingUseProvider) -> String {
             "{import}, with the types the call uses in place of {}",
             quoted_list(&missing.unresolved),
         ),
-    }
+    })
 }
 
 /// A provider trait named in `#[uses(…)]`, where a dependency on a component names its consumer

@@ -1423,8 +1423,9 @@ impl<E: Emitter> CgpEmitter<E> {
         {
             replace_header(&mut diag, plan_missing_use_provider(&missing));
             diag.span = MultiSpan::from_span(primary_span);
-            diag.children
-                .push(subdiag(Sublevel::Help, missing_use_provider_help(&missing)));
+            if let Some(help) = missing_use_provider_help(&missing) {
+                diag.children.push(subdiag(Sublevel::Help, help));
+            }
             self.postprocess(&mut diag, Origin::Rewritten);
             self.record_cgp_spans(&diag);
             self.push(BufEntry::Plain(Box::new(diag)));

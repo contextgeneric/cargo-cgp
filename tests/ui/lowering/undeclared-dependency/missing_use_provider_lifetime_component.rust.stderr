@@ -1,18 +1,18 @@
 error[E0599]: no associated function or constant named `name` found for type parameter `Inner` in the current scope
-  --> src/main.rs:22:16
+  --> src/main.rs:23:16
    |
-20 | impl<'a, Inner> NameGetter<'a> {
+21 | impl<'a, Inner> NameGetter<'a> {
    |          ----- associated function or constant `name` not found for this type parameter
-21 |     fn name(&self, prefix: &'a str) -> &'a str {
-22 |         Inner::name(self, prefix).trim()
+22 |     fn name(&self, prefix: &'a str) -> &'a str {
+23 |         Inner::name(self, prefix).trim()
    |                ^^^^ associated function or constant cannot be called on `Inner` due to unsatisfied trait bounds
    |
    = help: items from traits can only be used if the type parameter is bounded by the trait
 help: the following traits define an item `name`, perhaps you need to restrict type parameter `Inner` with one of them:
    |
-20 | impl<'a, Inner: CanGetName</* 'a */>> NameGetter<'a> {
+21 | impl<'a, Inner: CanGetName</* 'a */>> NameGetter<'a> {
    |               ++++++++++++++++++++++
-20 | impl<'a, Inner: NameGetter</* 'a, __Context__ */>> NameGetter<'a> {
+21 | impl<'a, Inner: NameGetter</* 'a, __Context__ */>> NameGetter<'a> {
    |               +++++++++++++++++++++++++++++++++++
 
 For more information about this error, try `rustc --explain E0599`.
