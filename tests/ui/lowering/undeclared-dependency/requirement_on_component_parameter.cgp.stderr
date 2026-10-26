@@ -1,0 +1,28 @@
+error[E0277]: [CGP-E036] the provider trait `Shower` requires `HasName` of the context, but the provider `ShowPlain` does not declare it
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_impl(new ShowPlain)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: declare it as a dependency with `#[uses(HasName)]`
+
+error[E0277]: `T` doesn't implement `std::fmt::Display`
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_impl(new ShowPlain)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `std::fmt::Display` is not implemented for `T`
+   |
+note: required by a bound in `Shower`
+  --> src/main.rs:23:22
+   |
+21 | #[cgp_component(Shower)]
+22 | #[extend(HasName)]
+23 | pub trait CanShow<T: Display> {
+   |                      ^^^^^^^ required by this bound in `Shower`
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider restricting type parameter `T` with trait `Display`
+   |
+28 | impl<T: std::fmt::Display> Shower<T> {
+   |       +++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0277`.

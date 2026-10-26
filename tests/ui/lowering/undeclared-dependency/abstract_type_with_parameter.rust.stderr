@@ -1,0 +1,7 @@
+error[E0220]: associated type `Fault` not found for `__Context__`
+  --> src/main.rs:27:34
+   |
+27 |         let _fault: Option<Self::Fault> = None;
+   |                                  ^^^^^ associated type `Fault` not found
+
+For more information about this error, try `rustc --explain E0220`.

@@ -1,0 +1,9 @@
+error[E0599]: [CGP-E030] the trait `Describe` is used but not declared as a dependency
+  --> src/main.rs:37:10
+   |
+37 |     self.describe()
+   |          ^^^^^^^^
+   |
+   = help: declare it as a dependency with `#[uses(Describe)]`
+
+For more information about this error, try `rustc --explain E0599`.

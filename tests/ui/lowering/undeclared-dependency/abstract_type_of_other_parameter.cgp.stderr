@@ -1,0 +1,7 @@
+error[E0220]: associated type `Error` not found for `Inner`
+  --> src/main.rs:21:35
+   |
+21 |         let _error: Option<Inner::Error> = None;
+   |                                   ^^^^^ associated type `Error` not found
+
+For more information about this error, try `rustc --explain E0220`.

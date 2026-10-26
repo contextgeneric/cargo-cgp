@@ -1,0 +1,35 @@
+error[E0599]: the method `prefix` exists for reference `&__Context__`, but its trait bounds were not satisfied
+  --> src/main.rs:21:10
+   |
+21 |     self.prefix(text)
+   |          ^^^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `PrefixGetter`
+  --> src/main.rs:16:5
+   |
+16 |     fn prefix(&self, text: &'a str) -> &'a str;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: the following trait bounds were not satisfied:
+      `&__Context__: PrefixGetter<'_, &__Context__>`
+      `__Context__: PrefixGetter<'_, __Context__>`
+  --> src/main.rs:14:17
+   |
+14 |   #[cgp_component(PrefixGetter)]
+   |  _----------------^-------------
+15 | | pub trait CanGetPrefix<'a> {
+   | |           ---------------^
+   | |__________________________|
+   |                            unsatisfied trait bound introduced here
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+help: use associated function syntax instead
+   |
+21 -     self.prefix(text)
+21 +     __Context__::prefix(text)
+   |
+help: the following trait defines an item `prefix`, perhaps you need to restrict type parameter `__Context__` with it:
+   |
+19 | #[cgp_fn]: CanGetPrefix</* 'a */>
+   |          ++++++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0599`.

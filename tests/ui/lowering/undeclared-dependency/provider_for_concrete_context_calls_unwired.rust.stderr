@@ -1,0 +1,45 @@
+error[E0599]: the method `wave` exists for reference `&Person`, but its trait bounds were not satisfied
+  --> src/main.rs:34:14
+   |
+27 | pub struct Person {
+   | ----------------- doesn't satisfy `Person: CanWave` or `Person: Waver<Person>`
+...
+34 |         self.wave()
+   |              ^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `Waver`
+  --> src/main.rs:23:5
+   |
+23 |     fn wave(&self) -> String;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: the following trait bounds were not satisfied:
+      `&Person: Waver<&Person>`
+      `Person: Waver<Person>`
+  --> src/main.rs:21:1
+   |
+21 | #[cgp_component(Waver)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+22 | pub trait CanWave {
+   |           ^^^^^^^
+note: the trait `Waver` must be implemented
+  --> src/main.rs:22:1
+   |
+22 | / pub trait CanWave {
+23 | |     fn wave(&self) -> String;
+24 | | }
+   | |_^
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `CanWave` defines an item `wave`, perhaps you need to implement it
+  --> src/main.rs:22:1
+   |
+22 | pub trait CanWave {
+   | ^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use associated function syntax instead
+   |
+31 - #[cgp_impl(new GreetPerson)]
+31 + Person::wave()
+   |
+
+For more information about this error, try `rustc --explain E0599`.

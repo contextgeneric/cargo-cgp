@@ -1,0 +1,42 @@
+error[E0277]: the trait bound `__Context__: HasName` is not satisfied
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_impl(new ShowPlain)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `__Context__`
+note: required for `__Context__` to implement `HasName`
+  --> src/main.rs:16:1
+   |
+16 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+17 | pub trait HasName {
+   |           ^^^^^^^
+note: required by a bound in `Shower`
+  --> src/main.rs:22:10
+   |
+21 | #[cgp_component(Shower)]
+22 | #[extend(HasName)]
+   |          ^^^^^^^ required by this bound in `Shower`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `T` doesn't implement `std::fmt::Display`
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_impl(new ShowPlain)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `std::fmt::Display` is not implemented for `T`
+   |
+note: required by a bound in `Shower`
+  --> src/main.rs:23:22
+   |
+21 | #[cgp_component(Shower)]
+22 | #[extend(HasName)]
+23 | pub trait CanShow<T: Display> {
+   |                      ^^^^^^^ required by this bound in `Shower`
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider restricting type parameter `T` with trait `Display`
+   |
+28 | impl<T: std::fmt::Display> Shower<T> {
+   |       +++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0277`.
