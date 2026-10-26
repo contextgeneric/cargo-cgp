@@ -1,0 +1,22 @@
+error[E0277]: the trait bound `__PartialShape<IsPresent, IsPresent>: ExtractField<Symbol<6, _>>` is not satisfied
+  --> src/main.rs:34:24
+   |
+34 |         .extract_field(PhantomData::<Symbol!("circle")>);
+   |          ------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |          |
+   |          required by a bound introduced by this call
+   |
+help: the trait `cgp::prelude::ExtractField<cgp::prelude::Symbol<6, cgp::prelude::Chars<..>>>` is not implemented for `__PartialShape<IsPresent, IsPresent>`
+  --> src/main.rs:25:1
+   |
+25 | pub enum Shape {
+   | ^^^^^^^^^^^^^^
+help: the following other types implement trait `cgp::prelude::ExtractField<Tag>`
+  --> src/main.rs:26:5
+   |
+26 |     Circle(Circle),
+   |     ^^^^^^ `__PartialShape<IsPresent, __F1__>` implements `ExtractField<Symbol<6, Chars<..>>>`
+27 |     Rectangle(Rectangle),
+   |     ^^^^^^^^^ `__PartialShape<__F0__, IsPresent>` implements `ExtractField<Symbol<9, Chars<..>>>`
+
+For more information about this error, try `rustc --explain E0277`.

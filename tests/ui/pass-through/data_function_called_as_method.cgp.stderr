@@ -1,0 +1,22 @@
+error[E0599]: no method named `builder` found for struct `Config` in the current scope
+  --> src/main.rs:24:20
+   |
+13 | pub struct Config {
+   | ----------------- method `builder` not found for this struct
+...
+24 |     let _ = config.builder();
+   |                    ^^^^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `cgp::prelude::HasBuilder`
+  --> $CGP/crates/core/cgp-field/src/traits/has_builder.rs:4:5
+   |
+ 4 |     fn builder() -> Self::Builder;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: use associated function syntax instead
+   |
+24 -     let _ = config.builder();
+24 +     let _ = Config::builder();
+   |
+
+For more information about this error, try `rustc --explain E0599`.

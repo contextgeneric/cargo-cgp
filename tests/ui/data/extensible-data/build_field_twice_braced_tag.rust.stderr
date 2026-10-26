@@ -1,0 +1,17 @@
+error[E0271]: type mismatch resolving `<__PartialPair<_, _> as UpdateField<Index<0>, _>>::Mapper == IsNothing`
+  --> src/main.rs:23:22
+   |
+23 |         .build_field(PhantomData::<Index<{ 0 }>>, 2);
+   |          ----------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<__PartialPair<_, _> as UpdateField<Index<0>, _>>::Mapper == IsNothing`
+   |          |
+   |          required by a bound introduced by this call
+   |
+note: expected this to be `IsNothing`
+  --> src/main.rs:17:10
+   |
+17 | #[derive(CgpData)]
+   |          ^^^^^^^
+   = note: required for `__PartialPair<IsPresent, IsNothing>` to implement `cgp::prelude::BuildField<cgp::prelude::Index<0>>`
+   = note: this error originates in the derive macro `CgpData` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0271`.
