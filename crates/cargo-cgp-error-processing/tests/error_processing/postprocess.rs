@@ -6,7 +6,7 @@
 use cargo_cgp_error_processing::{
     AmbiguousNames, Origin, context_has_hasfield_impls, postprocess_fragments, postprocess_message,
     resugar_lists, resugar_path, resugar_symbol, rewrite_missing_fields, scan_head_tail,
-    strip_cgp_prefixes, strip_module_paths, strip_unambiguous_paths,
+    strip_module_paths, strip_unambiguous_paths,
 };
 
 #[test]
@@ -317,25 +317,6 @@ fn strip_module_paths_preserves_multibyte_box_drawing() {
     assert_eq!(
         strip_module_paths("  └─ the trait bound `f64: std::cmp::Eq` is not satisfied").as_deref(),
         Some("  └─ the trait bound `f64: Eq` is not satisfied"),
-    );
-}
-
-#[test]
-fn strips_known_cgp_prefixes() {
-    assert_eq!(
-        strip_cgp_prefixes(
-            "HasField<cgp::prelude::Symbol<...>>, cgp::cgp_core::Foo, cgp::cgp_extra::Bar"
-        )
-        .as_deref(),
-        Some("HasField<Symbol<...>>, Foo, Bar"),
-    );
-}
-
-#[test]
-fn strip_leaves_non_cgp_text_untouched() {
-    assert_eq!(
-        strip_cgp_prefixes("the trait bound `Rectangle: Greeter` is not satisfied"),
-        None,
     );
 }
 

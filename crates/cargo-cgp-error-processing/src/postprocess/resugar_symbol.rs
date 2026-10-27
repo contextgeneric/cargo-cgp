@@ -13,8 +13,8 @@
 
 /// Rewrite every well-formed `Symbol<…>` spine in `text` to its `Symbol!("…")` surface
 /// form, returning the rewritten text when any was rewritten (and `None` otherwise). Meant
-/// to run after [`strip_cgp_prefixes`](super::strip_cgp_prefixes), so it matches the bare
-/// `Symbol`, `Chars`, and `Nil` names left once the CGP path prefixes are gone.
+/// to run after [`strip_unambiguous_paths`](super::strip_unambiguous_paths), so it matches the
+/// bare `Symbol`, `Chars`, and `Nil` names left once the module paths are gone.
 pub fn resugar_symbol(text: &str) -> Option<String> {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;

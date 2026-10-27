@@ -178,20 +178,6 @@ fn leaves_unrelated_notes_untouched() {
 }
 
 #[test]
-fn rewrites_can_use_component_header() {
-    let out = rewrite_trait_bound(
-        "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied",
-        &name_map(),
-    );
-    assert_eq!(
-        out.as_deref(),
-        Some(
-            "[CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`"
-        )
-    );
-}
-
-#[test]
 fn rewrites_is_provider_for_header() {
     let out = rewrite_trait_bound(
         "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle>` is not satisfied",
@@ -224,31 +210,33 @@ fn header_keeps_a_generic_subject_whole() {
 #[test]
 fn header_strips_module_prefix() {
     let out = rewrite_trait_bound(
-        "the trait bound `Rectangle: cgp::prelude::CanUseComponent<AreaCalculatorComponent>` is not satisfied",
+        "the trait bound `RectangleArea: cgp::prelude::IsProviderFor<AreaCalculatorComponent, Rectangle>` is not satisfied",
         &name_map(),
     );
     assert_eq!(
         out.as_deref(),
         Some(
-            "[CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`"
+            "[CGP-E002] the provider trait `AreaCalculator` with context `Rectangle` is not implemented for provider `RectangleArea`"
         )
     );
 }
 
 #[test]
-fn header_reattaches_a_single_generic_parameter() {
-    // A generic component: `CanUseComponent<Marker, f64>` recovers `ConsumerTrait<f64>`, and
-    // `IsProviderFor<Marker, Context, f64>` recovers `ProviderTrait<Context, f64>`.
+fn leaves_a_check_header_to_the_resolver() {
+    // A check's `CanUseComponent` header is worded by the typed resolver, never by this rewrite.
     assert_eq!(
         rewrite_trait_bound(
-            "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent, f64>` is not satisfied",
+            "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied",
             &name_map(),
-        )
-        .as_deref(),
-        Some(
-            "[CGP-E001] the consumer trait `CanCalculateArea<f64>` is not implemented for context `Rectangle`"
-        )
+        ),
+        None
     );
+}
+
+#[test]
+fn header_reattaches_a_single_generic_parameter() {
+    // A generic component: `IsProviderFor<Marker, Context, f64>` recovers
+    // `ProviderTrait<Context, f64>`.
     assert_eq!(
         rewrite_trait_bound(
             "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle, f64>` is not satisfied",
@@ -264,17 +252,7 @@ fn header_reattaches_a_single_generic_parameter() {
 #[test]
 fn header_unwraps_a_multi_parameter_tuple() {
     // Two or more parameters arrive grouped in a tuple, which is unwrapped so the reattached
-    // list matches how the trait was written (`ConsumerTrait<u32, u64>`, not `<(u32, u64)>`).
-    assert_eq!(
-        rewrite_trait_bound(
-            "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent, (u32, u64)>` is not satisfied",
-            &name_map(),
-        )
-        .as_deref(),
-        Some(
-            "[CGP-E001] the consumer trait `CanCalculateArea<u32, u64>` is not implemented for context `Rectangle`"
-        )
-    );
+    // list matches how the trait was written (`ProviderTrait<u32, u64>`, not `<(u32, u64)>`).
     assert_eq!(
         rewrite_trait_bound(
             "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle, (u32, u64)>` is not satisfied",
@@ -293,18 +271,6 @@ fn rewrites_a_three_parameter_generic_component() {
     // and are unwrapped in the header so the trait reads as written, while the notes name the
     // bare trait. The strings mirror what `generic_area_multi.rs` produces end to end.
     let map = name_map();
-
-    // Consumer header: `CanUseComponent<Marker, (u32, u64, bool)>` → `CanCalculateArea<u32, u64, bool>`.
-    assert_eq!(
-        rewrite_trait_bound(
-            "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent, (u32, u64, bool)>` is not satisfied",
-            &map,
-        )
-        .as_deref(),
-        Some(
-            "[CGP-E001] the consumer trait `CanCalculateArea<u32, u64, bool>` is not implemented for context `Rectangle`"
-        )
-    );
 
     // Provider header: the context is named in prose, then the three parameters reattach.
     assert_eq!(
@@ -389,12 +355,12 @@ fn rewrite_message_dispatches_note_and_header() {
     // The entry point handles both the header and the note forms.
     assert_eq!(
         rewrite_message(
-            "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied",
+            "the trait bound `RectangleArea: IsProviderFor<AreaCalculatorComponent, Rectangle>` is not satisfied",
             &name_map(),
         )
         .as_deref(),
         Some(
-            "[CGP-E001] the consumer trait `CanCalculateArea` is not implemented for context `Rectangle`"
+            "[CGP-E002] the provider trait `AreaCalculator` with context `Rectangle` is not implemented for provider `RectangleArea`"
         )
     );
     assert_eq!(
@@ -685,12 +651,12 @@ fn keeps_a_single_tuple_parameter_whole() {
     let map = ComponentNameMap::new(tuple_param_names);
     assert_eq!(
         rewrite_trait_bound(
-            "the trait bound `App: CanUseComponent<FormatPairComponent, (u32, u64)>` is not satisfied",
+            "the trait bound `FormatBoth: IsProviderFor<FormatPairComponent, App, (u32, u64)>` is not satisfied",
             &map,
         )
         .as_deref(),
         Some(
-            "[CGP-E001] the consumer trait `CanFormatPair<(u32, u64)>` is not implemented for context `App`"
+            "[CGP-E002] the provider trait `PairFormatter<(u32, u64)>` with context `App` is not implemented for provider `FormatBoth`"
         )
     );
 }
@@ -713,12 +679,12 @@ fn keeps_a_function_pointer_parameter_whole() {
     let map = ComponentNameMap::new(fn_pointer_names);
     assert_eq!(
         rewrite_trait_bound(
-            "the trait bound `App: CanUseComponent<ApplyComponent, (fn(u8) -> u8, u32)>` is not satisfied",
+            "the trait bound `ApplyTwice: IsProviderFor<ApplyComponent, App, (fn(u8) -> u8, u32)>` is not satisfied",
             &map,
         )
         .as_deref(),
         Some(
-            "[CGP-E001] the consumer trait `CanApply<fn(u8) -> u8, u32>` is not implemented for context `App`"
+            "[CGP-E002] the provider trait `Applier<fn(u8) -> u8, u32>` with context `App` is not implemented for provider `ApplyTwice`"
         )
     );
 }

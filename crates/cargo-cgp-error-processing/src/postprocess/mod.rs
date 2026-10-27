@@ -18,7 +18,6 @@ mod resugar_path;
 mod resugar_symbol;
 mod spine;
 mod strip_modules;
-mod strip_prefixes;
 
 pub use ambiguous::*;
 pub use chain::*;
@@ -28,4 +27,3 @@ pub use resugar_path::*;
 pub use resugar_symbol::*;
 pub use spine::*;
 pub use strip_modules::*;
-pub use strip_prefixes::*;

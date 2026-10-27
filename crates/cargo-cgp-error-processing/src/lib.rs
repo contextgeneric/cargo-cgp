@@ -64,9 +64,9 @@ pub use diagnosis::{
     use_type_misspelling_help, wiring_conflict_help, wiring_overflow_help, wiring_overflow_reason,
 };
 pub use postprocess::{
-    AmbiguousNames, CGP_PREFIXES, Origin, context_has_hasfield_impls, postprocess_fragments,
-    postprocess_message, resugar_lists, resugar_path, resugar_symbol, rewrite_missing_fields,
-    scan_head_tail, strip_cgp_prefixes, strip_module_paths, strip_unambiguous_paths,
+    AmbiguousNames, Origin, context_has_hasfield_impls, postprocess_fragments, postprocess_message,
+    resugar_lists, resugar_path, resugar_symbol, rewrite_missing_fields, scan_head_tail,
+    strip_module_paths, strip_unambiguous_paths,
 };
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use shape::{ShapeTag, render_enum_shape, render_struct_shape, render_variant, shape_name};
