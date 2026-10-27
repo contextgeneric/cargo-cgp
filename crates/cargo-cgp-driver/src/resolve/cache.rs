@@ -15,7 +15,6 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
 
 use cargo_cgp_error_processing::{ChainNode, Leaf, WiringOverflow};
 use rustc_data_structures::fingerprint::Fingerprint;
@@ -84,20 +83,11 @@ pub(crate) fn pred_fingerprint<'tcx>(
     })
 }
 
-/// Identity of a resolved node. Only [`fingerprint`](Self::fingerprint) feeds `Hash`/`Eq`; the
-/// rendered fields are debug-only, carried so the store can be dumped, and never affect a lookup —
-/// so they need not be injective.
-#[derive(Clone, Debug)]
+/// Identity of a resolved node: a `StableHash` fingerprint of the region-erased obligation and its
+/// root context.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct NodeKey {
-    /// The sole basis for `Hash`/`Eq`: a `StableHash` fingerprint of the region-erased obligation
-    /// and its root context.
     fingerprint: Fingerprint,
-    /// Debug-only: the obligation and context rendered as text, for inspecting the store through the
-    /// derived `Debug`. Read only by `Debug`, which dead-code analysis does not count.
-    #[allow(dead_code)]
-    obligation: String,
-    #[allow(dead_code)]
-    context: String,
 }
 
 impl NodeKey {
@@ -115,25 +105,7 @@ impl NodeKey {
             context.stable_hash(&mut hcx, &mut hasher);
             hasher.finish()
         });
-        Self {
-            fingerprint,
-            obligation: obligation.to_string(),
-            context: context.to_string(),
-        }
-    }
-}
-
-impl PartialEq for NodeKey {
-    fn eq(&self, other: &Self) -> bool {
-        self.fingerprint == other.fingerprint
-    }
-}
-
-impl Eq for NodeKey {}
-
-impl Hash for NodeKey {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.fingerprint.hash(state);
+        Self { fingerprint }
     }
 }
 

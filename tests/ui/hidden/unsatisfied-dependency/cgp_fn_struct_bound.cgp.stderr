@@ -1,0 +1,12 @@
+error[E0277]: [CGP-E003] missing field `name` on `Holder<T>`
+  --> src/main.rs:32:26
+   |
+32 |     let _holder = Holder(app);
+   |                          ^^^
+   |
+   = note: root cause: [CGP-E110] missing field `name` on `Holder<T>`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `GetName` for `Holder<T>`
+             └─ [CGP-E110] missing field `name` on `Holder<T>`
+
+For more information about this error, try `rustc --explain E0277`.

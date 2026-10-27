@@ -102,31 +102,28 @@ pub(crate) fn classify_leaf<'tcx>(
             // ([`owner_has_impl_of`] for `DelegateComponent`)), it is an aggregate provider or a
             // `UseDelegate`/`UseInputDelegate` table missing this entry: a [`Leaf::MissingDispatchEntry`]
             // naming the table and the key (named in full, since it may be a dispatched-on type).
+            // A leaf with no parent trait to name (a root-level `DelegateComponent`, which no anchor
+            // seeds) takes the dispatch-entry wording too, rather than an invented trait name.
             let is_dispatch = parent.is_some_and(|p| is_dispatch_lookup(tcx, self_ty, p.self_ty()))
                 || owner_has_impl_of(tcx, leaf_ref.def_id, self_ty);
-            if is_dispatch {
-                return Leaf::MissingDispatchEntry {
-                    key: tcx.erase_and_anonymize_regions(key).to_string(),
-                    table: owner,
-                };
-            }
+            let parent = match parent {
+                Some(parent) if !is_dispatch => parent,
+                _ => {
+                    return Leaf::MissingDispatchEntry {
+                        key: tcx.erase_and_anonymize_regions(key).to_string(),
+                        table: owner,
+                    };
+                }
+            };
             // Otherwise the owner is not a table at all: a type wired where a provider was expected
             // that does not implement the provider trait. Name the provider trait from the parent
             // obligation `owner: ProviderTrait<Ctx>` whose blanket produced this leaf.
-            if let Some(parent) = parent {
-                return Leaf::NotAProvider {
-                    provider: owner,
-                    provider_trait: tcx.item_name(parent.def_id).to_string(),
-                    adapter: AdapterFix(wrapping_adapters(tcx, parent)),
-                    provides: ProvidesFix(provided_components(tcx, parent)),
-                    core: CoreProviderFix(core_provider_hint(tcx, parent)),
-                };
-            }
-            // No parent trait to name (a root-level `DelegateComponent`); fall back to the
-            // dispatch-entry wording rather than invent a trait name.
-            return Leaf::MissingDispatchEntry {
-                key: tcx.erase_and_anonymize_regions(key).to_string(),
-                table: owner,
+            return Leaf::NotAProvider {
+                provider: owner,
+                provider_trait: tcx.item_name(parent.def_id).to_string(),
+                adapter: AdapterFix(wrapping_adapters(tcx, parent)),
+                provides: ProvidesFix(provided_components(tcx, parent)),
+                core: CoreProviderFix(core_provider_hint(tcx, parent)),
             };
         }
         // A bare `DelegateComponent<Marker>` on the context with no satisfying impl: the context does
