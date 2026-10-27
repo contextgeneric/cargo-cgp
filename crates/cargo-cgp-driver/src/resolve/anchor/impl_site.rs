@@ -31,11 +31,11 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// `CanHandleApiSend → CanHandleApi → …`, not `CanHandleApi → …` with the wrapper dropped. Because
 /// the wrapper is a distinct trait from that supertrait, its error stands on its own rather than
 /// de-duplicating into the `check_components!` entry. A caret on a bound of the impl's own `where`
-/// clause is read as that bound instead ([`where_bound_on_context`]). `None` when no enclosing impl
+/// clause is read as that bound instead (`where_bound_on_context`). `None` when no enclosing impl
 /// on a context carries an unmet CGP consumer supertrait or such a bound.
 ///
 /// `spans` are the diagnostic's primary spans, and an impl counts only when one of them is about the
-/// impl itself ([`is_about_impl`]), so an unrelated error inside a method body is left alone.
+/// impl itself (`is_about_impl`), so an unrelated error inside a method body is left alone.
 pub fn resolve_impl_site(
     tcx: TyCtxt<'_>,
     cache: &ResolveCache,

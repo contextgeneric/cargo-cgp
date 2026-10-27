@@ -1,10 +1,10 @@
 //! Installing the transforming emitter on the compiler session.
 //!
-//! The session's own emitter cannot be *wrapped* — [`set_emitter`](rustc_errors::DiagCtxt::set_emitter)
+//! The session's own emitter cannot be *wrapped* — [`set_emitter`](rustc_errors::DiagCtxtHandle::set_emitter)
 //! only replaces it, with no way to recover the original — so [`install`] rebuilds the same inner
 //! emitter the compiler's `default_emitter` would build for the active error format (a
 //! [`JsonEmitter`] or an [`AnnotateSnippetEmitter`]) and wraps *that* in
-//! [`CgpEmitter`](super::CgpEmitter), so `cargo-cgp-driver` renders like vanilla `rustc` in either
+//! [`CgpEmitter`], so `cargo-cgp-driver` renders like vanilla `rustc` in either
 //! format, only with the CGP transforms applied.
 
 use std::io;

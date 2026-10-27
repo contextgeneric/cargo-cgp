@@ -74,7 +74,7 @@ const CONTEXT: usize = 2;
 
 /// Render a line diff of the committed snapshot against the actual output, headed by the pass
 /// `label`: `-` marks a line only in the snapshot, `+` a line only in the output, and up to
-/// [`CONTEXT`] unchanged lines surround each change.
+/// `CONTEXT` unchanged lines surround each change.
 pub fn format_diff(label: &str, expected: &str, actual: &str) -> String {
     use std::fmt::Write;
 

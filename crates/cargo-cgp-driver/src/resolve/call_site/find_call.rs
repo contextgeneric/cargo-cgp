@@ -161,7 +161,7 @@ pub(crate) enum CallTrait {
 
 /// Every trait declaring a `self`-receiver associated fn named `method` that a call by that name
 /// could resolve through — the candidates [`resolve_call_site`] tries — each paired with that
-/// method's `DefId` (whose declared signature [`seed_from_call`](super::seed_from_call) unifies the
+/// method's `DefId` (whose declared signature [`seed_from_call`] unifies the
 /// call's arguments against) and the [kind](CallTrait) of trait it is.
 ///
 /// Two kinds qualify, and CGP consumer traits come **first** so a directly-wired consumer keeps

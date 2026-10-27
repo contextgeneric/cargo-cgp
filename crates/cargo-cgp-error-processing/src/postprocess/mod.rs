@@ -7,7 +7,7 @@
 //! `None` when it left it alone — so a caller can tell whether anything matched. They live
 //! here, apart from the driver, so they build and are unit-tested on any toolchain without
 //! the driver's `rustc_private` linkage; the driver applies [`postprocess_message`] to each
-//! message string of a `DiagInner` on the fallback path. The [chain] module composes the
+//! message string of a `DiagInner` on the fallback path. The `chain` module composes the
 //! individual transforms in the order they must run.
 
 mod ambiguous;

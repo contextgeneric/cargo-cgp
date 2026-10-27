@@ -163,7 +163,7 @@ fn matches(path: &ItemPath, prefix: &[String], written: &[String]) -> bool {
     qualified == target || as_written == target
 }
 
-/// [`matches`] over a `syn::Path`, comparing by its last segment as written (qualified by `prefix`)
+/// [`matches`](fn@matches) over a `syn::Path`, comparing by its last segment as written (qualified by `prefix`)
 /// and by its whole spelling.
 fn matches_path(path: &ItemPath, prefix: &[String], written: &Path) -> bool {
     let segments: Vec<String> = written

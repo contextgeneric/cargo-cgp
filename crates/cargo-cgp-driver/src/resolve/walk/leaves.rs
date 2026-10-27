@@ -178,7 +178,7 @@ fn growing_lookup<'tcx>(tcx: TyCtxt<'tcx>, prefix: &[ty::PolyTraitClause<'tcx>])
     }
 }
 
-/// Fold the root node's owned sub-causes into a [`Resolved`]: group by leaf into one [`Cause`] per
+/// Fold the root node's owned sub-causes into a [`Resolved`]: group by leaf into one [`Cause`](cargo_cgp_error_processing::Cause) per
 /// distinct root cause, each holding every path that reaches it (so a shared trait's diamond
 /// survives to the renderer). Merging happens in the rustc-free
 /// [dependency graph](cargo_cgp_error_processing::DependencyGraph) at render time, not here. `top`

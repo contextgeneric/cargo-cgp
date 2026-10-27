@@ -13,7 +13,7 @@
 //! reads the same as a reshaped one. Running on plain text, it cannot check the defining crate, so —
 //! like every resugaring post-processor — it resugars only on an **exact structural match**: the spine
 //! must close on the exact `Nil` (product) or `Void` (sum) terminator, and any other shape is left
-//! untouched. It runs after [`resugar_symbol`](super::resugar_symbol), so a `Field`'s tag is already
+//! untouched. It runs after [`resugar_symbol`](fn@super::resugar_symbol), so a `Field`'s tag is already
 //! in its `Symbol!("…")` surface form when a field/variant name is read from it, and each element is
 //! resugared recursively so a nested list resugars in turn.
 
@@ -194,7 +194,7 @@ fn resugar_element(elem: &str) -> String {
 /// The tag of a `Field` cell: the name inside a `Symbol!("name")` tag, or the position inside an
 /// `Index<N>` tag. `None` for any other tag. Only an unescaped symbol literal is read, so a name that
 /// cannot be read back verbatim leaves the list as its plain form rather than being decoded by
-/// guesswork. Meant to run after [`resugar_symbol`](super::resugar_symbol) has already produced the
+/// guesswork. Meant to run after [`resugar_symbol`](fn@super::resugar_symbol) has already produced the
 /// `Symbol!("…")` surface form.
 fn shape_tag(tag: &str) -> Option<ShapeTag> {
     if let Some(index) = tag

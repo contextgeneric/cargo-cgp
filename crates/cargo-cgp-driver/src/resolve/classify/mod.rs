@@ -12,7 +12,7 @@
 //! wired by a hand-written `DelegateComponent` impl without its `IsProviderFor`, [`known`] says
 //! whether a provider obligation is known well enough to confirm a fix against, and the hints for a
 //! type wired where a provider belongs: [`adapter`] names the adapter that makes it one,
-//! [`provided_components`] the other components it provides, and [`core_provider`] what serves the
+//! [`provided_components`](mod@provided_components) the other components it provides, and [`core_provider`] what serves the
 //! slot a misused CGP core provider cannot.
 
 mod adapter;

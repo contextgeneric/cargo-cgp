@@ -20,7 +20,7 @@ use crate::toolchain::pinned_toolchain;
 /// places each on its side of a single `--`.
 ///
 /// Unless [`NO_MANAGE_ENV`] is set, the tool *manages* the toolchain: it runs the
-/// [`preflight`] to confirm a matching driver and the pinned toolchain are present, and
+/// `preflight` to confirm a matching driver and the pinned toolchain are present, and
 /// forces `RUSTUP_TOOLCHAIN` to the pinned nightly so the sysroot and `librustc_driver`
 /// match the compiler the driver embeds — independent of the project's own toolchain. When
 /// the variable is set (local development), it skips both and trusts the environment.

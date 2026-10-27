@@ -25,8 +25,8 @@ use crate::resolve::walk::{holds, resolve_leaves};
 ///
 /// This entry starts from the enclosing impl's own unmet supertrait and walks *down* the ordinary
 /// trait obligations — via each impl's `where`-clauses — until one lands on a CGP consumer whose
-/// `Self` *is* a context ([`is_context_adt`]), at which point it hands off to
-/// [`consumer_handoff_causes`]. Every ordinary hop between the impl and that handoff becomes a
+/// `Self` *is* a context (`is_context_adt`), at which point it hands off to
+/// `consumer_handoff_causes`. Every ordinary hop between the impl and that handoff becomes a
 /// `trait impl` node, so the tree reads
 /// from the code the programmer wrote (`CanAddApiRoutes → CanAddMainApiRoutes → CanAddRoute →
 /// CanHandleApiSend → CanHandleApi → …`) down to the root cause. Because it *re-evaluates* each
@@ -34,7 +34,7 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// recovers the cause even where rustc's own error names only the outermost unsatisfied bound.
 /// `None` when no enclosing impl's supertrait chain reaches a CGP consumer on a context.
 ///
-/// `spans` are the diagnostic's primary spans, gated by [`is_about_impl`] as the impl-site anchor's
+/// `spans` are the diagnostic's primary spans, gated by `is_about_impl` as the impl-site anchor's
 /// are.
 pub fn resolve_wrapper_chain(
     tcx: TyCtxt<'_>,
@@ -112,7 +112,7 @@ const MAX_WRAPPER_DEPTH: u32 = 32;
 
 /// Descend `obligation` — an unmet ordinary-trait bound — looking for the nearest CGP consumer on a
 /// context beneath it, and append a cause per one found to `out`. Such a consumer obligation
-/// (`App: CanHandleApi<GreetApi>`) is the handoff: [`consumer_handoff_causes`] recovers its
+/// (`App: CanHandleApi<GreetApi>`) is the handoff: `consumer_handoff_causes` recovers its
 /// dependency tree, the descent stops there (that recovery walks the CGP chain the rest of the way),
 /// and the ordinary hops that led here are prepended as `trait impl` nodes. Anything else is
 /// descended through its satisfying impl's `where`-clause obligations ([`wrapper_chain_children`]),

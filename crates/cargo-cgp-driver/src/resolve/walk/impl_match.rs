@@ -160,7 +160,7 @@ pub(crate) fn impl_where_obligations<'tcx>(
 /// Every impl of `trait_did`, with the concrete-`Self` impls ahead of the blanket (param-`Self`)
 /// ones, so a caller that takes the first *unifying* impl prefers the specific impl over the
 /// delegation blanket — the ordering [`impl_where_obligations`] and
-/// [`has_field_projection_mismatch`](super::has_field_projection_mismatch) both rely on.
+/// [`projection_mismatch`](fn@super::projection_mismatch) both rely on.
 pub(crate) fn impls_concrete_first(tcx: TyCtxt<'_>, trait_did: DefId) -> Vec<DefId> {
     let (blanket, concrete): (Vec<DefId>, Vec<DefId>) =
         tcx.all_impls(trait_did).partition(|&did| {

@@ -8,10 +8,10 @@
 //!
 //! The descent is split by concern: [`leaves`] drives the recursion, [`vocabulary`] decides which
 //! obligations it walks into, [`impl_match`] finds the impl that satisfies an obligation and reads
-//! its `where`-clause dependencies, [`projection_mismatch`] surfaces a field-type mismatch the
+//! its `where`-clause dependencies, [`projection_mismatch`](mod@projection_mismatch) surfaces a field-type mismatch the
 //! trait-clause walk cannot see, [`unknowns`] carries a call-site unknown across inference-context
-//! boundaries as a rigid placeholder, [`holds`] asks the solver whether a predicate is satisfied,
-//! [`written_order`] reads an impl's clauses in the order the program wrote them, and [`misdirected`]
+//! boundaries as a rigid placeholder, [`holds`](mod@holds) asks the solver whether a predicate is satisfied,
+//! [`written_order`](mod@written_order) reads an impl's clauses in the order the program wrote them, and [`misdirected`]
 //! reads the requirements of a provider impl whose `#[cgp_impl]` header names the consumer trait.
 
 mod holds;

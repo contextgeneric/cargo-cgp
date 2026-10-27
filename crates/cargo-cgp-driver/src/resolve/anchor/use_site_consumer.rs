@@ -51,7 +51,7 @@ pub fn resolve_use_site_consumer(
 /// This reaches the shape a trait required through a `where` **bound** or supertrait produces —
 /// `fn greet_all<Context: GetName>(…)` called with a context missing the field — where the failure
 /// is an `E0277` on the call with no method call on a concrete context to read. It is tried **after**
-/// the [call-site anchor](crate::resolve::call_site): a *direct* method call
+/// the call-site anchor (`call_site`): a *direct* method call
 /// (`app.describe()`) anchors on the called method there, so its tree leads with the trait the
 /// programmer actually invoked rather than with whichever sub-trait the diagnostic happens to
 /// name in its spans. `None` when the diagnostic names no local blanket trait, or none of the

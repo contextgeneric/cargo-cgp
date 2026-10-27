@@ -17,7 +17,7 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// Resolve a failing call to one of CGP's extensible-data operations (a builder, an extractor, a
 /// cast), a method call (`builder.build_field(…)`, `remainder.extract_field(…)`) or a type-relative
 /// one (`Shape::from_variant(…)`). The value the operation is called on is typed through the chain
-/// of data operations that produced it ([`data_expr_ty`]), so a builder chain or a remainder bound
+/// of data operations that produced it (`data_expr_ty`), so a builder chain or a remainder bound
 /// by a pattern is read without typeck; the call is then seeded and walked like any call-site
 /// failure. Only a data trait in scope at the call is a candidate, as the compiler's own lookup
 /// considers only those, so a method of another library that shares a name (`builder`, `set`) is

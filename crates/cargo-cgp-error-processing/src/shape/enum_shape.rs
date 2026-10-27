@@ -3,7 +3,7 @@ use crate::shape::{ShapeTag, shape_name};
 /// Render a sum of `Field` cells as `Enum!`, or `None` when the sum has no exact `Enum!` spelling.
 ///
 /// Each entry is a variant's tag and its rendered payload, with `None` for a `Nil` payload. Every
-/// tag must be a name writable by [`shape_name`], since a variant cannot be named by a position.
+/// tag must be a name writable by [`shape_name`](fn@shape_name), since a variant cannot be named by a position.
 pub fn render_enum_shape(variants: &[(ShapeTag, Option<String>)]) -> Option<String> {
     if variants.is_empty() {
         return None;

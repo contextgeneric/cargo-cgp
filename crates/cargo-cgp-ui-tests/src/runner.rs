@@ -25,7 +25,7 @@ use std::thread;
 const DEFAULT_MAX_JOBS: usize = 8;
 
 /// The default worker count when `--jobs` is not given: the machine's parallelism, but
-/// never more than [`DEFAULT_MAX_JOBS`] and never more workers than there are fixtures
+/// never more than `DEFAULT_MAX_JOBS` and never more workers than there are fixtures
 /// (extra workers would only idle and rebuild cgp for nothing). Always at least one.
 pub fn default_jobs(fixture_count: usize) -> usize {
     thread::available_parallelism()

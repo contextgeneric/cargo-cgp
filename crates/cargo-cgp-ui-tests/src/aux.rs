@@ -10,10 +10,10 @@
 //!
 //! The named crate's source lives under [`auxiliary/`](crate::paths::auxiliary_src_dir);
 //! its manifest there is a template whose `cgp` dependency is the placeholder
-//! [`CGP_PLACEHOLDER`]. Before a run the harness [materializes](materialize_all)
+//! `CGP_PLACEHOLDER`. Before a run the harness [materializes](materialize_all)
 //! every stored auxiliary crate once — copying its `src/` and writing a manifest
 //! with the placeholder replaced by the sibling `cgp` checkout the rest of the
-//! harness already resolves — into [`aux_build_root`](crate::paths::aux_build_root).
+//! harness already resolves — into [`aux_build_root`].
 //! A fixture's directly-declared crates are then added as path dependencies of the
 //! worker crate; a transitive aux dependency (one aux crate's `../other` path) is
 //! pulled in by cargo through the materialized sibling, so only direct declarations

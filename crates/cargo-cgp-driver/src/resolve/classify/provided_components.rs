@@ -16,7 +16,7 @@ const MAX_COMPONENTS: usize = 3;
 /// context, other than `parent`'s own, the component whose marker its delegation blanket keys on is
 /// named when the solver confirms `Provider: Trait<Context>`.
 ///
-/// Empty when `parent` is not fully known, as for [`wrapping_adapters`].
+/// Empty when `parent` is not fully known, as for [`wrapping_adapters`](super::wrapping_adapters).
 pub(crate) fn provided_components<'tcx>(
     tcx: TyCtxt<'tcx>,
     parent: ty::TraitRef<'tcx>,

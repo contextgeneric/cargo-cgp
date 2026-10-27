@@ -29,7 +29,7 @@
 //! type. Only a bare `_` tail is open: `_` is never a concrete path segment, and any other
 //! non-`Nil` tail still declines.
 //!
-//! Runs after [`resugar_symbol`](super::resugar_symbol), so a symbol segment is already in its
+//! Runs after [`resugar_symbol`](fn@super::resugar_symbol), so a symbol segment is already in its
 //! `Symbol!("…")` surface form by the time this matches it.
 
 use crate::postprocess::scan_head_tail;

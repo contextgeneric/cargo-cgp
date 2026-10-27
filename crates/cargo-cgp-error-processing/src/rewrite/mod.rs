@@ -5,7 +5,7 @@
 //! toolchain without a `TyCtxt`. The compiler-coupled half — walking the trait graph to *build*
 //! the map — lives in the driver (`cargo-cgp-driver`), which hands the result in through the
 //! map's `fn`-pointer initializer. It is used by the driver's diagnostic emitter, alongside the
-//! [postprocess](crate::postprocess) fallback transforms; the [message] module documents the
+//! [postprocess](crate::postprocess) fallback transforms; the `message` module documents the
 //! rewrite forms in full.
 
 mod message;

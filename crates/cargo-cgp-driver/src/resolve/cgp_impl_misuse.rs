@@ -3,7 +3,7 @@
 //! `#[cgp_impl(new RectangleArea)] impl AreaCalculator { … }` turns its header inside out into
 //! `impl<__Context__> AreaCalculator<__Context__> for RectangleArea`, inserting the context as the
 //! leading generic. Three mistakes name the wrong trait and need different fixes (see
-//! [`CgpImplMisuse`](cargo_cgp_error_processing::CgpImplMisuse)): the header naming the component's
+//! [`CgpImplMisuse`]): the header naming the component's
 //! *consumer* trait where its *provider* trait belongs, the header naming a trait that is not a CGP
 //! component at all, or a higher-order provider's inner-provider `where`-bound (typically from
 //! `#[use_provider]`) naming the *consumer* trait — the inner-bound sibling of the first.

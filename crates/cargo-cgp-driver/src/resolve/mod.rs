@@ -7,20 +7,20 @@
 //! [`plan_resolved`](cargo_cgp_error_processing::plan_resolved). See
 //! `cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md` for the design.
 //!
-//! The pipeline is split by stage: [`anchor`] recovers the starting obligation (from a check
+//! The pipeline is split by stage: `anchor` recovers the starting obligation (from a check
 //! entry, a hand-written impl on the context, a foreign wrapper whose `where`-clause chain reaches
-//! the context, or a use site) with [`call_site`] as the last resort (re-reading the failing call
-//! expression itself, the unknowable parameters seeded as placeholders), [`walk`] descends the
-//! dependency graph to each terminal leaf, [`classify`]
+//! the context, or a use site) with `call_site` as the last resort (re-reading the failing call
+//! expression itself, the unknowable parameters seeded as placeholders), `walk` descends the
+//! dependency graph to each terminal leaf, `classify`
 //! turns a leaf into a [`Leaf`](cargo_cgp_error_processing::Leaf) by inspecting the struct it lands
-//! on, [`label`] renders each path predicate as a tree label, and [`cgp_item`] holds the
+//! on, `label` renders each path predicate as a tree label, and `cgp_item` holds the
 //! DefId-anchored CGP-trait recognition every stage relies on.
 //!
-//! A separate [`conflict`] stage handles the duplicate-key coherence conflict (`E0119`) rather
+//! A separate `conflict` stage handles the duplicate-key coherence conflict (`E0119`) rather
 //! than a check failure: it reads the two conflicting `DelegateComponent` impls off the compiler
-//! and words which keys collide. A sibling [`orphan`] stage handles the orphan-rule coherence
+//! and words which keys collide. A sibling `orphan` stage handles the orphan-rule coherence
 //! conflict (`E0210`/`E0117`) the same way: it reads the offending namespace-registration impl off
-//! the compiler and words which foreign namespace and key it names. A [`structural`] stage recovers
+//! the compiler and words which foreign namespace and key it names. A `structural` stage recovers
 //! the structural mistakes in a wiring or its checks, such as a check table listing an entry twice.
 
 mod ambiguous_names;

@@ -41,7 +41,7 @@ pub enum DiagKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiagnosisPlan {
     /// The displayed main message: the `[CGP-Exxx]` code and the cause (see
-    /// [`cause_headline`](super::cause_headline)), or `None` when the original is not an identified
+    /// [`cause_headline`]), or `None` when the original is not an identified
     /// CGP class and must be kept.
     pub header: Option<String>,
     /// The internal headline: the code and the class sentence, as a declined re-report of the same
@@ -53,7 +53,7 @@ pub struct DiagnosisPlan {
     /// resolver classed by its consumer. The ledger records it as a second key.
     pub declined_header: Option<String>,
     /// The `help` messages naming each fix the causes call for, in the order the causes are listed
-    /// (see [`fix_help_messages`](super::fix_help_messages)).
+    /// (see [`fix_help_messages`]).
     pub helps: Vec<String>,
     /// The `root cause:` note, **not yet rendered** — see [`PendingNote`].
     pub note: PendingNote,
@@ -93,7 +93,7 @@ impl PendingNote {
 }
 
 /// Build the [`DiagnosisPlan`] for a resolved failure. The main message is rewritten only when
-/// it is an identified CGP class (see [`categorized_header`]), and then it states the cause: a
+/// it is an identified CGP class (see `categorized_header`), and then it states the cause: a
 /// mismatch headline is its cause sentence, and every other class gives way to
 /// [`cause_headline`], keeping the class sentence as the internal headline. The sub-messages are
 /// replaced either way. When the main message already states the leaf (a mismatch, or a kept
