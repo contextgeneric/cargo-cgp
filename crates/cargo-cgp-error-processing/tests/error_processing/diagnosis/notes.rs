@@ -174,7 +174,7 @@ fn wording_helpers_format_directly() {
 
     let cause = missing_field_cause();
     assert!(
-        cause_note(&cause, None)
+        cause_notes(std::slice::from_ref(&cause), None)[0]
             .starts_with("root cause: [CGP-E110] missing field `height` on `Rectangle`")
     );
     assert_eq!(

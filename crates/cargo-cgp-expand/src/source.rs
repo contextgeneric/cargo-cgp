@@ -28,7 +28,7 @@ pub fn resugar_expanded_source(source: &str, options: &ExpandOptions) -> String 
         return String::new();
     }
 
-    resugar_file(&mut file, options);
+    resugar_file(&mut file);
     // The printer spaces a macro body's tokens apart, so the resugared calls are tightened after
     // printing; see `resugar::spacing`.
     tighten_sugar_bodies(&prettyplease::unparse(&file))

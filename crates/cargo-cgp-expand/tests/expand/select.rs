@@ -7,7 +7,6 @@ use cargo_cgp_expand::{ExpandOptions, ItemPath, resugar_expanded_source};
 fn expand_item(source: &str, item: &str) -> String {
     let options = ExpandOptions {
         item: Some(ItemPath::parse(item).expect("a valid item path")),
-        ..ExpandOptions::default()
     };
     resugar_expanded_source(source, &options)
 }

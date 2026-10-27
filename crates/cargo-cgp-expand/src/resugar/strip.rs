@@ -12,8 +12,7 @@ use syn::{ExprPath, Path, TypePath};
 /// How many segments the qualifier occupies: `cgp` and `macro_prelude`.
 const PRELUDE_SEGMENTS: usize = 2;
 
-/// The prelude-qualifier strip. Optional, controlled by
-/// [`ExpandOptions::strip_cgp_prefixes`](crate::ExpandOptions::strip_cgp_prefixes).
+/// The prelude-qualifier strip, the first pass [`resugar_file`](super::resugar_file) runs.
 pub struct StripPrelude;
 
 impl VisitMut for StripPrelude {

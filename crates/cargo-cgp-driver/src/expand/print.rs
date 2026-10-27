@@ -101,10 +101,7 @@ fn expand_options(sess: &Session, request: &ExpandRequest) -> Option<ExpandOptio
         None => None,
     };
 
-    Some(ExpandOptions {
-        item,
-        ..ExpandOptions::default()
-    })
+    Some(ExpandOptions { item })
 }
 
 /// The crate root's source text, read back from the source map the way the compiler's own

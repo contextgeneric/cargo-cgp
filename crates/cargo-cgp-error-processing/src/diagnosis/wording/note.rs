@@ -73,16 +73,6 @@ pub fn cause_notes_seen(
     vec![note]
 }
 
-/// The note body for one cause on its own — its lead over its own paths' graph. Kept for callers and
-/// tests that word a single cause; equivalent to [`cause_notes`] over a one-element slice.
-pub fn cause_note(cause: &Cause, header_leaf: Option<&Leaf>) -> String {
-    let chain = causes_graph(std::slice::from_ref(cause)).render();
-    match leaf_lead(&cause.leaf, header_leaf) {
-        Some(lead) => format!("{lead}\n{}", chain_heading(&chain)),
-        None => chain_heading(&chain),
-    }
-}
-
 /// The dependency graph built from every path of every cause.
 fn causes_graph(causes: &[Cause]) -> DependencyGraph {
     let paths: Vec<Vec<ChainNode>> = causes

@@ -5,18 +5,9 @@
 
 use cargo_cgp_expand::{ExpandOptions, resugar_expanded_source};
 
-/// Resugar a snippet with the default options (the prelude qualifier stripped).
+/// Resugar a snippet the way the driver does, the prelude qualifier stripped first.
 fn expand(source: &str) -> String {
     resugar_expanded_source(source, &ExpandOptions::default())
-}
-
-/// Resugar a snippet with nothing stripped, so only the resugaring itself shows.
-fn expand_verbatim(source: &str) -> String {
-    let options = ExpandOptions {
-        strip_cgp_prefixes: false,
-        ..ExpandOptions::default()
-    };
-    resugar_expanded_source(source, &options)
 }
 
 #[test]
@@ -330,11 +321,12 @@ fn keeps_ordinary_module_qualifiers() {
 
 #[test]
 fn resugars_a_qualified_spine_without_stripping() {
-    // The passes match on a construct's final path segment, so a fully-qualified spine resugars
-    // whether or not the qualifier was stripped first.
-    let source = "type Tag = ::cgp::macro_prelude::Symbol<1, ::cgp::macro_prelude::Chars<'a', ::cgp::macro_prelude::Nil>>;\n";
+    // The passes match on a construct's final path segment, so a spine resugars under a qualifier
+    // the prelude strip leaves in place.
+    let source =
+        "type Tag = ::cgp::prelude::Symbol<1, ::cgp::prelude::Chars<'a', ::cgp::prelude::Nil>>;\n";
 
-    assert_eq!(expand_verbatim(source), "type Tag = Symbol!(\"a\");\n");
+    assert_eq!(expand(source), "type Tag = Symbol!(\"a\");\n");
 }
 
 #[test]

@@ -3,13 +3,13 @@
 use syn::File;
 use syn::visit_mut::VisitMut;
 
-use crate::options::ExpandOptions;
 use crate::resugar::list::Lists;
 use crate::resugar::path::Paths;
 use crate::resugar::strip::StripPrelude;
 use crate::resugar::symbol::Symbols;
 
-/// Resugar every CGP construct in `file`, in place.
+/// Resugar every CGP construct in `file`, in place, after dropping the `cgp::macro_prelude::`
+/// qualifier the CGP macros emit.
 ///
 /// The passes are **separate whole-tree visits in a fixed order**, and that is load-bearing rather
 /// than stylistic. `Symbol!` runs first because the two later passes read the `Symbol!("…")` calls
@@ -21,10 +21,8 @@ use crate::resugar::symbol::Symbols;
 /// so it would rewrite a `Symbol`'s terminating `Nil` into `Product![]` before ever examining the
 /// enclosing `Symbol`, which then no longer matches — and every field name silently stays raw. See
 /// `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
-pub fn resugar_file(file: &mut File, options: &ExpandOptions) {
-    if options.strip_cgp_prefixes {
-        StripPrelude.visit_file_mut(file);
-    }
+pub fn resugar_file(file: &mut File) {
+    StripPrelude.visit_file_mut(file);
     Symbols.visit_file_mut(file);
     Paths.visit_file_mut(file);
     Lists.visit_file_mut(file);
