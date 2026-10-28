@@ -256,6 +256,28 @@ fn rebuilt_multispan(span: &MultiSpan, labels: Vec<(Span, DiagMessage)>) -> Mult
     rebuilt
 }
 
+/// Whether any plain-string message of `diag`, its main message, a child's, or a span label,
+/// satisfies `pred`. Used to recognize a diagnostic whose *main* message is a Fluent (non-`Str`)
+/// message but whose help or label carries the signal as plain text.
+pub fn diag_mentions(diag: &DiagInner, pred: fn(&str) -> bool) -> bool {
+    let in_messages = |messages: &[(DiagMessage, Style)]| {
+        messages
+            .iter()
+            .any(|(message, _)| matches!(message, DiagMessage::Str(text) if pred(text)))
+    };
+    let in_labels = |span: &MultiSpan| {
+        span.span_labels()
+            .into_iter()
+            .any(|label| matches!(label.label, Some(DiagMessage::Str(text)) if pred(&text)))
+    };
+    in_messages(&diag.messages)
+        || in_labels(&diag.span)
+        || diag
+            .children
+            .iter()
+            .any(|child| in_messages(&child.messages) || in_labels(&child.span))
+}
+
 /// Every span a diagnostic carries — its primary and labelled spans plus each child's — the pool
 /// the use-site resolver searches for one that lands on the failing context's type definition.
 pub(crate) fn diagnostic_spans(diag: &DiagInner) -> Vec<Span> {

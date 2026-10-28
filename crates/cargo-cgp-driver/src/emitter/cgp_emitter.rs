@@ -5,29 +5,15 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::{Arc, LazyLock, Mutex, MutexGuard};
 
-use cargo_cgp_error_processing::rewrite::{
-    ComponentNameMap, rewrite_message, rewrite_required_for, rewrite_wiring_overflow,
-};
+use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{
-    AmbiguousNames, Causes, ChainNode, DedupLedger, DiagKind, FIRST_CHECK_TABLE_LABEL,
-    MissingUseProvider, Origin, PendingNote, ProviderImplWithoutMacro, Resolved,
-    SECOND_CHECK_TABLE_LABEL, StructuralMistake, UndeclaredRequirement, UndeclaredTrait,
-    UnimportedAbstractType, WiringOverflow, cause_signature, coalesce_underived_fields,
-    coalesced_headline, explain_footer_codes, fix_help_messages, group_by_shared_cause,
-    is_explain_footer_text, is_method_bounds_text, is_recursion_limit_help_text,
-    is_unbounded_type_param_item_text, missing_use_provider_help, plan_missing_use_provider,
-    plan_provider_impl_without_macro, plan_resolved, plan_structural_mistake,
-    plan_undeclared_requirement, plan_undeclared_trait, plan_unimported_abstract_type,
-    postprocess_message, provider_impl_without_macro_help, structural_mistake_help,
-    undeclared_requirement_helps, undeclared_trait_help, unimported_abstract_type_help,
-    wiring_overflow_help,
+    AmbiguousNames, Causes, ChainNode, DedupLedger, Origin, PendingNote, Resolved,
+    coalesce_underived_fields, coalesced_headline, explain_footer_codes, fix_help_messages,
+    group_by_shared_cause, is_explain_footer_text, postprocess_message,
 };
-use rustc_errors::codes::{E0119, E0207, E0220, E0271, E0275, E0277, E0308, E0425, E0428, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
-use rustc_errors::{
-    DiagArgValue, DiagInner, DiagMessage, Level, MultiSpan, Style, Sublevel, Suggestions,
-};
+use rustc_errors::{DiagInner, DiagMessage, Level, Style, Sublevel, Suggestions};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
@@ -36,10 +22,8 @@ use crate::component_map::build_name_map_from_tls;
 use crate::emitter::attribute_splice::drop_attribute_splices;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
 use crate::emitter::edit::{
-    bound_candidate_lists, diag_kind, diagnostic_spans, is_no_matching_item,
-    is_question_mark_cascade, main_message_text, mentions_hasfield_impls, mentions_wiring,
-    merged_span, message_signature, postprocess_messages, postprocess_multispan, replace_header,
-    rewrite_messages, strip_method_probe_advice, subdiag, two_definitions_span,
+    bound_candidate_lists, main_message_text, mentions_hasfield_impls, merged_span,
+    message_signature, postprocess_messages, postprocess_multispan, subdiag,
 };
 use crate::emitter::fallback::{render_or_untransformed, transform_or_original};
 use crate::emitter::generated_names::drop_generated_names;
@@ -47,12 +31,13 @@ use crate::emitter::output::{Output, lock_output, register_output};
 use crate::emitter::pipeline::{BufferEdit, Reshape, Verdict, apply_reshape};
 use crate::emitter::repeats::merge_repeats;
 use crate::emitter::stage::{
-    CgpImplMisuseStage, consumer_trait_as_key, is_cgp_impl_sibling_entry, orphan_conflict,
-    provider_trait_in_uses, shared_dispatch_method, unresolved_wiring_overflow, wiring_conflict,
+    CgpImplMisuseStage, MacrolessProviderStage, Resolution, ResolvedFailure, StructuralStage,
+    UnimportedStage, consumer_trait_as_key, is_cgp_impl_sibling_entry, missing_use_provider,
+    orphan_conflict, provider_trait_in_uses, question_mark_cascade, resolve_or_rewrite,
+    shared_dispatch_method, undeclared_requirement, undeclared_trait, unresolved_wiring_overflow,
+    wiring_conflict,
 };
-use crate::resolve::{
-    self, DetectedUndeclaredRequirement, DetectedUnimportedAbstractType, ResolveCache,
-};
+use crate::resolve::{self, ResolveCache};
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
 /// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
@@ -88,28 +73,19 @@ pub struct CgpEmitter<E: Emitter> {
     /// [`names`](Self::names) and [`dedup`](Self::dedup).
     resolve_cache: ResolveCache,
     /// The primary spans of every CGP wiring failure this emitter has recognized this
-    /// compilation. Used to drop a downstream `?`-operator cascade
-    /// ([`is_question_mark_cascade`]) that lands on the same expression: once a wiring bound on
-    /// `expr` fails, the type of `expr?` cannot be resolved, so rustc adds a `Try`/`FromResidual`
-    /// error at the same span that restates the wiring failure and dumps the unresolved projected
-    /// type — noise over the CGP error already shown. rustc emits the wiring failure before its
-    /// cascade, so the span is recorded by the time the cascade arrives.
+    /// compilation, written by the tails and read by stage 15 ([`question_mark_cascade`]) to drop
+    /// a downstream `?`-operator cascade on the same expression. rustc emits the wiring failure
+    /// before its cascade, so the span is recorded by the time the cascade arrives.
     cgp_spans: Vec<Span>,
-    /// The structural mistakes already reported, so a mistake rustc reports as several errors
-    /// becomes one.
-    structural_reported: Vec<StructuralMistake>,
-    /// The abstract types already reported as used but not imported, so a second use of one in
-    /// the same item, or the same use reported for another generated item, is not a second error.
-    unimported_reported: Vec<UnimportedReport>,
-    /// The provider impls already reported for a requirement they do not declare, so the errors
-    /// one omission produces (at the attribute and at each signature) become one.
-    requirement_reported: Vec<rustc_span::def_id::DefId>,
     /// Stage 2, which owns the crate's `#[cgp_impl]` header mistakes once detected; the resolver's
     /// stage reads them to drop a check re-report of one.
     cgp_impl_misuse: CgpImplMisuseStage,
-    /// The provider structs whose provider-trait impl was reported as written without
-    /// `#[cgp_provider]`, so a later `IsProviderFor` failure on one is that report's consequence.
-    macroless_providers: Vec<String>,
+    /// Stage 9, which owns the structural mistakes already reported.
+    structural: StructuralStage,
+    /// Stages 12 and 16, which own the providers reported as written without `#[cgp_provider]`.
+    macroless_provider: MacrolessProviderStage,
+    /// Stages 13 and 14, which own the abstract types and the provider impls already reported.
+    unimported: UnimportedStage,
     /// Whether the crate being compiled uses CGP ([`resolve::crate_uses_cgp`]), decided on the first
     /// diagnostic for which the compiler can answer. A crate that does not use CGP can carry no CGP
     /// encoding, so its untransformed diagnostics are left exactly as rustc built them.
@@ -126,47 +102,6 @@ pub struct CgpEmitter<E: Emitter> {
 /// The subtrees a flush has already drawn, shared across its blocks so a later one `(*)`-elides
 /// what an earlier one showed rather than repeating it.
 type ChainNodeSet = HashSet<ChainNode>;
-
-/// An abstract type reported as used but not imported: the trait declaring it, the generated item
-/// the use sits in, and the use's caret. A later report of the same type is the same mistake when
-/// it shares the item (a second use) or the caret (one signature the macro copied into two items).
-struct UnimportedReport {
-    trait_did: rustc_span::def_id::DefId,
-    item: rustc_span::def_id::DefId,
-    span: Span,
-}
-
-/// What [`CgpEmitter::transform_resolved`] leaves for the rest of the transform: the note the
-/// flush renders, the class headline the de-duplication ledger records, and whether the block may
-/// coalesce with others sharing its cause.
-struct TransformedResolution {
-    note: PendingNote,
-    /// The class headline, and the provider form a declined re-report may carry instead.
-    headers: Vec<String>,
-    coalesces: bool,
-}
-
-/// Whether any plain-string message of `diag` — its main message, a child's, or a span label —
-/// satisfies `pred`. Used to recognize a diagnostic whose *main* message is a Fluent (non-`Str`)
-/// message but whose help or label carries the signal as plain text.
-fn diag_mentions(diag: &DiagInner, pred: fn(&str) -> bool) -> bool {
-    let in_messages = |messages: &[(DiagMessage, Style)]| {
-        messages
-            .iter()
-            .any(|(message, _)| matches!(message, DiagMessage::Str(text) if pred(text)))
-    };
-    let in_labels = |span: &MultiSpan| {
-        span.span_labels()
-            .into_iter()
-            .any(|label| matches!(label.label, Some(DiagMessage::Str(text)) if pred(&text)))
-    };
-    in_messages(&diag.messages)
-        || in_labels(&diag.span)
-        || diag
-            .children
-            .iter()
-            .any(|child| in_messages(&child.messages) || in_labels(&child.span))
-}
 
 /// A rebuilt "detailed explanations" footer note: `template` cloned from the original footer
 /// diagnostic (keeping its `FailureNote` level and empty span) with `message` as its only text.
@@ -195,11 +130,10 @@ impl<E: Emitter> CgpEmitter<E> {
             dedup: DedupLedger::new(),
             resolve_cache: ResolveCache::new(),
             cgp_spans: Vec::new(),
-            structural_reported: Vec::new(),
-            unimported_reported: Vec::new(),
-            requirement_reported: Vec::new(),
             cgp_impl_misuse: CgpImplMisuseStage::default(),
-            macroless_providers: Vec::new(),
+            structural: StructuralStage::default(),
+            macroless_provider: MacrolessProviderStage::default(),
+            unimported: UnimportedStage::default(),
             cgp_used: OnceCell::new(),
             ambiguous: OnceCell::new(),
             ambiguous_with_glob_items: OnceCell::new(),
@@ -399,52 +333,6 @@ impl<E: Emitter> CgpEmitter<E> {
             .extend(diag.span.primary_spans().iter().copied());
     }
 
-    /// Whether `diag` sits on an expression where a CGP wiring failure was already reported — a
-    /// primary span overlapping one recorded in [`cgp_spans`](Self::cgp_spans). Paired with
-    /// [`is_question_mark_cascade`] to drop the `?`-operator errors that cascade from that failure.
-    fn overlaps_cgp_failure(&self, diag: &DiagInner) -> bool {
-        diag.span
-            .primary_spans()
-            .iter()
-            .any(|span| self.cgp_spans.iter().any(|seen| seen.overlaps(*span)))
-    }
-
-    /// Rewrite every recognized CGP wiring message in `diag`, in place — the first fallback
-    /// text pass for a diagnostic the typed resolver declined. The primary header takes the
-    /// full rewrite (including the coded main-message forms); the children take only the
-    /// obligation-chain rename, since a CGP error code belongs on a main message and never on
-    /// a sub-message. A message that is not a wiring form is left untouched, and the name map
-    /// is forced only when some message is actually rewritten.
-    fn rewrite(&self, diag: &mut DiagInner) -> bool {
-        let mut changed = rewrite_messages(&mut diag.messages, &self.names, rewrite_message);
-        for child in &mut diag.children {
-            changed |= rewrite_messages(&mut child.messages, &self.names, rewrite_required_for);
-        }
-        changed
-    }
-
-    /// Why the `E0275` overflow `diag` never resolves, when walking the wiring of its check entry, or
-    /// of the consumer-method call at its caret, shows it: a cycle, or a lookup that grows
-    /// ([`resolve::overflow_walk`]). `None` for any other diagnostic, and for an overflow the walk
-    /// does not explain (one that follows from an unresolved type, say), which keeps rustc's
-    /// wording.
-    fn wiring_overflow(&self, diag: &DiagInner) -> Option<WiringOverflow> {
-        if diag.code != Some(E0275) {
-            return None;
-        }
-        let span = diag.span.primary_span()?;
-        let requirement = main_message_text(diag)?
-            .strip_prefix("overflow evaluating the requirement `")?
-            .split_once('`')?
-            .0;
-        rustc_middle::ty::tls::with_opt(|tcx| {
-            match resolve::overflow_walk(tcx?, &self.resolve_cache, span, requirement) {
-                resolve::OverflowWalk::Cut(reason) => Some(reason),
-                resolve::OverflowWalk::NotCut | resolve::OverflowWalk::NoEntry => None,
-            }
-        })
-    }
-
     /// Post-process a diagnostic after transforming it — the final cleanup pass, over every
     /// message and span label of the diagnostic and its children. It strips module paths,
     /// resugars `Symbol!` and `Path!` and the type-level lists, and rewords an unmet `HasField`
@@ -507,207 +395,6 @@ impl<E: Emitter> CgpEmitter<E> {
         };
         let _ = self.cgp_used.set(known);
         known
-    }
-
-    /// Recognize `diag` as a structural mistake in a wiring or its checks, recovered from the
-    /// generated items at its caret: an `E0119` between two identical check impls is a check table
-    /// listing one entry twice, an `E0428` on a check trait is two tables whose check traits share a
-    /// name, an `E0277` on a check entry checked at the unit parameters is an entry that names no
-    /// parameters for a component that takes some, and an `E0207` is a `for` loop whose key does
-    /// not use its variable, a `#[default_impl]` on a generic provider impl, or a wiring entry whose
-    /// key does not use its generic parameters. `None` for any other diagnostic.
-    fn structural_mistake(&self, diag: &DiagInner) -> Option<StructuralMistake> {
-        let primary_span = diag.span.primary_span()?;
-        match diag.code {
-            Some(E0119) => rustc_middle::ty::tls::with_opt(|tcx| {
-                resolve::detect_duplicate_check(tcx?, primary_span)
-            }),
-            // Name resolution reports a name defined twice, and the derived diagnostic carries the
-            // name as an argument rather than in a plain-string message.
-            Some(E0428) => match diag.args.get("name") {
-                Some(DiagArgValue::Str(name)) => {
-                    resolve::detect_duplicate_check_trait(name, primary_span)
-                }
-                _ => None,
-            },
-            Some(E0277) => rustc_middle::ty::tls::with_opt(|tcx| {
-                resolve::detect_check_at_unit_parameters(tcx?, primary_span)
-            }),
-            Some(E0207) => rustc_middle::ty::tls::with_opt(|tcx| {
-                let tcx = tcx?;
-                resolve::detect_loop_key_without_variable(tcx, primary_span)
-                    .or_else(|| resolve::detect_generic_default_impl(tcx, primary_span))
-                    .or_else(|| resolve::detect_entry_parameters_not_in_key(tcx, primary_span))
-            }),
-            _ => None,
-        }
-    }
-
-    /// Recognize `diag` as an undeclared-trait failure — a CGP trait called in a
-    /// `#[cgp_fn]`/`#[cgp_impl]` body without being declared via `#[uses(…)]`, so its method cannot
-    /// resolve on the generated `__Context__` generic. Returns the trait to declare, or `None`
-    /// when it is not one. Gated to the two `E0599` shapes a method call and a `Self::method(…)`
-    /// call produce, then confirmed structurally by [`resolve::detect_undeclared_trait`] (a
-    /// generated impl over a bare-parameter context, a CGP trait method called on it, and no
-    /// matching `where` bound).
-    fn undeclared_trait(&self, diag: &DiagInner) -> Option<UndeclaredTrait> {
-        // A method call reports the method-bounds shape; an associated-function call on `Self`
-        // reports the unbounded type parameter, whose main message is a Fluent one, so its help is
-        // read instead.
-        if diag.code != Some(E0599)
-            || !(main_message_text(diag).is_some_and(is_method_bounds_text)
-                || diag_mentions(diag, is_unbounded_type_param_item_text))
-        {
-            return None;
-        }
-        let primary_span = diag.span.primary_span()?;
-        let spans = diagnostic_spans(diag);
-        rustc_middle::ty::tls::with_opt(|tcx| {
-            resolve::detect_undeclared_trait(tcx?, primary_span, &spans)
-        })
-    }
-
-    /// Recognize a missing-`#[use_provider]` failure — a higher-order provider calling an inner
-    /// provider (`Inner::method(self)`) it never imported, so the inner parameter is unbounded and
-    /// the associated-function call cannot resolve. Returns the inner provider and the provider trait
-    /// to import it as, or `None`. Gated to the "no associated item for a type parameter" `E0599`
-    /// shape — reported during typeck of the calling body, so the detector's queries are cached and
-    /// safe (unlike the resolution-class `E0599` emitted mid-`clauses_of`) — then confirmed
-    /// structurally by [`resolve::detect_missing_use_provider`].
-    fn missing_use_provider(&self, diag: &DiagInner) -> Option<MissingUseProvider> {
-        // The `E0599`'s main message is a Fluent (non-`Str`) message, so the shape is recognized by
-        // its plain-string help/label instead.
-        if diag.code != Some(E0599) || !diag_mentions(diag, is_unbounded_type_param_item_text) {
-            return None;
-        }
-        let primary_span = diag.span.primary_span()?;
-        rustc_middle::ty::tls::with_opt(|tcx| {
-            resolve::detect_missing_use_provider(tcx?, primary_span)
-        })
-    }
-
-    /// Whether `diag` is an `E0277` on the `IsProviderFor` bound of a provider that was reported as
-    /// written without `#[cgp_provider]`.
-    fn is_macroless_provider_consequence(&self, diag: &DiagInner) -> bool {
-        diag.code == Some(E0277)
-            && main_message_text(diag).is_some_and(|text| {
-                self.macroless_providers
-                    .iter()
-                    .any(|provider| text.contains(&format!("`{provider}: IsProviderFor<")))
-            })
-    }
-
-    /// Recognize `diag` as a provider-trait impl written without `#[cgp_provider]`: an `E0277` whose
-    /// message names the missing `IsProviderFor` and whose caret is the impl's `Self` type, confirmed
-    /// structurally by [`resolve::detect_provider_impl_without_macro`].
-    fn provider_impl_without_macro(&self, diag: &DiagInner) -> Option<ProviderImplWithoutMacro> {
-        if diag.code != Some(E0277)
-            || !main_message_text(diag).is_some_and(|text| text.contains("IsProviderFor"))
-        {
-            return None;
-        }
-        let primary_span = diag.span.primary_span()?;
-        rustc_middle::ty::tls::with_opt(|tcx| {
-            resolve::detect_provider_impl_without_macro(tcx?, primary_span)
-        })
-    }
-
-    /// Recognize `diag` as an abstract type a CGP definition uses but does not import: an `E0220`
-    /// for an associated type of the generated context, confirmed by
-    /// [`resolve::detect_unimported_abstract_type`]. The type and its context are read from the
-    /// diagnostic's arguments, since its main message is a Fluent one.
-    fn unimported_abstract_type(&self, diag: &DiagInner) -> Option<DetectedUnimportedAbstractType> {
-        if diag.code != Some(E0220) {
-            return None;
-        }
-        let arg = |name: &str| match diag.args.get(name) {
-            Some(DiagArgValue::Str(value)) => Some(value.to_string()),
-            _ => None,
-        };
-        if arg("assoc_kind")? != "type" {
-            return None;
-        }
-        let type_name = arg("assoc_ident")?;
-        let qself = arg("qself")?;
-        let primary_span = diag.span.primary_span()?;
-        rustc_middle::ty::tls::with_opt(|tcx| {
-            resolve::detect_unimported_abstract_type(tcx?, primary_span, &type_name, &qself)
-        })
-    }
-
-    /// Recognize `diag` as a requirement a provider trait places on the context that a `#[cgp_impl]`
-    /// provider does not declare: an `E0277` on the generated `__Context__`, confirmed by
-    /// [`resolve::detect_undeclared_requirement`].
-    fn undeclared_requirement(&self, diag: &DiagInner) -> Option<DetectedUndeclaredRequirement> {
-        if diag.code != Some(E0277)
-            || !main_message_text(diag).is_some_and(|text| text.contains("`__Context__: "))
-        {
-            return None;
-        }
-        let primary_span = diag.span.primary_span()?;
-        rustc_middle::ty::tls::with_opt(|tcx| {
-            resolve::detect_undeclared_requirement(tcx?, primary_span)
-        })
-    }
-
-    /// Turn the buffered `E0425` "cannot find type `name`" inside the provider impl at `impl_span`
-    /// into the `[CGP-E035]` report of the abstract type it names, which `trait_name` declares, and
-    /// drop the later ones for the same name in the impl: name resolution reports a bare `Error`
-    /// before the compiler can say which trait declares it, so the requirement that names the trait
-    /// is where the use is recognized. Returns whether one was found.
-    fn convert_unresolved_abstract_type(
-        &mut self,
-        name: &str,
-        trait_did: rustc_span::def_id::DefId,
-        trait_name: &str,
-        impl_did: rustc_span::def_id::DefId,
-        impl_span: Span,
-    ) -> bool {
-        let message = format!("cannot find type `{name}` in this scope");
-        let is_use = |diag: &DiagInner| {
-            diag.code == Some(E0425)
-                && main_message_text(diag) == Some(message.as_str())
-                && diag
-                    .span
-                    .primary_span()
-                    .is_some_and(|span| impl_span.contains(span))
-        };
-        let unimported = UnimportedAbstractType {
-            type_name: name.to_owned(),
-            trait_name: trait_name.to_owned(),
-        };
-        let mut reported = None;
-        self.output().buffer.retain_mut(|entry| {
-            let BufEntry::Plain(diag) = entry else {
-                return true;
-            };
-            if !is_use(diag) {
-                return true;
-            }
-            if reported.is_some() {
-                return false;
-            }
-            let primary_span = diag.span.primary_span();
-            replace_header(diag, plan_unimported_abstract_type(&unimported));
-            if let Some(primary_span) = primary_span {
-                diag.span = MultiSpan::from_span(primary_span);
-            }
-            diag.children.push(subdiag(
-                Sublevel::Help,
-                unimported_abstract_type_help(&unimported),
-            ));
-            reported = primary_span;
-            true
-        });
-        let Some(span) = reported else {
-            return false;
-        };
-        self.unimported_reported.push(UnimportedReport {
-            trait_did,
-            item: impl_did,
-            span,
-        });
-        true
     }
 
     /// Rewrite the trailing "detailed explanations" footer of a flushed diagnostic list so it names
@@ -799,214 +486,6 @@ impl<E: Emitter> CgpEmitter<E> {
         *to_emit = rebuilt;
     }
 
-    /// Resolve `diag`'s failure to its root-cause dependency tree(s), or `None` when the resolver
-    /// cannot trace it to a CGP component failure (so the caller falls back to the in-place text
-    /// rewrite). A candidate is every diagnostic that reports an unmet obligation (`E0271`, `E0277`,
-    /// and a *method-bounds* `E0599`), whether or not it names a CGP trait — because a failure *not*
-    /// worded in CGP terms can still be a consequence of a CGP component failing (a manual `impl`
-    /// that forwards to a wired method, a downstream trait bound that needs it), and [`resolve`]
-    /// traces the dependency chain to find out. It yields `None` for everything whose chain does not
-    /// reach a CGP cause. Returns the primary span alongside the resolution so the caret can be
-    /// re-aimed at the entry.
-    ///
-    /// An `E0275` overflow is no candidate: the walk explains it only by a cut, a cycle or a lookup
-    /// that grows, which [`wiring_overflow`](Self::wiring_overflow) words, and a leaf the walk stops
-    /// at instead is a bound whose own evaluation overflowed, which no root cause states truly.
-    ///
-    /// Two more shapes reach the data-call anchor alone: the method probe's "no method named `…`"
-    /// `E0599`, and an `E0308` on a call's argument, each of which a call to one of CGP's
-    /// extensible-data operations can fail with before its bounds are checked; an `E0308` is taken
-    /// only when the walk finds the field or variant state the operation rejects.
-    ///
-    /// The `E0599` arm is otherwise narrowed to the "the method `…` exists … but its trait bounds
-    /// were not satisfied" shape, the consumer-method call the use-site anchor handles. A
-    /// *resolution*-class `E0599` (`no variant named …`, `no associated item …`) is not a wiring
-    /// failure and, worse, is emitted *during* type lowering / `clauses_of`, while that query is
-    /// mid-flight: running the resolver's trait solver on it re-forces an emitting query and
-    /// re-enters the already-held `DiagCtxt` lock, aborting the compiler (`lock was already held`).
-    /// Declining such an `E0599` before any solving both keeps the tool from crashing and is
-    /// correct, since the resolver has nothing to say about a name-resolution error.
-    /// (`E0271`/`E0277` are trait-solving failures reported after collection, where the queries the
-    /// solver forces are already cached.)
-    fn try_resolve(&self, diag: &DiagInner) -> Option<(Resolved, Span, bool)> {
-        // A method-bounds `E0599` (not a resolution-class one) is the `E0599` the anchors handle,
-        // beside the data-call shape below; see the re-entrancy note above.
-        let e0599_method_bounds =
-            diag.code == Some(E0599) && main_message_text(diag).is_some_and(is_method_bounds_text);
-        // A call to one of CGP's extensible-data operations can also fail before its bounds are
-        // checked: the method probe finds no impl of the operation's trait at all (a builder
-        // finalized too early has no `finalize_build`), or settles on the one impl left and rejects
-        // the call's tag argument (a variant extracted twice is an `E0308`). Both are reported while
-        // the calling body is type-checked, as the method-bounds `E0599` is, so the solver may run,
-        // and only the data-call anchor takes them.
-        let data_call_only = is_no_matching_item(diag) || diag.code == Some(E0308);
-        // Only a diagnostic reporting an unmet obligation has a chain to walk: a projection or
-        // trait-bound failure, or a method whose bounds fail. A coherence conflict (`E0119`) names
-        // CGP traits too, but two impls overlapping is not a bound left unmet, so walking it would
-        // invent a missing-impl cause.
-        if !matches!(diag.code, Some(E0271) | Some(E0277))
-            && !e0599_method_bounds
-            && !data_call_only
-        {
-            return None;
-        }
-        // A `?`-operator error is about `Try` on the call's result, not about the call's bounds; the
-        // cascade gate in `emit_diagnostic` drops one that follows a CGP failure, and any other is
-        // left as rustc wrote it rather than re-anchored onto the call it overlaps.
-        if is_question_mark_cascade(diag) {
-            return None;
-        }
-        let primary_span = diag.span.primary_span()?;
-        let cache = &self.resolve_cache;
-        if data_call_only {
-            let resolved = rustc_middle::ty::tls::with_opt(|tcx| {
-                resolve::resolve_data_call(tcx?, cache, diag.span.primary_spans())
-            })?;
-            // A mismatched argument is a plain type error unless the walk finds the field or
-            // variant state the operation rejects behind it.
-            if diag.code == Some(E0308)
-                && !resolved
-                    .causes
-                    .iter()
-                    .all(|cause| cause.leaf.is_data_state())
-            {
-                return None;
-            }
-            return Some((resolved, primary_span, true));
-        }
-        let (resolved, at_call) = rustc_middle::ty::tls::with_opt(|tcx| {
-            let tcx = tcx?;
-            let spans = diagnostic_spans(diag);
-            // The impl-site, wrapper-chain, and call-site anchors re-anchor a diagnostic onto code it
-            // sits inside, so they match only where rustc aimed it: a secondary label or a note can
-            // point at any code the failure passed through.
-            let primary = diag.span.primary_spans();
-            // Prefer the check-entry anchor (an obligation recovered from the check impl at the
-            // caret). Failing that, the impl-site anchor recovers the exact failing obligation —
-            // with its concrete component parameters — from a hand-written `impl … for Context`
-            // block the failure surfaces inside, which is more precise than the use-site re-check.
-            // Failing that, the wrapper-chain anchor handles a wrapper implemented on a *foreign*
-            // type holding the context (`impl … for Router<Arc<MockApp>>`), whose CGP consumer
-            // failure sits several `where`-clause hops down. Failing all — a use-site failure such
-            // as a consumer-method call, whose obligation no check impl carries — recover the
-            // context from the diagnostic's spans.
-            let resolved = resolve::resolve_check_failure(tcx, cache, primary_span)
-                // A `#[check_providers]` entry is anchored the same way, on the provider it lists.
-                .or_else(|| resolve::resolve_provider_check(tcx, cache, primary_span))
-                .or_else(|| resolve::resolve_impl_site(tcx, cache, primary))
-                .or_else(|| resolve::resolve_wrapper_chain(tcx, cache, primary))
-                .or_else(|| resolve::resolve_use_site(tcx, cache, &spans))
-                // A namespace-joined context's wiring lives in the namespace, not its own
-                // `DelegateComponent` impls, so the per-component re-check above finds nothing;
-                // anchoring on the consumer trait the diagnostic names and walking through the
-                // namespace recovers it.
-                .or_else(|| resolve::resolve_use_site_consumer(tcx, cache, &spans));
-            if let Some(resolved) = resolved {
-                return Some((resolved, false));
-            }
-            // The next resort re-reads the failing *call expression* itself — the anchor for a
-            // consumer-method `E0277` whose spans never touch the context's definition (a
-            // `Code`-dispatched handler pipeline that matches unconditionally), and for a direct
-            // call to a `#[cgp_fn]` trait method. A resolution from here is flagged, so the
-            // header is worded from the trait the call needs rather than from whichever provider
-            // bound rustc's headline stopped on.
-            if let Some(resolved) = resolve::resolve_call_site(tcx, cache, primary) {
-                return Some((resolved, true));
-            }
-            // A call to one of CGP's extensible-data operations, whose value is often another data
-            // operation's result (a builder chain, a remainder bound by a pattern) or named by a
-            // type-relative path (`Shape::from_variant(…)`).
-            if let Some(resolved) = resolve::resolve_data_call(tcx, cache, primary) {
-                return Some((resolved, true));
-            }
-            // A provider trait's method called through the provider's own path
-            // (`PipeHandlers::<…>::compute(&(), …)`), which asserts the provider trait directly.
-            if let Some(resolved) = resolve::resolve_provider_call(tcx, cache, primary) {
-                return Some((resolved, true));
-            }
-            // A bound of a generic function the call instantiates (`fail::<App>()`), read off the
-            // function's own `where` clauses: an `E0277` whose trait no span names and whose
-            // context no receiver carries.
-            if diag.code == Some(E0277)
-                && let Some(resolved) = resolve::resolve_bound_call(tcx, cache, primary)
-            {
-                return Some((resolved, true));
-            }
-            // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait the diagnostic names in its spans,
-            // required through a `where` bound or supertrait rather than a direct call. This is
-            // gated to `E0277` — a trait *used as a bound* — deliberately: an `E0599` method call
-            // is the call-site anchor's domain, and a *generic consumer* method call whose deep
-            // trait bound is a note (not the failure the diagnostic is about) must stay declined
-            // when its dispatch parameter is unrecoverable, rather than latch onto that transitive
-            // trait (see `generic_consumer_unwritten_arg`).
-            if diag.code == Some(E0277)
-                && let Some(resolved) = resolve::resolve_use_site_blanket_trait(tcx, cache, &spans)
-            {
-                return Some((resolved, false));
-            }
-            // A `Key -> Table` wiring entry whose table lacks the key: the compiler reports the
-            // entry's own forwarding bound, and the consumer the entry wires names the cause.
-            if diag.code == Some(E0277)
-                && let Some(resolved) = resolve::resolve_forwarding_entry(tcx, cache, primary)
-            {
-                return Some((resolved, true));
-            }
-            None
-        })?;
-        Some((resolved, primary_span, at_call))
-    }
-
-    /// Transform a resolved wiring failure in place from the rustc-free [`plan_resolved`]: replace
-    /// the main message when the plan carries a coded header (re-aiming the caret at the failing
-    /// entry), then replace the sub-messages with the plan's fix `help`s, dropping rustc's own
-    /// suggestions; the `root cause:` note is returned for the flush to render. A resolution
-    /// anchored at the call expression (`at_call`) plans as a use-site failure whatever its rustc
-    /// code, so its class is the consumer the call needs, except a genuine field-type mismatch,
-    /// whose `E0271` class is the more specific `[CGP-E004]`.
-    fn transform_resolved(
-        &self,
-        diag: &mut DiagInner,
-        resolved: &Resolved,
-        span: Span,
-        at_call: bool,
-    ) -> TransformedResolution {
-        let kind = match diag_kind(diag) {
-            kind if at_call && kind != DiagKind::TypeMismatch => DiagKind::MethodNotFound,
-            kind => kind,
-        };
-        let plan = plan_resolved(kind, main_message_text(diag), resolved, &self.names);
-        let coalesces = plan.coalesces();
-
-        if let Some(header) = plan.header {
-            diag.messages = vec![(DiagMessage::Str(header.into()), Style::NoStyle)];
-            // Re-aim the caret at the failing entry alone: the original span labels restate the
-            // replaced message, so they no longer apply.
-            diag.span = MultiSpan::from_span(span);
-        }
-
-        // The `help`s are applied now; the `root cause:` note is not, because rendering it needs the
-        // emission order the flush establishes (see [`PendingNote`]). The flush puts it ahead of
-        // these `help`s, so a fix follows the cause it repairs.
-        diag.children = plan
-            .helps
-            .into_iter()
-            .map(|help| subdiag(Sublevel::Help, help))
-            .collect();
-        // Drop rustc's structured suggestions along with its notes — for a use-site failure
-        // that includes the misleading "use associated function syntax instead".
-        diag.suggestions = Suggestions::Enabled(vec![]);
-
-        TransformedResolution {
-            note: plan.note,
-            headers: plan
-                .class_header
-                .into_iter()
-                .chain(plan.declined_header)
-                .collect(),
-            coalesces,
-        }
-    }
-
     /// Render a deferred [`PendingNote`] against the `seen` set shared by this flush and add it to
     /// `diag`, ahead of its `help`s, so each fix follows the cause it repairs. The note is
     /// post-processed on its own, since the rest of the diagnostic was already processed when it
@@ -1068,286 +547,61 @@ impl<E: Emitter> CgpEmitter<E> {
             .or_else(|| consumer_trait_as_key(tcx, &diag))
             .or_else(|| wiring_conflict(tcx, &diag))
             .or_else(|| orphan_conflict(tcx, &diag))
-            .or_else(|| shared_dispatch_method(&diag, &self.output().buffer));
+            .or_else(|| shared_dispatch_method(&diag, &self.output().buffer))
+            .or_else(|| self.structural.run(tcx, &diag))
+            .or_else(|| undeclared_trait(tcx, &diag))
+            .or_else(|| missing_use_provider(tcx, &diag))
+            .or_else(|| self.macroless_provider.run(tcx, &diag))
+            .or_else(|| self.unimported.unimported_abstract_type(tcx, &diag))
+            .or_else(|| match undeclared_requirement(tcx, &diag) {
+                // The requirement's query runs first; only then is the buffer locked, to convert
+                // the name-resolution errors of the abstract types it names.
+                Some(detected) => self
+                    .unimported
+                    .requirement(detected, &mut lock_output(&self.output).buffer),
+                None => Verdict::Continue,
+            })
+            .or_else(|| question_mark_cascade(&diag, &self.cgp_spans))
+            .or_else(|| self.macroless_provider.consequence(&diag));
         match verdict {
             Verdict::Continue => {}
             Verdict::Drop => return,
             Verdict::Reshape(reshape) => return self.reshape(diag, reshape),
         }
-        // A structural mistake in a wiring or its checks, such as a check table listing one entry
-        // twice: the compiler names only the generated items, so reword the header to name the
-        // mistake and carry the fix in a `help`, keeping rustc's carets on the two sites.
-        if let Some(mistake) = self.structural_mistake(&diag) {
-            // One mistake can produce several errors (a loop's key variable and its value variable,
-            // or each parameter of an entry, are unconstrained in an entry and in its
-            // `IsProviderFor` twin); report it once.
-            if self.structural_reported.contains(&mistake) {
-                return;
-            }
-            self.structural_reported.push(mistake.clone());
-            replace_header(&mut diag, plan_structural_mistake(&mistake));
-            if matches!(
-                mistake,
-                StructuralMistake::LoopKeyWithoutVariable { .. }
-                    | StructuralMistake::GenericDefaultImpl { .. }
-                    | StructuralMistake::EntryParametersNotInKey { .. }
-                    | StructuralMistake::CheckAtUnitParameters { .. }
-            ) && let Some(primary) = diag.span.primary_span()
-            {
-                // rustc's suggestions to remove the parameter or add it to the context, or to add a
-                // `where` clause to a check entry, are not the fix; keep the caret on the parameter
-                // or the entry alone.
-                diag.span = MultiSpan::from_span(primary);
-                diag.children.clear();
-                diag.suggestions = Suggestions::Enabled(Vec::new());
-            }
-            if matches!(mistake, StructuralMistake::DuplicateCheckTrait { .. }) {
-                // rustc's labels and note name the generated check trait; label the two tables
-                // instead, the reported one as the second.
-                diag.span = two_definitions_span(
-                    &diag.span,
-                    FIRST_CHECK_TABLE_LABEL,
-                    SECOND_CHECK_TABLE_LABEL,
-                );
-                diag.children.clear();
-            }
-            diag.children
-                .push(subdiag(Sublevel::Help, structural_mistake_help(&mistake)));
-            self.postprocess(&mut diag, Origin::Rewritten);
-            self.record_cgp_spans(&diag);
-            self.push(BufEntry::Plain(Box::new(diag)));
-            return;
-        }
-        // A trait called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared via `#[uses(…)]`:
-        // its method cannot resolve on the generated `__Context__` generic, and rustc reports a
-        // vague `E0599` pointing at a transitive `HasField` bound. Reword it to name the trait
-        // and carry the `#[uses(…)]` fix in a `help`, keeping the caret on the failing call. Recording
-        // the span lets a `?`-operator cascade on the same expression be dropped; an unsized-`[T]`
-        // cascade the failed resolution trails is left in place (see the `?` cascade below).
-        if let Some(undeclared) = self.undeclared_trait(&diag)
-            && let Some(primary_span) = diag.span.primary_span()
-        {
-            replace_header(&mut diag, plan_undeclared_trait(&undeclared));
-            diag.span = MultiSpan::from_span(primary_span);
-            if let Some(help) = undeclared_trait_help(&undeclared) {
-                diag.children.push(subdiag(Sublevel::Help, help));
-            }
-            self.postprocess(&mut diag, Origin::Rewritten);
-            self.record_cgp_spans(&diag);
-            self.push(BufEntry::Plain(Box::new(diag)));
-            return;
-        }
-        // A higher-order provider calling an inner provider it never imported with `#[use_provider]`:
-        // the inner parameter is unbounded, so rustc reports a vague `E0599` that leaks `__Context__`
-        // and suggests the wrong (consumer-trait) bound. Reword it to name the inner provider and
-        // carry the `#[use_provider(…)]` fix in a `help`, keeping the caret on the failing call.
-        if let Some(missing) = self.missing_use_provider(&diag)
-            && let Some(primary_span) = diag.span.primary_span()
-        {
-            replace_header(&mut diag, plan_missing_use_provider(&missing));
-            diag.span = MultiSpan::from_span(primary_span);
-            if let Some(help) = missing_use_provider_help(&missing) {
-                diag.children.push(subdiag(Sublevel::Help, help));
-            }
-            self.postprocess(&mut diag, Origin::Rewritten);
-            self.record_cgp_spans(&diag);
-            self.push(BufEntry::Plain(Box::new(diag)));
-            return;
-        }
-        // A provider-trait impl written without `#[cgp_provider]`: rustc rejects it on the provider
-        // trait's `IsProviderFor` supertrait and lists every unrelated implementor beside it. Reword
-        // it to name the provider and carry the macro in a `help`, keeping the caret on the impl.
-        if let Some(mistake) = self.provider_impl_without_macro(&diag)
-            && let Some(primary_span) = diag.span.primary_span()
-        {
-            self.macroless_providers.push(mistake.provider.clone());
-            replace_header(&mut diag, plan_provider_impl_without_macro(&mistake));
-            diag.span = MultiSpan::from_span(primary_span);
-            diag.children.push(subdiag(
-                Sublevel::Help,
-                provider_impl_without_macro_help(&mistake),
-            ));
-            self.postprocess(&mut diag, Origin::Rewritten);
-            self.record_cgp_spans(&diag);
-            self.push(BufEntry::Plain(Box::new(diag)));
-            return;
-        }
-        // An abstract type used without its `#[use_type(…)]` import: rustc reports an `E0220` on
-        // the generated context, naming no fix. Reword it to name the type and carry the import in
-        // a `help`, once per mistake.
-        if let Some(detected) = self.unimported_abstract_type(&diag)
-            && let Some(primary_span) = diag.span.primary_span()
-        {
-            let repeated = self.unimported_reported.iter().any(|report| {
-                report.trait_did == detected.trait_did
-                    && (report.item == detected.item || report.span == primary_span)
-            });
-            if repeated {
-                return;
-            }
-            self.unimported_reported.push(UnimportedReport {
-                trait_did: detected.trait_did,
-                item: detected.item,
-                span: primary_span,
-            });
-            let unimported: UnimportedAbstractType = detected.unimported;
-            replace_header(&mut diag, plan_unimported_abstract_type(&unimported));
-            diag.span = MultiSpan::from_span(primary_span);
-            diag.children.push(subdiag(
-                Sublevel::Help,
-                unimported_abstract_type_help(&unimported),
-            ));
-            self.postprocess(&mut diag, Origin::Rewritten);
-            self.record_cgp_spans(&diag);
-            self.push(BufEntry::Plain(Box::new(diag)));
-            return;
-        }
-        // A requirement the provider trait places on the context that a `#[cgp_impl]` provider does
-        // not declare: rustc reports an `E0277` on the generated `__Context__` at the attribute and
-        // at each signature. Reword the first into one block naming the provider trait, the
-        // provider, and each declaration, and drop the rest. An abstract type among them that the
-        // provider uses without importing is reported as that use instead.
-        if let Some(detected) = self.undeclared_requirement(&diag)
-            && let Some(primary_span) = diag.span.primary_span()
-        {
-            if self.requirement_reported.contains(&detected.impl_did) {
-                return;
-            }
-            self.requirement_reported.push(detected.impl_did);
-            let DetectedUndeclaredRequirement {
-                requirement,
-                impl_did,
-                impl_span,
-                traits,
-            } = detected;
-            let mut kept = Vec::new();
-            for (required, (trait_did, type_name)) in
-                requirement.requirements.into_iter().zip(traits)
-            {
-                let explained = type_name.is_some_and(|type_name| {
-                    self.unimported_reported
-                        .iter()
-                        .any(|report| report.trait_did == trait_did && report.item == impl_did)
-                        || self.convert_unresolved_abstract_type(
-                            &type_name,
-                            trait_did,
-                            &required.bound,
-                            impl_did,
-                            impl_span,
-                        )
-                });
-                if !explained {
-                    kept.push(required);
-                }
-            }
-            if kept.is_empty() {
-                return;
-            }
-            let requirement = UndeclaredRequirement {
-                requirements: kept,
-                ..requirement
-            };
-            replace_header(&mut diag, plan_undeclared_requirement(&requirement));
-            // The caret is often the `#[cgp_impl]` attribute through the macro's expansion; its
-            // call site is the same text, without rustc's note that the error originates in the
-            // macro, which says nothing about the missing declaration.
-            diag.span = MultiSpan::from_span(primary_span.source_callsite());
-            for help in undeclared_requirement_helps(&requirement) {
-                diag.children.push(subdiag(Sublevel::Help, help));
-            }
-            self.postprocess(&mut diag, Origin::Rewritten);
-            self.record_cgp_spans(&diag);
-            self.push(BufEntry::Plain(Box::new(diag)));
-            return;
-        }
-        if is_question_mark_cascade(&diag) && self.overlaps_cgp_failure(&diag) {
-            // A downstream `?`-operator cascade of a CGP wiring failure already reported at this
-            // expression: it restates the failure in `Try` terms and dumps the unresolved projected
-            // type, adding nothing. Drop it (cargo re-counts emitted diagnostics, so the "N errors"
-            // summary stays honest). A `?` error with no CGP failure on its expression is untouched.
-            // The check runs before resolution, since the call-site anchor would otherwise
-            // re-anchor the cascade onto the failing call it overlaps.
-            //
-            // Only the `?` cascade is dropped, never a `[T]: Sized` one: an unsized error the failed
-            // method/trait resolution trails can land off the failing expression (on the binding
-            // pattern, or a later statement the unresolved type flows into), where a span-overlap
-            // check misses it and a broader check would risk suppressing an unrelated error — so
-            // those are left in place rather than dropped unreliably.
-            return;
-        }
-        // A check or call that fails on the `IsProviderFor` bound of a provider already reported as
-        // written without `#[cgp_provider]` restates that one mistake, so it is dropped.
-        if self.is_macroless_provider_consequence(&diag) {
-            return;
-        }
-        // A resolvable wiring failure is transformed around its dependency tree(s); when the
-        // resolver declines, the wiring-message rename runs as the first fallback pass. A resolved
-        // failure also yields its span-independent cause signature, for the de-duplication below.
-        let mut class_headers: Vec<String> = Vec::new();
-        let (rewritten, cause_sig, resolution) =
-            if let Some((resolved, span, at_call)) = self.try_resolve(&diag) {
-                // The downstream check re-report of a `#[cgp_impl]` consumer-trait mistake (its
-                // provider struct failing `NotAProvider` because its impl targets the wrong trait)
-                // is a pure consequence of the `[CGP-E032]` already shown, so drop it. A failing
-                // requirement of that impl resolves to a cause of its own and is kept.
-                if self.cgp_impl_misuse.is_check_report(&resolved) {
-                    return;
-                }
-                let sig = cause_signature(&resolved);
-                let transformed = self.transform_resolved(&mut diag, &resolved, span, at_call);
-                // A failure whose headline gives way to its cause coalesces at flush with every
-                // failure it shares a root cause with; a mismatch or a kept rustc headline emits on
-                // its own. Every resolution defers its note to the flush, so all of them elide
-                // against one another.
-                class_headers = transformed.headers;
-                let coalescing = transformed.coalesces;
+        let resolution = resolve_or_rewrite(
+            tcx,
+            &mut diag,
+            &self.names,
+            &self.resolve_cache,
+            &self.cgp_impl_misuse,
+        );
+        self.finish(diag, original, resolution);
+    }
+
+    /// The final tail, after stage 17: post-process the result, drop the suggestions a macro made
+    /// wrong, record a rewritten diagnostic's spans, de-duplicate it, and buffer it.
+    fn finish(&mut self, mut diag: DiagInner, original: &DiagInner, resolution: Resolution) {
+        let (rewritten, cause_sig, resolution, class_headers) = match resolution {
+            Resolution::Drop => return,
+            Resolution::Resolved(failure) => {
+                let ResolvedFailure {
+                    resolved,
+                    cause_signature,
+                    transformed,
+                } = *failure;
                 (
                     true,
-                    Some(sig),
-                    Some((resolved, transformed.note, coalescing)),
+                    Some(cause_signature),
+                    // A failure whose headline gives way to its cause coalesces at flush with
+                    // every failure it shares a root cause with; a mismatch or a kept rustc
+                    // headline emits on its own. Every resolution defers its note to the flush,
+                    // so all of them elide against one another.
+                    Some((resolved, transformed.note, transformed.coalesces)),
+                    transformed.headers,
                 )
-            } else {
-                // A CGP consumer-method `E0599` the resolver declined still carries rustc's
-                // method-probe advice — the associated-function framing and the "use associated
-                // function syntax instead" suggestion, both artifacts of the provider's `self`-less
-                // methods, the second actively wrong. Strip that noise so the unmet wiring bound
-                // the diagnostic also names is not outranked by it.
-                if diag.code == Some(E0599)
-                    && main_message_text(&diag).is_some_and(is_method_bounds_text)
-                    && mentions_wiring(&diag)
-                {
-                    strip_method_probe_advice(&mut diag);
-                }
-                // A wiring overflow is worded by why its lookup never resolves; one the walk does
-                // not explain (it follows from an unresolved type, say) keeps rustc's wording.
-                let overflow = self.wiring_overflow(&diag);
-                let mut changed =
-                    (diag.code != Some(E0275) || overflow.is_some()) && self.rewrite(&mut diag);
-                if let Some(overflow) = &overflow
-                    && let Some(header) = main_message_text(&diag)
-                        .and_then(|text| rewrite_wiring_overflow(text, &self.names, overflow))
-                {
-                    diag.messages = vec![(DiagMessage::Str(header.into()), Style::NoStyle)];
-                    changed = true;
-                    // The note pointing at the generated `__Check…` trait names something the user
-                    // never wrote, whose location the kept caret already covers, and rustc's advice
-                    // to raise the recursion limit cannot fix a lookup that never ends.
-                    diag.children.retain(|child| {
-                        !child.messages.iter().any(|(message, _)| {
-                            matches!(
-                                message,
-                                DiagMessage::Str(text)
-                                    if text.contains("__Check")
-                                        || text.contains("__CanUse")
-                                        || is_recursion_limit_help_text(text)
-                            )
-                        })
-                    });
-                    diag.children
-                        .push(subdiag(Sublevel::Help, wiring_overflow_help(overflow)));
-                }
-                (changed, None, None)
-            };
+            }
+            Resolution::Declined { rewritten } => (rewritten, None, None, Vec::new()),
+        };
         // Post-process the result either way, so no raw CGP construct leaks. A typed resolution
         // or a text rewrite constructs the message, so its paths render bare (`@…`); a diagnostic
         // the tool left untouched keeps the `Path!(@…)` resugaring form.
