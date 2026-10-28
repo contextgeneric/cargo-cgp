@@ -7,8 +7,8 @@ use rustc_span::DUMMY_SP;
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::call_site::{data_expr_ty, expr_written_ty};
-use crate::resolve::walk::unknowns_to_placeholders;
+use crate::resolve::call_site::data_expr_ty;
+use crate::resolve::query::{expr_written_ty, unknowns_to_placeholders};
 
 /// How a call passes its arguments, and how their types are read.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -6,7 +6,7 @@ use rustc_hir::{self as hir, Expr, ExprKind, QPath};
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::Span;
 
-use crate::resolve::call_site::{call_output_ty, item_ty, lower_hir_ty, peel_hir_refs};
+use crate::resolve::query::{call_output_ty, item_ty, lower_hir_ty, peel_hir_refs};
 
 /// The context type a call's receiver expression names — the *receiver* is what carries the
 /// context in a consumer-method call, so this is the anchor's one source of it. The type is read

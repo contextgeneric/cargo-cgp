@@ -8,7 +8,8 @@ use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT};
 use crate::resolve::cgp_item::{is_cgp_item, is_namespace_lookup_trait};
-use crate::resolve::conflict::{describe_key, same_range};
+use crate::resolve::conflict::same_range;
+use crate::resolve::query::describe_key;
 
 /// The `for` loop an `E0207` at `primary_span` is about, when the unconstrained parameter there
 /// belongs to an entry a loop generated. `for <T, Provider> in Table { Key: Provider }` lowers to a

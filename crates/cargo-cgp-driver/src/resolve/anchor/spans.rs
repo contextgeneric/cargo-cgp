@@ -4,7 +4,6 @@
 //! inside (and whether a caret inside one is about it), and the struct/enum definitions a use-site
 //! failure's spans touch.
 
-use rustc_hir::ItemKind;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Interner as _, Ty, TyCtxt};
 use rustc_span::Span;
@@ -62,17 +61,6 @@ pub(crate) fn context_candidates_from_spans<'tcx>(
         }
     }
     candidates
-}
-
-/// The source span of an impl's `Self` type, e.g. the `Rectangle` in
-/// `impl __CheckRectangle<..> for Rectangle {}` — which the check macro re-spans onto the
-/// `check_components!` entry, so it matches the failing diagnostic's primary span.
-pub(crate) fn impl_self_ty_span(tcx: TyCtxt<'_>, impl_did: DefId) -> Option<Span> {
-    let local = impl_did.as_local()?;
-    match tcx.hir_expect_item(local).kind {
-        ItemKind::Impl(imp) => Some(imp.self_ty.span),
-        _ => None,
-    }
 }
 
 /// Whether one of the diagnostic's primary `spans` is about the impl itself rather than about other

@@ -14,10 +14,7 @@ use rustc_span::Span;
 /// and so does one whose every trait clause carries a constraint, as the bounds a getter or an
 /// `#[implicit]` argument generates do. Source positions cannot restore the order: those generated
 /// bounds all carry the macro's call site, and a macro mixes that site with the user's own tokens.
-pub(crate) fn written_order<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    clauses: &[(ty::Clause<'tcx>, Span)],
-) -> Vec<usize> {
+pub fn written_order<'tcx>(tcx: TyCtxt<'tcx>, clauses: &[(ty::Clause<'tcx>, Span)]) -> Vec<usize> {
     let constrained: Vec<Option<ty::TraitRef<'tcx>>> = clauses
         .iter()
         .map(|(clause, _)| {

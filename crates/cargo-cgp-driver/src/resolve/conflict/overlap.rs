@@ -6,7 +6,8 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypingMode};
 use rustc_span::DUMMY_SP;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::conflict::{ConflictSide, describe_key};
+use crate::resolve::conflict::ConflictSide;
+use crate::resolve::query::describe_key;
 
 /// Whether two colliding entries map one key: their keys render alike, or one is a blanket
 /// forwarding over every key (a namespace join, or a namespace's inheritance blanket). Only such a

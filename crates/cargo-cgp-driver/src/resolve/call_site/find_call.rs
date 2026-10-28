@@ -3,16 +3,14 @@
 use cargo_cgp_error_processing::Resolved;
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Expr, ExprKind, HirId};
-use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _};
-use rustc_span::def_id::DefId;
+use rustc_middle::ty::{TyCtxt, TypeVisitableExt as _};
 use rustc_span::{Span, Symbol};
 
 use crate::resolve::call_site::{CallForm, receiver_context, seed_from_call, unbounded_receiver};
-use crate::resolve::cgp_item::{
-    carries_wiring, is_blanket_trait, is_consumer_trait, is_context_adt,
-};
+use crate::resolve::cgp_item::{carries_wiring, is_context_adt};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::walk::{holds, resolve_leaves};
+use crate::resolve::query::{CallTrait, holds, traits_with_method};
+use crate::resolve::walk::resolve_leaves;
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
 /// from the receiver's binding, the component's parameters by unifying the call's written
@@ -145,58 +143,4 @@ pub(crate) fn is_about_call<'a, 'tcx: 'a>(
         && !operands
             .into_iter()
             .any(|operand| operand.span.contains(span) && operand.span != span)
-}
-
-/// What kind of trait a call resolves through, which decides the class its failure is headed with.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CallTrait {
-    /// A CGP consumer trait (`[CGP-E001]`).
-    Consumer,
-    /// A `#[cgp_fn]` / `#[blanket_trait]` blanket trait (`[CGP-E003]`).
-    Blanket,
-}
-
-/// Every trait declaring a `self`-receiver associated fn named `method` that a call by that name
-/// could resolve through — the candidates [`resolve_call_site`] tries — each paired with that
-/// method's `DefId` (whose declared signature [`seed_from_call`] unifies the
-/// call's arguments against) and the [kind](CallTrait) of trait it is.
-///
-/// Two kinds qualify, and CGP consumer traits come **first** so a directly-wired consumer keeps
-/// its precise `[CGP-E001]` recovery before any other trait is tried:
-///
-/// - a **CGP consumer trait** (recognized structurally, in any crate); and
-/// - a **blanket-impl trait** that is not a consumer and shows CGP evidence — the shape `#[cgp_fn]`
-///   / `#[blanket_trait]` generate (`impl<Context> Describe for Context where Self: …`). Its
-///   obligation `Ctx: Describe` is walkable exactly as a consumer's is, since its `Self` is the
-///   context.
-///
-/// CGP's extensible-data traits are left to the [data-call anchor](super::resolve_data_call),
-/// which types a receiver through a chain of data operations.
-///
-/// Requiring CGP evidence of the second kind excludes ordinary blanket traits (`Into`, `From`); the
-/// `self`-method requirement and the failing-obligation gate in [`resolve_call_site`] keep a wrong
-/// guess from fabricating a diagnostic.
-pub(crate) fn traits_with_method(
-    tcx: TyCtxt<'_>,
-    method: Symbol,
-) -> Vec<(DefId, DefId, CallTrait)> {
-    let mut found: Vec<(DefId, DefId, CallTrait)> = Vec::new();
-    for trait_did in tcx.all_traits_including_private() {
-        let Some(method_did) = tcx
-            .associated_items(trait_did)
-            .filter_by_name_unhygienic(method)
-            .find(|item| matches!(item.kind, ty::AssocKind::Fn { has_self: true, .. }))
-            .map(|item| item.def_id)
-        else {
-            continue;
-        };
-        if is_consumer_trait(tcx, trait_did) {
-            found.push((trait_did, method_did, CallTrait::Consumer));
-        } else if is_blanket_trait(tcx, trait_did) {
-            found.push((trait_did, method_did, CallTrait::Blanket));
-        }
-    }
-    // A stable sort keeps each kind in the order the traits were listed.
-    found.sort_by_key(|&(_, _, kind)| kind as u8);
-    found
 }

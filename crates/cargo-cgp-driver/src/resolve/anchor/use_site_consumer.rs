@@ -12,7 +12,8 @@ use crate::resolve::cgp_item::{
     carries_wiring, consumer_provider_trait, is_blanket_trait, is_local_adt,
 };
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::walk::{holds, resolve_leaves};
+use crate::resolve::query::holds;
+use crate::resolve::walk::resolve_leaves;
 
 /// Resolve a use-site failure by anchoring on the **consumer trait** the diagnostic names, rather
 /// than on the components the context wires. A consumer-method call names its consumer trait in a

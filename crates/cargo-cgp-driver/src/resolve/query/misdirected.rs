@@ -6,7 +6,7 @@ use rustc_span::def_id::DefId;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
 use crate::resolve::cgp_item::{consumer_provider_trait, is_provider_trait};
-use crate::resolve::walk::written_order;
+use crate::resolve::query::written_order;
 
 /// The requirements the provider of `provider_ref` states in an impl it wrote with the component's
 /// consumer trait in its `#[cgp_impl]` header, the mistake `[CGP-E032]` reports: that impl's
@@ -19,7 +19,7 @@ use crate::resolve::walk::written_order;
 /// the context lacks, that would remain once the header is fixed. `None` when `provider_ref` is not
 /// a provider-trait obligation on a local provider struct, when the provider implements the
 /// provider trait itself, or when it has no such impl, or several.
-pub(crate) fn misdirected_impl_clauses<'tcx>(
+pub fn misdirected_impl_clauses<'tcx>(
     tcx: TyCtxt<'tcx>,
     provider_ref: ty::TraitRef<'tcx>,
 ) -> Option<Vec<ty::Clause<'tcx>>> {

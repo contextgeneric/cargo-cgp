@@ -6,28 +6,15 @@
 //! folding each into a [`Cause`](cargo_cgp_error_processing::Cause) with its rendered dependency
 //! tree.
 //!
-//! The descent is split by concern: [`leaves`] drives the recursion, [`vocabulary`] decides which
-//! obligations it walks into, [`impl_match`] finds the impl that satisfies an obligation and reads
-//! its `where`-clause dependencies, [`projection_mismatch`](mod@projection_mismatch) surfaces a field-type mismatch the
-//! trait-clause walk cannot see, [`unknowns`] carries a call-site unknown across inference-context
-//! boundaries as a rigid placeholder, [`holds`](mod@holds) asks the solver whether a predicate is satisfied,
-//! [`written_order`](mod@written_order) reads an impl's clauses in the order the program wrote them, and [`misdirected`]
-//! reads the requirements of a provider impl whose `#[cgp_impl]` header names the consumer trait.
+//! The descent is split by concern: [`leaves`] drives the recursion, and [`vocabulary`] decides
+//! which obligations it walks into. The compiler queries it asks (the impl that satisfies an
+//! obligation and its `where`-clause dependencies, a field-type mismatch the trait-clause walk
+//! cannot see, whether a predicate holds, the placeholders that carry a call-site unknown across
+//! inference contexts, and the requirements of a provider impl whose `#[cgp_impl]` header names the
+//! consumer trait) live in the [query layer](crate::resolve::query), which the classifiers share.
 
-mod holds;
-mod impl_match;
 mod leaves;
-mod misdirected;
-mod projection_mismatch;
-mod unknowns;
 mod vocabulary;
-mod written_order;
 
-pub(crate) use holds::*;
-pub(crate) use impl_match::*;
 pub(crate) use leaves::*;
-pub(crate) use misdirected::*;
-pub(crate) use projection_mismatch::*;
-pub(crate) use unknowns::*;
 pub(crate) use vocabulary::*;
-pub(crate) use written_order::*;

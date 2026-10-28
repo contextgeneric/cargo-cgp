@@ -6,7 +6,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::cgp_item::find_cgp_trait;
-use crate::resolve::conflict::describe_key;
+use crate::resolve::query::describe_key;
 
 /// A named field of `owner`'s struct whose name is a likely slip of the missing `field`, such as
 /// `first_name` for `frist_name`. `None` when `owner` is not a struct or carries no such field.

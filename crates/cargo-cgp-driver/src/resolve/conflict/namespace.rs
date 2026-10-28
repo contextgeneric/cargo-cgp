@@ -25,9 +25,9 @@ use rustc_span::Span;
 
 use crate::resolve::cgp_item::is_namespace_lookup_trait;
 use crate::resolve::conflict::{
-    ConflictSide, describe_key, impl_delegate_type, maps_one_key, overlap_conflict,
-    redirect_conflict, render_lookup_trait, same_range,
+    ConflictSide, impl_delegate_type, maps_one_key, overlap_conflict, redirect_conflict, same_range,
 };
+use crate::resolve::query::{describe_key, render_lookup_trait};
 
 /// Classify an `E0119` on a namespace lookup trait as a duplicate-entry conflict, or `None` when
 /// no namespace-trait impl sits at the caret (leaving the diagnostic to the ordinary fallback).

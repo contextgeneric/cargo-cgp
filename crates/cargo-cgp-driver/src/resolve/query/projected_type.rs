@@ -8,7 +8,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 /// context that wired `UseType<String>` — or `None` when it does not reduce to one. This is the
 /// mismatch leaf's *actual* side, the counterpart of the *expected* type read off the failing
 /// projection, and it is the general form of the struct-field query
-/// [`field_type`](super::field_type) performs for a `HasField` value.
+/// [`field_type`](crate::resolve::classify::field_type) performs for a `HasField` value.
 ///
 /// It is read by asking the trait solver to normalize the alias, which is exactly how the owner's
 /// choice is recorded: an abstract type wired to `UseType<T>` resolves through the blanket impl
@@ -26,7 +26,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 /// the owned rendered type, so it cannot leak a variable into the walk's contexts (the
 /// cross-context contamination hazard in
 /// `cgp-knowledge-base/cargo-cgp/implementation/rustc-diagnostic-internals.md`).
-pub(crate) fn projected_type<'tcx>(tcx: TyCtxt<'tcx>, alias: Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub fn projected_type<'tcx>(tcx: TyCtxt<'tcx>, alias: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let param_env = ty::ParamEnv::empty();
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
     let ocx = ObligationCtxt::new(&infcx);

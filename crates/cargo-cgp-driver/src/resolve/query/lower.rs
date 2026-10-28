@@ -15,7 +15,7 @@ use rustc_span::def_id::DefId;
 /// written arguments, a literal const argument among them, defaulted parameters filled in, lifetimes
 /// erased), a primitive, a tuple, a reference, or a slice. `None` for any shape beyond it, declining
 /// the anchor rather than guessing.
-pub(crate) fn lower_hir_ty<'tcx>(tcx: TyCtxt<'tcx>, hir_ty: &hir::Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub fn lower_hir_ty<'tcx>(tcx: TyCtxt<'tcx>, hir_ty: &hir::Ty<'tcx>) -> Option<Ty<'tcx>> {
     match hir_ty.kind {
         hir::TyKind::Path(QPath::Resolved(None, path)) => {
             let written = written_args(tcx, path)?;
@@ -48,7 +48,7 @@ pub(crate) fn lower_hir_ty<'tcx>(tcx: TyCtxt<'tcx>, hir_ty: &hir::Ty<'tcx>) -> O
 
 /// One written generic argument of a path: a lowered type, or a const argument, which is lowered
 /// once the parameter it fills, and so its type, is known.
-pub(crate) enum WrittenArg<'a, 'tcx> {
+pub enum WrittenArg<'a, 'tcx> {
     Type(Ty<'tcx>),
     Const(&'a hir::ConstArg<'tcx>),
 }
@@ -56,7 +56,7 @@ pub(crate) enum WrittenArg<'a, 'tcx> {
 /// The written generic arguments of a path's last segment, each type lowered; lifetimes are
 /// skipped (they are re-supplied erased) and an inferred argument declines. An argument-less path
 /// yields the empty list.
-pub(crate) fn written_args<'a, 'tcx>(
+pub fn written_args<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     path: &'a hir::Path<'tcx>,
 ) -> Option<Vec<WrittenArg<'a, 'tcx>>> {
@@ -80,7 +80,7 @@ pub(crate) fn written_args<'a, 'tcx>(
 /// parameter takes its written literal (the `3` and `'a'` of `Symbol<3, Chars<'a', …>>`, what
 /// `Symbol!` expands to), missing trailing type parameters take their declared defaults, and any
 /// other const argument or an arity mismatch declines.
-pub(crate) fn instantiate_written<'tcx>(
+pub fn instantiate_written<'tcx>(
     tcx: TyCtxt<'tcx>,
     did: DefId,
     written: Vec<WrittenArg<'_, 'tcx>>,
@@ -172,7 +172,7 @@ fn lower_const_lit<'tcx>(
 /// callee (its instantiation is exactly what inference would have decided), a type-relative path
 /// (`Vec::new`, whose resolution lives only in typeck results), or an output that still carries a
 /// late-bound region (relating it would leak an escaping bound var).
-pub(crate) fn call_output_ty<'tcx>(tcx: TyCtxt<'tcx>, callee: &Expr<'tcx>) -> Option<Ty<'tcx>> {
+pub fn call_output_ty<'tcx>(tcx: TyCtxt<'tcx>, callee: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     let ExprKind::Path(QPath::Resolved(None, path)) = callee.kind else {
         return None;
     };
@@ -193,7 +193,7 @@ pub(crate) fn call_output_ty<'tcx>(tcx: TyCtxt<'tcx>, callee: &Expr<'tcx>) -> Op
 }
 
 /// The written primitive as its `ty::Ty`.
-pub(crate) fn prim_ty<'tcx>(tcx: TyCtxt<'tcx>, prim: hir::PrimTy) -> Ty<'tcx> {
+pub fn prim_ty<'tcx>(tcx: TyCtxt<'tcx>, prim: hir::PrimTy) -> Ty<'tcx> {
     match prim {
         hir::PrimTy::Bool => tcx.types.bool,
         hir::PrimTy::Char => tcx.types.char,
@@ -206,13 +206,13 @@ pub(crate) fn prim_ty<'tcx>(tcx: TyCtxt<'tcx>, prim: hir::PrimTy) -> Ty<'tcx> {
 
 /// The identity type of an item (`type_of`), for the receivers whose type is an item's own — a
 /// unit struct's, a const's, or a static's.
-pub(crate) fn item_ty<'tcx>(tcx: TyCtxt<'tcx>, did: DefId) -> Option<Ty<'tcx>> {
+pub fn item_ty<'tcx>(tcx: TyCtxt<'tcx>, did: DefId) -> Option<Ty<'tcx>> {
     Some(tcx.type_of(did).instantiate_identity().skip_norm_wip())
 }
 
 /// Strip the reference layers off a written type (`&App` → `App`), since the receiver's context
 /// is the ADT beneath them.
-pub(crate) fn peel_hir_refs<'tcx>(mut ty: &'tcx hir::Ty<'tcx>) -> &'tcx hir::Ty<'tcx> {
+pub fn peel_hir_refs<'tcx>(mut ty: &'tcx hir::Ty<'tcx>) -> &'tcx hir::Ty<'tcx> {
     while let hir::TyKind::Ref(_, inner, _) = ty.kind {
         ty = inner;
     }

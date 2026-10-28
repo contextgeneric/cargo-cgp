@@ -21,8 +21,8 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 use crate::config::{
     CGP_COMPONENT_CRATE, DELEGATE_AND_CHECK_COMPONENTS_MACRO, IS_PROVIDER_FOR_TRAIT,
 };
-use crate::resolve::anchor::{can_use_component_supertrait, impl_self_ty_span};
 use crate::resolve::cgp_item::{find_cgp_trait, marker_to_consumer};
+use crate::resolve::query::{can_use_component_supertrait, impl_self_ty_span};
 
 /// Recognize an `E0277` at `primary_span` as a check entry that names no parameters for a component
 /// that takes some: the caret is the entry of a check impl (whose trait has `CanUseComponent` as a

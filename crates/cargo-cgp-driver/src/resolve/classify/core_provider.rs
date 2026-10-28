@@ -10,7 +10,7 @@ use crate::config::{
 use crate::resolve::cgp_item::{is_cgp_item, provider_blanket_marker};
 use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
-use crate::resolve::walk::holds;
+use crate::resolve::query::holds;
 
 /// What serves the slot of `parent`, a provider-trait obligation `Provider: Trait<Context, …>`,
 /// where the wired `Provider` is a CGP core provider used where it has no impl. The core providers

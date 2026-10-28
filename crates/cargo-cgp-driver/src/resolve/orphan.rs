@@ -23,7 +23,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::resolve::cgp_item::is_namespace_lookup_trait;
-use crate::resolve::conflict::describe_key;
+use crate::resolve::query::describe_key;
 
 /// One local impl of a foreign namespace-lookup trait for a foreign key — a candidate orphan
 /// registration.

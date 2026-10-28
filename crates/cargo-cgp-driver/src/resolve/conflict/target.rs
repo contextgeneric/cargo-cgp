@@ -3,7 +3,8 @@
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 
-use crate::resolve::conflict::{namespace_delegate, redirect_path, render_provider};
+use crate::resolve::conflict::namespace_delegate;
+use crate::resolve::query::{redirect_path, render_provider};
 
 /// One side of a conflict: the impl, the key it maps, and its written `Delegate`.
 pub(crate) struct ConflictSide<'tcx> {

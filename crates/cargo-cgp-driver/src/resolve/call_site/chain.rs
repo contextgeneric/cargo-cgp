@@ -9,8 +9,9 @@ use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Symbol};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::call_site::{expr_written_ty, lower_hir_ty, peel_hir_refs, receiver_context};
+use crate::resolve::call_site::receiver_context;
 use crate::resolve::data::is_data_operation;
+use crate::resolve::query::{expr_written_ty, lower_hir_ty, peel_hir_refs};
 
 /// The type of `expr` when it is a value one of CGP's extensible-data operations produces, or a
 /// value the call-site anchor already types ([`receiver_context`]): a call to a data operation on

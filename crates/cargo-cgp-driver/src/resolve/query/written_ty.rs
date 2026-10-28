@@ -6,7 +6,7 @@ use rustc_infer::infer::InferCtxt;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::DUMMY_SP;
 
-use crate::resolve::call_site::{call_output_ty, instantiate_written, item_ty, written_args};
+use crate::resolve::query::{call_output_ty, instantiate_written, item_ty, written_args};
 
 /// The type an argument expression *writes*, syntactically — the call-side information the
 /// signature unification consumes. Covered shapes: a unit-struct or unit-variant value path with
@@ -16,10 +16,7 @@ use crate::resolve::call_site::{call_output_ty, instantiate_written, item_ty, wr
 /// to a non-generic fn (its declared return type). `None` for anything whose type only inference
 /// could know — an unsuffixed literal, a variable, a generic constructor like `Vec::new()` —
 /// leaving the corresponding parameter unknown rather than guessed.
-pub(crate) fn expr_written_ty<'tcx>(
-    infcx: &InferCtxt<'tcx>,
-    expr: &Expr<'tcx>,
-) -> Option<Ty<'tcx>> {
+pub fn expr_written_ty<'tcx>(infcx: &InferCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     let tcx = infcx.tcx;
     match expr.kind {
         ExprKind::Path(QPath::Resolved(None, path)) => match path.res {
@@ -53,7 +50,7 @@ pub(crate) fn expr_written_ty<'tcx>(
         // A tuple literal writes its *shape*, whether or not every element's type is written. An
         // element the call does not type becomes a fresh inference variable (folded into a
         // placeholder with the rest of the seed by
-        // [`unknowns_to_placeholders`](crate::resolve::walk::unknowns_to_placeholders)), so the
+        // [`unknowns_to_placeholders`](super::unknowns_to_placeholders)), so the
         // tuple arity and its written elements are recovered even beside an unknown one. This
         // matters because providers destructure their input on the tuple shape — `HandleIf`'s
         // `(InputCond, InputBranch)`, `HandleCompare`'s `(InputA, InputB)` — so collapsing the

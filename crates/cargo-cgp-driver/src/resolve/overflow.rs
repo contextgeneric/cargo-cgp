@@ -5,11 +5,10 @@ use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _};
 use rustc_span::Span;
 
 use crate::resolve::anchor::check_entry_obligation;
-use crate::resolve::call_site::{
-    CallForm, CallTrait, method_calls_at, receiver_context, seed_from_call, traits_with_method,
-};
+use crate::resolve::call_site::{CallForm, method_calls_at, receiver_context, seed_from_call};
 use crate::resolve::cgp_item::is_context_adt;
 use crate::resolve::ctx::ResolveCtx;
+use crate::resolve::query::{CallTrait, traits_with_method};
 use crate::resolve::walk::walk_overflow;
 
 /// What walking the obligation at an `E0275` overflow's caret shows about it.

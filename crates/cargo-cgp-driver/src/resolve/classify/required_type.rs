@@ -5,7 +5,7 @@ use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized}
 use rustc_span::DUMMY_SP;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::walk::{impls_concrete_first, misdirected_impl_clauses};
+use crate::resolve::query::{impls_concrete_first, misdirected_impl_clauses};
 
 /// The type the impl satisfying `parent` requires `leaf` (a `HasField` bound) to project, read off
 /// the associated-type constraint beside the bound (the `f64` of

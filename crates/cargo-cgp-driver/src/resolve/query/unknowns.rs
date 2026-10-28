@@ -20,7 +20,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 /// [call-site anchor](crate::resolve::call_site)'s unknown call arguments and to keep a
 /// later-pipeline-stage clause walkable in
 /// [`impl_where_obligations`](super::impl_where_obligations).
-pub(crate) fn unknowns_to_placeholders<'tcx, T>(tcx: TyCtxt<'tcx>, value: T) -> T
+pub fn unknowns_to_placeholders<'tcx, T>(tcx: TyCtxt<'tcx>, value: T) -> T
 where
     T: TypeFoldable<TyCtxt<'tcx>>,
 {
@@ -56,7 +56,7 @@ where
 /// the earlier provider's `where` clause is *false* (not merely unproven), so the projection never
 /// reduces even though the provider's `type Output` is independent of the input. A no-op unless
 /// the clause carries a placeholder.
-pub(crate) fn resolve_fixed_projections<'tcx>(
+pub fn resolve_fixed_projections<'tcx>(
     tcx: TyCtxt<'tcx>,
     clause: ty::Clause<'tcx>,
 ) -> ty::Clause<'tcx> {
@@ -128,7 +128,7 @@ fn try_project_fixed<'tcx>(tcx: TyCtxt<'tcx>, alias_ty: Ty<'tcx>) -> Option<Ty<'
 /// equalities are preserved. A leaked higher-ranked binder's placeholder (a non-root universe) is
 /// left alone. The inverse of [`unknowns_to_placeholders`], used to let the solver *defer* a bound
 /// on the unknown rather than reject it while a fixed projection is reduced.
-pub(crate) fn placeholders_to_infer<'tcx, T>(infcx: &InferCtxt<'tcx>, value: T) -> T
+pub fn placeholders_to_infer<'tcx, T>(infcx: &InferCtxt<'tcx>, value: T) -> T
 where
     T: TypeFoldable<TyCtxt<'tcx>>,
 {

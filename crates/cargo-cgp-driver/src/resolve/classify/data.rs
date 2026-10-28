@@ -12,10 +12,11 @@ use crate::config::{
     TO_OPTIONAL_TRAIT, UPDATE_FIELD_TRAIT, VALUE_ASSOC,
 };
 use crate::resolve::cgp_item::{decode_index, decode_symbol, find_cgp_trait, is_cgp_item};
-use crate::resolve::classify::{owner_has_impl_of, projected_type, similar_field, similar_variant};
+use crate::resolve::classify::{similar_field, similar_variant};
 use crate::resolve::data::{Marker, PartialRead, data_derive, is_data_trait, marker, read_partial};
-use crate::resolve::walk::{ProjectionMismatch, holds};
-use crate::resolve::wiring_name::import_path;
+use crate::resolve::query::{
+    ProjectionMismatch, holds, import_path, owner_has_impl_of, projected_type,
+};
 
 /// The data leaf for an unmet obligation of one of CGP's extensible-data traits, or `None` when the
 /// obligation is not one this leaf words. A builder's or an extractor's partial value records each

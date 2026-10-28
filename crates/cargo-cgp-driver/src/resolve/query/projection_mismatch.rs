@@ -8,23 +8,23 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::config::{CGP_FIELD_CRATE, HAS_FIELD_TRAIT};
 use crate::resolve::cgp_item::is_cgp_item;
-use crate::resolve::walk::{holds_projection, impls_concrete_first};
+use crate::resolve::query::{holds_projection, impls_concrete_first};
 
 /// An unmet associated-type projection carried by the impl that would satisfy an obligation —
 /// `<Ctx as HasField<Symbol!("height")>>::Value == f64`, or `<Ctx as HasErrorType>::Error ==
 /// AppError`. The trait bound itself holds, so the walk reaches it only through the branch where
 /// every trait-clause dependency held.
 #[derive(Clone, Copy)]
-pub(crate) struct ProjectionMismatch<'tcx> {
+pub struct ProjectionMismatch<'tcx> {
     /// The trait ref the projection is taken on (`Ctx: HasErrorType`) — the terminal the tree shows.
-    pub(crate) trait_ref: ty::TraitRef<'tcx>,
+    pub trait_ref: ty::TraitRef<'tcx>,
     /// The associated item being projected (`Error`), so the leaf can name it.
-    pub(crate) assoc_did: DefId,
+    pub assoc_did: DefId,
     /// The projected type `<Ctx as HasErrorType>::Error` as a non-rigid alias, region-erased and
     /// free of inference variables, so the leaf can normalize it to the type the owner supplies.
-    pub(crate) alias: Ty<'tcx>,
+    pub alias: Ty<'tcx>,
     /// The type the projection is required to equal (`AppError`).
-    pub(crate) expected: Ty<'tcx>,
+    pub expected: Ty<'tcx>,
 }
 
 /// When the impl that satisfies `pred`'s trait obligation carries an unmet associated-type
@@ -42,7 +42,7 @@ pub(crate) struct ProjectionMismatch<'tcx> {
 /// (`fresh_args_for_item` + `eq`), but keeps the projection predicates rather than the trait ones,
 /// and leaves each projection un-normalized so its `<.. as Trait>::Assoc` alias survives for the
 /// hold check.
-pub(crate) fn projection_mismatch<'tcx>(
+pub fn projection_mismatch<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitClause<'tcx>,
 ) -> Option<ProjectionMismatch<'tcx>> {
@@ -115,7 +115,7 @@ fn impl_projection_mismatch<'tcx>(
 /// The first unmet associated-type projection among an impl's instantiated `clauses`: a `HasField`
 /// value type before any other associated type, since its leaf can name the struct field to fix.
 /// `None` when every projection holds.
-pub(crate) fn unmet_projection<'tcx>(
+pub fn unmet_projection<'tcx>(
     tcx: TyCtxt<'tcx>,
     clauses: impl IntoIterator<Item = ty::Clause<'tcx>>,
 ) -> Option<ProjectionMismatch<'tcx>> {

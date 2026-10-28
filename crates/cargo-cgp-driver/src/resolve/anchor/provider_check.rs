@@ -6,9 +6,10 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::config::{CGP_COMPONENT_CRATE, IS_PROVIDER_FOR_TRAIT};
-use crate::resolve::anchor::{impl_self_ty_span, provider_obligation};
+use crate::resolve::anchor::provider_obligation;
 use crate::resolve::cgp_item::{is_cgp_item, marker_to_consumer};
 use crate::resolve::ctx::ResolveCtx;
+use crate::resolve::query::impl_self_ty_span;
 use crate::resolve::walk::resolve_provider_leaves;
 
 /// Resolve the root cause(s) of the `#[check_providers]` entry whose diagnostic caret sits at

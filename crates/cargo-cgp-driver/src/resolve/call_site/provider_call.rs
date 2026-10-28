@@ -7,12 +7,11 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
-use crate::resolve::call_site::{
-    CallForm, is_about_call, lower_hir_ty, peel_hir_refs, seed_from_call,
-};
+use crate::resolve::call_site::{CallForm, is_about_call, seed_from_call};
 use crate::resolve::cgp_item::{carries_wiring, is_provider_trait};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::walk::{holds, resolve_provider_leaves};
+use crate::resolve::query::{holds, lower_hir_ty, peel_hir_refs};
+use crate::resolve::walk::resolve_provider_leaves;
 
 /// Resolve a failing call to a provider trait's method through the provider's own path
 /// (`PipeHandlers::<…>::compute(&(), …)`, `Add::try_compute(&App, …)`), which no consumer trait

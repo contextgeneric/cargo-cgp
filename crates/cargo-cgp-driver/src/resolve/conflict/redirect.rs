@@ -12,7 +12,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode, Unno
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::conflict::bounding_trait_ref;
+use crate::resolve::query::bounding_trait_ref;
 
 /// What a blanket forwarding maps `concrete_key` to: its `Delegate` for that key, which a redirect
 /// makes a `RedirectLookup`. `blanket_impl_did` is the forwarding impl and `blanket_key` its generic

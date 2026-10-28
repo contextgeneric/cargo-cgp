@@ -15,13 +15,11 @@ use crate::resolve::cgp_item::{
 };
 use crate::resolve::classify::{
     classify_data_leaf, core_provider_hint, field_issue, field_type, is_blanket_dead_end,
-    is_dispatch_lookup, owner_has_impl_of, projected_type, provided_components,
-    provider_for_other_arguments, required_field_type, similar_field, similar_wired_key,
-    tuple_index_tag, wrapping_adapters,
+    is_dispatch_lookup, provided_components, provider_for_other_arguments, required_field_type,
+    similar_field, similar_wired_key, tuple_index_tag, wrapping_adapters,
 };
-use crate::resolve::conflict::render_path;
 use crate::resolve::label::fold_empty_lists;
-use crate::resolve::walk::ProjectionMismatch;
+use crate::resolve::query::{ProjectionMismatch, owner_has_impl_of, projected_type, render_path};
 
 /// Classify the terminal predicate a dependency chain bottoms out on. A `HasField` whose branch
 /// carried an unmet projection (`mismatch` is `Some`) becomes a [`Leaf::FieldTypeMismatch`], its

@@ -11,7 +11,8 @@
 //! primary span equals `tcx.def_span` of the *conflicting* impl (the macro re-spans each entry
 //! onto its key token, and rustc aims the `E0119` at that impl's def-span), so [`classify`]
 //! matches the caret to that impl and [`build`] reads the entry off it — its self type, its key,
-//! and its `Delegate` — then words the collision through the key renderings in [`keys`]. Each
+//! and its `Delegate` — then words the collision through the key renderings of the
+//! [query layer](crate::resolve::query). Each
 //! recognized trait is anchored by `DefId` exactly as the rest of [`resolve`](crate::resolve) is,
 //! so a same-named trait from another crate can never drive the rewrite.
 //!
@@ -24,7 +25,6 @@
 mod build;
 mod classify;
 mod delegate_impls;
-mod keys;
 mod namespace;
 mod overlap;
 mod redirect;
@@ -33,7 +33,6 @@ mod target;
 pub(crate) use build::*;
 pub use classify::*;
 pub(crate) use delegate_impls::*;
-pub(crate) use keys::*;
 pub(crate) use namespace::*;
 pub(crate) use overlap::*;
 pub(crate) use redirect::*;

@@ -3,12 +3,11 @@
 use cargo_cgp_error_processing::Resolved;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
-use rustc_span::def_id::DefId;
 
-use crate::config::{CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE};
-use crate::resolve::anchor::{consumer_obligation, impl_self_ty_span};
-use crate::resolve::cgp_item::{is_cgp_item, marker_to_consumer};
+use crate::resolve::anchor::consumer_obligation;
+use crate::resolve::cgp_item::marker_to_consumer;
 use crate::resolve::ctx::ResolveCtx;
+use crate::resolve::query::{can_use_component_supertrait, impl_self_ty_span};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of the check failure whose diagnostic caret sits at `primary_span`,
@@ -95,25 +94,4 @@ fn can_use_to_consumer_obligation<'tcx>(
     let params = trait_ref.args.type_at(2);
     let (consumer_did, _) = marker_to_consumer(tcx, marker)?;
     consumer_obligation(tcx, context, consumer_did, params)
-}
-
-/// The `CanUseComponent<..>` supertrait clause of `trait_did`, if it carries one — the marker
-/// of a `check_components!` check trait. Anchored by DefId to `cgp_component`.
-pub(crate) fn can_use_component_supertrait(
-    tcx: TyCtxt<'_>,
-    trait_did: DefId,
-) -> Option<ty::Clause<'_>> {
-    for &(clause, _) in tcx.explicit_super_clauses_of(trait_did).skip_binder() {
-        if let Some(tp) = clause.as_trait_clause()
-            && is_cgp_item(
-                tcx,
-                tp.def_id(),
-                CAN_USE_COMPONENT_TRAIT,
-                CGP_COMPONENT_CRATE,
-            )
-        {
-            return Some(clause);
-        }
-    }
-    None
 }

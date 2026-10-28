@@ -7,7 +7,7 @@ use rustc_span::DUMMY_SP;
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::walk::{resolve_fixed_projections, unknowns_to_placeholders, written_order};
+use crate::resolve::query::{resolve_fixed_projections, unknowns_to_placeholders, written_order};
 
 /// The instantiated `where`-clause trait obligations of the impl that would satisfy `obligation`
 /// — its direct dependencies — or `None` when no impl matches at all (so the caller can treat the
@@ -25,7 +25,7 @@ use crate::resolve::walk::{resolve_fixed_projections, unknowns_to_placeholders, 
 /// dead-end, since a leaf provider does not delegate. A blanket impl is used only when no
 /// concrete-`Self` one matches — the usual case for an obligation whose `Self` *is* the context
 /// (`App: CanUseComponent<…>` has only the blanket).
-pub(crate) fn impl_where_obligations<'tcx>(
+pub fn impl_where_obligations<'tcx>(
     tcx: TyCtxt<'tcx>,
     obligation: ty::PolyTraitClause<'tcx>,
 ) -> Option<Vec<ty::PolyTraitClause<'tcx>>> {
@@ -138,10 +138,10 @@ pub(crate) fn impl_where_obligations<'tcx>(
             // so its `::Output` never normalizes). Dropping it would hide every root cause living
             // in a stage past the first. Instead, replace those stray vars with rigid placeholders
             // so the walk can still descend the stage; the placeholder-leaf filter in
-            // [`resolve_leaves`](super::resolve_leaves) keeps any leaf that genuinely depends on
-            // the unknown from being reported, exactly as for the call-site seed's unknown input. A
-            // no-op when there are no such vars (the common concrete-input case), so ordinary walks
-            // are unaffected.
+            // [`resolve_leaves`](crate::resolve::walk::resolve_leaves) keeps any leaf that
+            // genuinely depends on the unknown from being reported, exactly as for the call-site
+            // seed's unknown input. A no-op when there are no such vars (the common concrete-input
+            // case), so ordinary walks are unaffected.
             let clause = if clause.has_non_region_infer() {
                 unknowns_to_placeholders(tcx, clause)
             } else {
@@ -161,7 +161,7 @@ pub(crate) fn impl_where_obligations<'tcx>(
 /// ones, so a caller that takes the first *unifying* impl prefers the specific impl over the
 /// delegation blanket — the ordering [`impl_where_obligations`] and
 /// [`projection_mismatch`](fn@super::projection_mismatch) both rely on.
-pub(crate) fn impls_concrete_first(tcx: TyCtxt<'_>, trait_did: DefId) -> Vec<DefId> {
+pub fn impls_concrete_first(tcx: TyCtxt<'_>, trait_did: DefId) -> Vec<DefId> {
     let (blanket, concrete): (Vec<DefId>, Vec<DefId>) =
         tcx.all_impls(trait_did).partition(|&did| {
             matches!(

@@ -13,10 +13,13 @@ use crate::resolve::cgp_item::{
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf, wiring_without_provider_for};
 use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::label::{label_for, redirect_lookup_args, render_ty, trait_generics};
-use crate::resolve::walk::{
-    ProjectionMismatch, holds, impl_where_obligations, is_context_side, is_descendable,
-    is_has_field, is_other_context_provider, is_workaround_plumbing, may_hold_for_some_unknown,
+use crate::resolve::query::{
+    ProjectionMismatch, holds, impl_where_obligations, may_hold_for_some_unknown,
     misdirected_impl_clauses, projection_mismatch, unmet_projection,
+};
+use crate::resolve::walk::{
+    is_context_side, is_descendable, is_has_field, is_other_context_provider,
+    is_workaround_plumbing,
 };
 
 /// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or

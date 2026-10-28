@@ -18,11 +18,7 @@ use crate::resolve::cgp_item::{decode_symbol, is_cgp_item, is_component_marker};
 /// component nobody defined. `None` for a key the classifier cannot render — one still carrying a
 /// generic parameter, an inference variable, or a placeholder — so the rewrite is declined rather
 /// than guessed.
-pub(crate) fn describe_key<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    key: Ty<'tcx>,
-    impl_did: DefId,
-) -> Option<WiringKey> {
+pub fn describe_key<'tcx>(tcx: TyCtxt<'tcx>, key: Ty<'tcx>, impl_did: DefId) -> Option<WiringKey> {
     match key.kind() {
         ty::Param(_) => Some(WiringKey::Blanket(bounding_trait(tcx, impl_did, key)?)),
         ty::Adt(def, _) if is_cgp_item(tcx, def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE) => {
@@ -44,7 +40,7 @@ pub(crate) fn describe_key<'tcx>(
 /// reads `AppNamespace` and a per-type table reads `DefaultImpls1<ShowImplComponent>`. It is the
 /// subject a namespace conflict is reported on, standing where a context does for a table
 /// collision.
-pub(crate) fn render_lookup_trait(tcx: TyCtxt<'_>, impl_did: DefId) -> String {
+pub fn render_lookup_trait(tcx: TyCtxt<'_>, impl_did: DefId) -> String {
     let trait_ref = tcx
         .impl_trait_ref(impl_did)
         .instantiate_identity()
@@ -75,7 +71,7 @@ pub(crate) fn render_lookup_trait(tcx: TyCtxt<'_>, impl_did: DefId) -> String {
 /// out, since the programmer never wrote it, so a key reads exactly as its entry wrote it. The bare
 /// `@…` form (no `Path!(…)` wrapper) is what the rewritten conflict message uses. `None` on a spine
 /// that is not `PathCons`/`Nil`.
-pub(crate) fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
+pub fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
     let mut segments: Vec<String> = Vec::new();
     let mut current = path;
     let mut guard = 0;
@@ -124,7 +120,7 @@ pub(crate) fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<Str
 /// If `delegate` is a `RedirectLookup<Table, Path>`, render its `Path` (the second argument) to
 /// its bare `@..` surface form — the redirected key the user should set. `None` for any other
 /// `Delegate`, which is an ordinary provider, not a redirect.
-pub(crate) fn redirect_path<'tcx>(tcx: TyCtxt<'tcx>, delegate: Ty<'tcx>) -> Option<String> {
+pub fn redirect_path<'tcx>(tcx: TyCtxt<'tcx>, delegate: Ty<'tcx>) -> Option<String> {
     let ty::Adt(def, args) = delegate.kind() else {
         return None;
     };
@@ -137,7 +133,7 @@ pub(crate) fn redirect_path<'tcx>(tcx: TyCtxt<'tcx>, delegate: Ty<'tcx>) -> Opti
 /// Render a provider (a `DelegateComponent` entry's `Delegate`, when it is a plain provider rather
 /// than a `RedirectLookup`) to the surface name the fix message uses, e.g. `GreetHello` or
 /// `UseType<String>`. CGP path prefixes are stripped by the post-processing pass that runs after.
-pub(crate) fn render_provider<'tcx>(tcx: TyCtxt<'tcx>, delegate: Ty<'tcx>) -> String {
+pub fn render_provider<'tcx>(tcx: TyCtxt<'tcx>, delegate: Ty<'tcx>) -> String {
     tcx.erase_and_anonymize_regions(delegate).to_string()
 }
 
@@ -153,7 +149,7 @@ fn bounding_trait<'tcx>(tcx: TyCtxt<'tcx>, impl_did: DefId, key: Ty<'tcx>) -> Op
 /// The bounding trait ref of a blanket `DelegateComponent<Key>` impl — the single non-`Sized` bound
 /// on its generic key parameter (`Key: DefaultNamespace<Ctx>`), the namespace or `for`-loop table
 /// the forwarding routes through. `None` if no such bound is found.
-pub(crate) fn bounding_trait_ref<'tcx>(
+pub fn bounding_trait_ref<'tcx>(
     tcx: TyCtxt<'tcx>,
     impl_did: DefId,
     key: Ty<'tcx>,

@@ -10,7 +10,8 @@ use crate::resolve::cgp_item::{
     component_params, find_cgp_trait, is_nil, is_path_cons, marker_to_consumer, path_cons_parts,
 };
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::walk::{holds, resolve_leaves};
+use crate::resolve::query::holds;
+use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of a CGP wiring failure reported at a *use site* rather than a
 /// `check_components!` entry — a consumer-method call (`E0599`) or any other diagnostic whose

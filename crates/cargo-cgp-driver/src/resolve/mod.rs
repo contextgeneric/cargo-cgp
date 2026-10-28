@@ -38,6 +38,7 @@ mod macro_less_provider;
 mod missing_use_provider;
 mod orphan;
 mod overflow;
+mod query;
 mod requirement;
 mod structural;
 mod undeclared;

@@ -6,7 +6,7 @@ use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 use crate::resolve::cgp_item::provider_blanket_marker;
 use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
-use crate::resolve::walk::holds;
+use crate::resolve::query::holds;
 
 /// How many components a `help` names at most.
 const MAX_COMPONENTS: usize = 3;

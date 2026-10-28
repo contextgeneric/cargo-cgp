@@ -12,7 +12,8 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 use crate::resolve::anchor::{enclosing_trait_impls, is_about_impl};
 use crate::resolve::cgp_item::{consumer_provider_trait, is_context_adt, is_provider_trait};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::walk::{holds, resolve_leaves};
+use crate::resolve::query::holds;
+use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait for
 /// Foreign` block whose `Self` is a foreign type holding the context* — the transfer example's
@@ -199,7 +200,7 @@ fn consumer_handoff_causes<'tcx>(
 /// (`<App as CanHandleApi<Api>>::Response: Send` → `App: CanHandleApi<Api>`). The base is what a
 /// projection bound really rests on, and it is concrete even when the projected type itself is not —
 /// which is exactly why the ordinary
-/// [`impl_where_obligations`](crate::resolve::walk::impl_where_obligations) (which normalizes,
+/// [`impl_where_obligations`](crate::resolve::query::impl_where_obligations) (which normalizes,
 /// turning the projection into an inference variable it then drops) cannot surface it. `None` when
 /// no impl matches. Mirrors `impl_where_obligations`'s next-solver-safe impl match, but reads the
 /// impl's predicates un-normalized so an associated-type `Self` survives long enough to read its
@@ -216,8 +217,9 @@ fn wrapper_chain_children<'tcx>(
 
         // Instantiate any higher-ranked binder with placeholders before relating, so a `for<'a>`
         // bound in the wrapper chain does not feed an escaping bound var into `ocx.eq` and panic
-        // rustc's generalizer (see [`impl_where_obligations`](crate::resolve::walk)). A no-op for a
-        // binder-free obligation.
+        // rustc's generalizer (see
+        // [`impl_where_obligations`](crate::resolve::query::impl_where_obligations)). A no-op for
+        // a binder-free obligation.
         let obligation_ref =
             infcx.enter_forall_and_leak_universe(obligation.map_bound(|p| p.trait_ref));
 

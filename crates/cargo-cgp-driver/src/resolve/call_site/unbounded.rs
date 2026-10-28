@@ -5,10 +5,9 @@ use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{self as hir, ExprKind, QPath};
 use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 
-use crate::resolve::call_site::{
-    CallTrait, MethodCall, declared_binding_ty, peel_hir_refs, traits_with_method,
-};
+use crate::resolve::call_site::{MethodCall, declared_binding_ty};
 use crate::resolve::label::{label_for, render_ty};
+use crate::resolve::query::{CallTrait, peel_hir_refs, traits_with_method};
 
 /// The cause of a consumer-method call whose receiver is a binding typed by a type parameter of
 /// the enclosing item (`context.greet()` for `context: &Context` in `fn run<Context>`), when the

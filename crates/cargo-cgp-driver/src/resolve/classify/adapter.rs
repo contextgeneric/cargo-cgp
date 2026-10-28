@@ -7,8 +7,7 @@ use rustc_span::def_id::DefId;
 use crate::resolve::cgp_item::is_provider_trait;
 use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
-use crate::resolve::walk::holds;
-use crate::resolve::wiring_name::import_path;
+use crate::resolve::query::{holds, import_path};
 
 /// The path prefix of the items the prelude exports, which need no `use` in a `help`.
 const PRELUDE_PATH: &str = "cgp::prelude::";
