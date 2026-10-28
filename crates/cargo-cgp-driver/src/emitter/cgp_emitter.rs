@@ -9,32 +9,26 @@ use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, rewrite_message, rewrite_required_for, rewrite_wiring_overflow,
 };
 use cargo_cgp_error_processing::{
-    AmbiguousNames, Causes, CgpImplMisuse, ChainNode, DedupLedger, DiagKind,
-    FIRST_CHECK_TABLE_LABEL, Leaf, MissingUseProvider, Origin, OrphanConflict, PendingNote,
-    ProviderImplWithoutMacro, ProviderTraitInUses, Resolved, SECOND_CHECK_TABLE_LABEL,
-    StructuralMistake, UndeclaredRequirement, UndeclaredTrait, UnimportedAbstractType,
-    WiringOverflow, cause_signature, cgp_impl_misuse_help, coalesce_underived_fields,
+    AmbiguousNames, Causes, ChainNode, DedupLedger, DiagKind, FIRST_CHECK_TABLE_LABEL,
+    MissingUseProvider, Origin, PendingNote, ProviderImplWithoutMacro, Resolved,
+    SECOND_CHECK_TABLE_LABEL, StructuralMistake, UndeclaredRequirement, UndeclaredTrait,
+    UnimportedAbstractType, WiringOverflow, cause_signature, coalesce_underived_fields,
     coalesced_headline, explain_footer_codes, fix_help_messages, group_by_shared_cause,
     is_explain_footer_text, is_method_bounds_text, is_recursion_limit_help_text,
-    is_unbounded_type_param_item_text, mentions_orphan_param_text, missing_use_provider_help,
-    orphan_conflict_help, plan_cgp_impl_misuse, plan_missing_use_provider, plan_orphan_conflict,
-    plan_provider_impl_without_macro, plan_provider_trait_in_uses, plan_resolved,
-    plan_structural_mistake, plan_undeclared_requirement, plan_undeclared_trait,
-    plan_unimported_abstract_type, plan_unresolved_wiring_name, plan_wiring_conflict,
-    postprocess_message, provider_impl_without_macro_help, provider_trait_in_uses_help,
-    structural_mistake_help, undeclared_requirement_helps, undeclared_trait_help,
-    unimported_abstract_type_help, unresolved_wiring_name_help, wiring_conflict_help,
+    is_unbounded_type_param_item_text, missing_use_provider_help, plan_missing_use_provider,
+    plan_provider_impl_without_macro, plan_resolved, plan_structural_mistake,
+    plan_undeclared_requirement, plan_undeclared_trait, plan_unimported_abstract_type,
+    postprocess_message, provider_impl_without_macro_help, structural_mistake_help,
+    undeclared_requirement_helps, undeclared_trait_help, unimported_abstract_type_help,
     wiring_overflow_help,
 };
-use rustc_errors::codes::{
-    E0107, E0117, E0119, E0186, E0207, E0210, E0220, E0271, E0275, E0277, E0308, E0425, E0428,
-    E0599, E0782,
-};
+use rustc_errors::codes::{E0119, E0207, E0220, E0271, E0275, E0277, E0308, E0425, E0428, E0599};
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
 use rustc_errors::{
     DiagArgValue, DiagInner, DiagMessage, Level, MultiSpan, Style, Sublevel, Suggestions,
 };
+use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
 
@@ -49,13 +43,15 @@ use crate::emitter::edit::{
 };
 use crate::emitter::fallback::{render_or_untransformed, transform_or_original};
 use crate::emitter::generated_names::drop_generated_names;
-use crate::emitter::name_resolution::is_unresolved_wiring_overflow;
 use crate::emitter::output::{Output, lock_output, register_output};
+use crate::emitter::pipeline::{BufferEdit, Reshape, Verdict, apply_reshape};
 use crate::emitter::repeats::merge_repeats;
-use crate::emitter::shared_dispatch_method::pair_shared_dispatch_method;
+use crate::emitter::stage::{
+    CgpImplMisuseStage, consumer_trait_as_key, is_cgp_impl_sibling_entry, orphan_conflict,
+    provider_trait_in_uses, shared_dispatch_method, unresolved_wiring_overflow, wiring_conflict,
+};
 use crate::resolve::{
-    self, ConflictAction, ConflictTrait, DetectedCgpImplMisuse, DetectedUndeclaredRequirement,
-    DetectedUnimportedAbstractType, ResolveCache,
+    self, DetectedUndeclaredRequirement, DetectedUnimportedAbstractType, ResolveCache,
 };
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
@@ -108,12 +104,9 @@ pub struct CgpEmitter<E: Emitter> {
     /// The provider impls already reported for a requirement they do not declare, so the errors
     /// one omission produces (at the attribute and at each signature) become one.
     requirement_reported: Vec<rustc_span::def_id::DefId>,
-    /// The `#[cgp_impl]` header-trait mistakes in the crate — a consumer trait or a non-CGP trait
-    /// named where the provider trait belongs — detected once from the compiler and reused. `None`
-    /// until first computed under an available `TyCtxt` (the macro-lowering errors this recognizes
-    /// arrive before trait solving, so the first candidate may precede one); an empty `Vec` means
-    /// "computed, none found". Owned data (names plus `Copy` spans), so it outlives the `TyCtxt`.
-    cgp_impl_misuses: Option<Vec<DetectedCgpImplMisuse>>,
+    /// Stage 2, which owns the crate's `#[cgp_impl]` header mistakes once detected; the resolver's
+    /// stage reads them to drop a check re-report of one.
+    cgp_impl_misuse: CgpImplMisuseStage,
     /// The provider structs whose provider-trait impl was reported as written without
     /// `#[cgp_provider]`, so a later `IsProviderFor` failure on one is that report's consequence.
     macroless_providers: Vec<String>,
@@ -153,38 +146,6 @@ struct TransformedResolution {
     coalesces: bool,
 }
 
-/// The outcome of recognizing a diagnostic as part of the cascade a `#[cgp_impl]` header-trait
-/// mistake produces.
-enum CgpImplMisuseAction {
-    /// Reshape the `E0107` into the coded header for `misuse`; the two spans scope the sibling purge.
-    Reshape {
-        misuse: CgpImplMisuse,
-        impl_span: Span,
-        macro_span: Span,
-    },
-    /// Drop this diagnostic as a redundant consequence of the mistake.
-    Suppress,
-}
-
-/// Whether `diag` is a sibling macro-lowering error of a `#[cgp_impl]` mistake — landing in the impl
-/// body (`impl_span`) or at the macro call-site the synthesized tokens share (`macro_span`, where
-/// `E0425`/`E0207` sit, outside the impl body). `E0425`/`E0186`/`E0207` are always siblings when they
-/// land there; an `E0308` type-mismatch cascade (from a malformed inner-provider bound) is a sibling
-/// only when it mentions the generated `__Context__`, so a genuine user type error is never dropped.
-fn is_cgp_impl_sibling(diag: &DiagInner, impl_span: Span, macro_span: Span) -> bool {
-    let Some(primary) = diag.span.primary_span() else {
-        return false;
-    };
-    if !(impl_span.overlaps(primary) || macro_span.overlaps(primary)) {
-        return false;
-    }
-    match diag.code {
-        Some(E0425) | Some(E0186) | Some(E0207) => true,
-        Some(E0308) => mentions_generated_context(diag),
-        _ => false,
-    }
-}
-
 /// Whether any plain-string message of `diag` — its main message, a child's, or a span label —
 /// satisfies `pred`. Used to recognize a diagnostic whose *main* message is a Fluent (non-`Str`)
 /// message but whose help or label carries the signal as plain text.
@@ -205,28 +166,6 @@ fn diag_mentions(diag: &DiagInner, pred: fn(&str) -> bool) -> bool {
             .children
             .iter()
             .any(|child| in_messages(&child.messages) || in_labels(&child.span))
-}
-
-/// Whether any message of `diag` or its children names the generated `__Context__` parameter — the
-/// tell that an `E0308` mismatch is a macro-lowering cascade rather than a user's own type error.
-fn mentions_generated_context(diag: &DiagInner) -> bool {
-    let in_messages = |messages: &[(DiagMessage, Style)]| {
-        messages.iter().any(|(message, _)| {
-            matches!(message, DiagMessage::Str(text) if text.contains("__Context__"))
-        })
-    };
-    in_messages(&diag.messages)
-        || diag
-            .children
-            .iter()
-            .any(|child| in_messages(&child.messages))
-}
-
-/// Whether a buffered entry is a sibling of the impl at `(impl_span, macro_span)` — the shape purged
-/// when the reshaped `E0107` is produced, since such a sibling (notably the name-resolution `E0425`)
-/// can arrive before the `E0107` that recognizes the mistake.
-fn is_cgp_impl_sibling_entry(entry: &BufEntry, impl_span: Span, macro_span: Span) -> bool {
-    matches!(entry, BufEntry::Plain(diag) if is_cgp_impl_sibling(diag, impl_span, macro_span))
 }
 
 /// A rebuilt "detailed explanations" footer note: `template` cloned from the original footer
@@ -259,7 +198,7 @@ impl<E: Emitter> CgpEmitter<E> {
             structural_reported: Vec::new(),
             unimported_reported: Vec::new(),
             requirement_reported: Vec::new(),
-            cgp_impl_misuses: None,
+            cgp_impl_misuse: CgpImplMisuseStage::default(),
             macroless_providers: Vec::new(),
             cgp_used: OnceCell::new(),
             ambiguous: OnceCell::new(),
@@ -414,6 +353,43 @@ impl<E: Emitter> CgpEmitter<E> {
         to_emit
     }
 
+    /// Write `reshape` into `diag` and buffer the result: the tail every reshaping stage shares.
+    /// The buffer edit goes first, then the wording and the span, the post-processing of a
+    /// rewritten diagnostic, and the span record that lets a later `?` cascade on the same
+    /// expression be dropped.
+    fn reshape(&mut self, mut diag: DiagInner, reshape: Reshape) {
+        let Reshape {
+            plan,
+            span,
+            records_spans,
+            buffer_edit,
+        } = reshape;
+        self.edit_buffer(buffer_edit);
+        apply_reshape(&mut diag, plan, span);
+        self.postprocess(&mut diag, Origin::Rewritten);
+        if records_spans {
+            self.record_cgp_spans(&diag);
+        }
+        self.push(BufEntry::Plain(Box::new(diag)));
+    }
+
+    /// Apply a reshape's edit of the diagnostics already buffered.
+    fn edit_buffer(&self, edit: BufferEdit) {
+        match edit {
+            BufferEdit::None => {}
+            BufferEdit::DropCgpImplSiblings {
+                impl_span,
+                macro_span,
+            } => self
+                .output()
+                .buffer
+                .retain(|entry| !is_cgp_impl_sibling_entry(entry, impl_span, macro_span)),
+            BufferEdit::Remove(index) => {
+                self.output().buffer.remove(index);
+            }
+        }
+    }
+
     /// Record the primary spans of a recognized CGP wiring failure, so a later `?`-operator
     /// cascade on the same expression can be suppressed. Called for every diagnostic the emitter
     /// transforms, before de-duplication, so even a re-report that is itself dropped still anchors
@@ -531,60 +507,6 @@ impl<E: Emitter> CgpEmitter<E> {
         };
         let _ = self.cgp_used.set(known);
         known
-    }
-
-    /// Recognize `diag` as a duplicate-key wiring conflict — the `E0119` coherence error a
-    /// duplicate `delegate_components!` or `cgp_namespace!` entry produces — returning the action
-    /// to take, or `None` when it is not one. The message text routes the shape (a redundant
-    /// `IsProviderFor` half is suppressed, a `DelegateComponent` half rewritten, and any other
-    /// trait tried as a `cgp_namespace!` conflict); the typed classifier verifies genuine CGP
-    /// impls sit at the caret before anything fires.
-    fn wiring_conflict(&self, diag: &DiagInner) -> Option<ConflictAction> {
-        if diag.code != Some(E0119) {
-            return None;
-        }
-        let message = main_message_text(diag)?;
-        // `IsProviderFor` is checked first: a `DelegateComponent` conflict names only
-        // `DelegateComponent`, while its companion names `IsProviderFor`. A message naming
-        // neither can still be a `cgp_namespace!` conflict on the user's own namespace trait,
-        // which the classifier recognizes by the impls at the carets.
-        let variant = if message.contains("IsProviderFor") {
-            ConflictTrait::IsProviderFor
-        } else if message.contains("DelegateComponent") {
-            ConflictTrait::Delegate
-        } else {
-            ConflictTrait::Other
-        };
-        let primary_span = diag.span.primary_span()?;
-        let label_spans: Vec<Span> = diag
-            .span
-            .span_labels()
-            .into_iter()
-            .map(|label| label.span)
-            .collect();
-        rustc_middle::ty::tls::with_opt(|tcx| {
-            resolve::classify_wiring_conflict(tcx?, variant, primary_span, &label_spans)
-        })
-    }
-
-    /// Recognize `diag` as an orphan-rule namespace registration — the `E0210` (or its sibling
-    /// `E0117`) the orphan rule produces when a crate registers wiring into a *foreign* namespace
-    /// keyed on a *foreign* key, so the generated `impl Namespace<_> for Key` has no local type.
-    /// Returns the recovered conflict, or `None` when it is not one. A cheap text pre-filter — the
-    /// machinery parameter (`__Components__` / `__Table__`) the `E0210` message names — gates the
-    /// impl scan; the rarer `E0117`, whose message names no parameter, is left to the typed
-    /// classifier alone, which confirms a foreign namespace trait sits at the caret before firing.
-    fn orphan_conflict(&self, diag: &DiagInner) -> Option<OrphanConflict> {
-        if !matches!(diag.code, Some(E0210) | Some(E0117)) {
-            return None;
-        }
-        if diag.code == Some(E0210)
-            && !main_message_text(diag).is_some_and(mentions_orphan_param_text)
-        {
-            return None;
-        }
-        let primary_span = diag.span.primary_span()?;
-        rustc_middle::ty::tls::with_opt(|tcx| resolve::classify_orphan_conflict(tcx?, primary_span))
     }
 
     /// Recognize `diag` as a structural mistake in a wiring or its checks, recovered from the
@@ -713,18 +635,6 @@ impl<E: Emitter> CgpEmitter<E> {
         })
     }
 
-    /// Recognize `diag` as a provider trait named in `#[uses(…)]`: an `E0107` on the trait name,
-    /// confirmed by [`resolve::detect_provider_trait_in_uses`].
-    fn provider_trait_in_uses(&self, diag: &DiagInner) -> Option<ProviderTraitInUses> {
-        if diag.code != Some(E0107) {
-            return None;
-        }
-        let primary_span = diag.span.primary_span()?;
-        rustc_middle::ty::tls::with_opt(|tcx| {
-            resolve::detect_provider_trait_in_uses(tcx?, primary_span)
-        })
-    }
-
     /// Recognize `diag` as a requirement a provider trait places on the context that a `#[cgp_impl]`
     /// provider does not declare: an `E0277` on the generated `__Context__`, confirmed by
     /// [`resolve::detect_undeclared_requirement`].
@@ -798,80 +708,6 @@ impl<E: Emitter> CgpEmitter<E> {
             span,
         });
         true
-    }
-
-    /// Detect the crate's `#[cgp_impl]` header-trait mistakes once, memoizing the result. Runs only
-    /// when a `TyCtxt` is in scope; the macro-lowering errors that trigger detection can be emitted
-    /// before trait solving puts one there, so a first attempt may find none and detection is
-    /// retried on a later diagnostic (the reshaped `E0107`, in the type-lowering phase, always has
-    /// one).
-    fn ensure_cgp_impl_misuses(&mut self) {
-        if self.cgp_impl_misuses.is_some() {
-            return;
-        }
-        if let Some(detected) =
-            rustc_middle::ty::tls::with_opt(|tcx| tcx.map(resolve::detect_cgp_impl_misuses))
-        {
-            self.cgp_impl_misuses = Some(detected);
-        }
-    }
-
-    /// The action for a diagnostic in the burst a `#[cgp_impl]` header mistake produces: reshape the
-    /// `E0107` whose caret sits on the misused trait name into the coded header, or suppress a
-    /// sibling macro-lowering error (`E0425`/`E0186`/`E0207`) landing inside the same impl as a
-    /// redundant consequence. `None` for anything unrelated.
-    fn cgp_impl_misuse_action(&self, diag: &DiagInner) -> Option<CgpImplMisuseAction> {
-        let misuses = self.cgp_impl_misuses.as_deref()?;
-        if misuses.is_empty() {
-            return None;
-        }
-        let primary = diag.span.primary_span()?;
-        if diag.code == Some(E0107)
-            && let Some(misuse) = misuses
-                .iter()
-                .find(|misuse| misuse.trait_ref_span.overlaps(primary))
-        {
-            return Some(CgpImplMisuseAction::Reshape {
-                misuse: misuse.misuse.clone(),
-                impl_span: misuse.impl_span,
-                macro_span: misuse.macro_span,
-            });
-        }
-        if misuses
-            .iter()
-            .any(|misuse| is_cgp_impl_sibling(diag, misuse.impl_span, misuse.macro_span))
-        {
-            return Some(CgpImplMisuseAction::Suppress);
-        }
-        None
-    }
-
-    /// Whether `resolved` is the downstream check re-report of a detected *consumer-trait*
-    /// `#[cgp_impl]` mistake — every cause a `NotAProvider` leaf naming that mistake's provider
-    /// struct and the provider trait its header should have targeted. Such a failure is a pure
-    /// consequence of the mistake already reported as `[CGP-E032]` (the provider struct cannot be a
-    /// provider because its impl targets the wrong trait), so it is suppressed rather than shown as
-    /// its own `[CGP-E115]` block. A requirement of that impl which fails on its own, such as a field
-    /// the context lacks, is a separate mistake: the walk resolves it to its own cause through the
-    /// impl as written, so a report carrying it is kept.
-    fn is_cgp_impl_misuse_check_report(&self, resolved: &Resolved) -> bool {
-        let Some(misuses) = self.cgp_impl_misuses.as_deref() else {
-            return false;
-        };
-        if misuses.is_empty() || resolved.causes.is_empty() {
-            return false;
-        }
-        resolved.causes.iter().all(|cause| {
-            matches!(
-                &cause.leaf,
-                Leaf::NotAProvider { provider, provider_trait, .. }
-                    if misuses.iter().any(|misuse| matches!(
-                        &misuse.misuse,
-                        CgpImplMisuse::ConsumerTrait { provider: expected, .. }
-                            if provider == &misuse.self_ty && provider_trait == expected
-                    ))
-            )
-        })
     }
 
     /// Rewrite the trailing "detailed explanations" footer of a flushed diagnostic list so it names
@@ -1208,149 +1044,35 @@ impl<E: Emitter> CgpEmitter<E> {
     /// Transform one diagnostic and buffer the result: the body of
     /// [`emit_diagnostic`](Emitter::emit_diagnostic), which runs it contained. `original` is the
     /// diagnostic as rustc built it, kept for the flush to fall back on.
-    fn transform(&mut self, mut diag: DiagInner, original: &DiagInner) {
+    fn transform(&mut self, diag: DiagInner, original: &DiagInner) {
+        // The compiler handle is read once for the whole stage list. Reading it runs no query, so a
+        // stage that must not query on an early-phase diagnostic still decides that itself.
+        rustc_middle::ty::tls::with_opt(|tcx| self.transform_with(tcx, diag, original));
+    }
+
+    /// [`transform`](Self::transform) with the compiler handle, when one is in scope.
+    fn transform_with(
+        &mut self,
+        tcx: Option<TyCtxt<'_>>,
+        mut diag: DiagInner,
+        original: &DiagInner,
+    ) {
         // The injected `--verbose` lists every implementor in a failed bound's help; cut the list
         // back to rustc's own length before anything else reads the diagnostic.
         bound_candidate_lists(&mut diag);
-        // A `#[cgp_impl]` header naming the wrong trait — the component's consumer trait, or a
-        // non-CGP trait — makes the macro generate an inside-out impl of the wrong trait, producing
-        // a burst of cryptic macro-lowering errors (E0425/E0107/E0186/E0207) plus a downstream check
-        // failure, none naming the mistake. Detect it structurally (once) and reshape the E0107
-        // whose caret is on the misused trait name into a `[CGP-E032]`/`[CGP-E033]` header with the
-        // fix, suppressing the rest of the cascade — the sibling errors here, the check re-report
-        // below.
-        if matches!(
-            diag.code,
-            Some(E0107) | Some(E0425) | Some(E0186) | Some(E0207) | Some(E0308)
-        ) {
-            // Detection forces HIR/trait-graph queries, which re-enter the `DiagCtxt` lock and abort
-            // the compiler if run while an *early-phase* diagnostic is emitting (name resolution,
-            // where `E0425` lands, is mid-`hir_owner`). So detection is triggered only by the
-            // `E0107` — a type-lowering-phase error, always present for this mistake and safe to
-            // query from. The `E0425`/`E0186`/`E0207` siblings that precede it are purged from the
-            // buffer at reshape time; those that follow are suppressed inline once the memo is set.
-            if diag.code == Some(E0107) {
-                self.ensure_cgp_impl_misuses();
-            }
-            match self.cgp_impl_misuse_action(&diag) {
-                Some(CgpImplMisuseAction::Suppress) => return,
-                Some(CgpImplMisuseAction::Reshape {
-                    misuse,
-                    impl_span,
-                    macro_span,
-                }) => {
-                    let primary = diag.span.primary_span();
-                    replace_header(&mut diag, plan_cgp_impl_misuse(&misuse));
-                    // Keep rustc's caret — already on the misused trait name — but drop its "expected
-                    // N generic arguments" label, which no longer fits the reshaped message.
-                    if let Some(primary) = primary {
-                        diag.span = MultiSpan::from_span(primary);
-                    }
-                    diag.children = vec![subdiag(Sublevel::Help, cgp_impl_misuse_help(&misuse))];
-                    diag.suggestions = Suggestions::Enabled(Vec::new());
-                    self.postprocess(&mut diag, Origin::Rewritten);
-                    // Drop any sibling of this impl already buffered: E0425 (name resolution)
-                    // arrives before this E0107 (type lowering), possibly before a `TyCtxt` was in
-                    // scope to detect the mistake, so it was buffered verbatim.
-                    self.output()
-                        .buffer
-                        .retain(|entry| !is_cgp_impl_sibling_entry(entry, impl_span, macro_span));
-                    self.record_cgp_spans(&diag);
-                    self.push(BufEntry::Plain(Box::new(diag)));
-                    return;
-                }
-                None => {}
-            }
-        }
-        // A provider trait named in `#[uses(…)]`, where a dependency names the consumer trait: rustc
-        // reports missing generics and suggests the generated `__Context__`. Reword it to name the
-        // consumer trait to declare, keeping the caret on the trait name.
-        if let Some(misuse) = self.provider_trait_in_uses(&diag)
-            && let Some(primary_span) = diag.span.primary_span()
-        {
-            replace_header(&mut diag, plan_provider_trait_in_uses(&misuse));
-            diag.span = MultiSpan::from_span(primary_span);
-            diag.children.push(subdiag(
-                Sublevel::Help,
-                provider_trait_in_uses_help(&misuse),
-            ));
-            self.postprocess(&mut diag, Origin::Rewritten);
-            self.record_cgp_spans(&diag);
-            self.push(BufEntry::Plain(Box::new(diag)));
-            return;
-        }
-        // An overflow on a requirement a wiring entry with an unresolved value left unprovable is
-        // that entry's consequence, already reported at the value.
-        if is_unresolved_wiring_overflow(&diag) {
-            return;
-        }
-        // A consumer trait written as a wiring key: rustc reports a trait where a type belongs and
-        // suggests `dyn`. Reword it to name the component the key should be.
-        if diag.code == Some(E0782)
-            && let Some(primary_span) = diag.span.primary_span()
-            && let Some(name) = rustc_middle::ty::tls::with_opt(|tcx| {
-                resolve::detect_consumer_trait_as_key(tcx?, primary_span)
-            })
-        {
-            replace_header(&mut diag, plan_unresolved_wiring_name(&name));
-            diag.span = MultiSpan::from_span(primary_span);
-            if let Some(help) = unresolved_wiring_name_help(&name) {
-                diag.children.push(subdiag(Sublevel::Help, help));
-            }
-            self.postprocess(&mut diag, Origin::Rewritten);
-            self.record_cgp_spans(&diag);
-            self.push(BufEntry::Plain(Box::new(diag)));
-            return;
-        }
-        // A duplicate-key coherence conflict (E0119) is handled as one logical error: the
-        // redundant `IsProviderFor` half of the pair is dropped, and the `DelegateComponent` half
-        // is reworded to name the colliding key(s), keeping rustc's two carets.
-        if let Some(action) = self.wiring_conflict(&diag) {
-            match action {
-                ConflictAction::Suppress => return,
-                ConflictAction::Rewrite(conflict) => {
-                    replace_header(&mut diag, plan_wiring_conflict(&conflict));
-                    // A redirect collision carries its fix as a `help`, kept out of the header.
-                    if let Some(help) = wiring_conflict_help(&conflict) {
-                        diag.children.push(subdiag(Sublevel::Help, help));
-                    }
-                    // A rewritten diagnostic: bare `@…` paths.
-                    self.postprocess(&mut diag, Origin::Rewritten);
-                    self.record_cgp_spans(&diag);
-                    self.push(BufEntry::Plain(Box::new(diag)));
-                    return;
-                }
-            }
-        }
-        // An orphan-rule namespace registration (E0210/E0117): a crate registering wiring into a
-        // foreign namespace keyed on a foreign key. Reword the raw coherence error — which names
-        // the machinery parameter and frames a CGP wiring decision as a bare coherence rule — into
-        // a `[CGP-E022]` header naming the namespace and key, re-aiming the caret at the offending
-        // macro alone (its "uncovered type parameter" label no longer applies), and carrying the
-        // ownership-based fix in a `help`.
-        if let Some(conflict) = self.orphan_conflict(&diag)
-            && let Some(primary_span) = diag.span.primary_span()
-        {
-            replace_header(&mut diag, plan_orphan_conflict(&conflict));
-            diag.span = MultiSpan::from_span(primary_span);
-            diag.children
-                .push(subdiag(Sublevel::Help, orphan_conflict_help(&conflict)));
-            // A rewritten diagnostic: bare `@…` paths (a path key renders without the `Path!`
-            // wrapper).
-            self.postprocess(&mut diag, Origin::Rewritten);
-            self.record_cgp_spans(&diag);
-            self.push(BufEntry::Plain(Box::new(diag)));
-            return;
-        }
-        // Two `#[cgp_auto_dispatch]` traits in one module sharing a method name: the computer's
-        // `E0428` and the helper's before it become one report on the two method names.
-        if diag.code == Some(E0428) {
-            let paired = pair_shared_dispatch_method(&mut self.output().buffer, &mut diag);
-            if paired {
-                self.postprocess(&mut diag, Origin::Rewritten);
-                self.push(BufEntry::Plain(Box::new(diag)));
-                return;
-            }
+        let verdict = self
+            .cgp_impl_misuse
+            .run(tcx, &diag)
+            .or_else(|| provider_trait_in_uses(tcx, &diag))
+            .or_else(|| unresolved_wiring_overflow(&diag))
+            .or_else(|| consumer_trait_as_key(tcx, &diag))
+            .or_else(|| wiring_conflict(tcx, &diag))
+            .or_else(|| orphan_conflict(tcx, &diag))
+            .or_else(|| shared_dispatch_method(&diag, &self.output().buffer));
+        match verdict {
+            Verdict::Continue => {}
+            Verdict::Drop => return,
+            Verdict::Reshape(reshape) => return self.reshape(diag, reshape),
         }
         // A structural mistake in a wiring or its checks, such as a check table listing one entry
         // twice: the compiler names only the generated items, so reword the header to name the
@@ -1568,7 +1290,7 @@ impl<E: Emitter> CgpEmitter<E> {
                 // provider struct failing `NotAProvider` because its impl targets the wrong trait)
                 // is a pure consequence of the `[CGP-E032]` already shown, so drop it. A failing
                 // requirement of that impl resolves to a cause of its own and is kept.
-                if self.is_cgp_impl_misuse_check_report(&resolved) {
+                if self.cgp_impl_misuse.is_check_report(&resolved) {
                     return;
                 }
                 let sig = cause_signature(&resolved);

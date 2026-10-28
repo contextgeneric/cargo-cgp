@@ -2,6 +2,7 @@ pub mod args;
 pub mod containment;
 pub mod expand;
 pub mod help;
+pub mod pipeline;
 pub mod postprocess;
 pub mod repeats;
 pub mod run;

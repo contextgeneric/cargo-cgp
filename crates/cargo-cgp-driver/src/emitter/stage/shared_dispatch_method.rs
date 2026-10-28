@@ -7,30 +7,27 @@
 //! name, does not. So neither alone identifies the mistake, but the pair does: a helper `E0428`
 //! from a `#[cgp_auto_dispatch]` expansion and a computer `E0428` whose name the same method gives.
 //! The macro defines the helper before the computer, so the helper's `E0428` is already buffered
-//! when the computer's arrives. The pass needs no compiler query, since an `E0428` arrives during
+//! when the computer's arrives. The stage needs no compiler query, since an `E0428` arrives during
 //! name resolution.
 
 use cargo_cgp_error_processing::{
-    FIRST_DISPATCH_METHOD_LABEL, SECOND_DISPATCH_METHOD_LABEL, StructuralMistake,
-    dispatch_computer_name, dispatch_helper_method, plan_structural_mistake,
-    structural_mistake_help, structural_mistake_note,
+    ClassPlan, FIRST_DISPATCH_METHOD_LABEL, SECOND_DISPATCH_METHOD_LABEL, StructuralMistake,
+    dispatch_computer_name, dispatch_helper_method,
 };
 use rustc_errors::codes::E0428;
-use rustc_errors::{DiagArgValue, DiagInner, Sublevel};
+use rustc_errors::{DiagArgValue, DiagInner};
 
 use crate::emitter::buffer::BufEntry;
-use crate::emitter::edit::{replace_header, subdiag, two_definitions_span};
+use crate::emitter::pipeline::{BufferEdit, Reshape, SpanPolicy, Verdict};
 use crate::resolve::is_from_auto_dispatch;
 
-/// Pair `diag`, an incoming computer `E0428`, with the buffered helper `E0428` of the method two
-/// `#[cgp_auto_dispatch]` traits share, and word the pair as one `[CGP-E061]` on `diag`, whose
-/// carets are the two method names, dropping the helper's from `buffer`. Returns whether it paired.
-pub(crate) fn pair_shared_dispatch_method(
-    buffer: &mut Vec<BufEntry>,
-    diag: &mut DiagInner,
-) -> bool {
+/// Stage 8: pair `diag`, an incoming computer `E0428`, with the buffered helper `E0428` of the
+/// method two `#[cgp_auto_dispatch]` traits share, and word the pair as one `[CGP-E061]` on `diag`,
+/// whose carets are the two method names, removing the helper's from `buffer`. Any other diagnostic
+/// is left to the next stage.
+pub fn shared_dispatch_method(diag: &DiagInner, buffer: &[BufEntry]) -> Verdict {
     let Some(name) = defined_twice(diag) else {
-        return false;
+        return Verdict::Continue;
     };
     let partner = buffer.iter().enumerate().find_map(|(index, entry)| {
         let BufEntry::Plain(buffered) = entry else {
@@ -41,11 +38,24 @@ pub(crate) fn pair_shared_dispatch_method(
         (dispatch_computer_name(&method) == name).then_some((index, helper, method))
     });
     let Some((index, helper, method)) = partner else {
-        return false;
+        return Verdict::Continue;
     };
-    buffer.remove(index);
-    word_shared_dispatch_method(diag, method, helper, name);
-    true
+    let mistake = StructuralMistake::SharedDispatchMethod {
+        method,
+        helper,
+        computer: name,
+    };
+    Verdict::Reshape(Reshape {
+        records_spans: false,
+        buffer_edit: BufferEdit::Remove(index),
+        ..Reshape::new(
+            ClassPlan::structural_mistake(&mistake),
+            SpanPolicy::TwoDefinitions {
+                first: FIRST_DISPATCH_METHOD_LABEL,
+                second: SECOND_DISPATCH_METHOD_LABEL,
+            },
+        )
+    })
 }
 
 /// The name an `E0428` ("the name `name` is defined multiple times") reports, read from its
@@ -66,31 +76,4 @@ fn helper_method(diag: &DiagInner, name: &str) -> Option<String> {
     let method = dispatch_helper_method(name)?;
     let primary = diag.span.primary_span()?;
     is_from_auto_dispatch(primary).then(|| method.to_owned())
-}
-
-/// Reword `diag`, the computer's `E0428`, as the shared method, its two carets labelled as the two
-/// method names.
-fn word_shared_dispatch_method(
-    diag: &mut DiagInner,
-    method: String,
-    helper: String,
-    computer: String,
-) {
-    let mistake = StructuralMistake::SharedDispatchMethod {
-        method,
-        helper,
-        computer,
-    };
-    replace_header(diag, plan_structural_mistake(&mistake));
-    diag.span = two_definitions_span(
-        &diag.span,
-        FIRST_DISPATCH_METHOD_LABEL,
-        SECOND_DISPATCH_METHOD_LABEL,
-    );
-    diag.children.clear();
-    if let Some(note) = structural_mistake_note(&mistake) {
-        diag.children.push(subdiag(Sublevel::Note, note));
-    }
-    diag.children
-        .push(subdiag(Sublevel::Help, structural_mistake_help(&mistake)));
 }

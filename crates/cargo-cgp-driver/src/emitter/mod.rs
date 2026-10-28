@@ -16,17 +16,17 @@
 //! the flush that renders the buffered diagnostics, falls back to the diagnostics rustc built.
 //!
 //! The module is split into `install` (rebuilding the compiler's default emitter and wrapping
-//! it), `cgp_emitter` (the [`CgpEmitter`] type and its orchestration), `edit` (the
-//! `DiagInner`-editing helpers), `buffer` (the diagnostics held until the flush), `output`
-//! (the inner emitter and buffer the panic hook can reach), `name_resolution` (the pass that
-//! reshapes a wiring entry's name-resolution errors once resolution is over),
+//! it), `cgp_emitter` (the [`CgpEmitter`] type and its orchestration), `pipeline` (the verdict a
+//! stage returns and the step that writes a reshape), `stage` (the stages, one module each),
+//! `edit` (the `DiagInner`-editing helpers), `buffer` (the diagnostics held until the flush),
+//! `output` (the inner emitter and buffer the panic hook can reach), `name_resolution` (the pass
+//! that reshapes a wiring entry's name-resolution errors once resolution is over),
 //! `generated_names` (the pass that drops a suggestion naming a generated identifier),
 //! `use_type_misspelling` (the pass that names the rename a misspelled `#[use_type]` import
 //! needs), `attribute_splice` (the drop of a suggestion spliced after an attribute macro),
-//! `shared_dispatch_method` (the pairing of the two errors two dispatch traits sharing a method
-//! name produce), `repeats` (the flush's merge of a diagnostic rustc reports twice),
-//! `containment` (containing a panic and the panic hooks), and `fallback` (the diagnostics
-//! emitted when a transform or the flush panics).
+//! `repeats` (the flush's merge of a diagnostic rustc reports twice), `containment` (containing a
+//! panic and the panic hooks), and `fallback` (the diagnostics emitted when a transform or the
+//! flush panics).
 
 mod attribute_splice;
 mod buffer;
@@ -38,8 +38,9 @@ mod generated_names;
 mod install;
 mod name_resolution;
 mod output;
+mod pipeline;
 mod repeats;
-mod shared_dispatch_method;
+mod stage;
 mod use_type_misspelling;
 
 pub use cgp_emitter::CgpEmitter;
@@ -49,5 +50,6 @@ pub use fallback::*;
 pub use generated_names::drop_generated_name_suggestions;
 pub use install::install;
 pub use name_resolution::reshape_name_resolution_errors;
+pub use pipeline::*;
 pub use repeats::merge_repeats;
 pub use use_type_misspelling::reshape_use_type_misspellings;
