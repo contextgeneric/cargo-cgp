@@ -18,13 +18,13 @@ use crate::config::{
 /// Whether `def_id` is a trait/type named `name` defined by crate `krate` — the DefId anchor
 /// that keeps a same-named item from an unrelated crate from driving resolution, exactly as
 /// `component_map::is_cgp_is_provider_for` does for `IsProviderFor`.
-pub(crate) fn is_cgp_item(tcx: TyCtxt<'_>, def_id: DefId, name: &str, krate: &str) -> bool {
+pub fn is_cgp_item(tcx: TyCtxt<'_>, def_id: DefId, name: &str, krate: &str) -> bool {
     tcx.item_name(def_id).as_str() == name && tcx.crate_name(def_id.krate).as_str() == krate
 }
 
 /// The `DefId` of the CGP trait named `name` defined by crate `krate`, or `None` if the crate does
 /// not use CGP. Anchored by name *and* crate, like every other CGP lookup here.
-pub(crate) fn find_cgp_trait(tcx: TyCtxt<'_>, name: &str, krate: &str) -> Option<DefId> {
+pub fn find_cgp_trait(tcx: TyCtxt<'_>, name: &str, krate: &str) -> Option<DefId> {
     tcx.all_traits_including_private()
         .find(|&did| is_cgp_item(tcx, did, name, krate))
 }
@@ -39,7 +39,7 @@ pub(crate) fn find_cgp_trait(tcx: TyCtxt<'_>, name: &str, krate: &str) -> Option
 /// The descent treats a provider-trait bound as a step to walk into (its concrete impl carries the
 /// provider's real `where` bounds), and a provider-trait obligation *for the context itself* is
 /// routing that the tree drops.
-pub(crate) fn is_provider_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_provider_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     provider_blanket_marker(tcx, def_id).is_some()
 }
 
@@ -47,7 +47,7 @@ pub(crate) fn is_provider_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// DelegateComponent<Marker>` bound — the `IsProviderFor`-free replacement for reading the marker
 /// off the `IsProviderFor<Marker, …>` supertrait. `None` when `def_id` has no such blanket (so it
 /// is not a provider trait). Also serves as the provider-trait recognizer ([`is_provider_trait`]).
-pub(crate) fn provider_blanket_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
+pub fn provider_blanket_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
     for &impl_did in tcx.trait_impls_of(def_id).blanket_impls() {
         let self_ty = tcx.type_of(impl_did).skip_binder();
         if !matches!(self_ty.kind(), ty::Param(_)) {
@@ -80,7 +80,7 @@ pub(crate) fn provider_blanket_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) ->
 /// own self and whose trait is a [provider trait](is_provider_trait) is that provider. `None` when
 /// `def_id` is not a CGP consumer trait — so [`is_consumer_trait`] is exactly this returning `Some`.
 /// This is `IsProviderFor`-free: it reads only the consumer↔provider blanket link.
-pub(crate) fn consumer_provider_trait(tcx: TyCtxt<'_>, consumer_did: DefId) -> Option<DefId> {
+pub fn consumer_provider_trait(tcx: TyCtxt<'_>, consumer_did: DefId) -> Option<DefId> {
     for &impl_did in tcx.trait_impls_of(consumer_did).blanket_impls() {
         let impl_self = tcx.type_of(impl_did).skip_binder();
         for &(clause, _) in tcx.clauses_of(impl_did).clauses {
@@ -99,7 +99,7 @@ pub(crate) fn consumer_provider_trait(tcx: TyCtxt<'_>, consumer_did: DefId) -> O
 /// Whether `def_id` is a CGP *consumer* trait — one whose blanket impl routes its own context to a
 /// provider trait ([`consumer_provider_trait`]). `IsProviderFor`-free, like the rest of the typed
 /// resolver's trait recognition.
-pub(crate) fn is_consumer_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_consumer_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     consumer_provider_trait(tcx, def_id).is_some()
 }
 
@@ -123,28 +123,28 @@ pub(crate) fn is_consumer_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// extensible-data casts and builders (`CanUpcast`, `CanBuildFrom`), whose failures end on the
 /// extractor and builder recursions the walk cannot yet word as the field or variant at fault,
 /// while the compiler's own headline names it (`Big: FromVariant<Symbol!("Bar")>`).
-pub(crate) fn is_blanket_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_blanket_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     !CGP_CRATES.contains(&tcx.crate_name(def_id.krate).as_str())
         && has_blanket_impl(tcx, def_id)
         && blanket_depends_on_cgp(tcx, def_id, 0)
 }
 
 /// Whether `def_id` is a trait carrying at least one blanket impl.
-fn has_blanket_impl(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn has_blanket_impl(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.is_trait(def_id) && !tcx.trait_impls_of(def_id).blanket_impls().is_empty()
 }
 
 /// How far the CGP-evidence search follows one trait's blanket bounds into another's. A
 /// composed chain (`Describe` → `HasName` → `HasField`) is a few links at most, and the bound is
 /// also what stops a pair of traits that depend on each other from looping.
-const MAX_BLANKET_TRAIT_DEPTH: u32 = 4;
+pub const MAX_BLANKET_TRAIT_DEPTH: u32 = 4;
 
 /// Whether a blanket-impl trait's blanket actually depends on CGP — the positive evidence a trait
 /// needs before it is read as a blanket trait. A bound qualifies when its trait comes
 /// from one of [`CGP_CRATES`] (`HasField` above all), is a CGP consumer trait (recognized
 /// structurally in any crate), or is itself such a blanket trait, followed to
 /// [`MAX_BLANKET_TRAIT_DEPTH`].
-fn blanket_depends_on_cgp(tcx: TyCtxt<'_>, def_id: DefId, depth: u32) -> bool {
+pub fn blanket_depends_on_cgp(tcx: TyCtxt<'_>, def_id: DefId, depth: u32) -> bool {
     if depth >= MAX_BLANKET_TRAIT_DEPTH {
         return false;
     }
@@ -194,7 +194,7 @@ pub fn links_cgp(tcx: TyCtxt<'_>) -> bool {
 
 /// Whether `def_id` is defined by one of CGP's own crates ([`CGP_CRATES`]) — anchored to the
 /// defining crate, so a same-named trait elsewhere never counts as evidence.
-fn is_cgp_crate_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_cgp_crate_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let krate = tcx.crate_name(def_id.krate);
     CGP_CRATES.iter().any(|name| krate.as_str() == *name)
 }
@@ -205,7 +205,7 @@ fn is_cgp_crate_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// blanket bounds on `DelegateComponent<marker>` ([`provider_blanket_marker`]); the consumer is the
 /// one whose blanket routes to that provider ([`consumer_provider_trait`]). `None` when `marker` is
 /// not an ADT, or no provider/consumer pair keys on it.
-pub(crate) fn marker_to_consumer(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<(DefId, DefId)> {
+pub fn marker_to_consumer(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<(DefId, DefId)> {
     let provider_did = marker_provider_trait(tcx, marker)?;
     let consumer_did = tcx
         .all_traits_including_private()
@@ -217,7 +217,7 @@ pub(crate) fn marker_to_consumer(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<(Def
 /// `DelegateComponent<marker>` ([`provider_blanket_marker`]). `None` when `marker` is not an ADT,
 /// or when no provider trait keys on it, which is what makes this the marker recognizer
 /// [`is_component_marker`] as well.
-pub(crate) fn marker_provider_trait(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<DefId> {
+pub fn marker_provider_trait(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<DefId> {
     let ty::Adt(marker_def, _) = marker.kind() else {
         return None;
     };
@@ -235,7 +235,7 @@ pub(crate) fn marker_provider_trait(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<D
 /// a wiring key, such as the `String` of a per-type default or the `u64` of a dispatch table. The
 /// distinction is what lets a conflicting key be worded as a component or as a type, and it is
 /// structural rather than by name, so a type merely *called* `FooComponent` does not pass.
-pub(crate) fn is_component_marker(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn is_component_marker(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     marker_provider_trait(tcx, ty).is_some()
 }
 
@@ -252,10 +252,7 @@ pub(crate) fn is_component_marker(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// decisive one — it is what makes `UseType<T>` a valid fix to suggest — and it is anchored by
 /// `DefId` to the crate defining `UseType`, so a same-named type elsewhere cannot pass. A
 /// behavioral component, or a plain trait with an associated type, matches none of the three.
-pub(crate) fn abstract_type_component_marker<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> Option<Ty<'tcx>> {
+pub fn abstract_type_component_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
     let mut items = tcx.associated_items(def_id).in_definition_order();
     let first = items.next()?;
     if items.next().is_some() || first.kind.tag() != ty::AssocTag::Type {
@@ -283,12 +280,12 @@ pub(crate) fn abstract_type_component_marker<'tcx>(
 ///
 /// The shape alone is not enough, since any user trait can have a lone `type Delegate`, so the
 /// trait must also show it is a namespace ([`namespace_has_cgp_evidence`]).
-pub(crate) fn is_namespace_lookup_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_namespace_lookup_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     has_namespace_shape(tcx, def_id) && namespace_has_cgp_evidence(tcx, def_id, 0)
 }
 
 /// Whether `def_id` is a trait whose only associated item is a type named `Delegate`.
-fn has_namespace_shape(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn has_namespace_shape(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     if !tcx.is_trait(def_id) {
         return false;
     }
@@ -303,13 +300,13 @@ fn has_namespace_shape(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// How far the namespace-evidence search follows a namespace to the parent it inherits. A real
 /// hierarchy is a few levels deep, and the bound also stops a cycle of namespaces from looping.
-const MAX_NAMESPACE_DEPTH: u32 = 8;
+pub const MAX_NAMESPACE_DEPTH: u32 = 8;
 
 /// Whether a namespace-shaped trait shows that CGP generated it: it is one of CGP's own
 /// ([`CGP_CRATES`], such as `DefaultNamespace`), an impl of it is keyed by a component marker or a
 /// `PathCons` path (the entries `cgp_namespace!` writes), or an impl's `where` clause names a parent
 /// namespace that shows the same evidence (the inheritance blanket every child namespace gets).
-fn namespace_has_cgp_evidence(tcx: TyCtxt<'_>, def_id: DefId, depth: u32) -> bool {
+pub fn namespace_has_cgp_evidence(tcx: TyCtxt<'_>, def_id: DefId, depth: u32) -> bool {
     if is_cgp_crate_trait(tcx, def_id) {
         return true;
     }
@@ -336,7 +333,7 @@ fn namespace_has_cgp_evidence(tcx: TyCtxt<'_>, def_id: DefId, depth: u32) -> boo
 
 /// Whether `ty` is a struct or enum defined in the crate being compiled. A context may also come
 /// from another crate ([`is_context_adt`]).
-pub(crate) fn is_local_adt(ty: Ty<'_>) -> bool {
+pub fn is_local_adt(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(def, _) if def.did().is_local())
 }
 
@@ -344,7 +341,7 @@ pub(crate) fn is_local_adt(ty: Ty<'_>) -> bool {
 /// compiled defines, or one from another crate that carries CGP wiring of its own (a
 /// `DelegateComponent` impl keyed on it), as a context a library defines and exports does. The
 /// wiring evidence keeps a foreign type that is no context, such as `Vec`, from being read as one.
-pub(crate) fn is_context_adt(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn is_context_adt(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     let ty::Adt(def, _) = ty.kind() else {
         return false;
     };
@@ -354,7 +351,7 @@ pub(crate) fn is_context_adt(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// Whether `ty` is a type with `DelegateComponent` wiring of its own, an impl whose `Self` is this
 /// type: what makes a type a *context*, the word a message uses only for such a type. A type
 /// argument a consumer trait is required of, with no wiring, is named plainly instead.
-pub(crate) fn carries_wiring(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn carries_wiring(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     let ty::Adt(def, _) = ty.kind() else {
         return false;
     };
@@ -377,7 +374,7 @@ pub(crate) fn carries_wiring(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// "required for … to implement …" note, whose span can fall inside the provider's own definition).
 /// The delegation blanket `impl<Ctx, P> ProviderTrait<Ctx> for P` has a *type parameter* `Self`, not
 /// an ADT, so it never matches here.
-pub(crate) fn is_provider_struct(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn is_provider_struct(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     let ty::Adt(def, _) = ty.kind() else {
         return false;
     };
@@ -396,15 +393,12 @@ pub(crate) fn is_provider_struct(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 
 /// Whether `ty` is CGP's type-level path spine `PathCons<…>` — an `open`/namespace redirect key,
 /// as opposed to a bare component marker. Anchored by `DefId` to [`CGP_BASE_TYPES_CRATE`].
-pub(crate) fn is_path_cons(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn is_path_cons(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(def, _) if is_cgp_item(tcx, def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE))
 }
 
 /// The `(head, tail)` of a `PathCons<Head, Tail>` type, or `None` when `ty` is not a `PathCons`.
-pub(crate) fn path_cons_parts<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    ty: Ty<'tcx>,
-) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+pub fn path_cons_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
     match ty.kind() {
         ty::Adt(def, args) if is_cgp_item(tcx, def.did(), PATH_CONS_TYPE, CGP_BASE_TYPES_CRATE) => {
             Some((args.type_at(0), args.type_at(1)))
@@ -418,13 +412,13 @@ pub(crate) fn path_cons_parts<'tcx>(
 /// A `RedirectLookup` keys its table on the redirect path *plus the component's own parameters*, so
 /// a `Handler` lookup for the fragment `Missing` reads `@…HandlerComponent.Missing.<Input>`. When
 /// the failure was recovered from a call the code does not fully type — a
-/// [call site](crate::resolve::call_site) whose input is inferred — that trailing parameter is a
-/// placeholder, and reporting it would name an entry the programmer could not write, besides being
-/// dropped as unknowable. Trimming the trailing run leaves the path they *can* wire.
+/// [call site](crate::resolve::resolve_call_site) whose input is inferred — that trailing parameter
+/// is a placeholder, and reporting it would name an entry the programmer could not write, besides
+/// being dropped as unknowable. Trimming the trailing run leaves the path they *can* wire.
 ///
 /// Only a trailing run is trimmed: a placeholder further up is part of what the lookup keys on, so
 /// such a leaf stays unknowable and is dropped as before.
-pub(crate) fn trim_unknown_path_tail<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub fn trim_unknown_path_tail<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let ty::Adt(cons_def, _) = path.kind() else {
         return None;
     };
@@ -456,7 +450,7 @@ pub(crate) fn trim_unknown_path_tail<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) ->
 }
 
 /// Whether `ty` is CGP's type-level path/list terminator `Nil`.
-pub(crate) fn is_nil(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn is_nil(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(def, _) if is_cgp_item(tcx, def.did(), NIL_TYPE, CGP_BASE_TYPES_CRATE))
 }
 
@@ -464,7 +458,7 @@ pub(crate) fn is_nil(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// reading each `char` const argument until `Nil`. Anchored to `cgp_base_types`, and returns
 /// `None` for any type that is not a well-formed `Symbol`, including one whose `LEN` is not the
 /// decoded string's byte length, since `Symbol!` always writes `str::len()` there.
-pub(crate) fn decode_symbol(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<String> {
+pub fn decode_symbol(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<String> {
     let ty::Adt(def, args) = ty.kind() else {
         return None;
     };
@@ -503,7 +497,7 @@ pub(crate) fn decode_symbol(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<String> {
 
 /// Decode a CGP `Index<N>` type, the position tag of a tuple field, into its `N`. Anchored to
 /// `cgp_field`, and returns `None` for any other type.
-pub(crate) fn decode_index(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<usize> {
+pub fn decode_index(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<usize> {
     let ty::Adt(def, args) = ty.kind() else {
         return None;
     };
@@ -524,7 +518,7 @@ pub(crate) fn decode_index(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<usize> {
 /// The type parameters of the component `key` names, which a redirect appends to its path when it
 /// looks the component up. Empty when `key` is not a component marker or the component has none.
 /// They are the provider trait's type parameters after its `Self` (the provider) and its context.
-pub(crate) fn component_params(tcx: TyCtxt<'_>, key: Ty<'_>) -> Vec<String> {
+pub fn component_params(tcx: TyCtxt<'_>, key: Ty<'_>) -> Vec<String> {
     let Some(provider_did) = marker_provider_trait(tcx, key) else {
         return Vec::new();
     };

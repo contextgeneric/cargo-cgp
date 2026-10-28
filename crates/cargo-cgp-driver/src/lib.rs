@@ -42,6 +42,7 @@ pub mod args;
 pub mod callbacks;
 pub mod component_map;
 pub mod config;
+pub mod detect;
 pub mod emitter;
 pub mod expand;
 pub mod help;

@@ -7,8 +7,8 @@ use rustc_errors::codes::{E0119, E0207, E0277, E0428};
 use rustc_errors::{DiagArgValue, DiagInner};
 use rustc_middle::ty::TyCtxt;
 
+use crate::detect;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
-use crate::resolve;
 
 /// Stage 9, with its memory: the structural mistakes already reported, so a mistake rustc reports
 /// as several errors becomes one.
@@ -63,21 +63,21 @@ impl StructuralStage {
 fn structural_mistake(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Option<StructuralMistake> {
     let primary_span = diag.span.primary_span()?;
     match diag.code {
-        Some(E0119) => resolve::detect_duplicate_check(tcx?, primary_span),
+        Some(E0119) => detect::detect_duplicate_check(tcx?, primary_span),
         // Name resolution reports a name defined twice, and the derived diagnostic carries the
         // name as an argument rather than in a plain-string message.
         Some(E0428) => match diag.args.get("name") {
             Some(DiagArgValue::Str(name)) => {
-                resolve::detect_duplicate_check_trait(name, primary_span)
+                detect::detect_duplicate_check_trait(name, primary_span)
             }
             _ => None,
         },
-        Some(E0277) => resolve::detect_check_at_unit_parameters(tcx?, primary_span),
+        Some(E0277) => detect::detect_check_at_unit_parameters(tcx?, primary_span),
         Some(E0207) => {
             let tcx = tcx?;
-            resolve::detect_loop_key_without_variable(tcx, primary_span)
-                .or_else(|| resolve::detect_generic_default_impl(tcx, primary_span))
-                .or_else(|| resolve::detect_entry_parameters_not_in_key(tcx, primary_span))
+            detect::detect_loop_key_without_variable(tcx, primary_span)
+                .or_else(|| detect::detect_generic_default_impl(tcx, primary_span))
+                .or_else(|| detect::detect_entry_parameters_not_in_key(tcx, primary_span))
         }
         _ => None,
     }

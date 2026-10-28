@@ -3,10 +3,10 @@
 use cargo_cgp_error_processing::{WiringConflict, WiringKey};
 use rustc_middle::ty::TyCtxt;
 
-use crate::resolve::cgp_item::component_params;
-use crate::resolve::conflict::{
+use crate::detect::conflict::{
     ConflictSide, DelegateImpl, EntryTarget, maps_one_key, overlap_conflict,
 };
+use crate::resolve::cgp_item::component_params;
 use crate::resolve::query::describe_key;
 
 /// Word the recovered impls into a [`WiringConflict`], picking the shape from how the two entries
@@ -14,7 +14,7 @@ use crate::resolve::query::describe_key;
 /// duplicate, or an overlap of two distinct keys. `None` when a key cannot be rendered to a surface
 /// form, when the first entry is not a local impl, or when neither of two distinct keys covers the
 /// other.
-pub(crate) fn build_conflict<'tcx>(
+pub fn build_conflict<'tcx>(
     tcx: TyCtxt<'tcx>,
     conflicting: &DelegateImpl<'tcx>,
     first: Option<&DelegateImpl<'tcx>>,
@@ -72,7 +72,7 @@ pub(crate) fn build_conflict<'tcx>(
 /// redirects when it maps the other entry's concrete key to a `RedirectLookup`, and the message then
 /// names that concrete key. `None` when neither entry redirects. `subject` is the context or the
 /// namespace the collision is reported on.
-pub(crate) fn redirect_conflict<'tcx>(
+pub fn redirect_conflict<'tcx>(
     tcx: TyCtxt<'tcx>,
     subject: &str,
     first: &ConflictSide<'tcx>,

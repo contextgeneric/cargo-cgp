@@ -8,7 +8,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 /// context that wired `UseType<String>` — or `None` when it does not reduce to one. This is the
 /// mismatch leaf's *actual* side, the counterpart of the *expected* type read off the failing
 /// projection, and it is the general form of the struct-field query
-/// [`field_type`](crate::resolve::classify::field_type) performs for a `HasField` value.
+/// `classify::field_type` performs for a `HasField` value.
 ///
 /// It is read by asking the trait solver to normalize the alias, which is exactly how the owner's
 /// choice is recorded: an abstract type wired to `UseType<T>` resolves through the blanket impl

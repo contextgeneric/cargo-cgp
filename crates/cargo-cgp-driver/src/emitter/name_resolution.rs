@@ -4,7 +4,7 @@
 //! provider, fail during name resolution with an `E0425` "cannot find type", before the compiler has
 //! built the HIR. The emitter buffers those diagnostics as rustc wrote them. Once resolution is over
 //! the driver's `after_expansion` callback runs [`reshape_name_resolution_errors`], which reads the
-//! wiring entries back from the HIR ([`resolve::plan_unresolved_names`]) and rewrites the buffered
+//! wiring entries back from the HIR ([`detect::plan_unresolved_names`]) and rewrites the buffered
 //! diagnostics in place: a coded header with the fix, or the diagnostic dropped as a repeat or a
 //! consequence.
 //!
@@ -24,12 +24,12 @@ use rustc_errors::{DiagInner, DiagMessage, Style, Sublevel, Suggestions};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
+use crate::detect::{self, NameAction};
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::buffer_pass::buffer_pass;
 use crate::emitter::edit::{main_message_text, retain_suggestions, subdiag};
 use crate::emitter::output::record_unprovable_requirements;
 use crate::emitter::pipeline::{SpanPolicy, apply_reshape};
-use crate::resolve::{self, NameAction};
 
 /// Whether `diag` is an `E0275` overflow on one of the `unprovable` requirements a wiring entry
 /// with an unresolved value left (`overflow evaluating the requirement `Person: CanGreet``), the
@@ -65,7 +65,7 @@ pub fn reshape_name_resolution_errors(tcx: TyCtxt<'_>) {
                 .iter()
                 .map(|(_, span, name)| (*span, name.clone()))
                 .collect();
-            let plan = resolve::plan_unresolved_names(tcx, &names);
+            let plan = detect::plan_unresolved_names(tcx, &names);
             record_unprovable_requirements(plan.overflow_requirements);
             plan.actions
         },

@@ -23,10 +23,10 @@ use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
-use crate::resolve::cgp_item::is_namespace_lookup_trait;
-use crate::resolve::conflict::{
+use crate::detect::conflict::{
     ConflictSide, impl_delegate_type, maps_one_key, overlap_conflict, redirect_conflict, same_range,
 };
+use crate::resolve::cgp_item::is_namespace_lookup_trait;
 use crate::resolve::query::{describe_key, render_lookup_trait};
 
 /// Classify an `E0119` on a namespace lookup trait as a duplicate-entry conflict, or `None` when
@@ -35,7 +35,7 @@ use crate::resolve::query::{describe_key, render_lookup_trait};
 /// redirecting is a duplicate redirect (naming both targets), one redirecting — written, or
 /// inherited through a parent namespace — is a redirect collision, and two plain entries are a
 /// duplicate; two distinct keys are an overlap.
-pub(crate) fn classify_namespace_conflict(
+pub fn classify_namespace_conflict(
     tcx: TyCtxt<'_>,
     primary_span: Span,
     label_spans: &[Span],

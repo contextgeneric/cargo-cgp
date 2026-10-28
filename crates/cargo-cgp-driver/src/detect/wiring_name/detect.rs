@@ -13,12 +13,12 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::resolve::cgp_item::{is_consumer_trait, marker_to_consumer};
-use crate::resolve::query::import_path;
-use crate::resolve::wiring_name::component::{
+use crate::detect::wiring_name::component::{
     component_markers, consumer_component, consumer_trait_named, is_type_declared,
 };
-use crate::resolve::wiring_name::slot::{NameSlot, name_slot_at};
+use crate::detect::wiring_name::slot::{NameSlot, name_slot_at};
+use crate::resolve::cgp_item::{is_consumer_trait, marker_to_consumer};
+use crate::resolve::query::import_path;
 
 /// What to do with the name-resolution diagnostics of the wiring entries, and the overflows to
 /// expect from them.

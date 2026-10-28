@@ -16,39 +16,23 @@
 //! on, `label` renders each path predicate as a tree label, and `cgp_item` holds the
 //! DefId-anchored CGP-trait recognition every stage relies on.
 //!
-//! A separate `conflict` stage handles the duplicate-key coherence conflict (`E0119`) rather
-//! than a check failure: it reads the two conflicting `DelegateComponent` impls off the compiler
-//! and words which keys collide. A sibling `orphan` stage handles the orphan-rule coherence
-//! conflict (`E0210`/`E0117`) the same way: it reads the offending namespace-registration impl off
-//! the compiler and words which foreign namespace and key it names. A `structural` stage recovers
-//! the structural mistakes in a wiring or its checks, such as a check table listing an entry twice.
+//! The compiler readers and solver helpers more than one stage uses sit in the `query` layer, which
+//! the class detectors in [`detect`](crate::detect) share. A resolver module imports only modules
+//! earlier in this order: `query`, `cgp_item`, `cache`, and `ctx`; `data`; `label`; `classify`;
+//! `walk`; `call_site`; `anchor`; and `overflow`.
 
-mod ambiguous_names;
 mod anchor;
 mod cache;
 mod call_site;
-mod cgp_impl_misuse;
-mod cgp_item;
+pub mod cgp_item;
 mod classify;
-mod conflict;
 mod ctx;
 mod data;
 mod label;
-mod macro_less_provider;
-mod missing_use_provider;
-mod orphan;
 mod overflow;
-mod query;
-mod requirement;
-mod structural;
-mod undeclared;
-mod unimported;
-mod use_type_misspelling;
-mod uses_misuse;
+pub mod query;
 mod walk;
-mod wiring_name;
 
-pub use ambiguous_names::ambiguous_type_names;
 pub use anchor::{
     resolve_check_failure, resolve_forwarding_entry, resolve_impl_site, resolve_provider_check,
     resolve_use_site, resolve_use_site_blanket_trait, resolve_use_site_consumer,
@@ -58,24 +42,6 @@ pub use cache::ResolveCache;
 pub use call_site::{
     resolve_bound_call, resolve_call_site, resolve_data_call, resolve_provider_call,
 };
-pub use cgp_impl_misuse::{DetectedCgpImplMisuse, detect_cgp_impl_misuses};
 pub use cgp_item::{crate_uses_cgp, links_cgp};
-pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
 pub use ctx::ResolveCtx;
-pub use macro_less_provider::detect_provider_impl_without_macro;
-pub use missing_use_provider::detect_missing_use_provider;
-pub use orphan::classify_orphan_conflict;
 pub use overflow::{OverflowWalk, overflow_walk};
-pub use requirement::{DetectedUndeclaredRequirement, detect_undeclared_requirement};
-pub use structural::{
-    detect_check_at_unit_parameters, detect_duplicate_check, detect_duplicate_check_trait,
-    detect_entry_parameters_not_in_key, detect_generic_default_impl,
-    detect_loop_key_without_variable, is_from_auto_dispatch,
-};
-pub use undeclared::detect_undeclared_trait;
-pub use unimported::{DetectedUnimportedAbstractType, detect_unimported_abstract_type};
-pub use use_type_misspelling::detect_use_type_misspelling;
-pub use uses_misuse::detect_provider_trait_in_uses;
-pub use wiring_name::{
-    NameAction, UnresolvedNamesPlan, detect_consumer_trait_as_key, plan_unresolved_names,
-};

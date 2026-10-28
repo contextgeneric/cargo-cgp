@@ -17,7 +17,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 /// `InferCtxt`). Distinct variables get distinct placeholders and repeated occurrences of one
 /// variable the same one (keyed by the variable's index, the integer and float spaces offset
 /// apart), preserving whatever type equalities unification established. Used both to seed the
-/// [call-site anchor](crate::resolve::call_site)'s unknown call arguments and to keep a
+/// [call-site anchor](crate::resolve::resolve_call_site)'s unknown call arguments and to keep a
 /// later-pipeline-stage clause walkable in
 /// [`impl_where_obligations`](super::impl_where_obligations).
 pub fn unknowns_to_placeholders<'tcx, T>(tcx: TyCtxt<'tcx>, value: T) -> T

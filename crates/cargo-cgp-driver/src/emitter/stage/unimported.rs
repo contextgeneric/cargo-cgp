@@ -8,10 +8,10 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
+use crate::detect::{self, DetectedUndeclaredRequirement};
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::edit::main_message_text;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict, apply_reshape};
-use crate::resolve::{self, DetectedUndeclaredRequirement};
 
 /// An abstract type reported as used but not imported: the trait declaring it, the generated item
 /// the use sits in, and the use's caret. A later report of the same type is the same mistake when
@@ -34,7 +34,7 @@ impl UnimportedStage {
     /// Stage 13: reword the `E0220` an abstract type used without its `#[use_type(…)]` import
     /// produces on the generated context, naming the type and carrying the import, once per
     /// mistake. The type and its context are read from the diagnostic's arguments, since its main
-    /// message is a Fluent one, and [`resolve::detect_unimported_abstract_type`] confirms it.
+    /// message is a Fluent one, and [`detect::detect_unimported_abstract_type`] confirms it.
     pub fn unimported_abstract_type(
         &mut self,
         tcx: Option<TyCtxt<'_>>,
@@ -59,7 +59,7 @@ impl UnimportedStage {
             return Verdict::Continue;
         };
         let Some(detected) =
-            resolve::detect_unimported_abstract_type(tcx, primary_span, &type_name, &qself)
+            detect::detect_unimported_abstract_type(tcx, primary_span, &type_name, &qself)
         else {
             return Verdict::Continue;
         };
@@ -196,7 +196,7 @@ impl UnimportedStage {
 
 /// Recognize `diag` as a requirement a provider trait places on the context that a `#[cgp_impl]`
 /// provider does not declare: an `E0277` on the generated `__Context__`, confirmed by
-/// [`resolve::detect_undeclared_requirement`]. This is stage 14's query, run before the buffer is
+/// [`detect::detect_undeclared_requirement`]. This is stage 14's query, run before the buffer is
 /// read.
 pub fn undeclared_requirement(
     tcx: Option<TyCtxt<'_>>,
@@ -207,5 +207,5 @@ pub fn undeclared_requirement(
     {
         return None;
     }
-    resolve::detect_undeclared_requirement(tcx?, diag.span.primary_span()?)
+    detect::detect_undeclared_requirement(tcx?, diag.span.primary_span()?)
 }

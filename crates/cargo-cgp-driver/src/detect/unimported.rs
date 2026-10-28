@@ -65,7 +65,7 @@ pub fn detect_unimported_abstract_type(
 /// over the `__Context__` parameter `#[cgp_impl]`, `#[cgp_fn]`, and `#[cgp_component]` give their
 /// generated impls, a consumer or provider trait, or a `#[cgp_fn]` trait, recognized by its blanket
 /// impl over that parameter.
-pub(crate) fn enclosing_cgp_item(tcx: TyCtxt<'_>, span: Span) -> Option<DefId> {
+pub fn enclosing_cgp_item(tcx: TyCtxt<'_>, span: Span) -> Option<DefId> {
     let items = tcx.hir_crate_items(());
     let methods = items
         .trait_items()
@@ -104,13 +104,13 @@ pub(crate) fn enclosing_cgp_item(tcx: TyCtxt<'_>, span: Span) -> Option<DefId> {
 
 /// Whether the impl declares a type parameter named `__Context__`, the reserved context the CGP
 /// macros give their generated impls. Read from the HIR, so no query on the impl is forced.
-pub(crate) fn has_context_param(tcx: TyCtxt<'_>, impl_did: LocalDefId) -> bool {
+pub fn has_context_param(tcx: TyCtxt<'_>, impl_did: LocalDefId) -> bool {
     context_param_span(tcx, impl_did).is_some()
 }
 
 /// The span of the impl's `__Context__` type parameter, the macro call site every token a CGP macro
 /// synthesizes shares, or `None` when the impl declares no such parameter.
-pub(crate) fn context_param_span(tcx: TyCtxt<'_>, impl_did: LocalDefId) -> Option<Span> {
+pub fn context_param_span(tcx: TyCtxt<'_>, impl_did: LocalDefId) -> Option<Span> {
     let ItemKind::Impl(imp) = tcx.hir_expect_item(impl_did).kind else {
         return None;
     };
@@ -124,7 +124,7 @@ pub(crate) fn context_param_span(tcx: TyCtxt<'_>, impl_did: LocalDefId) -> Optio
 /// The one CGP abstract-type component ([`abstract_type_component_marker`]) that declares an
 /// associated type named `name` and takes no parameter of its own, so `#[use_type(Trait.Name)]`
 /// writes it in full. `None` when there is none, or more than one.
-pub(crate) fn abstract_type_trait(tcx: TyCtxt<'_>, name: Symbol) -> Option<DefId> {
+pub fn abstract_type_trait(tcx: TyCtxt<'_>, name: Symbol) -> Option<DefId> {
     let mut found = None;
     for trait_did in tcx.all_traits_including_private() {
         let declares = tcx

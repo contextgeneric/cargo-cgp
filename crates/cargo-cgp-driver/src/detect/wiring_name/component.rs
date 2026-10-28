@@ -15,7 +15,7 @@ use crate::resolve::cgp_item::{
 use crate::resolve::query::public_dependency_path;
 
 /// Every component marker the crate can see, each with its provider trait.
-pub(crate) fn component_markers(tcx: TyCtxt<'_>) -> Vec<(DefId, DefId)> {
+pub fn component_markers(tcx: TyCtxt<'_>) -> Vec<(DefId, DefId)> {
     tcx.all_traits_including_private()
         .filter_map(|trait_did| {
             let marker = provider_blanket_marker(tcx, trait_did)?;
@@ -29,7 +29,7 @@ pub(crate) fn component_markers(tcx: TyCtxt<'_>) -> Vec<(DefId, DefId)> {
 
 /// The component of the consumer trait `consumer_did`: the marker its provider trait's delegation
 /// blanket keys on.
-pub(crate) fn consumer_component(tcx: TyCtxt<'_>, consumer_did: DefId) -> Option<DefId> {
+pub fn consumer_component(tcx: TyCtxt<'_>, consumer_did: DefId) -> Option<DefId> {
     let provider_did = consumer_provider_trait(tcx, consumer_did)?;
     let marker = provider_blanket_marker(tcx, provider_did)?;
     match marker.kind() {
@@ -39,7 +39,7 @@ pub(crate) fn consumer_component(tcx: TyCtxt<'_>, consumer_did: DefId) -> Option
 }
 
 /// The one consumer trait named `name`, or `None` when there is none or more than one.
-pub(crate) fn consumer_trait_named(tcx: TyCtxt<'_>, name: &str) -> Option<DefId> {
+pub fn consumer_trait_named(tcx: TyCtxt<'_>, name: &str) -> Option<DefId> {
     let mut found = None;
     for trait_did in tcx.all_traits_including_private() {
         if tcx.item_name(trait_did).as_str() != name || !is_consumer_trait(tcx, trait_did) {
@@ -55,7 +55,7 @@ pub(crate) fn consumer_trait_named(tcx: TyCtxt<'_>, name: &str) -> Option<DefId>
 /// Whether a type named `name` is declared where the crate could import it from: in any module of
 /// the crate, or public in a direct dependency. A wiring name that does not resolve but names such
 /// a type was not imported, rather than never declared.
-pub(crate) fn is_type_declared(tcx: TyCtxt<'_>, name: &str) -> bool {
+pub fn is_type_declared(tcx: TyCtxt<'_>, name: &str) -> bool {
     let local = tcx.hir_crate_items(()).definitions().any(|local| {
         is_type_kind(tcx.def_kind(local)) && tcx.item_name(local.to_def_id()).as_str() == name
     });

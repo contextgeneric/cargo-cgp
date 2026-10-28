@@ -17,10 +17,9 @@ pub enum CallTrait {
 
 /// Every trait declaring a `self`-receiver associated fn named `method` that a call by that name
 /// could resolve through — the candidates
-/// [`resolve_call_site`](crate::resolve::call_site::resolve_call_site) tries — each paired with
-/// that method's `DefId` (whose declared signature
-/// [`seed_from_call`](crate::resolve::call_site::seed_from_call) unifies the call's arguments
-/// against) and the [kind](CallTrait) of trait it is.
+/// [`resolve_call_site`](crate::resolve::resolve_call_site) tries — each paired with that method's
+/// `DefId` (whose declared signature the call-site anchor's `seed_from_call` unifies the call's
+/// arguments against) and the [kind](CallTrait) of trait it is.
 ///
 /// Two kinds qualify, and CGP consumer traits come **first** so a directly-wired consumer keeps
 /// its precise `[CGP-E001]` recovery before any other trait is tried:
@@ -32,13 +31,13 @@ pub enum CallTrait {
 ///   context.
 ///
 /// CGP's extensible-data traits are left to the
-/// [data-call anchor](crate::resolve::call_site::resolve_data_call), which types a receiver through
-/// a chain of data operations.
+/// [data-call anchor](crate::resolve::resolve_data_call), which types a receiver through a chain of
+/// data operations.
 ///
 /// Requiring CGP evidence of the second kind excludes ordinary blanket traits (`Into`, `From`); the
 /// `self`-method requirement and the failing-obligation gate in
-/// [`resolve_call_site`](crate::resolve::call_site::resolve_call_site) keep a wrong guess from
-/// fabricating a diagnostic.
+/// [`resolve_call_site`](crate::resolve::resolve_call_site) keep a wrong guess from fabricating a
+/// diagnostic.
 pub fn traits_with_method(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId, DefId, CallTrait)> {
     let mut found: Vec<(DefId, DefId, CallTrait)> = Vec::new();
     for trait_did in tcx.all_traits_including_private() {

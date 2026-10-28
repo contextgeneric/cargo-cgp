@@ -30,10 +30,10 @@ mod overlap;
 mod redirect;
 mod target;
 
-pub(crate) use build::*;
+pub use build::*;
 pub use classify::*;
-pub(crate) use delegate_impls::*;
-pub(crate) use namespace::*;
-pub(crate) use overlap::*;
-pub(crate) use redirect::*;
-pub(crate) use target::*;
+pub use delegate_impls::*;
+pub use namespace::*;
+pub use overlap::*;
+pub use redirect::*;
+pub use target::*;

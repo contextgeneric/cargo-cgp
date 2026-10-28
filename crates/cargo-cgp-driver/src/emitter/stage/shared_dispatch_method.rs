@@ -17,9 +17,9 @@ use cargo_cgp_error_processing::{
 use rustc_errors::codes::E0428;
 use rustc_errors::{DiagArgValue, DiagInner};
 
+use crate::detect::is_from_auto_dispatch;
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::pipeline::{BufferEdit, Reshape, SpanPolicy, Verdict};
-use crate::resolve::is_from_auto_dispatch;
 
 /// Stage 8: pair `diag`, an incoming computer `E0428`, with the buffered helper `E0428` of the
 /// method two `#[cgp_auto_dispatch]` traits share, and word the pair as one `[CGP-E061]` on `diag`,

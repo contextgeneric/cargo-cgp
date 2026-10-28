@@ -6,9 +6,9 @@ use rustc_errors::DiagInner;
 use rustc_errors::codes::E0277;
 use rustc_middle::ty::TyCtxt;
 
+use crate::detect;
 use crate::emitter::edit::main_message_text;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
-use crate::resolve;
 
 /// Stages 12 and 16, with their memory: the provider structs reported as written without
 /// `#[cgp_provider]`, so a later failure on one is that report's consequence.
@@ -22,7 +22,7 @@ impl MacrolessProviderStage {
     /// rustc rejects it on the provider trait's `IsProviderFor` supertrait and lists every unrelated
     /// implementor beside it; the reshape names the provider, carries the macro in a help, and keeps
     /// the caret on the impl. Gated to an `E0277` whose message names `IsProviderFor`, confirmed
-    /// structurally by [`resolve::detect_provider_impl_without_macro`].
+    /// structurally by [`detect::detect_provider_impl_without_macro`].
     pub fn run(&mut self, tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
         if diag.code != Some(E0277)
             || !main_message_text(diag).is_some_and(|text| text.contains("IsProviderFor"))
@@ -32,7 +32,7 @@ impl MacrolessProviderStage {
         let (Some(tcx), Some(primary_span)) = (tcx, diag.span.primary_span()) else {
             return Verdict::Continue;
         };
-        match resolve::detect_provider_impl_without_macro(tcx, primary_span) {
+        match detect::detect_provider_impl_without_macro(tcx, primary_span) {
             Some(mistake) => {
                 self.providers.push(mistake.provider.clone());
                 Verdict::Reshape(Reshape::new(

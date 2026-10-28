@@ -4,7 +4,7 @@
 //! the trait does not declare (`E0576`) at the alias the program wrote. The compiler's help respells
 //! that alias, which leaves the import's name in place, so the edit does not compile. Once
 //! resolution is over the driver's `after_expansion` callback runs [`reshape_use_type_misspellings`],
-//! which confirms the import ([`resolve::detect_use_type_misspelling`]), drops each suggestion that
+//! which confirms the import ([`detect::detect_use_type_misspelling`]), drops each suggestion that
 //! edits the alias, and adds a `help` naming the rename in the import. The header stays the
 //! compiler's, since it already names the missing type and its trait.
 //!
@@ -20,7 +20,7 @@ use rustc_span::Span;
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::buffer_pass::buffer_pass;
 use crate::emitter::edit::{main_message_text, retain_suggestions, subdiag};
-use crate::resolve;
+use crate::{detect, resolve};
 
 /// Replace the compiler's help on each buffered `E0576` that a misspelled `#[use_type]` import
 /// produced. Call once name resolution is over, while a `TyCtxt` is available. A panic in the
@@ -35,7 +35,7 @@ pub fn reshape_use_type_misspellings(tcx: TyCtxt<'_>) {
             candidates
                 .iter()
                 .map(|(_, span, type_name, trait_name, notes)| {
-                    resolve::detect_use_type_misspelling(tcx, *span, type_name, trait_name, notes)
+                    detect::detect_use_type_misspelling(tcx, *span, type_name, trait_name, notes)
                 })
                 .collect::<Vec<_>>()
         },

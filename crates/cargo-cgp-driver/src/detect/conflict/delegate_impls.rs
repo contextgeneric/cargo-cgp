@@ -7,7 +7,7 @@ use rustc_span::def_id::DefId;
 /// The value of an impl's `Delegate` associated type — what a wiring entry (a `DelegateComponent`
 /// impl, or a `cgp_namespace!` entry's namespace-trait impl) maps its key to — or `None` when the
 /// impl declares no `Delegate`.
-pub(crate) fn impl_delegate_type<'tcx>(tcx: TyCtxt<'tcx>, impl_did: DefId) -> Option<Ty<'tcx>> {
+pub fn impl_delegate_type<'tcx>(tcx: TyCtxt<'tcx>, impl_did: DefId) -> Option<Ty<'tcx>> {
     tcx.associated_items(impl_did)
         .in_definition_order()
         .find(|item| item.name().as_str() == "Delegate")
@@ -20,18 +20,18 @@ pub(crate) fn impl_delegate_type<'tcx>(tcx: TyCtxt<'tcx>, impl_did: DefId) -> Op
 
 /// One local `DelegateComponent` impl, read off the compiler: where it was written, the context
 /// it wires, the key it maps, and its `Delegate` (the provider or redirect it maps to).
-pub(crate) struct DelegateImpl<'tcx> {
-    pub(crate) def_span: Span,
-    pub(crate) self_ty: Ty<'tcx>,
-    pub(crate) key: Ty<'tcx>,
-    pub(crate) delegate: Option<Ty<'tcx>>,
-    pub(crate) impl_did: DefId,
+pub struct DelegateImpl<'tcx> {
+    pub def_span: Span,
+    pub self_ty: Ty<'tcx>,
+    pub key: Ty<'tcx>,
+    pub delegate: Option<Ty<'tcx>>,
+    pub impl_did: DefId,
 }
 
 /// Every local impl of the `DelegateComponent` trait, read into [`DelegateImpl`]s. Only local
 /// impls can be an entry the user wrote; library blanket impls sit in another crate and never
 /// match a caret in the user's source.
-pub(crate) fn local_delegate_impls<'tcx>(
+pub fn local_delegate_impls<'tcx>(
     tcx: TyCtxt<'tcx>,
     delegate_did: DefId,
 ) -> Vec<DelegateImpl<'tcx>> {

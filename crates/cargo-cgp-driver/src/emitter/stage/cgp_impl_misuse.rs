@@ -13,9 +13,9 @@ use rustc_errors::{DiagInner, DiagMessage, Style};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
+use crate::detect::{self, DetectedCgpImplMisuse};
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::pipeline::{BufferEdit, Reshape, SpanPolicy, Verdict};
-use crate::resolve::{self, DetectedCgpImplMisuse};
 
 /// Stage 2, with its memory: the crate's `#[cgp_impl]` header mistakes, detected once.
 #[derive(Default)]
@@ -43,7 +43,7 @@ impl CgpImplMisuseStage {
         // error always present for this mistake, triggers it. The siblings that precede it are
         // purged from the buffer when it is reshaped; those that follow are dropped here.
         if diag.code == Some(E0107) && self.misuses.is_none() {
-            self.misuses = tcx.map(resolve::detect_cgp_impl_misuses);
+            self.misuses = tcx.map(detect::detect_cgp_impl_misuses);
         }
         self.verdict(diag)
     }

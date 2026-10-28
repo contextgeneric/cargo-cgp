@@ -5,9 +5,9 @@ use rustc_errors::DiagInner;
 use rustc_errors::codes::{E0117, E0210};
 use rustc_middle::ty::TyCtxt;
 
+use crate::detect;
 use crate::emitter::edit::main_message_text;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
-use crate::resolve;
 
 /// Stage 7: reword the `E0210` (or its sibling `E0117`) of a crate registering wiring into a
 /// foreign namespace keyed on a foreign key. The raw error names the machinery parameter and frames
@@ -27,7 +27,7 @@ pub fn orphan_conflict(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
     let (Some(tcx), Some(primary_span)) = (tcx, diag.span.primary_span()) else {
         return Verdict::Continue;
     };
-    match resolve::classify_orphan_conflict(tcx, primary_span) {
+    match detect::classify_orphan_conflict(tcx, primary_span) {
         Some(conflict) => Verdict::Reshape(Reshape::new(
             ClassPlan::orphan_conflict(&conflict),
             SpanPolicy::Primary,

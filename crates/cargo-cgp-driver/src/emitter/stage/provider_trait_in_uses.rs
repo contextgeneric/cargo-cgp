@@ -5,8 +5,8 @@ use rustc_errors::DiagInner;
 use rustc_errors::codes::E0107;
 use rustc_middle::ty::TyCtxt;
 
+use crate::detect;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
-use crate::resolve;
 
 /// Stage 3: reword the `E0107` that `#[uses(AreaCalculator)]` produces, where a dependency names
 /// the consumer trait. rustc reports missing generics and suggests the generated `__Context__`; the
@@ -18,7 +18,7 @@ pub fn provider_trait_in_uses(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verd
     let (Some(tcx), Some(primary_span)) = (tcx, diag.span.primary_span()) else {
         return Verdict::Continue;
     };
-    match resolve::detect_provider_trait_in_uses(tcx, primary_span) {
+    match detect::detect_provider_trait_in_uses(tcx, primary_span) {
         Some(misuse) => Verdict::Reshape(Reshape::new(
             ClassPlan::provider_trait_in_uses(&misuse),
             SpanPolicy::Primary,

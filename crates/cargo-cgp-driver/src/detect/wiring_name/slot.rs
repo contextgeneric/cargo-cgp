@@ -14,11 +14,11 @@ use rustc_span::Span;
 use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, PATH_CONS_TYPE,
 };
+use crate::detect::unimported::has_context_param;
 use crate::resolve::cgp_item::is_cgp_item;
-use crate::resolve::unimported::has_context_param;
 
 /// Where a name at a span sits.
-pub(crate) enum NameSlot<'tcx> {
+pub enum NameSlot<'tcx> {
     /// The key of a wiring entry, as the HIR type the impl's trait reference carries.
     Key { key: &'tcx rustc_hir::Ty<'tcx> },
     /// The value of a wiring entry, with the entry's key as written and the entry's impl.
@@ -44,7 +44,7 @@ pub(crate) enum NameSlot<'tcx> {
 /// argument or `Delegate` type is that type, or an impl declaring the reserved `__Context__`
 /// parameter whose unresolved `Self` type is. A name inside a larger key or value, such as a path
 /// segment of an `@`-path, is [`NameSlot::Inside`].
-pub(crate) fn name_slot_at(tcx: TyCtxt<'_>, span: Span) -> Option<NameSlot<'_>> {
+pub fn name_slot_at(tcx: TyCtxt<'_>, span: Span) -> Option<NameSlot<'_>> {
     let mut inside = None;
     for local in tcx.hir_crate_items(()).definitions() {
         if !matches!(

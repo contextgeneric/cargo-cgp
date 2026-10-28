@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 
 use cargo_cgp_error_processing::{AmbiguousNames, Origin};
 
-use crate::resolve;
+use crate::{detect, resolve};
 
 /// No ambiguous names, for a message post-processed before the compiler can say which names are
 /// ambiguous, which strips every qualifier.
@@ -18,7 +18,7 @@ pub struct CrateFacts {
     /// Whether the crate uses CGP ([`resolve::crate_uses_cgp`]). A crate that does not use CGP can
     /// carry no CGP encoding, so its untransformed diagnostics are left exactly as rustc built them.
     pub cgp_used: OnceCell<bool>,
-    /// The type names that name more than one item ([`resolve::ambiguous_type_names`]), so the
+    /// The type names that name more than one item ([`detect::ambiguous_type_names`]), so the
     /// post-processing keeps the qualifier that tells such a name's items apart. This set knows
     /// the glob-imported names alone.
     pub ambiguous: OnceCell<AmbiguousNames>,
@@ -60,7 +60,7 @@ impl CrateFacts {
             return names;
         }
         match rustc_middle::ty::tls::with_opt(|tcx| {
-            tcx.and_then(|tcx| resolve::ambiguous_type_names(tcx, read_glob_items))
+            tcx.and_then(|tcx| detect::ambiguous_type_names(tcx, read_glob_items))
         }) {
             Some(names) => cell.get_or_init(|| names),
             None => &EMPTY_AMBIGUOUS_NAMES,

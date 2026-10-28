@@ -7,8 +7,8 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT};
+use crate::detect::conflict::{build_conflict, classify_namespace_conflict, local_delegate_impls};
 use crate::resolve::cgp_item::{find_cgp_trait, is_cgp_item};
-use crate::resolve::conflict::{build_conflict, classify_namespace_conflict, local_delegate_impls};
 
 /// Which trait an `E0119` conflict is about, read from the diagnostic's own message — the only
 /// thing that tells the `DelegateComponent` half of the pair from its `IsProviderFor` half, since
@@ -35,7 +35,7 @@ pub enum ConflictAction {
 /// Whether two spans cover the same source range, ignoring `SyntaxContext`. The two halves of the
 /// `E0119` pair are re-spanned onto the same entry token but carry different contexts, so matching
 /// a caret to an impl must compare ranges, not whole spans.
-pub(crate) fn same_range(a: Span, b: Span) -> bool {
+pub fn same_range(a: Span, b: Span) -> bool {
     a.lo() == b.lo() && a.hi() == b.hi()
 }
 

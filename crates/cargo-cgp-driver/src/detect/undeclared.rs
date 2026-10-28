@@ -354,7 +354,7 @@ fn written_bound<'tcx>(
 /// The type an argument expression has without typeck: the type it writes ([`expr_written_ty`]),
 /// or, for a path to a local binding, the type the binding is declared with (a fn parameter, or a
 /// `let` with an annotation).
-pub(crate) fn argument_ty<'tcx>(infcx: &InferCtxt<'tcx>, arg: &Expr<'tcx>) -> Option<Ty<'tcx>> {
+pub fn argument_ty<'tcx>(infcx: &InferCtxt<'tcx>, arg: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     if let Some(written) = expr_written_ty(infcx, arg) {
         return Some(written);
     }
@@ -443,7 +443,7 @@ fn param_declared_input_binder<'tcx>(
 /// intervening `#[async_trait]` coroutine body and its method), or `None` if none is reached before
 /// the crate root. This is what lets the detection work uniformly for a sync `#[cgp_fn]` body (impl
 /// one hop up) and an async one (impl two hops up, past the async-block coroutine).
-pub(crate) fn enclosing_trait_impl(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
+pub fn enclosing_trait_impl(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
     loop {
         if matches!(tcx.def_kind(did), DefKind::Impl { of_trait: true }) {
             return Some(did);

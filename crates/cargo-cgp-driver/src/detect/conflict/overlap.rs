@@ -6,13 +6,13 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypingMode};
 use rustc_span::DUMMY_SP;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::conflict::ConflictSide;
+use crate::detect::conflict::ConflictSide;
 use crate::resolve::query::describe_key;
 
 /// Whether two colliding entries map one key: their keys render alike, or one is a blanket
 /// forwarding over every key (a namespace join, or a namespace's inheritance blanket). Only such a
 /// pair can redirect a key twice or wire it beside its own redirect.
-pub(crate) fn maps_one_key<'tcx>(
+pub fn maps_one_key<'tcx>(
     tcx: TyCtxt<'tcx>,
     first: &ConflictSide<'tcx>,
     conflicting: &ConflictSide<'tcx>,
@@ -30,7 +30,7 @@ pub(crate) fn maps_one_key<'tcx>(
 /// (`@C.<T> Wrap<T>` before `@C.Wrap<u64>`), or the part they share when neither covers the other
 /// (`@C.Eval` and `@C.<Code> Code.u64` share `@C.Eval.u64`). `None` when the shared key cannot be
 /// rendered.
-pub(crate) fn overlap_conflict<'tcx>(
+pub fn overlap_conflict<'tcx>(
     tcx: TyCtxt<'tcx>,
     context: String,
     (first, first_key): (&ConflictSide<'tcx>, WiringKey),

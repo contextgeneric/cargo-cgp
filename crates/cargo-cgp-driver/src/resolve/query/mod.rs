@@ -2,16 +2,18 @@
 //!
 //! Every module here reads the compiler and decides no resolution:
 //!
-//! - **Solver queries** the walk and the classifiers ask: [`holds`](mod@holds),
-//!   [`impl_match`], [`projection_mismatch`](mod@projection_mismatch),
-//!   [`projected_type`](mod@projected_type), and the placeholder folders in [`unknowns`].
-//! - **Readers of an impl's clauses:** [`written_order`](mod@written_order) and [`misdirected`].
-//! - **Renderings of a wiring key**, its path, and its provider: [`keys`].
-//! - **Syntactic type reads** the call-site anchors and the detectors share: [`lower`] and
-//!   [`written_ty`].
-//! - **Lookups** several stages make: [`check_impl`], [`import_path`](mod@import_path),
-//!   [`owner_has_impl_of`](mod@owner_has_impl_of), and
-//!   [`traits_with_method`](mod@traits_with_method).
+//! - **Solver queries** the walk and the classifiers ask: [`holds`](fn@holds),
+//!   [`impl_where_obligations`], [`projection_mismatch`](fn@projection_mismatch),
+//!   [`projected_type`](fn@projected_type), and the placeholder folders such as
+//!   [`unknowns_to_placeholders`].
+//! - **Readers of an impl's clauses:** [`written_order`](fn@written_order) and
+//!   [`misdirected_impl_clauses`].
+//! - **Renderings of a wiring key**, its path, and its provider: [`describe_key`] and its siblings.
+//! - **Syntactic type reads** the call-site anchors and the detectors share: [`lower_hir_ty`] and
+//!   [`expr_written_ty`].
+//! - **Lookups** several stages make: [`can_use_component_supertrait`], [`impl_self_ty_span`],
+//!   [`import_path`](fn@import_path), [`owner_has_impl_of`](fn@owner_has_impl_of), and
+//!   [`traits_with_method`](fn@traits_with_method).
 //!
 //! The resolver's other modules and the class detectors import from here, and nothing here imports
 //! them.

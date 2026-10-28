@@ -11,8 +11,8 @@ use rustc_span::def_id::DefId;
 use crate::config::{
     CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT, REDIRECT_LOOKUP_TYPE,
 };
+use crate::detect::conflict::{impl_delegate_type, same_range};
 use crate::resolve::cgp_item::{is_cgp_item, is_namespace_lookup_trait};
-use crate::resolve::conflict::{impl_delegate_type, same_range};
 use crate::resolve::query::{describe_key, render_lookup_trait};
 
 /// The wiring entry an `E0207` at `primary_span` is about, when the unconstrained parameter there

@@ -6,9 +6,9 @@ use rustc_errors::codes::E0119;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
+use crate::detect::{self, ConflictAction, ConflictTrait};
 use crate::emitter::edit::main_message_text;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
-use crate::resolve::{self, ConflictAction, ConflictTrait};
 
 /// Stage 6: handle the `E0119` a duplicate `delegate_components!` or `cgp_namespace!` entry
 /// produces as one logical error. The redundant `IsProviderFor` half of the pair is dropped, and
@@ -41,7 +41,7 @@ pub fn wiring_conflict(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
         .into_iter()
         .map(|label| label.span)
         .collect();
-    match resolve::classify_wiring_conflict(tcx, variant, primary_span, &label_spans) {
+    match detect::classify_wiring_conflict(tcx, variant, primary_span, &label_spans) {
         Some(ConflictAction::Suppress) => Verdict::Drop,
         Some(ConflictAction::Rewrite(conflict)) => Verdict::Reshape(Reshape::new(
             ClassPlan::wiring_conflict(&conflict),

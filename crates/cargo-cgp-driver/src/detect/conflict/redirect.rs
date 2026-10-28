@@ -21,7 +21,7 @@ use crate::resolve::query::bounding_trait_ref;
 /// `<concrete_key as ParentNamespace<Table>>::Delegate`, through the trait solver, the same
 /// re-entrant normalization the typed resolver uses. `None` unless the key is fully concrete and
 /// the projection resolves.
-pub(crate) fn namespace_delegate<'tcx>(
+pub fn namespace_delegate<'tcx>(
     tcx: TyCtxt<'tcx>,
     blanket_impl_did: DefId,
     blanket_key: Ty<'tcx>,

@@ -5,7 +5,7 @@ use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
-use crate::resolve::conflict::same_range;
+use crate::detect::conflict::same_range;
 use crate::resolve::query::can_use_component_supertrait;
 
 /// The duplicate check entry an `E0119` at `primary_span` is about: a local impl of a

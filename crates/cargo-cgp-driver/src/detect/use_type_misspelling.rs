@@ -11,7 +11,7 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::resolve::unimported::enclosing_cgp_item;
+use crate::detect::unimported::enclosing_cgp_item;
 
 /// Recognize an `E0576` "cannot find associated type `type_name` in trait `trait_name`" at
 /// `primary_span` as a misspelled `#[use_type]` import. `None` unless the caret sits in an item a
