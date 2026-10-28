@@ -6,7 +6,8 @@
 //! before the report, so this state lives behind a shared lock that the emitter registers for the
 //! hook to reach ([`register_output`], [`flush_registered_output`]). The pass that reshapes the
 //! name-resolution errors after resolution reaches the buffer the same way
-//! ([`with_registered_buffer`]).
+//! ([`with_registered_buffer`]), and records there the requirements the emitter's overflow stage
+//! reads.
 
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, Weak};
@@ -26,6 +27,10 @@ pub(crate) struct Output<E> {
     /// its `Drop`. A coalescible [`BufEntry::Resolved`] joins the group of every failure it shares a
     /// root cause with; anything else is a [`BufEntry::Plain`] emitted at its original position.
     pub(crate) buffer: Vec<BufEntry>,
+    /// The requirements that wiring entries with an unresolved value leave unprovable, recorded by
+    /// the name-resolution pass after expansion, so the emitter drops a later `E0275` overflow on
+    /// one as that entry's consequence.
+    pub(crate) unprovable_requirements: Vec<String>,
 }
 
 /// Lock `output`, recovering it if a panic poisoned the lock: the state stays usable, and the
@@ -42,6 +47,9 @@ trait RegisteredOutput {
 
     /// The buffered diagnostics, to reshape in place.
     fn buffer_mut(&mut self) -> &mut Vec<BufEntry>;
+
+    /// The requirements recorded as unprovable, to add to.
+    fn unprovable_requirements_mut(&mut self) -> &mut Vec<String>;
 }
 
 impl<E: Emitter> RegisteredOutput for Output<E> {
@@ -55,6 +63,10 @@ impl<E: Emitter> RegisteredOutput for Output<E> {
 
     fn buffer_mut(&mut self) -> &mut Vec<BufEntry> {
         &mut self.buffer
+    }
+
+    fn unprovable_requirements_mut(&mut self) -> &mut Vec<String> {
+        &mut self.unprovable_requirements
     }
 }
 
@@ -94,10 +106,22 @@ pub(crate) fn flush_registered_output() {
 /// return `None` when no output is registered. `f` must not run compiler queries: one that emits a
 /// diagnostic would try to take the same lock.
 pub(crate) fn with_registered_buffer<R>(f: impl FnOnce(&mut Vec<BufEntry>) -> R) -> Option<R> {
+    with_registered_output(|output| f(output.buffer_mut()))
+}
+
+/// Add `requirements` to the unprovable requirements of the output registered on this thread, if
+/// one is registered.
+pub(crate) fn record_unprovable_requirements(requirements: Vec<String>) {
+    with_registered_output(|output| output.unprovable_requirements_mut().extend(requirements));
+}
+
+/// Run `f` on the output registered on this thread, under its lock, or return `None` when no output
+/// is registered.
+fn with_registered_output<R>(f: impl FnOnce(&mut dyn RegisteredOutput) -> R) -> Option<R> {
     let output = REGISTERED
         .try_with(|registered| registered.borrow().as_ref().and_then(Weak::upgrade))
         .ok()
         .flatten()?;
     let mut guard = lock_output(&output);
-    Some(f(guard.buffer_mut()))
+    Some(f(&mut *guard))
 }

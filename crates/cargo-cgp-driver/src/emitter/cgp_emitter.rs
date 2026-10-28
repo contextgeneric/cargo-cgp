@@ -1,11 +1,10 @@
 //! The wrapping [`Emitter`] that transforms CGP diagnostics before delegating.
 
-use std::cell::OnceCell;
 use std::path::Path;
-use std::sync::{Arc, LazyLock, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
-use cargo_cgp_error_processing::{AmbiguousNames, DedupLedger, Origin};
+use cargo_cgp_error_processing::{DedupLedger, Origin};
 use rustc_errors::DiagInner;
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
@@ -16,6 +15,7 @@ use rustc_span::source_map::SourceMap;
 use crate::component_map::build_name_map_from_tls;
 use crate::emitter::attribute_splice::drop_attribute_splices;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
+use crate::emitter::crate_facts::{CrateFacts, EMPTY_AMBIGUOUS_NAMES};
 use crate::emitter::edit::{
     bound_candidate_lists, main_message_text, message_signature, postprocess_diag,
 };
@@ -31,7 +31,7 @@ use crate::emitter::stage::{
     shared_dispatch_method, undeclared_requirement, undeclared_trait, unresolved_wiring_overflow,
     wiring_conflict,
 };
-use crate::resolve::{self, ResolveCache};
+use crate::resolve::ResolveCache;
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
 /// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
@@ -80,22 +80,9 @@ pub struct CgpEmitter<E: Emitter> {
     macroless_provider: MacrolessProviderStage,
     /// Stages 13 and 14, which own the abstract types and the provider impls already reported.
     unimported: UnimportedStage,
-    /// Whether the crate being compiled uses CGP ([`resolve::crate_uses_cgp`]), decided on the first
-    /// diagnostic for which the compiler can answer. A crate that does not use CGP can carry no CGP
-    /// encoding, so its untransformed diagnostics are left exactly as rustc built them.
-    cgp_used: OnceCell<bool>,
-    /// The type names that name more than one item ([`resolve::ambiguous_type_names`]), decided on
-    /// the first diagnostic for which the compiler can answer, so the post-processing keeps the
-    /// qualifier that tells such a name's items apart. `ambiguous` knows the glob-imported names
-    /// alone; `ambiguous_with_glob_items` also knows the items those globs bring in, read from HIR,
-    /// so it serves only a diagnostic the tool rewrote, which arrives after lowering.
-    ambiguous: OnceCell<AmbiguousNames>,
-    ambiguous_with_glob_items: OnceCell<AmbiguousNames>,
+    /// The crate facts the post-processing reads, decided once the compiler can answer.
+    facts: CrateFacts,
 }
-
-/// No ambiguous names, for a message post-processed before the compiler can say which names are
-/// ambiguous, which strips every qualifier.
-static EMPTY_AMBIGUOUS_NAMES: LazyLock<AmbiguousNames> = LazyLock::new(AmbiguousNames::default);
 
 impl<E: Emitter> CgpEmitter<E> {
     /// Wrap `inner`, which renders against `source_map`, and register the shared output for the
@@ -107,6 +94,7 @@ impl<E: Emitter> CgpEmitter<E> {
         let output = Arc::new(Mutex::new(Output {
             inner,
             buffer: Vec::new(),
+            unprovable_requirements: Vec::new(),
         }));
         register_output(&output);
         Self {
@@ -120,9 +108,7 @@ impl<E: Emitter> CgpEmitter<E> {
             structural: StructuralStage::default(),
             macroless_provider: MacrolessProviderStage::default(),
             unimported: UnimportedStage::default(),
-            cgp_used: OnceCell::new(),
-            ambiguous: OnceCell::new(),
-            ambiguous_with_glob_items: OnceCell::new(),
+            facts: CrateFacts::default(),
         }
     }
 
@@ -193,49 +179,10 @@ impl<E: Emitter> CgpEmitter<E> {
     /// where the chain recovers a CGP encoding (see [`Origin`]), and only in a crate that loads
     /// CGP, so a plain Rust error passes through exactly as rustc built it.
     fn postprocess(&self, diag: &mut DiagInner, origin: Origin) {
-        if origin == Origin::Untransformed && !self.crate_uses_cgp() {
+        if origin == Origin::Untransformed && !self.facts.uses_cgp() {
             return;
         }
-        postprocess_diag(diag, origin, self.ambiguous_names(origin));
-    }
-
-    /// The type names that name more than one item, decided once the compiler can answer. Before
-    /// then the set is empty, which strips every qualifier. A message the tool rewrote also knows
-    /// which item each glob import brings in. Reading that needs the HIR, which an untransformed
-    /// diagnostic emitted during name resolution would force the compiler to build under the
-    /// emitter, so an untransformed message gets the glob-imported names alone.
-    fn ambiguous_names(&self, origin: Origin) -> &AmbiguousNames {
-        let read_glob_items = origin == Origin::Rewritten;
-        let cell = if read_glob_items {
-            &self.ambiguous_with_glob_items
-        } else {
-            &self.ambiguous
-        };
-        if let Some(names) = cell.get() {
-            return names;
-        }
-        match rustc_middle::ty::tls::with_opt(|tcx| {
-            tcx.and_then(|tcx| resolve::ambiguous_type_names(tcx, read_glob_items))
-        }) {
-            Some(names) => cell.get_or_init(|| names),
-            None => &EMPTY_AMBIGUOUS_NAMES,
-        }
-    }
-
-    /// Whether the crate being compiled uses CGP, decided once the compiler can answer. Before then
-    /// (a parse or name-resolution error) the answer is `false`, which leaves the diagnostic as
-    /// rustc built it.
-    fn crate_uses_cgp(&self) -> bool {
-        if let Some(&known) = self.cgp_used.get() {
-            return known;
-        }
-        let Some(known) =
-            rustc_middle::ty::tls::with_opt(|tcx| tcx.and_then(resolve::crate_uses_cgp))
-        else {
-            return false;
-        };
-        let _ = self.cgp_used.set(known);
-        known
+        postprocess_diag(diag, origin, self.facts.ambiguous_names(origin));
     }
 }
 
@@ -263,7 +210,7 @@ impl<E: Emitter> CgpEmitter<E> {
             .cgp_impl_misuse
             .run(tcx, &diag)
             .or_else(|| provider_trait_in_uses(tcx, &diag))
-            .or_else(|| unresolved_wiring_overflow(&diag))
+            .or_else(|| unresolved_wiring_overflow(&diag, &self.output().unprovable_requirements))
             .or_else(|| consumer_trait_as_key(tcx, &diag))
             .or_else(|| wiring_conflict(tcx, &diag))
             .or_else(|| orphan_conflict(tcx, &diag))
@@ -331,7 +278,7 @@ impl<E: Emitter> CgpEmitter<E> {
             Origin::Untransformed
         };
         self.postprocess(&mut diag, origin);
-        if self.crate_uses_cgp() {
+        if self.facts.uses_cgp() {
             drop_attribute_splices(&mut diag);
             if let Some(source_map) = self.source_map.as_deref() {
                 drop_generated_names(&mut diag, source_map);
@@ -458,11 +405,11 @@ impl<E: Emitter> Drop for CgpEmitter<E> {
                     .iter()
                     .any(|entry| matches!(entry, BufEntry::Resolved(_)))
                 {
-                    self.ambiguous_names(Origin::Rewritten)
+                    self.facts.ambiguous_names(Origin::Rewritten)
                 } else {
                     &EMPTY_AMBIGUOUS_NAMES
                 };
-                let repeats = if self.cgp_used.get() == Some(&true) {
+                let repeats = if self.facts.cgp_used.get() == Some(&true) {
                     self.source_map.as_deref()
                 } else {
                     None

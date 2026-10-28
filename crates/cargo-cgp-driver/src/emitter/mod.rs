@@ -30,8 +30,10 @@
 
 mod attribute_splice;
 mod buffer;
+mod buffer_pass;
 mod cgp_emitter;
 mod containment;
+mod crate_facts;
 mod edit;
 mod fallback;
 mod flush;
@@ -51,7 +53,7 @@ pub use fallback::*;
 pub use flush::rebuild_explain_footers;
 pub use generated_names::drop_generated_name_suggestions;
 pub use install::install;
-pub use name_resolution::reshape_name_resolution_errors;
+pub use name_resolution::{is_unresolved_wiring_overflow, reshape_name_resolution_errors};
 pub use pipeline::*;
 pub use repeats::merge_repeats;
 pub use use_type_misspelling::reshape_use_type_misspellings;

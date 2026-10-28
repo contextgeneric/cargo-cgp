@@ -13,10 +13,8 @@
 //!
 //! A wiring entry whose value does not resolve also leaves its context unable to use the component,
 //! which a call later reports as an `E0275` overflow on that requirement. The pass records those
-//! requirements, and the emitter drops such an overflow as the entry's consequence
+//! requirements in the output, and the emitter drops such an overflow as the entry's consequence
 //! ([`is_unresolved_wiring_overflow`]).
-
-use std::cell::RefCell;
 
 use cargo_cgp_error_processing::{
     UnresolvedWiringName, is_missing_type_parameter_help_text, plan_unresolved_wiring_name,
@@ -28,22 +26,17 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::emitter::buffer::BufEntry;
-use crate::emitter::containment::contain;
+use crate::emitter::buffer_pass::buffer_pass;
 use crate::emitter::edit::{main_message_text, replace_header, retain_suggestions, subdiag};
-use crate::emitter::output::with_registered_buffer;
+use crate::emitter::output::record_unprovable_requirements;
 use crate::resolve::{self, NameAction};
 
-thread_local! {
-    /// The requirements the wiring entries with an unresolved value leave unprovable, recorded by
-    /// [`reshape_name_resolution_errors`] on the thread that compiles the crate.
-    static UNPROVABLE_REQUIREMENTS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
-}
-
-/// Whether `diag` is an `E0275` overflow on a requirement a wiring entry with an unresolved value
-/// left unprovable (`overflow evaluating the requirement `Person: CanGreet``), the consequence of
-/// the entry's own error. A recorded requirement stops before the component's parameters, so the
-/// overflow's may go on with a consumer trait's arguments (`<`) or the rest of a check's (`>`, `,`).
-pub(crate) fn is_unresolved_wiring_overflow(diag: &DiagInner) -> bool {
+/// Whether `diag` is an `E0275` overflow on one of the `unprovable` requirements a wiring entry
+/// with an unresolved value left (`overflow evaluating the requirement `Person: CanGreet``), the
+/// consequence of the entry's own error. A recorded requirement stops before the component's
+/// parameters, so the overflow's may go on with a consumer trait's arguments (`<`) or the rest of a
+/// check's (`>`, `,`).
+pub fn is_unresolved_wiring_overflow(diag: &DiagInner, unprovable: &[String]) -> bool {
     if diag.code != Some(E0275) {
         return false;
     }
@@ -53,71 +46,58 @@ pub(crate) fn is_unresolved_wiring_overflow(diag: &DiagInner) -> bool {
     else {
         return false;
     };
-    UNPROVABLE_REQUIREMENTS
-        .try_with(|recorded| {
-            recorded.borrow().iter().any(|unprovable| {
-                requirement
-                    .strip_prefix(unprovable.as_str())
-                    .is_some_and(|rest| rest.is_empty() || rest.starts_with(['<', '>', ',']))
-            })
-        })
-        .unwrap_or(false)
+    unprovable.iter().any(|unprovable| {
+        requirement
+            .strip_prefix(unprovable.as_str())
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with(['<', '>', ',']))
+    })
 }
 
 /// Reshape the buffered name-resolution `E0425`s that a wiring entry or a `#[cgp_impl]` header
-/// produced. Call once name resolution is over, while a `TyCtxt` is available. A panic in the
+/// produced, and record in the output the requirements the entries with an unresolved value leave
+/// unprovable. Call once name resolution is over, while a `TyCtxt` is available. A panic in the
 /// planning leaves every diagnostic as rustc wrote it.
 pub fn reshape_name_resolution_errors(tcx: TyCtxt<'_>) {
-    let Some(candidates) = with_registered_buffer(|buffer| unresolved_names(buffer)) else {
-        return;
-    };
-    if candidates.is_empty() {
-        return;
-    }
-    let names: Vec<(Span, String)> = candidates
-        .iter()
-        .map(|(_, span, name)| (*span, name.clone()))
-        .collect();
-    let Ok(plan) = contain(|| resolve::plan_unresolved_names(tcx, &names)) else {
-        return;
-    };
-    let _ = UNPROVABLE_REQUIREMENTS
-        .try_with(|recorded| recorded.borrow_mut().extend(plan.overflow_requirements));
-    let actions = plan.actions;
-    with_registered_buffer(|buffer| {
-        // A query run while planning can emit diagnostics, which only append to the buffer, but
-        // check the candidates are still where they were before rewriting any.
-        let current = unresolved_names(buffer);
-        if current != candidates {
-            return;
-        }
-        let mut dropped = Vec::new();
-        for ((index, span, _), action) in candidates.iter().zip(actions) {
-            match action {
-                Some(NameAction::Reword(name)) => {
-                    let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
-                        continue;
-                    };
-                    replace_header(diag, plan_unresolved_wiring_name(&name));
-                    diag.span = MultiSpan::from_span(*span);
-                    if let Some(help) = unresolved_wiring_name_help(&name) {
-                        diag.children.push(subdiag(Sublevel::Help, help));
+    buffer_pass(
+        unresolved_names,
+        |candidates| {
+            let names: Vec<(Span, String)> = candidates
+                .iter()
+                .map(|(_, span, name)| (*span, name.clone()))
+                .collect();
+            let plan = resolve::plan_unresolved_names(tcx, &names);
+            record_unprovable_requirements(plan.overflow_requirements);
+            plan.actions
+        },
+        |buffer, candidates, actions| {
+            let mut dropped = Vec::new();
+            for ((index, span, _), action) in candidates.iter().zip(actions) {
+                match action {
+                    Some(NameAction::Reword(name)) => {
+                        let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
+                            continue;
+                        };
+                        replace_header(diag, plan_unresolved_wiring_name(&name));
+                        diag.span = MultiSpan::from_span(*span);
+                        if let Some(help) = unresolved_wiring_name_help(&name) {
+                            diag.children.push(subdiag(Sublevel::Help, help));
+                        }
                     }
+                    Some(NameAction::RewordHeader(name)) => {
+                        let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
+                            continue;
+                        };
+                        reword_header_keeping_advice(diag, &name);
+                    }
+                    Some(NameAction::Drop) => dropped.push(*index),
+                    None => {}
                 }
-                Some(NameAction::RewordHeader(name)) => {
-                    let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
-                        continue;
-                    };
-                    reword_header_keeping_advice(diag, &name);
-                }
-                Some(NameAction::Drop) => dropped.push(*index),
-                None => {}
             }
-        }
-        for index in dropped.into_iter().rev() {
-            buffer.remove(index);
-        }
-    });
+            for index in dropped.into_iter().rev() {
+                buffer.remove(index);
+            }
+        },
+    );
 }
 
 /// Replace the header of `diag` with the coded form of `name`, keeping the compiler's notes and

@@ -18,9 +18,8 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::emitter::buffer::BufEntry;
-use crate::emitter::containment::contain;
+use crate::emitter::buffer_pass::buffer_pass;
 use crate::emitter::edit::{main_message_text, retain_suggestions, subdiag};
-use crate::emitter::output::with_registered_buffer;
 use crate::resolve;
 
 /// Replace the compiler's help on each buffered `E0576` that a misspelled `#[use_type]` import
@@ -30,42 +29,32 @@ pub fn reshape_use_type_misspellings(tcx: TyCtxt<'_>) {
     if !resolve::links_cgp(tcx) {
         return;
     }
-    let Some(candidates) = with_registered_buffer(|buffer| missing_associated_types(buffer)) else {
-        return;
-    };
-    if candidates.is_empty() {
-        return;
-    }
-    let Ok(misspellings) = contain(|| {
-        candidates
-            .iter()
-            .map(|(_, span, type_name, trait_name, notes)| {
-                resolve::detect_use_type_misspelling(tcx, *span, type_name, trait_name, notes)
-            })
-            .collect::<Vec<_>>()
-    }) else {
-        return;
-    };
-    with_registered_buffer(|buffer| {
-        // A query run while detecting can emit diagnostics, which only append to the buffer, but
-        // check the candidates are still where they were before rewriting any.
-        if missing_associated_types(buffer) != candidates {
-            return;
-        }
-        for ((index, span, ..), misspelling) in candidates.iter().zip(misspellings) {
-            let Some(misspelling) = misspelling else {
-                continue;
-            };
-            let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
-                continue;
-            };
-            retain_suggestions(diag, |suggestion| !edits_span(suggestion, *span));
-            diag.children.push(subdiag(
-                Sublevel::Help,
-                use_type_misspelling_help(&misspelling),
-            ));
-        }
-    });
+    buffer_pass(
+        missing_associated_types,
+        |candidates| {
+            candidates
+                .iter()
+                .map(|(_, span, type_name, trait_name, notes)| {
+                    resolve::detect_use_type_misspelling(tcx, *span, type_name, trait_name, notes)
+                })
+                .collect::<Vec<_>>()
+        },
+        |buffer, candidates, misspellings| {
+            for ((index, span, ..), misspelling) in candidates.iter().zip(misspellings) {
+                let Some(misspelling) = misspelling else {
+                    continue;
+                };
+                let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
+                    continue;
+                };
+                retain_suggestions(diag, |suggestion| !edits_span(suggestion, *span));
+                diag.children.push(subdiag(
+                    Sublevel::Help,
+                    use_type_misspelling_help(&misspelling),
+                ));
+            }
+        },
+    );
 }
 
 /// Whether a substitution of `suggestion` edits the text at `span`.
