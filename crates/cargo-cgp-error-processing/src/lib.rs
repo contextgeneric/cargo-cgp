@@ -41,8 +41,8 @@ pub use candidates::{RUSTC_CANDIDATE_LIMIT, bound_candidate_list};
 pub use dedup::DedupLedger;
 pub use diagnosis::{
     Adapter, AdapterFix, COALESCED_SITE_LABEL, Cause, Causes, CgpImplMisuse, ChainNode, CheckForm,
-    CheckTraitName, CoreProviderFix, CoreProviderHint, DepNode, DependencyGraph, DeriveFix,
-    DiagKind, DiagnosisPlan, EntryFix, EntryTable, FIRST_CHECK_TABLE_LABEL,
+    CheckTraitName, ClassPlan, CoreProviderFix, CoreProviderHint, DepNode, DependencyGraph,
+    DeriveFix, DiagKind, DiagnosisPlan, EntryFix, EntryTable, FIRST_CHECK_TABLE_LABEL,
     FIRST_DISPATCH_METHOD_LABEL, FieldFix, FieldIssue, Leaf, MethodFix, MissingUseProvider,
     NearMiss, OrphanConflict, OrphanTrigger, OverflowStep, ParameterUse, PartialKind, PartialValue,
     PendingNote, ProvidedComponent, ProviderImplWithoutMacro, ProviderTraitInUses, ProvidesFix,

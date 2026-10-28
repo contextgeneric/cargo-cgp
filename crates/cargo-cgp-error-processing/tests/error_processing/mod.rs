@@ -1,6 +1,7 @@
 pub mod candidates;
 pub mod causes;
 pub mod cgp_impl_misuse;
+pub mod class_plan;
 pub mod coalesce;
 pub mod dedup;
 pub mod diagnosis;

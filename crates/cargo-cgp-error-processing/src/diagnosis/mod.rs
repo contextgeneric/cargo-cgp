@@ -8,6 +8,7 @@
 //! unit-testable without a `TyCtxt`.
 
 mod cgp_impl_misuse;
+mod class_plan;
 mod coalesce;
 mod dispatch_names;
 mod graph;
@@ -31,6 +32,7 @@ mod wiring_name;
 mod wording;
 
 pub use cgp_impl_misuse::*;
+pub use class_plan::*;
 pub use coalesce::*;
 pub use dispatch_names::*;
 pub use graph::*;
