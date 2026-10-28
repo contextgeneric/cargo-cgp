@@ -168,16 +168,10 @@ impl<E: Emitter> CgpEmitter<E> {
             .extend(diag.span.primary_spans().iter().copied());
     }
 
-    /// Post-process a diagnostic after transforming it — the final cleanup pass, over every
-    /// message and span label of the diagnostic and its children. It strips module paths,
-    /// resugars `Symbol!` and `Path!` and the type-level lists, and rewords an unmet `HasField`
-    /// bound. Whether the context implements `HasField` for any field is a fact of the whole
-    /// diagnostic (the "similar impl" landmark can sit far from the clause), so it is decided once
-    /// up front and passed into each per-message rewrite.
-    ///
-    /// `origin` says whether the tool rewrote the diagnostic. An untransformed one changes only
-    /// where the chain recovers a CGP encoding (see [`Origin`]), and only in a crate that loads
-    /// CGP, so a plain Rust error passes through exactly as rustc built it.
+    /// Post-process a diagnostic after transforming it ([`postprocess_diag`]). `origin` says
+    /// whether the tool rewrote it; an untransformed one changes only where the chain recovers a
+    /// CGP encoding (see [`Origin`]), and only in a crate that loads CGP, so a plain Rust error
+    /// passes through exactly as rustc built it.
     fn postprocess(&self, diag: &mut DiagInner, origin: Origin) {
         if origin == Origin::Untransformed && !self.facts.uses_cgp() {
             return;
