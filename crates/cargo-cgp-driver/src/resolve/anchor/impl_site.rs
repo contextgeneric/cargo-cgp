@@ -2,15 +2,15 @@
 
 use cargo_cgp_error_processing::{Causes, DepNode, Resolved};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
-use rustc_middle::ty::{self, TyCtxt, Upcast as _};
+use rustc_middle::ty::{self, Upcast as _};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::resolve::anchor::{can_use_component_supertrait, enclosing_trait_impls, is_about_impl};
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{
     consumer_provider_trait, is_blanket_trait, is_context_adt, is_provider_trait,
 };
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait
@@ -36,11 +36,8 @@ use crate::resolve::walk::{holds, resolve_leaves};
 ///
 /// `spans` are the diagnostic's primary spans, and an impl counts only when one of them is about the
 /// impl itself (`is_about_impl`), so an unrelated error inside a method body is left alone.
-pub fn resolve_impl_site(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    spans: &[Span],
-) -> Option<Resolved> {
+pub fn resolve_impl_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
+    let tcx = cx.tcx;
     for impl_did in enclosing_trait_impls(tcx, spans) {
         // Safe because `enclosing_trait_impls` keeps only `of_trait` impls.
         let trait_ref = tcx
@@ -59,7 +56,7 @@ pub fn resolve_impl_site(
         // provider, `where App: CanRun` on a wrapper of a foreign type), and the compiler reports
         // such a bound failing at the bound itself. That is a real wiring failure, so recover it as
         // the consumer obligation it is — de-duplicating into that context's own check.
-        if let Some(resolved) = where_bound_on_context(tcx, cache, impl_did, spans) {
+        if let Some(resolved) = where_bound_on_context(cx, impl_did, spans) {
             return Some(resolved);
         }
         // A provider-trait impl (`impl Runner<Ctx> for RunViaInner`) has a *provider* struct as its
@@ -86,8 +83,7 @@ pub fn resolve_impl_site(
         // a distinct trait from that supertrait, the wrapper's error is reported on its own rather
         // than de-duplicated into the `check_components!` entry for the supertrait.
         let obligation: ty::PolyTraitClause<'_> = ty::Binder::dummy(trait_ref).upcast(tcx);
-        if let Some((consumers_are_cgp, causes)) =
-            wrapper_consumer_causes(tcx, cache, obligation, context)
+        if let Some((consumers_are_cgp, causes)) = wrapper_consumer_causes(cx, obligation, context)
         {
             return Some(Resolved {
                 context: context.to_string(),
@@ -113,11 +109,11 @@ pub fn resolve_impl_site(
 /// the caret. A normal provider's dependencies bind the *generic* context (`Ctx: HasName`, `Self` a
 /// type parameter), which is no context ADT, so this fires only on a concrete one.
 fn where_bound_on_context<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, 'tcx>,
     impl_did: DefId,
     spans: &[Span],
 ) -> Option<Resolved> {
+    let tcx = cx.tcx;
     for &(clause, bound_span) in tcx.clauses_of(impl_did).clauses {
         if !spans.iter().any(|&span| bound_span.overlaps(span)) {
             continue;
@@ -135,7 +131,7 @@ fn where_bound_on_context<'tcx>(
         if holds(tcx, bound) {
             continue;
         }
-        if let Some(resolved) = resolve_leaves(tcx, cache, bound) {
+        if let Some(resolved) = resolve_leaves(cx, bound) {
             return Some(resolved);
         }
     }
@@ -148,11 +144,11 @@ fn where_bound_on_context<'tcx>(
 /// and the causes, or `None` when no CGP consumer supertrait is unmet — so a plain bound like
 /// `Send` is skipped rather than mis-recovered.
 fn wrapper_consumer_causes<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, 'tcx>,
     obligation: ty::PolyTraitClause<'tcx>,
     context: ty::Ty<'tcx>,
 ) -> Option<(bool, Causes)> {
+    let tcx = cx.tcx;
     let trait_ref = obligation.skip_binder().trait_ref;
     let wrapper = trait_ref.print_only_trait_path().to_string();
     let wrapper_node = DepNode::Trait {
@@ -186,7 +182,7 @@ fn wrapper_consumer_causes<'tcx>(
         if consumer_provider_trait(tcx, sup_did).is_none() && !is_blanket_trait(tcx, sup_did) {
             continue;
         }
-        let Some(resolved) = resolve_leaves(tcx, cache, sup) else {
+        let Some(resolved) = resolve_leaves(cx, sup) else {
             continue;
         };
         causes.push(resolved.causes);

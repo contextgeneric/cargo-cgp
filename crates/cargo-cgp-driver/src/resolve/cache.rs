@@ -9,9 +9,8 @@
 //!
 //! The key is a [`StableHash`] fingerprint of the region-erased obligation together with its root
 //! context — the context is part of the input because the walk's rendering compares node self-types
-//! against it (see the design document). Only the fingerprint feeds `Hash`/`Eq`; the rendered
-//! `obligation`/`context` strings are carried purely so the store can be inspected. The fingerprint
-//! is `Copy` and lifetime-free, and the value is owned, so entries persist past any `TyCtxt`.
+//! against it (see the design document). The fingerprint is the key's only field, `Copy` and
+//! lifetime-free, and the value is owned, so entries persist past any `TyCtxt`.
 
 use std::cell::RefCell;
 use std::collections::HashMap;

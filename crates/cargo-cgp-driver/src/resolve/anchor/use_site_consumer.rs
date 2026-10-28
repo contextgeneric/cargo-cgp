@@ -7,11 +7,11 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::resolve::anchor::{consumer_obligation, context_candidates_from_spans};
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::contexts_at_spans;
 use crate::resolve::cgp_item::{
     carries_wiring, consumer_provider_trait, is_blanket_trait, is_local_adt,
 };
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by anchoring on the **consumer trait** the diagnostic names, rather
@@ -33,12 +33,8 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// component parameters a use site does not carry — a generic consumer (`CanHandle<Code, Input>`) is
 /// left to decline. `None` when the diagnostic names no local CGP consumer trait, or none of the
 /// candidate contexts fails one resolvably.
-pub fn resolve_use_site_consumer(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    spans: &[Span],
-) -> Option<Resolved> {
-    resolve_from_named_trait(tcx, cache, spans, TraitKind::CgpConsumer)
+pub fn resolve_use_site_consumer(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
+    resolve_from_named_trait(cx, spans, TraitKind::CgpConsumer)
 }
 
 /// Resolve a use-site failure by anchoring on a `#[cgp_fn]` / `#[blanket_trait]` **blanket trait**
@@ -56,12 +52,8 @@ pub fn resolve_use_site_consumer(
 /// programmer actually invoked rather than with whichever sub-trait the diagnostic happens to
 /// name in its spans. `None` when the diagnostic names no local blanket trait, or none of the
 /// candidate contexts fails one resolvably.
-pub fn resolve_use_site_blanket_trait(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    spans: &[Span],
-) -> Option<Resolved> {
-    resolve_from_named_trait(tcx, cache, spans, TraitKind::Blanket)
+pub fn resolve_use_site_blanket_trait(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
+    resolve_from_named_trait(cx, spans, TraitKind::Blanket)
 }
 
 /// Which local trait an anchor recovers from the diagnostic's spans.
@@ -78,11 +70,11 @@ enum TraitKind {
 /// and walk it — the shared body of the two anchors above. A [`TraitKind::Blanket`] result has
 /// its `consumers_are_cgp` flag cleared, since such a trait is not a CGP component.
 fn resolve_from_named_trait(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, '_>,
     spans: &[Span],
     kind: TraitKind,
 ) -> Option<Resolved> {
+    let tcx = cx.tcx;
     // The failing context, from a struct-definition span (an `E0599` "method not found for this
     // struct"). For the trait path this is unioned with the *expression* whose type fails (a
     // `where`-bound `E0277` on a call argument, whose context sits on no struct-definition span —
@@ -106,7 +98,7 @@ fn resolve_from_named_trait(
             if holds(tcx, top) {
                 continue;
             }
-            if let Some(mut resolved) = resolve_leaves(tcx, cache, top) {
+            if let Some(mut resolved) = resolve_leaves(cx, top) {
                 if kind == TraitKind::Blanket {
                     resolved.consumers_are_cgp = false;
                     resolved.subject_is_context = carries_wiring(tcx, context);

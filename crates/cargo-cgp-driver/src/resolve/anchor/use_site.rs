@@ -6,10 +6,10 @@ use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::anchor::{consumer_obligation, context_candidates_from_spans};
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{
     component_params, find_cgp_trait, is_nil, is_path_cons, marker_to_consumer, path_cons_parts,
 };
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve the root cause(s) of a CGP wiring failure reported at a *use site* rather than a
@@ -19,7 +19,8 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// and every component that context wires (through its `DelegateComponent` impls) is re-checked;
 /// each one that cannot be used contributes its dependency tree. `None` when no context is found
 /// or no wired component fails resolvably.
-pub fn resolve_use_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -> Option<Resolved> {
+pub fn resolve_use_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
+    let tcx = cx.tcx;
     // A diagnostic span can land on a provider struct as well as the real context (both are local
     // ADTs), so try each candidate and keep the first that actually wires a failing component.
     for context in context_candidates_from_spans(tcx, spans) {
@@ -39,7 +40,7 @@ pub fn resolve_use_site(tcx: TyCtxt<'_>, cache: &ResolveCache, spans: &[Span]) -
             if holds(tcx, top) {
                 continue;
             }
-            if let Some(resolved) = resolve_leaves(tcx, cache, top) {
+            if let Some(resolved) = resolve_leaves(cx, top) {
                 for consumer in resolved.consumers {
                     if !consumers.contains(&consumer) {
                         consumers.push(consumer);

@@ -6,12 +6,12 @@ use rustc_hir::{Expr, ExprKind, HirId, QPath};
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::{Span, Symbol};
 
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{
     CallForm, data_expr_ty, data_fns_named, is_about_call, lower_hir_ty, peel_hir_refs,
     seed_from_call,
 };
 use crate::resolve::cgp_item::carries_wiring;
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a failing call to one of CGP's extensible-data operations (a builder, an extractor, a
@@ -24,11 +24,8 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// never read as a data operation. The result heads the diagnostic as `[CGP-E050]`. `None` when no
 /// data call sits at the diagnostic's primary spans, its subject cannot be typed, or no root cause
 /// is found.
-pub fn resolve_data_call(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    spans: &[Span],
-) -> Option<Resolved> {
+pub fn resolve_data_call(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
+    let tcx = cx.tcx;
     for call in data_calls_at(tcx, spans) {
         let Some(subject) = call.subject else {
             continue;
@@ -50,7 +47,7 @@ pub fn resolve_data_call(
             if holds(tcx, top) {
                 continue;
             }
-            if let Some(mut resolved) = resolve_leaves(tcx, cache, top) {
+            if let Some(mut resolved) = resolve_leaves(cx, top) {
                 // A data trait is not a CGP component, and the value it is called on is a context
                 // only when it carries wiring.
                 resolved.consumers_are_cgp = false;

@@ -1,13 +1,13 @@
 //! The forwarding-entry anchor: a `Key -> Table` wiring entry whose table lacks the key.
 
 use cargo_cgp_error_processing::Resolved;
-use rustc_middle::ty::{TyCtxt, TypeVisitableExt as _};
+use rustc_middle::ty::TypeVisitableExt as _;
 use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::anchor::consumer_obligation;
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{component_params, find_cgp_trait, is_cgp_item, marker_to_consumer};
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve an error the compiler raises on a `Key -> Table` entry of `delegate_components!`. The
@@ -22,11 +22,8 @@ use crate::resolve::walk::{holds, resolve_leaves};
 /// `None` when no local entry's forwarding bound sits at the caret, when the key is not a bare
 /// component marker without parameters (its consumer obligation needs values the entry does not
 /// name), or when the consumer obligation holds or walks to no cause.
-pub fn resolve_forwarding_entry(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    primary: &[Span],
-) -> Option<Resolved> {
+pub fn resolve_forwarding_entry(cx: ResolveCtx<'_, '_>, primary: &[Span]) -> Option<Resolved> {
+    let tcx = cx.tcx;
     let delegate_did = find_cgp_trait(tcx, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)?;
     for impl_did in tcx.all_impls(delegate_did).filter(|did| did.is_local()) {
         let impl_ref = tcx
@@ -66,7 +63,7 @@ pub fn resolve_forwarding_entry(
         if holds(tcx, top) {
             return None;
         }
-        return resolve_leaves(tcx, cache, top);
+        return resolve_leaves(cx, top);
     }
     None
 }

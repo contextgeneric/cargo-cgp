@@ -5,11 +5,11 @@ use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _};
 use rustc_span::Span;
 
 use crate::resolve::anchor::check_entry_obligation;
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{
     CallForm, CallTrait, method_calls_at, receiver_context, seed_from_call, traits_with_method,
 };
 use crate::resolve::cgp_item::is_context_adt;
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::walk_overflow;
 
 /// What walking the obligation at an `E0275` overflow's caret shows about it.
@@ -29,17 +29,17 @@ pub enum OverflowWalk {
 /// that of the consumer-method call at the caret whose consumer trait `requirement` names, as the
 /// overflow's message gives it (`Person: CanGreet`).
 pub fn overflow_walk(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, '_>,
     primary_span: Span,
     requirement: &str,
 ) -> OverflowWalk {
+    let tcx = cx.tcx;
     let obligation = check_entry_obligation(tcx, primary_span)
         .or_else(|| call_obligation(tcx, primary_span, requirement));
     let Some(obligation) = obligation else {
         return OverflowWalk::NoEntry;
     };
-    match walk_overflow(tcx, cache, obligation) {
+    match walk_overflow(cx, obligation) {
         Some(reason) => OverflowWalk::Cut(reason),
         None => OverflowWalk::NotCut,
     }

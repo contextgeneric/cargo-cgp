@@ -7,8 +7,8 @@ use rustc_span::def_id::DefId;
 
 use crate::config::{CGP_COMPONENT_CRATE, IS_PROVIDER_FOR_TRAIT};
 use crate::resolve::anchor::{impl_self_ty_span, provider_obligation};
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{is_cgp_item, marker_to_consumer};
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::resolve_provider_leaves;
 
 /// Resolve the root cause(s) of the `#[check_providers]` entry whose diagnostic caret sits at
@@ -20,11 +20,8 @@ use crate::resolve::walk::resolve_provider_leaves;
 /// which provider, component, and context the entry names, then walks the real provider obligation
 /// `P: ProviderTrait<Context, Params…>`, so the tree starts at the provider the entry lists rather
 /// than at the context's own wiring, which may not wire that provider at all.
-pub fn resolve_provider_check(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    primary_span: Span,
-) -> Option<Resolved> {
+pub fn resolve_provider_check(cx: ResolveCtx<'_, '_>, primary_span: Span) -> Option<Resolved> {
+    let tcx = cx.tcx;
     for trait_did in tcx.all_traits_including_private() {
         let Some(super_clause) = provider_check_supertrait(tcx, trait_did) else {
             continue;
@@ -48,7 +45,7 @@ pub fn resolve_provider_check(
             let (consumer_did, provider_did) = marker_to_consumer(tcx, marker)?;
             let top =
                 provider_obligation(tcx, provider, provider_did, context, consumer_did, params)?;
-            if let Some(resolved) = resolve_provider_leaves(tcx, cache, top, context) {
+            if let Some(resolved) = resolve_provider_leaves(cx, top, context) {
                 return Some(resolved);
             }
         }

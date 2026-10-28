@@ -7,11 +7,11 @@ use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{CallForm, receiver_context, seed_from_call, unbounded_receiver};
 use crate::resolve::cgp_item::{
     carries_wiring, is_blanket_trait, is_consumer_trait, is_context_adt,
 };
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
@@ -32,11 +32,8 @@ use crate::resolve::walk::{holds, resolve_leaves};
 ///
 /// Tried after the six span-matching anchors, so a failure any of them can recover keeps its more
 /// precise recovery.
-pub fn resolve_call_site(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    spans: &[Span],
-) -> Option<Resolved> {
+pub fn resolve_call_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
+    let tcx = cx.tcx;
     for call in method_calls_at(tcx, spans) {
         let Some(context) = receiver_context(tcx, call.receiver) else {
             // A receiver typed by a type parameter of the enclosing item is no context, but a
@@ -66,7 +63,7 @@ pub fn resolve_call_site(
             if holds(tcx, top) {
                 continue;
             }
-            if let Some(mut resolved) = resolve_leaves(tcx, cache, top) {
+            if let Some(mut resolved) = resolve_leaves(cx, top) {
                 // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait is consumed like a consumer trait
                 // but is not a CGP *component*, so it heads the diagnostic as `[CGP-E003] the trait
                 // …` — the same wording the impl-site anchor gives such a trait reached through a

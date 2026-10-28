@@ -7,11 +7,11 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{
     CallForm, is_about_call, lower_hir_ty, peel_hir_refs, seed_from_call,
 };
 use crate::resolve::cgp_item::{carries_wiring, is_provider_trait};
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::{holds, resolve_provider_leaves};
 
 /// Resolve a failing call to a provider trait's method through the provider's own path
@@ -23,11 +23,8 @@ use crate::resolve::walk::{holds, resolve_provider_leaves};
 /// trait. Only a provider trait in scope at the call is a candidate, as the compiler's own lookup
 /// considers only those. `None` when no such call sits at the diagnostic's primary spans, its
 /// provider or context cannot be typed, or no root cause is found.
-pub fn resolve_provider_call(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    spans: &[Span],
-) -> Option<Resolved> {
+pub fn resolve_provider_call(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
+    let tcx = cx.tcx;
     for call in provider_calls_at(tcx, spans) {
         let Some(provider) = call.provider else {
             continue;
@@ -62,7 +59,7 @@ pub fn resolve_provider_call(
             if context.has_placeholders() || holds(tcx, top) {
                 continue;
             }
-            if let Some(mut resolved) = resolve_provider_leaves(tcx, cache, top, context) {
+            if let Some(mut resolved) = resolve_provider_leaves(cx, top, context) {
                 // The context argument is a context only when it carries wiring; a unit `()`
                 // passed to a dispatcher is named plainly.
                 resolved.subject_is_context = carries_wiring(tcx, context);

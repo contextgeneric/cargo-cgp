@@ -10,7 +10,6 @@ use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::call_site::{
     WrittenArg, data_expr_ty, declared_binding_ty, expr_written_ty, is_about_call, lower_hir_ty,
     written_args,
@@ -18,6 +17,7 @@ use crate::resolve::call_site::{
 use crate::resolve::cgp_item::{
     carries_wiring, is_blanket_trait, is_consumer_trait, is_context_adt,
 };
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::{holds, resolve_leaves, unknowns_to_placeholders};
 
 /// Resolve a failing `where` bound of a generic function at a call that names it by path
@@ -28,16 +28,13 @@ use crate::resolve::walk::{holds, resolve_leaves, unknowns_to_placeholders};
 /// seeded and walked as a call through the trait would be. A consumer trait heads the block as
 /// `[CGP-E001]`, a blanket trait as `[CGP-E003]`. `None` when no such call sits at the
 /// diagnostic's primary spans, or no bound on a context fails resolvably.
-pub fn resolve_bound_call(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    spans: &[Span],
-) -> Option<Resolved> {
+pub fn resolve_bound_call(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
+    let tcx = cx.tcx;
     for call in generic_calls_at(tcx, spans) {
         for top in failing_context_bounds(tcx, &call) {
             let trait_did = top.skip_binder().def_id();
             let blanket = !is_consumer_trait(tcx, trait_did);
-            if let Some(mut resolved) = resolve_leaves(tcx, cache, top) {
+            if let Some(mut resolved) = resolve_leaves(cx, top) {
                 if blanket {
                     resolved.consumers_are_cgp = false;
                     resolved.subject_is_context = carries_wiring(tcx, top.skip_binder().self_ty());

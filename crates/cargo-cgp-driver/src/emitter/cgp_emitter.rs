@@ -31,7 +31,7 @@ use crate::emitter::stage::{
     shared_dispatch_method, undeclared_requirement, undeclared_trait, unresolved_wiring_overflow,
     wiring_conflict,
 };
-use crate::resolve::ResolveCache;
+use crate::resolve::{ResolveCache, ResolveCtx};
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
 /// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
@@ -229,13 +229,11 @@ impl<E: Emitter> CgpEmitter<E> {
             Verdict::Drop => return,
             Verdict::Reshape(reshape) => return self.reshape(diag, reshape),
         }
-        let resolution = resolve_or_rewrite(
+        let cx = tcx.map(|tcx| ResolveCtx {
             tcx,
-            &mut diag,
-            &self.names,
-            &self.resolve_cache,
-            &self.cgp_impl_misuse,
-        );
+            cache: &self.resolve_cache,
+        });
+        let resolution = resolve_or_rewrite(cx, &mut diag, &self.names, &self.cgp_impl_misuse);
         self.finish(diag, original, resolution);
     }
 

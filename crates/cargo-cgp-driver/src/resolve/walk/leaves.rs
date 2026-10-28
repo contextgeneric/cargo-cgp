@@ -11,6 +11,7 @@ use crate::resolve::cgp_item::{
     is_cgp_item, is_consumer_trait, is_context_adt, is_provider_trait, trim_unknown_path_tail,
 };
 use crate::resolve::classify::{classify_leaf, is_reportable_leaf, wiring_without_provider_for};
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::label::{label_for, redirect_lookup_args, render_ty, trait_generics};
 use crate::resolve::walk::{
     ProjectionMismatch, holds, impl_where_obligations, is_context_side, is_descendable,
@@ -35,22 +36,22 @@ const MAX_DEPTH: u32 = 256;
 /// chain. The walk descends the consumer trait to its provider trait and on to the provider's real
 /// `where` bounds, never through `IsProviderFor`. `None` when no branch reaches a resolvable leaf.
 ///
-/// The descent is memoized at **every node** through `cache`: one CGP mistake surfaces the same
+/// The descent is memoized at **every node** through the context's cache: one CGP mistake surfaces the same
 /// failure at many sites (all seeding the same obligation), and a shared trait is a diamond
 /// reached from several parents, so each distinct obligation is resolved once and reused. See
 /// `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`.
 pub(crate) fn resolve_leaves<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, 'tcx>,
     top: ty::PolyTraitClause<'tcx>,
 ) -> Option<Resolved> {
+    let tcx = cx.tcx;
     // Erase the seed's free regions up front, exactly as every descendant obligation is erased by
     // [`impl_where_obligations`]. A lifetime-parameterized check entry (`(Life<'a>, str)`) seeds an
     // obligation carrying the check impl's own `'a`, and leaving it unerased would make the seed the
     // one chain entry whose `self_ty == context` comparisons fail, mislabeling the consumer node.
     let top = tcx.erase_and_anonymize_regions(top);
     let context = top.skip_binder().self_ty();
-    compute_leaves(tcx, cache, top, context)
+    compute_leaves(cx, top, context)
 }
 
 /// Walk the dependency graph of `top`, the provider obligation `Provider: ProviderTrait<Ctx, …>` a
@@ -59,14 +60,14 @@ pub(crate) fn resolve_leaves<'tcx>(
 /// without the provider and the context), and its [`provider`](Resolved::provider) is that provider. `None` when no branch
 /// reaches a resolvable leaf.
 pub(crate) fn resolve_provider_leaves<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, 'tcx>,
     top: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
 ) -> Option<Resolved> {
+    let tcx = cx.tcx;
     let top = tcx.erase_and_anonymize_regions(top);
     let context = tcx.erase_and_anonymize_regions(context);
-    let mut resolved = compute_leaves(tcx, cache, top, context)?;
+    let mut resolved = compute_leaves(cx, top, context)?;
     let top_ref = top.skip_binder().trait_ref;
     resolved.consumers = vec![format!(
         "{}{}",
@@ -81,13 +82,13 @@ pub(crate) fn resolve_provider_leaves<'tcx>(
 /// wiring) or the depth cap reached without a repeat (a lookup that grows). `None` when the walk ran
 /// to its leaves, as it does through a type the compiler could not resolve.
 pub(crate) fn walk_overflow<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, 'tcx>,
     top: ty::PolyTraitClause<'tcx>,
 ) -> Option<WiringOverflow> {
+    let tcx = cx.tcx;
     let top = tcx.erase_and_anonymize_regions(top);
     let context = top.skip_binder().self_ty();
-    resolve_node(tcx, cache, top, None, context, &[], 0).cut
+    resolve_node(cx, top, None, context, &[], 0).cut
 }
 
 /// The provider step `parent` that requires `required`, when `parent` is the provider-trait
@@ -184,12 +185,12 @@ fn growing_lookup<'tcx>(tcx: TyCtxt<'tcx>, prefix: &[ty::PolyTraitClause<'tcx>])
 /// [dependency graph](cargo_cgp_error_processing::DependencyGraph) at render time, not here. `top`
 /// is already region-erased and `context` is its self type.
 fn compute_leaves<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, 'tcx>,
     top: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
 ) -> Option<Resolved> {
-    let sub = resolve_node(tcx, cache, top, None, context, &[], 0);
+    let tcx = cx.tcx;
+    let sub = resolve_node(cx, top, None, context, &[], 0);
 
     // One cause per distinct leaf; a leaf reached by several paths keeps each path, so the graph
     // can render the convergence rather than dropping every path but the first.
@@ -225,7 +226,7 @@ fn compute_leaves<'tcx>(
 }
 
 /// Resolve one node of the dependency graph to its owned, node-rooted sub-causes, memoized in
-/// `cache`. `pred` is the (already region-erased) failing obligation, `parent` the trait of the
+/// the context's cache. `pred` is the (already region-erased) failing obligation, `parent` the trait of the
 /// obligation directly above it (needed only to classify a terminal leaf), `context` the root
 /// context, and `prefix` the chain of ancestors above `pred` (for the cycle guard and the reuse
 /// disjointness check). A `HasField`, or an obligation with no satisfying impl, or a foreign bound
@@ -233,14 +234,14 @@ fn compute_leaves<'tcx>(
 /// `where`-obligations of the impl that would satisfy it. Only complete (untainted) non-terminal
 /// nodes are cached.
 fn resolve_node<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, 'tcx>,
     pred: ty::PolyTraitClause<'tcx>,
     parent: Option<ty::TraitRef<'tcx>>,
     context: Ty<'tcx>,
     prefix: &[ty::PolyTraitClause<'tcx>],
     depth: u32,
 ) -> SubResult {
+    let tcx = cx.tcx;
     // Depth cap: a divergent wiring the cycle guard cannot catch (obligations that keep growing
     // without repeating) is cut here. The cut flags the subtree incomplete so it is never cached.
     if depth > MAX_DEPTH {
@@ -286,7 +287,7 @@ fn resolve_node<'tcx>(
     // fully-explored subtree; reuse it only when no current ancestor lies inside it, since otherwise
     // splicing it would keep a branch a fresh walk's cycle guard would cut here.
     let key = NodeKey::new(tcx, erased, context);
-    if let Some(cached) = cache.get(&key) {
+    if let Some(cached) = cx.cache.get(&key) {
         let reusable = prefix.iter().all(|ancestor| {
             !cached.reachable.contains(&pred_fingerprint(
                 tcx,
@@ -358,7 +359,7 @@ fn resolve_node<'tcx>(
             && let Some(mismatch) = unmet_projection(tcx, clauses)
         {
             let result = projection_result(tcx, erased, leaf_ref, context, mismatch, self_fp);
-            return cache_if_complete(cache, key, result);
+            return cache_if_complete(cx.cache, key, result);
         }
     }
 
@@ -416,7 +417,7 @@ fn resolve_node<'tcx>(
         // hand-written `DelegateComponent` impl leaves out.
         if let Some(leaf) = wiring_without_provider_for(tcx, &failing, context) {
             let result = cause_result(tcx, erased, context, leaf, self_fp);
-            return cache_if_complete(cache, key, result);
+            return cache_if_complete(cx.cache, key, result);
         }
         // Matched an impl, yet every trait-clause `where`-obligation holds: the fault is a projection
         // the trait-clause walk cannot see — a `HasField::Value` mismatch (a field present with the
@@ -427,7 +428,7 @@ fn resolve_node<'tcx>(
             Some(mismatch) => projection_result(tcx, erased, leaf_ref, context, mismatch, self_fp),
             None => SubResult::empty(self_fp),
         };
-        return cache_if_complete(cache, key, result);
+        return cache_if_complete(cx.cache, key, result);
     } else {
         unmet
     };
@@ -445,15 +446,7 @@ fn resolve_node<'tcx>(
     let mut incomplete = false;
     let mut cut: Option<WiringOverflow> = None;
     for child in children {
-        let sub = resolve_node(
-            tcx,
-            cache,
-            child,
-            Some(leaf_ref),
-            context,
-            &child_prefix,
-            depth + 1,
-        );
+        let sub = resolve_node(cx, child, Some(leaf_ref), context, &child_prefix, depth + 1);
         incomplete |= sub.incomplete;
         // A cycle explains a lookup that never resolves better than a depth cut does, so it wins.
         match (&cut, sub.cut) {
@@ -473,7 +466,7 @@ fn resolve_node<'tcx>(
         }
     }
     cache_if_complete(
-        cache,
+        cx.cache,
         key,
         SubResult {
             causes,

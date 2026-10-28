@@ -31,6 +31,7 @@ mod cgp_impl_misuse;
 mod cgp_item;
 mod classify;
 mod conflict;
+mod ctx;
 mod data;
 mod label;
 mod macro_less_provider;
@@ -59,6 +60,7 @@ pub use call_site::{
 pub use cgp_impl_misuse::{DetectedCgpImplMisuse, detect_cgp_impl_misuses};
 pub use cgp_item::{crate_uses_cgp, links_cgp};
 pub use conflict::{ConflictAction, ConflictTrait, classify_wiring_conflict};
+pub use ctx::ResolveCtx;
 pub use macro_less_provider::detect_provider_impl_without_macro;
 pub use missing_use_provider::detect_missing_use_provider;
 pub use orphan::classify_orphan_conflict;

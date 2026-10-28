@@ -14,7 +14,6 @@ use cargo_cgp_error_processing::{
 };
 use rustc_errors::codes::{E0271, E0275, E0277, E0308, E0599};
 use rustc_errors::{DiagInner, DiagMessage, MultiSpan, Style, Sublevel, Suggestions};
-use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::emitter::edit::{
@@ -22,7 +21,7 @@ use crate::emitter::edit::{
     mentions_wiring, rewrite_messages, strip_method_probe_advice, subdiag,
 };
 use crate::emitter::stage::CgpImplMisuseStage;
-use crate::resolve::{self, ResolveCache};
+use crate::resolve::{self, ResolveCtx};
 
 /// What stage 17 made of a diagnostic no earlier stage took.
 pub enum Resolution {
@@ -55,15 +54,15 @@ pub struct TransformedResolution {
 
 /// Stage 17: transform a resolvable wiring failure around its dependency tree, or, when the
 /// resolver declines, run the wiring-message rename and the overflow rewrite as the fallback.
+/// `cx` is `None` when no compiler handle is in scope, which the text fallback does not need.
 /// `cgp_impl_misuse` is stage 2, whose detected mistakes make a failing check's re-report a drop.
 pub fn resolve_or_rewrite(
-    tcx: Option<TyCtxt<'_>>,
+    cx: Option<ResolveCtx<'_, '_>>,
     diag: &mut DiagInner,
     names: &ComponentNameMap,
-    cache: &ResolveCache,
     cgp_impl_misuse: &CgpImplMisuseStage,
 ) -> Resolution {
-    if let Some((resolved, span, at_call)) = try_resolve(tcx, cache, diag) {
+    if let Some((resolved, span, at_call)) = try_resolve(cx, diag) {
         // The downstream check re-report of a `#[cgp_impl]` consumer-trait mistake (its provider
         // struct failing `NotAProvider` because its impl targets the wrong trait) is dropped. A
         // failing requirement of that impl resolves to a cause of its own and is kept.
@@ -90,7 +89,7 @@ pub fn resolve_or_rewrite(
     }
     // A wiring overflow is worded by why its lookup never resolves; one the walk does not explain
     // (it follows from an unresolved type, say) keeps rustc's wording.
-    let overflow = wiring_overflow(tcx, cache, diag);
+    let overflow = wiring_overflow(cx, diag);
     let mut rewritten = (diag.code != Some(E0275) || overflow.is_some()) && rewrite(diag, names);
     if let Some(overflow) = &overflow
         && let Some(header) =
@@ -148,8 +147,7 @@ pub fn resolve_or_rewrite(
 /// (`E0271`/`E0277` are trait-solving failures reported after collection, where the queries the
 /// solver forces are already cached.)
 pub fn try_resolve(
-    tcx: Option<TyCtxt<'_>>,
-    cache: &ResolveCache,
+    cx: Option<ResolveCtx<'_, '_>>,
     diag: &DiagInner,
 ) -> Option<(Resolved, Span, bool)> {
     // A method-bounds `E0599` (not a resolution-class one) is the `E0599` the anchors handle,
@@ -178,7 +176,7 @@ pub fn try_resolve(
     }
     let primary_span = diag.span.primary_span()?;
     if data_call_only {
-        let resolved = resolve::resolve_data_call(tcx?, cache, diag.span.primary_spans())?;
+        let resolved = resolve::resolve_data_call(cx?, diag.span.primary_spans())?;
         // A mismatched argument is a plain type error unless the walk finds the field or
         // variant state the operation rejects behind it.
         if diag.code == Some(E0308)
@@ -191,13 +189,13 @@ pub fn try_resolve(
         }
         return Some((resolved, primary_span, true));
     }
-    let (resolved, at_call) = anchor(tcx?, cache, diag)?;
+    let (resolved, at_call) = anchor(cx?, diag)?;
     Some((resolved, primary_span, at_call))
 }
 
 /// The anchors `try_resolve` tries for an unmet obligation, in order, with whether the resolution
 /// is anchored at the call expression.
-fn anchor(tcx: TyCtxt<'_>, cache: &ResolveCache, diag: &DiagInner) -> Option<(Resolved, bool)> {
+fn anchor(cx: ResolveCtx<'_, '_>, diag: &DiagInner) -> Option<(Resolved, bool)> {
     let primary_span = diag.span.primary_span()?;
     let spans = diagnostic_spans(diag);
     // The impl-site, wrapper-chain, and call-site anchors re-anchor a diagnostic onto code it
@@ -213,17 +211,17 @@ fn anchor(tcx: TyCtxt<'_>, cache: &ResolveCache, diag: &DiagInner) -> Option<(Re
     // failure sits several `where`-clause hops down. Failing all — a use-site failure such
     // as a consumer-method call, whose obligation no check impl carries — recover the
     // context from the diagnostic's spans.
-    let resolved = resolve::resolve_check_failure(tcx, cache, primary_span)
+    let resolved = resolve::resolve_check_failure(cx, primary_span)
         // A `#[check_providers]` entry is anchored the same way, on the provider it lists.
-        .or_else(|| resolve::resolve_provider_check(tcx, cache, primary_span))
-        .or_else(|| resolve::resolve_impl_site(tcx, cache, primary))
-        .or_else(|| resolve::resolve_wrapper_chain(tcx, cache, primary))
-        .or_else(|| resolve::resolve_use_site(tcx, cache, &spans))
+        .or_else(|| resolve::resolve_provider_check(cx, primary_span))
+        .or_else(|| resolve::resolve_impl_site(cx, primary))
+        .or_else(|| resolve::resolve_wrapper_chain(cx, primary))
+        .or_else(|| resolve::resolve_use_site(cx, &spans))
         // A namespace-joined context's wiring lives in the namespace, not its own
         // `DelegateComponent` impls, so the per-component re-check above finds nothing;
         // anchoring on the consumer trait the diagnostic names and walking through the
         // namespace recovers it.
-        .or_else(|| resolve::resolve_use_site_consumer(tcx, cache, &spans));
+        .or_else(|| resolve::resolve_use_site_consumer(cx, &spans));
     if let Some(resolved) = resolved {
         return Some((resolved, false));
     }
@@ -233,25 +231,25 @@ fn anchor(tcx: TyCtxt<'_>, cache: &ResolveCache, diag: &DiagInner) -> Option<(Re
     // call to a `#[cgp_fn]` trait method. A resolution from here is flagged, so the
     // header is worded from the trait the call needs rather than from whichever provider
     // bound rustc's headline stopped on.
-    if let Some(resolved) = resolve::resolve_call_site(tcx, cache, primary) {
+    if let Some(resolved) = resolve::resolve_call_site(cx, primary) {
         return Some((resolved, true));
     }
     // A call to one of CGP's extensible-data operations, whose value is often another data
     // operation's result (a builder chain, a remainder bound by a pattern) or named by a
     // type-relative path (`Shape::from_variant(…)`).
-    if let Some(resolved) = resolve::resolve_data_call(tcx, cache, primary) {
+    if let Some(resolved) = resolve::resolve_data_call(cx, primary) {
         return Some((resolved, true));
     }
     // A provider trait's method called through the provider's own path
     // (`PipeHandlers::<…>::compute(&(), …)`), which asserts the provider trait directly.
-    if let Some(resolved) = resolve::resolve_provider_call(tcx, cache, primary) {
+    if let Some(resolved) = resolve::resolve_provider_call(cx, primary) {
         return Some((resolved, true));
     }
     // A bound of a generic function the call instantiates (`fail::<App>()`), read off the
     // function's own `where` clauses: an `E0277` whose trait no span names and whose
     // context no receiver carries.
     if diag.code == Some(E0277)
-        && let Some(resolved) = resolve::resolve_bound_call(tcx, cache, primary)
+        && let Some(resolved) = resolve::resolve_bound_call(cx, primary)
     {
         return Some((resolved, true));
     }
@@ -263,14 +261,14 @@ fn anchor(tcx: TyCtxt<'_>, cache: &ResolveCache, diag: &DiagInner) -> Option<(Re
     // when its dispatch parameter is unrecoverable, rather than latch onto that transitive
     // trait (see `generic_consumer_unwritten_arg`).
     if diag.code == Some(E0277)
-        && let Some(resolved) = resolve::resolve_use_site_blanket_trait(tcx, cache, &spans)
+        && let Some(resolved) = resolve::resolve_use_site_blanket_trait(cx, &spans)
     {
         return Some((resolved, false));
     }
     // A `Key -> Table` wiring entry whose table lacks the key: the compiler reports the
     // entry's own forwarding bound, and the consumer the entry wires names the cause.
     if diag.code == Some(E0277)
-        && let Some(resolved) = resolve::resolve_forwarding_entry(tcx, cache, primary)
+        && let Some(resolved) = resolve::resolve_forwarding_entry(cx, primary)
     {
         return Some((resolved, true));
     }
@@ -333,11 +331,7 @@ pub fn transform_resolved(
 /// ([`resolve::overflow_walk`]). `None` for any other diagnostic, and for an overflow the walk
 /// does not explain (one that follows from an unresolved type, say), which keeps rustc's
 /// wording.
-pub fn wiring_overflow(
-    tcx: Option<TyCtxt<'_>>,
-    cache: &ResolveCache,
-    diag: &DiagInner,
-) -> Option<WiringOverflow> {
+pub fn wiring_overflow(cx: Option<ResolveCtx<'_, '_>>, diag: &DiagInner) -> Option<WiringOverflow> {
     if diag.code != Some(E0275) {
         return None;
     }
@@ -346,7 +340,7 @@ pub fn wiring_overflow(
         .strip_prefix("overflow evaluating the requirement `")?
         .split_once('`')?
         .0;
-    match resolve::overflow_walk(tcx?, cache, span, requirement) {
+    match resolve::overflow_walk(cx?, span, requirement) {
         resolve::OverflowWalk::Cut(reason) => Some(reason),
         resolve::OverflowWalk::NotCut | resolve::OverflowWalk::NoEntry => None,
     }

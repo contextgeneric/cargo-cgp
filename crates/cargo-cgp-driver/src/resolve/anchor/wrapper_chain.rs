@@ -10,8 +10,8 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::anchor::{enclosing_trait_impls, is_about_impl};
-use crate::resolve::cache::ResolveCache;
 use crate::resolve::cgp_item::{consumer_provider_trait, is_context_adt, is_provider_trait};
+use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::walk::{holds, resolve_leaves};
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait for
@@ -36,11 +36,8 @@ use crate::resolve::walk::{holds, resolve_leaves};
 ///
 /// `spans` are the diagnostic's primary spans, gated by `is_about_impl` as the impl-site anchor's
 /// are.
-pub fn resolve_wrapper_chain(
-    tcx: TyCtxt<'_>,
-    cache: &ResolveCache,
-    spans: &[Span],
-) -> Option<Resolved> {
+pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
+    let tcx = cx.tcx;
     for impl_did in enclosing_trait_impls(tcx, spans) {
         let trait_ref = tcx
             .impl_trait_ref(impl_did)
@@ -79,7 +76,7 @@ pub fn resolve_wrapper_chain(
             if holds(tcx, sup) {
                 continue;
             }
-            collect_wrapper_chain_causes(tcx, cache, sup, &[], 0, &mut causes);
+            collect_wrapper_chain_causes(cx, sup, &[], 0, &mut causes);
         }
 
         if !causes.is_empty() {
@@ -127,20 +124,20 @@ const MAX_WRAPPER_DEPTH: u32 = 32;
 /// within [`MAX_WRAPPER_DEPTH`], contributes nothing — only a genuine CGP consumer is ever reported,
 /// so a wandering descent cannot fabricate a cause.
 fn collect_wrapper_chain_causes<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, 'tcx>,
     obligation: ty::PolyTraitClause<'tcx>,
     chain: &[DepNode],
     depth: u32,
     out: &mut Vec<(Leaf, Vec<ChainNode>)>,
 ) {
+    let tcx = cx.tcx;
     if depth > MAX_WRAPPER_DEPTH {
         return;
     }
 
     // The handoff: `obligation` is a CGP consumer on a context. Recover its cause tree and
     // prepend the chain of ordinary hops that led here.
-    if let Some(causes) = consumer_handoff_causes(tcx, cache, obligation) {
+    if let Some(causes) = consumer_handoff_causes(cx, obligation) {
         // Prepend the ordinary hops that led here to each path. `Causes` groups these by leaf at the
         // top, so alternative routes reaching one cause down different branches all survive.
         for cause in causes.iter() {
@@ -169,7 +166,7 @@ fn collect_wrapper_chain_causes<'tcx>(
         if holds(tcx, child) {
             continue;
         }
-        collect_wrapper_chain_causes(tcx, cache, child, &next_chain, depth + 1, out);
+        collect_wrapper_chain_causes(cx, child, &next_chain, depth + 1, out);
     }
 }
 
@@ -181,10 +178,10 @@ fn collect_wrapper_chain_causes<'tcx>(
 /// consumer node. `None` when `obligation`'s `Self` is not a context ADT or its trait is not a CGP
 /// consumer — so the descent keeps walking rather than stopping on an ordinary bound.
 fn consumer_handoff_causes<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cache: &ResolveCache,
+    cx: ResolveCtx<'_, 'tcx>,
     obligation: ty::PolyTraitClause<'tcx>,
 ) -> Option<Causes> {
+    let tcx = cx.tcx;
     let trait_ref = obligation.skip_binder().trait_ref;
     let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
     if !is_context_adt(tcx, context) {
@@ -193,7 +190,7 @@ fn consumer_handoff_causes<'tcx>(
     // A CGP consumer trait pairs with a provider trait through its blanket impl; a plain trait does
     // not, so it is not a handoff.
     consumer_provider_trait(tcx, trait_ref.def_id)?;
-    let resolved = resolve_leaves(tcx, cache, obligation)?;
+    let resolved = resolve_leaves(cx, obligation)?;
     Some(resolved.causes)
 }
 
