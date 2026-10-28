@@ -17,18 +17,18 @@
 //! ([`is_unresolved_wiring_overflow`]).
 
 use cargo_cgp_error_processing::{
-    UnresolvedWiringName, is_missing_type_parameter_help_text, plan_unresolved_wiring_name,
-    unresolved_wiring_name_help,
+    ClassPlan, UnresolvedWiringName, is_missing_type_parameter_help_text,
 };
 use rustc_errors::codes::{E0275, E0425};
-use rustc_errors::{DiagInner, DiagMessage, MultiSpan, Style, Sublevel, Suggestions};
+use rustc_errors::{DiagInner, DiagMessage, Style, Sublevel, Suggestions};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::buffer_pass::buffer_pass;
-use crate::emitter::edit::{main_message_text, replace_header, retain_suggestions, subdiag};
+use crate::emitter::edit::{main_message_text, retain_suggestions, subdiag};
 use crate::emitter::output::record_unprovable_requirements;
+use crate::emitter::pipeline::{SpanPolicy, apply_reshape};
 use crate::resolve::{self, NameAction};
 
 /// Whether `diag` is an `E0275` overflow on one of the `unprovable` requirements a wiring entry
@@ -71,17 +71,19 @@ pub fn reshape_name_resolution_errors(tcx: TyCtxt<'_>) {
         },
         |buffer, candidates, actions| {
             let mut dropped = Vec::new();
-            for ((index, span, _), action) in candidates.iter().zip(actions) {
+            for ((index, ..), action) in candidates.iter().zip(actions) {
                 match action {
+                    // The candidates are unchanged, so the diagnostic's primary span is still the
+                    // name's span.
                     Some(NameAction::Reword(name)) => {
                         let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
                             continue;
                         };
-                        replace_header(diag, plan_unresolved_wiring_name(&name));
-                        diag.span = MultiSpan::from_span(*span);
-                        if let Some(help) = unresolved_wiring_name_help(&name) {
-                            diag.children.push(subdiag(Sublevel::Help, help));
-                        }
+                        apply_reshape(
+                            diag,
+                            ClassPlan::unresolved_wiring_name(&name),
+                            SpanPolicy::Primary,
+                        );
                     }
                     Some(NameAction::RewordHeader(name)) => {
                         let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
@@ -104,10 +106,8 @@ pub fn reshape_name_resolution_errors(tcx: TyCtxt<'_>) {
 /// suggestions except the one to add a type parameter, which no wiring entry can take. The coded
 /// help is added only when nothing else is left that says how to fix the name.
 fn reword_header_keeping_advice(diag: &mut DiagInner, name: &UnresolvedWiringName) {
-    diag.messages = vec![(
-        DiagMessage::Str(plan_unresolved_wiring_name(name).into()),
-        Style::NoStyle,
-    )];
+    let plan = ClassPlan::unresolved_wiring_name(name);
+    diag.messages = vec![(DiagMessage::Str(plan.header.into()), Style::NoStyle)];
     retain_suggestions(
         diag,
         |suggestion| !matches!(&suggestion.msg, DiagMessage::Str(text) if is_missing_type_parameter_help_text(text)),
@@ -117,11 +117,12 @@ fn reword_header_keeping_advice(diag: &mut DiagInner, name: &UnresolvedWiringNam
         Suggestions::Sealed(suggestions) => !suggestions.is_empty(),
         Suggestions::Disabled => false,
     };
-    if !has_suggestion
-        && diag.children.is_empty()
-        && let Some(help) = unresolved_wiring_name_help(name)
-    {
-        diag.children.push(subdiag(Sublevel::Help, help));
+    if !has_suggestion && diag.children.is_empty() {
+        diag.children.extend(
+            plan.helps
+                .into_iter()
+                .map(|help| subdiag(Sublevel::Help, help)),
+        );
     }
 }
 
