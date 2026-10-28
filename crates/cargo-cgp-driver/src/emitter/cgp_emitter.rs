@@ -1,19 +1,14 @@
 //! The wrapping [`Emitter`] that transforms CGP diagnostics before delegating.
 
 use std::cell::OnceCell;
-use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::{Arc, LazyLock, Mutex, MutexGuard};
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
-use cargo_cgp_error_processing::{
-    AmbiguousNames, Causes, ChainNode, DedupLedger, Origin, PendingNote, Resolved,
-    coalesce_underived_fields, coalesced_headline, explain_footer_codes, fix_help_messages,
-    group_by_shared_cause, is_explain_footer_text, postprocess_message,
-};
+use cargo_cgp_error_processing::{AmbiguousNames, DedupLedger, Origin};
+use rustc_errors::DiagInner;
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
-use rustc_errors::{DiagInner, DiagMessage, Level, Style, Sublevel, Suggestions};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
@@ -22,14 +17,13 @@ use crate::component_map::build_name_map_from_tls;
 use crate::emitter::attribute_splice::drop_attribute_splices;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
 use crate::emitter::edit::{
-    bound_candidate_lists, main_message_text, mentions_hasfield_impls, merged_span,
-    message_signature, postprocess_messages, postprocess_multispan, subdiag,
+    bound_candidate_lists, main_message_text, message_signature, postprocess_diag,
 };
 use crate::emitter::fallback::{render_or_untransformed, transform_or_original};
+use crate::emitter::flush::render;
 use crate::emitter::generated_names::drop_generated_names;
 use crate::emitter::output::{Output, lock_output, register_output};
 use crate::emitter::pipeline::{BufferEdit, Reshape, Verdict, apply_reshape};
-use crate::emitter::repeats::merge_repeats;
 use crate::emitter::stage::{
     CgpImplMisuseStage, MacrolessProviderStage, Resolution, ResolvedFailure, StructuralStage,
     UnimportedStage, consumer_trait_as_key, is_cgp_impl_sibling_entry, missing_use_provider,
@@ -99,17 +93,9 @@ pub struct CgpEmitter<E: Emitter> {
     ambiguous_with_glob_items: OnceCell<AmbiguousNames>,
 }
 
-/// The subtrees a flush has already drawn, shared across its blocks so a later one `(*)`-elides
-/// what an earlier one showed rather than repeating it.
-type ChainNodeSet = HashSet<ChainNode>;
-
-/// A rebuilt "detailed explanations" footer note: `template` cloned from the original footer
-/// diagnostic (keeping its `FailureNote` level and empty span) with `message` as its only text.
-fn footer_note(template: &DiagInner, message: &str) -> DiagInner {
-    let mut note = template.clone();
-    note.messages = vec![(DiagMessage::Str(message.to_string().into()), Style::NoStyle)];
-    note
-}
+/// No ambiguous names, for a message post-processed before the compiler can say which names are
+/// ambiguous, which strips every qualifier.
+static EMPTY_AMBIGUOUS_NAMES: LazyLock<AmbiguousNames> = LazyLock::new(AmbiguousNames::default);
 
 impl<E: Emitter> CgpEmitter<E> {
     /// Wrap `inner`, which renders against `source_map`, and register the shared output for the
@@ -148,143 +134,6 @@ impl<E: Emitter> CgpEmitter<E> {
     /// Buffer `entry` for the flush.
     fn push(&self, entry: BufEntry) {
         self.output().buffer.push(entry);
-    }
-
-    /// Build the one merged block for a coalesced group of several failures sharing a root cause: a
-    /// headline stating the cause once ([`coalesced_headline`]), the first failing site in the source
-    /// as its caret and every other site as a labelled secondary span ([`merged_span`]), and
-    /// one root-cause note built by folding *every* member's causes into a single dependency graph,
-    /// so a chain that runs through another collapses into it, independent chains to the shared
-    /// cause render side by side, and no member's chain is dropped. The headline takes the class
-    /// code of the member written first in the source.
-    fn merged_diag(
-        &self,
-        resolveds: &[&Resolved],
-        diags: &[&DiagInner],
-        seen: &mut ChainNodeSet,
-    ) -> DiagInner {
-        // Every cause across the coalesced consumers. The dependency graph then merges what they
-        // share — a consumer whose chain runs through another collapses into it, while independent
-        // chains to one cause render side by side — so no chain is dropped and every consumer appears.
-        // These members were grouped precisely *because* they share a cause, so each carries its own
-        // copy; `Causes::union` folds those copies back into one cause holding every path — the
-        // one-cause-per-distinct-leaf invariant the wording below assumes, kept by construction.
-        let causes = Causes::union(resolveds.iter().map(|resolved| resolved.causes.clone()));
-        let causes = coalesce_underived_fields(&causes);
-        let headline = coalesced_headline(resolveds, &causes);
-        // The fixes follow the note that explains them, as they do in a block of its own.
-        let helps = fix_help_messages(&causes);
-        let mut children: Vec<_> = PendingNote {
-            causes,
-            header_leaf: None,
-        }
-        .render(seen)
-        .into_iter()
-        .map(|note| subdiag(Sublevel::Note, note))
-        .collect();
-        children.extend(helps.into_iter().map(|help| subdiag(Sublevel::Help, help)));
-
-        let mut diag = diags[0].clone();
-        diag.messages = vec![(DiagMessage::Str(headline.into()), Style::NoStyle)];
-        diag.span = merged_span(diags);
-        diag.children = children;
-        diag.suggestions = Suggestions::Enabled(Vec::new());
-        // The header, notes, and helps are freshly built, so post-process them (resugar `Symbol!`,
-        // strip CGP prefixes) as the streaming path does for a rewritten diagnostic.
-        self.postprocess(&mut diag, Origin::Rewritten);
-        diag
-    }
-
-    /// Render the buffered diagnostics for the flush, coalescing each group of coalescible
-    /// failures that **share a root cause** into one block at the position of its first member.
-    /// Called only from [`Drop`], where the inner emitter is still alive to emit the result.
-    fn render(&self, buffer: &[BufEntry]) -> Vec<DiagInner> {
-        // The coalescible entries in arrival order, grouped by the root causes they share. Grouping
-        // on shared causes rather than on one whole-failure key is what keeps a single mistake in a
-        // single block: the depths it surfaces at each see a different *subset* of its causes, so no
-        // two of them ever carried equal keys (see [`group_by_shared_cause`]).
-        let positions: Vec<usize> = buffer
-            .iter()
-            .enumerate()
-            .filter_map(|(index, entry)| match entry {
-                BufEntry::Resolved(entry) if entry.coalescible => Some(index),
-                _ => None,
-            })
-            .collect();
-        let resolveds: Vec<&Resolved> = positions
-            .iter()
-            .map(|&index| match &buffer[index] {
-                BufEntry::Resolved(entry) => &entry.resolved,
-                _ => unreachable!("indices came from the coalescible entries"),
-            })
-            .collect();
-        let groups: Vec<Vec<usize>> = group_by_shared_cause(&resolveds)
-            .into_iter()
-            .map(|group| group.into_iter().map(|member| positions[member]).collect())
-            .collect();
-        let group_of: HashMap<usize, usize> = groups
-            .iter()
-            .enumerate()
-            .flat_map(|(group, members)| members.iter().map(move |&index| (index, group)))
-            .collect();
-
-        // The subtrees drawn so far, threaded through every block in emission order so a later one
-        // truncates at what an earlier one already showed. This is why notes are rendered here
-        // rather than on arrival: only now is that order known.
-        let mut seen = ChainNodeSet::new();
-        let mut emitted: HashSet<usize> = HashSet::new();
-        let mut to_emit: Vec<DiagInner> = Vec::new();
-        for (index, entry) in buffer.iter().enumerate() {
-            match entry {
-                BufEntry::Plain(diag) => to_emit.push((**diag).clone()),
-                BufEntry::Resolved(entry) => {
-                    let Some(&group) = group_of.get(&index) else {
-                        // A resolution that never coalesces: render its own note and emit it here.
-                        let mut diag = entry.diag.clone();
-                        self.insert_note(&mut diag, &entry.note, &mut seen);
-                        to_emit.push(diag);
-                        continue;
-                    };
-                    if !emitted.insert(group) {
-                        continue;
-                    }
-                    let members = &groups[group];
-                    if members.len() == 1 {
-                        // A group's first member is where it is emitted, so that member is `entry`.
-                        let mut diag = entry.diag.clone();
-                        self.insert_note(&mut diag, &entry.note, &mut seen);
-                        to_emit.push(diag);
-                    } else {
-                        let mut pairs: Vec<(&Resolved, &DiagInner)> = members
-                            .iter()
-                            .map(|&index| match &buffer[index] {
-                                BufEntry::Resolved(member) => (&member.resolved, &member.diag),
-                                _ => unreachable!("indices came from the coalescible entries"),
-                            })
-                            .collect();
-                        // The block's code and first caret come from the member written first in
-                        // the source, so the code names the class of the entry the reader sees first.
-                        pairs.sort_by_key(|(_, diag)| {
-                            diag.span.primary_span().map(|span| span.lo())
-                        });
-                        let (resolveds, diags): (Vec<&Resolved>, Vec<&DiagInner>) =
-                            pairs.into_iter().unzip();
-                        to_emit.push(self.merged_diag(&resolveds, &diags, &mut seen));
-                    }
-                }
-            }
-        }
-
-        // A diagnostic rustc reported twice is one mistake; merge the repeat, in a crate known to
-        // use CGP, so a plain Rust error is never touched.
-        if self.cgp_used.get() == Some(&true)
-            && let Some(source_map) = self.source_map.as_deref()
-        {
-            to_emit = merge_repeats(to_emit, source_map);
-        }
-        // Now that the surviving set is final, make the "detailed explanations" footer agree with it.
-        Self::rebuild_explain_footers(&mut to_emit);
-        to_emit
     }
 
     /// Write `reshape` into `diag` and buffer the result: the tail every reshaping stage shares.
@@ -347,14 +196,7 @@ impl<E: Emitter> CgpEmitter<E> {
         if origin == Origin::Untransformed && !self.crate_uses_cgp() {
             return;
         }
-        let has_field_impls = mentions_hasfield_impls(diag);
-        let ambiguous = self.ambiguous_names(origin);
-        postprocess_messages(&mut diag.messages, has_field_impls, origin, ambiguous);
-        postprocess_multispan(&mut diag.span, has_field_impls, origin, ambiguous);
-        for child in &mut diag.children {
-            postprocess_messages(&mut child.messages, has_field_impls, origin, ambiguous);
-            postprocess_multispan(&mut child.span, has_field_impls, origin, ambiguous);
-        }
+        postprocess_diag(diag, origin, self.ambiguous_names(origin));
     }
 
     /// The type names that name more than one item, decided once the compiler can answer. Before
@@ -363,7 +205,6 @@ impl<E: Emitter> CgpEmitter<E> {
     /// diagnostic emitted during name resolution would force the compiler to build under the
     /// emitter, so an untransformed message gets the glob-imported names alone.
     fn ambiguous_names(&self, origin: Origin) -> &AmbiguousNames {
-        static EMPTY: LazyLock<AmbiguousNames> = LazyLock::new(AmbiguousNames::default);
         let read_glob_items = origin == Origin::Rewritten;
         let cell = if read_glob_items {
             &self.ambiguous_with_glob_items
@@ -377,7 +218,7 @@ impl<E: Emitter> CgpEmitter<E> {
             tcx.and_then(|tcx| resolve::ambiguous_type_names(tcx, read_glob_items))
         }) {
             Some(names) => cell.get_or_init(|| names),
-            None => &EMPTY,
+            None => &EMPTY_AMBIGUOUS_NAMES,
         }
     }
 
@@ -395,127 +236,6 @@ impl<E: Emitter> CgpEmitter<E> {
         };
         let _ = self.cgp_used.set(known);
         known
-    }
-
-    /// Rewrite the trailing "detailed explanations" footer of a flushed diagnostic list so it names
-    /// `rustc --explain` codes only for errors still shown.
-    ///
-    /// rustc builds that footer in `print_error_count` from every error code it *registered* as
-    /// diagnostics arrived, which is a superset of what this emitter emits: it suppresses a
-    /// re-reported failure, a `?`-operator cascade, and a `#[cgp_impl]` mistake's sibling burst, and
-    /// it *merges* the failures sharing a root cause into one block whose code is the first member's.
-    /// Left alone the footer contradicts the output, offering `--explain` for a code no error carries.
-    ///
-    /// It runs over the flushed list rather than on the footer's arrival because only here is the
-    /// surviving set final — coalescing happens at flush, after every diagnostic has been buffered.
-    /// The kept codes are the footer's own codes filtered by what survived, never a fresh set built
-    /// from the survivors: rustc lists only codes that *have* an extended explanation, and
-    /// intersecting preserves that filtering instead of second-guessing it. A footer whose codes all
-    /// survive is rewritten to the identical text, so output the emitter did not touch is unaffected.
-    fn rebuild_explain_footers(to_emit: &mut Vec<DiagInner>) {
-        let is_footer = |diag: &DiagInner| {
-            diag.level() == Level::FailureNote
-                && main_message_text(diag).is_some_and(is_explain_footer_text)
-        };
-        if !to_emit.iter().any(is_footer) {
-            return;
-        }
-
-        // The rust codes still shown, and the explainable ones the footer itself names (the list line
-        // carries every one, the pointer line only the first, so their union is the whole set).
-        let surviving: HashSet<String> = to_emit
-            .iter()
-            .filter(|diag| diag.level() != Level::FailureNote)
-            .filter_map(|diag| diag.code)
-            .map(|code| code.to_string())
-            .collect();
-        let mut explainable: Vec<String> = Vec::new();
-        for diag in to_emit.iter().filter(|diag| is_footer(diag)) {
-            for code in explain_footer_codes(main_message_text(diag).unwrap_or_default()) {
-                if !explainable.contains(&code) {
-                    explainable.push(code);
-                }
-            }
-        }
-        // A footer line always names at least one code, so parsing none from any of them means the
-        // parse failed — rustc reworded — not that the line names nothing. Rebuilding on that would
-        // delete the footer outright, so leave it exactly as rustc wrote it: a stale footer is a far
-        // smaller fault than a silently missing one, and it is the pre-rebuild behaviour.
-        if explainable.is_empty() {
-            return;
-        }
-        let kept: Vec<String> = explainable
-            .into_iter()
-            .filter(|code| surviving.contains(code))
-            .collect();
-
-        let rebuilt: Vec<DiagInner> = to_emit
-            .drain(..)
-            .filter_map(|diag| {
-                if !is_footer(&diag) {
-                    return Some(diag);
-                }
-                let text = main_message_text(&diag).unwrap_or_default();
-                let Some(first) = kept.first() else {
-                    // Every explainable code was suppressed, so there is nothing left to point at
-                    // and both footer lines go.
-                    return None;
-                };
-                if text.starts_with("Some errors have detailed explanations:") {
-                    // The list line is only right for two or more codes; with one, the pointer line
-                    // below carries it alone.
-                    if kept.len() < 2 {
-                        return None;
-                    }
-                    return Some(footer_note(
-                        &diag,
-                        &format!(
-                            "Some errors have detailed explanations: {}.",
-                            kept.join(", ")
-                        ),
-                    ));
-                }
-                let message = if kept.len() == 1 {
-                    format!("For more information about this error, try `rustc --explain {first}`.")
-                } else {
-                    format!("For more information about an error, try `rustc --explain {first}`.")
-                };
-                Some(footer_note(&diag, &message))
-            })
-            .collect();
-        *to_emit = rebuilt;
-    }
-
-    /// Render a deferred [`PendingNote`] against the `seen` set shared by this flush and add it to
-    /// `diag`, ahead of its `help`s, so each fix follows the cause it repairs. The note is
-    /// post-processed on its own, since the rest of the diagnostic was already processed when it
-    /// arrived and re-running the chain over it could compound.
-    fn insert_note(&self, diag: &mut DiagInner, note: &PendingNote, seen: &mut ChainNodeSet) {
-        // A resolver-built note never carries the `` `HasField<…>` is not implemented `` clause the
-        // missing-field reword keys on (see
-        // cgp-knowledge-base/cargo-cgp/implementation/error-processing.md), so that branch has
-        // nothing to match and the flag it needs is moot here.
-        const HAS_FIELD_IMPLS: bool = false;
-        let notes: Vec<_> = note
-            .render(seen)
-            .into_iter()
-            .map(|text| {
-                let text = postprocess_message(
-                    &text,
-                    HAS_FIELD_IMPLS,
-                    Origin::Rewritten,
-                    self.ambiguous_names(Origin::Rewritten),
-                )
-                .unwrap_or(text);
-                subdiag(Sublevel::Note, text)
-            })
-            .collect();
-        let first_help = diag
-            .children
-            .iter()
-            .position(|child| child.level == Sublevel::Help)
-            .unwrap_or(diag.children.len());
-        diag.children.splice(first_help..first_help, notes);
     }
 }
 
@@ -731,7 +451,24 @@ impl<E: Emitter> Drop for CgpEmitter<E> {
         }
         let to_emit = render_or_untransformed(
             buffer,
-            |buffer| self.render(buffer),
+            |buffer| {
+                // Only a resolution's note and a merged block are post-processed here, so the
+                // ambiguous names are read only when the buffer holds a resolution.
+                let ambiguous = if buffer
+                    .iter()
+                    .any(|entry| matches!(entry, BufEntry::Resolved(_)))
+                {
+                    self.ambiguous_names(Origin::Rewritten)
+                } else {
+                    &EMPTY_AMBIGUOUS_NAMES
+                };
+                let repeats = if self.cgp_used.get() == Some(&true) {
+                    self.source_map.as_deref()
+                } else {
+                    None
+                };
+                render(buffer, ambiguous, repeats)
+            },
             |entry, note| entry.untransformed(Some(note)),
         );
         let mut output = self.output();

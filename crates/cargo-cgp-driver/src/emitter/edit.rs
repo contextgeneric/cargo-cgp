@@ -355,6 +355,22 @@ pub(crate) fn rewrite_messages<S>(
     changed
 }
 
+/// Post-process every message and span label of `diag` and its children: the final cleanup pass
+/// after a transform. It strips module paths, resugars `Symbol!`, `Path!`, and the type-level lists,
+/// and rewords an unmet `HasField` bound. Whether the context implements `HasField` for any field
+/// is a fact of the whole diagnostic (the "similar impl" landmark can sit far from the clause), so
+/// it is decided once up front and passed into each per-message rewrite. `origin` says whether the
+/// tool rewrote the diagnostic (see [`Origin`]).
+pub fn postprocess_diag(diag: &mut DiagInner, origin: Origin, ambiguous: &AmbiguousNames) {
+    let has_field_impls = mentions_hasfield_impls(diag);
+    postprocess_messages(&mut diag.messages, has_field_impls, origin, ambiguous);
+    postprocess_multispan(&mut diag.span, has_field_impls, origin, ambiguous);
+    for child in &mut diag.children {
+        postprocess_messages(&mut child.messages, has_field_impls, origin, ambiguous);
+        postprocess_multispan(&mut child.span, has_field_impls, origin, ambiguous);
+    }
+}
+
 /// Post-process a message in place through [`postprocess_message`], leaving any Fluent message
 /// untouched.
 ///
