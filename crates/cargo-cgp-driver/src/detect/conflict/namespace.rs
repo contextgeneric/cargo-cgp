@@ -4,7 +4,7 @@
 //! reads `conflicting implementations of trait `MyNamespace<_>` for type `PathCons<…>`` — so
 //! neither `DelegateComponent` nor `IsProviderFor` appears in the message and the pair routing
 //! cannot reach it. This classifier recognizes the shape by the impls at the carets instead: a
-//! local impl of a [namespace lookup trait](crate::resolve::cgp_item::is_namespace_lookup_trait),
+//! local impl of a [namespace lookup trait](crate::resolve::query::is_namespace_lookup_trait),
 //! whose `Self` is the entry's key. The recovered conflict reuses the same [`WiringConflict`]
 //! shapes as a context-table collision, with the namespace trait standing in as the wired-on
 //! subject.
@@ -26,8 +26,7 @@ use rustc_span::Span;
 use crate::detect::conflict::{
     ConflictSide, impl_delegate_type, maps_one_key, overlap_conflict, redirect_conflict, same_range,
 };
-use crate::resolve::cgp_item::is_namespace_lookup_trait;
-use crate::resolve::query::{describe_key, render_lookup_trait};
+use crate::resolve::query::{describe_key, is_namespace_lookup_trait, render_lookup_trait};
 
 /// Classify an `E0119` on a namespace lookup trait as a duplicate-entry conflict, or `None` when
 /// no namespace-trait impl sits at the caret (leaving the diagnostic to the ordinary fallback).

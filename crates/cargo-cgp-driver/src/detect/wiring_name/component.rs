@@ -9,10 +9,9 @@ use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
-use crate::resolve::cgp_item::{
-    consumer_provider_trait, is_consumer_trait, provider_blanket_marker,
+use crate::resolve::query::{
+    consumer_provider_trait, is_consumer_trait, provider_blanket_marker, public_dependency_path,
 };
-use crate::resolve::query::public_dependency_path;
 
 /// Every component marker the crate can see, each with its provider trait.
 pub fn component_markers(tcx: TyCtxt<'_>) -> Vec<(DefId, DefId)> {

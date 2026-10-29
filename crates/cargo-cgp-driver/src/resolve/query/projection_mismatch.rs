@@ -7,8 +7,7 @@ use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::config::{CGP_FIELD_CRATE, HAS_FIELD_TRAIT};
-use crate::resolve::cgp_item::is_cgp_item;
-use crate::resolve::query::{holds_projection, impls_concrete_first};
+use crate::resolve::query::{holds_projection, impls_concrete_first, is_cgp_item};
 
 /// An unmet associated-type projection carried by the impl that would satisfy an obligation —
 /// `<Ctx as HasField<Symbol!("height")>>::Value == f64`, or `<Ctx as HasErrorType>::Error ==

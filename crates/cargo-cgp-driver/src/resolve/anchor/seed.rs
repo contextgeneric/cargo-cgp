@@ -4,7 +4,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt, Upcast as _};
 use rustc_span::def_id::DefId;
 
 use crate::config::{CGP_FIELD_CRATE, LIFE_TYPE};
-use crate::resolve::cgp_item::is_cgp_item;
+use crate::resolve::query::is_cgp_item;
 
 /// Build `Ctx: ConsumerTrait<Params…>` from a consumer trait and the component's `Params` slot.
 ///

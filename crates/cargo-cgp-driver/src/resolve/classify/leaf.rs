@@ -9,17 +9,16 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use crate::config::{
     CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT, HAS_FIELD_TRAIT,
 };
-use crate::resolve::cgp_item::{
-    abstract_type_component_marker, decode_symbol, is_cgp_item, is_namespace_lookup_trait,
-    is_path_cons,
-};
 use crate::resolve::classify::{
     classify_data_leaf, core_provider_hint, field_issue, field_type, is_blanket_dead_end,
     is_dispatch_lookup, provided_components, provider_for_other_arguments, required_field_type,
     similar_field, similar_wired_key, tuple_index_tag, wrapping_adapters,
 };
 use crate::resolve::label::fold_empty_lists;
-use crate::resolve::query::{ProjectionMismatch, owner_has_impl_of, projected_type, render_path};
+use crate::resolve::query::{
+    ProjectionMismatch, abstract_type_component_marker, decode_symbol, is_cgp_item,
+    is_namespace_lookup_trait, is_path_cons, owner_has_impl_of, projected_type, render_path,
+};
 
 /// Classify the terminal predicate a dependency chain bottoms out on. A `HasField` whose branch
 /// carried an unmet projection (`mismatch` is `Some`) becomes a [`Leaf::FieldTypeMismatch`], its

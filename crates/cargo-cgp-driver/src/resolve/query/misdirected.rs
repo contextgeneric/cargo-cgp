@@ -5,8 +5,7 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
-use crate::resolve::cgp_item::{consumer_provider_trait, is_provider_trait};
-use crate::resolve::query::written_order;
+use crate::resolve::query::{consumer_provider_trait, is_provider_trait, written_order};
 
 /// The requirements the provider of `provider_ref` states in an impl it wrote with the component's
 /// consumer trait in its `#[cgp_impl]` header, the mistake `[CGP-E032]` reports: that impl's

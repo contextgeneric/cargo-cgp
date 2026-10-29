@@ -8,7 +8,7 @@ use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, NIL_TYPE, PATH_CONS_TYPE, REDIRECT_LOOKUP_TYPE,
     WILDCARD_PARAM,
 };
-use crate::resolve::cgp_item::{decode_symbol, is_cgp_item, is_component_marker};
+use crate::resolve::query::{decode_symbol, is_cgp_item, is_component_marker};
 
 /// The surface form of a wiring key — a `DelegateComponent` key, or the `Self` of a namespace
 /// lookup-trait entry: a bare component marker, an ordinary type, an `@`-path, or a blanket

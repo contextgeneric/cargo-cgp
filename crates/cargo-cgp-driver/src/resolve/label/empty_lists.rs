@@ -7,7 +7,7 @@ use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_FIELD_CRATE, CHARS_TYPE, CONS_TYPE, EITHER_TYPE, FIELD_TYPE,
     NIL_TYPE, PATH_CONS_TYPE, SYMBOL_TYPE, VOID_TYPE,
 };
-use crate::resolve::cgp_item::is_cgp_item;
+use crate::resolve::query::is_cgp_item;
 
 /// `value` with every CGP empty list that stands on its own (a `PipeHandlers<Nil>` argument, a
 /// `Nil: ComposeProviders` bound's subject) replaced by a type that prints as `Product![]`, and

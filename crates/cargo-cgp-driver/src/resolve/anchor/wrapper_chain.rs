@@ -10,9 +10,8 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::anchor::{enclosing_trait_impls, is_about_impl};
-use crate::resolve::cgp_item::{consumer_provider_trait, is_context_adt, is_provider_trait};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::holds;
+use crate::resolve::query::{consumer_provider_trait, holds, is_context_adt, is_provider_trait};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait for

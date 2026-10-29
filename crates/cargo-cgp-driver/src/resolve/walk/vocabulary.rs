@@ -6,8 +6,8 @@ use crate::config::{
     CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT,
     HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT,
 };
-use crate::resolve::cgp_item::{is_cgp_item, is_provider_trait};
 use crate::resolve::data::is_data_trait;
+use crate::resolve::query::{is_cgp_item, is_provider_trait};
 
 /// Whether `pred` is the check-trait scaffolding — `CanUseComponent` or `IsProviderFor` — the walk
 /// resolves *around* rather than through. These sit beside the real consumer/provider-trait

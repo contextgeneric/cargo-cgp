@@ -13,18 +13,17 @@
 //! expression itself, the unknowable parameters seeded as placeholders), `walk` descends the
 //! dependency graph to each terminal leaf, `classify`
 //! turns a leaf into a [`Leaf`](cargo_cgp_error_processing::Leaf) by inspecting the struct it lands
-//! on, `label` renders each path predicate as a tree label, and `cgp_item` holds the
+//! on, and `label` renders each path predicate as a tree label. The `query` layer holds the
 //! DefId-anchored CGP-trait recognition every stage relies on.
 //!
 //! The compiler readers and solver helpers more than one stage uses sit in the `query` layer, which
 //! the class detectors in [`detect`](crate::detect) share. A resolver module imports only modules
-//! earlier in this order: `query`, `cgp_item`, `cache`, and `ctx`; `data`; `label`; `classify`;
+//! earlier in this order: `query`, `cache`, and `ctx`; `data`; `label`; `classify`;
 //! `walk`; `call_site`; `anchor`; and `overflow`.
 
 mod anchor;
 mod cache;
 mod call_site;
-pub mod cgp_item;
 mod classify;
 mod ctx;
 mod data;
@@ -42,6 +41,5 @@ pub use cache::ResolveCache;
 pub use call_site::{
     resolve_bound_call, resolve_call_site, resolve_data_call, resolve_provider_call,
 };
-pub use cgp_item::{crate_uses_cgp, links_cgp};
 pub use ctx::ResolveCtx;
 pub use overflow::{OverflowWalk, overflow_walk};

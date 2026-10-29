@@ -7,7 +7,7 @@ use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_FIELD_CRATE, CGP_FIELD_EXTRA_CRATE, CONS_TYPE, DATA_DERIVES,
     EITHER_TYPE, FIELD_ACCESS_TRAITS, NIL_TYPE, VOID_TYPE,
 };
-use crate::resolve::cgp_item::is_cgp_item;
+use crate::resolve::query::is_cgp_item;
 
 /// Whether `did` is one of CGP's extensible-data traits: a trait the `cgp-field` or
 /// `cgp-field-extra` crate defines (the builders, extractors, casts, and their optional and

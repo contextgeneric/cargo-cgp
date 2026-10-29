@@ -8,8 +8,7 @@ use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::detect::conflict::{impl_delegate_type, same_range};
-use crate::resolve::cgp_item::{is_cgp_item, is_namespace_lookup_trait};
-use crate::resolve::query::describe_key;
+use crate::resolve::query::{describe_key, is_cgp_item, is_namespace_lookup_trait};
 
 /// The `#[default_impl]` an `E0207` at `primary_span` is about. The registration it generates,
 /// `impl<T, __Components__> Table<…, __Components__> for Key { type Delegate = Provider; }`,

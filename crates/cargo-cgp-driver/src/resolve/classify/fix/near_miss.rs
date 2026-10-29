@@ -5,12 +5,11 @@ use rustc_hir::def::CtorKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
-use crate::resolve::cgp_item::find_cgp_trait;
-use crate::resolve::query::describe_key;
+use crate::resolve::query::{describe_key, find_cgp_trait};
 
 /// A named field of `owner`'s struct whose name is a likely slip of the missing `field`, such as
 /// `first_name` for `frist_name`. `None` when `owner` is not a struct or carries no such field.
-pub(crate) fn similar_field(owner: Ty<'_>, field: &str) -> Option<String> {
+pub fn similar_field(owner: Ty<'_>, field: &str) -> Option<String> {
     let ty::Adt(def, _) = owner.kind() else {
         return None;
     };
@@ -29,7 +28,7 @@ pub(crate) fn similar_field(owner: Ty<'_>, field: &str) -> Option<String> {
 /// The `Index<N>` tag of the tuple-struct field of `owner` whose position `field` spells, such as
 /// `Index<0>` for `0`: a tuple field is keyed by its `Index`, never by a `Symbol!` of its digits.
 /// `None` when `owner` is not a tuple struct, or `field` is not one of its positions.
-pub(crate) fn tuple_index_tag(owner: Ty<'_>, field: &str) -> Option<String> {
+pub fn tuple_index_tag(owner: Ty<'_>, field: &str) -> Option<String> {
     let ty::Adt(def, _) = owner.kind() else {
         return None;
     };
@@ -44,7 +43,7 @@ pub(crate) fn tuple_index_tag(owner: Ty<'_>, field: &str) -> Option<String> {
 
 /// A variant of `owner`'s enum whose name is a likely slip of the missing `variant`, such as
 /// `Circle` for `circle`. `None` when `owner` is not an enum or carries no such variant.
-pub(crate) fn similar_variant(owner: Ty<'_>, variant: &str) -> Option<String> {
+pub fn similar_variant(owner: Ty<'_>, variant: &str) -> Option<String> {
     let ty::Adt(def, _) = owner.kind() else {
         return None;
     };
@@ -62,7 +61,7 @@ pub(crate) fn similar_variant(owner: Ty<'_>, variant: &str) -> Option<String> {
 /// A key `context` wires that is a likely slip of `target`, a component name or an `@`-path such
 /// as `@App.GreeterComponent` for `@app.GreeterComponent`. The candidates are the context's own
 /// `DelegateComponent` entries, each key rendered as its entry wrote it.
-pub(crate) fn similar_wired_key<'tcx>(
+pub fn similar_wired_key<'tcx>(
     tcx: TyCtxt<'tcx>,
     context: Ty<'tcx>,
     target: &str,

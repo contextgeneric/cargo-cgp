@@ -8,11 +8,10 @@ use rustc_span::def_id::DefId;
 
 use crate::resolve::anchor::{consumer_obligation, context_candidates_from_spans};
 use crate::resolve::call_site::contexts_at_spans;
-use crate::resolve::cgp_item::{
-    carries_wiring, consumer_provider_trait, is_blanket_trait, is_local_adt,
-};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::holds;
+use crate::resolve::query::{
+    carries_wiring, consumer_provider_trait, holds, is_blanket_trait, is_local_adt,
+};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve a use-site failure by anchoring on the **consumer trait** the diagnostic names, rather

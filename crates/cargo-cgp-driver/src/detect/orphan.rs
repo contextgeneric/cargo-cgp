@@ -9,7 +9,7 @@
 //!
 //! [`classify_orphan_conflict`] recovers those from the compiler, not the error text: it finds the
 //! offending impl at the caret, reads its trait and `Self`, and — anchoring the namespace trait by
-//! its structural [namespace-lookup fingerprint](crate::resolve::cgp_item::is_namespace_lookup_trait)
+//! its structural [namespace-lookup fingerprint](crate::resolve::query::is_namespace_lookup_trait)
 //! rather than by name — words the collision into the rustc-free
 //! [`OrphanConflict`]. Because we only run on an `E0210`/`E0117`, which rustc emits *only* for a
 //! genuine orphan, matching the caret to a foreign-namespace-trait-for-foreign-key impl is the whole
@@ -22,8 +22,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::resolve::cgp_item::is_namespace_lookup_trait;
-use crate::resolve::query::describe_key;
+use crate::resolve::query::{describe_key, is_namespace_lookup_trait};
 
 /// One local impl of a foreign namespace-lookup trait for a foreign key — a candidate orphan
 /// registration.

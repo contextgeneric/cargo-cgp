@@ -14,7 +14,7 @@ use crate::resolve::query::{impls_concrete_first, misdirected_impl_clauses};
 /// that impl's own clauses are read instead ([`misdirected_impl_clauses`]). `None` when no impl
 /// matches `parent`, no constraint names `leaf`, or the type it names is not concrete, so a fix
 /// never names a type the program could not write.
-pub(crate) fn required_field_type<'tcx>(
+pub fn required_field_type<'tcx>(
     tcx: TyCtxt<'tcx>,
     parent: ty::TraitRef<'tcx>,
     leaf: ty::TraitRef<'tcx>,

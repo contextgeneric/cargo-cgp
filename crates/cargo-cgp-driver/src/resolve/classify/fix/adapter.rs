@@ -4,10 +4,9 @@ use cargo_cgp_error_processing::Adapter;
 use rustc_middle::ty::{self, Ty, TyCtxt, Upcast as _};
 use rustc_span::def_id::DefId;
 
-use crate::resolve::cgp_item::is_provider_trait;
 use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
-use crate::resolve::query::{holds, import_path};
+use crate::resolve::query::{holds, import_path, is_provider_trait};
 
 /// The path prefix of the items the prelude exports, which need no `use` in a `help`.
 const PRELUDE_PATH: &str = "cgp::prelude::";
@@ -26,10 +25,7 @@ const MAX_ADAPTERS: usize = 3;
 ///
 /// Empty when `parent` is not fully known (it holds an inference variable, a placeholder, a
 /// parameter, or a projection), so no adapter is confirmed against a guess.
-pub(crate) fn wrapping_adapters<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    parent: ty::TraitRef<'tcx>,
-) -> Vec<Adapter> {
+pub fn wrapping_adapters<'tcx>(tcx: TyCtxt<'tcx>, parent: ty::TraitRef<'tcx>) -> Vec<Adapter> {
     if !is_provider_trait(tcx, parent.def_id) {
         return Vec::new();
     }

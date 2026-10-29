@@ -5,9 +5,8 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 
 use crate::resolve::anchor::consumer_obligation;
-use crate::resolve::cgp_item::marker_to_consumer;
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::{can_use_component_supertrait, impl_self_ty_span};
+use crate::resolve::query::{can_use_component_supertrait, impl_self_ty_span, marker_to_consumer};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of the check failure whose diagnostic caret sits at `primary_span`,

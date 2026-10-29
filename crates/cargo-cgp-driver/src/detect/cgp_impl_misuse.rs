@@ -53,7 +53,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
-use crate::resolve::cgp_item::{consumer_provider_trait, is_provider_trait};
+use crate::resolve::query::{consumer_provider_trait, is_provider_trait};
 
 /// A `#[cgp_impl]` provider impl whose header names the wrong trait. Carries the rustc-free wording
 /// model plus the spans the emitter needs to reshape the precise error and suppress the rest of the

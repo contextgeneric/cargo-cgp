@@ -26,7 +26,7 @@ use crate::{detect, resolve};
 /// produced. Call once name resolution is over, while a `TyCtxt` is available. A panic in the
 /// detection leaves every diagnostic as rustc wrote it.
 pub fn reshape_use_type_misspellings(tcx: TyCtxt<'_>) {
-    if !resolve::links_cgp(tcx) {
+    if !resolve::query::links_cgp(tcx) {
         return;
     }
     buffer_pass(

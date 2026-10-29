@@ -33,8 +33,10 @@ use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::cgp_item::{is_blanket_trait, is_consumer_trait, is_provider_trait};
-use crate::resolve::query::{expr_written_ty, lower_hir_ty, traits_with_method};
+use crate::resolve::query::{
+    expr_written_ty, is_blanket_trait, is_consumer_trait, is_provider_trait, lower_hir_ty,
+    traits_with_method,
+};
 
 /// Recognize an undeclared-trait failure and recover the trait to declare, or
 /// `None` when the diagnostic is not one. Everything is keyed on `primary_span`, the failing method

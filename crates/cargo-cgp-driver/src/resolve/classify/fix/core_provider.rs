@@ -7,10 +7,9 @@ use crate::config::{
     CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, REDIRECT_LOOKUP_TYPE, USE_DELEGATE_TYPE, USE_FIELD_TYPE,
     USE_FIELDS_TYPE,
 };
-use crate::resolve::cgp_item::{is_cgp_item, provider_blanket_marker};
 use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
-use crate::resolve::query::holds;
+use crate::resolve::query::{holds, is_cgp_item, provider_blanket_marker};
 
 /// What serves the slot of `parent`, a provider-trait obligation `Provider: Trait<Context, …>`,
 /// where the wired `Provider` is a CGP core provider used where it has no impl. The core providers
@@ -23,7 +22,7 @@ use crate::resolve::query::holds;
 ///   impl: an `open` statement dispatches on the parameters without `#[derive_delegate]`.
 ///
 /// `None` for any other provider, and when `parent` is not fully known.
-pub(crate) fn core_provider_hint<'tcx>(
+pub fn core_provider_hint<'tcx>(
     tcx: TyCtxt<'tcx>,
     parent: ty::TraitRef<'tcx>,
 ) -> Option<CoreProviderHint> {

@@ -16,7 +16,7 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, IS_PROVIDER_FOR_TRAIT};
-use crate::resolve::cgp_item::{find_cgp_trait, provider_blanket_marker};
+use crate::resolve::query::{find_cgp_trait, provider_blanket_marker};
 
 /// Recognize the `E0277` whose caret is `primary_span` as the missing `IsProviderFor` of a
 /// provider-trait impl written without its macro, or `None` when it is not one.

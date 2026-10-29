@@ -27,7 +27,7 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::detect::undeclared::{argument_ty, enclosing_trait_impl};
-use crate::resolve::cgp_item::is_provider_trait;
+use crate::resolve::query::is_provider_trait;
 
 /// Recognize a missing-`#[use_provider]` failure and recover the inner provider and the provider
 /// trait to import it as, or `None` when the diagnostic is not one. Everything is keyed on

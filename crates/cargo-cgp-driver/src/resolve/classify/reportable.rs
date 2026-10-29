@@ -5,9 +5,8 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use crate::config::{
     CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT,
 };
-use crate::resolve::cgp_item::is_cgp_item;
 use crate::resolve::classify::provider_for_other_arguments;
-use crate::resolve::query::owner_has_impl_of;
+use crate::resolve::query::{is_cgp_item, owner_has_impl_of};
 
 /// Whether a terminal leaf is a real root cause worth reporting, rather than pure wiring plumbing.
 /// A `CanUseComponent` or `IsProviderFor` that bottoms out unmet is a routing dead-end (the real

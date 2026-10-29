@@ -25,7 +25,7 @@ use rustc_span::def_id::{CRATE_DEF_ID, DefId, LocalDefId};
 /// holds. Without them each glob-imported name keeps no qualifier.
 ///
 /// `None` until name resolution has finished, which the frozen crate store marks (see
-/// [`crate_uses_cgp`](crate::resolve::crate_uses_cgp)).
+/// [`crate_uses_cgp`](crate::resolve::query::crate_uses_cgp)).
 pub fn ambiguous_type_names(tcx: TyCtxt<'_>, read_glob_items: bool) -> Option<AmbiguousNames> {
     if !tcx.untracked().cstore.is_frozen() {
         return None;

@@ -11,12 +11,10 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::call_site::{data_expr_ty, declared_binding_ty, is_about_call};
-use crate::resolve::cgp_item::{
-    carries_wiring, is_blanket_trait, is_consumer_trait, is_context_adt,
-};
 use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::query::{
-    WrittenArg, expr_written_ty, holds, lower_hir_ty, unknowns_to_placeholders, written_args,
+    WrittenArg, carries_wiring, expr_written_ty, holds, is_blanket_trait, is_consumer_trait,
+    is_context_adt, lower_hir_ty, unknowns_to_placeholders, written_args,
 };
 use crate::resolve::walk::resolve_leaves;
 

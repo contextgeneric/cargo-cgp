@@ -29,7 +29,7 @@ use crate::resolve;
 /// the source file it edits never writes. Call once name resolution is over, while a `TyCtxt` is
 /// available.
 pub fn drop_generated_name_suggestions(tcx: TyCtxt<'_>) {
-    if !resolve::links_cgp(tcx) {
+    if !resolve::query::links_cgp(tcx) {
         return;
     }
     let source_map = tcx.sess.source_map();

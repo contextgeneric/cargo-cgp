@@ -11,7 +11,7 @@
 //! misnamed. `ambiguous_names` reads which type names the post-processing must leave qualified.
 //!
 //! The detectors import the resolver's [`query`](crate::resolve::query) layer and
-//! [`cgp_item`](crate::resolve::cgp_item) recognizers, and one another, never the rest of the
+//! [`cgp_item`](crate::resolve::query) recognizers, and one another, never the rest of the
 //! resolver.
 
 mod ambiguous_names;

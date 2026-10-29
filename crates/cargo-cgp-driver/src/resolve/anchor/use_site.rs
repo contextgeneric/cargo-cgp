@@ -6,11 +6,11 @@ use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::anchor::{consumer_obligation, context_candidates_from_spans};
-use crate::resolve::cgp_item::{
-    component_params, find_cgp_trait, is_nil, is_path_cons, marker_to_consumer, path_cons_parts,
-};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::holds;
+use crate::resolve::query::{
+    component_params, find_cgp_trait, holds, is_nil, is_path_cons, marker_to_consumer,
+    path_cons_parts,
+};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of a CGP wiring failure reported at a *use site* rather than a

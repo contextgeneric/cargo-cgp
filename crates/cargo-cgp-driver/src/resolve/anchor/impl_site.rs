@@ -7,11 +7,11 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::resolve::anchor::{enclosing_trait_impls, is_about_impl};
-use crate::resolve::cgp_item::{
-    consumer_provider_trait, is_blanket_trait, is_context_adt, is_provider_trait,
-};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::{can_use_component_supertrait, holds};
+use crate::resolve::query::{
+    can_use_component_supertrait, consumer_provider_trait, holds, is_blanket_trait, is_context_adt,
+    is_provider_trait,
+};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait

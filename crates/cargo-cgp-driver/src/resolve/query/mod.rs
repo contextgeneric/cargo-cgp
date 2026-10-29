@@ -18,6 +18,7 @@
 //! The resolver's other modules and the class detectors import from here, and nothing here imports
 //! them.
 
+mod cgp_item;
 mod check_impl;
 mod holds;
 mod impl_match;
@@ -33,6 +34,7 @@ mod unknowns;
 mod written_order;
 mod written_ty;
 
+pub use cgp_item::*;
 pub use check_impl::*;
 pub use holds::*;
 pub use impl_match::*;

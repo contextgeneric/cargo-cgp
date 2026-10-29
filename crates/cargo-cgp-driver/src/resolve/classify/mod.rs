@@ -2,42 +2,25 @@
 //!
 //! Once the [walk](crate::resolve::walk) reaches a terminal predicate, this module turns it into
 //! the rustc-free [`Leaf`](cargo_cgp_error_processing::Leaf) the emitter words. [`leaf`] performs
-//! the classification, [`reportable`] decides whether a terminal is a real root cause or a routing
-//! dead-end to drop, [`field`] inspects the actual struct a `HasField` bound lands on (and its
-//! `Deref` chain) so a genuinely missing field is told apart from one present but underived,
-//! [`required_type`] reads the type a requirement gives a missing field, [`near_miss`] finds a
-//! similar field or wiring key the program wrote, [`other_arguments`] names the argument a
-//! provider does not implement its provider trait for, [`hand_wiring`] recognizes a component
-//! wired by a hand-written `DelegateComponent` impl without its `IsProviderFor`, [`known`] says
-//! whether a provider obligation is known well enough to confirm a fix against, and the hints for a
-//! type wired where a provider belongs: [`adapter`] names the adapter that makes it one,
-//! [`provided_components`](mod@provided_components) the other components it provides, and [`core_provider`] what serves the
-//! slot a misused CGP core provider cannot. The compiler queries these share with the walk and the
+//! the classification, [`data`] reads an extensible-data terminal off its presence markers,
+//! [`reportable`] decides whether a terminal is a real root cause or a routing dead-end to drop,
+//! [`field`] inspects the actual struct a `HasField` bound lands on (and its `Deref` chain) so a
+//! genuinely missing field is told apart from one present but underived, and [`known`] says
+//! whether a provider obligation is known well enough to confirm a fix against. The fix facts a
+//! leaf's `help` names are read in [`fix`]. The compiler queries these share with the walk and the
 //! detectors, such as the type an owner supplies for a projected associated type, live in the
 //! [query layer](crate::resolve::query).
 
-mod adapter;
-mod core_provider;
 mod data;
 mod field;
-mod hand_wiring;
+mod fix;
 mod known;
 mod leaf;
-mod near_miss;
-mod other_arguments;
-mod provided_components;
 mod reportable;
-mod required_type;
 
-pub(crate) use adapter::*;
-pub(crate) use core_provider::*;
 pub(crate) use data::*;
 pub(crate) use field::*;
-pub(crate) use hand_wiring::*;
+pub(crate) use fix::*;
 pub(crate) use known::*;
 pub(crate) use leaf::*;
-pub(crate) use near_miss::*;
-pub(crate) use other_arguments::*;
-pub(crate) use provided_components::*;
 pub(crate) use reportable::*;
-pub(crate) use required_type::*;

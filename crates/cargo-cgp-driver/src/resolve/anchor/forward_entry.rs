@@ -6,9 +6,10 @@ use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::anchor::consumer_obligation;
-use crate::resolve::cgp_item::{component_params, find_cgp_trait, is_cgp_item, marker_to_consumer};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::holds;
+use crate::resolve::query::{
+    component_params, find_cgp_trait, holds, is_cgp_item, marker_to_consumer,
+};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve an error the compiler raises on a `Key -> Table` entry of `delegate_components!`. The

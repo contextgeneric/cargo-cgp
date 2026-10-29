@@ -7,9 +7,9 @@ use rustc_span::DUMMY_SP;
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::cgp_item::is_provider_trait;
 use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
+use crate::resolve::query::is_provider_trait;
 
 /// The [`Leaf::ProviderForOtherArguments`] behind `parent`, a provider-trait obligation the walk
 /// followed into the delegation blanket because no impl of the provider itself matches it: the one
@@ -19,7 +19,7 @@ use crate::resolve::label::render_ty;
 /// known (it holds an unknown a call leaves open, or a projection the walk could not reduce, so a
 /// mismatch may be the walk's own), when no concrete impl's `Self` matches the provider, and when
 /// no single argument explains the mismatch.
-pub(crate) fn provider_for_other_arguments<'tcx>(
+pub fn provider_for_other_arguments<'tcx>(
     tcx: TyCtxt<'tcx>,
     parent: ty::TraitRef<'tcx>,
 ) -> Option<Leaf> {

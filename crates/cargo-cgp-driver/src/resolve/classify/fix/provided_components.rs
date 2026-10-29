@@ -3,10 +3,9 @@
 use cargo_cgp_error_processing::ProvidedComponent;
 use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 
-use crate::resolve::cgp_item::provider_blanket_marker;
 use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
-use crate::resolve::query::holds;
+use crate::resolve::query::{holds, provider_blanket_marker};
 
 /// How many components a `help` names at most.
 const MAX_COMPONENTS: usize = 3;
@@ -17,7 +16,7 @@ const MAX_COMPONENTS: usize = 3;
 /// named when the solver confirms `Provider: Trait<Context>`.
 ///
 /// Empty when `parent` is not fully known, as for [`wrapping_adapters`](super::wrapping_adapters).
-pub(crate) fn provided_components<'tcx>(
+pub fn provided_components<'tcx>(
     tcx: TyCtxt<'tcx>,
     parent: ty::TraitRef<'tcx>,
 ) -> Vec<ProvidedComponent> {

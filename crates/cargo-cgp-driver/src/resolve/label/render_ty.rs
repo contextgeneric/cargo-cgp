@@ -6,8 +6,8 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_FIELD_CRATE, CONS_TYPE, EITHER_TYPE, FIELD_TYPE, NIL_TYPE, VOID_TYPE,
 };
-use crate::resolve::cgp_item::{decode_index, decode_symbol, is_cgp_item, is_nil};
 use crate::resolve::label::fold_empty_lists;
+use crate::resolve::query::{decode_index, decode_symbol, is_cgp_item, is_nil};
 
 /// Render a type to its dependency-tree form, resugaring CGP's type-level list and sum spines back
 /// to their surface macros: a `Cons<A, Cons<B, Nil>>` product spine to `Product![A, B]` and an

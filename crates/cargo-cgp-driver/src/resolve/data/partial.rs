@@ -7,8 +7,7 @@ use crate::config::{
     CGP_FIELD_CRATE, IS_MUT_TYPE, IS_NOTHING_TYPE, IS_OPTIONAL_TYPE, IS_PRESENT_TYPE, IS_REF_TYPE,
     IS_VOID_TYPE, MAP_TYPE_TRAIT, PARTIAL_DATA_TARGET, PARTIAL_DATA_TRAIT,
 };
-use crate::resolve::cgp_item::{find_cgp_trait, is_cgp_item};
-use crate::resolve::query::{owner_has_impl_of, projected_type};
+use crate::resolve::query::{find_cgp_trait, is_cgp_item, owner_has_impl_of, projected_type};
 
 /// The state a presence marker records for one field or variant of a partial value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

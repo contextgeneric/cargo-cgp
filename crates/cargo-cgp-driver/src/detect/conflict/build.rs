@@ -6,8 +6,7 @@ use rustc_middle::ty::TyCtxt;
 use crate::detect::conflict::{
     ConflictSide, DelegateImpl, EntryTarget, maps_one_key, overlap_conflict,
 };
-use crate::resolve::cgp_item::component_params;
-use crate::resolve::query::describe_key;
+use crate::resolve::query::{component_params, describe_key};
 
 /// Word the recovered impls into a [`WiringConflict`], picking the shape from how the two entries
 /// relate: a redirect when they map one key and one or both map it to a `RedirectLookup`, a plain

@@ -11,11 +11,11 @@ use crate::config::{
     FINALIZE_EXTRACT_TRAIT, FROM_VARIANT_TRAIT, MAPPER_ASSOC, PARTIAL_VALUE_OPERATIONS,
     TO_OPTIONAL_TRAIT, UPDATE_FIELD_TRAIT, VALUE_ASSOC,
 };
-use crate::resolve::cgp_item::{decode_index, decode_symbol, find_cgp_trait, is_cgp_item};
 use crate::resolve::classify::{similar_field, similar_variant};
 use crate::resolve::data::{Marker, PartialRead, data_derive, is_data_trait, marker, read_partial};
 use crate::resolve::query::{
-    ProjectionMismatch, holds, import_path, owner_has_impl_of, projected_type,
+    ProjectionMismatch, decode_index, decode_symbol, find_cgp_trait, holds, import_path,
+    is_cgp_item, owner_has_impl_of, projected_type,
 };
 
 /// The data leaf for an unmet obligation of one of CGP's extensible-data traits, or `None` when the

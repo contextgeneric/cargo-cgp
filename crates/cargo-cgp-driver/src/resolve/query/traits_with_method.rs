@@ -4,7 +4,7 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 
-use crate::resolve::cgp_item::{is_blanket_trait, is_consumer_trait};
+use crate::resolve::query::{is_blanket_trait, is_consumer_trait};
 
 /// What kind of trait a call resolves through, which decides the class its failure is headed with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -21,7 +21,7 @@ use rustc_span::def_id::DefId;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
 use crate::detect::unimported::has_context_param;
-use crate::resolve::cgp_item::{consumer_provider_trait, is_provider_trait};
+use crate::resolve::query::{consumer_provider_trait, is_provider_trait};
 
 /// Recognize an `E0107` at `primary_span` as a provider trait named in `#[uses(…)]`: the caret is
 /// the trait name of a `where` bound on the context (`Self` or `__Context__`) of an impl a CGP macro

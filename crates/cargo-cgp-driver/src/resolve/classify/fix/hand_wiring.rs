@@ -5,8 +5,8 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT};
-use crate::resolve::cgp_item::{find_cgp_trait, is_cgp_item};
 use crate::resolve::label::render_ty;
+use crate::resolve::query::{find_cgp_trait, is_cgp_item};
 
 /// The [`Leaf::WiringWithoutProviderFor`] behind a step whose only failing requirements are
 /// `IsProviderFor` bounds (`failing`), the shape of the delegation blanket a consumer call routes
@@ -18,7 +18,7 @@ use crate::resolve::label::render_ty;
 /// `None` when no failing bound is on `context`, or when the context has an `IsProviderFor` impl
 /// for the component (or a blanket one over every key, as a namespace join writes), so the
 /// failure lies with the delegate's own `IsProviderFor` instead.
-pub(crate) fn wiring_without_provider_for<'tcx>(
+pub fn wiring_without_provider_for<'tcx>(
     tcx: TyCtxt<'tcx>,
     failing: &[ty::PolyTraitClause<'tcx>],
     context: Ty<'tcx>,

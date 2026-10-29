@@ -8,7 +8,7 @@ use rustc_span::def_id::DefId;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT};
 use crate::detect::conflict::{build_conflict, classify_namespace_conflict, local_delegate_impls};
-use crate::resolve::cgp_item::{find_cgp_trait, is_cgp_item};
+use crate::resolve::query::{find_cgp_trait, is_cgp_item};
 
 /// Which trait an `E0119` conflict is about, read from the diagnostic's own message — the only
 /// thing that tells the `DelegateComponent` half of the pair from its `IsProviderFor` half, since

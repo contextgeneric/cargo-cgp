@@ -7,11 +7,11 @@ use crate::config::{
     CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT,
     REDIRECT_LOOKUP_TYPE,
 };
-use crate::resolve::cgp_item::{
-    carries_wiring, is_cgp_item, is_consumer_trait, is_namespace_lookup_trait, is_provider_trait,
-};
 use crate::resolve::data::{is_data_list_recursion, read_partial};
 use crate::resolve::label::render_ty;
+use crate::resolve::query::{
+    carries_wiring, is_cgp_item, is_consumer_trait, is_namespace_lookup_trait, is_provider_trait,
+};
 
 /// The human-readable label for one predicate in a dependency path, replacing each CGP wiring
 /// trait with the concept it stands for. Crucially it reads the **real** consumer and provider

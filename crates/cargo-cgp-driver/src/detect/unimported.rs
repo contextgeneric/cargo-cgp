@@ -19,9 +19,7 @@ use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
-use crate::resolve::cgp_item::{
-    abstract_type_component_marker, is_consumer_trait, is_provider_trait,
-};
+use crate::resolve::query::{abstract_type_component_marker, is_consumer_trait, is_provider_trait};
 
 /// An abstract type a CGP definition uses but does not import, with the items that recognize a
 /// later report of the same mistake.

@@ -7,9 +7,8 @@ use rustc_middle::ty::{TyCtxt, TypeVisitableExt as _};
 use rustc_span::{Span, Symbol};
 
 use crate::resolve::call_site::{CallForm, receiver_context, seed_from_call, unbounded_receiver};
-use crate::resolve::cgp_item::{carries_wiring, is_context_adt};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::{CallTrait, holds, traits_with_method};
+use crate::resolve::query::{CallTrait, carries_wiring, holds, is_context_adt, traits_with_method};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context

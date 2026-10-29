@@ -9,9 +9,8 @@ use rustc_span::{Span, Symbol};
 use crate::resolve::call_site::{
     CallForm, data_expr_ty, data_fns_named, is_about_call, seed_from_call,
 };
-use crate::resolve::cgp_item::carries_wiring;
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::{holds, lower_hir_ty, peel_hir_refs};
+use crate::resolve::query::{carries_wiring, holds, lower_hir_ty, peel_hir_refs};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve a failing call to one of CGP's extensible-data operations (a builder, an extractor, a

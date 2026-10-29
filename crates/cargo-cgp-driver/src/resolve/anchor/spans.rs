@@ -10,7 +10,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::resolve::call_site::method_calls_at;
-use crate::resolve::cgp_item::{is_component_marker, is_provider_struct};
+use crate::resolve::query::{is_component_marker, is_provider_struct};
 
 /// The local trait-impl blocks (`impl Trait for Ty { … }`) whose source span contains one of the
 /// diagnostic's spans — the impls a wiring failure can surface inside, whether the caret lands on

@@ -6,7 +6,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::config::{CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE};
-use crate::resolve::cgp_item::is_cgp_item;
+use crate::resolve::query::is_cgp_item;
 
 /// The `CanUseComponent<..>` supertrait clause of `trait_did`, if it carries one — the marker
 /// of a `check_components!` check trait. Anchored by DefId to `cgp_component`.

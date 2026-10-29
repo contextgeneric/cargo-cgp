@@ -15,7 +15,7 @@ use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, PATH_CONS_TYPE,
 };
 use crate::detect::unimported::has_context_param;
-use crate::resolve::cgp_item::is_cgp_item;
+use crate::resolve::query::is_cgp_item;
 
 /// Where a name at a span sits.
 pub enum NameSlot<'tcx> {
