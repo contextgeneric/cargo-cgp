@@ -13,7 +13,6 @@
 //! impl may be the one being lowered.
 
 use cargo_cgp_error_processing::ProviderTraitInUses;
-use rustc_hir::def::DefKind;
 use rustc_hir::{GenericArg, GenericBound, ItemKind, QPath, TyKind, WherePredicateKind};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
@@ -21,7 +20,7 @@ use rustc_span::def_id::DefId;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
 use crate::detect::unimported::has_context_param;
-use crate::resolve::query::{consumer_provider_trait, is_provider_trait};
+use crate::resolve::query::{consumer_provider_trait, is_provider_trait, local_trait_impls};
 
 /// Recognize an `E0107` at `primary_span` as a provider trait named in `#[uses(…)]`: the caret is
 /// the trait name of a `where` bound on the context (`Self` or `__Context__`) of an impl a CGP macro
@@ -31,10 +30,8 @@ pub fn detect_provider_trait_in_uses(
     tcx: TyCtxt<'_>,
     primary_span: Span,
 ) -> Option<ProviderTraitInUses> {
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true })
-            || !has_context_param(tcx, local)
-        {
+    for local in local_trait_impls(tcx) {
+        if !has_context_param(tcx, local) {
             continue;
         }
         let ItemKind::Impl(imp) = tcx.hir_expect_item(local).kind else {

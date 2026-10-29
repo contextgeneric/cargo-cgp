@@ -17,12 +17,11 @@
 //! proved it for.
 
 use cargo_cgp_error_processing::{OrphanConflict, OrphanTrigger, WiringKey};
-use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::resolve::query::{describe_key, is_namespace_lookup_trait};
+use crate::resolve::query::{describe_key, is_namespace_lookup_trait, local_trait_impls};
 
 /// One local impl of a foreign namespace-lookup trait for a foreign key — a candidate orphan
 /// registration.
@@ -72,10 +71,7 @@ pub fn classify_orphan_conflict(tcx: TyCtxt<'_>, primary_span: Span) -> Option<O
 /// impls the orphan rule rejects for a namespace registration, whichever construct generated them.
 fn orphan_impls(tcx: TyCtxt<'_>) -> Vec<OrphanImpl<'_>> {
     let mut impls = Vec::new();
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let impl_did = local.to_def_id();
         let trait_ref = tcx.impl_trait_ref(impl_did).skip_binder();
         let trait_did = trait_ref.def_id;

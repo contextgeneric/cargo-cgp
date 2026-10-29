@@ -1,14 +1,15 @@
 //! A `for` loop in a wiring table whose key does not use the loop's key variable.
 
 use cargo_cgp_error_processing::{StructuralMistake, WiringKey};
-use rustc_hir::def::DefKind;
 use rustc_middle::ty::print::with_forced_trimmed_paths;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT};
 use crate::detect::conflict::same_range;
-use crate::resolve::query::{describe_key, is_cgp_item, is_namespace_lookup_trait};
+use crate::resolve::query::{
+    describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls,
+};
 
 /// The `for` loop an `E0207` at `primary_span` is about, when the unconstrained parameter there
 /// belongs to an entry a loop generated. `for <T, Provider> in Table { Key: Provider }` lowers to a
@@ -20,10 +21,7 @@ pub fn detect_loop_key_without_variable(
     tcx: TyCtxt<'_>,
     primary_span: Span,
 ) -> Option<StructuralMistake> {
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let impl_did = local.to_def_id();
         let declares_param = tcx
             .generics_of(impl_did)

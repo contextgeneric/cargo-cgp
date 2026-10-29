@@ -1,11 +1,12 @@
 //! Reading the requirements of a provider impl whose `#[cgp_impl]` header names the consumer trait.
 
-use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
-use crate::resolve::query::{consumer_provider_trait, is_provider_trait, written_order_clauses};
+use crate::resolve::query::{
+    consumer_provider_trait, is_provider_trait, local_trait_impls, written_order_clauses,
+};
 
 /// The requirements the provider of `provider_ref` states in an impl it wrote with the component's
 /// consumer trait in its `#[cgp_impl]` header, the mistake `[CGP-E032]` reports: that impl's
@@ -46,9 +47,7 @@ pub fn misdirected_impl_clauses<'tcx>(
         return None;
     }
 
-    let mut found = tcx
-        .hir_crate_items(())
-        .definitions()
+    let mut found = local_trait_impls(tcx)
         .map(|local| local.to_def_id())
         .filter(|&impl_did| {
             is_misdirected_impl(tcx, impl_did, provider_ref.def_id, provider_def.did())
@@ -77,7 +76,7 @@ pub fn misdirected_impl_clauses<'tcx>(
     )
 }
 
-/// Whether `impl_did` is a `#[cgp_impl]` impl on the provider `provider_did` whose header names the
+/// Whether the local trait impl `impl_did` is a `#[cgp_impl]` impl on the provider `provider_did` whose header names the
 /// consumer trait paired with `provider_trait`: its `Self` is the provider, its trait is that
 /// consumer trait, and its type parameters are the context parameter `#[cgp_impl]` inserts alone.
 fn is_misdirected_impl(
@@ -86,9 +85,6 @@ fn is_misdirected_impl(
     provider_trait: DefId,
     provider_did: DefId,
 ) -> bool {
-    if !matches!(tcx.def_kind(impl_did), DefKind::Impl { of_trait: true }) {
-        return false;
-    }
     let generics = tcx.generics_of(impl_did);
     let mut has_context = false;
     for param in &generics.own_params {

@@ -19,14 +19,15 @@
 //! the message names the entry to write instead.
 
 use cargo_cgp_error_processing::WiringConflict;
-use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::detect::conflict::{
     ConflictSide, impl_delegate_type, maps_one_key, overlap_conflict, redirect_conflict, same_range,
 };
-use crate::resolve::query::{describe_key, is_namespace_lookup_trait, render_lookup_trait};
+use crate::resolve::query::{
+    describe_key, is_namespace_lookup_trait, local_trait_impls, render_lookup_trait,
+};
 
 /// Classify an `E0119` on a namespace lookup trait as a duplicate-entry conflict, or `None` when
 /// no namespace-trait impl sits at the caret (leaving the diagnostic to the ordinary fallback).
@@ -85,10 +86,7 @@ pub fn classify_namespace_conflict(
 /// matches its carets. Empty when no local namespace-trait impl is there.
 fn namespace_entries_at<'tcx>(tcx: TyCtxt<'tcx>, span: Span) -> Vec<ConflictSide<'tcx>> {
     let mut entries = Vec::new();
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let impl_did = local.to_def_id();
         if !same_range(tcx.def_span(impl_did), span) {
             continue;

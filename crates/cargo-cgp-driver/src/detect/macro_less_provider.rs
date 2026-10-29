@@ -16,7 +16,7 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, IS_PROVIDER_FOR_TRAIT};
-use crate::resolve::query::{find_cgp_trait, provider_blanket_marker};
+use crate::resolve::query::{find_cgp_trait, local_trait_impls, provider_blanket_marker};
 
 /// Recognize the `E0277` whose caret is `primary_span` as the missing `IsProviderFor` of a
 /// provider-trait impl written without its macro, or `None` when it is not one.
@@ -25,10 +25,7 @@ pub fn detect_provider_impl_without_macro(
     primary_span: Span,
 ) -> Option<ProviderImplWithoutMacro> {
     let is_provider_for = find_cgp_trait(tcx, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)?;
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let ItemKind::Impl(imp) = tcx.hir_expect_item(local).kind else {
             continue;
         };

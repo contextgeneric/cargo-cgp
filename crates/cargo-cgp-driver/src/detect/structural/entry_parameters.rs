@@ -2,7 +2,6 @@
 
 use cargo_cgp_error_processing::{EntryTable, ParameterUse, StructuralMistake, WiringKey};
 use rustc_data_structures::fx::FxHashSet;
-use rustc_hir::def::DefKind;
 use rustc_middle::ty::print::with_forced_trimmed_paths;
 use rustc_middle::ty::{self, GenericArg, GenericArgKind, GenericParamDefKind, Ty, TyCtxt};
 use rustc_span::Span;
@@ -13,7 +12,7 @@ use crate::config::{
 };
 use crate::detect::conflict::{impl_delegate_type, same_range};
 use crate::resolve::query::{
-    describe_key, is_cgp_item, is_namespace_lookup_trait, render_lookup_trait,
+    describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls, render_lookup_trait,
 };
 
 /// The wiring entry an `E0207` at `primary_span` is about, when the unconstrained parameter there
@@ -28,10 +27,7 @@ pub fn detect_entry_parameters_not_in_key(
     tcx: TyCtxt<'_>,
     primary_span: Span,
 ) -> Option<StructuralMistake> {
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let impl_did = local.to_def_id();
         let declares_param = tcx
             .generics_of(impl_did)
@@ -201,11 +197,9 @@ fn binds_loop_variable(
 /// provider impl declares the same parameter; an entry the program wrote in a `cgp_namespace!` is
 /// the only impl declaring its parameters.
 fn declared_by_provider_impl(tcx: TyCtxt<'_>, namespace_impl: DefId, primary_span: Span) -> bool {
-    tcx.hir_crate_items(()).definitions().any(|local| {
+    local_trait_impls(tcx).any(|local| {
         let impl_did = local.to_def_id();
-        if impl_did == namespace_impl
-            || !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true })
-        {
+        if impl_did == namespace_impl {
             return false;
         }
         let trait_did = tcx

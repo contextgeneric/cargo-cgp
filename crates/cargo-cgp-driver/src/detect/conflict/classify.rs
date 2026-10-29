@@ -1,14 +1,13 @@
 //! Matching an `E0119` caret to the conflicting wiring impls and routing the pair.
 
 use cargo_cgp_error_processing::WiringConflict;
-use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT};
 use crate::detect::conflict::{build_conflict, classify_namespace_conflict, local_delegate_impls};
-use crate::resolve::query::{find_cgp_trait, is_cgp_item};
+use crate::resolve::query::{find_cgp_trait, is_cgp_item, local_trait_impls};
 
 /// Which trait an `E0119` conflict is about, read from the diagnostic's own message — the only
 /// thing that tells the `DelegateComponent` half of the pair from its `IsProviderFor` half, since
@@ -127,10 +126,7 @@ fn suppressible_is_provider_for(tcx: TyCtxt<'_>, primary_span: Span, label_spans
 /// def-span and the CGP macros re-span every impl of one entry onto the same token.
 fn local_trait_impls_at(tcx: TyCtxt<'_>, span: Span) -> Vec<DefId> {
     let mut traits = Vec::new();
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let did = local.to_def_id();
         if !same_range(tcx.def_span(did), span) {
             continue;

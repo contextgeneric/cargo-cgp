@@ -53,7 +53,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
-use crate::resolve::query::{consumer_provider_trait, is_provider_trait};
+use crate::resolve::query::{consumer_provider_trait, is_provider_trait, local_trait_impls};
 
 /// A `#[cgp_impl]` provider impl whose header names the wrong trait. Carries the rustc-free wording
 /// model plus the spans the emitter needs to reshape the precise error and suppress the rest of the
@@ -82,10 +82,7 @@ pub struct DetectedCgpImplMisuse {
 /// compiler with the fingerprints described in the module docs.
 pub fn detect_cgp_impl_misuses(tcx: TyCtxt<'_>) -> Vec<DetectedCgpImplMisuse> {
     let mut found = Vec::new();
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let item = tcx.hir_expect_item(local);
         let ItemKind::Impl(imp) = item.kind else {
             continue;

@@ -15,7 +15,7 @@ use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, PATH_CONS_TYPE,
 };
 use crate::detect::unimported::has_context_param;
-use crate::resolve::query::is_cgp_item;
+use crate::resolve::query::{is_cgp_item, local_trait_impls};
 
 /// Where a name at a span sits.
 pub enum NameSlot<'tcx> {
@@ -46,13 +46,7 @@ pub enum NameSlot<'tcx> {
 /// segment of an `@`-path, is [`NameSlot::Inside`].
 pub fn name_slot_at(tcx: TyCtxt<'_>, span: Span) -> Option<NameSlot<'_>> {
     let mut inside = None;
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(
-            tcx.def_kind(local),
-            rustc_hir::def::DefKind::Impl { of_trait: true }
-        ) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let ItemKind::Impl(imp) = tcx.hir_expect_item(local).kind else {
             continue;
         };

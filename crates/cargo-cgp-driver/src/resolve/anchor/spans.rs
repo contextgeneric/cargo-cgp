@@ -10,7 +10,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::resolve::call_site::method_calls_at;
-use crate::resolve::query::{is_component_marker, is_provider_struct};
+use crate::resolve::query::{is_component_marker, is_provider_struct, local_trait_impls};
 
 /// The local trait-impl blocks (`impl Trait for Ty { … }`) whose source span contains one of the
 /// diagnostic's spans — the impls a wiring failure can surface inside, whether the caret lands on
@@ -20,10 +20,7 @@ use crate::resolve::query::{is_component_marker, is_provider_struct};
 /// the body (a forwarding `self.method(..)` call, say).
 pub(crate) fn enclosing_trait_impls(tcx: TyCtxt<'_>, spans: &[Span]) -> Vec<DefId> {
     let mut impls = Vec::new();
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let impl_span = tcx.hir_expect_item(local).span;
         if spans.iter().any(|&span| impl_span.contains(span)) {
             impls.push(local.to_def_id());

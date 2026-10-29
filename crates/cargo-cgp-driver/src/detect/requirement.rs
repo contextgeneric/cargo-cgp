@@ -23,7 +23,7 @@ use rustc_trait_selection::traits::ObligationCause;
 use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
 
 use crate::detect::unimported::context_param_span;
-use crate::resolve::query::{abstract_type_component_marker, is_provider_trait};
+use crate::resolve::query::{abstract_type_component_marker, is_provider_trait, local_trait_impls};
 
 /// A component requirement a provider does not declare, with the impl and the traits that tie a
 /// later report, or an abstract type reported on its own, to the same mistake.
@@ -48,13 +48,7 @@ pub fn detect_undeclared_requirement(
     tcx: TyCtxt<'_>,
     primary_span: Span,
 ) -> Option<DetectedUndeclaredRequirement> {
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(
-            tcx.def_kind(local),
-            rustc_hir::def::DefKind::Impl { of_trait: true }
-        ) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let Some(macro_span) = context_param_span(tcx, local) else {
             continue;
         };

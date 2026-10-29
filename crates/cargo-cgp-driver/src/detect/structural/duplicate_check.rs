@@ -1,22 +1,18 @@
 //! A `check_components!` table that checks one entry twice.
 
 use cargo_cgp_error_processing::StructuralMistake;
-use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::detect::conflict::same_range;
-use crate::resolve::query::can_use_component_supertrait;
+use crate::resolve::query::{can_use_component_supertrait, local_trait_impls};
 
 /// The duplicate check entry an `E0119` at `primary_span` is about: a local impl of a
 /// `check_components!` check trait (one whose supertrait is `CanUseComponent`) whose def-span is
 /// the caret, which rustc aims at the conflicting impl. The two impls a repeated entry generates
 /// are identical, so the entry is read off the one at the caret. `None` when no check impl is there.
 pub fn detect_duplicate_check(tcx: TyCtxt<'_>, primary_span: Span) -> Option<StructuralMistake> {
-    for local in tcx.hir_crate_items(()).definitions() {
-        if !matches!(tcx.def_kind(local), DefKind::Impl { of_trait: true }) {
-            continue;
-        }
+    for local in local_trait_impls(tcx) {
         let impl_did = local.to_def_id();
         if !same_range(tcx.def_span(impl_did), primary_span) {
             continue;
