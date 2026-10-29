@@ -11,7 +11,9 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::call_site::receiver_context;
 use crate::resolve::data::is_data_operation;
-use crate::resolve::query::{expr_written_ty, lower_hir_ty, peel_hir_refs, unify_call_inputs};
+use crate::resolve::query::{
+    expr_written_ty, lower_hir_ty, peel_hir_refs, trait_fns_named, unify_call_inputs,
+};
 
 /// The type of `expr` when it is a value one of CGP's extensible-data operations produces, or a
 /// value the call-site anchor already types ([`receiver_context`]): a call to a data operation on
@@ -51,20 +53,12 @@ pub(crate) fn data_fns_named(
     name: Symbol,
     method_call: bool,
 ) -> Vec<(DefId, DefId)> {
-    tcx.all_traits_including_private()
-        .filter(|&trait_did| is_data_operation(tcx, trait_did))
-        .filter_map(|trait_did| {
-            let fn_did = tcx
-                .associated_items(trait_did)
-                .filter_by_name_unhygienic(name)
-                .find(|item| match item.kind {
-                    ty::AssocKind::Fn { has_self, .. } => has_self || !method_call,
-                    _ => false,
-                })?
-                .def_id;
-            Some((trait_did, fn_did))
-        })
-        .collect()
+    trait_fns_named(tcx, name, |item| match item.kind {
+        ty::AssocKind::Fn { has_self, .. } => has_self || !method_call,
+        _ => false,
+    })
+    .filter(|&(trait_did, _)| is_data_operation(tcx, trait_did))
+    .collect()
 }
 
 /// The output type of a call to the data operation named `name` on `self_ty`, through the first

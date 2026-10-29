@@ -4,7 +4,7 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 
-use crate::resolve::query::{is_blanket_trait, is_consumer_trait};
+use crate::resolve::query::{is_blanket_trait, is_consumer_trait, trait_fns_named};
 
 /// What kind of trait a call resolves through, which decides the class its failure is headed with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,15 +40,10 @@ pub enum CallTrait {
 /// diagnostic.
 pub fn traits_with_method(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId, DefId, CallTrait)> {
     let mut found: Vec<(DefId, DefId, CallTrait)> = Vec::new();
-    for trait_did in tcx.all_traits_including_private() {
-        let Some(method_did) = tcx
-            .associated_items(trait_did)
-            .filter_by_name_unhygienic(method)
-            .find(|item| matches!(item.kind, ty::AssocKind::Fn { has_self: true, .. }))
-            .map(|item| item.def_id)
-        else {
-            continue;
-        };
+    let with_method = trait_fns_named(tcx, method, |item| {
+        matches!(item.kind, ty::AssocKind::Fn { has_self: true, .. })
+    });
+    for (trait_did, method_did) in with_method {
         if is_consumer_trait(tcx, trait_did) {
             found.push((trait_did, method_did, CallTrait::Consumer));
         } else if is_blanket_trait(tcx, trait_did) {

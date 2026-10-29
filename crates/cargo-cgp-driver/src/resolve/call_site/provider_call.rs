@@ -10,7 +10,7 @@ use rustc_span::{Span, Symbol};
 use crate::resolve::call_site::{CallForm, is_about_call, seed_from_call};
 use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::query::{
-    carries_wiring, holds, is_provider_trait, lower_hir_ty, peel_hir_refs,
+    carries_wiring, holds, is_provider_trait, lower_hir_ty, peel_hir_refs, trait_fns_named,
 };
 use crate::resolve::walk::resolve_provider_leaves;
 
@@ -121,15 +121,9 @@ fn provider_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<ProviderCal
 /// The CGP provider traits that declare an associated fn named `name`, each with that fn's `DefId`.
 /// A provider method takes its context as an argument rather than as `self`, so every fn counts.
 fn provider_fns_named(tcx: TyCtxt<'_>, name: Symbol) -> Vec<(DefId, DefId)> {
-    tcx.all_traits_including_private()
-        .filter(|&trait_did| is_provider_trait(tcx, trait_did))
-        .filter_map(|trait_did| {
-            let fn_did = tcx
-                .associated_items(trait_did)
-                .filter_by_name_unhygienic(name)
-                .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }))?
-                .def_id;
-            Some((trait_did, fn_did))
-        })
-        .collect()
+    trait_fns_named(tcx, name, |item| {
+        matches!(item.kind, ty::AssocKind::Fn { .. })
+    })
+    .filter(|&(trait_did, _)| is_provider_trait(tcx, trait_did))
+    .collect()
 }
