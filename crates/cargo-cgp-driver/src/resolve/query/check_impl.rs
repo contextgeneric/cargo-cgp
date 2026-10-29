@@ -35,3 +35,45 @@ pub fn impl_self_ty_span(tcx: TyCtxt<'_>, impl_did: DefId) -> Option<Span> {
         _ => None,
     }
 }
+
+/// One check impl at a caret, as [`check_impls_at`] finds it.
+#[derive(Clone, Copy)]
+pub struct CheckImpl<'tcx> {
+    /// The check trait the impl implements.
+    pub trait_did: DefId,
+    /// The check impl.
+    pub impl_did: DefId,
+    /// The check trait's asserting supertrait, instantiated on the impl's trait ref (a
+    /// `CanUseComponent<Marker, Params>` on the context, or an `IsProviderFor` on a provider).
+    pub asserted: ty::Clause<'tcx>,
+}
+
+/// The check impls whose `Self` type sits at `primary_span`, lazily: for each trait whose
+/// asserting supertrait `supertrait` reads (such as [`can_use_component_supertrait`]), each impl of
+/// it whose `Self` type's span ([`impl_self_ty_span`]) is the caret, the check macro having
+/// re-spanned that type onto the entry. Traits are scanned in the compiler's order, and a caller
+/// that needs only the first match stops there.
+pub fn check_impls_at<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    primary_span: Span,
+    supertrait: impl Fn(TyCtxt<'tcx>, DefId) -> Option<ty::Clause<'tcx>>,
+) -> impl Iterator<Item = CheckImpl<'tcx>> {
+    tcx.all_traits_including_private()
+        .filter_map(move |trait_did| Some((trait_did, supertrait(tcx, trait_did)?)))
+        .flat_map(move |(trait_did, super_clause)| {
+            tcx.all_impls(trait_did)
+                .filter(move |&impl_did| impl_self_ty_span(tcx, impl_did) == Some(primary_span))
+                .map(move |impl_did| {
+                    let trait_ref = tcx
+                        .impl_trait_ref(impl_did)
+                        .instantiate_identity()
+                        .skip_norm_wip();
+                    CheckImpl {
+                        trait_did,
+                        impl_did,
+                        asserted: super_clause
+                            .instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref)),
+                    }
+                })
+        })
+}

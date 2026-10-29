@@ -22,7 +22,7 @@ use crate::config::{
     CGP_COMPONENT_CRATE, DELEGATE_AND_CHECK_COMPONENTS_MACRO, IS_PROVIDER_FOR_TRAIT,
 };
 use crate::resolve::query::{
-    can_use_component_supertrait, find_cgp_trait, fresh_impl_ref, impl_self_ty_span,
+    can_use_component_supertrait, check_impls_at, find_cgp_trait, fresh_impl_ref,
     marker_to_consumer,
 };
 
@@ -35,46 +35,28 @@ pub fn detect_check_at_unit_parameters(
     tcx: TyCtxt<'_>,
     primary_span: Span,
 ) -> Option<StructuralMistake> {
-    for trait_did in tcx.all_traits_including_private() {
-        let Some(super_clause) = can_use_component_supertrait(tcx, trait_did) else {
-            continue;
-        };
-        for impl_did in tcx.all_impls(trait_did) {
-            if impl_self_ty_span(tcx, impl_did) != Some(primary_span) {
-                continue;
-            }
-            let trait_ref = tcx
-                .impl_trait_ref(impl_did)
-                .instantiate_identity()
-                .skip_norm_wip();
-            let can_use = super_clause
-                .instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref))
-                .as_trait_clause()?
-                .skip_binder()
-                .trait_ref;
-            // `CanUseComponent<Marker, Params>`, with args `[Context, Marker, Params]`.
-            let context = can_use.self_ty();
-            let marker = can_use.args.type_at(1);
-            if !can_use.args.type_at(2).is_unit() {
-                return None;
-            }
-            let (consumer_did, _) = marker_to_consumer(tcx, marker)?;
-            if tcx.generics_of(consumer_did).own_params.len() <= 1 {
-                return None;
-            }
-            let parameters = checkable_parameters(tcx, impl_did, can_use.def_id, context, marker);
-            if parameters.is_empty() {
-                return None;
-            }
-            return Some(StructuralMistake::CheckAtUnitParameters {
-                context: with_forced_trimmed_paths!(context.to_string()),
-                entry: tcx.sess.source_map().span_to_snippet(primary_span).ok()?,
-                parameters,
-                form: check_form(tcx, trait_did),
-            });
-        }
+    let check = check_impls_at(tcx, primary_span, can_use_component_supertrait).next()?;
+    let can_use = check.asserted.as_trait_clause()?.skip_binder().trait_ref;
+    // `CanUseComponent<Marker, Params>`, with args `[Context, Marker, Params]`.
+    let context = can_use.self_ty();
+    let marker = can_use.args.type_at(1);
+    if !can_use.args.type_at(2).is_unit() {
+        return None;
     }
-    None
+    let (consumer_did, _) = marker_to_consumer(tcx, marker)?;
+    if tcx.generics_of(consumer_did).own_params.len() <= 1 {
+        return None;
+    }
+    let parameters = checkable_parameters(tcx, check.impl_did, can_use.def_id, context, marker);
+    if parameters.is_empty() {
+        return None;
+    }
+    Some(StructuralMistake::CheckAtUnitParameters {
+        context: with_forced_trimmed_paths!(context.to_string()),
+        entry: tcx.sess.source_map().span_to_snippet(primary_span).ok()?,
+        parameters,
+        form: check_form(tcx, check.trait_did),
+    })
 }
 
 /// The parameters the context can be checked at for `marker`: the `Params` of each `IsProviderFor`

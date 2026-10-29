@@ -6,7 +6,7 @@ use rustc_span::Span;
 
 use crate::resolve::anchor::consumer_obligation;
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::{can_use_component_supertrait, impl_self_ty_span, marker_to_consumer};
+use crate::resolve::query::{can_use_component_supertrait, check_impls_at, marker_to_consumer};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of the check failure whose diagnostic caret sits at `primary_span`,
@@ -19,33 +19,16 @@ use crate::resolve::walk::resolve_leaves;
 /// `IsProviderFor` scaffolding, so the resolution does not depend on `IsProviderFor`.
 pub fn resolve_check_failure(cx: ResolveCtx<'_, '_>, primary_span: Span) -> Option<Resolved> {
     let tcx = cx.tcx;
-    for trait_did in tcx.all_traits_including_private() {
-        let Some(super_clause) = can_use_component_supertrait(tcx, trait_did) else {
+    // The entry the error is about is the check impl whose `Self` type carries the caret's span.
+    for check in check_impls_at(tcx, primary_span, can_use_component_supertrait) {
+        let Some(can_use) = check.asserted.as_trait_clause() else {
             continue;
         };
-
-        for impl_did in tcx.all_impls(trait_did) {
-            // The entry the error is about is the impl whose `Self` type carries the caret's
-            // span (the macro re-spans the context type onto the entry, so they coincide).
-            if impl_self_ty_span(tcx, impl_did) != Some(primary_span) {
-                continue;
-            }
-
-            let trait_ref = tcx
-                .impl_trait_ref(impl_did)
-                .instantiate_identity()
-                .skip_norm_wip();
-            let concrete = super_clause.instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref));
-
-            let Some(can_use) = concrete.as_trait_clause() else {
-                continue;
-            };
-            let Some(top) = can_use_to_consumer_obligation(tcx, can_use) else {
-                continue;
-            };
-            if let Some(resolved) = resolve_leaves(cx, top) {
-                return Some(resolved);
-            }
+        let Some(top) = can_use_to_consumer_obligation(tcx, can_use) else {
+            continue;
+        };
+        if let Some(resolved) = resolve_leaves(cx, top) {
+            return Some(resolved);
         }
     }
     None
@@ -57,23 +40,8 @@ pub(crate) fn check_entry_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     primary_span: Span,
 ) -> Option<ty::PolyTraitClause<'tcx>> {
-    for trait_did in tcx.all_traits_including_private() {
-        let Some(super_clause) = can_use_component_supertrait(tcx, trait_did) else {
-            continue;
-        };
-        for impl_did in tcx.all_impls(trait_did) {
-            if impl_self_ty_span(tcx, impl_did) != Some(primary_span) {
-                continue;
-            }
-            let trait_ref = tcx
-                .impl_trait_ref(impl_did)
-                .instantiate_identity()
-                .skip_norm_wip();
-            let concrete = super_clause.instantiate_supertrait(tcx, ty::Binder::dummy(trait_ref));
-            return can_use_to_consumer_obligation(tcx, concrete.as_trait_clause()?);
-        }
-    }
-    None
+    let check = check_impls_at(tcx, primary_span, can_use_component_supertrait).next()?;
+    can_use_to_consumer_obligation(tcx, check.asserted.as_trait_clause()?)
 }
 
 /// Turn a `Ctx: CanUseComponent<Marker, Params>` assertion into the real consumer obligation

@@ -14,7 +14,8 @@
 //! - **Syntactic type reads** the call-site anchors and the detectors share: [`lower_hir_ty`] and
 //!   [`expr_written_ty`], and the unification of a call's arguments with its callee's declared
 //!   inputs, [`unify_call_inputs`](fn@unify_call_inputs).
-//! - **Lookups** several stages make: [`can_use_component_supertrait`], [`impl_self_ty_span`],
+//! - **Lookups** several stages make: [`check_impls_at`] over [`can_use_component_supertrait`] and
+//!   [`impl_self_ty_span`],
 //!   [`import_path`](fn@import_path), [`owner_has_impl_of`](fn@owner_has_impl_of), and
 //!   [`traits_with_method`](fn@traits_with_method).
 //!
