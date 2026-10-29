@@ -6,7 +6,7 @@
 //! surviving `DelegateComponent` half's conflict — recovered by querying the trait solver — to
 //! [`plan_wiring_conflict`], which words it into the replacement header. Keeping the model and
 //! wording here, in owned `String` form, is what makes them unit-testable without a compiler;
-//! the driver's `resolve::conflict` module fills the model in from the live `TyCtxt`.
+//! the driver's `detect::conflict` module fills the model in from the live `TyCtxt`.
 //!
 //! The wording names *which keys* collide, in the terms the programmer wrote them (an `@`-path
 //! renders in bare `@a.b` notation, not wrapped in `Path!(…)`), so the headline is the fix

@@ -13,7 +13,7 @@
 //! This model records the trait the body used but did not declare, and
 //! [`plan_undeclared_trait`] words it into the `[CGP-E030]` header that replaces the raw
 //! message, with [`undeclared_trait_help`] carrying the `#[uses(…)]` fix. The driver's
-//! `resolve::undeclared` module fills the model in from the live `TyCtxt`; keeping the wording here
+//! `detect::undeclared` module fills the model in from the live `TyCtxt`; keeping the wording here
 //! in owned `String` form makes it unit-testable without a compiler.
 
 use crate::code::UNDECLARED_TRAIT;

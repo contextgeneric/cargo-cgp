@@ -19,7 +19,7 @@
 //!
 //! This model records which mistake it is, and [`plan_cgp_impl_misuse`] words it into the coded
 //! header ([`CONSUMER_TRAIT_IN_PROVIDER_IMPL`] / [`NON_CGP_TRAIT_IN_CGP_IMPL`]) that replaces the raw
-//! message, with [`cgp_impl_misuse_help`] carrying the fix. The driver's `resolve::cgp_impl_misuse`
+//! message, with [`cgp_impl_misuse_help`] carrying the fix. The driver's `detect::cgp_impl_misuse`
 //! module fills the model in from the live `TyCtxt` using the consumer- and provider-trait
 //! fingerprints; keeping the wording here in owned `String` form makes it unit-testable without a
 //! compiler.
