@@ -5,7 +5,7 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
-use crate::resolve::query::{consumer_provider_trait, is_provider_trait, written_order};
+use crate::resolve::query::{consumer_provider_trait, is_provider_trait, written_order_clauses};
 
 /// The requirements the provider of `provider_ref` states in an impl it wrote with the component's
 /// consumer trait in its `#[cgp_impl]` header, the mistake `[CGP-E032]` reports: that impl's
@@ -69,24 +69,10 @@ pub fn misdirected_impl_clauses<'tcx>(
     {
         return None;
     }
-    let generic = tcx.clauses_of(impl_did);
-    let instantiated: Vec<ty::Clause<'tcx>> = generic
-        .instantiate(tcx, args)
-        .into_iter()
-        .map(|(clause, _)| clause.skip_norm_wip())
-        .collect();
-    let ordered: Vec<ty::Clause<'tcx>> = if instantiated.len() == generic.clauses.len() {
-        written_order(tcx, generic.clauses)
-            .into_iter()
-            .map(|index| instantiated[index])
-            .collect()
-    } else {
-        instantiated
-    };
     Some(
-        ordered
+        written_order_clauses(tcx, impl_did, args)
             .into_iter()
-            .map(|clause| tcx.erase_and_anonymize_regions(clause))
+            .map(|clause| tcx.erase_and_anonymize_regions(clause.skip_norm_wip()))
             .collect(),
     )
 }

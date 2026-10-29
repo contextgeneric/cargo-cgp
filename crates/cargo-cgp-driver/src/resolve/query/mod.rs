@@ -6,7 +6,9 @@
 //!   [`impl_where_obligations`], [`projection_mismatch`](fn@projection_mismatch),
 //!   [`projected_type`](fn@projected_type), and the placeholder folders such as
 //!   [`unknowns_to_placeholders`].
-//! - **Readers of an impl's clauses:** [`written_order`](fn@written_order) and
+//! - **The impl match** every reader of a matched impl shares, [`match_impl`] over
+//!   [`fresh_impl_ref`], and the **readers of an impl's clauses:**
+//!   [`written_order`](fn@written_order), [`written_order_clauses`], and
 //!   [`misdirected_impl_clauses`].
 //! - **Renderings of a wiring key**, its path, and its provider: [`describe_key`] and its siblings.
 //! - **Syntactic type reads** the call-site anchors and the detectors share: [`lower_hir_ty`] and

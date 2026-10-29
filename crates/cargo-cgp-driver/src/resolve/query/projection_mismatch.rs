@@ -1,13 +1,12 @@
 //! Surfacing an associated-type mismatch the trait-clause walk cannot see.
 
 use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized};
-use rustc_span::DUMMY_SP;
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode};
 use rustc_span::def_id::DefId;
-use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
+use rustc_trait_selection::traits::ObligationCtxt;
 
 use crate::config::{CGP_FIELD_CRATE, HAS_FIELD_TRAIT};
-use crate::resolve::query::{holds_projection, impls_concrete_first, is_cgp_item};
+use crate::resolve::query::{holds_projection, impls_concrete_first, is_cgp_item, match_impl};
 
 /// An unmet associated-type projection carried by the impl that would satisfy an obligation —
 /// `<Ctx as HasField<Symbol!("height")>>::Value == f64`, or `<Ctx as HasErrorType>::Error ==
@@ -37,10 +36,9 @@ pub struct ProjectionMismatch<'tcx> {
 /// specific classification and the one whose leaf can name the struct field to fix; the walk reports
 /// a single leaf per node either way, as it always has.
 ///
-/// Mirrors [`impl_where_obligations`](super::impl_where_obligations)'s next-solver-safe impl match
-/// (`fresh_args_for_item` + `eq`), but keeps the projection predicates rather than the trait ones,
-/// and leaves each projection un-normalized so its `<.. as Trait>::Assoc` alias survives for the
-/// hold check.
+/// Matches each impl as [`impl_where_obligations`](super::impl_where_obligations) does
+/// ([`match_impl`]), but keeps the projection predicates rather than the trait ones, and leaves
+/// each projection un-normalized so its `<.. as Trait>::Assoc` alias survives for the hold check.
 pub fn projection_mismatch<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitClause<'tcx>,
@@ -68,36 +66,9 @@ fn impl_projection_mismatch<'tcx>(
     pred: ty::PolyTraitClause<'tcx>,
     impl_did: DefId,
 ) -> Option<Option<ProjectionMismatch<'tcx>>> {
-    let param_env = ty::ParamEnv::empty();
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
     let ocx = ObligationCtxt::new(&infcx);
-
-    // Instantiate any higher-ranked binder with placeholders before relating, for the same reason
-    // as `impl_where_obligations`: a `skip_binder()`'d escaping bound var fed into `ocx.eq` panics
-    // rustc's generalizer. A no-op for a binder-free predicate.
-    let obligation_ref = infcx.enter_forall_and_leak_universe(pred.map_bound(|p| p.trait_ref));
-
-    let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
-    let impl_ref = tcx
-        .impl_trait_ref(impl_did)
-        .instantiate(tcx, impl_args)
-        .skip_norm_wip();
-    let impl_ref = ocx.normalize(
-        &ObligationCause::dummy(),
-        param_env,
-        Unnormalized::new_wip(impl_ref),
-    );
-    if ocx
-        .eq(
-            &ObligationCause::dummy(),
-            param_env,
-            obligation_ref,
-            impl_ref,
-        )
-        .is_err()
-    {
-        return None;
-    }
+    let impl_args = match_impl(&ocx, pred.map_bound(|p| p.trait_ref), impl_did)?;
 
     // Keep each projection un-normalized so its `<.. as Trait>::Assoc` alias survives;
     // `skip_norm_wip` unwraps without normalizing, unlike the `ocx.normalize` the trait-clause walk

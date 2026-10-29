@@ -1,11 +1,10 @@
 //! Reading the type a requirement gives a field, from the impl that requires it.
 
 use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized};
-use rustc_span::DUMMY_SP;
-use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
+use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt, TypingMode};
+use rustc_trait_selection::traits::ObligationCtxt;
 
-use crate::resolve::query::{impls_concrete_first, misdirected_impl_clauses};
+use crate::resolve::query::{impls_concrete_first, match_impl, misdirected_impl_clauses};
 
 /// The type the impl satisfying `parent` requires `leaf` (a `HasField` bound) to project, read off
 /// the associated-type constraint beside the bound (the `f64` of
@@ -26,26 +25,13 @@ pub fn required_field_type<'tcx>(
     if let Some(clauses) = misdirected_impl_clauses(tcx, parent) {
         return required_type_in(tcx, clauses, leaf);
     }
-    let param_env = ty::ParamEnv::empty();
     for impl_did in impls_concrete_first(tcx, parent.def_id) {
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
-        let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
-        let impl_ref = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate(tcx, impl_args)
-            .skip_norm_wip();
-        let impl_ref = ocx.normalize(
-            &ObligationCause::dummy(),
-            param_env,
-            Unnormalized::new_wip(impl_ref),
-        );
-        if ocx
-            .eq(&ObligationCause::dummy(), param_env, parent, impl_ref)
-            .is_err()
-        {
+        // `parent` carries no bound variables (checked above), so its binder is a dummy.
+        let Some(impl_args) = match_impl(&ocx, ty::Binder::dummy(parent), impl_did) else {
             continue;
-        }
+        };
         let clauses = tcx
             .clauses_of(impl_did)
             .instantiate(tcx, impl_args)

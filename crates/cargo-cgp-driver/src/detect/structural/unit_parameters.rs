@@ -12,9 +12,9 @@ use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_infer::traits::Obligation;
 use rustc_middle::ty::print::with_forced_trimmed_paths;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode};
+use rustc_span::Span;
 use rustc_span::def_id::DefId;
 use rustc_span::hygiene::{ExpnKind, MacroKind};
-use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
@@ -22,7 +22,8 @@ use crate::config::{
     CGP_COMPONENT_CRATE, DELEGATE_AND_CHECK_COMPONENTS_MACRO, IS_PROVIDER_FOR_TRAIT,
 };
 use crate::resolve::query::{
-    can_use_component_supertrait, find_cgp_trait, impl_self_ty_span, marker_to_consumer,
+    can_use_component_supertrait, find_cgp_trait, fresh_impl_ref, impl_self_ty_span,
+    marker_to_consumer,
 };
 
 /// Recognize an `E0277` at `primary_span` as a check entry that names no parameters for a component
@@ -98,11 +99,7 @@ fn checkable_parameters<'tcx>(
     for impl_did in tcx.all_impls(is_provider_for) {
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
-        let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
-        let impl_ref = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate(tcx, impl_args)
-            .skip_norm_wip();
+        let (_, impl_ref) = fresh_impl_ref(&infcx, impl_did);
         // `IsProviderFor<Component, Context, Params>`, with args `[Provider, Component, Context,
         // Params]`.
         if ocx

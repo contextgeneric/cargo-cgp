@@ -3,15 +3,15 @@
 use cargo_cgp_error_processing::{Causes, ChainNode, DepNode, Leaf, Resolved};
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::print::PrintTraitRefExt as _;
-use rustc_middle::ty::{
-    self, TyCtxt, TypeVisitableExt as _, TypingMode, Unnormalized, Upcast as _,
-};
-use rustc_span::{DUMMY_SP, Span};
-use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
+use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _, TypingMode, Upcast as _};
+use rustc_span::Span;
+use rustc_trait_selection::traits::ObligationCtxt;
 
 use crate::resolve::anchor::{enclosing_trait_impls, is_about_impl};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::{consumer_provider_trait, holds, is_context_adt, is_provider_trait};
+use crate::resolve::query::{
+    consumer_provider_trait, holds, is_context_adt, is_provider_trait, match_impl,
+};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait for
@@ -201,48 +201,20 @@ fn consumer_handoff_causes<'tcx>(
 /// which is exactly why the ordinary
 /// [`impl_where_obligations`](crate::resolve::query::impl_where_obligations) (which normalizes,
 /// turning the projection into an inference variable it then drops) cannot surface it. `None` when
-/// no impl matches. Mirrors `impl_where_obligations`'s next-solver-safe impl match, but reads the
-/// impl's predicates un-normalized so an associated-type `Self` survives long enough to read its
-/// base.
+/// no impl matches. Matches each impl as `impl_where_obligations` does ([`match_impl`]), in the
+/// order the compiler lists them, but reads the impl's predicates un-normalized so an
+/// associated-type `Self` survives long enough to read its base.
 fn wrapper_chain_children<'tcx>(
     tcx: TyCtxt<'tcx>,
     obligation: ty::PolyTraitClause<'tcx>,
 ) -> Option<Vec<ty::PolyTraitClause<'tcx>>> {
-    let param_env = ty::ParamEnv::empty();
-
     for impl_did in tcx.all_impls(obligation.def_id()) {
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
-
-        // Instantiate any higher-ranked binder with placeholders before relating, so a `for<'a>`
-        // bound in the wrapper chain does not feed an escaping bound var into `ocx.eq` and panic
-        // rustc's generalizer (see
-        // [`impl_where_obligations`](crate::resolve::query::impl_where_obligations)). A no-op for
-        // a binder-free obligation.
-        let obligation_ref =
-            infcx.enter_forall_and_leak_universe(obligation.map_bound(|p| p.trait_ref));
-
-        let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
-        let impl_ref = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate(tcx, impl_args)
-            .skip_norm_wip();
-        let impl_ref = ocx.normalize(
-            &ObligationCause::dummy(),
-            param_env,
-            Unnormalized::new_wip(impl_ref),
-        );
-        if ocx
-            .eq(
-                &ObligationCause::dummy(),
-                param_env,
-                obligation_ref,
-                impl_ref,
-            )
-            .is_err()
-        {
+        let Some(impl_args) = match_impl(&ocx, obligation.map_bound(|p| p.trait_ref), impl_did)
+        else {
             continue;
-        }
+        };
 
         let mut children = Vec::new();
         for (predicate, _) in tcx.clauses_of(impl_did).instantiate(tcx, impl_args) {

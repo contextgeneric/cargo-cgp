@@ -3,13 +3,12 @@
 use cargo_cgp_error_processing::Leaf;
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypingMode};
-use rustc_span::DUMMY_SP;
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
-use crate::resolve::query::is_provider_trait;
+use crate::resolve::query::{fresh_impl_ref, is_provider_trait};
 
 /// The [`Leaf::ProviderForOtherArguments`] behind `parent`, a provider-trait obligation the walk
 /// followed into the delegation blanket because no impl of the provider itself matches it: the one
@@ -80,13 +79,7 @@ pub fn provider_for_other_arguments<'tcx>(
     let mut provided: Vec<String> = Vec::new();
     for &impl_did in &impls {
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
-        let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
-        let written = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate(tcx, impl_args)
-            .skip_norm_wip()
-            .args
-            .type_at(index);
+        let written = fresh_impl_ref(&infcx, impl_did).1.args.type_at(index);
         let written = render_ty(tcx, tcx.erase_and_anonymize_regions(written));
         if !provided.contains(&written) {
             provided.push(written);
@@ -107,11 +100,7 @@ pub fn provider_for_other_arguments<'tcx>(
 fn accepts<'tcx>(tcx: TyCtxt<'tcx>, impl_did: DefId, index: usize, required: Ty<'tcx>) -> bool {
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
     let ocx = ObligationCtxt::new(&infcx);
-    let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
-    let impl_ref = tcx
-        .impl_trait_ref(impl_did)
-        .instantiate(tcx, impl_args)
-        .skip_norm_wip();
+    let (_, impl_ref) = fresh_impl_ref(&infcx, impl_did);
     ocx.eq(
         &ObligationCause::dummy(),
         ty::ParamEnv::empty(),

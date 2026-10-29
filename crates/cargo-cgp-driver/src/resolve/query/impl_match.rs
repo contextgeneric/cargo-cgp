@@ -1,8 +1,8 @@
 //! Finding the impl that satisfies an obligation and reading its dependencies.
 
-use rustc_infer::infer::TyCtxtInferExt;
+use rustc_infer::infer::{InferCtxt, TyCtxtInferExt};
 use rustc_infer::traits::Obligation;
-use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized};
+use rustc_middle::ty::{self, GenericArgsRef, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized};
 use rustc_span::DUMMY_SP;
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
@@ -12,9 +12,8 @@ use crate::resolve::query::{resolve_fixed_projections, unknowns_to_placeholders,
 /// The instantiated `where`-clause trait obligations of the impl that would satisfy `obligation`
 /// — its direct dependencies — or `None` when no impl matches at all (so the caller can treat the
 /// obligation as a terminal leaf). Found by unifying `obligation` with each candidate impl's trait
-/// ref (the next-solver-safe `fresh_args_for_item` + `eq` dance `SelectionContext` is unavailable
-/// for), then instantiating and normalizing that impl's predicates. `Some(vec![])` means an impl
-/// matched but carries no trait-clause `where` obligations.
+/// ref ([`match_impl`]), then instantiating and normalizing that impl's predicates. `Some(vec![])`
+/// means an impl matched but carries no trait-clause `where` obligations.
 ///
 /// A **concrete-`Self`** impl (one whose declared `Self` is a struct/enum, like the `#[cgp_provider]`
 /// impl `impl ValueDeserializer<…> for DeserializeRecordFields`) is preferred over a **blanket** one
@@ -34,58 +33,13 @@ pub fn impl_where_obligations<'tcx>(
     for impl_did in impls_concrete_first(tcx, obligation.def_id()) {
         let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let ocx = ObligationCtxt::new(&infcx);
-
-        // Instantiate the obligation's binder with placeholders in *this* infcx before it is
-        // related. A higher-ranked obligation — `Self: for<'a> CanSerializeValue<&'a Value>`, the
-        // shape a recursive provider like `SerializeIterator` carries — would otherwise reach `ocx.eq`
-        // through `skip_binder()` with the `'a` bound var still escaping, tripping the inference
-        // generalizer's `!source_term.has_escaping_bound_vars()` assertion and panicking rustc.
-        // Placeholders (rigid, universal regions) rather than fresh inference vars are what let a
-        // *nested* higher-ranked hop resolve: a projection through the bound lifetime (`<&'a Value as
-        // IntoIterator>::Item`) normalizes deterministically against a placeholder region but stalls
-        // against an unconstrained inference region. The fast path makes this a no-op for an ordinary
-        // (binder-free) obligation, so only the higher-ranked case changes.
-        let obligation_ref =
-            infcx.enter_forall_and_leak_universe(obligation.map_bound(|p| p.trait_ref));
-
-        let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
-        let impl_ref = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate(tcx, impl_args)
-            .skip_norm_wip();
-        let impl_ref = ocx.normalize(
-            &ObligationCause::dummy(),
-            param_env,
-            Unnormalized::new_wip(impl_ref),
-        );
-        if ocx
-            .eq(
-                &ObligationCause::dummy(),
-                param_env,
-                obligation_ref,
-                impl_ref,
-            )
-            .is_err()
-        {
+        let Some(impl_args) = match_impl(&ocx, obligation.map_bound(|p| p.trait_ref), impl_did)
+        else {
             continue;
-        }
+        };
 
         // Read the clauses in written order, so the causes they lead to are reported in it.
-        let generic = tcx.clauses_of(impl_did);
-        let instantiated: Vec<Unnormalized<ty::Clause<'tcx>>> = generic
-            .instantiate(tcx, impl_args)
-            .into_iter()
-            .map(|(clause, _)| clause)
-            .collect();
-        let raw: Vec<Unnormalized<ty::Clause<'tcx>>> =
-            if instantiated.len() == generic.clauses.len() {
-                written_order(tcx, generic.clauses)
-                    .into_iter()
-                    .map(|index| instantiated[index])
-                    .collect()
-            } else {
-                instantiated
-            };
+        let raw = written_order_clauses(tcx, impl_did, impl_args);
         // Register every predicate so the solver can propagate the constraints that *do* hold onto
         // the impl's otherwise-free parameters, before any single one is read. A record deserializer's
         // `Record: HasOptionalBuilder<Builder = Builder>` clause pins the free `Builder` param to the
@@ -155,6 +109,84 @@ pub fn impl_where_obligations<'tcx>(
         return Some(obligations);
     }
     None
+}
+
+/// The arguments of the impl `impl_did` when its trait ref unifies with `obligation` in `ocx`'s
+/// inference context, or `None` when it does not. The impl's parameters start as fresh variables
+/// ([`fresh_impl_ref`]) and its trait ref is normalized before it is related; this is the
+/// next-solver-safe match `SelectionContext` is unavailable for, and each caller reads the matched
+/// impl's clauses its own way.
+///
+/// The obligation's binder is instantiated with placeholders in this inference context first. A
+/// higher-ranked obligation (`Self: for<'a> CanSerializeValue<&'a Value>`, the shape a recursive
+/// provider like `SerializeIterator` carries) would otherwise reach `ocx.eq` through
+/// `skip_binder()` with the `'a` bound var still escaping, tripping the inference generalizer's
+/// `!source_term.has_escaping_bound_vars()` assertion and panicking rustc. Placeholders (rigid,
+/// universal regions) rather than fresh inference vars are what let a *nested* higher-ranked hop
+/// resolve: a projection through the bound lifetime (`<&'a Value as IntoIterator>::Item`)
+/// normalizes deterministically against a placeholder region but stalls against an unconstrained
+/// inference region. The fast path makes this a no-op for a binder-free obligation. The binder is
+/// entered before the impl's variables are made, so they live in the placeholders' universe.
+pub fn match_impl<'tcx>(
+    ocx: &ObligationCtxt<'_, 'tcx>,
+    obligation: ty::PolyTraitRef<'tcx>,
+    impl_did: DefId,
+) -> Option<GenericArgsRef<'tcx>> {
+    let param_env = ty::ParamEnv::empty();
+    let obligation_ref = ocx.infcx.enter_forall_and_leak_universe(obligation);
+    let (impl_args, impl_ref) = fresh_impl_ref(ocx.infcx, impl_did);
+    let impl_ref = ocx.normalize(
+        &ObligationCause::dummy(),
+        param_env,
+        Unnormalized::new_wip(impl_ref),
+    );
+    ocx.eq(
+        &ObligationCause::dummy(),
+        param_env,
+        obligation_ref,
+        impl_ref,
+    )
+    .ok()?;
+    Some(impl_args)
+}
+
+/// The impl `impl_did`'s trait ref with its parameters as fresh variables of `infcx`, and those
+/// variables, unnormalized.
+pub fn fresh_impl_ref<'tcx>(
+    infcx: &InferCtxt<'tcx>,
+    impl_did: DefId,
+) -> (GenericArgsRef<'tcx>, ty::TraitRef<'tcx>) {
+    let tcx = infcx.tcx;
+    let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
+    let impl_ref = tcx
+        .impl_trait_ref(impl_did)
+        .instantiate(tcx, impl_args)
+        .skip_norm_wip();
+    (impl_args, impl_ref)
+}
+
+/// The clauses of `impl_did` instantiated with `args`, in the order the program wrote them
+/// ([`written_order`](fn@written_order)), or in the compiler's order when the instantiation does
+/// not keep one clause per written clause.
+pub fn written_order_clauses<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    impl_did: DefId,
+    args: GenericArgsRef<'tcx>,
+) -> Vec<Unnormalized<'tcx, ty::Clause<'tcx>>> {
+    let generic = tcx.clauses_of(impl_did);
+    let instantiated: Vec<Unnormalized<ty::Clause<'tcx>>> = generic
+        .instantiate(tcx, args)
+        .into_iter()
+        .map(|(clause, _)| clause)
+        .collect();
+    if instantiated.len() == generic.clauses.len() {
+        written_order(tcx, generic.clauses)
+            .into_iter()
+            .map(|index| instantiated[index])
+            .collect()
+    } else {
+        instantiated
+    }
 }
 
 /// Every impl of `trait_did`, with the concrete-`Self` impls ahead of the blanket (param-`Self`)
