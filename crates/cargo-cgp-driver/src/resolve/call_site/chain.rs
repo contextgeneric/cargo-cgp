@@ -12,7 +12,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 use crate::resolve::call_site::receiver_context;
 use crate::resolve::data::is_data_operation;
 use crate::resolve::query::{
-    expr_written_ty, lower_hir_ty, peel_hir_refs, trait_fns_named, unify_call_inputs,
+    expr_written_ty, lower_hir_ty, peel_hir_refs, trait_items_named, unify_call_inputs,
 };
 
 /// The type of `expr` when it is a value one of CGP's extensible-data operations produces, or a
@@ -53,7 +53,7 @@ pub(crate) fn data_fns_named(
     name: Symbol,
     method_call: bool,
 ) -> Vec<(DefId, DefId)> {
-    trait_fns_named(tcx, name, |item| match item.kind {
+    trait_items_named(tcx, name, |item| match item.kind {
         ty::AssocKind::Fn { has_self, .. } => has_self || !method_call,
         _ => false,
     })

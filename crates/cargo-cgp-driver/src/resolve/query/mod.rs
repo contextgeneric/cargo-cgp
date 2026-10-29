@@ -17,7 +17,7 @@
 //!   [`expr_written_ty`].
 //! - **Lookups** several stages make: [`check_impls_at`] over [`can_use_component_supertrait`] and
 //!   [`impl_self_ty_span`], [`import_path`](fn@import_path),
-//!   [`owner_has_impl_of`](fn@owner_has_impl_of), [`trait_fns_named`](fn@trait_fns_named), and
+//!   [`owner_has_impl_of`](fn@owner_has_impl_of), [`trait_items_named`](fn@trait_items_named), and
 //!   [`traits_with_method`](fn@traits_with_method).
 //!
 //! The resolver's other modules and the class detectors import from here, and nothing here imports
@@ -34,7 +34,7 @@ mod misdirected;
 mod owner_has_impl_of;
 mod projected_type;
 mod projection_mismatch;
-mod trait_fns_named;
+mod trait_items_named;
 mod traits_with_method;
 mod unify_call_inputs;
 mod unknowns;
@@ -52,7 +52,7 @@ pub use misdirected::*;
 pub use owner_has_impl_of::*;
 pub use projected_type::*;
 pub use projection_mismatch::*;
-pub use trait_fns_named::*;
+pub use trait_items_named::*;
 pub use traits_with_method::*;
 pub use unify_call_inputs::*;
 pub use unknowns::*;

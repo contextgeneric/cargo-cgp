@@ -35,7 +35,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::query::{
     expr_written_ty, is_blanket_trait, is_consumer_trait, is_provider_trait, lower_hir_ty,
-    trait_fns_named, traits_with_method, unify_call_inputs,
+    trait_items_named, traits_with_method, unify_call_inputs,
 };
 
 /// Recognize an undeclared-trait failure and recover the trait to declare, or
@@ -260,7 +260,7 @@ fn names_context(
 fn traits_with_assoc_fn(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId, DefId)> {
     let mut consumers = Vec::new();
     let mut blanket_traits = Vec::new();
-    for (trait_did, method_did) in trait_fns_named(tcx, method, |item| {
+    for (trait_did, method_did) in trait_items_named(tcx, method, |item| {
         matches!(item.kind, ty::AssocKind::Fn { .. })
     }) {
         if is_consumer_trait(tcx, trait_did) {

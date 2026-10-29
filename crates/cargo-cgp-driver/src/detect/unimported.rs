@@ -19,7 +19,9 @@ use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
-use crate::resolve::query::{abstract_type_component_marker, is_consumer_trait, is_provider_trait};
+use crate::resolve::query::{
+    abstract_type_component_marker, is_consumer_trait, is_provider_trait, trait_items_named,
+};
 
 /// An abstract type a CGP definition uses but does not import, with the items that recognize a
 /// later report of the same mistake.
@@ -124,13 +126,9 @@ pub fn context_param_span(tcx: TyCtxt<'_>, impl_did: LocalDefId) -> Option<Span>
 /// writes it in full. `None` when there is none, or more than one.
 pub fn abstract_type_trait(tcx: TyCtxt<'_>, name: Symbol) -> Option<DefId> {
     let mut found = None;
-    for trait_did in tcx.all_traits_including_private() {
-        let declares = tcx
-            .associated_items(trait_did)
-            .filter_by_name_unhygienic(name)
-            .any(|item| item.kind.tag() == ty::AssocTag::Type);
-        if !declares
-            || tcx.generics_of(trait_did).own_params.len() != 1
+    for (trait_did, _) in trait_items_named(tcx, name, |item| item.kind.tag() == ty::AssocTag::Type)
+    {
+        if tcx.generics_of(trait_did).own_params.len() != 1
             || abstract_type_component_marker(tcx, trait_did).is_none()
         {
             continue;

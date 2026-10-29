@@ -27,7 +27,7 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::detect::undeclared::{argument_ty, enclosing_trait_impl};
-use crate::resolve::query::{is_provider_trait, unify_call_inputs};
+use crate::resolve::query::{is_provider_trait, trait_items_named, unify_call_inputs};
 
 /// Recognize a missing-`#[use_provider]` failure and recover the inner provider and the provider
 /// trait to import it as, or `None` when the diagnostic is not one. Everything is keyed on
@@ -74,9 +74,11 @@ pub fn detect_missing_use_provider(
     {
         impl_trait_did
     } else {
-        let mut candidates = tcx.all_traits_including_private().filter(|&trait_did| {
-            is_provider_trait(tcx, trait_did) && trait_has_method(tcx, trait_did, method)
-        });
+        let mut candidates = trait_items_named(tcx, method, |item| {
+            matches!(item.kind, ty::AssocKind::Fn { .. })
+        })
+        .map(|(trait_did, _)| trait_did)
+        .filter(|&trait_did| is_provider_trait(tcx, trait_did));
         let only = candidates.next()?;
         if candidates.next().is_some() {
             return None;
