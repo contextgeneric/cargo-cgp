@@ -27,7 +27,7 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::detect::undeclared::{argument_ty, enclosing_trait_impl};
-use crate::resolve::query::is_provider_trait;
+use crate::resolve::query::{is_provider_trait, unify_call_inputs};
 
 /// Recognize a missing-`#[use_provider]` failure and recover the inner provider and the provider
 /// trait to import it as, or `None` when the diagnostic is not one. Everything is keyed on
@@ -151,17 +151,10 @@ fn written_provider_bound<'tcx>(
     let cause = ObligationCause::dummy();
     let _ = ocx.eq(&cause, param_env, method_args.type_at(0), inner);
     let _ = ocx.eq(&cause, param_env, method_args.type_at(1), context);
-    let sig = tcx
-        .fn_sig(method_did)
-        .instantiate(tcx, method_args)
-        .skip_norm_wip();
-    let sig = infcx.enter_forall_and_leak_universe(sig);
-    for (arg, declared) in std::iter::zip(args, sig.inputs()) {
-        if let Some(written) = argument_ty(&infcx, arg) {
-            // Best effort: an argument that does not unify leaves its parameter named.
-            let _ = ocx.eq(&cause, param_env, *declared, written);
-        }
-    }
+    // An argument that does not unify leaves its parameter named.
+    unify_call_inputs(&ocx, method_did, method_args, args, 0, |arg| {
+        argument_ty(&infcx, arg)
+    });
     let _ = ocx.try_evaluate_obligations();
 
     let mut unresolved = Vec::new();

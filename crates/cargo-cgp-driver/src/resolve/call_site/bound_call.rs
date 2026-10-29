@@ -14,7 +14,7 @@ use crate::resolve::call_site::{data_expr_ty, declared_binding_ty, is_about_call
 use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::query::{
     WrittenArg, carries_wiring, expr_written_ty, holds, is_blanket_trait, is_consumer_trait,
-    is_context_adt, lower_hir_ty, unknowns_to_placeholders, written_args,
+    is_context_adt, lower_hir_ty, unify_call_inputs, unknowns_to_placeholders, written_args,
 };
 use crate::resolve::walk::resolve_leaves;
 
@@ -124,16 +124,9 @@ fn failing_context_bounds<'tcx>(
             }
         }
     }
-    let sig = tcx
-        .fn_sig(call.fn_did)
-        .instantiate(tcx, fn_args)
-        .skip_norm_wip();
-    let sig = infcx.enter_forall_and_leak_universe(sig);
-    for (arg, declared) in std::iter::zip(call.args, sig.inputs()) {
-        if let Some(written) = arg_ty(&infcx, arg) {
-            let _ = ocx.eq(&ObligationCause::dummy(), param_env, *declared, written);
-        }
-    }
+    unify_call_inputs(&ocx, call.fn_did, fn_args, call.args, 0, |arg| {
+        arg_ty(&infcx, arg)
+    });
     let _ = ocx.try_evaluate_obligations();
 
     tcx.clauses_of(call.fn_did)

@@ -35,7 +35,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::query::{
     expr_written_ty, is_blanket_trait, is_consumer_trait, is_provider_trait, lower_hir_ty,
-    traits_with_method,
+    traits_with_method, unify_call_inputs,
 };
 
 /// Recognize an undeclared-trait failure and recover the trait to declare, or
@@ -311,22 +311,12 @@ fn written_bound<'tcx>(
         method_args.type_at(0),
         context,
     );
-    // The declared inputs, their late-bound lifetimes instantiated as placeholders first, since
-    // relating a type with an escaping bound var panics the generalizer.
-    let sig = tcx
-        .fn_sig(method_did)
-        .instantiate(tcx, method_args)
-        .skip_norm_wip();
-    let sig = infcx.enter_forall_and_leak_universe(sig);
     // A method's `self` receiver is the first declared input and is not among the call's arguments.
-    let inputs = sig.inputs().iter().skip(usize::from(has_self));
-    for (arg, declared) in std::iter::zip(args, inputs) {
-        if let Some(written) = argument_ty(&infcx, arg) {
-            // Best effort: an argument that does not unify (a coerced one) leaves its parameter
-            // named.
-            let _ = ocx.eq(&ObligationCause::dummy(), param_env, *declared, written);
-        }
-    }
+    // An argument that does not unify (a coerced one) leaves its parameter named.
+    let skip = usize::from(has_self);
+    unify_call_inputs(&ocx, method_did, method_args, args, skip, |arg| {
+        argument_ty(&infcx, arg)
+    });
     let _ = ocx.try_evaluate_obligations();
 
     let mut unresolved = Vec::new();

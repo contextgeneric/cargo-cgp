@@ -8,7 +8,7 @@ use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::call_site::data_expr_ty;
-use crate::resolve::query::{expr_written_ty, unknowns_to_placeholders};
+use crate::resolve::query::{expr_written_ty, unify_call_inputs, unknowns_to_placeholders};
 
 /// How a call passes its arguments, and how their types are read.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,30 +59,24 @@ pub(crate) fn seed_from_call<'tcx>(
     )
     .ok()?;
 
-    // The declared inputs, their late-bound lifetimes instantiated as placeholders first —
-    // relating a type with an escaping bound var panics the generalizer, as in the walk.
-    let sig = tcx
-        .fn_sig(method_did)
-        .instantiate(tcx, method_args)
-        .skip_norm_wip();
-    let sig = infcx.enter_forall_and_leak_universe(sig);
     // A method call's `inputs()[0]` is the `self` receiver, already pinned above, so its arguments
     // line up with the declared inputs from position 1; a path call's arguments are every input.
+    // A written type that does not unify leaves its parameter unknown: the seed is gated on
+    // failing, and the walk reports nothing it cannot prove.
     let skip = usize::from(form != CallForm::Path);
-    for (arg, declared) in std::iter::zip(args, sig.inputs().iter().skip(skip)) {
-        let written = match form {
+    unify_call_inputs(
+        &ocx,
+        method_did,
+        method_args,
+        args,
+        skip,
+        |arg| match form {
             CallForm::Method => expr_written_ty(&infcx, arg),
             CallForm::DataMethod | CallForm::Path => {
                 expr_written_ty(&infcx, arg).or_else(|| data_expr_ty(tcx, arg))
             }
-        };
-        if let Some(written) = written {
-            // Best effort: a written type that does not unify (a mis-guessed consumer candidate,
-            // a coerced argument) just leaves its parameter unknown — the seed is gated on
-            // failing, and the walk reports nothing it cannot prove.
-            let _ = ocx.eq(&ObligationCause::dummy(), param_env, *declared, written);
-        }
-    }
+        },
+    );
     // Propagate what the unifications imply before the variables are read back.
     let _ = ocx.try_evaluate_obligations();
 

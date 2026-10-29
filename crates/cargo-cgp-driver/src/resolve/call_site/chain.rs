@@ -11,7 +11,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::call_site::receiver_context;
 use crate::resolve::data::is_data_operation;
-use crate::resolve::query::{expr_written_ty, lower_hir_ty, peel_hir_refs};
+use crate::resolve::query::{expr_written_ty, lower_hir_ty, peel_hir_refs, unify_call_inputs};
 
 /// The type of `expr` when it is a value one of CGP's extensible-data operations produces, or a
 /// value the call-site anchor already types ([`receiver_context`]): a call to a data operation on
@@ -103,16 +103,11 @@ fn call_output<'tcx>(
     let fn_args = infcx.fresh_args_for_item(DUMMY_SP, fn_did);
     ocx.eq(&cause, param_env, fn_args.type_at(0), self_ty)
         .ok()?;
-    let sig = tcx.fn_sig(fn_did).instantiate(tcx, fn_args).skip_norm_wip();
-    let sig = infcx.enter_forall_and_leak_universe(sig);
     // A method call's arguments follow its `self` input; a path call's arguments are every input.
     let skip = usize::from(method_call);
-    for (arg, declared) in std::iter::zip(args, sig.inputs().iter().skip(skip)) {
-        let written = expr_written_ty(&infcx, arg).or_else(|| data_expr_ty(tcx, arg));
-        if let Some(written) = written {
-            let _ = ocx.eq(&cause, param_env, *declared, written);
-        }
-    }
+    let sig = unify_call_inputs(&ocx, fn_did, fn_args, args, skip, |arg| {
+        expr_written_ty(&infcx, arg).or_else(|| data_expr_ty(tcx, arg))
+    });
 
     let trait_ref = ty::TraitRef::from_assoc(tcx, trait_did, fn_args);
     ocx.register_obligation(Obligation::new(tcx, cause.clone(), param_env, trait_ref));

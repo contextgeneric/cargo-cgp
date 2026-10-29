@@ -12,7 +12,8 @@
 //!   [`misdirected_impl_clauses`].
 //! - **Renderings of a wiring key**, its path, and its provider: [`describe_key`] and its siblings.
 //! - **Syntactic type reads** the call-site anchors and the detectors share: [`lower_hir_ty`] and
-//!   [`expr_written_ty`].
+//!   [`expr_written_ty`], and the unification of a call's arguments with its callee's declared
+//!   inputs, [`unify_call_inputs`](fn@unify_call_inputs).
 //! - **Lookups** several stages make: [`can_use_component_supertrait`], [`impl_self_ty_span`],
 //!   [`import_path`](fn@import_path), [`owner_has_impl_of`](fn@owner_has_impl_of), and
 //!   [`traits_with_method`](fn@traits_with_method).
@@ -32,6 +33,7 @@ mod owner_has_impl_of;
 mod projected_type;
 mod projection_mismatch;
 mod traits_with_method;
+mod unify_call_inputs;
 mod unknowns;
 mod written_order;
 mod written_ty;
@@ -48,6 +50,7 @@ pub use owner_has_impl_of::*;
 pub use projected_type::*;
 pub use projection_mismatch::*;
 pub use traits_with_method::*;
+pub use unify_call_inputs::*;
 pub use unknowns::*;
 pub use written_order::*;
 pub use written_ty::*;
