@@ -37,7 +37,7 @@ pub fn impl_self_ty_span(tcx: TyCtxt<'_>, impl_did: DefId) -> Option<Span> {
 }
 
 /// One check impl at a caret, as [`check_impls_at`] finds it.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CheckImpl<'tcx> {
     /// The check trait the impl implements.
     pub trait_did: DefId,

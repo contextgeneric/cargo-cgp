@@ -113,19 +113,19 @@ pub fn impl_where_obligations<'tcx>(
 
 /// The arguments of the impl `impl_did` when its trait ref unifies with `obligation` in `ocx`'s
 /// inference context, or `None` when it does not. The impl's parameters start as fresh variables
-/// ([`fresh_impl_ref`]) and its trait ref is normalized before it is related; this is the
-/// next-solver-safe match `SelectionContext` is unavailable for, and each caller reads the matched
-/// impl's clauses its own way.
+/// ([`fresh_impl_ref`]) and its trait ref is normalized before it is related. This is the impl
+/// match the next solver allows, since `SelectionContext` asserts against it, and each caller reads
+/// the matched impl's clauses its own way.
 ///
 /// The obligation's binder is instantiated with placeholders in this inference context first. A
 /// higher-ranked obligation (`Self: for<'a> CanSerializeValue<&'a Value>`, the shape a recursive
 /// provider like `SerializeIterator` carries) would otherwise reach `ocx.eq` through
 /// `skip_binder()` with the `'a` bound var still escaping, tripping the inference generalizer's
 /// `!source_term.has_escaping_bound_vars()` assertion and panicking rustc. Placeholders (rigid,
-/// universal regions) rather than fresh inference vars are what let a *nested* higher-ranked hop
-/// resolve: a projection through the bound lifetime (`<&'a Value as IntoIterator>::Item`)
-/// normalizes deterministically against a placeholder region but stalls against an unconstrained
-/// inference region. The fast path makes this a no-op for a binder-free obligation. The binder is
+/// universal regions) let a *nested* higher-ranked hop resolve where fresh inference vars would
+/// not: a projection through the bound lifetime (`<&'a Value as IntoIterator>::Item`) normalizes
+/// deterministically against a placeholder region but stalls against an unconstrained inference
+/// region. The fast path makes this a no-op for a binder-free obligation. The binder is
 /// entered before the impl's variables are made, so they live in the placeholders' universe.
 pub fn match_impl<'tcx>(
     ocx: &ObligationCtxt<'_, 'tcx>,
@@ -150,8 +150,8 @@ pub fn match_impl<'tcx>(
     Some(impl_args)
 }
 
-/// The impl `impl_did`'s trait ref with its parameters as fresh variables of `infcx`, and those
-/// variables, unnormalized.
+/// Fresh variables of `infcx` for the impl `impl_did`'s parameters, and its trait ref instantiated
+/// with them, unnormalized.
 pub fn fresh_impl_ref<'tcx>(
     infcx: &InferCtxt<'tcx>,
     impl_did: DefId,
@@ -191,8 +191,9 @@ pub fn written_order_clauses<'tcx>(
 
 /// Every impl of `trait_did`, with the concrete-`Self` impls ahead of the blanket (param-`Self`)
 /// ones, so a caller that takes the first *unifying* impl prefers the specific impl over the
-/// delegation blanket — the ordering [`impl_where_obligations`] and
-/// [`projection_mismatch`](fn@super::projection_mismatch) both rely on.
+/// delegation blanket. [`impl_where_obligations`],
+/// [`projection_mismatch`](fn@super::projection_mismatch), and the classifier's
+/// `required_field_type` rely on this order.
 pub fn impls_concrete_first(tcx: TyCtxt<'_>, trait_did: DefId) -> Vec<DefId> {
     let (blanket, concrete): (Vec<DefId>, Vec<DefId>) =
         tcx.all_impls(trait_did).partition(|&did| {
