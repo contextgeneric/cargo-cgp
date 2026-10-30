@@ -6,7 +6,7 @@ use rustc_data_structures::fx::FxHashSet;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
 
 use crate::resolve::cache::{SubCause, SubResult, pred_fingerprint};
-use crate::resolve::classify::{classify_leaf, is_reportable_leaf};
+use crate::resolve::classify::classify_leaf;
 use crate::resolve::label::label_for;
 use crate::resolve::query::ProjectionMismatch;
 
@@ -29,10 +29,9 @@ pub fn terminal_result<'tcx>(
         return SubResult::empty(self_fp);
     }
     // A path that bottoms out on pure wiring plumbing (a routing dead-end) is not a root cause.
-    if !is_reportable_leaf(tcx, leaf_ref, context, parent) {
+    let Some(leaf) = classify_leaf(tcx, leaf_ref, context, parent, None) else {
         return SubResult::empty(self_fp);
-    }
-    let leaf = classify_leaf(tcx, leaf_ref, context, parent, None);
+    };
     let mut path = Vec::new();
     // A seed that is itself the cause (a data operation with no impl at all, such as a finalize on
     // a builder with a field unset) heads the chain with its own step, so the chain names the
@@ -94,11 +93,9 @@ pub fn projection_result<'tcx>(
     if leaf_poly.has_placeholders() || leaf_poly.references_error() {
         return SubResult::empty(self_fp);
     }
-    let parent = Some(parent_ref);
-    if !is_reportable_leaf(tcx, leaf_ref, context, parent) {
+    let Some(leaf) = classify_leaf(tcx, leaf_ref, context, Some(parent_ref), Some(mismatch)) else {
         return SubResult::empty(self_fp);
-    }
-    let leaf = classify_leaf(tcx, leaf_ref, context, parent, Some(mismatch));
+    };
     let mut path = Vec::new();
     if let Some(node_hop) = label_for(tcx, erased, context) {
         path.push(ChainNode::Hop(node_hop));

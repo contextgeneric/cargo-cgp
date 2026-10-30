@@ -2,8 +2,9 @@
 //!
 //! Once the [walk](crate::resolve::walk) reaches a terminal predicate, this module turns it into
 //! the rustc-free [`Leaf`](cargo_cgp_error_processing::Leaf) the emitter words. [`leaf`] performs
-//! the classification, [`data`] reads an extensible-data terminal off its presence markers,
-//! [`reportable`] decides whether a terminal is a real root cause or a routing dead-end to drop,
+//! the classification, dropping a terminal that is a routing dead-end rather than a root cause,
+//! [`data`] reads an extensible-data terminal off its presence markers, [`reportable`] holds the
+//! shapes that tell a delegation table's missing entry from such a dead-end,
 //! [`field`] inspects the actual struct a `HasField` bound lands on (and its `Deref` chain) so a
 //! genuinely missing field is told apart from one present but underived, and [`known`] says
 //! whether a provider obligation is known well enough to confirm a fix against. The fix facts a
