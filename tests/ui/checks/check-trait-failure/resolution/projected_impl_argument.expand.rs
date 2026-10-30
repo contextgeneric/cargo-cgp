@@ -8,7 +8,8 @@
 //! Property: the walk matches an obligation against an impl only where the impl's trait ref, its
 //! projections reduced, equals the obligation's. An impl matched with its projection unreduced
 //! relates `<u8 as Assoc>::Out` to `B` as a goal left for later, so the first impl looks like a
-//! match and the cause would name `alpha`, a field the program never asks for.
+//! match and the cause would name `alpha`, the field the first impl requires, which `Pick<B>` does
+//! not need.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

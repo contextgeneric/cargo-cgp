@@ -1,36 +1,36 @@
 error[E0277]: the trait bound `App: CanUseComponent<GreeterComponent>` is not satisfied
-  --> src/main.rs:60:9
+  --> src/main.rs:61:9
    |
-60 |         GreeterComponent,
+61 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<_, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<_, Chars<..>>>` is implemented for it
-  --> src/main.rs:49:9
+  --> src/main.rs:50:9
    |
-49 |     pub name: String,
+50 |     pub name: String,
    |         ^^^^
 note: required for `App` to implement `Pick<B>`
-  --> src/main.rs:34:11
+  --> src/main.rs:35:11
    |
-34 | impl<Ctx> Pick<<u16 as Assoc>::Out> for Ctx where Ctx: HasField<Symbol!("beta"), Value = u32> {}
+35 | impl<Ctx> Pick<<u16 as Assoc>::Out> for Ctx where Ctx: HasField<Symbol!("beta"), Value = u32> {}
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^     ^^^                                      ----------- unsatisfied trait bound introduced here
 note: required for `GreetPicked` to implement `IsProviderFor<GreeterComponent, App>`
-  --> src/main.rs:41:1
+  --> src/main.rs:42:1
    |
-41 | #[cgp_impl(new GreetPicked)]
+42 | #[cgp_impl(new GreetPicked)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-42 | #[uses(Pick<B>)]
+43 | #[uses(Pick<B>)]
    |        ------- unsatisfied trait bound introduced here
    = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:58:1
+  --> src/main.rs:59:1
    |
-58 | / check_components! {
-59 | |     App {
-60 | |         GreeterComponent,
-61 | |     }
-62 | | }
+59 | / check_components! {
+60 | |     App {
+61 | |         GreeterComponent,
+62 | |     }
+63 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
