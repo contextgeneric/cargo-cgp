@@ -113,9 +113,11 @@ pub fn impl_where_obligations<'tcx>(
 
 /// The arguments of the impl `impl_did` when its trait ref unifies with `obligation` in `ocx`'s
 /// inference context, or `None` when it does not. The impl's parameters start as fresh variables
-/// ([`fresh_impl_ref`]) and its trait ref is normalized before it is related. This is the impl
-/// match the next solver allows, since `SelectionContext` asserts against it, and each caller reads
-/// the matched impl's clauses its own way.
+/// ([`fresh_impl_ref`]) and its trait ref is normalized before it is related, so two impls whose
+/// trait refs differ only in a projected argument are told apart: `eq` alone would leave the
+/// projection as a goal and match both. This is the impl match the next solver allows, since
+/// `SelectionContext` asserts against it, and each caller reads the matched impl's clauses its own
+/// way.
 ///
 /// The obligation's binder is instantiated with placeholders in this inference context first. A
 /// higher-ranked obligation (`Self: for<'a> CanSerializeValue<&'a Value>`, the shape a recursive

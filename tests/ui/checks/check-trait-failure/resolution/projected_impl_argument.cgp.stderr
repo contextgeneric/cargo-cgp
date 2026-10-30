@@ -1,0 +1,15 @@
+error[E0277]: [CGP-E001] missing field `beta` on `App`
+  --> src/main.rs:60:9
+   |
+60 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `beta` on `App`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet` for context `App`
+             └─ [CGP-E102] provider trait impl `Greeter` with context `App` for provider `GreetPicked`
+               └─ [CGP-E104] trait impl `Pick<B>` for `App`
+                 └─ [CGP-E110] missing field `beta` on `App`
+   = help: add the field `beta: u32` to `App`
+
+For more information about this error, try `rustc --explain E0277`.
