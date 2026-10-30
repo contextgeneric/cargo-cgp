@@ -50,108 +50,164 @@ pub(crate) fn classify_data_leaf<'tcx>(
     }
     let self_ty = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
     let is_trait = |name: &str| is_cgp_item(tcx, did, name, CGP_FIELD_CRATE);
-    let mismatched = |assoc: &str| {
-        mismatch.filter(|mismatch| tcx.item_name(mismatch.assoc_did).as_str() == assoc)
-    };
 
     if is_trait(UPDATE_FIELD_TRAIT) {
-        let partial = builder(tcx, self_ty)?;
-        let name = tag_name(tcx, leaf_ref.args.type_at(1))?;
-        let owner = partial.target.to_string();
-        return match (mismatch, mismatched(MAPPER_ASSOC)) {
-            // Adding the field to the struct is not offered: the operation then builds it, but a
-            // field the struct needs from elsewhere may still be unset, as when a merged source
-            // carries a renamed field.
-            (None, _) if partial.marker_of(&name).is_none() => Some(Leaf::Field {
-                fix: FieldFix {
-                    confirmed: false,
-                    ty: None,
-                    similar: similar_field(partial.target, &name),
-                    index_tag: None,
-                },
-                name,
-                owner,
-                issue: FieldIssue::Missing,
-            }),
-            (_, Some(mapper)) => match (marker(tcx, mapper.expected), partial.marker_of(&name)?) {
-                (Marker::Nothing, Marker::Present) => Some(Leaf::FieldAlreadySet { name, owner }),
-                (Marker::Present, Marker::Nothing) => Some(Leaf::FieldsNotSet {
-                    names: vec![name],
-                    owner,
-                }),
-                (Marker::Optional, Marker::Nothing | Marker::Present) => {
-                    Some(Leaf::FieldNotOptional {
-                        name,
-                        owner,
-                        convert: MethodFix(to_optional(tcx, self_ty)),
-                    })
-                }
-                _ => None,
-            },
-            _ => None,
-        };
+        return update_field_leaf(tcx, leaf_ref, self_ty, mismatch);
     }
     if is_trait(FINALIZE_BUILD_TRAIT) && mismatch.is_none() {
-        let partial = builder(tcx, self_ty)?;
-        let names: Vec<String> = partial
-            .members
-            .iter()
-            .filter(|(_, marker)| *marker != Marker::Present)
-            .map(|(name, _)| name.clone())
-            .collect();
-        return (!names.is_empty()).then(|| Leaf::FieldsNotSet {
-            names,
-            owner: partial.target.to_string(),
-        });
+        return finalize_build_leaf(tcx, self_ty);
     }
     if is_trait(EXTRACT_FIELD_TRAIT) && mismatch.is_none() {
-        let partial = extractor(tcx, self_ty)?;
-        let name = tag_name(tcx, leaf_ref.args.type_at(1))?;
-        let owner = partial.target.to_string();
-        return match partial.marker_of(&name) {
-            None => Some(Leaf::MissingVariant {
-                similar: NearMiss(similar_variant(partial.target, &name)),
-                name,
-                owner,
-            }),
-            Some(Marker::Void) => Some(Leaf::VariantAlreadyExtracted { name, owner }),
-            Some(_) => None,
-        };
+        return extract_field_leaf(tcx, leaf_ref, self_ty);
     }
     if is_trait(FINALIZE_EXTRACT_TRAIT) && mismatch.is_none() {
-        let partial = extractor(tcx, self_ty)?;
-        let names = partial.with_marker(Marker::Present);
-        return (!names.is_empty()).then(|| Leaf::VariantsNotExtracted {
-            names,
-            owner: partial.target.to_string(),
-        });
+        return finalize_extract_leaf(tcx, self_ty);
     }
     if is_trait(FROM_VARIANT_TRAIT) && read_partial(tcx, self_ty).is_none() {
-        let name = tag_name(tcx, leaf_ref.args.type_at(1))?;
-        let owner = self_ty.to_string();
-        if let Some(value) = mismatched(VALUE_ASSOC) {
-            return Some(Leaf::VariantTypeMismatch {
-                name,
-                owner,
-                expected: value.expected.to_string(),
-                actual: projected_type(tcx, value.alias)
-                    .map(|ty| ty.to_string())
-                    .unwrap_or_else(|| "_".to_owned()),
-            });
-        }
-        if mismatch.is_some() {
-            return None;
-        }
-        // An enum that derives `FromVariant` implements it for each of its variants, so a missing
-        // impl for this tag is a variant the enum lacks; one with no impl at all lacks the derive.
-        if owner_has_impl_of(tcx, did, self_ty) {
-            return Some(Leaf::MissingVariant {
-                similar: NearMiss(similar_variant(self_ty, &name)),
-                name,
-                owner,
-            });
-        }
+        return from_variant_leaf(tcx, leaf_ref, self_ty, parent, mismatch);
     }
+    derive_leaf(tcx, did, self_ty, parent, mismatch)
+}
+
+/// The leaf for an unmet `UpdateField<Tag, M>` on a builder: a field the struct lacks, or one whose
+/// `Mapper` was found set, unset, or not optional where the update needs it otherwise.
+fn update_field_leaf<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    leaf_ref: ty::TraitRef<'tcx>,
+    self_ty: Ty<'tcx>,
+    mismatch: Option<ProjectionMismatch<'tcx>>,
+) -> Option<Leaf> {
+    let partial = builder(tcx, self_ty)?;
+    let name = tag_name(tcx, leaf_ref.args.type_at(1))?;
+    let owner = partial.target.to_string();
+    match (mismatch, mismatched(tcx, mismatch, MAPPER_ASSOC)) {
+        // Adding the field to the struct is not offered: the operation then builds it, but a
+        // field the struct needs from elsewhere may still be unset, as when a merged source
+        // carries a renamed field.
+        (None, _) if partial.marker_of(&name).is_none() => Some(Leaf::Field {
+            fix: FieldFix {
+                confirmed: false,
+                ty: None,
+                similar: similar_field(partial.target, &name),
+                index_tag: None,
+            },
+            name,
+            owner,
+            issue: FieldIssue::Missing,
+        }),
+        (_, Some(mapper)) => match (marker(tcx, mapper.expected), partial.marker_of(&name)?) {
+            (Marker::Nothing, Marker::Present) => Some(Leaf::FieldAlreadySet { name, owner }),
+            (Marker::Present, Marker::Nothing) => Some(Leaf::FieldsNotSet {
+                names: vec![name],
+                owner,
+            }),
+            (Marker::Optional, Marker::Nothing | Marker::Present) => Some(Leaf::FieldNotOptional {
+                name,
+                owner,
+                convert: MethodFix(to_optional(tcx, self_ty)),
+            }),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// The leaf for an unmet `FinalizeBuild` on a builder: the fields it does not hold are not set.
+fn finalize_build_leaf<'tcx>(tcx: TyCtxt<'tcx>, self_ty: Ty<'tcx>) -> Option<Leaf> {
+    let partial = builder(tcx, self_ty)?;
+    let names: Vec<String> = partial
+        .members
+        .iter()
+        .filter(|(_, marker)| *marker != Marker::Present)
+        .map(|(name, _)| name.clone())
+        .collect();
+    (!names.is_empty()).then(|| Leaf::FieldsNotSet {
+        names,
+        owner: partial.target.to_string(),
+    })
+}
+
+/// The leaf for an unmet `ExtractField<Tag>` on an extractor: the enum lacks the variant, or the
+/// extractor has already ruled it out.
+fn extract_field_leaf<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    leaf_ref: ty::TraitRef<'tcx>,
+    self_ty: Ty<'tcx>,
+) -> Option<Leaf> {
+    let partial = extractor(tcx, self_ty)?;
+    let name = tag_name(tcx, leaf_ref.args.type_at(1))?;
+    let owner = partial.target.to_string();
+    match partial.marker_of(&name) {
+        None => Some(Leaf::MissingVariant {
+            similar: NearMiss(similar_variant(partial.target, &name)),
+            name,
+            owner,
+        }),
+        Some(Marker::Void) => Some(Leaf::VariantAlreadyExtracted { name, owner }),
+        Some(_) => None,
+    }
+}
+
+/// The leaf for an unmet `FinalizeExtract` on an extractor: the variants it may still yield are not
+/// extracted.
+fn finalize_extract_leaf<'tcx>(tcx: TyCtxt<'tcx>, self_ty: Ty<'tcx>) -> Option<Leaf> {
+    let partial = extractor(tcx, self_ty)?;
+    let names = partial.with_marker(Marker::Present);
+    (!names.is_empty()).then(|| Leaf::VariantsNotExtracted {
+        names,
+        owner: partial.target.to_string(),
+    })
+}
+
+/// The leaf for an unmet `FromVariant<Tag>` on an enum: the variant's payload has the wrong type, or
+/// the enum lacks the variant; an enum with no `FromVariant` impl at all lacks the derive, which
+/// [`derive_leaf`] words.
+fn from_variant_leaf<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    leaf_ref: ty::TraitRef<'tcx>,
+    self_ty: Ty<'tcx>,
+    parent: Option<ty::TraitRef<'tcx>>,
+    mismatch: Option<ProjectionMismatch<'tcx>>,
+) -> Option<Leaf> {
+    let did = leaf_ref.def_id;
+    let name = tag_name(tcx, leaf_ref.args.type_at(1))?;
+    let owner = self_ty.to_string();
+    if let Some(value) = mismatched(tcx, mismatch, VALUE_ASSOC) {
+        return Some(Leaf::VariantTypeMismatch {
+            name,
+            owner,
+            expected: value.expected.to_string(),
+            actual: projected_type(tcx, value.alias)
+                .map(|ty| ty.to_string())
+                .unwrap_or_else(|| "_".to_owned()),
+        });
+    }
+    if mismatch.is_some() {
+        return None;
+    }
+    // An enum that derives `FromVariant` implements it for each of its variants, so a missing
+    // impl for this tag is a variant the enum lacks; one with no impl at all lacks the derive.
+    if owner_has_impl_of(tcx, did, self_ty) {
+        return Some(Leaf::MissingVariant {
+            similar: NearMiss(similar_variant(self_ty, &name)),
+            name,
+            owner,
+        });
+    }
+    derive_leaf(tcx, did, self_ty, parent, mismatch)
+}
+
+/// The leaf for an unmet trait only a data derive implements (`HasFields`, `HasExtractor`,
+/// `HasBuilder`, …): on a partial value, the operation was given a builder or an extractor where the
+/// struct or enum belongs; on any other type, the type does not implement the trait. `None` when
+/// the trait comes from no derive, or the branch carried an unmet projection.
+fn derive_leaf<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    did: DefId,
+    self_ty: Ty<'tcx>,
+    parent: Option<ty::TraitRef<'tcx>>,
+    mismatch: Option<ProjectionMismatch<'tcx>>,
+) -> Option<Leaf> {
     let derive = data_derive(tcx, did)?;
     if mismatch.is_some() {
         return None;
@@ -175,6 +231,15 @@ pub(crate) fn classify_data_leaf<'tcx>(
         trait_name: tcx.item_name(did).to_string(),
         derive: DeriveFix(derive_applies(self_ty, derive).then(|| derive.to_owned())),
     })
+}
+
+/// The `mismatch` when it is on the associated type named `assoc`.
+fn mismatched<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    mismatch: Option<ProjectionMismatch<'tcx>>,
+    assoc: &str,
+) -> Option<ProjectionMismatch<'tcx>> {
+    mismatch.filter(|mismatch| tcx.item_name(mismatch.assoc_did).as_str() == assoc)
 }
 
 /// The conversion of the record builder `builder` to an optional one (`to_optional`), when the
