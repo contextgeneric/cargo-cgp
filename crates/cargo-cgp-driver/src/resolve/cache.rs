@@ -15,7 +15,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use cargo_cgp_error_processing::{ChainNode, Leaf, WiringOverflow};
+use cargo_cgp_error_processing::{ChainNode, DepNode, Leaf, WiringOverflow};
 use rustc_data_structures::fingerprint::Fingerprint;
 use rustc_data_structures::fx::FxHashSet;
 use rustc_data_structures::stable_hash::{StableHash, StableHasher};
@@ -62,6 +62,22 @@ impl SubResult {
         Self {
             causes: Vec::new(),
             reachable,
+            incomplete: false,
+            cut: None,
+        }
+    }
+
+    /// A complete node whose one cause is `leaf`, reached through `hop`, the node's own step, when
+    /// it has one; `reachable` holds the fingerprints of the obligations the path covers.
+    pub(crate) fn cause(hop: Option<DepNode>, leaf: Leaf, reachable: &[Fingerprint]) -> Self {
+        let path = hop
+            .map(ChainNode::Hop)
+            .into_iter()
+            .chain([ChainNode::Leaf(leaf.clone())])
+            .collect();
+        Self {
+            causes: vec![SubCause { path, leaf }],
+            reachable: reachable.iter().copied().collect(),
             incomplete: false,
             cut: None,
         }

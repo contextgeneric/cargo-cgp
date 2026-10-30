@@ -1,11 +1,10 @@
 //! Building the sub-result of a node that ends a path: a terminal leaf, a cause, or a projection mismatch.
 
-use cargo_cgp_error_processing::{ChainNode, Leaf};
+use cargo_cgp_error_processing::Leaf;
 use rustc_data_structures::fingerprint::Fingerprint;
-use rustc_data_structures::fx::FxHashSet;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast as _};
 
-use crate::resolve::cache::{SubCause, SubResult, pred_fingerprint};
+use crate::resolve::cache::{SubResult, pred_fingerprint};
 use crate::resolve::classify::classify_leaf;
 use crate::resolve::label::label_for;
 use crate::resolve::query::ProjectionMismatch;
@@ -32,24 +31,14 @@ pub fn terminal_result<'tcx>(
     let Some(leaf) = classify_leaf(tcx, leaf_ref, context, parent, None) else {
         return SubResult::empty(self_fp);
     };
-    let mut path = Vec::new();
     // A seed that is itself the cause (a data operation with no impl at all, such as a finalize on
     // a builder with a field unset) heads the chain with its own step, so the chain names the
     // operation the cause is about rather than restating the cause alone.
-    if parent.is_none()
-        && let Some(hop) = label_for(tcx, erased, context)
-    {
-        path.push(ChainNode::Hop(hop));
-    }
-    path.push(ChainNode::Leaf(leaf.clone()));
-    let mut reachable = FxHashSet::default();
-    reachable.insert(self_fp);
-    SubResult {
-        causes: vec![SubCause { path, leaf }],
-        reachable,
-        incomplete: false,
-        cut: None,
-    }
+    let hop = parent
+        .is_none()
+        .then(|| label_for(tcx, erased, context))
+        .flatten();
+    SubResult::cause(hop, leaf, &[self_fp])
 }
 
 /// Build the sub-result for a cause the node itself states, already classified as `leaf`: the node
@@ -61,19 +50,7 @@ pub fn cause_result<'tcx>(
     leaf: Leaf,
     self_fp: Fingerprint,
 ) -> SubResult {
-    let mut path = Vec::new();
-    if let Some(node_hop) = label_for(tcx, erased, context) {
-        path.push(ChainNode::Hop(node_hop));
-    }
-    path.push(ChainNode::Leaf(leaf.clone()));
-    let mut reachable = FxHashSet::default();
-    reachable.insert(self_fp);
-    SubResult {
-        causes: vec![SubCause { leaf, path }],
-        reachable,
-        incomplete: false,
-        cut: None,
-    }
+    SubResult::cause(label_for(tcx, erased, context), leaf, &[self_fp])
 }
 
 /// Build the sub-result for a projection mismatch: the impl matched with every trait-clause holding,
@@ -96,18 +73,10 @@ pub fn projection_result<'tcx>(
     let Some(leaf) = classify_leaf(tcx, leaf_ref, context, Some(parent_ref), Some(mismatch)) else {
         return SubResult::empty(self_fp);
     };
-    let mut path = Vec::new();
-    if let Some(node_hop) = label_for(tcx, erased, context) {
-        path.push(ChainNode::Hop(node_hop));
-    }
-    path.push(ChainNode::Leaf(leaf.clone()));
-    let mut reachable = FxHashSet::default();
-    reachable.insert(self_fp);
-    reachable.insert(pred_fingerprint(tcx, leaf_poly));
-    SubResult {
-        causes: vec![SubCause { leaf, path }],
-        reachable,
-        incomplete: false,
-        cut: None,
-    }
+    // The leaf's own obligation is covered too, so a reuse of this node is checked against it.
+    SubResult::cause(
+        label_for(tcx, erased, context),
+        leaf,
+        &[self_fp, pred_fingerprint(tcx, leaf_poly)],
+    )
 }
