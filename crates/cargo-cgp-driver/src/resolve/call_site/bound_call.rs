@@ -2,7 +2,6 @@
 
 use cargo_cgp_error_processing::Resolved;
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Expr, ExprKind, QPath};
 use rustc_infer::infer::{InferCtxt, TyCtxtInferExt as _};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode};
@@ -14,7 +13,8 @@ use crate::resolve::call_site::{data_expr_ty, declared_binding_ty, is_about_call
 use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::query::{
     WrittenArg, carries_wiring, expr_written_ty, holds, is_blanket_trait, is_consumer_trait,
-    is_context_adt, lower_hir_ty, unify_call_inputs, unknowns_to_placeholders, written_args,
+    is_context_adt, local_body_exprs, lower_hir_ty, unify_call_inputs, unknowns_to_placeholders,
+    written_args,
 };
 use crate::resolve::walk::resolve_leaves;
 
@@ -55,40 +55,26 @@ struct GenericCall<'tcx> {
 /// one of the diagnostic's primary spans is about ([`is_about_call`]); a caret on the turbofish
 /// is inside the callee, so it is about the call.
 fn generic_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<GenericCall<'tcx>> {
-    struct Finder<'a, 'tcx> {
-        tcx: TyCtxt<'tcx>,
-        spans: &'a [Span],
-        calls: Vec<GenericCall<'tcx>>,
-    }
-    impl<'tcx> Visitor<'tcx> for Finder<'_, 'tcx> {
-        fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+    local_body_exprs(tcx)
+        .filter_map(|expr| {
             if let ExprKind::Call(callee, args) = expr.kind
                 && let ExprKind::Path(QPath::Resolved(None, path)) = callee.kind
                 && let Res::Def(DefKind::Fn, fn_did) = path.res
-                && !self.tcx.generics_of(fn_did).own_params.is_empty()
-                && self
-                    .spans
+                && !tcx.generics_of(fn_did).own_params.is_empty()
+                && spans
                     .iter()
                     .any(|&span| is_about_call(span, expr.span, args))
             {
-                self.calls.push(GenericCall {
+                Some(GenericCall {
                     fn_did,
                     callee: path,
                     args,
-                });
+                })
+            } else {
+                None
             }
-            intravisit::walk_expr(self, expr);
-        }
-    }
-    let mut finder = Finder {
-        tcx,
-        spans,
-        calls: Vec::new(),
-    };
-    for owner in tcx.hir_body_owners() {
-        finder.visit_expr(tcx.hir_body_owned_by(owner).value);
-    }
-    finder.calls
+        })
+        .collect()
 }
 
 /// The bounds of `call`'s function on a CGP consumer or blanket trait whose `Self` is a context,

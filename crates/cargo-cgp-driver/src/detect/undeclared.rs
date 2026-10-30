@@ -24,7 +24,6 @@
 
 use cargo_cgp_error_processing::UndeclaredTrait;
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{self as hir, Expr, ExprKind, HirId, Node, QPath};
 use rustc_infer::infer::{BoundRegionConversionTime, InferCtxt, TyCtxtInferExt as _};
 use rustc_middle::ty::print::{PrintTraitRefExt as _, with_forced_trimmed_paths};
@@ -34,8 +33,8 @@ use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::query::{
-    expr_written_ty, is_blanket_trait, is_consumer_trait, is_provider_trait, lower_hir_ty,
-    trait_items_named, traits_with_method, unify_call_inputs,
+    expr_written_ty, is_blanket_trait, is_consumer_trait, is_provider_trait, local_body_exprs,
+    lower_hir_ty, trait_items_named, traits_with_method, unify_call_inputs,
 };
 
 /// Recognize an undeclared-trait failure and recover the trait to declare, or
@@ -179,55 +178,42 @@ fn is_referenced(tcx: TyCtxt<'_>, trait_did: DefId, spans: &[Span]) -> bool {
 /// precisely on the method segment's own span, so a call nested beside it in the same expression
 /// (a sibling argument of one `format!`, say) is not mistaken for the failing one.
 fn failing_call_at<'tcx>(tcx: TyCtxt<'tcx>, primary_span: Span) -> Option<FailingCall<'tcx>> {
-    struct Finder<'tcx> {
-        span: Span,
-        found: Option<FailingCall<'tcx>>,
-    }
-    impl<'tcx> Visitor<'tcx> for Finder<'tcx> {
-        fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-            match expr.kind {
-                ExprKind::MethodCall(segment, receiver, args, _)
-                    if segment.ident.span.overlaps(self.span) =>
-                {
-                    let binding = match receiver.kind {
-                        ExprKind::Path(QPath::Resolved(None, path)) => match path.res {
-                            Res::Local(binding) => Some(binding),
-                            _ => None,
-                        },
+    local_body_exprs(tcx)
+        .filter_map(|expr| match expr.kind {
+            ExprKind::MethodCall(segment, receiver, args, _)
+                if segment.ident.span.overlaps(primary_span) =>
+            {
+                let binding = match receiver.kind {
+                    ExprKind::Path(QPath::Resolved(None, path)) => match path.res {
+                        Res::Local(binding) => Some(binding),
                         _ => None,
-                    };
-                    self.found = Some(FailingCall {
+                    },
+                    _ => None,
+                };
+                Some(FailingCall {
+                    method: segment.ident.name,
+                    hir_id: expr.hir_id,
+                    receiver: CallReceiver::Value(binding),
+                    args,
+                })
+            }
+            ExprKind::Call(callee, args) => {
+                if let ExprKind::Path(QPath::TypeRelative(qself, segment)) = callee.kind
+                    && segment.ident.span.overlaps(primary_span)
+                {
+                    Some(FailingCall {
                         method: segment.ident.name,
                         hir_id: expr.hir_id,
-                        receiver: CallReceiver::Value(binding),
+                        receiver: CallReceiver::Type(qself),
                         args,
-                    });
+                    })
+                } else {
+                    None
                 }
-                ExprKind::Call(callee, args) => {
-                    if let ExprKind::Path(QPath::TypeRelative(qself, segment)) = callee.kind
-                        && segment.ident.span.overlaps(self.span)
-                    {
-                        self.found = Some(FailingCall {
-                            method: segment.ident.name,
-                            hir_id: expr.hir_id,
-                            receiver: CallReceiver::Type(qself),
-                            args,
-                        });
-                    }
-                }
-                _ => {}
             }
-            intravisit::walk_expr(self, expr);
-        }
-    }
-    let mut finder = Finder {
-        span: primary_span,
-        found: None,
-    };
-    for owner in tcx.hir_body_owners() {
-        finder.visit_expr(tcx.hir_body_owned_by(owner).value);
-    }
-    finder.found
+            _ => None,
+        })
+        .last()
 }
 
 /// Whether the written qualifying type of an associated-function call names the generated

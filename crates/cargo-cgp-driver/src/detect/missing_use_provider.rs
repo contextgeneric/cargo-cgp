@@ -17,7 +17,6 @@
 
 use cargo_cgp_error_processing::MissingUseProvider;
 use rustc_hir::def::DefKind;
-use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Expr, ExprKind, QPath, TyKind};
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::print::with_forced_trimmed_paths;
@@ -27,7 +26,9 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::detect::undeclared::{argument_ty, enclosing_trait_impl};
-use crate::resolve::query::{is_provider_trait, trait_items_named, unify_call_inputs};
+use crate::resolve::query::{
+    is_provider_trait, local_body_exprs, trait_items_named, unify_call_inputs,
+};
 
 /// Recognize a missing-`#[use_provider]` failure and recover the inner provider and the provider
 /// trait to import it as, or `None` when the diagnostic is not one. Everything is keyed on
@@ -204,15 +205,11 @@ struct FailingAssocFnCall<'tcx> {
 /// The associated-function call `Param::method(…)` the primary span points at, matched precisely on
 /// the method segment's own span.
 fn failing_assoc_fn_call_at(tcx: TyCtxt<'_>, primary_span: Span) -> Option<FailingAssocFnCall<'_>> {
-    struct Finder<'tcx> {
-        span: Span,
-        found: Option<FailingAssocFnCall<'tcx>>,
-    }
-    impl<'tcx> Visitor<'tcx> for Finder<'tcx> {
-        fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+    local_body_exprs(tcx)
+        .filter_map(|expr| {
             if let ExprKind::Call(callee, args) = expr.kind
                 && let ExprKind::Path(QPath::TypeRelative(qself, segment)) = callee.kind
-                && segment.ident.span.overlaps(self.span)
+                && segment.ident.span.overlaps(primary_span)
                 && let TyKind::Path(QPath::Resolved(_, path)) = qself.kind
                 && let Some(param_did) = path.res.opt_def_id()
             {
@@ -221,25 +218,18 @@ fn failing_assoc_fn_call_at(tcx: TyCtxt<'_>, primary_span: Span) -> Option<Faili
                     .last()
                     .map(|seg| seg.ident.name.to_string())
                     .unwrap_or_default();
-                self.found = Some(FailingAssocFnCall {
+                Some(FailingAssocFnCall {
                     inner: name,
                     inner_did: param_did,
                     method: segment.ident.name,
                     hir_id: expr.hir_id,
                     args,
-                });
+                })
+            } else {
+                None
             }
-            intravisit::walk_expr(self, expr);
-        }
-    }
-    let mut finder = Finder {
-        span: primary_span,
-        found: None,
-    };
-    for owner in tcx.hir_body_owners() {
-        finder.visit_expr(tcx.hir_body_owned_by(owner).value);
-    }
-    finder.found
+        })
+        .last()
 }
 
 /// Whether `trait_did` declares an associated function named `method`.

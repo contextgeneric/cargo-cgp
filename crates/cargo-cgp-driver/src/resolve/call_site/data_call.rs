@@ -1,7 +1,6 @@
 //! Anchoring a failing call to one of CGP's extensible-data operations.
 
 use cargo_cgp_error_processing::Resolved;
-use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Expr, ExprKind, HirId, QPath};
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::{Span, Symbol};
@@ -10,7 +9,7 @@ use crate::resolve::call_site::{
     CallForm, data_expr_ty, data_fns_named, is_about_call, seed_from_call,
 };
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::{carries_wiring, holds, lower_hir_ty, peel_hir_refs};
+use crate::resolve::query::{carries_wiring, holds, local_body_exprs, lower_hir_ty, peel_hir_refs};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve a failing call to one of CGP's extensible-data operations (a builder, an extractor, a
@@ -75,32 +74,14 @@ struct DataCall<'tcx> {
 /// of the diagnostic's primary spans is about, by the rule the call-site anchor applies
 /// ([`is_about_call`]), outermost first.
 fn data_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<DataCall<'tcx>> {
-    let mut finder = DataCallFinder {
-        tcx,
-        spans,
-        calls: Vec::new(),
-    };
-    for owner in tcx.hir_body_owners() {
-        finder.visit_expr(tcx.hir_body_owned_by(owner).value);
-    }
-    finder.calls
-}
-
-struct DataCallFinder<'a, 'tcx> {
-    tcx: TyCtxt<'tcx>,
-    spans: &'a [Span],
-    calls: Vec<DataCall<'tcx>>,
-}
-
-impl<'tcx> Visitor<'tcx> for DataCallFinder<'_, 'tcx> {
-    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        let call = match expr.kind {
+    local_body_exprs(tcx)
+        .filter_map(|expr| match expr.kind {
             ExprKind::MethodCall(segment, receiver, args, _)
-                if self.is_about(expr, std::iter::once(receiver).chain(args)) =>
+                if is_about(spans, expr, std::iter::once(receiver).chain(args)) =>
             {
                 Some(DataCall {
                     name: segment.ident.name,
-                    subject: data_expr_ty(self.tcx, receiver),
+                    subject: data_expr_ty(tcx, receiver),
                     args,
                     form: CallForm::DataMethod,
                     scope: expr.hir_id,
@@ -108,11 +89,11 @@ impl<'tcx> Visitor<'tcx> for DataCallFinder<'_, 'tcx> {
             }
             ExprKind::Call(callee, args) => match callee.kind {
                 ExprKind::Path(QPath::TypeRelative(qself, segment))
-                    if self.is_about(expr, args) =>
+                    if is_about(spans, expr, args) =>
                 {
                     Some(DataCall {
                         name: segment.ident.name,
-                        subject: lower_hir_ty(self.tcx, peel_hir_refs(qself)),
+                        subject: lower_hir_ty(tcx, peel_hir_refs(qself)),
                         args,
                         form: CallForm::Path,
                         scope: callee.hir_id,
@@ -121,24 +102,17 @@ impl<'tcx> Visitor<'tcx> for DataCallFinder<'_, 'tcx> {
                 _ => None,
             },
             _ => None,
-        };
-        self.calls.extend(call);
-        intravisit::walk_expr(self, expr);
-    }
+        })
+        .collect()
 }
 
-impl<'tcx> DataCallFinder<'_, 'tcx> {
-    /// Whether one of the primary spans is about the call `expr`, whose operands are `operands`.
-    fn is_about<'a>(
-        &self,
-        expr: &Expr<'tcx>,
-        operands: impl IntoIterator<Item = &'a Expr<'tcx>> + Clone,
-    ) -> bool
-    where
-        'tcx: 'a,
-    {
-        self.spans
-            .iter()
-            .any(|&span| is_about_call(span, expr.span, operands.clone()))
-    }
+/// Whether one of the primary `spans` is about the call `expr`, whose operands are `operands`.
+fn is_about<'a, 'tcx: 'a>(
+    spans: &[Span],
+    expr: &Expr<'tcx>,
+    operands: impl IntoIterator<Item = &'a Expr<'tcx>> + Clone,
+) -> bool {
+    spans
+        .iter()
+        .any(|&span| is_about_call(span, expr.span, operands.clone()))
 }

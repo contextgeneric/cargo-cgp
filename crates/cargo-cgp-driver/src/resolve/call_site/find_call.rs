@@ -1,14 +1,15 @@
 //! Locating the failing call and the consumer traits it could resolve through.
 
 use cargo_cgp_error_processing::Resolved;
-use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Expr, ExprKind, HirId};
 use rustc_middle::ty::{TyCtxt, TypeVisitableExt as _};
 use rustc_span::{Span, Symbol};
 
 use crate::resolve::call_site::{CallForm, receiver_context, seed_from_call, unbounded_receiver};
 use crate::resolve::ctx::ResolveCtx;
-use crate::resolve::query::{CallTrait, carries_wiring, holds, is_context_adt, traits_with_method};
+use crate::resolve::query::{
+    CallTrait, carries_wiring, holds, is_context_adt, local_body_exprs, traits_with_method,
+};
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
@@ -95,38 +96,24 @@ pub(crate) struct MethodCall<'tcx> {
 /// inside an argument (an `Rc` passed to a `Send` bound in `person.greet(count(Rc::new(1)))`) is
 /// about that argument's own code, and an error elsewhere in the enclosing body is about no call.
 pub(crate) fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<MethodCall<'tcx>> {
-    let mut finder = CallFinder {
-        spans,
-        calls: Vec::new(),
-    };
-    for owner in tcx.hir_body_owners() {
-        finder.visit_expr(tcx.hir_body_owned_by(owner).value);
-    }
-    finder.calls
-}
-
-struct CallFinder<'a, 'tcx> {
-    spans: &'a [Span],
-    calls: Vec<MethodCall<'tcx>>,
-}
-
-impl<'tcx> Visitor<'tcx> for CallFinder<'_, 'tcx> {
-    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        if let ExprKind::MethodCall(segment, receiver, args, _) = expr.kind
-            && self
-                .spans
-                .iter()
-                .any(|&span| is_about_call(span, expr.span, std::iter::once(receiver).chain(args)))
-        {
-            self.calls.push(MethodCall {
-                method: segment.ident.name,
-                receiver,
-                args,
-                hir_id: expr.hir_id,
-            });
-        }
-        intravisit::walk_expr(self, expr);
-    }
+    local_body_exprs(tcx)
+        .filter_map(|expr| {
+            if let ExprKind::MethodCall(segment, receiver, args, _) = expr.kind
+                && spans.iter().any(|&span| {
+                    is_about_call(span, expr.span, std::iter::once(receiver).chain(args))
+                })
+            {
+                Some(MethodCall {
+                    method: segment.ident.name,
+                    receiver,
+                    args,
+                    hir_id: expr.hir_id,
+                })
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 /// Whether a diagnostic's primary `span` is about the call spanning `call`: it overlaps the call

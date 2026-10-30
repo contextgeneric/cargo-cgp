@@ -1,7 +1,6 @@
 //! Anchoring a failing call to a provider trait's method, made through the provider's own path.
 
 use cargo_cgp_error_processing::Resolved;
-use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Expr, ExprKind, HirId, QPath};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
@@ -10,7 +9,8 @@ use rustc_span::{Span, Symbol};
 use crate::resolve::call_site::{CallForm, is_about_call, seed_from_call};
 use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::query::{
-    carries_wiring, holds, is_provider_trait, lower_hir_ty, peel_hir_refs, trait_items_named,
+    carries_wiring, holds, is_provider_trait, local_body_exprs, lower_hir_ty, peel_hir_refs,
+    trait_items_named,
 };
 use crate::resolve::walk::resolve_provider_leaves;
 
@@ -83,39 +83,25 @@ struct ProviderCall<'tcx> {
 /// Every call by a type-relative path in a local body that one of the diagnostic's primary spans is
 /// about, by the rule the call-site anchor applies ([`is_about_call`]), outermost first.
 fn provider_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<ProviderCall<'tcx>> {
-    struct Finder<'a, 'tcx> {
-        tcx: TyCtxt<'tcx>,
-        spans: &'a [Span],
-        calls: Vec<ProviderCall<'tcx>>,
-    }
-    impl<'tcx> Visitor<'tcx> for Finder<'_, 'tcx> {
-        fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+    local_body_exprs(tcx)
+        .filter_map(|expr| {
             if let ExprKind::Call(callee, args) = expr.kind
                 && let ExprKind::Path(QPath::TypeRelative(qself, segment)) = callee.kind
-                && self
-                    .spans
+                && spans
                     .iter()
                     .any(|&span| is_about_call(span, expr.span, args))
             {
-                self.calls.push(ProviderCall {
+                Some(ProviderCall {
                     name: segment.ident.name,
-                    provider: lower_hir_ty(self.tcx, peel_hir_refs(qself)),
+                    provider: lower_hir_ty(tcx, peel_hir_refs(qself)),
                     args,
                     scope: callee.hir_id,
-                });
+                })
+            } else {
+                None
             }
-            intravisit::walk_expr(self, expr);
-        }
-    }
-    let mut finder = Finder {
-        tcx,
-        spans,
-        calls: Vec::new(),
-    };
-    for owner in tcx.hir_body_owners() {
-        finder.visit_expr(tcx.hir_body_owned_by(owner).value);
-    }
-    finder.calls
+        })
+        .collect()
 }
 
 /// The CGP provider traits that declare an associated fn named `name`, each with that fn's `DefId`.

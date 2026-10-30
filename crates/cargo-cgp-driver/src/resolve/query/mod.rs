@@ -17,7 +17,7 @@
 //!   [`expr_written_ty`].
 //! - **Lookups** several stages make: [`check_impls_at`] over [`can_use_component_supertrait`] and
 //!   [`impl_self_ty_span`], [`import_path`](fn@import_path),
-//!   [`local_trait_impls`](fn@local_trait_impls),
+//!   [`local_body_exprs`](fn@local_body_exprs), [`local_trait_impls`](fn@local_trait_impls),
 //!   [`owner_has_impl_of`](fn@owner_has_impl_of), [`trait_items_named`](fn@trait_items_named), and
 //!   [`traits_with_method`](fn@traits_with_method).
 //!
@@ -30,6 +30,7 @@ mod holds;
 mod impl_match;
 mod import_path;
 mod keys;
+mod local_body_exprs;
 mod local_trait_impls;
 mod lower;
 mod misdirected;
@@ -49,6 +50,7 @@ pub use holds::*;
 pub use impl_match::*;
 pub use import_path::*;
 pub use keys::*;
+pub use local_body_exprs::*;
 pub use local_trait_impls::*;
 pub use lower::*;
 pub use misdirected::*;

@@ -1,12 +1,13 @@
 //! Reading the context type off the call's receiver expression.
 
 use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
-use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{self as hir, Expr, ExprKind, QPath};
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::Span;
 
-use crate::resolve::query::{call_output_ty, item_ty, lower_hir_ty, peel_hir_refs};
+use crate::resolve::query::{
+    call_output_ty, item_ty, local_body_exprs, lower_hir_ty, peel_hir_refs,
+};
 
 /// The context type a call's receiver expression names — the *receiver* is what carries the
 /// context in a consumer-method call, so this is the anchor's one source of it. The type is read
@@ -57,30 +58,10 @@ pub(crate) fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Op
 /// ADTs and gates each on actually failing the trait, so an unrelated overlapping expression
 /// (the enclosing call, whose "context" would be its return type) contributes nothing.
 pub(crate) fn contexts_at_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Ty<'tcx>> {
-    struct ContextFinder<'a, 'tcx> {
-        tcx: TyCtxt<'tcx>,
-        spans: &'a [Span],
-        found: Vec<Ty<'tcx>>,
-    }
-    impl<'tcx> Visitor<'tcx> for ContextFinder<'_, 'tcx> {
-        fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-            if self.spans.iter().any(|span| span.overlaps(expr.span))
-                && let Some(ty) = receiver_context(self.tcx, expr)
-            {
-                self.found.push(ty);
-            }
-            intravisit::walk_expr(self, expr);
-        }
-    }
-    let mut finder = ContextFinder {
-        tcx,
-        spans,
-        found: Vec::new(),
-    };
-    for owner in tcx.hir_body_owners() {
-        finder.visit_expr(tcx.hir_body_owned_by(owner).value);
-    }
-    finder.found
+    local_body_exprs(tcx)
+        .filter(|expr| spans.iter().any(|span| span.overlaps(expr.span)))
+        .filter_map(|expr| receiver_context(tcx, expr))
+        .collect()
 }
 
 /// The type of the binding a receiver path resolves to, its references peeled, since a receiver's
