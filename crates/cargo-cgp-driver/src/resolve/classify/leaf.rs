@@ -7,8 +7,7 @@ use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{
-    CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT,
-    HAS_FIELD_TRAIT, IS_PROVIDER_FOR_TRAIT,
+    CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT, HAS_FIELD_TRAIT,
 };
 use crate::resolve::classify::{
     classify_data_leaf, core_provider_hint, field_issue, field_type, is_blanket_dead_end,
@@ -21,9 +20,10 @@ use crate::resolve::query::{
     is_namespace_lookup_trait, is_path_cons, owner_has_impl_of, projected_type, render_path,
 };
 
-/// Classify the terminal predicate a dependency chain bottoms out on, or `None` when it is wiring
-/// plumbing rather than a root cause: an unmet `CanUseComponent` or `IsProviderFor` (the real cause
-/// sits down another branch) or a `DelegateComponent` routing dead-end ([`delegate_component_leaf`]).
+/// Classify the terminal predicate a dependency chain bottoms out on, or `None` when it is a
+/// `DelegateComponent` routing dead-end rather than a root cause ([`delegate_component_leaf`]). The
+/// walk never hands it an unmet `CanUseComponent` or `IsProviderFor`, which it drops as plumbing
+/// before descending.
 /// A `HasField` whose branch carried an unmet projection (`mismatch` is `Some`) becomes a
 /// [`Leaf::FieldTypeMismatch`], its actual field type queried from the struct; a plain `HasField`
 /// becomes a [`Leaf::Field`] (inspecting the struct so the emitter can tell missing from
@@ -43,21 +43,6 @@ pub(crate) fn classify_leaf<'tcx>(
     parent: Option<ty::TraitRef<'tcx>>,
     mismatch: Option<ProjectionMismatch<'tcx>>,
 ) -> Option<Leaf> {
-    // A `CanUseComponent` or `IsProviderFor` that bottoms out unmet is a routing dead-end: the real
-    // cause sits down another branch.
-    if is_cgp_item(
-        tcx,
-        leaf_ref.def_id,
-        CAN_USE_COMPONENT_TRAIT,
-        CGP_COMPONENT_CRATE,
-    ) || is_cgp_item(
-        tcx,
-        leaf_ref.def_id,
-        IS_PROVIDER_FOR_TRAIT,
-        CGP_COMPONENT_CRATE,
-    ) {
-        return None;
-    }
     // An extensible-data operation's bound names the field or variant whose state its partial value
     // records, read off the presence markers before the generic shapes below claim it.
     if let Some(leaf) = classify_data_leaf(tcx, leaf_ref, parent, mismatch) {
@@ -123,8 +108,9 @@ pub(crate) fn classify_leaf<'tcx>(
 /// - on **any other type** under a parent obligation: a type wired where a provider was expected,
 ///   named against the parent's provider trait.
 ///
-/// `parent` is the obligation one hop above the leaf, or `None` at the root, where only a table
-/// that wires other keys is reported.
+/// `parent` is the obligation one hop above the leaf. Only the walk's root has none, and every root
+/// is a consumer, provider, blanket, or data obligation, so a `DelegateComponent` leaf always has
+/// one; the classifier declines without it.
 fn delegate_component_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
@@ -164,13 +150,12 @@ fn delegate_component_leaf<'tcx>(
             owner,
         });
     }
+    let parent = parent?;
     // A provider reached through its own delegation blanket, although it implements the parent's
     // trait, implements that trait for other arguments than the wiring gives it, or the lookup is a
     // dead-end. Off the context a path is an aggregate provider's own `open` redirect, so it names
     // that provider table as any other entry missing from it does.
-    if let Some(parent) = parent
-        && is_blanket_dead_end(tcx, self_ty, parent)
-    {
+    if is_blanket_dead_end(tcx, self_ty, parent) {
         let other_arguments = provider_for_other_arguments(tcx, parent)?;
         return Some(if is_path {
             missing_entry()
@@ -178,11 +163,6 @@ fn delegate_component_leaf<'tcx>(
             other_arguments
         });
     }
-    // With no parent trait to name (a root-level `DelegateComponent`, which no anchor seeds), only
-    // an owner that wires some other key is a table, and anything else is no root cause.
-    let Some(parent) = parent else {
-        return owner_has_impl_of(tcx, leaf_ref.def_id, self_ty).then(missing_entry);
-    };
     // An owner that is a delegation table (a separate-table dispatch lookup or an owner that wires
     // some other key) is an aggregate provider or a `UseDelegate`/`UseInputDelegate` table missing
     // this entry, named with the key in full, since it may be a dispatched-on type.
