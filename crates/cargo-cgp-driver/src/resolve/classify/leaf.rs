@@ -43,12 +43,6 @@ pub(crate) fn classify_leaf<'tcx>(
     parent: Option<ty::TraitRef<'tcx>>,
     mismatch: Option<ProjectionMismatch<'tcx>>,
 ) -> Option<Leaf> {
-    let is_delegate_component = is_cgp_item(
-        tcx,
-        leaf_ref.def_id,
-        DELEGATE_COMPONENT_TRAIT,
-        CGP_COMPONENT_CRATE,
-    );
     // A `CanUseComponent` or `IsProviderFor` that bottoms out unmet is a routing dead-end: the real
     // cause sits down another branch.
     if is_cgp_item(
@@ -69,6 +63,12 @@ pub(crate) fn classify_leaf<'tcx>(
     if let Some(leaf) = classify_data_leaf(tcx, leaf_ref, parent, mismatch) {
         return Some(leaf);
     }
+    let is_delegate_component = is_cgp_item(
+        tcx,
+        leaf_ref.def_id,
+        DELEGATE_COMPONENT_TRAIT,
+        CGP_COMPONENT_CRATE,
+    );
     // A projection mismatch on a trait that is *not* `HasField`, most often a CGP abstract type the
     // context binds one way and a provider pins another. Classified before the trait-keyed branches
     // below, since the leaf is about the projected type rather than the trait bound (which holds).
@@ -115,8 +115,11 @@ pub(crate) fn classify_leaf<'tcx>(
 ///   mismatch ([`provider_for_other_arguments`]), and the lookup is a dead-end otherwise, as for a
 ///   pipeline stage fed an input the walk does not know;
 /// - on a **delegation table**, a dispatch lookup into a separate table ([`is_dispatch_lookup`],
-///   which reaches even an empty table) or an owner that wires some other key ([`owner_has_impl_of`]
-///   for `DelegateComponent`): the entry the table lacks;
+///   which reaches even an empty table) or an owner that wires some other key
+///   ([`owner_has_impl_of`] for `DelegateComponent`): the entry the table lacks;
+/// - for a **redirect path** on any other type under a parent obligation, an aggregate provider's
+///   own `open` redirect: the entry missing from that provider's table, in place of the other
+///   arguments a blanket dead-end would name, and dropped where that dead-end names none;
 /// - on **any other type** under a parent obligation: a type wired where a provider was expected,
 ///   named against the parent's provider trait.
 ///
