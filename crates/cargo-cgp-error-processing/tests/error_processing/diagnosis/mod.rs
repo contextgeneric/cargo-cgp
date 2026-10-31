@@ -20,7 +20,7 @@ use cargo_cgp_error_processing::diagnosis::{assoc_mismatch_leaf, mismatch_leaf, 
 use cargo_cgp_error_processing::rewrite::{ComponentNameMap, ComponentTraitNames};
 use cargo_cgp_error_processing::{
     AdapterFix, Cause, ChainNode, CoreProviderFix, DepNode, DependencyGraph, DiagKind, FieldIssue,
-    Leaf, NearMiss, PendingNote, ProvidesFix, Resolved, cause_headline, cause_notes,
+    Leaf, NearMiss, PendingNote, ProvidesFix, Resolved, ResolvedClass, cause_headline, cause_notes,
     cause_signature, coalesced_headline, consumer_header, dependency_leaf_code,
     dependency_tree_leaf, fix_help_messages, merged_cause, plan_resolved,
 };
@@ -82,16 +82,14 @@ fn one_path(leaf: Leaf, hops: Vec<ChainNode>) -> Cause {
 }
 
 /// A `Resolved` for the common case — CGP consumer traits failing on the context itself, so both
-/// `consumers_are_cgp` and `subject_is_context` are `true`. The wrapper-header tests that vary
-/// those flags build `Resolved` explicitly instead.
+/// the class is [`ResolvedClass::Consumer`] and `subject_is_context` is `true`. The wrapper-header
+/// tests that vary those build `Resolved` explicitly instead.
 fn cgp_resolved(context: &str, consumers: &[&str], causes: Vec<Cause>) -> Resolved {
     Resolved {
         context: context.to_owned(),
         consumers: consumers.iter().map(|c| (*c).to_owned()).collect(),
-        consumers_are_cgp: true,
+        class: ResolvedClass::Consumer,
         subject_is_context: true,
-        data_operation: false,
-        provider: None,
         causes: causes.into_iter().collect(),
     }
 }

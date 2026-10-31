@@ -1,6 +1,6 @@
 //! The walk's entry points, and the fold of the root node's sub-result into a `Resolved`.
 
-use cargo_cgp_error_processing::{Causes, Resolved, WiringOverflow};
+use cargo_cgp_error_processing::{Causes, Resolved, ResolvedClass, WiringOverflow};
 use rustc_middle::ty::{self, Ty};
 
 use crate::resolve::ctx::ResolveCtx;
@@ -34,7 +34,7 @@ pub fn resolve_leaves<'tcx>(
 /// Walk the dependency graph of `top`, the provider obligation `Provider: ProviderTrait<Ctx, …>` a
 /// `#[check_providers]` entry or a call to the provider's own method asserts, with `context` as the
 /// walk's root context. The result is the provider class: its trait is the provider trait (named
-/// without the provider and the context), and its [`provider`](Resolved::provider) is that provider. `None` when no branch
+/// without the provider and the context), and its class holds that provider. `None` when no branch
 /// reaches a resolvable leaf.
 pub fn resolve_provider_leaves<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,
@@ -51,7 +51,7 @@ pub fn resolve_provider_leaves<'tcx>(
         tcx.item_name(top_ref.def_id),
         trait_generics(tcx, top_ref, 2)
     )];
-    resolved.provider = Some(render_ty(tcx, top_ref.self_ty()));
+    resolved.class = ResolvedClass::Provider(render_ty(tcx, top_ref.self_ty()));
     Some(resolved)
 }
 
@@ -105,11 +105,9 @@ pub fn compute_leaves<'tcx>(
         consumers: vec![consumer],
         // Every anchor seeds the walk with a real CGP consumer obligation (the impl-site anchor
         // overrides this when the failing trait is a plain wrapper).
-        consumers_are_cgp: true,
+        class: ResolvedClass::Consumer,
         // The subject is the checked context itself.
         subject_is_context: true,
-        data_operation: false,
-        provider: None,
         causes,
     })
 }

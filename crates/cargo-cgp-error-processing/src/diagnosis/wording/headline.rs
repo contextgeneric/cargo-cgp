@@ -94,9 +94,7 @@ fn coalesced_class_sentence(members: &[&Resolved]) -> String {
         let same_subject = |subject: &&mut Resolved| {
             subject.context == member.context
                 && subject.subject_is_context == member.subject_is_context
-                && subject.consumers_are_cgp == member.consumers_are_cgp
-                && subject.data_operation == member.data_operation
-                && subject.provider == member.provider
+                && subject.class == member.class
         };
         match subjects.iter_mut().find(|subject| same_subject(subject)) {
             Some(subject) => {

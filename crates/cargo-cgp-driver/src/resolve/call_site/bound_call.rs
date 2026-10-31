@@ -1,6 +1,6 @@
 //! Anchoring a failing bound of a generic function at the call that instantiates it.
 
-use cargo_cgp_error_processing::Resolved;
+use cargo_cgp_error_processing::{Resolved, ResolvedClass};
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{Expr, ExprKind, QPath};
 use rustc_infer::infer::{InferCtxt, TyCtxtInferExt as _};
@@ -34,7 +34,7 @@ pub fn resolve_bound_call(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Reso
             let blanket = !is_consumer_trait(tcx, trait_did);
             if let Some(mut resolved) = resolve_leaves(cx, top) {
                 if blanket {
-                    resolved.consumers_are_cgp = false;
+                    resolved.class = ResolvedClass::Wrapper;
                     resolved.subject_is_context = carries_wiring(tcx, top.skip_binder().self_ty());
                 }
                 return Some(resolved);

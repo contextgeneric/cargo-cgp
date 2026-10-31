@@ -139,6 +139,25 @@ impl Deref for Causes {
     }
 }
 
+/// What the failing trait is, chosen by the anchor that matched the caret. It selects a block's
+/// class code and how its class sentence names the trait.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ResolvedClass {
+    /// A `#[check_providers]` entry, or a provider's own method called directly (`CGP-E002`). It
+    /// holds the provider, and [`Resolved::consumers`] the provider trait it fails to implement for
+    /// [`Resolved::context`].
+    Provider(String),
+    /// A call to one of CGP's extensible-data traits, a cast such as `CanUpcast`, a builder operation
+    /// such as `BuildField`, or an extractor operation (`CGP-E050`). It is worded with the plain trait
+    /// sentence, since these traits are not components.
+    DataOperation,
+    /// A CGP consumer trait, from a `check_components!` entry or a consumer-method call (`CGP-E001`).
+    Consumer,
+    /// Any other trait: a hand-written wrapper such as `CanHandleApiSend`, or a `#[cgp_fn]` blanket
+    /// trait (`CGP-E003`).
+    Wrapper,
+}
+
 /// The recovered root cause(s) of a check failure, in owned form so they outlive the inference
 /// contexts they were read from.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -152,28 +171,14 @@ pub struct Resolved {
     /// reattached (e.g. `CanCalculateArea<f64>`) — one per failing component, in first-seen order.
     /// The emitter words a rewritten main message around these.
     pub consumers: Vec<String>,
-    /// Whether [`consumers`](Resolved::consumers) are CGP *consumer* traits (from a
-    /// `check_components!` entry or a consumer-method call) rather than a hand-written wrapper trait
-    /// implemented on the context. It selects the header wording: `the consumer trait` (`CGP-E001`)
-    /// when `true`, `the trait` (`CGP-E003`) when `false` — since a wrapper such as
-    /// `CanHandleApiSend` is a plain trait the programmer wrote, not a CGP consumer.
-    pub consumers_are_cgp: bool,
+    /// What the failing trait is, which selects the block's class.
+    pub class: ResolvedClass,
     /// Whether [`context`](Resolved::context) is the checked CGP context itself (`true`, the usual
     /// case) or a foreign wrapper type the failing trait is implemented for that merely holds the
     /// context (`false`) — as `Router<Arc<MockApp>>` does for a routing trait. It selects whether the
     /// header calls the subject a `context` or names it plainly, so a foreign wrapper is not
     /// mislabelled a context.
     pub subject_is_context: bool,
-    /// Whether [`consumers`](Resolved::consumers) are CGP's extensible-data traits (a cast such as
-    /// `CanUpcast`, a builder operation such as `BuildField`, an extractor operation), reached by a
-    /// call to one. The block is then the extensible-data class (`CGP-E050`), worded with the plain
-    /// trait sentence, since these traits are not components. `false` for every other anchor.
-    pub data_operation: bool,
-    /// The provider a `#[check_providers]` entry checks, or whose own method a call names, when the
-    /// failure is that entry's or that call's: the block is then the provider class (`CGP-E002`),
-    /// and [`consumers`](Resolved::consumers) holds the provider trait the provider fails to
-    /// implement for [`context`](Resolved::context). `None` for every other anchor.
-    pub provider: Option<String>,
     /// The root causes, one entry per distinct leaf, in first-seen order.
     pub causes: Causes,
 }

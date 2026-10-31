@@ -1,6 +1,6 @@
 //! Locating the failing call and the consumer traits it could resolve through.
 
-use cargo_cgp_error_processing::Resolved;
+use cargo_cgp_error_processing::{Resolved, ResolvedClass};
 use rustc_hir::{Expr, ExprKind, HirId};
 use rustc_middle::ty::{TyCtxt, TypeVisitableExt as _};
 use rustc_span::{Span, Symbol};
@@ -25,8 +25,8 @@ use crate::resolve::walk::resolve_leaves;
 /// `app.describe()` — and both seed a walkable obligation `Ctx: Trait<…>` whose `Self` is the
 /// context; they differ only in the header the result gets. A blanket trait is not a CGP
 /// component, so — exactly as the impl-site anchor words such a trait — its failure reads
-/// `[CGP-E003] the trait …` rather than `[CGP-E001] the consumer trait …`, by clearing
-/// [`Resolved::consumers_are_cgp`] the walk sets.
+/// `[CGP-E003] the trait …` rather than `[CGP-E001] the consumer trait …`, by changing the
+/// [`Resolved::class`] the walk sets.
 ///
 /// Tried after the six span-matching anchors, so a failure any of them can recover keeps its more
 /// precise recovery.
@@ -65,11 +65,11 @@ pub fn resolve_call_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
                 // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait is consumed like a consumer trait
                 // but is not a CGP *component*, so it heads the diagnostic as `[CGP-E003] the trait
                 // …` — the same wording the impl-site anchor gives such a trait reached through a
-                // wrapper. A genuine consumer keeps the `consumers_are_cgp` the walk set. The trait
+                // wrapper. A genuine consumer keeps the class the walk set. The trait
                 // is called on a type that is a context only when it carries wiring, so a type with
                 // none is named plainly.
                 if kind == CallTrait::Blanket {
-                    resolved.consumers_are_cgp = false;
+                    resolved.class = ResolvedClass::Wrapper;
                     resolved.subject_is_context = carries_wiring(tcx, context);
                 }
                 return Some(resolved);

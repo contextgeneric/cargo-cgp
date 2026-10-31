@@ -1,6 +1,6 @@
 //! The by-consumer and by-blanket-trait use-site anchors: walking a trait the diagnostic names.
 
-use cargo_cgp_error_processing::Resolved;
+use cargo_cgp_error_processing::{Resolved, ResolvedClass};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
@@ -42,7 +42,7 @@ pub fn resolve_use_site_consumer(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Opti
 /// is not a CGP *component* (a local blanket-impl trait with no provider trait or
 /// `DelegateComponent`). Its obligation `Ctx: BlanketTrait` is walkable exactly as a consumer's is,
 /// since its `Self` is the context; the result is headed `[CGP-E003] the trait …` rather than
-/// `[CGP-E001] the consumer trait …` by clearing [`Resolved::consumers_are_cgp`].
+/// `[CGP-E001] the consumer trait …` by changing [`Resolved::class`].
 ///
 /// This reaches the shape a trait required through a `where` **bound** or supertrait produces —
 /// `fn greet_all<Context: GetName>(…)` called with a context missing the field — where the failure
@@ -68,7 +68,7 @@ enum TraitKind {
 
 /// Recover the context and the named trait of `kind` from the diagnostic's spans, seed `Ctx: Trait`,
 /// and walk it — the shared body of the two anchors above. A [`TraitKind::Blanket`] result has
-/// its `consumers_are_cgp` flag cleared, since such a trait is not a CGP component.
+/// the wrapper class, since such a trait is not a CGP component.
 fn resolve_from_named_trait(
     cx: ResolveCtx<'_, '_>,
     spans: &[Span],
@@ -100,7 +100,7 @@ fn resolve_from_named_trait(
             }
             if let Some(mut resolved) = resolve_leaves(cx, top) {
                 if kind == TraitKind::Blanket {
-                    resolved.consumers_are_cgp = false;
+                    resolved.class = ResolvedClass::Wrapper;
                     resolved.subject_is_context = carries_wiring(tcx, context);
                 }
                 return Some(resolved);

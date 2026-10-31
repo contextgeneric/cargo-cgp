@@ -34,10 +34,8 @@ fn data_resolved(owner: &str, trait_ref: &str, causes: Vec<Cause>) -> Resolved {
     Resolved {
         context: owner.to_owned(),
         consumers: vec![trait_ref.to_owned()],
-        consumers_are_cgp: false,
+        class: ResolvedClass::DataOperation,
         subject_is_context: false,
-        data_operation: true,
-        provider: None,
         causes: causes.into_iter().collect(),
     }
 }

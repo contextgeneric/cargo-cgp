@@ -5,7 +5,7 @@ use crate::code::{
     WRAPPER_TRAIT_UNIMPLEMENTED,
 };
 use crate::diagnosis::leaf::Leaf;
-use crate::diagnosis::resolved::Resolved;
+use crate::diagnosis::resolved::{Resolved, ResolvedClass};
 
 /// An `and`-joined, back-quoted list: `` `x` ``, `` `x` and `y` ``, or `` `x`, `y`, and `z` ``.
 pub fn quoted_list(items: &[String]) -> String {
@@ -22,13 +22,13 @@ pub fn quoted_list(items: &[String]) -> String {
 /// from the typed resolution, which keys each component marker by its full path, so two same-named
 /// components in different modules can never be confused. A CGP consumer trait reads as
 /// `the consumer trait …`; a trait that is not a CGP consumer (a hand-written wrapper, or a
-/// `#[cgp_fn]` blanket trait) reads as `the trait …`, chosen by [`Resolved::consumers_are_cgp`].
+/// `#[cgp_fn]` blanket trait) reads as `the trait …`, chosen by [`Resolved::class`].
 /// The subject is named `` context `X` `` when it is the checked context, or plainly `` `X` `` when
 /// it is a foreign type that merely holds the context (`Router<Arc<MockApp>>`), chosen by
 /// [`Resolved::subject_is_context`]. A `#[check_providers]` entry, or a provider's own method called
 /// directly, reads as the provider trait the provider fails to implement for the context.
 pub fn class_sentence(resolved: &Resolved) -> String {
-    if let Some(provider) = &resolved.provider {
+    if let ResolvedClass::Provider(provider) = &resolved.class {
         return format!(
             "the provider trait {} with context `{}` is not implemented for provider `{provider}`",
             quoted_list(&resolved.consumers),
@@ -48,7 +48,7 @@ pub fn class_sentence(resolved: &Resolved) -> String {
     } else {
         format!("`{}`", resolved.context)
     };
-    let kind = if resolved.consumers_are_cgp {
+    let kind = if resolved.class == ResolvedClass::Consumer {
         "consumer "
     } else {
         ""
@@ -61,14 +61,11 @@ pub fn class_sentence(resolved: &Resolved) -> String {
 /// call to one of CGP's extensible-data traits,
 /// `CGP-E001` for a CGP consumer trait, and `CGP-E003` for any other trait.
 pub fn class_code(resolved: &Resolved) -> &'static str {
-    if resolved.provider.is_some() {
-        PROVIDER_TRAIT_UNIMPLEMENTED
-    } else if resolved.data_operation {
-        DATA_OPERATION_UNIMPLEMENTED
-    } else if resolved.consumers_are_cgp {
-        CONSUMER_TRAIT_UNIMPLEMENTED
-    } else {
-        WRAPPER_TRAIT_UNIMPLEMENTED
+    match resolved.class {
+        ResolvedClass::Provider(_) => PROVIDER_TRAIT_UNIMPLEMENTED,
+        ResolvedClass::DataOperation => DATA_OPERATION_UNIMPLEMENTED,
+        ResolvedClass::Consumer => CONSUMER_TRAIT_UNIMPLEMENTED,
+        ResolvedClass::Wrapper => WRAPPER_TRAIT_UNIMPLEMENTED,
     }
 }
 

@@ -1,6 +1,6 @@
 //! The by-component use-site anchor: re-checking every component the context wires.
 
-use cargo_cgp_error_processing::{Causes, Resolved};
+use cargo_cgp_error_processing::{Causes, Resolved, ResolvedClass};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::Span;
 
@@ -57,11 +57,9 @@ pub fn resolve_use_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolv
                 context: tcx.erase_and_anonymize_regions(context).to_string(),
                 consumers,
                 // A use-site failure recovers CGP consumer traits from the context's wired markers.
-                consumers_are_cgp: true,
+                class: ResolvedClass::Consumer,
                 // The subject is the checked context itself.
                 subject_is_context: true,
-                data_operation: false,
-                provider: None,
                 causes: Causes::union(causes),
             });
         }

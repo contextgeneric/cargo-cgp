@@ -1,6 +1,6 @@
 //! Anchoring a failing call to one of CGP's extensible-data operations.
 
-use cargo_cgp_error_processing::Resolved;
+use cargo_cgp_error_processing::{Resolved, ResolvedClass};
 use rustc_hir::{Expr, ExprKind, HirId, QPath};
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::{Span, Symbol};
@@ -48,8 +48,7 @@ pub fn resolve_data_call(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
             if let Some(mut resolved) = resolve_leaves(cx, top) {
                 // A data trait is not a CGP component, and the value it is called on is a context
                 // only when it carries wiring.
-                resolved.consumers_are_cgp = false;
-                resolved.data_operation = true;
+                resolved.class = ResolvedClass::DataOperation;
                 resolved.subject_is_context = carries_wiring(tcx, subject);
                 return Some(resolved);
             }

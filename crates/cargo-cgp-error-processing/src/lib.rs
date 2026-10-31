@@ -46,7 +46,7 @@ pub use diagnosis::{
     FIRST_DISPATCH_METHOD_LABEL, FieldFix, FieldIssue, Leaf, MethodFix, MissingUseProvider,
     NearMiss, OrphanConflict, OrphanTrigger, OverflowStep, ParameterUse, PartialKind, PartialValue,
     PendingNote, ProvidedComponent, ProviderImplWithoutMacro, ProviderTraitInUses, ProvidesFix,
-    Requirement, Resolved, SECOND_CHECK_TABLE_LABEL, SECOND_DISPATCH_METHOD_LABEL,
+    Requirement, Resolved, ResolvedClass, SECOND_CHECK_TABLE_LABEL, SECOND_DISPATCH_METHOD_LABEL,
     StructuralMistake, SuggestedCall, UndeclaredRequirement, UndeclaredTrait,
     UnimportedAbstractType, UnresolvedWiringName, UseTypeMisspelling, WiringConflict, WiringKey,
     WiringOverflow, cause_headline, cause_notes, cause_signature, cgp_impl_misuse_help, class_code,

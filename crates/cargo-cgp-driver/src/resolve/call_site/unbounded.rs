@@ -1,6 +1,6 @@
 //! A consumer method called on a type parameter its generic item does not bound by the consumer.
 
-use cargo_cgp_error_processing::{Causes, ChainNode, Leaf, Resolved};
+use cargo_cgp_error_processing::{Causes, ChainNode, Leaf, Resolved, ResolvedClass};
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{self as hir, QPath};
 use rustc_middle::ty::{self, TyCtxt, Upcast as _};
@@ -79,11 +79,9 @@ pub(crate) fn unbounded_receiver<'tcx>(
     Some(Resolved {
         context: render_ty(tcx, param_ty),
         consumers: vec![tcx.item_name(trait_did).to_string()],
-        consumers_are_cgp: true,
+        class: ResolvedClass::Consumer,
         // A type parameter carries no wiring, so it is named plainly.
         subject_is_context: false,
-        data_operation: false,
-        provider: None,
         causes: Causes::from_sub_chains([(leaf, chain)]),
     })
 }

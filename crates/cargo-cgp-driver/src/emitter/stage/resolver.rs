@@ -21,7 +21,7 @@ use crate::emitter::edit::{
     mentions_wiring, rewrite_messages, strip_method_probe_advice, subdiag,
 };
 use crate::emitter::stage::CgpImplMisuseStage;
-use crate::resolve::{self, ResolveCtx};
+use crate::resolve::{self, AnchorInput, ResolveCtx};
 
 /// What stage 17 made of a diagnostic no earlier stage took.
 pub enum Resolution {
@@ -159,7 +159,7 @@ pub fn try_resolve(
     // finalized too early has no `finalize_build`), or settles on the one impl left and rejects
     // the call's tag argument (a variant extracted twice is an `E0308`). Both are reported while
     // the calling body is type-checked, as the method-bounds `E0599` is, so the solver may run,
-    // and only the data-call anchor takes them.
+    // and only the data-call anchor takes them (the anchor list's gates).
     let data_call_only = is_no_matching_item(diag) || diag.code == Some(E0308);
     // Only a diagnostic reporting an unmet obligation has a chain to walk: a projection or
     // trait-bound failure, or a method whose bounds fail. A coherence conflict (`E0119`) names
@@ -175,104 +175,15 @@ pub fn try_resolve(
         return None;
     }
     let primary_span = diag.span.primary_span()?;
-    if data_call_only {
-        let resolved = resolve::resolve_data_call(cx?, diag.span.primary_spans())?;
-        // A mismatched argument is a plain type error unless the walk finds the field or
-        // variant state the operation rejects behind it.
-        if diag.code == Some(E0308)
-            && !resolved
-                .causes
-                .iter()
-                .all(|cause| cause.leaf.is_data_state())
-        {
-            return None;
-        }
-        return Some((resolved, primary_span, true));
-    }
-    let (resolved, at_call) = anchor(cx?, diag)?;
+    let input = AnchorInput {
+        code: diag.code,
+        primary_span,
+        primary_spans: diag.span.primary_spans(),
+        spans: diagnostic_spans(diag),
+        data_call_only,
+    };
+    let (resolved, at_call) = resolve::resolve(cx?, &input)?;
     Some((resolved, primary_span, at_call))
-}
-
-/// The anchors `try_resolve` tries for an unmet obligation, in order, with whether the resolution
-/// is anchored at the call expression.
-fn anchor(cx: ResolveCtx<'_, '_>, diag: &DiagInner) -> Option<(Resolved, bool)> {
-    let primary_span = diag.span.primary_span()?;
-    let spans = diagnostic_spans(diag);
-    // The impl-site, wrapper-chain, and call-site anchors re-anchor a diagnostic onto code it
-    // sits inside, so they match only where rustc aimed it: a secondary label or a note can
-    // point at any code the failure passed through.
-    let primary = diag.span.primary_spans();
-    // Prefer the check-entry anchor (an obligation recovered from the check impl at the
-    // caret). Failing that, the impl-site anchor recovers the exact failing obligation —
-    // with its concrete component parameters — from a hand-written `impl … for Context`
-    // block the failure surfaces inside, which is more precise than the use-site re-check.
-    // Failing that, the wrapper-chain anchor handles a wrapper implemented on a *foreign*
-    // type holding the context (`impl … for Router<Arc<MockApp>>`), whose CGP consumer
-    // failure sits several `where`-clause hops down. Failing all — a use-site failure such
-    // as a consumer-method call, whose obligation no check impl carries — recover the
-    // context from the diagnostic's spans.
-    let resolved = resolve::resolve_check_failure(cx, primary_span)
-        // A `#[check_providers]` entry is anchored the same way, on the provider it lists.
-        .or_else(|| resolve::resolve_provider_check(cx, primary_span))
-        .or_else(|| resolve::resolve_impl_site(cx, primary))
-        .or_else(|| resolve::resolve_wrapper_chain(cx, primary))
-        .or_else(|| resolve::resolve_use_site(cx, &spans))
-        // A namespace-joined context's wiring lives in the namespace, not its own
-        // `DelegateComponent` impls, so the per-component re-check above finds nothing;
-        // anchoring on the consumer trait the diagnostic names and walking through the
-        // namespace recovers it.
-        .or_else(|| resolve::resolve_use_site_consumer(cx, &spans));
-    if let Some(resolved) = resolved {
-        return Some((resolved, false));
-    }
-    // The next resort re-reads the failing *call expression* itself — the anchor for a
-    // consumer-method `E0277` whose spans never touch the context's definition (a
-    // `Code`-dispatched handler pipeline that matches unconditionally), and for a direct
-    // call to a `#[cgp_fn]` trait method. A resolution from here is flagged, so the
-    // header is worded from the trait the call needs rather than from whichever provider
-    // bound rustc's headline stopped on.
-    if let Some(resolved) = resolve::resolve_call_site(cx, primary) {
-        return Some((resolved, true));
-    }
-    // A call to one of CGP's extensible-data operations, whose value is often another data
-    // operation's result (a builder chain, a remainder bound by a pattern) or named by a
-    // type-relative path (`Shape::from_variant(…)`).
-    if let Some(resolved) = resolve::resolve_data_call(cx, primary) {
-        return Some((resolved, true));
-    }
-    // A provider trait's method called through the provider's own path
-    // (`PipeHandlers::<…>::compute(&(), …)`), which asserts the provider trait directly.
-    if let Some(resolved) = resolve::resolve_provider_call(cx, primary) {
-        return Some((resolved, true));
-    }
-    // A bound of a generic function the call instantiates (`fail::<App>()`), read off the
-    // function's own `where` clauses: an `E0277` whose trait no span names and whose
-    // context no receiver carries.
-    if diag.code == Some(E0277)
-        && let Some(resolved) = resolve::resolve_bound_call(cx, primary)
-    {
-        return Some((resolved, true));
-    }
-    // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait the diagnostic names in its spans,
-    // required through a `where` bound or supertrait rather than a direct call. This is
-    // gated to `E0277` — a trait *used as a bound* — deliberately: an `E0599` method call
-    // is the call-site anchor's domain, and a *generic consumer* method call whose deep
-    // trait bound is a note (not the failure the diagnostic is about) must stay declined
-    // when its dispatch parameter is unrecoverable, rather than latch onto that transitive
-    // trait (see `generic_consumer_unwritten_arg`).
-    if diag.code == Some(E0277)
-        && let Some(resolved) = resolve::resolve_use_site_blanket_trait(cx, &spans)
-    {
-        return Some((resolved, false));
-    }
-    // A `Key -> Table` wiring entry whose table lacks the key: the compiler reports the
-    // entry's own forwarding bound, and the consumer the entry wires names the cause.
-    if diag.code == Some(E0277)
-        && let Some(resolved) = resolve::resolve_forwarding_entry(cx, primary)
-    {
-        return Some((resolved, true));
-    }
-    None
 }
 
 /// Transform a resolved wiring failure in place from the rustc-free [`plan_resolved`]: replace

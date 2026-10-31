@@ -1,6 +1,6 @@
 //! The impl-site anchor: a wiring failure surfaced inside a hand-written `impl Trait for Context`.
 
-use cargo_cgp_error_processing::{Causes, DepNode, Resolved};
+use cargo_cgp_error_processing::{Causes, DepNode, Resolved, ResolvedClass};
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, Upcast as _};
 use rustc_span::Span;
@@ -84,16 +84,13 @@ pub fn resolve_impl_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
         // a distinct trait from that supertrait, the wrapper's error is reported on its own rather
         // than de-duplicated into the `check_components!` entry for the supertrait.
         let obligation: ty::PolyTraitClause<'_> = ty::Binder::dummy(trait_ref).upcast(tcx);
-        if let Some((consumers_are_cgp, causes)) = wrapper_consumer_causes(cx, obligation, context)
-        {
+        if let Some((class, causes)) = wrapper_consumer_causes(cx, obligation, context) {
             return Some(Resolved {
                 context: context.to_string(),
                 consumers: vec![trait_ref.print_only_trait_path().to_string()],
-                consumers_are_cgp,
+                class,
                 // The wrapper is implemented directly on the context, so the subject is the context.
                 subject_is_context: true,
-                data_operation: false,
-                provider: None,
                 causes,
             });
         }
@@ -141,14 +138,14 @@ fn where_bound_on_context<'tcx>(
 
 /// Recover a cause per unmet CGP consumer supertrait of a wrapper obligation `Self: Wrapper` whose
 /// `Self` is the `context` [`resolve_impl_site`] read, each tree headed by the wrapper's own
-/// `trait impl` node. Returns whether the wrapper is itself a CGP consumer (for the header wording)
+/// `trait impl` node. Returns whether the wrapper is itself a CGP consumer, as a class (for the header wording),
 /// and the causes, or `None` when no CGP consumer supertrait is unmet — so a plain bound like
 /// `Send` is skipped rather than mis-recovered.
 fn wrapper_consumer_causes<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,
     obligation: ty::PolyTraitClause<'tcx>,
     context: ty::Ty<'tcx>,
-) -> Option<(bool, Causes)> {
+) -> Option<(ResolvedClass, Causes)> {
     let tcx = cx.tcx;
     let trait_ref = obligation.skip_binder().trait_ref;
     let wrapper = trait_ref.print_only_trait_path().to_string();
@@ -200,6 +197,10 @@ fn wrapper_consumer_causes<'tcx>(
     // fingerprint: a consumer trait carries a blanket impl routing to a provider trait
     // (`consumer_provider_trait`), while a hand-written wrapper like `CanHandleApiSend` has only its
     // concrete impl. This picks `the consumer trait` vs `the trait` in the header.
-    let consumers_are_cgp = consumer_provider_trait(tcx, trait_ref.def_id).is_some();
-    Some((consumers_are_cgp, causes))
+    let class = if consumer_provider_trait(tcx, trait_ref.def_id).is_some() {
+        ResolvedClass::Consumer
+    } else {
+        ResolvedClass::Wrapper
+    };
+    Some((class, causes))
 }

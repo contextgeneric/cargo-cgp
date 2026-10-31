@@ -179,7 +179,7 @@ fn a_check_providers_entry_is_the_provider_class() {
             )],
         )],
     );
-    resolved.provider = Some("ScaledArea<RectangleArea>".to_owned());
+    resolved.class = ResolvedClass::Provider("ScaledArea<RectangleArea>".to_owned());
     let plan = plan_resolved(
         DiagKind::Check,
         Some("the trait bound `Rectangle: HasField<Symbol!(\"scale_factor\")>` is not satisfied"),
@@ -251,10 +251,8 @@ fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
     let resolved = Resolved {
         context: "MockApp".to_owned(),
         consumers: vec!["CanHandleApiSend<QueryBalanceApi>".to_owned()],
-        consumers_are_cgp: false,
+        class: ResolvedClass::Wrapper,
         subject_is_context: true,
-        data_operation: false,
-        provider: None,
         causes: [missing_field_cause()].into_iter().collect(),
     };
     assert_eq!(
@@ -271,10 +269,8 @@ fn wrapper_header_names_a_foreign_subject_plainly() {
     let resolved = Resolved {
         context: "Router<Arc<MockApp>>".to_owned(),
         consumers: vec!["CanAddApiRoutes".to_owned()],
-        consumers_are_cgp: false,
+        class: ResolvedClass::Wrapper,
         subject_is_context: false,
-        data_operation: false,
-        provider: None,
         causes: [missing_field_cause()].into_iter().collect(),
     };
     assert_eq!(

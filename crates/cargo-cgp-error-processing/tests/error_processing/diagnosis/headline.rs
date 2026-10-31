@@ -157,7 +157,7 @@ fn a_coalesced_block_names_each_subject_when_its_causes_are_mixed() {
     );
     // Two providers checked on one context and failing for different causes are two subjects.
     let provider_check = |provider: &str, cause: Cause| Resolved {
-        provider: Some(provider.to_owned()),
+        class: ResolvedClass::Provider(provider.to_owned()),
         ..cgp_resolved("App", &["Greeter"], vec![cause])
     };
     let hello = provider_check("GreetHello", missing_field("name", "App", "App"));

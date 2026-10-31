@@ -1,7 +1,7 @@
 //! Grouping coalescible failures by the root causes they share, over hand-built `Resolved` values.
 
 use cargo_cgp_error_processing::{
-    Cause, Causes, ChainNode, DepNode, FieldIssue, Resolved, group_by_shared_cause,
+    Cause, Causes, ChainNode, DepNode, FieldIssue, Resolved, ResolvedClass, group_by_shared_cause,
 };
 
 use super::support::field_leaf;
@@ -31,10 +31,8 @@ fn failure(context: &str, consumer: &str, fields: &[&str]) -> Resolved {
     Resolved {
         context: context.to_owned(),
         consumers: vec![consumer.to_owned()],
-        consumers_are_cgp: true,
+        class: ResolvedClass::Consumer,
         subject_is_context: true,
-        data_operation: false,
-        provider: None,
         causes,
     }
 }

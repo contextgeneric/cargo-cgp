@@ -1,6 +1,6 @@
 //! The foreign-wrapper anchor: descending a `where`-clause chain to a CGP consumer.
 
-use cargo_cgp_error_processing::{Causes, ChainNode, DepNode, Leaf, Resolved};
+use cargo_cgp_error_processing::{Causes, ChainNode, DepNode, Leaf, Resolved, ResolvedClass};
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _, TypingMode, Upcast as _};
@@ -89,12 +89,14 @@ pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<R
                 consumers: vec![wrapper],
                 // The impl's own trait heads the header; a routing wrapper such as `CanAddApiRoutes`
                 // is a plain trait, not a CGP consumer, so it reads `the trait` (`CGP-E003`).
-                consumers_are_cgp: consumer_provider_trait(tcx, trait_ref.def_id).is_some(),
+                class: if consumer_provider_trait(tcx, trait_ref.def_id).is_some() {
+                    ResolvedClass::Consumer
+                } else {
+                    ResolvedClass::Wrapper
+                },
                 // `Self` is a foreign wrapper holding the context, not the context itself — reached
                 // here only *because* it is not the context (else `resolve_impl_site` caught it).
                 subject_is_context: false,
-                data_operation: false,
-                provider: None,
                 causes,
             });
         }
