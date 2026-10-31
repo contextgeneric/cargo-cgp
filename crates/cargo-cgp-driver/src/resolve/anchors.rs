@@ -71,7 +71,7 @@ fn accept_data_call(input: &AnchorInput<'_>, resolved: &Resolved) -> bool {
 }
 
 /// The anchors, in the order they are tried.
-pub const ANCHORS: [Anchor; 12] = [
+pub static ANCHORS: [Anchor; 12] = [
     // A check entry: the obligation recovered from the check impl at the caret.
     Anchor {
         gate: unmet_obligation,

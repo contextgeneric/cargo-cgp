@@ -5,7 +5,7 @@
 //! (`cargo-cgp-driver`) is the only caller; the front-end no longer touches diagnostics.
 //! See `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md` for the design.
 //!
-//! Eight tenants live here, all driven by the driver's emitter:
+//! Nine tenants live here, all driven by the driver's emitter:
 //!
 //! - [`rewrite`] — the string transform that renames CGP wiring messages, over the
 //!   [`ComponentNameMap`] the driver fills in from the compiler.
@@ -23,6 +23,8 @@
 //!   by the text post-processing and the driver's typed renderer.
 //! - [`candidates`]: [`bound_candidate_list`], which cuts the implementor list the driver's
 //!   `--verbose` flag un-elides back to the length rustc prints by default.
+//! - [`byte_range`]: the anchors' span decisions over plain byte ranges, which the driver converts
+//!   each `Span` to.
 //!
 //! A further module, [`code`], holds the `CGP-E` error-code constants the rewrite and the
 //! diagnosis wording stamp on classified main messages.

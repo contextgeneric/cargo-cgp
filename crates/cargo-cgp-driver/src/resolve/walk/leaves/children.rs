@@ -29,7 +29,7 @@ pub enum NodeStep<'tcx> {
 /// the unmet `where`-obligations of the impl that would satisfy it.
 ///
 /// An unmet `DelegateComponent` on the **context** is the missing-wiring leaf, whatever impl
-/// nominally matches it. Normally none does and the terminal branch below catches it, but a
+/// nominally matches it. Normally none does and the no-impl terminal catches it, but a
 /// context that joins a namespace carries a blanket `DelegateComponent<__Key__>` forwarding that
 /// unifies with *every* key, so the descent would follow it into the namespace's own lookup
 /// machinery (`ConcatPath`, `Sized` on the unresolved key) and bottom out on plumbing instead.
@@ -73,14 +73,12 @@ pub fn select_children<'tcx>(
     if delegated.is_empty()
         && let Some(clauses) = misdirected_impl_clauses(tcx, leaf_ref)
     {
-        misdirected = unmet_clauses(
-            tcx,
-            clauses
-                .iter()
-                .filter_map(|clause| clause.as_trait_clause())
-                .filter(|nested| !holds(tcx, *nested))
-                .collect(),
-        );
+        let failing: Vec<_> = clauses
+            .iter()
+            .filter_map(|clause| clause.as_trait_clause())
+            .filter(|nested| !holds(tcx, *nested))
+            .collect();
+        misdirected = unmet_clauses(tcx, &failing);
         if misdirected.is_empty()
             && let Some(mismatch) = unmet_projection(tcx, clauses)
         {
@@ -107,7 +105,7 @@ pub fn select_children<'tcx>(
         .into_iter()
         .filter(|nested| !holds(tcx, *nested))
         .collect();
-    let unmet = unmet_clauses(tcx, failing.clone());
+    let unmet = unmet_clauses(tcx, &failing);
 
     if !descendable {
         followable_children(tcx, erased, parent, context, self_fp, unmet)
@@ -120,22 +118,24 @@ pub fn select_children<'tcx>(
     }
 }
 
-/// `failing` without the check-trait scaffolding.
-///
-/// Drop the check-trait scaffolding wherever it appears as a dependency: the generated blanket
-/// impls carry a `CanUseComponent`/`IsProviderFor` bound *beside* the real consumer or
+/// `failing` without the check-trait scaffolding, wherever it appears as a dependency: the generated
+/// blanket impls carry a `CanUseComponent`/`IsProviderFor` bound *beside* the real consumer or
 /// provider-trait obligation, and only the latter is walked — the `IsProviderFor` bound just
 /// re-states the provider's `where` clause, which the real provider impl already carries.
 pub fn unmet_clauses<'tcx>(
     tcx: TyCtxt<'tcx>,
-    failing: Vec<ty::PolyTraitClause<'tcx>>,
+    failing: &[ty::PolyTraitClause<'tcx>],
 ) -> Vec<ty::PolyTraitClause<'tcx>> {
     failing
-        .into_iter()
+        .iter()
+        .copied()
         .filter(|nested| !is_workaround_plumbing(tcx, *nested))
         .collect()
 }
 
+/// What a node that is not descendable does with its `unmet` clauses: it follows the ones below, or
+/// ends as a terminal leaf.
+///
 /// A foreign-type bound is normally the terminal root cause, and the descent must not wander
 /// into whatever `std` blanket impl happens to satisfy it. Two exceptions are followed: a CGP
 /// getter or blanket trait on a non-context type whose blanket impl depends on the *context*

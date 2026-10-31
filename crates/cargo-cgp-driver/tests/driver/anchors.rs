@@ -33,8 +33,13 @@ fn reached(input: &AnchorInput<'_>) -> Vec<usize> {
 // Property: for all data-call-only diagnostics, the only entry reached is the data-call anchor.
 #[test]
 fn a_data_call_only_shape_reaches_the_data_call_anchor_alone() {
-    assert_eq!(reached(&input(E0599, true)), [DATA_CALL]);
-    assert_eq!(reached(&input(E0308, true)), [DATA_CALL]);
+    for code in [E0599, E0308] {
+        assert_eq!(
+            reached(&input(code, true)),
+            [DATA_CALL],
+            "{code:?} on a data-call-only shape reaches only the data-call anchor",
+        );
+    }
 }
 
 // Property: an unmet obligation other than `E0277` reaches the first nine entries, and the last
@@ -42,15 +47,24 @@ fn a_data_call_only_shape_reaches_the_data_call_anchor_alone() {
 #[test]
 fn the_bound_anchors_stay_shut_for_a_projection_and_a_method_call() {
     let first_nine: Vec<usize> = (0..9).collect();
-    assert_eq!(reached(&input(E0271, false)), first_nine);
-    assert_eq!(reached(&input(E0599, false)), first_nine);
+    for code in [E0271, E0599] {
+        assert_eq!(
+            reached(&input(code, false)),
+            first_nine,
+            "{code:?} leaves the anchors for a trait bound shut",
+        );
+    }
 }
 
 // Property: an `E0277` reaches every entry.
 #[test]
 fn a_trait_bound_failure_reaches_every_anchor() {
     let every: Vec<usize> = (0..ANCHORS.len()).collect();
-    assert_eq!(reached(&input(E0277, false)), every);
+    assert_eq!(
+        reached(&input(E0277, false)),
+        every,
+        "E0277 opens every gate"
+    );
 }
 
 fn resolved_with(leaf: Leaf) -> Resolved {
@@ -83,8 +97,20 @@ fn plain_bound() -> Leaf {
 #[test]
 fn the_data_call_anchor_accepts_a_mismatch_only_for_a_data_state() {
     let accept = ANCHORS[DATA_CALL].accept;
-    assert!(accept(&input(E0308, true), &resolved_with(data_state())));
-    assert!(!accept(&input(E0308, true), &resolved_with(plain_bound())));
-    assert!(accept(&input(E0599, true), &resolved_with(plain_bound())));
-    assert!(accept(&input(E0277, false), &resolved_with(plain_bound())));
+    assert!(
+        accept(&input(E0308, true), &resolved_with(data_state())),
+        "a data state explains a mismatched argument",
+    );
+    assert!(
+        !accept(&input(E0308, true), &resolved_with(plain_bound())),
+        "a plain bound does not explain a mismatched argument",
+    );
+    assert!(
+        accept(&input(E0599, true), &resolved_with(plain_bound())),
+        "any cause explains a method the probe did not find",
+    );
+    assert!(
+        accept(&input(E0277, false), &resolved_with(plain_bound())),
+        "any cause explains an unmet bound",
+    );
 }

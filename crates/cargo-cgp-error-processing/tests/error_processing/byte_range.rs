@@ -55,6 +55,29 @@ fn overlaps_or_adjacent_adds_touching_ranges_on_small_ranges() {
     }
 }
 
+// Property (assumed from `rustc_span`'s definitions, which these comparisons follow): an empty range
+// overlaps only a range it lies strictly inside, and is contained in a range holding its position,
+// ends included.
+#[test]
+fn an_empty_range_overlaps_only_strictly_inside_and_is_contained_up_to_the_ends() {
+    let outer = range(2, 5);
+    for (position, overlaps, contained) in [
+        (1, false, false),
+        (2, false, true),
+        (3, true, true),
+        (5, false, true),
+        (6, false, false),
+    ] {
+        let empty = range(position, position);
+        assert_eq!(outer.overlaps(empty), overlaps, "overlap at {position}");
+        assert_eq!(
+            outer.contains(empty),
+            contained,
+            "containment at {position}"
+        );
+    }
+}
+
 // The call `person.greet(count(x))` of these tests: the receiver is bytes 0 to 6, `greet` 7 to 12,
 // the argument `count(x)` 13 to 21, and `x` inside it 19 to 20.
 const CALL: ByteRange = ByteRange { lo: 0, hi: 22 };
@@ -84,7 +107,10 @@ fn a_caret_on_the_call_its_name_or_a_whole_operand_is_about_it() {
 #[test]
 fn a_caret_strictly_inside_an_operand_is_not_about_the_call() {
     let caret = range(19, 20);
-    assert!(!is_about_call(caret, CALL, operands(caret)));
+    assert!(
+        !is_about_call(caret, CALL, operands(caret)),
+        "a caret nested in an argument keeps its own diagnostic",
+    );
 }
 
 // Concern: an error beside the call (an `Rc` passed to a `T: Send` function on the line before)
@@ -105,7 +131,10 @@ fn an_operand_with_the_carets_bytes_in_another_context_holds_the_caret() {
         range: ARGUMENT,
         is_caret: false,
     }];
-    assert!(!is_about_call(ARGUMENT, CALL, other_context));
+    assert!(
+        !is_about_call(ARGUMENT, CALL, other_context),
+        "bytes alone do not make an operand the caret",
+    );
 }
 
 // The impl of these tests spans bytes 10 to 50, with one method body at 30 to 40.

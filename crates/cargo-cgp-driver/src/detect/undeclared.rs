@@ -96,9 +96,8 @@ pub fn detect_undeclared_trait(
     None
 }
 
-/// The generic context a generated impl is over, and whether it is the impl's `Self`.
-///
-/// The generic context the generated impl is over: a `#[cgp_fn]` blanket impl's `Self`, or a
+/// The generic context a generated impl is over, and whether it is the impl's `Self`: a `#[cgp_fn]`
+/// blanket impl's `Self`, or a
 /// `#[cgp_impl]` provider impl's first trait argument (`Greeter<__Context__> for GreetHello`).
 /// A hand-written `impl … for ConcreteContext` has neither and is a different
 /// (concrete-context) failure.
@@ -111,7 +110,8 @@ fn generated_context(trait_ref: ty::TraitRef<'_>) -> Option<(Ty<'_>, bool)> {
     matches!(first.kind(), ty::Param(_)).then_some((first, false))
 }
 
-/// The call must be on that context. A receiver that is a parameter of another type (a
+/// Whether the call is on the generated `context`; `blanket_impl` is the impl when its `Self` is the
+/// context. A receiver that is a parameter of another type (a
 /// `value: &Value` beside the context) needs a bound on `Value`, which `#[uses]` cannot give, so
 /// it is not this failure. A receiver whose type cannot be read off a signature (a method call's
 /// result) is accepted only in a `#[cgp_fn]` impl, whose `Self` is the context.
