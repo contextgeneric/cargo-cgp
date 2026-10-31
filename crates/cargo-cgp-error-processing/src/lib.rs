@@ -26,7 +26,8 @@
 //!   `--verbose` flag un-elides back to the length rustc prints by default.
 //! - [`byte_range`]: the anchors' span decisions over plain byte ranges, which the driver converts
 //!   each `Span` to.
-//! - [`syntax`]: telling a string literal from the code around it in rendered text.
+//! - [`syntax`]: telling a string literal from the code around it in rendered text, and how Rust
+//!   and `Path!` spell a name.
 //!
 //! A further module, [`code`], holds the `CGP-E` error-code constants the rewrite and the
 //! diagnosis wording stamp on classified main messages.
@@ -84,5 +85,5 @@ pub use signals::{
     is_question_mark_cascade_text, is_recursion_limit_help_text, is_unbounded_type_param_item_text,
     mentions_orphan_param_text, mentions_wiring_text,
 };
-pub use syntax::{code_chars, string_literal_end};
+pub use syntax::{code_chars, is_ident, is_primitive_type, string_literal_end};
 pub use tree::{DependencyTree, render_dependency_tree};

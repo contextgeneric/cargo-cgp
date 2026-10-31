@@ -11,7 +11,7 @@ keywords     = { workspace = true }
 
 # The syntax-tree half of the `cargo cgp expand` command: it takes the source the compiler's
 # pretty-printer produced for an expanded crate and rewrites CGP's type-level spines back to
-# the surface macros the programmer wrote. Like `cargo-cgp-error-processing` it links no
+# the surface macros the programmer wrote. Like `cargo-cgp-error-processing`, on which it depends, it links no
 # compiler internals — it works on text and a `syn` tree — so it builds and its tests run on
 # any toolchain. See `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 
@@ -25,8 +25,6 @@ proc-macro2 = { workspace = true }
 # Prints the resugared tree back to source. The same printer `cargo-expand` uses, so the
 # formatting a user sees matches what they are used to from that tool.
 prettyplease = { workspace = true }
-
-[dev-dependencies]
-# The agreement test compares this crate's resugaring with the diagnostic text resugaring over the
-# same constructs. A path-only dependency, so `cargo publish` drops it from the published manifest.
-cargo-cgp-error-processing = { path = "../cargo-cgp-error-processing" }
+# The spelling rules the text resugaring also follows, so a name is spelled the same in an expansion
+# and in a diagnostic. The agreement test also compares the two resugarings' results.
+cargo-cgp-error-processing = { workspace = true }

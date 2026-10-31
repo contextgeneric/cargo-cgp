@@ -8,12 +8,13 @@
 //! are the same as the diagnostic resugarers' (see
 //! `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`).
 
+use cargo_cgp_error_processing::shape_name;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::visit_mut::{self, VisitMut};
 use syn::{Expr, ExprLit, GenericArgument, Lit, MacroDelimiter, Type};
 
-use crate::resugar::parts::{Delimiter, is_terminator, macro_type, shape_name, type_args};
+use crate::resugar::parts::{Delimiter, is_terminator, macro_type, type_args};
 use crate::resugar::symbol::symbol_macro_name;
 
 /// The `Product!`/`Sum!` pass. Runs after [`Paths`](super::Paths), which consumes the `Nil` that

@@ -13,14 +13,13 @@
 //! left as it stands. In an expansion the open tail is a named generic parameter anyway, not the
 //! `_` a diagnostic shows.
 
+use cargo_cgp_error_processing::{is_ident, is_primitive_type};
 use proc_macro2::{Punct, Spacing, TokenStream, TokenTree};
 use quote::ToTokens;
 use syn::visit_mut::{self, VisitMut};
 use syn::{GenericArgument, Type};
 
-use crate::resugar::parts::{
-    Delimiter, is_ident, is_primitive_type, is_terminator, macro_type, type_args,
-};
+use crate::resugar::parts::{Delimiter, is_terminator, macro_type, type_args};
 use crate::resugar::symbol::symbol_macro_name;
 
 /// The `Path!` pass. Runs after [`Symbols`](super::Symbols), whose `Symbol!("…")` calls it reads

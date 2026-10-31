@@ -162,7 +162,8 @@ either, so it builds and tests on any toolchain (see
 **`cargo-cgp-expand`** (`crates/cargo-cgp-expand`), is the rustc-free half of `cargo cgp expand`: it
 takes the source the compiler printed for an expanded crate, optionally narrows it to one module or
 item, and folds CGP's type-level spines back to the surface macros (`Symbol!`, `Path!`,
-`Product!`/`Sum!`); it links no compiler internals either
+`Product!`/`Sum!`); it links no compiler internals either, and takes the shared spelling rules from
+`cargo-cgp-error-processing`
 (see [Resugaring](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/resugaring.md) and
 [The expand command](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/expand-command.md)).
 

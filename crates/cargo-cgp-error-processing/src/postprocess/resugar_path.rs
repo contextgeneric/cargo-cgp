@@ -33,6 +33,7 @@
 //! `Symbol!("…")` surface form by the time this matches it.
 
 use crate::postprocess::scan_head_tail;
+use crate::syntax::{is_ident, is_primitive_type};
 
 /// Rewrite every well-formed `PathCons<…>` spine in `text` to its surface path form, returning
 /// the rewritten text when any was rewritten (and `None` otherwise). A `PathCons<` that does not
@@ -198,40 +199,4 @@ fn symbol_inner(segment: &str) -> Option<String> {
         return None;
     }
     Some(inner.to_owned())
-}
-
-/// Whether `s` is a single Rust identifier (ASCII letters, digits, and underscores, not
-/// starting with a digit).
-fn is_ident(s: &str) -> bool {
-    let mut chars = s.chars();
-    match chars.next() {
-        Some(c) if c == '_' || c.is_ascii_alphabetic() => {}
-        _ => return false,
-    }
-    chars.all(|c| c == '_' || c.is_ascii_alphanumeric())
-}
-
-/// Whether `ident` is a Rust primitive type name, matching the `Path!` macro's own rule
-/// (`cgp-macro-core`'s `path_element::is_primitive_type`): only the real names, so `f` or `u2`
-/// is a symbol.
-fn is_primitive_type(ident: &str) -> bool {
-    matches!(
-        ident,
-        "u8" | "u16"
-            | "u32"
-            | "u64"
-            | "u128"
-            | "usize"
-            | "i8"
-            | "i16"
-            | "i32"
-            | "i64"
-            | "i128"
-            | "isize"
-            | "f32"
-            | "f64"
-            | "char"
-            | "bool"
-            | "str"
-    )
 }

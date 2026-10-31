@@ -1,8 +1,8 @@
 //! The syntax-tree resugaring (this crate) and the diagnostic text resugaring
 //! (`cargo-cgp-error-processing`) agree on every construct both can show.
 //!
-//! The two implementations share no code, because one reads a parsed type and the other a rendered
-//! string, so nothing but this test keeps their spellings in step. Each case feeds the same type to
+//! The two share their spelling rules, but one walks a parsed type and the other a rendered string,
+//! so nothing but this test keeps their results in step. Each case feeds the same type to
 //! both: the text pass through the chain an untransformed diagnostic runs, which spells a path in
 //! its `Path!(@…)` source form, and this crate's pass as the right-hand side of a type alias. The
 //! typed pass inside the driver needs the compiler, so the UI fixtures cover it instead.

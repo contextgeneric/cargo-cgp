@@ -1,5 +1,7 @@
 //! Finding a near miss: a field or wiring key the program wrote that is close to the one missing.
 
+use crate::syntax::is_primitive_type;
+
 /// The candidate closest to `target` when it is close enough to be a likely slip: a candidate equal
 /// to `target` ignoring ASCII case, or one within an edit distance of a third of `target`'s length,
 /// as rustc's own "similar name" suggestions allow, but never more than two edits, so names that
@@ -83,11 +85,7 @@ fn is_near_key(target: &[&str], candidate: &[&str]) -> bool {
 /// Whether a segment is a symbol, by `Path!`'s rule: it starts with a lowercase ASCII letter and is
 /// not a primitive type, which stays a type (`u64` and `f64` are two types, not one slip).
 fn is_symbol(segment: &str) -> bool {
-    const PRIMITIVES: [&str; 17] = [
-        "bool", "char", "str", "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32",
-        "i64", "i128", "isize", "f32", "f64",
-    ];
-    segment.starts_with(|c: char| c.is_ascii_lowercase()) && !PRIMITIVES.contains(&segment)
+    segment.starts_with(|c: char| c.is_ascii_lowercase()) && !is_primitive_type(segment)
 }
 
 /// A key's segments: the parts of an `@`-path between its dots, or a bare name as one segment.
