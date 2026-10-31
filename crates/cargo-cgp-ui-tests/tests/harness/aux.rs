@@ -9,7 +9,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use cargo_cgp_ui_tests::aux;
+use cargo_cgp_ui_tests::directives;
 
 fn fixture(name: &str, body: &str) -> PathBuf {
     let dir = std::env::temp_dir().join("cargo-cgp-aux-tests");
@@ -25,7 +25,10 @@ fn reads_one_declared_crate() {
         "one.rs",
         "//! A fixture.\n//@aux-build: cgp-test-crate-a\n\nfn main() {}\n",
     );
-    assert_eq!(aux::declared(&path), vec!["cgp-test-crate-a".to_owned()]);
+    assert_eq!(
+        directives::read(&path).aux_build,
+        vec!["cgp-test-crate-a".to_owned()]
+    );
 }
 
 #[test]
@@ -35,7 +38,7 @@ fn reads_several_declared_crates_in_order() {
         "//@aux-build: cgp-test-crate-a\n//@aux-build: cgp-test-crate-b\nfn main() {}\n",
     );
     assert_eq!(
-        aux::declared(&path),
+        directives::read(&path).aux_build,
         vec!["cgp-test-crate-a".to_owned(), "cgp-test-crate-b".to_owned()]
     );
 }
@@ -43,13 +46,13 @@ fn reads_several_declared_crates_in_order() {
 #[test]
 fn a_fixture_without_the_directive_declares_nothing() {
     let path = fixture("none.rs", "//! A fixture.\nfn main() {}\n");
-    assert!(aux::declared(&path).is_empty());
+    assert!(directives::read(&path).aux_build.is_empty());
 }
 
 #[test]
 fn a_missing_fixture_declares_nothing() {
     let path = std::env::temp_dir().join("cargo-cgp-aux-tests/does-not-exist.rs");
-    assert!(aux::declared(&path).is_empty());
+    assert!(directives::read(&path).aux_build.is_empty());
 }
 
 #[test]
@@ -61,14 +64,14 @@ fn a_space_after_the_slashes_is_rejected() {
         "spaced.rs",
         "// @aux-build: cgp-test-crate-a\nfn main() {}\n",
     );
-    let _ = aux::declared(&path);
+    let _ = directives::read(&path).aux_build;
 }
 
 #[test]
 #[should_panic(expected = "malformed `//@` directive")]
 fn a_doc_comment_directive_is_rejected() {
     let path = fixture("doc.rs", "//! @aux-build: cgp-test-crate-a\nfn main() {}\n");
-    let _ = aux::declared(&path);
+    let _ = directives::read(&path).aux_build;
 }
 
 #[test]
@@ -79,5 +82,5 @@ fn prose_mentioning_the_syntax_is_not_a_directive() {
         "prose.rs",
         "//! A fixture opts in with a `//@aux-build: name` line.\nfn main() {}\n",
     );
-    assert!(aux::declared(&path).is_empty());
+    assert!(directives::read(&path).aux_build.is_empty());
 }

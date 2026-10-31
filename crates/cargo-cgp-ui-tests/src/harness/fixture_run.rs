@@ -29,18 +29,24 @@ impl Run {
 /// diagnostics from stderr with its exit status. `-q` suppresses cargo's progress lines,
 /// leaving the compiler diagnostics; `--color never` keeps the snapshot free of ANSI escapes.
 /// This is the "call cargo-cgp directly" pass.
-pub fn run_fixture(harness_crate: &Path, fixture: &Path) -> Run {
-    let output = run_cargo_cgp(harness_crate, fixture, &["check", "-q", "--color", "never"]);
+pub fn run_fixture(harness_crate: &Path, fixture: &Path, env: &[(String, String)]) -> Run {
+    let output = run_cargo_cgp(
+        harness_crate,
+        fixture,
+        env,
+        &["check", "-q", "--color", "never"],
+    );
     Run::from_output(&output)
 }
 
 /// Compile one fixture through `cargo-cgp check --message-format=json` and return cargo's JSON
 /// message stream from stdout, the form an editor reads. The caller keeps only the compiler
 /// messages; cargo's artifact and build-finished lines are noise here.
-pub fn run_fixture_json(harness_crate: &Path, fixture: &Path) -> String {
+pub fn run_fixture_json(harness_crate: &Path, fixture: &Path, env: &[(String, String)]) -> String {
     let output = run_cargo_cgp(
         harness_crate,
         fixture,
+        env,
         &["check", "-q", "--message-format=json"],
     );
     String::from_utf8_lossy(&output.stdout).into_owned()
@@ -56,10 +62,15 @@ pub fn run_fixture_json(harness_crate: &Path, fixture: &Path) -> String {
 /// type defined twice, which rustc treats as fatal once name resolution finishes) produces no
 /// expansion at all. The marker returned here is what its snapshot records, which pins that the
 /// failure happens before the compiler type-checks the generated code.
-pub fn run_fixture_expand(harness_crate: &Path, fixture: &Path) -> String {
+pub fn run_fixture_expand(
+    harness_crate: &Path,
+    fixture: &Path,
+    env: &[(String, String)],
+) -> String {
     let output = run_cargo_cgp(
         harness_crate,
         fixture,
+        env,
         &["expand", "-q", "--color", "never"],
     );
     let expansion = String::from_utf8_lossy(&output.stdout).into_owned();
@@ -102,21 +113,27 @@ pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path) -> Run {
 /// recompile and re-emit diagnostics even when the same fixture was just built by another
 /// pass.
 ///
-/// The fixture's `//@env:` variables are set on the command (see [`crate::directives`]).
+/// `env` holds the fixture's `//@env:` variables, which are set on the command (see
+/// [`crate::directives`]).
 ///
 /// `CARGO_CGP_NO_MANAGE` turns off the front-end's provisioning preflight and toolchain
 /// forcing: the harness drives the freshly built driver under the toolchain `cargo test`
 /// already selected, so there is nothing to verify or install. Without it, `cargo cgp
 /// check` would try to confirm a provisioned driver that the source-tree test loop never
 /// installs.
-pub fn run_cargo_cgp(harness_crate: &Path, fixture: &Path, args: &[&str]) -> std::process::Output {
+pub fn run_cargo_cgp(
+    harness_crate: &Path,
+    fixture: &Path,
+    env: &[(String, String)],
+    args: &[&str],
+) -> std::process::Output {
     fs::copy(fixture, harness_crate.join("src/main.rs"))
         .unwrap_or_else(|e| panic!("copying fixture {}: {e}", fixture.display()));
 
     Command::new(cargo_cgp_bin())
         .current_dir(harness_crate)
         .env("CARGO_CGP_NO_MANAGE", "1")
-        .envs(crate::directives::read(fixture).env)
+        .envs(env.iter().map(|(key, value)| (key, value)))
         .args(args)
         .output()
         .expect("running cargo-cgp on a fixture")

@@ -34,11 +34,16 @@ pub fn report_block(name: &str, outcomes: &[(&str, Outcome)]) -> String {
 
 /// Render a fixture's raw output for interactive inspection: the tool's stderr, plain
 /// `cargo check`'s stderr, and the expansion, each unnormalized and labelled with its exit status.
-pub fn print_block(harness_crate: &Path, fixture: &Path, name: &str) -> String {
+pub fn print_block(
+    harness_crate: &Path,
+    fixture: &Path,
+    name: &str,
+    env: &[(String, String)],
+) -> String {
     let status = |ok: bool| if ok { "success" } else { "failure" };
-    let cgp = harness::run_fixture(harness_crate, fixture);
+    let cgp = harness::run_fixture(harness_crate, fixture, env);
     let rust = harness::run_fixture_rust(harness_crate, fixture);
-    let expand = harness::run_fixture_expand(harness_crate, fixture);
+    let expand = harness::run_fixture_expand(harness_crate, fixture, env);
     format!(
         "===== {name}: cargo cgp check ({}) =====\n{}\
          ===== {name}: cargo check ({}) =====\n{}\

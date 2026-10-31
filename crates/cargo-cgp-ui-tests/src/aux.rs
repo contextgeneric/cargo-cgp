@@ -28,12 +28,6 @@ use crate::paths::{aux_build_root, auxiliary_src_dir, cgp_crate_dir};
 /// with the resolved sibling checkout when the crate is materialized.
 const CGP_PLACEHOLDER: &str = "__CGP_CRATE_DIR__";
 
-/// The auxiliary crate names a fixture declares with `//@aux-build: <name>` lines, read with
-/// the rest of its directives (see [`crate::directives`], which also rejects a malformed one).
-pub fn declared(fixture: &Path) -> Vec<String> {
-    crate::directives::read(fixture).aux_build
-}
-
 /// Materialize every stored auxiliary crate once and return a map from crate name
 /// to its materialized directory. Run at setup, before any worker starts, so the
 /// static sources are copied and their manifests generated a single time; each
@@ -98,20 +92,20 @@ fn copy_tree(src: &Path, dest: &Path) {
     }
 }
 
-/// Resolve a fixture's declared auxiliary crates to `(name, materialized dir)`
-/// pairs, drawn from the map [`materialize_all`] produced. A declared name with no
+/// Resolve a fixture's declared auxiliary crates (see [`crate::directives`]) to
+/// `(name, materialized dir)` pairs, drawn from the map [`materialize_all`] produced. A declared name with no
 /// matching materialized crate is skipped (the fixture will then fail to compile,
 /// surfacing the typo through the snapshot rather than a harness panic).
 pub fn required<'a>(
-    fixture: &Path,
+    declared: &[String],
     materialized: &'a [(String, PathBuf)],
 ) -> Vec<(&'a str, &'a Path)> {
-    declared(fixture)
-        .into_iter()
+    declared
+        .iter()
         .filter_map(|name| {
             materialized
                 .iter()
-                .find(|(n, _)| *n == name)
+                .find(|(n, _)| n == name)
                 .map(|(n, dir)| (n.as_str(), dir.as_path()))
         })
         .collect()

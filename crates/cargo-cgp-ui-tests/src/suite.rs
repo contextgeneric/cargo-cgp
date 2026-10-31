@@ -8,7 +8,7 @@ use crate::blocks::{list_block, print_block, report_block};
 use crate::options::Options;
 use crate::passes::run_passes;
 use crate::snapshot::Outcome;
-use crate::{aux, fixtures, harness, passes, paths, runner};
+use crate::{aux, directives, fixtures, harness, passes, paths, runner};
 
 /// Run the UI suite. `args` are the harness arguments (everything cargo passes after
 /// `--`): `--bless` to regenerate snapshots, `--print` to print each fixture's raw output
@@ -128,14 +128,16 @@ pub fn check_fixture(
         .display()
         .to_string();
 
+    let directives = directives::read(fixture);
+
     // Point the worker crate at whatever auxiliary crates this fixture declares
     // (usually none) before any pass copies the fixture in and compiles it.
-    let fixture_aux = aux::required(fixture, &setup.aux_crates);
+    let fixture_aux = aux::required(&directives.aux_build, &setup.aux_crates);
     harness::write_manifest(crate_dir, &fixture_aux);
 
     if options.print {
         Report {
-            text: print_block(crate_dir, fixture, &name),
+            text: print_block(crate_dir, fixture, &name, &directives.env),
             failed: false,
         }
     } else {
@@ -144,7 +146,7 @@ pub fn check_fixture(
             cgp_root: &setup.cgp_root,
             sysroot: &setup.sysroot,
         };
-        let outcomes = run_passes(options, fixture, &name, &paths);
+        let outcomes = run_passes(options, fixture, &name, &directives, &paths);
         let failed = outcomes
             .iter()
             .any(|(_, outcome)| matches!(outcome, Outcome::Mismatch(_)));

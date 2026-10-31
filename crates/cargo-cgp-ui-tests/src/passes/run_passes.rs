@@ -2,12 +2,13 @@
 
 use std::path::Path;
 
+use crate::directives::Directives;
 use crate::options::Options;
 use crate::passes::checks::{header_check, pass_through_check, status_check};
 use crate::passes::pass_paths::Paths;
 use crate::passes::snapshot_passes::{cgp_stderr_pass, expand_pass, json_pass, rust_stderr_pass};
 use crate::snapshot::Outcome;
-use crate::{directives, harness, normalize};
+use crate::{harness, normalize};
 
 /// Run the passes and checks for one fixture and return each one's label and outcome: the rust
 /// pass records the plain-compiler `.rust.stderr` baseline, the cgp pass owns the tool's
@@ -18,11 +19,11 @@ pub fn run_passes(
     options: &Options,
     fixture: &Path,
     name: &str,
+    directives: &Directives,
     paths: &Paths,
 ) -> Vec<(&'static str, Outcome)> {
-    let directives = directives::read(fixture);
     let rust = harness::run_fixture_rust(paths.harness_crate, fixture);
-    let cgp = harness::run_fixture(paths.harness_crate, fixture);
+    let cgp = harness::run_fixture(paths.harness_crate, fixture, &directives.env);
 
     let mut outcomes = vec![
         (
@@ -30,7 +31,10 @@ pub fn run_passes(
             rust_stderr_pass(&rust, fixture, paths, options.bless),
         ),
         ("cgp", cgp_stderr_pass(&cgp, fixture, paths, options.bless)),
-        ("expand", expand_pass(fixture, paths, options.bless)),
+        (
+            "expand",
+            expand_pass(fixture, &directives.env, paths, options.bless),
+        ),
         ("status", status_check(rust.success, cgp.success)),
     ];
 
@@ -43,7 +47,7 @@ pub fn run_passes(
         paths.cgp_root,
         paths.sysroot,
     );
-    outcomes.push(("header", header_check(exempt, &directives, &tool_output)));
+    outcomes.push(("header", header_check(exempt, directives, &tool_output)));
 
     if name.starts_with("pass-through/") {
         let baseline = |stderr: &str| {
@@ -65,7 +69,10 @@ pub fn run_passes(
     }
 
     if directives.json {
-        outcomes.push(("json", json_pass(fixture, paths, options.bless)));
+        outcomes.push((
+            "json",
+            json_pass(fixture, &directives.env, paths, options.bless),
+        ));
     }
 
     outcomes

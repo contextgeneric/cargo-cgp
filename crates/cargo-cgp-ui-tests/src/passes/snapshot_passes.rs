@@ -32,16 +32,21 @@ pub fn rust_stderr_pass(run: &Run, fixture: &Path, paths: &Paths, bless: bool) -
 
 /// Run `cargo cgp expand` on the fixture and review its expansion against `.expand.rs` — the Rust
 /// its CGP macros generate, with CGP's type-level constructs resugared.
-pub fn expand_pass(fixture: &Path, paths: &Paths, bless: bool) -> Outcome {
-    let raw = harness::run_fixture_expand(paths.harness_crate, fixture);
+pub fn expand_pass(
+    fixture: &Path,
+    env: &[(String, String)],
+    paths: &Paths,
+    bless: bool,
+) -> Outcome {
+    let raw = harness::run_fixture_expand(paths.harness_crate, fixture, env);
     let actual = normalize_source(&raw, paths.harness_crate, paths.cgp_root, paths.sysroot);
     review(&expand_path(fixture), &actual, bless, "expand")
 }
 
 /// Run `cargo cgp check --message-format=json` on the fixture and review its compiler messages,
 /// reduced by [`reduce_json`], against `.cgp.json`.
-pub fn json_pass(fixture: &Path, paths: &Paths, bless: bool) -> Outcome {
-    let stream = harness::run_fixture_json(paths.harness_crate, fixture);
+pub fn json_pass(fixture: &Path, env: &[(String, String)], paths: &Paths, bless: bool) -> Outcome {
+    let stream = harness::run_fixture_json(paths.harness_crate, fixture, env);
     let reduced = reduce_json(&stream);
     let actual = replace_paths(&reduced, paths.harness_crate, paths.cgp_root, paths.sysroot);
     review(&json_path(fixture), &actual, bless, "json")
