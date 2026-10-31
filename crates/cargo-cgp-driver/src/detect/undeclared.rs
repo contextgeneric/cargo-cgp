@@ -73,65 +73,13 @@ pub fn detect_undeclared_trait(
         .impl_trait_ref(impl_did)
         .instantiate_identity()
         .skip_norm_wip();
-    // The generic context the generated impl is over: a `#[cgp_fn]` blanket impl's `Self`, or a
-    // `#[cgp_impl]` provider impl's first trait argument (`Greeter<__Context__> for GreetHello`).
-    // A hand-written `impl … for ConcreteContext` has neither and is a different
-    // (concrete-context) failure.
-    let self_is_context = matches!(trait_ref.self_ty().kind(), ty::Param(_));
-    let context = if self_is_context {
-        trait_ref.self_ty()
-    } else {
-        // `args` begins with `Self`, so the provider trait's own first argument is the second.
-        let first = trait_ref.args.types().nth(1)?;
-        if !matches!(first.kind(), ty::Param(_)) {
-            return None;
-        }
-        first
-    };
-    // The call must be on that context. A receiver that is a parameter of another type (a
-    // `value: &Value` beside the context) needs a bound on `Value`, which `#[uses]` cannot give, so
-    // it is not this failure. A receiver whose type cannot be read off a signature (a method call's
-    // result) is accepted only in a `#[cgp_fn]` impl, whose `Self` is the context.
-    match call.receiver {
-        CallReceiver::Value(binding) => {
-            match binding.and_then(|binding| param_declared_input(tcx, binding)) {
-                Some(declared) if declared.peel_refs() != context => return None,
-                Some(_) => {}
-                None if self_is_context => {}
-                None => return None,
-            }
-        }
-        CallReceiver::Type(qself) => {
-            if !names_context(tcx, qself, context, self_is_context.then_some(impl_did)) {
-                return None;
-            }
-        }
+    let (context, self_is_context) = generated_context(trait_ref)?;
+    let blanket_impl = self_is_context.then_some(impl_did);
+    if !called_on_context(tcx, &call.receiver, context, blanket_impl) {
+        return None;
     }
 
-    // The CGP trait(s) declaring `method`. Several unrelated traits can share a method name
-    // across modules (a `#[cgp_fn]` trait and a `#[cgp_component]` consumer both named
-    // `fetch_storage_object`), so disambiguate to the one the diagnostic actually points at: the
-    // "trait bound not satisfied" note spans the *failing* trait's own definition. Only if none is
-    // referenced (a single unambiguous candidate) fall back to the full list.
-    let candidates: Vec<(DefId, DefId)> = match call.receiver {
-        CallReceiver::Value(_) => traits_with_method(tcx, call.method)
-            .into_iter()
-            .map(|(trait_did, method_did, _)| (trait_did, method_did))
-            .collect(),
-        CallReceiver::Type(_) => traits_with_assoc_fn(tcx, call.method),
-    };
-    let referenced: Vec<(DefId, DefId)> = candidates
-        .iter()
-        .copied()
-        .filter(|&(trait_did, _)| is_referenced(tcx, trait_did, spans))
-        .collect();
-    let pool = if referenced.is_empty() {
-        &candidates
-    } else {
-        &referenced
-    };
-
-    for &(trait_did, method_did) in pool {
+    for (trait_did, method_did) in candidate_traits(tcx, &call, spans) {
         // Already a `where` bound of the impl → declared; the failure is something else.
         if impl_bounds_by(tcx, impl_did, trait_did) {
             continue;
@@ -146,6 +94,71 @@ pub fn detect_undeclared_trait(
         });
     }
     None
+}
+
+/// The generic context a generated impl is over, and whether it is the impl's `Self`.
+///
+/// The generic context the generated impl is over: a `#[cgp_fn]` blanket impl's `Self`, or a
+/// `#[cgp_impl]` provider impl's first trait argument (`Greeter<__Context__> for GreetHello`).
+/// A hand-written `impl … for ConcreteContext` has neither and is a different
+/// (concrete-context) failure.
+fn generated_context(trait_ref: ty::TraitRef<'_>) -> Option<(Ty<'_>, bool)> {
+    if matches!(trait_ref.self_ty().kind(), ty::Param(_)) {
+        return Some((trait_ref.self_ty(), true));
+    }
+    // `args` begins with `Self`, so the provider trait's own first argument is the second.
+    let first = trait_ref.args.types().nth(1)?;
+    matches!(first.kind(), ty::Param(_)).then_some((first, false))
+}
+
+/// The call must be on that context. A receiver that is a parameter of another type (a
+/// `value: &Value` beside the context) needs a bound on `Value`, which `#[uses]` cannot give, so
+/// it is not this failure. A receiver whose type cannot be read off a signature (a method call's
+/// result) is accepted only in a `#[cgp_fn]` impl, whose `Self` is the context.
+fn called_on_context<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    receiver: &CallReceiver<'tcx>,
+    context: Ty<'tcx>,
+    blanket_impl: Option<DefId>,
+) -> bool {
+    match *receiver {
+        CallReceiver::Value(binding) => {
+            match binding.and_then(|binding| param_declared_input(tcx, binding)) {
+                Some(declared) => declared.peel_refs() == context,
+                None => blanket_impl.is_some(),
+            }
+        }
+        CallReceiver::Type(qself) => names_context(tcx, qself, context, blanket_impl),
+    }
+}
+
+/// The CGP trait(s) declaring `method`. Several unrelated traits can share a method name
+/// across modules (a `#[cgp_fn]` trait and a `#[cgp_component]` consumer both named
+/// `fetch_storage_object`), so disambiguate to the one the diagnostic actually points at: the
+/// "trait bound not satisfied" note spans the *failing* trait's own definition. Only if none is
+/// referenced (a single unambiguous candidate) fall back to the full list.
+fn candidate_traits(
+    tcx: TyCtxt<'_>,
+    call: &FailingCall<'_>,
+    spans: &[Span],
+) -> Vec<(DefId, DefId)> {
+    let candidates: Vec<(DefId, DefId)> = match call.receiver {
+        CallReceiver::Value(_) => traits_with_method(tcx, call.method)
+            .into_iter()
+            .map(|(trait_did, method_did, _)| (trait_did, method_did))
+            .collect(),
+        CallReceiver::Type(_) => traits_with_assoc_fn(tcx, call.method),
+    };
+    let referenced: Vec<(DefId, DefId)> = candidates
+        .iter()
+        .copied()
+        .filter(|&(trait_did, _)| is_referenced(tcx, trait_did, spans))
+        .collect();
+    if referenced.is_empty() {
+        candidates
+    } else {
+        referenced
+    }
 }
 
 /// The failing call the primary span points at: the method's name, the call's `HirId`, what the

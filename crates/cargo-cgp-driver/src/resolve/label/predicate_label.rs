@@ -66,35 +66,8 @@ pub(crate) fn label_for<'tcx>(
         if self_ty == context {
             return None;
         }
-        // A `RedirectLookup<Table, Path>` provider is a namespace/`open` redirection hop, not a
-        // real provider impl, so a chain of them reads as its successive hops. `Table` is where the
-        // path is looked up: the context for its own `open` or `namespace`, but an aggregate
-        // provider for a bundle that opens its own components, so the hop names it rather than the
-        // context. The dispatched key (the provider trait's own parameters, skipping `Self` = the
-        // lookup and the context) is carried as the node's identity so two lookups along the same
-        // route for different keys stay distinct — it is not rendered, since the key already shows
-        // on the child provider node.
-        if let Some((table, path)) = redirect_lookup_args(tcx, self_ty) {
-            return Some(DepNode::Redirect {
-                path: path.to_string(),
-                table: table.to_string(),
-                key: trait_generics(tcx, trait_ref, 2),
-            });
-        }
-        // `Provider: ProviderTrait<Ctx, Params…>` — trait name, context, provider, and the
-        // component's extra parameters all read straight off the obligation, no marker or map. The
-        // context is the first type argument after `Self`, indexed by *type* position because a
-        // component's lifetime parameters sort ahead of the context in the argument list
-        // (`ReferenceGetter<'a, Ctx, T>`); indexing by argument position would land on the region
-        // and abort the compiler. A trait with no such argument is not a shape `#[cgp_component]`
-        // emits, so it falls through to the plain label.
-        if let Some(provider_context) = trait_ref.args.types().nth(1) {
-            let generics = trait_generics(tcx, trait_ref, 2);
-            return Some(DepNode::Provider {
-                trait_ref: format!("{}{generics}", tcx.item_name(did)),
-                context: render_ty(tcx, provider_context),
-                provider: render_ty(tcx, self_ty),
-            });
+        if let Some(node) = provider_label(tcx, trait_ref) {
+            return Some(node);
         }
     }
 
@@ -126,6 +99,43 @@ pub(crate) fn label_for<'tcx>(
         trait_ref,
         self_ty: render_ty(tcx, self_ty),
     })
+}
+
+/// The node of a provider-trait obligation not for the context, or `None` for a trait whose shape
+/// `#[cgp_component]` does not emit.
+fn provider_label<'tcx>(tcx: TyCtxt<'tcx>, trait_ref: ty::TraitRef<'tcx>) -> Option<DepNode> {
+    let self_ty = trait_ref.self_ty();
+    // A `RedirectLookup<Table, Path>` provider is a namespace/`open` redirection hop, not a
+    // real provider impl, so a chain of them reads as its successive hops. `Table` is where the
+    // path is looked up: the context for its own `open` or `namespace`, but an aggregate
+    // provider for a bundle that opens its own components, so the hop names it rather than the
+    // context. The dispatched key (the provider trait's own parameters, skipping `Self` = the
+    // lookup and the context) is carried as the node's identity so two lookups along the same
+    // route for different keys stay distinct — it is not rendered, since the key already shows
+    // on the child provider node.
+    if let Some((table, path)) = redirect_lookup_args(tcx, self_ty) {
+        return Some(DepNode::Redirect {
+            path: path.to_string(),
+            table: table.to_string(),
+            key: trait_generics(tcx, trait_ref, 2),
+        });
+    }
+    // `Provider: ProviderTrait<Ctx, Params…>` — trait name, context, provider, and the
+    // component's extra parameters all read straight off the obligation, no marker or map. The
+    // context is the first type argument after `Self`, indexed by *type* position because a
+    // component's lifetime parameters sort ahead of the context in the argument list
+    // (`ReferenceGetter<'a, Ctx, T>`); indexing by argument position would land on the region
+    // and abort the compiler. A trait with no such argument is not a shape `#[cgp_component]`
+    // emits, so it falls through to the plain label.
+    if let Some(provider_context) = trait_ref.args.types().nth(1) {
+        let generics = trait_generics(tcx, trait_ref, 2);
+        return Some(DepNode::Provider {
+            trait_ref: format!("{}{generics}", tcx.item_name(trait_ref.def_id)),
+            context: render_ty(tcx, provider_context),
+            provider: render_ty(tcx, self_ty),
+        });
+    }
+    None
 }
 
 /// Render a trait obligation's arguments as a generic list (`<u32, u64>`, `<'_, str>`), or the

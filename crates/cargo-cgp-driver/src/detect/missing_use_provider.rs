@@ -67,25 +67,7 @@ pub fn detect_missing_use_provider(
         return None;
     }
 
-    // The provider trait the call's method belongs to: the enclosing impl's own trait when it
-    // declares the method (a higher-order provider wrapping the same component — the common case),
-    // else the sole provider trait that declares it.
-    let provider_did = if is_provider_trait(tcx, impl_trait_did)
-        && trait_has_method(tcx, impl_trait_did, method)
-    {
-        impl_trait_did
-    } else {
-        let mut candidates = trait_items_named(tcx, method, |item| {
-            matches!(item.kind, ty::AssocKind::Fn { .. })
-        })
-        .map(|(trait_did, _)| trait_did)
-        .filter(|&trait_did| is_provider_trait(tcx, trait_did));
-        let only = candidates.next()?;
-        if candidates.next().is_some() {
-            return None;
-        }
-        only
-    };
+    let provider_did = called_provider_trait(tcx, impl_trait_did, method)?;
 
     // If `inner` is already bounded by that provider trait, the call would resolve, so this `E0599`
     // is some other failure, not a forgotten import.
@@ -93,9 +75,49 @@ pub fn detect_missing_use_provider(
         return None;
     }
 
+    let (provider_trait, unresolved) =
+        use_provider_bound(tcx, impl_did, provider_did, inner_did, method, args);
+    Some(MissingUseProvider {
+        inner,
+        provider_trait,
+        unresolved,
+    })
+}
+
+/// The provider trait the call's method belongs to: the enclosing impl's own trait when it
+/// declares the method (a higher-order provider wrapping the same component — the common case),
+/// else the sole provider trait that declares it.
+fn called_provider_trait(
+    tcx: TyCtxt<'_>,
+    impl_trait_did: DefId,
+    method: rustc_span::Symbol,
+) -> Option<DefId> {
+    if is_provider_trait(tcx, impl_trait_did) && trait_has_method(tcx, impl_trait_did, method) {
+        return Some(impl_trait_did);
+    }
+    let mut candidates = trait_items_named(tcx, method, |item| {
+        matches!(item.kind, ty::AssocKind::Fn { .. })
+    })
+    .map(|(trait_did, _)| trait_did)
+    .filter(|&trait_did| is_provider_trait(tcx, trait_did));
+    let only = candidates.next()?;
+    candidates.next().is_none().then_some(only)
+}
+
+/// The bound `#[use_provider]` declares for the inner provider of the impl `impl_did`, and the trait
+/// parameters it leaves named.
+fn use_provider_bound<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    impl_did: DefId,
+    provider_did: DefId,
+    inner_did: DefId,
+    method: rustc_span::Symbol,
+    args: &[Expr<'tcx>],
+) -> (Option<String>, Vec<String>) {
+    let impl_trait_ref = tcx.impl_trait_ref(impl_did).skip_binder();
     // The context the impl is over, which the inner provider is called with: the provider trait's
     // first argument after its `Self`.
-    let context = is_provider_trait(tcx, impl_trait_did)
+    let context = is_provider_trait(tcx, impl_trait_ref.def_id)
         .then(|| impl_trait_ref.args.types().nth(1))
         .flatten();
     let method_did = tcx
@@ -109,17 +131,12 @@ pub fn detect_missing_use_provider(
         .param_def_id_to_index(tcx, inner_did)
         .map(|index| tcx.mk_param_from_def(impl_generics.param_at(index as usize, tcx)))
         .and_then(|arg| arg.as_type());
-    let (provider_trait, unresolved) = match (context, method_did, inner_ty) {
+    match (context, method_did, inner_ty) {
         (Some(context), Some(method_did), Some(inner_ty)) => {
             written_provider_bound(tcx, provider_did, method_did, inner_ty, context, args)
         }
         _ => (bare_provider_bound(tcx, provider_did), Vec::new()),
-    };
-    Some(MissingUseProvider {
-        inner,
-        provider_trait,
-        unresolved,
-    })
+    }
 }
 
 /// The provider trait as `#[use_provider]` writes it, `AreaCalculator<Shape>`: the context argument

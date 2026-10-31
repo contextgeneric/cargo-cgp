@@ -69,61 +69,8 @@ fn is_cgp_is_provider_for(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 pub fn build_component_name_map(tcx: TyCtxt<'_>) -> HashMap<String, ComponentTraitNames> {
     let all_traits: Vec<DefId> = tcx.all_traits_including_private().collect();
 
-    // Provider trait DefId → (component marker name, provider trait name), found by the
-    // genuine `IsProviderFor<Marker, …>` supertrait every provider trait carries. Checking
-    // each supertrait's identity directly (rather than first picking "the" `IsProviderFor` by
-    // name) means a same-named trait from another crate is simply never matched.
-    let mut providers: HashMap<DefId, (String, String)> = HashMap::new();
-    for &trait_did in &all_traits {
-        for &(clause, _) in tcx.explicit_super_clauses_of(trait_did).skip_binder() {
-            let Some(predicate) = clause.as_trait_clause() else {
-                continue;
-            };
-            let trait_ref = predicate.skip_binder().trait_ref;
-            if !is_cgp_is_provider_for(tcx, trait_ref.def_id) {
-                continue;
-            }
-            // Args are `[Self, Marker, Context, Params]`; the marker is the second.
-            let Some(marker_ty) = trait_ref.args.get(1).copied().and_then(|arg| arg.as_type())
-            else {
-                continue;
-            };
-            if let ty::Adt(marker, _) = marker_ty.kind() {
-                providers.insert(
-                    trait_did,
-                    (
-                        // Full path, not the bare name, so same-named markers in different
-                        // modules key distinct entries.
-                        tcx.def_path_str(marker.did()),
-                        tcx.item_name(trait_did).to_string(),
-                    ),
-                );
-            }
-        }
-    }
-
-    // Provider trait DefId → consumer trait name, found by the consumer's blanket impl
-    // `impl<C> Consumer for C where C: Provider<C>`: a blanket impl bounding its *own* self
-    // type on a known provider trait belongs to that provider's consumer. Requiring the
-    // bound's self type to be the impl's self type is what tells this apart from the
-    // provider blanket impl, which also bounds the same provider trait but on a projected
-    // `<C as DelegateComponent<…>>::Delegate` rather than on `C` itself.
-    let mut consumers: HashMap<DefId, String> = HashMap::new();
-    for &consumer_did in &all_traits {
-        for &impl_did in tcx.trait_impls_of(consumer_did).blanket_impls() {
-            let impl_self_ty = tcx.type_of(impl_did).skip_binder();
-            for &(clause, _) in tcx.clauses_of(impl_did).clauses {
-                let Some(predicate) = clause.as_trait_clause() else {
-                    continue;
-                };
-                let trait_ref = predicate.skip_binder().trait_ref;
-                if providers.contains_key(&trait_ref.def_id) && trait_ref.self_ty() == impl_self_ty
-                {
-                    consumers.insert(trait_ref.def_id, tcx.item_name(consumer_did).to_string());
-                }
-            }
-        }
-    }
+    let providers = provider_names(tcx, &all_traits);
+    let consumers = consumer_names(tcx, &all_traits, &providers);
 
     providers
         .into_iter()
@@ -152,4 +99,70 @@ pub fn build_component_name_map(tcx: TyCtxt<'_>) -> HashMap<String, ComponentTra
             )
         })
         .collect()
+}
+
+/// Provider trait DefId → (component marker name, provider trait name), found by the
+/// genuine `IsProviderFor<Marker, …>` supertrait every provider trait carries. Checking
+/// each supertrait's identity directly (rather than first picking "the" `IsProviderFor` by
+/// name) means a same-named trait from another crate is simply never matched.
+fn provider_names(tcx: TyCtxt<'_>, all_traits: &[DefId]) -> HashMap<DefId, (String, String)> {
+    let mut providers: HashMap<DefId, (String, String)> = HashMap::new();
+    for &trait_did in all_traits {
+        for &(clause, _) in tcx.explicit_super_clauses_of(trait_did).skip_binder() {
+            let Some(predicate) = clause.as_trait_clause() else {
+                continue;
+            };
+            let trait_ref = predicate.skip_binder().trait_ref;
+            if !is_cgp_is_provider_for(tcx, trait_ref.def_id) {
+                continue;
+            }
+            // Args are `[Self, Marker, Context, Params]`; the marker is the second.
+            let Some(marker_ty) = trait_ref.args.get(1).copied().and_then(|arg| arg.as_type())
+            else {
+                continue;
+            };
+            if let ty::Adt(marker, _) = marker_ty.kind() {
+                providers.insert(
+                    trait_did,
+                    (
+                        // Full path, not the bare name, so same-named markers in different
+                        // modules key distinct entries.
+                        tcx.def_path_str(marker.did()),
+                        tcx.item_name(trait_did).to_string(),
+                    ),
+                );
+            }
+        }
+    }
+    providers
+}
+
+/// Provider trait DefId → consumer trait name, found by the consumer's blanket impl
+/// `impl<C> Consumer for C where C: Provider<C>`: a blanket impl bounding its *own* self
+/// type on a known provider trait belongs to that provider's consumer. Requiring the
+/// bound's self type to be the impl's self type is what tells this apart from the
+/// provider blanket impl, which also bounds the same provider trait but on a projected
+/// `<C as DelegateComponent<…>>::Delegate` rather than on `C` itself.
+fn consumer_names(
+    tcx: TyCtxt<'_>,
+    all_traits: &[DefId],
+    providers: &HashMap<DefId, (String, String)>,
+) -> HashMap<DefId, String> {
+    let mut consumers: HashMap<DefId, String> = HashMap::new();
+    for &consumer_did in all_traits {
+        for &impl_did in tcx.trait_impls_of(consumer_did).blanket_impls() {
+            let impl_self_ty = tcx.type_of(impl_did).skip_binder();
+            for &(clause, _) in tcx.clauses_of(impl_did).clauses {
+                let Some(predicate) = clause.as_trait_clause() else {
+                    continue;
+                };
+                let trait_ref = predicate.skip_binder().trait_ref;
+                if providers.contains_key(&trait_ref.def_id) && trait_ref.self_ty() == impl_self_ty
+                {
+                    consumers.insert(trait_ref.def_id, tcx.item_name(consumer_did).to_string());
+                }
+            }
+        }
+    }
+    consumers
 }

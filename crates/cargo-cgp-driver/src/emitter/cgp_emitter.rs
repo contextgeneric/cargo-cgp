@@ -282,29 +282,7 @@ impl<E: Emitter> CgpEmitter<E> {
             // suppressed still anchors its cascade.
             self.record_cgp_spans(&diag);
         }
-        // Cross-diagnostic de-duplication. CGP wiring is lazy, so one mistake surfaces as the same
-        // error at many sites — the `check_components!` entry, every hand-written `impl` that
-        // references the broken component, and each call. A transformed diagnostic whose signature
-        // the ledger has already recorded is such a re-report, so it is suppressed and only the
-        // first occurrence is shown; the key scheme lives with the [`DedupLedger`]. Only the tool's
-        // own transformed diagnostics are de-duplicated here; an untouched `rustc` error is merged
-        // only at the flush, when rustc reports it twice on one line ([`merge_repeats`]). cargo
-        // re-counts the diagnostics the emitter produces, so a suppressed re-report drops out of
-        // its "N errors" summary as well, keeping the count consistent. A resolved failure records
-        // its class headlines, not the cause it displays, since a declined re-report of the same
-        // failure is worded with a class sentence.
-        let headers: Vec<&str> = if class_headers.is_empty() {
-            main_message_text(&diag).into_iter().collect()
-        } else {
-            class_headers.iter().map(String::as_str).collect()
-        };
-        if rewritten
-            && self.dedup.check_and_record(
-                cause_sig.as_deref(),
-                || message_signature(&diag),
-                &headers,
-            )
-        {
+        if rewritten && self.is_repeat_report(&diag, cause_sig.as_deref(), &class_headers) {
             return;
         }
         // Buffer rather than emit now: a resolution has its `root cause:` note rendered at flush,
@@ -324,6 +302,32 @@ impl<E: Emitter> CgpEmitter<E> {
             }
             None => self.push(BufEntry::Plain(Box::new(diag))),
         }
+    }
+
+    /// Cross-diagnostic de-duplication. CGP wiring is lazy, so one mistake surfaces as the same
+    /// error at many sites — the `check_components!` entry, every hand-written `impl` that
+    /// references the broken component, and each call. A transformed diagnostic whose signature
+    /// the ledger has already recorded is such a re-report, so it is suppressed and only the
+    /// first occurrence is shown; the key scheme lives with the [`DedupLedger`]. Only the tool's
+    /// own transformed diagnostics are de-duplicated here; an untouched `rustc` error is merged
+    /// only at the flush, when rustc reports it twice on one line (`merge_repeats`). cargo
+    /// re-counts the diagnostics the emitter produces, so a suppressed re-report drops out of
+    /// its "N errors" summary as well, keeping the count consistent. A resolved failure records
+    /// its class headlines, not the cause it displays, since a declined re-report of the same
+    /// failure is worded with a class sentence.
+    fn is_repeat_report(
+        &mut self,
+        diag: &DiagInner,
+        cause_sig: Option<&str>,
+        class_headers: &[String],
+    ) -> bool {
+        let headers: Vec<&str> = if class_headers.is_empty() {
+            main_message_text(diag).into_iter().collect()
+        } else {
+            class_headers.iter().map(String::as_str).collect()
+        };
+        self.dedup
+            .check_and_record(cause_sig, || message_signature(diag), &headers)
     }
 }
 

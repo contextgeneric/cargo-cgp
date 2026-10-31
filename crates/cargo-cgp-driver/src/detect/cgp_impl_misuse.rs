@@ -45,9 +45,12 @@
 
 use cargo_cgp_error_processing::CgpImplMisuse;
 use rustc_hir::def::DefKind;
-use rustc_hir::{GenericArg, GenericBound, ItemKind, QPath, TyKind, WherePredicateKind};
+use rustc_hir::{
+    GenericArg, GenericBound, ItemKind, QPath, TyKind, WherePredicate, WherePredicateKind,
+};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
+use rustc_span::def_id::LocalDefId;
 
 use crate::resolve::query::{
     consumer_provider_trait, context_param_span, is_provider_trait, local_trait_impls,
@@ -79,118 +82,141 @@ pub struct DetectedCgpImplMisuse {
 /// Recover every `#[cgp_impl]` header-trait mistake in the crate, reading each structurally off the
 /// compiler with the fingerprints described in the module docs.
 pub fn detect_cgp_impl_misuses(tcx: TyCtxt<'_>) -> Vec<DetectedCgpImplMisuse> {
+    local_trait_impls(tcx)
+        .flat_map(|local| impl_misuses(tcx, local))
+        .collect()
+}
+
+/// The mistakes of one impl: its header's, and each inner-provider bound's.
+fn impl_misuses(tcx: TyCtxt<'_>, local: LocalDefId) -> Vec<DetectedCgpImplMisuse> {
     let mut found = Vec::new();
-    for local in local_trait_impls(tcx) {
-        let item = tcx.hir_expect_item(local);
-        let ItemKind::Impl(imp) = item.kind else {
+    let item = tcx.hir_expect_item(local);
+    let ItemKind::Impl(imp) = item.kind else {
+        return Vec::new();
+    };
+    // (1) The `#[cgp_impl]` fingerprint: a leading context type parameter named `__Context__`,
+    // whose own span is the `#[cgp_impl(…)]` attribute call-site the sibling errors land on.
+    let Some(macro_span) = context_param_span(tcx, local) else {
+        return Vec::new();
+    };
+    // (2) `Self` is a concrete local struct/enum — the provider struct — not the bare type
+    // parameter the generated consumer/provider blanket impls use.
+    let TyKind::Path(QPath::Resolved(_, self_path)) = imp.self_ty.kind else {
+        return Vec::new();
+    };
+    let Some(self_did) = self_path.res.opt_def_id() else {
+        return Vec::new();
+    };
+    if !matches!(
+        tcx.def_kind(self_did),
+        DefKind::Struct | DefKind::Enum | DefKind::Union
+    ) {
+        return Vec::new();
+    }
+    let Some(header) = imp.of_trait else {
+        return Vec::new();
+    };
+    let trait_ref_span = header
+        .trait_ref
+        .path
+        .segments
+        .last()
+        .map_or(header.trait_ref.path.span, |segment| segment.ident.span);
+    // (3) The header trait reference is a token the user wrote — not the macro-synthesized
+    // reference every generated forwarding impl carries.
+    if trait_ref_span.from_expansion() {
+        return Vec::new();
+    }
+    let Some(header_did) = header.trait_ref.path.res.opt_def_id() else {
+        return Vec::new();
+    };
+    let self_ty = tcx.item_name(self_did).to_string();
+    // Classify the header by the trait's fingerprint. A consumer trait pairs with a provider
+    // trait to suggest (E013); a non-component is E014; the provider trait is the *correct*
+    // header, leaving only a possible inner-bound mistake below.
+    let header_misuse = if let Some(provider_did) = consumer_provider_trait(tcx, header_did) {
+        Some(CgpImplMisuse::ConsumerTrait {
+            consumer: tcx.item_name(header_did).to_string(),
+            provider: tcx.item_name(provider_did).to_string(),
+        })
+    } else if is_provider_trait(tcx, header_did) {
+        None
+    } else {
+        Some(CgpImplMisuse::NonCgpTrait {
+            trait_name: tcx.item_name(header_did).to_string(),
+        })
+    };
+    if let Some(misuse) = header_misuse {
+        found.push(DetectedCgpImplMisuse {
+            misuse,
+            self_ty: self_ty.clone(),
+            trait_ref_span,
+            impl_span: item.span,
+            macro_span,
+        });
+    }
+    found.extend(inner_bound_misuses(
+        tcx,
+        imp.generics.predicates,
+        &self_ty,
+        item.span,
+        macro_span,
+    ));
+    found
+}
+
+/// A higher-order provider's inner-provider bound — typically written through
+/// `#[use_provider]`, which supplies the leading context argument — that names the
+/// component's *consumer* trait: the same consumer/provider confusion as the header case, in
+/// the `where` clause (E015). Every such bound is a candidate; the `E0107` that lands on its
+/// trait name selects which one is reshaped.
+fn inner_bound_misuses(
+    tcx: TyCtxt<'_>,
+    predicates: &[WherePredicate<'_>],
+    self_ty: &str,
+    impl_span: Span,
+    macro_span: Span,
+) -> Vec<DetectedCgpImplMisuse> {
+    let mut found = Vec::new();
+    for predicate in predicates {
+        let WherePredicateKind::BoundPredicate(bound) = predicate.kind else {
             continue;
         };
-        // (1) The `#[cgp_impl]` fingerprint: a leading context type parameter named `__Context__`,
-        // whose own span is the `#[cgp_impl(…)]` attribute call-site the sibling errors land on.
-        let Some(macro_span) = context_param_span(tcx, local) else {
-            continue;
-        };
-        // (2) `Self` is a concrete local struct/enum — the provider struct — not the bare type
-        // parameter the generated consumer/provider blanket impls use.
-        let TyKind::Path(QPath::Resolved(_, self_path)) = imp.self_ty.kind else {
-            continue;
-        };
-        let Some(self_did) = self_path.res.opt_def_id() else {
-            continue;
-        };
-        if !matches!(
-            tcx.def_kind(self_did),
-            DefKind::Struct | DefKind::Enum | DefKind::Union
-        ) {
-            continue;
-        }
-        let Some(header) = imp.of_trait else {
-            continue;
-        };
-        let trait_ref_span = header
-            .trait_ref
-            .path
-            .segments
-            .last()
-            .map_or(header.trait_ref.path.span, |segment| segment.ident.span);
-        // (3) The header trait reference is a token the user wrote — not the macro-synthesized
-        // reference every generated forwarding impl carries.
-        if trait_ref_span.from_expansion() {
-            continue;
-        }
-        let Some(header_did) = header.trait_ref.path.res.opt_def_id() else {
-            continue;
-        };
-        let self_ty = tcx.item_name(self_did).to_string();
-        // Classify the header by the trait's fingerprint. A consumer trait pairs with a provider
-        // trait to suggest (E013); a non-component is E014; the provider trait is the *correct*
-        // header, leaving only a possible inner-bound mistake below.
-        let header_misuse = if let Some(provider_did) = consumer_provider_trait(tcx, header_did) {
-            Some(CgpImplMisuse::ConsumerTrait {
-                consumer: tcx.item_name(header_did).to_string(),
-                provider: tcx.item_name(provider_did).to_string(),
-            })
-        } else if is_provider_trait(tcx, header_did) {
-            None
-        } else {
-            Some(CgpImplMisuse::NonCgpTrait {
-                trait_name: tcx.item_name(header_did).to_string(),
-            })
-        };
-        if let Some(misuse) = header_misuse {
-            found.push(DetectedCgpImplMisuse {
-                misuse,
-                self_ty: self_ty.clone(),
-                trait_ref_span,
-                impl_span: item.span,
-                macro_span,
-            });
-        }
-        // A higher-order provider's inner-provider bound — typically written through
-        // `#[use_provider]`, which supplies the leading context argument — that names the
-        // component's *consumer* trait: the same consumer/provider confusion as the header case, in
-        // the `where` clause (E015). Every such bound is a candidate; the `E0107` that lands on its
-        // trait name selects which one is reshaped.
-        for predicate in imp.generics.predicates {
-            let WherePredicateKind::BoundPredicate(bound) = predicate.kind else {
+        for generic_bound in bound.bounds {
+            let GenericBound::Trait(poly) = generic_bound else {
                 continue;
             };
-            for generic_bound in bound.bounds {
-                let GenericBound::Trait(poly) = generic_bound else {
-                    continue;
-                };
-                let bound_path = poly.trait_ref.path;
-                let Some(bound_did) = bound_path.res.opt_def_id() else {
-                    continue;
-                };
-                let Some(provider_did) = consumer_provider_trait(tcx, bound_did) else {
-                    continue;
-                };
-                let Some(segment) = bound_path.segments.last() else {
-                    continue;
-                };
-                // Only a consumer trait *given generic arguments* is the mistake — the inserted
-                // `<Self>` the consumer trait cannot take. A bare `Self: SomeConsumer` self-bound is
-                // legitimate and produces no `E0107`.
-                let has_type_arg = segment.args.is_some_and(|args| {
-                    args.args
-                        .iter()
-                        .any(|arg| matches!(arg, GenericArg::Type(_)))
-                });
-                if !has_type_arg {
-                    continue;
-                }
-                found.push(DetectedCgpImplMisuse {
-                    misuse: CgpImplMisuse::ConsumerProviderBound {
-                        consumer: tcx.item_name(bound_did).to_string(),
-                        provider: tcx.item_name(provider_did).to_string(),
-                    },
-                    self_ty: self_ty.clone(),
-                    trait_ref_span: segment.ident.span,
-                    impl_span: item.span,
-                    macro_span,
-                });
+            let bound_path = poly.trait_ref.path;
+            let Some(bound_did) = bound_path.res.opt_def_id() else {
+                continue;
+            };
+            let Some(provider_did) = consumer_provider_trait(tcx, bound_did) else {
+                continue;
+            };
+            let Some(segment) = bound_path.segments.last() else {
+                continue;
+            };
+            // Only a consumer trait *given generic arguments* is the mistake — the inserted
+            // `<Self>` the consumer trait cannot take. A bare `Self: SomeConsumer` self-bound is
+            // legitimate and produces no `E0107`.
+            let has_type_arg = segment.args.is_some_and(|args| {
+                args.args
+                    .iter()
+                    .any(|arg| matches!(arg, GenericArg::Type(_)))
+            });
+            if !has_type_arg {
+                continue;
             }
+            found.push(DetectedCgpImplMisuse {
+                misuse: CgpImplMisuse::ConsumerProviderBound {
+                    consumer: tcx.item_name(bound_did).to_string(),
+                    provider: tcx.item_name(provider_did).to_string(),
+                },
+                self_ty: self_ty.to_owned(),
+                trait_ref_span: segment.ident.span,
+                impl_span,
+                macro_span,
+            });
         }
     }
     found

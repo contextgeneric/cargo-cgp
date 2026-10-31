@@ -58,57 +58,69 @@ pub fn impl_where_obligations<'tcx>(
 
         let mut obligations = Vec::new();
         for clause in raw {
-            // Best-effort: recover a *fixed* associated-type projection that stalls on an unknown
-            // input before it is normalized. The canonical case is a later pipeline stage keyed on
-            // an earlier stage's `::Output` (`ProviderB: Handler<Ctx, Code, <ProviderA as
-            // Handler<Ctx, Code, In>>::Output>`) where the walk's input `In` is a call-site unknown
-            // (a rigid placeholder): the earlier provider's `where` clause (`In: Send`, or a deeper
-            // `In: Into<Body>`) is *false* against a rigid placeholder, so its impl is rejected and
-            // the projection never reduces — even though the provider's `type Output` does not
-            // depend on `In` at all. Resolving the projection with the placeholders as *deferrable*
-            // inference variables (so the blocking bound is ambiguous, not false) lets the solver
-            // commit to the sole impl and read off the fixed output, turning the next stage's input
-            // from an unknowable `_` into the concrete type that carries the real cause (a later
-            // stage's `stream: AsRef<[u8]>`). A no-op unless the clause carries such a placeholder.
-            // Substitute the parent's unifications (including the obligation's placeholder input)
-            // into the raw clause *without* normalizing, so a stalled `::Output` projection — a
-            // later pipeline stage's input keyed on an earlier stage's output — survives as an
-            // alias we can recover here. Normalizing first would collapse it into an opaque
-            // inference variable, losing the projection.
-            let pre = resolve_fixed_projections(
-                tcx,
-                infcx.deeply_resolve_ignoring_regions(clause.skip_norm_wip()),
-            );
-            let clause: ty::Clause<'tcx> = ocx.normalize(
-                &ObligationCause::dummy(),
-                param_env,
-                Unnormalized::new_wip(pre),
-            );
-            let clause = infcx.deeply_resolve_ignoring_regions(clause);
-            // A clause that still carries inference vars after solving is one whose parameter the
-            // impl match left unconstrained — most often a *later pipeline stage keyed on an
-            // earlier stage's unresolved `::Output`* (`ProviderB: Handler<Ctx, Code, ProviderA::
-            // Output>`, where `ProviderA` does not hold because the walk's own input is an unknown,
-            // so its `::Output` never normalizes). Dropping it would hide every root cause living
-            // in a stage past the first. Instead, replace those stray vars with rigid placeholders
-            // so the walk can still descend the stage; the placeholder-leaf filter in
-            // [`resolve_leaves`](crate::resolve::walk::resolve_leaves) keeps any leaf that
-            // genuinely depends on the unknown from being reported, exactly as for the call-site
-            // seed's unknown input. A no-op when there are no such vars (the common concrete-input
-            // case), so ordinary walks are unaffected.
-            let clause = if clause.has_non_region_infer() {
-                unknowns_to_placeholders(tcx, clause)
-            } else {
-                clause
-            };
-            if let Some(tp) = tcx.erase_and_anonymize_regions(clause).as_trait_clause() {
-                obligations.push(tp);
+            if let Some(obligation) = read_where_clause(&ocx, clause) {
+                obligations.push(obligation);
             }
         }
 
         return Some(obligations);
     }
     None
+}
+
+/// One `where` clause of a matched impl, as the walk reads it, or `None` when it is no trait clause.
+///
+/// Best-effort: recover a *fixed* associated-type projection that stalls on an unknown
+/// input before it is normalized. The canonical case is a later pipeline stage keyed on
+/// an earlier stage's `::Output` (`ProviderB: Handler<Ctx, Code, <ProviderA as
+/// Handler<Ctx, Code, In>>::Output>`) where the walk's input `In` is a call-site unknown
+/// (a rigid placeholder): the earlier provider's `where` clause (`In: Send`, or a deeper
+/// `In: Into<Body>`) is *false* against a rigid placeholder, so its impl is rejected and
+/// the projection never reduces — even though the provider's `type Output` does not
+/// depend on `In` at all. Resolving the projection with the placeholders as *deferrable*
+/// inference variables (so the blocking bound is ambiguous, not false) lets the solver
+/// commit to the sole impl and read off the fixed output, turning the next stage's input
+/// from an unknowable `_` into the concrete type that carries the real cause (a later
+/// stage's `stream: AsRef<[u8]>`). A no-op unless the clause carries such a placeholder.
+/// Substitute the parent's unifications (including the obligation's placeholder input)
+/// into the raw clause *without* normalizing, so a stalled `::Output` projection — a
+/// later pipeline stage's input keyed on an earlier stage's output — survives as an
+/// alias we can recover here. Normalizing first would collapse it into an opaque
+/// inference variable, losing the projection.
+///
+/// A clause that still carries inference vars after solving is one whose parameter the
+/// impl match left unconstrained — most often a *later pipeline stage keyed on an
+/// earlier stage's unresolved `::Output`* (`ProviderB: Handler<Ctx, Code, ProviderA::
+/// Output>`, where `ProviderA` does not hold because the walk's own input is an unknown,
+/// so its `::Output` never normalizes). Dropping it would hide every root cause living
+/// in a stage past the first. Instead, replace those stray vars with rigid placeholders
+/// so the walk can still descend the stage; the placeholder-leaf filter in
+/// [`resolve_leaves`](crate::resolve::walk::resolve_leaves) keeps any leaf that
+/// genuinely depends on the unknown from being reported, exactly as for the call-site
+/// seed's unknown input. A no-op when there are no such vars (the common concrete-input
+/// case), so ordinary walks are unaffected.
+fn read_where_clause<'tcx>(
+    ocx: &ObligationCtxt<'_, 'tcx>,
+    clause: Unnormalized<'tcx, ty::Clause<'tcx>>,
+) -> Option<ty::PolyTraitClause<'tcx>> {
+    let infcx = ocx.infcx;
+    let tcx = infcx.tcx;
+    let pre = resolve_fixed_projections(
+        tcx,
+        infcx.deeply_resolve_ignoring_regions(clause.skip_norm_wip()),
+    );
+    let clause: ty::Clause<'tcx> = ocx.normalize(
+        &ObligationCause::dummy(),
+        ty::ParamEnv::empty(),
+        Unnormalized::new_wip(pre),
+    );
+    let clause = infcx.deeply_resolve_ignoring_regions(clause);
+    let clause = if clause.has_non_region_infer() {
+        unknowns_to_placeholders(tcx, clause)
+    } else {
+        clause
+    };
+    tcx.erase_and_anonymize_regions(clause).as_trait_clause()
 }
 
 /// The arguments of the impl `impl_did` when its trait ref unifies with `obligation` in `ocx`'s
