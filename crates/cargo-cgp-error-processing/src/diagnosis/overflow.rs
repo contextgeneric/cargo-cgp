@@ -5,8 +5,8 @@
 //! back to an obligation it already met (a cycle, such as a component wired to `UseContext`), or
 //! each step requires the consumer trait again for a larger type (a growing lookup, such as a
 //! provider of `CanShow<T>` that requires `CanShow<Vec<T>>`). [`WiringOverflow`] records which, and
-//! the provider step that causes it when the walk can name one; [`wiring_overflow_reason`] and
-//! [`wiring_overflow_help`] word the headline's reason and the fix.
+//! the provider step that causes it when the walk can name one; [`rewrite_wiring_overflow`] and
+//! [`wiring_overflow_reason`] word the headline, and [`wiring_overflow_help`] the fix.
 
 use crate::code::{GROWING_LOOKUP, WIRING_CYCLE};
 use crate::rewrite::{

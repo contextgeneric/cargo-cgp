@@ -5,7 +5,7 @@
 //! (`cargo-cgp-driver`) is the only caller; the front-end no longer touches diagnostics.
 //! See `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md` for the design.
 //!
-//! Nine tenants live here, all driven by the driver's emitter:
+//! Ten tenants live here, all driven by the driver's emitter:
 //!
 //! - [`rewrite`] — the string transform that renames CGP wiring messages, over the
 //!   [`ComponentNameMap`] the driver fills in from the compiler.
@@ -19,6 +19,7 @@
 //! - [`dedup`] — the [`DedupLedger`] that suppresses the re-reports one lazy-wiring mistake
 //!   produces at many sites.
 //! - [`signals`] — the stable rustc phrasings the emitter's candidate checks key on.
+//! - [`naming`] — the rule CGP macros follow for the names they invent.
 //! - [`shape`] — the `Struct!`/`Enum!` record and variant forms a field list renders to, shared
 //!   by the text post-processing and the driver's typed renderer.
 //! - [`candidates`]: [`bound_candidate_list`], which cuts the implementor list the driver's
