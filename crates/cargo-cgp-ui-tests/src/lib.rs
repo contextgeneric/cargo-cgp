@@ -15,6 +15,7 @@
 
 pub mod aux;
 pub mod blocks;
+pub mod cgp_code;
 pub mod directives;
 pub mod fixtures;
 pub mod harness;

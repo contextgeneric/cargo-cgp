@@ -25,6 +25,8 @@
 use std::fs;
 use std::path::Path;
 
+use crate::cgp_code::cgp_code_at;
+
 /// The directive names, as they follow `//@`.
 const NAMES: &[&str] = &[
     "aux-build",
@@ -150,6 +152,5 @@ fn once(already_declared: bool, name: &str, line: &str) {
 
 /// Whether `text` is a `CGP-Exxx` code: `CGP-E` followed by three digits.
 fn is_cgp_code(text: &str) -> bool {
-    text.strip_prefix("CGP-E")
-        .is_some_and(|digits| digits.len() == 3 && digits.bytes().all(|b| b.is_ascii_digit()))
+    cgp_code_at(text) == Some(text)
 }

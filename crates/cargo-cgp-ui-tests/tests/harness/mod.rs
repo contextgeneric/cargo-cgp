@@ -1,4 +1,5 @@
 pub mod aux;
+pub mod cgp_code;
 pub mod directives;
 pub mod fixtures;
 pub mod normalize;
