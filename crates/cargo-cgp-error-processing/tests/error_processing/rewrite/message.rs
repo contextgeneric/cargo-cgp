@@ -1,38 +1,19 @@
-//! Tests for the compiler-free wiring-message rewrite (`cargo_cgp_error_processing::rewrite`).
+//! Tests for the wiring-message rewrite (`cargo_cgp_error_processing::rewrite`).
 //!
-//! This crate links no compiler internals, so — unlike the driver that drives this logic —
-//! the tests need no `rustc_private` gate and run on any toolchain. The rewrite is exercised
-//! from a hand-built name map, the same shape the driver produces from a `TyCtxt`.
+//! This crate links no compiler internals, so, unlike the driver that drives this logic, the tests
+//! need no `rustc_private` gate and run on any toolchain. The rewrite is exercised from a hand-built
+//! name map, the same shape the driver produces from a `TyCtxt`.
 
 use std::collections::HashMap;
 
 use cargo_cgp_error_processing::rewrite::{
-    ComponentNameMap, ComponentTraitNames, parse_trait_bound, rewrite_message,
-    rewrite_required_for, rewrite_trait_bound,
-};
-use cargo_cgp_error_processing::{
-    OverflowStep, WiringOverflow, rewrite_wiring_overflow, wiring_overflow_help,
+    ComponentNameMap, ComponentTraitNames, rewrite_message, rewrite_required_for,
+    rewrite_trait_bound,
 };
 
-/// The fixed map every test's [`ComponentNameMap`] initializes to.
-fn names() -> HashMap<String, ComponentTraitNames> {
-    let mut map = HashMap::new();
-    map.insert(
-        "AreaCalculatorComponent".to_owned(),
-        ComponentTraitNames {
-            consumer: "CanCalculateArea".to_owned(),
-            provider: "AreaCalculator".to_owned(),
-            params: 0,
-        },
-    );
-    map
-}
+use super::support::name_map;
 
-/// A lazily-initialized map over [`names`], the driver-side `ComponentNameMap` stand-in.
-fn name_map() -> ComponentNameMap {
-    ComponentNameMap::new(names)
-}
-
+// Property: for all `IsProviderFor` notes whose marker the map knows, the note names the provider trait and context.
 #[test]
 fn rewrites_is_provider_for_note() {
     let out = rewrite_required_for(
@@ -47,6 +28,8 @@ fn rewrites_is_provider_for_note() {
     );
 }
 
+// Property: a generated parameter is never called a context: the provider form leaves it out, and the consumer form
+// names it plainly.
 #[test]
 fn a_generated_parameter_is_not_called_a_context() {
     // `__Context__` is the parameter a provider impl is generic over, standing for every context,
@@ -69,6 +52,7 @@ fn a_generated_parameter_is_not_called_a_context() {
     );
 }
 
+// Property: for all `CanUseComponent` notes whose marker the map knows, the note names the consumer trait.
 #[test]
 fn rewrites_can_use_component_note() {
     let out = rewrite_required_for(
@@ -83,6 +67,7 @@ fn rewrites_can_use_component_note() {
     );
 }
 
+// Property: a note matches by the trait's last segment, whatever prefix rustc printed.
 #[test]
 fn strips_module_prefix_on_trait_and_marker() {
     // At driver time the notes still carry the `cgp::prelude::` re-export prefix; the
@@ -99,6 +84,7 @@ fn strips_module_prefix_on_trait_and_marker() {
     );
 }
 
+// Property: a context's own generic arguments survive the top-level comma split.
 #[test]
 fn keeps_a_generic_context_whole() {
     // A context with its own generic arguments must survive the top-level comma split.
@@ -114,6 +100,7 @@ fn keeps_a_generic_context_whole() {
     );
 }
 
+// Property: the provider note names the bare trait, leaving out the parameters after the context.
 #[test]
 fn ignores_a_params_tuple_after_the_context() {
     let out = rewrite_required_for(
@@ -128,6 +115,7 @@ fn ignores_a_params_tuple_after_the_context() {
     );
 }
 
+// Property: the consumer note names the bare trait, leaving out the component's parameters.
 #[test]
 fn consumer_note_elides_generic_parameters() {
     // A generic component's consumer note still names the trait; the extra parameters are
@@ -154,6 +142,7 @@ fn consumer_note_elides_generic_parameters() {
     );
 }
 
+// Property: for all markers absent from the map, the note gives `None`.
 #[test]
 fn leaves_unknown_component_untouched() {
     // A marker absent from the map means the names are unknown, so nothing is rewritten.
@@ -164,6 +153,7 @@ fn leaves_unknown_component_untouched() {
     assert_eq!(out, None);
 }
 
+// Property: for all notes that are not one of the two wiring forms, the rewrite gives `None`.
 #[test]
 fn leaves_unrelated_notes_untouched() {
     assert_eq!(
@@ -179,6 +169,8 @@ fn leaves_unrelated_notes_untouched() {
     );
 }
 
+// Property: for all `IsProviderFor` headers whose marker the map knows, the header carries `[CGP-E002]` and names the
+// provider trait, the context, and the provider.
 #[test]
 fn rewrites_is_provider_for_header() {
     let out = rewrite_trait_bound(
@@ -193,6 +185,7 @@ fn rewrites_is_provider_for_header() {
     );
 }
 
+// Property: a header's subject stays whole, whatever generic arguments it holds.
 #[test]
 fn header_keeps_a_generic_subject_whole() {
     // The `: ` split must find the self/trait separator, not a colon inside the subject's
@@ -209,6 +202,7 @@ fn header_keeps_a_generic_subject_whole() {
     );
 }
 
+// Property: a header matches by the trait's last segment, whatever prefix rustc printed.
 #[test]
 fn header_strips_module_prefix() {
     let out = rewrite_trait_bound(
@@ -223,6 +217,7 @@ fn header_strips_module_prefix() {
     );
 }
 
+// Property: a `CanUseComponent` header gives `None`, since the typed resolver words it.
 #[test]
 fn leaves_a_check_header_to_the_resolver() {
     // A check's `CanUseComponent` header is worded by the typed resolver, never by this rewrite.
@@ -235,6 +230,7 @@ fn leaves_a_check_header_to_the_resolver() {
     );
 }
 
+// Property: a single parameter reattaches to the named trait as written.
 #[test]
 fn header_reattaches_a_single_generic_parameter() {
     // A generic component: `IsProviderFor<Marker, Context, f64>` recovers
@@ -251,6 +247,7 @@ fn header_reattaches_a_single_generic_parameter() {
     );
 }
 
+// Property: two or more grouped parameters reattach unwrapped.
 #[test]
 fn header_unwraps_a_multi_parameter_tuple() {
     // Two or more parameters arrive grouped in a tuple, which is unwrapped so the reattached
@@ -267,6 +264,7 @@ fn header_unwraps_a_multi_parameter_tuple() {
     );
 }
 
+// Property: the header reattaches three grouped parameters while both notes leave them out.
 #[test]
 fn rewrites_a_three_parameter_generic_component() {
     // A component with three generic parameters: they arrive grouped as `(u32, u64, bool)`
@@ -309,31 +307,7 @@ fn rewrites_a_three_parameter_generic_component() {
     );
 }
 
-#[test]
-fn parses_a_trait_bound_header() {
-    // The classification parse the driver uses on its own: subject, whole bound, trait name.
-    let parsed = parse_trait_bound(
-        "the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied",
-    )
-    .expect("a trait-bound header must parse");
-    assert_eq!(parsed.subject, "Rectangle");
-    assert_eq!(
-        parsed.bound,
-        "Rectangle: CanUseComponent<AreaCalculatorComponent>"
-    );
-    assert_eq!(parsed.trait_name, "CanUseComponent");
-
-    // A bound without generics parses too, with empty args.
-    let parsed = parse_trait_bound("the trait bound `f64: std::cmp::Eq` is not satisfied")
-        .expect("an ordinary bound must parse");
-    assert_eq!(parsed.subject, "f64");
-    assert_eq!(parsed.bound, "f64: std::cmp::Eq");
-    assert_eq!(parsed.trait_name, "Eq");
-    assert_eq!(parsed.args, "");
-
-    assert!(parse_trait_bound("mismatched types").is_none());
-}
-
+// Property: for all other bounds, and markers absent from the map, the header gives `None`.
 #[test]
 fn header_leaves_non_cgp_and_unknown_bounds_untouched() {
     assert_eq!(
@@ -352,6 +326,7 @@ fn header_leaves_non_cgp_and_unknown_bounds_untouched() {
     );
 }
 
+// Property: `rewrite_message` rewrites both wiring forms and gives `None` for any other message.
 #[test]
 fn rewrite_message_dispatches_note_and_header() {
     // The entry point handles both the header and the note forms.
@@ -378,262 +353,6 @@ fn rewrite_message_dispatches_note_and_header() {
     assert_eq!(rewrite_message("some unrelated message", &name_map()), None);
 }
 
-/// A map keyed by a marker's *full path*, the shape the driver builds from `def_path_str`.
-fn full_path_names() -> HashMap<String, ComponentTraitNames> {
-    let mut map = HashMap::new();
-    map.insert(
-        "my_crate::area::AreaCalculatorComponent".to_owned(),
-        ComponentTraitNames {
-            consumer: "CanCalculateArea".to_owned(),
-            provider: "AreaCalculator".to_owned(),
-            params: 0,
-        },
-    );
-    map
-}
-
-#[test]
-fn resolves_a_full_path_key_by_name() {
-    let map = ComponentNameMap::new(full_path_names);
-
-    // The text rewrite's name lookup matches the full-path key by its last segment, so a note
-    // that carries only the unqualified marker still rewrites.
-    assert_eq!(
-        map.get("AreaCalculatorComponent").map(|n| n.consumer),
-        Some("CanCalculateArea".to_owned())
-    );
-    assert_eq!(
-        rewrite_required_for(
-            "required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`",
-            &map,
-        )
-        .as_deref(),
-        Some(
-            "required for the context `Rectangle` to implement the consumer trait `CanCalculateArea`"
-        )
-    );
-}
-
-/// Two components in different modules whose markers share the name `MeasurerComponent`.
-fn same_name_names() -> HashMap<String, ComponentTraitNames> {
-    let mut map = HashMap::new();
-    for (module, suffix) in [("shapes_a", "A"), ("shapes_b", "B")] {
-        map.insert(
-            format!("my_crate::{module}::MeasurerComponent"),
-            ComponentTraitNames {
-                consumer: format!("CanMeasure{suffix}"),
-                provider: format!("Measurer{suffix}"),
-                params: 0,
-            },
-        );
-    }
-    map
-}
-
-#[test]
-fn declines_a_marker_name_two_components_share() {
-    // The bare name rustc printed matches both entries, and the text cannot tell which one it
-    // meant, so the rename declines rather than pick one.
-    let map = ComponentNameMap::new(same_name_names);
-    assert_eq!(map.get("MeasurerComponent"), None);
-    assert_eq!(
-        rewrite_required_for(
-            "required for `MeasureWidthA` to implement `IsProviderFor<MeasurerComponent, App>`",
-            &map,
-        ),
-        None
-    );
-    // rustc qualifies a shared name, and the qualified path picks out one component.
-    assert_eq!(
-        rewrite_required_for(
-            "required for `MeasureWidthA` to implement `IsProviderFor<shapes_a::MeasurerComponent, App>`",
-            &map,
-        )
-        .as_deref(),
-        Some(
-            "required for the provider `MeasureWidthA` to implement the provider trait `MeasurerA` for the context `App`"
-        )
-    );
-}
-
-/// A cycle the walk closed at `UseContext`'s `Greeter` step.
-fn use_context_cycle() -> WiringOverflow {
-    WiringOverflow::Cycle {
-        closing: Some(OverflowStep {
-            provider: "UseContext".to_owned(),
-            provider_trait: "Greeter".to_owned(),
-            context: "Person".to_owned(),
-            requires: "CanGreet".to_owned(),
-            required_of: "Person".to_owned(),
-        }),
-    }
-}
-
-#[test]
-fn rewrites_a_wiring_cycle_into_its_cycle_header() {
-    let out = rewrite_wiring_overflow(
-        "overflow evaluating the requirement `Person: CanUseComponent<AreaCalculatorComponent>`",
-        &name_map(),
-        &use_context_cycle(),
-    );
-    assert_eq!(
-        out.as_deref(),
-        Some(
-            "[CGP-E020] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because the lookup leads back to itself"
-        )
-    );
-}
-
-#[test]
-fn rewrites_a_growing_lookup_into_its_own_header() {
-    let growing = WiringOverflow::Growing {
-        larger: Some("CanCalculateArea<Vec<u32>>".to_owned()),
-        growing: None,
-    };
-    let out = rewrite_wiring_overflow(
-        "overflow evaluating the requirement `Person: CanUseComponent<AreaCalculatorComponent>`",
-        &name_map(),
-        &growing,
-    );
-    assert_eq!(
-        out.as_deref(),
-        Some(
-            "[CGP-E021] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because each step requires it for a larger type (`CanCalculateArea<Vec<u32>>`, …)"
-        )
-    );
-    // Without the first larger requirement, the reason names none.
-    let unnamed = WiringOverflow::Growing {
-        larger: None,
-        growing: None,
-    };
-    assert_eq!(
-        rewrite_wiring_overflow(
-            "overflow evaluating the requirement `Person: CanUseComponent<AreaCalculatorComponent>`",
-            &name_map(),
-            &unnamed,
-        )
-        .as_deref(),
-        Some(
-            "[CGP-E021] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because each step requires it for a larger type"
-        )
-    );
-}
-
-#[test]
-fn the_wiring_overflow_help_names_the_provider_that_closes_or_grows_the_lookup() {
-    assert_eq!(
-        wiring_overflow_help(&use_context_cycle()),
-        "wire a provider in place of `UseContext`, which provides `Greeter` for `Person` by \
-         requiring `CanGreet` on `Person` again"
-    );
-    assert_eq!(
-        wiring_overflow_help(&WiringOverflow::Growing {
-            larger: Some("CanShow<Vec<u32>>".to_owned()),
-            growing: Some(OverflowStep {
-                provider: "ShowNested".to_owned(),
-                provider_trait: "Shower<u32>".to_owned(),
-                context: "App".to_owned(),
-                requires: "CanShow<Vec<u32>>".to_owned(),
-                required_of: "App".to_owned(),
-            }),
-        }),
-        "wire a provider in place of `ShowNested`, which provides `Shower<u32>` for `App` by \
-         requiring `CanShow<Vec<u32>>` on `App`, a larger type at every step"
-    );
-    // A lookup that grows in the type the consumer trait is required of names that type.
-    assert_eq!(
-        wiring_overflow_help(&WiringOverflow::Growing {
-            larger: Some("Vec<u32>".to_owned()),
-            growing: Some(OverflowStep {
-                provider: "ShowWrapped".to_owned(),
-                provider_trait: "Shower".to_owned(),
-                context: "u32".to_owned(),
-                requires: "CanShow".to_owned(),
-                required_of: "Vec<u32>".to_owned(),
-            }),
-        }),
-        "wire a provider in place of `ShowWrapped`, which provides `Shower` for `u32` by requiring \
-         `CanShow` on `Vec<u32>`, a larger type at every step"
-    );
-    // Without a provider step, the help says what the replacement must not do.
-    assert_eq!(
-        wiring_overflow_help(&WiringOverflow::Cycle { closing: None }),
-        "wire the component to a provider that does not require the consumer trait it provides"
-    );
-    assert_eq!(
-        wiring_overflow_help(&WiringOverflow::Growing {
-            larger: Some("CanShow<Vec<u32>>".to_owned()),
-            growing: None,
-        }),
-        "wire the component to a provider whose requirements do not grow with each step"
-    );
-}
-
-#[test]
-fn rewrites_a_consumer_overflow_at_a_call_into_its_cycle_header() {
-    // A call reports the overflow on the consumer trait itself, with or without its arguments.
-    assert_eq!(
-        rewrite_wiring_overflow(
-            "overflow evaluating the requirement `Person: CanCalculateArea`",
-            &name_map(),
-            &use_context_cycle(),
-        )
-        .as_deref(),
-        Some(
-            "[CGP-E020] the wiring for the consumer trait `CanCalculateArea` on context `Person` never resolves, because the lookup leads back to itself"
-        )
-    );
-    assert_eq!(
-        rewrite_wiring_overflow(
-            "overflow evaluating the requirement `Person: app::CanCalculateArea<Square>`",
-            &name_map(),
-            &use_context_cycle(),
-        )
-        .as_deref(),
-        Some(
-            "[CGP-E020] the wiring for the consumer trait `CanCalculateArea<Square>` on context `Person` never resolves, because the lookup leads back to itself"
-        )
-    );
-}
-
-#[test]
-fn a_non_wiring_overflow_is_left_alone() {
-    // An `E0275` on an ordinary trait is not a wiring lookup, so it keeps rustc's own header.
-    assert_eq!(
-        rewrite_wiring_overflow(
-            "overflow evaluating the requirement `Foo: Bar<Baz>`",
-            &name_map(),
-            &use_context_cycle(),
-        ),
-        None
-    );
-}
-
-/// A `ComponentNameMap` whose initializer panics, to prove it is never forced.
-fn panicking_init() -> HashMap<String, ComponentTraitNames> {
-    panic!("the name map must not be built when no message is rewritten");
-}
-
-#[test]
-fn does_not_force_the_map_without_a_matching_message() {
-    // The lazy build must not run for a message that is not a CGP wiring form — even one that
-    // is a trait-bound header for an unrelated trait, or a `required for` note for a
-    // non-wiring trait. If any of these forced the map, `panicking_init` would panic.
-    let map = ComponentNameMap::new(panicking_init);
-    assert_eq!(rewrite_message("some unrelated message", &map), None);
-    assert_eq!(
-        rewrite_message("the trait bound `f64: std::cmp::Eq` is not satisfied", &map),
-        None
-    );
-    assert_eq!(
-        rewrite_required_for(
-            "required for `Rectangle` to implement `HasRectangleFields`",
-            &map
-        ),
-        None
-    );
-}
-
 /// A component whose one parameter is a tuple (`CanFormatPair<(u32, u64)>`).
 fn tuple_param_names() -> HashMap<String, ComponentTraitNames> {
     HashMap::from([(
@@ -646,6 +365,7 @@ fn tuple_param_names() -> HashMap<String, ComponentTraitNames> {
     )])
 }
 
+// Property: a component with exactly one parameter keeps it whole, even when it is a tuple.
 #[test]
 fn keeps_a_single_tuple_parameter_whole() {
     // A one-parameter component whose parameter is a tuple arrives exactly as a two-parameter
@@ -675,6 +395,7 @@ fn fn_pointer_names() -> HashMap<String, ComponentTraitNames> {
     )])
 }
 
+// Property: a grouped list splits at its own commas, and the `>` of a `->` closes no bracket.
 #[test]
 fn keeps_a_function_pointer_parameter_whole() {
     // The `>` of `->` closes no bracket, so the grouped list still splits at its own comma.
