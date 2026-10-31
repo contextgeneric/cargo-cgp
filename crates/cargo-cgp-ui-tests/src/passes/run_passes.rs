@@ -20,7 +20,7 @@ pub fn run_passes(
     fixture: &Path,
     name: &str,
     directives: &Directives,
-    paths: &Paths,
+    paths: &Paths<'_>,
 ) -> Vec<(&'static str, Outcome)> {
     let rust = harness::run_fixture_rust(paths.harness_crate, fixture);
     let cgp = harness::run_fixture(paths.harness_crate, fixture, &directives.env);

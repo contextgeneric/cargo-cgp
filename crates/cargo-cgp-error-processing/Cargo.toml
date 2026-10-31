@@ -24,3 +24,6 @@ insta = { workspace = true }
 # from typed compiler state and this crate turns it into `cargo tree`-style text, kept here so
 # the rendering is unit-tested without the driver's `rustc_private` linkage.
 termtree = { workspace = true }
+
+[lints]
+workspace = true

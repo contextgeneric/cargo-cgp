@@ -9,7 +9,7 @@ use crate::passes::reduce_json::reduce_json;
 use crate::snapshot::{Outcome, cgp_stderr_path, expand_path, json_path, review, rust_stderr_path};
 
 /// Review the tool's stderr from `run` against `.cgp.stderr`.
-pub fn cgp_stderr_pass(run: &Run, fixture: &Path, paths: &Paths, bless: bool) -> Outcome {
+pub fn cgp_stderr_pass(run: &Run, fixture: &Path, paths: &Paths<'_>, bless: bool) -> Outcome {
     let actual = normalize(
         &run.stderr,
         paths.harness_crate,
@@ -20,7 +20,7 @@ pub fn cgp_stderr_pass(run: &Run, fixture: &Path, paths: &Paths, bless: bool) ->
 }
 
 /// Review plain `cargo check`'s stderr from `run` against `.rust.stderr`.
-pub fn rust_stderr_pass(run: &Run, fixture: &Path, paths: &Paths, bless: bool) -> Outcome {
+pub fn rust_stderr_pass(run: &Run, fixture: &Path, paths: &Paths<'_>, bless: bool) -> Outcome {
     let actual = normalize_baseline(
         &run.stderr,
         paths.harness_crate,
@@ -35,7 +35,7 @@ pub fn rust_stderr_pass(run: &Run, fixture: &Path, paths: &Paths, bless: bool) -
 pub fn expand_pass(
     fixture: &Path,
     env: &[(String, String)],
-    paths: &Paths,
+    paths: &Paths<'_>,
     bless: bool,
 ) -> Outcome {
     let raw = harness::run_fixture_expand(paths.harness_crate, fixture, env);
@@ -45,7 +45,12 @@ pub fn expand_pass(
 
 /// Run `cargo cgp check --message-format=json` on the fixture and review its compiler messages,
 /// reduced by [`reduce_json`], against `.cgp.json`.
-pub fn json_pass(fixture: &Path, env: &[(String, String)], paths: &Paths, bless: bool) -> Outcome {
+pub fn json_pass(
+    fixture: &Path,
+    env: &[(String, String)],
+    paths: &Paths<'_>,
+    bless: bool,
+) -> Outcome {
     let stream = harness::run_fixture_json(paths.harness_crate, fixture, env);
     let reduced = reduce_json(&stream);
     let actual = replace_paths(&reduced, paths.harness_crate, paths.cgp_root, paths.sysroot);

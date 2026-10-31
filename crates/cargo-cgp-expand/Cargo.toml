@@ -28,3 +28,6 @@ prettyplease = { workspace = true }
 # The spelling rules the text resugaring also follows, so a name is spelled the same in an expansion
 # and in a diagnostic. The agreement test also compares the two resugarings' results.
 cargo-cgp-error-processing = { workspace = true }
+
+[lints]
+workspace = true

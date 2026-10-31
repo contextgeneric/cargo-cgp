@@ -29,3 +29,6 @@ cargo-cgp-error-processing = { workspace = true }
 # surface macros. Kept out of this crate for the same reason as the error processing — so it builds
 # and its tests run without the `rustc_private` linkage.
 cargo-cgp-expand = { workspace = true }
+
+[lints]
+workspace = true

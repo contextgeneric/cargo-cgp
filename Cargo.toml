@@ -25,6 +25,14 @@ repository   = "https://github.com/contextgeneric/cargo-cgp"
 authors      = ["Soares Chen <soares.chen@maybevoid.com>"]
 keywords     = ["cgp"]
 
+# The lints every crate shares, each of which the whole tree already meets. Crate-specific lints stay
+# in the crate. `cargo clippy --all-targets -- -D warnings` turns each warning here into an error.
+[workspace.lints.rust]
+# No crate needs `unsafe`, so a first use has to change this line and say why.
+unsafe_code = "forbid"
+rust_2018_idioms = { level = "warn", priority = -1 }
+unused_qualifications = "warn"
+
 [workspace.dependencies]
 anyhow = { version = "1" }
 # Semantic-version parsing/comparison, used by `cargo cgp update` to decide whether the

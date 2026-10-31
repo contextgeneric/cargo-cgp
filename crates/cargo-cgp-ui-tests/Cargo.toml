@@ -25,3 +25,6 @@ serde_json = { workspace = true }
 name    = "ui"
 path    = "tests/ui.rs"
 harness = false
+
+[lints]
+workspace = true

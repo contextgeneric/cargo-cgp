@@ -188,7 +188,7 @@ pub fn written_order_clauses<'tcx>(
     args: GenericArgsRef<'tcx>,
 ) -> Vec<Unnormalized<'tcx, ty::Clause<'tcx>>> {
     let generic = tcx.clauses_of(impl_did);
-    let instantiated: Vec<Unnormalized<ty::Clause<'tcx>>> = generic
+    let instantiated: Vec<Unnormalized<'tcx, ty::Clause<'tcx>>> = generic
         .instantiate(tcx, args)
         .into_iter()
         .map(|(clause, _)| clause)

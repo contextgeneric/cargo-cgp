@@ -48,7 +48,7 @@ pub fn postprocess_message(
     origin: Origin,
     ambiguous: &AmbiguousNames,
 ) -> Option<String> {
-    let mut current: Cow<str> = Cow::Borrowed(text);
+    let mut current: Cow<'_, str> = Cow::Borrowed(text);
     // Strip module qualifiers first, so the resugaring stages below match the bare
     // `Symbol`/`Chars`/`PathCons` names, keeping only those that tell two items apart.
     if let Some(stripped) = strip_unambiguous_paths(&current, ambiguous) {
