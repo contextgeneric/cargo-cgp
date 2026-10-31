@@ -3,6 +3,7 @@
 mod command;
 mod driver_path;
 mod dylib;
+mod forwarded_flag;
 mod invocation;
 mod preflight;
 mod sysroot;
@@ -12,6 +13,7 @@ mod workspace_wrapper;
 pub use command::*;
 pub use driver_path::*;
 pub use dylib::*;
+pub use forwarded_flag::*;
 pub use invocation::*;
 pub use preflight::*;
 pub use sysroot::*;

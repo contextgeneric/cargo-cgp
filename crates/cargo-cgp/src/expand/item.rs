@@ -3,6 +3,7 @@
 use anyhow::bail;
 
 use crate::config::ITEM_FLAG;
+use crate::launch::scan_flag;
 
 /// Split the forwarded arguments into the ones cargo gets and the item path, if one was given.
 ///
@@ -15,25 +16,16 @@ use crate::config::ITEM_FLAG;
 /// told from the value of a cargo flag (`--bin my_module`) without re-declaring cargo's whole
 /// argument grammar here — which is exactly what forwarding exists to avoid.
 pub fn take_item(args: &[String]) -> anyhow::Result<(Vec<String>, Option<String>)> {
-    let prefix = format!("{ITEM_FLAG}=");
-    let mut forwarded = Vec::with_capacity(args.len());
+    let scan = scan_flag(args, ITEM_FLAG);
     let mut item = None;
-    let mut arguments = args.iter();
-
-    while let Some(arg) = arguments.next() {
-        if let Some(path) = arg.strip_prefix(&prefix) {
-            set_item(&mut item, path.to_owned())?;
-        } else if arg == ITEM_FLAG {
-            let Some(path) = arguments.next() else {
-                bail!("`{ITEM_FLAG}` needs the path of a module or item to expand");
-            };
-            set_item(&mut item, path.clone())?;
-        } else {
-            forwarded.push(arg.clone());
-        }
+    for value in scan.values {
+        let Some(path) = value else {
+            bail!("`{ITEM_FLAG}` needs the path of a module or item to expand");
+        };
+        set_item(&mut item, path)?;
     }
 
-    Ok((forwarded, item))
+    Ok((scan.remainder, item))
 }
 
 /// Record the path, rejecting an empty one and a second `--item` — either would leave what gets

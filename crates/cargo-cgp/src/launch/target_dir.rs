@@ -4,7 +4,9 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 use crate::config::{CHECK_TARGET_DIR, CHECK_TARGET_SUBDIR, RUSTUP_TOOLCHAIN_ENV};
-use crate::launch::invocation::split_forwarded;
+use crate::launch::forwarded_flag::{
+    forwarded_config, forwarded_manifest_path, forwards_target_dir,
+};
 
 /// The target directory the tool chooses for a wrapped command, or `None` when the caller forwarded
 /// a `--target-dir` (in either `--target-dir X` or `--target-dir=X` form), which is taken as given.
@@ -33,31 +35,6 @@ pub fn cgp_target_dir(project_target_dir: Option<PathBuf>) -> PathBuf {
     project_target_dir
         .map(|dir| dir.join(CHECK_TARGET_SUBDIR))
         .unwrap_or_else(|| PathBuf::from(CHECK_TARGET_DIR))
-}
-
-/// Whether the forwarded arguments already set `--target-dir` (in either `--target-dir X`
-/// or `--target-dir=X` form), in which case the default is not injected.
-pub fn forwards_target_dir(args: &[String]) -> bool {
-    split_forwarded(args)
-        .0
-        .iter()
-        .any(|arg| arg == "--target-dir" || arg.starts_with("--target-dir="))
-}
-
-/// The `--manifest-path` the caller forwarded, in either `--manifest-path X` or
-/// `--manifest-path=X` form, so the target-directory query asks about the same package the
-/// wrapped command builds.
-pub fn forwarded_manifest_path(args: &[String]) -> Option<String> {
-    let mut args = split_forwarded(args).0.iter();
-    while let Some(arg) = args.next() {
-        if arg == "--manifest-path" {
-            return args.next().cloned();
-        }
-        if let Some(path) = arg.strip_prefix("--manifest-path=") {
-            return Some(path.to_owned());
-        }
-    }
-    None
 }
 
 /// The `target_directory` field of `cargo metadata`'s JSON output, or `None` when the output is
@@ -106,20 +83,4 @@ pub fn metadata_query_args(forwarded_args: &[String]) -> Vec<String> {
         args.push(config);
     }
     args
-}
-
-/// The values of every `--config` the caller forwarded, in either `--config X` or `--config=X`
-/// form, in order. A `build.target-dir` among them decides the target directory, and any other
-/// value may change how cargo reads the project, so the query sees them all.
-pub fn forwarded_config(args: &[String]) -> Vec<String> {
-    let mut values = Vec::new();
-    let mut args = split_forwarded(args).0.iter();
-    while let Some(arg) = args.next() {
-        if arg == "--config" {
-            values.extend(args.next().cloned());
-        } else if let Some(value) = arg.strip_prefix("--config=") {
-            values.push(value.to_owned());
-        }
-    }
-    values
 }
