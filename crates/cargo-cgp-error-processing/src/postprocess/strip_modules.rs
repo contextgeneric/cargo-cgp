@@ -20,6 +20,7 @@
 //! a string literal is skipped so a `Symbol!("a::b")` (were one to arise) is never mangled.
 
 use crate::postprocess::ambiguous::AmbiguousNames;
+use crate::syntax::string_literal_end;
 
 /// Strip module qualifiers from `text`, collapsing each `a::b::C` identifier run to its tail from
 /// its first uppercase segment, or to its last segment when none is uppercase. Returns the
@@ -58,7 +59,6 @@ fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Op
     let bytes = text.as_bytes();
     let mut out = String::with_capacity(text.len());
     let mut i = 0;
-    let mut in_string = false;
     let mut changed = false;
 
     // Identifier runs are pure ASCII, so they are scanned by byte; every other character is copied
@@ -66,24 +66,10 @@ fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Op
     // box-drawing of a rendered dependency tree, say — is never split into invalid bytes.
     while i < bytes.len() {
         let b = bytes[i];
-        if in_string {
-            let ch = next_char(text, i);
-            out.push(ch);
-            i += ch.len_utf8();
-            // Skip an escaped character whole, so a `\"` does not end the string early.
-            if ch == '\\' && i < bytes.len() {
-                let esc = next_char(text, i);
-                out.push(esc);
-                i += esc.len_utf8();
-            } else if ch == '"' {
-                in_string = false;
-            }
-            continue;
-        }
         if b == b'"' {
-            in_string = true;
-            out.push('"');
-            i += 1;
+            let end = string_literal_end(text, i);
+            out.push_str(&text[i..end]);
+            i = end;
             continue;
         }
         if is_ident_start(b) {

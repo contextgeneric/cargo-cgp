@@ -20,6 +20,7 @@ pub mod signals;
 pub mod similar;
 pub mod structural;
 pub mod support;
+pub mod syntax;
 pub mod tree;
 pub mod undeclared;
 pub mod unimported;

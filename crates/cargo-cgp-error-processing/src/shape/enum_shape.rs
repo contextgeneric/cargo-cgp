@@ -1,4 +1,5 @@
 use crate::shape::{ShapeTag, shape_name};
+use crate::syntax::code_chars;
 
 /// Render a sum of `Field` cells as `Enum!`, or `None` when the sum has no exact `Enum!` spelling.
 ///
@@ -50,20 +51,8 @@ fn macro_body<'a>(text: &'a str, prefix: &str, open: char, close: char) -> Optio
     let body = text.strip_prefix(prefix)?.strip_suffix(close)?;
 
     let mut depth = 0i32;
-    let mut in_string = false;
-    let mut escaped = false;
-    for c in body.chars() {
-        if in_string {
-            if escaped {
-                escaped = false;
-            } else if c == '\\' {
-                escaped = true;
-            } else if c == '"' {
-                in_string = false;
-            }
-        } else if c == '"' {
-            in_string = true;
-        } else if c == open {
+    for (_, c) in code_chars(body) {
+        if c == open {
             depth += 1;
         } else if c == close {
             depth -= 1;

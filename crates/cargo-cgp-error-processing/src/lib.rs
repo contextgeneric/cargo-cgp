@@ -5,7 +5,7 @@
 //! (`cargo-cgp-driver`) is the only caller; the front-end no longer touches diagnostics.
 //! See `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md` for the design.
 //!
-//! Ten tenants live here, all driven by the driver's emitter:
+//! Eleven tenants live here, all driven by the driver's emitter:
 //!
 //! - [`rewrite`] — the string transform that renames CGP wiring messages, over the
 //!   [`ComponentNameMap`] the driver fills in from the compiler.
@@ -26,6 +26,7 @@
 //!   `--verbose` flag un-elides back to the length rustc prints by default.
 //! - [`byte_range`]: the anchors' span decisions over plain byte ranges, which the driver converts
 //!   each `Span` to.
+//! - [`syntax`]: telling a string literal from the code around it in rendered text.
 //!
 //! A further module, [`code`], holds the `CGP-E` error-code constants the rewrite and the
 //! diagnosis wording stamp on classified main messages.
@@ -40,6 +41,7 @@ pub mod postprocess;
 pub mod rewrite;
 pub mod shape;
 pub mod signals;
+pub mod syntax;
 pub mod tree;
 
 pub use candidates::{RUSTC_CANDIDATE_LIMIT, bound_candidate_list};
@@ -82,4 +84,5 @@ pub use signals::{
     is_question_mark_cascade_text, is_recursion_limit_help_text, is_unbounded_type_param_item_text,
     mentions_orphan_param_text, mentions_wiring_text,
 };
+pub use syntax::{code_chars, string_literal_end};
 pub use tree::{DependencyTree, render_dependency_tree};
