@@ -1,0 +1,15 @@
+error[E0277]: [CGP-E001] missing field `separator` on `App`
+  --> src/main.rs:50:15
+   |
+50 |     format_it(app)
+   |               ^^^
+   |
+   = note: root cause: [CGP-E110] missing field `separator` on `App`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanFormatPair<u32>` for context `App`
+             └─ [CGP-E102] provider trait impl `PairFormatter<u32>` with context `App` for provider `FormatWithSeparator`
+               └─ [CGP-E104] trait impl `HasSeparator` for `App`
+                 └─ [CGP-E110] missing field `separator` on `App`
+   = help: add the field `separator: String` to `App`
+
+For more information about this error, try `rustc --explain E0277`.

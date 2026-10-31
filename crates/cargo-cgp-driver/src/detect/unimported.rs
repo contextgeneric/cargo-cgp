@@ -13,14 +13,14 @@
 
 use cargo_cgp_error_processing::UnimportedAbstractType;
 use rustc_hir::def::DefKind;
-use rustc_hir::{GenericParamKind, ItemKind, ParamName};
 use rustc_middle::ty::{self, TyCtxt};
-use rustc_span::def_id::{DefId, LocalDefId};
+use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
 use crate::resolve::query::{
-    abstract_type_component_marker, is_consumer_trait, is_provider_trait, trait_items_named,
+    abstract_type_component_marker, has_context_param, is_consumer_trait, is_provider_trait,
+    trait_items_named,
 };
 
 /// An abstract type a CGP definition uses but does not import, with the items that recognize a
@@ -100,25 +100,6 @@ pub fn enclosing_cgp_item(tcx: TyCtxt<'_>, span: Span) -> Option<DefId> {
         }
     }
     None
-}
-
-/// Whether the impl declares a type parameter named `__Context__`, the reserved context the CGP
-/// macros give their generated impls. Read from the HIR, so no query on the impl is forced.
-pub fn has_context_param(tcx: TyCtxt<'_>, impl_did: LocalDefId) -> bool {
-    context_param_span(tcx, impl_did).is_some()
-}
-
-/// The span of the impl's `__Context__` type parameter, the macro call site every token a CGP macro
-/// synthesizes shares, or `None` when the impl declares no such parameter.
-pub fn context_param_span(tcx: TyCtxt<'_>, impl_did: LocalDefId) -> Option<Span> {
-    let ItemKind::Impl(imp) = tcx.hir_expect_item(impl_did).kind else {
-        return None;
-    };
-    imp.generics.params.iter().find_map(|param| {
-        (matches!(param.kind, GenericParamKind::Type { .. })
-            && matches!(param.name, ParamName::Plain(ident) if ident.name.as_str() == CGP_IMPL_CONTEXT_PARAM))
-        .then_some(param.span)
-    })
 }
 
 /// The one CGP abstract-type component ([`abstract_type_component_marker`]) that declares an

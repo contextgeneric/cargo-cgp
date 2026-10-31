@@ -22,8 +22,9 @@ use rustc_span::{Span, kw};
 use rustc_trait_selection::traits::ObligationCause;
 use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
 
-use crate::detect::unimported::context_param_span;
-use crate::resolve::query::{abstract_type_component_marker, is_provider_trait, local_trait_impls};
+use crate::resolve::query::{
+    abstract_type_component_marker, context_param_span, is_provider_trait, local_trait_impls,
+};
 
 /// A component requirement a provider does not declare, with the impl and the traits that tie a
 /// later report, or an abstract type reported on its own, to the same mistake.

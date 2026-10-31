@@ -45,15 +45,13 @@
 
 use cargo_cgp_error_processing::CgpImplMisuse;
 use rustc_hir::def::DefKind;
-use rustc_hir::{
-    GenericArg, GenericBound, GenericParamKind, ItemKind, ParamName, QPath, TyKind,
-    WherePredicateKind,
-};
+use rustc_hir::{GenericArg, GenericBound, ItemKind, QPath, TyKind, WherePredicateKind};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
-use crate::config::CGP_IMPL_CONTEXT_PARAM;
-use crate::resolve::query::{consumer_provider_trait, is_provider_trait, local_trait_impls};
+use crate::resolve::query::{
+    consumer_provider_trait, context_param_span, is_provider_trait, local_trait_impls,
+};
 
 /// A `#[cgp_impl]` provider impl whose header names the wrong trait. Carries the rustc-free wording
 /// model plus the spans the emitter needs to reshape the precise error and suppress the rest of the
@@ -89,11 +87,7 @@ pub fn detect_cgp_impl_misuses(tcx: TyCtxt<'_>) -> Vec<DetectedCgpImplMisuse> {
         };
         // (1) The `#[cgp_impl]` fingerprint: a leading context type parameter named `__Context__`,
         // whose own span is the `#[cgp_impl(…)]` attribute call-site the sibling errors land on.
-        let Some(macro_span) = imp.generics.params.iter().find_map(|param| {
-            (matches!(param.kind, GenericParamKind::Type { .. })
-                && matches!(param.name, ParamName::Plain(ident) if ident.name.as_str() == CGP_IMPL_CONTEXT_PARAM))
-            .then_some(param.span)
-        }) else {
+        let Some(macro_span) = context_param_span(tcx, local) else {
             continue;
         };
         // (2) `Self` is a concrete local struct/enum — the provider struct — not the bare type

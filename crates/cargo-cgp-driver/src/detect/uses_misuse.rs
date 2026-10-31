@@ -16,11 +16,11 @@ use cargo_cgp_error_processing::ProviderTraitInUses;
 use rustc_hir::{GenericArg, GenericBound, ItemKind, QPath, TyKind, WherePredicateKind};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
-use rustc_span::def_id::DefId;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
-use crate::detect::unimported::has_context_param;
-use crate::resolve::query::{consumer_provider_trait, is_provider_trait, local_trait_impls};
+use crate::resolve::query::{
+    consumer_of_provider, has_context_param, is_provider_trait, local_trait_impls,
+};
 
 /// Recognize an `E0107` at `primary_span` as a provider trait named in `#[uses(…)]`: the caret is
 /// the trait name of a `where` bound on the context (`Self` or `__Context__`) of an impl a CGP macro
@@ -69,7 +69,7 @@ pub fn detect_provider_trait_in_uses(
                 if written_args || !is_provider_trait(tcx, provider_did) {
                     continue;
                 }
-                let consumer_did = consumer_of(tcx, provider_did, own_trait)?;
+                let consumer_did = consumer_of_provider(tcx, provider_did, own_trait)?;
                 return Some(ProviderTraitInUses {
                     provider: tcx.item_name(provider_did).to_string(),
                     consumer: tcx.item_name(consumer_did).to_string(),
@@ -89,12 +89,4 @@ fn bounds_context(bounded: &rustc_hir::Ty<'_>) -> bool {
     matches!(path.segments, [segment]
         if segment.ident.name.as_str() == "Self"
             || segment.ident.name.as_str() == CGP_IMPL_CONTEXT_PARAM)
-}
-
-/// The consumer trait whose blanket impl routes to `provider_did` ([`consumer_provider_trait`]),
-/// leaving out `skip`, the trait of the impl being lowered.
-fn consumer_of(tcx: TyCtxt<'_>, provider_did: DefId, skip: Option<DefId>) -> Option<DefId> {
-    tcx.all_traits_including_private()
-        .filter(|&trait_did| Some(trait_did) != skip)
-        .find(|&trait_did| consumer_provider_trait(tcx, trait_did) == Some(provider_did))
 }

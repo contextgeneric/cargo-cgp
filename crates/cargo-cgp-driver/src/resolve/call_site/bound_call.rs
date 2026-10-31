@@ -9,12 +9,12 @@ use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::resolve::call_site::{data_expr_ty, declared_binding_ty, is_about_call};
+use crate::resolve::call_site::{data_expr_ty, is_about_call};
 use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::query::{
-    WrittenArg, carries_wiring, expr_written_ty, holds, is_blanket_trait, is_consumer_trait,
-    is_context_adt, local_body_exprs, lower_hir_ty, unify_call_inputs, unknowns_to_placeholders,
-    written_args,
+    WrittenArg, carries_wiring, declared_binding_ty, expr_written_ty, holds, is_blanket_trait,
+    is_consumer_trait, is_context_adt, local_binding, local_body_exprs, lower_hir_ty,
+    unify_call_inputs, unknowns_to_placeholders, written_args,
 };
 use crate::resolve::walk::resolve_leaves;
 
@@ -143,8 +143,7 @@ fn arg_ty<'tcx>(infcx: &InferCtxt<'tcx>, arg: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     if let Some(ty) = expr_written_ty(infcx, arg) {
         return Some(ty);
     }
-    if let ExprKind::Path(QPath::Resolved(None, path)) = arg.kind
-        && let Res::Local(binding) = path.res
+    if let Some(binding) = local_binding(arg)
         && let Some(declared) = declared_binding_ty(infcx.tcx, binding)
     {
         return lower_hir_ty(infcx.tcx, declared);

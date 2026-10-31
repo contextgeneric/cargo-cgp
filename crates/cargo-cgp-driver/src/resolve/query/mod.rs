@@ -14,9 +14,11 @@
 //!   call-site anchors and the detectors share: [`unify_call_inputs`](fn@unify_call_inputs).
 //! - **Renderings of a wiring key**, its path, and its provider: [`describe_key`] and its siblings.
 //! - **Syntactic type reads** the call-site anchors and the detectors share: [`lower_hir_ty`] and
-//!   [`expr_written_ty`].
+//!   [`expr_written_ty`], and a binding's declared type, as written ([`declared_binding_ty`]) or as
+//!   its signature gives it ([`param_declared_input`], [`argument_ty`](fn@argument_ty)).
 //! - **Lookups** several stages make: [`check_impls_at`] over [`can_use_component_supertrait`] and
-//!   [`impl_self_ty_span`], [`import_path`](fn@import_path),
+//!   [`impl_self_ty_span`], [`context_param_span`],
+//!   [`enclosing_trait_impl`](fn@enclosing_trait_impl), [`import_path`](fn@import_path),
 //!   [`local_body_exprs`](fn@local_body_exprs), [`local_trait_impls`](fn@local_trait_impls),
 //!   [`owner_has_impl_of`](fn@owner_has_impl_of), [`trait_items_named`](fn@trait_items_named), and
 //!   [`traits_with_method`](fn@traits_with_method).
@@ -24,8 +26,12 @@
 //! The resolver's other modules and the class detectors import from here, and nothing here imports
 //! them.
 
+mod argument_ty;
+mod binding;
 mod cgp_item;
 mod check_impl;
+mod context_param;
+mod enclosing_trait_impl;
 mod holds;
 mod impl_match;
 mod import_path;
@@ -44,8 +50,12 @@ mod unknowns;
 mod written_order;
 mod written_ty;
 
+pub use argument_ty::*;
+pub use binding::*;
 pub use cgp_item::*;
 pub use check_impl::*;
+pub use context_param::*;
+pub use enclosing_trait_impl::*;
 pub use holds::*;
 pub use impl_match::*;
 pub use import_path::*;

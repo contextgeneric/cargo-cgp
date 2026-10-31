@@ -1,0 +1,9 @@
+error[E0107]: [CGP-E037] `AreaCalculator` is a provider trait and cannot be a `#[uses]` dependency; a dependency names its consumer trait `CanCalculateArea`
+  --> src/main.rs:16:8
+   |
+16 | #[uses(AreaCalculator)]
+   |        ^^^^^^^^^^^^^^
+   |
+   = help: name the consumer trait instead: `#[uses(CanCalculateArea)]` (not the provider trait `AreaCalculator`)
+
+For more information about this error, try `rustc --explain E0107`.

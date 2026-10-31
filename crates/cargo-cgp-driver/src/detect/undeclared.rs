@@ -24,8 +24,8 @@
 
 use cargo_cgp_error_processing::UndeclaredTrait;
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{self as hir, Expr, ExprKind, HirId, Node, QPath};
-use rustc_infer::infer::{BoundRegionConversionTime, InferCtxt, TyCtxtInferExt as _};
+use rustc_hir::{self as hir, Expr, ExprKind, HirId, QPath};
+use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::print::{PrintTraitRefExt as _, with_forced_trimmed_paths};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode};
 use rustc_span::def_id::DefId;
@@ -33,8 +33,9 @@ use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::query::{
-    expr_written_ty, is_blanket_trait, is_consumer_trait, is_provider_trait, local_body_exprs,
-    lower_hir_ty, trait_items_named, traits_with_method, unify_call_inputs,
+    argument_ty, enclosing_trait_impl, is_blanket_trait, is_consumer_trait, is_provider_trait,
+    local_binding, local_body_exprs, param_declared_input, trait_items_named, traits_with_method,
+    unify_call_inputs,
 };
 
 /// Recognize an undeclared-trait failure and recover the trait to declare, or
@@ -183,17 +184,10 @@ fn failing_call_at<'tcx>(tcx: TyCtxt<'tcx>, primary_span: Span) -> Option<Failin
             ExprKind::MethodCall(segment, receiver, args, _)
                 if segment.ident.span.overlaps(primary_span) =>
             {
-                let binding = match receiver.kind {
-                    ExprKind::Path(QPath::Resolved(None, path)) => match path.res {
-                        Res::Local(binding) => Some(binding),
-                        _ => None,
-                    },
-                    _ => None,
-                };
                 Some(FailingCall {
                     method: segment.ident.name,
                     hir_id: expr.hir_id,
-                    receiver: CallReceiver::Value(binding),
+                    receiver: CallReceiver::Value(local_binding(receiver)),
                     args,
                 })
             }
@@ -321,111 +315,6 @@ fn written_bound<'tcx>(
     let trait_ref = ty::TraitRef::new(tcx, trait_did, trait_args);
     let bound = with_forced_trimmed_paths!(trait_ref.print_only_trait_path().to_string());
     (Some(bound), unresolved)
-}
-
-/// The type an argument expression has without typeck: the type it writes ([`expr_written_ty`]),
-/// or, for a path to a local binding, the type the binding is declared with (a fn parameter, or a
-/// `let` with an annotation).
-pub fn argument_ty<'tcx>(infcx: &InferCtxt<'tcx>, arg: &Expr<'tcx>) -> Option<Ty<'tcx>> {
-    if let Some(written) = expr_written_ty(infcx, arg) {
-        return Some(written);
-    }
-    let ExprKind::Path(QPath::Resolved(None, path)) = arg.kind else {
-        return None;
-    };
-    let Res::Local(binding) = path.res else {
-        return None;
-    };
-    let tcx = infcx.tcx;
-    if let Node::LetStmt(let_stmt) = tcx.parent_hir_node(binding)
-        && let Some(annotation) = let_stmt.ty
-    {
-        return lower_hir_ty(tcx, annotation);
-    }
-    // A parameter's late-bound lifetimes (`shape: &Shape`) become fresh region variables, as they
-    // would at a call, so the type unifies with a declared input.
-    param_declared_input_binder(tcx, binding).map(|declared| {
-        infcx.instantiate_binder_with_fresh_vars(
-            DUMMY_SP,
-            BoundRegionConversionTime::FnCall,
-            declared,
-        )
-    })
-}
-
-/// The declared type of the fn parameter `binding` names, with its late-bound lifetimes left bound
-/// ([`param_declared_input_binder`]). A `#[cgp_impl]` provider's renamed `self`, declared
-/// `&__Context__`, is the case this was written for.
-fn param_declared_input<'tcx>(tcx: TyCtxt<'tcx>, binding: HirId) -> Option<Ty<'tcx>> {
-    param_declared_input_binder(tcx, binding).map(ty::Binder::skip_binder)
-}
-
-/// The declared type of the fn parameter `binding` names, under the signature's binder of
-/// late-bound lifetimes, read from the enclosing function's signature rather than from typeck
-/// results, which do not exist yet for the body whose type checking is reporting the error. `None`
-/// when `binding` is not a parameter.
-///
-/// An `async fn` body sees its parameters through fresh bindings, since lowering moves each into the
-/// future with an untyped `let __context__ = __context__;`, so such a forwarding `let` is followed
-/// back to the parameter it copies.
-fn param_declared_input_binder<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    mut binding: HirId,
-) -> Option<ty::Binder<'tcx, Ty<'tcx>>> {
-    let param = loop {
-        match tcx.parent_hir_node(binding) {
-            Node::Param(param) => break param,
-            Node::LetStmt(let_stmt) if let_stmt.ty.is_none() => {
-                let Some(Expr {
-                    kind: ExprKind::Path(QPath::Resolved(None, path)),
-                    ..
-                }) = let_stmt.init
-                else {
-                    return None;
-                };
-                let Res::Local(source) = path.res else {
-                    return None;
-                };
-                if source == binding {
-                    return None;
-                }
-                binding = source;
-            }
-            _ => return None,
-        }
-    };
-    let owner = tcx.hir_enclosing_body_owner(binding);
-    if !matches!(tcx.def_kind(owner), DefKind::AssocFn | DefKind::Fn) {
-        return None;
-    }
-    let index = tcx
-        .hir_body_owned_by(owner)
-        .params
-        .iter()
-        .position(|candidate| candidate.pat.hir_id == param.pat.hir_id)?;
-    let sig = tcx
-        .fn_sig(owner.to_def_id())
-        .instantiate_identity()
-        .skip_norm_wip();
-    let input = *sig.skip_binder().inputs().get(index)?;
-    Some(sig.rebind(input))
-}
-
-/// The nearest enclosing trait impl of `did`, walking up the def-parent chain (through the
-/// intervening `#[async_trait]` coroutine body and its method), or `None` if none is reached before
-/// the crate root. This is what lets the detection work uniformly for a sync `#[cgp_fn]` body (impl
-/// one hop up) and an async one (impl two hops up, past the async-block coroutine).
-pub fn enclosing_trait_impl(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
-    loop {
-        if matches!(tcx.def_kind(did), DefKind::Impl { of_trait: true }) {
-            return Some(did);
-        }
-        let parent = tcx.opt_parent(did)?;
-        if parent == did {
-            return None;
-        }
-        did = parent;
-    }
 }
 
 /// Whether `impl_did`'s `where` clause carries a trait bound of trait `trait_did`, so that the

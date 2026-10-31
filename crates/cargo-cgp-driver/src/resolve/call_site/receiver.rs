@@ -6,7 +6,7 @@ use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::Span;
 
 use crate::resolve::query::{
-    call_output_ty, item_ty, local_body_exprs, lower_hir_ty, peel_hir_refs,
+    call_output_ty, declared_binding_ty, item_ty, local_body_exprs, lower_hir_ty, peel_hir_refs,
 };
 
 /// The context type a call's receiver expression names — the *receiver* is what carries the
@@ -78,27 +78,4 @@ fn local_binding_context<'tcx>(tcx: TyCtxt<'tcx>, binding: hir::HirId) -> Option
     declared_binding_ty(tcx, binding)
         .map(|ty| peel_hir_refs(ty))
         .and_then(|ty| lower_hir_ty(tcx, ty))
-}
-
-/// The type a binding is declared with, references kept: a fn parameter's input type, or a `let`'s
-/// annotation. `None` for any other binding. An argument passed on by reference (`greet_all(app)`
-/// for `app: &App`) needs the reference to line up with the declared input it fills.
-pub(crate) fn declared_binding_ty<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    binding: hir::HirId,
-) -> Option<&'tcx hir::Ty<'tcx>> {
-    match tcx.parent_hir_node(binding) {
-        hir::Node::LetStmt(let_stmt) => let_stmt.ty,
-        hir::Node::Param(param) => {
-            let owner = tcx.hir_enclosing_body_owner(binding);
-            let body = tcx.hir_body_owned_by(owner);
-            let index = body
-                .params
-                .iter()
-                .position(|candidate| candidate.pat.hir_id == param.pat.hir_id)?;
-            let decl = tcx.hir_node_by_def_id(owner).fn_decl()?;
-            decl.inputs.get(index)
-        }
-        _ => None,
-    }
 }

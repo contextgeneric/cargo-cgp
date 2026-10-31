@@ -2,12 +2,14 @@
 
 use cargo_cgp_error_processing::{Causes, ChainNode, Leaf, Resolved};
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{self as hir, ExprKind, QPath};
+use rustc_hir::{self as hir, QPath};
 use rustc_middle::ty::{self, TyCtxt, Upcast as _};
 
-use crate::resolve::call_site::{MethodCall, declared_binding_ty};
+use crate::resolve::call_site::MethodCall;
 use crate::resolve::label::{label_for, render_ty};
-use crate::resolve::query::{CallTrait, peel_hir_refs, traits_with_method};
+use crate::resolve::query::{
+    CallTrait, declared_binding_ty, local_binding, peel_hir_refs, traits_with_method,
+};
 
 /// The cause of a consumer-method call whose receiver is a binding typed by a type parameter of
 /// the enclosing item (`context.greet()` for `context: &Context` in `fn run<Context>`), when the
@@ -23,12 +25,7 @@ pub(crate) fn unbounded_receiver<'tcx>(
     tcx: TyCtxt<'tcx>,
     call: &MethodCall<'tcx>,
 ) -> Option<Resolved> {
-    let ExprKind::Path(QPath::Resolved(None, path)) = call.receiver.kind else {
-        return None;
-    };
-    let Res::Local(binding) = path.res else {
-        return None;
-    };
+    let binding = local_binding(call.receiver)?;
     let declared = peel_hir_refs(declared_binding_ty(tcx, binding)?);
     let hir::TyKind::Path(QPath::Resolved(None, ty_path)) = declared.kind else {
         return None;

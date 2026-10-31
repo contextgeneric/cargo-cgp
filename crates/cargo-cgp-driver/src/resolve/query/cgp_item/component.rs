@@ -88,10 +88,21 @@ pub fn is_consumer_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// not an ADT, or no provider/consumer pair keys on it.
 pub fn marker_to_consumer(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<(DefId, DefId)> {
     let provider_did = marker_provider_trait(tcx, marker)?;
-    let consumer_did = tcx
-        .all_traits_including_private()
-        .find(|&trait_did| consumer_provider_trait(tcx, trait_did) == Some(provider_did))?;
+    let consumer_did = consumer_of_provider(tcx, provider_did, None)?;
     Some((consumer_did, provider_did))
+}
+
+/// The consumer trait whose blanket impl routes to `provider_did` ([`consumer_provider_trait`]),
+/// the inverse of that reader. `skip` leaves one trait out of the scan: a detector that runs while
+/// the compiler lowers a trait's blanket impl must not read that trait.
+pub fn consumer_of_provider(
+    tcx: TyCtxt<'_>,
+    provider_did: DefId,
+    skip: Option<DefId>,
+) -> Option<DefId> {
+    tcx.all_traits_including_private()
+        .filter(|&trait_did| Some(trait_did) != skip)
+        .find(|&trait_did| consumer_provider_trait(tcx, trait_did) == Some(provider_did))
 }
 
 /// The provider trait a component marker keys — the trait whose provider blanket bounds on

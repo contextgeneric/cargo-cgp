@@ -1,0 +1,53 @@
+error[E0277]: the trait bound `App: CanFormatPair<u32>` is not satisfied
+  --> src/main.rs:50:15
+   |
+50 |     format_it(app)
+   |     --------- ^^^ unsatisfied trait bound
+   |     |
+   |     required by a bound introduced by this call
+   |
+help: the trait `HasField<Symbol<9, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
+  --> src/main.rs:36:9
+   |
+36 |     pub dummy: (),
+   |         ^^^^^
+note: required for `App` to implement `HasSeparator`
+  --> src/main.rs:19:1
+   |
+19 | #[cgp_auto_getter]
+   | ^^^^^^^^^^^^^^^^^^
+20 | pub trait HasSeparator {
+   |           ^^^^^^^^^^^^
+note: required for `FormatWithSeparator` to implement `IsProviderFor<PairFormatterComponent, App, u32>`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_impl(new FormatWithSeparator)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+27 |     Self: HasSeparator,
+   |           ------------ unsatisfied trait bound introduced here
+   = note: 1 redundant requirement hidden
+   = note: required for `App` to implement `IsProviderFor<PairFormatterComponent, App, u32>`
+note: required for `App` to implement `PairFormatter<App, u32>`
+  --> src/main.rs:14:1
+   |
+14 |   #[cgp_component(PairFormatter)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 | | pub trait CanFormatPair<T> {
+   | |__________________________^
+note: required for `App` to implement `CanFormatPair<u32>`
+  --> src/main.rs:14:1
+   |
+14 | #[cgp_component(PairFormatter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 | pub trait CanFormatPair<T> {
+   |           ^^^^^^^^^^^^^^^^
+note: required by a bound in `format_it`
+  --> src/main.rs:45:23
+   |
+45 | fn format_it<Context: CanFormatPair<u32>>(context: &Context) -> String {
+   |                       ^^^^^^^^^^^^^^^^^^ required by this bound in `format_it`
+   = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

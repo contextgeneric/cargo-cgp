@@ -25,9 +25,9 @@ use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::detect::undeclared::{argument_ty, enclosing_trait_impl};
 use crate::resolve::query::{
-    is_provider_trait, local_body_exprs, trait_items_named, unify_call_inputs,
+    argument_ty, enclosing_trait_impl, is_provider_trait, local_body_exprs, trait_items_named,
+    unify_call_inputs,
 };
 
 /// Recognize a missing-`#[use_provider]` failure and recover the inner provider and the provider
