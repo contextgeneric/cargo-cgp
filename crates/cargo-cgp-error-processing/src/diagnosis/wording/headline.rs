@@ -2,8 +2,8 @@
 
 use crate::diagnosis::leaf::{FieldIssue, Leaf};
 use crate::diagnosis::resolved::{Cause, Resolved};
-use crate::diagnosis::wording::header::{class_code, class_sentence, quoted_list};
 use crate::diagnosis::wording::lead::root_cause_lead;
+use crate::diagnosis::wording::{class_code, class_sentence, quoted_list};
 
 /// The headline a resolved block displays, after its class `code`. One cause is stated as itself;
 /// several causes of one kind on one owner are stated together ([`merged_cause`]); causes too mixed
@@ -52,7 +52,7 @@ pub fn merged_cause(causes: &[Cause]) -> Option<String> {
     }
 }
 
-/// A [`quoted_list`] of `items`, or its first [`MERGED_CAUSE_NAMES`] items and a count of the rest
+/// A [`quoted_list`](fn@quoted_list) of `items`, or its first [`MERGED_CAUSE_NAMES`] items and a count of the rest
 /// when the list is longer. A list one item past the cap is named in full, since its count would
 /// take as much room as the item.
 fn capped_list(items: &[String]) -> String {

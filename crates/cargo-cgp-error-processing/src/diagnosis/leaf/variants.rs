@@ -1,35 +1,10 @@
-//! What a resolved check failure's dependency chain bottoms out on.
-//!
-//! These are the rustc-free leaf types the driver's typed resolver produces and the
-//! [wording](super::wording) turns into diagnostic text. They carry only owned `String`s,
-//! no compiler handles, so they outlive the inference contexts the driver reads them from
-//! and are exercised by plain unit tests.
+//! The causes a dependency chain bottoms out on.
 
+use crate::diagnosis::leaf::{
+    AdapterFix, CoreProviderFix, DeriveFix, EntryFix, FieldFix, FieldIssue, MethodFix, NearMiss,
+    ProvidesFix,
+};
 use crate::diagnosis::node::PartialKind;
-
-/// Why a required `HasField` bound is unmet — the distinction that tells a genuinely missing
-/// field apart from one some struct actually carries but has not derived. CGP's `HasField`
-/// follows `Deref` (a blanket impl forwards to the target), so a field on a `Deref` target
-/// resolves when the target derives it; the failure diagnosed here is a field present on some
-/// struct that has no `HasField` impl for it. (A field present *with a mismatched type* keeps
-/// its `HasField` trait impl and fails only the associated-type projection, so it never reaches
-/// this classification — it is a [`Leaf::FieldTypeMismatch`] instead.)
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FieldIssue {
-    /// No struct in the context's `Deref` chain carries a field of this name: it is genuinely
-    /// missing and must be added.
-    Missing,
-    /// The context struct itself carries a field of this name, yet the `HasField` bound is unmet:
-    /// the struct is missing (or has an incomplete) `#[derive(HasField)]` for it.
-    Present,
-    /// The context does not carry the field directly, but a struct reached through its `Deref`
-    /// chain does. Since `HasField` follows `Deref`, the bound would hold if that target derived
-    /// the field; the fault is that the target does not derive `HasField`.
-    PresentViaDeref {
-        /// The `Deref`-reachable struct that carries the field, e.g. `AppFields`.
-        target: String,
-    },
-}
 
 /// What a resolved dependency chain bottoms out on — the actual root cause the tree leads to.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -76,7 +51,7 @@ pub enum Leaf {
     /// [`FieldIssue::Present`] on the same owner. `#[derive(HasField)]` derives an impl for
     /// *every* field, so several underived fields on one struct are one mistake with one fix
     /// (the missing derive), and reporting them as separate root causes would overstate the
-    /// work. Built by [`coalesce_underived_fields`](super::coalesce_underived_fields), never by
+    /// work. Built by [`coalesce_underived_fields`](crate::diagnosis::coalesce_underived_fields), never by
     /// the driver's classifier directly; the merged cause's tree still branches to the
     /// per-field leaves, so each field stays visible in the chain.
     UnderivedFields {
@@ -347,143 +322,6 @@ pub enum Leaf {
     },
 }
 
-/// What a missing field's `help`s can name. It rides on a [`Leaf::Field`] but is not part of the
-/// leaf's identity: every equality and hash treats two values alike, so one missing field reached
-/// through requirements that state its type differently stays one cause, and
-/// [`Leaf::reconcile_fix`] keeps only what every route agrees on.
-#[derive(Debug, Clone, Default)]
-pub struct FieldFix {
-    /// Whether adding the field is confirmed to fix the cause: its struct implements `HasField` for
-    /// another field, so it derives it. A struct with no `HasField` impl may lack the derive too.
-    pub confirmed: bool,
-    /// The type the requirement gives the field (the `f64` of
-    /// `HasField<Symbol!("height"), Value = f64>`), or `None` when no requirement states a concrete
-    /// one.
-    pub ty: Option<String>,
-    /// A field the struct carries whose name is a likely slip of the missing one
-    /// ([`similar_name`](super::similar_name)), such as `first_name` for `frist_name`.
-    pub similar: Option<String>,
-    /// The `Index<N>` tag of the tuple field the missing field's name is the position of, when the
-    /// struct is a tuple struct and the tag was written as `Symbol!("N")`.
-    pub index_tag: Option<String>,
-}
-
-/// A key the context wires that is a likely slip of a missing one
-/// ([`similar_key`](super::similar_key)), such as `@App.GreeterComponent` for
-/// `@app.GreeterComponent`. Like [`FieldFix`], it is carried for a `help` and is not part of the
-/// leaf's identity.
-#[derive(Debug, Clone, Default)]
-pub struct NearMiss(pub Option<String>);
-
-/// The adapter types a `help` names for a [`Leaf::NotAProvider`]: each wraps the wired type, and the
-/// solver confirmed the result is a provider of the slot's trait (`WithProvider<ReadName>` for a
-/// hand-written getter). Like [`NearMiss`], it is carried for the `help` and is not part of the
-/// leaf's identity.
-#[derive(Debug, Clone, Default)]
-pub struct AdapterFix(pub Vec<Adapter>);
-
-/// An adapter type applied to a wired type, with the `use` path its name needs when the prelude does
-/// not export it (`Promote` comes from `cgp::extra::handler`, `WithProvider` from the prelude).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Adapter {
-    /// The adapter applied to the wired type, e.g. `Promote<Double>`.
-    pub ty: String,
-    /// The path a `use` imports the adapter by, or `None` when the prelude exports it or no public
-    /// path is found.
-    pub import: Option<String>,
-}
-
-/// The other components a [`Leaf::NotAProvider`]'s wired type is a provider of, each confirmed by
-/// the solver for the same context: the likely mix-up of a provider wired under the wrong key. Like
-/// [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
-#[derive(Debug, Clone, Default)]
-pub struct ProvidesFix(pub Vec<ProvidedComponent>);
-
-/// A component a wired type provides.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProvidedComponent {
-    /// The component's provider trait, e.g. `Farewell`.
-    pub provider_trait: String,
-    /// The component's marker, the key to wire it under, e.g. `FarewellComponent`.
-    pub component: String,
-}
-
-/// The fix a `help` names for a [`Leaf::NotAProvider`] that is a misused CGP core provider. Like
-/// [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
-#[derive(Debug, Clone, Default)]
-pub struct CoreProviderFix(pub Option<CoreProviderHint>);
-
-/// What serves a slot a CGP core provider cannot.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CoreProviderHint {
-    /// `UseField` is wired for a multi-method getter, which has no `UseField` impl; `UseFields`
-    /// serves it.
-    UseFields,
-    /// `UseDelegate` is wired for a component that does not declare `#[derive_delegate]`; an `open`
-    /// statement dispatches on the component's parameters without it. `component` is the key to
-    /// open, and `params` the names of the parameters the entries' paths end in.
-    OpenDispatch {
-        component: String,
-        params: Vec<String>,
-    },
-}
-
-/// The derive a `help` names for a [`Leaf::DataTraitUnimplemented`], when one can be added to the
-/// type. Like [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
-#[derive(Debug, Clone, Default)]
-pub struct DeriveFix(pub Option<String>);
-
-/// The provider a `help` names for a [`Leaf::WiringWithoutProviderFor`], to write the entry that
-/// replaces a hand-written `DelegateComponent` impl. Like [`NearMiss`], it is carried for the `help`
-/// and is not part of the leaf's identity.
-#[derive(Debug, Clone, Default)]
-pub struct EntryFix(pub Option<String>);
-
-/// A method a `help` tells the reader to call: `to_optional` on a core builder before an optional
-/// one's `set`, or `downcast_fields` on an extractor in place of `downcast`. Like [`NearMiss`], it
-/// is carried for the `help` and is not part of the leaf's identity.
-#[derive(Debug, Clone, Default)]
-pub struct MethodFix(pub Option<SuggestedCall>);
-
-/// The method a [`MethodFix`] names.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SuggestedCall {
-    /// The method to call, e.g. `downcast_fields`.
-    pub method: String,
-    /// The method the call replaces, e.g. `downcast`, or `None` for a call made first.
-    pub replaces: Option<String>,
-    /// The path that imports the method's trait, e.g. `cgp::core::field::impls::CanDowncastFields`,
-    /// since the data traits are not in the prelude. `None` when no public path is found.
-    pub trait_path: Option<String>,
-}
-
-/// Equality and hashing that treat every value alike, for the facts a leaf carries for its `help`s
-/// alone.
-macro_rules! identity_free {
-    ($ty:ty) => {
-        impl PartialEq for $ty {
-            fn eq(&self, _: &Self) -> bool {
-                true
-            }
-        }
-
-        impl Eq for $ty {}
-
-        impl std::hash::Hash for $ty {
-            fn hash<H: std::hash::Hasher>(&self, _: &mut H) {}
-        }
-    };
-}
-
-identity_free!(FieldFix);
-identity_free!(AdapterFix);
-identity_free!(ProvidesFix);
-identity_free!(CoreProviderFix);
-identity_free!(NearMiss);
-identity_free!(DeriveFix);
-identity_free!(EntryFix);
-identity_free!(MethodFix);
-
 impl Leaf {
     /// Whether this cause is the state of a field or variant that an extensible-data operation does
     /// not allow (set twice, not set, extracted twice, not extracted, not optional), a variant the
@@ -500,94 +338,6 @@ impl Leaf {
                 | Leaf::VariantsNotExtracted { .. }
                 | Leaf::PartialLacksDataTrait { .. }
         )
-    }
-
-    /// Fold the `help` facts of `other`, the same cause reached another way, into this leaf: adding
-    /// a field stays confirmed only when both routes confirm it, and a type or a near miss is kept
-    /// only when both routes name the same one, since a help naming one route's would not fix the
-    /// other.
-    pub fn reconcile_fix(&mut self, other: &Leaf) {
-        fn agree(mine: &mut Option<String>, theirs: &Option<String>) {
-            if mine != theirs {
-                *mine = None;
-            }
-        }
-        match (self, other) {
-            (
-                Leaf::NotAProvider {
-                    adapter,
-                    provides,
-                    core,
-                    ..
-                },
-                Leaf::NotAProvider {
-                    adapter: their_adapter,
-                    provides: their_provides,
-                    core: their_core,
-                    ..
-                },
-            ) => {
-                if adapter.0 != their_adapter.0 {
-                    adapter.0.clear();
-                }
-                if provides.0 != their_provides.0 {
-                    provides.0.clear();
-                }
-                if core.0 != their_core.0 {
-                    core.0 = None;
-                }
-            }
-            (Leaf::Field { fix, .. }, Leaf::Field { fix: theirs, .. }) => {
-                fix.confirmed &= theirs.confirmed;
-                agree(&mut fix.ty, &theirs.ty);
-                agree(&mut fix.similar, &theirs.similar);
-                agree(&mut fix.index_tag, &theirs.index_tag);
-            }
-            (
-                Leaf::MissingWiring { similar, .. },
-                Leaf::MissingWiring {
-                    similar: theirs, ..
-                },
-            )
-            | (
-                Leaf::MissingRedirectWiring { similar, .. },
-                Leaf::MissingRedirectWiring {
-                    similar: theirs, ..
-                },
-            )
-            | (
-                Leaf::MissingVariant { similar, .. },
-                Leaf::MissingVariant {
-                    similar: theirs, ..
-                },
-            ) => agree(&mut similar.0, &theirs.0),
-            (
-                Leaf::DataTraitUnimplemented { derive, .. },
-                Leaf::DataTraitUnimplemented { derive: theirs, .. },
-            ) => agree(&mut derive.0, &theirs.0),
-            (
-                Leaf::WiringWithoutProviderFor { delegate, .. },
-                Leaf::WiringWithoutProviderFor {
-                    delegate: theirs, ..
-                },
-            ) => agree(&mut delegate.0, &theirs.0),
-            (
-                Leaf::FieldNotOptional { convert: fix, .. },
-                Leaf::FieldNotOptional {
-                    convert: theirs, ..
-                },
-            )
-            | (
-                Leaf::PartialLacksDataTrait {
-                    replacement: fix, ..
-                },
-                Leaf::PartialLacksDataTrait {
-                    replacement: theirs,
-                    ..
-                },
-            ) if fix.0 != theirs.0 => fix.0 = None,
-            _ => {}
-        }
     }
 }
 

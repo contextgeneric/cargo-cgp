@@ -10,7 +10,7 @@ use crate::code::{
     DEP_WIRING_WITHOUT_PROVIDER_FOR,
 };
 use crate::diagnosis::leaf::{FieldIssue, Leaf};
-use crate::diagnosis::wording::header::{quoted_list, required_type};
+use crate::diagnosis::wording::{quoted_list, required_type};
 
 /// What an associated type is called in a message: `abstract type` when it belongs to a CGP
 /// abstract-type component (a context *chooses* its concrete type by wiring), and `associated type`

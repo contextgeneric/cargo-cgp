@@ -34,6 +34,7 @@ pub mod candidates;
 pub mod code;
 pub mod dedup;
 pub mod diagnosis;
+pub mod naming;
 pub mod postprocess;
 pub mod rewrite;
 pub mod shape;
@@ -61,11 +62,12 @@ pub use diagnosis::{
     plan_provider_trait_in_uses, plan_resolved, plan_structural_mistake,
     plan_undeclared_requirement, plan_undeclared_trait, plan_unimported_abstract_type,
     plan_unresolved_wiring_name, plan_wiring_conflict, provider_impl_without_macro_help,
-    provider_trait_in_uses_help, root_cause_lead, similar_key, similar_name,
-    structural_mistake_help, structural_mistake_note, undeclared_requirement_helps,
+    provider_trait_in_uses_help, rewrite_wiring_overflow, root_cause_lead, similar_key,
+    similar_name, structural_mistake_help, structural_mistake_note, undeclared_requirement_helps,
     undeclared_trait_help, unimported_abstract_type_help, unresolved_wiring_name_help,
     use_type_misspelling_help, wiring_conflict_help, wiring_overflow_help, wiring_overflow_reason,
 };
+pub use naming::{is_reserved_name, reserved_names};
 pub use postprocess::{
     AmbiguousNames, Origin, context_has_hasfield_impls, postprocess_fragments, postprocess_message,
     resugar_lists, resugar_path, resugar_symbol, rewrite_missing_fields, scan_head_tail,
@@ -76,8 +78,7 @@ pub use shape::{ShapeTag, render_enum_shape, render_struct_shape, render_variant
 pub use signals::{
     explain_footer_codes, invokes_macro, is_explain_footer_text, is_method_bounds_text,
     is_method_probe_advice_text, is_missing_type_parameter_help_text,
-    is_question_mark_cascade_text, is_recursion_limit_help_text, is_reserved_name,
-    is_unbounded_type_param_item_text, mentions_orphan_param_text, mentions_wiring_text,
-    reserved_names,
+    is_question_mark_cascade_text, is_recursion_limit_help_text, is_unbounded_type_param_item_text,
+    mentions_orphan_param_text, mentions_wiring_text,
 };
 pub use tree::{DependencyTree, render_dependency_tree};

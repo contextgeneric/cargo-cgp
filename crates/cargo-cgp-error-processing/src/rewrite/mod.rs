@@ -16,3 +16,4 @@ mod text;
 pub use message::*;
 pub use names::*;
 pub use parse::*;
+pub use text::*;

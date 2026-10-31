@@ -23,72 +23,26 @@
 //!
 //! [`rewrite_message`] is the entry point; it dispatches to the note-form rewrite
 //! ([`rewrite_required_for`]) and the header rewrite ([`rewrite_trait_bound`]).
-//! [`rewrite_wiring_overflow`] rewrites the `E0275` a never-resolving lookup produces, with the
-//! reason the driver's walk found. The codes
-//! belong on *main* messages only — the driver applies the full dispatch to a
+//! The codes belong on *main* messages only — the driver applies the full dispatch to a
 //! diagnostic's header and [`rewrite_required_for`] to its sub-messages.
 //!
 //! Each form parses the message *before* consulting `names`, so a message that is not a CGP
 //! wiring form returns `None` without ever forcing the map's lazy initializer.
 
-use crate::code::{GROWING_LOOKUP, PROVIDER_TRAIT_UNIMPLEMENTED, WIRING_CYCLE};
-use crate::diagnosis::{WiringOverflow, wiring_overflow_reason};
+use crate::code::PROVIDER_TRAIT_UNIMPLEMENTED;
+use crate::naming::is_reserved_name;
 use crate::rewrite::names::ComponentNameMap;
 use crate::rewrite::parse::parse_trait_bound;
 use crate::rewrite::text::{last_segment, split_generics, split_top_level};
-use crate::signals::is_reserved_name;
 
 /// Rewrite one diagnostic message into its trait-named form, or return `None` to leave it
 /// unchanged. This is the entry point the emitter drives over every message; it tries each
 /// recognized CGP wiring form: the obligation-chain notes ([`rewrite_required_for`]) and the
 /// primary `the trait bound … is not satisfied` header ([`rewrite_trait_bound`]). The
 /// `overflow evaluating the requirement …` header has its own entry point,
-/// [`rewrite_wiring_overflow`], since its wording depends on why the lookup never resolves.
+/// [`rewrite_wiring_overflow`](crate::rewrite_wiring_overflow), since its wording depends on why the lookup never resolves.
 pub fn rewrite_message(message: &str, names: &ComponentNameMap) -> Option<String> {
     rewrite_required_for(message, names).or_else(|| rewrite_trait_bound(message, names))
-}
-
-/// Rewrite the `overflow evaluating the requirement …` header (`E0275`) of a wiring lookup that
-/// never resolves, or return `None` for any other overflow. Only an overflow whose requirement is a
-/// `Self: CanUseComponent<Marker, …>` bound, as a check reports it, or a consumer trait the map
-/// knows, as a call reports it (`Person: CanGreet`), is a wiring lookup; `overflow` says how it never
-/// resolves, as the driver's walk found it: a cycle ([`WIRING_CYCLE`]) or a growing lookup
-/// ([`GROWING_LOOKUP`]). The fix rides in [`wiring_overflow_help`](crate::wiring_overflow_help), kept out of the header so the
-/// headline stays one sentence.
-pub fn rewrite_wiring_overflow(
-    message: &str,
-    names: &ComponentNameMap,
-    overflow: &WiringOverflow,
-) -> Option<String> {
-    let rest = message.strip_prefix("overflow evaluating the requirement `")?;
-    let (bound, _tail) = rest.split_once('`')?;
-    let (subject, trait_ref) = bound.split_once(": ")?;
-    let (path, args_str) = split_generics(trait_ref).unwrap_or((trait_ref, ""));
-    let consumer = if last_segment(path) == "CanUseComponent" {
-        let args = split_top_level(args_str);
-        let component = args.first()?.trim();
-        let entry = names.get(component)?;
-        let generics = render_trait_generics(&[], &args[1..], entry.params);
-        format!("{}{generics}", entry.consumer)
-    } else {
-        let name = last_segment(path);
-        if !names.is_consumer(name) {
-            return None;
-        }
-        if args_str.is_empty() {
-            name.to_owned()
-        } else {
-            format!("{name}<{args_str}>")
-        }
-    };
-    let code = match overflow {
-        WiringOverflow::Cycle { .. } => WIRING_CYCLE,
-        WiringOverflow::Growing { .. } => GROWING_LOOKUP,
-    };
-    Some(format!(
-        "[{code}] the wiring for the consumer trait `{consumer}` on context `{subject}` never resolves, because {}",
-        wiring_overflow_reason(overflow)
-    ))
 }
 
 /// Rewrite one `required for … to implement …` obligation-chain note into its trait-named
@@ -187,7 +141,7 @@ pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<St
 /// here so the reattached list matches how the trait was written. `arity` is the component's
 /// parameter count: a component with exactly one parameter keeps it whole, even when that
 /// parameter is itself a tuple.
-fn render_trait_generics(leading: &[&str], params: &[&str], arity: usize) -> String {
+pub fn render_trait_generics(leading: &[&str], params: &[&str], arity: usize) -> String {
     let mut generics: Vec<&str> = leading.to_vec();
     match params {
         [] => {}

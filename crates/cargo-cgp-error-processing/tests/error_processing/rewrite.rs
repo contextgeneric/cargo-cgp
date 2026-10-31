@@ -8,9 +8,11 @@ use std::collections::HashMap;
 
 use cargo_cgp_error_processing::rewrite::{
     ComponentNameMap, ComponentTraitNames, parse_trait_bound, rewrite_message,
-    rewrite_required_for, rewrite_trait_bound, rewrite_wiring_overflow,
+    rewrite_required_for, rewrite_trait_bound,
 };
-use cargo_cgp_error_processing::{OverflowStep, WiringOverflow, wiring_overflow_help};
+use cargo_cgp_error_processing::{
+    OverflowStep, WiringOverflow, rewrite_wiring_overflow, wiring_overflow_help,
+};
 
 /// The fixed map every test's [`ComponentNameMap`] initializes to.
 fn names() -> HashMap<String, ComponentTraitNames> {

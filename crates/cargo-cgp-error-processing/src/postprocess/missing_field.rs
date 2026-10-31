@@ -29,8 +29,8 @@
 //! [`resugar_symbol`](fn@super::resugar_symbol), so it matches the bare, resugared
 //! `HasField<Symbol!("…")>` form.
 
+use crate::naming::is_reserved_name;
 use crate::postprocess::strip_modules::strip_module_paths;
-use crate::signals::is_reserved_name;
 
 /// The text that opens the unmet-`HasField` clause, once prefixes are stripped and the
 /// symbol resugared.

@@ -8,6 +8,11 @@
 //! the provider step that causes it when the walk can name one; [`wiring_overflow_reason`] and
 //! [`wiring_overflow_help`] word the headline's reason and the fix.
 
+use crate::code::{GROWING_LOOKUP, WIRING_CYCLE};
+use crate::rewrite::{
+    ComponentNameMap, last_segment, render_trait_generics, split_generics, split_top_level,
+};
+
 /// Why a wiring lookup never resolves, as the driver's walk found it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WiringOverflow {
@@ -79,4 +84,47 @@ pub fn wiring_overflow_help(overflow: &WiringOverflow) -> String {
                 .to_owned()
         }
     }
+}
+
+/// Rewrite the `overflow evaluating the requirement …` header (`E0275`) of a wiring lookup that
+/// never resolves, or return `None` for any other overflow. Only an overflow whose requirement is a
+/// `Self: CanUseComponent<Marker, …>` bound, as a check reports it, or a consumer trait the map
+/// knows, as a call reports it (`Person: CanGreet`), is a wiring lookup; `overflow` says how it never
+/// resolves, as the driver's walk found it: a cycle ([`WIRING_CYCLE`]) or a growing lookup
+/// ([`GROWING_LOOKUP`]). The fix rides in [`wiring_overflow_help`], kept out of the header so the
+/// headline stays one sentence.
+pub fn rewrite_wiring_overflow(
+    message: &str,
+    names: &ComponentNameMap,
+    overflow: &WiringOverflow,
+) -> Option<String> {
+    let rest = message.strip_prefix("overflow evaluating the requirement `")?;
+    let (bound, _tail) = rest.split_once('`')?;
+    let (subject, trait_ref) = bound.split_once(": ")?;
+    let (path, args_str) = split_generics(trait_ref).unwrap_or((trait_ref, ""));
+    let consumer = if last_segment(path) == "CanUseComponent" {
+        let args = split_top_level(args_str);
+        let component = args.first()?.trim();
+        let entry = names.get(component)?;
+        let generics = render_trait_generics(&[], &args[1..], entry.params);
+        format!("{}{generics}", entry.consumer)
+    } else {
+        let name = last_segment(path);
+        if !names.is_consumer(name) {
+            return None;
+        }
+        if args_str.is_empty() {
+            name.to_owned()
+        } else {
+            format!("{name}<{args_str}>")
+        }
+    };
+    let code = match overflow {
+        WiringOverflow::Cycle { .. } => WIRING_CYCLE,
+        WiringOverflow::Growing { .. } => GROWING_LOOKUP,
+    };
+    Some(format!(
+        "[{code}] the wiring for the consumer trait `{consumer}` on context `{subject}` never resolves, because {}",
+        wiring_overflow_reason(overflow)
+    ))
 }
