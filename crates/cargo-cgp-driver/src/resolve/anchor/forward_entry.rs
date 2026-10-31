@@ -8,7 +8,7 @@ use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::anchor::consumer_obligation;
 use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::query::{
-    component_params, find_cgp_trait, holds, is_cgp_item, marker_to_consumer,
+    byte_range, component_params, find_cgp_trait, holds, is_cgp_item, marker_to_consumer,
 };
 use crate::resolve::walk::resolve_leaves;
 
@@ -52,7 +52,7 @@ pub fn resolve_forwarding_entry(cx: ResolveCtx<'_, '_>, primary: &[Span]) -> Opt
                     && bound.self_ty() != context
                     && primary
                         .iter()
-                        .any(|caret| caret.lo() <= span.lo() && span.hi() <= caret.hi())
+                        .any(|&caret| byte_range(caret).contains(byte_range(span)))
             });
         if !forwards_at_caret {
             continue;

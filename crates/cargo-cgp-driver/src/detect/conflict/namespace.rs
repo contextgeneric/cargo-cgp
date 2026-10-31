@@ -23,10 +23,10 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
 use crate::detect::conflict::{
-    ConflictSide, impl_delegate_type, maps_one_key, overlap_conflict, redirect_conflict, same_range,
+    ConflictSide, impl_delegate_type, maps_one_key, overlap_conflict, redirect_conflict,
 };
 use crate::resolve::query::{
-    describe_key, is_namespace_lookup_trait, local_trait_impls, render_lookup_trait,
+    describe_key, is_namespace_lookup_trait, local_trait_impls, render_lookup_trait, same_range,
 };
 
 /// Classify an `E0119` on a namespace lookup trait as a duplicate-entry conflict, or `None` when

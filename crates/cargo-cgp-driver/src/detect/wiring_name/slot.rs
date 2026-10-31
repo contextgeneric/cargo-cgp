@@ -14,7 +14,7 @@ use rustc_span::Span;
 use crate::config::{
     CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, PATH_CONS_TYPE,
 };
-use crate::resolve::query::{has_context_param, is_cgp_item, local_trait_impls};
+use crate::resolve::query::{has_context_param, is_cgp_item, local_trait_impls, same_range};
 
 /// Where a name at a span sits.
 pub enum NameSlot<'tcx> {
@@ -75,12 +75,12 @@ pub fn name_slot_at(tcx: TyCtxt<'_>, span: Span) -> Option<NameSlot<'_>> {
             else {
                 continue;
             };
-            if spans_exactly(key.span, span) {
+            if same_range(key.span, span) {
                 return Some(NameSlot::Key { key });
             }
             let value_at = imp.items.iter().any(|&item_id| {
                 let item = tcx.hir_impl_item(item_id);
-                matches!(item.kind, ImplItemKind::Type(value) if spans_exactly(value.span, span))
+                matches!(item.kind, ImplItemKind::Type(value) if same_range(value.span, span))
             });
             if value_at {
                 return Some(NameSlot::Value {
@@ -110,18 +110,13 @@ pub fn name_slot_at(tcx: TyCtxt<'_>, span: Span) -> Option<NameSlot<'_>> {
                 }
             }
         } else if has_context_param(tcx, local)
-            && spans_exactly(imp.self_ty.span, span)
+            && same_range(imp.self_ty.span, span)
             && matches!(imp.self_ty.kind, TyKind::Path(QPath::Resolved(None, path)) if path.res == Res::Err)
         {
             return Some(NameSlot::CgpImplProvider);
         }
     }
     inside
-}
-
-/// Whether `ty_span` covers exactly the source range of `span`, whatever their expansion contexts.
-fn spans_exactly(ty_span: Span, span: Span) -> bool {
-    ty_span.lo() == span.lo() && ty_span.hi() == span.hi()
 }
 
 /// Whether the unresolved type at `span` sits inside the path spine of `ty`, a `PathCons` chain
@@ -139,7 +134,7 @@ fn path_segment_at(
     let TyKind::Path(QPath::Resolved(None, path)) = ty.kind else {
         return None;
     };
-    if path.res == Res::Err && spans_exactly(ty.span, span) {
+    if path.res == Res::Err && same_range(ty.span, span) {
         return in_spine.then_some(false);
     }
     let is_spine = path
@@ -155,7 +150,7 @@ fn path_segment_at(
     if is_spine && let Some(segment) = types.next() {
         if let TyKind::Path(QPath::Resolved(None, segment_path)) = segment.kind
             && segment_path.res == Res::Err
-            && spans_exactly(segment.span, span)
+            && same_range(segment.span, span)
         {
             return Some(true);
         }

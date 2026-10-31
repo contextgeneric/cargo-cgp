@@ -4,13 +4,16 @@
 //! inside (and whether a caret inside one is about it), and the struct/enum definitions a use-site
 //! failure's spans touch.
 
+use cargo_cgp_error_processing::byte_range::{ByteRange, CaretPlace, caret_place};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Interner as _, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::resolve::call_site::method_calls_at;
-use crate::resolve::query::{is_component_marker, is_provider_struct, local_trait_impls};
+use crate::resolve::query::{
+    byte_range, is_component_marker, is_provider_struct, local_trait_impls,
+};
 
 /// The local trait-impl blocks (`impl Trait for Ty { … }`) whose source span contains one of the
 /// diagnostic's spans — the impls a wiring failure can surface inside, whether the caret lands on
@@ -74,21 +77,25 @@ pub(crate) fn is_about_impl(
     let Some(local) = impl_did.as_local() else {
         return false;
     };
-    let impl_span = tcx.hir_expect_item(local).span;
-    let bodies: Vec<Span> = tcx
+    let impl_range = byte_range(tcx.hir_expect_item(local).span);
+    let bodies: Vec<ByteRange> = tcx
         .associated_item_def_ids(impl_did)
         .iter()
         .filter_map(|item| tcx.hir_maybe_body_owned_by(item.as_local()?))
-        .map(|body| body.value.span)
+        .map(|body| byte_range(body.value.span))
         .collect();
-    let (in_bodies, outside): (Vec<Span>, Vec<Span>) = spans
+    let place = |span: Span| caret_place(byte_range(span), impl_range, &bodies);
+    if spans
         .iter()
-        .copied()
-        .filter(|span| impl_span.contains(*span))
-        .partition(|span| bodies.iter().any(|body| body.contains(*span)));
-    if !outside.is_empty() {
+        .any(|&span| place(span) == CaretPlace::ImplHeader)
+    {
         return true;
     }
+    let in_bodies: Vec<Span> = spans
+        .iter()
+        .copied()
+        .filter(|&span| place(span) == CaretPlace::MethodBody)
+        .collect();
     if in_bodies.is_empty() {
         return false;
     }

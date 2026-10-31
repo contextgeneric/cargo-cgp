@@ -1,5 +1,6 @@
 //! Locating the failing call and the consumer traits it could resolve through.
 
+use cargo_cgp_error_processing::byte_range::{self as range, Operand};
 use cargo_cgp_error_processing::{Resolved, ResolvedClass};
 use rustc_hir::{Expr, ExprKind, HirId};
 use rustc_middle::ty::{TyCtxt, TypeVisitableExt as _};
@@ -8,7 +9,8 @@ use rustc_span::{Span, Symbol};
 use crate::resolve::call_site::{CallForm, receiver_context, seed_from_call, unbounded_receiver};
 use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::query::{
-    CallTrait, carries_wiring, holds, is_context_adt, local_body_exprs, traits_with_method,
+    CallTrait, byte_range, carries_wiring, holds, is_context_adt, local_body_exprs,
+    traits_with_method,
 };
 use crate::resolve::walk::resolve_leaves;
 
@@ -125,8 +127,12 @@ pub(crate) fn is_about_call<'a, 'tcx: 'a>(
     call: Span,
     operands: impl IntoIterator<Item = &'a Expr<'tcx>>,
 ) -> bool {
-    span.overlaps(call)
-        && !operands
-            .into_iter()
-            .any(|operand| operand.span.contains(span) && operand.span != span)
+    range::is_about_call(
+        byte_range(span),
+        byte_range(call),
+        operands.into_iter().map(|operand| Operand {
+            range: byte_range(operand.span),
+            is_caret: operand.span == span,
+        }),
+    )
 }

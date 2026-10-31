@@ -21,7 +21,9 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::resolve::query::{describe_key, is_namespace_lookup_trait, local_trait_impls};
+use crate::resolve::query::{
+    byte_range, describe_key, is_namespace_lookup_trait, local_trait_impls,
+};
 
 /// One local impl of a foreign namespace-lookup trait for a foreign key — a candidate orphan
 /// registration.
@@ -46,7 +48,9 @@ pub fn classify_orphan_conflict(tcx: TyCtxt<'_>, primary_span: Span) -> Option<O
     // still unambiguous, so fall back to it; more than one leaves the choice ambiguous and declines.
     let orphan = candidates
         .iter()
-        .find(|candidate| range_overlaps(candidate.def_span, primary_span))
+        .find(|candidate| {
+            byte_range(candidate.def_span).overlaps_or_adjacent(byte_range(primary_span))
+        })
         .or(match candidates.as_slice() {
             [only] => Some(only),
             _ => None,
@@ -111,11 +115,4 @@ fn orphan_trigger(tcx: TyCtxt<'_>, impl_did: DefId) -> OrphanTrigger {
     } else {
         OrphanTrigger::Register
     }
-}
-
-/// Whether two spans cover overlapping source ranges, ignoring `SyntaxContext` — the macro-generated
-/// impl and the coherence caret carry different contexts, so the match compares ranges, as the
-/// duplicate-key conflict classifier's `same_range` does.
-fn range_overlaps(a: Span, b: Span) -> bool {
-    a.lo() <= b.hi() && b.lo() <= a.hi()
 }

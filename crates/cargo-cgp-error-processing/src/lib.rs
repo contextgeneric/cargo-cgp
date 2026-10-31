@@ -27,6 +27,7 @@
 //! A further module, [`code`], holds the `CGP-E` error-code constants the rewrite and the
 //! diagnosis wording stamp on classified main messages.
 
+pub mod byte_range;
 pub mod candidates;
 pub mod code;
 pub mod dedup;

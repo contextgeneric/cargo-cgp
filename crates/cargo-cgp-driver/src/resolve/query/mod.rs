@@ -16,6 +16,8 @@
 //! - **Syntactic type reads** the call-site anchors and the detectors share: [`lower_hir_ty`] and
 //!   [`expr_written_ty`], and a binding's declared type, as written ([`declared_binding_ty`]) or as
 //!   its signature gives it ([`param_declared_input`], [`argument_ty`](fn@argument_ty)).
+//! - **Source ranges:** [`byte_range`](fn@byte_range), the conversion the rustc-free span decisions
+//!   read, and [`same_range`].
 //! - **Lookups** several stages make: [`check_impls_at`] over [`can_use_component_supertrait`] and
 //!   [`impl_self_ty_span`], [`context_param_span`],
 //!   [`enclosing_trait_impl`](fn@enclosing_trait_impl), [`import_path`](fn@import_path),
@@ -28,6 +30,7 @@
 
 mod argument_ty;
 mod binding;
+mod byte_range;
 mod cgp_item;
 mod check_impl;
 mod context_param;
@@ -52,6 +55,7 @@ mod written_ty;
 
 pub use argument_ty::*;
 pub use binding::*;
+pub use byte_range::*;
 pub use cgp_item::*;
 pub use check_impl::*;
 pub use context_param::*;

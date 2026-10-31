@@ -6,9 +6,8 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT};
-use crate::detect::conflict::same_range;
 use crate::resolve::query::{
-    describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls,
+    describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls, same_range,
 };
 
 /// The `for` loop an `E0207` at `primary_span` is about, when the unconstrained parameter there
