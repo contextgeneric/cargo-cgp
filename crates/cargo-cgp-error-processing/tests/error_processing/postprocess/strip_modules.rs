@@ -5,7 +5,8 @@
 
 use cargo_cgp_error_processing::{AmbiguousNames, strip_module_paths, strip_unambiguous_paths};
 
-// Property: for all `a::b::C` runs, `strip_module_paths` keeps the run from its first uppercase segment.
+// Property: for all `a::b::C` runs, `strip_module_paths` keeps the run from its first uppercase
+// segment.
 #[test]
 fn strips_module_paths_to_the_final_segment() {
     assert_eq!(
@@ -17,8 +18,8 @@ fn strips_module_paths_to_the_final_segment() {
     );
 }
 
-// Property: an item inside a type or trait keeps its qualifier, and a run with no uppercase segment keeps its last
-// segment.
+// Property: an item inside a type or trait keeps its qualifier, and a run with no uppercase segment
+// keeps its last segment.
 #[test]
 fn strip_module_paths_keeps_the_type_an_item_belongs_to() {
     // A module is named in lowercase and a type or trait in uppercase, so only the module segments
@@ -36,7 +37,8 @@ fn strip_module_paths_keeps_the_type_an_item_belongs_to() {
     );
 }
 
-// Property: `strip_unambiguous_paths` asks about the path to the item the run names, not the whole run.
+// Property: `strip_unambiguous_paths` asks about the path to the item the run names, not the whole
+// run.
 #[test]
 fn unambiguous_path_strip_reads_the_item_a_method_belongs_to() {
     // The ambiguity check reads the path to the type, `finance::Quantity`, not the whole run.
@@ -50,7 +52,8 @@ fn unambiguous_path_strip_reads_the_item_a_method_belongs_to() {
     );
 }
 
-// Property: only identifier runs change: a lone identifier, a primitive, and a `>::Assoc` tail stay.
+// Property: only identifier runs change: a lone identifier, a primitive, and a `>::Assoc` tail
+// stay.
 #[test]
 fn strip_module_paths_keeps_generics_and_bare_names() {
     // A qualified type inside generics is collapsed to its tail; a bare name and a primitive are
@@ -74,7 +77,8 @@ fn strip_module_paths_skips_string_literals() {
     assert_eq!(strip_module_paths("Symbol!(\"a::b\")"), None);
 }
 
-// Property: a run right after a `use ` keeps every segment, and a word only ending in `use` does not count.
+// Property: a run right after a `use ` keeps every segment, and a word only ending in `use` does
+// not count.
 #[test]
 fn strip_keeps_a_use_statement_path_whole() {
     // A `use` path is code the reader types, so its module segments stay, while the same path
@@ -105,8 +109,8 @@ fn strip_module_paths_preserves_multibyte_box_drawing() {
     );
 }
 
-// Property: a path naming the item a glob brings in collapses, a path naming another item keeps its qualifier, and
-// a glob-imported name whose items could not be read keeps none.
+// Property: a path naming the item a glob brings in collapses, a path naming another item keeps its
+// qualifier, and a glob-imported name whose items could not be read keeps none.
 #[test]
 fn a_glob_imported_name_keeps_the_qualifier_of_another_item() {
     // The crate glob-imports `Error` naming `backend::Error`, so a bare `Error` reads as that item:
@@ -131,8 +135,8 @@ fn a_glob_imported_name_keeps_the_qualifier_of_another_item() {
     );
 }
 
-// Property: a run collapses when rooted at `cgp`, when it ends in a CGP encoding name, or when `keeps_qualifier`
-// says the bare name is safe; every other run stays.
+// Property: a run collapses when rooted at `cgp`, when it ends in a CGP encoding name, or when
+// `keeps_qualifier` says the bare name is safe; every other run stays.
 #[test]
 fn unambiguous_path_strip_keeps_a_disambiguating_qualifier() {
     // `cgp::prelude::HasErrorType` is CGP's and `Quantity` glob-imported, so both lose their

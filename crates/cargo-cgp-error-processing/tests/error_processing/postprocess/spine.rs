@@ -2,9 +2,9 @@
 
 use cargo_cgp_error_processing::scan_head_tail;
 
-// Property: for all text after a cell's opening token, `scan_head_tail` splits at the first top-level comma and
-// ends just past the matching `>`, whatever nesting and string literals hold, and gives `None` when
-// either is missing.
+// Property: for all text after a cell's opening token, `scan_head_tail` splits at the first
+// top-level comma and ends just past the matching `>`, whatever nesting and string literals hold,
+// and gives `None` when either is missing.
 #[test]
 fn scan_head_tail_splits_at_the_top_level_comma() {
     // The scan reads the text after a cell's opening token; nesting and string literals hide their

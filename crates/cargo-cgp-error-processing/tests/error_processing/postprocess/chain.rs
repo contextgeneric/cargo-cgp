@@ -7,7 +7,8 @@ use cargo_cgp_error_processing::{
     AmbiguousNames, Origin, postprocess_fragments, postprocess_message,
 };
 
-// Property: `postprocess_message` resugars `Symbol!` before the lists, so a raw `Field` tag still names its field.
+// Property: `postprocess_message` resugars `Symbol!` before the lists, so a raw `Field` tag still
+// names its field.
 #[test]
 fn full_chain_resugars_a_raw_field_spine_to_a_struct() {
     // End to end: the raw `Symbol` spine is resugared first, then the field list folds to `Struct!`.
@@ -23,7 +24,8 @@ fn full_chain_resugars_a_raw_field_spine_to_a_struct() {
     );
 }
 
-// Property: `postprocess_message` resugars `Symbol!` before `Path!`, which reads the resugared segments.
+// Property: `postprocess_message` resugars `Symbol!` before `Path!`, which reads the resugared
+// segments.
 #[test]
 fn postprocess_message_resugars_an_expanded_path() {
     // End to end through the chain: an expanded `Symbol` spine inside a `PathCons` is
@@ -41,8 +43,8 @@ fn postprocess_message_resugars_an_expanded_path() {
     );
 }
 
-// Property: for all open-tailed paths, `Origin` chooses the form: bare `@...` for a rewritten message, and the
-// spine with its symbols resugared for an untransformed one.
+// Property: for all open-tailed paths, `Origin` chooses the form: bare `@...` for a rewritten
+// message, and the spine with its symbols resugared for an untransformed one.
 #[test]
 fn postprocess_message_resugars_an_open_tailed_path() {
     // The conflicting-wiring E0119 shape end to end: two prefixed, expanded `Symbol` spines
@@ -104,8 +106,8 @@ fn postprocess_message_leaves_plain_rust_alone() {
 // difference when highlighting the difference between two types — shredding a CGP spine so no
 // single fragment matches. `postprocess_fragments` reads them as the one line they render as.
 
-// Property: for all fragments whose concatenation holds a CGP construct no fragment holds, `postprocess_fragments`
-// gives the rewritten whole.
+// Property: for all fragments whose concatenation holds a CGP construct no fragment holds,
+// `postprocess_fragments` gives the rewritten whole.
 #[test]
 fn a_spine_split_across_fragments_is_resugared_as_a_whole() {
     // The shape rustc's "similar impl" hint produces, split at each differing character.
@@ -131,7 +133,8 @@ fn a_spine_split_across_fragments_is_resugared_as_a_whole() {
     );
 }
 
-// Property: for all fragments with no construct across a boundary, `postprocess_fragments` gives `None`.
+// Property: for all fragments with no construct across a boundary, `postprocess_fragments` gives
+// `None`.
 #[test]
 fn fragments_needing_no_joining_keep_their_styling() {
     // Each fragment is post-processed on its own by the caller before this runs, so a message
@@ -150,7 +153,8 @@ fn fragments_needing_no_joining_keep_their_styling() {
     );
 }
 
-// Property: for a single fragment, nothing spans a boundary, so `postprocess_fragments` gives `None`.
+// Property: for a single fragment, nothing spans a boundary, so `postprocess_fragments` gives
+// `None`.
 #[test]
 fn a_single_fragment_is_left_to_the_per_message_pass() {
     let fragments = ["Symbol<2, Chars<'x', Chars<'y', Nil>>>"];
@@ -166,8 +170,8 @@ fn a_single_fragment_is_left_to_the_per_message_pass() {
     );
 }
 
-// Property: for all untransformed messages where no later stage recovers an encoding, the strips alone do not
-// count as a change.
+// Property: for all untransformed messages where no later stage recovers an encoding, the strips
+// alone do not count as a change.
 #[test]
 fn an_untransformed_message_keeps_the_paths_rustc_printed() {
     // Two types sharing a name are told apart only by their paths, so a message rustc built and the
@@ -194,7 +198,8 @@ fn an_untransformed_message_keeps_the_paths_rustc_printed() {
     );
 }
 
-// Property: for all rewritten messages, the chain strips every qualifier except on a name in `ambiguous`.
+// Property: for all rewritten messages, the chain strips every qualifier except on a name in
+// `ambiguous`.
 #[test]
 fn a_rewritten_message_keeps_only_qualifiers_that_disambiguate() {
     // A message the tool built drops every qualifier except on a name that names several items,
@@ -212,8 +217,8 @@ fn a_rewritten_message_keeps_only_qualifiers_that_disambiguate() {
     );
 }
 
-// Property: for all untransformed messages where a later stage recovers an encoding, the strips apply to the whole
-// message.
+// Property: for all untransformed messages where a later stage recovers an encoding, the strips
+// apply to the whole message.
 #[test]
 fn an_untransformed_message_with_a_cgp_encoding_is_cleaned_whole() {
     // Once a CGP encoding is recovered, the strip applies to the rest of that message too.

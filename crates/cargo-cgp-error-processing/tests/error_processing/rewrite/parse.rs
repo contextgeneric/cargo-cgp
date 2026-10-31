@@ -2,8 +2,8 @@
 
 use cargo_cgp_error_processing::rewrite::parse_trait_bound;
 
-// Property: for all trait-bound headers, `parse_trait_bound` gives the subject, the whole bound, the trait's last
-// segment, and the raw generic arguments; any other message gives `None`.
+// Property: for all trait-bound headers, `parse_trait_bound` gives the subject, the whole bound,
+// the trait's last segment, and the raw generic arguments; any other message gives `None`.
 #[test]
 fn parses_a_trait_bound_header() {
     // The classification parse the driver uses on its own: subject, whole bound, trait name.

@@ -2,8 +2,8 @@
 
 use cargo_cgp_error_processing::AmbiguousNames;
 
-// Property: for all paths rustc prints for a glob-imported item, `keeps_qualifier` is false, and a tail starting at a
-// root name names another item.
+// Property: for all paths rustc prints for a glob-imported item, `keeps_qualifier` is false, and a
+// tail starting at a root name names another item.
 #[test]
 fn a_glob_item_reads_bare_from_each_path_rustc_prints() {
     // rustc prints a glob-imported item from any enclosing module whose name it trims, so each such

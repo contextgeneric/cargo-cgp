@@ -13,7 +13,8 @@ use cargo_cgp_error_processing::rewrite::{
 
 use super::support::name_map;
 
-// Property: for all `IsProviderFor` notes whose marker the map knows, the note names the provider trait and context.
+// Property: for all `IsProviderFor` notes whose marker the map knows, the note names the provider
+// trait and context.
 #[test]
 fn rewrites_is_provider_for_note() {
     let out = rewrite_required_for(
@@ -28,8 +29,8 @@ fn rewrites_is_provider_for_note() {
     );
 }
 
-// Property: a generated parameter is never called a context: the provider form leaves it out, and the consumer form
-// names it plainly.
+// Property: a generated parameter is never called a context: the provider form leaves it out, and
+// the consumer form names it plainly.
 #[test]
 fn a_generated_parameter_is_not_called_a_context() {
     // `__Context__` is the parameter a provider impl is generic over, standing for every context,
@@ -52,7 +53,8 @@ fn a_generated_parameter_is_not_called_a_context() {
     );
 }
 
-// Property: for all `CanUseComponent` notes whose marker the map knows, the note names the consumer trait.
+// Property: for all `CanUseComponent` notes whose marker the map knows, the note names the consumer
+// trait.
 #[test]
 fn rewrites_can_use_component_note() {
     let out = rewrite_required_for(
@@ -169,8 +171,8 @@ fn leaves_unrelated_notes_untouched() {
     );
 }
 
-// Property: for all `IsProviderFor` headers whose marker the map knows, the header carries `[CGP-E002]` and names the
-// provider trait, the context, and the provider.
+// Property: for all `IsProviderFor` headers whose marker the map knows, the header carries
+// `[CGP-E002]` and names the provider trait, the context, and the provider.
 #[test]
 fn rewrites_is_provider_for_header() {
     let out = rewrite_trait_bound(

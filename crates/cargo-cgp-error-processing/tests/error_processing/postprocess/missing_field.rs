@@ -5,7 +5,8 @@
 
 use cargo_cgp_error_processing::{context_has_hasfield_impls, rewrite_missing_fields};
 
-// Property: an unmet clause followed by the inline landmark rewrites to `missing field`, and the landmark goes.
+// Property: an unmet clause followed by the inline landmark rewrites to `missing field`, and the
+// landmark goes.
 #[test]
 fn missing_field_with_inline_landmark_absorbs_it() {
     // A single missing field: the "but trait … is implemented for it" landmark follows
@@ -47,7 +48,8 @@ fn separate_impls_note_is_recognized_with_its_path() {
     assert!(context_has_hasfield_impls(text));
 }
 
-// Property: `context_has_hasfield_impls` reads the inline landmark whether or not rustc qualifies the trait.
+// Property: `context_has_hasfield_impls` reads the inline landmark whether or not rustc qualifies
+// the trait.
 #[test]
 fn inline_landmark_is_recognized_with_its_path() {
     let text =

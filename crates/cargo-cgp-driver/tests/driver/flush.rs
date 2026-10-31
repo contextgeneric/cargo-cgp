@@ -123,8 +123,8 @@ fn blocks(buffer: &[BufEntry]) -> Vec<DiagInner> {
 }
 
 // Property: for all buffers, the groups partition exactly the coalescible resolutions by shared
-// cause, in arrival order, and `group_of` agrees with them. A plain entry and a resolution that never
-// coalesces belong to no group, even when it shares a cause.
+// cause, in arrival order, and `group_of` agrees with them. A plain entry and a resolution that
+// never coalesces belong to no group, even when it shares a cause.
 #[test]
 fn only_coalescible_resolutions_are_grouped() {
     source::with_source(SOURCE, |_, span| {
@@ -147,8 +147,8 @@ fn only_coalescible_resolutions_are_grouped() {
     });
 }
 
-// Property: for all buffers, a group of several is one block at its first member's arrival position,
-// and every other entry keeps its arrival order.
+// Property: for all buffers, a group of several is one block at its first member's arrival
+// position, and every other entry keeps its arrival order.
 #[test]
 fn a_group_is_one_block_at_its_first_members_position() {
     source::with_source(SOURCE, |_, span| {
@@ -271,8 +271,8 @@ fn a_merged_block_states_the_cause_once_and_names_every_consumer() {
     });
 }
 
-// Property: for all diagnostics, `insert_note` puts the note ahead of the first `help`, and last when
-// there is none, and leaves every other child in order.
+// Property: for all diagnostics, `insert_note` puts the note ahead of the first `help`, and last
+// when there is none, and leaves every other child in order.
 #[test]
 fn a_note_goes_ahead_of_the_first_help() {
     source::with_source(SOURCE, |_, span| {

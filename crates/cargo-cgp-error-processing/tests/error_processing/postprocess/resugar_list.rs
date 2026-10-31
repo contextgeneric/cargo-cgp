@@ -5,7 +5,8 @@
 
 use cargo_cgp_error_processing::resugar_lists;
 
-// Property: for all spines `Cons<A, ..., Nil>` of non-`Field` elements, `resugar_lists` gives `Product![A, ...]`.
+// Property: for all spines `Cons<A, ..., Nil>` of non-`Field` elements, `resugar_lists` gives
+// `Product![A, ...]`.
 #[test]
 fn resugars_a_product_of_bare_types() {
     assert_eq!(
@@ -14,7 +15,8 @@ fn resugars_a_product_of_bare_types() {
     );
 }
 
-// Property: for all spines `Either<A, ..., Void>` of non-`Field` elements, `resugar_lists` gives `Sum![A, ...]`.
+// Property: for all spines `Either<A, ..., Void>` of non-`Field` elements, `resugar_lists` gives
+// `Sum![A, ...]`.
 #[test]
 fn resugars_a_sum_of_bare_types() {
     assert_eq!(
@@ -23,8 +25,8 @@ fn resugars_a_sum_of_bare_types() {
     );
 }
 
-// Property: for all products whose elements are all `Field`s with writable names, `resugar_lists` gives
-// `Struct! { name: Type, ... }`.
+// Property: for all products whose elements are all `Field`s with writable names, `resugar_lists`
+// gives `Struct! { name: Type, ... }`.
 #[test]
 fn resugars_a_product_of_fields_to_a_struct() {
     assert_eq!(
@@ -49,7 +51,8 @@ fn resugars_a_sum_of_fields_to_an_enum() {
     );
 }
 
-// Property: for all products of two or more `Index` fields in order, `resugar_lists` gives `Struct!(A, B, ...)`.
+// Property: for all products of two or more `Index` fields in order, `resugar_lists` gives
+// `Struct!(A, B, ...)`.
 #[test]
 fn resugars_a_product_of_index_fields_to_a_tuple_struct() {
     assert_eq!(
@@ -86,7 +89,8 @@ fn a_keyword_field_name_is_written_raw() {
     );
 }
 
-// Property: for all named variants, `Enum!` writes each payload in the shortest spelling of the same type.
+// Property: for all named variants, `Enum!` writes each payload in the shortest spelling of the
+// same type.
 #[test]
 fn each_variant_takes_its_shortest_spelling() {
     assert_eq!(
@@ -101,7 +105,8 @@ fn each_variant_takes_its_shortest_spelling() {
     );
 }
 
-// Property: a sum tagged by position keeps the plain list form, since a variant cannot be named by a position.
+// Property: a sum tagged by position keeps the plain list form, since a variant cannot be named by
+// a position.
 #[test]
 fn a_sum_tagged_by_position_stays_a_plain_sum() {
     assert_eq!(
@@ -120,7 +125,8 @@ fn a_mixed_list_stays_a_plain_product() {
     );
 }
 
-// Property: for all spines, each element is resugared recursively, so a nested spine resugars in turn.
+// Property: for all spines, each element is resugared recursively, so a nested spine resugars in
+// turn.
 #[test]
 fn resugars_a_nested_list() {
     assert_eq!(

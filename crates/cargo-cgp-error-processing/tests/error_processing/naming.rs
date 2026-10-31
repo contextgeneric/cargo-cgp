@@ -2,8 +2,8 @@
 
 use cargo_cgp_error_processing::{is_reserved_name, reserved_names};
 
-// Property: `is_reserved_name` holds exactly for two underscores at each end of a non-empty name that neither starts
-// nor ends with an underscore of its own.
+// Property: `is_reserved_name` holds exactly for two underscores at each end of a non-empty name
+// that neither starts nor ends with an underscore of its own.
 #[test]
 fn a_reserved_name_has_two_underscores_at_each_end() {
     assert!(is_reserved_name("__Context__"));
@@ -19,8 +19,8 @@ fn a_reserved_name_has_two_underscores_at_each_end() {
     assert!(!is_reserved_name("Context"));
 }
 
-// Property: `reserved_names` gives exactly the words of `text` that `is_reserved_name` accepts, without a lifetime's
-// quote.
+// Property: `reserved_names` gives exactly the words of `text` that `is_reserved_name` accepts,
+// without a lifetime's quote.
 #[test]
 fn reserved_names_are_the_double_underscore_words() {
     // A generated lifetime, without its quote, and a generated type parameter.

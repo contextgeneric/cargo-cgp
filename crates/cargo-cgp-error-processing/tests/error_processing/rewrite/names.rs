@@ -20,7 +20,8 @@ fn full_path_names() -> HashMap<String, ComponentTraitNames> {
     map
 }
 
-// Property: `get` matches a full-path key by its trailing segments, so a bare marker still finds it.
+// Property: `get` matches a full-path key by its trailing segments, so a bare marker still finds
+// it.
 #[test]
 fn resolves_a_full_path_key_by_name() {
     let map = ComponentNameMap::new(full_path_names);
@@ -59,8 +60,8 @@ fn same_name_names() -> HashMap<String, ComponentTraitNames> {
     map
 }
 
-// Property: when the keys a printed path matches stand for different traits, the lookup finds nothing; a qualified
-// path that picks out one finds it.
+// Property: when the keys a printed path matches stand for different traits, the lookup finds
+// nothing; a qualified path that picks out one finds it.
 #[test]
 fn declines_a_marker_name_two_components_share() {
     // The bare name rustc printed matches both entries, and the text cannot tell which one it
@@ -92,7 +93,8 @@ fn panicking_init() -> HashMap<String, ComponentTraitNames> {
     panic!("the name map must not be built when no message is rewritten");
 }
 
-// Property: for all messages that are not a wiring form, the rewrite gives `None` without forcing the map.
+// Property: for all messages that are not a wiring form, the rewrite gives `None` without forcing
+// the map.
 #[test]
 fn does_not_force_the_map_without_a_matching_message() {
     // The lazy build must not run for a message that is not a CGP wiring form — even one that

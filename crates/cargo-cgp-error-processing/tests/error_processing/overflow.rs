@@ -35,8 +35,8 @@ fn rewrites_a_wiring_cycle_into_its_cycle_header() {
     );
 }
 
-// Property: for all wiring requirements, `WiringOverflow::Growing` gives the `[CGP-E021]` header, naming the first
-// larger requirement when known.
+// Property: for all wiring requirements, `WiringOverflow::Growing` gives the `[CGP-E021]` header,
+// naming the first larger requirement when known.
 #[test]
 fn rewrites_a_growing_lookup_into_its_own_header() {
     let growing = WiringOverflow::Growing {
@@ -72,8 +72,8 @@ fn rewrites_a_growing_lookup_into_its_own_header() {
     );
 }
 
-// Property: the help names the provider and its requirement when the walk found that step, and otherwise says what
-// the replacement must not do.
+// Property: the help names the provider and its requirement when the walk found that step, and
+// otherwise says what the replacement must not do.
 #[test]
 fn the_wiring_overflow_help_names_the_provider_that_closes_or_grows_the_lookup() {
     assert_eq!(
@@ -124,7 +124,8 @@ fn the_wiring_overflow_help_names_the_provider_that_closes_or_grows_the_lookup()
     );
 }
 
-// Property: a requirement on a consumer trait the map knows is a wiring lookup, with or without arguments.
+// Property: a requirement on a consumer trait the map knows is a wiring lookup, with or without
+// arguments.
 #[test]
 fn rewrites_a_consumer_overflow_at_a_call_into_its_cycle_header() {
     // A call reports the overflow on the consumer trait itself, with or without its arguments.
@@ -152,8 +153,8 @@ fn rewrites_a_consumer_overflow_at_a_call_into_its_cycle_header() {
     );
 }
 
-// Property: for all overflows on a trait that is neither `CanUseComponent` nor a known consumer trait, the rewrite
-// gives `None`.
+// Property: for all overflows on a trait that is neither `CanUseComponent` nor a known consumer
+// trait, the rewrite gives `None`.
 #[test]
 fn a_non_wiring_overflow_is_left_alone() {
     // An `E0275` on an ordinary trait is not a wiring lookup, so it keeps rustc's own header.

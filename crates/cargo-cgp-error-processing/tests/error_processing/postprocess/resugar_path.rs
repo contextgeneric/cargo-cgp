@@ -39,7 +39,8 @@ fn resugars_an_open_tailed_path_bare_as_its_key() {
     );
 }
 
-// Property: for all well-formed paths, `wrap = true` gives `Path!(@...)` and only the spine changes.
+// Property: for all well-formed paths, `wrap = true` gives `Path!(@...)` and only the spine
+// changes.
 #[test]
 fn resugars_a_symbol_and_type_path() {
     // The common shape: a namespace path of one lowercase symbol segment and one component
@@ -114,7 +115,8 @@ const PRIMITIVE_NAMES: &[&str] = &[
     "f64", "char", "bool", "str",
 ];
 
-// Property: a bare lowercase segment that is not a real primitive declines, since `Path!` would read it as a symbol.
+// Property: a bare lowercase segment that is not a real primitive declines, since `Path!` would
+// read it as a symbol.
 #[test]
 fn resugar_path_declines_a_type_named_like_a_primitive() {
     // `f`, `u2`, and `i7` look like primitives but are none, so `Path!` would read each as a
@@ -178,8 +180,8 @@ fn resugar_path_skips_a_non_nil_terminated_spine() {
     assert_eq!(resugar_path("PathCons<GreeterComponent, App>", true), None);
 }
 
-// Property: a `Symbol!` head that is not a lowercase, non-primitive identifier declines, since `Path!` would not
-// have made it a symbol.
+// Property: a `Symbol!` head that is not a lowercase, non-primitive identifier declines, since
+// `Path!` would not have made it a symbol.
 #[test]
 fn resugar_path_skips_an_uppercase_symbol_segment() {
     // `Path!` would never encode `Foo` (capitalized) as a `Symbol`, so a `Symbol!("Foo")`

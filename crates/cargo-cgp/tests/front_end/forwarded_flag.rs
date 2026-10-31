@@ -9,8 +9,8 @@ fn args(list: &[&str]) -> Vec<String> {
     list.iter().map(|s| s.to_string()).collect()
 }
 
-// Property: for all args, a spaced flag with no argument after it counts as present for the
-// readers that ask whether it was given, and gives no value to the readers that ask for its value.
+// Property: for all args, a spaced flag with no argument after it counts as present for the readers
+// that ask whether it was given, and gives no value to the readers that ask for its value.
 #[test]
 fn a_spaced_flag_at_the_end_is_present_without_a_value() {
     assert!(forwards_target_dir(&args(&["--target-dir"])));
@@ -75,8 +75,8 @@ fn a_longer_flag_is_not_the_flag() {
     );
 }
 
-// Property: for all args and flag, `scan_flag` gives the occurrences' values in order and leaves the
-// other arguments in order.
+// Property: for all args and flag, `scan_flag` gives the occurrences' values in order and leaves
+// the other arguments in order.
 #[test]
 fn a_scan_gives_the_values_in_order_and_the_rest_untouched() {
     assert_eq!(
