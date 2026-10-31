@@ -46,14 +46,16 @@ mod repeats;
 mod stage;
 mod use_type_misspelling;
 
+pub use buffer::*;
 pub use cgp_emitter::CgpEmitter;
 pub use containment::{contain, install_panic_hooks};
-pub use edit::postprocess_multispan;
+pub use edit::{merged_span, postprocess_multispan};
 pub use fallback::*;
-pub use flush::rebuild_explain_footers;
+pub use flush::*;
 pub use generated_names::drop_generated_name_suggestions;
 pub use install::install;
 pub use name_resolution::{is_unresolved_wiring_overflow, reshape_name_resolution_errors};
 pub use pipeline::*;
 pub use repeats::merge_repeats;
+pub use stage::shared_dispatch_method;
 pub use use_type_misspelling::reshape_use_type_misspellings;

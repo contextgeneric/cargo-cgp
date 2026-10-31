@@ -6,7 +6,7 @@ use rustc_errors::{DiagInner, Sublevel};
 use crate::emitter::edit::subdiag;
 
 /// One buffered diagnostic awaiting the [`Drop`]-time flush.
-pub(crate) enum BufEntry {
+pub enum BufEntry {
     /// Emitted verbatim at its arrival position. Boxed, like the variant below, so the buffer's
     /// element stays a pointer rather than a whole `DiagInner`.
     Plain(Box<DiagInner>),
@@ -23,21 +23,21 @@ pub(crate) enum BufEntry {
 }
 
 /// The payload of a [`BufEntry::Resolved`].
-pub(crate) struct ResolvedEntry {
-    pub(crate) coalescible: bool,
-    pub(crate) resolved: Resolved,
-    pub(crate) note: PendingNote,
-    pub(crate) diag: DiagInner,
+pub struct ResolvedEntry {
+    pub coalescible: bool,
+    pub resolved: Resolved,
+    pub note: PendingNote,
+    pub diag: DiagInner,
     /// The diagnostic as rustc built it, emitted instead of the transformed one when the flush
     /// cannot render the transformed one (see [`BufEntry::untransformed`]).
-    pub(crate) original: DiagInner,
+    pub original: DiagInner,
 }
 
 impl BufEntry {
     /// The diagnostic to emit when the flush cannot render the buffer: a plain entry as it stands,
     /// and a resolution as rustc built it, since its note was never rendered. `note`, when given,
     /// is attached to such a resolution to say why it is untransformed.
-    pub(crate) fn untransformed(self, note: Option<&str>) -> DiagInner {
+    pub fn untransformed(self, note: Option<&str>) -> DiagInner {
         match self {
             BufEntry::Plain(diag) => *diag,
             BufEntry::Resolved(entry) => {

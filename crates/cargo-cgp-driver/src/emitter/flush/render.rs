@@ -75,7 +75,7 @@ pub fn coalesced_groups(buffer: &[BufEntry]) -> CoalescedGroups {
 /// first member's position. The subtrees drawn so far are threaded through every block in emission
 /// order, so a later one truncates at what an earlier one already showed; this is why notes are
 /// rendered here rather than on arrival, since only now is that order known.
-fn render_blocks(
+pub fn render_blocks(
     buffer: &[BufEntry],
     groups: &CoalescedGroups,
     ambiguous: &AmbiguousNames,

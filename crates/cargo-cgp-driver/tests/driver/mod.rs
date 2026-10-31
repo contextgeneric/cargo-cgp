@@ -2,6 +2,7 @@ pub mod anchors;
 pub mod args;
 pub mod containment;
 pub mod expand;
+pub mod flush;
 pub mod footers;
 pub mod help;
 pub mod pipeline;
