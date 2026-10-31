@@ -88,3 +88,10 @@ pub const FRONTEND_CRATE: &str = "cargo-cgp";
 /// This front-end's own version, from Cargo. The preflight requires the driver to report
 /// the identical version, and `setup` installs the driver at this version.
 pub const TOOL_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// The environment variable through which cargo runs a wrapper for each workspace crate, and
+/// through which the front-end installs its driver.
+pub const WORKSPACE_WRAPPER_ENV: &str = "RUSTC_WORKSPACE_WRAPPER";
+
+/// The flag that names one module or item to expand.
+pub const ITEM_FLAG: &str = "--item";

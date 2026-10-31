@@ -3,11 +3,13 @@
 use std::env;
 use std::process::Command;
 
-use crate::config::{DRIVER_BIN, NO_MANAGE_ENV, RUSTUP_TOOLCHAIN_ENV, SYSROOT_ENV};
+use crate::config::{
+    DRIVER_BIN, NO_MANAGE_ENV, RUSTUP_TOOLCHAIN_ENV, SYSROOT_ENV, WORKSPACE_WRAPPER_ENV,
+};
 use crate::launch::dylib::prepend_dylib_path;
 use crate::launch::invocation::cargo_invocation;
 use crate::launch::target_dir::default_target_dir;
-use crate::launch::workspace_wrapper::{WORKSPACE_WRAPPER_ENV, workspace_wrapper_warning};
+use crate::launch::workspace_wrapper::workspace_wrapper_warning;
 use crate::launch::{driver_path, preflight, sysroot};
 use crate::toolchain::pinned_toolchain;
 

@@ -3,11 +3,8 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
+use crate::config::WORKSPACE_WRAPPER_ENV;
 use crate::report::warning;
-
-/// The environment variable through which cargo runs a wrapper for each workspace crate, and
-/// through which the front-end installs its driver.
-pub const WORKSPACE_WRAPPER_ENV: &str = "RUSTC_WORKSPACE_WRAPPER";
 
 /// The warning to print when the front-end replaces the user's own [`WORKSPACE_WRAPPER_ENV`], or
 /// `None` when there is nothing to replace: the variable is unset, empty, or already the driver.

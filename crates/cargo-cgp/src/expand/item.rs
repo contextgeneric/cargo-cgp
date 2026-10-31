@@ -2,8 +2,7 @@
 
 use anyhow::bail;
 
-/// The flag that names one module or item to expand.
-pub const ITEM_FLAG: &str = "--item";
+use crate::config::ITEM_FLAG;
 
 /// Split the forwarded arguments into the ones cargo gets and the item path, if one was given.
 ///
