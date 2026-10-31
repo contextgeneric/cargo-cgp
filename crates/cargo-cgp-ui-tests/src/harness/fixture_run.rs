@@ -1,105 +1,11 @@
-//! Building the tool and compiling a fixture through it.
-//!
-//! A fixture is a loose `.rs` file, so it is compiled by copying it into a throwaway
-//! crate that depends on cgp and running `cargo-cgp check` there. Each concurrent worker
-//! owns one such crate ([`ensure_worker_crates`]); reusing a worker's crate across the
-//! fixtures it checks keeps cgp built and cached within that worker.
+//! Compiling one fixture, through the tool or plain cargo.
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
-use crate::paths::{cargo_cgp_bin, cgp_crate_dir, worker_crate_dir};
-
-/// The cargo executable, from the `CARGO` cargo sets for us, falling back to `cargo`.
-fn cargo() -> String {
-    std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned())
-}
-
-/// Build the `cargo-cgp` front-end and its driver into the workspace `target/debug`.
-/// Both are needed: the front-end locates the driver as its sibling.
-pub fn build_binaries() {
-    let status = Command::new(cargo())
-        .current_dir(workspace_root_for_build())
-        .args([
-            "build",
-            "-q",
-            "--bin",
-            "cargo-cgp",
-            "--bin",
-            "cargo-cgp-driver",
-        ])
-        .status()
-        .expect("running `cargo build` for the cargo-cgp binaries");
-    assert!(status.success(), "failed to build the cargo-cgp binaries");
-}
-
-/// Where `cargo build` runs. The workspace root holds `rust-toolchain.toml`, so
-/// building there selects the pinned toolchain — the one whose compiler the driver
-/// embeds.
-fn workspace_root_for_build() -> PathBuf {
-    crate::paths::workspace_root()
-}
-
-/// Create or refresh the `count` per-worker throwaway crates and return their directories.
-/// Giving each worker its own crate is what lets fixtures run in parallel: two workers
-/// never share a `src/main.rs` nor a cargo target lock. The cost is that cgp is built once
-/// per worker rather than once overall, since each crate has its own target directory.
-pub fn ensure_worker_crates(count: usize) -> Vec<PathBuf> {
-    (0..count).map(ensure_worker_crate).collect()
-}
-
-/// Create or refresh one worker's throwaway crate and return its directory. Every worker
-/// crate is identical apart from its directory: it lives under `target/` (git-ignored) and
-/// is named `ui` (a stable package name keeps cargo's output stable regardless of which
-/// worker ran a fixture — the differing directory is normalized to `$DIR`), and the empty
-/// `[workspace]` table stops cargo from folding it into the cargo-cgp workspace above it.
-fn ensure_worker_crate(index: usize) -> PathBuf {
-    let dir = worker_crate_dir(index);
-    fs::create_dir_all(dir.join("src")).expect("creating the throwaway crate");
-
-    write_manifest(&dir, &[]);
-
-    let main = dir.join("src/main.rs");
-    if !main.exists() {
-        fs::write(&main, "fn main() {}\n").expect("seeding the throwaway main.rs");
-    }
-
-    dir
-}
-
-/// Write the worker crate's `Cargo.toml`: a `cgp` path dependency plus a path
-/// dependency on each auxiliary crate the current fixture declared (see
-/// [`crate::aux`]). The empty `[workspace]` table stops cargo from folding the
-/// crate into the cargo-cgp workspace above it.
-///
-/// Rewritten per fixture, because which auxiliary crates are needed varies by
-/// fixture — but only when the content actually changes, so a run of ordinary
-/// (no-aux) fixtures leaves the manifest untouched and never disturbs cargo's
-/// fingerprints for the cached `cgp` build.
-pub fn write_manifest(harness_crate: &Path, aux: &[(&str, &Path)]) {
-    let mut deps = format!("cgp = {{ path = \"{}\" }}\n", cgp_crate_dir().display());
-    for (name, dir) in aux {
-        deps.push_str(&format!("{name} = {{ path = \"{}\" }}\n", dir.display()));
-    }
-    let manifest = format!(
-        "[package]\n\
-         name    = \"ui\"\n\
-         version = \"0.0.0\"\n\
-         edition = \"2024\"\n\
-         publish = false\n\
-         \n\
-         [dependencies]\n\
-         {deps}\
-         \n\
-         [workspace]\n",
-    );
-
-    let path = harness_crate.join("Cargo.toml");
-    if fs::read_to_string(&path).ok().as_deref() != Some(manifest.as_str()) {
-        fs::write(&path, manifest).expect("writing the throwaway manifest");
-    }
-}
+use crate::harness::cargo::cargo;
+use crate::paths::cargo_cgp_bin;
 
 /// The result of compiling one fixture: the rendered diagnostics and whether the command
 /// succeeded.
@@ -203,7 +109,7 @@ pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path) -> Run {
 /// already selected, so there is nothing to verify or install. Without it, `cargo cgp
 /// check` would try to confirm a provisioned driver that the source-tree test loop never
 /// installs.
-fn run_cargo_cgp(harness_crate: &Path, fixture: &Path, args: &[&str]) -> std::process::Output {
+pub fn run_cargo_cgp(harness_crate: &Path, fixture: &Path, args: &[&str]) -> std::process::Output {
     fs::copy(fixture, harness_crate.join("src/main.rs"))
         .unwrap_or_else(|e| panic!("copying fixture {}: {e}", fixture.display()));
 
