@@ -30,16 +30,15 @@ pub fn rust_stderr_pass(run: &Run, fixture: &Path, paths: &Paths<'_>, bless: boo
     review(&rust_stderr_path(fixture), &actual, bless, "rust")
 }
 
-/// Run `cargo cgp expand` on the fixture and review its expansion against `.expand.rs` — the Rust
+/// Review a fixture's `cargo cgp expand` output against `.expand.rs` — the Rust
 /// its CGP macros generate, with CGP's type-level constructs resugared.
-pub fn expand_pass(
-    fixture: &Path,
-    env: &[(String, String)],
-    paths: &Paths<'_>,
-    bless: bool,
-) -> Outcome {
-    let raw = harness::run_fixture_expand(paths.harness_crate, fixture, env);
-    let actual = normalize_source(&raw, paths.harness_crate, paths.cgp_root, paths.sysroot);
+pub fn expand_pass(expansion: &str, fixture: &Path, paths: &Paths<'_>, bless: bool) -> Outcome {
+    let actual = normalize_source(
+        expansion,
+        paths.harness_crate,
+        paths.cgp_root,
+        paths.sysroot,
+    );
     review(&expand_path(fixture), &actual, bless, "expand")
 }
 

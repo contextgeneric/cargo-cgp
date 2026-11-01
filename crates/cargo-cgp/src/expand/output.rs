@@ -70,9 +70,9 @@ impl Drop for ExpansionDir {
 
 /// Read the expansion the driver wrote, if it wrote one.
 ///
-/// `None` means the driver never reached expand mode — a build error before expansion, or a
-/// cargo invocation that compiled no workspace target — which the caller reports rather than
-/// printing nothing. A stale file cannot be mistaken for output, since the directory is new for
+/// `None` means the driver wrote nothing — a build error before expansion, a cargo invocation that
+/// compiled no workspace target, or an `--item` path that matched nothing — which the caller reports
+/// rather than printing nothing. A stale file cannot be mistaken for output, since the directory is new for
 /// each run.
 pub fn read_expansion(path: &Path) -> Option<String> {
     let expansion = fs::read_to_string(path).ok()?;

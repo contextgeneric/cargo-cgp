@@ -52,33 +52,45 @@ pub fn run_fixture_json(harness_crate: &Path, fixture: &Path, env: &[(String, St
     String::from_utf8_lossy(&output.stdout).into_owned()
 }
 
-/// Expand one fixture through `cargo cgp expand` and return the expansion from **stdout**.
+/// One fixture's `cargo cgp expand`: the expansion from **stdout**, and how the command ended.
+pub struct ExpandRun {
+    /// The expansion, or [`NO_EXPANSION`] when the command printed none.
+    pub expansion: String,
+    /// How the command ended, for the expand status check.
+    pub run: Run,
+}
+
+/// Expand one fixture through `cargo cgp expand`.
 ///
-/// Unlike the two diagnostic passes, what is captured is stdout: the expansion is the command's
-/// output, and its stderr carries only cargo's progress. The fixture is the worker crate's one
-/// binary target, so `cargo rustc` needs no target flag to pick it.
+/// Unlike the two diagnostic passes, the snapshot's text is stdout: the expansion is the command's
+/// output. The fixture is the worker crate's one binary target, so `cargo rustc` needs no target
+/// flag to pick it.
 ///
-/// A fixture whose compilation stops before expansion completes (a malformed macro invocation, or a
-/// type defined twice, which rustc treats as fatal once name resolution finishes) produces no
-/// expansion at all. The marker returned here is what its snapshot records, which pins that the
-/// failure happens before the compiler type-checks the generated code.
+/// A fixture whose compilation stops before expansion and name resolution finish (a type defined
+/// twice, a `macro_rules!` call matching no rule, or an unclosed delimiter) produces no expansion at
+/// all. The marker is what its snapshot records, which pins that the failure happens before the
+/// compiler type-checks the generated code.
 pub fn run_fixture_expand(
     harness_crate: &Path,
     fixture: &Path,
     env: &[(String, String)],
-) -> String {
+) -> ExpandRun {
     let output = run_cargo_cgp(
         harness_crate,
         fixture,
         env,
         &["expand", "-q", "--color", "never"],
     );
-    let expansion = String::from_utf8_lossy(&output.stdout).into_owned();
-
-    if expansion.trim().is_empty() {
-        return NO_EXPANSION.to_owned();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let expansion = if stdout.trim().is_empty() {
+        NO_EXPANSION.to_owned()
+    } else {
+        stdout.into_owned()
+    };
+    ExpandRun {
+        expansion,
+        run: Run::from_output(&output),
     }
-    expansion
 }
 
 /// What an `.expand.rs` snapshot records for a fixture that never got as far as an expansion.

@@ -1,0 +1,14 @@
+error: this crate refuses to compile
+ --> src/main.rs:7:1
+  |
+7 | compile_error!("this crate refuses to compile");
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused dependency `cgp`
+ --> Cargo.toml:8:1
+  |
+8 | cgp = { path = "$CGP/crates/main/cgp" }
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `cargo::unused_dependencies` is set to `warn` by default
+help: consider removing the dependency on `cgp`

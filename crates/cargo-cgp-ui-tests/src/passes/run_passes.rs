@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::directives::Directives;
 use crate::options::Options;
-use crate::passes::checks::{header_check, pass_through_check, status_check};
+use crate::passes::checks::{expand_status_check, header_check, pass_through_check, status_check};
 use crate::passes::pass_paths::Paths;
 use crate::passes::snapshot_passes::{cgp_stderr_pass, expand_pass, json_pass, rust_stderr_pass};
 use crate::snapshot::Outcome;
@@ -25,6 +25,8 @@ pub fn run_passes(
     let rust = harness::run_fixture_rust(paths.harness_crate, fixture);
     let cgp = harness::run_fixture(paths.harness_crate, fixture, &directives.env);
 
+    let expand = harness::run_fixture_expand(paths.harness_crate, fixture, &directives.env);
+
     let mut outcomes = vec![
         (
             "rust",
@@ -33,9 +35,13 @@ pub fn run_passes(
         ("cgp", cgp_stderr_pass(&cgp, fixture, paths, options.bless)),
         (
             "expand",
-            expand_pass(fixture, &directives.env, paths, options.bless),
+            expand_pass(&expand.expansion, fixture, paths, options.bless),
         ),
         ("status", status_check(rust.success, cgp.success)),
+        (
+            "expand status",
+            expand_status_check(expand.run.success, &expand.run.stderr),
+        ),
     ];
 
     let exempt = ["ok/", "pass-through/", "robustness/"]

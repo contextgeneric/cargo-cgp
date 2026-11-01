@@ -10,10 +10,11 @@
 //! - [`expand_pass`] runs `cargo cgp expand` and compares its stdout to `.expand.rs`, the code the
 //!   compiler was actually given, which is where the answer to "why does it say that?" usually is.
 //!
-//! Two checks compare the passes with each other rather than with a snapshot:
+//! Three checks read how the commands ended or compare them, rather than a snapshot:
 //!
 //! - [`status_check`]: the tool and plain `cargo check` must agree on whether the fixture
 //!   compiles.
+//! - [`expand_status_check`]: `cargo cgp expand` must fail exactly when it reported an error.
 //! - [`pass_through_check`]: for a fixture under `pass-through/`, a plain Rust error the tool must
 //!   not touch, the tool's output must equal plain rustc's, unless the fixture is marked
 //!   `//@rewrites-falsely:` for a fix still to come or a documented limitation.

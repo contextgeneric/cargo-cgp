@@ -1,0 +1,14 @@
+error: no rules expected `bad`
+  --> src/main.rs:12:10
+   |
+ 8 | macro_rules! only_ok {
+   | -------------------- when calling this macro
+...
+12 | only_ok!(bad);
+   |          ^^^ no rules expected this token in macro call
+   |
+note: while trying to match `ok`
+  --> src/main.rs:9:6
+   |
+ 9 |     (ok) => {};
+   |      ^^

@@ -91,6 +91,7 @@ ignored.
 Beside the three snapshot comparisons, each fixture runs these checks:
 
 - **Exit status:** the tool and plain `cargo check` must agree on whether the fixture compiles.
+- **Expand status:** `cargo cgp expand` must fail exactly when it reported an error.
 - **Pass-through:** for a fixture under `pass-through/`, the tool's output must equal plain
   rustc's.
 - **Header:** an error fixture must declare its quality, and its `//@codes:` must match the output.

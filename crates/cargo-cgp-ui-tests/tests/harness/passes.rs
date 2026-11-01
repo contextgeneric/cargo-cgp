@@ -3,7 +3,7 @@
 
 use cargo_cgp_ui_tests::directives::parse;
 use cargo_cgp_ui_tests::passes::{
-    cgp_codes, header_check, pass_through_check, reduce_json, status_check,
+    cgp_codes, expand_status_check, header_check, pass_through_check, reduce_json, status_check,
 };
 use cargo_cgp_ui_tests::snapshot::Outcome;
 
@@ -16,6 +16,20 @@ fn mismatch(outcome: Outcome) -> String {
         Outcome::Mismatch(text) => text,
         _ => panic!("expected a mismatch"),
     }
+}
+
+/// Property: `expand_status_check` is `Ok` iff the exit status and the reported errors agree. The
+/// first failing input is the shape of a bug `cargo cgp expand` had: an error, then exit 0.
+#[test]
+fn an_expansions_status_must_match_its_reported_errors() {
+    let error = "error[E0425]: cannot find type `Missing` in this scope\n";
+    assert!(is_ok(&expand_status_check(true, "")));
+    assert!(is_ok(&expand_status_check(true, "warning: unused\n")));
+    assert!(is_ok(&expand_status_check(false, error)));
+    let text = mismatch(expand_status_check(true, error));
+    assert!(text.contains("reported an error but exited 0"), "{text}");
+    let text = mismatch(expand_status_check(false, ""));
+    assert!(text.contains("failed without reporting an error"), "{text}");
 }
 
 #[test]

@@ -47,13 +47,15 @@ pub fn print_block(
     format!(
         "===== {name}: cargo cgp check ({}) =====\n{}\
          ===== {name}: cargo check ({}) =====\n{}\
-         ===== {name}: cargo cgp expand =====\n{}\
+         ===== {name}: cargo cgp expand ({}) =====\n{}{}\
          ===== end {name} =====\n",
         status(cgp.success),
         cgp.stderr,
         status(rust.success),
         rust.stderr,
-        expand,
+        status(expand.run.success),
+        expand.run.stderr,
+        expand.expansion,
     )
 }
 
