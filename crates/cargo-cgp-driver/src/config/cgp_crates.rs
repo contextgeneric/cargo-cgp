@@ -7,6 +7,10 @@ use crate::config::{CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, 
 /// compilation's diagnostics can carry CGP constructs at all.
 pub const CGP_UMBRELLA_CRATE: &str = "cgp";
 
+/// The proc-macro crate that defines `#[cgp_component]`, `#[cgp_impl]`, `cgp_namespace!`, and most of
+/// CGP's other macros.
+pub const CGP_MACRO_CRATE: &str = "cgp_macro";
+
 /// The crates whose traits count as *CGP evidence* when deciding whether a blanket-impl trait
 /// from another crate is a `#[cgp_fn]`/`#[blanket_trait]` blanket trait rather than an ordinary
 /// blanket trait.

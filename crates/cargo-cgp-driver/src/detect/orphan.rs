@@ -21,10 +21,10 @@ use rustc_middle::ty::print::with_forced_trimmed_paths;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
-use rustc_span::hygiene::ExpnKind;
 
+use crate::config::{CGP_COMPONENT_CRATE, CGP_MACRO_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::resolve::query::{
-    byte_range, describe_key, is_namespace_lookup_trait, local_trait_impls,
+    byte_range, describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls,
 };
 
 /// One local impl of a foreign namespace-lookup trait for a foreign key — a candidate orphan
@@ -57,7 +57,7 @@ pub fn classify_orphan_conflict(tcx: TyCtxt<'_>, primary_span: Span) -> Option<O
             byte_range(candidate.def_span).overlaps_or_adjacent(byte_range(primary_span))
         })
         .or(match candidates.as_slice() {
-            [only] if is_from_cgp_macro(primary_span) => Some(only),
+            [only] if is_from_cgp_macro(tcx, primary_span) => Some(only),
             _ => None,
         })?;
 
@@ -90,7 +90,16 @@ fn orphan_impls(tcx: TyCtxt<'_>) -> Vec<OrphanImpl<'_>> {
         // Foreign namespace trait — a local one would be no orphan (you may implement your own
         // trait for anything). Recognized by the single-`Delegate` fingerprint, so a downstream
         // crate's own namespace trait is treated the same as CGP's built-in `DefaultNamespace`.
-        if trait_did.is_local() || !is_namespace_lookup_trait(tcx, trait_did) {
+        // `DelegateComponent` has that shape too, but its `Self` is a wiring table, not a key.
+        if trait_did.is_local()
+            || !is_namespace_lookup_trait(tcx, trait_did)
+            || is_cgp_item(
+                tcx,
+                trait_did,
+                DELEGATE_COMPONENT_TRAIT,
+                CGP_COMPONENT_CRATE,
+            )
+        {
             continue;
         }
         // Foreign key: a component marker, a `PathCons<…>` path, or a per-type default's type,
@@ -116,12 +125,15 @@ fn orphan_impls(tcx: TyCtxt<'_>) -> Vec<OrphanImpl<'_>> {
     impls
 }
 
-/// Whether `span` comes from a CGP macro, recognized as a macro whose name, without its path, starts
-/// with `cgp_`: every construct that registers into a namespace is written with one.
-fn is_from_cgp_macro(span: Span) -> bool {
+/// Whether `span` comes from a CGP macro's expansion. Every construct that registers into a namespace
+/// is a `cgp_`-named macro of CGP's proc-macro crate. Reading the macro's definition holds under a
+/// renaming import and rejects a program's own macro of a similar name.
+fn is_from_cgp_macro(tcx: TyCtxt<'_>, span: Span) -> bool {
     span.macro_backtrace().any(|expansion| {
-        matches!(expansion.kind, ExpnKind::Macro(_, name)
-            if name.as_str().rsplit("::").next().is_some_and(|last| last.starts_with("cgp_")))
+        expansion.macro_def_id.is_some_and(|macro_did| {
+            tcx.crate_name(macro_did.krate).as_str() == CGP_MACRO_CRATE
+                && tcx.item_name(macro_did).as_str().starts_with("cgp_")
+        })
     })
 }
 

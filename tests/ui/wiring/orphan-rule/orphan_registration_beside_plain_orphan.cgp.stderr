@@ -1,16 +1,16 @@
 error[E0210]: [CGP-E022] cannot register the foreign type `String` into the foreign namespace `DefaultImpls1`
-  --> src/main.rs:18:1
+  --> src/main.rs:19:1
    |
-18 | #[cgp::prelude::cgp_impl(new RaisePlain)]
+19 | #[cgp::prelude::cgp_impl(new RaisePlain)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: own one end of the wiring: key it on a component defined in this crate, or register it from the crate that defines `DefaultImpls1`
    = note: this error originates in the attribute macro `cgp::prelude::cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0117]: only traits defined in the current crate can be implemented for types defined outside of the crate
-  --> src/main.rs:27:1
+  --> src/main.rs:28:1
    |
-27 | impl std::fmt::Display for Vec<u8> {
+28 | impl std::fmt::Display for Vec<u8> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^-------
    |                            |
    |                            `Vec` is not defined in the current crate
@@ -20,17 +20,17 @@ error[E0117]: only traits defined in the current crate can be implemented for ty
    = note: define and implement a trait or new type instead
 
 error[E0117]: only traits defined in the current crate can be implemented for types defined outside of the crate
-  --> src/main.rs:35:9
+  --> src/main.rs:36:9
    |
-33 | macro_rules! impl_display {
-34 |     ($ty:ty) => {
-35 |         impl std::fmt::Display for $ty {
+34 | macro_rules! cgp_impl_display {
+35 |     ($ty:ty) => {
+36 |         impl std::fmt::Display for $ty {
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-43 | impl_display!(Vec<u16>);
-   | -----------------------
-   | |             |
-   | |             `Vec` is not defined in the current crate
+44 | cgp_impl_display!(Vec<u16>);
+   | ---------------------------
+   | |                 |
+   | |                 `Vec` is not defined in the current crate
    | in this macro invocation
    |
    = note: impl doesn't have any local type before any uncovered type parameters
