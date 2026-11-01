@@ -180,7 +180,7 @@ fn render_segment(segment: &str) -> Option<String> {
 /// The final `::`-separated component of a module-qualified named-type segment, or `None` unless
 /// every component is a plain identifier. `a::b::C` returns its tail (`C`); a component carrying
 /// generics, references, or other non-identifier shape declines, so only a genuine qualified type
-/// name is folded to its tail.
+/// name is rendered.
 fn type_segment_tail(segment: &str) -> Option<&str> {
     let mut tail = None;
     for part in segment.split("::") {

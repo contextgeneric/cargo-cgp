@@ -268,10 +268,15 @@ fn declines_a_path_with_a_bare_lowercase_segment() {
 }
 
 #[test]
-fn folds_a_qualified_path_segment_to_its_tail() {
+fn keeps_a_qualified_path_segment_as_written() {
+    // Property: a segment reads as the type it names (`resugaring.md`, "A module-qualified segment
+    // is rendered as written"), so the qualifier stays, which can tell two types apart.
     let source = "type Route = PathCons<finance::QuantityComponent, Nil>;\n";
 
-    assert_eq!(expand(source), "type Route = Path!(@QuantityComponent);\n");
+    assert_eq!(
+        expand(source),
+        "type Route = Path!(@finance::QuantityComponent);\n"
+    );
 }
 
 #[test]

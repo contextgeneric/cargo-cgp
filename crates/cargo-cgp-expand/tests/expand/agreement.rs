@@ -43,6 +43,12 @@ fn symbol(name: &str) -> String {
 /// Every construct the passes resugar, as its expansion and the spelling both must produce.
 fn cases() -> Vec<(String, &'static str)> {
     vec![
+        // A qualified segment names the type it writes, so neither pass may cut it to its last
+        // component, which can name another type.
+        (
+            "PathCons<ErrorRaiserComponent, PathCons<std::io::Error, Nil>>".to_owned(),
+            "Path!(@ErrorRaiserComponent.std::io::Error)",
+        ),
         (symbol("height"), "Symbol!(\"height\")"),
         ("Symbol<0, Nil>".to_owned(), "Symbol!(\"\")"),
         (
@@ -140,6 +146,8 @@ fn both_passes_decline_the_same_non_constructs() {
         "Symbol<1, Other<'a', Nil>>",
         "Cons<u8, Rest>",
         "Nil",
+        "PathCons<a::b, Nil>",
+        "PathCons<a::B<u8>, Nil>",
     ] {
         assert_eq!(text_pass(raw), raw, "text pass on {raw}");
         assert_eq!(syntax_tree_pass(raw), raw, "syntax-tree pass on {raw}");

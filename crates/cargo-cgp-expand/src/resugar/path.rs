@@ -4,14 +4,13 @@
 //! and this pass reads it back. Segments are classified the way `Path!` classifies them going
 //! forward: a lowercase, non-primitive identifier is a `Symbol`, and every other segment was
 //! kept verbatim as a named type. Two shapes decline, leaving the raw spine rather than risking
-//! a mangled path — a module-qualified segment whose tail is not a plain type, and a bare
-//! lowercase identifier, which `Path!` would have encoded as a `Symbol`.
+//! a mangled path — a module-qualified segment that is not a plain type path, and a bare lowercase
+//! identifier, which `Path!` would have encoded as a `Symbol`.
 //!
-//! Only a `Nil`-terminated chain is folded. A diagnostic also renders an **open-ended** path — one
-//! whose tail is a generic "rest of path" parameter — with a trailing `.*` wildcard, but that form
-//! is not `Path!` syntax and would not parse back, and this pass writes source, so such a chain is
-//! left as it stands. In an expansion the open tail is a named generic parameter anyway, not the
-//! `_` a diagnostic shows.
+//! Only a `Nil`-terminated chain is folded. An **open-ended** path, whose tail is a generic "rest of
+//! path" parameter, has no `Path!` spelling, since `Path!(@a.b)` is the closed path, and this pass
+//! writes source, so such a chain is left as it stands. In an expansion the open tail is a named
+//! generic parameter, not the `_` a diagnostic shows.
 
 use cargo_cgp_error_processing::{is_ident, is_primitive_type};
 use proc_macro2::{Punct, Spacing, TokenStream, TokenTree};
@@ -114,21 +113,23 @@ fn render_segment(ty: &Type) -> Option<TokenStream> {
             .segments
             .iter()
             .all(|segment| segment.arguments.is_none());
+        let qualified = path.path.segments.len() > 1;
+        // A qualified segment must be a plain type path, as the diagnostic pass requires.
+        if qualified && !plain_idents {
+            return None;
+        }
         if plain_idents {
             let tail = path.path.segments.last()?.ident.to_string();
             // A bare lowercase identifier would have been a `Symbol`, so meeting one as a plain
-            // type is ambiguous rather than a clean path.
+            // type is ambiguous rather than a clean path, and so is a qualified path ending in one.
             if tail.starts_with(|c: char| c.is_ascii_lowercase()) && !is_primitive_type(&tail) {
                 return None;
             }
-            // A qualified segment keeps only its final component, which is the bare form `Path!`
-            // writes.
-            let ident = syn::Ident::new(&tail, proc_macro2::Span::call_site());
-            return Some(ident.to_token_stream());
         }
     }
 
-    // Everything else — a compound value type an `open` statement dispatches on (`Vec<u8>`,
-    // `&Coord`, `DateTime<Utc>`) — is kept verbatim, as `Path!` kept it going forward.
+    // Everything else is kept verbatim, as `Path!` kept it going forward: a named type, whose
+    // qualifier says which type it is, or a compound value type an `open` statement dispatches on
+    // (`Vec<u8>`, `&Coord`, `DateTime<Utc>`).
     Some(ty.to_token_stream())
 }

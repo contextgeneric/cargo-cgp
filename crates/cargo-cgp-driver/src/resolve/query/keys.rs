@@ -1,6 +1,6 @@
 //! Rendering a conflicting entry's key, provider, and redirect path to their surface forms.
 
-use cargo_cgp_error_processing::WiringKey;
+use cargo_cgp_error_processing::{WiringKey, is_ident, is_primitive_type};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 
@@ -97,17 +97,26 @@ pub fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
                 let head = args.type_at(0);
                 match head.kind() {
                     ty::Adt(_, _) if let Some(symbol) = decode_symbol(tcx, head) => {
+                        // Only a lowercase, non-primitive name is a symbol segment going forward,
+                        // so any other reads as a type and has no path spelling.
+                        if !is_symbol_segment(&symbol) {
+                            return None;
+                        }
                         segments.push(symbol);
-                    }
-                    // A component marker or other plain type reads as its name.
-                    ty::Adt(head_def, head_args) if head_args.is_empty() => {
-                        segments.push(tcx.item_name(head_def.did()).to_string());
                     }
                     // Any other segment prints as the type itself: a generic segment as its
                     // parameter name, a primitive such as the `u64` an input-keyed `open` entry
-                    // names, and a type with arguments with all of them (`Wrap<u64>`), which is
-                    // what tells two keys over one type apart.
-                    _ => segments.push(tcx.erase_and_anonymize_regions(head).to_string()),
+                    // names, a type with a qualifier only when it tells two types apart
+                    // (`std::io::Error`), and one with arguments with all of them (`Wrap<u64>`),
+                    // which is what tells two keys over one type apart. A plain lowercase name would
+                    // read as a symbol, so it declines.
+                    _ => {
+                        let segment = tcx.erase_and_anonymize_regions(head).to_string();
+                        if is_symbol_segment(&segment) {
+                            return None;
+                        }
+                        segments.push(segment);
+                    }
                 }
                 current = args.type_at(1);
             }
@@ -115,6 +124,12 @@ pub fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
         }
     }
     Some(format!("@{}", segments.join(".")))
+}
+
+/// Whether `name` is a path segment `Path!` encodes as a symbol: a lowercase, non-primitive
+/// identifier.
+fn is_symbol_segment(name: &str) -> bool {
+    is_ident(name) && name.starts_with(|c: char| c.is_ascii_lowercase()) && !is_primitive_type(name)
 }
 
 /// If `delegate` is a `RedirectLookup<Table, Path>`, render its `Path` (the second argument) to

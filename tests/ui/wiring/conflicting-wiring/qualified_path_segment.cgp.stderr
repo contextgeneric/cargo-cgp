@@ -1,0 +1,9 @@
+error[E0119]: [CGP-E010] conflicting wiring: `App` wires `@ErrorRaiserComponent.std::io::Error` twice
+  --> src/main.rs:29:10
+   |
+28 |         @ErrorRaiserComponent.std::io::Error: DebugError,
+   |          ----------------------------------- first implementation here
+29 |         @ErrorRaiserComponent.std::io::Error: RaiseFrom,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+For more information about this error, try `rustc --explain E0119`.
