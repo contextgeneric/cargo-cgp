@@ -1,14 +1,13 @@
 //! Post-processing text transforms for CGP diagnostics.
 //!
-//! These are the compiler-free string transforms the *driver* applies to a diagnostic it
-//! did not rewrite, so raw CGP constructs (`cgp::` path prefixes, `Symbol!` spines, unmet
-//! `HasField` bounds) do not look confusing in an error the tool leaves otherwise
-//! untouched. Each transform is `&str -> Option<String>` — `Some` when it changed the text,
-//! `None` when it left it alone — so a caller can tell whether anything matched. They live
-//! here, apart from the driver, so they build and are unit-tested on any toolchain without
-//! the driver's `rustc_private` linkage; the driver applies [`postprocess_message`] to each
-//! message string of a `DiagInner` on the fallback path. The `chain` module composes the
-//! individual transforms in the order they must run.
+//! These are the compiler-free string transforms the *driver* applies as its final pass, so raw
+//! CGP constructs (`Symbol!` spines, unmet `HasField` bounds) do not look confusing. A diagnostic
+//! the tool rewrote gets the whole chain, and one it left alone changes only where a CGP encoding
+//! is recovered ([`Origin`]). Each transform is `&str -> Option<String>` — `Some` when it changed
+//! the text, `None` when it left it alone — so a caller can tell whether anything matched. They
+//! live here, apart from the driver, so they build and are unit-tested on any toolchain without
+//! the driver's `rustc_private` linkage. The `chain` module composes the individual transforms in
+//! the order they must run.
 
 mod ambiguous;
 mod chain;

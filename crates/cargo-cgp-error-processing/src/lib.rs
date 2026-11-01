@@ -10,8 +10,8 @@
 //!
 //! - [`rewrite`] — the string transform that renames CGP wiring messages, over the
 //!   [`ComponentNameMap`] the driver fills in from the compiler.
-//! - [`postprocess`] — the fallback text transforms ([`postprocess_message`]) the driver
-//!   applies to a diagnostic it did not rewrite, so raw CGP constructs stay readable.
+//! - [`postprocess`] — the text transforms ([`postprocess_message`]) the driver applies as its
+//!   final pass, so raw CGP constructs stay readable.
 //! - [`diagnosis`] — the rustc-free root-cause model ([`Resolved`]) the driver's typed
 //!   resolver produces, [`plan_resolved`], which words it into the header, help, and note
 //!   text the emitter emits, and the pure label constructors the driver's tree builder uses.
