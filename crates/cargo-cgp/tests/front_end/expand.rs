@@ -4,7 +4,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use cargo_cgp::expand::{ExpansionDir, forwards_profile, take_item};
+use cargo_cgp::expand::{ExpansionDir, expansion_exit_code, forwards_profile, take_item};
 
 fn args(list: &[&str]) -> Vec<String> {
     list.iter().map(|s| s.to_string()).collect()
@@ -19,6 +19,18 @@ fn scratch(name: &str) -> PathBuf {
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).expect("creating a scratch directory");
     dir
+}
+
+/// Property: for all cargo codes c, `expansion_exit_code(c, true) == c`, and
+/// `expansion_exit_code(c, false)` is nonzero and equals c when c is nonzero. The inputs cover each
+/// arm: a clean run, a compiler error that still printed an expansion (cargo's 101), an `--item` miss
+/// (cargo's 0 with nothing printed), and a crate that failed before expanding.
+#[test]
+fn a_failure_is_reported_whether_or_not_an_expansion_came_back() {
+    assert_eq!(expansion_exit_code(0, true), 0);
+    assert_eq!(expansion_exit_code(101, true), 101);
+    assert_eq!(expansion_exit_code(0, false), 1);
+    assert_eq!(expansion_exit_code(101, false), 101);
 }
 
 #[test]

@@ -21,9 +21,9 @@ use crate::launch::{split_forwarded, wrapped_cargo};
 /// *single* target's invocation — which is what scopes expand mode to the crate the user asked
 /// about, leaving its dependencies to compile normally.
 ///
-/// Success is judged by whether the driver produced output, not by cargo's exit code: the
-/// compilation stops after expansion, so the unit yields no artifact and cargo may report a
-/// failure for a run that did exactly what was asked.
+/// A clean expansion stops the compilation yet leaves cargo's status at success, so cargo's code
+/// says whether the compiler reported an error, and [`expansion_exit_code`] reports it. An error
+/// that lets expansion finish, such as a wiring entry naming nothing, still prints what expanded.
 pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
     // Answer a help request here rather than forwarding it: `cargo rustc --help` would describe
     // cargo's options and never mention `--item`, the one flag that is ours.
@@ -61,12 +61,12 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
         .status()
         .context("failed to run `cargo rustc` (is cargo on PATH?)")?;
 
-    match read_expansion(&output) {
+    let expansion = read_expansion(&output);
+    match &expansion {
         Some(expansion) => {
             io::stdout()
                 .write_all(expansion.as_bytes())
                 .context("failed to write the expansion to stdout")?;
-            Ok(0)
         }
         None => {
             // Whatever went wrong, the layer that knows has already said so above — cargo when it
@@ -75,12 +75,20 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
             // `--item` path matched nothing. So this line only reports that nothing came back;
             // guessing at a cause here is what made it confusing.
             eprintln!("error: no expansion was produced; see the errors above");
-            // Nothing to print is a failure, whatever cargo's own status says.
-            Ok(match exit_code(status) {
-                0 => 1,
-                code => code,
-            })
         }
+    }
+    Ok(expansion_exit_code(exit_code(status), expansion.is_some()))
+}
+
+/// The exit code of an expansion, from cargo's code and whether an expansion came back.
+///
+/// Postcondition: a failure in cargo's code is kept either way, since the compiler reported an error
+/// even when it printed what expanded; and with no expansion the result is never 0, since nothing to
+/// print is a failure whatever cargo's status says (the driver's `--item` miss leaves cargo at 0).
+pub fn expansion_exit_code(cargo_code: i32, produced: bool) -> i32 {
+    match (cargo_code, produced) {
+        (0, false) => 1,
+        (code, _) => code,
     }
 }
 
