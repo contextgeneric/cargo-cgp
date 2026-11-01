@@ -7,8 +7,8 @@
 //! `App` wires and checks *both* components and misses both fields, producing two check failures.
 //! Each recovered tree must name its own module's consumer and provider traits — the `shapes_a`
 //! failure `CanMeasureA`/`MeasurerA`, the `shapes_b` failure `CanMeasureB`/`MeasurerB` — with no
-//! cross-over. With the old bare-name key the two `MeasurerComponent` entries collided and both
-//! failures resolved to whichever entry happened to win; the full-path key keeps them apart.
+//! cross-over. Under a bare-name key the two `MeasurerComponent` entries would collide and both
+//! failures resolve to whichever entry won; the full-path key keeps them apart.
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (component-name
 //! resolution).
