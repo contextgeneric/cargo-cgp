@@ -26,8 +26,8 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::query::{
-    argument_ty, enclosing_trait_impl, is_provider_trait, local_body_exprs, trait_items_named,
-    unify_call_inputs,
+    argument_ty, enclosing_trait_impl, is_cgp_definition_impl, is_provider_trait, local_body_exprs,
+    trait_items_named, unify_call_inputs,
 };
 
 /// Recognize a missing-`#[use_provider]` failure and recover the inner provider and the provider
@@ -54,6 +54,11 @@ pub fn detect_missing_use_provider(
     // The enclosing trait impl, and its own provider trait (a higher-order provider implements one).
     let owner = tcx.hir_enclosing_body_owner(call_hir_id);
     let impl_did = enclosing_trait_impl(tcx, owner.to_def_id())?;
+    // `#[use_provider]` goes on a definition a CGP macro lowers. A type parameter of a hand-written
+    // impl, with or without `#[cgp_provider]`, is an ordinary one, whose fix is an ordinary bound.
+    if !is_cgp_definition_impl(tcx, impl_did) {
+        return None;
+    }
     let impl_trait_ref = tcx.impl_trait_ref(impl_did).skip_binder();
     let impl_trait_did = impl_trait_ref.def_id;
 

@@ -13,6 +13,12 @@ pub const DELEGATE_AND_CHECK_COMPONENTS_MACRO: &str = "delegate_and_check_compon
 /// [`CHECK_COMPONENTS_MACRO`] in the `E0428`s of two dispatch traits that share a method name.
 pub const CGP_AUTO_DISPATCH_MACRO: &str = "cgp_auto_dispatch";
 
+/// The attribute macro that lowers a function into a blanket trait impl.
+pub const CGP_FN_MACRO: &str = "cgp_fn";
+
+/// The attribute macro that lowers a provider written in consumer form into a provider impl.
+pub const CGP_IMPL_MACRO: &str = "cgp_impl";
+
 /// The generic parameter `cgp`'s macros end an `@`-path key or redirect target with, the open
 /// "rest of the path" a lookup's appended parameters slot into. The programmer never writes it,
 /// so a rendered path leaves it out.

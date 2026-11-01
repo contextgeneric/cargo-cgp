@@ -1,0 +1,84 @@
+error[E0599]: the method `get_count` exists for reference `&T`, but its trait bounds were not satisfied
+  --> src/main.rs:38:14
+   |
+38 |         self.get_count()
+   |              ^^^^^^^^^ method cannot be called on `&T` due to unsatisfied trait bounds
+   |
+note: the following trait bounds were not satisfied:
+      `&T: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `T: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_fn]
+   | ^^^^^^^^^
+18 | pub fn get_count(&self, #[implicit] count: &u64) -> u64 {
+   |        ^^^^^^^^^
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: the following trait defines an item `get_count`, perhaps you need to restrict type parameter `T` with it:
+   |
+36 | impl<T: GetCount> Describe for T {
+   |       ++++++++++
+
+error[E0599]: the method `get_count` exists for reference `&C`, but its trait bounds were not satisfied
+  --> src/main.rs:50:17
+   |
+50 |         context.get_count()
+   |                 ^^^^^^^^^ method cannot be called on `&C` due to unsatisfied trait bounds
+   |
+note: the following trait bounds were not satisfied:
+      `&C: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `C: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_fn]
+   | ^^^^^^^^^
+18 | pub fn get_count(&self, #[implicit] count: &u64) -> u64 {
+   |        ^^^^^^^^^
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: the following trait defines an item `get_count`, perhaps you need to restrict type parameter `C` with it:
+   |
+48 | impl<C: GetCount> Run<C> for Runner {
+   |       ++++++++++
+
+error[E0599]: no associated function or constant named `area` found for type parameter `T` in the current scope
+  --> src/main.rs:62:12
+   |
+60 | impl<T> Twice for Wrapper<T> {
+   |      - associated function or constant `area` not found for this type parameter
+61 |     fn twice(&self) -> f64 {
+62 |         T::area(&self.0) * 2.0
+   |            ^^^^ associated function or constant cannot be called on `T` due to unsatisfied trait bounds
+   |
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+help: the following traits define an item `area`, perhaps you need to restrict type parameter `T` with one of them:
+   |
+60 | impl<T: AreaCalculator</* __Context__ */>> Twice for Wrapper<T> {
+   |       +++++++++++++++++++++++++++++++++++
+60 | impl<T: CanCalculateArea> Twice for Wrapper<T> {
+   |       ++++++++++++++++++
+
+error[E0599]: the method `get_count` exists for reference `&Context`, but its trait bounds were not satisfied
+  --> src/main.rs:69:17
+   |
+69 |         context.get_count()
+   |                 ^^^^^^^^^ method cannot be called on `&Context` due to unsatisfied trait bounds
+   |
+note: the following trait bounds were not satisfied:
+      `&Context: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `Context: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+  --> src/main.rs:17:1
+   |
+17 | #[cgp_fn]
+   | ^^^^^^^^^
+18 | pub fn get_count(&self, #[implicit] count: &u64) -> u64 {
+   |        ^^^^^^^^^
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: the following trait defines an item `get_count`, perhaps you need to restrict type parameter `Context` with it:
+   |
+67 | impl<Context: GetCount> Greeter<Context> for GreetHello {
+   |             ++++++++++
+
+For more information about this error, try `rustc --explain E0599`.

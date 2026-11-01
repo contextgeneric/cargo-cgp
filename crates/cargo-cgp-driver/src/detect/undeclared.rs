@@ -33,9 +33,9 @@ use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::query::{
-    argument_ty, binding_let_annotation, enclosing_trait_impl, is_blanket_trait, is_consumer_trait,
-    is_provider_trait, local_binding, local_body_exprs, param_declared_input, peel_hir_refs,
-    trait_items_named, traits_with_method, unify_call_inputs,
+    argument_ty, binding_let_annotation, enclosing_trait_impl, is_blanket_trait,
+    is_cgp_definition_impl, is_consumer_trait, is_provider_trait, local_binding, local_body_exprs,
+    param_declared_input, peel_hir_refs, trait_items_named, traits_with_method, unify_call_inputs,
 };
 
 /// Recognize an undeclared-trait failure and recover the trait to declare, or
@@ -73,6 +73,11 @@ pub fn detect_undeclared_trait(
         .impl_trait_ref(impl_did)
         .instantiate_identity()
         .skip_norm_wip();
+    // Only `#[cgp_fn]` and `#[cgp_impl]` take `#[uses]`. A hand-written impl over a type parameter,
+    // with or without `#[cgp_provider]`, fixes the call with an ordinary bound.
+    if !is_cgp_definition_impl(tcx, impl_did) {
+        return None;
+    }
     let (context, self_is_context) = generated_context(trait_ref)?;
     let blanket_impl = self_is_context.then_some(impl_did);
     if !called_on_context(tcx, &call.receiver, context, blanket_impl) {

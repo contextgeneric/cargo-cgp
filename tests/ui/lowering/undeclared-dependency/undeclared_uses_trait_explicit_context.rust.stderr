@@ -1,0 +1,23 @@
+error[E0599]: the method `get_count` exists for reference `&Context`, but its trait bounds were not satisfied
+  --> src/main.rs:28:14
+   |
+28 |         self.get_count()
+   |              ^^^^^^^^^ method cannot be called on `&Context` due to unsatisfied trait bounds
+   |
+note: the following trait bounds were not satisfied:
+      `&Context: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `Context: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+  --> src/main.rs:15:1
+   |
+15 | #[cgp_fn]
+   | ^^^^^^^^^
+16 | pub fn get_count(&self, #[implicit] count: &u64) -> u64 {
+   |        ^^^^^^^^^
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: the following trait defines an item `get_count`, perhaps you need to restrict type parameter `Context` with it:
+   |
+26 | impl<Context: GetCount> Greeter for Context {
+   |             ++++++++++
+
+For more information about this error, try `rustc --explain E0599`.

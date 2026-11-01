@@ -132,7 +132,7 @@ fn impl_misuses(tcx: TyCtxt<'_>, local: LocalDefId) -> Vec<DetectedCgpImplMisuse
     };
     let self_ty = tcx.item_name(self_did).to_string();
     // Classify the header by the trait's fingerprint. A consumer trait pairs with a provider
-    // trait to suggest (E013); a non-component is E014; the provider trait is the *correct*
+    // trait to suggest (`CGP-E032`); a non-component is `CGP-E033`; the provider trait is the *correct*
     // header, leaving only a possible inner-bound mistake below.
     let header_misuse = if let Some(provider_did) = consumer_provider_trait(tcx, header_did) {
         Some(CgpImplMisuse::ConsumerTrait {
@@ -168,7 +168,7 @@ fn impl_misuses(tcx: TyCtxt<'_>, local: LocalDefId) -> Vec<DetectedCgpImplMisuse
 /// A higher-order provider's inner-provider bound — typically written through
 /// `#[use_provider]`, which supplies the leading context argument — that names the
 /// component's *consumer* trait: the same consumer/provider confusion as the header case, in
-/// the `where` clause (E015). Every such bound is a candidate; the `E0107` that lands on its
+/// the `where` clause (`CGP-E034`). Every such bound is a candidate; the `E0107` that lands on its
 /// trait name selects which one is reshaped.
 fn inner_bound_misuses(
     tcx: TyCtxt<'_>,
