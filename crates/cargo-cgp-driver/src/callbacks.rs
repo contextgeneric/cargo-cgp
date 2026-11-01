@@ -9,10 +9,9 @@ use crate::expand::{ExpandRequest, print_expansion};
 
 /// The driver's [`rustc_driver::Callbacks`] implementation.
 ///
-/// Its `config` hook installs the diagnostic-rewriting [`emitter`], which replaces the
-/// session's JSON emitter with one that names the consumer and provider traits behind a CGP
-/// component marker in the compiler's wiring notes. Everything else about a check is
-/// unchanged from plain `rustc`.
+/// Its `config` hook installs the diagnostic-rewriting [`emitter`], which wraps the emitter the
+/// compiler would have built for the active error format. Aside from the injected flags and that
+/// emitter, a check is unchanged from plain `rustc`.
 ///
 /// In a check, `after_expansion` reshapes the name-resolution errors of the crate's wiring entries
 /// ([`emitter::reshape_name_resolution_errors`]) and of a misspelled `#[use_type]` import
