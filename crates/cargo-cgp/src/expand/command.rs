@@ -64,8 +64,7 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
     let expansion = read_expansion(&output);
     match &expansion {
         Some(expansion) => {
-            io::stdout()
-                .write_all(expansion.as_bytes())
+            write_expansion(&mut io::stdout(), expansion)
                 .context("failed to write the expansion to stdout")?;
         }
         None => {
@@ -78,6 +77,18 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
         }
     }
     Ok(expansion_exit_code(exit_code(status), expansion.is_some()))
+}
+
+/// Write the expansion to `out`. A reader that closed the pipe, as `head` does once it has enough,
+/// got what it wanted, so that is not a failure; any other write error is returned.
+pub fn write_expansion(out: &mut impl Write, expansion: &str) -> io::Result<()> {
+    match out
+        .write_all(expansion.as_bytes())
+        .and_then(|()| out.flush())
+    {
+        Err(error) if error.kind() == io::ErrorKind::BrokenPipe => Ok(()),
+        result => result,
+    }
 }
 
 /// The exit code of an expansion, from cargo's code and whether an expansion came back.
