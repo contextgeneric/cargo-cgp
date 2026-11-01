@@ -11,15 +11,16 @@ pub struct FlagScan {
     pub remainder: Vec<String>,
 }
 
-/// Find `flag` in `args`, in either `flag X` or `flag=X` form.
+/// Find `flag` in the arguments cargo reads, in either `flag X` or `flag=X` form.
 ///
 /// The argument after a spaced flag is its value, even when it looks like a flag, and a flag that
-/// only starts with `flag` is another flag. A `--` is an ordinary argument here, so a caller that
-/// wants only what cargo reads passes [`split_forwarded`]'s cargo half.
+/// only starts with `flag` is another flag. The first `--` ends the scan, since cargo hands what
+/// follows it to rustc ([`split_forwarded`]), and the remainder keeps the separator and the rest.
 pub fn scan_flag(args: &[String], flag: &str) -> FlagScan {
+    let (cargo_args, rustc_args) = split_forwarded(args);
     let mut values = Vec::new();
     let mut remainder = Vec::with_capacity(args.len());
-    let mut arguments = args.iter();
+    let mut arguments = cargo_args.iter();
     while let Some(arg) = arguments.next() {
         if arg == flag {
             values.push(arguments.next().cloned());
@@ -32,22 +33,24 @@ pub fn scan_flag(args: &[String], flag: &str) -> FlagScan {
             remainder.push(arg.clone());
         }
     }
+    if let Some(rustc_args) = rustc_args {
+        remainder.push("--".to_owned());
+        remainder.extend_from_slice(rustc_args);
+    }
     FlagScan { values, remainder }
 }
 
 /// Whether the forwarded arguments already set `--target-dir` (in either `--target-dir X`
 /// or `--target-dir=X` form), in which case the default is not injected.
 pub fn forwards_target_dir(args: &[String]) -> bool {
-    !scan_flag(split_forwarded(args).0, "--target-dir")
-        .values
-        .is_empty()
+    !scan_flag(args, "--target-dir").values.is_empty()
 }
 
 /// The `--manifest-path` the caller forwarded, in either `--manifest-path X` or
 /// `--manifest-path=X` form, so the target-directory query asks about the same package the
 /// wrapped command builds.
 pub fn forwarded_manifest_path(args: &[String]) -> Option<String> {
-    scan_flag(split_forwarded(args).0, "--manifest-path")
+    scan_flag(args, "--manifest-path")
         .values
         .into_iter()
         .next()
@@ -58,7 +61,7 @@ pub fn forwarded_manifest_path(args: &[String]) -> Option<String> {
 /// form, in order. A `build.target-dir` among them decides the target directory, and any other
 /// value may change how cargo reads the project, so the query sees them all.
 pub fn forwarded_config(args: &[String]) -> Vec<String> {
-    scan_flag(split_forwarded(args).0, "--config")
+    scan_flag(args, "--config")
         .values
         .into_iter()
         .flatten()

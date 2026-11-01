@@ -7,9 +7,9 @@ use crate::launch::scan_flag;
 
 /// Split the forwarded arguments into the ones cargo gets and the item path, if one was given.
 ///
-/// Recognizes `--item <path>` and `--item=<path>`, and **removes** them, since cargo knows no such
-/// flag. The filter is the front-end's one tool-specific argument; everything else still passes
-/// through verbatim.
+/// Recognizes `--item <path>` and `--item=<path>` among the arguments cargo reads, and **removes**
+/// them, since cargo knows no such flag. The filter is the front-end's one tool-specific argument;
+/// everything else still passes through verbatim, and an `--item` after a `--` is rustc's.
 ///
 /// A bare positional path (`cargo cgp expand my::module`, the way `cargo-expand` takes it) is
 /// deliberately not accepted: with every other argument forwarded untouched, a bare word cannot be

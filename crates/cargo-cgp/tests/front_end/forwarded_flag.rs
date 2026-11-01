@@ -1,6 +1,6 @@
 //! Tests for reading a flag out of the forwarded arguments.
 
-use cargo_cgp::expand::{forwards_profile, take_item};
+use cargo_cgp::expand::{asks_for_help, forwards_profile, take_item};
 use cargo_cgp::launch::{
     FlagScan, forwarded_config, forwarded_manifest_path, forwards_target_dir, scan_flag,
 };
@@ -105,17 +105,58 @@ fn a_scan_gives_the_values_in_order_and_the_rest_untouched() {
     );
 }
 
-// Concern: a separator could end the scan, which would hide an `--item` a caller's whole list holds.
-// Handled: `scan_flag` treats `--` as an ordinary argument, and each caller chooses what it passes.
+// Property: for all args, `scan_flag` reads only the arguments before the first `--`, since cargo
+// hands the rest to rustc, and keeps the separator and all that follows in the remainder, in order.
 #[test]
-fn a_scan_reads_past_a_separator() {
+fn a_scan_stops_at_a_separator_and_keeps_what_follows() {
     assert_eq!(
-        scan_flag(&args(&["--", "--f=x"]), "--f"),
+        scan_flag(
+            &args(&["--f=x", "--lib", "--", "--f=y", "--", "--f", "z"]),
+            "--f"
+        ),
         FlagScan {
             values: vec![Some("x".to_owned())],
-            remainder: args(&["--"]),
+            remainder: args(&["--lib", "--", "--f=y", "--", "--f", "z"]),
         }
     );
+}
+
+// Property: for all args, `--item` after a `--` is rustc's: `take_item` takes no path from it and
+// forwards it whole.
+#[test]
+fn an_item_flag_after_a_separator_reaches_rustc() {
+    assert_eq!(
+        take_item(&args(&["--lib", "--", "--item", "a"])).unwrap(),
+        (args(&["--lib", "--", "--item", "a"]), None)
+    );
+}
+
+// Property: a spaced `--item` directly before a `--` has no value, since the `--` ends what cargo
+// reads.
+#[test]
+fn a_separator_is_not_an_items_value() {
+    assert_eq!(
+        take_item(&args(&["--item", "--", "a"]))
+            .unwrap_err()
+            .to_string(),
+        "`--item` needs the path of a module or item to expand"
+    );
+}
+
+// Property: for all args, a profile flag after a `--` chooses no profile, since it is rustc's.
+#[test]
+fn a_profile_flag_after_a_separator_chooses_no_profile() {
+    assert!(!forwards_profile(&args(&["--lib", "--", "--release"])));
+    assert!(!forwards_profile(&args(&["--lib", "--", "--profile=dev"])));
+}
+
+// Property: for all args, `expand` answers a help flag only when cargo would read it.
+#[test]
+fn only_a_help_flag_before_a_separator_asks_for_help() {
+    assert!(asks_for_help(&args(&["--lib", "--help"])));
+    assert!(asks_for_help(&args(&["-h", "--", "x"])));
+    assert!(!asks_for_help(&args(&["--lib", "--", "--help"])));
+    assert!(!asks_for_help(&args(&["--lib"])));
 }
 
 #[test]

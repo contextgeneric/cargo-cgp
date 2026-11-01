@@ -76,7 +76,8 @@ Options:
                                provider trait, everything wired to that component
     -h, --help     Print this help.
 
-Every other argument is forwarded to `cargo rustc`, so target selection is cargo's own.
+Every other argument is forwarded to `cargo rustc`, so target selection is cargo's own, and
+arguments after a `--` go to rustc, `--item` and `--help` among them.
 Because exactly one target is expanded, a package with both a library and a binary needs
 `--lib` or `--bin NAME`. Run `cargo rustc --help` for those options.
 

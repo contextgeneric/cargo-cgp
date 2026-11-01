@@ -27,7 +27,7 @@ use crate::launch::{split_forwarded, wrapped_cargo};
 pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
     // Answer a help request here rather than forwarding it: `cargo rustc --help` would describe
     // cargo's options and never mention `--item`, the one flag that is ours.
-    if forwarded_args.iter().any(|arg| is_help_flag(arg)) {
+    if asks_for_help(forwarded_args) {
         println!("{}", expand_help_text());
         return Ok(0);
     }
@@ -43,7 +43,7 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
     // Expansion needs no codegen, so build under the `check` profile unless the caller chose a
     // profile of their own.
     let mut tool_cargo_args = Vec::new();
-    if !forwards_profile(split_forwarded(&cargo_args).0) {
+    if !forwards_profile(&cargo_args) {
         tool_cargo_args.extend(["--profile".to_owned(), "check".to_owned()]);
     }
 
@@ -82,4 +82,13 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
             })
         }
     }
+}
+
+/// Whether the forwarded arguments ask for `expand`'s help: a help flag cargo would read, not one
+/// after a `--`, which goes to rustc.
+pub fn asks_for_help(forwarded_args: &[String]) -> bool {
+    split_forwarded(forwarded_args)
+        .0
+        .iter()
+        .any(|arg| is_help_flag(arg))
 }
