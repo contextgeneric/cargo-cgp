@@ -1,0 +1,44 @@
+error[E0277]: the trait bound `App: CanLoad<u32>` is not satisfied
+  --> src/main.rs:59:22
+   |
+59 |     let _: u32 = app.fetch::<u32>();
+   |                      ^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
+  --> src/main.rs:48:9
+   |
+48 |     pub other: String,
+   |         ^^^^^
+note: required for `LoadName` to implement `IsProviderFor<LoaderComponent, App, u32>`
+  --> src/main.rs:19:1
+   |
+19 | #[cgp_impl(new LoadName)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `App` to implement `IsProviderFor<LoaderComponent, App, u32>`
+note: required for `App` to implement `Loader<App, u32>`
+  --> src/main.rs:13:1
+   |
+13 |   #[cgp_component(Loader)]
+   |  _^^^^^^^^^^^^^^^^^^^^^^^^
+14 | | pub trait CanLoad<T> {
+   | |____________________^
+note: required for `App` to implement `CanLoad<u32>`
+  --> src/main.rs:13:1
+   |
+13 | #[cgp_component(Loader)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+14 | pub trait CanLoad<T> {
+   |           ^^^^^^^^^^
+note: required by a bound in `CanFetch::fetch`
+  --> src/main.rs:34:15
+   |
+31 | pub trait CanFetch {
+32 |     fn fetch<T>(&self) -> T
+33 |     where
+34 |         Self: CanLoad<T, Output = T>;
+   |               ^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `CanFetch::fetch`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

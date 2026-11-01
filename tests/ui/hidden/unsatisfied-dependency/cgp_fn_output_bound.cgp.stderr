@@ -1,0 +1,15 @@
+error[E0599]: [CGP-E003] missing field `name` on `App`
+  --> src/main.rs:52:22
+   |
+52 |     let _: u32 = app.fetch_value();
+   |                      ^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `name` on `App`
+           this is required through the dependency chain:
+             [CGP-E104] trait impl `CanFetchValue<_>` for `App`
+             └─ [CGP-E102] provider trait impl `Loader<_>` with context `App` for provider `LoadVia`
+               └─ [CGP-E104] trait impl `HasName` for `App`
+                 └─ [CGP-E110] missing field `name` on `App`
+   = help: add the field `name: String` to `App`
+
+For more information about this error, try `rustc --explain E0599`.
