@@ -93,9 +93,9 @@ fn copy_tree(src: &Path, dest: &Path) {
 }
 
 /// Resolve a fixture's declared auxiliary crates (see [`crate::directives`]) to
-/// `(name, materialized dir)` pairs, drawn from the map [`materialize_all`] produced. A declared name with no
-/// matching materialized crate is skipped (the fixture will then fail to compile,
-/// surfacing the typo through the snapshot rather than a harness panic).
+/// `(name, materialized dir)` pairs, drawn from the map [`materialize_all`] produced. A
+/// declared name with no matching materialized crate is skipped (the fixture will then fail
+/// to compile, surfacing the typo through the snapshot rather than a harness panic).
 pub fn required<'a>(
     declared: &[String],
     materialized: &'a [(String, PathBuf)],

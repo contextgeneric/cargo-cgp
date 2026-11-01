@@ -2,10 +2,11 @@
 //!
 //! This crate holds the string-level diagnostic logic the driver drives but keeps out of
 //! its `rustc_private` linkage, so it builds and its tests run on any toolchain. The driver
-//! (`cargo-cgp-driver`) is the only caller; the front-end no longer touches diagnostics.
+//! (`cargo-cgp-driver`) calls the diagnostic logic, `cargo-cgp-expand` calls the spelling rules, and
+//! the front-end touches no diagnostics.
 //! See `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md` for the design.
 //!
-//! Eleven tenants live here, all driven by the driver's emitter:
+//! Eleven tenants live here, all but [`syntax`] driven by the driver's emitter:
 //!
 //! - [`rewrite`] — the string transform that renames CGP wiring messages, over the
 //!   [`ComponentNameMap`] the driver fills in from the compiler.
@@ -27,7 +28,7 @@
 //! - [`byte_range`]: the anchors' span decisions over plain byte ranges, which the driver converts
 //!   each `Span` to.
 //! - [`syntax`]: telling a string literal from the code around it in rendered text, and how Rust
-//!   and `Path!` spell a name.
+//!   and `Path!` spell a name, which this crate's text passes and the expand crate share.
 //!
 //! A further module, [`code`], holds the `CGP-E` error-code constants the rewrite and the
 //! diagnosis wording stamp on classified main messages.

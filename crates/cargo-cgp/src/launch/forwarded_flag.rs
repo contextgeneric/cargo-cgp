@@ -3,7 +3,7 @@
 use crate::launch::invocation::split_forwarded;
 
 /// One flag's occurrences in a list of arguments.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct FlagScan {
     /// Each occurrence's value in argument order, `None` for a spaced flag with no argument after it.
     pub values: Vec<Option<String>>,

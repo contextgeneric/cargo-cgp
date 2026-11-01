@@ -69,7 +69,8 @@ fn rewrites_can_use_component_note() {
     );
 }
 
-// Property: a note matches by the trait's last segment, whatever prefix rustc printed.
+// Property (assumed from the test's name): a note matches by the trait's last segment, whatever
+// prefix rustc printed.
 #[test]
 fn strips_module_prefix_on_trait_and_marker() {
     // At driver time the notes still carry the `cgp::prelude::` re-export prefix; the
@@ -86,7 +87,8 @@ fn strips_module_prefix_on_trait_and_marker() {
     );
 }
 
-// Property: a context's own generic arguments survive the top-level comma split.
+// Property (assumed from the test's name): a context's own generic arguments survive the top-level
+// comma split.
 #[test]
 fn keeps_a_generic_context_whole() {
     // A context with its own generic arguments must survive the top-level comma split.
@@ -102,7 +104,8 @@ fn keeps_a_generic_context_whole() {
     );
 }
 
-// Property: the provider note names the bare trait, leaving out the parameters after the context.
+// Property (assumed from the test's name): the provider note names the bare trait, leaving out the
+// parameters after the context.
 #[test]
 fn ignores_a_params_tuple_after_the_context() {
     let out = rewrite_required_for(
@@ -117,7 +120,8 @@ fn ignores_a_params_tuple_after_the_context() {
     );
 }
 
-// Property: the consumer note names the bare trait, leaving out the component's parameters.
+// Property (assumed from the test's name): the consumer note names the bare trait, leaving out the
+// component's parameters.
 #[test]
 fn consumer_note_elides_generic_parameters() {
     // A generic component's consumer note still names the trait; the extra parameters are
@@ -187,7 +191,8 @@ fn rewrites_is_provider_for_header() {
     );
 }
 
-// Property: a header's subject stays whole, whatever generic arguments it holds.
+// Property (assumed from the test's name): a header's subject stays whole, whatever generic
+// arguments it holds.
 #[test]
 fn header_keeps_a_generic_subject_whole() {
     // The `: ` split must find the self/trait separator, not a colon inside the subject's
@@ -204,7 +209,8 @@ fn header_keeps_a_generic_subject_whole() {
     );
 }
 
-// Property: a header matches by the trait's last segment, whatever prefix rustc printed.
+// Property (assumed from the test's name): a header matches by the trait's last segment, whatever
+// prefix rustc printed.
 #[test]
 fn header_strips_module_prefix() {
     let out = rewrite_trait_bound(
@@ -266,7 +272,8 @@ fn header_unwraps_a_multi_parameter_tuple() {
     );
 }
 
-// Property: the header reattaches three grouped parameters while both notes leave them out.
+// Property (assumed from the test's name): the header reattaches three grouped parameters while
+// both notes leave them out.
 #[test]
 fn rewrites_a_three_parameter_generic_component() {
     // A component with three generic parameters: they arrive grouped as `(u32, u64, bool)`
@@ -397,7 +404,8 @@ fn fn_pointer_names() -> HashMap<String, ComponentTraitNames> {
     )])
 }
 
-// Property: a grouped list splits at its own commas, and the `>` of a `->` closes no bracket.
+// Property (assumed from the test's name): a grouped list splits at its own commas, and the `>` of
+// a `->` closes no bracket.
 #[test]
 fn keeps_a_function_pointer_parameter_whole() {
     // The `>` of `->` closes no bracket, so the grouped list still splits at its own comma.

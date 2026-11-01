@@ -1,64 +1,13 @@
 //! Tests for the wrapped-launch helpers that are pure enough to pin directly.
 
-use cargo_cgp::launch::forwards_target_dir;
-
-fn args(list: &[&str]) -> Vec<String> {
-    list.iter().map(|s| s.to_string()).collect()
-}
-
-#[test]
-fn detects_spaced_target_dir() {
-    assert!(forwards_target_dir(&args(&[
-        "--workspace",
-        "--target-dir",
-        "out"
-    ])));
-}
-
-#[test]
-fn detects_equals_target_dir() {
-    assert!(forwards_target_dir(&args(&[
-        "--target-dir=out",
-        "--workspace"
-    ])));
-}
-
-#[test]
-fn absent_target_dir_is_not_detected() {
-    assert!(!forwards_target_dir(&args(&[
-        "--workspace",
-        "--all-targets"
-    ])));
-}
-
-#[test]
-fn a_target_dir_after_a_separator_is_not_cargos() {
-    // Under `expand`, arguments after a user's `--` go to rustc, so they choose no target directory.
-    assert!(!forwards_target_dir(&args(&[
-        "--lib",
-        "--",
-        "--target-dir",
-        "elsewhere"
-    ])));
-}
-
 use std::path::PathBuf;
 
 use cargo_cgp::launch::{
     cgp_target_dir, forwarded_manifest_path, metadata_query_args, parse_target_directory,
 };
 
-#[test]
-fn finds_a_forwarded_manifest_path_in_either_form() {
-    assert_eq!(
-        forwarded_manifest_path(&args(&["--manifest-path", "a/Cargo.toml", "--workspace"])),
-        Some("a/Cargo.toml".to_owned())
-    );
-    assert_eq!(
-        forwarded_manifest_path(&args(&["--workspace", "--manifest-path=b/Cargo.toml"])),
-        Some("b/Cargo.toml".to_owned())
-    );
-    assert_eq!(forwarded_manifest_path(&args(&["--workspace"])), None);
+fn args(list: &[&str]) -> Vec<String> {
+    list.iter().map(|s| s.to_string()).collect()
 }
 
 #[test]

@@ -46,8 +46,9 @@ semver = { version = "1" }
 ureq = { version = "3" }
 # JSON parsing of the sparse-index lines. Ubiquitous and dependency-light.
 serde_json = { version = "1" }
-# The rustc-free error-processing library the driver drives. An ordinary crate that does
-# not touch `rustc_private`, so it builds and its tests run on any toolchain.
+# The rustc-free error-processing library the driver drives, whose spelling rules the expand crate
+# also calls. An ordinary crate that does not touch `rustc_private`, so it builds and its tests run
+# on any toolchain.
 cargo-cgp-error-processing = { version = "0.1.0-alpha", path = "crates/cargo-cgp-error-processing" }
 # The rustc-free resugaring library `cargo cgp expand` drives: it turns the source the compiler
 # printed for an expanded crate back into the CGP syntax the programmer wrote. Like the

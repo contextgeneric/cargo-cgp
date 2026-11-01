@@ -155,8 +155,8 @@ string-level diagnostic helpers the driver drives — the wiring-message rewrite
 post-processing text transforms, the `Struct!`/`Enum!` shape spellings the text and typed
 resugaring share, the rustc-free root-cause model and the diagnostic-plan wording
 that turns it into text, the dependency-tree renderer, the cross-diagnostic de-duplication ledger,
-the text signals the emitter's candidate checks key on, and the anchors' span decisions over byte
-ranges; it links no compiler internals
+the text signals the emitter's candidate checks key on, the anchors' span decisions over byte
+ranges, and the rules for reading a string literal and spelling a name in rendered text; it links no compiler internals
 either, so it builds and tests on any toolchain (see
 [Error processing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-processing.md)). A fourth, library-only crate,
 **`cargo-cgp-expand`** (`crates/cargo-cgp-expand`), is the rustc-free half of `cargo cgp expand`: it

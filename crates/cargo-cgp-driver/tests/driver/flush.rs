@@ -10,11 +10,11 @@ use cargo_cgp_driver::emitter::{
 };
 use cargo_cgp_error_processing::{
     AmbiguousNames, COALESCED_SITE_LABEL, Cause, Causes, ChainNode, DepNode, FieldFix, FieldIssue,
-    Leaf, PendingNote, Resolved, ResolvedClass,
+    Leaf, PendingNote, Resolved, ResolvedClass, dispatch_computer_name, dispatch_helper_method,
 };
 use rustc_errors::codes::{E0277, E0428};
 use rustc_errors::{
-    DiagArgValue, DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, Sublevel,
+    DiagArgValue, DiagInner, DiagMessage, Level, MultiSpan, Style, Subdiag, Sublevel, Suggestions,
 };
 use rustc_span::Span;
 
@@ -222,8 +222,9 @@ fn a_merged_block_points_at_the_site_written_first() {
     });
 }
 
-// Property: a merged block states the shared cause once, in a headline and one note naming every
-// member's consumer, followed by the fix; rustc's own children and suggestions go.
+// Property (the part on suggestions assumed from `driver.md`'s list of what a merged block holds): a
+// merged block states the shared cause once, in a headline and one note naming every member's
+// consumer, followed by the fix; rustc's own children and suggestions go.
 #[test]
 fn a_merged_block_states_the_cause_once_and_names_every_consumer() {
     source::with_source(SOURCE, |_, span| {
@@ -233,6 +234,7 @@ fn a_merged_block_states_the_cause_once_and_names_every_consumer() {
         with_children
             .children
             .push(child(Sublevel::Note, "rustc's own note"));
+        with_children.suggestions = Suggestions::Disabled;
         let other = error("CanBar", span(SECOND));
 
         let merged = merged_diag(
@@ -264,10 +266,66 @@ fn a_merged_block_states_the_cause_once_and_names_every_consumer() {
             notes[0]
         );
         assert!(!notes[0].contains("rustc's own note"));
+        assert!(matches!(&merged.suggestions, Suggestions::Enabled(found) if found.is_empty()));
         assert_eq!(
             children.last().map(|(level, _)| *level),
             Some(Sublevel::Help)
         );
+    });
+}
+
+/// A buffered resolution that never coalesces, failing `consumer` through `shared` on a missing field.
+fn through_shared(consumer: &str, shared: &str, caret: Span) -> BufEntry {
+    let mut resolved = failure(consumer, &["name"], ResolvedClass::Consumer);
+    let causes: Causes = resolved
+        .causes
+        .iter()
+        .cloned()
+        .map(|mut cause| {
+            cause.paths[0].insert(
+                1,
+                ChainNode::Hop(DepNode::Consumer {
+                    trait_ref: shared.to_owned(),
+                    context: "App".to_owned(),
+                    is_context: true,
+                }),
+            );
+            cause
+        })
+        .collect();
+    resolved.causes = causes;
+    let note = PendingNote {
+        causes: resolved.causes.iter().cloned().collect(),
+        header_leaf: None,
+    };
+    BufEntry::Resolved(Box::new(ResolvedEntry {
+        coalescible: false,
+        resolved,
+        note,
+        original: error("as rustc built it", caret),
+        diag: error(consumer, caret),
+    }))
+}
+
+// Property: for all buffers, the subtrees drawn so far are shared across blocks in emission order, so
+// a later block `(*)`-elides a subtree an earlier one showed.
+#[test]
+fn a_later_block_elides_what_an_earlier_one_drew() {
+    source::with_source(SOURCE, |_, span| {
+        let buffer = [
+            through_shared("CanFoo", "CanShared", span(FIRST)),
+            through_shared("CanBar", "CanShared", span(SECOND)),
+        ];
+
+        let emitted = blocks(&buffer);
+
+        let notes: Vec<String> = emitted
+            .iter()
+            .map(|block| text(&block.children[0].messages))
+            .collect();
+        assert!(!notes[0].contains("(*)"), "{}", notes[0]);
+        assert!(notes[1].contains("CanShared"), "{}", notes[1]);
+        assert!(notes[1].contains("(*)"), "{}", notes[1]);
     });
 }
 
@@ -338,6 +396,11 @@ fn defined_twice(name: &str, caret: Span) -> DiagInner {
 #[test]
 fn a_diagnostic_without_its_helper_goes_to_the_next_stage() {
     source::with_source(SOURCE, |_, span| {
+        // The names really are a pair, so only the caret keeps the last case from pairing.
+        assert_eq!(
+            dispatch_helper_method("__compute_area__").map(dispatch_computer_name),
+            Some("ComputeArea".to_owned())
+        );
         let computer = defined_twice("ComputeArea", span(SECOND));
         let written_helper = defined_twice("__compute_area__", span(FIRST));
         for (diag, buffer) in [

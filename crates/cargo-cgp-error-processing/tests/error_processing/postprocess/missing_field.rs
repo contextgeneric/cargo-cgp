@@ -1,7 +1,7 @@
 //! Tests for the missing-field rewrite.
 //!
-//! Each transform is a pure `&str -> Option<String>` (`Some` when it changed the text), so
-//! it is driven directly over the case under test, with no diagnostic wrapper and no compiler.
+//! Each transform reads plain text and gives `Some` when it changed it, so it is driven directly
+//! over the case under test, with no diagnostic wrapper and no compiler.
 
 use cargo_cgp_error_processing::{context_has_hasfield_impls, rewrite_missing_fields};
 

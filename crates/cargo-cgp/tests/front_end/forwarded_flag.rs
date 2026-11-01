@@ -9,8 +9,9 @@ fn args(list: &[&str]) -> Vec<String> {
     list.iter().map(|s| s.to_string()).collect()
 }
 
-// Property: for all args, a spaced flag with no argument after it counts as present for the readers
-// that ask whether it was given, and gives no value to the readers that ask for its value.
+// Property (assumed from what each reader's doc asks of the arguments): for all args, a spaced flag
+// with no argument after it counts as present for the readers that ask whether it was given, and
+// gives no value to the readers that ask for its value.
 #[test]
 fn a_spaced_flag_at_the_end_is_present_without_a_value() {
     assert!(forwards_target_dir(&args(&["--target-dir"])));
@@ -29,8 +30,8 @@ fn the_first_manifest_path_decides() {
     );
 }
 
-// Property: for all args, the argument after a spaced flag is that flag's value, even when it looks
-// like the flag again.
+// Property (assumed from how cargo reads a spaced flag): for all args, the argument after a spaced
+// flag is that flag's value, even when it looks like the flag again.
 #[test]
 fn a_spaced_flags_value_is_never_read_as_a_flag() {
     assert_eq!(
@@ -45,10 +46,18 @@ fn a_spaced_flags_value_is_never_read_as_a_flag() {
     );
 }
 
-// Property: for all args, `take_item` reports the first mistake in argument order.
+// Property (assumed from reading arguments left to right): for all args, `take_item` reports the
+// first mistake in argument order.
 #[test]
 fn the_first_item_mistake_is_the_one_reported() {
     let needs_a_path = "`--item` needs the path of a module or item to expand";
+    assert!(
+        take_item(&args(&["--item", "a", "--item", "b", "--item"]))
+            .unwrap_err()
+            .to_string()
+            .starts_with("`--item` was given twice"),
+        "the repeat comes before the flag with no path"
+    );
     assert_eq!(
         take_item(&args(&["--item", "a", "--item"]))
             .unwrap_err()
@@ -63,7 +72,8 @@ fn the_first_item_mistake_is_the_one_reported() {
     );
 }
 
-// Property: for all args, a flag that only starts with the name of a flag is another flag.
+// Property (assumed from how cargo names flags): for all args, a flag that only starts with the
+// name of a flag is another flag.
 #[test]
 fn a_longer_flag_is_not_the_flag() {
     assert!(!forwards_target_dir(&args(&["--target-dir-extra=x"])));
@@ -106,4 +116,53 @@ fn a_scan_reads_past_a_separator() {
             remainder: args(&["--"]),
         }
     );
+}
+
+#[test]
+fn detects_spaced_target_dir() {
+    assert!(forwards_target_dir(&args(&[
+        "--workspace",
+        "--target-dir",
+        "out"
+    ])));
+}
+
+#[test]
+fn detects_equals_target_dir() {
+    assert!(forwards_target_dir(&args(&[
+        "--target-dir=out",
+        "--workspace"
+    ])));
+}
+
+#[test]
+fn absent_target_dir_is_not_detected() {
+    assert!(!forwards_target_dir(&args(&[
+        "--workspace",
+        "--all-targets"
+    ])));
+}
+
+#[test]
+fn a_target_dir_after_a_separator_is_not_cargos() {
+    // Under `expand`, arguments after a user's `--` go to rustc, so they choose no target directory.
+    assert!(!forwards_target_dir(&args(&[
+        "--lib",
+        "--",
+        "--target-dir",
+        "elsewhere"
+    ])));
+}
+
+#[test]
+fn finds_a_forwarded_manifest_path_in_either_form() {
+    assert_eq!(
+        forwarded_manifest_path(&args(&["--manifest-path", "a/Cargo.toml", "--workspace"])),
+        Some("a/Cargo.toml".to_owned())
+    );
+    assert_eq!(
+        forwarded_manifest_path(&args(&["--workspace", "--manifest-path=b/Cargo.toml"])),
+        Some("b/Cargo.toml".to_owned())
+    );
+    assert_eq!(forwarded_manifest_path(&args(&["--workspace"])), None);
 }
