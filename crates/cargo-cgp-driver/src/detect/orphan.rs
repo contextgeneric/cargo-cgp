@@ -17,6 +17,7 @@
 //! proved it for.
 
 use cargo_cgp_error_processing::{OrphanConflict, OrphanTrigger, WiringKey};
+use rustc_middle::ty::print::with_forced_trimmed_paths;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -57,9 +58,12 @@ pub fn classify_orphan_conflict(tcx: TyCtxt<'_>, primary_span: Span) -> Option<O
         })?;
 
     let namespace = tcx.item_name(orphan.trait_did).to_string();
-    let key = describe_key(tcx, orphan.key, orphan.impl_did)?;
-    // A blanket key is a namespace *join*, not a registration; the orphan class is only a component
-    // or path key, so decline anything else rather than word a nonsensical fix.
+    // An `E0210` carries no type in its message, so nothing has printed one with trimmed paths yet,
+    // and the first such print takes the diagnostic context's lock, which the emitter holds. So a
+    // type the key spells prints by its own name.
+    let key = with_forced_trimmed_paths!(describe_key(tcx, orphan.key, orphan.impl_did))?;
+    // A blanket key is a namespace *join*, not a registration, so decline it rather than word a
+    // nonsensical fix.
     if matches!(key, WiringKey::Blanket(_)) {
         return None;
     }
@@ -85,10 +89,13 @@ fn orphan_impls(tcx: TyCtxt<'_>) -> Vec<OrphanImpl<'_>> {
         if trait_did.is_local() || !is_namespace_lookup_trait(tcx, trait_did) {
             continue;
         }
-        // Foreign key — a bare component marker or a `PathCons<…>` path, both defined in another
-        // crate. A local key would be covered and again no orphan.
+        // Foreign key: a component marker, a `PathCons<…>` path, or a per-type default's type,
+        // defined in another crate or built in. A local key would be covered and again no orphan,
+        // and a generic parameter is a blanket impl rather than a registration.
         let key = trait_ref.self_ty();
-        if !matches!(key.kind(), ty::Adt(def, _) if !def.did().is_local()) {
+        if matches!(key.kind(), ty::Param(_))
+            || matches!(key.kind(), ty::Adt(def, _) if def.did().is_local())
+        {
             continue;
         }
         impls.push(OrphanImpl {
