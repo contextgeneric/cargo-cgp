@@ -1,6 +1,6 @@
 //! The values every anchor and walk step takes together: the compiler handle and the cache.
 //!
-//! See `cgp-knowledge-base/cargo-cgp/implementation/resolve-context.md`. A `TyCtxt` exists only
+//! See `cgp-knowledge-base/cargo-cgp/implementation/architecture.md`. A `TyCtxt` exists only
 //! inside the emitter's `ty::tls::with_opt` closure, while the cache lives on the emitter for the
 //! whole compilation, so the context is built per diagnostic inside that closure and borrows the
 //! cache rather than owning it.

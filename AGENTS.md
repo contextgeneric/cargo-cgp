@@ -390,8 +390,8 @@ the upstream error classes are.
 - **How the output is produced** — [Typed root-cause resolution](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-root-cause-resolution.md)
   (the resolver that turns a wiring failure into its root-cause tree — the main lever for a better
   message), [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md) and [Error processing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-processing.md)
-  (the emitter and the rustc-free wording/plan/tree it drives), [The error pipeline](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-pipeline.md)
-  (how the stages fit together), [rustc diagnostic internals](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/rustc-diagnostic-internals.md)
+  (the emitter and the rustc-free wording/plan/tree it drives), [Architecture](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/architecture.md)
+  (the crates and how the stages fit together), [rustc diagnostic internals](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/rustc-diagnostic-internals.md)
   (where the compiler hides the information a good message needs), and [Testing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/testing.md)
   (the UI snapshot suite and its bless workflow, the mechanism the loop runs on).
 - **The problem domain** — the upstream [CGP error catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md) (which error
