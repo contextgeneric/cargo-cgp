@@ -1,7 +1,7 @@
 //! The walk's entry points, and the fold of the root node's sub-result into a `Resolved`.
 
 use cargo_cgp_error_processing::{Causes, Resolved, ResolvedClass, WiringOverflow};
-use rustc_middle::ty::{self, Ty};
+use rustc_middle::ty::{self, Ty, TypeVisitableExt as _};
 
 use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::label::{render_ty, trait_generics};
@@ -72,13 +72,19 @@ pub fn walk_overflow<'tcx>(
 /// distinct root cause, each holding every path that reaches it (so a shared trait's diamond
 /// survives to the renderer). Merging happens in the rustc-free
 /// [dependency graph](cargo_cgp_error_processing::DependencyGraph) at render time, not here. `top`
-/// is already region-erased and `context` is its self type.
+/// is already region-erased and `context` is its self type. `None` for a seed holding a type
+/// parameter, as well as for a walk that reaches no resolvable leaf.
 pub fn compute_leaves<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,
     top: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
 ) -> Option<Resolved> {
     let tcx = cx.tcx;
+    // The walk solves under an empty parameter environment, where the solver does not prove a
+    // wiring lookup that names the seed's type parameter, so the walk would blame wiring that exists.
+    if top.has_param() {
+        return None;
+    }
     let sub = resolve_node(cx, top, None, context, &[], 0);
 
     // One cause per distinct leaf; a leaf reached by several paths keeps each path, so the graph

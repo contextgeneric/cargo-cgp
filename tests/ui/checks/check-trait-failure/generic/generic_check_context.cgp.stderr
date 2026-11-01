@@ -1,0 +1,29 @@
+error[E0277]: the trait bound `App<T>: CanUseComponent<GreeterComponent>` is not satisfied
+  --> src/main.rs:44:9
+   |
+44 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: missing field `name` on `App<T>`
+  --> src/main.rs:33:9
+   |
+33 |     pub other: PhantomData<T>,
+   |         ^^^^^
+note: required for the provider `GreetName` to implement the provider trait `Greeter` for the context `App<T>`
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_impl(new GreetName)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for the context `App<T>` to implement the consumer trait `CanGreet`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:42:1
+   |
+42 | / check_components! {
+43 | |     <T> App<T> {
+44 | |         GreeterComponent,
+45 | |     }
+46 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
