@@ -9,9 +9,9 @@
 //!
 //! The pipeline is split by stage: `anchor` recovers the starting obligation (from a check
 //! entry, a hand-written impl on the context, a foreign wrapper whose `where`-clause chain reaches
-//! the context, or a use site) with `call_site` as the last resort (re-reading the failing call
-//! expression itself, the unknowable parameters seeded as placeholders), `walk` descends the
-//! dependency graph to each terminal leaf, `classify`
+//! the context, or a use site), `call_site` recovers it by re-reading the failing call expression
+//! itself (the unknowable parameters seeded as placeholders), `anchors` holds the order they are
+//! tried in, `walk` descends the dependency graph to each terminal leaf, `classify`
 //! turns a leaf into a [`Leaf`](cargo_cgp_error_processing::Leaf) by inspecting the struct it lands
 //! on, and `label` renders each path predicate as a tree label. The `query` layer holds the
 //! DefId-anchored CGP-trait recognition every stage relies on.

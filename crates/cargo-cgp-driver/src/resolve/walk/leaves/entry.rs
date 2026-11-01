@@ -57,12 +57,18 @@ pub fn resolve_provider_leaves<'tcx>(
 
 /// Why walking `top` was cut short, when a guard cut it: the obligation met again (a cycle in the
 /// wiring) or the depth cap reached without a repeat (a lookup that grows). `None` when the walk ran
-/// to its leaves, as it does through a type the compiler could not resolve.
+/// to its leaves, as it does through a type the compiler could not resolve, and for a seed holding a
+/// type parameter.
 pub fn walk_overflow<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,
     top: ty::PolyTraitClause<'tcx>,
 ) -> Option<WiringOverflow> {
     let tcx = cx.tcx;
+    // As in [`compute_leaves`]: under an empty parameter environment the walk cannot read the wiring
+    // of a seed holding a type parameter, so a cut would name a provider it never found.
+    if top.has_param() {
+        return None;
+    }
     let top = tcx.erase_and_anonymize_regions(top);
     let context = top.skip_binder().self_ty();
     resolve_node(cx, top, None, context, &[], 0).cut
