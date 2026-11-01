@@ -78,6 +78,28 @@ pub fn param_declared_input_binder<'tcx>(
     Some(sig.rebind(input))
 }
 
+/// The annotation of the `let` that declares `binding`, reached through any untyped `let` copying
+/// it: `&Self` for `again` in `let context: &Self = self; let again = context;`. `None` when the
+/// bindings lead to anything else, such as a parameter.
+pub fn binding_let_annotation<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    mut binding: HirId,
+) -> Option<&'tcx hir::Ty<'tcx>> {
+    loop {
+        let Node::LetStmt(let_stmt) = tcx.parent_hir_node(binding) else {
+            return None;
+        };
+        if let Some(annotation) = let_stmt.ty {
+            return Some(annotation);
+        }
+        let source = local_binding(let_stmt.init?)?;
+        if source == binding {
+            return None;
+        }
+        binding = source;
+    }
+}
+
 /// The position of `param` among the parameters of the body `owner` owns.
 pub fn param_index(tcx: TyCtxt<'_>, owner: LocalDefId, param: &hir::Param<'_>) -> Option<usize> {
     tcx.hir_body_owned_by(owner)

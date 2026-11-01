@@ -2,8 +2,8 @@
 //! A `#[cgp_impl]` provider body that calls an undeclared trait through an annotated `let`.
 //!
 //! `let context: &Self = self;` names the context with an annotation, and the call is on that
-//! binding. The undeclared-trait detector follows only an untyped forwarding `let` back to the
-//! parameter it copies, so it does not recognize this receiver.
+//! binding. The undeclared-trait detector reads the annotation, so it recognizes this receiver as
+//! the context and reports the missing `#[uses]`.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

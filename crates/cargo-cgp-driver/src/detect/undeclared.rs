@@ -12,9 +12,9 @@
 //! `impl<__Context__> Greeter<__Context__> for GreetHello`, with `self` renamed to a
 //! `__context__: &__Context__` parameter and `Self` to `__Context__`. Its `Self` is the provider
 //! struct, so the context is the provider trait's first argument instead, and the call is
-//! recognized by its receiver: a parameter declared as that context, or the context named as the
-//! qualifying type. A call on any other parameter (`value: &Value`) is left alone, since its fix is a
-//! bound on that parameter, which `#[uses]` cannot express.
+//! recognized by its receiver: a parameter or a `let` declared as that context, or the context named
+//! as the qualifying type. A call on a value declared with another type (`value: &Value`) is left
+//! alone, since its fix is a bound on that type, which `#[uses]` cannot express.
 //!
 //! This module recognizes that shape off the compiler: the failing call sits inside a generated
 //! impl over a bare type-parameter context and is made on that context, the call names a method of
@@ -33,9 +33,9 @@ use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::query::{
-    argument_ty, enclosing_trait_impl, is_blanket_trait, is_consumer_trait, is_provider_trait,
-    local_binding, local_body_exprs, param_declared_input, trait_items_named, traits_with_method,
-    unify_call_inputs,
+    argument_ty, binding_let_annotation, enclosing_trait_impl, is_blanket_trait, is_consumer_trait,
+    is_provider_trait, local_binding, local_body_exprs, param_declared_input, peel_hir_refs,
+    trait_items_named, traits_with_method, unify_call_inputs,
 };
 
 /// Recognize an undeclared-trait failure and recover the trait to declare, or
@@ -111,9 +111,8 @@ fn generated_context(trait_ref: ty::TraitRef<'_>) -> Option<(Ty<'_>, bool)> {
 }
 
 /// Whether the call is on the generated `context`; `blanket_impl` is the impl when its `Self` is the
-/// context. A receiver that is a parameter of another type (a
-/// `value: &Value` beside the context) needs a bound on `Value`, which `#[uses]` cannot give, so
-/// it is not this failure. A receiver whose type cannot be read off a signature (a method call's
+/// context. A receiver declared with another type (a `value: &Value` parameter, or a `let` annotated
+/// that way) needs a bound on `Value`, which `#[uses]` cannot give, so it is not this failure. A receiver whose type cannot be read off a signature (a method call's
 /// result) is accepted only in a `#[cgp_fn]` impl, whose `Self` is the context.
 fn called_on_context<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -123,6 +122,11 @@ fn called_on_context<'tcx>(
 ) -> bool {
     match *receiver {
         CallReceiver::Value(binding) => {
+            if let Some(annotation) =
+                binding.and_then(|binding| binding_let_annotation(tcx, binding))
+            {
+                return names_context(tcx, peel_hir_refs(annotation), context, blanket_impl);
+            }
             match binding.and_then(|binding| param_declared_input(tcx, binding)) {
                 Some(declared) => declared.peel_refs() == context,
                 None => blanket_impl.is_some(),
@@ -223,8 +227,8 @@ fn failing_call_at<'tcx>(tcx: TyCtxt<'tcx>, primary_span: Span) -> Option<Failin
         .last()
 }
 
-/// Whether the written qualifying type of an associated-function call names the generated
-/// context: a `#[cgp_impl]` body's `Self`, which the macro writes as the `__Context__` parameter, or
+/// Whether a written type, the qualifying type of an associated-function call or a `let`'s annotation
+/// with its references peeled, names the generated context: a `#[cgp_impl]` body's `Self`, which the macro writes as the `__Context__` parameter, or
 /// a `#[cgp_fn]` body's `Self`, the alias of a blanket impl whose `Self` is the context
 /// (`blanket_impl`).
 fn names_context(
