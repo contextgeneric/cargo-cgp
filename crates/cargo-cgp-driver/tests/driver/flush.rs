@@ -222,7 +222,7 @@ fn a_merged_block_points_at_the_site_written_first() {
     });
 }
 
-// Property (the part on suggestions assumed from `driver.md`'s list of what a merged block holds): a
+// Property (the part on suggestions assumed from `driver/program.md`'s list of what a merged block holds): a
 // merged block states the shared cause once, in a headline and one note naming every member's
 // consumer, followed by the fix; rustc's own children and suggestions go.
 #[test]

@@ -2,7 +2,7 @@
 //!
 //! Each anchor recovers the obligation to walk from one failure shape, and the first that succeeds
 //! wins, so the order is part of the behaviour. See
-//! `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution-anchors.md`.
+//! `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md`.
 
 use cargo_cgp_error_processing::Resolved;
 use rustc_errors::ErrCode;

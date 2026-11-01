@@ -15,7 +15,7 @@
 //!
 //! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md (its "the wiring
 //! is missing" face) and
-//! cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md.
+//! cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md.
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E113

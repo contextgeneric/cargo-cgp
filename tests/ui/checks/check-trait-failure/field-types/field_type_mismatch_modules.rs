@@ -14,7 +14,7 @@
 //! The sibling of [`same_name_components`](../resolution/same_name_components.rs), which proves the *component*
 //! name map is full-path keyed; this proves the *struct* field query is `DefId`-anchored.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (field-type
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (field-type
 //! mismatch, and its `DefId`-anchored struct query).
 
 //@quality: acceptable

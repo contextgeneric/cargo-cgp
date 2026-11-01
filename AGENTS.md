@@ -79,7 +79,7 @@ link, so it resolves for a reader who has only this repository checked out. When
 yourself, prefer the local checkout. A bare mention of a checkout's location, like the path `../cgp`,
 is a filesystem reference rather than a link and stays relative — as is a doc pointer in a source
 comment or a fixture header, which names its knowledge-base path
-(`cgp-knowledge-base/cargo-cgp/implementation/driver.md`).
+(`cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`).
 
 **The code dependency stays one-way.** No `cgp` *crate* may depend on a `cargo-cgp` crate:
 `cargo-cgp` reads `cgp` (its source, its UI-fixture inputs), never the reverse. Documentation is the
@@ -123,7 +123,7 @@ agents. Read it before a task and keep it in sync after one; its
 document in the whole base on one page, which is the fastest way to find the few a task needs. The
 [implementation documentation](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/README.md) explains how the tool is built and why
 — start with [Executable structure](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/executable-structure.md) for the
-two-executable design and the cargo wrapping, and [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md) for the
+two-executable design and the cargo wrapping, and [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver/program.md) for the
 rustc wrapping, the compiler-API access, and the driver-side diagnostic transformations. The knowledge base
 is bound by a **synchronization rule** ([its AGENTS.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/AGENTS.md)): the source is the single
 source of truth, and when you change how the tool is structured or behaves, you revise the matching
@@ -174,7 +174,7 @@ cargo's output — is documented in
 argument preparation, the `rustc_private` compiler-API access, and the diagnostic transformations (the
 `-Znext-solver=globally` and `--verbose` flag injections, the generic `CgpEmitter` that renders text
 or JSON like vanilla `rustc`, its typed root-cause resolution, and its wiring-note rename plus
-post-processing fallback) — are in [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md), and what each emitter stage does to its error class is in [Diagnostic reshapes](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/diagnostic-reshapes.md). Read the relevant one
+post-processing fallback) — are in [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver/program.md), and what each emitter stage does to its error class is in [Diagnostic reshapes](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver/diagnostic-reshapes.md). Read the relevant one
 before changing how the executables interact or what the driver does, and keep it in sync when you do.
 
 ## Toolchain and `rustc_private`
@@ -191,7 +191,7 @@ needed on the driver's **binary** crate as well as its library (the binary is wh
 dylib), and the pinned nightly is the compiler the driver *embeds*, so the tool must be run against a
 project using that same nightly — for example with `RUSTUP_TOOLCHAIN` set — or it loads a mismatched
 `librustc_driver` and fails.
-[The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md#accessing-the-rust-compiler-api)
+[The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver/program.md#accessing-the-rust-compiler-api)
 explains both in full.
 
 ## Code organization conventions
@@ -387,9 +387,9 @@ the upstream error classes are.
 - **Using the tool** — [Usage](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/usage.md) (running the check, and reading its output and
   `[CGP-Exxx]` codes), [Troubleshooting](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/troubleshooting.md) (when the tool itself will
   not run), and the [error-code catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/error-code.md) (what each code already means).
-- **How the output is produced** — [Typed root-cause resolution](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-root-cause-resolution.md)
+- **How the output is produced** — [Typed root-cause resolution](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-resolution/overview.md)
   (the resolver that turns a wiring failure into its root-cause tree — the main lever for a better
-  message), [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md), [Diagnostic reshapes](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/diagnostic-reshapes.md), and [Error processing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-processing.md)
+  message), [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver/program.md), [Diagnostic reshapes](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver/diagnostic-reshapes.md), and [Error processing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-processing.md)
   (the emitter, what it does to each error class, and the rustc-free wording/plan/tree it drives), [Architecture](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/architecture.md)
   (the crates and how the stages fit together), [rustc diagnostic internals](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/rustc-diagnostic-internals.md)
   (where the compiler hides the information a good message needs), and [Testing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/testing.md)
@@ -426,7 +426,7 @@ target project is re-checked.
    `.cgp.stderr` shows the same shortcoming you saw on the real project. A change with no fixture that
    reproduces its motivation does not belong in the tool.
 5. **Change the tool, and verify the fixture first.** Make the improvement (usually in the
-   [resolver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-root-cause-resolution.md) or the rustc-free
+   [resolver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-resolution/overview.md) or the rustc-free
    [wording](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-processing.md)), then re-run the UI suite and confirm the
    fixture's `.cgp.stderr` improved as intended — and that no other snapshot regressed — **before** you
    go back to the target project. The simplified fixture, not the real project, is the fast feedback

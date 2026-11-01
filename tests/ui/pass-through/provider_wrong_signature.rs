@@ -3,7 +3,7 @@
 //! The error is plain Rust: the method's type is incompatible with the trait (`E0053`), and the
 //! tool leaves it alone. Its text still differs from plain `cargo check`, a documented limitation:
 //! the injected `--verbose` prints the generated `__Context__` in the signature note where rustc
-//! prints `_` (cgp-knowledge-base/cargo-cgp/implementation/driver.md, "Un-eliding the diagnostic").
+//! prints `_` (cgp-knowledge-base/cargo-cgp/implementation/driver/program.md, "Un-eliding the diagnostic").
 //!
 //! CGP error class: none; plain Rust the tool passes through.
 

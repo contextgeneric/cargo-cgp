@@ -16,7 +16,7 @@
 //! so no `impl`- or check-site span exists to anchor on, and the only handle is the call expression
 //! itself.
 //!
-//! The call-site anchor (cgp-knowledge-base/cargo-cgp/implementation/typed-resolution-call-site.md) recovers it:
+//! The call-site anchor (cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/call-site.md) recovers it:
 //! it reads the receiver's context (`App`, off the `describe_app` parameter) and the called method
 //! name (`describe`), finds the local blanket-impl trait `Describe` declaring that method, and walks
 //! `App: Describe` to the missing field. Because a `#[cgp_fn]` trait is not a CGP *component*,

@@ -7,7 +7,7 @@
 //! compilation goes on. Every other panic is a real crash: the hook first has the emitter print
 //! the diagnostics it buffered ([`flush_registered_output`]), so they appear before the crash
 //! report as they do in plain rustc, and then hands over to rustc's ICE hook, which names
-//! cargo-cgp's issue tracker. See `cgp-knowledge-base/cargo-cgp/implementation/driver.md`.
+//! cargo-cgp's issue tracker. See `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`.
 
 use std::any::Any;
 use std::cell::{Cell, RefCell};

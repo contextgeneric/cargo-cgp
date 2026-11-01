@@ -6,7 +6,7 @@
 //! it drops, and [`partial`] reads a partial value's markers back into the field or variant each
 //! tracks, which the [classifier](crate::resolve::classify) words as the data leaf and the
 //! [labels](crate::resolve::label) name in words. See
-//! `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution-leaves.md`.
+//! `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/leaves.md`.
 
 mod partial;
 mod traits;

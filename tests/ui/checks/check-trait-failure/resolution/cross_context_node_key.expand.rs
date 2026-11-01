@@ -26,7 +26,7 @@
 //! chain runs through `Inner`'s.
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md (the cache key)
-//! and cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the impl-site
+//! and cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (the impl-site
 //! anchor and cross-context walk).
 extern crate std;
 #[prelude_import]

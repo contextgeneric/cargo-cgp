@@ -7,7 +7,7 @@
 //!
 //! CGP error class: none; plain Rust the tool passes through.
 //!
-//! Limitation: cgp-knowledge-base/cargo-cgp/implementation/driver.md, "Un-eliding the diagnostic".
+//! Limitation: cgp-knowledge-base/cargo-cgp/implementation/driver/program.md, "Un-eliding the diagnostic".
 
 //@rewrites-falsely: the injected `--verbose` prints types rustc elides (a documented limitation)
 

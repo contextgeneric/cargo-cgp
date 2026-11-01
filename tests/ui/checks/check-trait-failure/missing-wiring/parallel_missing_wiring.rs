@@ -10,7 +10,7 @@
 //! A regression that followed only the first unmet bound would report one and hide the
 //! other.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md
 //! (parallel branches).
 
 //@quality: acceptable

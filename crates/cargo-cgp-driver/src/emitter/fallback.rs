@@ -3,7 +3,7 @@
 //! The emitter's two risky steps run through these two functions, which take the step as a
 //! closure. The emitter passes its real transform and render; a test passes a closure that panics,
 //! so the fallback is tested without a switch in the shipped code. See
-//! `cgp-knowledge-base/cargo-cgp/implementation/driver.md`.
+//! `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`.
 
 use cargo_cgp_error_processing::internal_error_note;
 use rustc_errors::{DiagInner, Sublevel};

@@ -3,7 +3,7 @@
 //! This is the compiler-side seam of every diagnostic transform. It replaces the session's own
 //! emitter with [`CgpEmitter`], which acts on each diagnostic before handing it to a real inner
 //! emitter, so the transformed result reaches cargo already shaped and rendered like vanilla
-//! `rustc` (see `cgp-knowledge-base/cargo-cgp/implementation/driver.md`).
+//! `rustc` (see `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`).
 //!
 //! Each `emit_diagnostic` first tries the reshapes of specific compiler errors (a wiring conflict,
 //! a structural mistake, an undeclared dependency, and the like). Any other diagnostic runs one of

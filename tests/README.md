@@ -143,7 +143,7 @@ Stable `rustc` rejects it with an `E0275` overflow, but on the pinned nightly bo
 solver and the next-generation solver accept it, so both snapshots are empty. It is a *missing*
 error rather than a suppressed cause, and a documented limitation of checking with the next solver
 (see
-[The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md#choosing-the-trait-solver)).
+[The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver/program.md#choosing-the-trait-solver)).
 Its exit-status check fails if a later nightly makes the two compilers disagree.
 
 ## Running

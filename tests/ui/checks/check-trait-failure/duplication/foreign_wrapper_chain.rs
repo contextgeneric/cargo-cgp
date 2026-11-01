@@ -27,7 +27,7 @@
 //! The two share their root cause, so they coalesce into one block headed by it, its caret on the
 //! first impl and the other labelled, and the tree shows both routes to the field.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (the
 //! wrapper-chain path).
 
 //@quality: acceptable

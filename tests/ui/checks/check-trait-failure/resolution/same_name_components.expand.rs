@@ -11,7 +11,7 @@
 //! cross-over. With the old bare-name key the two `MeasurerComponent` entries collided and both
 //! failures resolved to whichever entry happened to win; the full-path key keeps them apart.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (component-name
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (component-name
 //! resolution).
 extern crate std;
 #[prelude_import]

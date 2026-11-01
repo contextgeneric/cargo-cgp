@@ -19,7 +19,7 @@
 //! its headline states the missing field, over a tree that leads with `CanCalculateAreaChecked`,
 //! then its `CanCalculateArea` supertrait, down to the missing field.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the impl-site
+//! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (the impl-site
 //! path).
 extern crate std;
 #[prelude_import]

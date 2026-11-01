@@ -32,7 +32,7 @@
 //! reported as the root cause, rather than declining to `PipeHandlers`/`ComposeHandlers`-plumbing
 //! `[CGP-E002]` blocks with the cause nowhere in the output. The mechanism (and why it generalizes to any stalled associated-type projection) is
 //! documented under "Walking the dependency graph downward" in
-//! `cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md`.
+//! `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md`.
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E117

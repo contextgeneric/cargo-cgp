@@ -10,7 +10,7 @@
 //! `HasField` — `AppFields`, not `App`.
 //!
 //! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md and
-//! cgp-knowledge-base/cargo-cgp/implementation/typed-root-cause-resolution.md (the
+//! cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (the
 //! field-inspection variants).
 
 //@quality: acceptable

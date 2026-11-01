@@ -8,7 +8,7 @@
 //!
 //! CGP error class: none; plain Rust the tool passes through.
 //!
-//! Limitation: cgp-knowledge-base/cargo-cgp/implementation/driver.md, "Un-eliding the diagnostic".
+//! Limitation: cgp-knowledge-base/cargo-cgp/implementation/driver/program.md, "Un-eliding the diagnostic".
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
