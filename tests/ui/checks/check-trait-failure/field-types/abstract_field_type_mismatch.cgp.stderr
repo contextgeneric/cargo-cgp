@@ -1,7 +1,7 @@
 error[E0271]: [CGP-E004] field `database` on `App` has type `Pool<Sqlite>`, but `Pool<<App as HasDbType>::Db>` (`Pool<Postgres>`) is required
-  --> src/main.rs:85:9
+  --> src/main.rs:88:9
    |
-85 |         RowCounterComponent,
+88 |         RowCounterComponent,
    |         ^^^^^^^^^^^^^^^^^^^
    |
    = note: this is required through the dependency chain:

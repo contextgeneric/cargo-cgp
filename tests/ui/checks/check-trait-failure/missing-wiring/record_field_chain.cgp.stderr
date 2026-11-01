@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `@ValueBuilderComponent.Inner` on `App`
-   --> src/main.rs:123:9
+   --> src/main.rs:125:9
     |
-123 |         ValueBuilderComponent: [
+125 |         ValueBuilderComponent: [
     |         ^^^^^^^^^^^^^^^^^^^^^
     |
     = note: root cause: [CGP-E113] missing wiring for `@ValueBuilderComponent.Inner` on `App`

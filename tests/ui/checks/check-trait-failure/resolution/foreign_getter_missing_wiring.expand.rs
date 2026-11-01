@@ -11,6 +11,9 @@
 //! getter branch stopping at the bare foreign bound `LoginRequest: HasCredential<App>` and
 //! reporting it as a second, misleading root cause (and leaking it as the header).
 //!
+//! The provider's two dependencies both reach the one missing wiring, so the graph renders them
+//! converging on it, the second marked `(*)`.
+//!
 //! This is the shape the transfer example's `UseBasicAuth` provider produces:
 //! `Request: HasBasicAuthHeader<MockApp>` beside the real missing password-type wiring.
 extern crate std;

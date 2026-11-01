@@ -7,6 +7,7 @@
 //! consumer obligation with the lifetime restored to its region slot — not spread
 //! `Life<'a>` in as a type — and label the provider node without assuming the
 //! context is the trait's first argument.
+//! Each step keeps the lifetime in its trait as `'_` (`HasReference<'_, str>`).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

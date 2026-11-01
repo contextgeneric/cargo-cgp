@@ -15,6 +15,8 @@
 //! the one missing `@ValueEncoderComponent.u64` wiring, each nesting level a distinct hop
 //! in the chain.
 //!
+//! It resolves only because a nested higher-ranked hop normalizes against placeholders.
+//!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.
 

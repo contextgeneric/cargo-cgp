@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `name` on `App<'_>`
-  --> src/main.rs:50:9
+  --> src/main.rs:51:9
    |
-50 |         ReferenceGetterComponent: (Life<'a>, str),
+51 |         ReferenceGetterComponent: (Life<'a>, str),
    |         ^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `name` on `App<'_>`

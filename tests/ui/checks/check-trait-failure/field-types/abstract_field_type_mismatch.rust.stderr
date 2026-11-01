@@ -1,31 +1,31 @@
 error[E0271]: type mismatch resolving `<App as HasField<Symbol<8, Chars<..>>>>::Value == Pool<Postgres>`
-  --> src/main.rs:85:9
+  --> src/main.rs:88:9
    |
-85 |         RowCounterComponent,
+88 |         RowCounterComponent,
    |         ^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<App as HasField<Symbol<8, Chars<..>>>>::Value == Pool<Postgres>`
    |
 note: expected this to be `Pool<Postgres>`
-  --> src/main.rs:72:19
+  --> src/main.rs:75:19
    |
-72 |     pub database: Pool<Sqlite>,
+75 |     pub database: Pool<Sqlite>,
    |                   ^^^^^^^^^^^^
    = note: expected struct `Pool<Postgres>`
               found struct `Pool<Sqlite>`
 note: required for `CountPooledRows` to implement `IsProviderFor<RowCounterComponent, App>`
-  --> src/main.rs:61:1
+  --> src/main.rs:64:1
    |
-61 | #[cgp_impl(new CountPooledRows)]
+64 | #[cgp_impl(new CountPooledRows)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: associated types for the current `impl` cannot be restricted in `where` clauses
    = note: required for `App` to implement `CanUseComponent<RowCounterComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:83:1
+  --> src/main.rs:86:1
    |
-83 | / check_components! {
-84 | |     App {
-85 | |         RowCounterComponent,
-86 | |     }
-87 | | }
+86 | / check_components! {
+87 | |     App {
+88 | |         RowCounterComponent,
+89 | |     }
+90 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

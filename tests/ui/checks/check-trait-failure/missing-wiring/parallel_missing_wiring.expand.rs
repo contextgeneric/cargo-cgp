@@ -6,8 +6,8 @@
 //!
 //! This is the missing-wiring analog of `parallel_branches`: the
 //! resolver follows *every* unmet dependency, not just the first the next-generation
-//! solver stops at, so a single `[CGP-E001]` header carries two `root cause: missing
-//! wiring …` notes — one per unwired component — each with its own dependency chain.
+//! solver stops at, so a single `[CGP-E001]` header carries one `root causes:` note that
+//! names both, over one tree branching to each unwired component.
 //! A regression that followed only the first unmet bound would report one and hide the
 //! other.
 //!

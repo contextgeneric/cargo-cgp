@@ -23,6 +23,8 @@
 //! The single mistake is the un-wired `@ValueBuilderComponent.Inner`; the root cause names exactly
 //! that path, reached through the record chain.
 //!
+//! Its tree entries also pin the `Cons`/`Nil` to `Struct! { … }` resugaring.
+//!
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (the walk).
 
 //@quality: acceptable

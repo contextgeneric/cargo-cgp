@@ -21,6 +21,9 @@
 //! all, where a provider pins an abstract type the context wires differently, is
 //! [`types/abstract_type_mismatch`](../types/abstract_type_mismatch.rs).
 //!
+//! The block pins the dual rendering: the projection, which names the wiring the requirement flows
+//! from, followed by what it reduces to, `Pool<<App as HasDbType>::Db>` (`Pool<Postgres>`).
+//!
 //! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md and
 //! cgp-knowledge-base/cgp/guides/naming-a-type-dependency.md.
 extern crate std;

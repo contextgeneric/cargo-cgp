@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `@ValueEncoderComponent.u64` on `App`
-   --> src/main.rs:122:9
+   --> src/main.rs:124:9
     |
-122 |         ValueEncoderComponent: [Outer],
+124 |         ValueEncoderComponent: [Outer],
     |         ^^^^^^^^^^^^^^^^^^^^^
     |
     = note: root cause: [CGP-E113] missing wiring for `@ValueEncoderComponent.u64` on `App`

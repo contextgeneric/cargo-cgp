@@ -1,59 +1,59 @@
 error[E0277]: the trait bound `App: CanUseComponent<ValueEncoderComponent, Outer>` is not satisfied
-   --> src/main.rs:122:9
+   --> src/main.rs:124:9
     |
-122 |         ValueEncoderComponent: [Outer],
+124 |         ValueEncoderComponent: [Outer],
     |         ^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
     |
 help: the trait `for<'a> CanEncodeValue<&'a Mid>` is not implemented for `App`
-   --> src/main.rs:106:1
+   --> src/main.rs:108:1
     |
-106 | pub struct App;
+108 | pub struct App;
     | ^^^^^^^^^^^^^^
 note: required for `EncodeIterator` to implement `IsProviderFor<ValueEncoderComponent, App, Vec<Mid>>`
-   --> src/main.rs:38:1
+   --> src/main.rs:40:1
     |
- 38 | #[cgp_impl(new EncodeIterator)]
+ 40 | #[cgp_impl(new EncodeIterator)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
- 42 |     Self: for<'a> CanEncodeValue<<&'a Value as IntoIterator>::Item>,
+ 44 |     Self: for<'a> CanEncodeValue<<&'a Value as IntoIterator>::Item>,
     |           --------------------------------------------------------- unsatisfied trait bound introduced here
     = note: 2 redundant requirements hidden
     = note: required for `App` to implement `IsProviderFor<ValueEncoderComponent, App, Vec<Mid>>`
 note: required for `App` to implement `ValueEncoder<App, Vec<Mid>>`
-   --> src/main.rs:26:1
+   --> src/main.rs:28:1
     |
- 26 |   #[cgp_component(ValueEncoder)]
+ 28 |   #[cgp_component(ValueEncoder)]
     |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 27 | | pub trait CanEncodeValue<Value: ?Sized> {
+ 29 | | pub trait CanEncodeValue<Value: ?Sized> {
     | |_______________________________________^
 note: required for `App` to implement `CanEncodeValue<Vec<Mid>>`
-   --> src/main.rs:26:1
+   --> src/main.rs:28:1
     |
- 26 | #[cgp_component(ValueEncoder)]
+ 28 | #[cgp_component(ValueEncoder)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 27 | pub trait CanEncodeValue<Value: ?Sized> {
+ 29 | pub trait CanEncodeValue<Value: ?Sized> {
     |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `Cons<Field<Symbol<4, Chars<..>>, _>, Nil>` to implement `EncodeFields<App, Outer>`
-   --> src/main.rs:63:45
+   --> src/main.rs:65:45
     |
- 63 | impl<Context, Value, Tag, FieldValue, Tail> EncodeFields<Context, Value>
+ 65 | impl<Context, Value, Tag, FieldValue, Tail> EncodeFields<Context, Value>
     |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 64 |     for Cons<Field<Tag, FieldValue>, Tail>
+ 66 |     for Cons<Field<Tag, FieldValue>, Tail>
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 65 | where
- 66 |     Context: CanEncodeValue<FieldValue>,
+ 67 | where
+ 68 |     Context: CanEncodeValue<FieldValue>,
     |              -------------------------- unsatisfied trait bound introduced here
     = note: 2 redundant requirements hidden
     = note: required for `RedirectLookup<App, PathCons<ValueEncoderComponent, cgp::prelude::Nil>>` to implement `IsProviderFor<ValueEncoderComponent, App, Outer>`
     = note: required for `App` to implement `CanUseComponent<ValueEncoderComponent, Outer>`
 note: required by a bound in `__CheckApp`
-   --> src/main.rs:120:1
+   --> src/main.rs:122:1
     |
-120 | / check_components! {
-121 | |     App {
-122 | |         ValueEncoderComponent: [Outer],
-123 | |     }
-124 | | }
+122 | / check_components! {
+123 | |     App {
+124 | |         ValueEncoderComponent: [Outer],
+125 | |     }
+126 | | }
     | |_^ required by this bound in `__CheckApp`
     = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

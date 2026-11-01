@@ -18,6 +18,8 @@
 //! reduction is what the reader compares against. A pin to a concrete type normalizes to
 //! itself and gets no parenthetical, which is what the sibling fixture pins.
 //!
+//! The `help` uses the reduced form alone, since it names an edit the reader types.
+//!
 //! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md and
 //! cgp-knowledge-base/cargo-cgp/error-code.md.
 extern crate std;
