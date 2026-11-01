@@ -43,9 +43,10 @@ pub const DRIVER_ENV: &str = "CARGO_CGP_DRIVER";
 /// which runs the binaries it builds under the toolchain `cargo test` selected.
 pub const NO_MANAGE_ENV: &str = "CARGO_CGP_NO_MANAGE";
 
-/// Escape hatch: overrides [`PINNED_TOOLCHAIN`] at runtime, for testing a toolchain bump
-/// before the constant changes. Normally paired with [`NO_MANAGE_ENV`], since a hand-picked
-/// toolchain will not match the driver's baked-in build identity.
+/// Escape hatch: overrides [`PINNED_TOOLCHAIN`] at runtime, for testing a toolchain bump before
+/// the constant changes. The preflight compares the driver with this toolchain, so the driver must
+/// be built under it, as `setup` with the same override does. [`NO_MANAGE_ENV`] makes it have no
+/// effect on `check`, since an unmanaged run forces no toolchain.
 pub const TOOLCHAIN_ENV: &str = "CARGO_CGP_TOOLCHAIN";
 
 /// The subdirectory of the project's own target directory that `cargo cgp check` and `expand`

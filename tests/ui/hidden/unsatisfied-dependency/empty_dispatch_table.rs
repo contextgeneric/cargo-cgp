@@ -8,7 +8,7 @@
 //! of `UseInputDelegate`'s own provider impl, a lookup into a *separate* table (`EmptySink` is a
 //! parameter of `UseInputDelegate<EmptySink>`), so it is unambiguously a missing dispatch entry —
 //! whether or not that table happens to wire any other key. The block therefore leads with
-//! `[CGP-E114] provider \`EmptySink\` does not contain any delegate entry for \`ByteStream\`` rather
+//! `[CGP-E114] missing entry for \`ByteStream\` in provider \`EmptySink\`` rather
 //! than declining to raw `PipeHandlers`/`ComposeHandlers` plumbing.
 //!
 //! Stage 1, `Call<Fetch>`, produces a fixed `ByteStream` (its `where Input: Send` stalls under the

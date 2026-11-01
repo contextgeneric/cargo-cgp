@@ -113,7 +113,7 @@ pub fn guard_cut<'tcx>(
 
 /// The context a node is about, given the `context` above it.
 ///
-/// Cross-context handoff: a consumer obligation whose `Self` is a *different* local context is the
+/// Cross-context handoff: a consumer obligation whose `Self` is a *different* context is the
 /// cross-context dependency shape — one context's wiring depends on a concrete other context. Re-root
 /// the subtree at that context, so its nodes are labeled and classified against the context they are
 /// actually about: a consumer node reads `for context Inner` (not a plain foreign bound), its

@@ -8,8 +8,8 @@
 //! The tree names the table each lookup runs in. The first `[CGP-E103]` hop is the context's own
 //! redirect, `redirect lookup to @ComputerComponent in App`; the second runs inside the aggregate
 //! (`RedirectLookup<ByteSink, …>`) and reads `… in ByteSink`. The leaf is the `[CGP-E114]`
-//! provider-table leaf, `provider ByteSink does not contain any delegate entry for
-//! @ComputerComponent.Sink.Digest`, so the reader adds the entry to `ByteSink` rather than to `App`.
+//! provider-table leaf, `missing entry for @ComputerComponent.Sink.Digest in provider
+//! ByteSink`, so the reader adds the entry to `ByteSink` rather than to `App`.
 //!
 //! See cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E103, CGP-E114).
 

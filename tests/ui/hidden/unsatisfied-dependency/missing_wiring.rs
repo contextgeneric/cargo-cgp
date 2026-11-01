@@ -10,7 +10,7 @@
 //! diagnostic's spans and re-checks the component it *does* wire
 //! (`FooProviderComponent`), walking down to the unwired `BarProviderComponent`. The
 //! result is the same `[CGP-E001]` header (the code kept `E0599`) over a
-//! `root cause: context \`App\` does not contain any delegate entry for \`BarProviderComponent\`` note, with
+//! `root cause: missing wiring for \`BarProviderComponent\` on \`App\`` note, with
 //! rustc's misleading "use associated function syntax instead" advice dropped.
 //!
 //! See cgp-knowledge-base/cgp/errors/hidden/unsatisfied-dependency.md and

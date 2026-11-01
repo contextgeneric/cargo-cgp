@@ -1,5 +1,5 @@
-//! Currently a compiler **panic**, not a bad message: the
-//! resolver's dependency walk crashes rustc when it descends into a higher-ranked
+//! A wiring failure through a higher-ranked obligation, where a careless walk would panic: the
+//! resolver's dependency walk descends into a higher-ranked
 //! (`for<'a>`) CGP obligation.
 //!
 //! `EncodeSeq` serializes a `Seq<Value>` by encoding each borrowed item, so it depends
@@ -11,14 +11,14 @@
 //!
 //! While resolving that failure, the walk descends to the unmet `App: for<'a>
 //! CanEncodeItem<&'a u64>` obligation. To find the impl that would satisfy it, the
-//! resolver calls `ocx.eq` on the obligation's trait ref — but reaches it through
-//! `skip_binder()`, which leaves the `'a` bound variable escaping. rustc's inference
-//! generalizer asserts `!source_term.has_escaping_bound_vars()`, and the compiler
-//! panics with an ICE instead of reporting the missing wiring.
+//! resolver relates the obligation's trait ref with `ocx.eq`. Reaching it through
+//! `skip_binder()` would leave the `'a` bound variable escaping, and rustc's inference
+//! generalizer asserts `!source_term.has_escaping_bound_vars()`, so the compiler
+//! would panic instead of reporting the missing wiring.
 //!
-//! The fix instantiates the obligation's binder with fresh inference variables before
-//! the `eq`, so the walk descends past the higher-ranked bound and bottoms out on the
-//! real root cause — the missing `@ItemEncoderComponent.&u64` wiring — with no panic.
+//! The walk instantiates the obligation's binder with placeholders before
+//! the `eq`, so it descends past the higher-ranked bound and bottoms out on the
+//! real root cause, the missing `@ItemEncoderComponent.&u64` wiring, with no panic.
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E113

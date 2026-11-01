@@ -174,7 +174,7 @@ cargo's output — is documented in
 argument preparation, the `rustc_private` compiler-API access, and the diagnostic transformations (the
 `-Znext-solver=globally` and `--verbose` flag injections, the generic `CgpEmitter` that renders text
 or JSON like vanilla `rustc`, its typed root-cause resolution, and its wiring-note rename plus
-post-processing fallback) — are in [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md). Read the relevant one
+post-processing fallback) — are in [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md), and what each emitter stage does to its error class is in [Diagnostic reshapes](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/diagnostic-reshapes.md). Read the relevant one
 before changing how the executables interact or what the driver does, and keep it in sync when you do.
 
 ## Toolchain and `rustc_private`
@@ -389,8 +389,8 @@ the upstream error classes are.
   not run), and the [error-code catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/error-code.md) (what each code already means).
 - **How the output is produced** — [Typed root-cause resolution](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/typed-root-cause-resolution.md)
   (the resolver that turns a wiring failure into its root-cause tree — the main lever for a better
-  message), [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md) and [Error processing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-processing.md)
-  (the emitter and the rustc-free wording/plan/tree it drives), [Architecture](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/architecture.md)
+  message), [The driver](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/driver.md), [Diagnostic reshapes](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/diagnostic-reshapes.md), and [Error processing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/error-processing.md)
+  (the emitter, what it does to each error class, and the rustc-free wording/plan/tree it drives), [Architecture](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/architecture.md)
   (the crates and how the stages fit together), [rustc diagnostic internals](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/rustc-diagnostic-internals.md)
   (where the compiler hides the information a good message needs), and [Testing](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/testing.md)
   (the UI snapshot suite and its bless workflow, the mechanism the loop runs on).

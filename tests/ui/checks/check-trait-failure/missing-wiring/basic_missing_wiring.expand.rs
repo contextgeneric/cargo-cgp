@@ -10,7 +10,7 @@
 //! typed resolver walks the same `CanUseComponent` → `IsProviderFor` chain, but the
 //! terminal leaf is an unmet `DelegateComponent<BarProviderComponent>` on the context
 //! rather than an unmet `HasField`. It renders as a `[CGP-E001]` header over one
-//! `root cause: context \`App\` does not contain any delegate entry for \`BarProviderComponent\`` note, with the
+//! `root cause: missing wiring for \`BarProviderComponent\` on \`App\`` note, with the
 //! dependency chain bottoming out at the `CanUseBar` trait the missing component
 //! would supply.
 //!

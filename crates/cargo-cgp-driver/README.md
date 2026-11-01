@@ -8,7 +8,7 @@ own.
 Install it through the front-end rather than directly:
 
 ```sh
-cargo install cargo-cgp
+cargo install --locked cargo-cgp
 cargo cgp setup
 ```
 
