@@ -125,7 +125,7 @@ The cargo path installs the small front-end first, then lets it provision the pi
 matching driver in a second step:
 
 ```sh
-cargo install cargo-cgp      # installs the front-end (builds on any toolchain)
+cargo install --locked cargo-cgp   # installs the front-end (builds on any toolchain)
 cargo cgp setup              # installs the pinned nightly + driver, in lockstep
 ```
 

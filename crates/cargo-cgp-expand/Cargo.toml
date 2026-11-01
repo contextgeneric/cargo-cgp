@@ -8,6 +8,7 @@ license      = { workspace = true }
 repository   = { workspace = true }
 authors      = { workspace = true }
 keywords     = { workspace = true }
+categories   = { workspace = true }
 
 # The syntax-tree half of the `cargo cgp expand` command: it takes the source the compiler's
 # pretty-printer produced for an expanded crate and rewrites CGP's type-level spines back to

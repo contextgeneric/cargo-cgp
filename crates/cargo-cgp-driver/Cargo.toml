@@ -8,6 +8,7 @@ license      = { workspace = true }
 repository   = { workspace = true }
 authors      = { workspace = true }
 keywords     = { workspace = true }
+categories   = { workspace = true }
 
 # The rustc wrapper. It links the compiler-internal `rustc_driver`/`rustc_interface`
 # crates from the sysroot via the `rustc_private` feature (see `src/lib.rs`), so it can

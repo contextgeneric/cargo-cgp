@@ -1,6 +1,6 @@
 [package]
 name         = "cargo-cgp"
-description  = "A cargo subcommand that runs `cargo check` through the cargo-cgp rustc driver."
+description  = "A cargo subcommand that makes Context-Generic Programming errors readable, leading with the root cause, and expands CGP macros readably."
 version      = { workspace = true }
 edition      = { workspace = true }
 rust-version = { workspace = true }
@@ -8,6 +8,7 @@ license      = { workspace = true }
 repository   = { workspace = true }
 authors      = { workspace = true }
 keywords     = { workspace = true }
+categories   = { workspace = true }
 readme       = "../../README.md"
 
 # The cargo-subcommand front-end. It is deliberately a plain std/anyhow binary and

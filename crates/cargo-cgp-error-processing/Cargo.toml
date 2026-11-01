@@ -8,6 +8,7 @@ license      = { workspace = true }
 repository   = { workspace = true }
 authors      = { workspace = true }
 keywords     = { workspace = true }
+categories   = { workspace = true }
 
 # This crate holds the string-level diagnostic logic the driver drives — the wiring-message
 # rewrite, the fallback post-processing transforms, and the dependency-tree renderer. It
