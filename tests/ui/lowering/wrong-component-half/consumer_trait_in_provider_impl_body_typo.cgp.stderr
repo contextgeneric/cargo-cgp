@@ -1,0 +1,9 @@
+error[E0107]: [CGP-E032] `CanGreet` is a consumer trait, but a `#[cgp_impl]` provider must implement its provider trait `Greeter`
+  --> src/main.rs:22:6
+   |
+22 | impl CanGreet {
+   |      ^^^^^^^^
+   |
+   = help: change the impl header to target the provider trait: `impl Greeter` (not `impl CanGreet`)
+
+For more information about this error, try `rustc --explain E0107`.
