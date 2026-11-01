@@ -1,13 +1,11 @@
 #![feature(prelude_import)]
-//! The failing layer of a higher-order provider is not spelled out.
+//! The inner layer of a higher-order provider fails.
 //!
 //! `ScaledArea<RectangleArea>` wraps an inner calculator; `Rectangle` has
 //! `scale_factor` but not `height`, so the *inner* `RectangleArea` layer fails. The
-//! signal is present — the "introduced here" caret sits on the inner provider's
-//! `where` clause and the chain runs through both providers' `IsProviderFor` — but
-//! the reader must know to read it. The cause is recoverable, so this is a usability
-//! problem: the tool should name the failing layer. Contrast scaled_area_2, where
-//! the outer layer fails.
+//! tool's chain runs through both providers, so it names the failing layer, where
+//! rustc's notes leave the reader to work it out. Contrast scaled_area_2, where the
+//! outer layer fails.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/higher-order-provider-layer.md.

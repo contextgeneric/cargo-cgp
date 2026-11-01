@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! A missing wiring reached only *through* the extensible-data record machinery — a
 //! record provider that builds each field through the context, over a recursive `Cons`/`Nil`
-//! field-list handler. This is the shape `cgp-serde`'s arena test hits: checking `Payload`
+//! field-list handler: checking `Payload`
 //! deserialization descends `DeserializeRecordFields` → `HandleMapEntry` over the field list → a
 //! field whose value type (`&Coord`) the context never wires.
 //!

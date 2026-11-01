@@ -14,7 +14,7 @@
 //!
 //! The tool reshapes it into the same `[CGP-E030]` error as the `#[cgp_fn]` case, with a
 //! `help: declare it as a dependency with `#[uses(PersonName)]``, recovered by
-//! `resolve::detect_undeclared_trait` from the receiver's declared type.
+//! `detect::detect_undeclared_trait` from the receiver's declared type.
 //!
 //! CGP error class: undeclared dependency (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/undeclared-dependency.md).
 

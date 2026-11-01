@@ -17,7 +17,7 @@
 //!
 //! The tool reshapes it into ``[CGP-E030] the trait `GetCount` is used but not declared as a
 //! dependency`` with ``help: declare it as a dependency with `#[uses(GetCount)]` ``, recovered by
-//! `resolve::detect_undeclared_trait`: the failing call sits in a generated blanket impl whose
+//! `detect::detect_undeclared_trait`: the failing call sits in a generated blanket impl whose
 //! `Self` is the bare `__Context__` parameter, its method belongs to the blanket trait `GetCount`,
 //! and that trait is not among the impl's `where` bounds. The `GetName` that *is* declared is left
 //! alone.

@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProviderFor<_, App, _>` is not satisfied
-  --> src/main.rs:57:9
+  --> src/main.rs:55:9
    |
-57 |         ItemEncoderComponent: [Seq<u64>],
+55 |         ItemEncoderComponent: [Seq<u64>],
    |         ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `for<'a> IsProviderFor<ItemEncoderComponent, App, &'a u64>` is not implemented for `RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>`
@@ -16,40 +16,40 @@ error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProvider
              IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
            and 10 others
 note: required for `App` to implement `for<'a> IsProviderFor<ItemEncoderComponent, App, &'a u64>`
-  --> src/main.rs:47:1
+  --> src/main.rs:45:1
    |
-47 | / delegate_components! {
-48 | |     App {
+45 | / delegate_components! {
+46 | |     App {
    | |     ^^^
-49 | |         open ItemEncoderComponent;
+47 | |         open ItemEncoderComponent;
 ...  |
-53 | | }
+51 | | }
    | |_^
 note: required for `App` to implement `for<'a> ItemEncoder<App, &'a u64>`
-  --> src/main.rs:28:1
+  --> src/main.rs:26:1
    |
-28 |   #[cgp_component(ItemEncoder)]
+26 |   #[cgp_component(ItemEncoder)]
    |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | | pub trait CanEncodeItem<Value> {
+27 | | pub trait CanEncodeItem<Value> {
    | |______________________________^
 note: required for `App` to implement `for<'a> CanEncodeItem<&'a u64>`
-  --> src/main.rs:28:1
+  --> src/main.rs:26:1
    |
-28 | #[cgp_component(ItemEncoder)]
+26 | #[cgp_component(ItemEncoder)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | pub trait CanEncodeItem<Value> {
+27 | pub trait CanEncodeItem<Value> {
    |           ^^^^^^^^^^^^^^^^^^^^
    = note: 2 redundant requirements hidden
    = note: required for `RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>` to implement `IsProviderFor<ItemEncoderComponent, App, Seq<u64>>`
    = note: required for `App` to implement `CanUseComponent<ItemEncoderComponent, Seq<u64>>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:55:1
+  --> src/main.rs:53:1
    |
-55 | / check_components! {
-56 | |     App {
-57 | |         ItemEncoderComponent: [Seq<u64>],
-58 | |     }
-59 | | }
+53 | / check_components! {
+54 | |     App {
+55 | |         ItemEncoderComponent: [Seq<u64>],
+56 | |     }
+57 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

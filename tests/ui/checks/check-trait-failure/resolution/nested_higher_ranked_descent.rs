@@ -1,7 +1,7 @@
 //! A wiring failure threading the record field-list machinery through *nested*
 //! higher-ranked (`for<'a>`) hops, resolved to its root cause.
 //!
-//! This is the faithful shape of `cgp-serde`'s `MessagesArchive` check. Encoding a record
+//! Encoding a record
 //! walks its `HasFields` list (`EncodeFields` over `Cons`/`Field`/`Nil`), each field
 //! encoded through the context; a `Vec` field routes through `EncodeIterator`, whose
 //! higher-ranked dependency `Self: for<'a> CanEncodeValue<<&'a Value as IntoIterator>::Item>`
@@ -57,7 +57,7 @@ impl<'a, Value> ValueEncoder<&'a Value> {
 }
 
 // A recursive field-list handler over the `Cons`/`Nil` spine: encodes the head field
-// *through the context* and recurses on the tail (mirrors `cgp-serde`'s `FieldsSerializer`).
+// *through the context* and recurses on the tail.
 pub trait EncodeFields<Context, Value> {
     fn encode_fields(context: &Context, value: &Value) -> String;
 }

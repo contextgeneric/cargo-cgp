@@ -9,7 +9,7 @@
 //! conflicting wiring: `App` redirects component `FooComponent` twice, to `@app.foo` and to
 //! `@app.bar``,
 //! naming both redirect targets, while keeping rustc's two carets on the `FooComponent =>` lines.
-//! If the redirect detection in `resolve/conflict.rs` regresses (counting one redirect instead of
+//! If the redirect detection in `detect/conflict/` regresses (counting one redirect instead of
 //! two), the header reverts to the single-redirect `[CGP-E013]` form.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md and

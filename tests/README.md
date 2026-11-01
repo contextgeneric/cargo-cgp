@@ -116,12 +116,12 @@ resolves) and adds it as a path dependency of the throwaway crate before compili
 declare several. The auxiliary crates and the fixtures they back:
 
 - `cgp-test-crate-a` (upstream: a foreign namespace, component, and getter) and `cgp-test-crate-b`
-  (downstream: the orphan-safe wirings against it). They back the three orphan-rule failures in
-  [`ui/wiring/orphan-rule/`](ui/wiring/orphan-rule), which `cargo-cgp` reshapes into
-  `[CGP-E022]`, and the clean [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs).
-- `cgp-test-foreign-pipeline`: a pipeline context and its wiring for
-  [`foreign_context_error_route`](ui/hidden/unsatisfied-dependency/foreign_context_error_route.rs),
-  whose root cause the tool recovers though the context is defined in another crate.
+  (downstream: the orphan-safe wirings against it). They back the foreign registrations in
+  [`ui/wiring/orphan-rule/`](ui/wiring/orphan-rule), the `upstream_*` fixtures of the conflict
+  classes, and the clean [`ui/ok/cross_crate_wiring.rs`](ui/ok/cross_crate_wiring.rs).
+- `cgp-test-foreign-pipeline`: a pipeline context and its wiring for the `foreign_context_*` fixtures
+  in [`ui/hidden/unsatisfied-dependency/`](ui/hidden/unsatisfied-dependency), whose root cause the
+  tool recovers though the context is defined in another crate.
 - `cgp-test-dispatch-traits` (upstream: `#[cgp_auto_dispatch]` traits with no implementor, plus a
   `#[cgp_computer]` and a `#[cgp_producer]`) and `cgp-test-dispatch-shapes` (payloads implementing
   those traits and an enum over them). They back the clean

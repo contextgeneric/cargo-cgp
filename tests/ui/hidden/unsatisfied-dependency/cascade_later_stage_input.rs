@@ -30,9 +30,10 @@
 //! The resolver recovers the fixed output rather than folding it to a placeholder, so the second
 //! stage's input becomes the concrete `ByteStream` and its `ByteStream: AsRef<[u8]>` requirement is
 //! reported as the root cause, rather than declining to `PipeHandlers`/`ComposeHandlers`-plumbing
-//! `[CGP-E002]` blocks with the cause nowhere in the output. The mechanism (and why it generalizes to any stalled associated-type projection) is
-//! documented under "Walking the dependency graph downward" in
-//! `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md`.
+//! `[CGP-E002]` blocks with the cause nowhere in the output. The mechanism, and why it generalizes to
+//! any stalled associated-type projection, is
+//! documented under "Recovering a later pipeline stage" in
+//! `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/walk.md`.
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E117

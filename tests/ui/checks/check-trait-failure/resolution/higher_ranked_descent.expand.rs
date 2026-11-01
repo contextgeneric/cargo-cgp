@@ -4,9 +4,7 @@
 //! (`for<'a>`) CGP obligation.
 //!
 //! `EncodeSeq` serializes a `Seq<Value>` by encoding each borrowed item, so it depends
-//! on `Self: for<'a> CanEncodeItem<&'a Value>` — a higher-ranked impl-side dependency,
-//! the same shape `cgp-serde`'s `SerializeIterator` carries (`Self: for<'a>
-//! CanSerializeValue<<&'a Value as IntoIterator>::Item>`). `App` wires `Seq<u64>` to
+//! on `Self: for<'a> CanEncodeItem<&'a Value>`, a higher-ranked impl-side dependency. `App` wires `Seq<u64>` to
 //! `EncodeSeq` but never wires an encoder for the borrowed `&u64` the sequence yields,
 //! so the `check_components!` entry for `Seq<u64>` fails.
 //!

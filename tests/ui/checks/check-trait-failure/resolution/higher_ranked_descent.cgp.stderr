@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `@ItemEncoderComponent.&u64` on `App`
-  --> src/main.rs:57:9
+  --> src/main.rs:55:9
    |
-57 |         ItemEncoderComponent: [Seq<u64>],
+55 |         ItemEncoderComponent: [Seq<u64>],
    |         ^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `@ItemEncoderComponent.&u64` on `App`

@@ -6,16 +6,9 @@
 //! fields it emits *nothing* — byte-for-byte the same as a struct with no derive at all.
 //! A fieldless derive leaves no trace in the generated program, so it is impossible to
 //! tell whether the derive was even written; the two are the same program wherever
-//! `HasField` is concerned. The diagnostic is correspondingly identical to the
-//! missing-derive case (`base_area_2.rs`): the first field (`width`) is unimplemented,
-//! there is **no** "but trait `HasField<…>` is implemented for it" landmark, and the
-//! `help` points at the `struct` definition.
-//!
-//! So cargo-cgp reporting that `#[derive(HasField)]` is required here is fine, not a
-//! misclassification: it accurately states what is observable — the context implements
-//! `HasField` for no field — and a fieldless derive is exactly that. There is nothing to
-//! recover, since the two situations are the same program. This fixture pins the expected
-//! behavior; see cgp-knowledge-base/cargo-cgp/implementation/error-processing.md.
+//! `HasField` is concerned. The tool therefore reports both fields the provider reads as
+//! missing, without a `help`: it cannot tell whether the fix is a field or the derive. This
+//! fixture pins that output.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md

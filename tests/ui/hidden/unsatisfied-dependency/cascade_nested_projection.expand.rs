@@ -6,15 +6,6 @@
 //! missing-wiring leaf for the input axis: a delegation table (`SinkHandlers`) that is missing one
 //! key, rather than a context that does not wire a component.
 //!
-//! Distilled from the `hypershell` `http_checksum_native` example: a `StreamingHttpRequest`
-//! (fixed output stream) piped to `Checksum<Sha256>` (producing the raw digest
-//! `GenericArray<u8, Sha256::OutputSize>`) piped to `StreamToStdout`, whose `HandleToTokioAsyncRead`
-//! adapter is an `UseInputDelegate` that dispatches the incoming value on its type into a writable
-//! form — with entries for byte-like inputs (`Vec<u8>`, `String`, stream wrappers) but **none for a
-//! raw `GenericArray`**. The intervening `BytesToHex` stage (which would have turned the digest into
-//! a `String`) is removed, so the raw digest reaches the sink and matches no input-dispatch entry.
-//! The self-contained analogue here is `SinkHandlers` having no entry for `Tagged<Bytes>`.
-//!
 //! The pipeline steps are `Code` tags wrapped in a `Call<Code>` forwarding handler, so a stage's
 //! `::Output` (the next stage's input) resolves *through* `CanHandle` rather than off a provider
 //! impl directly. `App` runs the fixed `Prog` program through the async, `Code`-dispatched `Handler`
@@ -34,10 +25,10 @@
 //! root cause.
 //!
 //! The missing entry surfaces as an unmet `DelegateComponent` on the *dispatch table* `SinkHandlers`
-//! rather than on the context. The resolver reports it as a [`CGP-E114`] `MissingDispatchEntry` leaf
-//! — a non-context delegation table (an aggregate provider or a `UseDelegate`/`UseInputDelegate`
-//! table) missing a key — so the block leads with `provider \`SinkHandlers\` does not contain any
-//! delegate entry for \`Tagged<Bytes>\`` over the dependency chain, rather than declining to
+//! rather than on the context. The resolver reports it as a `[CGP-E114]` `MissingDispatchEntry` leaf,
+//! a non-context delegation table (an aggregate provider or a `UseDelegate`/`UseInputDelegate`
+//! table) missing a key, so the block leads with ``missing entry for `Tagged<Bytes>` in provider
+//! `SinkHandlers` `` over the dependency chain, rather than declining to
 //! `PipeHandlers`/`ComposeHandlers` plumbing with the cause nowhere. The tree also shows
 //! `Tagged<Bytes>` flowing into the sink stage, so a reader sees exactly which type reached a stage
 //! that cannot handle it.

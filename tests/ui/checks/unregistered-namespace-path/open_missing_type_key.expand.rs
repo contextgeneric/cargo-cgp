@@ -3,9 +3,9 @@
 //! redirect leaf names the missing path (`@ItemEncoderComponent.Vec<u8>`), the same way the redirect
 //! hop above it names `@ItemEncoderComponent`, so the reader sees exactly what to wire.
 //!
-//! This is the shape `cgp-serde`'s arena test hits: `open ValueDeserializerComponent` with
-//! `@ValueDeserializerComponent.<'b> &'b Coord: DeserializeAndAllocate` commented out, so checking
-//! `&'a Coord` must name `@ValueDeserializerComponent.&'a Coord` rather than a bare `PathCons`.
+//! The same holds for a dispatched reference type: under `open ValueDeserializerComponent` with no
+//! `@ValueDeserializerComponent.<'b> &'b Coord` entry, checking `&'a Coord` names
+//! `@ValueDeserializerComponent.&'a Coord` rather than a bare `PathCons`.
 //!
 //! Two things had to line up. The missing `DelegateComponent` key is a redirect *path*
 //! (`PathCons<ItemEncoderComponent, PathCons<Vec<u8>, Nil>>`), not a bare component marker, so the

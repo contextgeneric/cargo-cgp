@@ -1,32 +1,27 @@
 # cargo-cgp
 
-[Context-Generic Programming (CGP)](https://github.com/contextgeneric/cgp) is a language extension
-for Rust, with pluggable trait implementations at compile-time. It is an ordinary library on the
-stable toolchain that lets one trait have many interchangeable implementations and lets each type
-choose which one it uses — you write that choice as *wiring* in one place, and the compiler resolves
-it statically, so there is no runtime cost.
+`cargo-cgp` is a cargo subcommand that makes the compiler errors of
+[Context-Generic Programming (CGP)](https://github.com/contextgeneric/cgp) readable. `cargo cgp check`
+stands in for `cargo check`, compiling your workspace through a `rustc` wrapper that recognizes CGP
+errors and presents them root cause first, much as Clippy layers its own analysis on top of `rustc`.
+`cargo cgp expand` shows the Rust your CGP macros generate, with CGP's type-level constructs spelled
+the way you wrote them.
 
-`cargo-cgp` is a cargo subcommand that makes CGP's compiler errors readable. It stands in for
-`cargo check`, compiling your workspace through a `rustc` wrapper that recognizes CGP wiring errors
-and re-presents them with the root cause first — much as Clippy layers its own analysis on top of
-`rustc`. A second command, `cargo cgp expand`, shows the Rust your CGP macros generate, with CGP's
-type-level constructs spelled the way you wrote them.
+CGP itself is an ordinary library on the stable toolchain. It lets one trait have many interchangeable
+implementations and lets each type choose which one it uses: you write that choice as *wiring* in one
+place, and the compiler resolves it statically, at no runtime cost.
 
-> **This is an early release (`v0.1.0`).** The tool works and is useful today, but its surface is
-> small and still changing. See [Status](#status) for what it does now.
-
-## What cargo-cgp solves
+## What it solves
 
 A CGP macro expands to ordinary Rust, so the compiler type-checks the *generated* code, not the code
-you wrote. When a provider needs a value its context does not supply, the mistake surfaces as an
-error about types you never typed — buried under machinery names like `IsProviderFor` and
-`CanUseComponent`, with the actual missing field written as a nested `Symbol<6, Chars<..>>` spine, or
-hidden from the output entirely. `cargo-cgp` reads those diagnostics inside the compiler and rewrites
-them into a compact form that names the real cause and the dependency chain that leads to it.
+you wrote. When a provider needs a value its context does not supply, the mistake surfaces as an error
+about types you never typed, under machinery names like `IsProviderFor` and `CanUseComponent`, with
+the missing field written as a nested `Symbol<6, Chars<…>>` spine or absent from the output. The tool
+reads those diagnostics inside the compiler and rewrites them to name the real cause and the
+dependency chain that leads to it.
 
-The difference is easiest to see on a small program with one deliberate mistake. Here a provider
-computes a rectangle's area from `width` and `height` fields, but the `Rectangle` context is missing
-its `height`:
+A small program with one deliberate mistake shows the difference. A provider computes a rectangle's
+area from `width` and `height` fields, but the `Rectangle` context has no `height`:
 
 ```rust
 use cgp::prelude::*;
@@ -63,124 +58,105 @@ check_components! {
 }
 ```
 
-Plain `cargo check` reports this roughly as an unsatisfied bound on a generated check trait, and
-leaves you to decode which field is missing from a `Symbol<..>` spine and a chain of `IsProviderFor`
-notes:
+Plain `cargo check` reports an unsatisfied bound on a generated check trait, and leaves you to decode
+the field from the spine and the chain from its notes:
 
 ```text
 error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
-  |
-  |         AreaCalculatorComponent,
-  |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-  |
-help: the trait `HasField<Symbol<6, Chars<..>>>` is not implemented for `Rectangle`
-      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
+   |
+   |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `HasField<Symbol<6, Chars<'h', Chars<'e', Chars<'i', Chars<'g', Chars<_, cgp::prelude::Chars<'t', Nil>>>>>>>>` is not implemented for `Rectangle`
+      but trait `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', Chars<_, Nil>>>>>>>` is implemented for it
 note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
+   = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
 note: required by a bound in `__CheckRectangle`
-   ...
 ```
 
-`cargo cgp check` rewrites the same failure to name the missing field in its headline and show the
-dependency chain that requires it, tagged with `[CGP-Exxx]` codes you can look up:
+`cargo cgp check` names the missing field in its headline, shows the chain that requires it, and says
+what to add:
 
 ```text
 error[E0277]: [CGP-E001] missing field `height` on `Rectangle`
-  |
-  |         AreaCalculatorComponent,
-  |         ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: root cause: [CGP-E110] missing field `height` on `Rectangle`
-          this is required through the dependency chain:
-            [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
-            └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
-              └─ [CGP-E110] missing field `height` on `Rectangle`
+   |
+   |         AreaCalculatorComponent,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E110] missing field `height` on `Rectangle`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanCalculateArea` for context `Rectangle`
+             └─ [CGP-E102] provider trait impl `AreaCalculator` with context `Rectangle` for provider `RectangleArea`
+               └─ [CGP-E110] missing field `height` on `Rectangle`
+   = help: add the field `height: f64` to `Rectangle`
 ```
 
-The Rust error code (`E0277`) is always kept, so `rustc --explain` still works; the `[CGP-Exxx]`
-codes ride inside the message and are catalogued in
-the [error-code catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/error-code.md).
+The Rust error code stays, so `rustc --explain E0277` still works, and the
+[error-code catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/error-code.md) explains each `[CGP-Exxx]` code. An error the tool does not
+recognize passes through as `rustc` wrote it.
+
+The check turns on the next-generation trait solver, which surfaces CGP dependency errors the default
+solver hides, so its errors can differ from those of plain `cargo check`. The tool adds no way to
+build, run, or test, so keep using plain cargo for those.
 
 ## Installing
 
-`cargo-cgp` is two binaries — the `cargo-cgp` front-end you invoke and a `cargo-cgp-driver` that
-links the compiler internals — plus the exact nightly toolchain the driver is built against. There
-are two ways to install the set, depending on how your machine manages Rust: with cargo if you have
-rustup, or with Nix. cargo-cgp requires that exact nightly, which `cargo cgp setup` installs (or the
-Nix flake builds against), and forces it only for its own check, so your own project keeps whatever
-toolchain it already uses.
+The tool is two binaries, the `cargo-cgp` front-end you invoke and a `cargo-cgp-driver` that links the
+compiler's internals, plus the exact nightly toolchain the driver is built against. It forces that
+nightly only for its own check, so your project keeps its toolchain. Install with cargo if you have
+rustup, or with Nix.
+
+### With cargo
+
+The front-end builds under the toolchain you already have, which must be Rust 1.96 or newer. Then
+`cargo cgp setup` installs the pinned nightly and builds the matching driver against it:
+
+```sh
+cargo install --locked cargo-cgp
+cargo cgp setup
+```
 
 ### With Nix
 
 The flake at the repository root builds both binaries against the pinned nightly and wraps them so
-they run without rustup. To install the tool onto your `PATH` so `cargo cgp check` works like any
-other cargo subcommand, install the release tag from the profile:
+they run without rustup:
 
 ```sh
 nix profile install github:contextgeneric/cargo-cgp/v0.1.0
 ```
 
-### With cargo
-
-The cargo path installs the small front-end first, then lets it provision the pinned nightly and the
-matching driver in a second step:
+To try the tool without installing it, run the flake from your project's directory. Everything after
+`--` goes to the check, and your project's toolchain and `target/` stay untouched:
 
 ```sh
-cargo install --locked cargo-cgp   # installs the front-end (builds on any toolchain)
-cargo cgp setup              # installs the pinned nightly + driver, in lockstep
-```
-
-The first command builds the front-end under whatever toolchain you already have; `cargo cgp setup`
-then provisions the pinned nightly and builds the matching driver against it, in lockstep. Later,
-`cargo cgp update` upgrades the tool. Full instructions for every path, including installing from a
-source checkout, are in
-the [installation guide](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/installation.md).
-
-## Running it without installing
-
-To try the tool on a project without adding anything to your `PATH`, run the flake's default app from
-that project's directory, pinning the release tag:
-
-```sh
-cd /path/to/your/project     # a cargo package or workspace that uses `cgp`
 nix run github:contextgeneric/cargo-cgp/v0.1.0 -- check
 ```
 
-This builds (or reuses a cached) `cargo-cgp` and `cargo-cgp-driver` under the pinned nightly and runs
-`cargo cgp check` in the current directory, with everything after `--` forwarded to the check. It
-needs no rustup and leaves the project's own toolchain and `target/` untouched, which makes it
-convenient for CI or a one-off trial. To pin the tool as an input in another project's own flake, add
-`inputs.cargo-cgp.url = "github:contextgeneric/cargo-cgp/v0.1.0";` and take its
-`packages.default`.
+The [installation guide](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/installation.md) covers updating, uninstalling, and installing
+from a source checkout.
 
-## Uninstalling
+## Expanding the generated code
 
-How you uninstall matches how you installed.
-
-If you installed with **Nix**, remove it from your profile:
+`cargo cgp expand` prints one target after macro expansion, with type-level constructs restored to
+macro notation: a field tag reads `Symbol!("width")` rather than the raw `Symbol<5, Chars<…>>` spine.
+Reach for it when an error names types you never wrote and you need to see the impl behind them.
 
 ```sh
-nix profile remove cargo-cgp
+cargo cgp expand --lib                              # the whole library target
+cargo cgp expand --lib --item contexts::MockApp     # one module, type, or trait
+cargo cgp expand --help                             # the options
 ```
 
-If you installed with **cargo**, uninstall both binaries:
+A package with a library and a binary needs `--lib` or `--bin NAME`, and every other argument goes to
+`cargo rustc`. `--item <path>` narrows the output: a module gives its contents, a type its declaration
+and every impl written for it, and a trait its definition and every impl of it. That last form suits a
+component, whose generated items are almost all impls. The command is not a check, since it stops once
+the macros are expanded, so its success says nothing about your wiring.
 
-```sh
-cargo uninstall cargo-cgp cargo-cgp-driver
-```
+## Editor integration
 
-The pinned nightly toolchain that `cargo cgp setup` installed is left in place, since other tools may
-depend on it. Remove it by hand if nothing else needs it (its name is printed by
-`cargo-cgp-driver --version`):
-
-```sh
-rustup toolchain uninstall <pinned-nightly>
-```
-
-## Editor integration (Rust Analyzer)
-
-Rust Analyzer can run `cargo cgp check` as its on-save check backend, so the rewritten CGP errors
-appear inline in your editor. Because the command is two words and must emit JSON, wire it through
-`check.overrideCommand` (not `check.command`) with `--message-format=json`:
+Rust Analyzer can run `cargo cgp check` as its on-save check, so the rewritten errors appear inline.
+The command is two words and must emit JSON, so wire it through `check.overrideCommand`:
 
 ```jsonc
 "rust-analyzer.check.overrideCommand": [
@@ -188,59 +164,27 @@ appear inline in your editor. Because the command is two words and must emit JSO
 ]
 ```
 
-The check builds into an isolated `target/cgp` directory, so it will not contend with your normal
-builds or Rust Analyzer's own project loading. The full integration notes are in
-the [usage guide](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/usage.md#editor-integration-rust-analyzer).
-
-## Expanding the generated code
-
-Because a CGP mistake is usually a mistake in *generated* code, the second command shows you that
-code. `cargo cgp expand` prints a target after macro expansion with CGP's type-level constructs
-**resugared** — a field tag reads `Symbol!("width")` rather than the raw `Symbol<5, Chars<'w', …>>`
-spine the compiler prints — so the generated impls are legible in the same vocabulary as your source:
-
-```sh
-cargo cgp expand --lib                              # the whole library target
-cargo cgp expand --lib --item contexts::MockApp     # one module, type, or trait
-cargo cgp expand --help                             # the options, including --item
-```
-
-It expands exactly one target, so a package with a library and a binary needs `--lib` or
-`--bin NAME`; every other argument is forwarded to `cargo rustc`. `--item <path>` narrows the output:
-a module gives its contents, a type its declaration and every impl written for it, and a trait its
-definition and every impl of it — the last being the one to reach for on a component, whose generated
-items are almost all impls. Reach for `expand` when an error names types you never wrote and you need
-to see the impl behind it; note that it is not a check, since it stops as soon as the macros are
-expanded.
-
-## Status
-
-This is an early release. The tool ships two commands that read your code. `cargo cgp check`
-stands in for `cargo check` and does two things for CGP code: it turns on the **next-generation trait
-solver**, which surfaces the CGP dependency errors the default solver hides, and it **rewrites the
-wiring errors it recognizes** into the root-cause-first form shown above; errors it does not yet
-recognize pass through unchanged, and the set of recognized classes will grow with later releases.
-`cargo cgp expand` shows the generated code, as above.
+The check builds into its own `target/cgp` directory, so it does not wait on your normal builds. The
+[usage guide](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/usage.md#editor-integration-rust-analyzer) lists what this override
+changes in the editor.
 
 ## Learn more
 
-This tool's documentation lives in the [CGP knowledge base](https://github.com/contextgeneric/cgp-knowledge-base),
-the consolidated documentation for every project in the CGP ecosystem. Its
-[`cargo-cgp/` section](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/README.md) covers both how to use the tool and how it is built:
+The [CGP knowledge base](https://github.com/contextgeneric/cgp-knowledge-base) holds this tool's
+documentation, under its [`cargo-cgp/` section](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/README.md):
 
-- [Usage](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/usage.md) — running the check, reading its output, expanding a
-  target, and editor integration.
-- [Installation](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/installation.md) — every install, update, and uninstall
-  path.
-- [Error codes](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/error-code.md) — the catalog of the `[CGP-Exxx]` codes in the output.
-- [Troubleshooting](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/troubleshooting.md) — what to do when the tool itself
-  will not run.
-- [The implementation documents](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/README.md) — the internals: the
-  two-binary design, the driver, and how the diagnostics are transformed.
+- [Usage](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/usage.md): running the check, reading its output, and expanding a target.
+- [Installation](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/installation.md): every install, update, and uninstall path.
+- [Error codes](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/error-code.md): the `[CGP-Exxx]` codes in the output.
+- [Troubleshooting](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/troubleshooting.md): what to do when the tool itself will not run.
+- [Known issues](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md): the errors the tool does not yet present well.
+- [Implementation](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/README.md): the two binaries, the driver, and how diagnostics
+  are transformed.
 
-Contributors and agents should start from [AGENTS.md](AGENTS.md), which maps the code and records the
-conventions this project follows, and [sibling-projects.md](sibling-projects.md), which lists the
-related repositories and where to find them.
+Contributors and agents start from
+[AGENTS.md](https://github.com/contextgeneric/cargo-cgp/blob/main/AGENTS.md), and
+[sibling-projects.md](https://github.com/contextgeneric/cargo-cgp/blob/main/sibling-projects.md) lists
+the related repositories.
 
 ## License
 

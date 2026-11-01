@@ -7,7 +7,7 @@
 //! undeclared trait on the context (compare
 //! [`undeclared_uses_trait_in_cgp_impl`](undeclared_uses_trait_in_cgp_impl.rs)), but the fix is a
 //! bound on `Value`, which `#[uses(…)]` cannot express, since it bounds the context. So
-//! `resolve::detect_undeclared_trait` requires the failing call's receiver to be the impl's generic
+//! `detect::detect_undeclared_trait` requires the failing call's receiver to be the impl's generic
 //! context, and this error passes through as rustc wrote it. A `[CGP-E030]` here would be a
 //! regression that hands the reader a wrong fix.
 //!
