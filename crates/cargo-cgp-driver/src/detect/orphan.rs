@@ -21,6 +21,7 @@ use rustc_middle::ty::print::with_forced_trimmed_paths;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
+use rustc_span::hygiene::ExpnKind;
 
 use crate::resolve::query::{
     byte_range, describe_key, is_namespace_lookup_trait, local_trait_impls,
@@ -45,15 +46,18 @@ pub fn classify_orphan_conflict(tcx: TyCtxt<'_>, primary_span: Span) -> Option<O
 
     // The offending impl is the one the caret sits on, matched by source range (the macro re-spans
     // its generated impl onto the invocation, whose range the coherence caret shares). When the
-    // caret lands on none of them — a span shape the match does not reach — a lone candidate is
-    // still unambiguous, so fall back to it; more than one leaves the choice ambiguous and declines.
+    // caret lands on none of them, as for a `#[default_impl]`, whose caret is the `#[cgp_impl]`
+    // attribute and whose impl is spanned on its key, a lone candidate is still unambiguous, so fall
+    // back to it; more than one leaves the choice ambiguous and declines. The fallback needs a caret
+    // a CGP macro generated: an `E0117` names no machinery parameter, so a plain Rust orphan beside a
+    // registration reaches this scan too, its caret on an impl the program or its own macro wrote.
     let orphan = candidates
         .iter()
         .find(|candidate| {
             byte_range(candidate.def_span).overlaps_or_adjacent(byte_range(primary_span))
         })
         .or(match candidates.as_slice() {
-            [only] => Some(only),
+            [only] if is_from_cgp_macro(primary_span) => Some(only),
             _ => None,
         })?;
 
@@ -93,9 +97,13 @@ fn orphan_impls(tcx: TyCtxt<'_>) -> Vec<OrphanImpl<'_>> {
         // defined in another crate or built in. A local key would be covered and again no orphan,
         // and a generic parameter is a blanket impl rather than a registration.
         let key = trait_ref.self_ty();
-        if matches!(key.kind(), ty::Param(_))
-            || matches!(key.kind(), ty::Adt(def, _) if def.did().is_local())
-        {
+        if matches!(key.kind(), ty::Param(_)) || is_local_type(key) {
+            continue;
+        }
+        // A local type among the trait's arguments covers the impl as well, as the local component
+        // of `impl DefaultImpls1<LocalComponent, __Components__> for String` does: a legal per-type
+        // registration, whatever its key.
+        if trait_ref.args.types().skip(1).any(is_local_type) {
             continue;
         }
         impls.push(OrphanImpl {
@@ -106,6 +114,25 @@ fn orphan_impls(tcx: TyCtxt<'_>) -> Vec<OrphanImpl<'_>> {
         });
     }
     impls
+}
+
+/// Whether `span` comes from a CGP macro, recognized as a macro whose name, without its path, starts
+/// with `cgp_`: every construct that registers into a namespace is written with one.
+fn is_from_cgp_macro(span: Span) -> bool {
+    span.macro_backtrace().any(|expansion| {
+        matches!(expansion.kind, ExpnKind::Macro(_, name)
+            if name.as_str().rsplit("::").next().is_some_and(|last| last.starts_with("cgp_")))
+    })
+}
+
+/// Whether the orphan rule counts `ty` as local: a type this crate defines, through any references,
+/// which the rule looks through. The other fundamental types, `Box` and `Pin`, are not read.
+fn is_local_type(ty: Ty<'_>) -> bool {
+    match ty.kind() {
+        ty::Adt(def, _) => def.did().is_local(),
+        ty::Ref(_, inner, _) => is_local_type(*inner),
+        _ => false,
+    }
 }
 
 /// Which construct generated the impl, read from its own machinery type parameter: a
