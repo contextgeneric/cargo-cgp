@@ -156,8 +156,11 @@ fn render_segment(segment: &str) -> Option<String> {
     // A **module-qualified** segment (`std::io::Error`) is a type `Path!` accepts as written, so it
     // stays qualified: rustc prints a name qualified only when it is ambiguous, and the chain strips
     // CGP's own qualifiers before this stage. It must be a run of plain identifiers ending in a type
-    // name; a lowercase tail (would be a `Symbol`) or one carrying generics declines.
-    if segment.contains("::") {
+    // name; a lowercase tail (would be a `Symbol`) or one carrying generics declines. Only the
+    // segment's own head counts: a path inside its arguments (`Wrap<a::Item>`) leaves it a compound
+    // type.
+    let head = segment.split('<').next().unwrap_or(segment);
+    if head.contains("::") {
         let tail = type_segment_tail(segment)?;
         return (tail.starts_with(|c: char| c.is_ascii_uppercase()) || is_primitive_type(tail))
             .then(|| segment.to_owned());

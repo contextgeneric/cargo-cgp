@@ -1,0 +1,14 @@
+error[E0277]: [CGP-E001] missing wiring for `@GreeterComponent.Wrap<a::Item>` on `App`
+  --> src/main.rs:44:9
+   |
+44 |         GreeterComponent: Wrap<a::Item>,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E113] missing wiring for `@GreeterComponent.Wrap<a::Item>` on `App`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanGreet<Wrap<a::Item>>` for context `App`
+             └─ [CGP-E103] redirect lookup to `@GreeterComponent` in `App`
+               └─ [CGP-E113] missing wiring for `@GreeterComponent.Wrap<a::Item>` on `App`
+   = help: wire `@GreeterComponent.Wrap<a::Item>` to a provider in the wiring of `App`
+
+For more information about this error, try `rustc --explain E0277`.

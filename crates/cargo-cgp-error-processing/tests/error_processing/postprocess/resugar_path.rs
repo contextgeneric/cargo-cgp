@@ -89,6 +89,20 @@ fn resugar_path_skips_a_qualified_segment_with_a_lowercase_tail() {
     assert_eq!(resugar_path("PathCons<foo::bar, Nil>", true), None);
 }
 
+// Property: a segment whose own head is a plain type is rendered verbatim, whatever paths its
+// arguments hold, since `Path!` parses it as the same type.
+#[test]
+fn resugars_a_segment_whose_argument_is_qualified() {
+    assert_eq!(
+        resugar_path(
+            "PathCons<GreeterComponent, PathCons<Wrap<a::Item>, Nil>>",
+            false
+        )
+        .as_deref(),
+        Some("@GreeterComponent.Wrap<a::Item>"),
+    );
+}
+
 // Property: a qualified segment whose tail carries generics declines the whole path.
 #[test]
 fn resugar_path_skips_a_qualified_segment_with_generics() {
