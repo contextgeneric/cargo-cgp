@@ -76,13 +76,10 @@ fn resolve_from_named_trait(
 ) -> Option<Resolved> {
     let tcx = cx.tcx;
     // The failing context, from a struct-definition span (an `E0599` "method not found for this
-    // struct"). For the trait path this is unioned with the *expression* whose type fails (a
-    // `where`-bound `E0277` on a call argument, whose context sits on no struct-definition span —
-    // see [`contexts_at_spans`]); the consumer path keeps its existing struct-span recovery alone.
+    // struct"), unioned with the *expression* whose type fails (a bound's `E0277` on a call argument,
+    // whose context sits on no struct-definition span; see [`contexts_at_spans`]).
     let mut contexts = context_candidates_from_spans(tcx, spans);
-    if kind == TraitKind::Blanket {
-        contexts.extend(contexts_at_spans(tcx, spans));
-    }
+    contexts.extend(contexts_at_spans(tcx, spans));
     for trait_did in local_traits_from_spans(tcx, spans, kind) {
         // `count() == 1` is `Self` alone, so the obligation is simply `Ctx: Trait` (no params).
         if tcx.generics_of(trait_did).count() != 1 {

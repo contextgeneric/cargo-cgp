@@ -1,0 +1,41 @@
+error[E0277]: the trait bound `App: CanGreet` is not satisfied
+  --> src/main.rs:37:26
+   |
+37 |     let _holder = Holder(app);
+   |                   ------ ^^^ unsatisfied trait bound
+   |                   |
+   |                   required by a bound introduced by this call
+   |
+help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
+      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
+  --> src/main.rs:26:9
+   |
+26 |     pub label: String,
+   |         ^^^^^
+note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, App>`
+  --> src/main.rs:15:1
+   |
+15 | #[cgp_impl(new GreetHello)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `App` to implement `IsProviderFor<GreeterComponent, App>`
+note: required for `App` to implement `Greeter<App>`
+  --> src/main.rs:10:1
+   |
+10 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `App` to implement `CanGreet`
+  --> src/main.rs:10:1
+   |
+10 | #[cgp_component(Greeter)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+11 | pub trait CanGreet {
+   |           ^^^^^^^^
+note: required by a bound in `Holder`
+  --> src/main.rs:22:22
+   |
+22 | pub struct Holder<T: CanGreet>(pub T);
+   |                      ^^^^^^^^ required by this bound in `Holder`
+   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.

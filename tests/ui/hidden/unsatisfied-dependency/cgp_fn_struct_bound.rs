@@ -6,11 +6,10 @@
 //! for an `App` without that field fails with an `E0277` on the argument, `required by a bound in
 //! `Holder``. The root cause is the missing `name` field on `App`.
 //!
-//! The tool resolves the failure but names the wrong owner: the headline and the tree say the field
-//! is missing on `Holder<T>`, the struct whose definition holds the bound, rather than on `App`.
-//! This fixture pins that false statement as today's output; the fix is queued.
+//! rustc's note lands on the bound inside `Holder`'s generics, so `Holder` is only passing the
+//! requirement on, and the context is the argument the caret points at.
 
-//@quality: usability
+//@quality: acceptable
 //@codes: CGP-E003 CGP-E104 CGP-E110
 
 use cgp::prelude::*;

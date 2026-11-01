@@ -1,0 +1,27 @@
+//! A `#[cgp_fn]` trait required by a struct's `where` clause, built with a context missing the field
+//! the trait reads. The root cause is the missing `name` field on `App`, and `Holder` only passes the
+//! requirement on.
+
+//@quality: acceptable
+//@codes: CGP-E003 CGP-E104 CGP-E110
+
+use cgp::prelude::*;
+
+#[cgp_fn]
+fn get_name(&self, #[implicit] name: &str) -> String {
+    name.to_owned()
+}
+
+pub struct Holder<T>(pub T)
+where
+    T: GetName;
+
+#[derive(HasField)]
+pub struct App {
+    pub label: String,
+}
+
+fn main() {
+    let app = App { label: String::new() };
+    let _holder = Holder(app);
+}

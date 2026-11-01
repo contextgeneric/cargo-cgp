@@ -38,7 +38,8 @@ pub(crate) fn enclosing_trait_impls(tcx: TyCtxt<'_>, spans: &[Span]) -> Vec<DefI
 /// identity arguments (so a generic context keeps its generic form). A provider struct that merely
 /// shares a span — rustc names it in a "required for … to implement …" note — is excluded, since a
 /// provider is never a context; the caller then picks the candidate that actually wires a failing
-/// component.
+/// component. A span on the ADT's generics is left out too: rustc's "required by a bound in `Holder`"
+/// note lands on a bound of `struct Holder<T: Trait>`, which `Holder` asks of what it holds.
 pub(crate) fn context_candidates_from_spans<'tcx>(
     tcx: TyCtxt<'tcx>,
     spans: &[Span],
@@ -50,7 +51,11 @@ pub(crate) fn context_candidates_from_spans<'tcx>(
             continue;
         }
         let def_span = tcx.def_span(did);
-        if spans.iter().any(|&span| def_span.contains(span)) {
+        let generics_span = tcx.hir_get_generics(local).map(|generics| generics.span);
+        let names_adt = |span: Span| {
+            def_span.contains(span) && !generics_span.is_some_and(|inner| inner.contains(span))
+        };
+        if spans.iter().any(|&span| names_adt(span)) {
             let ty = tcx.type_of(did).instantiate_identity().skip_norm_wip();
             // A provider struct or a component marker is never a context; exclude both so an
             // anchor does not mis-recover one as the failing context. A marker's definition sits
