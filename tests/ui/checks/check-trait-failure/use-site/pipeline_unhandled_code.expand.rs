@@ -2,7 +2,7 @@
 //! A pipeline stage that routes back to the context for a `Code` nothing is wired for.
 //!
 //! This is the shape a type-level DSL produces when a program names a syntax the language
-//! has no interpreter for, most simply, when a step is deleted and something else is left
+//! has no interpreter for: most simply, when a step is deleted and something else is left
 //! in its place. Each stage of the pipeline is a `Call<Code>` provider whose whole job is to
 //! route back through the context's *own* handler for its `Code`, so a stage naming an
 //! unwired `Code` fails not on a dependency of its own but on a missing dispatch entry one

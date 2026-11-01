@@ -5,7 +5,7 @@
 //!
 //! Unlike [`manual_supertrait_impl`](../../../hidden/unsatisfied-dependency/manual_supertrait_impl.rs) and
 //! [`traced_send_wrapper`](traced_send_wrapper.rs), where the wrapper is implemented *on the context
-//! itself* and carries the CGP consumer trait as a *direct* supertrait, here the routing trait
+//! itself* and carries the CGP consumer trait as a *direct* supertrait: here the routing trait
 //! `CanAddAppRoutes` is implemented for the foreign `Box<App>`, and the CGP consumer failure sits two
 //! hops down a chain of ordinary user-trait `where`-clauses (`Box<App>: CanAddRoute<App, GreetApi>` →
 //! `App: CanHandleApi<GreetApi>`). The context `App` appears only as a type *argument*, never as the
@@ -13,8 +13,7 @@
 //! CGP consumer" recovery does not fire; the wrapper-chain anchor descends the `where`-clauses to
 //! reach it instead.
 //!
-//! The routing impl carries the associated-type bound `Ctx::Response: Send`, as a web framework's
-//! `App::Request: FromRequestParts` would: it is the projection over the broken `CanHandleApi` that
+//! The routing impl carries the associated-type bound `Ctx::Response: Send`: it is the projection over the broken `CanHandleApi` that
 //! makes the downstream `CanAddRoute` genuinely fail: the direct `App: CanHandleApiSend<GreetApi>`
 //! bound is instead *assumed to hold* off its ill-formed impl, so the anchor reaches the real cause
 //! through the projection's base trait (`App: CanHandleApi<GreetApi>`) rather than that bound. The

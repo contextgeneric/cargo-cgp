@@ -317,7 +317,7 @@ fn a_wholly_redundant_graph_reports_itself_fully_elided() {
     assert!(DependencyGraph::from_paths(&paths).fully_elided_by(&seen));
 }
 
-/// A bare leaf hides no subtree, so it is drawn in full wherever a chain bottoms out on it, a
+/// A bare leaf hides no subtree, so it is drawn in full wherever a chain bottoms out on it: a
 /// graph that is only a leaf is never reported as fully elided, however often it recurs.
 #[test]
 fn a_leaf_only_graph_is_never_elided() {

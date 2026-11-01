@@ -44,12 +44,12 @@ pub fn cause_notes_seen(
     }
 
     // Every root of this graph was drawn by an earlier note, so eliding against that note has nothing
-    // to *trim*, sinceit would remove the whole derivation and leave the block asserting a cause with no
+    // to *trim*, since it would remove the whole derivation and leave the block asserting a cause with no
     // account of where it came from. The cross-block elision exists to drop a long shared tail hanging
     // under a block's own distinct prefix; a block with no distinct prefix at all is the degenerate
     // case, not the case it was built for. Such a block has already survived de-duplication, so it is a
     // *different* failure that happens to run through ground another one covered, and it earns its own
-    // chain: render it against a fresh set, ignoring what came before. The cost is bounded, a
+    // chain: render it against a fresh set, ignoring what came before. The cost is bounded: a
     // wholly-contained graph is by construction no larger than the one that contains it, and the
     // nodes still join `seen`, so later notes elide against this block as usual.
     let chain = if graph.fully_elided_by(seen) {

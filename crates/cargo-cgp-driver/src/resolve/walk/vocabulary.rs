@@ -9,7 +9,7 @@ use crate::config::{
 use crate::resolve::data::is_data_trait;
 use crate::resolve::query::{is_cgp_item, is_provider_trait};
 
-/// Whether `pred` is the check-trait scaffolding (`CanUseComponent` or `IsProviderFor`), the walk
+/// Whether `pred` is the check-trait scaffolding (`CanUseComponent` or `IsProviderFor`), which the walk
 /// resolves *around* rather than through. These sit beside the real consumer/provider-trait
 /// obligation in every generated blanket impl and carry only the delegation check
 /// (`CanUseComponent`) or a copy of the provider's `where` clause (`IsProviderFor`), both redundant

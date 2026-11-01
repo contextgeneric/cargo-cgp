@@ -1,5 +1,5 @@
 //! A missing field read *directly* by a provider: the shorter-chain counterpart of
-//! [`base_area_1`](base_area_1.rs).
+//! [`base_area_1`](base_area_1.rs). The repository README quotes this program and its output.
 //!
 //! Where `base_area_1` reads its fields through a `#[cgp_auto_getter]` getter trait
 //! (`HasRectangleFields`), `RectangleArea` here takes the `width`/`height` values as `#[implicit]`
