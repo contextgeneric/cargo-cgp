@@ -77,7 +77,7 @@ pub fn rebuilt_multispan(span: &MultiSpan, labels: Vec<(Span, DiagMessage)>) -> 
     rebuilt
 }
 
-/// Every span a diagnostic carries — its primary and labelled spans plus each child's — the pool
+/// Every span a diagnostic carries (its primary and labelled spans plus each child's): the pool
 /// the use-site resolver searches for one that lands on the failing context's type definition.
 pub fn diagnostic_spans(diag: &DiagInner) -> Vec<Span> {
     let mut spans: Vec<Span> = diag.span.primary_spans().to_vec();

@@ -29,7 +29,7 @@ use std::path::Path;
 
 /// Lines dropped from the rendered `.stderr` because they carry no diagnostic content.
 /// The temp-file notes name a volatile, hash-bearing path; the `could not compile` line
-/// is cargo's own build-failure summary, which is not part of a diagnostic — so dropping it
+/// is cargo's own build-failure summary, which is not part of a diagnostic, so dropping it
 /// keeps the tool pass and the baseline pass comparable.
 const DROP_MARKERS: &[&str] = &[
     "the full name for the type has been written to",
@@ -87,8 +87,8 @@ pub fn normalize_baseline(
 
 /// Rewrite every `Chars<…>` type-level spine in `text` to a stable `Chars<..>` placeholder,
 /// collapsing the whole balanced spine (`Chars<'m', Chars<'a', …, _>>` or `… Nil>`) at once. This
-/// erases the run-to-run drift in how the baseline renders a `Symbol` field-name spine — the depth
-/// at which rustc truncates it, and whether the terminal reads `_` or `Nil` — while leaving the
+/// erases the run-to-run drift in how the baseline renders a `Symbol` field-name spine: the depth
+/// at which rustc truncates it, and whether the terminal reads `_` or `Nil`, while leaving the
 /// enclosing `Symbol<N, …>` (and its stable length `N`) intact. Scanning from each `Chars<` and
 /// consuming to its matching `>` by angle-bracket depth means a nested spine is swallowed by its
 /// outermost `Chars<`, so one placeholder replaces the entire spine.
@@ -127,7 +127,7 @@ fn collapse_chars_spines(text: &str) -> String {
 /// Only the absolute paths are replaced. None of the diagnostic normalization applies here, and one
 /// piece of it would actively hide a defect: `collapse_chars_spines` exists to absorb how rustc
 /// truncates a `Chars` spine in a *diagnostic*, but in an expansion a raw `Chars<…>` spine means the
-/// resugaring declined — exactly what the snapshot is there to show.
+/// resugaring declined: exactly what the snapshot is there to show.
 pub fn normalize_source(raw: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path) -> String {
     raw.lines()
         .map(|line| replace_paths(line, harness_dir, cgp_root, sysroot))

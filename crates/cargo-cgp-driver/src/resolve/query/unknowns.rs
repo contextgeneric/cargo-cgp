@@ -94,7 +94,7 @@ impl<'tcx> TypeFolder<TyCtxt<'tcx>> for ProjectionResolver<'tcx> {
 
 /// Try to reduce one associated-type projection `alias_ty` to a concrete type, treating the
 /// unknown-input placeholders inside it as *deferrable* inference variables rather than rigid
-/// falsifiers. Returns the reduced type only when it is fully concrete — no inference variable or
+/// falsifiers. Returns the reduced type only when it is fully concrete, with no inference variable or
 /// placeholder left (so it does not depend on the unknown input) and no longer an alias (the
 /// projection genuinely reduced). `None` otherwise, leaving the projection as it was.
 ///

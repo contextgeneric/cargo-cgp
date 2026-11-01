@@ -11,7 +11,7 @@ use crate::paths::cgp_crate_dir;
 /// crate into the cargo-cgp workspace above it.
 ///
 /// Rewritten per fixture, because which auxiliary crates are needed varies by
-/// fixture — but only when the content actually changes, so a run of ordinary
+/// fixture, but only when the content actually changes, so a run of ordinary
 /// (no-aux) fixtures leaves the manifest untouched and never disturbs cargo's
 /// fingerprints for the cached `cgp` build.
 pub fn write_manifest(harness_crate: &Path, aux: &[(&str, &Path)]) {

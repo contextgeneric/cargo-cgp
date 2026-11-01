@@ -1,4 +1,4 @@
-//! Tests for `update`'s pure logic — the sparse-index path convention
+//! Tests for `update`'s pure logic: the sparse-index path convention
 //! ([`sparse_index_path`]), version extraction ([`parse_versions`]), and the
 //! channel-preserving update selection ([`select_update`]).
 
@@ -41,7 +41,7 @@ fn stable_install_updates_to_the_highest_stable_ignoring_prereleases() {
 
 #[test]
 fn stable_install_with_only_prereleases_ahead_does_not_update() {
-    // A higher pre-release exists but no newer stable — stay put.
+    // A higher pre-release exists but no newer stable: stay put.
     let vs = versions(&["0.1.0", "0.1.1-alpha", "0.2.0-alpha"]);
     assert_eq!(select_update(&vs, "0.1.0").unwrap(), None);
 }

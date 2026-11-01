@@ -6,12 +6,12 @@ use rustc_span::def_id::DefId;
 use crate::config::{CGP_COMPONENT_CRATE, CGP_TYPE_CRATE, DELEGATE_COMPONENT_TRAIT, USE_TYPE_TYPE};
 use crate::resolve::query::is_cgp_item;
 
-/// Whether `def_id` is a CGP *provider* trait, recognized **structurally** — by the provider
+/// Whether `def_id` is a CGP *provider* trait, recognized **structurally**: by the provider
 /// blanket impl `#[cgp_component]` generates, `impl<Ctx, P> ProviderTrait<Ctx> for P where P:
 /// DelegateComponent<Marker>, …`, whose `Self` is a bare type parameter bounded by
 /// `DelegateComponent`. This deliberately avoids the trait's `IsProviderFor` supertrait: the typed
 /// resolver must not depend on `IsProviderFor`, which cargo-cgp aims to make obsolete, so it reads
-/// the delegation-blanket shape instead — the same information without the workaround marker.
+/// the delegation-blanket shape instead, the same information without the workaround marker.
 ///
 /// The descent treats a provider-trait bound as a step to walk into (its concrete impl carries the
 /// provider's real `where` bounds), and a provider-trait obligation *for the context itself* is
@@ -21,7 +21,7 @@ pub fn is_provider_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// The component marker a provider trait keys on, read from its provider blanket's `P:
-/// DelegateComponent<Marker>` bound — the `IsProviderFor`-free replacement for reading the marker
+/// DelegateComponent<Marker>` bound: the `IsProviderFor`-free replacement for reading the marker
 /// off the `IsProviderFor<Marker, …>` supertrait. `None` when `def_id` has no such blanket (so it
 /// is not a provider trait). Also serves as the provider-trait recognizer ([`is_provider_trait`]).
 pub fn provider_blanket_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
@@ -55,7 +55,7 @@ pub fn provider_blanket_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option
 /// The provider trait a consumer trait pairs with, found through the consumer's blanket impl
 /// `impl<C> Consumer for C where C: Provider<C>`: the `where`-bound whose self type is the impl's
 /// own self and whose trait is a [provider trait](is_provider_trait) is that provider. `None` when
-/// `def_id` is not a CGP consumer trait — so [`is_consumer_trait`] is exactly this returning `Some`.
+/// `def_id` is not a CGP consumer trait, so [`is_consumer_trait`] is exactly this returning `Some`.
 /// This is `IsProviderFor`-free: it reads only the consumer↔provider blanket link.
 pub fn consumer_provider_trait(tcx: TyCtxt<'_>, consumer_did: DefId) -> Option<DefId> {
     for &impl_did in tcx.trait_impls_of(consumer_did).blanket_impls() {
@@ -73,14 +73,14 @@ pub fn consumer_provider_trait(tcx: TyCtxt<'_>, consumer_did: DefId) -> Option<D
     None
 }
 
-/// Whether `def_id` is a CGP *consumer* trait — one whose blanket impl routes its own context to a
+/// Whether `def_id` is a CGP *consumer* trait: one whose blanket impl routes its own context to a
 /// provider trait ([`consumer_provider_trait`]). `IsProviderFor`-free, like the rest of the typed
 /// resolver's trait recognition.
 pub fn is_consumer_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     consumer_provider_trait(tcx, def_id).is_some()
 }
 
-/// Recover the `(consumer trait, provider trait)` a component marker keys — the `IsProviderFor`-free
+/// Recover the `(consumer trait, provider trait)` a component marker keys: the `IsProviderFor`-free
 /// inversion the anchors use to turn a `check_components!` / use-site `CanUseComponent<Marker, …>`
 /// entry into the real consumer obligation to walk. The provider trait is the one whose provider
 /// blanket bounds on `DelegateComponent<marker>` ([`provider_blanket_marker`]); the consumer is the
@@ -105,7 +105,7 @@ pub fn consumer_of_provider(
         .find(|&trait_did| consumer_provider_trait(tcx, trait_did) == Some(provider_did))
 }
 
-/// The provider trait a component marker keys — the trait whose provider blanket bounds on
+/// The provider trait a component marker keys: the trait whose provider blanket bounds on
 /// `DelegateComponent<marker>` ([`provider_blanket_marker`]). `None` when `marker` is not an ADT,
 /// or when no provider trait keys on it, which is what makes this the marker recognizer
 /// [`is_component_marker`] as well.
@@ -122,8 +122,8 @@ pub fn marker_provider_trait(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<DefId> {
     })
 }
 
-/// Whether `ty` is a CGP **component marker** — the `…Component` key some provider trait's
-/// delegation blanket bounds on ([`marker_provider_trait`]) — rather than an ordinary type used as
+/// Whether `ty` is a CGP **component marker** (the `…Component` key some provider trait's
+/// delegation blanket bounds on ([`marker_provider_trait`])), rather than an ordinary type used as
 /// a wiring key, such as the `String` of a per-type default or the `u64` of a dispatch table. The
 /// distinction is what lets a conflicting key be worded as a component or as a type, and it is
 /// structural rather than by name, so a type merely *called* `FooComponent` does not pass.
@@ -131,8 +131,8 @@ pub fn is_component_marker(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     marker_provider_trait(tcx, ty).is_some()
 }
 
-/// The component marker a CGP **abstract-type** component keys on — `ScalarTypeProviderComponent`
-/// for `HasScalarType` — or `None` when `def_id` is not one. This is the name a context writes on the
+/// The component marker a CGP **abstract-type** component keys on (`ScalarTypeProviderComponent`
+/// for `HasScalarType`), or `None` when `def_id` is not one. This is the name a context writes on the
 /// left of the `delegate_components!` entry that chooses the concrete type, so it is what the
 /// mismatch leaf's `help` offers as the fix.
 ///
@@ -141,7 +141,7 @@ pub fn is_component_marker(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// generates and nothing else does: the trait is a CGP consumer trait
 /// ([`consumer_provider_trait`]), its *only* associated item is a type, and its provider trait
 /// carries the `UseType<T>` blanket impl that supplies that type. The last condition is the
-/// decisive one — it is what makes `UseType<T>` a valid fix to suggest — and it is anchored by
+/// decisive one, since it makes `UseType<T>` a valid fix to suggest, and it is anchored by
 /// `DefId` to the crate defining `UseType`, so a same-named type elsewhere cannot pass. A
 /// behavioral component, or a plain trait with an associated type, matches none of the three.
 pub fn abstract_type_component_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {

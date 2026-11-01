@@ -42,7 +42,7 @@ pub fn carries_wiring(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     })
 }
 
-/// Whether `ty` is a *provider* struct — the concrete `Self` of some provider-trait impl — rather
+/// Whether `ty` is a *provider* struct (the concrete `Self` of some provider-trait impl) rather
 /// than a context. A provider is never a context, so a use-site recovery must not treat one as the
 /// failing context even when it merely shares a diagnostic span (rustc names the provider in a
 /// "required for … to implement …" note, whose span can fall inside the provider's own definition).

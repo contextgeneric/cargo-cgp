@@ -12,7 +12,7 @@ categories   = { workspace = true }
 
 # The rustc wrapper. It links the compiler-internal `rustc_driver`/`rustc_interface`
 # crates from the sysroot via the `rustc_private` feature (see `src/lib.rs`), so it can
-# only be built with a nightly toolchain carrying the `rustc-dev` component — hence the
+# only be built with a nightly toolchain carrying the `rustc-dev` component, hence the
 # workspace `rust-toolchain.toml`. The compiler crates are pulled from the sysroot by
 # `extern crate`, not `[dependencies]`.
 [[bin]]
@@ -27,7 +27,7 @@ path = "bin/cargo-cgp-driver.rs"
 cargo-cgp-error-processing = { workspace = true }
 # The rustc-free resugaring the expand mode drives: the driver prints the expanded crate with the
 # compiler's own printer and hands the text here to have its CGP constructs folded back to the
-# surface macros. Kept out of this crate for the same reason as the error processing — so it builds
+# surface macros. Kept out of this crate for the same reason as the error processing, so it builds
 # and its tests run without the `rustc_private` linkage.
 cargo-cgp-expand = { workspace = true }
 

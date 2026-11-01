@@ -66,7 +66,7 @@ fn adt_has_field(ty: Ty<'_>, field: &str) -> bool {
 /// The `Deref::Target` of `ty`, read straight from the concrete `impl Deref for ty` rather than by
 /// normalizing a projection, so it needs no inference context. Returns `None` when `ty` has no
 /// matching `Deref` impl. Matches the impl by its `Self` type, so a generic `Deref` impl whose
-/// `Self` is not exactly `ty` is skipped — sufficient for the concrete contexts a check targets.
+/// `Self` is not exactly `ty` is skipped, sufficient for the concrete contexts a check targets.
 fn deref_target<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let deref_trait = tcx.lang_items().deref_trait()?;
     let ty = tcx.erase_and_anonymize_regions(ty);

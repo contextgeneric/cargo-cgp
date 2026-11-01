@@ -46,7 +46,7 @@ pub fn namespace_delegate<'tcx>(
     normalize(tcx, projection)
 }
 
-/// Normalize `ty` through a fresh inference context, returning the resolved type — or `None` if it
+/// Normalize `ty` through a fresh inference context, returning the resolved type, or `None` if it
 /// does not resolve to a concrete type (an ambiguous or unresolved projection leaves inference vars
 /// or an alias behind). Re-entering the solver mid-emission is the same technique the typed resolver
 /// relies on.

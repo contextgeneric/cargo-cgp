@@ -8,7 +8,7 @@ use cargo_cgp_error_processing::resugar_symbol;
 // Property: for all exact `Symbol<LEN, spine>` matches, only the symbol changes.
 #[test]
 fn resugars_an_exact_symbol() {
-    // `height` — six ASCII characters, so the length is 6. The surrounding `HasField<…>`
+    // `height`: six ASCII characters, so the length is 6. The surrounding `HasField<…>`
     // must survive with its own closing `>`.
     assert_eq!(
         resugar_symbol(
@@ -31,7 +31,7 @@ fn resugars_the_empty_symbol() {
 // Property: a `LEN` different from the decoded byte length is not an exact match.
 #[test]
 fn resugar_skips_a_wrong_length() {
-    // Declared length 3 but only two characters — not an exact match, so left alone.
+    // Declared length 3 but only two characters: not an exact match, so left alone.
     assert_eq!(
         resugar_symbol("Symbol<3, Chars<'x', Chars<'y', Nil>>>"),
         None

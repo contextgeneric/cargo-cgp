@@ -8,7 +8,7 @@ pub const USE_FIELD_TYPE: &str = "UseField";
 /// genuine CGP `HasField` before decoding its `Symbol!` field name.
 pub const HAS_FIELD_TRAIT: &str = "HasField";
 
-/// The crate that defines [`HAS_FIELD_TRAIT`] — distinct from
+/// The crate that defines [`HAS_FIELD_TRAIT`], distinct from
 /// [`CGP_COMPONENT_CRATE`](super::CGP_COMPONENT_CRATE), since `HasField` lives in `cgp-field`, not
 /// `cgp-component`.
 pub const CGP_FIELD_CRATE: &str = "cgp_field";
@@ -19,11 +19,11 @@ pub const CGP_FIELD_CRATE: &str = "cgp_field";
 pub const EITHER_TYPE: &str = "Either";
 
 /// The name of the type-level empty-sum terminator (defined by [`CGP_FIELD_CRATE`]) that closes an
-/// `Either` spine — the sum counterpart of [`NIL_TYPE`](super::NIL_TYPE).
+/// `Either` spine: the sum counterpart of [`NIL_TYPE`](super::NIL_TYPE).
 pub const VOID_TYPE: &str = "Void";
 
 /// The name of the type-level lifetime lift (defined by [`CGP_FIELD_CRATE`]): `Life<'a>` stands in
-/// for the lifetime `'a` wherever a component's parameters must all be types — the `Params` slot of
+/// for the lifetime `'a` wherever a component's parameters must all be types: the `Params` slot of
 /// `CanUseComponent`/`IsProviderFor` and a `check_components!` entry. The resolver reads the region
 /// back out of it when it rebuilds a real consumer obligation, whose trait wants the lifetime in a
 /// region slot, not a type standing in for one.

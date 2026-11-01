@@ -6,7 +6,7 @@
 //!
 //! Three rules decide what a path selects, and the third is the CGP-shaped one:
 //!
-//! 1. An item **declared** at that path — a struct, trait, function, and so on. A module selects its
+//! 1. An item **declared** at that path, such as a struct, trait, function, and so on. A module selects its
 //!    *contents* rather than the `mod` wrapper, since the wrapper is noise around what was asked for.
 //! 2. An `impl` block whose **self type** is that path, so `--item Rectangle` shows the struct
 //!    together with every impl written for it.
@@ -18,7 +18,7 @@
 //! derives emit) is matched by the same two impl rules, and selecting it selects the whole block,
 //! whose imports the impl's paths resolve through.
 //!
-//! A path is matched against the item's own written path, qualified by the module it sits in — so
+//! A path is matched against the item's own written path, qualified by the module it sits in, so
 //! `shapes::Rectangle` finds a `Rectangle` declared or implemented inside `mod shapes`.
 
 use syn::{Expr, File, Item, ItemImpl, Path, Stmt, Type};
@@ -37,7 +37,7 @@ impl ItemPath {
     ///
     /// A **crate-root prefix is accepted and dropped**: `crate::contexts::app`, `::contexts::app`, and
     /// `self::contexts::app` all mean `contexts::app`. Matching is against module paths within the
-    /// crate being expanded, which carry no such prefix — but `crate::…` is how the module is spelled
+    /// crate being expanded, which carry no such prefix, but `crate::…` is how the module is spelled
     /// in the source, so it is what a reader reaches for, and rejecting it would be pedantry.
     pub fn parse(pattern: &str) -> Option<Self> {
         let mut segments: Vec<String> = pattern.split("::").map(str::to_owned).collect();
@@ -179,7 +179,7 @@ fn matches_path(path: &ItemPath, prefix: &[String], written: &Path) -> bool {
 }
 
 /// The path an impl's self type names, or `None` when it is not a plain path type (a reference, a
-/// tuple, a generic parameter's projection — none of which a reader names as an item).
+/// tuple, a generic parameter's projection, none of which a reader names as an item).
 fn self_type_path(self_ty: &Type) -> Option<&Path> {
     match self_ty {
         Type::Path(path) if path.qself.is_none() => Some(&path.path),

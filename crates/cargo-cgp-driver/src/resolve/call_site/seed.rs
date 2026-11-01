@@ -27,7 +27,7 @@ pub(crate) enum CallForm {
 }
 
 /// Build the seed obligation `Ctx: Consumer<…>` by unifying the call's arguments against the
-/// method's own declared signature — no calling convention assumed; the signature's own use of
+/// method's own declared signature, with no calling convention assumed; the signature's own use of
 /// the trait's generics decides what each written argument type pins down (the rationale is in
 /// the implementation document's call-site section). Every parameter of the method's item starts
 /// as a fresh inference variable; `Self` is pinned to the recovered context; each argument whose
@@ -48,8 +48,8 @@ pub(crate) fn seed_from_call<'tcx>(
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
     let ocx = ObligationCtxt::new(&infcx);
 
-    // Fresh variables for the method's whole item — for an associated fn the parent trait's
-    // parameters come first, `Self` at index 0 — then pin `Self` to the recovered context.
+    // Fresh variables for the method's whole item: for an associated fn the parent trait's
+    // parameters come first, `Self` at index 0, then pin `Self` to the recovered context.
     let method_args = infcx.fresh_args_for_item(DUMMY_SP, method_did);
     ocx.eq(
         &ObligationCause::dummy(),

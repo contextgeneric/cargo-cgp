@@ -55,7 +55,7 @@ fn collapses_chars_spines_regardless_of_truncation() {
 fn collapses_qualified_and_multiple_spines() {
     // The baseline's primary "is not implemented" line prints the fully-qualified
     // `cgp::prelude::Chars` path; the prefix (no angle brackets) is kept, only the spine
-    // collapses — and each spine on the line collapses.
+    // collapses, and each spine on the line collapses.
     let input = "`HasField<Symbol<1, cgp::prelude::Chars<'a', cgp::prelude::Chars<'b', Nil>>>>` \
                  and `HasField<Symbol<1, cgp::prelude::Chars<'c', _>>>`";
     let expected = "`HasField<Symbol<1, cgp::prelude::Chars<..>>>` and `HasField<Symbol<1, cgp::prelude::Chars<..>>>`";
@@ -68,7 +68,7 @@ fn collapses_qualified_and_multiple_spines() {
 #[test]
 fn replaces_the_sysroot_in_a_standard_library_note() {
     // A diagnostic that points into the standard library names a path holding the user's home
-    // directory, the pinned nightly, and the host target triple — none of which may reach a
+    // directory, the pinned nightly, and the host target triple, none of which may reach a
     // snapshot. Whether rustc can show the source line depends on the `rust-src` component, which
     // `rust-toolchain.toml` pins for exactly that reason; the path itself is normalized here.
     let raw = "\

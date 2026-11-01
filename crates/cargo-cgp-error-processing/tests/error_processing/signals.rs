@@ -1,4 +1,4 @@
-//! The text signals — the stable rustc phrasings the emitter routes decisions on — over plain
+//! The text signals, the stable rustc phrasings the emitter routes decisions on, over plain
 //! strings. Each predicate is a *signal*, not a classification, so these pin the exact wordings it
 //! matches and, as importantly, the near-misses it must not.
 
@@ -58,7 +58,7 @@ fn method_probe_advice_signal_matches_each_artifact() {
     assert!(!is_method_probe_advice_text(
         "the following trait defines an item `describe`, perhaps you need to restrict type parameter `Value` with it:"
     ));
-    // The real unmet bound the same diagnostic carries is not probe advice — it must survive.
+    // The real unmet bound the same diagnostic carries is not probe advice: it must survive.
     assert!(!is_method_probe_advice_text(
         "trait bound `App: HasField<Symbol!(\"separator\")>` was not satisfied"
     ));
@@ -71,7 +71,7 @@ fn orphan_signal_needs_both_the_phrase_and_a_reserved_marker() {
     assert!(mentions_orphan_param_text(
         "type parameter `__Components__` must be used as an argument to some local type"
     ));
-    // A genuine non-CGP orphan error carries the phrase but no reserved marker — not a candidate.
+    // A genuine non-CGP orphan error carries the phrase but no reserved marker: not a candidate.
     assert!(!mentions_orphan_param_text(
         "type parameter `T` must be used as an argument to some local type"
     ));

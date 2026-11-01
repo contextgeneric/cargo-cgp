@@ -1,11 +1,11 @@
 //! Detecting a higher-order provider that calls an inner provider it never imported.
 //!
 //! A higher-order provider names an inner provider as a generic parameter and invokes it as an
-//! associated function on the context — `InnerCalculator::area(self)`. For that call to resolve, the
+//! associated function on the context: `InnerCalculator::area(self)`. For that call to resolve, the
 //! inner parameter must carry the provider-trait bound `InnerCalculator: AreaCalculator<Self>`,
 //! declared idiomatically with `#[use_provider(InnerCalculator: AreaCalculator)]`. When the import is
-//! forgotten, the parameter is unbounded and rustc reports a vague `E0599` — "no associated function
-//! `area` found for type parameter `InnerCalculator` … due to unsatisfied trait bounds" — whose
+//! forgotten, the parameter is unbounded and rustc reports a vague `E0599` ("no associated function
+//! `area` found for type parameter `InnerCalculator` … due to unsatisfied trait bounds"), whose
 //! suggestion leaks the generated `__Context__` and offers the *consumer* trait as a bound, the wrong
 //! fix for a higher-order provider.
 //!
@@ -45,7 +45,7 @@ pub fn detect_missing_use_provider(
         args,
     } = failing_assoc_fn_call_at(tcx, primary_span)?;
 
-    // `inner` must be a generic type parameter — a higher-order provider's inner-provider slot — not
+    // `inner` must be a generic type parameter (a higher-order provider's inner-provider slot), not
     // a concrete type (whose associated-function failure is a different mistake).
     if !matches!(tcx.def_kind(inner_did), DefKind::TyParam) {
         return None;
@@ -90,7 +90,7 @@ pub fn detect_missing_use_provider(
 }
 
 /// The provider trait the call's method belongs to: the enclosing impl's own trait when it
-/// declares the method (a higher-order provider wrapping the same component — the common case),
+/// declares the method (a higher-order provider wrapping the same component, the common case),
 /// else the sole provider trait that declares it.
 fn called_provider_trait(
     tcx: TyCtxt<'_>,
@@ -261,7 +261,7 @@ fn trait_has_method(tcx: TyCtxt<'_>, trait_did: DefId, method: rustc_span::Symbo
         .any(|item| matches!(item.kind, ty::AssocKind::Fn { .. }))
 }
 
-/// Whether `impl_did`'s `where` clause bounds a type parameter named `param` by trait `trait_did` —
+/// Whether `impl_did`'s `where` clause bounds a type parameter named `param` by trait `trait_did`:
 /// i.e. the inner provider is already imported (via `#[use_provider]` or a hand-written bound).
 fn impl_bounds_param_by(tcx: TyCtxt<'_>, impl_did: DefId, trait_did: DefId, param: &str) -> bool {
     tcx.clauses_of(impl_did)

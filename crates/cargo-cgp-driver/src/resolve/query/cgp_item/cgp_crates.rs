@@ -31,7 +31,7 @@ pub fn links_cgp(tcx: TyCtxt<'_>) -> bool {
     })
 }
 
-/// Whether `def_id` is defined by one of CGP's own crates ([`CGP_CRATES`]) — anchored to the
+/// Whether `def_id` is defined by one of CGP's own crates ([`CGP_CRATES`]), anchored to the
 /// defining crate, so a same-named trait elsewhere never counts as evidence.
 pub fn is_cgp_crate_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let krate = tcx.crate_name(def_id.krate);

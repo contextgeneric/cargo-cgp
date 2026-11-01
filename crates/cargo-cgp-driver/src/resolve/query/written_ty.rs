@@ -8,13 +8,13 @@ use rustc_span::DUMMY_SP;
 
 use crate::resolve::query::{call_output_ty, instantiate_written, item_ty, written_args};
 
-/// The type an argument expression *writes*, syntactically — the call-side information the
+/// The type an argument expression *writes*, syntactically: the call-side information the
 /// signature unification consumes. Covered shapes: a unit-struct or unit-variant value path with
 /// its written arguments (`PhantomData::<Program>`, `GetMethod`), a non-generic const, a struct
 /// literal, a reference, a tuple (its *structure* recovered even when some elements are not
 /// written), a literal whose type is definite (`"…"`, suffixed numerics, `true`, `'c'`), and a call
 /// to a non-generic fn (its declared return type). `None` for anything whose type only inference
-/// could know — an unsuffixed literal, a variable, a generic constructor like `Vec::new()` —
+/// could know (an unsuffixed literal, a variable, a generic constructor like `Vec::new()`),
 /// leaving the corresponding parameter unknown rather than guessed.
 pub fn expr_written_ty<'tcx>(infcx: &InferCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     let tcx = infcx.tcx;
@@ -52,8 +52,8 @@ pub fn expr_written_ty<'tcx>(infcx: &InferCtxt<'tcx>, expr: &Expr<'tcx>) -> Opti
         // placeholder with the rest of the seed by
         // [`unknowns_to_placeholders`](super::unknowns_to_placeholders)), so the
         // tuple arity and its written elements are recovered even beside an unknown one. This
-        // matters because providers destructure their input on the tuple shape — `HandleIf`'s
-        // `(InputCond, InputBranch)`, `HandleCompare`'s `(InputA, InputB)` — so collapsing the
+        // matters because providers destructure their input on the tuple shape (`HandleIf`'s
+        // `(InputCond, InputBranch)`, `HandleCompare`'s `(InputA, InputB)`), so collapsing the
         // whole tuple to one flat unknown (as returning `None` would) leaves such a provider's
         // impl unmatched and hides a cause sitting inside a *known* branch (a field read by the
         // condition, say). The recovered structure is real call-side information, not a guess:
@@ -73,7 +73,7 @@ pub fn expr_written_ty<'tcx>(infcx: &InferCtxt<'tcx>, expr: &Expr<'tcx>) -> Opti
     }
 }
 
-/// The definite type of a literal — `None` for the suffixless numerics whose type only inference
+/// The definite type of a literal: `None` for the suffixless numerics whose type only inference
 /// decides.
 fn lit_ty<'tcx>(tcx: TyCtxt<'tcx>, lit: &hir::Lit) -> Option<Ty<'tcx>> {
     use rustc_ast::{LitFloatType, LitIntType, LitKind};

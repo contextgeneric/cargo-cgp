@@ -9,7 +9,7 @@ use crate::resolve::query::{
     call_output_ty, declared_binding_ty, item_ty, local_body_exprs, lower_hir_ty, peel_hir_refs,
 };
 
-/// The context type a call's receiver expression names — the *receiver* is what carries the
+/// The context type a call's receiver expression names: the *receiver* is what carries the
 /// context in a consumer-method call, so this is the anchor's one source of it. The type is read
 /// syntactically: a path to a binding follows the binding (a `let` typed by its annotation or its
 /// initializer, a fn parameter typed by the enclosing signature); a struct literal, unit-struct
@@ -39,7 +39,7 @@ pub(crate) fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Op
             item_ty(tcx, did)
         }
         // A plain constructor call: the callee's declared return type is the receiver's type,
-        // read from its (collection-cached) signature — still no typeck results.
+        // read from its (collection-cached) signature, still no typeck results.
         ExprKind::Call(callee, _) => Some(call_output_ty(tcx, callee)?.peel_refs()),
         ExprKind::AddrOf(_, _, inner) | ExprKind::Unary(hir::UnOp::Deref, inner) => {
             receiver_context(tcx, inner)
@@ -51,7 +51,7 @@ pub(crate) fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Op
 /// The context types recovered from the *expressions* at the diagnostic's spans, by reading each
 /// overlapping expression's type syntactically ([`receiver_context`]). This reaches a use-site
 /// failure whose context is *not* on any struct-definition span but is the **value whose type
-/// fails** — the argument of a call bounded on a trait (`greet_all(app)`), where the context
+/// fails**: the argument of a call bounded on a trait (`greet_all(app)`), where the context
 /// comes from `app`'s binding rather than from a span on `App`'s definition (rustc puts its "not
 /// implemented for `App`" span on the `#[derive(HasField)]` attribute, outside the struct item).
 /// Every kind of expression `receiver_context` understands contributes; the caller filters to local
@@ -67,7 +67,7 @@ pub(crate) fn contexts_at_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<
 /// The type of the binding a receiver path resolves to, its references peeled, since a receiver's
 /// context is the ADT beneath them. A `let` with a type annotation supplies it directly; a `let`
 /// without one is typed by its initializer expression (a struct literal, usually); a fn parameter
-/// is typed by the matching input of the enclosing signature. All three are syntactic — no typeck
+/// is typed by the matching input of the enclosing signature. All three are syntactic, with no typeck
 /// results are consulted.
 fn local_binding_context<'tcx>(tcx: TyCtxt<'tcx>, binding: hir::HirId) -> Option<Ty<'tcx>> {
     if let hir::Node::LetStmt(let_stmt) = tcx.parent_hir_node(binding)

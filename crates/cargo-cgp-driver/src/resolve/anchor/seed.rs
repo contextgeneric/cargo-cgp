@@ -8,13 +8,13 @@ use crate::resolve::query::is_cgp_item;
 
 /// Build `Ctx: ConsumerTrait<Params…>` from a consumer trait and the component's `Params` slot.
 ///
-/// The slot groups a component's extra parameters as all-types data — none as the unit `()`, one
-/// bare, several as a tuple, and a lifetime lifted into `Life<'a>` — but the consumer trait itself
+/// The slot groups a component's extra parameters as all-types data (none as the unit `()`, one
+/// bare, several as a tuple, and a lifetime lifted into `Life<'a>`), but the consumer trait itself
 /// wants its arguments back in their declared kinds and arity. So the slot is ungrouped against the
 /// trait's *own* generics rather than by its shape alone: the parameter count decides whether a
 /// tuple is *the* single (tuple-typed) parameter or several parameters to spread, and a lifetime
 /// parameter takes its region back out of the `Life<'a>` lift. Building the trait ref from the
-/// slot's shape alone would hand the solver a malformed obligation — spreading a single tuple-typed
+/// slot's shape alone would hand the solver a malformed obligation, spreading a single tuple-typed
 /// parameter into two, or a `Life<'a>` *type* where a region belongs, the latter aborting the
 /// compiler when the solver relates it. `None` when the slot cannot be matched to the trait's
 /// parameters, so the caller declines to the fallback instead.
@@ -29,7 +29,7 @@ pub(crate) fn consumer_obligation<'tcx>(
 
     let supplied: Vec<Ty<'tcx>> = match (expected.len(), params.kind()) {
         (0, _) if params.is_unit() => Vec::new(),
-        // A single parameter is grouped bare — even when it is itself a tuple type, which is why
+        // A single parameter is grouped bare, even when it is itself a tuple type, which is why
         // the parameter count is consulted before the slot's shape.
         (1, _) => vec![params],
         (n, ty::Tuple(elems)) if elems.len() == n => elems.iter().collect(),

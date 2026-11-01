@@ -24,7 +24,7 @@ fn resugars_a_path_bare_without_the_macro_wrapper() {
 #[test]
 fn resugars_an_open_tailed_path_bare_as_its_key() {
     // The bare form names a key, which the programmer wrote without the wildcard tail the macros
-    // append, so the tail is left out — the form the conflicting-wiring E0119 blocks show.
+    // append, so the tail is left out: the form the conflicting-wiring E0119 blocks show.
     assert_eq!(
         resugar_path(
             "PathCons<Symbol!(\"foo\"), PathCons<Symbol!(\"bar\"), _>>",
@@ -190,7 +190,7 @@ fn declines_an_open_tailed_path_in_the_macro_form() {
 #[test]
 fn resugar_path_skips_a_non_nil_terminated_spine() {
     // A tail that is neither `Nil`, another `PathCons`, nor the open `_` placeholder is not a
-    // path spine — a concrete type like `App` is a genuine mismatch, not an open tail.
+    // path spine: a concrete type like `App` is a genuine mismatch, not an open tail.
     assert_eq!(resugar_path("PathCons<GreeterComponent, App>", true), None);
 }
 

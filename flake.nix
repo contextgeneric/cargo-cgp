@@ -1,5 +1,5 @@
 {
-  description = "cargo-cgp — a cargo subcommand that makes Context-Generic Programming compiler errors readable";
+  description = "cargo-cgp: a cargo subcommand that makes Context-Generic Programming compiler errors readable";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -26,11 +26,11 @@
 
         # The exact nightly the driver is welded to, read straight from the workspace
         # `rust-toolchain.toml`. That file is the single source of truth: it names the
-        # dated `channel` and every component — the `rustc-dev` + `llvm-tools` the
-        # `rustc_private` driver needs, and the `rust-src` the UI snapshots need — and the
+        # dated `channel` and every component: the `rustc-dev` + `llvm-tools` the
+        # `rustc_private` driver needs, and the `rust-src` the UI snapshots need, and the
         # crates' `build.rs` scripts read the same file, so the Nix toolchain can never
         # drift from the pinned one. `rustc-dev` carries `librustc_driver`, which the
-        # driver both links at build time and loads at run time — the whole reason a plain
+        # driver both links at build time and loads at run time, the whole reason a plain
         # nightly is not enough.
         rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
@@ -48,8 +48,8 @@
 
         inherit (pkgs) lib;
 
-        # Only the files the build actually reads, so the derivation's input hash — and
-        # thus a rebuild — turns solely on the crate sources, the manifests, the lockfile,
+        # Only the files the build actually reads, so the derivation's input hash, and
+        # thus a rebuild, turns solely on the crate sources, the manifests, the lockfile,
         # the pinned-toolchain file the `build.rs` scripts consume, and the `LICENSE` each
         # published crate links to (so the links do not dangle). Editing a
         # `tests/ui` fixture, `README.md`, or `AGENTS.md` leaves the source unchanged and
@@ -100,14 +100,14 @@
             # front-end not to manage one (`CARGO_CGP_NO_MANAGE`) and hand it the pinned
             # nightly instead: `RUSTC` and the front-end PATH both point at this
             # toolchain, so the wrapped `cargo check` compiles under the same compiler the
-            # driver embeds and `rustc --print sysroot` returns that toolchain's sysroot —
+            # driver embeds and `rustc --print sysroot` returns that toolchain's sysroot,
             # whose `lib` holds the matching `librustc_driver`. The driver stays reachable
             # as the front-end's sibling in this same `bin/` directory.
             #
             # The dylib prefix is the same protection the driver gets above, and the
             # front-end needs it for the toolchain binaries *it* spawns. Invoked as `cargo
             # cgp check`, the entry point is rustup's `cargo` shim, which exports
-            # `${dylibPathVar}=<the project's active toolchain>/lib` to its children — so a
+            # `${dylibPathVar}=<the project's active toolchain>/lib` to its children, so a
             # foreign toolchain's library directory is searched ahead of this one's own
             # RUNPATH. That is harmless while the two Rust versions differ, but a rustc
             # shared library is named for its Rust version rather than by content hash

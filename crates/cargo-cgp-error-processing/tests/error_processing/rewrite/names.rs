@@ -97,7 +97,7 @@ fn panicking_init() -> HashMap<String, ComponentTraitNames> {
 // the map.
 #[test]
 fn does_not_force_the_map_without_a_matching_message() {
-    // The lazy build must not run for a message that is not a CGP wiring form — even one that
+    // The lazy build must not run for a message that is not a CGP wiring form, even one that
     // is a trait-bound header for an unrelated trait, or a `required for` note for a
     // non-wiring trait. If any of these forced the map, `panicking_init` would panic.
     let map = ComponentNameMap::new(panicking_init);

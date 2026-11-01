@@ -4,8 +4,8 @@ use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-/// The value of an impl's `Delegate` associated type — what a wiring entry (a `DelegateComponent`
-/// impl, or a `cgp_namespace!` entry's namespace-trait impl) maps its key to — or `None` when the
+/// The value of an impl's `Delegate` associated type (what a wiring entry (a `DelegateComponent`
+/// impl, or a `cgp_namespace!` entry's namespace-trait impl) maps its key to), or `None` when the
 /// impl declares no `Delegate`.
 pub fn impl_delegate_type<'tcx>(tcx: TyCtxt<'tcx>, impl_did: DefId) -> Option<Ty<'tcx>> {
     tcx.associated_items(impl_did)
@@ -41,7 +41,7 @@ pub fn local_delegate_impls<'tcx>(
             continue;
         }
         let self_ty = tcx.type_of(impl_did).instantiate_identity().skip_norm_wip();
-        // `DelegateComponent<Key>` — args are `[Self, Key]`.
+        // `DelegateComponent<Key>`: args are `[Self, Key]`.
         let key = tcx
             .impl_trait_ref(impl_did)
             .instantiate_identity()

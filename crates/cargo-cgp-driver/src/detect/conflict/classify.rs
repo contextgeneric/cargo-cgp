@@ -9,23 +9,26 @@ use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_F
 use crate::detect::conflict::{build_conflict, classify_namespace_conflict, local_delegate_impls};
 use crate::resolve::query::{find_cgp_trait, is_cgp_item, local_trait_impls, same_range};
 
-/// Which trait an `E0119` conflict is about, read from the diagnostic's own message — the only
+/// Which trait an `E0119` conflict is about, read from the diagnostic's own message: the only
 /// thing that tells the `DelegateComponent` half of the pair from its `IsProviderFor` half, since
 /// both carry the same caret. The classifier still verifies the genuine CGP impls sit at that
 /// caret before acting, so the message is used only to route within a confirmed pair. An `E0119`
-/// naming neither trait can still be a wiring conflict — a duplicate `cgp_namespace!` entry
-/// conflicts on the *user's own* namespace trait — so [`Other`](ConflictTrait::Other) routes to
+/// naming neither trait can still be a wiring conflict (a duplicate `cgp_namespace!` entry
+/// conflicts on the *user's own* namespace trait), so [`Other`](ConflictTrait::Other) routes to
 /// the namespace classifier.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ConflictTrait {
+    /// The conflict names `DelegateComponent`.
     Delegate,
+    /// The conflict names `IsProviderFor`.
     IsProviderFor,
+    /// The conflict names neither, such as a namespace's own lookup trait.
     Other,
 }
 
 /// What to do with an `E0119` recognized as a duplicate-key wiring conflict.
 pub enum ConflictAction {
-    /// Drop this diagnostic entirely — it is the redundant `IsProviderFor` half of the pair.
+    /// Drop this diagnostic entirely: it is the redundant `IsProviderFor` half of the pair.
     Suppress,
     /// Rewrite this diagnostic's header from the recovered conflict.
     Rewrite(WiringConflict),
@@ -45,9 +48,9 @@ pub fn classify_wiring_conflict(
     primary_span: Span,
     label_spans: &[Span],
 ) -> Option<ConflictAction> {
-    // An `IsProviderFor` conflict is always the redundant half of a generated pair — the macro
+    // An `IsProviderFor` conflict is always the redundant half of a generated pair: the macro
     // emits the `IsProviderFor` impl alongside a `DelegateComponent` entry impl or a provider
-    // trait impl, and the paired impls conflict exactly when the `IsProviderFor` copies do — so it
+    // trait impl, and the paired impls conflict exactly when the `IsProviderFor` copies do, so it
     // is dropped whenever the companion pair is confirmed, whichever trait it is on.
     if variant == ConflictTrait::IsProviderFor {
         return suppressible_is_provider_for(tcx, primary_span, label_spans)
@@ -87,13 +90,13 @@ pub fn classify_wiring_conflict(
 }
 
 /// Whether an `E0119` on `IsProviderFor` impls is safe to drop as the redundant half of a
-/// generated pair. Dropping is safe only when the *companion* conflict — the one on the impls the
-/// same macro invocations generated the `IsProviderFor` copies alongside — is itself reported, or
+/// generated pair. Dropping is safe only when the *companion* conflict (the one on the impls the
+/// same macro invocations generated the `IsProviderFor` copies alongside) is itself reported, or
 /// the user would face a failing build with no error at all. That companion is confirmed
 /// structurally: the caret must sit on a genuine local `IsProviderFor` impl, and the two colliding
 /// sites (the caret and a labelled span) must each also carry a local impl of one *common* other
-/// trait — `DelegateComponent` for a duplicate wiring entry, or the provider trait for a duplicate
-/// provider definition — whose own `E0119` rustc then reports. Two `IsProviderFor` impls with *no*
+/// trait (`DelegateComponent` for a duplicate wiring entry, or the provider trait for a duplicate
+/// provider definition), whose own `E0119` rustc then reports. Two `IsProviderFor` impls with *no*
 /// common companion trait (a delegation entry colliding with a provider impl, say) are not
 /// suppressed, since no companion conflict would surface the mistake.
 fn suppressible_is_provider_for(tcx: TyCtxt<'_>, primary_span: Span, label_spans: &[Span]) -> bool {
@@ -114,7 +117,7 @@ fn suppressible_is_provider_for(tcx: TyCtxt<'_>, primary_span: Span, label_spans
         })
 }
 
-/// The traits with a local impl whose def-span covers the same source range as `span` — the
+/// The traits with a local impl whose def-span covers the same source range as `span`: the
 /// impls a conflict caret can stand for, since rustc aims an `E0119` at the conflicting impl's
 /// def-span and the CGP macros re-span every impl of one entry onto the same token.
 fn local_trait_impls_at(tcx: TyCtxt<'_>, span: Span) -> Vec<DefId> {

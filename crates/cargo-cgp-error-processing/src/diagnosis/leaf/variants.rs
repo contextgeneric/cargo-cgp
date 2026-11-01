@@ -6,7 +6,7 @@ use crate::diagnosis::leaf::{
 };
 use crate::diagnosis::node::PartialKind;
 
-/// What a resolved dependency chain bottoms out on — the actual root cause the tree leads to.
+/// What a resolved dependency chain bottoms out on: the actual root cause the tree leads to.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Leaf {
     /// A `HasField` bound the wiring needs. The emitter renders this as a clean, tree-first
@@ -14,7 +14,7 @@ pub enum Leaf {
     Field {
         /// The field name, decoded from its `Symbol!`, e.g. `height`.
         name: String,
-        /// The struct the `HasField` bound lands on — the type that must carry (or derive) the
+        /// The struct the `HasField` bound lands on: the type that must carry (or derive) the
         /// field. Usually the checked context, but a nested getter can make it another type.
         owner: String,
         /// Whether the field is genuinely missing, present-but-underived, or behind a `Deref`.
@@ -38,7 +38,7 @@ pub enum Leaf {
         /// why a type they never wrote is demanded of them.
         expected: String,
         /// What `expected` normalizes to, when normalizing changes it and reduces to a concrete
-        /// type — `Some("Pool<Postgres>")` for `Pool<<App as HasDbType>::Db>`, and `None` for an
+        /// type: `Some("Pool<Postgres>")` for `Pool<<App as HasDbType>::Db>`, and `None` for an
         /// `expected` that is already concrete or does not reduce. The un-normalized form alone
         /// says where the requirement comes from but not what it currently resolves to, and the two
         /// things in conflict are then never put side by side, so both are carried.
@@ -46,7 +46,7 @@ pub enum Leaf {
         /// The type the field actually has, queried from the struct by `DefId`, e.g. `i32`.
         actual: String,
     },
-    /// Several fields of one struct, each present but with no `HasField` implementation — the
+    /// Several fields of one struct, each present but with no `HasField` implementation: the
     /// coalesced form of two or more [`Leaf::Field`] causes whose issue is
     /// [`FieldIssue::Present`] on the same owner. `#[derive(HasField)]` derives an impl for
     /// *every* field, so several underived fields on one struct are one mistake with one fix
@@ -61,13 +61,13 @@ pub enum Leaf {
         /// The struct that carries the fields but not the derive, e.g. `Rectangle`.
         owner: String,
     },
-    /// A component the wiring needs but the context does not delegate at all — the
+    /// A component the wiring needs but the context does not delegate at all: the
     /// `DelegateComponent<Marker>` bound has no impl, so no provider is chosen for it. Parallel
     /// to a genuinely missing field, but the fix is to wire the component rather than add a
     /// field. The emitter renders this as a tree-first diagnostic of its own, with a lead naming
     /// the component to wire.
     MissingWiring {
-        /// The component marker the context does not wire, e.g. `BarProviderComponent` — the name
+        /// The component marker the context does not wire, e.g. `BarProviderComponent`: the name
         /// the programmer writes on the left of a `delegate_components!` entry to fix it.
         component: String,
         /// The context that must wire the component, e.g. `App`.
@@ -76,7 +76,7 @@ pub enum Leaf {
         similar: NearMiss,
     },
     /// A non-context delegation table that has no entry for a key it is asked to resolve. The owner
-    /// is a *provider* that delegates — an [aggregate
+    /// is a *provider* that delegates: an [aggregate
     /// provider](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/aggregate-providers.md)
     /// missing a component wiring, or a
     /// [`UseDelegate`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/providers/use_delegate.md)
@@ -86,7 +86,7 @@ pub enum Leaf {
     /// table (or feed the stage a type the table already covers), not to wire a component on the
     /// context.
     MissingDispatchEntry {
-        /// The key with no entry — a component marker (`BarProviderComponent`) for an aggregate
+        /// The key with no entry: a component marker (`BarProviderComponent`) for an aggregate
         /// provider, a redirect path (`@HandlerComponent.Code.Input`) for an aggregate provider
         /// that opens its own components, or a dispatched-on type (`GenericArray<u8, U32>`) for a
         /// `UseDelegate` / `UseInputDelegate` table.
@@ -97,10 +97,9 @@ pub enum Leaf {
     },
     /// A type wired where a *provider* was expected that does not implement the provider trait at
     /// all. A higher-order provider's inner slot (or any wiring position that expects a provider) is
-    /// filled with a type that has no impl of the provider trait — the `money-transfer-api` mistake
-    /// of wiring `UseBasicAuth<QueryBalanceRequest>`, where the *request* type `QueryBalanceRequest`
-    /// sits where an `ApiHandler` provider belongs. Distinct from [`Leaf::MissingDispatchEntry`]: the
-    /// owner is not a delegation table missing one key, it is simply not a provider — so the fix is to
+    /// filled with a type that has no impl of the provider trait, such as a request type
+    /// wired where a handler provider belongs. Distinct from [`Leaf::MissingDispatchEntry`]: the
+    /// owner is not a delegation table missing one key, it is simply not a provider, so the fix is to
     /// use an actual provider (e.g. wrap it in the endpoint handler), not to add a wiring entry.
     NotAProvider {
         /// The type wired where a provider was expected, e.g. `QueryBalanceRequest`.
@@ -163,7 +162,7 @@ pub enum Leaf {
     /// A namespace redirect whose target path has no delegate entry in the context. A
     /// `RedirectLookup<Ctx, Path>` provider resolves a component by forwarding the lookup to `Path`
     /// inside `Ctx`'s wiring (through the namespace lookup trait every joined namespace supplies),
-    /// but nothing — no direct entry, no namespace default, no `#[default_impl]` — terminates that
+    /// but nothing (no direct entry, no namespace default, no `#[default_impl]`) terminates that
     /// path with a provider, so the redirect resolves to nothing. Parallel to
     /// [`Leaf::MissingWiring`], but keyed by a redirect *path* rather than a bare component marker:
     /// the fix is to add a wiring entry for the path (on the context, or in the namespace it
@@ -173,7 +172,7 @@ pub enum Leaf {
         /// `Path!(@app.finance.types.QuantityTypeProviderComponent)` (resugared from its `PathCons`
         /// spine when the emitter post-processes the note).
         path: String,
-        /// The context the lookup is forwarded inside, e.g. `MockApp` — the table that carries no
+        /// The context the lookup is forwarded inside, e.g. `MockApp`: the table that carries no
         /// delegate entry for the path.
         context: String,
         /// A key the context wires that is a likely slip of this path, for a `help`.
@@ -193,13 +192,13 @@ pub enum Leaf {
         assoc: String,
         /// The trait that declares it, e.g. `HasErrorType`.
         trait_name: String,
-        /// The type the projection is taken on — the context for an abstract type, e.g. `App`.
+        /// The type the projection is taken on: the context for an abstract type, e.g. `App`.
         owner: String,
         /// The type the wiring requires, taken from the failing projection's right-hand side, e.g.
         /// `AppError`.
         expected: String,
         /// What `expected` normalizes to, when normalizing changes it and reduces to a concrete
-        /// type — `Some("Tx<Postgres>")` for `Tx<<App as HasDbType>::Db>`, and `None` for an
+        /// type: `Some("Tx<Postgres>")` for `Tx<<App as HasDbType>::Db>`, and `None` for an
         /// `expected` that is already concrete or does not reduce. A pin whose right-hand side
         /// projects through another abstract type (the `{HashedPassword = Password}` unification
         /// form, or `{Transaction = Tx<Db>}`) produces exactly such a requirement, and naming only
@@ -209,7 +208,7 @@ pub enum Leaf {
         /// The type the owner actually supplies, read by normalizing the projection, e.g. `String`.
         actual: String,
         /// The component marker a context wires to choose this type (`ErrorTypeProviderComponent`),
-        /// present only when the trait is a CGP abstract-type component — a consumer trait with one
+        /// present only when the trait is a CGP abstract-type component: a consumer trait with one
         /// associated type whose provider carries the `UseType` blanket `#[cgp_type]` generates. It
         /// selects the `abstract type` wording over the plain `associated type` one, and supplies the
         /// wiring `help`; `None` for an ordinary trait's associated type, which has no such fix.
@@ -312,7 +311,7 @@ pub enum Leaf {
         /// [`NearMiss`], it is not part of the leaf's identity.
         replacement: MethodFix,
     },
-    /// Any other terminal unmet bound — an ordinary trait bound such as `f64: Eq`, or a trait
+    /// Any other terminal unmet bound: an ordinary trait bound such as `f64: Eq`, or a trait
     /// bound the walk cannot descend further. The emitter keeps rustc's own header for these and
     /// only replaces the sub-notes with the dependency tree.
     Bound {

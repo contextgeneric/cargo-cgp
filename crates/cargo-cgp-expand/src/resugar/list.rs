@@ -18,13 +18,13 @@ use crate::resugar::parts::{Delimiter, is_terminator, macro_type, type_args};
 use crate::resugar::symbol::symbol_macro_name;
 
 /// The `Product!`/`Sum!` pass. Runs after [`Paths`](super::Paths), which consumes the `Nil` that
-/// terminates a path — a `Nil` this pass would otherwise read as an empty list.
+/// terminates a path, a `Nil` this pass would otherwise read as an empty list.
 pub struct Lists;
 
 impl VisitMut for Lists {
     fn visit_type_mut(&mut self, ty: &mut Type) {
         // **Outermost-first.** A spine is right-nested, so its tail is a spine too: folding the
-        // innermost cell first — which is what an ordinary visitor would do — replaces that tail
+        // innermost cell first, as an ordinary visitor would, replaces that tail
         // with a macro call, and the enclosing cells then no longer match, leaving a two-element
         // list as `Cons<A, Product![B]>`. So a cell is folded before the recursion, and the
         // recursion runs over its collected elements instead.
@@ -39,7 +39,7 @@ impl VisitMut for Lists {
 
 impl Lists {
     /// Fold `ty` if it is a product or sum spine, resugaring inside each element first so a nested
-    /// list — or a field's list-typed value — folds in turn.
+    /// list, or a field's list-typed value, folds in turn.
     fn fold_spine(&mut self, ty: &Type) -> Option<Type> {
         if let Some(elements) = self.spine(ty, "Cons", "Nil") {
             return Some(

@@ -23,10 +23,10 @@ use crate::resolve::walk::resolve_leaves;
 ///
 /// The called method resolves through either a CGP **consumer trait** or a `#[cgp_fn]` /
 /// `#[blanket_trait]` **blanket trait** (a blanket-impl trait, in any crate, that is not a CGP
-/// component and whose blanket depends on CGP). Both are consumed the same way —
-/// `app.describe()` — and both seed a walkable obligation `Ctx: Trait<…>` whose `Self` is the
+/// component and whose blanket depends on CGP). Both are consumed the same way (
+/// `app.describe()`), and both seed a walkable obligation `Ctx: Trait<…>` whose `Self` is the
 /// context; they differ only in the header the result gets. A blanket trait is not a CGP
-/// component, so — exactly as the impl-site anchor words such a trait — its failure reads
+/// component, so, exactly as the impl-site anchor words such a trait, its failure reads
 /// `[CGP-E003] the trait …` rather than `[CGP-E001] the consumer trait …`, by changing the
 /// [`Resolved::class`] the walk sets.
 ///
@@ -66,7 +66,7 @@ pub fn resolve_call_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
             if let Some(mut resolved) = resolve_leaves(cx, top) {
                 // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait is consumed like a consumer trait
                 // but is not a CGP *component*, so it heads the diagnostic as `[CGP-E003] the trait
-                // …` — the same wording the impl-site anchor gives such a trait reached through a
+                // …`, the same wording the impl-site anchor gives such a trait reached through a
                 // wrapper. A genuine consumer keeps the class the walk set. The trait
                 // is called on a type that is a context only when it carries wiring, so a type with
                 // none is named plainly.

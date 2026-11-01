@@ -11,8 +11,8 @@ use crate::launch::wrapped_cargo;
 /// `forwarded_args` are the arguments after `check`; they pass straight through to `cargo
 /// check`. The front-end does nothing to the diagnostics: the driver's emitter applies
 /// every CGP transform in-process and renders the result (text or JSON, matching whatever
-/// format the invocation asks for), so the front-end only wires the driver in — through
-/// [`wrapped_cargo`], which `expand` shares — and lets cargo's output stream to the terminal
+/// format the invocation asks for), so the front-end only wires the driver in, through
+/// [`wrapped_cargo`], which `expand` shares, and lets cargo's output stream to the terminal
 /// untouched.
 pub fn run_check(forwarded_args: &[String]) -> anyhow::Result<i32> {
     let mut command = wrapped_cargo("check", forwarded_args, &[], &[])?;

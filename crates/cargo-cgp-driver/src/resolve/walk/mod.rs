@@ -1,8 +1,8 @@
 //! Walking the wiring's dependency graph down to each terminal root cause.
 //!
 //! From a starting obligation (recovered by [anchor](crate::resolve::anchor)) this descends the
-//! failing trait obligations — following only the CGP wiring vocabulary and obligations on the
-//! context itself — and collects every root→leaf path that bottoms out on a terminal unmet bound,
+//! failing trait obligations, following only the CGP wiring vocabulary and obligations on the
+//! context itself, and collects every root→leaf path that bottoms out on a terminal unmet bound,
 //! folding each into a [`Cause`](cargo_cgp_error_processing::Cause) with its rendered dependency
 //! tree.
 //!

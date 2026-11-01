@@ -35,7 +35,7 @@ pub enum NodeStep<'tcx> {
 /// machinery (`ConcatPath`, `Sized` on the unresolved key) and bottom out on plumbing instead.
 /// Descending can never find anything better: had the context wired this key the obligation would
 /// hold and be pruned before becoming a node at all, so reaching here means the entry is simply
-/// absent — which is the cause to report. The one exception is an entry that *delegates* the key
+/// absent, which is the cause to report. The one exception is an entry that *delegates* the key
 /// to another table (`Key -> Table`): the context does carry it, and the failure is that table's
 /// lookup, so the walk descends there instead of blaming the context.
 ///
@@ -95,7 +95,7 @@ pub fn select_children<'tcx>(
     } else {
         Some(delegated)
     }) else {
-        // No impl satisfies `pred` at all — `pred` is itself the terminal root-cause bound.
+        // No impl satisfies `pred` at all: `pred` is itself the terminal root-cause bound.
         return NodeStep::Terminal(terminal_result(
             tcx, erased, leaf_ref, parent, context, self_fp,
         ));
@@ -120,7 +120,7 @@ pub fn select_children<'tcx>(
 
 /// `failing` without the check-trait scaffolding, wherever it appears as a dependency: the generated
 /// blanket impls carry a `CanUseComponent`/`IsProviderFor` bound *beside* the real consumer or
-/// provider-trait obligation, and only the latter is walked — the `IsProviderFor` bound just
+/// provider-trait obligation, and only the latter is walked, since the `IsProviderFor` bound just
 /// re-states the provider's `where` clause, which the real provider impl already carries.
 pub fn unmet_clauses<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -186,7 +186,7 @@ pub fn result_without_unmet_clause<'tcx>(
         return cause_result(tcx, erased, context, leaf, self_fp);
     }
     // Matched an impl, yet every trait-clause `where`-obligation holds: the fault is a projection
-    // the trait-clause walk cannot see — a `HasField::Value` mismatch (a field present with the
+    // the trait-clause walk cannot see: a `HasField::Value` mismatch (a field present with the
     // wrong type), or any other associated type the owner supplies differently from what the impl
     // requires (a CGP abstract type, typically). Either way the node matched an impl, so it is a
     // complete non-terminal and is cached.

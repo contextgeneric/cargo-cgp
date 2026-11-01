@@ -10,7 +10,7 @@ authors      = { workspace = true }
 keywords     = { workspace = true }
 categories   = { workspace = true }
 
-# This crate holds the string-level diagnostic logic the driver drives — the wiring-message
+# This crate holds the string-level diagnostic logic the driver drives: the wiring-message
 # rewrite, the fallback post-processing transforms, and the dependency-tree renderer. It
 # deliberately does *not* depend on `rustc_private`: it operates on plain text and typed
 # tree data the driver hands it, so it builds and its tests run on any toolchain, without

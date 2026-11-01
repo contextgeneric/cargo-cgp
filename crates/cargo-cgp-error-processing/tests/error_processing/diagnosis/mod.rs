@@ -1,8 +1,7 @@
 //! Tests for the rustc-free diagnosis model and its diagnostic plan.
 //!
-//! These exercise the wording and planning that used to live inside the driver's emitter, where
-//! it could only be pinned end-to-end by a UI snapshot. Moving it into this crate makes each case
-//! a plain unit test over a hand-built [`Resolved`], with no compiler in the loop. The dependency
+//! These exercise the wording and planning apart from the driver's emitter, so each case is a
+//! plain unit test over a hand-built [`Resolved`], with no compiler in the loop. The dependency
 //! chain each note carries is built by the [`DependencyGraph`] from structured node paths; the
 //! graph's own rendering is pinned separately in `graph.rs`, so here the focus is the note
 //! assembly (lead, heading, indentation, singular vs plural) around it.
@@ -66,7 +65,7 @@ fn redirect(path: &str, table: &str) -> ChainNode {
     support::redirect(path, table, "")
 }
 
-/// The rendered dependency chain for a single path — the graph over just that path.
+/// The rendered dependency chain for a single path: the graph over just that path.
 fn render_path(path: &[ChainNode]) -> String {
     DependencyGraph::from_paths(&[path.to_vec()]).render()
 }
@@ -81,7 +80,7 @@ fn one_path(leaf: Leaf, hops: Vec<ChainNode>) -> Cause {
     }
 }
 
-/// A `Resolved` for the common case — CGP consumer traits failing on the context itself, so both
+/// A `Resolved` for the common case: CGP consumer traits failing on the context itself, so both
 /// the class is [`ResolvedClass::Consumer`] and `subject_is_context` is `true`. The wrapper-header
 /// tests that vary those build `Resolved` explicitly instead.
 fn cgp_resolved(context: &str, consumers: &[&str], causes: Vec<Cause>) -> Resolved {
@@ -94,7 +93,7 @@ fn cgp_resolved(context: &str, consumers: &[&str], causes: Vec<Cause>) -> Resolv
     }
 }
 
-/// An empty name map — the categorized-header paths worded from the resolution never consult it.
+/// An empty name map: the categorized-header paths worded from the resolution never consult it.
 fn empty_names() -> ComponentNameMap {
     ComponentNameMap::new(HashMap::new)
 }
@@ -124,7 +123,7 @@ fn missing_field_cause() -> Cause {
     )
 }
 
-/// One field-missing cause whose path shares a `getter` hop's prefix with its sibling — the branch
+/// One field-missing cause whose path shares a `getter` hop's prefix with its sibling: the branch
 /// point of the merge test below.
 fn field_cause(getter: &str, field: &str) -> Cause {
     one_path(

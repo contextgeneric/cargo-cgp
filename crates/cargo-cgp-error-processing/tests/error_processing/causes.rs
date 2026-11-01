@@ -7,7 +7,7 @@ use cargo_cgp_error_processing::{
 
 use super::support::field_leaf;
 
-/// A cause reaching `owner`'s `name` field through the named consumer — the shape one member of a
+/// A cause reaching `owner`'s `name` field through the named consumer: the shape one member of a
 /// coalesced block contributes, each member reaching the shared cause down its own chain.
 fn field_cause_via(consumer: &str, name: &str, owner: &str, issue: FieldIssue) -> Cause {
     let leaf = field_leaf(name, owner, issue);
@@ -24,7 +24,7 @@ fn field_cause_via(consumer: &str, name: &str, owner: &str, issue: FieldIssue) -
     }
 }
 
-/// The hop an anchor heads a recovered chain with — the wrapper trait the programmer wrote.
+/// The hop an anchor heads a recovered chain with: the wrapper trait the programmer wrote.
 fn wrapper_hop() -> DepNode {
     DepNode::Trait {
         trait_ref: "CanGreetChecked".to_owned(),
@@ -49,7 +49,7 @@ fn the_same_leaf_reached_by_several_consumers_becomes_one_cause() {
 
 /// The invariant exists for this: a duplicate-leaf list makes a downstream reader count one mistake
 /// several times, most visibly as a lead naming one underived field once per consumer that reads it.
-/// The type is what makes that unreachable — there is no constructor that produces the bad list.
+/// The type is what makes that unreachable: there is no constructor that produces the bad list.
 #[test]
 fn one_underived_field_never_reads_as_three() {
     let causes: Causes = [
@@ -177,8 +177,8 @@ fn heading_a_hop_prefixes_every_path() {
 }
 
 /// Heading commutes with the grouping, which is why `headed_by` needs no re-merge: a single constant
-/// hop cannot change any leaf's identity. The two anchors that head a chain used to rely on this
-/// without stating it, and in opposite orders.
+/// hop cannot change any leaf's identity. The two anchors that head a chain rely on this, in opposite
+/// orders.
 #[test]
 fn heading_commutes_with_grouping() {
     let causes = [

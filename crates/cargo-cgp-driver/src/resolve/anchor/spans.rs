@@ -16,7 +16,7 @@ use crate::resolve::query::{
 };
 
 /// The local trait-impl blocks (`impl Trait for Ty { … }`) whose source span contains one of the
-/// diagnostic's spans — the impls a wiring failure can surface inside, whether the caret lands on
+/// diagnostic's spans: the impls a wiring failure can surface inside, whether the caret lands on
 /// the impl header or deep in a method body. A trait impl (not an inherent one) is required
 /// because the recovery reads the impl's trait supertraits. The *full* item span is taken from HIR
 /// rather than `def_span`, which for an impl covers only the header and would miss a caret inside
@@ -33,10 +33,10 @@ pub(crate) fn enclosing_trait_impls(tcx: TyCtxt<'_>, spans: &[Span]) -> Vec<DefI
 }
 
 /// The candidate context types of a use-site failure: every local struct or enum whose definition
-/// span contains one of the diagnostic's spans — for an `E0599` method error that includes the
+/// span contains one of the diagnostic's spans: for an `E0599` method error that includes the
 /// "method not found for this struct" span on the receiver's type. Each ADT is returned with
 /// identity arguments (so a generic context keeps its generic form). A provider struct that merely
-/// shares a span — rustc names it in a "required for … to implement …" note — is excluded, since a
+/// shares a span (rustc names it in a "required for … to implement …" note) is excluded, since a
 /// provider is never a context; the caller then picks the candidate that actually wires a failing
 /// component. A span on the ADT's generics is left out too: rustc's "required by a bound in `Holder`"
 /// note lands on a bound of `struct Holder<T: Trait>`, which `Holder` asks of what it holds.

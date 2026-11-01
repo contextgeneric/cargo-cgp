@@ -1,7 +1,7 @@
 //! The small syntactic type lowering the call-site recovery stands on.
 //!
 //! This is deliberately not the compiler's HIR lowering: it runs inside the emitter, where only
-//! already-cached queries may be forced, so it reads `type_of` for a named item (cached — typeck
+//! already-cached queries may be forced, so it reads `type_of` for a named item (cached: typeck
 //! resolved this very type to produce the diagnostic) and composes the rest by hand, declining
 //! anything beyond it rather than guessing.
 
@@ -11,7 +11,7 @@ use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 
-/// Lower a *written* type to its `ty::Ty`, syntactically — a path to an ADT or alias (with
+/// Lower a *written* type to its `ty::Ty`, syntactically: a path to an ADT or alias (with
 /// written arguments, a literal const argument among them, defaulted parameters filled in, lifetimes
 /// erased), a primitive, a tuple, a reference, or a slice. `None` for any shape beyond it, declining
 /// the anchor rather than guessing.
@@ -49,7 +49,9 @@ pub fn lower_hir_ty<'tcx>(tcx: TyCtxt<'tcx>, hir_ty: &hir::Ty<'tcx>) -> Option<T
 /// One written generic argument of a path: a lowered type, or a const argument, which is lowered
 /// once the parameter it fills, and so its type, is known.
 pub enum WrittenArg<'a, 'tcx> {
+    /// A lowered type.
     Type(Ty<'tcx>),
+    /// A const argument, not yet lowered.
     Const(&'a hir::ConstArg<'tcx>),
 }
 
@@ -204,7 +206,7 @@ pub fn prim_ty<'tcx>(tcx: TyCtxt<'tcx>, prim: hir::PrimTy) -> Ty<'tcx> {
     }
 }
 
-/// The identity type of an item (`type_of`), for the receivers whose type is an item's own — a
+/// The identity type of an item (`type_of`), for the receivers whose type is an item's own, a
 /// unit struct's, a const's, or a static's.
 pub fn item_ty<'tcx>(tcx: TyCtxt<'tcx>, did: DefId) -> Option<Ty<'tcx>> {
     Some(tcx.type_of(did).instantiate_identity().skip_norm_wip())

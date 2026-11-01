@@ -17,7 +17,7 @@ use crate::emitter::edit::main_message_text;
 /// Left alone the footer contradicts the output, offering `--explain` for a code no error carries.
 ///
 /// It runs over the flushed list rather than on the footer's arrival because only here is the
-/// surviving set final — coalescing happens at flush, after every diagnostic has been buffered.
+/// surviving set final: coalescing happens at flush, after every diagnostic has been buffered.
 /// The kept codes are the footer's own codes filtered by what survived, never a fresh set built
 /// from the survivors: rustc lists only codes that *have* an extended explanation, and
 /// intersecting preserves that filtering instead of second-guessing it. A footer whose codes all
@@ -48,7 +48,7 @@ pub fn rebuild_explain_footers(to_emit: &mut Vec<DiagInner>) {
         }
     }
     // A footer line always names at least one code, so parsing none from any of them means the
-    // parse failed — rustc reworded — not that the line names nothing. Rebuilding on that would
+    // parse failed, meaning that rustc reworded, not that the line names nothing. Rebuilding on that would
     // delete the footer outright, so leave it exactly as rustc wrote it: a stale footer is a far
     // smaller fault than a silently missing one, and it is the pre-rebuild behaviour.
     if explainable.is_empty() {

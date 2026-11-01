@@ -59,7 +59,7 @@ fn a_lone_underived_field_keeps_its_single_field_wording() {
 
 #[test]
 fn genuinely_missing_fields_are_never_coalesced() {
-    // A struct missing several fields needs several fixes — one per field — and a fieldless
+    // A struct missing several fields needs several fixes (one per field), and a fieldless
     // struct's derive (which emits no impls) reads as missing fields, so both stay apart.
     let causes = vec![
         field_cause("height", "Rectangle", FieldIssue::Missing),

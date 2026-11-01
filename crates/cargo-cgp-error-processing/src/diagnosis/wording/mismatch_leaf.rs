@@ -3,7 +3,7 @@
 use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::resolved::Resolved;
 
-/// The first field-type-mismatch cause of a resolution, if any — the leaf `[CGP-E004]` is
+/// The first field-type-mismatch cause of a resolution, if any: the leaf `[CGP-E004]` is
 /// worded from.
 pub fn mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
     resolved
@@ -13,7 +13,7 @@ pub fn mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
         .find(|leaf| matches!(leaf, Leaf::FieldTypeMismatch { .. }))
 }
 
-/// The first associated-type-mismatch cause of a resolution, if any — the leaf `[CGP-E005]` is
+/// The first associated-type-mismatch cause of a resolution, if any: the leaf `[CGP-E005]` is
 /// worded from.
 pub fn assoc_mismatch_leaf(resolved: &Resolved) -> Option<&Leaf> {
     resolved

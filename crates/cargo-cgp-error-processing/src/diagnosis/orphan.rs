@@ -2,15 +2,15 @@
 //!
 //! Registering wiring into a namespace lowers to `impl<Param> Namespace<Param> for Key`. Rust's
 //! orphan rule accepts a foreign-trait impl only when a local type covers its parameters, so when
-//! *both* the namespace trait and the key are foreign — a downstream crate registering into an
-//! upstream namespace it does not own, keyed on an upstream component it does not own either —
+//! *both* the namespace trait and the key are foreign (a downstream crate registering into an
+//! upstream namespace it does not own, keyed on an upstream component it does not own either),
 //! nothing is local and the compiler rejects it with `E0210` (or its sibling `E0117`). The raw
 //! diagnostic is accurate but frames a CGP wiring decision as a bare coherence rule, naming the
 //! machinery parameter (`__Components__` / `__Table__`) rather than the namespace and key the
 //! programmer wrote.
 //!
-//! This model records what the driver recovers from the offending impl — the foreign namespace,
-//! the key, and which construct registered it — and [`plan_orphan_conflict`] words it into the
+//! This model records what the driver recovers from the offending impl: the foreign namespace,
+//! the key, and which construct registered it, and [`plan_orphan_conflict`] words it into the
 //! `[CGP-E022]` header that replaces the raw message, with [`orphan_conflict_help`] carrying the
 //! ownership-based fix. Keeping the model and wording here, in owned `String` form, is what makes
 //! them unit-testable without a compiler; the driver's `detect::orphan` module fills the model in
@@ -19,7 +19,7 @@
 use crate::code::ORPHAN_FOREIGN_NAMESPACE;
 use crate::diagnosis::wiring::WiringKey;
 
-/// Which construct registered the wiring the orphan rule rejected — the two differ only in the
+/// Which construct registered the wiring the orphan rule rejected: the two differ only in the
 /// idiomatic fix, since the violation (a foreign namespace trait implemented for a foreign key) is
 /// identical.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,7 +44,7 @@ pub struct OrphanConflict {
 }
 
 impl WiringKey {
-    /// The key as the object of "cannot register the foreign …" — a bare component, a per-type
+    /// The key as the object of "cannot register the foreign …": a bare component, a per-type
     /// key, or an `@`-path.
     fn orphan_phrase(&self) -> String {
         match self {
@@ -70,7 +70,7 @@ pub fn plan_orphan_conflict(conflict: &OrphanConflict) -> String {
     )
 }
 
-/// The `help` accompanying the header — the ownership-based fix, which is the one thing the raw
+/// The `help` accompanying the header: the ownership-based fix, which is the one thing the raw
 /// coherence error never states. It differs by [`OrphanTrigger`]: a registration is fixed by owning
 /// one end (a local key, or registering from the namespace's own crate), while a re-open is fixed by
 /// inheriting the namespace into a new local one instead of extending it in place.

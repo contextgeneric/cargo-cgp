@@ -12,9 +12,9 @@
 //!    `#[default_impl]` (orphan-safe because the crate owns the component key).
 //!
 //! This is the orphan-*safe* counterpart to the failing orphan-rule fixtures: all
-//! of it must compile. Building the positive `ok/cross_crate_wiring.rs` fixture —
-//! which depends on this crate through a `//@aux-build: cgp-test-crate-b` directive
-//! — is what compile-checks every impl below. (The wirings' runtime behaviour is
+//! of it must compile. Building the positive `ok/cross_crate_wiring.rs` fixture,
+//! which depends on this crate through a `//@aux-build: cgp-test-crate-b` directive,
+//! is what compile-checks every impl below. (The wirings' runtime behaviour is
 //! exercised by the parent `cgp` project's own test suite, not by the UI harness,
 //! which only compiles fixtures and diffs their diagnostics.)
 //!
@@ -43,7 +43,7 @@ delegate_components! {
 
 /// (2) A provider defined in *this* crate for the foreign `Greeter` provider
 /// trait. This is allowed because `GreetGoodbye` is local, even though `Greeter`
-/// is not — the coherence win that CGP's provider structs are built for.
+/// is not: the coherence win that CGP's provider structs are built for.
 #[cgp_impl(new GreetGoodbye)]
 impl Greeter
 where
@@ -81,8 +81,8 @@ delegate_components! {
 }
 
 /// (4) A *local* component and provider registered into crate-a's *foreign*
-/// `AppNamespace` with `#[default_impl]`. This is orphan-safe because the key —
-/// the local `FarewellComponent` — is owned by this crate, even though
+/// `AppNamespace` with `#[default_impl]`. This is orphan-safe because the key,
+/// the local `FarewellComponent`, is owned by this crate, even though
 /// `AppNamespace` is not: registering a per-component default needs the crate to
 /// own either the namespace or the component key. (A `#[prefix]`-ed component,
 /// whose key is a foreign `PathCons<..>` path rather than a local marker, could

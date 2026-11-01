@@ -3,7 +3,7 @@
 //! Every construct a CGP macro references is emitted fully qualified, so the expansion is full of
 //! `::cgp::macro_prelude::DelegateComponent` where the programmer wrote `DelegateComponent`. That
 //! qualifier is noise nobody wrote, and stripping it is what makes the rest of the expansion read
-//! like source. General module qualifiers are left alone — in source, unlike in a diagnostic, a
+//! like source. General module qualifiers are left alone: in source, unlike in a diagnostic, a
 //! qualifier carries information.
 
 use syn::visit_mut::{self, VisitMut};
@@ -21,7 +21,7 @@ impl VisitMut for StripPrelude {
         strip_prelude(path);
     }
 
-    // A **qualified** path — `<P as DelegateComponent<C>>::Delegate` — indexes into its own
+    // A **qualified** path (`<P as DelegateComponent<C>>::Delegate`) indexes into its own
     // segments to say where the qualifier ends, so dropping segments from the front without
     // moving that index leaves the two inconsistent. The printer asserts on exactly that, so the
     // two node kinds that carry a `QSelf` correct it here. Generated CGP code is full of them.

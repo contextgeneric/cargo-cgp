@@ -14,7 +14,7 @@ use crate::resolve::walk::resolve_leaves;
 /// leaves the original diagnostic to the text-rewrite fallback).
 ///
 /// The check impl's supertrait is the user's own `CanUseComponent<Marker, Params>` assertion, which
-/// this reads to learn *which* component the entry checks — but it then walks the real consumer
+/// this reads to learn *which* component the entry checks, but it then walks the real consumer
 /// obligation `Ctx: ConsumerTrait<Params…>` that marker stands for, never the `CanUseComponent` /
 /// `IsProviderFor` scaffolding, so the resolution does not depend on `IsProviderFor`.
 pub fn resolve_check_failure(cx: ResolveCtx<'_, '_>, primary_span: Span) -> Option<Resolved> {
@@ -55,7 +55,7 @@ fn can_use_to_consumer_obligation<'tcx>(
     can_use: ty::PolyTraitClause<'tcx>,
 ) -> Option<ty::PolyTraitClause<'tcx>> {
     let trait_ref = can_use.skip_binder().trait_ref;
-    // `CanUseComponent<Marker, Params>` — args are `[Ctx, Marker, Params]`.
+    // `CanUseComponent<Marker, Params>`: args are `[Ctx, Marker, Params]`.
     let context = trait_ref.self_ty();
     let marker = trait_ref.args.type_at(1);
     let params = trait_ref.args.type_at(2);

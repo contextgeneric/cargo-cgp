@@ -4,13 +4,13 @@
 //! from a shared cursor so a fast worker keeps taking work rather than waiting on a slow
 //! one. The catch cargo forces on us is that a `cargo` build holds an exclusive lock on
 //! its target directory for the whole build, so two workers can only run at once by
-//! building in *separate* target directories — which is exactly what per-worker crates
+//! building in *separate* target directories: which is exactly what per-worker crates
 //! give us, at the cost of compiling cgp once per worker.
 //!
 //! Each fixture's result is reported the moment it finishes, through a `done` callback the
 //! runner calls one at a time (never overlapping), so a run streams live rather than
-//! withholding everything to the end. The order is completion order, not fixture order —
-//! whichever worker finishes first reports first — so a caller that needs its output
+//! withholding everything to the end. The order is completion order, not fixture order:
+//! whichever worker finishes first reports first, so a caller that needs its output
 //! identifiable prints the fixture's name on every line.
 
 use std::path::Path;
@@ -40,7 +40,7 @@ pub fn default_jobs(fixture_count: usize) -> usize {
 /// soon as it is ready. Worker `w` (in `0..jobs`) is passed to `task` alongside the
 /// fixture so the task can address that worker's own crate; the same worker index recurs
 /// for every fixture that worker picks up, so its crate stays warm across them. `done` is
-/// serialized — the runner never calls it from two workers at once — so it can print
+/// serialized (the runner never calls it from two workers at once), so it can print
 /// without interleaving; the results arrive in completion order.
 pub fn run<T, Task, Done>(jobs: usize, fixtures: &[&Path], task: Task, done: Done)
 where

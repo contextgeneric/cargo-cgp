@@ -251,7 +251,7 @@ fn declines_an_open_tailed_path() {
         "type Route = PathCons<Symbol<3, Chars<'a', Chars<'p', Chars<'p', Nil>>>>, Rest>;\n";
 
     // The chain is left whole; its symbol segment still resugars, since that pass is independent
-    // of the path fold — which is what a declined path shows in a diagnostic too.
+    // of the path fold, which is what a declined path shows in a diagnostic too.
     assert_eq!(
         expand(source),
         "type Route = PathCons<Symbol!(\"app\"), Rest>;\n"
@@ -261,7 +261,7 @@ fn declines_an_open_tailed_path() {
 #[test]
 fn declines_a_path_with_a_bare_lowercase_segment() {
     // `Path!` would have encoded a lowercase identifier as a `Symbol`, so meeting one as a plain
-    // type is ambiguous — the spine is left raw rather than guessed at.
+    // type is ambiguous, so the spine is left raw rather than guessed at.
     let source = "type Route = PathCons<app, PathCons<GreeterComponent, Nil>>;\n";
 
     assert_eq!(expand(source), source);
@@ -283,7 +283,7 @@ fn keeps_a_qualified_path_segment_as_written() {
 fn a_path_terminator_is_not_read_as_an_empty_product() {
     // `Nil` terminates a path as well as a list, so the path pass must consume its own
     // terminator before the list pass runs. If it does not, this renders `Path!` over a
-    // `Product![]` — or fails to resugar at all.
+    // `Product![]`, or fails to resugar at all.
     let source = "type Route = PathCons<GreeterComponent, Nil>;\n";
 
     assert_eq!(expand(source), "type Route = Path!(@GreeterComponent);\n");

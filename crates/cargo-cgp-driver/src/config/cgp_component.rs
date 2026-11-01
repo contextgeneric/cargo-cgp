@@ -15,7 +15,7 @@ pub const CGP_COMPONENT_CRATE: &str = "cgp_component";
 pub const IS_PROVIDER_FOR_TRAIT: &str = "IsProviderFor";
 
 /// The item name of the check trait `check_components!` asserts on a context. Paired with
-/// [`CGP_COMPONENT_CRATE`] (its defining crate) to identify the genuine trait — the anchor
+/// [`CGP_COMPONENT_CRATE`] (its defining crate) to identify the genuine trait: the anchor
 /// the typed resolver keys on when it re-runs a check obligation. See `resolve`.
 pub const CAN_USE_COMPONENT_TRAIT: &str = "CanUseComponent";
 

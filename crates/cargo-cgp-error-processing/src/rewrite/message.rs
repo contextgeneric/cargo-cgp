@@ -1,7 +1,7 @@
 //! Rewriting CGP wiring messages to name the traits behind a component marker.
 //!
 //! rustc reports a CGP wiring failure in terms of the internal wiring traits, which name the
-//! *component marker* but not the consumer or provider trait a reader thinks in — both in the
+//! *component marker* but not the consumer or provider trait a reader thinks in, both in the
 //! primary header the error opens with and in the obligation-chain notes:
 //!
 //! ```text
@@ -23,7 +23,7 @@
 //!
 //! [`rewrite_message`] is the entry point; it dispatches to the note-form rewrite
 //! ([`rewrite_required_for`]) and the header rewrite ([`rewrite_trait_bound`]).
-//! The codes belong on *main* messages only — the driver applies the full dispatch to a
+//! The codes belong on *main* messages only: the driver applies the full dispatch to a
 //! diagnostic's header and [`rewrite_required_for`] to its sub-messages.
 //!
 //! Each form parses the message *before* consulting `names`, so a message that is not a CGP
@@ -49,7 +49,7 @@ pub fn rewrite_message(message: &str, names: &ComponentNameMap) -> Option<String
 /// form, or return `None` to leave the message untouched.
 ///
 /// Returns `None` for any message that is not one of the two recognized note forms, and for a
-/// recognized form whose component marker is absent from `names` — so a message is only ever
+/// recognized form whose component marker is absent from `names`, so a message is only ever
 /// rewritten when the replacement names are known. A type is called a context only when it is
 /// one: a generated parameter such as `__Context__` stands for every context a provider is generic
 /// over, so the provider form leaves its context out and the consumer form names it plainly.
@@ -63,7 +63,7 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
 
     match last_segment(path) {
         "IsProviderFor" => {
-            // `IsProviderFor<Component, Context, Params?>` — the provider (`subject`)
+            // `IsProviderFor<Component, Context, Params?>`: the provider (`subject`)
             // implements the provider trait behind `Component` for `Context`.
             let component = args.first()?.trim();
             let context = args.get(1)?.trim();
@@ -80,7 +80,7 @@ pub fn rewrite_required_for(message: &str, names: &ComponentNameMap) -> Option<S
             ))
         }
         "CanUseComponent" => {
-            // `CanUseComponent<Component, Params?>` — the context (`subject`) implements
+            // `CanUseComponent<Component, Params?>`: the context (`subject`) implements
             // the consumer trait behind `Component`.
             let component = args.first()?.trim();
             let entry = names.get(component)?;
@@ -117,7 +117,7 @@ pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<St
 
     match parsed.trait_name {
         "IsProviderFor" if args.len() >= 2 => {
-            // `IsProviderFor<Marker, Context, Params?>` — the context is named in prose, and
+            // `IsProviderFor<Marker, Context, Params?>`: the context is named in prose, and
             // the provider trait's generics are the component's extra parameters.
             let component = args[0].trim();
             let entry = names.get(component)?;
@@ -134,7 +134,7 @@ pub fn rewrite_trait_bound(message: &str, names: &ComponentNameMap) -> Option<St
 
 /// Render a trait's generic-argument list from a `leading` run (the provider's context, or
 /// nothing for a consumer) followed by a component's extra parameters, and return it as
-/// `<a, b, c>` — or the empty string when there are no arguments at all.
+/// `<a, b, c>`, or the empty string when there are no arguments at all.
 ///
 /// The extra parameters arrive as CGP groups them in `IsProviderFor`/`CanUseComponent`: a
 /// single parameter appears bare, and two or more are wrapped in a tuple, which is unwrapped

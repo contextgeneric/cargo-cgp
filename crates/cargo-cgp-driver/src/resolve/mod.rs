@@ -1,7 +1,7 @@
 //! Typed root-cause resolution for CGP check-trait failures.
 //!
 //! When the emitter sees a CGP wiring failure, it asks this module to recover the *real* root
-//! cause(s) — and the transitive dependency chain that leads to each — by walking the wiring's
+//! cause(s) and the transitive dependency chain that leads to each by walking the wiring's
 //! trait obligations rather than by reading the rendered error text. The result is the rustc-free
 //! [`Resolved`](cargo_cgp_error_processing::Resolved) the emitter turns into a diagnostic through
 //! [`plan_resolved`](cargo_cgp_error_processing::plan_resolved). See

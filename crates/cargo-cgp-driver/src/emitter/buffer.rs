@@ -24,9 +24,13 @@ pub enum BufEntry {
 
 /// The payload of a [`BufEntry::Resolved`].
 pub struct ResolvedEntry {
+    /// Whether the flush may merge this entry with others that share a root cause.
     pub coalescible: bool,
+    /// The failure the walk recovered.
     pub resolved: Resolved,
+    /// The `root cause:` note, rendered at flush.
     pub note: PendingNote,
+    /// The transformed diagnostic.
     pub diag: DiagInner,
     /// The diagnostic as rustc built it, emitted instead of the transformed one when the flush
     /// cannot render the transformed one (see [`BufEntry::untransformed`]).

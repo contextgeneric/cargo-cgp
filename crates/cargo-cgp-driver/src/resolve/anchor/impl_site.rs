@@ -15,19 +15,19 @@ use crate::resolve::query::{
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait
-/// for Context` block* — the shape a wrapper trait that carries a CGP consumer trait as a
-/// supertrait produces when it is implemented directly on a concrete context (the transfer
-/// example's per-endpoint `impl CanHandleApiSend<Api> for MockApp`, added to bound a future
+/// for Context` block*: the shape a wrapper trait that carries a CGP consumer trait as a
+/// supertrait produces when it is implemented directly on a concrete context (such as a
+/// per-endpoint `impl CanHandleApiSend<Api> for MockApp`, added to bound a future
 /// `Send`). Such a failure anchors on neither a `check_components!` entry nor a consumer-method
 /// call, and its caret sits on the impl rather than on the context's own type definition, so
 /// [`resolve_use_site`](super::resolve_use_site) cannot recover the context from a
 /// struct-definition span.
 ///
-/// This entry recovers the context from the enclosing impl's `Self` type, and — crucially — the
+/// This entry recovers the context from the enclosing impl's `Self` type, and, crucially, the
 /// *exact* failing obligation from the impl's CGP consumer supertrait, so a generic component
 /// carries its concrete parameter (`CanCalculateArea<Rectangle>`, not the `()` form the use-site
 /// re-check would substitute), and walks that supertrait obligation directly. The recovered tree is
-/// then headed by the impl's *own* trait — the wrapper the programmer wrote — so the diagnostic
+/// then headed by the impl's *own* trait (the wrapper the programmer wrote), so the diagnostic
 /// points at their code and the CGP consumer it reduces to follows beneath: the failure reads
 /// `CanHandleApiSend → CanHandleApi → …`, not `CanHandleApi → …` with the wrapper dropped. Because
 /// the wrapper is a distinct trait from that supertrait, its error stands on its own rather than
@@ -56,12 +56,12 @@ pub fn resolve_impl_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
         // The impl's own `where` clause can name a concrete context (`where Inner: CanCompute` on a
         // provider, `where App: CanRun` on a wrapper of a foreign type), and the compiler reports
         // such a bound failing at the bound itself. That is a real wiring failure, so recover it as
-        // the consumer obligation it is — de-duplicating into that context's own check.
+        // the consumer obligation it is, de-duplicating into that context's own check.
         if let Some(resolved) = where_bound_on_context(cx, impl_did, spans) {
             return Some(resolved);
         }
         // A provider-trait impl (`impl Runner<Ctx> for RunViaInner`) has a *provider* struct as its
-        // `Self`, not a context, and its only supertrait is `IsProviderFor` — so the supertrait
+        // `Self`, not a context, and its only supertrait is `IsProviderFor`, so the supertrait
         // recovery below would reach a consumer only via the `IsProviderFor` workaround this resolver
         // sheds (leaking `IsProviderFor` and the trait's `__Context__` into the tree). Skip that.
         if is_provider_trait(tcx, trait_ref.def_id) {
@@ -70,14 +70,14 @@ pub fn resolve_impl_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
         let context = tcx.erase_and_anonymize_regions(trait_ref.self_ty());
         // Only a context struct/enum (local, or a wired one from another crate) is a context whose
         // wiring we can re-check; skip an impl on another foreign type (e.g. `impl … for
-        // Router<Arc<App>>`) or a type parameter. Such a foreign wrapper — where the CGP consumer
-        // failure sits several `where`-clause hops down rather than in a direct supertrait — is
+        // Router<Arc<App>>`) or a type parameter. Such a foreign wrapper (where the CGP consumer
+        // failure sits several `where`-clause hops down rather than in a direct supertrait) is
         // [`resolve_wrapper_chain`](super::resolve_wrapper_chain)'s job.
         if !is_context_adt(tcx, context) {
             continue;
         }
 
-        // The error the programmer actually wrote is the impl's *own* trait — the wrapper (e.g.
+        // The error the programmer actually wrote is the impl's *own* trait: the wrapper (e.g.
         // `CanHandleApiSend<Api>`), not the CGP consumer supertrait it reduces to. That original
         // obligation heads the dependency tree and names the diagnostic, so the reader sees the
         // failure at their own code; the CGP consumer it depends on follows as the next node. Being
@@ -102,7 +102,7 @@ pub fn resolve_impl_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
 /// primary `spans` lies on: an unmet `Ctx: Consumer` bound whose `Ctx` is a *concrete* context
 /// ([`is_context_adt`]) and whose trait is a CGP consumer (`where Inner: CanCompute` on a provider,
 /// `where App: CanRun` on a wrapper of another type). Walked as the consumer obligation it is, it
-/// yields that context's own root-cause tree — the same `Resolved` the context's
+/// yields that context's own root-cause tree: the same `Resolved` the context's
 /// `check_components!` entry produces, so the two de-duplicate. `None` when no such bound lies at
 /// the caret. A normal provider's dependencies bind the *generic* context (`Ctx: HasName`, `Self` a
 /// type parameter), which is no context ADT, so this fires only on a concrete one.
@@ -139,7 +139,7 @@ fn where_bound_on_context<'tcx>(
 /// Recover a cause per unmet CGP consumer supertrait of a wrapper obligation `Self: Wrapper` whose
 /// `Self` is the `context` [`resolve_impl_site`] read, each tree headed by the wrapper's own
 /// `trait impl` node. Returns whether the wrapper is itself a CGP consumer, as a class (for the header wording),
-/// and the causes, or `None` when no CGP consumer supertrait is unmet — so a plain bound like
+/// and the causes, or `None` when no CGP consumer supertrait is unmet, so a plain bound like
 /// `Send` is skipped rather than mis-recovered.
 fn wrapper_consumer_causes<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,

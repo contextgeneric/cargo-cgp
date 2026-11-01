@@ -1,8 +1,8 @@
 //! The dependency graph: a DAG assembled from root→leaf paths, rendered `cargo tree`-style.
 //!
 //! The resolver produces one path of [`ChainNode`]s per way a root cause is reached. This module
-//! folds a set of such paths into a directed acyclic graph — merging every node several paths reach
-//! in common by structural identity — and renders it. A node reached again is drawn once and
+//! folds a set of such paths into a directed acyclic graph, merging every node several paths reach
+//! in common by structural identity, and renders it. A node reached again is drawn once and
 //! referenced with `(*)` (the convention `cargo tree` uses), so a shared dependency, a diamond, a
 //! super-root, and independent chains converging on one leaf all render correctly. The whole thing
 //! is a pure function over the structured nodes, so every shape is unit-tested without a compiler.
@@ -20,7 +20,7 @@ pub struct DependencyGraph {
     nodes: Vec<ChainNode>,
     /// Each node's dependency children, unique and in first-seen order.
     children: Vec<Vec<usize>>,
-    /// Whether each node is ever some node's child — the complement of "is a top-level root".
+    /// Whether each node is ever some node's child: the complement of "is a top-level root".
     is_child: Vec<bool>,
     /// The head (first node) of each input path, unique and in first-seen order.
     heads: Vec<usize>,
@@ -32,8 +32,8 @@ impl DependencyGraph {
     /// adjacent pair adds a child edge, and each path's first node is recorded as a head.
     ///
     /// A label that repeats *within a single path* is kept a distinct node, not merged. A linear
-    /// descent can pass through two hops that render identically yet mean different things — a
-    /// recursive `RedirectLookup` resolving `Outer` then `Inner`, say, whose label omits the key —
+    /// descent can pass through two hops that render identically yet mean different things: a
+    /// recursive `RedirectLookup` resolving `Outer` then `Inner`, say, whose label omits the key,
     /// and merging those would fold the spine into a false cycle. Only a genuine cross-path
     /// convergence merges.
     pub fn from_paths(paths: &[Vec<ChainNode>]) -> Self {
@@ -93,7 +93,7 @@ impl DependencyGraph {
         self.nodes.is_empty()
     }
 
-    /// Whether rendering against `seen` would say nothing new — every top-level root was already
+    /// Whether rendering against `seen` would say nothing new: every top-level root was already
     /// drawn elsewhere, so the whole diagram would collapse to `(*)` references.
     ///
     /// A caller uses this to render such a graph against a *fresh* set instead, so the block shows its
@@ -112,7 +112,7 @@ impl DependencyGraph {
 
     /// The top-level roots: path heads that are not also some node's child. A head that appears
     /// inside another path (one consumer's chain running through another) is therefore not rendered
-    /// as a second root — which is how subsumption falls out. Falls back to every head if that set is
+    /// as a second root, which is how subsumption falls out. Falls back to every head if that set is
     /// empty (a pathological all-cyclic input), so rendering never yields nothing.
     fn roots(&self) -> Vec<usize> {
         let roots: Vec<usize> = self
@@ -138,8 +138,8 @@ impl DependencyGraph {
     /// *earlier* graph already drew is `(*)`-referenced here instead of expanded again.
     ///
     /// This is what lets a compilation's diagnostics elide across blocks. CGP wiring is lazy, so one
-    /// mistake surfaces in several diagnostics that do not de-duplicate — a hand-written wrapper
-    /// trait is a distinct trait from the consumer it reduces to, so it keeps its own block — and
+    /// mistake surfaces in several diagnostics that do not de-duplicate: a hand-written wrapper
+    /// trait is a distinct trait from the consumer it reduces to, so it keeps its own block, and
     /// their chains can share everything below their own first few hops. Threading one `seen` through
     /// the blocks in emission order keeps each block's own prefix and truncates the shared remainder,
     /// which is the same `(*)` convention `cargo tree` uses for a subtree printed elsewhere in the
@@ -155,7 +155,7 @@ impl DependencyGraph {
         // load-bearing: `seen` is keyed by node value, while a label repeating within a single path
         // is deliberately a distinct node (see [`from_paths`](Self::from_paths)), so consulting a
         // set this render is also filling would mark the second occurrence `(*)` and fold a linear
-        // descent into a false cycle. Within a render, only `expanded` — keyed by id — elides.
+        // descent into a false cycle. Within a render, only `expanded`, keyed by id, elides.
         let mut drawn: Vec<ChainNode> = Vec::new();
         let rendered = self
             .roots()
@@ -169,8 +169,8 @@ impl DependencyGraph {
 
     /// The distinct terminal leaves reachable from `id`, in first-seen order, as render nodes. This
     /// is what an elided branch bottoms out on, so a chain whose middle was drawn in another note
-    /// still ends at the root cause. Descent is bounded by a visited set, so a cyclic graph — which
-    /// the resolver should never emit, but which the renderer promises to survive — terminates.
+    /// still ends at the root cause. Descent is bounded by a visited set, so a cyclic graph, which
+    /// the resolver should never emit, but which the renderer promises to survive, terminates.
     fn leaves_below(&self, id: usize) -> Vec<DependencyTree> {
         let mut leaves = Vec::new();
         let mut visited = vec![false; self.nodes.len()];
@@ -191,9 +191,9 @@ impl DependencyGraph {
         leaves.into_iter().map(DependencyTree::leaf).collect()
     }
 
-    /// Expand node `id` into a render tree. A node whose subtree was already drawn — earlier in this
+    /// Expand node `id` into a render tree. A node whose subtree was already drawn, earlier in this
     /// render (`expanded`, indexed by id) or by an earlier one (`seen`, keyed by node identity so it
-    /// spans graphs) — is emitted as a `(*)` reference rather than re-expanded; the `expanded` marks
+    /// spans graphs), is emitted as a `(*)` reference rather than re-expanded; the `expanded` marks
     /// double as cycle protection, since each node is expanded at most once. Only a node with
     /// children is ever referenced that way: a leaf hides no subtree, so it is drawn in full wherever
     /// a chain bottoms out on it.
@@ -221,7 +221,7 @@ impl DependencyGraph {
         if has_children && seen.contains(node) {
             // Drawn by an *earlier* render, in another note the reader may not have to hand. The
             // intervening hops are elided, but the chain must still bottom out at the cause it leads
-            // to — a chain that stops short of the root cause is the one thing it may never do.
+            // to: a chain that stops short of the root cause is the one thing it may never do.
             return DependencyTree::node(format!("{label} (*)"), self.leaves_below(id));
         }
         expanded[id] = true;

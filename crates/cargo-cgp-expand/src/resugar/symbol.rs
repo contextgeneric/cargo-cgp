@@ -1,4 +1,4 @@
-//! Resugaring `Symbol!` — the type-level string every CGP field name travels as.
+//! Resugaring `Symbol!`: the type-level string every CGP field name travels as.
 //!
 //! `Symbol!("height")` expands to a byte length and a right-folded character list closed by
 //! `Nil`, so this pass reads that spine back into the literal the programmer wrote. The match

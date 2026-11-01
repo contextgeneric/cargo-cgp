@@ -2,15 +2,15 @@
 //!
 //! Registering wiring into a namespace lowers to `impl<Param> Namespace<Param> for Key`, and Rust's
 //! orphan rule rejects it with `E0210` (or its sibling `E0117`) when both the namespace trait and
-//! the key are foreign — a downstream crate registering into an upstream namespace it does not own,
+//! the key are foreign: a downstream crate registering into an upstream namespace it does not own,
 //! keyed on an upstream component it does not own either. The raw diagnostic names the machinery
 //! parameter (`__Components__` from a `#[default_impl]`/`#[prefix]`, `__Table__` from a
 //! `cgp_namespace!` re-open) rather than the namespace and key the programmer wrote.
 //!
 //! [`classify_orphan_conflict`] recovers those from the compiler, not the error text: it finds the
-//! offending impl at the caret, reads its trait and `Self`, and — anchoring the namespace trait by
+//! offending impl at the caret, reads its trait and `Self`, and, anchoring the namespace trait by
 //! its structural [namespace-lookup fingerprint](crate::resolve::query::is_namespace_lookup_trait)
-//! rather than by name — words the collision into the rustc-free
+//! rather than by name, words the collision into the rustc-free
 //! [`OrphanConflict`]. Because we only run on an `E0210`/`E0117`, which rustc emits *only* for a
 //! genuine orphan, matching the caret to a foreign-namespace-trait-for-foreign-key impl is the whole
 //! confirmation: rustc has already proved the orphan, and the caret already sits on the impl it
@@ -27,7 +27,7 @@ use crate::resolve::query::{
     byte_range, describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls,
 };
 
-/// One local impl of a foreign namespace-lookup trait for a foreign key — a candidate orphan
+/// One local impl of a foreign namespace-lookup trait for a foreign key: a candidate orphan
 /// registration.
 struct OrphanImpl<'tcx> {
     impl_did: DefId,
@@ -87,7 +87,7 @@ fn orphan_impls(tcx: TyCtxt<'_>) -> Vec<OrphanImpl<'_>> {
         let impl_did = local.to_def_id();
         let trait_ref = tcx.impl_trait_ref(impl_did).skip_binder();
         let trait_did = trait_ref.def_id;
-        // Foreign namespace trait — a local one would be no orphan (you may implement your own
+        // Foreign namespace trait: a local one would be no orphan (you may implement your own
         // trait for anything). Recognized by the single-`Delegate` fingerprint, so a downstream
         // crate's own namespace trait is treated the same as CGP's built-in `DefaultNamespace`.
         // `DelegateComponent` has that shape too, but its `Self` is a wiring table, not a key.

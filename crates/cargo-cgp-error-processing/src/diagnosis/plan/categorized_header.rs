@@ -14,7 +14,7 @@ use crate::rewrite::{ComponentNameMap, ParsedTraitBound, parse_trait_bound, rewr
 pub struct Header<'a> {
     /// The rewritten main message, or `None` to keep rustc's own.
     pub text: Option<String>,
-    /// The leaf the rewritten message states in full, when it was worded from one — so the note can
+    /// The leaf the rewritten message states in full, when it was worded from one, so the note can
     /// drop that leaf's now-redundant `root cause:` lead.
     pub states_leaf: Option<&'a Leaf>,
     /// The headline the text rewrite gives rustc's own message, when it is a different class
@@ -67,9 +67,9 @@ pub fn categorized_header<'a>(
     if resolved.consumers.is_empty() {
         return Header::keep();
     }
-    // A mismatch-coded (`E0271`) failure that the resolver traced to a *non*-mismatch cause — a
+    // A mismatch-coded (`E0271`) failure that the resolver traced to a *non*-mismatch cause (a
     // missing field or wiring reached through an opaque-future or associated-type projection, as a
-    // manual `Send`-recovery wrapper's forwarding `async fn` produces — is a consequence of the
+    // manual `Send`-recovery wrapper's forwarding `async fn` produces), is a consequence of the
     // consumer failing, not a type mismatch. Its rustc message (`type mismatch resolving …`) is
     // opaque, so name the consumer trait that could not be implemented instead.
     if kind == DiagKind::TypeMismatch {
@@ -150,8 +150,8 @@ pub fn bound_text_header<'a>(
             ..Header::rewritten(consumer_header(resolved))
         };
     }
-    // rustc opened the diagnostic on a bound that restates a genuine recovered leaf — an
-    // ordinary bound such as `f64: Eq` the solver descended to *is* the root cause — so
+    // rustc opened the diagnostic on a bound that restates a genuine recovered leaf: an
+    // ordinary bound such as `f64: Eq` the solver descended to *is* the root cause, so
     // keep rustc's header, which already names that cause. (The matching note then drops
     // its `root cause:` lead so it does not repeat the header.) Where the leaf writes the
     // bound as the program did and rustc does not (`Product![]` for CGP's `Nil`), the

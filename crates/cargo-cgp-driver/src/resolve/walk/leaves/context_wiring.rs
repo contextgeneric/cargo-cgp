@@ -33,8 +33,8 @@ pub fn delegated_table_lookups<'tcx>(
         .collect()
 }
 
-/// The unmet `DelegateComponent` obligation to report when `pred` is one **on the context** — with
-/// any trailing unknown segments trimmed off a redirect-path key — or `None` when `pred` is not one.
+/// The unmet `DelegateComponent` obligation to report when `pred` is one **on the context**, with
+/// any trailing unknown segments trimmed off a redirect-path key, or `None` when `pred` is not one.
 ///
 /// The trim is what makes a call-site-anchored redirect reportable. A `RedirectLookup` keys on the
 /// path *plus the component's parameters*, so a lookup recovered from a call whose input is inferred

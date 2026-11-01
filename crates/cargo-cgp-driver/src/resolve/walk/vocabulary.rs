@@ -9,7 +9,7 @@ use crate::config::{
 use crate::resolve::data::is_data_trait;
 use crate::resolve::query::{is_cgp_item, is_provider_trait};
 
-/// Whether `pred` is the check-trait scaffolding — `CanUseComponent` or `IsProviderFor` — the walk
+/// Whether `pred` is the check-trait scaffolding (`CanUseComponent` or `IsProviderFor`), the walk
 /// resolves *around* rather than through. These sit beside the real consumer/provider-trait
 /// obligation in every generated blanket impl and carry only the delegation check
 /// (`CanUseComponent`) or a copy of the provider's `where` clause (`IsProviderFor`), both redundant
@@ -28,7 +28,7 @@ pub(crate) fn is_workaround_plumbing<'tcx>(
 /// terminal leaf: a [context-side](is_context_side) obligation, or one of CGP's
 /// **extensible-data traits** (a cast, a builder or extractor operation), whose blanket impl leads
 /// to the presence-marker bound that names the field or variant at fault. It stops at everything
-/// else — an ordinary bound like `f64: Eq`, whose `Self` is a foreign type, is a leaf.
+/// else: an ordinary bound like `f64: Eq`, whose `Self` is a foreign type, is a leaf.
 pub(crate) fn is_descendable<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitClause<'tcx>,
@@ -81,7 +81,7 @@ pub(crate) fn is_other_context_provider<'tcx>(
             })
 }
 
-/// Whether a trait predicate is a genuine CGP `HasField` bound — the missing-field leaf.
+/// Whether a trait predicate is a genuine CGP `HasField` bound: the missing-field leaf.
 pub(crate) fn is_has_field(tcx: TyCtxt<'_>, pred: ty::PolyTraitClause<'_>) -> bool {
     is_cgp_item(
         tcx,

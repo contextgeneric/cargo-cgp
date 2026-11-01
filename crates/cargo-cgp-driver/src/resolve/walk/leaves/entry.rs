@@ -7,8 +7,8 @@ use crate::resolve::ctx::ResolveCtx;
 use crate::resolve::label::{render_ty, trait_generics};
 use crate::resolve::walk::resolve_node;
 
-/// Walk the dependency graph of `top` — the **real consumer-trait obligation** `Ctx:
-/// ConsumerTrait<Params…>` the failure stands for, not a `CanUseComponent` wrapper — and, for each
+/// Walk the dependency graph of `top`, the **real consumer-trait obligation** `Ctx:
+/// ConsumerTrait<Params…>` the failure stands for, not a `CanUseComponent` wrapper, and, for each
 /// distinct terminal unmet bound it bottoms out on, return that leaf with its rendered dependency
 /// chain. The walk descends the consumer trait to its provider trait and on to the provider's real
 /// `where` bounds, never through `IsProviderFor`. `None` when no branch reaches a resolvable leaf.
@@ -102,7 +102,7 @@ pub fn compute_leaves<'tcx>(
     }
 
     // The consumer trait is the seed obligation's own trait, named straight off its `DefId` with
-    // its parameters reattached from the obligation's arguments — no marker, no name map, no
+    // its parameters reattached from the obligation's arguments, with no marker, no name map, no
     // `IsProviderFor`. The `DefId` is exact, so two same-named components in different modules
     // cannot be confused.
     let top_ref = top.skip_binder().trait_ref;

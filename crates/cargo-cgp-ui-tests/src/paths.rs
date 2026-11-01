@@ -10,7 +10,7 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// The cargo-cgp workspace root — two levels up from this crate's manifest
+/// The cargo-cgp workspace root, two levels up from this crate's manifest
 /// (`crates/cargo-cgp-ui-tests`).
 pub fn workspace_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -67,7 +67,7 @@ pub fn debug_dir() -> PathBuf {
     ancestor_holding(&exe, &front_end).unwrap_or_else(|| {
         panic!(
             "deriving target/debug from the harness executable {}: no ancestor holds a \
-             built `{front_end}` — run `cargo build` first",
+             built `{front_end}`: run `cargo build` first",
             exe.display(),
         )
     })
@@ -90,8 +90,8 @@ fn front_end_name() -> String {
 
 /// The sysroot of the toolchain the harness runs under, from `rustc --print sysroot`.
 ///
-/// A diagnostic that points into the standard library — an implicit `Sized` bound on
-/// `Option`, say — names a path inside this directory, which carries the user's home
+/// A diagnostic that points into the standard library (an implicit `Sized` bound on
+/// `Option`, say) names a path inside this directory, which carries the user's home
 /// directory, the pinned nightly's name, and the host target triple. The snapshots
 /// normalize it to `$SYSROOT` for the same reason they normalize the `cgp` checkout.
 pub fn sysroot() -> PathBuf {

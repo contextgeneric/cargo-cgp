@@ -36,7 +36,7 @@ impl Options {
                 "--print" => options.print = true,
                 "--list" => options.list = true,
                 // `--jobs`/`-j` take their count from the next argument, so consume it
-                // even when it fails to parse — otherwise it would be read as a filter.
+                // even when it fails to parse, since otherwise it would be read as a filter.
                 "--jobs" | "-j" => options.jobs = args.next().and_then(|n| n.parse().ok()),
                 flag if job_count(flag).is_some() => options.jobs = job_count(flag),
                 flag if flag.starts_with('-') => {}
@@ -57,7 +57,7 @@ impl Options {
     }
 }
 
-/// The job count in a glued form — `--jobs=N`, `-j=N`, or `-jN` — or `None` if `flag` is
+/// The job count in a glued form (`--jobs=N`, `-j=N`, or `-jN`) or `None` if `flag` is
 /// not such a form (or its count does not parse).
 fn job_count(flag: &str) -> Option<usize> {
     let rest = flag

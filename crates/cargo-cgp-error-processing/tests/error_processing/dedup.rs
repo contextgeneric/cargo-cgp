@@ -2,7 +2,7 @@
 
 use cargo_cgp_error_processing::DedupLedger;
 
-/// A `text_signature` thunk that must not be called — for the resolved path, whose key is the
+/// A `text_signature` thunk that must not be called, for the resolved path, whose key is the
 /// recovered cause.
 fn no_text() -> String {
     panic!("the text signature must not be computed when a cause signature is present");

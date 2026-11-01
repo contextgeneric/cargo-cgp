@@ -1,7 +1,7 @@
 //! Classifying an `E0119` on a namespace's own lookup trait.
 //!
-//! An entry *inside a namespace* conflicts on that namespace's own lookup trait — the `E0119`
-//! reads `conflicting implementations of trait `MyNamespace<_>` for type `PathCons<…>`` — so
+//! An entry *inside a namespace* conflicts on that namespace's own lookup trait (the `E0119`
+//! reads `conflicting implementations of trait `MyNamespace<_>` for type `PathCons<…>``), so
 //! neither `DelegateComponent` nor `IsProviderFor` appears in the message and the pair routing
 //! cannot reach it. This classifier recognizes the shape by the impls at the carets instead: a
 //! local impl of a [namespace lookup trait](crate::resolve::query::is_namespace_lookup_trait),
@@ -13,8 +13,8 @@
 //! provider's `#[default_impl(… in Namespace)]` registration, and the inheritance blanket a
 //! `new Child: Parent` header emits. That last one is why the collision is often not the duplicate
 //! it looks like: the blanket forwards *every* key the parent answers, so binding a key the parent
-//! already registers collides with it. When the parent resolves that key to a `RedirectLookup` —
-//! the shape a component's `#[prefix(...)]` produces — the real mistake is that the key is
+//! already registers collides with it. When the parent resolves that key to a `RedirectLookup` (
+//! the shape a component's `#[prefix(...)]` produces), the real mistake is that the key is
 //! addressed by its path, and [`redirect_conflict`] recovers that path so
 //! the message names the entry to write instead.
 
@@ -32,8 +32,8 @@ use crate::resolve::query::{
 /// Classify an `E0119` on a namespace lookup trait as a duplicate-entry conflict, or `None` when
 /// no namespace-trait impl sits at the caret (leaving the diagnostic to the ordinary fallback).
 /// The shapes mirror [`build_conflict`](super::build_conflict): of two entries over one key, both
-/// redirecting is a duplicate redirect (naming both targets), one redirecting — written, or
-/// inherited through a parent namespace — is a redirect collision, and two plain entries are a
+/// redirecting is a duplicate redirect (naming both targets), one redirecting (written, or
+/// inherited through a parent namespace) is a redirect collision, and two plain entries are a
 /// duplicate; two distinct keys are an overlap.
 pub fn classify_namespace_conflict(
     tcx: TyCtxt<'_>,
@@ -81,7 +81,7 @@ pub fn classify_namespace_conflict(
     }
 }
 
-/// The namespace entries whose namespace-trait impls sit at `span`, in definition order — matched
+/// The namespace entries whose namespace-trait impls sit at `span`, in definition order: matched
 /// by source range against each impl's def-span, exactly as the `DelegateComponent` classifier
 /// matches its carets. Empty when no local namespace-trait impl is there.
 fn namespace_entries_at<'tcx>(tcx: TyCtxt<'tcx>, span: Span) -> Vec<ConflictSide<'tcx>> {

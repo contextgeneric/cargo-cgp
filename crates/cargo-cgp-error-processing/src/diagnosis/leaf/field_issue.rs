@@ -1,12 +1,12 @@
 //! Why a required `HasField` bound is unmet.
 
-/// Why a required `HasField` bound is unmet — the distinction that tells a genuinely missing
+/// Why a required `HasField` bound is unmet: the distinction that tells a genuinely missing
 /// field apart from one some struct actually carries but has not derived. CGP's `HasField`
 /// follows `Deref` (a blanket impl forwards to the target), so a field on a `Deref` target
 /// resolves when the target derives it; the failure diagnosed here is a field present on some
 /// struct that has no `HasField` impl for it. (A field present *with a mismatched type* keeps
 /// its `HasField` trait impl and fails only the associated-type projection, so it never reaches
-/// this classification — it is a [`Leaf::FieldTypeMismatch`](crate::diagnosis::Leaf::FieldTypeMismatch) instead.)
+/// this classification; it is a [`Leaf::FieldTypeMismatch`](crate::diagnosis::Leaf::FieldTypeMismatch) instead.)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FieldIssue {
     /// No struct in the context's `Deref` chain carries a field of this name: it is genuinely

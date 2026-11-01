@@ -1,7 +1,7 @@
 //! The OS dynamic-library search path.
 //!
 //! The driver links `librustc_driver` from the sysroot, so that directory must be on the
-//! loader's search path whenever the driver runs — both when cargo spawns it for the check
+//! loader's search path whenever the driver runs, both when cargo spawns it for the check
 //! and when the preflight runs `cargo-cgp-driver --version` as a load test.
 
 use std::env;
@@ -12,10 +12,13 @@ use std::process::Command;
 use anyhow::Context;
 
 /// Name of the OS variable that lists directories searched for dynamic libraries.
+/// The variable the platform's dynamic loader searches for the driver's compiler libraries.
 #[cfg(target_os = "macos")]
 pub const DYLIB_PATH_VAR: &str = "DYLD_FALLBACK_LIBRARY_PATH";
+/// The variable the platform's dynamic loader searches for the driver's compiler libraries.
 #[cfg(target_os = "windows")]
 pub const DYLIB_PATH_VAR: &str = "PATH";
+/// The variable the platform's dynamic loader searches for the driver's compiler libraries.
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
 pub const DYLIB_PATH_VAR: &str = "LD_LIBRARY_PATH";
 

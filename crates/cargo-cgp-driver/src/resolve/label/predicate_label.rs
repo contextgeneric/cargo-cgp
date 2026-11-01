@@ -15,8 +15,8 @@ use crate::resolve::query::{
 
 /// The human-readable label for one predicate in a dependency path, replacing each CGP wiring
 /// trait with the concept it stands for. Crucially it reads the **real** consumer and provider
-/// trait obligations that the walk descends — `Ctx: ConsumerTrait<…>` and `Provider:
-/// ProviderTrait<Ctx, …>` — and takes every name straight off the trait `DefId` and the
+/// trait obligations that the walk descends (`Ctx: ConsumerTrait<…>` and `Provider:
+/// ProviderTrait<Ctx, …>`) and takes every name straight off the trait `DefId` and the
 /// obligation's own type arguments. It does *not* read `CanUseComponent`/`IsProviderFor`: those
 /// are the check-trait scaffolding cargo-cgp treats as removable, and the resolver never depends on
 /// them for a name.
@@ -27,14 +27,14 @@ use crate::resolve::query::{
 ///   `RedirectLookup<Table, Path>` provider is a namespace/`open` redirection hop instead, so a
 ///   chain of them reads as its successive hops, each naming the table it looks the path up in.
 /// - A `HasField` obligation never reaches here: the walk classifies it as a root-cause leaf first.
-/// - Any other trait — a user's own blanket trait or getter — is shown as a trait impl for its self.
+/// - Any other trait (a user's own blanket trait or getter) is shown as a trait impl for its self.
 ///
 /// The steps that carry no information for a reader return `None` and are dropped: the
 /// `CanUseComponent`/`IsProviderFor` scaffolding, a provider-trait obligation *for the context
 /// itself* (delegation routing), the `DelegateComponent` table lookup, a namespace lookup, and an
 /// extensible-data trait's recursion over a type-level list. A trait implemented for a builder or an
 /// extractor names that partial value in words. The
-/// missing-delegate leaf a wiring chain bottoms out on is not rendered here — the caller
+/// missing-delegate leaf a wiring chain bottoms out on is not rendered here: the caller
 /// ([`resolve_leaves`](crate::resolve::walk::resolve_leaves)) re-states the root cause as the
 /// terminal leaf.
 pub(crate) fn label_for<'tcx>(
@@ -58,8 +58,8 @@ pub(crate) fn label_for<'tcx>(
         return None;
     }
 
-    // Note: a `HasField` obligation is never labeled here — `resolve_node` classifies it as a
-    // terminal root-cause leaf before `label_for` is reached — so there is no interior HasField hop.
+    // Note: a `HasField` obligation is never labeled here (`resolve_node` classifies it as a
+    // terminal root-cause leaf before `label_for` is reached), so there is no interior HasField hop.
 
     if is_provider_trait(tcx, did) {
         // A provider-trait obligation for the context itself is delegation routing, dropped.
@@ -72,7 +72,7 @@ pub(crate) fn label_for<'tcx>(
     }
 
     if is_consumer_trait(tcx, did) && self_ty == context {
-        // `Ctx: ConsumerTrait<Params…>` — the consumer name and its parameters read directly.
+        // `Ctx: ConsumerTrait<Params…>`: the consumer name and its parameters read directly.
         let generics = trait_generics(tcx, trait_ref, 1);
         return Some(DepNode::Consumer {
             trait_ref: format!("{}{generics}", tcx.item_name(did)),
@@ -111,7 +111,7 @@ fn provider_label<'tcx>(tcx: TyCtxt<'tcx>, trait_ref: ty::TraitRef<'tcx>) -> Opt
     // provider for a bundle that opens its own components, so the hop names it rather than the
     // context. The dispatched key (the provider trait's own parameters, skipping `Self` = the
     // lookup and the context) is carried as the node's identity so two lookups along the same
-    // route for different keys stay distinct — it is not rendered, since the key already shows
+    // route for different keys stay distinct; it is not rendered, since the key already shows
     // on the child provider node.
     if let Some((table, path)) = redirect_lookup_args(tcx, self_ty) {
         return Some(DepNode::Redirect {
@@ -120,7 +120,7 @@ fn provider_label<'tcx>(tcx: TyCtxt<'tcx>, trait_ref: ty::TraitRef<'tcx>) -> Opt
             key: trait_generics(tcx, trait_ref, 2),
         });
     }
-    // `Provider: ProviderTrait<Ctx, Params…>` — trait name, context, provider, and the
+    // `Provider: ProviderTrait<Ctx, Params…>`: trait name, context, provider, and the
     // component's extra parameters all read straight off the obligation, no marker or map. The
     // context is the first type argument after `Self`, indexed by *type* position because a
     // component's lifetime parameters sort ahead of the context in the argument list

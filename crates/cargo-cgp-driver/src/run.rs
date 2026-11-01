@@ -1,4 +1,4 @@
-//! The driver entrypoint — the function the `cargo-cgp-driver` binary calls.
+//! The driver entrypoint: the function the `cargo-cgp-driver` binary calls.
 
 use std::env;
 use std::process::ExitCode;
@@ -71,7 +71,7 @@ pub fn run() -> ExitCode {
         let expand = take_expand_request(&mut raw, EXPAND_FLAG, EXPAND_ITEM_FLAG);
 
         // The injected flags shape diagnostics produced during analysis, which expand mode never
-        // reaches — it stops once the crate is expanded — so they are left off there.
+        // reaches (it stops once the crate is expanded), so they are left off there.
         let injected_flags: &[&str] = if expand.is_some() {
             &[]
         } else {

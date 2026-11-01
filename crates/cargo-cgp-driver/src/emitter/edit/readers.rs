@@ -25,7 +25,7 @@ pub fn diag_kind(diag: &DiagInner) -> DiagKind {
     }
 }
 
-/// A span-independent signature of a diagnostic's rendered text — its main message plus each
+/// A span-independent signature of a diagnostic's rendered text: its main message plus each
 /// child's message, in order. Used to de-duplicate a text-rewritten CGP diagnostic the typed
 /// resolver *declined*: the same rewritten wiring error re-reported at another span renders the
 /// same text, so the emitter shows the first and suppresses the rest. It deliberately ignores
@@ -47,11 +47,11 @@ pub fn message_signature(diag: &DiagInner) -> String {
     parts.join("\u{1f}")
 }
 
-/// Whether `diag` is a downstream `?`-operator cascade — the `Try` / `FromResidual` error rustc
+/// Whether `diag` is a downstream `?`-operator cascade: the `Try` / `FromResidual` error rustc
 /// emits when the `?` in `expr?` is applied to a value whose type it could not resolve because an
 /// earlier trait bound on that same expression failed
 /// ([`is_question_mark_cascade_text`]). On its own this is not enough to suppress
-/// — a genuine `?` misuse reads the same — so the emitter pairs it with a span check: the cascade is
+/// (a genuine `?` misuse reads the same), so the emitter pairs it with a span check: the cascade is
 /// dropped only when it sits on an expression where a CGP wiring failure was already reported, where
 /// it merely restates that failure in `Try` terms while dumping the unresolved projected type.
 pub fn is_question_mark_cascade(diag: &DiagInner) -> bool {

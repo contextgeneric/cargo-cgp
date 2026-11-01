@@ -116,7 +116,7 @@ fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
             vec![consumer("CanGreet", "App")],
         )
     };
-    // Same context, consumer, and cause reached at two sites — a re-report — shares a signature,
+    // Same context, consumer, and cause reached at two sites (a re-report) shares a signature,
     // even though the dependency paths differ (the path is not part of the signature).
     let at_check = cgp_resolved("App", &["CanGreet"], vec![missing_name()]);
     let at_call = cgp_resolved(
@@ -129,11 +129,11 @@ fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
     );
     assert_eq!(cause_signature(&at_check), cause_signature(&at_call));
 
-    // A different consumer is a distinct failure — never merged, so no trait is hidden.
+    // A different consumer is a distinct failure, never merged, so no trait is hidden.
     let other_consumer = cgp_resolved("App", &["CanShout"], vec![missing_name()]);
     assert_ne!(cause_signature(&at_check), cause_signature(&other_consumer));
 
-    // A different cause is a distinct fix — never merged.
+    // A different cause is a distinct fix, never merged.
     let other_cause = cgp_resolved(
         "App",
         &["CanGreet"],
@@ -209,7 +209,7 @@ fn merges_two_causes_sharing_a_root_into_one_note() {
          \x20     └─ [CGP-E110] missing field `last_name` on `Person`"
     );
 
-    // A single cause is not merged — it keeps the `root cause:` (singular) form.
+    // A single cause is not merged, so it keeps the `root cause:` (singular) form.
     let single = cause_notes(std::slice::from_ref(&causes[0]), None);
     assert_eq!(single.len(), 1);
     assert!(single[0].starts_with("root cause: [CGP-E110] missing field `first_name`"));

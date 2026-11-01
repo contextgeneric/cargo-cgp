@@ -156,7 +156,7 @@ fn everything_else_is_forwarded_untouched() {
 
 #[test]
 fn a_bare_word_is_left_to_cargo() {
-    // A positional cannot be told from a cargo flag's value — `--bin release` names a binary — so the
+    // A positional cannot be told from a cargo flag's value (`--bin release` names a binary), so the
     // filter is only ever the explicit flag, and a bare word passes through.
     let (forwarded, item) = take_item(&args(&["--bin", "my_module"])).unwrap();
 

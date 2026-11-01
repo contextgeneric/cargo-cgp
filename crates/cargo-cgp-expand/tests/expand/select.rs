@@ -44,7 +44,7 @@ fn a_module_selects_its_contents() {
     let out = expand_item(PROGRAM, "shapes");
 
     // The `mod shapes { … }` wrapper is noise around what was asked for, so the contents come out
-    // unwrapped — and resugared like any other expansion.
+    // unwrapped, and resugared like any other expansion.
     assert!(!out.contains("mod shapes"), "{out}");
     assert!(out.contains("pub struct Rectangle"), "{out}");
     assert!(

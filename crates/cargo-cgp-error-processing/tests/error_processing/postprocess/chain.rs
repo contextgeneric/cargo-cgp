@@ -103,7 +103,7 @@ fn postprocess_message_leaves_plain_rust_alone() {
 // --- Fragmented messages -----------------------------------------------------------------
 //
 // rustc splits a message into styled fragments to highlight part of it, and splits at every
-// difference when highlighting the difference between two types — shredding a CGP spine so no
+// difference when highlighting the difference between two types, shredding a CGP spine so no
 // single fragment matches. `postprocess_fragments` reads them as the one line they render as.
 
 // Property: for all fragments whose concatenation holds a CGP construct no fragment holds,
@@ -138,7 +138,7 @@ fn a_spine_split_across_fragments_is_resugared_as_a_whole() {
 #[test]
 fn fragments_needing_no_joining_keep_their_styling() {
     // Each fragment is post-processed on its own by the caller before this runs, so a message
-    // with nothing spanning a boundary must decline — flattening would drop rustc's
+    // with nothing spanning a boundary must decline: flattening would drop rustc's
     // highlighting for no gain.
     let fragments = ["the trait `", "Foo", "` is not implemented for `Bar`"];
 

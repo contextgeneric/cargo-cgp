@@ -11,10 +11,10 @@ use crate::diagnosis::wording::lead::{dependency_leaf_code, root_cause_lead};
 /// The `root cause:` note(s) for a resolved failure. Every path of every cause is folded into one
 /// [`DependencyGraph`], which merges the nodes they share and renders the whole as a `cargo
 /// tree`-style diagram; the heading then names the distinct root cause(s) above it. The result is a
-/// single note (or none, for no causes), since the graph already fuses what the old per-root grouping
-/// kept apart.
+/// single note (or none, for no causes), since the graph already fuses what separate per-root blocks
+/// would keep apart.
 ///
-/// `header_leaf` is the leaf the diagnostic's main message already states in full, if any — its lead
+/// `header_leaf` is the leaf the diagnostic's main message already states in full, if any: its lead
 /// is then dropped so the note does not repeat the header. A caller that rewords the header itself,
 /// as the emitter's coalesced block does, passes `None`: its header names the affected consumers
 /// rather than the cause, so every lead is worth keeping.
@@ -35,7 +35,7 @@ pub fn cause_notes_seen(
     }
     let graph = causes_graph(causes);
 
-    // The distinct root causes, in first-seen order — a leaf reached by several paths is named once.
+    // The distinct root causes, in first-seen order: a leaf reached by several paths is named once.
     let mut leaves: Vec<&Leaf> = Vec::new();
     for cause in causes {
         if !leaves.iter().any(|leaf| **leaf == cause.leaf) {
@@ -44,13 +44,13 @@ pub fn cause_notes_seen(
     }
 
     // Every root of this graph was drawn by an earlier note, so eliding against that note has nothing
-    // to *trim* — it would remove the whole derivation and leave the block asserting a cause with no
+    // to *trim*, sinceit would remove the whole derivation and leave the block asserting a cause with no
     // account of where it came from. The cross-block elision exists to drop a long shared tail hanging
     // under a block's own distinct prefix; a block with no distinct prefix at all is the degenerate
     // case, not the case it was built for. Such a block has already survived de-duplication, so it is a
     // *different* failure that happens to run through ground another one covered, and it earns its own
-    // chain: render it against a fresh set, ignoring what came before. The cost is bounded — a
-    // wholly-contained graph is by construction no larger than the one that contains it — and the
+    // chain: render it against a fresh set, ignoring what came before. The cost is bounded, a
+    // wholly-contained graph is by construction no larger than the one that contains it, and the
     // nodes still join `seen`, so later notes elide against this block as usual.
     let chain = if graph.fully_elided_by(seen) {
         let mut fresh = HashSet::new();
@@ -98,11 +98,11 @@ fn leaf_list(leaves: &[&Leaf]) -> String {
 }
 
 /// The `root cause: [code] lead` line for a single leaf, or `None` when the note should carry the
-/// chain alone because the main message already states this very leaf — a rewritten mismatch header
+/// chain alone because the main message already states this very leaf: a rewritten mismatch header
 /// naming the type, or a kept rustc header restating the ordinary bound the walk descended to.
 ///
 /// The test is whether the header states *this* leaf, not what kind of leaf it is. Keying on the
-/// kind instead would drop a mismatch's lead even under a header that never mentioned it — as the
+/// kind instead would drop a mismatch's lead even under a header that never mentioned it, as the
 /// emitter's coalesced block produces, where the header lists the affected consumers and the lead is
 /// the only place above the tree the cause appears.
 fn leaf_lead(leaf: &Leaf, header_leaf: Option<&Leaf>) -> Option<String> {

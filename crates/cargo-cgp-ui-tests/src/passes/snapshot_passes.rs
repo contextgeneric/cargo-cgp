@@ -30,7 +30,7 @@ pub fn rust_stderr_pass(run: &Run, fixture: &Path, paths: &Paths<'_>, bless: boo
     review(&rust_stderr_path(fixture), &actual, bless, "rust")
 }
 
-/// Review a fixture's `cargo cgp expand` output against `.expand.rs` — the Rust
+/// Review a fixture's `cargo cgp expand` output against `.expand.rs`: the Rust
 /// its CGP macros generate, with CGP's type-level constructs resugared.
 pub fn expand_pass(expansion: &str, fixture: &Path, paths: &Paths<'_>, bless: bool) -> Outcome {
     let actual = normalize_source(

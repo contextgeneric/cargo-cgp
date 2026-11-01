@@ -1,7 +1,7 @@
 //! Bakes the driver's toolchain identity into it at build time.
 //!
 //! Two values are recorded. `CARGO_CGP_PINNED_TOOLCHAIN` is the channel the workspace
-//! `rust-toolchain.toml` pins — the toolchain the driver is *meant* to be built with.
+//! `rust-toolchain.toml` pins: the toolchain the driver is *meant* to be built with.
 //! `CARGO_CGP_BUILT_AGAINST_RUSTC` is the `rustc --version` line of the compiler that
 //! *actually* compiled the driver, captured by querying the compiling rustc, so the
 //! front-end's preflight can tell whether the driver was built against the nightly that is
@@ -31,7 +31,7 @@ fn main() {
 /// canonical file at the workspace root; a published crate ships its own copy in the crate
 /// root (see the crate's `rust-toolchain.toml`), because the workspace file is not part of
 /// the package tarball. Walking up from the manifest directory takes the first match, so the
-/// same build script serves both layouts — including the isolated verification build cargo
+/// same build script serves both layouts, including the isolated verification build cargo
 /// runs under `target/package/` during `cargo publish`.
 fn find_toolchain_file() -> PathBuf {
     let start = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));

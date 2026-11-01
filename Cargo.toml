@@ -42,7 +42,7 @@ anyhow = { version = "1" }
 semver = { version = "1" }
 # Blocking HTTP client, used by `cargo cgp update` to read the crates.io sparse index (all
 # published versions) so it can pick the highest version in the running crate's channel.
-# rustls TLS keeps it self-contained. Only the front-end's `update` path links it — the
+# rustls TLS keeps it self-contained. Only the front-end's `update` path links it; the
 # check path and the driver do not. (ureq is a widely used, dependency-light client.)
 ureq = { version = "3" }
 # JSON parsing of the sparse-index lines. Ubiquitous and dependency-light.

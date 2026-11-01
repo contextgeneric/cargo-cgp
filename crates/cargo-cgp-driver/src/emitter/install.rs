@@ -1,7 +1,7 @@
 //! Installing the transforming emitter on the compiler session.
 //!
-//! The session's own emitter cannot be *wrapped* — [`set_emitter`](rustc_errors::DiagCtxtHandle::set_emitter)
-//! only replaces it, with no way to recover the original — so [`install`] rebuilds the same inner
+//! The session's own emitter cannot be *wrapped*: [`set_emitter`](rustc_errors::DiagCtxtHandle::set_emitter)
+//! only replaces it, with no way to recover the original, so [`install`] rebuilds the same inner
 //! emitter the compiler's `default_emitter` would build for the active error format (a
 //! [`JsonEmitter`] or an [`AnnotateSnippetEmitter`]) and wraps *that* in
 //! [`CgpEmitter`], so `cargo-cgp-driver` renders like vanilla `rustc` in either
@@ -22,7 +22,7 @@ use crate::emitter::cgp_emitter::CgpEmitter;
 /// default emitter so cargo's output is what vanilla `rustc` would produce apart from the CGP
 /// transforms.
 ///
-/// It handles both the JSON error format — the one the front-end drives cargo with — and the
+/// It handles both the JSON error format (the one the front-end drives cargo with) and the
 /// human-readable one a direct `cargo-cgp-driver` (or `cargo cgp check`) invocation renders,
 /// rebuilding whichever emitter the compiler's `default_emitter` would for that format and
 /// wrapping it in [`CgpEmitter`]. The session options the emitter construction needs are not

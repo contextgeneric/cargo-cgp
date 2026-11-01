@@ -5,7 +5,7 @@
 //! map, it decides the rewritten main message (when the diagnostic is an identified CGP class)
 //! and the replacement sub-messages (the fix `help`s and the `root cause:` note).
 //! The driver's emitter feeds it those inputs from the live `DiagInner` and turns the returned
-//! [`DiagnosisPlan`] strings into `rustc` sub-diagnostics — so all the wording logic is here,
+//! [`DiagnosisPlan`] strings into `rustc` sub-diagnostics, so all the wording logic is here,
 //! unit-tested without a compiler, and the emitter is left with only `DiagInner` manipulation.
 
 mod categorized_header;

@@ -10,7 +10,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 use crate::resolve::query::{resolve_fixed_projections, unknowns_to_placeholders, written_order};
 
 /// The instantiated `where`-clause trait obligations of the impl that would satisfy `obligation`
-/// — its direct dependencies — or `None` when no impl matches at all (so the caller can treat the
+/// (its direct dependencies), or `None` when no impl matches at all (so the caller can treat the
 /// obligation as a terminal leaf). Found by unifying `obligation` with each candidate impl's trait
 /// ref ([`match_impl`]), then instantiating and normalizing that impl's predicates. `Some(vec![])`
 /// means an impl matched but carries no trait-clause `where` obligations.
@@ -22,7 +22,7 @@ use crate::resolve::query::{resolve_fixed_projections, unknowns_to_placeholders,
 /// `DeserializeRecordFields: ValueDeserializer<…>`, but only the specific impl's `where`-clauses lead
 /// to the real cause; the blanket's lead to a `DeserializeRecordFields: DelegateComponent`
 /// dead-end, since a leaf provider does not delegate. A blanket impl is used only when no
-/// concrete-`Self` one matches — the usual case for an obligation whose `Self` *is* the context
+/// concrete-`Self` one matches, the usual case for an obligation whose `Self` *is* the context
 /// (`App: CanUseComponent<…>` has only the blanket).
 pub fn impl_where_obligations<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -44,7 +44,7 @@ pub fn impl_where_obligations<'tcx>(
         // the impl's otherwise-free parameters, before any single one is read. A record deserializer's
         // `Record: HasOptionalBuilder<Builder = Builder>` clause pins the free `Builder` param to the
         // concrete builder type; without solving it first, the sibling `Record::Fields:
-        // HandleMapEntry<.., Builder>` clause — the branch that leads to the real cause — carries
+        // HandleMapEntry<.., Builder>` clause (the branch that leads to the real cause) carries
         // `Builder` as a stray inference var and is dropped as inference-laden below.
         for &clause in &raw {
             ocx.register_obligation(Obligation::new(
@@ -76,20 +76,20 @@ pub fn impl_where_obligations<'tcx>(
 /// Handler<Ctx, Code, In>>::Output>`) where the walk's input `In` is a call-site unknown
 /// (a rigid placeholder): the earlier provider's `where` clause (`In: Send`, or a deeper
 /// `In: Into<Body>`) is *false* against a rigid placeholder, so its impl is rejected and
-/// the projection never reduces — even though the provider's `type Output` does not
+/// the projection never reduces, even though the provider's `type Output` does not
 /// depend on `In` at all. Resolving the projection with the placeholders as *deferrable*
 /// inference variables (so the blocking bound is ambiguous, not false) lets the solver
 /// commit to the sole impl and read off the fixed output, turning the next stage's input
 /// from an unknowable `_` into the concrete type that carries the real cause (a later
 /// stage's `stream: AsRef<[u8]>`). A no-op unless the clause carries such a placeholder.
 /// Substitute the parent's unifications (including the obligation's placeholder input)
-/// into the raw clause *without* normalizing, so a stalled `::Output` projection — a
-/// later pipeline stage's input keyed on an earlier stage's output — survives as an
+/// into the raw clause *without* normalizing, so a stalled `::Output` projection (a
+/// later pipeline stage's input keyed on an earlier stage's output) survives as an
 /// alias we can recover here. Normalizing first would collapse it into an opaque
 /// inference variable, losing the projection.
 ///
 /// A clause that still carries inference vars after solving is one whose parameter the
-/// impl match left unconstrained — most often a *later pipeline stage keyed on an
+/// impl match left unconstrained: most often a *later pipeline stage keyed on an
 /// earlier stage's unresolved `::Output`* (`ProviderB: Handler<Ctx, Code, ProviderA::
 /// Output>`, where `ProviderA` does not hold because the walk's own input is an unknown,
 /// so its `::Output` never normalizes). Dropping it would hide every root cause living

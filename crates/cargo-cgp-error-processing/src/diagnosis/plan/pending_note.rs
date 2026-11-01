@@ -24,7 +24,7 @@ pub struct PendingNote {
 
 impl PendingNote {
     /// Render the note against `seen`, the subtrees the compilation's earlier notes already drew. A
-    /// caller with no such context — a unit test, or any single-diagnostic use — passes a fresh set.
+    /// caller with no such context (a unit test, or any single-diagnostic use) passes a fresh set.
     /// Yields one note, or none when there are no causes.
     pub fn render(&self, seen: &mut HashSet<ChainNode>) -> Vec<String> {
         cause_notes_seen(&self.causes, self.header_leaf.as_ref(), seen)

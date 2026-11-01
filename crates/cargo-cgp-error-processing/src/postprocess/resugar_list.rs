@@ -10,8 +10,8 @@
 //! This is the **fallback** counterpart of the driver's typed `render_ty` (which resugars the same
 //! spines in the dependency tree, anchored by `DefId` to the CGP crates). It exists to catch a raw
 //! spine in a diagnostic the resolver *declined* and left to rustc's own text, so a fallback message
-//! reads the same as a reshaped one. Running on plain text, it cannot check the defining crate, so —
-//! like every resugaring post-processor — it resugars only on an **exact structural match**: the spine
+//! reads the same as a reshaped one. Running on plain text, it cannot check the defining crate, so,
+//! like every resugaring post-processor, it resugars only on an **exact structural match**: the spine
 //! must close on the exact `Nil` (product) or `Void` (sum) terminator, and any other shape is left
 //! untouched. It runs after [`resugar_symbol`](fn@super::resugar_symbol), so a `Field`'s tag is already
 //! in its `Symbol!("…")` surface form when a field/variant name is read from it, and each element is
@@ -20,13 +20,13 @@
 use crate::postprocess::scan_head_tail;
 use crate::shape::{ShapeTag, render_enum_shape, render_struct_shape};
 
-/// Which type-level list a spine is — the cell/terminator names it is built from and the surface
+/// Which type-level list a spine is: the cell/terminator names it is built from and the surface
 /// macros it resugars to (the plain list, and the record/variant form when every element is a field).
 #[derive(Clone, Copy)]
 enum ListKind {
-    /// `Cons<…, Nil>` — a `Product!`, or a `Struct!` when every element is a `Field` cell.
+    /// `Cons<…, Nil>`: a `Product!`, or a `Struct!` when every element is a `Field` cell.
     Product,
-    /// `Either<…, Void>` — a `Sum!`, or an `Enum!` when every element is a named `Field` cell.
+    /// `Either<…, Void>`: a `Sum!`, or an `Enum!` when every element is a named `Field` cell.
     Sum,
 }
 
@@ -85,7 +85,7 @@ pub fn resugar_lists(text: &str) -> Option<String> {
     changed.then_some(out)
 }
 
-/// Find the next standalone `Cons<` or `Either<` in `text` — the start of a spine to try. The
+/// Find the next standalone `Cons<` or `Either<` in `text`: the start of a spine to try. The
 /// preceding character must not be part of an identifier, so a `Cons<` inside `PathCons<` (or any
 /// name ending in the cell's) is not mistaken for a spine cell.
 fn next_cell(text: &str) -> Option<(usize, ListKind)> {
@@ -128,7 +128,7 @@ fn parse_spine(input: &str, kind: ListKind) -> Option<(String, usize)> {
         }
         let tail_after = tail.strip_prefix(open)?;
         let (tail_head, tail_tail, tail_inner_len) = scan_head_tail(tail_after)?;
-        // The tail's cell must be the whole tail — nothing may trail it, or the spine is malformed.
+        // The tail's cell must be the whole tail: nothing may trail it, or the spine is malformed.
         if open.len() + tail_inner_len != tail.len() {
             return None;
         }
@@ -175,7 +175,7 @@ fn field_cells(elems: &[&str]) -> Option<Vec<(ShapeTag, String)>> {
             let elem = elem.trim();
             let after = elem.strip_prefix("Field<")?;
             let (tag, value, inner_len) = scan_head_tail(after)?;
-            // `Field<…>` must be the whole element — a trailing `::Something` or arguments mean it is
+            // `Field<…>` must be the whole element: a trailing `::Something` or arguments mean it is
             // not a bare field cell.
             if "Field<".len() + inner_len != elem.len() {
                 return None;
@@ -213,7 +213,7 @@ fn shape_tag(tag: &str) -> Option<ShapeTag> {
     Some(ShapeTag::Name(inner.to_owned()))
 }
 
-/// Whether `c` can appear inside a Rust identifier — used to keep `next_cell` from matching a cell
+/// Whether `c` can appear inside a Rust identifier: used to keep `next_cell` from matching a cell
 /// name that is only the tail of a longer identifier (`PathCons`).
 fn is_ident_char(c: char) -> bool {
     c == '_' || c.is_alphanumeric()

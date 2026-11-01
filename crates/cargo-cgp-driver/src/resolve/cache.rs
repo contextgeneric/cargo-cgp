@@ -1,14 +1,14 @@
 //! A per-compilation memoization cache over the typed resolver's walk.
 //!
 //! See `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`. CGP wiring is
-//! lazy, so one mistake surfaces the same failure at many sites — the `check_components!` entry,
-//! every hand-written `impl` that references the broken consumer, and each call — and a shared
+//! lazy, so one mistake surfaces the same failure at many sites: the `check_components!` entry,
+//! every hand-written `impl` that references the broken consumer, and each call, and a shared
 //! trait is a diamond reached from several parents. This cache memoizes the walk **at every
 //! node**, storing each node's owned, rustc-free sub-result so a repeated obligation is resolved
 //! once and reused.
 //!
 //! The key is a [`StableHash`] fingerprint of the region-erased obligation together with its root
-//! context — the context is part of the input because the walk's rendering compares node self-types
+//! context: the context is part of the input because the walk's rendering compares node self-types
 //! against it (see the design document). The fingerprint is the key's only field, `Copy` and
 //! lifetime-free, and the value is owned, so entries persist past any `TyCtxt`.
 
@@ -22,7 +22,7 @@ use rustc_data_structures::stable_hash::{StableHash, StableHasher};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
 /// One root-cause sub-chain of a node's subtree: the classified leaf and the node chain from this
-/// node down to it (node-rooted — this node's own hop first, the terminal leaf node last), so a
+/// node down to it (node-rooted: this node's own hop first, the terminal leaf node last), so a
 /// parent reuses it by prepending its own hop and the root groups it into a `Cause` by leaf.
 #[derive(Clone)]
 pub(crate) struct SubCause {
@@ -32,7 +32,7 @@ pub(crate) struct SubCause {
 
 /// The owned result of resolving one node's subtree: its sub-causes, the fingerprints of every
 /// obligation reachable within the subtree (for the reuse disjointness check), and whether any guard
-/// (the cycle guard or the depth cap) curtailed it — an incomplete subtree is never cached.
+/// (the cycle guard or the depth cap) curtailed it: an incomplete subtree is never cached.
 #[derive(Clone)]
 pub(crate) struct SubResult {
     pub(crate) causes: Vec<SubCause>,
@@ -85,7 +85,7 @@ impl SubResult {
 }
 
 /// A `StableHash` fingerprint of an already region-erased obligation *alone* (no context), used for
-/// the subtree reachable sets and the ancestor-disjointness check — the context is constant within a
+/// the subtree reachable sets and the ancestor-disjointness check: the context is constant within a
 /// walk, so it need not enter these fingerprints.
 pub(crate) fn pred_fingerprint<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -145,7 +145,7 @@ impl ResolveCache {
     }
 
     /// Record a complete node's sub-result. Only complete (untainted) non-terminal nodes are ever
-    /// inserted — see the walk.
+    /// inserted; see the walk.
     pub(crate) fn insert(&self, key: NodeKey, value: SubResult) {
         self.entries.borrow_mut().insert(key, value);
     }

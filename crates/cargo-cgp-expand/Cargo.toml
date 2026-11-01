@@ -13,7 +13,7 @@ categories   = { workspace = true }
 # The syntax-tree half of the `cargo cgp expand` command: it takes the source the compiler's
 # pretty-printer produced for an expanded crate and rewrites CGP's type-level spines back to
 # the surface macros the programmer wrote. Like `cargo-cgp-error-processing`, on which it depends,
-# it links no compiler internals — it works on text and a `syn` tree — so it builds and its tests
+# it links no compiler internals (it works on text and a `syn` tree), so it builds and its tests
 # run on any toolchain. See `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 
 [dependencies]

@@ -3,7 +3,7 @@
 //! A duplicate key in `delegate_components!` makes the expansion emit two overlapping
 //! `DelegateComponent` impls, which the compiler rejects with a coherence error (`E0119`).
 //! The driver recognizes the pair, drops the redundant `IsProviderFor` half, and hands the
-//! surviving `DelegateComponent` half's conflict — recovered by querying the trait solver — to
+//! surviving `DelegateComponent` half's conflict, recovered by querying the trait solver, to
 //! [`plan_wiring_conflict`], which words it into the replacement header. Keeping the model and
 //! wording here, in owned `String` form, is what makes them unit-testable without a compiler;
 //! the driver's `detect::conflict` module fills the model in from the live `TyCtxt`.
@@ -26,14 +26,14 @@ pub enum WiringKey {
     /// A bare component marker, e.g. `GreeterComponent`.
     Component(String),
     /// An ordinary type used as a wiring key, e.g. the `String` of a per-type default or the
-    /// `u64` of a dispatch table — a key that names no component.
+    /// `u64` of a dispatch table: a key that names no component.
     Type(String),
     /// An `@`-path key, in bare surface notation as its entry wrote it (`@a.b`,
     /// `@ComputerComponent.Code.u64`): a generic segment keeps its parameter name, and the
     /// wildcard tail the macros append is left out.
     Path(String),
     /// A blanket forwarding that covers *every* key, tagged by the namespace or table trait
-    /// that keys it (e.g. `DefaultNamespace`) — the shape a `namespace …;` join or a bare-key
+    /// that keys it (e.g. `DefaultNamespace`): the shape a `namespace …;` join or a bare-key
     /// `for` loop lowers to.
     Blanket(String),
 }
@@ -76,11 +76,11 @@ impl WiringKey {
 /// how the two entries relate.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WiringConflict {
-    /// Two entries wire the same key directly — the same component or the same `@`-path mapped
+    /// Two entries wire the same key directly: the same component or the same `@`-path mapped
     /// twice (`CGP-E010`).
     Duplicate { context: String, key: WiringKey },
     /// Two entries wire *overlapping but distinct* keys, so one cannot claim what the other
-    /// already covers — a generic entry over a specific one, or a path that is a prefix of
+    /// already covers: a generic entry over a specific one, or a path that is a prefix of
     /// another (`CGP-E011`). `first` is the key that covers `conflicting`, which may be the key the
     /// two entries share when neither covers the other.
     Overlap {

@@ -162,7 +162,7 @@ pub fn skip_char_literal(chars: &mut (impl Iterator<Item = (usize, char)> + Clon
                 }
             }
         }
-        // `'c'` — one character then a quote. Anything else is a lifetime, left to the main scan.
+        // `'c'`: one character then a quote. Anything else is a lifetime, left to the main scan.
         Some(_) => {
             if let Some((_, '\'')) = lookahead.next() {
                 chars.next();

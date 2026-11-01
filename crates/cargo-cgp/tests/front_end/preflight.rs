@@ -1,5 +1,5 @@
-//! Tests for the preflight's pure logic — parsing the driver's `--version` output
-//! ([`parse_driver_version`]) and the match decision ([`evaluate`]) — plus the guarantee
+//! Tests for the preflight's pure logic: parsing the driver's `--version` output
+//! ([`parse_driver_version`]) and the match decision ([`evaluate`]), plus the guarantee
 //! that the baked-in [`PINNED_TOOLCHAIN`] tracks `rust-toolchain.toml`.
 
 use std::path::Path;
@@ -53,7 +53,7 @@ fn evaluate_accepts_a_matching_driver() {
 fn evaluate_rejects_a_version_mismatch() {
     let driver = sample();
     let installed = "rustc 1.98.0-nightly (4c9d2bfe4 2026-07-01)";
-    // Front-end is 0.2.0 but the driver reports 0.1.0 — out of lockstep.
+    // Front-end is 0.2.0 but the driver reports 0.1.0: out of lockstep.
     assert!(evaluate("0.2.0", &driver, installed).is_err());
 }
 

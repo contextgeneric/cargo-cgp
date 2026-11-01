@@ -95,7 +95,7 @@ fn skips_injection_on_version_probe() {
 #[test]
 fn skips_injection_on_print_query() {
     // `--print` requests (e.g. `--print=cfg`) are cargo probes, not real compilations, so
-    // they receive none of the diagnostic flags either — in both the split and `=` forms.
+    // they receive none of the diagnostic flags either, in both the split and `=` forms.
     let split = rustc_args(
         args(&["d", "/tk/bin/rustc", "--print", "cfg"]),
         None,

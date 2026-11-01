@@ -45,7 +45,7 @@ pub fn build_conflict<'tcx>(
     let key = describe_key(tcx, conflicting.key, conflicting.impl_did)?;
     let first_key = describe_key(tcx, first.key, first.impl_did)?;
     match (&first_key, &key) {
-        // Two blanket forwardings, each over every key — a context joining more than one
+        // Two blanket forwardings, each over every key: a context joining more than one
         // namespace (`namespace` desugars to a bare-key `for` loop, so the two are the same shape).
         (WiringKey::Blanket(first_ns), WiringKey::Blanket(second_ns)) => {
             Some(WiringConflict::MultipleNamespaces {

@@ -1,10 +1,10 @@
-//! Resugaring `Path!` — the type-level path a namespace or an `open` statement dispatches on.
+//! Resugaring `Path!`: the type-level path a namespace or an `open` statement dispatches on.
 //!
 //! `Path!(@app.GreeterComponent)` expands to a right-nested `PathCons` chain closed by `Nil`,
 //! and this pass reads it back. Segments are classified the way `Path!` classifies them going
 //! forward: a lowercase, non-primitive identifier is a `Symbol`, and every other segment was
 //! kept verbatim as a named type. Two shapes decline, leaving the raw spine rather than risking
-//! a mangled path — a module-qualified segment that is not a plain type path, and a bare lowercase
+//! a mangled path: a module-qualified segment that is not a plain type path, and a bare lowercase
 //! identifier, which `Path!` would have encoded as a `Symbol`.
 //!
 //! Only a `Nil`-terminated chain is folded. An **open-ended** path, whose tail is a generic "rest of
@@ -29,8 +29,8 @@ pub struct Paths;
 impl VisitMut for Paths {
     fn visit_type_mut(&mut self, ty: &mut Type) {
         // A `PathCons` chain is folded whole or left whole. Outermost-first, for the same reason
-        // the [list](super::list) pass is — the chain is right-nested, so folding an inner link
-        // first leaves the outer links unmatched — and without recursing when the fold declines,
+        // the [list](super::list) pass is: the chain is right-nested, so folding an inner link
+        // first leaves the outer links unmatched, and without recursing when the fold declines,
         // since folding a *part* of a declining chain would print a `Path!` nested inside a
         // `PathCons`, which is no path at all.
         if type_args(ty, "PathCons").is_some() {
@@ -92,7 +92,7 @@ impl Paths {
 /// Render one spine segment back to the tokens `Path!` was written with, or `None` when it would
 /// not round-trip.
 fn render_segment(ty: &Type) -> Option<TokenStream> {
-    // A `Symbol!("app")` head is a lowercase path segment — but only when the name really is one
+    // A `Symbol!("app")` head is a lowercase path segment, but only when the name really is one
     // `Path!` would have encoded as a symbol.
     if let Some(name) = symbol_macro_name(ty) {
         let is_lowercase_ident = is_ident(&name)

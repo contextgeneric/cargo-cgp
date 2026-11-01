@@ -5,11 +5,11 @@ use crate::resugar::resugar_file;
 use crate::resugar::spacing::tighten_sugar_bodies;
 use crate::select::select_items;
 
-/// Resugar the CGP constructs in `source` — the text the compiler's pretty-printer produced for
-/// an expanded crate — and return it re-printed.
+/// Resugar the CGP constructs in `source`, the text the compiler's pretty-printer produced for
+/// an expanded crate, and return it re-printed.
 ///
 /// When `options` names an item, the expansion is narrowed to it first, and an **empty string** comes
-/// back if nothing matched — never the whole crate, which is not what was asked for. The caller
+/// back if nothing matched, never the whole crate, which is not what was asked for. The caller
 /// reports the miss.
 ///
 /// When `source` does not parse, it is returned **unchanged** rather than reported: expansion can

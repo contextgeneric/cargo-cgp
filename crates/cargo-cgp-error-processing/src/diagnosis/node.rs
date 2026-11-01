@@ -18,7 +18,7 @@ use crate::diagnosis::wording::{dependency_tree_leaf, quoted_list};
 /// chain names is shown as written, since the type a reader is tracing is the point of the chain.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DepNode {
-    /// `CGP-E101` — a hop through a consumer-trait impl. `is_context` says whether the type the
+    /// `CGP-E101`: a hop through a consumer-trait impl. `is_context` says whether the type the
     /// trait is implemented for carries wiring of its own, which is what makes it a context; any
     /// other type, such as a type argument the consumer is required of, is named plainly.
     Consumer {
@@ -26,13 +26,13 @@ pub enum DepNode {
         context: String,
         is_context: bool,
     },
-    /// `CGP-E102` — a hop through a provider's provider-trait impl.
+    /// `CGP-E102`: a hop through a provider's provider-trait impl.
     Provider {
         trait_ref: String,
         context: String,
         provider: String,
     },
-    /// `CGP-E102` — a requirement of a provider trait on a provider that has no impl of it: the
+    /// `CGP-E102`: a requirement of a provider trait on a provider that has no impl of it: the
     /// step reads as what is required, not as an impl the program has, and the leaf beneath it
     /// states that the provider is not one.
     ProviderRequired {
@@ -40,21 +40,21 @@ pub enum DepNode {
         context: String,
         provider: String,
     },
-    /// `CGP-E103` — a hop through a namespace/`open` `RedirectLookup<Table, Path>`, labeled with
+    /// `CGP-E103`: a hop through a namespace/`open` `RedirectLookup<Table, Path>`, labeled with
     /// the `Table` the path is looked up in: the context for its own redirects, or an aggregate
     /// provider for one that opens its own components. `key` is the dispatched value (`<Outer>`);
-    /// it is part of the node's *identity* — so two lookups along the same route for different keys
-    /// stay distinct nodes rather than merging in the graph — but not its rendered label, since
+    /// it is part of the node's *identity*, so two lookups along the same route for different keys
+    /// stay distinct nodes rather than merging in the graph, but not its rendered label, since
     /// that dispatched value already shows on the child provider node.
     Redirect {
         path: String,
         table: String,
         key: String,
     },
-    /// `CGP-E104` — a hop through any other trait (a user's blanket trait, a wrapper, or an ordinary
+    /// `CGP-E104`: a hop through any other trait (a user's blanket trait, a wrapper, or an ordinary
     /// bound restated as an impl).
     Trait { trait_ref: String, self_ty: String },
-    /// `CGP-E104` — a hop through a trait implemented for a partial value of extensible data, a
+    /// `CGP-E104`: a hop through a trait implemented for a partial value of extensible data, a
     /// builder or an extractor, named in words since its type is generated.
     PartialTrait {
         trait_ref: String,
@@ -190,17 +190,19 @@ impl DepNode {
     }
 }
 
-/// A node of the rendered dependency graph — an interior [`DepNode`] hop or the terminal root-cause
+/// A node of the rendered dependency graph: an interior [`DepNode`] hop or the terminal root-cause
 /// [`Leaf`]. Node identity (used by the graph to merge shared nodes) is structural equality on this
 /// enum.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ChainNode {
+    /// An interior hop of the chain.
     Hop(DepNode),
+    /// The root cause the chain ends at.
     Leaf(Leaf),
 }
 
 impl ChainNode {
-    /// The rendered label of this node — the hop template, or the terminal leaf's tree form.
+    /// The rendered label of this node: the hop template, or the terminal leaf's tree form.
     pub fn render(&self) -> String {
         match self {
             ChainNode::Hop(hop) => hop.render(),

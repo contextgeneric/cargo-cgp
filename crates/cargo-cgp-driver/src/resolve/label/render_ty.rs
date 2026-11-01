@@ -29,8 +29,8 @@ pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     if let ty::Placeholder(_) = ty.kind() {
         return "_".to_owned();
     }
-    // A tuple can carry such placeholders in its elements — the call-site anchor recovers a written
-    // tuple's *shape* while leaving an unwritten element a placeholder — so render it recursively
+    // A tuple can carry such placeholders in its elements (the call-site anchor recovers a written
+    // tuple's *shape* while leaving an unwritten element a placeholder), so render it recursively
     // rather than through `to_string`, which would print the raw `!N` placeholder form. This is the
     // one non-spine structural type the anchor puts placeholders inside (a reference or ADT argument
     // stays all-or-nothing, so it never contains one).
@@ -101,7 +101,7 @@ fn field_cells<'tcx>(tcx: TyCtxt<'tcx>, elems: &[Ty<'tcx>]) -> Option<Vec<(Shape
             if !is_cgp_item(tcx, def.did(), FIELD_TYPE, CGP_FIELD_CRATE) {
                 return None;
             }
-            // `Field<Tag, Value>` — the tag is a `Symbol!` name or an `Index<N>` position.
+            // `Field<Tag, Value>`: the tag is a `Symbol!` name or an `Index<N>` position.
             let tag = args.type_at(0);
             let tag = match decode_symbol(tcx, tag) {
                 Some(name) => ShapeTag::Name(name),
@@ -122,8 +122,8 @@ fn render_ty_list<'tcx>(tcx: TyCtxt<'tcx>, elems: &[Ty<'tcx>]) -> String {
         .join(", ")
 }
 
-/// The head types of a CGP type-level spine `Cell<Head, Tail>` ended by `Terminator` — the element
-/// list a `Product!`/`Sum!` macro was written with — or `None` when `ty` is not such a spine. The
+/// The head types of a CGP type-level spine `Cell<Head, Tail>` ended by `Terminator` (the element
+/// list a `Product!`/`Sum!` macro was written with), or `None` when `ty` is not such a spine. The
 /// first cell must be a `Cell` (a bare terminator is not resugared, so an empty list is left as its
 /// terminator type), each `Cell` and the final `Terminator` are checked by `DefId` against the given
 /// CGP crate, and an open-ended spine (a tail that is neither another `Cell` nor the terminator, such
@@ -158,7 +158,7 @@ fn cgp_spine<'tcx>(
         };
         let did = def.did();
         if is_cgp_item(tcx, did, cell, cell_crate) {
-            // `Cell<Head, Tail>` — collect the head and continue down the tail.
+            // `Cell<Head, Tail>`: collect the head and continue down the tail.
             elems.push(args.type_at(0));
             current = args.type_at(1);
         } else if is_cgp_item(tcx, did, terminator, terminator_crate) {

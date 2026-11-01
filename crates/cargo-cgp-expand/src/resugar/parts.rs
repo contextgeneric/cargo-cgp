@@ -18,7 +18,7 @@ pub(crate) enum Delimiter {
 /// Build the macro-call type a resugared construct becomes, such as `Symbol!("height")`.
 ///
 /// The output has to be a syntax node rather than a string, because the printer formats the
-/// tree after every pass has run — which is what lets a resugared call be laid out compactly
+/// tree after every pass has run, which is what lets a resugared call be laid out compactly
 /// where the raw spine it replaced was broken across lines.
 pub(crate) fn macro_type(name: &str, delimiter: Delimiter, tokens: TokenStream) -> Type {
     let delimiter = match delimiter {
@@ -57,7 +57,7 @@ pub(crate) fn type_args(ty: &Type, name: &str) -> Option<Vec<GenericArgument>> {
     }
 }
 
-/// Whether `ty` is the bare path `name` carrying no arguments — a spine terminator such as
+/// Whether `ty` is the bare path `name` carrying no arguments, a spine terminator such as
 /// `Nil` or `Void`.
 pub(crate) fn is_terminator(ty: &Type, name: &str) -> bool {
     type_args(ty, name).is_some_and(|args| args.is_empty())

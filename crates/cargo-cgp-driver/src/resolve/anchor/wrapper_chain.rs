@@ -15,7 +15,7 @@ use crate::resolve::query::{
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait for
-/// Foreign` block whose `Self` is a foreign type holding the context* — the transfer example's
+/// Foreign` block whose `Self` is a foreign type holding the context*: for example
 /// `impl CanAddApiRoutes for Router<Arc<MockApp>>`, where the routing wrapper's supertrait descends
 /// through a chain of ordinary user-trait `where`-clauses (`… CanAddRoute<MockApp, …>` → `MockApp:
 /// CanHandleApiSend<…>`) before it reaches a CGP consumer on the context. The context appears only
@@ -24,7 +24,7 @@ use crate::resolve::walk::resolve_leaves;
 /// cannot fire.
 ///
 /// This entry starts from the enclosing impl's own unmet supertrait and walks *down* the ordinary
-/// trait obligations — via each impl's `where`-clauses — until one lands on a CGP consumer whose
+/// trait obligations (via each impl's `where`-clauses) until one lands on a CGP consumer whose
 /// `Self` *is* a context (`is_context_adt`), at which point it hands off to
 /// `consumer_handoff_causes`. Every ordinary hop between the impl and that handoff becomes a
 /// `trait impl` node, so the tree reads
@@ -44,7 +44,7 @@ pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<R
             .instantiate_identity()
             .skip_norm_wip();
         // A provider-trait impl's `Self` is a provider struct, and its supertrait is `IsProviderFor`,
-        // so descending it would route the cause through that workaround — leaking `IsProviderFor` and
+        // so descending it would route the cause through that workaround, leaking `IsProviderFor` and
         // the provider trait's own `__Context__` parameter into the tree. A caret on a provider's own
         // impl is a documented decline (mirrored in [`resolve_impl_site`](super::resolve_impl_site)).
         if is_provider_trait(tcx, trait_ref.def_id) {
@@ -80,7 +80,7 @@ pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<R
         }
 
         if !causes.is_empty() {
-            // Head every cause's paths with the impl's own trait — the code the programmer wrote —
+            // Head every cause's paths with the impl's own trait (the code the programmer wrote),
             // and keep one cause per distinct leaf, since separate supertraits can descend to the
             // same one.
             let causes = Causes::from_sub_chains(causes).headed_by(&top_node);
@@ -94,7 +94,7 @@ pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<R
                 } else {
                     ResolvedClass::Wrapper
                 },
-                // `Self` is a foreign wrapper holding the context, not the context itself — reached
+                // `Self` is a foreign wrapper holding the context, not the context itself: reached
                 // here only *because* it is not the context (else `resolve_impl_site` caught it).
                 subject_is_context: false,
                 causes,
@@ -109,7 +109,7 @@ pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<R
 /// are only a few hops.
 const MAX_WRAPPER_DEPTH: u32 = 32;
 
-/// Descend `obligation` — an unmet ordinary-trait bound — looking for the nearest CGP consumer on a
+/// Descend `obligation` (an unmet ordinary-trait bound) looking for the nearest CGP consumer on a
 /// context beneath it, and append a cause per one found to `out`. Such a consumer obligation
 /// (`App: CanHandleApi<GreetApi>`) is the handoff: `consumer_handoff_causes` recovers its
 /// dependency tree, the descent stops there (that recovery walks the CGP chain the rest of the way),
@@ -118,12 +118,12 @@ const MAX_WRAPPER_DEPTH: u32 = 32;
 /// following only the unmet ones.
 ///
 /// The descent reaches the consumer two ways, both handled by `wrapper_chain_children`: as a direct
-/// `where`-clause bound, or — the transfer example's case — as the *base* of a projection bound
+/// `where`-clause bound, or as the *base* of a projection bound
 /// (`<App as CanHandleApi<GreetApi>>::Response: Send`), since a `where`-clause naming an associated
 /// type of the broken consumer is what makes the outer trait genuinely fail (the direct
 /// `App: CanHandleApiSend<GreetApi>` bound is instead *assumed to hold* off its ill-formed impl, so
 /// it is never the failing route). A branch with no satisfying impl, or one reaching no consumer
-/// within [`MAX_WRAPPER_DEPTH`], contributes nothing — only a genuine CGP consumer is ever reported,
+/// within [`MAX_WRAPPER_DEPTH`], contributes nothing: only a genuine CGP consumer is ever reported,
 /// so a wandering descent cannot fabricate a cause.
 fn collect_wrapper_chain_causes<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,
@@ -150,7 +150,7 @@ fn collect_wrapper_chain_causes<'tcx>(
         return;
     }
 
-    // Not a handoff: descend the obligations of the impl that would satisfy it — its direct trait
+    // Not a handoff: descend the obligations of the impl that would satisfy it: its direct trait
     // bounds and the base trait ref of each associated-type `where`-clause bound.
     let Some(children) = wrapper_chain_children(tcx, obligation) else {
         return;
@@ -173,12 +173,12 @@ fn collect_wrapper_chain_causes<'tcx>(
 }
 
 /// Recover a cause per root cause of `obligation` when it *is* a CGP consumer trait on a context
-/// (`App: CanHandleApi<GreetApi>`) — the handoff the wrapper-chain descent hands off to the
+/// (`App: CanHandleApi<GreetApi>`): the handoff the wrapper-chain descent hands off to the
 /// ordinary [walk](crate::resolve::walk). `obligation` already is the consumer obligation the walk
-/// wants — with its concrete component parameters preserved — so it is walked directly, with no
+/// wants, with its concrete component parameters preserved, so it is walked directly, with no
 /// `CanUseComponent`/`IsProviderFor` detour, and the returned trees are already headed by the
 /// consumer node. `None` when `obligation`'s `Self` is not a context ADT or its trait is not a CGP
-/// consumer — so the descent keeps walking rather than stopping on an ordinary bound.
+/// consumer, so the descent keeps walking rather than stopping on an ordinary bound.
 fn consumer_handoff_causes<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,
     obligation: ty::PolyTraitClause<'tcx>,
@@ -199,7 +199,7 @@ fn consumer_handoff_causes<'tcx>(
 /// The obligations to descend from an unmet ordinary-trait bound: the `where`-clause obligations of
 /// the impl that would satisfy it, with each associated-type bound replaced by its *base* trait ref
 /// (`<App as CanHandleApi<Api>>::Response: Send` → `App: CanHandleApi<Api>`). The base is what a
-/// projection bound really rests on, and it is concrete even when the projected type itself is not —
+/// projection bound really rests on, and it is concrete even when the projected type itself is not,
 /// which is exactly why the ordinary
 /// [`impl_where_obligations`](crate::resolve::query::impl_where_obligations) (which normalizes,
 /// turning the projection into an inference variable it then drops) cannot surface it. `None` when
@@ -228,7 +228,7 @@ fn wrapper_chain_children<'tcx>(
                 continue;
             };
             // An associated-type bound (`<App as CanHandleApi<Api>>::Response: Send`) descends to the
-            // projection's base trait (`App: CanHandleApi<Api>`) — what it truly rests on — rather
+            // projection's base trait (`App: CanHandleApi<Api>`) (what it truly rests on) rather
             // than the bound itself.
             let child = match tp.self_ty().skip_binder().kind() {
                 ty::Alias(_, alias) if matches!(alias.kind, ty::AliasTyKind::Projection { .. }) => {

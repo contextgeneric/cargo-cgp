@@ -17,7 +17,7 @@ pub fn ensure_worker_crates(count: usize) -> Vec<PathBuf> {
 /// Create or refresh one worker's throwaway crate and return its directory. Every worker
 /// crate is identical apart from its directory: it lives under `target/` (git-ignored) and
 /// is named `ui` (a stable package name keeps cargo's output stable regardless of which
-/// worker ran a fixture — the differing directory is normalized to `$DIR`), and the empty
+/// worker ran a fixture, since the differing directory is normalized to `$DIR`), and the empty
 /// `[workspace]` table stops cargo from folding it into the cargo-cgp workspace above it.
 pub fn ensure_worker_crate(index: usize) -> PathBuf {
     let dir = worker_crate_dir(index);

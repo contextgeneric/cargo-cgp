@@ -12,7 +12,7 @@ use crate::resolve::query::ProjectionMismatch;
 /// Build the sub-result for a terminal leaf `leaf_ref` (a `HasField`, an impl-less bound, or a
 /// foreign bound with nothing to follow). Drops a leaf still carrying a call-site placeholder (an
 /// unknowable `_: Send`) and a non-reportable plumbing dead-end, in both cases as a complete
-/// no-cause result. Not cached — the classification reads `parent`, which lies outside the leaf.
+/// no-cause result. Not cached: the classification reads `parent`, which lies outside the leaf.
 pub fn terminal_result<'tcx>(
     tcx: TyCtxt<'tcx>,
     erased: ty::PolyTraitClause<'tcx>,

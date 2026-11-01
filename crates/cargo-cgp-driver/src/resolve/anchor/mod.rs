@@ -6,8 +6,8 @@
 //! [`resolve_provider_check`] on a `#[check_providers]` entry the same way, seeding the walk with
 //! the provider obligation it asserts;
 //! [`resolve_impl_site`] handles a wiring failure surfaced *inside a hand-written `impl Trait for
-//! Context` block* (by recovering the exact failing obligation — with its concrete component
-//! parameters — from the impl's CGP consumer supertrait); [`resolve_wrapper_chain`] handles the same
+//! Context` block* (by recovering the exact failing obligation, with its concrete component
+//! parameters, from the impl's CGP consumer supertrait); [`resolve_wrapper_chain`] handles the same
 //! shape when the impl's `Self` is a *foreign* wrapper holding the context (by descending its
 //! supertrait's ordinary `where`-clause hops to a CGP consumer on the context, the routing-glue
 //! case); [`resolve_use_site`] handles a

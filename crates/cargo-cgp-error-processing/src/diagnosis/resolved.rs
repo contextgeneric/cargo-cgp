@@ -10,7 +10,7 @@ use crate::diagnosis::leaf::Leaf;
 use crate::diagnosis::node::{ChainNode, DepNode};
 
 /// One recovered root cause: the leaf it names for the note heading, and every root→leaf path that
-/// reaches it. A leaf reached one way has a single path — the common case; a leaf reached through a
+/// reaches it. A leaf reached one way has a single path, the common case; a leaf reached through a
 /// shared trait several providers depend on has several, which the
 /// [dependency graph](crate::DependencyGraph) merges when it renders. Keeping several paths on one
 /// cause preserves the *one cause per distinct leaf* invariant the de-duplication signatures, the
@@ -31,10 +31,8 @@ pub struct Cause {
 ///
 /// That invariant is the whole point of the type. The wording, the de-duplication signature, the
 /// coalescing, and the derive `help`s all read a cause list expecting each leaf once, and a list
-/// holding one leaf twice does not fail loudly — it makes a downstream reader count one mistake
-/// several times, which surfaced as `` the fields `name`, `name`, and `name` `` in a lead. It used to
-/// be re-established by hand with a `merge_causes_by_leaf` call at each of the five places a
-/// `Resolved` is built, so a sixth would have inherited the bug silently. Here there is no way to
+/// holding one leaf twice does not fail loudly: it makes a downstream reader count one mistake
+/// several times, which surfaced as `` the fields `name`, `name`, and `name` `` in a lead. There is no way to
 /// construct a `Causes` that violates it: every constructor normalizes, and the field is private.
 ///
 /// Reads go through [`Deref`] to `[Cause]`, so consumers keep slice ergonomics while construction
@@ -43,7 +41,7 @@ pub struct Cause {
 pub struct Causes(Vec<Cause>);
 
 impl Causes {
-    /// Collect `(leaf, path)` sub-chains — one per way the walk reached a root cause — grouping the
+    /// Collect `(leaf, path)` sub-chains, one per way the walk reached a root cause, grouping the
     /// paths that reach one leaf onto a single cause. This is what the walk's own result folds
     /// through, and what keeps a shared trait's diamond intact: a leaf reached twice keeps both
     /// routes rather than only the first.
@@ -55,9 +53,9 @@ impl Causes {
         causes
     }
 
-    /// Merge several failures' causes into one set — the emitter's coalesced block, and any anchor
-    /// that collects a walk per wired component. Total and associative, where the old
-    /// concat-then-remember-to-merge was neither.
+    /// Merge several failures' causes into one set: the emitter's coalesced block, and any anchor
+    /// that collects a walk per wired component. Total and associative, which a
+    /// concatenation followed by a separate merge would not be.
     pub fn union(parts: impl IntoIterator<Item = Self>) -> Self {
         let mut merged = Causes::default();
         for part in parts {
@@ -100,7 +98,7 @@ impl Causes {
         });
     }
 
-    /// Fold `cause` in, extending the entry for its leaf rather than adding a second one — the single
+    /// Fold `cause` in, extending the entry for its leaf rather than adding a second one: the single
     /// place the invariant is maintained, which is why every constructor routes through here. An exact
     /// duplicate path is dropped: the [dependency graph](crate::DependencyGraph) merges paths by
     /// structural identity when it renders, so keeping it would change nothing but the work.
@@ -120,7 +118,7 @@ impl Causes {
 }
 
 impl FromIterator<Cause> for Causes {
-    /// Collect ready-made causes, folding any that name one leaf together — so collecting cannot
+    /// Collect ready-made causes, folding any that name one leaf together, so collecting cannot
     /// produce a `Causes` that breaks the invariant either.
     fn from_iter<I: IntoIterator<Item = Cause>>(iter: I) -> Self {
         let mut causes = Causes::default();
@@ -162,20 +160,20 @@ pub enum ResolvedClass {
 /// contexts they were read from.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Resolved {
-    /// The type the failing trait(s) are (not) implemented for — the header subject. Usually the
+    /// The type the failing trait(s) are (not) implemented for: the header subject. Usually the
     /// checked context itself (`Rectangle`), but for a wrapper implemented on a *foreign* type that
     /// merely holds the context (`Router<Arc<MockApp>>`), it is that foreign type, and
     /// [`subject_is_context`](Resolved::subject_is_context) is then `false`.
     pub context: String,
     /// The trait(s) the context fails to implement, with a generic component's extra parameters
-    /// reattached (e.g. `CanCalculateArea<f64>`) — one per failing component, in first-seen order.
+    /// reattached (e.g. `CanCalculateArea<f64>`), one per failing component, in first-seen order.
     /// The emitter words a rewritten main message around these.
     pub consumers: Vec<String>,
     /// What the failing trait is, which selects the block's class.
     pub class: ResolvedClass,
     /// Whether [`context`](Resolved::context) is the checked CGP context itself (`true`, the usual
     /// case) or a foreign wrapper type the failing trait is implemented for that merely holds the
-    /// context (`false`) — as `Router<Arc<MockApp>>` does for a routing trait. It selects whether the
+    /// context (`false`), as `Router<Arc<MockApp>>` does for a routing trait. It selects whether the
     /// header calls the subject a `context` or names it plainly, so a foreign wrapper is not
     /// mislabelled a context.
     pub subject_is_context: bool,

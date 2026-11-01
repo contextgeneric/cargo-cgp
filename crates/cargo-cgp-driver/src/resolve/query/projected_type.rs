@@ -4,8 +4,8 @@ use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-/// The concrete type `projection` resolves to — `String` for `<App as HasErrorType>::Error` on a
-/// context that wired `UseType<String>` — or `None` when it does not reduce to one. This is the
+/// The concrete type `projection` resolves to (`String` for `<App as HasErrorType>::Error` on a
+/// context that wired `UseType<String>`), or `None` when it does not reduce to one. This is the
 /// mismatch leaf's *actual* side, the counterpart of the *expected* type read off the failing
 /// projection, and it is the general form of the struct-field query
 /// `classify::field_type` performs for a `HasField` value.
@@ -14,7 +14,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 /// choice is recorded: an abstract type wired to `UseType<T>` resolves through the blanket impl
 /// `#[cgp_type]` generates, and a hand-written `impl HasErrorType for App { type Error = String; }`
 /// resolves through that impl, so both forms are read the same way with no wiring-shape special
-/// case. Only a **fully concrete** result is kept — an alias or inference variable left over means
+/// case. Only a **fully concrete** result is kept: an alias or inference variable left over means
 /// the owner's choice is not pinned down, and reporting a half-resolved type would mislead.
 ///
 /// The obligations normalization registers are deliberately *not* discharged: the question is what

@@ -3,8 +3,8 @@
 use super::*;
 
 /// The lead is dropped by whether the *header* states the leaf, not by the leaf's kind. Under a
-/// header that names something else — as the emitter's coalesced block produces, listing the
-/// affected consumers — a mismatch keeps its lead, since that is then the only place above the tree
+/// header that names something else (as the emitter's coalesced block produces, listing the
+/// affected consumers), a mismatch keeps its lead, since that is then the only place above the tree
 /// where the cause appears.
 #[test]
 fn keeps_a_mismatch_lead_under_a_header_that_does_not_state_it() {
@@ -211,8 +211,8 @@ fn redirect_lookup_provider_follows_through_to_consumer_header() {
             vec![consumer("CanFoo", "App")],
         )],
     );
-    // An `IsProviderFor` bound whose subject is a `RedirectLookup` names only redirect plumbing —
-    // the lookup resolved to no provider — so the header follows through to the consumer trait
+    // An `IsProviderFor` bound whose subject is a `RedirectLookup` names only redirect plumbing,
+    // the lookup resolved to no provider, so the header follows through to the consumer trait
     // rather than reporting `RedirectLookup<…>` as the provider. A leading `for<'a>` binder (a
     // higher-ranked obligation) is stripped before the check.
     for subject in [
@@ -264,7 +264,7 @@ fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
 #[test]
 fn wrapper_header_names_a_foreign_subject_plainly() {
     // A routing wrapper implemented on a *foreign* type holding the context (`Router<Arc<MockApp>>`)
-    // is named plainly — never mislabelled a "context" — while the traced cause on the real context
+    // is named plainly, never mislabelled a "context", while the traced cause on the real context
     // follows in the dependency tree.
     let resolved = Resolved {
         context: "Router<Arc<MockApp>>".to_owned(),

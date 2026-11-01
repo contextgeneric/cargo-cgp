@@ -28,7 +28,7 @@ pub struct DiagnosisPlan {
     /// The `help` messages naming each fix the causes call for, in the order the causes are listed
     /// (see [`fix_help_messages`]).
     pub helps: Vec<String>,
-    /// The `root cause:` note, **not yet rendered** — see [`PendingNote`].
+    /// The `root cause:` note, **not yet rendered**: see [`PendingNote`].
     pub note: PendingNote,
 }
 

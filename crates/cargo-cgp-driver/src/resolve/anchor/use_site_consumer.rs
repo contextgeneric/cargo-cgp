@@ -18,7 +18,7 @@ use crate::resolve::walk::resolve_leaves;
 /// than on the components the context wires. A consumer-method call names its consumer trait in a
 /// note (`` `CanGreet` defines an item `greet` ``), whose span points at the trait definition; when
 /// that trait is a local, non-generic CGP consumer, this recovers it and walks the real obligation
-/// `Ctx: Consumer` directly — no marker, no `CanUseComponent`/`IsProviderFor` detour.
+/// `Ctx: Consumer` directly, with no marker, no `CanUseComponent`/`IsProviderFor` detour.
 ///
 /// This is what reaches a **namespace-joined** context, whose concrete wiring lives in the joined
 /// namespace and not in its own `DelegateComponent` impls.
@@ -30,7 +30,7 @@ use crate::resolve::walk::resolve_leaves;
 /// directly-wired context keeps its existing recovery.
 ///
 /// Restricted to a consumer whose only generic is `Self`, so `Ctx: Consumer` forms without the
-/// component parameters a use site does not carry — a generic consumer (`CanHandle<Code, Input>`) is
+/// component parameters a use site does not carry: a generic consumer (`CanHandle<Code, Input>`) is
 /// left to decline. `None` when the diagnostic names no local CGP consumer trait, or none of the
 /// candidate contexts fails one resolvably.
 pub fn resolve_use_site_consumer(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
@@ -38,14 +38,14 @@ pub fn resolve_use_site_consumer(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Opti
 }
 
 /// Resolve a use-site failure by anchoring on a `#[cgp_fn]` / `#[blanket_trait]` **blanket trait**
-/// the diagnostic names — the counterpart of [`resolve_use_site_consumer`] for a trait that
+/// the diagnostic names: the counterpart of [`resolve_use_site_consumer`] for a trait that
 /// is not a CGP *component* (a local blanket-impl trait with no provider trait or
 /// `DelegateComponent`). Its obligation `Ctx: BlanketTrait` is walkable exactly as a consumer's is,
 /// since its `Self` is the context; the result is headed `[CGP-E003] the trait …` rather than
 /// `[CGP-E001] the consumer trait …` by changing [`Resolved::class`].
 ///
-/// This reaches the shape a trait required through a `where` **bound** or supertrait produces —
-/// `fn greet_all<Context: GetName>(…)` called with a context missing the field — where the failure
+/// This reaches the shape a trait required through a `where` **bound** or supertrait produces:
+/// `fn greet_all<Context: GetName>(…)` called with a context missing the field, where the failure
 /// is an `E0277` on the call with no method call on a concrete context to read. It is tried **after**
 /// the call-site anchor (`call_site`): a *direct* method call
 /// (`app.describe()`) anchors on the called method there, so its tree leads with the trait the
@@ -59,15 +59,15 @@ pub fn resolve_use_site_blanket_trait(cx: ResolveCtx<'_, '_>, spans: &[Span]) ->
 /// Which local trait an anchor recovers from the diagnostic's spans.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum TraitKind {
-    /// A CGP consumer trait — walked as-is, headed `[CGP-E001] the consumer trait …`.
+    /// A CGP consumer trait: walked as-is, headed `[CGP-E001] the consumer trait …`.
     CgpConsumer,
-    /// A `#[cgp_fn]`/`#[blanket_trait]` blanket trait that is not a CGP component — headed
+    /// A `#[cgp_fn]`/`#[blanket_trait]` blanket trait that is not a CGP component: headed
     /// `[CGP-E003] the trait …`.
     Blanket,
 }
 
 /// Recover the context and the named trait of `kind` from the diagnostic's spans, seed `Ctx: Trait`,
-/// and walk it — the shared body of the two anchors above. A [`TraitKind::Blanket`] result has
+/// and walk it: the shared body of the two anchors above. A [`TraitKind::Blanket`] result has
 /// the wrapper class, since such a trait is not a CGP component.
 fn resolve_from_named_trait(
     cx: ResolveCtx<'_, '_>,
@@ -107,7 +107,7 @@ fn resolve_from_named_trait(
     None
 }
 
-/// The local traits of `kind` the diagnostic's spans reference — a trait a use-site `E0599`/`E0277`
+/// The local traits of `kind` the diagnostic's spans reference: a trait a use-site `E0599`/`E0277`
 /// names in a `` `Trait` defines an item … `` note or a `required for … to implement `Trait`` note,
 /// whose span points at the trait definition. A trait qualifies when it is defined in this crate and
 /// its definition span contains one of the diagnostic's spans, and either it is a CGP consumer

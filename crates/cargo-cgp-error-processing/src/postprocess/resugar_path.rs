@@ -1,7 +1,7 @@
 //! Post-processor: resugar the `Path!` type-level path.
 //!
 //! `Path!(@app.GreeterComponent)` expands to a right-nested `PathCons` chain terminated by
-//! `Nil` — `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` (see the CGP `Path!`
+//! `Nil`: `PathCons<Symbol!("app"), PathCons<GreeterComponent, Nil>>` (see the CGP `Path!`
 //! reference). This reverses that spine back to `Path!(@app.GreeterComponent)` in the
 //! diagnostic text.
 //!
@@ -10,7 +10,7 @@
 //! ASCII-lowercase and that is not a primitive type becomes a `Symbol`; every other segment is kept
 //! verbatim as the named type. So a `Symbol!("name")` head is resugared to the bare segment `name`
 //! only when `name` is such a lowercase, non-primitive identifier, and every other segment is
-//! rendered back verbatim as its type — a capitalized component marker (`GreeterComponent`), a
+//! rendered back verbatim as its type: a capitalized component marker (`GreeterComponent`), a
 //! primitive (`u32`), or a compound value type an `open` statement dispatches on (`Vec<u8>`,
 //! `&Coord`, `DateTime<Utc>`), including a module-qualified type (`std::io::Error`), which rustc
 //! qualifies only when the bare name is ambiguous. Two shapes still decline, leaving the raw
@@ -39,10 +39,10 @@ use crate::syntax::{is_ident, is_primitive_type};
 /// the rewritten text when any was rewritten (and `None` otherwise). A `PathCons<` that does not
 /// parse as an exact, round-trippable path is emitted unchanged and scanning resumes after it.
 ///
-/// `wrap` chooses the form. A **rewrite** — a message the tool constructs, such as a typed
-/// resolution note or a coded header — wants the bare `@app.GreeterComponent`, since it reads as a
-/// path the message names, not a macro call. The **resugaring fallback** — an un-rewritten message
-/// where a raw type is being shown back in source form — wants the `Path!(@app.GreeterComponent)`
+/// `wrap` chooses the form. A **rewrite** (a message the tool constructs, such as a typed
+/// resolution note or a coded header) wants the bare `@app.GreeterComponent`, since it reads as a
+/// path the message names, not a macro call. The **resugaring fallback** (an un-rewritten message
+/// where a raw type is being shown back in source form) wants the `Path!(@app.GreeterComponent)`
 /// macro form. So `wrap` is `false` in the rewrite paths and `true` in the fallback.
 pub fn resugar_path(text: &str, wrap: bool) -> Option<String> {
     let mut out = String::with_capacity(text.len());
@@ -101,7 +101,7 @@ fn parse_path(input: &str, wrap: bool) -> Option<(String, usize)> {
         }
         let tail_after_open = tail.strip_prefix("PathCons<")?;
         let (tail_head, tail_tail, tail_inner_len) = scan_head_tail(tail_after_open)?;
-        // A tail segment's `PathCons<…>` must be the whole tail — nothing may trail it, or
+        // A tail segment's `PathCons<…>` must be the whole tail: nothing may trail it, or
         // the spine is malformed and must not be silently rewritten.
         if "PathCons<".len() + tail_inner_len != tail.len() {
             return None;
@@ -128,7 +128,7 @@ fn parse_path(input: &str, wrap: bool) -> Option<(String, usize)> {
 /// Whether `tail` is an open-ended path's terminating generic parameter rather than `Nil` or
 /// another `PathCons`. rustc prints a free "rest of path" impl parameter as the inference
 /// placeholder `_`, and `_` is never a concrete path segment, so a bare `_` is the exact,
-/// round-trippable signal of an open tail — no other tail is treated as a wildcard.
+/// round-trippable signal of an open tail: no other tail is treated as a wildcard.
 fn is_open_tail(tail: &str) -> bool {
     tail == "_"
 }
@@ -136,8 +136,8 @@ fn is_open_tail(tail: &str) -> bool {
 /// Render one spine segment back to its `Path!` surface form, or `None` when it would not
 /// round-trip. A `Symbol!("name")` becomes the bare `name` when `name` is a lowercase,
 /// non-primitive identifier. Every other segment was kept verbatim as a type by `Path!` going
-/// forward — a capitalized component marker (`GreeterComponent`), a primitive (`u32`), or a compound
-/// value type an `open` statement dispatches on (`Vec<u8>`, `&Coord`, `DateTime<Utc>`) — so it is
+/// forward: a capitalized component marker (`GreeterComponent`), a primitive (`u32`), or a compound
+/// value type an `open` statement dispatches on (`Vec<u8>`, `&Coord`, `DateTime<Utc>`), so it is
 /// rendered verbatim.
 ///
 /// A **`::`-qualified** type segment (`std::io::Error`) is rendered as written, since `Path!` parses
@@ -172,8 +172,8 @@ fn render_segment(segment: &str) -> Option<String> {
     {
         return None;
     }
-    // Everything else — a capitalized component marker, a primitive, or a compound value type
-    // (`Vec<u8>`, `&Coord`) — is kept verbatim as `Path!` kept it going forward.
+    // Everything else (a capitalized component marker, a primitive, or a compound value type
+    // (`Vec<u8>`, `&Coord`)) is kept verbatim as `Path!` kept it going forward.
     Some(segment.to_owned())
 }
 
@@ -193,7 +193,7 @@ fn type_segment_tail(segment: &str) -> Option<&str> {
 }
 
 /// The string content of a `Symbol!("…")` segment, or `None` if `segment` is not one. Only a
-/// plain, unescaped literal is accepted — an escaped or quote-bearing one is left for
+/// plain, unescaped literal is accepted: an escaped or quote-bearing one is left for
 /// [`render_segment`] to decline, since it cannot be a path identifier anyway.
 fn symbol_inner(segment: &str) -> Option<String> {
     let literal = segment.strip_prefix("Symbol!(")?.strip_suffix(')')?.trim();

@@ -10,9 +10,9 @@ use rustc_errors::{
 
 use crate::emitter::edit::strip_multispan_labels;
 
-/// Replace a diagnostic's main message with `header`, keeping its spans and their labels — for a
+/// Replace a diagnostic's main message with `header`, keeping its spans and their labels (for a
 /// duplicate-key conflict, the two carets ("first implementation here" and "conflicting
-/// implementation") that point at the colliding entries — while dropping its children (rustc's
+/// implementation") that point at the colliding entries) while dropping its children (rustc's
 /// redundant coherence notes, such as "downstream crates may implement …") and its structured
 /// suggestions. The header says *what* collided; the kept carets say *where*.
 pub fn replace_header(diag: &mut DiagInner, header: String) {
@@ -21,7 +21,7 @@ pub fn replace_header(diag: &mut DiagInner, header: String) {
     diag.suggestions = Suggestions::Enabled(Vec::new());
 }
 
-/// Build a plain-text sub-diagnostic (a `help` or `note`) with no span — the shape every
+/// Build a plain-text sub-diagnostic (a `help` or `note`) with no span: the shape every
 /// diagnosis note and derive help takes.
 pub fn subdiag(level: Sublevel, message: String) -> Subdiag {
     Subdiag {

@@ -8,7 +8,7 @@ use crate::diagnosis::resolved::Resolved;
 /// Partition failures into groups that **share a root cause**, so the emitter can coalesce each
 /// group into one block that states the shared cause once. Returns one `Vec` of indices into
 /// `resolveds` per group, each group in arrival order and the groups themselves ordered by their
-/// first member — so the caller emits each group where its first member arrived and overall ordering
+/// first member, so the caller emits each group where its first member arrived and overall ordering
 /// is preserved.
 ///
 /// Two failures group when they share *at least one* root cause, and grouping is transitive: the
@@ -17,16 +17,15 @@ use crate::diagnosis::resolved::Resolved;
 /// is lazy, so a single omission surfaces at several depths, and each depth sees a different subset of
 /// its causes: a `check_components!` entry stops at the first unmet leaf on its own branch, while a
 /// use-site call walks every wired component and reaches them all. Those subsets overlap without ever
-/// being equal, so no two of them grouped — and the block whose causes were the *union* of the others
-/// fared worst, since its chain was then fully elided against the blocks that had already drawn every
-/// one of its roots, leaving a bare `root causes:` list with no dependency chain at all.
+/// being equal, so an exact-match key would group no two of them, and the block whose causes are the
+/// *union* of the others would fare worst: its chain would be fully elided against the blocks that had
+/// already drawn every one of its roots, leaving a bare `root causes:` list with no dependency chain.
 ///
 /// Transitivity is what makes the relation a partition rather than an ambiguous overlap graph: a
 /// failure whose causes are covered by two others would otherwise have no single group to join.
 /// Grouping this way also earns an invariant the exact-match key could not: **no two coalesced blocks
-/// share a root cause**, so one mistake is stated in exactly one block, and two blocks can no longer
-/// have the same top-level roots by way of a shared cause — which is what made the whole-chain elision
-/// degenerate in the first place.
+/// share a root cause**, so one mistake is stated in exactly one block, and two blocks cannot have the
+/// same top-level roots by way of a shared cause, which would make the whole-chain elision degenerate.
 ///
 /// A cause is identified by its [`Leaf`] **structurally**, not by the rendered `root cause:` lead
 /// the leaf words. A leaf names its owner (the struct missing a field, the context missing a wiring

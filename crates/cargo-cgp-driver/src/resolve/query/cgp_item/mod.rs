@@ -2,7 +2,7 @@
 //!
 //! Every stage of the resolution is anchored by `DefId` to the CGP crate that defines the
 //! trait or type it matches, so a same-named item from an unrelated crate can never drive a
-//! replacement — the same discipline [`component_map`](crate::component_map) uses for
+//! replacement, the same discipline [`component_map`](crate::component_map) uses for
 //! `IsProviderFor`. The recognizers are grouped by what they recognize: an item by name, a
 //! component's traits, a blanket trait, a namespace lookup trait, CGP's own crates, a context,
 //! and the type-level spines.

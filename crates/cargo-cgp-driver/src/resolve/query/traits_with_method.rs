@@ -16,8 +16,8 @@ pub enum CallTrait {
 }
 
 /// Every trait declaring a `self`-receiver associated fn named `method` that a call by that name
-/// could resolve through — the candidates
-/// [`resolve_call_site`](crate::resolve::resolve_call_site) tries — each paired with that method's
+/// could resolve through (the candidates
+/// [`resolve_call_site`](crate::resolve::resolve_call_site) tries), each paired with that method's
 /// `DefId` (whose declared signature the call-site anchor's `seed_from_call` unifies the call's
 /// arguments against) and the [kind](CallTrait) of trait it is.
 ///
@@ -25,7 +25,7 @@ pub enum CallTrait {
 /// its precise `[CGP-E001]` recovery before any other trait is tried:
 ///
 /// - a **CGP consumer trait** (recognized structurally, in any crate); and
-/// - a **blanket-impl trait** that is not a consumer and shows CGP evidence — the shape `#[cgp_fn]`
+/// - a **blanket-impl trait** that is not a consumer and shows CGP evidence: the shape `#[cgp_fn]`
 ///   / `#[blanket_trait]` generate (`impl<Context> Describe for Context where Self: …`). Its
 ///   obligation `Ctx: Describe` is walkable exactly as a consumer's is, since its `Self` is the
 ///   context.

@@ -35,8 +35,8 @@ use crate::resolve::{ResolveCache, ResolveCtx};
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
 /// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
-/// compiler's default would build for the active error format — a `JsonEmitter` or an
-/// `AnnotateSnippetEmitter` — and render like vanilla `rustc` in either.
+/// compiler's default would build for the active error format (a `JsonEmitter` or an
+/// `AnnotateSnippetEmitter`) and render like vanilla `rustc` in either.
 pub struct CgpEmitter<E: Emitter> {
     /// The compiler's own emitter and the diagnostics buffered for it, shared with the panic hook
     /// so a compiler crash can print the buffer before its report (see [`Output`]).
@@ -46,8 +46,8 @@ pub struct CgpEmitter<E: Emitter> {
     source_map: Option<Arc<SourceMap>>,
     /// The component-marker → trait-names map. A [`ComponentNameMap`] owns the laziness: its
     /// `fn`-pointer initializer ([`build_name_map_from_tls`]) runs the expensive
-    /// whole-trait-graph walk at most once — on the first message that actually needs a
-    /// lookup — and never when no diagnostic mentions CGP wiring, so this emitter needs no
+    /// whole-trait-graph walk at most once, on the first message that actually needs a
+    /// lookup, and never when no diagnostic mentions CGP wiring, so this emitter needs no
     /// candidate pre-check of its own. Built once per compilation is sound because the map
     /// draws only on data fixed for the rest of the compilation (the trait set, the
     /// `IsProviderFor` supertraits, the blanket impls) and stores owned `String`s, not
@@ -55,9 +55,9 @@ pub struct CgpEmitter<E: Emitter> {
     names: ComponentNameMap,
     /// The ledger of CGP diagnostics already emitted this compilation, so a wiring mistake that
     /// surfaces at many sites is shown once and its identical re-reports are suppressed (see
-    /// [`emit_diagnostic`](CgpEmitter::emit_diagnostic)). The keys — the recovered root cause for
+    /// [`emit_diagnostic`](CgpEmitter::emit_diagnostic)). The keys (the recovered root cause for
     /// a resolved diagnostic, the rendered text for a declined-but-rewritten one, and the coded
-    /// header — live with the ledger in the rustc-free crate.
+    /// header) live with the ledger in the rustc-free crate.
     dedup: DedupLedger,
     /// Memoization of the typed resolver's walk, so a wiring mistake re-reported at many sites is
     /// resolved once and reused rather than re-walked per diagnostic (see [`ResolveCache`] and
@@ -305,7 +305,7 @@ impl<E: Emitter> CgpEmitter<E> {
     }
 
     /// Cross-diagnostic de-duplication. CGP wiring is lazy, so one mistake surfaces as the same
-    /// error at many sites — the `check_components!` entry, every hand-written `impl` that
+    /// error at many sites: the `check_components!` entry, every hand-written `impl` that
     /// references the broken component, and each call. A transformed diagnostic whose signature
     /// the ledger has already recorded is such a re-report, so it is suppressed and only the
     /// first occurrence is shown; the key scheme lives with the [`DedupLedger`]. Only the tool's
@@ -378,7 +378,7 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
 impl<E: Emitter> Drop for CgpEmitter<E> {
     /// Flush the buffered diagnostics when the compiler drops the emitter. This runs during the
     /// `DiagCtxt`'s own teardown, *after* every diagnostic has been handed to `emit_diagnostic` but
-    /// while the inner emitter (a field of `self`, dropped only after this returns) is still alive —
+    /// while the inner emitter (a field of `self`, dropped only after this returns) is still alive:
     /// the one place a "list every affected consumer" block can be built, since the `Emitter` trait
     /// offers no end-of-compilation hook. Diagnostics were counted by the `DiagCtxt` as they
     /// arrived, so deferring their *rendering* to here does not change the error count.

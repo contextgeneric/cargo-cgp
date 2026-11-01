@@ -47,14 +47,14 @@ use crate::config::{CGP_COMPONENT_CRATE, IS_PROVIDER_FOR_TRAIT};
 /// This is the `fn`-pointer initializer the driver hands to
 /// [`ComponentNameMap`](cargo_cgp_error_processing::rewrite::ComponentNameMap): the emitter
 /// installs it at session setup, before any `TyCtxt` exists, and it is forced only on the
-/// first message rewrite — which happens during trait solving, when a `TyCtxt` *is* in scope
+/// first message rewrite, which happens during trait solving, when a `TyCtxt` *is* in scope
 /// ([`rustc_middle::ty::tls`]). Being a plain `fn` (capturing nothing, reading TLS) is what
 /// lets the rustc-free `ComponentNameMap` hold it.
 pub fn build_name_map_from_tls() -> HashMap<String, ComponentTraitNames> {
     ty::tls::with_opt(|tcx| tcx.map(build_component_name_map).unwrap_or_default())
 }
 
-/// Whether `def_id` is the `IsProviderFor` trait *defined by* the `cgp-component` crate — not
+/// Whether `def_id` is the `IsProviderFor` trait *defined by* the `cgp-component` crate, not
 /// merely a trait spelled `IsProviderFor`. The name is checked first because it is the cheaper
 /// query and rules out almost every bound before the crate is even consulted.
 fn is_cgp_is_provider_for(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
@@ -65,7 +65,7 @@ fn is_cgp_is_provider_for(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// Build the map from component-marker name to the consumer/provider trait names behind it,
 /// by inverting the `IsProviderFor` supertrait and consumer-blanket-impl links across every
 /// trait in scope. Returns an empty map when no trait carries a genuine `cgp-component`
-/// `IsProviderFor` supertrait — the case for any compilation that does not use CGP.
+/// `IsProviderFor` supertrait: the case for any compilation that does not use CGP.
 pub fn build_component_name_map(tcx: TyCtxt<'_>) -> HashMap<String, ComponentTraitNames> {
     let all_traits: Vec<DefId> = tcx.all_traits_including_private().collect();
 

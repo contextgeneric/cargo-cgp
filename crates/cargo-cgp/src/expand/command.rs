@@ -18,7 +18,7 @@ use crate::launch::{split_forwarded, wrapped_cargo};
 /// cargo, so target selection (`--lib`, `--bin`, `-p`, `--features`, …) is cargo's own, while `--item`
 /// narrows the expansion to one module or item of the target. It is `cargo rustc`
 /// rather than `cargo check` because that is the one subcommand which appends rustc arguments to a
-/// *single* target's invocation — which is what scopes expand mode to the crate the user asked
+/// *single* target's invocation, which is what scopes expand mode to the crate the user asked
 /// about, leaving its dependencies to compile normally.
 ///
 /// A clean expansion stops the compilation yet leaves cargo's status at success, so cargo's code
@@ -48,7 +48,7 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
     }
 
     // Everything after `--` reaches the selected target's rustc invocation, where the driver
-    // recognizes the flags and takes over — see `cargo-cgp-driver`'s `expand` module. They follow
+    // recognizes the flags and takes over; see `cargo-cgp-driver`'s `expand` module. They follow
     // any rustc arguments of the user's own, after the same `--`.
     let mut tool_rustc_args = vec![format!("{EXPAND_FLAG}={}", output.display())];
     if let Some(item) = &item {
@@ -68,7 +68,7 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
                 .context("failed to write the expansion to stdout")?;
         }
         None => {
-            // Whatever went wrong, the layer that knows has already said so above — cargo when it
+            // Whatever went wrong, the layer that knows has already said so above, cargo when it
             // would not run the expansion at all (a package with several targets needs `--lib` or
             // `--bin NAME`), the compiler when the crate failed before expanding, the driver when an
             // `--item` path matched nothing. So this line only reports that nothing came back;

@@ -120,7 +120,7 @@ pub fn resolve_or_rewrite(
 /// Resolve `diag`'s failure to its root-cause dependency tree(s), or `None` when the resolver
 /// cannot trace it to a CGP component failure (so the caller falls back to the in-place text
 /// rewrite). A candidate is every diagnostic that reports an unmet obligation (`E0271`, `E0277`,
-/// and a *method-bounds* `E0599`), whether or not it names a CGP trait — because a failure *not*
+/// and a *method-bounds* `E0599`), whether or not it names a CGP trait, because a failure *not*
 /// worded in CGP terms can still be a consequence of a CGP component failing (a manual `impl`
 /// that forwards to a wired method, a downstream trait bound that needs it), and [`resolve`]
 /// traces the dependency chain to find out. It yields `None` for everything whose chain does not
@@ -222,7 +222,7 @@ pub fn transform_resolved(
         .into_iter()
         .map(|help| subdiag(Sublevel::Help, help))
         .collect();
-    // Drop rustc's structured suggestions along with its notes — for a use-site failure
+    // Drop rustc's structured suggestions along with its notes: for a use-site failure
     // that includes the misleading "use associated function syntax instead".
     diag.suggestions = Suggestions::Enabled(vec![]);
 

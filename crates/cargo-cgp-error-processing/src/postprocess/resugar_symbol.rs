@@ -1,6 +1,6 @@
 //! Post-processor: resugar the `Symbol!` type-level string.
 //!
-//! `Symbol!("xy")` expands to `Symbol<2, Chars<'x', Chars<'y', Nil>>>` — a length and a
+//! `Symbol!("xy")` expands to `Symbol<2, Chars<'x', Chars<'y', Nil>>>`: a length and a
 //! right-folded character list terminated by `Nil` (see the CGP `Symbol!` reference). This
 //! reverses that spine back to `Symbol!("xy")` in the diagnostic text.
 //!

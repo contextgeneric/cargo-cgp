@@ -40,7 +40,7 @@ fn renders_a_linear_spine() {
 
 #[test]
 fn merges_a_shared_prefix_into_one_branching_tree() {
-    // Two paths sharing `Con → Prov` diverge into two leaves — the shape a provider with two unmet
+    // Two paths sharing `Con → Prov` diverge into two leaves: the shape a provider with two unmet
     // dependencies produces. The shared prefix appears once and the tree branches beneath it.
     let out = render(&[
         vec![hop("Con"), hop("Prov"), hop("HasFirst"), leaf("first")],
@@ -123,10 +123,9 @@ fn a_super_root_over_two_branches_shares_the_subtree() {
 #[test]
 fn a_repeated_trait_still_names_its_generics_in_full() {
     // Two distinct provider nodes sharing a trait reference (`Handler<Big>`) form a parent/child
-    // pair. The child once printed `Handler<…>`, shortening a dispatch chain that restates a
-    // program-sized `Code` at every step — but that hid the very type the reader is tracing. Every
-    // CGP construct a chain names is now rendered as written. (They are distinct nodes — different
-    // providers — so the graph does not merge them.)
+    // pair. A dispatch chain restates a program-sized `Code` at every step, but shortening it would
+    // hide the type the reader is tracing, so every CGP construct a chain names renders as written.
+    // They are distinct nodes, with different providers, so the graph does not merge them.
     let parent = ChainNode::Hop(DepNode::Provider {
         trait_ref: "Handler<Big>".to_owned(),
         context: "Ctx".to_owned(),
@@ -150,7 +149,7 @@ fn a_repeated_trait_still_names_its_generics_in_full() {
 fn a_hop_whose_generics_differ_from_its_parent_keeps_its_full_form() {
     // The companion of the test above: two provider nodes on the *same* trait whose generic
     // arguments differ (`ValueEncoder<Outer>` then `ValueEncoder<Vec<Mid>>`). Both are rendered in
-    // full, as every hop now is.
+    // full, as every hop is.
     let parent = ChainNode::Hop(DepNode::Provider {
         trait_ref: "ValueEncoder<Outer>".to_owned(),
         context: "Ctx".to_owned(),
@@ -172,7 +171,7 @@ fn a_hop_whose_generics_differ_from_its_parent_keeps_its_full_form() {
 
 #[test]
 fn a_within_path_label_repeat_stays_a_linear_chain() {
-    // A single path passes through a same-labelled hop `R` twice — a recursive descent (a redirect
+    // A single path passes through a same-labelled hop `R` twice: a recursive descent (a redirect
     // resolving `Outer` then `Inner`) whose label omits the key. It is one path, so the repeat must
     // stay a distinct node: a linear chain, not a false cycle that would `(*)`-fold onto itself.
     let out = render(&[vec![hop("R"), hop("X"), hop("R"), leaf("D")]]);
@@ -189,7 +188,7 @@ fn a_within_path_label_repeat_stays_a_linear_chain() {
 fn cross_path_redirects_differing_only_by_key_stay_distinct() {
     // Two lookups along the same route (`@VBC`) for different keys render the *same* label but are
     // different nodes (the key is part of their identity). In separate paths they must not merge
-    // into a false diamond — each leads to its own leaf, with no `(*)`.
+    // into a false diamond: each leads to its own leaf, with no `(*)`.
     let out = render(&[
         vec![
             hop("Outer"),
@@ -241,7 +240,7 @@ fn an_empty_path_set_renders_empty() {
 
 #[test]
 fn a_cycle_across_paths_terminates_and_is_marked() {
-    // Two paths that between them form a cycle — `A → B` and `B → A` — leave every head also a
+    // Two paths that between them form a cycle (`A → B` and `B → A`) leave every head also a
     // child, so `roots()` falls back to all heads. The `expanded` set caps each node at one
     // expansion, so rendering terminates (rather than looping) and marks the re-reached node `(*)`.
     // This is a pathological input the resolver's cycle guard should never emit; the test pins the
@@ -254,7 +253,7 @@ fn a_cycle_across_paths_terminates_and_is_marked() {
     );
 }
 
-/// Two graphs rendered against one shared `seen` set — the shape a compilation's separate error
+/// Two graphs rendered against one shared `seen` set: the shape a compilation's separate error
 /// blocks form when one mistake surfaces in several diagnostics that do not de-duplicate. The
 /// second keeps its own prefix and truncates at the subtree the first already drew.
 #[test]
@@ -269,7 +268,7 @@ fn a_second_graph_elides_what_the_first_drew() {
     ");
 
     // `Wrapper` is this graph's own hop and renders; `Shared` was drawn above, so its intervening
-    // hops are referenced rather than repeated — but the chain still bottoms out at the root cause,
+    // hops are referenced rather than repeated, but the chain still bottoms out at the root cause,
     // which the reader of *this* block would otherwise never see.
     let second = DependencyGraph::from_paths(&[vec![
         hop("Wrapper"),
@@ -318,7 +317,7 @@ fn a_wholly_redundant_graph_reports_itself_fully_elided() {
     assert!(DependencyGraph::from_paths(&paths).fully_elided_by(&seen));
 }
 
-/// A bare leaf hides no subtree, so it is drawn in full wherever a chain bottoms out on it — a
+/// A bare leaf hides no subtree, so it is drawn in full wherever a chain bottoms out on it, a
 /// graph that is only a leaf is never reported as fully elided, however often it recurs.
 #[test]
 fn a_leaf_only_graph_is_never_elided() {

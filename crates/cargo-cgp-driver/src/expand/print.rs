@@ -20,7 +20,7 @@ impl pprust::PpAnn for NoAnn {}
 /// asked for it.
 ///
 /// This runs from the `after_expansion` callback, which is the earliest point the expanded AST
-/// exists — and the reason the driver does not simply set `-Zunpretty=expanded`: under that flag
+/// exists, and the reason the driver does not simply set `-Zunpretty=expanded`: under that flag
 /// the compiler prints the crate and exits *before* any callback runs, so the driver would never
 /// get to resugar anything.
 ///
@@ -37,7 +37,7 @@ pub fn print_expansion(sess: &Session, tcx: TyCtxt<'_>, request: &ExpandRequest)
         return;
     };
 
-    // Expansion has already run — the compiler forces it immediately before calling us — so the
+    // Expansion has already run (the compiler forces it immediately before calling us), so the
     // expanded crate is sitting behind this query's `Steal`, unstolen until lowering.
     let printed = tcx.resolver_for_lowering().1.borrow().clone();
     let printed = pprust::print_crate(
@@ -63,7 +63,7 @@ pub fn print_expansion(sess: &Session, tcx: TyCtxt<'_>, request: &ExpandRequest)
     // Printed straight to stderr rather than emitted as a compiler diagnostic, for two reasons. It is
     // not about the code being compiled, so it should not add to the crate's error count and make
     // cargo report a failed compilation; and the driver's own diagnostic post-processing would rewrite
-    // it — the module-path strip exists to shorten CGP type names in an error, and it would shorten
+    // it: the module-path strip exists to shorten CGP type names in an error, and it would shorten
     // the very path this message quotes (`contexts::nope` down to `nope`).
     if resugared.is_empty()
         && let Some(item) = &request.item

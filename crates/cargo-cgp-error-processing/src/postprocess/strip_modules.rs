@@ -1,7 +1,7 @@
 //! Post-processor: strip module qualifiers from every path, leaving the item the path names.
 //!
-//! rustc prints types and traits fully qualified — `contexts::app::MockApp`,
-//! `interfaces::types::QuantityTypeProviderComponent`, `std::cmp::Eq` — which is noise in a CGP
+//! rustc prints types and traits fully qualified (`contexts::app::MockApp`,
+//! `interfaces::types::QuantityTypeProviderComponent`, `std::cmp::Eq`), which is noise in a CGP
 //! diagnostic, where the bare name (`MockApp`, `QuantityTypeProviderComponent`, `Eq`) is what the
 //! programmer wrote and reads. This drops the module segments of each `a::b::C` run, in both
 //! the rewritten CGP messages and the resugaring fallback, so the two read the same. A module is
@@ -12,7 +12,7 @@
 //! re-export path such as `cgp::prelude::Chars` is just one such run. The strip runs first, before
 //! the resugaring stages, so they match the bare names.
 //!
-//! It rewrites **only** a run of plain identifiers joined by `::` — `foo::Bar`, `a::b::c::D` — and
+//! It rewrites **only** a run of plain identifiers joined by `::` (`foo::Bar`, `a::b::c::D`) and
 //! leaves everything else alone: a lone identifier keeps its name, a turbofish (`foo::<T>`) is not
 //! an identifier run so it is untouched, an associated-type projection's `>::Assoc` tail has no
 //! identifier before its `::` so it stays, a `use` statement's path keeps every segment since the
@@ -30,7 +30,7 @@ pub fn strip_module_paths(text: &str) -> Option<String> {
 }
 
 /// The CGP type names the resugaring stages and the missing-field rewrite read in bare form, so a
-/// path ending in one always collapses, whatever crate re-exports it (`hypershell::prelude::Chars`).
+/// path ending in one always collapses, whatever crate re-exports it (`app::prelude::Chars`).
 /// Some of them are ambiguous (`std::str::Chars`, `std::ops::Index`), but in a CGP diagnostic they
 /// are the encoding the later stages fold away.
 pub const CGP_ENCODING_NAMES: &[&str] = &[
@@ -62,8 +62,8 @@ fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Op
     let mut changed = false;
 
     // Identifier runs are pure ASCII, so they are scanned by byte; every other character is copied
-    // whole (by its UTF-8 width) rather than byte-by-byte, so multi-byte text — the `└─`
-    // box-drawing of a rendered dependency tree, say — is never split into invalid bytes.
+    // whole (by its UTF-8 width) rather than byte-by-byte, so multi-byte text (the `└─`
+    // box-drawing of a rendered dependency tree, say) is never split into invalid bytes.
     while i < bytes.len() {
         let b = bytes[i];
         if b == b'"' {
@@ -92,7 +92,7 @@ fn collapse_paths(text: &str, collapse: impl Fn(&str, &str, &str) -> bool) -> Op
                 if item_start.is_none() && bytes[seg_start].is_ascii_uppercase() {
                     item_start = Some(seg_start);
                 }
-                // Continue the run only across a `::` that is followed by another identifier —
+                // Continue the run only across a `::` that is followed by another identifier,
                 // not a turbofish `::<` and not a trailing `::` before a non-identifier.
                 if j + 2 < bytes.len()
                     && bytes[j] == b':'

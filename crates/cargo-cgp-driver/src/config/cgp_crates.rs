@@ -16,7 +16,7 @@ pub const CGP_MACRO_CRATE: &str = "cgp_macro";
 /// blanket trait.
 ///
 /// A blanket impl over a bare context is the only structural mark such a trait carries, and
-/// it is far too broad on its own — `ToString`, `Into`, and `Borrow` all have one. A trait the
+/// it is far too broad on its own: `ToString`, `Into`, and `Borrow` all have one. A trait the
 /// checked crate *defines* is trusted outright (cargo-cgp runs on CGP workspaces), but a foreign
 /// one must show that its blanket actually depends on CGP: on a trait from one of these crates
 /// (`HasField` above all), on a CGP consumer trait, or on another trait that does. Anchoring

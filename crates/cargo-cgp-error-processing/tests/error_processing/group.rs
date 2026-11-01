@@ -6,7 +6,7 @@ use cargo_cgp_error_processing::{
 
 use super::support::field_leaf;
 
-/// A failure of `consumer` on `context` bottoming out on one missing field per name in `fields` —
+/// A failure of `consumer` on `context` bottoming out on one missing field per name in `fields`:
 /// the shape a check entry or a use-site call recovers, with the field names standing for the
 /// distinct root causes a failure reaches.
 fn failure(context: &str, consumer: &str, fields: &[&str]) -> Resolved {

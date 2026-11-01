@@ -6,7 +6,7 @@ use rustc_span::def_id::DefId;
 use crate::config::CGP_CRATES;
 use crate::resolve::query::{is_cgp_crate_trait, is_consumer_trait};
 
-/// Whether `def_id` is a **blanket trait** — one carrying a blanket impl over a bare context
+/// Whether `def_id` is a **blanket trait**: one carrying a blanket impl over a bare context
 /// parameter (`impl<Context> Trait for Context where Self: …`). This is the shape `#[cgp_fn]` and
 /// `#[blanket_trait]` generate, and the hand-written desugaring of them: the trait is available to
 /// any context meeting the blanket's `where` bounds (a `HasField`, another such trait), so a
@@ -43,7 +43,7 @@ pub fn has_blanket_impl(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// also what stops a pair of traits that depend on each other from looping.
 pub const MAX_BLANKET_TRAIT_DEPTH: u32 = 4;
 
-/// Whether a blanket-impl trait's blanket actually depends on CGP — the positive evidence a trait
+/// Whether a blanket-impl trait's blanket actually depends on CGP: the positive evidence a trait
 /// needs before it is read as a blanket trait. A bound qualifies when its trait comes
 /// from one of [`CGP_CRATES`] (`HasField` above all), is a CGP consumer trait (recognized
 /// structurally in any crate), or is itself such a blanket trait, followed to

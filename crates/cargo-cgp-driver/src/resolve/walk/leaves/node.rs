@@ -14,14 +14,14 @@ use crate::resolve::walk::{
 };
 
 /// Bound on how deep the dependency-graph walk descends before giving up, so a pathological or
-/// cyclic wiring cannot make it loop. Each logical wiring hop expands to several walk frames — a
+/// cyclic wiring cannot make it loop. Each logical wiring hop expands to several walk frames: a
 /// consumer obligation, the delegation-routing provider obligation, a `RedirectLookup`, the real
-/// provider obligation, then the next consumer — so a deeply nested data type (e.g. `cgp-serde`'s
-/// `MessagesArchive`, a `Vec<Vec<record>>` threaded through iterator/deref/record providers) reaches
+/// provider obligation, then the next consumer, so a deeply nested data type (e.g. a
+/// `Vec<Vec<record>>` threaded through iterator/deref/record providers) reaches
 /// its root cause only tens of frames down. The bound is set well above that so a genuine chain
-/// resolves rather than declining to the raw fallback, but not so high that a *divergent* wiring —
+/// resolves rather than declining to the raw fallback, but not so high that a *divergent* wiring (
 /// one whose obligations keep growing without ever exactly repeating, which the cycle guard cannot
-/// catch — grinds through the trait solver at every frame for a long time before giving up.
+/// catch), grinds through the trait solver at every frame for a long time before giving up.
 pub const MAX_DEPTH: u32 = 256;
 
 /// Resolve one node of the dependency graph to its owned, node-rooted sub-causes, memoized in
@@ -61,7 +61,7 @@ pub fn resolve_node<'tcx>(
         return SubResult::empty(self_fp);
     }
 
-    // A `HasField` completes a path directly — a terminal leaf, not cached (its classification can
+    // A `HasField` completes a path directly: a terminal leaf, not cached (its classification can
     // read its parent, which lies outside a leaf-rooted subtree, and it is cheap to re-derive).
     if is_has_field(tcx, erased) {
         return terminal_result(tcx, erased, leaf_ref, parent, context, self_fp);
@@ -94,7 +94,7 @@ pub fn guard_cut<'tcx>(
 
     // Cycle guard: if this exact obligation already appears among its own ancestors, the wiring
     // loops (a `UseContext` cycle routes `Ctx: CanUseComponent<C>` straight back to itself), so this
-    // branch carries no new root cause — stop rather than descend the loop. Regions are erased so a
+    // branch carries no new root cause, so stop rather than descend the loop. Regions are erased so a
     // loop that only differs by lifetime is still seen. The cut flags the subtree incomplete, which
     // propagates up so no ancestor whose result depended on the cut is cached.
     if prefix
@@ -114,7 +114,7 @@ pub fn guard_cut<'tcx>(
 /// The context a node is about, given the `context` above it.
 ///
 /// Cross-context handoff: a consumer obligation whose `Self` is a *different* context is the
-/// cross-context dependency shape — one context's wiring depends on a concrete other context. Re-root
+/// cross-context dependency shape: one context's wiring depends on a concrete other context. Re-root
 /// the subtree at that context, so its nodes are labeled and classified against the context they are
 /// actually about: a consumer node reads `for context Inner` (not a plain foreign bound), its
 /// delegation-routing hop is recognized as routing and dropped, and its getter leaf decodes to a

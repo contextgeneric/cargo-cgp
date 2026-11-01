@@ -3,8 +3,8 @@
 //! A resugared construct is a macro call whose body holds ordinary types, and the printer lays a
 //! macro body out token by token: it has no way to know the body is a type list, so it spaces
 //! every token apart and prints `Product![Multiply < Symbol!("foo") >]`. Its spacing rules cannot
-//! be coaxed into the conventional form — the space *before* a token is the printer's decision and
-//! an identifier cannot ask for it to be dropped — so the layout is corrected after printing.
+//! be coaxed into the conventional form: the space *before* a token is the printer's decision and
+//! an identifier cannot ask for it to be dropped, so the layout is corrected after printing.
 //!
 //! The printer also always breaks a brace-delimited macro body onto lines of its own, printing a
 //! `Struct! { … }` shape as a block. It still puts the whole body on one line, so a brace body is

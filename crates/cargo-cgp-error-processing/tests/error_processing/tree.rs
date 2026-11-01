@@ -3,7 +3,7 @@
 
 use cargo_cgp_error_processing::tree::{DependencyTree, render_dependency_tree};
 
-/// A single spine — the common cascade shape — renders as a `cargo tree`-style chain with no
+/// A single spine, the common cascade shape, renders as a `cargo tree`-style chain with no
 /// trailing newline.
 #[test]
 fn renders_linear_spine() {

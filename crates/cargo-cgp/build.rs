@@ -3,7 +3,7 @@
 //! The channel lives in the workspace `rust-toolchain.toml` (the single source of truth);
 //! this reads it and exposes it as `CARGO_CGP_PINNED_TOOLCHAIN`, which `config.rs` reads
 //! back with `env!`. Keeping the derivation here means the constant can never drift from
-//! the toolchain file — the same approach `rustc_plugin` uses for its `CHANNEL`.
+//! the toolchain file, the same approach `rustc_plugin` uses for its `CHANNEL`.
 
 use std::path::PathBuf;
 
@@ -23,7 +23,7 @@ fn main() {
 /// canonical file at the workspace root; a published crate ships its own copy in the crate
 /// root (see the crate's `rust-toolchain.toml`), because the workspace file is not part of
 /// the package tarball. Walking up from the manifest directory takes the first match, so the
-/// same build script serves both layouts — including the isolated verification build cargo
+/// same build script serves both layouts, including the isolated verification build cargo
 /// runs under `target/package/` during `cargo publish`.
 fn find_toolchain_file() -> PathBuf {
     let start = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));

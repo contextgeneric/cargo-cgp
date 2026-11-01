@@ -5,7 +5,7 @@ use rustc_span::def_id::DefId;
 
 use crate::resolve::query::{is_cgp_crate_trait, is_component_marker, is_path_cons};
 
-/// Whether `def_id` is a **namespace lookup trait** — the fingerprint every `cgp_namespace!`
+/// Whether `def_id` is a **namespace lookup trait**: the fingerprint every `cgp_namespace!`
 /// (and the built-in `DefaultNamespace`/`DefaultImpls*`) generates: a trait whose *only*
 /// associated item is a type named `Delegate`, resolving a key to its delegate provider. These are
 /// recognized by that structural signature rather than by name or crate, because a user's own

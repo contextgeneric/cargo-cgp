@@ -23,10 +23,10 @@ pub fn merged_diag(
     ambiguous: &AmbiguousNames,
 ) -> DiagInner {
     // Every cause across the coalesced consumers. The dependency graph then merges what they
-    // share — a consumer whose chain runs through another collapses into it, while independent
-    // chains to one cause render side by side — so no chain is dropped and every consumer appears.
+    // share: a consumer whose chain runs through another collapses into it, while independent
+    // chains to one cause render side by side, so no chain is dropped and every consumer appears.
     // These members were grouped precisely *because* they share a cause, so each carries its own
-    // copy; `Causes::union` folds those copies back into one cause holding every path — the
+    // copy; `Causes::union` folds those copies back into one cause holding every path: the
     // one-cause-per-distinct-leaf invariant the wording below assumes, kept by construction.
     let causes = Causes::union(resolveds.iter().map(|resolved| resolved.causes.clone()));
     let causes = coalesce_underived_fields(&causes);

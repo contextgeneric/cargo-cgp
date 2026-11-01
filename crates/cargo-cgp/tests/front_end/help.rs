@@ -64,8 +64,8 @@ fn top_level_help_points_at_both_subcommand_helps() {
     let help = help_text();
 
     assert!(help.contains("expand"), "{help}");
-    // The two subcommands' options come from different places — ours for `expand`, cargo's for
-    // `check` — so the top level has to name both, or a reader looks in the wrong one.
+    // The two subcommands' options come from different places (ours for `expand`, cargo's for
+    // `check`), so the top level has to name both, or a reader looks in the wrong one.
     assert!(help.contains("cargo cgp expand --help"), "{help}");
     assert!(help.contains("cargo cgp check --help"), "{help}");
 }

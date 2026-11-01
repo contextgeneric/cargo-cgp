@@ -6,17 +6,17 @@
 //! [`CgpImplMisuse`]): the header naming the component's
 //! *consumer* trait where its *provider* trait belongs, the header naming a trait that is not a CGP
 //! component at all, or a higher-order provider's inner-provider `where`-bound (typically from
-//! `#[use_provider]`) naming the *consumer* trait — the inner-bound sibling of the first.
+//! `#[use_provider]`) naming the *consumer* trait: the inner-bound sibling of the first.
 //!
 //! This module recognizes all three off the compiler, using the consumer- and provider-trait
 //! fingerprints. The mistake is confirmed structurally, never from error text, by three conditions
 //! that together select the *user's* `#[cgp_impl]` impl and exclude every blanket and forwarding
 //! impl the CGP macros generate (which also carry `__Context__`):
 //!
-//! 1. the impl carries a generic parameter named `__Context__` — the reserved parameter
+//! 1. the impl carries a generic parameter named `__Context__`: the reserved parameter
 //!    `#[cgp_impl]` inserts, so this is a macro-generated inside-out impl and not a legitimate
 //!    hand-written direct consumer impl (`impl CanGreet for Person`, which has no such parameter);
-//! 2. its `Self` is a concrete local struct/enum — the provider struct (`RectangleArea`) — where the
+//! 2. its `Self` is a concrete local struct/enum (the provider struct `RectangleArea`), where the
 //!    `#[cgp_component]`-generated consumer and provider *blanket* impls have a bare type-parameter
 //!    `Self` (`impl<__Context__> CanCalculateArea for __Context__`); and
 //! 3. the header trait reference is a token the user wrote (not from a macro expansion), where the
@@ -24,7 +24,7 @@
 //!    trait reference.
 //!
 //! The header trait is then classified: a CGP *consumer* trait ([`consumer_provider_trait`] yields
-//! its paired provider — a `ConsumerTrait` misuse) or neither a consumer nor a provider trait (a
+//! its paired provider, a `ConsumerTrait` misuse) or neither a consumer nor a provider trait (a
 //! `NonCgpTrait` misuse). A header that *is* the provider trait is the correct form; even then, each
 //! of the impl's inner-provider `where`-bounds is scanned for a consumer trait (a
 //! `ConsumerProviderBound` misuse). Each candidate carries its own trait-reference span, so the
@@ -36,8 +36,8 @@
 //!
 //! **Boundary.** Recognition is deliberately specific to `#[cgp_impl]`, whose macro-inserted
 //! `__Context__` parameter is the marker used above. The lower-level `#[cgp_provider]` /
-//! `#[cgp_new_provider]` forms — which spell the whole inside-out impl by hand with a user-named
-//! context parameter — are *not* covered, and cannot be safely: without the reserved `__Context__`
+//! `#[cgp_new_provider]` forms, which spell the whole inside-out impl by hand with a user-named
+//! context parameter, are *not* covered, and cannot be safely: without the reserved `__Context__`
 //! marker, `impl<Ctx> SomeConsumer<Ctx> for ConcreteType` is indistinguishable from a legitimate
 //! hand-written direct impl of a generic consumer trait on a context, so flagging it would risk a
 //! false positive on valid code. `#[cgp_impl]` is the idiomatic provider form, so this covers the
@@ -62,7 +62,7 @@ use crate::resolve::query::{
 pub struct DetectedCgpImplMisuse {
     /// The consumer/provider (or non-CGP trait) names, worded into the coded header and help.
     pub misuse: CgpImplMisuse,
-    /// The impl's self type — the provider struct (`RectangleArea`) — used to tie the downstream
+    /// The impl's self type (the provider struct `RectangleArea`), used to tie the downstream
     /// `NotAProvider` check re-report back to this mistake.
     pub self_ty: String,
     /// The span of the header trait reference, matched against the `E0107` whose caret lands there so
@@ -72,7 +72,7 @@ pub struct DetectedCgpImplMisuse {
     /// caret lands *inside the impl body* (`E0186` on the method) so it is suppressed as a
     /// consequence of the one mistake.
     pub impl_span: Span,
-    /// The span of the macro-inserted `__Context__` parameter — the `#[cgp_impl(…)]` attribute
+    /// The span of the macro-inserted `__Context__` parameter: the `#[cgp_impl(…)]` attribute
     /// call-site every synthesized token shares. It is where the siblings landing *outside* the impl
     /// body sit (`E0425` on the missing `…Component` marker, `E0207` on the unconstrained
     /// `__Context__`), so it is the second span sibling errors are matched against.
@@ -99,7 +99,7 @@ fn impl_misuses(tcx: TyCtxt<'_>, local: LocalDefId) -> Vec<DetectedCgpImplMisuse
     let Some(macro_span) = context_param_span(tcx, local) else {
         return Vec::new();
     };
-    // (2) `Self` is a concrete local struct/enum — the provider struct — not the bare type
+    // (2) `Self` is a concrete local struct/enum (the provider struct), not the bare type
     // parameter the generated consumer/provider blanket impls use.
     let TyKind::Path(QPath::Resolved(_, self_path)) = imp.self_ty.kind else {
         return Vec::new();
@@ -122,7 +122,7 @@ fn impl_misuses(tcx: TyCtxt<'_>, local: LocalDefId) -> Vec<DetectedCgpImplMisuse
         .segments
         .last()
         .map_or(header.trait_ref.path.span, |segment| segment.ident.span);
-    // (3) The header trait reference is a token the user wrote — not the macro-synthesized
+    // (3) The header trait reference is a token the user wrote, not the macro-synthesized
     // reference every generated forwarding impl carries.
     if trait_ref_span.from_expansion() {
         return Vec::new();
@@ -165,8 +165,8 @@ fn impl_misuses(tcx: TyCtxt<'_>, local: LocalDefId) -> Vec<DetectedCgpImplMisuse
     found
 }
 
-/// A higher-order provider's inner-provider bound — typically written through
-/// `#[use_provider]`, which supplies the leading context argument — that names the
+/// A higher-order provider's inner-provider bound (typically written through
+/// `#[use_provider]`, which supplies the leading context argument) that names the
 /// component's *consumer* trait: the same consumer/provider confusion as the header case, in
 /// the `where` clause (`CGP-E034`). Every such bound is a candidate; the `E0107` that lands on its
 /// trait name selects which one is reshaped.
@@ -196,7 +196,7 @@ fn inner_bound_misuses(
             let Some(segment) = bound_path.segments.last() else {
                 continue;
             };
-            // Only a consumer trait *given generic arguments* is the mistake — the inserted
+            // Only a consumer trait *given generic arguments* is the mistake: the inserted
             // `<Self>` the consumer trait cannot take. A bare `Self: SomeConsumer` self-bound is
             // legitimate and produces no `E0107`.
             let has_type_arg = segment.args.is_some_and(|args| {

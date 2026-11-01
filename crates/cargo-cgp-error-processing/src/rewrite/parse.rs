@@ -2,7 +2,7 @@
 
 use crate::rewrite::text::{last_segment, split_generics};
 
-/// The parsed pieces of a "the trait bound `S: Trait<…>` is not satisfied" message — the form
+/// The parsed pieces of a "the trait bound `S: Trait<…>` is not satisfied" message: the form
 /// rustc opens a trait-bound failure with. The driver uses the parse on its own to *classify*
 /// a main message (is this a `CanUseComponent` failure? does the header already name the
 /// leaf bound?) before deciding how to transform the diagnostic around it.
@@ -13,8 +13,8 @@ pub struct ParsedTraitBound<'a> {
     pub bound: &'a str,
     /// The trait path's last segment, e.g. `CanUseComponent` or `Eq`.
     pub trait_name: &'a str,
-    /// The raw generic-argument text of the trait, e.g. `AreaCalculatorComponent, Rectangle`
-    /// — empty when the trait has no generics.
+    /// The raw generic-argument text of the trait, e.g. `AreaCalculatorComponent, Rectangle`,
+    /// empty when the trait has no generics.
     pub args: &'a str,
     /// Whatever follows `is not satisfied`, usually empty.
     pub tail: &'a str,
@@ -25,7 +25,7 @@ pub struct ParsedTraitBound<'a> {
 pub fn parse_trait_bound(message: &str) -> Option<ParsedTraitBound<'_>> {
     let rest = message.strip_prefix("the trait bound `")?;
     let (bound, tail) = rest.split_once("` is not satisfied")?;
-    // `Self: Trait<…>` — the first `: ` separates the self type from the trait, and neither a
+    // `Self: Trait<…>`: the first `: ` separates the self type from the trait, and neither a
     // path (`::`) nor a generic argument inside the self type contains a colon *followed by a
     // space*, so this split cannot land inside either.
     let (subject, trait_ref) = bound.split_once(": ")?;

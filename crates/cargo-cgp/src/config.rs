@@ -65,7 +65,7 @@ pub const CHECK_TARGET_DIR: &str = "target/cgp";
 /// path the driver writes the finished expansion to (`--cgp-expand=<path>`).
 ///
 /// It is passed after `cargo rustc`'s `--`, so cargo appends it to exactly one target's rustc
-/// invocation — which is what scopes expand mode to the crate the user asked about. The driver
+/// invocation, which is what scopes expand mode to the crate the user asked about. The driver
 /// strips it from the argument vector before the compiler sees it, since it is no flag of rustc's;
 /// the driver crate declares the same name independently, and the shared string is the contract
 /// between them.

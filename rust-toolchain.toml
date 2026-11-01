@@ -1,5 +1,5 @@
 # cargo-cgp links against the compiler's internal `rustc_driver`/`rustc_interface`
-# libraries (the `rustc_private` feature), so — like clippy — it must be built with
+# libraries (the `rustc_private` feature), so, like clippy, it must be built with
 # a nightly toolchain that carries the `rustc-dev` component. The channel is pinned
 # to an exact dated nightly because the `rustc_private` API is unstable and changes
 # between nightlies; bump this deliberately, in lockstep with any driver code that a
@@ -7,10 +7,10 @@
 #
 # The cgp workspace pins a stable toolchain for the *library*; that is unrelated to
 # the toolchain used to build this tool. A project being checked keeps its own
-# toolchain — cargo-cgp only wraps the compiler cargo already selects for it.
+# toolchain: cargo-cgp only wraps the compiler cargo already selects for it.
 # `rust-src` is not needed to build the driver. It is pinned because the UI snapshots
 # contain compiler diagnostics, and a diagnostic pointing into the standard library shows
-# the `core`/`std` source line only when that component is present — so without it here, a
+# the `core`/`std` source line only when that component is present, so without it here, a
 # snapshot would depend on whichever components a contributor's toolchain happened to pick
 # up. See cgp-knowledge-base/cargo-cgp/implementation/testing.md.
 [toolchain]

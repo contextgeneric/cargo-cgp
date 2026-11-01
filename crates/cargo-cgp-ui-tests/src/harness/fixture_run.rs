@@ -97,7 +97,7 @@ pub fn run_fixture_expand(
 pub const NO_EXPANSION: &str = "// no expansion: compilation stops before macro expansion and name resolution\n\
      // finish, so there is nothing to expand.\n";
 
-/// Compile one fixture through plain `cargo check` — no `cargo-cgp`, no driver — and return
+/// Compile one fixture through plain `cargo check`, with no `cargo-cgp` or driver, and return
 /// its rendered diagnostics from stderr with its exit status. This records the *original* compiler output for the
 /// fixture, the "before" against which the tool's `.cgp.stderr` is the "after": no
 /// diagnostic rewriting, the default trait solver rather than the driver's

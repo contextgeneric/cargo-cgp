@@ -8,13 +8,13 @@ use rustc_trait_selection::traits::ObligationCtxt;
 use crate::config::{CGP_FIELD_CRATE, HAS_FIELD_TRAIT};
 use crate::resolve::query::{holds_projection, impls_concrete_first, is_cgp_item, match_impl};
 
-/// An unmet associated-type projection carried by the impl that would satisfy an obligation —
+/// An unmet associated-type projection carried by the impl that would satisfy an obligation:
 /// `<Ctx as HasField<Symbol!("height")>>::Value == f64`, or `<Ctx as HasErrorType>::Error ==
 /// AppError`. The trait bound itself holds, so the walk reaches it only through the branch where
 /// every trait-clause dependency held.
 #[derive(Clone, Copy)]
 pub struct ProjectionMismatch<'tcx> {
-    /// The trait ref the projection is taken on (`Ctx: HasErrorType`) — the terminal the tree shows.
+    /// The trait ref the projection is taken on (`Ctx: HasErrorType`): the terminal the tree shows.
     pub trait_ref: ty::TraitRef<'tcx>,
     /// The associated item being projected (`Error`), so the leaf can name it.
     pub assoc_did: DefId,
@@ -27,7 +27,7 @@ pub struct ProjectionMismatch<'tcx> {
 
 /// When the impl that satisfies `pred`'s trait obligation carries an unmet associated-type
 /// projection, return it. This covers two shapes of the same failure: a `HasField` value type (a
-/// field present with the wrong type) and any other associated type — most often a CGP [abstract
+/// field present with the wrong type) and any other associated type, most often a CGP [abstract
 /// type](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/abstract-types.md)
 /// a provider pinned with the `#[use_type(Trait.{Assoc = Concrete})]` equality form while the
 /// context bound it to something else. `None` when the impl carries no unmet projection.
@@ -46,9 +46,9 @@ pub fn projection_mismatch<'tcx>(
     // Prefer a concrete-`Self` impl, falling back to a blanket, exactly as
     // `impl_where_obligations` does. For a provider trait both the concrete provider impl (which
     // carries the projection) and the delegation blanket (`impl<.., P> Provider<..> for P`, which
-    // does not) unify with the obligation, and only the concrete one is authoritative — matching the
+    // does not) unify with the obligation, and only the concrete one is authoritative, matching the
     // blanket first would wrongly report no mismatch. But a getter trait's *only* impl is itself a
-    // blanket (`impl<C: HasField<..>> HasName for C`), and that one *does* carry the projection — so
+    // blanket (`impl<C: HasField<..>> HasName for C`), and that one *does* carry the projection, so
     // a blanket is deferred, not skipped outright.
     for impl_did in impls_concrete_first(tcx, pred.def_id()) {
         if let Some(result) = impl_projection_mismatch(tcx, pred, impl_did) {
@@ -103,7 +103,7 @@ pub fn unmet_projection<'tcx>(
             continue;
         };
         let projection = proj.skip_binder().projection_term;
-        // Only a trait's associated *type* projection is classifiable here — an opaque, inherent, or
+        // Only a trait's associated *type* projection is classifiable here: an opaque, inherent, or
         // const alias has no `Trait::Assoc` to name, and the accessors below would panic on one.
         if !matches!(projection.kind, ty::AliasTermKind::ProjectionTy { .. }) {
             continue;

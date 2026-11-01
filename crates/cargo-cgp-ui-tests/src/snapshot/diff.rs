@@ -52,8 +52,11 @@ pub fn format_diff(label: &str, expected: &str, actual: &str) -> String {
 
 /// One line of a diff.
 pub enum Line<'a> {
+    /// A line both sides hold.
     Same(&'a str),
+    /// A line only the expected side holds.
     Removed(&'a str),
+    /// A line only the actual side holds.
     Added(&'a str),
 }
 

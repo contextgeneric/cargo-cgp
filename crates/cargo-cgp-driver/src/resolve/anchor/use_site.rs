@@ -14,7 +14,7 @@ use crate::resolve::query::{
 use crate::resolve::walk::resolve_leaves;
 
 /// Resolve the root cause(s) of a CGP wiring failure reported at a *use site* rather than a
-/// `check_components!` entry — a consumer-method call (`E0599`) or any other diagnostic whose
+/// `check_components!` entry: a consumer-method call (`E0599`) or any other diagnostic whose
 /// obligation is not recoverable from a check impl. There is no check impl to anchor on, so the
 /// context type is recovered from a diagnostic span that lands on a local struct/enum definition,
 /// and every component that context wires (through its `DelegateComponent` impls) is re-checked;
@@ -67,22 +67,22 @@ pub fn resolve_use_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolv
     None
 }
 
-/// The `(marker, params)` pairs a use-site failure re-checks — each mapped to its real consumer
-/// obligation `Ctx: Consumer<params…>` — read from the context's `DelegateComponent<Key>` impls. A
+/// The `(marker, params)` pairs a use-site failure re-checks (each mapped to its real consumer
+/// obligation `Ctx: Consumer<params…>`), read from the context's `DelegateComponent<Key>` impls. A
 /// `DelegateComponent` key is one of three shapes, and each yields a different re-check:
 ///
 /// - A **bare component marker** (`ItemEncoderComponent`) re-checks with the unit parameter `()`,
-///   the parameterless form an ordinary component's use-site failure exercises — *unless* the same
+///   the parameterless form an ordinary component's use-site failure exercises, *unless* the same
 ///   component is `open`-dispatched (below), in which case its `()` form is meaningless (there is no
 ///   unit-keyed value) and would report a spurious `@Component.()` redirect, or the component has
 ///   type parameters, whose values a bare marker does not carry, so it is skipped.
 /// - An **`open`-dispatch redirect path** (`PathCons<ItemEncoderComponent, PathCons<Value, Nil>>`,
-///   emitted by an `@Component.Value:` entry) is *not* a component marker — re-checking it as one
+///   emitted by an `@Component.Value:` entry) is *not* a component marker: re-checking it as one
 ///   reports the internal `PathCons` spine as a bogus consumer trait. Instead the real dispatch
 ///   parameter is recovered from the path, re-checking the consumer obligation `Ctx:
 ///   Consumer<Value>` so the failure is traced with the value the context actually wired (a longer,
 ///   non-two-segment path is skipped rather than mis-rendered).
-/// - A **blanket-forwarding key** — a bare type parameter (`__Key__`) — is the impl a `namespace …;`
+/// - A **blanket-forwarding key** (a bare type parameter (`__Key__`)) is the impl a `namespace …;`
 ///   join emits (`impl<__Key__> DelegateComponent<__Key__> for Ctx`), which forwards *every* lookup
 ///   to the namespace rather than naming a concrete component. It is not a real wired key, and
 ///   re-checking a free parameter bottoms out on `__Key__: Sized` noise under a bogus `__Key__`
@@ -106,7 +106,7 @@ fn delegated_check_targets<'tcx>(
             let impl_self = tcx.type_of(impl_did).instantiate_identity().skip_norm_wip();
             tcx.erase_and_anonymize_regions(impl_self) == context
         })
-        // `DelegateComponent<Key>` — args are `[Self, Key]`.
+        // `DelegateComponent<Key>`: args are `[Self, Key]`.
         .map(|impl_did| {
             let key = tcx
                 .impl_trait_ref(impl_did)
@@ -152,11 +152,11 @@ fn delegated_check_targets<'tcx>(
     targets
 }
 
-/// Recover the `(component, value)` an `open`-dispatch redirect key stands for — the two-segment
-/// path an `@Component.Value:` wiring entry emits — so a use-site re-check can use the real dispatch
+/// Recover the `(component, value)` an `open`-dispatch redirect key stands for (the two-segment
+/// path an `@Component.Value:` wiring entry emits), so a use-site re-check can use the real dispatch
 /// value rather than the raw path. The key is `PathCons<Component, PathCons<Value, Tail>>`, where
 /// `Tail` is the `Nil` terminator or the generic wildcard the macro leaves for prefix matching; both
-/// mark a two-segment key. `None` when `key` is not such a path — a bare marker, or a genuine
+/// mark a two-segment key. `None` when `key` is not such a path: a bare marker, or a genuine
 /// three-plus-segment namespace route (whose `Tail` is a further `PathCons`), which the caller skips
 /// rather than mis-render.
 fn open_dispatch_target<'tcx>(tcx: TyCtxt<'tcx>, key: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {

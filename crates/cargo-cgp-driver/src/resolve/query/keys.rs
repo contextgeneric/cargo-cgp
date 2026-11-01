@@ -10,13 +10,13 @@ use crate::config::{
 };
 use crate::resolve::query::{decode_symbol, is_cgp_item, is_component_marker};
 
-/// The surface form of a wiring key — a `DelegateComponent` key, or the `Self` of a namespace
+/// The surface form of a wiring key: a `DelegateComponent` key, or the `Self` of a namespace
 /// lookup-trait entry: a bare component marker, an ordinary type, an `@`-path, or a blanket
 /// forwarding tagged by the namespace/table trait that keys it. A component marker is told from an
 /// ordinary type structurally, by whether a provider trait keys on it
 /// ([`is_component_marker`]), so a per-type default's `String` reads as a type rather than as a
-/// component nobody defined. `None` for a key the classifier cannot render — one still carrying a
-/// generic parameter, an inference variable, or a placeholder — so the rewrite is declined rather
+/// component nobody defined. `None` for a key the classifier cannot render (one still carrying a
+/// generic parameter, an inference variable, or a placeholder), so the rewrite is declined rather
 /// than guessed.
 pub fn describe_key<'tcx>(tcx: TyCtxt<'tcx>, key: Ty<'tcx>, impl_did: DefId) -> Option<WiringKey> {
     match key.kind() {
@@ -133,7 +133,7 @@ fn is_symbol_segment(name: &str) -> bool {
 }
 
 /// If `delegate` is a `RedirectLookup<Table, Path>`, render its `Path` (the second argument) to
-/// its bare `@..` surface form — the redirected key the user should set. `None` for any other
+/// its bare `@..` surface form: the redirected key the user should set. `None` for any other
 /// `Delegate`, which is an ordinary provider, not a redirect.
 pub fn redirect_path<'tcx>(tcx: TyCtxt<'tcx>, delegate: Ty<'tcx>) -> Option<String> {
     let ty::Adt(def, args) = delegate.kind() else {
@@ -161,7 +161,7 @@ fn bounding_trait<'tcx>(tcx: TyCtxt<'tcx>, impl_did: DefId, key: Ty<'tcx>) -> Op
     )
 }
 
-/// The bounding trait ref of a blanket `DelegateComponent<Key>` impl — the single non-`Sized` bound
+/// The bounding trait ref of a blanket `DelegateComponent<Key>` impl: the single non-`Sized` bound
 /// on its generic key parameter (`Key: DefaultNamespace<Ctx>`), the namespace or `for`-loop table
 /// the forwarding routes through. `None` if no such bound is found.
 pub fn bounding_trait_ref<'tcx>(

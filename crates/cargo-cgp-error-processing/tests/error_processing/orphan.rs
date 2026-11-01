@@ -1,7 +1,7 @@
 //! Tests for the orphan-rule namespace-registration wording.
 //!
 //! `plan_orphan_conflict` and `orphan_conflict_help` are pure functions over the rustc-free
-//! [`OrphanConflict`] model, so they are driven directly over hand-built conflicts — no compiler,
+//! [`OrphanConflict`] model, so they are driven directly over hand-built conflicts, with no compiler,
 //! no diagnostic wrapper. The driver fills the same model in from the live `TyCtxt`. The header is
 //! one `[CGP-E022]` shape for both triggers (the violation is identical); only the `help`'s fix
 //! differs by whether the registration was a `#[default_impl]`/`#[prefix]` or a `cgp_namespace!`

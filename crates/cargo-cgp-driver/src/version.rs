@@ -6,8 +6,8 @@
 //! line carries the driver's crate version, the toolchain it is pinned to, and the exact
 //! `rustc` it was compiled against (all baked in by `build.rs`).
 //!
-//! In *wrapper* mode the same flags belong to the real compiler — cargo probes it with
-//! `rustc -vV` / `--version` — so [`crate::run`] answers here only when not in wrapper mode.
+//! In *wrapper* mode the same flags belong to the real compiler (cargo probes it with
+//! `rustc -vV` / `--version`), so [`crate::run`] answers here only when not in wrapper mode.
 
 /// The driver's crate version, kept equal to the front-end's by the shared
 /// `[workspace.package]` version.
