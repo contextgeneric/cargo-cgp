@@ -3,7 +3,7 @@
 //!
 //! `App` dispatches `ItemEncoderComponent` per value type with an `open` statement. It wires
 //! `Seq<u64>` to `EncodeSeq`, which encodes a sequence by encoding each item, so it depends on
-//! `Self: CanEncodeItem<u64>` — but `App` never wires `u64`. Calling `app.encode_item(&Seq(..))`
+//! `Self: CanEncodeItem<u64>`, but `App` never wires `u64`. Calling `app.encode_item(&Seq(..))`
 //! therefore fails at the use site with an unsatisfied transitive dependency, and there is no
 //! `check_components!` entry to anchor on.
 //!
@@ -12,8 +12,8 @@
 //! entries whose keys are `PathCons<…>` *paths*, not component markers. The resolver recovers the
 //! real dispatch parameter from each two-segment path (`@ItemEncoderComponent.Seq<u64>` →
 //! `CanUseComponent<ItemEncoderComponent, Seq<u64>>`) rather than re-checking the raw `PathCons`
-//! key — which would report the type-level `PathCons` spine as a bogus "consumer trait" and bottom
-//! out on `T: Sized` noise — so the failure is traced to the real gap: the unwired `u64` encoder.
+//! key (which would report the type-level `PathCons` spine as a bogus "consumer trait" and bottom
+//! out on `T: Sized` noise), so the failure is traced to the real gap: the unwired `u64` encoder.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

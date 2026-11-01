@@ -5,9 +5,8 @@
 //! segment module-qualified (`finance::QuantityTypeProviderComponent`). The `resugar_path`
 //! post-processor folds such a qualified segment to its final identifier, so the redirect path
 //! reads as `Path!(@app.finance.types.QuantityTypeProviderComponent)` rather than a raw
-//! `PathCons<…>` spine. This is the multi-module case a real project (cgp-examples/transfer)
-//! surfaced and the single-module fixtures never exercised — before the fold, the raw spine
-//! appeared three times in the one error.
+//! `PathCons<…>` spine. It pins the multi-module case the single-module fixtures do not
+//! exercise, where an unfolded spine would appear three times in the one error.
 //!
 //! `App` joins `DefaultNamespace`, which routes the prefixed `QuantityTypeProviderComponent`
 //! to `@app.finance.types.QuantityTypeProviderComponent`, but nothing ever terminates that

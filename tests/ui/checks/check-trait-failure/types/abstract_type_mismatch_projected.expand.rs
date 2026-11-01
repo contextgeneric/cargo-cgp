@@ -4,8 +4,8 @@
 //!
 //! The sibling [`abstract_type_mismatch`](abstract_type_mismatch.rs) pins the concrete
 //! case, where a provider pins `Scalar` to `f64` and the context wires `UseType<u32>`.
-//! Here the pin's right-hand side is `Tx<Db>` — a type projecting through the abstract
-//! `Db` the same context wires — so the requirement the provider states is
+//! Here the pin's right-hand side is `Tx<Db>` (a type projecting through the abstract
+//! `Db` the same context wires), so the requirement the provider states is
 //! `Tx<<App as HasDbType>::Db>` rather than a constant, and the two things in conflict
 //! are both the context's own wiring decisions.
 //!
@@ -14,7 +14,7 @@
 //! [`ok/use_type_pin_nested_alias`](../../../ok/use_type_pin_nested_alias.rs). It pins the
 //! dual rendering on the `[CGP-E005]` header and the `[CGP-E116]` leaf: the required type
 //! appears as the projection the provider wrote, followed by what it reduces to, on the
-//! same rule the field leaf uses — the projection names the wiring to change, the
+//! same rule the field leaf uses: the projection names the wiring to change, the
 //! reduction is what the reader compares against. A pin to a concrete type normalizes to
 //! itself and gets no parenthetical, which is what the sibling fixture pins.
 //!

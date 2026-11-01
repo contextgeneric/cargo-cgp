@@ -1,7 +1,7 @@
 //! Two independent consumers coalesced on one cause via parallel (non-subsuming) chains.
 //!
-//! `CanCalculateArea` and `CanReportHeight` are unrelated — neither depends on the other
-//! — yet both read the `height` field the `Rectangle` context is missing, so both fail
+//! `CanCalculateArea` and `CanReportHeight` are unrelated (neither depends on the other),
+//! yet both read the `height` field the `Rectangle` context is missing, so both fail
 //! with the same root cause. cargo-cgp coalesces them into a single `[CGP-E001]` block
 //! naming both consumers, its caret on one check entry and a label on the other, and the cause once.
 //!
@@ -10,7 +10,7 @@
 //! deeper chain, here neither chain contains the other: they are equal-depth parallel
 //! branches to the same missing field, each through its own getter and provider. With no
 //! subsuming chain to prefer, the representative is the first check entry
-//! (`AreaCalculatorComponent`) — a deterministic choice that does not flip on entry order.
+//! (`AreaCalculatorComponent`), a deterministic choice that does not flip on entry order.
 //! This pins the parallel counterpart of the subsuming coalescing the cascade fixtures pin.
 //!
 //! CGP error class:
@@ -71,7 +71,7 @@ pub struct Rectangle {
 }
 
 // `RectangleArea` reads `height` through `HasRectangleFields`, `ReportHeight` through the
-// separate `HasHeight` getter — two independent paths to the one missing field.
+// separate `HasHeight` getter: two independent paths to the one missing field.
 
 delegate_components! {
     Rectangle {

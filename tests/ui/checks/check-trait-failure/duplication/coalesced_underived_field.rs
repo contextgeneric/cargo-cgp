@@ -1,14 +1,14 @@
 //! One underived field named once, however many coalesced consumers reach it.
 //!
 //! `App` declares a `name` field but no `#[derive(HasField)]`, so the field is
-//! present-but-underived — one mistake with one fix. Three checked components read it
+//! present-but-underived: one mistake with one fix. Three checked components read it
 //! through a cascade (`ProvideBaz` needs `CanBar`, which needs `CanFoo`, which reads the
 //! field), so all three consumer failures share that single root cause and coalesce into
 //! one `[CGP-E001]` block.
 //!
 //! Pins that the merged block states the shared cause *once*. Coalescing several
-//! **distinct** underived fields on one struct into one lead is deliberate — the derive
-//! emits an impl per field, so they are one fix (`base_area_2`) — but every member here
+//! **distinct** underived fields on one struct into one lead is deliberate, since the derive
+//! emits an impl per field, so they are one fix (`base_area_2`), but every member here
 //! contributes the **same** field, and the union of their causes therefore repeats it once
 //! per member. `merge_causes_by_leaf` folds those copies back into one cause holding all
 //! three paths before the underived-field coalescing runs, so the lead keeps its
@@ -69,7 +69,7 @@ impl Baz {
     }
 }
 
-// The field is declared, but `#[derive(HasField)]` is missing — so it is
+// The field is declared, but `#[derive(HasField)]` is missing, so it is
 // present-but-underived rather than absent.
 pub struct App {
     pub name: String,

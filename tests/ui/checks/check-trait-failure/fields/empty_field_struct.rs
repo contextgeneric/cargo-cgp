@@ -2,7 +2,7 @@
 //! all*, while a getter names a field.
 //!
 //! `#[derive(HasField)]` emits one `HasField` impl per field, so on a struct with no
-//! fields it emits *nothing* — byte-for-byte the same as a struct with no derive at all.
+//! fields it emits *nothing*: byte-for-byte the same as a struct with no derive at all.
 //! A fieldless derive leaves no trace in the generated program, so it is impossible to
 //! tell whether the derive was even written; the two are the same program wherever
 //! `HasField` is concerned. The tool therefore reports both fields the provider reads as

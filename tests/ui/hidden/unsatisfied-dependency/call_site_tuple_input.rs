@@ -1,16 +1,16 @@
 //! A call-site `E0277` whose failing provider **destructures its input on a tuple shape**, with the
-//! root cause reachable only once that shape is recovered — the case
+//! root cause reachable only once that shape is recovered: the case
 //! [`cascade_later_stage`](cascade_later_stage.rs) and [`cascade_after_use_site`](cascade_after_use_site.rs)
 //! do not cover.
 //!
 //! `Branch<Cond>` is a `Code`-dispatched handler whose interpreter `HandleBranch` takes a *tuple*
 //! input `(CondInput, Rest)`, running the inner `Cond` on the first component. The program
-//! `Branch<ReadName>` runs `ReadName`, which reads the context's `name` field — the buried cause,
+//! `Branch<ReadName>` runs `ReadName`, which reads the context's `name` field: the buried cause,
 //! since `App` has none. The call passes a tuple literal `(Vec::new(), Vec::new())` whose element
 //! types the call does not write.
 //!
 //! The wiring matches the `Code` unconditionally, so the method is *found* and the failure is an
-//! `E0277` on the call with no span on `App`'s definition — only the call-site anchor applies. That
+//! `E0277` on the call with no span on `App`'s definition, so only the call-site anchor applies. That
 //! anchor seeds the call's input from its written argument types. An all-unknown tuple collapsed
 //! to one flat placeholder could not destructure into `HandleBranch`'s `(CondInput, Rest)`, so the
 //! anchor recovers the tuple *shape* instead (each unwritten element a placeholder): `HandleBranch`
@@ -36,7 +36,7 @@ pub trait HasName {
     fn name(&self) -> &str;
 }
 
-/// Interpreter for `ReadName`: reads the context's `name` field — the buried root cause.
+/// Interpreter for `ReadName`: reads the context's `name` field: the buried root cause.
 #[async_trait]
 #[cgp_impl(new HandleReadName)]
 #[use_type(HasErrorType.Error)]
@@ -89,7 +89,7 @@ cgp_namespace! {
 
 #[derive(HasField)]
 pub struct App {
-    // No `name` field — `HandleReadName`'s `Self: HasName` dependency cannot be met.
+    // No `name` field: `HandleReadName`'s `Self: HasName` dependency cannot be met.
 }
 
 delegate_components! {
@@ -100,7 +100,7 @@ delegate_components! {
 
 async fn run_app(app: &App) -> Result<(), String> {
     // The tuple literal's element types are not written (`Vec::new()` is generic), yet the tuple
-    // *shape* `(_, _)` is what `HandleBranch` destructures — the anchor must recover it.
+    // *shape* `(_, _)` is what `HandleBranch` destructures, so the anchor must recover it.
     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
         .await?;
     Ok(())

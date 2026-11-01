@@ -1,10 +1,10 @@
 error[E0271]: [CGP-E003] missing field `name` on `App`
-   --> src/main.rs:86:10
+   --> src/main.rs:85:10
     |
- 86 |     ) -> impl Future<Output = Self::Response> + Send {
+ 85 |     ) -> impl Future<Output = Self::Response> + Send {
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-111 | impl CanAddAppRoutes for Box<App> {}
+110 | impl CanAddAppRoutes for Box<App> {}
     |                          -------- also required here
     |
     = note: root cause: [CGP-E110] missing field `name` on `App`

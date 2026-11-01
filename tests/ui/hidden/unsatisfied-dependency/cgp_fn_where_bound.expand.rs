@@ -1,8 +1,8 @@
 #![feature(prelude_import)]
 //! A `#[cgp_fn]` trait required through a `where` **bound**, not called as a method.
 //!
-//! `#[cgp_fn]` turns a function into a *blanket-impl trait* — `impl<Context> GetName for Context
-//! where Self: HasField<Symbol!("name")>` — which is not a CGP component. Besides calling its method
+//! `#[cgp_fn]` turns a function into a *blanket-impl trait* (`impl<Context> GetName for Context
+//! where Self: HasField<Symbol!("name")>`), which is not a CGP component. Besides calling its method
 //! directly, such a trait is commonly required as a bound on a generic function
 //! (`fn greet_all<Context: GetName>(…)`), so the function works on any context providing it. When
 //! that function is called with a context missing the field the trait reads, the failure is an
@@ -15,7 +15,7 @@
 //!
 //! The by-blanket-trait use-site anchor recovers it: it finds the local `#[cgp_fn]`/`#[blanket_trait]`
 //! trait `GetName` named in the diagnostic's spans and the context `App` from the failing
-//! expression (`app`, whose type is read off its binding — rustc puts the "not implemented for
+//! expression (`app`, whose type is read off its binding: rustc puts the "not implemented for
 //! `App`" span on the `#[derive(HasField)]` attribute, outside `App`'s item span, so it cannot be
 //! recovered from a struct-definition span). Walking `App: GetName` reaches the missing field, and
 //! because `GetName` is not a CGP component the block takes the `[CGP-E003]` code and states the

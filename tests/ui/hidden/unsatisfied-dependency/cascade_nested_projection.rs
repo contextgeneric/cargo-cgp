@@ -9,7 +9,7 @@
 //! `::Output` (the next stage's input) resolves *through* `CanHandle` rather than off a provider
 //! impl directly. `App` runs the fixed `Prog` program through the async, `Code`-dispatched `Handler`
 //! component, dispatched to a `PipeHandlers` composition that matches the code unconditionally, so
-//! the failure is an `E0277` on the call with no span on `App`'s definition — only the call-site
+//! the failure is an `E0277` on the call with no span on `App`'s definition, so only the call-site
 //! anchor can recover it. The call's input (`Vec::new()`) is not written syntactically, so the walk
 //! seeds it as an unknown placeholder.
 //!
@@ -20,7 +20,7 @@
 //! `PipeHandlers<Product![HandleAdapt, HandleHash]>`; `HandleHash` produces the fixed projection
 //! output `Tagged<<Sha as HasOutSize>::OutSize>` = `Tagged<Bytes>`, independent of its input. Stage 3,
 //! `Call<Sink>`, forwards to the input-dispatcher `UseInputDelegate<SinkHandlers>`, whose table has
-//! no entry for `Tagged<Bytes>` — so `SinkHandlers: DelegateComponent<Tagged<Bytes>>` is the real
+//! no entry for `Tagged<Bytes>`, so `SinkHandlers: DelegateComponent<Tagged<Bytes>>` is the real
 //! root cause.
 //!
 //! The missing entry surfaces as an unmet `DelegateComponent` on the *dispatch table* `SinkHandlers`
@@ -49,7 +49,7 @@ pub struct Fetch;
 pub struct Digest<H>(pub PhantomData<H>);
 pub struct Sink;
 
-/// The inner stage of `Digest`'s nested pipeline — an adapter that passes the stream on.
+/// The inner stage of `Digest`'s nested pipeline: an adapter that passes the stream on.
 pub struct Adapt;
 
 /// A hasher marker carrying its output size as an associated type, so `Digest`'s output is a
@@ -64,7 +64,7 @@ impl HasOutSize for Sha {
     type OutSize = Bytes;
 }
 
-/// The digest output payload — deliberately *not* `AsRef<[u8]>`, standing in for the raw
+/// The digest output payload: deliberately *not* `AsRef<[u8]>`, standing in for the raw
 /// `GenericArray` bytes that `StreamToStdout` (an `AsyncRead` sink) cannot accept.
 pub struct Bytes;
 
@@ -90,7 +90,7 @@ where
 }
 
 /// Stage 1: produces a *fixed* `ByteStream`, but its `Input: Send` dependency cannot be shown under
-/// the call's unknown input, so `<App as CanHandle<Fetch, _>>::Output` stalls — even though its
+/// the call's unknown input, so `<App as CanHandle<Fetch, _>>::Output` stalls, even though its
 /// output does not depend on the input.
 #[async_trait]
 #[cgp_impl(new HandleFetch)]
@@ -163,7 +163,7 @@ delegate_components! {
 }
 
 // The input-dispatch table for the sink. It has entries for the byte-like inputs a real program
-// would feed to stdout — but **no entry for `Tagged<Bytes>`**, the raw digest that stage 2 produces
+// would feed to stdout, but **no entry for `Tagged<Bytes>`**, the raw digest that stage 2 produces
 // when the intervening hex-encoding stage is absent. That missing input entry is the real root
 // cause, the analogue of `hypershell`'s `ToTokioAsyncReadHandlers` having no branch for a raw
 // `GenericArray`.

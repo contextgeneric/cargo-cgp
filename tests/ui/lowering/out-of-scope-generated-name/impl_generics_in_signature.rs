@@ -1,11 +1,11 @@
 //! An `#[impl_generics]` parameter is named in the generated
 //! trait's method signature, where it is out of scope.
 //!
-//! `#[impl_generics(Db: Database)]` adds `Db` to the generated *impl* alone — that
+//! `#[impl_generics(Db: Database)]` adds `Db` to the generated *impl* alone: that
 //! is the whole point of the attribute, and it is what lets a context supply the
 //! type implicitly through the type of its `database` field, with no parameter on
 //! the trait for any caller to thread. But the trait is generated without `Db`, so
-//! a method signature that names it — here the return type `Db::Row` — refers to a
+//! a method signature that names it (here the return type `Db::Row`) refers to a
 //! type the trait cannot see, and the compiler rejects the generated trait with
 //! `E0433` "cannot find type `Db` in this scope".
 //!

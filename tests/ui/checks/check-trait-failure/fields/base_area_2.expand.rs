@@ -8,7 +8,7 @@
 //! ("accessor trait `HasField` is not implemented for the fields `height` and
 //! `width` of `Rectangle`") over one merged tree whose branches still end at the
 //! per-field leaves, with the derive `help` naming the fix. Pins that coalescing; the
-//! boundary cases — a lone underived field, genuinely absent fields — are pinned by
+//! boundary cases (a lone underived field, genuinely absent fields) are pinned by
 //! `missing_has_field_derive`, `underived_and_missing_field`, and `parallel_branches`.
 //!
 //! CGP error class:

@@ -1,12 +1,12 @@
-//! A missing field read *directly* by a provider — the shorter-chain counterpart of
+//! A missing field read *directly* by a provider: the shorter-chain counterpart of
 //! [`base_area_1`](base_area_1.rs).
 //!
 //! Where `base_area_1` reads its fields through a `#[cgp_auto_getter]` getter trait
 //! (`HasRectangleFields`), `RectangleArea` here takes the `width`/`height` values as `#[implicit]`
 //! arguments, so the unmet `HasField<Symbol!("height")>` bound sits *directly* on the provider's
 //! `IsProviderFor` rather than one hop behind a getter trait. The resolved dependency chain is thus
-//! one node shorter — `CanCalculateArea → AreaCalculator/RectangleArea → HasField height`, with no
-//! intervening `trait impl` for the getter — which is exactly the distinction this fixture pins
+//! one node shorter (`CanCalculateArea → AreaCalculator/RectangleArea → HasField height`, with no
+//! intervening `trait impl` for the getter), which is exactly the distinction this fixture pins
 //! against `base_area_1`.
 //!
 //! `Rectangle` derives `HasField` but carries only `width`, so the one near-miss field makes rustc

@@ -1,8 +1,8 @@
 //! A present-but-underived field beside a genuinely missing one on the same struct.
 //!
 //! `Shape` carries `width` but no `#[derive(HasField)]`, and does not carry `depth` at
-//! all; the provider reads both. The two shortcomings are distinct fixes — add the
-//! derive for `width`, add the field for `depth` — so they must stay *two* root causes:
+//! all; the provider reads both. The two shortcomings are distinct fixes (add the
+//! derive for `width`, add the field for `depth`), so they must stay *two* root causes:
 //! the underived-field coalescing (which merges several underived fields on one struct
 //! into a single add-the-derive cause, as in `base_area_2`) keys on a *group* of
 //! present-but-underived fields and must leave a lone underived field, and the missing

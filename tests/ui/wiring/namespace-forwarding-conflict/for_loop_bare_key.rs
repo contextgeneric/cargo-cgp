@@ -1,13 +1,13 @@
 //! A `for` loop that wires a **bare key** (`Key: Value`)
-//! instead of embedding it in a path, in a context that also joins a namespace —
+//! instead of embedding it in a path, in a context that also joins a namespace:
 //! the two blanket impls overlap and the compiler rejects them with `E0119`.
 //!
 //! `namespace DefaultNamespace;` emits a blanket `impl<Key, Value>
 //! DelegateComponent<Key> for App where Key: DefaultNamespace<App, ..>` (plus the
 //! matching `IsProviderFor` forwarding) that covers *every* key. A `for <Key, Value>
 //! in GreeterTable { Key: Value }` loop emits a second blanket `impl<Key, Value>
-//! DelegateComponent<Key> for App where Key: GreeterTable<App, ..>` — also over every
-//! key — and the two overlap because a key could satisfy both `where` clauses, so
+//! DelegateComponent<Key> for App where Key: GreeterTable<App, ..>` (also over every
+//! key), and the two overlap because a key could satisfy both `where` clauses, so
 //! coherence rejects the pair (`E0119`, fully generic `DelegateComponent<_>` /
 //! `IsProviderFor<_, _, _>`). This is why a loop key must sit inside a path
 //! (`@app.SomeComponent.Key: Value`), which keys the impl on a concrete path rather

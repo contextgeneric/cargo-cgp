@@ -3,7 +3,7 @@
 //! implementation of that component *is* that same delegation forms a cycle.
 //! `UseContext` implements the provider trait by routing back through the context's
 //! own consumer-trait impl, but that consumer impl exists only via this delegation
-//! to `UseContext` — so resolving `Person: Greeter<Person>` requires resolving
+//! to `UseContext`, so resolving `Person: Greeter<Person>` requires resolving
 //! `Person: CanGreet`, which requires `Person: Greeter<Person>` again. The trait
 //! solver chases the cycle until it overflows the recursion limit (`E0275`). CGP
 //! lowers the wiring faithfully and cannot see that the delegation is self-referential

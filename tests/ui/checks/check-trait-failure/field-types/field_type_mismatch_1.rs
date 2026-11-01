@@ -1,4 +1,4 @@
-//! A field whose name matches but whose type does not, read *directly* by a provider —
+//! A field whose name matches but whose type does not, read *directly* by a provider:
 //! the shorter-chain counterpart of [`field_type_mismatch`](field_type_mismatch.rs). `RectangleArea`
 //! takes `height` as an `#[implicit]` argument of type `f64`, so `HasField<Symbol!("height")>` *is*
 //! implemented for `Rectangle` (it derives `HasField`) but with `Value = i32`; the trait bound

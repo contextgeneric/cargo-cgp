@@ -43,7 +43,7 @@ impl FooProvider {
 }
 
 // `App` wires neither `BarProviderComponent` nor `BazProviderComponent`, both of which
-// `DoFooWithBarBaz` needs — so the check reports both as missing wirings.
+// `DoFooWithBarBaz` needs, so the check reports both as missing wirings.
 delegate_and_check_components! {
     new App {
         FooProviderComponent: DoFooWithBarBaz,

@@ -5,13 +5,13 @@
 //! call names its type: the span-matching anchors cannot recover it (the bare-marker
 //! re-check uses an empty `()` slot, the by-consumer anchor needs a `Self`-only
 //! consumer), and the call-site anchor's signature unification has no written
-//! argument type to consume — typing `pair` would need the typeck results the
+//! argument type to consume: typing `pair` would need the typeck results the
 //! emitter can never force. The parameter is seeded as an unknown, every root cause
 //! behind the wiring depends on it, and the resolver declines to the fallback. What
 //! this fixture pins is the fallback's cleanup: the method-probe artifacts of CGP's
-//! `self`-less provider methods — the "this is an associated function, not a method"
+//! `self`-less provider methods (the "this is an associated function, not a method"
 //! framing and the actively wrong "use associated function syntax instead"
-//! suggestion — are dropped, so the unmet `HasField<Symbol!("separator")>` bound the
+//! suggestion) are dropped, so the unmet `HasField<Symbol!("separator")>` bound the
 //! diagnostic names is the first note a reader meets.
 //!
 //! CGP error class:

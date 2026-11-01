@@ -1,7 +1,7 @@
 //! `GreetHello` carries the impl-side dependency
 //! `Self: HasName`, but `Person` has no `name` field, so it does not implement
-//! `HasName`. CGP wiring is lazy by design — `delegate_components!` accepts the
-//! entry without checking the provider's transitive dependencies — so the unmet
+//! `HasName`. CGP wiring is lazy by design: `delegate_components!` accepts the
+//! entry without checking the provider's transitive dependencies, so the unmet
 //! dependency surfaces only when the consumer trait is finally called, reported
 //! by the compiler through `IsProviderFor`. Using `check_components!` (or
 //! `delegate_and_check_components!`) would move this same error to the wiring

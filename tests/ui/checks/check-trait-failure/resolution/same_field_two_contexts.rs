@@ -2,13 +2,13 @@
 //! provider reads a `name` field from its own context and also depends on the concrete `Inner`
 //! context being able to compute, whose provider reads a `name` field of *its* own. Neither struct
 //! carries one, so `Outer`'s dependency tree bottoms out on two missing fields that share a name but
-//! sit on different structs — and need two separate fixes.
+//! sit on different structs and need two separate fixes.
 //!
 //! Causes are grouped by whole-leaf equality, so the two stay distinct and the note heads a
 //! `root causes:` list naming both owners. `Inner`'s own failure shares one of them, so it joins the
 //! same block, whose headline names both failing traits and the cause count. Grouping them by the field name alone would merge them
 //! into one cause whose singular heading named only the first struct, while the tree below it still
-//! branched to both — a heading that understates the work.
+//! branched to both: a heading that understates the work.
 //!
 //! The cross-context machinery this leans on (the `where Inner: CanCompute` recovery, the re-rooting
 //! that makes `Inner`'s subtree decode against `Inner`) is pinned separately by

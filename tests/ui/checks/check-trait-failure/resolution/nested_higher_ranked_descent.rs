@@ -6,12 +6,12 @@
 //! encoded through the context; a `Vec` field routes through `EncodeIterator`, whose
 //! higher-ranked dependency `Self: for<'a> CanEncodeValue<<&'a Value as IntoIterator>::Item>`
 //! carries a projection through the bound lifetime; and the borrowed item routes back to
-//! the owned value through `EncodeDeref`. `Outer` nests this twice — `Outer` → `Vec<Inner>`
-//! → `Inner` → `Vec<u64>` → `u64` — and `u64` is never wired.
+//! the owned value through `EncodeDeref`. `Outer` nests this twice (`Outer` → `Vec<Inner>`
+//! → `Inner` → `Vec<u64>` → `u64`), and `u64` is never wired.
 //!
 //! The single-hop `higher_ranked_descent` and the record-only `record_field_chain` pin the
-//! two mechanics separately; this fixture pins their combination — the record-list
-//! recursion crossing two nested higher-ranked projection hops — descending all the way to
+//! two mechanics separately; this fixture pins their combination (the record-list
+//! recursion crossing two nested higher-ranked projection hops), descending all the way to
 //! the one missing `@ValueEncoderComponent.u64` wiring, each nesting level a distinct hop
 //! in the chain.
 //!
@@ -114,7 +114,7 @@ delegate_components! {
         @ValueEncoderComponent.[Outer, Mid, Inner]: EncodeRecord,
         @ValueEncoderComponent.[Vec<Mid>, Vec<Inner>]: EncodeIterator,
         @ValueEncoderComponent.<'a, T> &'a T: EncodeDeref,
-        // `u64` is deliberately left unwired — the mistake this fixture pins, reached only
+        // `u64` is deliberately left unwired: the mistake this fixture pins, reached only
         // through three record layers and two nested higher-ranked iterator hops.
     }
 }

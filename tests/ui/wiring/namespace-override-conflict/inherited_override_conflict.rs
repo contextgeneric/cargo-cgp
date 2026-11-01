@@ -1,10 +1,10 @@
 //! A child namespace that inherits a parent and then
-//! *redefines* a key the parent already binds — a namespace entry cannot be
+//! *redefines* a key the parent already binds: a namespace entry cannot be
 //! overridden by an inheriting namespace.
 //!
 //! `new ChildNs: BaseNs` emits the inheritance blanket impl `impl<Table, Key,
 //! Value> ChildNs<Table> for Key where Key: BaseNs<__ChildNsComponents>, Key:
-//! BaseNs<Table, Delegate = Value>`, which forwards *every* key `BaseNs` resolves —
+//! BaseNs<Table, Delegate = Value>`, which forwards *every* key `BaseNs` resolves,
 //! including `GreeterComponent`, since `BaseNs` binds it. The child's own
 //! `GreeterComponent: GreetBye` entry emits a second impl `impl<Table> ChildNs<Table>
 //! for GreeterComponent`, and the two overlap for that key, so coherence rejects the

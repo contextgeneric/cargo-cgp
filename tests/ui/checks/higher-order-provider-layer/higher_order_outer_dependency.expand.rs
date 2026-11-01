@@ -7,7 +7,7 @@
 //!
 //! This fixture pins the contrast with the inner-failure case: the `unsatisfied
 //! trait bound introduced here` caret lands on `ScaledArea`'s own
-//! `Self: HasScaleFactor` clause, and the `required for …` chain is *shorter* — it
+//! `Self: HasScaleFactor` clause, and the `required for …` chain is *shorter*: it
 //! reaches `ScaledArea<BaseArea>`'s `IsProviderFor` and stops, never descending
 //! into `BaseArea`, because the outer layer fails before it ever delegates inward.
 //! Read alongside higher_order_inner_dependency.rs, the pair shows that the layer

@@ -1,7 +1,7 @@
 //! Two entries in a *single* `delegate_components!` block
 //! that map the same component key produce two conflicting
 //! `DelegateComponent<GreeterComponent>` impls for `Person`, rejected with the
-//! coherence error E0119 — the same failure as [duplicate_key.rs], reached with
+//! coherence error E0119: the same failure as [duplicate_key.rs], reached with
 //! one block instead of two.
 //!
 //! This fixture exists to pin the **error span**: each conflicting entry lowers

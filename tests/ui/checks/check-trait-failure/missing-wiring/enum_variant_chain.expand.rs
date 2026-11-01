@@ -4,15 +4,15 @@
 //! surface form.
 //!
 //! `EncodeChoice` dispatches over the variant list
-//! `Sum![Field<Symbol!("Rect"), u64>, Field<Symbol!("Circle"), f64>]` — the shape an enum's
-//! `HasFields` produces, written out here directly — through the `EncodeVariants` visitor, each
+//! `Sum![Field<Symbol!("Rect"), u64>, Field<Symbol!("Circle"), f64>]` (the shape an enum's
+//! `HasFields` produces, written out here directly) through the `EncodeVariants` visitor, each
 //! variant's payload encoded via the context. `App` wires `u64` but not `f64`, so the
 //! `check_components!` entry for `Choice` fails on the missing `@VariantEncoderComponent.f64` wiring,
 //! reached by following the sum spine.
 //!
 //! The point of the fixture is the rendering: because every element of the sum is a
 //! `Field<Symbol!("Name"), Type>`, the renderer resugars the whole list past `Sum![…]` to
-//! `Enum! { Rect(u64), Circle(f64) }`, and its tail to `Enum! { Circle(f64) }` — the enum the
+//! `Enum! { Rect(u64), Circle(f64) }`, and its tail to `Enum! { Circle(f64) }`: the enum the
 //! variant list represents. It is the sum counterpart of `record_field_chain`'s `Struct! { … }`.
 //! Both are CGP's own `Struct!`/`Enum!` shape macros, so the rendered list can be copied back into
 //! code; `enum_variant_shapes_chain` covers the other variant shapes.

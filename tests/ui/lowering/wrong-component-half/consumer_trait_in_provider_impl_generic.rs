@@ -23,7 +23,7 @@ pub struct Rectangle;
 
 // MISTAKE: the `#[cgp_impl]` header names the consumer trait `CanCalculateArea` where the provider
 // trait `AreaCalculator` belongs. The macro inserts the context as the leading generic, so the
-// consumer trait is given one argument too many — a generic component reproduces the same class of
+// consumer trait is given one argument too many: a generic component reproduces the same class of
 // error as a parameterless one.
 #[cgp_impl(new RectangleArea)]
 impl CanCalculateArea<Rectangle> {

@@ -44,7 +44,7 @@ delegate_components! {
         open ItemEncoderComponent;
 
         @ItemEncoderComponent.u64: EncodeDisplay,
-        // `Vec<u8>` is deliberately left unwired — the mistake this fixture pins.
+        // `Vec<u8>` is deliberately left unwired: the mistake this fixture pins.
         // @ItemEncoderComponent.Vec<u8>: EncodeBytes,
     }
 }

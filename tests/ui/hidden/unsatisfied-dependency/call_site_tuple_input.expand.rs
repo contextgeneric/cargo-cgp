@@ -1,17 +1,17 @@
 #![feature(prelude_import)]
 //! A call-site `E0277` whose failing provider **destructures its input on a tuple shape**, with the
-//! root cause reachable only once that shape is recovered — the case
+//! root cause reachable only once that shape is recovered: the case
 //! [`cascade_later_stage`](cascade_later_stage.rs) and [`cascade_after_use_site`](cascade_after_use_site.rs)
 //! do not cover.
 //!
 //! `Branch<Cond>` is a `Code`-dispatched handler whose interpreter `HandleBranch` takes a *tuple*
 //! input `(CondInput, Rest)`, running the inner `Cond` on the first component. The program
-//! `Branch<ReadName>` runs `ReadName`, which reads the context's `name` field — the buried cause,
+//! `Branch<ReadName>` runs `ReadName`, which reads the context's `name` field: the buried cause,
 //! since `App` has none. The call passes a tuple literal `(Vec::new(), Vec::new())` whose element
 //! types the call does not write.
 //!
 //! The wiring matches the `Code` unconditionally, so the method is *found* and the failure is an
-//! `E0277` on the call with no span on `App`'s definition — only the call-site anchor applies. That
+//! `E0277` on the call with no span on `App`'s definition, so only the call-site anchor applies. That
 //! anchor seeds the call's input from its written argument types. An all-unknown tuple collapsed
 //! to one flat placeholder could not destructure into `HandleBranch`'s `(CondInput, Rest)`, so the
 //! anchor recovers the tuple *shape* instead (each unwritten element a placeholder): `HandleBranch`
@@ -38,7 +38,7 @@ where
         self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
     }
 }
-/// Interpreter for `ReadName`: reads the context's `name` field — the buried root cause.
+/// Interpreter for `ReadName`: reads the context's `name` field: the buried root cause.
 impl<__Context__, Input> Handler<__Context__, ReadName, Input> for HandleReadName
 where
     __Context__: HasName,

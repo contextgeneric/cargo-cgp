@@ -4,7 +4,7 @@
 //! `App` runs a four-stage pipeline program through the `Code`-dispatched `Handler`
 //! component, inherited through two namespace levels. The first stage reads the
 //! context's `name` field, which `App` lacks, and the call-site anchor resolves the
-//! failure cleanly — root cause first, one block. What this fixture pins is the
+//! failure cleanly: root cause first, one block. What this fixture pins is the
 //! *presentation* of that success on a program-sized `Code` type: the whole chain
 //! unfolds stage by stage down to the missing field, and each hop states its trait and
 //! parameters as written.
@@ -25,7 +25,7 @@ use core::marker::PhantomData;
 use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::extra::handler::{CanHandle, Handler, HandlerComponent, PipeHandlers};
 use cgp::prelude::*;
-/// A program wrapper generic over its pipeline steps — the analogue of a DSL's
+/// A program wrapper generic over its pipeline steps: the analogue of a DSL's
 /// `Pipe<Steps>`, wired to a single provider that matches *every* `Prog<Steps>`.
 pub struct Prog<Steps>(pub PhantomData<Steps>);
 /// Style markers, so the pass-through stages carry DSL-sized names into every label.
@@ -44,7 +44,7 @@ where
     }
 }
 /// First pipe stage: produce the context's name. Depends on `Self: HasName`, which
-/// `App` cannot meet — the root cause.
+/// `App` cannot meet: the root cause.
 impl<__Context__, Code, Input> Handler<__Context__, Code, Input> for HandleReadName
 where
     __Context__: HasName,

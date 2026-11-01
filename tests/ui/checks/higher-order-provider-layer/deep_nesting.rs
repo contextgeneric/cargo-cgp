@@ -3,7 +3,7 @@
 //!
 //! `ScaledArea` wraps an inner `AreaCalculator`, and the wiring nests it three deep around
 //! `RectangleArea`. `Rectangle` has `scale_factor` and `width` but not `height`, so the
-//! innermost `RectangleArea` layer fails — through all three `ScaledArea` layers. The dependency
+//! innermost `RectangleArea` layer fails, through all three `ScaledArea` layers. The dependency
 //! note should show the full nesting as one spine.
 //!
 //! CGP error class:

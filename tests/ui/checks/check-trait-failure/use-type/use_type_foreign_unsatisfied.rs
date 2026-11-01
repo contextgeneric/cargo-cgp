@@ -29,7 +29,7 @@ pub trait CanCalculateArea<Types> {
 pub struct NoScalar;
 
 // Asserting the component for `NoScalar` requires `NoScalar: HasScalarType`, which
-// the foreign import now demands — so this fails to compile.
+// the foreign import now demands, so this fails to compile.
 pub trait CheckMissingScalar: CanCalculateArea<NoScalar> {}
 
 fn main() {}

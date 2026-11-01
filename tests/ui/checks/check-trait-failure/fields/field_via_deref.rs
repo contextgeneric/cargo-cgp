@@ -1,13 +1,13 @@
 //! A field the context reaches through `Deref`, whose `Deref` target does
 //! not derive `HasField`. CGP's `HasField` follows `Deref` (a blanket impl forwards to the
 //! target), so `App` *would* satisfy `HasField<Symbol!("name")>` if its `Deref` target
-//! `AppFields` derived it — but `AppFields` deliberately omits `#[derive(HasField)]`, so the
+//! `AppFields` derived it, but `AppFields` deliberately omits `#[derive(HasField)]`, so the
 //! forward has nothing to reach and the `GreetHello` wiring fails.
 //!
 //! This fixture pins the driver's `Deref`-aware diagnosis: rather than reporting `name` as a
-//! plain missing field (it is not — `AppFields` carries it), the resolver walks `App`'s `Deref`
+//! plain missing field (it is not: `AppFields` carries it), the resolver walks `App`'s `Deref`
 //! chain, finds `name` on `AppFields`, and points the fix at the type that must derive
-//! `HasField` — `AppFields`, not `App`.
+//! `HasField`: `AppFields`, not `App`.
 //!
 //! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md and
 //! cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (the

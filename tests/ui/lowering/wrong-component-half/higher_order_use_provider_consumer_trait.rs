@@ -26,7 +26,7 @@ impl AreaCalculator {
 
 // MISTAKE: `#[use_provider]` names the consumer trait `CanCalculateArea` where the provider trait
 // `AreaCalculator` belongs. The attribute inserts the context as the leading generic, generating the
-// bound `InnerCalculator: CanCalculateArea<Self>` — but the consumer trait takes no context
+// bound `InnerCalculator: CanCalculateArea<Self>`, but the consumer trait takes no context
 // parameter, so it is given one argument too many.
 #[cgp_impl(new ScaledArea<InnerCalculator>)]
 #[use_provider(InnerCalculator: CanCalculateArea)]

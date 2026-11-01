@@ -13,10 +13,9 @@
 //! The resolver tells this apart from a leaf-provider dead-end (a valid provider reached by an input
 //! mismatch, whose real cause runs through its concrete impl) by whether the owner has a concrete
 //! impl of the provider trait at all: `NotAGreeter` has *no* `Greeter` impl, so it is genuinely not
-//! a provider, reported as a [`CGP-E115`] `NotAProvider` leaf — `the provider trait \`Greeter\` is
-//! not implemented for \`NotAGreeter\``. Before this, the resolver dropped the leaf and declined to a
-//! `[CGP-E002]` block naming the whole `WrapGreeter<NotAGreeter>` pipeline (and leaking rustc's giant
-//! implementor list), with the real cause nowhere.
+//! a provider, reported as a [`CGP-E115`] `NotAProvider` leaf: `the provider trait \`Greeter\` is
+//! not implemented for \`NotAGreeter\``, rather than a `[CGP-E002]` block naming the whole
+//! `WrapGreeter<NotAGreeter>` pipeline.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
@@ -93,7 +92,7 @@ impl<__Context__> Greeter<__Context__> for GreetHello {
 }
 impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetHello {}
 pub struct GreetHello;
-/// A higher-order provider that wraps an inner `Greeter` — the shape a wrapper endpoint has.
+/// A higher-order provider that wraps an inner `Greeter`: the shape a wrapper endpoint has.
 impl<__Context__, Inner> Greeter<__Context__> for WrapGreeter<Inner>
 where
     Inner: Greeter<__Context__>,
@@ -108,7 +107,7 @@ where
     Inner: IsProviderFor<GreeterComponent, __Context__, ()> + Greeter<__Context__>,
 {}
 pub struct WrapGreeter<Inner>(pub ::core::marker::PhantomData<Inner>);
-/// An ordinary struct that is **not** a `Greeter` provider — wired where a provider is expected.
+/// An ordinary struct that is **not** a `Greeter` provider: wired where a provider is expected.
 pub struct NotAGreeter;
 pub struct App;
 impl DelegateComponent<GreeterComponent> for App {

@@ -3,11 +3,11 @@
 //! second stage dispatches its provider on the input type through `UseInputDelegate<EmptySink>`, and
 //! that table wires no entries at all. This pins the **structural** half of the missing-dispatch-entry
 //! recognition, the case the owner-property check (`owner_has_impl_of`, "does the table wire *some*
-//! key") cannot see — an empty table has no `DelegateComponent` impl to find.
+//! key") cannot see: an empty table has no `DelegateComponent` impl to find.
 //!
 //! The resolver instead keys on *where* the unmet `DelegateComponent` arises: it is a `where`-clause
 //! of `UseInputDelegate`'s own provider impl, a lookup into a *separate* table (`EmptySink` is a
-//! parameter of `UseInputDelegate<EmptySink>`), so it is unambiguously a missing dispatch entry —
+//! parameter of `UseInputDelegate<EmptySink>`), so it is unambiguously a missing dispatch entry,
 //! whether or not that table happens to wire any other key. The block therefore leads with
 //! `[CGP-E114] missing entry for \`ByteStream\` in provider \`EmptySink\`` rather
 //! than declining to raw `PipeHandlers`/`ComposeHandlers` plumbing.
@@ -15,7 +15,7 @@
 //! Stage 1, `Call<Fetch>`, produces a fixed `ByteStream` (its `where Input: Send` stalls under the
 //! call's unknown input, so the output is recovered as a fixed projection). Stage 2, `Call<Sink>`,
 //! forwards to `UseInputDelegate<EmptySink>`; its input is stage 1's `ByteStream`, for which the
-//! empty table has no entry — `EmptySink: DelegateComponent<ByteStream>` is the root cause.
+//! empty table has no entry: `EmptySink: DelegateComponent<ByteStream>` is the root cause.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -1,6 +1,6 @@
 //! A context joins `namespace DefaultNamespace;` and then wires a
 //! bare, unprefixed component key (`ErrorTypeProviderComponent`) that the namespace
-//! already *redirects* — `DefaultNamespace` maps that key, under its `@cgp.core.error`
+//! already *redirects*: `DefaultNamespace` maps that key, under its `@cgp.core.error`
 //! prefix, to a `RedirectLookup`. The bare `DelegateComponent<ErrorTypeProviderComponent>`
 //! entry overlaps the namespace's blanket forwarding, so coherence rejects the pair with
 //! E0119 (plus a downstream note).

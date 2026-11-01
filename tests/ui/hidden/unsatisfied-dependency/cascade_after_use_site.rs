@@ -7,11 +7,11 @@
 //! field, but `App` has none, so awaiting `app.handle(..)` at a use site fails.
 //! Because the composition matches the `Code` unconditionally the method is *found*
 //! (its trait bound is only conditionally satisfied), so the failure is an `E0277`,
-//! not an `E0599`, and its spans never land on `App`'s type definition — no
+//! not an `E0599`, and its spans never land on `App`'s type definition, so no
 //! span-matching anchor applies. The call-site anchor recovers it from the failing
 //! call instead: the context from the receiver's binding, the `Code` from the
 //! `PhantomData` tag argument the method's own signature declares, and the inferred
-//! input as an unknown the walk resolves around — reaching the missing `name` field
+//! input as an unknown the walk resolves around, reaching the missing `name` field
 //! and rendering the full combinator chain, with the header naming the consumer
 //! trait the call needs rather than the `PipeHandlers`/`ComposeHandlers` plumbing.
 //!
@@ -31,7 +31,7 @@ use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::extra::handler::{CanHandle, Handler, HandlerComponent, PipeHandlers};
 use cgp::prelude::*;
 
-/// A program wrapper generic over its pipeline steps — the analogue of the DSL's
+/// A program wrapper generic over its pipeline steps: the analogue of the DSL's
 /// `Pipe<Steps>`, wired to a single provider that matches *every* `Prog<Steps>`.
 pub struct Prog<Steps>(pub PhantomData<Steps>);
 
@@ -41,7 +41,7 @@ pub trait HasName {
 }
 
 /// First pipe stage: produce the context's name. Depends on `Self: HasName`, which
-/// `App` cannot meet — the buried root cause.
+/// `App` cannot meet: the buried root cause.
 #[async_trait]
 #[cgp_impl(new HandleName)]
 #[use_type(HasErrorType.Error)]
@@ -84,7 +84,7 @@ cgp_namespace! {
 
 #[derive(HasField)]
 pub struct App {
-    // No `name` field — `HandleName`'s `Self: HasName` dependency cannot be met.
+    // No `name` field: `HandleName`'s `Self: HasName` dependency cannot be met.
 }
 
 delegate_components! {

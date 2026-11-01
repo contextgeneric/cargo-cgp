@@ -2,7 +2,7 @@
 //! `pub struct GreeterComponent;`, and this module also declares its own
 //! `GreeterComponent`, so the name is defined twice (E0428). `#[cgp_component]`
 //! expands without any view of the rest of the module, so it emits the derived
-//! marker faithfully and lets the compiler report the clash — exactly as two
+//! marker faithfully and lets the compiler report the clash, exactly as two
 //! hand-written definitions would.
 //!
 //! This fixture pins the span of the *derived* `#[cgp_component]` marker. The
@@ -12,8 +12,8 @@
 //! the provider identifier's own span (see
 //! cgp-macro-core/src/types/cgp_component/args/component_args.rs). A regression
 //! that stamped the marker with `Span::call_site()` would move that note onto the
-//! whole `#[cgp_component(..)]` attribute — the leak the span fix removed so that
-//! cross-crate go-to-definition on the marker resolves to the provider name alone.
+//! whole `#[cgp_component(..)]` attribute, while the current span lets
+//! cross-crate go-to-definition on the marker resolve to the provider name alone.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
 

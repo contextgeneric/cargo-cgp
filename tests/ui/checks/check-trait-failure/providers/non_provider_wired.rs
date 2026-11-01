@@ -12,10 +12,9 @@
 //! The resolver tells this apart from a leaf-provider dead-end (a valid provider reached by an input
 //! mismatch, whose real cause runs through its concrete impl) by whether the owner has a concrete
 //! impl of the provider trait at all: `NotAGreeter` has *no* `Greeter` impl, so it is genuinely not
-//! a provider, reported as a [`CGP-E115`] `NotAProvider` leaf — `the provider trait \`Greeter\` is
-//! not implemented for \`NotAGreeter\``. Before this, the resolver dropped the leaf and declined to a
-//! `[CGP-E002]` block naming the whole `WrapGreeter<NotAGreeter>` pipeline (and leaking rustc's giant
-//! implementor list), with the real cause nowhere.
+//! a provider, reported as a [`CGP-E115`] `NotAProvider` leaf: `the provider trait \`Greeter\` is
+//! not implemented for \`NotAGreeter\``, rather than a `[CGP-E002]` block naming the whole
+//! `WrapGreeter<NotAGreeter>` pipeline.
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E115
@@ -35,7 +34,7 @@ impl Greeter {
     }
 }
 
-/// A higher-order provider that wraps an inner `Greeter` — the shape a wrapper endpoint has.
+/// A higher-order provider that wraps an inner `Greeter`: the shape a wrapper endpoint has.
 #[cgp_impl(new WrapGreeter<Inner>)]
 #[use_provider(Inner: Greeter)]
 impl<Inner> Greeter {
@@ -44,7 +43,7 @@ impl<Inner> Greeter {
     }
 }
 
-/// An ordinary struct that is **not** a `Greeter` provider — wired where a provider is expected.
+/// An ordinary struct that is **not** a `Greeter` provider: wired where a provider is expected.
 pub struct NotAGreeter;
 
 pub struct App;

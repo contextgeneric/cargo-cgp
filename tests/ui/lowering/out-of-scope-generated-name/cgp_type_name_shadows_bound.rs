@@ -2,7 +2,7 @@
 //! bounds it, so the bound resolves to the associated type rather than the trait.
 //!
 //! `#[cgp_type] trait HasDatabaseType { type Database: Database; }` reads as "the
-//! abstract type `Database`, which must implement the `Database` trait" — but inside
+//! abstract type `Database`, which must implement the `Database` trait", but inside
 //! the declaration the name `Database` is already taken by the associated type being
 //! declared, so the bound position resolves to that rather than to the trait in
 //! scope. The compiler rejects it with `E0404` "expected trait, found type parameter
@@ -11,7 +11,7 @@
 //!
 //! The failure is a plain name collision rather than anything CGP-specific, but it
 //! is easy to walk into when naming an abstract type after the concrete trait it
-//! abstracts over — which is why an abstract database type reads better as `Db`,
+//! abstracts over, which is why an abstract database type reads better as `Db`,
 //! as in [`ok/abstract_db_transaction.rs`](../../ok/abstract_db_transaction.rs).
 //!
 //! See cgp-knowledge-base/cgp/reference/macros/cgp_type.md and

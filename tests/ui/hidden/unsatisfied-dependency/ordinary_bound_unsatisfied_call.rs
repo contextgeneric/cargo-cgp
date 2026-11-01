@@ -1,13 +1,13 @@
 //! The same unmet *ordinary Rust trait bound* dependency as
 //! `ordinary_bound_unsatisfied` (`Scalar: Eq` with `f64` wired),
-//! but exercised by calling the consumer method rather than a check — so the cause
+//! but exercised by calling the consumer method rather than a check, so the cause
 //! is *hidden*.
 //!
 //! Calling `app.scalars_equal(..)` produces the `E0599` "method exists but its
 //! trait bounds were not satisfied" shape: it names `App: CanCompareScalars` /
 //! `App: ScalarEquality<App>`, misclassifies the method as an associated function
 //! (the provider method has no `self` receiver), and suggests `App::scalars_equal()`
-//! — but never mentions the unmet `f64: Eq`. This is byte-for-shape identical to the
+//! but never mentions the unmet `f64: Eq`. This is byte-for-shape identical to the
 //! HasName hidden case in delegate_components/missing_dependency.rs: the compiler's
 //! method-probe heuristic drops the nested `where`-clause bound regardless of whether
 //! that bound is a `HasField`, a CGP trait, or an ordinary trait. Promote it with

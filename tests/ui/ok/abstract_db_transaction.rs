@@ -3,13 +3,13 @@
 //!
 //! This is the positive counterpart to the lowering failures around abstract database
 //! types. `Db` and `Transaction` are both abstract, so both are nameable in the
-//! components' public signatures — which is what the inferred `#[impl_generics]` form
+//! components' public signatures, which is what the inferred `#[impl_generics]` form
 //! cannot do, per
 //! [`impl_generics_in_signature`](../lowering/out-of-scope-generated-name/impl_generics_in_signature.rs).
 //! The relationship between them ("a transaction of *this* database") rides in an
 //! ordinary `where` predicate over both bare aliases. A `#[use_type]` equality pin is
 //! the alternative where the relationship is an equality rather than a trait bound,
-//! and it grounds a nested alias too — see
+//! and it grounds a nested alias too; see
 //! [`use_type_pin_nested_alias`](use_type_pin_nested_alias.rs).
 //!
 //! The payoff is `run_unit_of_work`: it composes both traits and mentions neither

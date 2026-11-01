@@ -1,14 +1,14 @@
 //! A variant of `missing_dependency` where
 //! the mistake is not a missing *field* but a missing `#[derive(HasField)]`
 //! altogether. `GreetHello` needs `Self: HasName`, and `Person` even has a `name`
-//! field — but without the derive, `Person` has *no* `HasField` impls at all, so
+//! field, but without the derive, `Person` has *no* `HasField` impls at all, so
 //! `HasName` is unsatisfiable and the check fails.
 //!
 //! This fixture pins the diagnostic that tells this case apart from a single
 //! missing field: the `help:` note names `HasField<Symbol!("name")>` as
-//! unimplemented for `Person` and points at the `Person` struct, but — unlike
+//! unimplemented for `Person` and points at the `Person` struct, but, unlike
 //! missing_dependency.rs, where a derived `age` field supplies a "but trait
-//! `HasField<Symbol!(\"age\")>` is implemented for it" landmark — there is no such
+//! `HasField<Symbol!(\"age\")>` is implemented for it" landmark, there is no such
 //! landmark here, because `Person` implements the trait for no field. The absence
 //! of the landmark is the signal that the whole derive is missing and the fix is
 //! to add `#[derive(HasField)]`, not to add a field. This is the check doing its
@@ -55,7 +55,7 @@ delegate_components! {
 }
 
 // Fails because `Person` has no `HasField` impls at all, not because it lacks the
-// `name` field — the fix is the missing derive.
+// `name` field: the fix is the missing derive.
 check_components! {
     Person {
         GreeterComponent,

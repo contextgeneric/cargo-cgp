@@ -1,6 +1,6 @@
 //! Positive cross-crate wiring: CGP's two-trait split stays within Rust's
 //! coherence and orphan rules across crate boundaries. All the cross-crate wiring
-//! lives in the auxiliary crates — `cgp-test-crate-b` (downstream) consumes
+//! lives in the auxiliary crates: `cgp-test-crate-b` (downstream) consumes
 //! `cgp-test-crate-a` (upstream) to wire a foreign component to a foreign provider,
 //! define a local provider for a foreign provider trait, join an upstream
 //! namespace, and register a local component into an upstream namespace with

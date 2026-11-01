@@ -2,7 +2,7 @@
 //! implementation of that component *is* that same delegation forms a cycle.
 //! `UseContext` implements the provider trait by routing back through the context's
 //! own consumer-trait impl, but that consumer impl exists only via this delegation
-//! to `UseContext` — so resolving `Person: Greeter<Person>` requires resolving
+//! to `UseContext`, so resolving `Person: Greeter<Person>` requires resolving
 //! `Person: CanGreet`, which requires `Person: Greeter<Person>` again. The trait
 //! solver chases the cycle until it overflows the recursion limit (`E0275`). CGP
 //! lowers the wiring faithfully and cannot see that the delegation is self-referential
@@ -27,7 +27,7 @@ pub struct Person {
 }
 
 // `Person`'s only source of `CanGreet` is this delegation to `UseContext`, which
-// resolves back to `CanGreet` — a cycle.
+// resolves back to `CanGreet`: a cycle.
 delegate_components! {
     Person {
         GreeterComponent: UseContext,
@@ -37,7 +37,7 @@ delegate_components! {
 // Forcing the wiring through a check drives the solver into the cycle directly, so it
 // overflows with `E0275` and the note chain names the cycle. (A plain method call on
 // `Person` would instead surface the hidden `E0599`, since the method probe treats the
-// unresolvable cycle as an unsatisfied bound — see cgp-knowledge-base/cgp/errors/hidden/.)
+// unresolvable cycle as an unsatisfied bound; see cgp-knowledge-base/cgp/errors/hidden/.)
 check_components! {
     Person {
         GreeterComponent,

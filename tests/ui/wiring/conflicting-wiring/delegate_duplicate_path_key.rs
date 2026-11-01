@@ -1,7 +1,7 @@
 //! Two `@`-path entries in one `delegate_components!` block
 //! that map the same namespace path produce two conflicting `DelegateComponent`
 //! impls (keyed by the same `PathCons<..>` type) for `App`, rejected with the
-//! coherence error E0119 — the `@`-path analogue of [duplicate_key_same_block.rs].
+//! coherence error E0119: the `@`-path analogue of [duplicate_key_same_block.rs].
 //!
 //! This fixture pins the **error span** for an `@`-path key. The key type is a
 //! synthesized `PathCons<..>` nest whose own span points at the macro

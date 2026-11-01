@@ -9,14 +9,14 @@
 //! This is the abstract-type sibling of the `HasField` mismatch in
 //! [`field_type_mismatch`](../field-types/field_type_mismatch.rs), and it fails the same way:
 //! `Rectangle: HasScalarType` *is* implemented, so the trait bound holds and only the
-//! associated-type projection `<Rectangle as HasScalarType>::Scalar == f64` fails — an `E0271`.
+//! associated-type projection `<Rectangle as HasScalarType>::Scalar == f64` fails: an `E0271`.
 //!
 //! The driver resolves it the same way too: the walk reaches the provider impl whose every
 //! trait-clause dependency holds, finds the unmet projection it carries, normalizes
 //! `<Rectangle as HasScalarType>::Scalar` to read the type the context actually supplies (`u32`),
 //! and rewrites the main message into the `[CGP-E005]` abstract-type form over the dependency
-//! chain. Because the trait is a `#[cgp_type]` component — recognized structurally, by its provider
-//! carrying the `UseType` blanket — a `help` names the wiring entry to change. Where rustc's raw
+//! chain. Because the trait is a `#[cgp_type]` component (recognized structurally, by its provider
+//! carrying the `UseType` blanket), a `help` names the wiring entry to change. Where rustc's raw
 //! output aims `expected this to be `f64`` at the `#[cgp_type]` attribute and never states the type
 //! the context supplies at all, the reshaped message names both sides and the fix. The `E0271` Rust
 //! code is kept.

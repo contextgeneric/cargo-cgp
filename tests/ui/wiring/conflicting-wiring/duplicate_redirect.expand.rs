@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! The same component redirected twice with explicit `=>` mappings, to two
 //! different paths. Each `FooComponent => @app.foo` lowers to a `DelegateComponent<FooComponent>`
-//! whose `Delegate` is a `RedirectLookup`, so the two conflict with the coherence error E0119 — a
+//! whose `Delegate` is a `RedirectLookup`, so the two conflict with the coherence error E0119: a
 //! *duplicate redirect*, distinct from a redirect that collides with a direct wiring
 //! ([duplicate_open_key.rs]).
 //!

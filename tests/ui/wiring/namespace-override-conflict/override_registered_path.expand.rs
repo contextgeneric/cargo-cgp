@@ -8,7 +8,7 @@
 //! `impl<Key> DelegateComponent<Key> for App where Key: AppNamespace<App>`, which
 //! already covers that path. The extra `@app.GreeterComponent: GreetBye` entry
 //! emits a second `DelegateComponent<PathCons<app, GreeterComponent>> for App`,
-//! and the two overlap — E0119. CGP lowers both entries faithfully; only the whole
+//! and the two overlap: E0119. CGP lowers both entries faithfully; only the whole
 //! program reveals the overlap, so it defers to the compiler.
 //!
 //! The rule this pins: override a component the namespace routes by shadowing its

@@ -1,7 +1,7 @@
 //! A pipeline stage that routes back to the context for a `Code` nothing is wired for.
 //!
 //! This is the shape a type-level DSL produces when a program names a syntax the language
-//! has no interpreter for — most simply, when a step is deleted and something else is left
+//! has no interpreter for, most simply, when a step is deleted and something else is left
 //! in its place. Each stage of the pipeline is a `Call<Code>` provider whose whole job is to
 //! route back through the context's *own* handler for its `Code`, so a stage naming an
 //! unwired `Code` fails not on a dependency of its own but on a missing dispatch entry one
@@ -19,8 +19,8 @@
 //!
 //! It also pins the trailing-segment trim. A `RedirectLookup` keys on the path *plus* the
 //! component's parameters, and this failure is recovered from a call whose input is inferred, so
-//! the raw key ends in a placeholder segment; the leaf names `@….Missing` — the entry the
-//! programmer can actually write — rather than an unwritable key that would be dropped as
+//! the raw key ends in a placeholder segment; the leaf names `@….Missing` (the entry the
+//! programmer can actually write) rather than an unwritable key that would be dropped as
 //! unknowable.
 //!
 //! Distilled from a real DSL pipeline whose first stage was removed; the counterpart where the
@@ -45,7 +45,7 @@ pub struct Prog;
 /// A syntax fragment the wiring *does* interpret.
 pub struct Present;
 
-/// A syntax fragment the wiring does **not** interpret — the root cause.
+/// A syntax fragment the wiring does **not** interpret: the root cause.
 pub struct Missing;
 
 /// The DSL's indirection: a stage that interprets its `OutCode` by routing back through the

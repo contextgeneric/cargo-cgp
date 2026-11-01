@@ -9,7 +9,7 @@
 //!
 //! This is the *prefixed* `for`-key counterpart of the bare-key
 //! [for_loop_bare_key.rs]: a bare loop key overlaps *every* key, while a prefixed
-//! loop key overlaps only where the prefix path is itself routed by the namespace —
+//! loop key overlaps only where the prefix path is itself routed by the namespace:
 //! here `AppDefaults` registers `@cgp.core.error.ErrorRaiserComponent.String`, so the
 //! generic loop tail collides with it. (A prefix the namespace does not register does
 //! *not* overlap: the orphan rule proves it, which is why prefixing an otherwise-bare

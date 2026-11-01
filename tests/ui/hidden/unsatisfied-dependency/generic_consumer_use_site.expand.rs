@@ -6,8 +6,8 @@
 //! re-checks the bare marker with an empty `()` parameter slot, and the by-consumer
 //! anchor is restricted to a consumer whose only generic is `Self`. The call-site
 //! anchor recovers it instead, with no calling convention assumed: the context comes
-//! from the receiver's `let` binding, and unifying the written argument type — the
-//! suffixed-literal tuple `(1_u32, 2_u64)` — against the method's declared
+//! from the receiver's `let` binding, and unifying the written argument type (the
+//! suffixed-literal tuple `(1_u32, 2_u64)`) against the method's declared
 //! `value: T` input pins `T = (u32, u64)` through the signature alone. The seeded
 //! `App: CanFormatPair<(u32, u64)>` then walks to the missing `separator` field,
 //! and rustc's misleading "use associated function syntax" advice is dropped with

@@ -1,13 +1,13 @@
 //! A field whose name matches but whose type does not, read through a getter trait.
-//! `Rectangle` derives `HasField`, so `HasField<Symbol!("height")>` *is* implemented — but with
+//! `Rectangle` derives `HasField`, so `HasField<Symbol!("height")>` *is* implemented, but with
 //! `Value = i32`, while the `height()` getter needs `Value = f64`. The trait bound holds; only the
 //! associated-type projection `<Rectangle as HasField<Symbol!("height")>>::Value == f64` fails,
 //! which rustc reports as an `E0271` type mismatch.
 //!
 //! The driver resolves this the way it resolves a missing field: it walks the wiring to the failing
 //! `HasField` projection, queries the struct (by `DefId`) for the field's actual type `i32`, and
-//! rewrites the main message into the `[CGP-E004]` field-type-mismatch form — `expected a `height`
-//! field of type `f64` on `Rectangle`, but found `i32`` — over the dependency chain, which here runs
+//! rewrites the main message into the `[CGP-E004]` field-type-mismatch form (`expected a `height`
+//! field of type `f64` on `Rectangle`, but found `i32``) over the dependency chain, which here runs
 //! through the `HasRectangleFields` getter trait. The `E0271` Rust code is kept.
 //!
 //! The shorter-chain counterpart, where the provider reads the field directly with an `#[implicit]`

@@ -16,8 +16,8 @@
 //! The tool reads the collision off the two registration impls and rewrites the
 //! header to `[CGP-E010]`, naming the key and the table it is registered in. The
 //! key here is an ordinary *type*, not a component marker, so it is worded as one
-//! — the classifier tells the two apart structurally, by whether a provider trait
-//! keys on it — and the subject is the lookup trait with its leading arguments,
+//! (the classifier tells the two apart structurally, by whether a provider trait
+//! keys on it), and the subject is the lookup trait with its leading arguments,
 //! `DefaultImpls1<ShowImplComponent>`, minus the components table the macro
 //! appends.
 //!

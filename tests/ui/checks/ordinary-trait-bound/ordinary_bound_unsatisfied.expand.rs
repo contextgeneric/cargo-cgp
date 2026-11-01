@@ -1,6 +1,6 @@
 #![feature(prelude_import)]
 //! A provider's impl-side dependency is an *ordinary Rust
-//! trait bound* — a standard trait (`Eq`), not a CGP trait — on an abstract
+//! trait bound* (a standard trait (`Eq`), not a CGP trait) on an abstract
 //! type, and the concrete type the context wires for that abstract type does not
 //! implement it.
 //!
@@ -8,7 +8,7 @@
 //! `<Self as HasScalarType>::Scalar: Eq`). `App` wires its `Scalar` type to `f64`,
 //! which is `PartialEq` but not `Eq`, so the dependency is unmet. The wiring is
 //! accepted lazily; forcing it through `check_components!` surfaces the failure via
-//! `IsProviderFor` as `E0277` — but unlike a missing `HasField` (whose leaf sits in
+//! `IsProviderFor` as `E0277`, but unlike a missing `HasField` (whose leaf sits in
 //! a `help:` note under a `CanUseComponent` primary), the *primary* error names the
 //! ordinary bound on the concrete type directly (`f64: Eq` is not satisfied), the
 //! `help:` lists the standard types that *do* implement `Eq`, and the `IsProviderFor`

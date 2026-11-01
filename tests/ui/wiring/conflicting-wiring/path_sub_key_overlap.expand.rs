@@ -4,7 +4,7 @@
 //! `@cgp.core.error.ErrorTypeProviderComponent.String`). Each path entry lowers to a
 //! `DelegateComponent<PathCons<.., __Wildcard__>>` with an open wildcard tail, so the
 //! shorter path's wildcard covers the longer one and the two overlap with the
-//! coherence error E0119 — the sub-key shape of the duplicate-path conflict
+//! coherence error E0119: the sub-key shape of the duplicate-path conflict
 //! ([delegate_duplicate_path_key.rs] maps the *same* path twice).
 //!
 //! The tool drops the redundant `IsProviderFor` half and rewrites the

@@ -5,13 +5,13 @@
 //! qualified `<Self as Trait>::Assoc` form, and that includes an alias heading an
 //! expression path: `Transaction::begin_from(database)` becomes
 //! `<<Self as HasTransactionType>::Transaction>::begin_from(database)`. The same
-//! fixture reads the alias in three further positions — a `where` predicate, an
-//! `#[implicit]` annotation, and the return type — so every position is pinned
+//! fixture reads the alias in three further positions (a `where` predicate, an
+//! `#[implicit]` annotation, and the return type), so every position is pinned
 //! together in one program.
 //!
 //! This is a regression pin. The substitution once ran over type nodes only, so an
 //! alias qualifying an expression path was passed through untouched and the body
-//! failed to resolve with `E0433` — an inconsistency rather than a boundary, since a
+//! failed to resolve with `E0433`, an inconsistency rather than a boundary, since a
 //! `let` annotation in the same body *was* rewritten. What remains a boundary is
 //! arity: a bare single-segment path in expression position names a value, which an
 //! abstract type can never be, so it is left alone. Both halves are pinned at the

@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! A `#[cgp_fn]` trait check that fails because the context is missing the field the
-//! trait reads. `#[cgp_fn]` turns a function into a *blanket-impl trait* — `impl<Context>
-//! FormatName for Context where Self: HasField<Symbol!("name"), Value = String>` — which is not a
+//! trait reads. `#[cgp_fn]` turns a function into a *blanket-impl trait* (`impl<Context>
+//! FormatName for Context where Self: HasField<Symbol!("name"), Value = String>`), which is not a
 //! CGP component (there is no provider trait or `DelegateComponent`). A common way to assert such a
 //! trait holds for a concrete context is a wrapper trait carrying it as a supertrait,
 //! implemented on the context: `pub trait CheckFormatName: FormatName {}` + `impl CheckFormatName
@@ -10,7 +10,7 @@
 //! The impl-site anchor recognizes the `impl CheckFormatName for App` block and its failing
 //! supertrait on the local context, and walks it whether that supertrait is a CGP *component*
 //! consumer or a `#[cgp_fn]`/`#[blanket_trait]` blanket-impl trait, so the failure resolves to the
-//! real cause — `` missing field `name` on `App` `` — through the `FormatName` (and, for `greeting`,
+//! real cause (`` missing field `name` on `App` ``) through the `FormatName` (and, for `greeting`,
 //! the `#[uses]`-chained `Greeting → FormatName`) blanket-trait chain. Left to raw rustc the
 //! `` `#[derive(HasField)]` is required to access field `name` `` help is actively misleading here:
 //! `App` *does* derive `HasField`; it is the `name` *field* that is absent (rustc then lists the

@@ -5,7 +5,7 @@
 //!
 //! `CountPooledRows` reads a `database` field typed `&Pool<Db>`, where `Db` is the
 //! abstract type imported with `#[use_type(HasDbType.Db)]`. The field bound the macro
-//! emits is therefore `HasField<Symbol!("database"), Value = Pool<Self::Db>>` — the
+//! emits is therefore `HasField<Symbol!("database"), Value = Pool<Self::Db>>`: the
 //! required type is not a constant but a projection through the context's own wiring.
 //! `App` wires `Db` to `Postgres` while declaring a `Pool<Sqlite>` field, so the two
 //! disagree and the `HasField` projection fails as an `E0271`.
@@ -13,7 +13,7 @@
 //! This is what an abstract type buys over the `#[impl_generics]` form that merely
 //! *infers* the type from the field: under inference the two could never disagree,
 //! because there was only ever one of them. Naming the type makes the pairing a
-//! stated claim, and a stated claim is checkable — the check reports it at the wiring
+//! stated claim, and a stated claim is checkable: the check reports it at the wiring
 //! entry rather than leaving a reader to notice that the pool is the wrong engine.
 //!
 //! The sibling with a *concrete* required type is

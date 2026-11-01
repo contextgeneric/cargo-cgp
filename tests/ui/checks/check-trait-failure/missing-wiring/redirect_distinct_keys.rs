@@ -1,11 +1,11 @@
 //! Two dependencies dispatched along the same `open` route for distinct, unwired value
-//! types — the shape that pins two redirect hops staying distinct nodes across branches.
+//! types: the shape that pins two redirect hops staying distinct nodes across branches.
 //!
 //! `AssembleParts` (wired directly to `AssemblerComponent`, *not* through a redirect) needs to build
 //! two values, a `Left` and a `Right`, through the `open`-dispatched `ValueBuilder`. Neither type is
 //! wired, so checking `CanAssemble` fails with two root causes: the missing
 //! `@ValueBuilderComponent.Left` and `@ValueBuilderComponent.Right` wirings. Each is reached through a
-//! `redirect lookup to @ValueBuilderComponent` hop — the same route, rendered identically — but for a
+//! `redirect lookup to @ValueBuilderComponent` hop (the same route, rendered identically), but for a
 //! different dispatch key.
 //!
 //! Because the top component is wired directly, each branch's redirect is the *first* redirect on its
@@ -36,7 +36,7 @@ impl ValueBuilder<u64> {
     }
 }
 
-// Two distinct value types, both left unwired — the two distinct missing keys.
+// Two distinct value types, both left unwired: the two distinct missing keys.
 pub struct Left;
 pub struct Right;
 
@@ -63,7 +63,7 @@ delegate_components! {
         open ValueBuilderComponent;
 
         @ValueBuilderComponent.u64: BuildU64,
-        // `Left` and `Right` are deliberately left unwired — two distinct missing keys reached
+        // `Left` and `Right` are deliberately left unwired: two distinct missing keys reached
         // through the same `@ValueBuilderComponent` redirect route.
 
         AssemblerComponent: AssembleParts,

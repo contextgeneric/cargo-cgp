@@ -1,4 +1,4 @@
-//! A minimal, correctly-wired CGP program — the passing baseline the error cases
+//! A minimal, correctly-wired CGP program: the passing baseline the error cases
 //! contrast against. `Person` carries a `name` field, so `GreetHello`'s
 //! `Self: HasName` dependency is satisfied and `check_components!` passes, so the
 //! snapshot of cargo-cgp's output is empty.

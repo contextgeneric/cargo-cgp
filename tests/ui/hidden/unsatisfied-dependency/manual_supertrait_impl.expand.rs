@@ -1,14 +1,13 @@
 #![feature(prelude_import)]
 //! A wiring gap surfaced inside a *hand-written* `impl Trait for Context`
-//! block — where the caret sits on the impl, never on the context's own type definition. The
+//! block, where the caret sits on the impl, never on the context's own type definition. The
 //! impl-site anchor recovers the context from the enclosing impl's `Self` type and the *exact*
 //! failing obligation (with its concrete component parameter, `CanCalculateArea<Rectangle>`) from
-//! the impl's CGP consumer supertrait, then walks it as a check entry would — but heads the tree
+//! the impl's CGP consumer supertrait, then walks it as a check entry would, but heads the tree
 //! with the impl's *own* trait, the wrapper the programmer wrote, so the failure reads at their
 //! code and descends from there.
 //!
-//! This is the shape the `cgp-examples/transfer` walkthrough hits with its per-endpoint
-//! `impl CanHandleApiSend<Api> for MockApp` blocks: a wrapper trait carrying a generic CGP
+//! This is the shape of per-endpoint `impl CanHandleApiSend<Api> for MockApp` blocks: a wrapper trait carrying a generic CGP
 //! consumer trait as a supertrait, implemented directly on the context to add a bound (there,
 //! `Send`) the component cannot express. Here `App` wires `AreaCalculatorComponent` for
 //! `Rectangle` through `ScaleArea`, which depends on the unwired `scale_factor` field; the

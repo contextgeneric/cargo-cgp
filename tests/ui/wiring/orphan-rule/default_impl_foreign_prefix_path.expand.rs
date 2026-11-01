@@ -5,7 +5,7 @@
 //! its namespace key is the path `@app.AnnouncerComponent`. Registering a default
 //! at that path expands to `impl AppNamespace<_> for PathCons<Symbol<"app">,
 //! PathCons<AnnouncerComponent, Nil>>`, whose trait and every element of the `Self`
-//! type are foreign to this crate — an orphan-rule violation (`E0210`). A default
+//! type are foreign to this crate: an orphan-rule violation (`E0210`). A default
 //! keyed on a *prefix path* can therefore only be written in the crate that owns
 //! the namespace.
 //!

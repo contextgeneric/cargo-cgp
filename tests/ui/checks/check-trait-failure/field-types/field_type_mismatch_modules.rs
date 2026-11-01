@@ -1,6 +1,6 @@
 //! Module-path struct resolution for the field-type mismatch: two *different* `Rectangle` contexts,
 //! one per module, each derive `HasField` and each wire an area calculator whose `height()` getter
-//! needs `f64` — but `shape_a::Rectangle` carries `height: i32` and `shape_b::Rectangle` carries
+//! needs `f64`, but `shape_a::Rectangle` carries `height: i32` and `shape_b::Rectangle` carries
 //! `height: i16`. Both fail with a `HasField<Symbol!("height")>::Value == f64` projection mismatch
 //! (`E0271`), so the resolver rewrites each into its `[CGP-E004]` field-type-mismatch form.
 //!

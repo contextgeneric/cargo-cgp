@@ -31,7 +31,7 @@ where
         self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
     }
 }
-/// Interpreter for `ReadName`: reads the context's `name` field — the buried root cause.
+/// Interpreter for `ReadName`: reads the context's `name` field: the buried root cause.
 impl<__Context__, Input> Handler<__Context__, ReadName, Input> for HandleReadName
 where
     __Context__: HasName,

@@ -3,7 +3,7 @@
 //! imported alias rather than *being* one.
 //!
 //! The pin form `#[use_type(Trait.{Assoc = Type})]` emits `Self: Trait<Assoc = Type>`,
-//! and an imported alias is grounded wherever it occurs inside that right-hand side —
+//! and an imported alias is grounded wherever it occurs inside that right-hand side,
 //! so `{Transaction = Tx<Db>}` emits
 //! `Self: HasTransactionType<Transaction = Tx<<Self as HasDbType>::Db>>`, naming the
 //! projection rather than a bare `Db` that would resolve to nothing.

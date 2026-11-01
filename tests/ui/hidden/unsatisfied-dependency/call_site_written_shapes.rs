@@ -28,7 +28,7 @@ pub trait HasName {
     fn name(&self) -> &str;
 }
 
-/// Interpreter for `ReadName`: reads the context's `name` field — the buried root cause.
+/// Interpreter for `ReadName`: reads the context's `name` field: the buried root cause.
 #[async_trait]
 #[cgp_impl(new HandleReadName)]
 #[use_type(HasErrorType.Error)]
@@ -81,7 +81,7 @@ cgp_namespace! {
 
 #[derive(HasField)]
 pub struct App {
-    // No `name` field — `HandleReadName`'s `Self: HasName` dependency cannot be met.
+    // No `name` field: `HandleReadName`'s `Self: HasName` dependency cannot be met.
 }
 
 delegate_components! {

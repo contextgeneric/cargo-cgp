@@ -1,12 +1,12 @@
 #![feature(prelude_import)]
-//! A context that joins **two** namespaces at once —
-//! `namespace NamespaceA; namespace NamespaceB;` — cannot compile, because each
+//! A context that joins **two** namespaces at once (
+//! `namespace NamespaceA; namespace NamespaceB;`) cannot compile, because each
 //! join emits a *blanket* forwarding impl over every key and the two overlap.
 //!
 //! Each `namespace N;` header emits `impl<Key, Value> DelegateComponent<Key> for
 //! App where Key: N<App, ..>` (plus the matching `IsProviderFor` forwarding), a
 //! blanket impl that covers *every* key. Joining two namespaces emits two such
-//! blanket impls — one keyed through `NamespaceA`, one through `NamespaceB` — and
+//! blanket impls (one keyed through `NamespaceA`, one through `NamespaceB`), and
 //! because a key could satisfy both `where` clauses, coherence cannot prove they
 //! never overlap and rejects the pair (`E0119`, fully generic `DelegateComponent<_>`
 //! / `IsProviderFor<_, _, _>`, carets on the two `namespace` lines, no downstream

@@ -1,15 +1,15 @@
 #![feature(prelude_import)]
 //! A component delegation that fails because the `DelegateComponent` impl carries a **constrained
-//! key** whose `where`-clause is unsatisfied — the shape `PipeHandlers<Providers>` produces (its
+//! key** whose `where`-clause is unsatisfied: the shape `PipeHandlers<Providers>` produces (its
 //! `delegate_components!` generic list is `Providers: ComposeProviders<Provider = Provider>`, so an
 //! un-composable `Providers` makes the delegation itself fail).
 //!
 //! `PickFirstProvider<List>` is such a dispatcher: its wiring delegates every component to the
-//! provider its `List` parameter reduces to, but only when `List: PickFirst` holds — and `PickFirst`
+//! provider its `List` parameter reduces to, but only when `List: PickFirst` holds, and `PickFirst`
 //! is implemented for a non-empty `Cons`, never for the empty `Nil`. `App` wires `GreeterComponent`
 //! to `PickFirstProvider<Product![]>`, whose `Nil` list has no `PickFirst` impl, so the generated
 //! `DelegateComponent<GreeterComponent> for PickFirstProvider<Nil>` impl cannot apply. The delegate
-//! entry *exists* but its own bound is unmet — distinct from a component wired nowhere.
+//! entry *exists* but its own bound is unmet, distinct from a component wired nowhere.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

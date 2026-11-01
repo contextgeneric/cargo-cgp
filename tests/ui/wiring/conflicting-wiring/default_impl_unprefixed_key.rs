@@ -10,8 +10,8 @@
 //! inheritance blanket is involved: both impls are concrete registrations for one key, and
 //! the collision is direct.
 //!
-//! The mistake is the same one in both, though — a prefixed component is addressed by its
-//! path — so the tool reads the `RedirectLookup` straight off the prefix entry's `Delegate`
+//! The mistake is the same one in both, though: a prefixed component is addressed by its
+//! path, so the tool reads the `RedirectLookup` straight off the prefix entry's `Delegate`
 //! and reports `[CGP-E013]`, naming `@app.GreeterComponent` as the key to register under.
 //! Without that, the bare marker key leaves the conflict unclassified and rustc's raw
 //! `conflicting implementations of trait \`DefaultNamespace<_>\`` is all the reader gets.

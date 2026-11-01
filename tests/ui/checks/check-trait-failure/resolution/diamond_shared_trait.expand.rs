@@ -3,7 +3,7 @@
 //! branches of a single dependency tree. `CanTop` depends on both `CanLeft` and `CanRight`, and
 //! each of those depends on the same `CanShared` trait, whose provider needs the `name` field.
 //! `App` wires all four components but has no `name` field, so the walk from `CanTop` descends into
-//! `App: CanShared` twice — once under `CanLeft`, once under `CanRight` — the diamond the per-node
+//! `App: CanShared` twice (once under `CanLeft`, once under `CanRight`): the diamond the per-node
 //! [resolution
 //! cache](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/cached-dependency-resolution.md)
 //! resolves once and reuses.
@@ -14,7 +14,7 @@
 //! renders as a diamond: `CanTop` branches to `CanLeft` and `CanRight`, the shared `CanShared`
 //! subtree is drawn in full under the first (`CanLeft`) and referenced with `(*)` under the second
 //! (`CanRight`), and the missing `name` field is shown once. The point of the fixture is that both
-//! branches appear — neither is dropped — while the shared subtree is not duplicated. It also pins
+//! branches appear, neither dropped, while the shared subtree is not duplicated. It also pins
 //! the cache: `CanShared` renders identically whichever branch reaches it first, so a cache hit on
 //! the second branch is output-preserving.
 //!

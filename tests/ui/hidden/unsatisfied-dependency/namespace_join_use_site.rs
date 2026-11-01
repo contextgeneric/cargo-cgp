@@ -47,7 +47,7 @@ cgp_namespace! {
 
 #[derive(HasField)]
 pub struct App {
-    // No `name` field — `GreetHello`'s `Self: HasName` dependency cannot be met.
+    // No `name` field: `GreetHello`'s `Self: HasName` dependency cannot be met.
 }
 
 delegate_components! {

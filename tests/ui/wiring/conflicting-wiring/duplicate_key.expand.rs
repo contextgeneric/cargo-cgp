@@ -2,8 +2,8 @@
 //! Two `delegate_components!` blocks that map the same
 //! component key produce two conflicting `DelegateComponent<GreeterComponent>`
 //! impls for `Person`, which the Rust compiler rejects with the coherence error
-//! E0119. `delegate_components!` cannot catch this — it lowers each block
-//! independently and has no view of the other block — so it correctly defers to
+//! E0119. `delegate_components!` cannot catch this: it lowers each block
+//! independently and has no view of the other block, so it correctly defers to
 //! the compiler, exactly as two hand-written overlapping impls would.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.

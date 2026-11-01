@@ -1,7 +1,7 @@
 //! A raw error that never names a CGP construct, traced back to the one CGP cause.
 //! `App` lacks the `name` field `HandleGreet` needs. Besides the clean `check_components!` failure
-//! (`CanHandleApi`), the hand-written `impl CanHandleApiSend<GreetApi> for App` — the transfer
-//! example's `Send`-recovery shape, forwarding to the wired `handle_api` — makes the same failure
+//! (`CanHandleApi`), the hand-written `impl CanHandleApiSend<GreetApi> for App` (a `Send`-recovery
+//! shape, forwarding to the wired `handle_api`) makes the same failure
 //! resurface as an `E0271` opaque-future type mismatch mentioning only `CanHandleApiSend`/`Future`,
 //! no CGP trait. The resolver anchors it on the enclosing hand-written impl (whose `CanHandleApi`
 //! supertrait is a CGP consumer trait), traces the chain to the same missing-field root cause, and
@@ -60,7 +60,7 @@ check_components! {
     }
 }
 
-// The `Send`-recovery workaround (the transfer example's `CanHandleApiSend`). Written with an
+// The `Send`-recovery workaround. Written with an
 // explicit `-> impl Future` and an `async move` block rather than an `async fn`, so the forwarding
 // failure surfaces as an `E0271` on the returned future rather than an opaque-type cycle.
 pub trait CanHandleApiSend<Api>: CanHandleApi<Api, Response: Send> + Send + Sync {

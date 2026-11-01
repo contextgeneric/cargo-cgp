@@ -3,7 +3,7 @@
 //!
 //! `GreetHello` needs `Self: HasName`, but `Person` has no `name` field, and the
 //! failure is triggered by calling `greet` directly with no `check_components!`.
-//! Under a plain `cargo check` this is the hidden class — a bare `E0599` "method not
+//! Under a plain `cargo check` this is the hidden class: a bare `E0599` "method not
 //! found" that never names the cause. Under the next-generation solver the tool
 //! recovers it: one `[CGP-E001]` block over a `[CGP-E110]` root cause naming the missing
 //! `name` field, without rustc's advice to use associated-function syntax. A passing

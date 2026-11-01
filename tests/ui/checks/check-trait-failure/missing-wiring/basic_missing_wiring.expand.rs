@@ -1,7 +1,7 @@
 #![feature(prelude_import)]
 //! A *transitive* missing wiring. `DoFooWithBar` carries the
 //! impl-side dependency `#[uses(CanUseBar)]`, so `App` can only use `FooProvider`
-//! if it also wires the `BarProvider` component — but `App` wires only
+//! if it also wires the `BarProvider` component, but `App` wires only
 //! `FooProviderComponent`, never `BarProviderComponent`. The check therefore fails
 //! not because a field is missing but because a component the wired provider needs
 //! is not delegated at all.

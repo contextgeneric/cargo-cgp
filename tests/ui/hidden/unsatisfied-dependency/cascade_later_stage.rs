@@ -1,15 +1,15 @@
 //! A use-site `E0277` on a `Code`-dispatched handler pipeline whose root cause lives in a
-//! *later* stage — the shape [`cascade_after_use_site`](cascade_after_use_site.rs) does not cover.
+//! *later* stage: the shape [`cascade_after_use_site`](cascade_after_use_site.rs) does not cover.
 //!
 //! As there, `App` runs a program through the async, `Code`-dispatched `Handler` component,
 //! dispatched to a `PipeHandlers` composition that matches the `Code` unconditionally, so the
-//! failure is an `E0277` on the call with no span landing on `App`'s definition — only the
+//! failure is an `E0277` on the call with no span landing on `App`'s definition, so only the
 //! call-site anchor can recover it.
 //!
 //! The difference is *where* the cause sits. Here the **first** stage, `HandleConnect`, depends
 //! only on `Input: Send`; with the call's unknown (placeholder) input that bound cannot be shown
 //! to hold, so `HandleConnect`'s `::Output` never normalizes. The **second** stage, `HandleName`,
-//! reads the context's `name` field — the real buried cause — and its input is that first stage's
+//! reads the context's `name` field (the real buried cause), and its input is that first stage's
 //! unresolved `::Output`. A walk that dropped a `ComposeHandlers` stage keyed on a projection
 //! carrying an inference variable would descend only the first stage (a mere `_: Send` it cannot
 //! report) and decline. The walk instead folds such a stray variable into a rigid placeholder, so
@@ -35,8 +35,8 @@ pub trait HasName {
 }
 
 /// First pipe stage: depends only on `Input: Send`. With the call's unknown input this cannot be
-/// shown to hold, so its `::Output` (used as the next stage's input) never normalizes — the shape
-/// that used to hide a cause living past the first stage.
+/// shown to hold, so its `::Output` (used as the next stage's input) never normalizes: the shape
+/// that could hide a cause living past the first stage.
 #[async_trait]
 #[cgp_impl(new HandleConnect)]
 #[use_type(HasErrorType.Error)]
@@ -51,7 +51,7 @@ where
     }
 }
 
-/// Second pipe stage: reads the context's `name` field — the buried root cause. Its input is the
+/// Second pipe stage: reads the context's `name` field: the buried root cause. Its input is the
 /// first stage's unresolved `::Output`; because it accepts *any* input (like a real DSL's later
 /// handlers), the walk can descend it once that input is folded to a placeholder, and reach the
 /// context-side `Self: HasName` dependency past the `Input: Send` one it cannot report.
@@ -82,7 +82,7 @@ cgp_namespace! {
 
 #[derive(HasField)]
 pub struct App {
-    // No `name` field — `HandleName`'s `Self: HasName` dependency cannot be met.
+    // No `name` field: `HandleName`'s `Self: HasName` dependency cannot be met.
 }
 
 delegate_components! {

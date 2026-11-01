@@ -1,6 +1,6 @@
 //! A resolution-class `E0599` near CGP wiring, which must not crash the resolver.
 //!
-//! The `GreetChoice` provider's `where` clause names `Choice::Fields` — but `Choice` is an enum
+//! The `GreetChoice` provider's `where` clause names `Choice::Fields`, but `Choice` is an enum
 //! with no such associated item reachable that way (the writer meant `<Choice as HasFields>::Fields`
 //! and forgot the qualified form), so rustc reports `E0599: no variant named Fields`. Crucially that
 //! error is emitted *during* predicate lowering (`gather_explicit_clauses_of`), while that query

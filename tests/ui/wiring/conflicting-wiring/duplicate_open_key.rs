@@ -1,8 +1,8 @@
 //! An `open` header and an explicit mapping that both wire
 //! the same component. `open GreeterComponent;` emits a `DelegateComponent<
 //! GreeterComponent>` redirect impl, and the following `GreeterComponent:
-//! GreetHello` emits another, so they conflict with the coherence error E0119 —
-//! the third duplicate-key shape named in the Failure modes doc, alongside
+//! GreetHello` emits another, so they conflict with the coherence error E0119:
+//! the third duplicate-key shape, alongside
 //! [duplicate_key.rs] (two blocks) and [duplicate_key_same_block.rs] (two plain
 //! entries).
 //!

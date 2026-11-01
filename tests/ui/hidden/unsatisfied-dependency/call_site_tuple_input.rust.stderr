@@ -171,7 +171,7 @@ error[E0277]: the `?` operator can only be used in an async function that return
 101 |    async fn run_app(app: &App) -> Result<(), String> {
     |  ____________________________________________________-
 102 | |      // The tuple literal's element types are not written (`Vec::new()` is generic), yet the tuple
-103 | |      // *shape* `(_, _)` is what `HandleBranch` destructures — the anchor must recover it.
+103 | |      // *shape* `(_, _)` is what `HandleBranch` destructures, so the anchor must recover it.
 104 | |/     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
 105 | ||         .await?;
     | ||_______________^ cannot use the `?` operator in an async function that returns `<impl Future<Output = Result<_, _>> as Future>::Output`

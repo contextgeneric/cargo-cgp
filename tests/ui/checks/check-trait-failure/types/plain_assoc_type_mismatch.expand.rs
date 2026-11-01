@@ -1,15 +1,15 @@
 #![feature(prelude_import)]
 //! The negative counterpart of [`abstract_type_mismatch`](abstract_type_mismatch.rs): the same
 //! projection failure on a trait that is **not** a CGP abstract-type component. `HasUnit` is a
-//! plain Rust trait with an associated type, implemented directly on the context — no
+//! plain Rust trait with an associated type, implemented directly on the context, with no
 //! `#[cgp_type]`, so no provider trait, no component marker, and no `UseType` blanket.
 //! `RectangleArea` pins its `Unit` to `f64` through an ordinary `where` clause (the form
 //! [`#[use_type]`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/attributes/use_type.md)
 //! deliberately does not cover, since the trait is not an abstract-type component), while
 //! `Rectangle` supplies `u32`.
 //!
-//! The failure is reshaped into the same `[CGP-E005]` class — the mechanism is the projection, not
-//! the trait — but the wording turns on the trait's fingerprint, and that is what this fixture pins.
+//! The failure is reshaped into the same `[CGP-E005]` class (the mechanism is the projection, not
+//! the trait), but the wording turns on the trait's fingerprint, and that is what this fixture pins.
 //! Because `HasUnit`'s provider trait carries no `UseType` impl, it reads `associated type` rather
 //! than `abstract type` and carries **no** `help`: there is no wiring entry to change, so suggesting
 //! `UseType<f64>` here would name a fix that does not exist. The concrete type is fixed by the
@@ -86,7 +86,7 @@ where
     >>::Delegate: IsProviderFor<AreaCalculatorComponent, __Context__, ()>
         + AreaCalculator<__Context__>,
 {}
-/// A plain associated-type trait — deliberately *not* `#[cgp_type]`, so nothing about it is wired.
+/// A plain associated-type trait: deliberately *not* `#[cgp_type]`, so nothing about it is wired.
 pub trait HasUnit {
     type Unit;
 }

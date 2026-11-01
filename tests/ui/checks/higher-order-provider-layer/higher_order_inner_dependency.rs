@@ -11,7 +11,7 @@
 //! runs *through* `ScaledArea<BaseArea>`'s `IsProviderFor` before reaching
 //! `CanUseComponent`, so the outer wrapper appears in the chain even though its own
 //! bound is satisfied. Contrast higher_order_outer_dependency.rs, whose caret lands
-//! on `ScaledArea`'s own clause and whose chain never reaches the inner provider —
+//! on `ScaledArea`'s own clause and whose chain never reaches the inner provider:
 //! the two failures are structurally similar but point at different layers, which
 //! is why `#[check_providers(...)]` exists to assert `IsProviderFor` per layer.
 //! This is the check doing its job, not a macro defect.

@@ -3,10 +3,10 @@
 //!
 //! A generic context `<T> Wrapper<T>` wires its abstract `Scalar` type to the impl
 //! generic `T` (`ScalarTypeProviderComponent: UseType<T>`), and `CompareScalars`
-//! needs `Scalar: Eq` — i.e. `T: Eq`. The generic wiring is accepted unconditionally;
+//! needs `Scalar: Eq`, i.e. `T: Eq`. The generic wiring is accepted unconditionally;
 //! the bound only bites at a concrete instantiation. Checking `Wrapper<f64>` surfaces
 //! `f64: Eq` unsatisfied through `IsProviderFor<ScalarEqualityComponent, Wrapper<f64>>`,
-//! exactly as the concrete-context case does — showing the ordinary-trait-bound class
+//! exactly as the concrete-context case does, showing the ordinary-trait-bound class
 //! arises anywhere impl generics carry a bound, including a generic
 //! `delegate_components!` table checked at one instantiation.
 //!

@@ -1,5 +1,5 @@
-//! Candidate fixture (feasibility probe): a two-component wiring cycle — `ProviderA`
-//! depends on `CanB`, `ProviderB` depends back on `CanA` — walked alongside a
+//! A two-component wiring cycle (`ProviderA`
+//! depends on `CanB`, `ProviderB` depends back on `CanA`), walked alongside a
 //! genuinely missing field. The resolver's cycle guard must cut the `CanA → CanB →
 //! CanA` loop while still reporting the missing `width` field down the other branch.
 

@@ -1,11 +1,10 @@
 //! A wiring gap surfaced through a plain trait implemented on a *foreign* wrapper type,
-//! whose `where`-clause chain reaches a CGP consumer several hops down — the shape the
-//! `cgp-examples/transfer` walkthrough hits with `impl CanAddApiRoutes for Router<Arc<MockApp>>`,
-//! traced to a root-cause tree by the wrapper-chain anchor.
+//! whose `where`-clause chain reaches a CGP consumer several hops down, such as
+//! `impl CanAddApiRoutes for Router<Arc<MockApp>>`, traced to a root-cause tree by the wrapper-chain anchor.
 //!
 //! Unlike [`manual_supertrait_impl`](../../../hidden/unsatisfied-dependency/manual_supertrait_impl.rs) and
-//! [`traced_send_wrapper`](traced_send_wrapper.rs) — where the wrapper is implemented *on the context
-//! itself* and carries the CGP consumer trait as a *direct* supertrait — here the routing trait
+//! [`traced_send_wrapper`](traced_send_wrapper.rs), where the wrapper is implemented *on the context
+//! itself* and carries the CGP consumer trait as a *direct* supertrait, here the routing trait
 //! `CanAddAppRoutes` is implemented for the foreign `Box<App>`, and the CGP consumer failure sits two
 //! hops down a chain of ordinary user-trait `where`-clauses (`Box<App>: CanAddRoute<App, GreetApi>` →
 //! `App: CanHandleApi<GreetApi>`). The context `App` appears only as a type *argument*, never as the
@@ -13,13 +12,13 @@
 //! CGP consumer" recovery does not fire; the wrapper-chain anchor descends the `where`-clauses to
 //! reach it instead.
 //!
-//! The routing impl carries the associated-type bound `Ctx::Response: Send` (the transfer example's
-//! `App::Request: FromRequestParts` shape): it is the projection over the broken `CanHandleApi` that
-//! makes the downstream `CanAddRoute` genuinely fail — the direct `App: CanHandleApiSend<GreetApi>`
+//! The routing impl carries the associated-type bound `Ctx::Response: Send`, as a web framework's
+//! `App::Request: FromRequestParts` would: it is the projection over the broken `CanHandleApi` that
+//! makes the downstream `CanAddRoute` genuinely fail: the direct `App: CanHandleApiSend<GreetApi>`
 //! bound is instead *assumed to hold* off its ill-formed impl, so the anchor reaches the real cause
 //! through the projection's base trait (`App: CanHandleApi<GreetApi>`) rather than that bound. The
 //! tree is headed by the code the programmer wrote (`CanAddAppRoutes`), and the header names the
-//! foreign `Box<App>` plainly — never mislabelling it a "context".
+//! foreign `Box<App>` plainly, never mislabelling it a "context".
 //!
 //! The one mistake is the missing `name` field `HandleGreet` reads. It surfaces both at the
 //! hand-written `impl CanHandleApiSend<GreetApi> for App` (traced by the impl-site anchor) and (the
@@ -73,7 +72,7 @@ delegate_components! {
 }
 
 // A `Send`-recovery wrapper carrying the CGP consumer trait `CanHandleApi` as a supertrait,
-// implemented directly on the context — the transfer example's `CanHandleApiSend` shape.
+// implemented directly on the context.
 pub trait CanHandleApiSend<Api>: CanHandleApi<Api, Response: Send> + Send + Sync {
     fn handle_api_send(&self, api: PhantomData<Api>)
     -> impl Future<Output = Self::Response> + Send;
@@ -89,7 +88,7 @@ impl CanHandleApiSend<GreetApi> for App {
 }
 
 // A generic routing trait whose blanket impl for the *foreign* wrapper `Box<Ctx>` depends on the
-// wrapper trait on `Ctx` and on its associated `Response` type — the `impl CanAddRoute<App, ..>
+// wrapper trait on `Ctx` and on its associated `Response` type: the `impl CanAddRoute<App, ..>
 // for Router<Arc<App>>` shape. `Ctx` appears only as a type argument, never as the impl's `Self`.
 pub trait CanAddRoute<Ctx, Api> {
     fn add_route(self);
@@ -103,7 +102,7 @@ where
     fn add_route(self) {}
 }
 
-// The convenience-alias impl the programmer writes, binding the routing to the concrete context —
+// The convenience-alias impl the programmer writes, binding the routing to the concrete context:
 // the `impl CanAddApiRoutes for Router<Arc<MockApp>>` shape. The caret lands here; its supertrait
 // `Box<App>: CanAddRoute<App, GreetApi>` fails several hops from the real cause.
 pub trait CanAddAppRoutes: CanAddRoute<App, GreetApi> {}

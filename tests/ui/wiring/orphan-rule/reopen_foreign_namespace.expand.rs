@@ -4,7 +4,7 @@
 //! `AppNamespace` and `GreeterComponent` come from the auxiliary upstream crate, so
 //! the `GreeterComponent => @foo` entry expands to `impl<__Table__>
 //! AppNamespace<__Table__> for GreeterComponent { .. }`, whose trait and self type
-//! are both foreign and whose `__Table__` parameter no local type covers — the
+//! are both foreign and whose `__Table__` parameter no local type covers, so the
 //! orphan rule rejects it (`E0210`). To extend a foreign namespace, define a *new*
 //! local namespace that *inherits* it (`new Local: AppNamespace { .. }`), which is
 //! orphan-safe because the emitted impls are for the local trait.
@@ -12,8 +12,8 @@
 //! cargo-cgp reshapes the orphan class into a `[CGP-E022]` header naming the
 //! foreign namespace (`AppNamespace`) and the foreign key (`GreeterComponent`)
 //! instead of the machinery parameter `__Table__`. Because the trigger is a
-//! `cgp_namespace!` re-open rather than a `#[default_impl]` registration — told
-//! apart by the impl's `__Table__` parameter — the `help` gives the re-open fix:
+//! `cgp_namespace!` re-open rather than a `#[default_impl]` registration (told
+//! apart by the impl's `__Table__` parameter), the `help` gives the re-open fix:
 //! define a new local namespace that *inherits* the foreign one. This is the
 //! `cgp_namespace!` trigger of the orphan class, alongside the `#[default_impl]`
 //! triggers in the sibling fixtures.

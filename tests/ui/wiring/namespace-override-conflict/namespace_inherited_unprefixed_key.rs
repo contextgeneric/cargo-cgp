@@ -1,12 +1,12 @@
 //! A namespace inherits a parent and then binds a bare, unprefixed
-//! component key that the parent already *redirects* — the namespace-level counterpart
+//! component key that the parent already *redirects*: the namespace-level counterpart
 //! of namespace_unprefixed_key.rs, where a *context* makes the same mistake.
 //!
 //! `#[prefix(@app in DefaultNamespace)]` registers `GreeterComponent` in
 //! `DefaultNamespace` as a `RedirectLookup` down `@app.GreeterComponent`, and
 //! `new AppNamespace: DefaultNamespace` emits the inheritance blanket impl
 //! `impl<Table, Key, Value> AppNamespace<Table> for Key where Key: DefaultNamespace<…>`,
-//! which forwards every key the parent answers — `GreeterComponent` among them.
+//! which forwards every key the parent answers, `GreeterComponent` among them.
 //! `#[default_impl(GreeterComponent in AppNamespace)]` then emits a second impl
 //! `impl<Table> AppNamespace<Table> for GreeterComponent`, and the two overlap, so
 //! coherence rejects the pair (`E0119`, a *single* conflict on

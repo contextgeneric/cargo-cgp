@@ -2,7 +2,7 @@
 //! Two `@`-path prefix-rewrite entries in one `cgp_namespace!`
 //! block that map the same path produce two conflicting `MyNamespace<_>` impls
 //! (keyed by the same `PathCons<..>` type), rejected with the coherence error
-//! E0119 — the namespace analogue of the `delegate_components!`
+//! E0119: the namespace analogue of the `delegate_components!`
 //! [delegate_duplicate_path_key.rs](delegate_duplicate_path_key.rs).
 //!
 //! This fixture pins the **error span** for a namespace `@`-path key. The key

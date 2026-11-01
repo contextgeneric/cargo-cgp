@@ -2,17 +2,17 @@
 //!
 //! Both `AreaCalculatorComponent` and `DensityCalculatorComponent` are checked, and a
 //! single missing `height` field breaks both. Left to rustc that is two full `E0277`
-//! blocks — an error count reflecting the depth of the wiring graph, not the number of
+//! blocks: an error count reflecting the depth of the wiring graph, not the number of
 //! mistakes. cargo-cgp coalesces the two: they share one root cause, so they collapse
 //! into a single `[CGP-E001]` headline naming both consumer traits, its caret on the first
 //! check entry and the second labelled, and the shared cause shown once. This is the *different
-//! consumers, one cause* coalescing — distinct from the same-consumer de-duplication
+//! consumers, one cause* coalescing, distinct from the same-consumer de-duplication
 //! `duplication/cross_site_dedup.rs` pins.
 //!
 //! `DensityCalculator` depends on `CanCalculateArea`, so `CanCalculateDensity`'s chain
 //! down to the missing field *contains* `CanCalculateArea`'s whole chain as a subtree.
-//! The merged block leads with that deeper, subsuming chain — showing why the two merged
-//! — even though the shallower `AreaCalculatorComponent` is the first entry checked; the
+//! The merged block leads with that deeper, subsuming chain, showing why the two merged
+//! even though the shallower `AreaCalculatorComponent` is the first entry checked; the
 //! representative chain is the deepest, not the first to arrive.
 //!
 //! CGP error class:

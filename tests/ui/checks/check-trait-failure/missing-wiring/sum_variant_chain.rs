@@ -1,14 +1,14 @@
 //! A missing wiring reached *through* a type-level sum spine, whose dependency-tree
 //! entries resugar `Either<…, Void>` back to `Sum![…]`.
 //!
-//! `EncodeChoice` dispatches over the variant list `Sum![u64, f64]` — which expands to the sum
-//! spine `Either<u64, Either<f64, Void>>` — through the recursive `EncodeVariants` visitor, each
+//! `EncodeChoice` dispatches over the variant list `Sum![u64, f64]` (which expands to the sum
+//! spine `Either<u64, Either<f64, Void>>`) through the recursive `EncodeVariants` visitor, each
 //! variant encoded via the context. `App` wires `u64` but not `f64`, so the `check_components!`
 //! entry for `Choice` fails on the missing `@VariantEncoderComponent.f64` wiring, reached by
 //! following the sum spine's same-trait recursion (the sum counterpart of `record_field_chain`).
 //!
 //! The point of the fixture is the rendering: the tree entries for the `EncodeVariants` steps carry
-//! the sum spine as their self type, and the renderer resugars it — `Either<u64, Either<f64, Void>>`
+//! the sum spine as their self type, and the renderer resugars it: `Either<u64, Either<f64, Void>>`
 //! reads as `Sum![u64, f64]` and its tail as `Sum![f64]`, anchored by `DefId` to `cgp-field` so only
 //! CGP's own `Either`/`Void` are resugared.
 
@@ -71,7 +71,7 @@ delegate_components! {
 
         @VariantEncoderComponent.Choice: EncodeChoice,
         @VariantEncoderComponent.u64: EncodeU64,
-        // `f64` is deliberately left unwired — the mistake this fixture pins, reached through the
+        // `f64` is deliberately left unwired: the mistake this fixture pins, reached through the
         // sum spine `Sum![u64, f64]`.
     }
 }

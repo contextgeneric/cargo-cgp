@@ -49,7 +49,7 @@ check_components! {
 }
 
 // Sites 2 and 3: a hand-written wrapper trait carrying `CanGreet` as a supertrait, implemented
-// directly on the context to add a `Send` bound the component cannot express — failing at the impl
+// directly on the context to add a `Send` bound the component cannot express, failing at the impl
 // header and again at the forwarding call, both the same failure as the check above.
 pub trait CanGreetSend: CanGreet + Send {
     fn greet_send(&self);

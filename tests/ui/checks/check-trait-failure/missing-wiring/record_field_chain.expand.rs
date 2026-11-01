@@ -1,5 +1,5 @@
 #![feature(prelude_import)]
-//! A missing wiring reached only *through* the extensible-data record machinery — a
+//! A missing wiring reached only *through* the extensible-data record machinery: a
 //! record provider that builds each field through the context, over a recursive `Cons`/`Nil`
 //! field-list handler: checking `Payload`
 //! deserialization descends `DeserializeRecordFields` → `HandleMapEntry` over the field list → a
@@ -14,8 +14,8 @@
 //!    `BuildRecord: DelegateComponent`.
 //!  - **An associated-type-determined provider parameter.** `BuildRecord`'s `Builder` param is fixed
 //!    only by `Value: HasRecordBuilder<RecordBuilder = Builder>`; the walk must solve that clause to
-//!    bind `Builder` before the sibling `Value::Fields: BuildFields<Self, Builder>` clause — the
-//!    branch that leads to the cause — reads as anything but a stray inference var.
+//!    bind `Builder` before the sibling `Value::Fields: BuildFields<Self, Builder>` clause (the
+//!    branch that leads to the cause) reads as anything but a stray inference var.
 //!  - **A same-trait recursion over a type-level list.** `BuildFields` handles its head field here and
 //!    its later fields through the tail `Cons<.., Nil>: BuildFields<..>`, a same-trait bound on
 //!    another foreign list node; the walk must follow that recursion to reach the field whose

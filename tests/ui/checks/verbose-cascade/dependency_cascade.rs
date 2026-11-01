@@ -3,7 +3,7 @@
 //! `ProvideFoo` needs the `name` field, `ProvideBar` depends on `CanFoo`, and
 //! `ProvideBaz` depends on `CanBar`; wiring all three onto an `App` without a `name`
 //! field and checking all three would, left to rustc, cascade into a block per
-//! component — more than three, since the deeper providers also emit intermediate
+//! component: more than three, since the deeper providers also emit intermediate
 //! provider-bound failures. cargo-cgp coalesces them: the three consumer failures
 //! share the one missing-`name` root cause, so they collapse into a single
 //! `[CGP-E001]` headline naming `CanBaz`, `CanBar`, and `CanFoo`, a caret or label on each check

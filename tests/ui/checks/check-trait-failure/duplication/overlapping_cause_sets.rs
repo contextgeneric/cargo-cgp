@@ -1,10 +1,10 @@
 //! Failures whose root-cause *sets* overlap without being equal, coalesced into one block.
 //!
-//! One omitted wiring entry — a single generic key covering every element type — is reached at two
+//! One omitted wiring entry (a single generic key covering every element type) is reached at two
 //! instantiations, so it surfaces as two distinct missing-delegate root causes. Each
 //! `check_components!` entry reaches one of the two; the use-site call walks every wired component
 //! and so reaches both. No two of those three cause sets are equal, so grouping failures by an
-//! *identical* cause set left one mistake reported as three blocks — and the use-site block fared
+//! *identical* cause set left one mistake reported as three blocks, and the use-site block fared
 //! worst, because its two top-level roots were exactly the consumers the check blocks had already
 //! drawn, so its chain was fully elided against them and it degenerated to a bare `root causes:`
 //! list with no dependency chain at all, on the one diagnostic sitting on code the programmer wrote.
