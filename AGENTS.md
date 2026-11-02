@@ -143,8 +143,9 @@ and apply to inline doc comments too.
 
 `cargo-cgp` mirrors Clippy's split into a front-end and a driver, and understanding that split is
 the key to the whole codebase. The **`cargo-cgp` crate** (`crates/cargo-cgp`) is the front-end: the
-cargo subcommand a user invokes, a plain `std` + `anyhow` binary that runs `cargo check` with
-`RUSTC_WORKSPACE_WRAPPER` set to the driver and lets cargo's output stream through untouched. The
+cargo subcommand a user invokes, an ordinary binary that links no compiler crate and runs
+`cargo check` with `RUSTC_WORKSPACE_WRAPPER` set to the driver and lets cargo's output stream
+through untouched. The
 **`cargo-cgp-driver` crate** (`crates/cargo-cgp-driver`) is the driver: the `rustc` replacement cargo
 then calls for each workspace crate, running the real compiler in-process through `rustc_driver`, and
 it is where every diagnostic transform happens. They are separate crates for one concrete
