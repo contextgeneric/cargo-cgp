@@ -47,27 +47,6 @@ fn duplicate_type_key() {
 }
 
 #[test]
-fn redirect_collides_with_inherited_namespace_entry() {
-    // The namespace-level face of the redirect collision: the subject is the namespace binding the
-    // bare key, and the path comes from the parent namespace the key is registered in.
-    let conflict = WiringConflict::Redirect {
-        context: "AppNamespace".to_owned(),
-        key: WiringKey::Component("GreeterComponent".to_owned()),
-        path: "@app.GreeterComponent".to_owned(),
-        provider: Some("GreetHello".to_owned()),
-        params: Vec::new(),
-    };
-    assert_eq!(
-        plan_wiring_conflict(&conflict),
-        "[CGP-E013] conflicting wiring: `AppNamespace` wires component `GreeterComponent` directly, but it is redirected to `@app.GreeterComponent`",
-    );
-    assert_eq!(
-        wiring_conflict_help(&conflict).as_deref(),
-        Some("wire the provider `GreetHello` with the key `@app.GreeterComponent`"),
-    );
-}
-
-#[test]
 fn overlap_bare_component_over_namespace() {
     let conflict = WiringConflict::Overlap {
         context: "App".to_owned(),
@@ -123,6 +102,10 @@ fn multiple_namespaces() {
     );
 }
 
+// Property: a redirect collision names its subject, the key it wires directly, and the path that
+//   redirects it, with the fix in a `help` naming the written provider at that path (the error-code
+//   catalog's `CGP-E013`). The subject may be a context or a namespace binding a key its parent
+//   redirects; the wording is the same for both.
 #[test]
 fn redirect_collides_with_direct_wiring() {
     // The fix moves to a `help`, keeping the header a single short sentence.
