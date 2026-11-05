@@ -46,7 +46,7 @@ pub fn detect_duplicate_check_trait(
 /// The check macro whose expansion `span` comes from, or `None` for a span no check macro wrote.
 /// `delegate_and_check_components!` is looked for first, in case its expansion passes through
 /// `check_components!`.
-fn check_macro_at(span: Span) -> Option<CheckForm> {
+pub fn check_macro_at(span: Span) -> Option<CheckForm> {
     let from = |macro_name: &str| {
         span.macro_backtrace().any(|expansion| {
             matches!(expansion.kind, ExpnKind::Macro(MacroKind::Bang, name)

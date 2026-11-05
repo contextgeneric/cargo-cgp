@@ -6,8 +6,8 @@
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
 
-//@quality: usability
-//@codes: CGP-E010 CGP-E015
+//@quality: acceptable
+//@codes: CGP-E010
 
 use cgp::prelude::*;
 

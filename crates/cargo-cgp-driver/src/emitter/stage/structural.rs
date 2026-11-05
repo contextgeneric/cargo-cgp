@@ -7,7 +7,7 @@ use rustc_errors::codes::{E0119, E0207, E0277, E0428};
 use rustc_errors::{DiagArgValue, DiagInner};
 use rustc_middle::ty::TyCtxt;
 
-use crate::detect;
+use crate::detect::{self, DuplicateCheck};
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 
 /// Stage 9, with its memory: the structural mistakes already reported, so a mistake rustc reports
@@ -24,8 +24,10 @@ impl StructuralStage {
     /// or each parameter of an entry, are unconstrained in the entry and in its `IsProviderFor`
     /// twin.
     pub fn run(&mut self, tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
-        let Some(mistake) = structural_mistake(tcx, diag) else {
-            return Verdict::Continue;
+        let mistake = match structural_mistake(tcx, diag) {
+            Some(Found::Mistake(mistake)) => mistake,
+            Some(Found::Restated) => return Verdict::Drop,
+            None => return Verdict::Continue,
         };
         if self.reported.contains(&mistake) {
             return Verdict::Drop;
@@ -53,17 +55,31 @@ impl StructuralStage {
     }
 }
 
+/// What the generated items at a diagnostic's caret show.
+enum Found {
+    /// A structural mistake, reported once.
+    Mistake(StructuralMistake),
+    /// A second report of a mistake another stage words, dropped.
+    Restated,
+}
+
 /// The structural mistake recovered from the generated items at `diag`'s caret: an `E0119` between
-/// two identical check impls is a check table listing one entry twice, an `E0428` on a check trait
+/// two identical check impls is a check table listing one entry twice (restating the wiring
+/// conflict when `delegate_and_check_components!` wrote it), an `E0428` on a check trait
 /// is two tables whose check traits share a name, an `E0277` on a check entry checked at the unit
 /// parameters is an entry that names no parameters for a component that takes some, and an `E0207`
 /// is a `for` loop whose key does not use its variable, a `#[default_impl]` on a generic provider
 /// impl, or a wiring entry whose key does not use its generic parameters. `None` for any other
 /// diagnostic.
-fn structural_mistake(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Option<StructuralMistake> {
+fn structural_mistake(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Option<Found> {
     let primary_span = diag.span.primary_span()?;
-    match diag.code {
-        Some(E0119) => detect::detect_duplicate_check(tcx?, primary_span),
+    let mistake = match diag.code {
+        Some(E0119) => {
+            return Some(match detect::detect_duplicate_check(tcx?, primary_span)? {
+                DuplicateCheck::Entry(mistake) => Found::Mistake(mistake),
+                DuplicateCheck::WiredTwice => Found::Restated,
+            });
+        }
         // Name resolution reports a name defined twice, and the derived diagnostic carries the
         // name as an argument rather than in a plain-string message; its one secondary label is
         // the earlier definition.
@@ -87,5 +103,6 @@ fn structural_mistake(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Option<Struc
                 .or_else(|| detect::detect_entry_parameters_not_in_key(tcx, primary_span))
         }
         _ => None,
-    }
+    };
+    mistake.map(Found::Mistake)
 }
