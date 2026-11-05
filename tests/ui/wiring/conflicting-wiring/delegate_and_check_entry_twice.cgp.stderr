@@ -1,0 +1,22 @@
+error[E0119]: [CGP-E010] conflicting wiring: `App` wires component `GreeterComponent` twice
+  --> src/main.rs:32:9
+   |
+31 |         GreeterComponent: GreetHello,
+   |         ---------------- first implementation here
+32 |         GreeterComponent: GreetHello,
+   |         ^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+
+error[E0119]: [CGP-E015] `check_components!` checks `GreeterComponent` twice for `App`
+  --> src/main.rs:29:1
+   |
+29 | // delegate_and_check_components! {
+30 | ||     App {
+31 | ||         GreeterComponent: GreetHello,
+   | ||________________________- first implementation here
+32 | |          GreeterComponent: GreetHello,
+   | |_________________________^ conflicting implementation for `App`
+   |
+   = help: remove one of the two `GreeterComponent` entries
+   = note: this error originates in the macro `delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0119`.
