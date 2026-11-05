@@ -1,15 +1,15 @@
 error[E0107]: trait takes 1 generic argument but 2 generic arguments were supplied
-  --> src/main.rs:26:8
+  --> src/main.rs:24:8
    |
-26 | #[uses(CanFoo<u32, u64>)]
+24 | #[uses(CanFoo<u32, u64>)]
    |        ^^^^^^    ----- help: remove the unnecessary generic argument
    |        |
    |        expected 1 generic argument
    |
 note: trait defined here, with 1 generic parameter: `T`
-  --> src/main.rs:15:11
+  --> src/main.rs:13:11
    |
-15 | pub trait CanFoo<T> {
+13 | pub trait CanFoo<T> {
    |           ^^^^^^ -
 
 For more information about this error, try `rustc --explain E0107`.

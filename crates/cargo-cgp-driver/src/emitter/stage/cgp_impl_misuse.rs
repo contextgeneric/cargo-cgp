@@ -114,7 +114,8 @@ impl CgpImplMisuseStage {
 /// body (`impl_span`) or at the macro call site the synthesized tokens share (`macro_span`, where
 /// the `E0425` and `E0207` sit). `E0425`, `E0186`, and `E0207` are always siblings when they land
 /// there; an `E0308` mismatch cascade (from a malformed inner-provider bound) is one only when it
-/// mentions the generated `__Context__`, so a user's own type error is never dropped.
+/// mentions the generated `__Context__`, so a type error of the program's own that names no
+/// generated type is kept. One that does, in the impl holding the mistake, is dropped with it.
 pub fn is_cgp_impl_sibling(diag: &DiagInner, impl_span: Span, macro_span: Span) -> bool {
     let Some(primary) = diag.span.primary_span() else {
         return false;

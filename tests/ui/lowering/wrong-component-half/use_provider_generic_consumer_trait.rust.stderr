@@ -1,0 +1,37 @@
+error[E0107]: trait takes 1 generic argument but 2 generic arguments were supplied
+  --> src/main.rs:25:23
+   |
+25 | #[use_provider(Inner: CanCalculateArea<Shape>)]
+   |                       ^^^^^^^^^^^^^^^^ expected 1 generic argument
+   |
+note: trait defined here, with 1 generic parameter: `Shape`
+  --> src/main.rs:18:11
+   |
+18 | pub trait CanCalculateArea<Shape> {
+   |           ^^^^^^^^^^^^^^^^ -----
+
+error[E0308]: mismatched types
+  --> src/main.rs:24:1
+   |
+24 | #[cgp_impl(new DoubledArea<Inner>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&Inner`, found `&__Context__`
+25 | #[use_provider(Inner: CanCalculateArea<Shape>)]
+26 | impl<Inner, Shape> AreaCalculator<Shape> {
+   |      ----- expected type parameter
+27 |     fn area(&self, shape: &Shape) -> f64 {
+28 |         Inner::area(self, shape) * 2.0
+   |         ----------- arguments to this function are incorrect
+   |
+   = note: expected reference `&Inner`
+              found reference `&__Context__`
+   = note: a type parameter was expected, but a different one was found; you might be missing a type parameter or trait bound
+   = note: for more information, visit https://doc.rust-lang.org/book/ch10-02-traits.html#traits-as-parameters
+note: method defined here
+  --> src/main.rs:19:8
+   |
+19 |     fn area(&self, shape: &Shape) -> f64;
+   |        ^^^^  ----
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0107, E0308.
+For more information about an error, try `rustc --explain E0107`.

@@ -27,8 +27,11 @@
 //! its paired provider, a `ConsumerTrait` misuse) or neither a consumer nor a provider trait (a
 //! `NonCgpTrait` misuse). A header that *is* the provider trait is the correct form; even then, each
 //! of the impl's inner-provider `where`-bounds is scanned for a consumer trait (a
-//! `ConsumerProviderBound` misuse). Each candidate carries its own trait-reference span, so the
-//! `E0107` that lands on one selects which is reshaped.
+//! `ConsumerProviderBound` misuse). An inner-provider bound is one on a type parameter other than
+//! `__Context__` whose trait takes `__Context__` as its first argument, the shape `#[use_provider]`
+//! writes; a `#[uses]` bound on the context itself is never one, so its own `E0107` (an arity slip)
+//! keeps rustc's wording. Each candidate carries its own trait-reference span, so the `E0107` that
+//! lands on one selects which is reshaped.
 //!
 //! No condition forces a query on the malformed impl itself: the header trait's `DefId` and `Self`'s
 //! kind are read from HIR, and the fingerprint queries touch only the well-formed consumer/provider
@@ -44,14 +47,16 @@
 //! case a programmer is overwhelmingly likely to hit.
 
 use cargo_cgp_error_processing::CgpImplMisuse;
-use rustc_hir::def::DefKind;
+use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{
-    GenericArg, GenericBound, ItemKind, QPath, TyKind, WherePredicate, WherePredicateKind,
+    GenericArg, GenericBound, ItemKind, PathSegment, QPath, Ty, TyKind, WherePredicate,
+    WherePredicateKind,
 };
 use rustc_middle::ty::TyCtxt;
-use rustc_span::Span;
 use rustc_span::def_id::LocalDefId;
+use rustc_span::{Span, Symbol};
 
+use crate::config::CGP_IMPL_CONTEXT_PARAM;
 use crate::resolve::query::{
     consumer_provider_trait, context_param_span, is_provider_trait, local_trait_impls,
 };
@@ -169,7 +174,8 @@ fn impl_misuses(tcx: TyCtxt<'_>, local: LocalDefId) -> Vec<DetectedCgpImplMisuse
 /// `#[use_provider]`, which supplies the leading context argument) that names the
 /// component's *consumer* trait: the same consumer/provider confusion as the header case, in
 /// the `where` clause (`CGP-E034`). Every such bound is a candidate; the `E0107` that lands on its
-/// trait name selects which one is reshaped.
+/// trait name selects which one is reshaped. A bound on the context, which `#[uses]` writes, is
+/// skipped (see [`is_inner_provider_bound`]).
 fn inner_bound_misuses(
     tcx: TyCtxt<'_>,
     predicates: &[WherePredicate<'_>],
@@ -196,15 +202,7 @@ fn inner_bound_misuses(
             let Some(segment) = bound_path.segments.last() else {
                 continue;
             };
-            // Only a consumer trait *given generic arguments* is the mistake: the inserted
-            // `<Self>` the consumer trait cannot take. A bare `Self: SomeConsumer` self-bound is
-            // legitimate and produces no `E0107`.
-            let has_type_arg = segment.args.is_some_and(|args| {
-                args.args
-                    .iter()
-                    .any(|arg| matches!(arg, GenericArg::Type(_)))
-            });
-            if !has_type_arg {
+            if !is_inner_provider_bound(bound.bounded_ty, segment) {
                 continue;
             }
             found.push(DetectedCgpImplMisuse {
@@ -220,4 +218,36 @@ fn inner_bound_misuses(
         }
     }
     found
+}
+
+/// Whether a `where` bound has the shape `#[use_provider]` writes, `Inner: Trait<__Context__, …>`:
+/// its bounded type is a type parameter other than `__Context__`, and its trait's first argument is
+/// `__Context__`. A consumer trait in that shape receives the context it cannot take, the mistake
+/// `CGP-E034` names. A bound on `__Context__` itself, as `#[uses]` writes, is a dependency of the
+/// context, so a wrong argument count there is an ordinary arity slip; and a bound on an inner
+/// provider whose first argument is another type is the program's own, not the attribute's.
+fn is_inner_provider_bound(bounded: &Ty<'_>, segment: &PathSegment<'_>) -> bool {
+    let is_context = |name: Symbol| name.as_str() == CGP_IMPL_CONTEXT_PARAM;
+    let Some(bounded) = type_param_name(bounded) else {
+        return false;
+    };
+    let first_arg = segment.args.and_then(|args| args.args.first());
+    let Some(GenericArg::Type(first)) = first_arg else {
+        return false;
+    };
+    !is_context(bounded) && type_param_name(first.as_unambig_ty()).is_some_and(is_context)
+}
+
+/// The name of the generic type parameter a HIR type is, or `None` for any other type.
+fn type_param_name(ty: &Ty<'_>) -> Option<Symbol> {
+    let TyKind::Path(QPath::Resolved(None, path)) = ty.kind else {
+        return None;
+    };
+    let Res::Def(DefKind::TyParam, _) = path.res else {
+        return None;
+    };
+    match path.segments {
+        [segment] => Some(segment.ident.name),
+        _ => None,
+    }
 }

@@ -7,8 +7,6 @@
 //!
 //! CGP error class: none; plain Rust the tool passes through.
 
-//@rewrites-falsely: the `#[cgp_impl]` misuse detector takes the `#[uses]` bound for an inner-provider bound once any `E0107` runs it, and drops the body's `E0308` as that mistake's cascade
-
 use cgp::prelude::*;
 
 #[cgp_component(Loader)]

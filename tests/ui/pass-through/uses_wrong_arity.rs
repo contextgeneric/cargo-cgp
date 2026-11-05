@@ -7,8 +7,6 @@
 //!
 //! CGP error class: none; plain Rust the tool passes through.
 
-//@rewrites-falsely: the `#[cgp_impl]` misuse detector takes the context's own bound for an inner-provider bound and rewrites the arity slip as `[CGP-E034]`
-
 use cgp::prelude::*;
 
 #[cgp_component(Fooer)]

@@ -1,7 +1,7 @@
 error[E0107]: missing generics for struct `Vec`
-   --> src/main.rs:31:21
+   --> src/main.rs:29:21
     |
- 31 | pub fn unrelated(_: Vec) {}
+ 29 | pub fn unrelated(_: Vec) {}
     |                     ^^^ expected at least 1 generic argument
     |
 note: struct defined here, with at least 1 generic parameter: `T`
@@ -11,13 +11,13 @@ note: struct defined here, with at least 1 generic parameter: `T`
     |            ^^^ -
 help: add missing generic argument
     |
- 31 | pub fn unrelated(_: Vec<T>) {}
+ 29 | pub fn unrelated(_: Vec<T>) {}
     |                        +++
 
 error[E0308]: mismatched types
-   --> src/main.rs:26:13
+   --> src/main.rs:24:13
     |
- 26 |         Err("failed".to_owned())
+ 24 |         Err("failed".to_owned())
     |         --- ^^^^^^^^^^^^^^^^^^^ expected associated type, found `String`
     |         |
     |         arguments to this enum variant are incorrect
@@ -25,9 +25,9 @@ error[E0308]: mismatched types
     = note: expected associated type `<__Context__ as cgp::prelude::HasErrorType>::Error`
                         found struct `String`
 help: the type constructed contains `String` due to the type of the argument passed
-   --> src/main.rs:26:9
+   --> src/main.rs:24:9
     |
- 26 |         Err("failed".to_owned())
+ 24 |         Err("failed".to_owned())
     |         ^^^^-------------------^
     |             |
     |             this argument influences the type of `Err`
@@ -38,7 +38,7 @@ note: tuple variant defined here
     |     ^^^
 help: consider constraining the associated type `<__Context__ as cgp::prelude::HasErrorType>::Error` to `String`
     |
- 23 | #[use_type(HasErrorType<Error = String>.Error)]
+ 21 | #[use_type(HasErrorType<Error = String>.Error)]
     |                        ++++++++++++++++
 
 Some errors have detailed explanations: E0107, E0308.
