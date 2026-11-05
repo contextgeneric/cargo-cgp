@@ -1,0 +1,9 @@
+error[E0107]: [CGP-E034] `CanFoo` is a consumer trait and cannot bound an inner provider; a higher-order provider imports its provider trait `Fooer`
+  --> src/main.rs:26:8
+   |
+26 | #[uses(CanFoo<u32, u64>)]
+   |        ^^^^^^
+   |
+   = help: name the provider trait in the bound, idiomatically `#[use_provider(… : Fooer)]` (not the consumer trait `CanFoo`)
+
+For more information about this error, try `rustc --explain E0107`.

@@ -1,0 +1,45 @@
+error[E0107]: missing generics for struct `Vec`
+   --> src/main.rs:31:21
+    |
+ 31 | pub fn unrelated(_: Vec) {}
+    |                     ^^^ expected at least 1 generic argument
+    |
+note: struct defined here, with at least 1 generic parameter: `T`
+   --> $SYSROOT/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs:439:12
+    |
+439 | pub struct Vec<T, #[stable(feature = "allocator_api", since = "1.100.0")] A: Allocator = Global> {
+    |            ^^^ -
+help: add missing generic argument
+    |
+ 31 | pub fn unrelated(_: Vec<T>) {}
+    |                        +++
+
+error[E0308]: mismatched types
+   --> src/main.rs:26:13
+    |
+ 26 |         Err("failed".to_owned())
+    |         --- ^^^^^^^^^^^^^^^^^^^ expected associated type, found `String`
+    |         |
+    |         arguments to this enum variant are incorrect
+    |
+    = note: expected associated type `<__Context__ as cgp::prelude::HasErrorType>::Error`
+                        found struct `String`
+help: the type constructed contains `String` due to the type of the argument passed
+   --> src/main.rs:26:9
+    |
+ 26 |         Err("failed".to_owned())
+    |         ^^^^-------------------^
+    |             |
+    |             this argument influences the type of `Err`
+note: tuple variant defined here
+   --> $SYSROOT/lib/rustlib/src/rust/library/core/src/result.rs:567:5
+    |
+567 |     Err(#[stable(feature = "rust1", since = "1.0.0")] E),
+    |     ^^^
+help: consider constraining the associated type `<__Context__ as cgp::prelude::HasErrorType>::Error` to `String`
+    |
+ 23 | #[use_type(HasErrorType<Error = String>.Error)]
+    |                        ++++++++++++++++
+
+Some errors have detailed explanations: E0107, E0308.
+For more information about an error, try `rustc --explain E0107`.
