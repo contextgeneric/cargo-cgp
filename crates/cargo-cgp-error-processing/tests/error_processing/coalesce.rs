@@ -19,6 +19,9 @@ fn field_cause(name: &str, owner: &str, issue: FieldIssue) -> Cause {
     }
 }
 
+// Property: for all sets of underived fields on one struct, `coalesce_underived_fields` merges them
+//   into one cause that keeps every field's path, with one lead naming every field and one derive
+//   `help` (its doc).
 #[test]
 fn two_underived_fields_on_one_struct_become_one_cause() {
     let causes = vec![
@@ -50,6 +53,8 @@ fn two_underived_fields_on_one_struct_become_one_cause() {
     );
 }
 
+// Property: a lone underived field is left as it is, keeping its single-field wording
+//   (`coalesce_underived_fields`'s doc).
 #[test]
 fn a_lone_underived_field_keeps_its_single_field_wording() {
     let causes = vec![field_cause("name", "App", FieldIssue::Present)];
@@ -57,6 +62,8 @@ fn a_lone_underived_field_keeps_its_single_field_wording() {
     assert_eq!(coalesced, causes);
 }
 
+// Property: missing fields are never coalesced, since each is its own fix
+//   (`coalesce_underived_fields`'s doc).
 #[test]
 fn genuinely_missing_fields_are_never_coalesced() {
     // A struct missing several fields needs several fixes (one per field), and a fieldless
@@ -69,6 +76,8 @@ fn genuinely_missing_fields_are_never_coalesced() {
     assert_eq!(coalesced, causes);
 }
 
+// Property: underived fields on different structs stay apart, since they are different fixes
+//   (`coalesce_underived_fields`'s doc).
 #[test]
 fn underived_fields_on_different_structs_stay_apart() {
     let causes = vec![
@@ -79,6 +88,9 @@ fn underived_fields_on_different_structs_stay_apart() {
     assert_eq!(coalesced, causes);
 }
 
+// Property: only the underived fields of a struct merge, the merged cause takes its first member's
+//   position, and a missing field beside them stays its own cause (`coalesce_underived_fields`'s
+//   doc).
 #[test]
 fn an_underived_group_beside_a_missing_field_coalesces_only_the_group() {
     let causes = vec![

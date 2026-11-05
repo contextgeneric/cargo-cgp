@@ -2,6 +2,9 @@
 
 use super::*;
 
+// Property: a check failing on a missing field plans the cause as headline, the class sentence as
+//   the internal headline, the note, and the add-field `help` (the error-code catalog's `CGP-E001`
+//   and `CGP-E110`).
 #[test]
 fn plans_a_missing_field_check_failure() {
     let cause = missing_field_cause();
@@ -42,6 +45,8 @@ fn plans_a_missing_field_check_failure() {
     );
 }
 
+// Property: a check failing on missing wiring plans the cause as headline, the note, and the wiring
+//   `help` (the error-code catalog's `CGP-E113`).
 #[test]
 fn plans_a_missing_wiring_check_failure() {
     let leaf = Leaf::MissingWiring {
@@ -77,6 +82,8 @@ fn plans_a_missing_wiring_check_failure() {
     );
 }
 
+// Property: a check failing on a missing table entry plans the cause as headline, the note, and the
+//   entry `help` (the error-code catalog's `CGP-E114`).
 #[test]
 fn plans_a_missing_dispatch_entry_check_failure() {
     let leaf = Leaf::MissingDispatchEntry {
@@ -107,6 +114,9 @@ fn plans_a_missing_dispatch_entry_check_failure() {
     );
 }
 
+// Property: a check failing on a type that is not a provider plans its `root cause:` note, and no
+//   `help` when no adapter, other component, or core provider is confirmed (the error-code
+//   catalog's `CGP-E115`).
 #[test]
 fn plans_a_not_a_provider_check_failure() {
     let leaf = Leaf::NotAProvider {
@@ -135,6 +145,8 @@ fn plans_a_not_a_provider_check_failure() {
     );
 }
 
+// Property: a check failing on a missing path plans the path as the wiring cause and its `help`
+//   writes the path as a key (the error-code catalog's `CGP-E113`).
 #[test]
 fn plans_a_missing_redirect_wiring_check_failure() {
     let leaf = Leaf::MissingRedirectWiring {
@@ -172,6 +184,8 @@ fn plans_a_missing_redirect_wiring_check_failure() {
     );
 }
 
+// Property: a field type mismatch takes the `CGP-E004` header, which states the leaf, so the note
+//   carries the chain alone (the error-code catalog's `CGP-E004`).
 #[test]
 fn plans_a_field_type_mismatch() {
     let leaf = Leaf::FieldTypeMismatch {
@@ -215,6 +229,8 @@ fn plans_a_field_type_mismatch() {
 /// An abstract-type mismatch is the `HasField` mismatch's sibling: the same `E0271` projection
 /// failure on a CGP abstract type instead of a field value, so it takes the `[CGP-E005]` header and
 /// carries the wiring fix in a `help`.
+// Property: an abstract-type mismatch takes the `CGP-E005` header and carries the `UseType` wiring
+//   `help` (the error-code catalog's `CGP-E005`).
 #[test]
 fn plans_an_abstract_type_mismatch() {
     let leaf = Leaf::AssocTypeMismatch {
@@ -262,6 +278,8 @@ fn plans_an_abstract_type_mismatch() {
 /// An associated type on a trait that is *not* a CGP abstract-type component reads as an
 /// `associated type` and carries no `help`: there is no wiring entry to name, since the type is
 /// fixed by whatever impl supplies it.
+// Property: a mismatch on an associated type that is no CGP abstract type reads `associated type`
+//   and carries no `help` (the error-code catalog's `CGP-E005`).
 #[test]
 fn plans_a_plain_associated_type_mismatch() {
     let leaf = Leaf::AssocTypeMismatch {
@@ -294,6 +312,8 @@ fn plans_a_plain_associated_type_mismatch() {
     assert!(plan.helps.is_empty());
 }
 
+// Property: a consumer-method `E0599`, whose rustc header names no wiring trait, is still worded
+//   from the resolution (the error-code catalog's `CGP-E001`).
 #[test]
 fn plans_a_use_site_method_failure() {
     let leaf = field_leaf("name", "Person", FieldIssue::Missing);

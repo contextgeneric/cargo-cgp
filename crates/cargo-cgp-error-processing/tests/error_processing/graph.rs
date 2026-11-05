@@ -29,6 +29,7 @@ fn render(paths: &[Vec<ChainNode>]) -> String {
     DependencyGraph::from_paths(paths).render()
 }
 
+// Shows: a single path renders as one root with each node nested one level under the one before.
 #[test]
 fn renders_a_linear_spine() {
     insta::assert_snapshot!(render(&[vec![hop("A"), hop("B"), leaf("D")]]), @"
@@ -38,6 +39,8 @@ fn renders_a_linear_spine() {
     ");
 }
 
+// Shows: a prefix several paths share renders once, branching where the paths diverge
+//   (`DependencyGraph::from_paths`'s doc).
 #[test]
 fn merges_a_shared_prefix_into_one_branching_tree() {
     // Two paths sharing `Con → Prov` diverge into two leaves: the shape a provider with two unmet
@@ -56,6 +59,8 @@ fn merges_a_shared_prefix_into_one_branching_tree() {
     ");
 }
 
+// Shows: a path head that is another path's child is not a top-level root, so only the deeper chain
+//   renders (`DependencyGraph::roots`'s doc).
 #[test]
 fn a_subsuming_chain_drops_the_contained_root() {
     // `Density → Area → D` and `Area → D`: `Area` is a head of the second path but also a child in
@@ -71,6 +76,8 @@ fn a_subsuming_chain_drops_the_contained_root() {
     ");
 }
 
+// Shows: roots that meet only at a leaf both render, and the leaf is drawn in full under each,
+//   since a leaf hides no subtree (`expand`'s doc).
 #[test]
 fn independent_roots_converging_on_one_leaf_both_render() {
     // Two unrelated chains reach the same leaf `D`. Neither subsumes the other, so both are roots;
@@ -84,6 +91,8 @@ fn independent_roots_converging_on_one_leaf_both_render() {
     ");
 }
 
+// Shows: a node with two parents is expanded under the first and referenced as `(*)` under the
+//   second, so its subtree appears once (`expand`'s doc).
 #[test]
 fn a_diamond_shows_the_shared_subtree_once() {
     // Two top-level nodes `A` and `B` both depend on `C`, which depends on the missing `D`. `C` is
@@ -102,6 +111,8 @@ fn a_diamond_shows_the_shared_subtree_once() {
     ");
 }
 
+// Shows: the single head that is no node's child is the only root, and a subtree both its branches
+//   share is expanded once (`roots` and `expand`'s docs).
 #[test]
 fn a_super_root_over_two_branches_shares_the_subtree() {
     // `S` depends on both `A` and `B`, which both depend on `C → D`. `S` is the only head that is
@@ -120,6 +131,8 @@ fn a_super_root_over_two_branches_shares_the_subtree() {
     ");
 }
 
+// Shows: a hop that repeats its parent's trait still names every generic argument, and distinct
+//   nodes on one trait stay distinct (`expand`'s doc: every CGP construct is rendered in full).
 #[test]
 fn a_repeated_trait_still_names_its_generics_in_full() {
     // Two distinct provider nodes sharing a trait reference (`Handler<Big>`) form a parent/child
@@ -145,6 +158,7 @@ fn a_repeated_trait_still_names_its_generics_in_full() {
     ");
 }
 
+// Shows: hops on one trait with different arguments each render in full (`expand`'s doc).
 #[test]
 fn a_hop_whose_generics_differ_from_its_parent_keeps_its_full_form() {
     // The companion of the test above: two provider nodes on the *same* trait whose generic
@@ -169,6 +183,8 @@ fn a_hop_whose_generics_differ_from_its_parent_keeps_its_full_form() {
     ");
 }
 
+// Shows: a label repeated within one path stays a distinct node, so the chain stays linear with no
+//   `(*)` (`from_paths`'s doc).
 #[test]
 fn a_within_path_label_repeat_stays_a_linear_chain() {
     // A single path passes through a same-labelled hop `R` twice: a recursive descent (a redirect
@@ -184,6 +200,8 @@ fn a_within_path_label_repeat_stays_a_linear_chain() {
     ");
 }
 
+// Shows: redirect lookups along one route for different keys stay distinct nodes across paths,
+//   since the key is part of their identity, so neither is `(*)`.
 #[test]
 fn cross_path_redirects_differing_only_by_key_stay_distinct() {
     // Two lookups along the same route (`@VBC`) for different keys render the *same* label but are
@@ -215,6 +233,8 @@ fn cross_path_redirects_differing_only_by_key_stay_distinct() {
     ");
 }
 
+// Shows: a redirect lookup with the same route and key in two paths merges into one node,
+//   `(*)`-referenced under the second (`from_paths`'s doc).
 #[test]
 fn cross_path_redirects_with_the_same_key_merge() {
     // Same route *and* same key is genuinely the same lookup, so it merges across paths like any
@@ -232,12 +252,15 @@ fn cross_path_redirects_with_the_same_key_merge() {
     ");
 }
 
+// Property: an empty path set builds an empty graph, which renders as an empty string.
 #[test]
 fn an_empty_path_set_renders_empty() {
     assert!(DependencyGraph::from_paths(&[]).is_empty());
     insta::assert_snapshot!(render(&[]), @"");
 }
 
+// Property: for all path sets whose heads are all children (a cycle), rendering terminates and
+//   marks the re-reached node `(*)` (`roots` and `expand`'s docs).
 #[test]
 fn a_cycle_across_paths_terminates_and_is_marked() {
     // Two paths that between them form a cycle (`A → B` and `B → A`) leave every head also a
@@ -256,6 +279,9 @@ fn a_cycle_across_paths_terminates_and_is_marked() {
 /// Two graphs rendered against one shared `seen` set: the shape a compilation's separate error
 /// blocks form when one mistake surfaces in several diagnostics that do not de-duplicate. The
 /// second keeps its own prefix and truncates at the subtree the first already drew.
+// Shows: a graph rendered against an earlier graph's `seen` set keeps its own hops, references the
+//   shared subtree as `(*)`, and still ends at the root cause (`render_seen` and `leaves_below`'s
+//   docs).
 #[test]
 fn a_second_graph_elides_what_the_first_drew() {
     let mut seen = HashSet::new();
@@ -287,6 +313,8 @@ fn a_second_graph_elides_what_the_first_drew() {
 /// A branch elided *within* one render needs no such terminator: the subtree it points at, root
 /// cause included, is right above it in the same note. Only a cross-render elision re-states the
 /// cause, since there the expansion lives in another block.
+// Shows: a `(*)` reference within one render needs no restated leaf, since the expansion is above
+//   it in the same note.
 #[test]
 fn a_within_render_reference_stays_bare() {
     let out = render(&[
@@ -305,6 +333,8 @@ fn a_within_render_reference_stays_bare() {
 
 /// A graph whose *every* root was already drawn has nothing of its own to show, so a caller is told
 /// to drop the chain rather than head a lone `(*)` with a promise of one.
+// Property: for all graphs whose every root is in `seen`, `fully_elided_by(seen)` holds, and for
+//   none drawn yet it does not (`fully_elided_by`'s doc).
 #[test]
 fn a_wholly_redundant_graph_reports_itself_fully_elided() {
     let mut seen = HashSet::new();
@@ -319,6 +349,8 @@ fn a_wholly_redundant_graph_reports_itself_fully_elided() {
 
 /// A bare leaf hides no subtree, so it is drawn in full wherever a chain bottoms out on it: a
 /// graph that is only a leaf is never reported as fully elided, however often it recurs.
+// Property: a graph that is only a leaf is never fully elided, however often it recurs, since a
+//   leaf hides no subtree (`fully_elided_by` and `expand`'s docs).
 #[test]
 fn a_leaf_only_graph_is_never_elided() {
     let mut seen = HashSet::new();

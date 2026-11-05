@@ -3,6 +3,9 @@
 
 use super::*;
 
+// Property: every root-cause leaf carries its own tree code, an ordinary bound keeps the compiler's
+//   phrasing, and the `root cause:` lead repeats its leaf's code (the error-code catalog's tree
+//   codes).
 #[test]
 fn dependency_tree_leaf_codes_every_root_cause() {
     // Each root-cause leaf carries its own `CGP-E1xx` code as a tree entry.
@@ -82,6 +85,9 @@ fn dependency_tree_leaf_codes_every_root_cause() {
     );
 }
 
+// Property: a provider for other arguments names the context as its `for`, or the parameter a
+//   component argument binds, with several impls as alternatives (the error-code catalog's
+//   `CGP-E127`).
 #[test]
 fn a_provider_for_other_arguments_names_the_argument_it_takes() {
     // The context reads as the `for` of a `#[cgp_impl]` header.
@@ -108,6 +114,8 @@ fn a_provider_for_other_arguments_names_the_argument_it_takes() {
     );
 }
 
+// Property: for all failures, `cause_signature` is equal exactly when the context, the consumer
+//   traits, and each cause's lead are, whatever the dependency paths (its doc).
 #[test]
 fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
     let missing_name = || {
@@ -145,6 +153,8 @@ fn cause_signature_matches_re_reports_and_separates_distinct_failures() {
     assert_ne!(cause_signature(&at_check), cause_signature(&other_cause));
 }
 
+// Property: `quoted_list` joins names with the Oxford comma, and a mismatch's required type shows
+//   both its projection and its reduction when they differ (the error-code catalog's `CGP-E004`).
 #[test]
 fn wording_helpers_format_directly() {
     assert_eq!(quoted_list(&[]), "");
@@ -186,6 +196,8 @@ fn wording_helpers_format_directly() {
 /// Two causes sharing a dependency prefix collapse into a single `root causes:` note: the shared
 /// prefix appears once, each cause is listed up front, and the merged graph branches to the two
 /// distinct leaves. A lone cause keeps its own `root cause:` note.
+// Property: causes sharing a dependency prefix render as one `root causes:` note listing each
+//   cause, with the prefix once, and a lone cause keeps the singular `root cause:` form.
 #[test]
 fn merges_two_causes_sharing_a_root_into_one_note() {
     let causes = vec![
@@ -219,6 +231,8 @@ fn merges_two_causes_sharing_a_root_into_one_note() {
 /// one note (the `parallel_consumers` shape), not two: the `root causes:` heading lists each distinct
 /// leaf, and the graph renders each root chain stacked. This is the behavior the graph adds over the
 /// old shared-prefix-only merge, which would have emitted two separate notes here.
+// Property: causes reached through independent chains render as one note listing each leaf, with
+//   each root chain stacked.
 #[test]
 fn independent_root_causes_render_as_one_note_with_stacked_chains() {
     let causes = vec![
@@ -258,6 +272,8 @@ fn independent_root_causes_render_as_one_note_with_stacked_chains() {
 /// built for: eliding there removes the whole derivation and leaves the block asserting a cause with
 /// no account of where it came from. Such a block has already survived de-duplication, so it is a
 /// distinct failure that merely runs through ground another one covered, and it earns its chain.
+// Property: a block whose every root an earlier block drew still renders its own chain
+//   (`DependencyGraph::fully_elided_by`'s doc).
 #[test]
 fn a_wholly_contained_block_still_renders_its_chain() {
     let leaf = missing_field_leaf();
@@ -305,6 +321,8 @@ fn a_wholly_contained_block_still_renders_its_chain() {
 
 /// The partial case is untouched: a block with its own prefix still elides the shared tail, keeping
 /// the `(*)` marker and the leaves beneath it.
+// Property: a block with its own prefix elides the tail an earlier block drew, keeping the `(*)`
+//   marker and the leaves beneath it (`DependencyGraph::render_seen`'s doc).
 #[test]
 fn a_partly_contained_block_still_elides_its_shared_tail() {
     let leaf = missing_field_leaf();

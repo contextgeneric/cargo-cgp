@@ -2,6 +2,8 @@
 
 use cargo_cgp_error_processing::{similar_key, similar_name};
 
+// Property: a candidate equal to the target ignoring ASCII case, or within the edit limit counting
+//   a swap of adjacent characters as one edit, is a near miss (`similar_name`'s doc).
 #[test]
 fn a_transposed_or_recased_name_is_a_near_miss() {
     assert_eq!(
@@ -16,6 +18,8 @@ fn a_transposed_or_recased_name_is_a_near_miss() {
     );
 }
 
+// Property: a candidate past the edit limit, or equal to the target, is no near miss
+//   (`similar_name`'s doc).
 #[test]
 fn a_distant_or_identical_name_is_not_a_near_miss() {
     assert_eq!(similar_name("height", ["width"]), None);
@@ -24,11 +28,15 @@ fn a_distant_or_identical_name_is_not_a_near_miss() {
     assert_eq!(similar_name("name", ["name"]), None);
 }
 
+// Property: among candidates within the limit, the one closest to the target is returned
+//   (`similar_name`'s doc).
 #[test]
 fn the_closest_name_wins() {
     assert_eq!(similar_name("widht", ["wide", "width"]), Some("width"));
 }
 
+// Property: a key that differs from the target in one segment by ASCII case alone is a near miss
+//   (`similar_key`'s doc).
 #[test]
 fn a_key_with_one_segment_recased_is_a_near_miss() {
     assert_eq!(
@@ -37,6 +45,8 @@ fn a_key_with_one_segment_recased_is_a_near_miss() {
     );
 }
 
+// Property: a key whose one differing segment is a symbol within `similar_name`'s limit is a near
+//   miss (`similar_key`'s doc).
 #[test]
 fn a_key_with_one_symbol_misspelled_is_a_near_miss() {
     assert_eq!(
@@ -45,6 +55,8 @@ fn a_key_with_one_symbol_misspelled_is_a_near_miss() {
     );
 }
 
+// Property: a key with one segment more or fewer, other than the last, is a near miss
+//   (`similar_key`'s doc).
 #[test]
 fn a_key_with_a_segment_doubled_or_missing_is_a_near_miss() {
     assert_eq!(
@@ -61,6 +73,8 @@ fn a_key_with_a_segment_doubled_or_missing_is_a_near_miss() {
     );
 }
 
+// Property: two differing type segments, primitives included, or a dropped last segment never make
+//   a near miss (`similar_key`'s doc).
 #[test]
 fn different_types_or_a_dropped_last_segment_are_not_near_misses() {
     // Two type segments name two different types, however close their spelling.

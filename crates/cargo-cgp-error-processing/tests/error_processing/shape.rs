@@ -18,6 +18,8 @@ fn fields(entries: &[(ShapeTag, &str)]) -> Vec<(ShapeTag, String)> {
         .collect()
 }
 
+// Property: for all names that are identifiers and not keywords, `shape_name` returns them
+//   unchanged.
 #[test]
 fn an_identifier_is_written_as_is() {
     assert_eq!(shape_name("width").as_deref(), Some("width"));
@@ -26,6 +28,8 @@ fn an_identifier_is_written_as_is() {
     assert_eq!(shape_name("größe").as_deref(), Some("größe"));
 }
 
+// Property: for all keywords a raw identifier can write, `shape_name` returns them with `r#`
+//   (`shape_name`'s doc).
 #[test]
 fn a_keyword_is_written_raw() {
     assert_eq!(shape_name("type").as_deref(), Some("r#type"));
@@ -33,6 +37,8 @@ fn a_keyword_is_written_raw() {
     assert_eq!(shape_name("gen").as_deref(), Some("r#gen"));
 }
 
+// Property: for all names that are no identifier, or keywords even a raw identifier cannot write,
+//   `shape_name` returns `None`.
 #[test]
 fn a_name_no_body_can_write_has_no_spelling() {
     for unwritable in [
@@ -42,6 +48,8 @@ fn a_name_no_body_can_write_has_no_spelling() {
     }
 }
 
+// Property: a product whose tags are all writable names renders as `Struct! { a: A }`
+//   (`render_struct_shape`'s doc).
 #[test]
 fn named_cells_render_as_a_named_struct() {
     assert_eq!(
@@ -50,6 +58,8 @@ fn named_cells_render_as_a_named_struct() {
     );
 }
 
+// Property: a product tagged `Index<0>`, `Index<1>`, and on in order, with at least two cells,
+//   renders as `Struct!(A, B)` (`render_struct_shape`'s doc).
 #[test]
 fn index_cells_in_order_render_as_a_tuple_struct() {
     assert_eq!(
@@ -62,6 +72,8 @@ fn index_cells_in_order_render_as_a_tuple_struct() {
     );
 }
 
+// Property: a product with a single `Index` cell, a gap or reorder in its positions, mixed tags, an
+//   unwritable name, or no cells has no `Struct!` spelling (`render_struct_shape`'s doc).
 #[test]
 fn a_product_with_no_struct_spelling_declines() {
     // `Struct!(T)` is the bare `T`, so a single `Index` cell has no spelling.
@@ -97,6 +109,8 @@ fn a_product_with_no_struct_spelling_declines() {
     assert_eq!(render_struct_shape(&[]), None);
 }
 
+// Property: a variant renders as a unit for a `Nil` payload, with its own braces or parentheses for
+//   a `Struct!` payload, and as `V(T)` otherwise (`render_variant`'s doc).
 #[test]
 fn a_variant_takes_the_shortest_spelling_of_its_payload() {
     assert_eq!(render_variant("Empty", None), "Empty");
@@ -116,6 +130,8 @@ fn a_variant_takes_the_shortest_spelling_of_its_payload() {
     );
 }
 
+// Property: a payload whose `Struct!` call is not the whole text stays the single positional field
+//   (`render_variant`'s doc and its call reader's).
 #[test]
 fn a_variant_payload_that_only_starts_with_a_shape_stays_positional() {
     // The shape is not the whole payload, so its braces are not the variant's own.
@@ -129,6 +145,8 @@ fn a_variant_payload_that_only_starts_with_a_shape_stays_positional() {
     );
 }
 
+// Property: a sum whose tags are all writable names renders as `Enum!`, each variant in its
+//   shortest spelling (`render_enum_shape`'s doc).
 #[test]
 fn named_variants_render_as_an_enum() {
     assert_eq!(
@@ -143,6 +161,8 @@ fn named_variants_render_as_an_enum() {
     );
 }
 
+// Property: a sum with a position tag, an unwritable name, or no variants has no `Enum!` spelling
+//   (`render_enum_shape`'s doc).
 #[test]
 fn a_sum_with_no_enum_spelling_declines() {
     assert_eq!(

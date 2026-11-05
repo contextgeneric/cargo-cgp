@@ -9,6 +9,8 @@ use cargo_cgp_error_processing::{
     mentions_wiring_text,
 };
 
+// Property: `mentions_wiring_text` holds for a message naming `CanUseComponent`, `IsProviderFor`,
+//   or `HasField`, and not for one naming none of them (its doc).
 #[test]
 fn wiring_signal_matches_each_wiring_trait_and_nothing_else() {
     assert!(mentions_wiring_text(
@@ -25,6 +27,8 @@ fn wiring_signal_matches_each_wiring_trait_and_nothing_else() {
     assert!(!mentions_wiring_text("mismatched types"));
 }
 
+// Property: `is_method_bounds_text` holds for the method-bounds `E0599` and not for the
+//   resolution-class `E0599` (its doc).
 #[test]
 fn method_bounds_signal_tells_the_two_e0599_shapes_apart() {
     assert!(is_method_bounds_text(
@@ -37,6 +41,8 @@ fn method_bounds_signal_tells_the_two_e0599_shapes_apart() {
     ));
 }
 
+// Property: `is_method_probe_advice_text` holds for each artifact of the method probe its doc
+//   lists, and not for rustc's other suggestions or the unmet bound the diagnostic names (its doc).
 #[test]
 fn method_probe_advice_signal_matches_each_artifact() {
     assert!(is_method_probe_advice_text(
@@ -64,6 +70,8 @@ fn method_probe_advice_signal_matches_each_artifact() {
     ));
 }
 
+// Property: `mentions_orphan_param_text` holds only for the orphan phrasing naming a reserved
+//   machinery parameter, neither alone (its doc).
 #[test]
 fn orphan_signal_needs_both_the_phrase_and_a_reserved_marker() {
     // The CGP macros emit `__Components__`/`__Table__`, so the reserved marker beside the coherence
@@ -81,6 +89,8 @@ fn orphan_signal_needs_both_the_phrase_and_a_reserved_marker() {
     ));
 }
 
+// Property: `is_question_mark_cascade_text` holds for rustc's `?` wording and not for another
+//   message (its doc).
 #[test]
 fn question_mark_signal_matches_rustc_try_wording() {
     assert!(is_question_mark_cascade_text(
@@ -89,6 +99,8 @@ fn question_mark_signal_matches_rustc_try_wording() {
     assert!(!is_question_mark_cascade_text("mismatched types"));
 }
 
+// Property: `is_explain_footer_text` holds for both footer forms and not for a note that mentions
+//   an error (its doc).
 #[test]
 fn recognizes_the_explain_footer_lines() {
     assert!(is_explain_footer_text(
@@ -106,6 +118,8 @@ fn recognizes_the_explain_footer_lines() {
     ));
 }
 
+// Property: `explain_footer_codes` returns every code of the list form and the single code of the
+//   pointer form, in order (its doc).
 #[test]
 fn reads_the_codes_a_footer_line_names() {
     assert_eq!(
@@ -124,6 +138,8 @@ fn reads_the_codes_a_footer_line_names() {
 
 /// The guard the rebuild keys on: a footer always names a code, so parsing none means the wording
 /// moved. The emitter leaves such a footer alone rather than rebuilding it out of existence.
+// Property: a footer line whose wording moved yields no codes, the signal the rebuild keys on to
+//   leave the footer alone (`explain_footer_codes`'s doc).
 #[test]
 fn yields_no_codes_when_the_wording_moved() {
     assert!(explain_footer_codes("Some errors have detailed explanations:").is_empty());
@@ -132,6 +148,8 @@ fn yields_no_codes_when_the_wording_moved() {
     );
 }
 
+// Property: `is_recursion_limit_help_text` holds for rustc's recursion-limit advice and not for
+//   another message (its doc).
 #[test]
 fn recognizes_the_recursion_limit_help() {
     assert!(is_recursion_limit_help_text(
@@ -142,6 +160,8 @@ fn recognizes_the_recursion_limit_help() {
     ));
 }
 
+// Property: for all paths p and names n, `invokes_macro(p, n)` holds exactly when the last segment
+//   of p is n (its doc).
 #[test]
 fn a_macro_is_named_by_the_last_segment_of_its_path() {
     // A bare call, and a call written by its path.
@@ -162,6 +182,8 @@ fn a_macro_is_named_by_the_last_segment_of_its_path() {
     ));
 }
 
+// Property: `is_missing_type_parameter_help_text` holds for that suggestion and not for rustc's
+//   other help on an unresolved name (its doc).
 #[test]
 fn the_missing_type_parameter_signal_matches_only_that_help() {
     assert!(is_missing_type_parameter_help_text(

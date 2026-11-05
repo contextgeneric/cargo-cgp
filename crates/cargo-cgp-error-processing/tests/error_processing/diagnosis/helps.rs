@@ -28,6 +28,8 @@ fn app_cause(leaf: Leaf) -> Cause {
     one_path(leaf, vec![consumer("CanRun", "App")])
 }
 
+// Property: a field without its derive gets the derive `help` and the `CGP-E111` lead (the
+//   error-code catalog's `CGP-E111`).
 #[test]
 fn plans_a_missing_derive_with_a_help() {
     let leaf = field_leaf("height", "Rectangle", FieldIssue::Present);
@@ -57,6 +59,8 @@ fn plans_a_missing_derive_with_a_help() {
     ));
 }
 
+// Property: a field reached through a `Deref` target that lacks the derive gets the derive `help`
+//   on the target (the error-code catalog's `CGP-E111`).
 #[test]
 fn a_deref_target_help_points_at_the_target() {
     let leaf = Leaf::Field {
@@ -79,6 +83,8 @@ fn a_deref_target_help_points_at_the_target() {
     );
 }
 
+// Property: a confirmed missing field's `help` names the type its requirement states
+//   (`fix_help_messages`'s doc).
 #[test]
 fn a_missing_field_help_names_the_type_its_requirement_states() {
     let causes = [app_cause(typed_missing_field("height", "App", Some("f64")))];
@@ -88,6 +94,8 @@ fn a_missing_field_help_names_the_type_its_requirement_states() {
     );
 }
 
+// Property: missing fields on one struct share one `help`, naming them in written order
+//   (`fix_help_messages`'s doc).
 #[test]
 fn missing_fields_on_one_struct_share_one_help_in_written_order() {
     let causes = [
@@ -105,6 +113,8 @@ fn missing_fields_on_one_struct_share_one_help_in_written_order() {
     );
 }
 
+// Property: missing wiring on one context shares one `help`, naming each key (`fix_help_messages`'s
+//   doc).
 #[test]
 fn missing_wiring_on_one_context_shares_one_help() {
     let wiring = |component: &str| Leaf::MissingWiring {
@@ -129,6 +139,7 @@ fn missing_wiring_on_one_context_shares_one_help() {
     );
 }
 
+// Property: missing entries share one `help` per table (`fix_help_messages`'s doc).
 #[test]
 fn missing_entries_share_one_help_per_table() {
     let entry = |key: &str, table: &str| Leaf::MissingDispatchEntry {
@@ -149,6 +160,9 @@ fn missing_entries_share_one_help_per_table() {
     );
 }
 
+// Property: mixed causes get one `help` per kind and owner, in the order the causes are listed, and
+//   an ordinary bound, a non-provider without a confirmed fix, and a provider for other arguments
+//   add none (`fix_help_messages`'s doc).
 #[test]
 fn mixed_causes_get_one_help_per_kind_in_cause_order() {
     let causes = [
@@ -189,6 +203,9 @@ fn mixed_causes_get_one_help_per_kind_in_cause_order() {
     );
 }
 
+// Property: a field is named with its type only when every route to it agrees on the type (the
+//   error-code catalog's `CGP-E110`;
+//   cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/output.md).
 #[test]
 fn a_field_reached_with_two_required_types_is_one_cause_named_without_a_type() {
     // The required type is not part of the cause's identity, so the two routes stay one cause; they
@@ -226,6 +243,8 @@ fn a_field_reached_with_two_required_types_is_one_cause_named_without_a_type() {
     );
 }
 
+// Property: a missing field whose fix is not confirmed on every route gets no add-field `help`
+//   (`fix_help_messages`'s doc).
 #[test]
 fn a_missing_field_whose_fix_is_unconfirmed_gets_no_help() {
     // Its struct implements `HasField` for no field, so the derive may be missing as well.
@@ -248,6 +267,9 @@ fn a_missing_field_whose_fix_is_unconfirmed_gets_no_help() {
     assert!(fix_help_messages(&causes).is_empty());
 }
 
+// Property: a key holding a reference or an erased lifetime gets no `help`, since it cannot be
+//   pasted, while a `Symbol!` character that spells `'_'` is no lifetime (the error-code catalog's
+//   `CGP-E113`).
 #[test]
 fn a_key_holding_a_reference_gets_no_help() {
     // The lifetime is erased, so the key cannot be pasted as written.
@@ -288,8 +310,8 @@ fn a_key_holding_a_reference_gets_no_help() {
 }
 
 // Property: the postcondition of `fix_help_messages`, that a near miss comes before its cause's
-// fix. The wiring cause's fix merges into the help the path cause opened, so its near miss moves
-// ahead of that merged help rather than after it.
+//   fix. The wiring cause's fix merges into the help the path cause opened, so its near miss moves
+//   ahead of that merged help rather than after it.
 #[test]
 fn a_near_miss_is_named_before_the_fix() {
     let field = Leaf::Field {
@@ -328,6 +350,8 @@ fn a_near_miss_is_named_before_the_fix() {
     );
 }
 
+// Property: a near miss is named even when its cause's own fix is not confirmed
+//   (`fix_help_messages`'s doc).
 #[test]
 fn a_near_miss_needs_no_confirmed_fix() {
     // A struct that does not derive `HasField` gets no add-field help, but its similar field is
@@ -365,6 +389,8 @@ fn not_a_provider(adapters: Vec<(&str, Option<&str>)>) -> Leaf {
     }
 }
 
+// Property: a non-provider gets a `help` naming the adapter the solver confirms, with its `use`
+//   when the prelude lacks it (the error-code catalog's `CGP-E115`).
 #[test]
 fn a_non_provider_names_the_adapter_that_makes_it_one_with_its_import() {
     let leaf = not_a_provider(vec![(
@@ -378,6 +404,8 @@ fn a_non_provider_names_the_adapter_that_makes_it_one_with_its_import() {
     );
 }
 
+// Property: several confirmed adapters are named as alternatives, and one in the prelude needs no
+//   `use` (the error-code catalog's `CGP-E115`).
 #[test]
 fn several_adapters_are_named_alternatives_and_a_prelude_adapter_needs_no_import() {
     let leaf = not_a_provider(vec![
@@ -390,6 +418,8 @@ fn several_adapters_are_named_alternatives_and_a_prelude_adapter_needs_no_import
     );
 }
 
+// Property: a non-provider that provides another component for the same context gets a `help`
+//   naming that component's key (the error-code catalog's `CGP-E115`).
 #[test]
 fn a_non_provider_that_provides_another_component_names_its_key() {
     let leaf = Leaf::NotAProvider {
@@ -421,6 +451,9 @@ fn core_hint(hint: CoreProviderHint) -> Leaf {
     }
 }
 
+// Property: a misused core provider gets the `help` naming what serves the slot: `UseFields` for a
+//   multi-method getter, or the `open` dispatch for `UseDelegate` (the error-code catalog's
+//   `CGP-E115`).
 #[test]
 fn a_misused_core_provider_names_what_serves_the_slot() {
     assert_eq!(
@@ -439,11 +472,15 @@ fn a_misused_core_provider_names_what_serves_the_slot() {
     );
 }
 
+// Property: a non-provider with nothing confirmed gets no `help` (the error-code catalog's
+//   `CGP-E115`).
 #[test]
 fn a_non_provider_with_no_confirmed_adapter_gets_no_help() {
     assert!(fix_help_messages(&[app_cause(not_a_provider(Vec::new()))]).is_empty());
 }
 
+// Property: a tuple-struct field written as a string tag gets the `Index` tag `help` alone, since a
+//   tuple struct cannot gain a named field (the error-code catalog's `CGP-E110`).
 #[test]
 fn a_tuple_field_tagged_by_a_string_names_its_index_tag() {
     // A tuple struct cannot gain a named field, so only the `Index` tag is named.
@@ -465,6 +502,9 @@ fn a_tuple_field_tagged_by_a_string_names_its_index_tag() {
     );
 }
 
+// Property: a hand-written wiring without `IsProviderFor` gets the `delegate_components!` entry to
+//   write when its delegate is known, and no `help` otherwise (the error-code catalog's
+//   `CGP-E128`).
 #[test]
 fn a_hand_written_wiring_names_the_entry_to_write_when_its_delegate_is_known() {
     let leaf = |delegate: Option<&str>| Leaf::WiringWithoutProviderFor {
@@ -488,6 +528,8 @@ fn a_hand_written_wiring_names_the_entry_to_write_when_its_delegate_is_known() {
     assert!(fix_help_messages(&[app_cause(leaf(None))]).is_empty());
 }
 
+// Property: an unbounded type parameter gets the `help` naming the bound to add (the error-code
+//   catalog's `CGP-E129`).
 #[test]
 fn an_unbounded_parameter_names_the_bound_to_add() {
     let leaf = Leaf::UnboundedParameter {
@@ -516,6 +558,8 @@ fn helps_of_two_routes(leaves: [Leaf; 2]) -> Vec<String> {
     fix_help_messages(&causes)
 }
 
+// Property: for all causes reached by several routes, a fix one route names and another does not,
+//   or names differently, is dropped, since it would not fix every route's requirement.
 #[test]
 fn routes_that_disagree_on_a_fix_drop_its_help() {
     let provides = |component: &str| Leaf::NotAProvider {

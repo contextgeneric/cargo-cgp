@@ -6,6 +6,8 @@ use super::*;
 /// header that names something else (as the emitter's coalesced block produces, listing the
 /// affected consumers), a mismatch keeps its lead, since that is then the only place above the tree
 /// where the cause appears.
+// Property: the note keeps its `root cause:` lead whenever the header does not state the leaf, so a
+//   mismatch under a header naming something else keeps it.
 #[test]
 fn keeps_a_mismatch_lead_under_a_header_that_does_not_state_it() {
     for leaf in [
@@ -35,6 +37,8 @@ fn keeps_a_mismatch_lead_under_a_header_that_does_not_state_it() {
     }
 }
 
+// Property: an ordinary bound keeps rustc's header, and the note drops the lead that header already
+//   states (the error-code catalog's `CGP-E117`).
 #[test]
 fn keeps_an_ordinary_bound_header_and_drops_the_repeated_lead() {
     let leaf = Leaf::Bound {
@@ -61,6 +65,8 @@ fn keeps_an_ordinary_bound_header_and_drops_the_repeated_lead() {
     );
 }
 
+// Property: a kept ordinary-bound header writes an empty CGP list as `Product![]`, as its leaf does
+//   (the error-code catalog's `CGP-E117`).
 #[test]
 fn an_ordinary_bound_header_writes_an_empty_list_as_the_leaf_does() {
     // rustc prints CGP's empty list as `Nil`; the leaf, which knows the type, writes `Product![]`.
@@ -91,6 +97,9 @@ fn an_ordinary_bound_header_writes_an_empty_list_as_the_leaf_does() {
     );
 }
 
+// Property: a rustc header naming a bound that is not the recovered leaf is replaced, with the
+//   consumer class sentence as the internal headline and the cause as the displayed one (the class
+//   code is chosen by the anchor, not rustc's headline).
 #[test]
 fn promotes_a_mid_chain_symptom_bound_to_the_consumer_header() {
     // rustc opened the diagnostic on a getter bound (`LoginRequest: HasCredential<App>`) that is a
@@ -128,6 +137,9 @@ fn promotes_a_mid_chain_symptom_bound_to_the_consumer_header() {
     );
 }
 
+// Property: the class code follows the anchor's recorded class, never rustc's headline text, so an
+//   `IsProviderFor` headline reads as the consumer, provider, or wrapper class its anchor chose
+//   (the error-code catalog's `CGP-E002`).
 #[test]
 fn an_is_provider_for_headline_is_classed_by_its_anchor() {
     let resolved = cgp_resolved(
@@ -165,6 +177,8 @@ fn an_is_provider_for_headline_is_classed_by_its_anchor() {
     );
 }
 
+// Property: a `#[check_providers]` entry is the provider class, naming the provider in the class
+//   sentence and stating the cause as the headline (the error-code catalog's `CGP-E002`).
 #[test]
 fn a_check_providers_entry_is_the_provider_class() {
     let mut resolved = cgp_resolved(
@@ -199,6 +213,8 @@ fn a_check_providers_entry_is_the_provider_class() {
     );
 }
 
+// Property: an `IsProviderFor` bound whose subject is a `RedirectLookup`, with or without a leading
+//   binder, reads as the consumer class, never as a provider named `RedirectLookup`.
 #[test]
 fn redirect_lookup_provider_follows_through_to_consumer_header() {
     let resolved = cgp_resolved(
@@ -235,6 +251,8 @@ fn redirect_lookup_provider_follows_through_to_consumer_header() {
     }
 }
 
+// Property: a failure across several consumer traits names them all with the plural verb (the
+//   error-code catalog's `CGP-E001`).
 #[test]
 fn consumer_header_pluralizes_across_components() {
     let resolved = cgp_resolved("App", &["CanFoo", "CanBar"], vec![missing_field_cause()]);
@@ -244,6 +262,8 @@ fn consumer_header_pluralizes_across_components() {
     );
 }
 
+// Property: the wrapper class names the trait the program wrote, not a consumer trait (the
+//   error-code catalog's `CGP-E003`).
 #[test]
 fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
     // A hand-written wrapper trait (not a CGP consumer) fails through a traced CGP dependency: the
@@ -261,6 +281,8 @@ fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
     );
 }
 
+// Property: a wrapper failure on a type without wiring names it plainly, never as a context (the
+//   error-code catalog's `CGP-E003`).
 #[test]
 fn wrapper_header_names_a_foreign_subject_plainly() {
     // A routing wrapper implemented on a *foreign* type holding the context (`Router<Arc<MockApp>>`)

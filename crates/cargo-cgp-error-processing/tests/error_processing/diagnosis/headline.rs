@@ -20,6 +20,8 @@ fn missing_wiring(component: &str, owner: &str) -> Cause {
     )
 }
 
+// Property: a resolved block with one cause takes that cause's sentence as its headline, after the
+//   class code (the error-code catalog's `CGP-E001`).
 #[test]
 fn one_cause_is_the_headline() {
     let causes = vec![missing_field("height", "Rectangle", "Rectangle")];
@@ -33,6 +35,8 @@ fn one_cause_is_the_headline() {
     );
 }
 
+// Property: a merged statement names up to four causes, and a longer list names the first three and
+//   counts the rest (the error-code catalog's `CGP-E001`).
 #[test]
 fn a_long_merged_headline_names_the_first_causes_and_counts_the_rest() {
     let fields = |names: &[&str]| -> Vec<Cause> {
@@ -52,6 +56,8 @@ fn a_long_merged_headline_names_the_first_causes_and_counts_the_rest() {
     );
 }
 
+// Property: causes of one kind on one owner (fields of one struct, wiring of one context, entries
+//   of one table) merge into one statement naming them all (the error-code catalog's `CGP-E001`).
 #[test]
 fn causes_of_one_kind_on_one_owner_merge() {
     let fields = vec![
@@ -98,6 +104,8 @@ fn causes_of_one_kind_on_one_owner_merge() {
     );
 }
 
+// Property: causes of mixed kinds keep the class sentence with their count (the error-code
+//   catalog's `CGP-E001`).
 #[test]
 fn mixed_causes_keep_the_class_sentence_with_a_count() {
     // One kind, but two owners: two fixes, so no single statement.
@@ -129,6 +137,9 @@ fn mixed_causes_keep_the_class_sentence_with_a_count() {
     );
 }
 
+// Property: a coalesced block whose causes are mixed names each member's class sentence, joined as
+//   a list, with the cause count, and one with a single cause takes that cause as its headline
+//   (`coalesced_headline`'s doc).
 #[test]
 fn a_coalesced_block_names_each_subject_when_its_causes_are_mixed() {
     let inner = cgp_resolved(

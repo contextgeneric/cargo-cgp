@@ -32,6 +32,8 @@ fn wrapper_hop() -> DepNode {
     }
 }
 
+// Property: for all causes collected into a `Causes`, each distinct leaf appears once, holding
+//   every path that reaches it (`Causes`'s invariant).
 #[test]
 fn the_same_leaf_reached_by_several_consumers_becomes_one_cause() {
     let causes: Causes = [
@@ -50,6 +52,8 @@ fn the_same_leaf_reached_by_several_consumers_becomes_one_cause() {
 /// The invariant exists for this: a duplicate-leaf list makes a downstream reader count one mistake
 /// several times, most visibly as a lead naming one underived field once per consumer that reads it.
 /// The type is what makes that unreachable: there is no constructor that produces the bad list.
+// Property: for all collections of causes naming one underived field, the coalesced lead names that
+//   field once (`Causes`'s invariant, as the lead relies on it).
 #[test]
 fn one_underived_field_never_reads_as_three() {
     let causes: Causes = [
@@ -67,6 +71,8 @@ fn one_underived_field_never_reads_as_three() {
     );
 }
 
+// Property: for all causes with distinct leaves, collecting keeps one cause per leaf (`Causes`'s
+//   invariant).
 #[test]
 fn distinct_leaves_stay_apart() {
     let causes: Causes = [
@@ -79,6 +85,8 @@ fn distinct_leaves_stay_apart() {
     assert_eq!(causes.len(), 2);
 }
 
+// Property: for all causes, an exact repeat of a path is dropped when it is folded in
+//   (`Causes::add_cause`'s doc).
 #[test]
 fn an_exact_repeat_of_a_path_is_dropped() {
     let cause = field_cause_via("CanFoo", "name", "App", FieldIssue::Missing);
@@ -88,6 +96,8 @@ fn an_exact_repeat_of_a_path_is_dropped() {
     assert_eq!(causes[0].paths.len(), 1);
 }
 
+// Property: for all sub-chains, `from_sub_chains` files the paths that reach one leaf under a
+//   single cause.
 #[test]
 fn sub_chains_group_by_leaf() {
     let first = field_cause_via("CanFoo", "name", "App", FieldIssue::Missing);
@@ -104,6 +114,8 @@ fn sub_chains_group_by_leaf() {
 
 /// Union is what the emitter's coalesced block and the by-component use-site anchor need: total, and
 /// normalizing, so a cause every member shares is stated once while keeping every member's route.
+// Property: for all sets a and b, `union([a, b])` holds one cause per distinct leaf of a and b,
+//   with every path of either (`Causes::union`'s doc).
 #[test]
 fn union_folds_shared_causes_and_keeps_every_route() {
     let left: Causes = [field_cause_via(
@@ -129,6 +141,8 @@ fn union_folds_shared_causes_and_keeps_every_route() {
     assert_eq!(merged[1].paths.len(), 1);
 }
 
+// Property: for all a, b, and c, `union([union([a, b]), c]) == union([a, union([b, c])])`
+//   (`Causes::union`'s doc).
 #[test]
 fn union_is_associative() {
     let a: Causes = [field_cause_via(
@@ -157,6 +171,8 @@ fn union_is_associative() {
     assert_eq!(left, right);
 }
 
+// Property: for all causes and every hop h, each path of `headed_by(h)` starts with h
+//   (`Causes::headed_by`'s doc).
 #[test]
 fn heading_a_hop_prefixes_every_path() {
     let causes: Causes = [
@@ -179,6 +195,8 @@ fn heading_a_hop_prefixes_every_path() {
 /// Heading commutes with the grouping, which is why `headed_by` needs no re-merge: a single constant
 /// hop cannot change any leaf's identity. The two anchors that head a chain rely on this, in opposite
 /// orders.
+// Property: for all causes and every hop h, heading then grouping equals grouping then heading, so
+//   `headed_by` needs no re-merge (`Causes::headed_by`'s doc).
 #[test]
 fn heading_commutes_with_grouping() {
     let causes = [
@@ -224,6 +242,8 @@ fn not_a_provider(provider: &str) -> Leaf {
     }
 }
 
+// Property: a provider hop directly above a not-a-provider leaf for the same provider renders as
+//   the requirement template of `CGP-E102` in the error-code catalog.
 #[test]
 fn the_hop_above_a_not_a_provider_leaf_reads_as_a_requirement() {
     let leaf = not_a_provider("NotAGreeter");
@@ -247,6 +267,8 @@ fn the_hop_above_a_not_a_provider_leaf_reads_as_a_requirement() {
     );
 }
 
+// Property: a provider hop above a not-a-provider leaf for another provider keeps the impl template
+//   of `CGP-E102` in the error-code catalog.
 #[test]
 fn a_hop_for_another_provider_above_a_not_a_provider_leaf_keeps_its_impl_form() {
     let leaf = not_a_provider("NotAGreeter");

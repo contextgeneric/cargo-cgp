@@ -40,6 +40,8 @@ fn data_resolved(owner: &str, trait_ref: &str, causes: Vec<Cause>) -> Resolved {
     }
 }
 
+// Property: each extensible-data leaf words the sentence and carries the tree code the error-code
+//   catalog's `CGP-E118` to `CGP-E126` give it.
 #[test]
 fn data_leaves_have_their_sentences_and_codes() {
     let cases = [
@@ -137,6 +139,8 @@ fn data_leaves_have_their_sentences_and_codes() {
     }
 }
 
+// Property: data traits one type lacks merge into one headline and one `help` naming every derive
+//   in one attribute (the error-code catalog's `CGP-E123`).
 #[test]
 fn data_traits_one_type_lacks_merge_into_one_headline_and_help() {
     // Two traits a derive would supply, both unmet on one enum: one headline names both, and one
@@ -161,6 +165,8 @@ fn data_traits_one_type_lacks_merge_into_one_headline_and_help() {
     );
 }
 
+// Property: a data trait whose derive the crate cannot add gets no `help` (the error-code catalog's
+//   `CGP-E123`).
 #[test]
 fn a_derive_that_cannot_be_added_gets_no_help() {
     // A type the crate does not define, or of a kind the derive does not accept, carries no derive.
@@ -171,6 +177,8 @@ fn a_derive_that_cannot_be_added_gets_no_help() {
     assert!(fix_help_messages(&causes).is_empty());
 }
 
+// Property: a missing variant with a similar variant on its enum gets the near-miss `help` (the
+//   error-code catalog's `CGP-E120`).
 #[test]
 fn a_missing_variant_names_a_similar_one() {
     let causes = vec![one_path(
@@ -187,6 +195,8 @@ fn a_missing_variant_names_a_similar_one() {
     );
 }
 
+// Property: a builder or extractor in the wrong place gets a `help` naming the method that holds
+//   with its `use`, and none without one (the error-code catalog's `CGP-E125` and `CGP-E126`).
 #[test]
 fn a_method_help_names_the_call_and_its_import() {
     // The extractor takes `downcast_fields` in place of `downcast`, and the help writes the `use`
@@ -232,6 +242,8 @@ fn a_method_help_names_the_call_and_its_import() {
     assert!(fix_help_messages(&causes).is_empty());
 }
 
+// Property: `Leaf::is_data_state` holds for the extensible-data state leaves and not for a missing
+//   derive or an ordinary bound (its doc).
 #[test]
 fn the_data_states_are_told_apart_from_other_causes() {
     assert!(
@@ -251,6 +263,8 @@ fn the_data_states_are_told_apart_from_other_causes() {
     );
 }
 
+// Property: a call to a data trait takes the data class, with the cause as headline and the trait
+//   named plainly in the class sentence (the error-code catalog's `CGP-E050`).
 #[test]
 fn a_call_to_a_data_trait_takes_the_data_class() {
     // A call to `upcast` resolved to a variant the target lacks: the block is `[CGP-E050]`, its
@@ -281,6 +295,8 @@ fn a_call_to_a_data_trait_takes_the_data_class() {
     );
 }
 
+// Property: a variant payload mismatch states itself as the headline under the anchor's class code,
+//   and the note carries the chain alone (the error-code catalog's `CGP-E122`).
 #[test]
 fn a_variant_payload_mismatch_is_its_blocks_headline() {
     // An `E0271` traced to a variant's payload states the mismatch as its headline, under the
@@ -307,6 +323,9 @@ fn a_variant_payload_mismatch_is_its_blocks_headline() {
     assert!(!notes(&plan)[0].contains("root cause:"));
 }
 
+// Property: a partial value is named in words by its target and the members it holds set, optional,
+//   or extracted, never by its generated type (`PartialValue::describe`'s doc; the catalog's
+//   `CGP-E104`).
 #[test]
 fn a_partial_value_is_named_in_words() {
     let builder = |marked: &[&str], optional: &[&str]| PartialValue {
