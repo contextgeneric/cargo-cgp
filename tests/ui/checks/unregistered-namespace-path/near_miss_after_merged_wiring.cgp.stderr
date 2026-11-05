@@ -16,7 +16,7 @@ error[E0277]: [CGP-E001] missing wiring for `@app.GreeterComponent` and `@app.Na
                └─ [CGP-E101] consumer trait impl `CanName` for context `App`
                  └─ [CGP-E103] redirect lookup to `@app.NamerComponent` in `App`
                    └─ [CGP-E113] missing wiring for `@app.NamerComponent` on `App`
-   = help: wire `@app.GreeterComponent` and `@app.NamerComponent` to providers in the wiring of `App`
    = help: a similar key exists in the wiring of `App`: `@App.NamerComponent`
+   = help: wire `@app.GreeterComponent` and `@app.NamerComponent` to providers in the wiring of `App`
 
 For more information about this error, try `rustc --explain E0277`.

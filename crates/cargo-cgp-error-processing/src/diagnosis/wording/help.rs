@@ -13,29 +13,41 @@ use crate::diagnosis::wording::quoted_list;
 /// core provider, a hand-written wiring to replace, a bound to add, and a method to call. A missing
 /// field is named with its type when its requirement states one, and gets no help when adding it is
 /// not confirmed to fix the cause (see [`FieldFix`](crate::FieldFix)); a key the reader could not
-/// paste gets none either. A near miss, a similar name the program wrote, comes before the fix of
-/// its cause. Both the streaming plan and the emitter's coalesced block build their `help`s through
-/// this, so a block that merges several consumers carries the same fixes as the per-consumer one it
-/// replaces.
+/// paste gets none either. Both the streaming plan and the emitter's coalesced block build their
+/// `help`s through this, so a block that merges several consumers carries the same fixes as the
+/// per-consumer one it replaces.
+///
+/// Postcondition: a near miss, a similar name the program wrote, comes before the fix of its
+/// cause, also when that fix merges into a `help` an earlier cause opened.
 pub fn fix_help_messages(causes: &[Cause]) -> Vec<String> {
-    // One group per help: its kind and owner, and the items it names in first-seen order.
+    // One group per help: its kind and owner, and the items it names in first-seen order. A whole
+    // fix's owner is its text.
     let mut groups: Vec<(FixKind, String, Vec<String>)> = Vec::new();
-    for (kind, owner, item) in causes.iter().flat_map(|cause| fixes_for(&cause.leaf)) {
-        let group = match groups
-            .iter_mut()
-            .find(|(seen_kind, seen_owner, _)| *seen_kind == kind && *seen_owner == owner)
-        {
-            Some(group) => group,
-            None => {
-                groups.push((kind, owner, Vec::new()));
-                groups.last_mut().expect("a group was just pushed")
+    for cause in causes {
+        // The whole fixes `fixes_for` lists before a cause's mergeable fix are its near misses,
+        // placed just before that fix's group wherever the group sits.
+        let mut near_misses: Vec<String> = Vec::new();
+        for (kind, owner, item) in fixes_for(&cause.leaf) {
+            if kind == FixKind::Whole {
+                near_misses.push(owner);
+                continue;
             }
-        };
-        if let Some(item) = item
-            && !group.2.contains(&item)
-        {
-            group.2.push(item);
+            let found = groups
+                .iter()
+                .position(|(seen_kind, seen_owner, _)| *seen_kind == kind && *seen_owner == owner);
+            let at = found.unwrap_or_else(|| {
+                groups.push((kind, owner, Vec::new()));
+                groups.len() - 1
+            });
+            let at = insert_whole_before(&mut groups, at, near_misses.drain(..));
+            if let Some(item) = item
+                && !groups[at].2.contains(&item)
+            {
+                groups[at].2.push(item);
+            }
         }
+        let end = groups.len();
+        insert_whole_before(&mut groups, end, near_misses);
     }
     groups
         .into_iter()
@@ -62,4 +74,23 @@ pub fn fix_help_messages(causes: &[Cause]) -> Vec<String> {
             }
         })
         .collect()
+}
+
+/// Insert each whole `help` in `texts` that `groups` does not hold yet at index `at`, in order, and
+/// return the index the group at `at` moved to.
+fn insert_whole_before(
+    groups: &mut Vec<(FixKind, String, Vec<String>)>,
+    mut at: usize,
+    texts: impl IntoIterator<Item = String>,
+) -> usize {
+    for text in texts {
+        let seen = groups
+            .iter()
+            .any(|(kind, owner, _)| *kind == FixKind::Whole && *owner == text);
+        if !seen {
+            groups.insert(at, (FixKind::Whole, text, Vec::new()));
+            at += 1;
+        }
+    }
+    at
 }

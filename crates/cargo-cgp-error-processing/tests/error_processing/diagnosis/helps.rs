@@ -287,6 +287,9 @@ fn a_key_holding_a_reference_gets_no_help() {
     );
 }
 
+// Property: the postcondition of `fix_help_messages`, that a near miss comes before its cause's
+// fix. The wiring cause's fix merges into the help the path cause opened, so its near miss moves
+// ahead of that merged help rather than after it.
 #[test]
 fn a_near_miss_is_named_before_the_fix() {
     let field = Leaf::Field {
@@ -317,10 +320,10 @@ fn a_near_miss_is_named_before_the_fix() {
             "a similar field exists on `Person`: `first_name`".to_owned(),
             "add the field `frist_name: String` to `Person`".to_owned(),
             "a similar key exists in the wiring of `App`: `@App.GreeterComponent`".to_owned(),
+            "a similar key exists in the wiring of `App`: `@app.GreeterComponent`".to_owned(),
             "wire `@app.GreeterComponent` and `GreeterComponent` to providers in the wiring of \
              `App`"
                 .to_owned(),
-            "a similar key exists in the wiring of `App`: `@app.GreeterComponent`".to_owned(),
         ]
     );
 }
