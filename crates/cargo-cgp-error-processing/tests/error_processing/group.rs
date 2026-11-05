@@ -78,7 +78,7 @@ fn a_failure_whose_causes_cover_two_others_joins_them_all() {
     assert_eq!(group_by_shared_cause(&resolveds), vec![vec![0, 1, 2]]);
 }
 
-/// Grouping is transitive, which is what makes it a partition: a failure covered by two others has
+/// Grouping is transitive, which makes it a partition: a failure covered by two others has
 /// one group to join rather than an ambiguous choice between them.
 // Property: for all failures a, b, and c, if a shares a cause with b and b with c, all three group
 //   together (`group_by_shared_cause`'s doc).

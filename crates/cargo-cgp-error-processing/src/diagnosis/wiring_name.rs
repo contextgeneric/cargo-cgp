@@ -22,30 +22,54 @@ use crate::code::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UnresolvedWiringName {
     /// A key names the consumer trait `consumer` where its component `component` belongs.
-    ConsumerTraitAsKey { consumer: String, component: String },
+    ConsumerTraitAsKey {
+        /// The consumer trait the key names.
+        consumer: String,
+        /// The component the key should name.
+        component: String,
+    },
     /// A key names the component `component`, which exists but is not in scope; `path` is the path
     /// a `use` imports it by.
-    ComponentNotImported { component: String, path: String },
+    ComponentNotImported {
+        /// The component the key names.
+        component: String,
+        /// The path a `use` imports it by.
+        path: String,
+    },
     /// A key `key` names no component, and stripping its `Component` suffix names the consumer
     /// trait `consumer`, whose component is `component`.
     KeyNamesNoComponent {
+        /// The key as written.
         key: String,
+        /// The consumer trait the key names without its suffix.
         consumer: String,
+        /// The component of that consumer trait.
         component: String,
     },
     /// A value names the provider `provider`, which is never declared, for the component `key`;
     /// `near_miss` is a provider of that component with a similar name, when one exists.
     ProviderNotDeclared {
+        /// The provider the value names.
         provider: String,
+        /// The component the value is wired for.
         key: String,
+        /// A provider of that component with a similar name, when one exists.
         near_miss: Option<String>,
     },
     /// `#[cgp_impl(provider)]` names a provider struct that is never declared.
-    CgpImplProviderNotDeclared { provider: String },
+    CgpImplProviderNotDeclared {
+        /// The provider the attribute names.
+        provider: String,
+    },
     /// A type `name` written in the `@`-path of a wiring key or value is never declared;
     /// `whole_segment` says the type is a segment of the path by itself, which a lowercase spelling
     /// would turn into a symbol, rather than a type nested in a segment's generic arguments.
-    PathTypeNotDeclared { name: String, whole_segment: bool },
+    PathTypeNotDeclared {
+        /// The type as written.
+        name: String,
+        /// Whether the type is a segment of the path by itself.
+        whole_segment: bool,
+    },
 }
 
 /// The coded header that replaces the compiler's message for `name`.

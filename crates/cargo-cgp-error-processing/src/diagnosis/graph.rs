@@ -137,7 +137,7 @@ impl DependencyGraph {
     /// [`render`](Self::render) against a `seen` set that outlives this graph, so a node some
     /// *earlier* graph already drew is `(*)`-referenced here instead of expanded again.
     ///
-    /// This is what lets a compilation's diagnostics elide across blocks. CGP wiring is lazy, so one
+    /// This lets a compilation's diagnostics elide across blocks. CGP wiring is lazy, so one
     /// mistake surfaces in several diagnostics that do not de-duplicate: a hand-written wrapper
     /// trait is a distinct trait from the consumer it reduces to, so it keeps its own block, and
     /// their chains can share everything below their own first few hops. Threading one `seen` through
@@ -167,8 +167,8 @@ impl DependencyGraph {
         rendered
     }
 
-    /// The distinct terminal leaves reachable from `id`, in first-seen order, as render nodes. This
-    /// is what an elided branch bottoms out on, so a chain whose middle was drawn in another note
+    /// The distinct terminal leaves reachable from `id`, in first-seen order, as render nodes. An
+    /// elided branch bottoms out on them, so a chain whose middle was drawn in another note
     /// still ends at the root cause. Descent is bounded by a visited set, so a cyclic graph, which
     /// the resolver should never emit, but which the renderer promises to survive, terminates.
     fn leaves_below(&self, id: usize) -> Vec<DependencyTree> {

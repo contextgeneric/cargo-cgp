@@ -20,7 +20,7 @@ fn wiring_signal_matches_each_wiring_trait_and_nothing_else() {
         "required for `GreetHello` to implement `IsProviderFor<GreeterComponent, App>`"
     ));
     // A use-site `E0599` names the missing `HasField` leaf but no `CanUseComponent`/`IsProviderFor`,
-    // so `HasField` is what makes it a candidate.
+    // so `HasField` makes it a candidate.
     assert!(mentions_wiring_text(
         "doesn't satisfy `_: HasField<Symbol!(\"name\")>`"
     ));
@@ -75,7 +75,7 @@ fn method_probe_advice_signal_matches_each_artifact() {
 #[test]
 fn orphan_signal_needs_both_the_phrase_and_a_reserved_marker() {
     // The CGP macros emit `__Components__`/`__Table__`, so the reserved marker beside the coherence
-    // phrasing is what identifies a namespace-orphan candidate.
+    // phrasing identifies a namespace-orphan candidate.
     assert!(mentions_orphan_param_text(
         "type parameter `__Components__` must be used as an argument to some local type"
     ));

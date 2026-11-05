@@ -1,7 +1,7 @@
 //! The recovered root cause(s) of a check failure, in owned rustc-free form.
 //!
 //! The driver's typed resolver builds these from live compiler state and hands them to the
-//! [wording](super::wording) and [plan](super::plan) here; keeping the model rustc-free is what
+//! [wording](super::wording) and [plan](super::plan) here; keeping the model rustc-free
 //! lets the whole diagnosis-to-text layer be unit-tested without a `TyCtxt`.
 
 use std::ops::Deref;
@@ -42,8 +42,8 @@ pub struct Causes(Vec<Cause>);
 
 impl Causes {
     /// Collect `(leaf, path)` sub-chains, one per way the walk reached a root cause, grouping the
-    /// paths that reach one leaf onto a single cause. This is what the walk's own result folds
-    /// through, and what keeps a shared trait's diamond intact: a leaf reached twice keeps both
+    /// paths that reach one leaf onto a single cause. The walk's own result folds through
+    /// this, which keeps a shared trait's diamond intact: a leaf reached twice keeps both
     /// routes rather than only the first.
     pub fn from_sub_chains(chains: impl IntoIterator<Item = (Leaf, Vec<ChainNode>)>) -> Self {
         let mut causes = Causes::default();

@@ -26,8 +26,11 @@ use crate::diagnosis::{
 /// or with no fix it can state, leaves that list empty.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClassPlan {
+    /// The coded header that replaces rustc's message.
     pub header: String,
+    /// The notes that say why the program fails, in order.
     pub notes: Vec<String>,
+    /// The `help`s that name the fix, in order.
     pub helps: Vec<String>,
 }
 

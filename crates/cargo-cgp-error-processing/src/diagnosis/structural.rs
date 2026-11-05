@@ -35,22 +35,34 @@ pub const SECOND_DISPATCH_METHOD_LABEL: &str = "declared again here";
 pub enum StructuralMistake {
     /// One `check_components!` table checks `entry` (a component, with its parameters when it
     /// takes any, as the table wrote them) twice for `context`.
-    DuplicateCheck { context: String, entry: String },
+    DuplicateCheck {
+        /// The context the table checks.
+        context: String,
+        /// The entry checked twice, as the table wrote it.
+        entry: String,
+    },
     /// A check entry for `entry` on `context`, written in `form`, names no parameters for a
     /// component that takes some, so it checks the component at the unit parameters `()`;
     /// `parameters` are those a provider implements and the context passes the check at, each as
     /// `#[check_params(…)]` writes one check's parameters (a tuple for several).
     CheckAtUnitParameters {
+        /// The context the entry checks.
         context: String,
+        /// The entry, as written.
         entry: String,
+        /// The parameters the context passes the check at, each written as one check's parameters.
         parameters: Vec<String>,
+        /// The macro the entry is written in.
         form: CheckForm,
     },
     /// Two `#[cgp_auto_dispatch]` traits in one module declare `method`, so the macro generates its
     /// `helper` function and its `computer` provider twice.
     SharedDispatchMethod {
+        /// The method both traits declare.
         method: String,
+        /// The helper function the macro names after the method.
         helper: String,
+        /// The computer the macro names after the method.
         computer: String,
     },
     /// Two check tables in one module generate check traits of the same name, either both derived
@@ -58,15 +70,21 @@ pub enum StructuralMistake {
     /// `#[check_trait(...)]` attribute. `first` and `second` are the macros of the tables in
     /// written order.
     DuplicateCheckTrait {
+        /// The check trait's name, derived or given.
         name: CheckTraitName,
+        /// The macro of the first table.
         first: CheckForm,
+        /// The macro of the second table, the one the compiler reports.
         second: CheckForm,
     },
     /// A `for <variable, …> in Table` loop in the wiring of `context` whose `key` does not use
     /// `variable`, the loop's key variable, so the variable is bound to nothing.
     LoopKeyWithoutVariable {
+        /// The context whose wiring holds the loop.
         context: String,
+        /// The loop's key variable.
         variable: String,
+        /// The key the loop writes.
         key: String,
     },
     /// A `#[default_impl(key in …)]` on the impl of `provider` that is generic over `parameter`,
@@ -74,18 +92,26 @@ pub enum StructuralMistake {
     /// `key` in place of `parameter`, when the provider struct itself uses the parameter
     /// (`ShowWith<String>` for `ShowWith<T>`).
     GenericDefaultImpl {
+        /// The provider the impl is for.
         provider: String,
+        /// The key the registration names.
         key: String,
+        /// The impl's generic parameter nothing in the registration uses.
         parameter: String,
+        /// The provider with the key in place of the parameter, when the provider struct uses it.
         provider_at_key: Option<String>,
     },
     /// An entry for `key` in `table` binds generic `parameters` (in written order) that its key
     /// does not use, so the impls it lowers to cannot bind them; `used` says what in the entry
     /// uses them.
     EntryParametersNotInKey {
+        /// The wiring or namespace the entry belongs to.
         table: EntryTable,
+        /// The entry's key.
         key: String,
+        /// The parameters the key does not use, in written order.
         parameters: Vec<String>,
+        /// What in the entry uses them.
         used: ParameterUse,
     },
 }
@@ -135,9 +161,15 @@ pub enum ParameterUse {
 pub enum CheckTraitName {
     /// The name the macro derives from the last segment of the context's path: `__Check{context}`
     /// for `check_components!`, and `__CanUse{context}` for `delegate_and_check_components!`.
-    Derived { context: String },
+    Derived {
+        /// The last segment of the context's path.
+        context: String,
+    },
     /// A name a `#[check_trait(...)]` attribute gave.
-    Given { check_trait: String },
+    Given {
+        /// The name the attribute gave.
+        check_trait: String,
+    },
 }
 
 /// The header that replaces the compiler's message for a structural mistake.

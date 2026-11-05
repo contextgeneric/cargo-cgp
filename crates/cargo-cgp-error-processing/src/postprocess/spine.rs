@@ -1,3 +1,6 @@
+//! Splitting a type-level list cell into its head and tail, which the list and path resugarers
+//! both read.
+
 use crate::syntax::code_chars;
 
 /// Split the content after a cell's opening token (`Cons<`, `Either<`, `PathCons<`) into its `Head`

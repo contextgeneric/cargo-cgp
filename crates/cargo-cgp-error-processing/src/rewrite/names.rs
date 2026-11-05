@@ -25,7 +25,7 @@ pub struct ComponentTraitNames {
 ///
 /// Building the map is expensive (the driver walks the whole trait graph through a
 /// `TyCtxt`), so it is wrapped in a [`LazyLock`]: the initializer runs at most once, on the
-/// first lookup, and *not at all* if no message is ever rewritten. That is what lets the
+/// first lookup, and *not at all* if no message is ever rewritten. That lets the
 /// emitter drop a separate "does this diagnostic mention CGP?" pre-filter: the rewrite
 /// functions look a marker up only after a message parses as a wiring form, so an ordinary
 /// diagnostic never forces the map.

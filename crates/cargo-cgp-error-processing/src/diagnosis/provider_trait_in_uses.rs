@@ -7,7 +7,9 @@
 /// with.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProviderTraitInUses {
+    /// The provider trait the attribute names.
     pub provider: String,
+    /// The consumer trait the provider trait pairs with, which the dependency should name.
     pub consumer: String,
 }
 

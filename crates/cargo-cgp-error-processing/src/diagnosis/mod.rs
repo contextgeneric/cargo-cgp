@@ -4,7 +4,7 @@
 //! failure, in owned `String` form) and this module turns it into the text the emitter emits.
 //! [`plan_resolved`] composes the wording into a whole [`DiagnosisPlan`] (a rewritten header
 //! and the replacement help/note messages); the emitter only maps that plan onto rustc's
-//! `DiagInner`. Keeping every piece here rustc-free is what makes the diagnosis-to-text layer
+//! `DiagInner`. Keeping every piece here rustc-free makes the diagnosis-to-text layer
 //! unit-testable without a `TyCtxt`.
 
 mod cgp_impl_misuse;

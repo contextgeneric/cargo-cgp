@@ -34,13 +34,26 @@ use crate::code::{
 pub enum CgpImplMisuse {
     /// The impl header names the component's *consumer* trait; `provider` is the provider trait to
     /// use instead (recovered from the consumer↔provider fingerprint).
-    ConsumerTrait { consumer: String, provider: String },
+    ConsumerTrait {
+        /// The consumer trait the header names.
+        consumer: String,
+        /// The provider trait the header should name.
+        provider: String,
+    },
     /// The impl header names a trait that is not a CGP component, so there is no provider trait to
     /// suggest.
-    NonCgpTrait { trait_name: String },
+    NonCgpTrait {
+        /// The trait the header names.
+        trait_name: String,
+    },
     /// An inner-provider bound (typically written through `#[use_provider]`) names the component's
     /// *consumer* trait where its *provider* trait belongs; `provider` is the provider trait to use.
-    ConsumerProviderBound { consumer: String, provider: String },
+    ConsumerProviderBound {
+        /// The consumer trait the bound names.
+        consumer: String,
+        /// The provider trait the bound should name.
+        provider: String,
+    },
 }
 
 /// Word a [`CgpImplMisuse`] into the coded header that replaces the raw `E0107`, naming the trait the

@@ -31,8 +31,7 @@
 
 /// `CGP-E001`: the consumer trait behind a component is not implemented for the context. Stamped on
 /// a resolved failure whose anchor recovered a CGP consumer trait (a check entry, a consumer-method
-/// call, or a bound on a called function), and by the text rewrite on a declined `CanUseComponent`
-/// bound.
+/// call, or a bound on a called function).
 pub const CONSUMER_TRAIT_UNIMPLEMENTED: &str = "CGP-E001";
 
 /// `CGP-E002`: the provider trait behind a component is not implemented for a provider. Stamped on

@@ -14,8 +14,8 @@ pub fn mentions_wiring_text(text: &str) -> bool {
     text.contains("CanUseComponent") || text.contains("IsProviderFor") || text.contains("HasField")
 }
 
-/// Whether a main message is the method-bounds `E0599` shape: "the method `…` exists … but its
-/// trait bounds were not satisfied": the one `E0599` form the typed resolver may run on. A
+/// Whether a main message is the method-bounds `E0599` shape, "the method `…` exists … but its
+/// trait bounds were not satisfied". It is the one `E0599` form the typed resolver may run on. A
 /// *resolution*-class `E0599` (`no variant named …`) is emitted mid-`clauses_of`, where running
 /// the solver re-enters the diagnostic context and aborts the compiler, so the distinction is
 /// load-bearing (see `cgp-knowledge-base/cargo-cgp/implementation/rustc-diagnostic-internals.md`).

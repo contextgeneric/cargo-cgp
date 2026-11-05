@@ -19,25 +19,34 @@ use crate::diagnosis::wording::{dependency_tree_leaf, quoted_list};
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DepNode {
     /// `CGP-E101`: a hop through a consumer-trait impl. `is_context` says whether the type the
-    /// trait is implemented for carries wiring of its own, which is what makes it a context; any
-    /// other type, such as a type argument the consumer is required of, is named plainly.
+    /// trait is implemented for carries wiring of its own, which makes it a context; any other
+    /// type, such as a type argument the consumer is required of, is named plainly.
     Consumer {
+        /// The consumer trait, with its arguments.
         trait_ref: String,
+        /// The type the trait is implemented for.
         context: String,
+        /// Whether that type carries wiring of its own.
         is_context: bool,
     },
     /// `CGP-E102`: a hop through a provider's provider-trait impl.
     Provider {
+        /// The provider trait, with its arguments after the context.
         trait_ref: String,
+        /// The context the provider trait is implemented for.
         context: String,
+        /// The provider.
         provider: String,
     },
     /// `CGP-E102`: a requirement of a provider trait on a provider that has no impl of it: the
     /// step reads as what is required, not as an impl the program has, and the leaf beneath it
     /// states that the provider is not one.
     ProviderRequired {
+        /// The provider trait required, with its arguments after the context.
         trait_ref: String,
+        /// The context it is required for.
         context: String,
+        /// The type it is required of, which has no impl of it.
         provider: String,
     },
     /// `CGP-E103`: a hop through a namespace/`open` `RedirectLookup<Table, Path>`, labeled with
@@ -47,17 +56,27 @@ pub enum DepNode {
     /// stay distinct nodes rather than merging in the graph, but not its rendered label, since
     /// that dispatched value already shows on the child provider node.
     Redirect {
+        /// The path looked up, as `@`-path notation.
         path: String,
+        /// The table the path is looked up in.
         table: String,
+        /// The dispatched value, part of the node's identity but not its label.
         key: String,
     },
     /// `CGP-E104`: a hop through any other trait (a user's blanket trait, a wrapper, or an ordinary
     /// bound restated as an impl).
-    Trait { trait_ref: String, self_ty: String },
+    Trait {
+        /// The trait, with its arguments.
+        trait_ref: String,
+        /// The type the trait is implemented for.
+        self_ty: String,
+    },
     /// `CGP-E104`: a hop through a trait implemented for a partial value of extensible data, a
     /// builder or an extractor, named in words since its type is generated.
     PartialTrait {
+        /// The trait, with its arguments.
         trait_ref: String,
+        /// The partial value the trait is implemented for.
         value: PartialValue,
     },
 }

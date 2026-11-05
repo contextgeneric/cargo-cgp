@@ -5,7 +5,7 @@
 //! The driver recognizes the pair, drops the redundant `IsProviderFor` half, and hands the
 //! surviving `DelegateComponent` half's conflict, recovered by querying the trait solver, to
 //! [`plan_wiring_conflict`], which words it into the replacement header. Keeping the model and
-//! wording here, in owned `String` form, is what makes them unit-testable without a compiler;
+//! wording here, in owned `String` form, makes them unit-testable without a compiler;
 //! the driver's `detect::conflict` module fills the model in from the live `TyCtxt`.
 //!
 //! The wording names *which keys* collide, in the terms the programmer wrote them (an `@`-path
@@ -78,21 +78,32 @@ impl WiringKey {
 pub enum WiringConflict {
     /// Two entries wire the same key directly: the same component or the same `@`-path mapped
     /// twice (`CGP-E010`).
-    Duplicate { context: String, key: WiringKey },
+    Duplicate {
+        /// The context or namespace the entries are wired on.
+        context: String,
+        /// The key both entries wire.
+        key: WiringKey,
+    },
     /// Two entries wire *overlapping but distinct* keys, so one cannot claim what the other
     /// already covers: a generic entry over a specific one, or a path that is a prefix of
     /// another (`CGP-E011`). `first` is the key that covers `conflicting`, which may be the key the
     /// two entries share when neither covers the other.
     Overlap {
+        /// The context or namespace the entries are wired on.
         context: String,
+        /// The key that collides.
         conflicting: WiringKey,
+        /// The key that covers it, or the key the two entries share.
         first: WiringKey,
     },
     /// A context joins more than one namespace, so two blanket forwardings each cover every key
     /// and overlap. `first` and `second` are the two namespace/table trait names (`CGP-E012`).
     MultipleNamespaces {
+        /// The context that joins the namespaces.
         context: String,
+        /// The first namespace or table trait.
         first: String,
+        /// The second namespace or table trait.
         second: String,
     },
     /// One entry redirects the key (via `open` or a namespace) while the other sets it directly to
@@ -102,18 +113,27 @@ pub enum WiringConflict {
     /// appends to `path` when it looks the component up, so a generic component is wired one key
     /// per parameter value rather than at `path` itself.
     Redirect {
+        /// The context or namespace the entries are wired on.
         context: String,
+        /// The key wired directly.
         key: WiringKey,
+        /// The path the key is redirected to.
         path: String,
+        /// The provider the direct entry names, when a reader wrote one.
         provider: Option<String>,
+        /// The component's type parameters, which the redirect appends to the path.
         params: Vec<String>,
     },
     /// The same key is redirected more than once. `first_path` and `second_path` are the two
     /// redirect targets, equal when both redirects point the same way (`CGP-E014`).
     DuplicateRedirect {
+        /// The context or namespace the redirects are on.
         context: String,
+        /// The key redirected twice.
         key: WiringKey,
+        /// The first redirect's target.
         first_path: String,
+        /// The second redirect's target.
         second_path: String,
     },
 }

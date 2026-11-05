@@ -76,7 +76,9 @@ pub enum CoreProviderHint {
     /// statement dispatches on the component's parameters without it. `component` is the key to
     /// open, and `params` the names of the parameters the entries' paths end in.
     OpenDispatch {
+        /// The component marker to open.
         component: String,
+        /// The names of the component's parameters, one path segment each.
         params: Vec<String>,
     },
 }

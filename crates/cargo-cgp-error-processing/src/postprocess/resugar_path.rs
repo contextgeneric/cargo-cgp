@@ -172,8 +172,8 @@ fn render_segment(segment: &str) -> Option<String> {
     {
         return None;
     }
-    // Everything else (a capitalized component marker, a primitive, or a compound value type
-    // (`Vec<u8>`, `&Coord`)) is kept verbatim as `Path!` kept it going forward.
+    // Everything else is kept verbatim, as `Path!` kept it going forward: a capitalized component
+    // marker, a primitive, or a compound value type such as `Vec<u8>` or `&Coord`.
     Some(segment.to_owned())
 }
 

@@ -4,7 +4,7 @@
 //! `check_components!` entry, every hand-written `impl` that references the broken component, and
 //! each call. The emitter records each transformed diagnostic here and suppresses a later one whose
 //! signature it has already seen, so a mistake is shown once. Every key is span-independent, since
-//! the span is exactly what differs between the copies. Only the tool's own transformed diagnostics
+//! the copies differ in exactly the span. Only the tool's own transformed diagnostics
 //! are recorded; an untouched `rustc` error never reaches this ledger.
 
 use std::collections::HashSet;

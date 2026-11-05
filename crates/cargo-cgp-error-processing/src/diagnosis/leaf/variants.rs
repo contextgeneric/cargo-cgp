@@ -341,9 +341,8 @@ impl Leaf {
 }
 
 // A leaf carries no separate identity key: two causes are the same cause exactly when their leaves
-// are equal in every field but the facts carried for a `help`, which is what the derived
-// `PartialEq` above gives. An earlier key named only the *thing to fix* (a field or associated-type
-// name), which merged two leaves naming the same thing on different owners into one cause whose
-// heading could then name only the first of them. Whole-leaf equality keeps the useful merge (one
-// leaf genuinely reached by several paths, which is how a diamond survives to the renderer) and
-// separates the rest.
+// are equal in every field but the facts carried for a `help`, the equality the derived
+// `PartialEq` above gives. A key naming only the *thing to fix* (a field or associated-type name)
+// would merge two leaves naming the same thing on different owners into one cause whose heading
+// could name only the first of them. Whole-leaf equality keeps the useful merge (one leaf reached
+// by several paths, which is how a diamond survives to the renderer) and separates the rest.

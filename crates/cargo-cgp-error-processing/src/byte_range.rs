@@ -8,7 +8,9 @@
 /// A half-open range of source bytes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ByteRange {
+    /// The offset of the first byte.
     pub lo: u32,
+    /// The offset just past the last byte.
     pub hi: u32,
 }
 
@@ -33,6 +35,7 @@ impl ByteRange {
 /// A call's receiver or argument, as [`is_about_call`] reads it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Operand {
+    /// The bytes the operand covers.
     pub range: ByteRange,
     /// Whether the operand's span is the caret itself, its expansion context included. A
     /// macro-expanded operand can have the caret's bytes and still be another span.

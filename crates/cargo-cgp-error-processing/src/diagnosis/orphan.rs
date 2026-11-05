@@ -12,7 +12,7 @@
 //! This model records what the driver recovers from the offending impl: the foreign namespace,
 //! the key, and which construct registered it, and [`plan_orphan_conflict`] words it into the
 //! `[CGP-E022]` header that replaces the raw message, with [`orphan_conflict_help`] carrying the
-//! ownership-based fix. Keeping the model and wording here, in owned `String` form, is what makes
+//! ownership-based fix. Keeping the model and wording here, in owned `String` form, makes
 //! them unit-testable without a compiler; the driver's `detect::orphan` module fills the model in
 //! from the live `TyCtxt`.
 
@@ -38,8 +38,11 @@ pub enum OrphanTrigger {
 /// [`Blanket`](WiringKey::Blanket)), and the construct that generated the impl.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrphanConflict {
+    /// The foreign namespace trait.
     pub namespace: String,
+    /// The foreign key, as the program wrote it.
     pub key: WiringKey,
+    /// The construct that generated the impl.
     pub trigger: OrphanTrigger,
 }
 

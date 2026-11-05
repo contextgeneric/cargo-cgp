@@ -94,8 +94,8 @@ pub fn postprocess_message(
 /// reader actually sees.
 ///
 /// The caller runs [`postprocess_message`] over each fragment first and passes the results here, so
-/// this fires only on a construct that genuinely spans a boundary. That is what makes flattening
-/// safe to pay for: the caller replaces the fragments with this one string, losing rustc's
+/// this fires only on a construct that genuinely spans a boundary, which makes flattening safe
+/// to pay for: the caller replaces the fragments with this one string, losing rustc's
 /// highlighting, and it only does so when there was a CGP construct to recover, never merely
 /// because a fragment was tidied on its own.
 pub fn postprocess_fragments(
