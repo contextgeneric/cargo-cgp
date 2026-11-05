@@ -65,13 +65,20 @@ fn structural_mistake(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Option<Struc
     match diag.code {
         Some(E0119) => detect::detect_duplicate_check(tcx?, primary_span),
         // Name resolution reports a name defined twice, and the derived diagnostic carries the
-        // name as an argument rather than in a plain-string message.
-        Some(E0428) => match diag.args.get("name") {
-            Some(DiagArgValue::Str(name)) => {
-                detect::detect_duplicate_check_trait(name, primary_span)
-            }
-            _ => None,
-        },
+        // name as an argument rather than in a plain-string message; its one secondary label is
+        // the earlier definition.
+        Some(E0428) => {
+            let Some(DiagArgValue::Str(name)) = diag.args.get("name") else {
+                return None;
+            };
+            let first = diag
+                .span
+                .span_labels()
+                .into_iter()
+                .find(|label| !label.is_primary)?
+                .span;
+            detect::detect_duplicate_check_trait(name, first, primary_span)
+        }
         Some(E0277) => detect::detect_check_at_unit_parameters(tcx?, primary_span),
         Some(E0207) => {
             let tcx = tcx?;

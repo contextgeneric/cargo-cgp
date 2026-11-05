@@ -9,6 +9,14 @@ pub const CHECK_COMPONENTS_MACRO: &str = "check_components";
 /// [`CHECK_COMPONENTS_MACRO`]; its check entries write their parameters in `#[check_params(…)]`.
 pub const DELEGATE_AND_CHECK_COMPONENTS_MACRO: &str = "delegate_and_check_components";
 
+/// The prefix `check_components!` puts before the last segment of the context's path to name the
+/// check trait it derives, when no `#[check_trait(...)]` gives one.
+pub const CHECK_COMPONENTS_TRAIT_PREFIX: &str = "__Check";
+
+/// The prefix `delegate_and_check_components!` puts before the last segment of the context's path
+/// to name the check trait it derives, like [`CHECK_COMPONENTS_TRAIT_PREFIX`].
+pub const DELEGATE_AND_CHECK_COMPONENTS_TRAIT_PREFIX: &str = "__CanUse";
+
 /// The name of the `#[cgp_auto_dispatch]` attribute macro, recognized like
 /// [`CHECK_COMPONENTS_MACRO`] in the `E0428`s of two dispatch traits that share a method name.
 pub const CGP_AUTO_DISPATCH_MACRO: &str = "cgp_auto_dispatch";

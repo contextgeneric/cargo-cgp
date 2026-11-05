@@ -16,10 +16,10 @@ use crate::code::{
 };
 use crate::diagnosis::wording::quoted_list;
 
-/// The label on the first of two `check_components!` tables whose check traits share a name.
+/// The label on the first of two check tables whose check traits share a name.
 pub const FIRST_CHECK_TABLE_LABEL: &str = "the first table";
 
-/// The label on the second of two `check_components!` tables whose check traits share a name, the
+/// The label on the second of two check tables whose check traits share a name, the
 /// one the compiler reports.
 pub const SECOND_CHECK_TABLE_LABEL: &str = "the second table";
 
@@ -53,10 +53,15 @@ pub enum StructuralMistake {
         helper: String,
         computer: String,
     },
-    /// Two `check_components!` tables in one module generate check traits of the same name, either
-    /// both derived from contexts whose paths end in `context` (`__Check{context}`) or both named
-    /// `check_trait` by a `#[check_trait(...)]` attribute.
-    DuplicateCheckTrait { name: CheckTraitName },
+    /// Two check tables in one module generate check traits of the same name, either both derived
+    /// by one macro from contexts whose paths end in `context` or both named `check_trait` by a
+    /// `#[check_trait(...)]` attribute. `first` and `second` are the macros of the tables in
+    /// written order.
+    DuplicateCheckTrait {
+        name: CheckTraitName,
+        first: CheckForm,
+        second: CheckForm,
+    },
     /// A `for <variable, …> in Table` loop in the wiring of `context` whose `key` does not use
     /// `variable`, the loop's key variable, so the variable is bound to nothing.
     LoopKeyWithoutVariable {
@@ -94,6 +99,16 @@ pub enum CheckForm {
     DelegateAndCheckComponents,
 }
 
+impl CheckForm {
+    /// The macro as a program calls it, for a message that names it.
+    pub fn macro_name(&self) -> &'static str {
+        match self {
+            CheckForm::CheckComponents => "check_components!",
+            CheckForm::DelegateAndCheckComponents => "delegate_and_check_components!",
+        }
+    }
+}
+
 /// The wiring table an entry belongs to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EntryTable {
@@ -115,10 +130,11 @@ pub enum ParameterUse {
     Unused,
 }
 
-/// The name two `check_components!` tables gave their check traits.
+/// The name two check tables gave their check traits.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CheckTraitName {
-    /// The name the macro derives, `__Check{context}`, from the last segment of the context's path.
+    /// The name the macro derives from the last segment of the context's path: `__Check{context}`
+    /// for `check_components!`, and `__CanUse{context}` for `delegate_and_check_components!`.
     Derived { context: String },
     /// A name a `#[check_trait(...)]` attribute gave.
     Given { check_trait: String },
@@ -138,13 +154,19 @@ pub fn plan_structural_mistake(mistake: &StructuralMistake) -> String {
         ),
         StructuralMistake::DuplicateCheckTrait {
             name: CheckTraitName::Derived { context },
+            second,
+            ..
         } => format!(
-            "[{DUPLICATE_CHECK_TRAIT}] two `check_components!` tables in one module check `{context}`"
+            "[{DUPLICATE_CHECK_TRAIT}] two `{}` tables in one module check `{context}`",
+            second.macro_name()
         ),
         StructuralMistake::DuplicateCheckTrait {
             name: CheckTraitName::Given { check_trait },
+            first,
+            second,
         } => format!(
-            "[{DUPLICATE_CHECK_TRAIT}] two `check_components!` tables in one module name their check trait `{check_trait}`"
+            "[{DUPLICATE_CHECK_TRAIT}] {} in one module name their check trait `{check_trait}`",
+            check_tables(first, second)
         ),
         StructuralMistake::LoopKeyWithoutVariable {
             context,
@@ -208,12 +230,21 @@ pub fn structural_mistake_help(mistake: &StructuralMistake) -> String {
         ),
         StructuralMistake::DuplicateCheckTrait {
             name: CheckTraitName::Derived { .. },
+            ..
         } => "merge the two tables, or name one table's check trait with `#[check_trait(...)]`"
             .to_owned(),
         StructuralMistake::DuplicateCheckTrait {
             name: CheckTraitName::Given { .. },
-        } => "merge the two tables, or give one of them another `#[check_trait(...)]` name"
-            .to_owned(),
+            first,
+            second,
+        } if first == second => {
+            "merge the two tables, or give one of them another `#[check_trait(...)]` name"
+                .to_owned()
+        }
+        StructuralMistake::DuplicateCheckTrait {
+            name: CheckTraitName::Given { .. },
+            ..
+        } => "give one of the tables another `#[check_trait(...)]` name".to_owned(),
         StructuralMistake::LoopKeyWithoutVariable { variable, .. } => {
             format!("write `{variable}` in the key where the type the loop covers goes")
         }
@@ -268,5 +299,20 @@ pub fn structural_mistake_note(mistake: &StructuralMistake) -> Option<String> {
             "`#[cgp_auto_dispatch]` names the items it generates after the method alone, so both traits generate `{computer}` and `{helper}`"
         )),
         _ => None,
+    }
+}
+
+/// The two check tables of a [`StructuralMistake::DuplicateCheckTrait`], each named by its macro:
+/// "two `check_components!` tables" for one macro, and "a `check_components!` table and a
+/// `delegate_and_check_components!` table", in written order, for two.
+fn check_tables(first: &CheckForm, second: &CheckForm) -> String {
+    if first == second {
+        format!("two `{}` tables", first.macro_name())
+    } else {
+        format!(
+            "a `{}` table and a `{}` table",
+            first.macro_name(),
+            second.macro_name()
+        )
     }
 }

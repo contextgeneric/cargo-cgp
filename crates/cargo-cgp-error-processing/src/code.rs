@@ -90,7 +90,8 @@ pub const DUPLICATE_REDIRECT: &str = "CGP-E014";
 /// between the two identical check impls the table generates.
 pub const DUPLICATE_CHECK: &str = "CGP-E015";
 
-/// `CGP-E016`: two `check_components!` tables in one module generate check traits of one name.
+/// `CGP-E016`: two check tables in one module, written with `check_components!` or
+/// `delegate_and_check_components!`, generate check traits of one name.
 /// Stamped on the `E0428` the second definition produces.
 pub const DUPLICATE_CHECK_TRAIT: &str = "CGP-E016";
 

@@ -8,8 +8,6 @@
 //!
 //! CGP error class: none; plain Rust the tool passes through.
 
-//@rewrites-falsely: the check-trait detector reads only the second definition's span, so a table colliding with the program's own trait reads as two tables
-
 use cgp::prelude::*;
 
 #[cgp_component(Greeter)]

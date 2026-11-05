@@ -1,25 +1,25 @@
-error[E0428]: [CGP-E016] two `check_components!` tables in one module name their check trait `__CanUseApp`
-  --> src/main.rs:34:1
+error[E0428]: the name `__CanUseApp` is defined multiple times
+  --> src/main.rs:32:1
    |
-32 | pub trait __CanUseApp {}
-   | --------------------- the first table
-33 |
-34 | delegate_and_check_components! {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the second table
+30 | pub trait __CanUseApp {}
+   | --------------------- previous definition of the trait `__CanUseApp` here
+31 |
+32 | delegate_and_check_components! {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `__CanUseApp` redefined here
    |
-   = help: merge the two tables, or give one of them another `#[check_trait(...)]` name
+   = note: `__CanUseApp` must be defined only once in the type namespace of this module
    = note: this error originates in the macro `delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0428]: [CGP-E016] two `check_components!` tables in one module check `App`
-  --> src/main.rs:40:1
+error[E0428]: the name `__CheckApp` is defined multiple times
+  --> src/main.rs:38:1
    |
-30 | pub trait __CheckApp {}
-   | -------------------- the first table
+28 | pub trait __CheckApp {}
+   | -------------------- previous definition of the trait `__CheckApp` here
 ...
-40 | check_components! {
-   | ^^^^^^^^^^^^^^^^^ the second table
+38 | check_components! {
+   | ^^^^^^^^^^^^^^^^^ `__CheckApp` redefined here
    |
-   = help: merge the two tables, or name one table's check trait with `#[check_trait(...)]`
+   = note: `__CheckApp` must be defined only once in the type namespace of this module
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0428`.

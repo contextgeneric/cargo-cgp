@@ -37,29 +37,46 @@ fn a_duplicate_check_names_a_generic_entry_as_the_table_wrote_it() {
     );
 }
 
+// Property: for all contexts c and check macros m, two tables of m deriving one check trait for
+// c read as two m tables checking c, with the fix to merge or rename.
 #[test]
-fn two_tables_with_a_derived_check_trait_name_the_context() {
-    let mistake = StructuralMistake::DuplicateCheckTrait {
-        name: CheckTraitName::Derived {
-            context: "App".to_owned(),
-        },
-    };
-    assert_eq!(
-        plan_structural_mistake(&mistake),
-        "[CGP-E016] two `check_components!` tables in one module check `App`",
-    );
-    assert_eq!(
-        structural_mistake_help(&mistake),
-        "merge the two tables, or name one table's check trait with `#[check_trait(...)]`",
-    );
+fn two_tables_with_a_derived_check_trait_name_the_context_and_their_macro() {
+    for (form, header) in [
+        (
+            CheckForm::CheckComponents,
+            "[CGP-E016] two `check_components!` tables in one module check `App`",
+        ),
+        (
+            CheckForm::DelegateAndCheckComponents,
+            "[CGP-E016] two `delegate_and_check_components!` tables in one module check `App`",
+        ),
+    ] {
+        let mistake = StructuralMistake::DuplicateCheckTrait {
+            name: CheckTraitName::Derived {
+                context: "App".to_owned(),
+            },
+            first: form.clone(),
+            second: form.clone(),
+        };
+        assert_eq!(plan_structural_mistake(&mistake), header, "{form:?}");
+        assert_eq!(
+            structural_mistake_help(&mistake),
+            "merge the two tables, or name one table's check trait with `#[check_trait(...)]`",
+            "{form:?}",
+        );
+    }
 }
 
+// Property: two tables of one macro given one check-trait name read as two tables of that macro
+// naming it, with the fix to merge or rename.
 #[test]
 fn two_tables_with_a_given_check_trait_name_it() {
     let mistake = StructuralMistake::DuplicateCheckTrait {
         name: CheckTraitName::Given {
             check_trait: "CheckApp".to_owned(),
         },
+        first: CheckForm::CheckComponents,
+        second: CheckForm::CheckComponents,
     };
     assert_eq!(
         plan_structural_mistake(&mistake),
@@ -68,6 +85,27 @@ fn two_tables_with_a_given_check_trait_name_it() {
     assert_eq!(
         structural_mistake_help(&mistake),
         "merge the two tables, or give one of them another `#[check_trait(...)]` name",
+    );
+}
+
+// Property: tables of two macros given one check-trait name are each named by their macro, in
+// written order, and the fix renames one check trait, since the tables cannot merge as written.
+#[test]
+fn tables_of_two_macros_with_a_given_check_trait_name_each_macro() {
+    let mistake = StructuralMistake::DuplicateCheckTrait {
+        name: CheckTraitName::Given {
+            check_trait: "CheckApp".to_owned(),
+        },
+        first: CheckForm::CheckComponents,
+        second: CheckForm::DelegateAndCheckComponents,
+    };
+    assert_eq!(
+        plan_structural_mistake(&mistake),
+        "[CGP-E016] a `check_components!` table and a `delegate_and_check_components!` table in one module name their check trait `CheckApp`",
+    );
+    assert_eq!(
+        structural_mistake_help(&mistake),
+        "give one of the tables another `#[check_trait(...)]` name",
     );
 }
 
