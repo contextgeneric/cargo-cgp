@@ -1,0 +1,14 @@
+error[E0277]: [CGP-E001] `UseDelegate<LabelTable>` is not a provider of `Labeller`
+  --> src/main.rs:42:9
+   |
+42 |         LabellerComponent: (Life<'a>, Square),
+   |         ^^^^^^^^^^^^^^^^^
+   |
+   = note: root cause: [CGP-E115] `UseDelegate<LabelTable>` is not a provider of `Labeller`
+           this is required through the dependency chain:
+             [CGP-E101] consumer trait impl `CanLabel<'_, Square>` for context `App`
+             └─ [CGP-E102] provider trait `Labeller<'_, Square>` required of provider `UseDelegate<LabelTable>` with context `App`
+               └─ [CGP-E115] `UseDelegate<LabelTable>` is not a provider of `Labeller`
+   = help: dispatch with `open LabellerComponent;` and one `@LabellerComponent.Item: <provider>` entry per type, in place of `UseDelegate<LabelTable>`
+
+For more information about this error, try `rustc --explain E0277`.
