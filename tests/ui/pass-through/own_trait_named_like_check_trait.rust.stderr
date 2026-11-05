@@ -1,0 +1,25 @@
+error[E0428]: the name `__CanUseApp` is defined multiple times
+  --> src/main.rs:34:1
+   |
+32 | pub trait __CanUseApp {}
+   | --------------------- previous definition of the trait `__CanUseApp` here
+33 |
+34 | delegate_and_check_components! {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `__CanUseApp` redefined here
+   |
+   = note: `__CanUseApp` must be defined only once in the type namespace of this module
+   = note: this error originates in the macro `delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0428]: the name `__CheckApp` is defined multiple times
+  --> src/main.rs:40:1
+   |
+30 | pub trait __CheckApp {}
+   | -------------------- previous definition of the trait `__CheckApp` here
+...
+40 | check_components! {
+   | ^^^^^^^^^^^^^^^^^ `__CheckApp` redefined here
+   |
+   = note: `__CheckApp` must be defined only once in the type namespace of this module
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0428`.

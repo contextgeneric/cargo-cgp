@@ -1,0 +1,25 @@
+error[E0428]: [CGP-E016] two `check_components!` tables in one module name their check trait `__CanUseApp`
+  --> src/main.rs:34:1
+   |
+32 | pub trait __CanUseApp {}
+   | --------------------- the first table
+33 |
+34 | delegate_and_check_components! {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the second table
+   |
+   = help: merge the two tables, or give one of them another `#[check_trait(...)]` name
+   = note: this error originates in the macro `delegate_and_check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0428]: [CGP-E016] two `check_components!` tables in one module check `App`
+  --> src/main.rs:40:1
+   |
+30 | pub trait __CheckApp {}
+   | -------------------- the first table
+...
+40 | check_components! {
+   | ^^^^^^^^^^^^^^^^^ the second table
+   |
+   = help: merge the two tables, or name one table's check trait with `#[check_trait(...)]`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0428`.
