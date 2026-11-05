@@ -23,7 +23,12 @@ pub fn provided_components<'tcx>(
     let Some(parent) = known_obligation(tcx, parent) else {
         return Vec::new();
     };
-    let (provider, context) = (parent.self_ty(), parent.args.type_at(1));
+    // The context is the first type argument after `Self`: a component's lifetime parameters sort
+    // ahead of it.
+    let provider = parent.self_ty();
+    let Some(context) = parent.args.types().nth(1) else {
+        return Vec::new();
+    };
     let mut provided: Vec<ProvidedComponent> = Vec::new();
     for trait_did in tcx.all_traits_including_private() {
         if provided.len() == MAX_COMPONENTS {

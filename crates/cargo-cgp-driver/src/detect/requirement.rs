@@ -72,7 +72,11 @@ pub fn detect_undeclared_requirement(
         {
             continue;
         }
-        let context = trait_ref.args.type_at(1);
+        // The first type argument after `Self`, since a component's lifetime parameters sort ahead
+        // of the context.
+        let Some(context) = trait_ref.args.types().nth(1) else {
+            continue;
+        };
         if !matches!(context.kind(), ty::Param(_)) {
             continue;
         }

@@ -1,25 +1,9 @@
-error[E0277]: the trait bound `__Context__: HasName` is not satisfied
+error[E0277]: [CGP-E036] the provider trait `Greeter` requires `HasName` of the context, but the provider `GreetHello` does not declare it
   --> src/main.rs:29:1
    |
 29 | #[cgp_impl(new GreetHello)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<'n', cgp::prelude::Chars<'a', cgp::prelude::Chars<'m', cgp::prelude::Chars<'e', Nil>>>>>>` is not implemented for `__Context__`
-note: required for `__Context__` to implement `HasName`
-  --> src/main.rs:17:1
-   |
-17 | #[cgp_auto_getter]
-   | ^^^^^^^^^^^^^^^^^^
-18 | pub trait HasName {
-   |           ^^^^^^^
-note: required by a bound in `Greeter`
-  --> src/main.rs:23:10
-   |
-22 | #[cgp_component(Greeter)]
-23 | #[extend(HasName)]
-   |          ^^^^^^^ required by this bound in `Greeter`
-   = note: cargo-cgp could not transform this diagnostic because of an internal error, so it is shown as the compiler reported it: lock was already held (at /rustc-dev/32dba69d69c5b10ea89a4042de8d0619f7756203/compiler/rustc_errors/src/lib.rs:867:24)
-           this is a bug in cargo-cgp; please report it at https://github.com/contextgeneric/cargo-cgp/issues
-   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = help: declare it as a dependency with `#[uses(HasName)]`
 
 For more information about this error, try `rustc --explain E0277`.

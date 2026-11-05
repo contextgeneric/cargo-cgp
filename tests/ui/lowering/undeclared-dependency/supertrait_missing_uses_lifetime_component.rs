@@ -9,8 +9,8 @@
 //!
 //! CGP error class: undeclared dependency (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/undeclared-dependency.md).
 
-//@quality: usability
-//@codes: none
+//@quality: acceptable
+//@codes: CGP-E036
 
 use cgp::prelude::*;
 

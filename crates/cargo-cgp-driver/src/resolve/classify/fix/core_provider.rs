@@ -53,11 +53,13 @@ pub fn core_provider_hint<'tcx>(
     if provider_is(USE_DELEGATE_TYPE, CGP_COMPONENT_CRATE) {
         impl_self_is(REDIRECT_LOOKUP_TYPE)?;
         let generics = tcx.generics_of(parent.def_id);
+        // The type parameters after `Self` and the context; a component's lifetime parameters
+        // sort ahead of the context, so they are filtered out before the two are skipped.
         let params: Vec<String> = generics
             .own_params
             .iter()
-            .skip(2)
             .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }))
+            .skip(2)
             .map(|param| param.name.to_string())
             .collect();
         if params.is_empty() {
