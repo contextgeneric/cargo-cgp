@@ -1,26 +1,18 @@
-warning: unused import: `cgp::core::error::ErrorTypeProviderComponent`
-  --> src/main.rs:10:5
-   |
-10 | use cgp::core::error::ErrorTypeProviderComponent;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
 error[E0034]: multiple applicable items in scope
-  --> src/main.rs:33:18
+  --> src/main.rs:32:18
    |
-33 |     let _ = App::compute(&App, PhantomData::<()>, 21);
+32 |     let _ = App::compute(&App, PhantomData::<()>, 21);
    |                  ^^^^^^^ multiple `compute` found
    |
    = note: candidate #1 is defined in an impl of the trait `CanCompute` for the type `__Context__`
    = note: candidate #2 is defined in an impl of the trait `cgp::prelude::Computer` for the type `__Provider__`
 help: use fully-qualified syntax to disambiguate
    |
-33 -     let _ = App::compute(&App, PhantomData::<()>, 21);
-33 +     let _ = <App as cgp::prelude::Computer>::compute(&App, PhantomData::<()>, 21);
+32 -     let _ = App::compute(&App, PhantomData::<()>, 21);
+32 +     let _ = <App as cgp::prelude::Computer>::compute(&App, PhantomData::<()>, 21);
    |
-33 -     let _ = App::compute(&App, PhantomData::<()>, 21);
-33 +     let _ = CanCompute::compute(&App, PhantomData::<()>, 21);
+32 -     let _ = App::compute(&App, PhantomData::<()>, 21);
+32 +     let _ = CanCompute::compute(&App, PhantomData::<()>, 21);
    |
 
 For more information about this error, try `rustc --explain E0034`.

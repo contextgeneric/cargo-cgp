@@ -1,15 +1,7 @@
-warning: unused import: `cgp::core::error::ErrorTypeProviderComponent`
-  --> src/main.rs:14:5
-   |
-14 | use cgp::core::error::ErrorTypeProviderComponent;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
 error[E0277]: the trait bound `BindErr<IdentMonadic, Double>: IsProviderFor<cgp::prelude::ComputerComponent, App, ((), u64)>` is not satisfied
-  --> src/main.rs:39:9
+  --> src/main.rs:38:9
    |
-39 |         ComputerComponent: ((), u64),
+38 |         ComputerComponent: ((), u64),
    |         ^^^^^^^^^^^^^^^^^ the trait `IsProviderFor<cgp::prelude::ComputerComponent, App, ((), u64)>` is not implemented for `BindErr<IdentMonadic, Double>`
    |
 help: `BindErr<M, Cont>` implements trait `IsProviderFor<Component, Context, Params>`
@@ -32,13 +24,13 @@ help: `BindErr<M, Cont>` implements trait `IsProviderFor<Component, Context, Par
    = note: required for `PipeMonadic<ErrMonadic, Cons<Double, Cons<Double, Nil>>>` to implement `IsProviderFor<cgp::prelude::ComputerComponent, App, ((), u64)>`
    = note: required for `App` to implement `CanUseComponent<cgp::prelude::ComputerComponent, ((), u64)>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:37:1
+  --> src/main.rs:36:1
    |
-37 | / check_components! {
-38 | |     App {
-39 | |         ComputerComponent: ((), u64),
-40 | |     }
-41 | | }
+36 | / check_components! {
+37 | |     App {
+38 | |         ComputerComponent: ((), u64),
+39 | |     }
+40 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

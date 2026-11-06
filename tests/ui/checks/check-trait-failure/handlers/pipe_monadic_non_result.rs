@@ -11,7 +11,6 @@
 
 use core::marker::PhantomData;
 
-use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::prelude::*;
 
 #[cgp_new_provider]
