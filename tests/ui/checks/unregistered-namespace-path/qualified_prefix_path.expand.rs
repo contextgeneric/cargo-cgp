@@ -11,6 +11,8 @@
 //! `App` joins `DefaultNamespace`, which routes the prefixed `QuantityTypeProviderComponent`
 //! to `@app.finance.types.QuantityTypeProviderComponent`, but nothing ever terminates that
 //! path with a provider, so the lookup finds no delegate and the `check_components!` fails.
+//!
+//! CGP error class: unregistered namespace path (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/unregistered-namespace-path.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

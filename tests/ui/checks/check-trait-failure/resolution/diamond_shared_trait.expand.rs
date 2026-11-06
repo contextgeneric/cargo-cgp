@@ -20,6 +20,8 @@
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md (diamond) and
 //! cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md (diamond reuse).
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

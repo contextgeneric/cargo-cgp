@@ -3,6 +3,8 @@
 //! rustc prints `a::Item` qualified, because `b::Item` shares its name. The missing key is
 //! `@GreeterComponent.Wrap<a::Item>`: the segment's own head is a plain type, and only its argument
 //! holds a path.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E103 CGP-E113

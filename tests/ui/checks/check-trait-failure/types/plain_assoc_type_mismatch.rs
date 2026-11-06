@@ -13,6 +13,8 @@
 //! than `abstract type` and carries **no** `help`: there is no wiring entry to change, so suggesting
 //! `UseType<f64>` here would name a fix that does not exist. The concrete type is fixed by the
 //! `impl HasUnit for Rectangle` block, and that is where a reader must go.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E005 CGP-E101 CGP-E102 CGP-E116

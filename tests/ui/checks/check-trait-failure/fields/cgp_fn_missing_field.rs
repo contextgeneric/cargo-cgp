@@ -14,6 +14,8 @@
 //! `` `#[derive(HasField)]` is required to access field `name` `` help is actively misleading here:
 //! `App` *does* derive `HasField`; it is the `name` *field* that is absent (rustc then lists the
 //! fields it does have).
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E003 CGP-E104 CGP-E110

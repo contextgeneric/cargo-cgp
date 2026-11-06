@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `width_a` on `App`
-  --> src/main.rs:90:9
+  --> src/main.rs:92:9
    |
-90 |         shapes_a::MeasurerComponent,
+92 |         shapes_a::MeasurerComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `width_a` on `App`
@@ -13,9 +13,9 @@ error[E0277]: [CGP-E001] missing field `width_a` on `App`
    = help: add the field `width_a: f64` to `App`
 
 error[E0277]: [CGP-E001] missing field `width_b` on `App`
-  --> src/main.rs:91:9
+  --> src/main.rs:93:9
    |
-91 |         shapes_b::MeasurerComponent,
+93 |         shapes_b::MeasurerComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `width_b` on `App`

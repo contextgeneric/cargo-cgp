@@ -31,6 +31,8 @@
 //! `PipeHandlers`/`ComposeHandlers` plumbing with the cause nowhere. The tree also shows
 //! `Tagged<Bytes>` flowing into the sink stage, so a reader sees exactly which type reached a stage
 //! that cannot handle it.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E114

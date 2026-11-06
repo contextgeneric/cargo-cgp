@@ -12,6 +12,8 @@
 //! satisfied" shape, which is both crash-safe (no solving on it) and correct, since a
 //! name-resolution error is not a CGP wiring failure. rustc's own clear `E0599` passes through
 //! unchanged.
+//!
+//! CGP error class: none; rustc's own name-resolution error, which the tool passes through.
 
 //@quality: acceptable
 //@codes: none

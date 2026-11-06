@@ -9,6 +9,8 @@
 //! headed by `CanGreetSend` (the code the programmer wrote), then `CanGreet`, down to the missing
 //! field, so the wrapper's and the check's routes are one chain. The `.rust.stderr` shows the full
 //! cascade for contrast.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

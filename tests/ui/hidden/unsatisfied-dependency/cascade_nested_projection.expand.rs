@@ -32,6 +32,8 @@
 //! `PipeHandlers`/`ComposeHandlers` plumbing with the cause nowhere. The tree also shows
 //! `Tagged<Bytes>` flowing into the sink stage, so a reader sees exactly which type reached a stage
 //! that cannot handle it.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

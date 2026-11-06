@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `BarProviderComponent` and `BazProviderComponent` on `App`
-  --> src/main.rs:49:9
+  --> src/main.rs:51:9
    |
-49 |         FooProviderComponent: DoFooWithBarBaz,
+51 |         FooProviderComponent: DoFooWithBarBaz,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
    = note: root causes:

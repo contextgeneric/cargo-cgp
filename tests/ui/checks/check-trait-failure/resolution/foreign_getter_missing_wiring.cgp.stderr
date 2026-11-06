@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `CredentialTypeProviderComponent` on `App`
-  --> src/main.rs:89:9
+  --> src/main.rs:91:9
    |
-89 |         AuthenticatorComponent: LoginRequest,
+91 |         AuthenticatorComponent: LoginRequest,
    |         ^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `CredentialTypeProviderComponent` on `App`

@@ -1,30 +1,30 @@
 error[E0271]: type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<..>>>>::Value == f64`
-  --> src/main.rs:47:9
+  --> src/main.rs:49:9
    |
-47 |         AreaCalculatorComponent,
+49 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<..>>>>::Value == f64`
    |
 note: expected this to be `f64`
-  --> src/main.rs:36:17
+  --> src/main.rs:38:17
    |
-36 |     pub height: i32,
+38 |     pub height: i32,
    |                 ^^^
 note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
-  --> src/main.rs:25:1
+  --> src/main.rs:27:1
    |
-25 | #[cgp_impl(new RectangleArea)]
+27 | #[cgp_impl(new RectangleArea)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: associated types for the current `impl` cannot be restricted in `where` clauses
    = note: associated types for the current `impl` cannot be restricted in `where` clauses
    = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
 note: required by a bound in `__CheckRectangle`
-  --> src/main.rs:45:1
+  --> src/main.rs:47:1
    |
-45 | / check_components! {
-46 | |     Rectangle {
-47 | |         AreaCalculatorComponent,
-48 | |     }
-49 | | }
+47 | / check_components! {
+48 | |     Rectangle {
+49 | |         AreaCalculatorComponent,
+50 | |     }
+51 | | }
    | |_^ required by this bound in `__CheckRectangle`
    = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

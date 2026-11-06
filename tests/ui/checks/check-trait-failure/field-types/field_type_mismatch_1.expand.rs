@@ -12,6 +12,8 @@
 //! → HasField height`. The driver still queries the struct by `DefId` for the actual type `i32` and
 //! rewrites the main message into the `[CGP-E004]` field-type-mismatch form, keeping the `E0271`
 //! Rust code.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

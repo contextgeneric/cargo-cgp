@@ -1,7 +1,7 @@
 error[E0271]: [CGP-E005] associated type `Unit` of `HasUnit` on `Rectangle` is `u32`, but `f64` is required
-  --> src/main.rs:57:9
+  --> src/main.rs:59:9
    |
-57 |         AreaCalculatorComponent,
+59 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this is required through the dependency chain:

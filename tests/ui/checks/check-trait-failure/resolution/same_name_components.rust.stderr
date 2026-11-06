@@ -1,80 +1,80 @@
 error[E0277]: the trait bound `App: CanUseComponent<shapes_a::MeasurerComponent>` is not satisfied
-  --> src/main.rs:90:9
+  --> src/main.rs:92:9
    |
-90 |         shapes_a::MeasurerComponent,
+92 |         shapes_a::MeasurerComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<7, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
-  --> src/main.rs:78:9
+  --> src/main.rs:80:9
    |
-78 |     pub other: f64,
+80 |     pub other: f64,
    |         ^^^^^
 note: required for `App` to implement `HasWidthA`
-  --> src/main.rs:32:5
+  --> src/main.rs:34:5
    |
-32 |     #[cgp_auto_getter]
+34 |     #[cgp_auto_getter]
    |     ^^^^^^^^^^^^^^^^^^
-33 |     pub trait HasWidthA {
+35 |     pub trait HasWidthA {
    |               ^^^^^^^^^
 note: required for `MeasureWidthA` to implement `IsProviderFor<shapes_a::MeasurerComponent, App>`
-  --> src/main.rs:37:5
+  --> src/main.rs:39:5
    |
-37 |     #[cgp_impl(new MeasureWidthA: MeasurerComponent)]
+39 |     #[cgp_impl(new MeasureWidthA: MeasurerComponent)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-40 |         Self: HasWidthA,
+42 |         Self: HasWidthA,
    |               --------- unsatisfied trait bound introduced here
    = note: required for `App` to implement `CanUseComponent<shapes_a::MeasurerComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:88:1
+  --> src/main.rs:90:1
    |
-88 | / check_components! {
-89 | |     App {
-90 | |         shapes_a::MeasurerComponent,
-91 | |         shapes_b::MeasurerComponent,
-92 | |     }
-93 | | }
+90 | / check_components! {
+91 | |     App {
+92 | |         shapes_a::MeasurerComponent,
+93 | |         shapes_b::MeasurerComponent,
+94 | |     }
+95 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: CanUseComponent<shapes_b::MeasurerComponent>` is not satisfied
-  --> src/main.rs:91:9
+  --> src/main.rs:93:9
    |
-91 |         shapes_b::MeasurerComponent,
+93 |         shapes_b::MeasurerComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<7, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
-  --> src/main.rs:78:9
+  --> src/main.rs:80:9
    |
-78 |     pub other: f64,
+80 |     pub other: f64,
    |         ^^^^^
 note: required for `App` to implement `HasWidthB`
-  --> src/main.rs:59:5
+  --> src/main.rs:61:5
    |
-59 |     #[cgp_auto_getter]
+61 |     #[cgp_auto_getter]
    |     ^^^^^^^^^^^^^^^^^^
-60 |     pub trait HasWidthB {
+62 |     pub trait HasWidthB {
    |               ^^^^^^^^^
 note: required for `MeasureWidthB` to implement `IsProviderFor<shapes_b::MeasurerComponent, App>`
-  --> src/main.rs:64:5
+  --> src/main.rs:66:5
    |
-64 |     #[cgp_impl(new MeasureWidthB: MeasurerComponent)]
+66 |     #[cgp_impl(new MeasureWidthB: MeasurerComponent)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-67 |         Self: HasWidthB,
+69 |         Self: HasWidthB,
    |               --------- unsatisfied trait bound introduced here
    = note: required for `App` to implement `CanUseComponent<shapes_b::MeasurerComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:88:1
+  --> src/main.rs:90:1
    |
-88 | / check_components! {
-89 | |     App {
-90 | |         shapes_a::MeasurerComponent,
-91 | |         shapes_b::MeasurerComponent,
-92 | |     }
-93 | | }
+90 | / check_components! {
+91 | |     App {
+92 | |         shapes_a::MeasurerComponent,
+93 | |         shapes_b::MeasurerComponent,
+94 | |     }
+95 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

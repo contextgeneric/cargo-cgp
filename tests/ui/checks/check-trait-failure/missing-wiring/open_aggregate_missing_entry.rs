@@ -12,6 +12,8 @@
 //! ByteSink`, so the reader adds the entry to `ByteSink` rather than to `App`.
 //!
 //! See cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E103, CGP-E114).
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E114

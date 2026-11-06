@@ -15,6 +15,8 @@
 //!
 //! An authentication provider produces this shape: a getter bound on the request beside the real
 //! missing credential-type wiring.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E113

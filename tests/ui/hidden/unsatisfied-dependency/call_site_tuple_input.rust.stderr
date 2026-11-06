@@ -1,42 +1,42 @@
 error[E0277]: the trait bound `App: IsProviderFor<HandlerComponent, App, (ReadName, _)>` is not satisfied
-   --> src/main.rs:104:9
+   --> src/main.rs:106:9
     |
-104 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+106 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
     |         ^^^^^^ unsatisfied trait bound
     |
 help: the trait `IsProviderFor<HandlerComponent, App, (ReadName, _)>` is not implemented for `App`
-   --> src/main.rs:91:1
+   --> src/main.rs:93:1
     |
- 91 | pub struct App {
+ 93 | pub struct App {
     | ^^^^^^^^^^^^^^
 help: the trait `IsProviderFor<__Key__, __Context__, __Params__>` is conditionally implemented for `App`
-   --> src/main.rs:97:19
+   --> src/main.rs:99:19
     |
- 95 | / delegate_components! {
- 96 | |     App {
- 97 | |         namespace MyNamespace;
+ 97 | / delegate_components! {
+ 98 | |     App {
+ 99 | |         namespace MyNamespace;
     | |                   ^^^^^^^^^^^
- 98 | |     }
- 99 | | }
+100 | |     }
+101 | | }
     | |_- unsatisfied requirement introduced here: `_: IsProviderFor<_, _, _>`
     = note: required for `App` to implement `Handler<App, ReadName, _>`
     = note: required for `App` to implement `CanHandle<ReadName, _>`
 note: required for `HandleBranch` to implement `IsProviderFor<HandlerComponent, App, (Branch<ReadName>, (_, _))>`
-   --> src/main.rs:59:1
+   --> src/main.rs:61:1
     |
- 59 | #[cgp_impl(new HandleBranch)]
+ 61 | #[cgp_impl(new HandleBranch)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
- 63 |     Self: CanHandle<Cond, CondInput, Output = String>,
+ 65 |     Self: CanHandle<Cond, CondInput, Output = String>,
     |                                      --------------- unsatisfied trait bound introduced here
     = note: 4 redundant requirements hidden
     = note: required for `App` to implement `CanHandle<Branch<ReadName>, (_, _)>`
     = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFor<_, App, _>` is not satisfied
-   --> src/main.rs:104:16
+   --> src/main.rs:106:16
     |
-104 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+106 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
     |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
     |         |
     |         required by a bound introduced by this call
@@ -53,14 +53,14 @@ error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFo
               IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
             and 9 others
 note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (ReadName, _)>`
-   --> src/main.rs:95:1
+   --> src/main.rs:97:1
     |
- 95 | / delegate_components! {
- 96 | |     App {
+ 97 | / delegate_components! {
+ 98 | |     App {
     | |     ^^^
- 97 | |         namespace MyNamespace;
- 98 | |     }
- 99 | | }
+ 99 | |         namespace MyNamespace;
+100 | |     }
+101 | | }
     | |_^
     = note: required for `App` to implement `Handler<App, ReadName, _>`
     = note: required for `App` to implement `CanHandle<ReadName, _>`
@@ -69,9 +69,9 @@ note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Rea
     = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFor<_, App, _>` is not satisfied
-   --> src/main.rs:104:9
+   --> src/main.rs:106:9
     |
-104 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+106 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
     |         ^^^^^^ unsatisfied trait bound
     |
     = help: the trait `IsProviderFor<HandlerComponent, App, (ReadName, _)>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
@@ -86,14 +86,14 @@ error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFo
               IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
             and 9 others
 note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (ReadName, _)>`
-   --> src/main.rs:95:1
+   --> src/main.rs:97:1
     |
- 95 | / delegate_components! {
- 96 | |     App {
+ 97 | / delegate_components! {
+ 98 | |     App {
     | |     ^^^
- 97 | |         namespace MyNamespace;
- 98 | |     }
- 99 | | }
+ 99 | |         namespace MyNamespace;
+100 | |     }
+101 | | }
     | |_^
     = note: required for `App` to implement `Handler<App, ReadName, _>`
     = note: required for `App` to implement `CanHandle<ReadName, _>`
@@ -113,9 +113,9 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
     = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFor<_, App, _>` is not satisfied
-   --> src/main.rs:104:5
+   --> src/main.rs:106:5
     |
-104 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+106 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
     |
     = help: the trait `IsProviderFor<HandlerComponent, App, (ReadName, Vec<_>)>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
@@ -130,14 +130,14 @@ error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFo
               IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
             and 9 others
 note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (ReadName, Vec<_>)>`
-   --> src/main.rs:95:1
+   --> src/main.rs:97:1
     |
- 95 | / delegate_components! {
- 96 | |     App {
+ 97 | / delegate_components! {
+ 98 | |     App {
     | |     ^^^
- 97 | |         namespace MyNamespace;
- 98 | |     }
- 99 | | }
+ 99 | |         namespace MyNamespace;
+100 | |     }
+101 | | }
     | |_^
     = note: required for `App` to implement `Handler<App, ReadName, Vec<_>>`
     = note: required for `App` to implement `CanHandle<ReadName, Vec<_>>`
@@ -157,26 +157,26 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
     = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the `?` operator can only be applied to values that implement `Try`
-   --> src/main.rs:104:5
+   --> src/main.rs:106:5
     |
-104 | /     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
-105 | |         .await?;
+106 | /     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+107 | |         .await?;
     | |_______________^ the `?` operator cannot be applied to type `<impl Future<Output = Result<_, _>> as Future>::Output`
     |
     = help: the nightly-only, unstable trait `Try` is not implemented for `<impl Future<Output = Result<_, _>> as Future>::Output`
 
 error[E0277]: the `?` operator can only be used in an async function that returns `Result` or `Option` (or another type that implements `FromResidual`)
-   --> src/main.rs:104:5
+   --> src/main.rs:106:5
     |
-101 |    async fn run_app(app: &App) -> Result<(), String> {
+103 |    async fn run_app(app: &App) -> Result<(), String> {
     |  ____________________________________________________-
-102 | |      // The tuple literal's element types are not written (`Vec::new()` is generic), yet the tuple
-103 | |      // *shape* `(_, _)` is what `HandleBranch` destructures, so the anchor must recover it.
-104 | |/     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
-105 | ||         .await?;
+104 | |      // The tuple literal's element types are not written (`Vec::new()` is generic), yet the tuple
+105 | |      // *shape* `(_, _)` is what `HandleBranch` destructures, so the anchor must recover it.
+106 | |/     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+107 | ||         .await?;
     | ||_______________^ cannot use the `?` operator in an async function that returns `<impl Future<Output = Result<_, _>> as Future>::Output`
-106 | |      Ok(())
-107 | |  }
+108 | |      Ok(())
+109 | |  }
     | |__- this function should return `Result` or `Option` to accept `?`
     |
 

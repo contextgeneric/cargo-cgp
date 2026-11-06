@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `separator` on `App`
-  --> src/main.rs:47:9
+  --> src/main.rs:49:9
    |
-47 |         PairFormatterComponent: (u32, u64),
+49 |         PairFormatterComponent: (u32, u64),
    |         ^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `separator` on `App`

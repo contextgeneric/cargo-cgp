@@ -9,6 +9,8 @@
 //!
 //! rustc's note lands on the bound inside `Holder`'s generics, so `Holder` is only passing the
 //! requirement on, and the context is the argument the caret points at.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

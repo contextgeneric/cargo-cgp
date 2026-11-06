@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E003] missing field `name` on `App`
-  --> src/main.rs:53:15
+  --> src/main.rs:55:15
    |
-53 |     greet_all(app)
+55 |     greet_all(app)
    |               ^^^
    |
    = note: root cause: [CGP-E110] missing field `name` on `App`

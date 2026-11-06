@@ -12,6 +12,8 @@
 //! its missing `name` field. The walk reads the real consumer/provider trait
 //! obligations (never `IsProviderFor`), and the blanket `__Key__` key is skipped as
 //! the non-component it is, so no placeholder noise leaks.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

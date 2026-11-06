@@ -15,6 +15,8 @@
 //! to one flat placeholder could not destructure into `HandleBranch`'s `(CondInput, Rest)`, so the
 //! anchor recovers the tuple *shape* instead (each unwritten element a placeholder): `HandleBranch`
 //! matches, the walk runs the inner `Cond`, and it reaches the missing `name` field.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E110

@@ -1,7 +1,7 @@
 error[E0271]: [CGP-E004] field `height` on `shape_a::Rectangle` has type `i32`, but `f64` is required
-  --> src/main.rs:62:13
+  --> src/main.rs:64:13
    |
-62 |             AreaCalculatorAComponent,
+64 |             AreaCalculatorAComponent,
    |             ^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this is required through the dependency chain:
@@ -11,9 +11,9 @@ error[E0271]: [CGP-E004] field `height` on `shape_a::Rectangle` has type `i32`, 
                  └─ [CGP-E112] field `height` on `shape_a::Rectangle` has type `i32`, but `f64` is required
 
 error[E0271]: [CGP-E004] field `height` on `shape_b::Rectangle` has type `i16`, but `f64` is required
-   --> src/main.rs:106:13
+   --> src/main.rs:108:13
     |
-106 |             AreaCalculatorBComponent,
+108 |             AreaCalculatorBComponent,
     |             ^^^^^^^^^^^^^^^^^^^^^^^^
     |
     = note: this is required through the dependency chain:

@@ -7,6 +7,8 @@
 //! `Life<'a>` in as a type, and label the provider node without assuming the
 //! context is the trait's first argument.
 //! Each step keeps the lifetime in its trait as `'_` (`HasReference<'_, str>`).
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110

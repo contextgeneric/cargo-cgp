@@ -16,6 +16,8 @@
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (field-type
 //! mismatch, and its `DefId`-anchored struct query).
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E004 CGP-E101 CGP-E102 CGP-E104 CGP-E112

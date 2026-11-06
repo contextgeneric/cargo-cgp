@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `@ValueBuilderComponent.Left` and `@ValueBuilderComponent.Right` on `App`
-  --> src/main.rs:75:9
+  --> src/main.rs:77:9
    |
-75 |         AssemblerComponent,
+77 |         AssemblerComponent,
    |         ^^^^^^^^^^^^^^^^^^
    |
    = note: root causes:

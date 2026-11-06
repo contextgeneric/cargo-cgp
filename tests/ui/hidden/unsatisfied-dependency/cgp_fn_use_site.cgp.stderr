@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E003] missing field `name` on `App`
-  --> src/main.rs:60:9
+  --> src/main.rs:62:9
    |
-60 |     app.describe()
+62 |     app.describe()
    |         ^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `name` on `App`

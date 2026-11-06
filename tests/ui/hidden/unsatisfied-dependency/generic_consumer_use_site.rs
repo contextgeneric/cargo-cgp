@@ -11,6 +11,8 @@
 //! `App: CanFormatPair<(u32, u64)>` then walks to the missing `separator` field,
 //! and rustc's misleading "use associated function syntax" advice is dropped with
 //! the rest of its sub-notes.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110

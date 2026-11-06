@@ -4,6 +4,8 @@
 //! `let context: &Self = self;` names the context with an annotation, and the call is on that
 //! binding. The undeclared-trait detector reads the annotation, so it recognizes this receiver as
 //! the context and reports the missing `#[uses]`.
+//!
+//! CGP error class: undeclared dependency (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/undeclared-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

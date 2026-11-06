@@ -1,10 +1,10 @@
 error[E0599]: the method `encode_item` exists for struct `App`, but its trait bounds were not satisfied
-  --> src/main.rs:53:17
+  --> src/main.rs:55:17
    |
-41 | pub struct App;
+43 | pub struct App;
    | -------------- method `encode_item` not found for this struct because it doesn't satisfy `App: CanEncodeItem<_>`
 ...
-53 |     let _ = app.encode_item(&Seq(vec![1u64]));
+55 |     let _ = app.encode_item(&Seq(vec![1u64]));
    |                 ^^^^^^^^^^^ this is an associated function, not a method
    |
   ::: $CGP/crates/core/cgp-component/src/providers/redirect_lookup.rs:3:1
@@ -14,33 +14,33 @@ error[E0599]: the method `encode_item` exists for struct `App`, but its trait bo
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `ItemEncoder`
-  --> src/main.rs:24:5
+  --> src/main.rs:26:5
    |
-24 |     fn encode_item(&self, value: &Value) -> String;
+26 |     fn encode_item(&self, value: &Value) -> String;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: trait bound `RedirectLookup<App, PathCons<ItemEncoderComponent, Nil>>: IsProviderFor<ItemEncoderComponent, App, u64>` was not satisfied
-  --> src/main.rs:43:1
+  --> src/main.rs:45:1
    |
-43 | / delegate_components! {
-44 | |     App {
+45 | / delegate_components! {
+46 | |     App {
    | |     ---
-45 | |         open ItemEncoderComponent;
+47 | |         open ItemEncoderComponent;
 ...  |
-49 | | }
+51 | | }
    | | ^ unsatisfied trait bound introduced here
    | |_|
    |
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanEncodeItem` defines an item `encode_item`, perhaps you need to implement it
-  --> src/main.rs:23:1
+  --> src/main.rs:25:1
    |
-23 | pub trait CanEncodeItem<Value> {
+25 | pub trait CanEncodeItem<Value> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
-53 -     let _ = app.encode_item(&Seq(vec![1u64]));
-53 +     let _ = App::encode_item(&Seq(vec![1u64]));
+55 -     let _ = app.encode_item(&Seq(vec![1u64]));
+55 +     let _ = App::encode_item(&Seq(vec![1u64]));
    |
 
 For more information about this error, try `rustc --explain E0599`.

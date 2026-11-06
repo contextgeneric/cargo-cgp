@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E001] missing field `separator` on `App`
-  --> src/main.rs:49:17
+  --> src/main.rs:51:17
    |
-49 |     let _ = app.format_pair((1_u32, 2_u64));
+51 |     let _ = app.format_pair((1_u32, 2_u64));
    |                 ^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `separator` on `App`

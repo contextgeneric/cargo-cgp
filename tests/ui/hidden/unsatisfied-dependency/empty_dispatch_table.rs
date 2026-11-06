@@ -15,6 +15,8 @@
 //! call's unknown input, so the output is recovered as a fixed projection). Stage 2, `Call<Sink>`,
 //! forwards to `UseInputDelegate<EmptySink>`; its input is stage 1's `ByteStream`, for which the
 //! empty table has no entry: `EmptySink: DelegateComponent<ByteStream>` is the root cause.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E114

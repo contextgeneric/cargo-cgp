@@ -21,6 +21,8 @@
 //! output aims `expected this to be `f64`` at the `#[cgp_type]` attribute and never states the type
 //! the context supplies at all, the reshaped message names both sides and the fix. The `E0271` Rust
 //! code is kept.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

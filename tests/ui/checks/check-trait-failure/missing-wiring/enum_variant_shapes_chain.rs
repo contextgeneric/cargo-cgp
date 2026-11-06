@@ -15,6 +15,8 @@
 //! `Circle(f64)` for the bare payload. Each spelling is the same type as the field list it renders,
 //! so the list can be copied back into code. It complements `enum_variant_chain`, whose variants
 //! all carry a bare payload.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E113

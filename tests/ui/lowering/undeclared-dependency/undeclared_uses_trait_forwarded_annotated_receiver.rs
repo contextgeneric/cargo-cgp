@@ -1,5 +1,7 @@
 //! A `#[cgp_impl]` provider body that calls an undeclared trait through an untyped `let` copying one
 //! annotated as the context.
+//!
+//! CGP error class: undeclared dependency (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/undeclared-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E030

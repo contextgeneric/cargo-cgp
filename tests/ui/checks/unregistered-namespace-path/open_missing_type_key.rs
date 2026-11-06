@@ -16,6 +16,8 @@
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (the
 //! missing-redirect-wiring leaf).
+//!
+//! CGP error class: unregistered namespace path (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/unregistered-namespace-path.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E103 CGP-E113

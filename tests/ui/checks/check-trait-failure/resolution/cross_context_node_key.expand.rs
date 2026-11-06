@@ -28,6 +28,8 @@
 //! See cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md (the cache key)
 //! and cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (the impl-site
 //! anchor and cross-context walk).
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -12,6 +12,8 @@
 //! `App: CanFormatPair<(u32, u64)>` then walks to the missing `separator` field,
 //! and rustc's misleading "use associated function syntax" advice is dropped with
 //! the rest of its sub-notes.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

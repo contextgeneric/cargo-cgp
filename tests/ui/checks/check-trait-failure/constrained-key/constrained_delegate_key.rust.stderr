@@ -1,35 +1,35 @@
 error[E0277]: the trait bound `Nil: PickFirst` is not satisfied
-  --> src/main.rs:64:9
+  --> src/main.rs:66:9
    |
-64 |         GreeterComponent,
+66 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ the trait `PickFirst` is not implemented for `Nil`
    |
 help: the trait `PickFirst` is implemented for `cgp::prelude::Cons<Head, Tail>`
-  --> src/main.rs:41:1
+  --> src/main.rs:43:1
    |
-41 | impl<Head, Tail> PickFirst for Cons<Head, Tail> {
+43 | impl<Head, Tail> PickFirst for Cons<Head, Tail> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `PickFirstProvider<Nil>` to implement `IsProviderFor<GreeterComponent, App>`
-  --> src/main.rs:45:1
+  --> src/main.rs:47:1
    |
-45 | / delegate_components! {
-46 | |     <Component, Provider, List: PickFirst<Provider = Provider>>
+47 | / delegate_components! {
+48 | |     <Component, Provider, List: PickFirst<Provider = Provider>>
    | |                                           ------------------- unsatisfied trait bound introduced here
-47 | |     PickFirstProvider<List> {
+49 | |     PickFirstProvider<List> {
    | |     ^^^^^^^^^^^^^^^^^^^^^^^
-48 | |         Component: Provider,
-49 | |     }
-50 | | }
+50 | |         Component: Provider,
+51 | |     }
+52 | | }
    | |_^
    = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:62:1
+  --> src/main.rs:64:1
    |
-62 | / check_components! {
-63 | |     App {
-64 | |         GreeterComponent,
-65 | |     }
-66 | | }
+64 | / check_components! {
+65 | |     App {
+66 | |         GreeterComponent,
+67 | |     }
+68 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

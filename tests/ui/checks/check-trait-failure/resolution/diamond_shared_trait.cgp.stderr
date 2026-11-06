@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `name` on `App`
-   --> src/main.rs:102:9
+   --> src/main.rs:104:9
     |
-102 |         TopProviderComponent,
+104 |         TopProviderComponent,
     |         ^^^^^^^^^^^^^^^^^^^^
     |
     = note: root cause: [CGP-E110] missing field `name` on `App`

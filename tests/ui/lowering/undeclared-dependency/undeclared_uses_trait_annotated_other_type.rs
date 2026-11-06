@@ -4,6 +4,8 @@
 //! `#[uses]` only adds bounds on the context, so declaring the trait would not fix this: the provider
 //! needs a bound on `Value`. rustc's `E0599` names `Value`, and the undeclared-trait detector leaves
 //! it alone.
+//!
+//! CGP error class: undeclared dependency (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/undeclared-dependency.md).
 
 //@quality: acceptable
 //@codes: none

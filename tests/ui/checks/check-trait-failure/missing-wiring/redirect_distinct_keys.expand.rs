@@ -18,6 +18,8 @@
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md (node identity is
 //! cross-path, keyed on the dispatched value).
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

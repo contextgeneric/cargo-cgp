@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `Sum![]: PickFirstVariant` is not satisfied
-  --> src/main.rs:58:9
+  --> src/main.rs:60:9
    |
-58 |         GreeterComponent,
+60 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: this is required through the dependency chain:

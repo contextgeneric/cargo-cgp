@@ -3,6 +3,8 @@
 //! depends on `CanB`, `ProviderB` depends back on `CanA`), walked alongside a
 //! genuinely missing field. The resolver's cycle guard must cut the `CanA → CanB →
 //! CanA` loop while still reporting the missing `width` field down the other branch.
+//!
+//! CGP error class: wiring cycle (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/wiring-cycle.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

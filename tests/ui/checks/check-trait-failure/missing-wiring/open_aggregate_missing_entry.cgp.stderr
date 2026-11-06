@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing entry for `@ComputerComponent.Sink.Digest` in provider `ByteSink`
-  --> src/main.rs:60:9
+  --> src/main.rs:62:9
    |
-60 |         ComputerComponent: (Sink, Digest),
+62 |         ComputerComponent: (Sink, Digest),
    |         ^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E114] missing entry for `@ComputerComponent.Sink.Digest` in provider `ByteSink`

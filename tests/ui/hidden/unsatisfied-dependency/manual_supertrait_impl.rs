@@ -19,6 +19,8 @@
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (the impl-site
 //! path).
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E003 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E110

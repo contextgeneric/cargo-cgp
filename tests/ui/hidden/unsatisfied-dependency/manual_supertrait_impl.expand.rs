@@ -20,6 +20,8 @@
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md (the impl-site
 //! path).
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

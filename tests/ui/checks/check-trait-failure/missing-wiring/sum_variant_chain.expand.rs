@@ -12,6 +12,8 @@
 //! the sum spine as their self type, and the renderer resugars it: `Either<u64, Either<f64, Void>>`
 //! reads as `Sum![u64, f64]` and its tail as `Sum![f64]`, anchored by `DefId` to `cgp-field` so only
 //! CGP's own `Either`/`Void` are resugared.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

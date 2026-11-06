@@ -5,6 +5,8 @@
 //! The anchors read a context from an expression or from a struct definition, and neither names
 //! `App` here, so rustc's diagnostic stays, with its `HasField` clause reworded. It states the cause
 //! truly but leads with the bound.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -8,6 +8,8 @@
 //! back to `Product![u64, String]` (and would fold an all-`Field` spine to the `Struct!`/`Enum!`
 //! shape, and an `Either`/`Void` spine to `Sum![…]`), so a declined message reads the same as one
 //! the resolver reshaped: the string-level counterpart of the driver's typed `render_ty`.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: none

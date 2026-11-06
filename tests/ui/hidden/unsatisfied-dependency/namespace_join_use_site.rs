@@ -11,6 +11,8 @@
 //! its missing `name` field. The walk reads the real consumer/provider trait
 //! obligations (never `IsProviderFor`), and the blanket `__Key__` key is skipped as
 //! the non-component it is, so no placeholder noise leaks.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E110

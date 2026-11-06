@@ -5,6 +5,8 @@
 //! bound-call anchor needs the binding's type with its reference to pin `Context = App`. It then
 //! seeds the bound `App: CanFormatPair<u32>` and walks to the missing `separator` field. The consumer
 //! takes a parameter, so no other anchor recovers this bound from the diagnostic's spans.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110

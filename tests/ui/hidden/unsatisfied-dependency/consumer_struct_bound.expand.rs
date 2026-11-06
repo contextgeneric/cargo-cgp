@@ -2,6 +2,8 @@
 //! A consumer trait required by a struct's bound, built with a context whose wiring misses the field
 //! the provider reads. The root cause is the missing `name` field on `App`, and `Holder` only passes
 //! the requirement on.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

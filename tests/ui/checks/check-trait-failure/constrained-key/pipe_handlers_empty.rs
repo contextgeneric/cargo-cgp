@@ -10,6 +10,8 @@
 //! component routes through it), and the check fails because the delegate entry's constrained key is
 //! unsatisfiable, not because the component is unwired. The resolver should lead with the real
 //! composition bound rather than the `IsProviderFor`/`DelegateComponent` scaffolding.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E101 CGP-E102 CGP-E117

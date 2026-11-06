@@ -13,6 +13,8 @@
 //! `CanUseComponent<ItemEncoderComponent, Seq<u64>>`) rather than re-checking the raw `PathCons`
 //! key (which would report the type-level `PathCons` spine as a bogus "consumer trait" and bottom
 //! out on `T: Sized` noise), so the failure is traced to the real gap: the unwired `u64` encoder.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E113

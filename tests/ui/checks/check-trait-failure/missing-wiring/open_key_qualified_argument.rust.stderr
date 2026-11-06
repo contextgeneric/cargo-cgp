@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `RedirectLookup<App, _>: IsProviderFor<_, App, Wrap<Item>>` is not satisfied
-  --> src/main.rs:44:9
+  --> src/main.rs:46:9
    |
-44 |         GreeterComponent: Wrap<a::Item>,
+46 |         GreeterComponent: Wrap<a::Item>,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `IsProviderFor<GreeterComponent, App, Wrap<a::Item>>` is not implemented for `RedirectLookup<App, PathCons<GreeterComponent, Nil>>`
@@ -17,13 +17,13 @@ error[E0277]: the trait bound `RedirectLookup<App, _>: IsProviderFor<_, App, Wra
            and 10 others
    = note: required for `App` to implement `CanUseComponent<GreeterComponent, Wrap<a::Item>>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:42:1
+  --> src/main.rs:44:1
    |
-42 | / check_components! {
-43 | |     App {
-44 | |         GreeterComponent: Wrap<a::Item>,
-45 | |     }
-46 | | }
+44 | / check_components! {
+45 | |     App {
+46 | |         GreeterComponent: Wrap<a::Item>,
+47 | |     }
+48 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

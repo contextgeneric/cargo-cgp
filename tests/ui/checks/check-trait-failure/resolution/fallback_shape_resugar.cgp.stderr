@@ -1,55 +1,55 @@
 error[E0277]: the trait bound `Struct!(u8, u16): Needs` is not satisfied
-  --> src/main.rs:23:15
+  --> src/main.rs:25:15
    |
-23 |     require::<Struct!(u8, u16)>();
+25 |     require::<Struct!(u8, u16)>();
    |               ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `Needs` is not implemented for `Struct!(u8, u16)`
 help: this trait has no implementations, consider adding one
-  --> src/main.rs:18:1
+  --> src/main.rs:20:1
    |
-18 | pub trait Needs {}
+20 | pub trait Needs {}
    | ^^^^^^^^^^^^^^^
 note: required by a bound in `require`
-  --> src/main.rs:20:15
+  --> src/main.rs:22:15
    |
-20 | fn require<T: Needs>() {}
+22 | fn require<T: Needs>() {}
    |               ^^^^^ required by this bound in `require`
 
 error[E0277]: the trait bound `Struct! { r#type: u8, name: u16 }: Needs` is not satisfied
-  --> src/main.rs:24:15
+  --> src/main.rs:26:15
    |
-24 |     require::<Struct! { r#type: u8, name: u16 }>();
+26 |     require::<Struct! { r#type: u8, name: u16 }>();
    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `Needs` is not implemented for `Struct! { r#type: u8, name: u16 }`
 help: this trait has no implementations, consider adding one
-  --> src/main.rs:18:1
+  --> src/main.rs:20:1
    |
-18 | pub trait Needs {}
+20 | pub trait Needs {}
    | ^^^^^^^^^^^^^^^
 note: required by a bound in `require`
-  --> src/main.rs:20:15
+  --> src/main.rs:22:15
    |
-20 | fn require<T: Needs>() {}
+22 | fn require<T: Needs>() {}
    |               ^^^^^ required by this bound in `require`
 
 error[E0277]: the trait bound `Enum! { Empty, Pair(u8, u16), Rect { w: f64 } }: Needs` is not satisfied
-  --> src/main.rs:25:15
+  --> src/main.rs:27:15
    |
-25 |     require::<Enum! { Empty, Pair(u8, u16), Rect { w: f64 } }>();
+27 |     require::<Enum! { Empty, Pair(u8, u16), Rect { w: f64 } }>();
    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `Needs` is not implemented for `Enum! { Empty, Pair(u8, u16), Rect { w: f64 } }`
 help: this trait has no implementations, consider adding one
-  --> src/main.rs:18:1
+  --> src/main.rs:20:1
    |
-18 | pub trait Needs {}
+20 | pub trait Needs {}
    | ^^^^^^^^^^^^^^^
 note: required by a bound in `require`
-  --> src/main.rs:20:15
+  --> src/main.rs:22:15
    |
-20 | fn require<T: Needs>() {}
+22 | fn require<T: Needs>() {}
    |               ^^^^^ required by this bound in `require`
 
 For more information about this error, try `rustc --explain E0277`.

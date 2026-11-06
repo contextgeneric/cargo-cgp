@@ -5,6 +5,8 @@
 //! params tuple whether the component has two parameters or one tuple-typed one.
 //! The resolver rebuilds the consumer obligation from that slot, so it must not
 //! mistake the one tuple-typed parameter for two separate ones.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

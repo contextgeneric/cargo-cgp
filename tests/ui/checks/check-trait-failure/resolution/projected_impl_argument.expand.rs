@@ -10,6 +10,8 @@
 //! relates `<u8 as Assoc>::Out` to `B` as a goal left for later, so the first impl looks like a
 //! match and the cause would name `alpha`, the field the first impl requires, which `Pick<B>` does
 //! not need.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

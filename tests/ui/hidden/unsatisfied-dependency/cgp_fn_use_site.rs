@@ -23,6 +23,8 @@
 //! cause, ``missing field `name` on `App` ``, over a tree: the `GetName` branch that fails, with the
 //! holding `GetCount` branch omitted. Left to raw rustc this is an `E0599` whose real cause is a
 //! mid-stack note buried under a method-probe candidate list.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E003 CGP-E104 CGP-E110

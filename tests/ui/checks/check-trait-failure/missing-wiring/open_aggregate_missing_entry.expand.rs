@@ -13,6 +13,8 @@
 //! ByteSink`, so the reader adds the entry to `ByteSink` rather than to `App`.
 //!
 //! See cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E103, CGP-E114).
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

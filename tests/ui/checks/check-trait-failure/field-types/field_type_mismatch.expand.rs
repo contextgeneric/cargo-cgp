@@ -14,6 +14,8 @@
 //! The shorter-chain counterpart, where the provider reads the field directly with an `#[implicit]`
 //! argument (no getter trait), is [`field_type_mismatch_1`](field_type_mismatch_1.rs); the
 //! module-path disambiguation is [`field_type_mismatch_modules`](field_type_mismatch_modules.rs).
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

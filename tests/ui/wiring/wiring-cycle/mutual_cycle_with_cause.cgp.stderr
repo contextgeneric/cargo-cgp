@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `width` on `App`
-  --> src/main.rs:55:9
+  --> src/main.rs:57:9
    |
-55 |         ProviderAComponent,
+57 |         ProviderAComponent,
    |         ^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `width` on `App`

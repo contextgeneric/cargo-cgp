@@ -19,6 +19,8 @@
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md (diamond) and
 //! cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md (diamond reuse).
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110

@@ -11,6 +11,8 @@
 //! the sum spine as their self type, and the renderer resugars it: `Either<u64, Either<f64, Void>>`
 //! reads as `Sum![u64, f64]` and its tail as `Sum![f64]`, anchored by `DefId` to `cgp-field` so only
 //! CGP's own `Either`/`Void` are resugared.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E113

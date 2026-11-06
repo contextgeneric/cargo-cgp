@@ -16,6 +16,8 @@
 //! report) and decline. The walk instead folds such a stray variable into a rigid placeholder, so
 //! it descends into `HandleName` and reaches the missing `name` field, while the first stage's
 //! `_: Send`, which genuinely depends on the input, is filtered out as a placeholder leaf.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

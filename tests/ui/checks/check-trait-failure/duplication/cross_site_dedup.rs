@@ -8,6 +8,8 @@
 //! headed by `CanGreetSend` (the code the programmer wrote), then `CanGreet`, down to the missing
 //! field, so the wrapper's and the check's routes are one chain. The `.rust.stderr` shows the full
 //! cascade for contrast.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110

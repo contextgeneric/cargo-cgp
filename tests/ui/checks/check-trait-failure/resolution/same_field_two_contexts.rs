@@ -14,6 +14,8 @@
 //! that makes `Inner`'s subtree decode against `Inner`) is pinned separately by
 //! [`cross_context_node_key`](cross_context_node_key.rs); here it is only the shortest way to reach
 //! two same-named fields on different owners from one check entry.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110

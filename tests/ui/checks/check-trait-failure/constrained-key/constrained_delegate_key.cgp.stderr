@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `Product![]: PickFirst` is not satisfied
-  --> src/main.rs:64:9
+  --> src/main.rs:66:9
    |
-64 |         GreeterComponent,
+66 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: this is required through the dependency chain:

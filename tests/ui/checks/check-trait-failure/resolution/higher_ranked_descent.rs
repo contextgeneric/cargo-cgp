@@ -17,6 +17,8 @@
 //! The walk instantiates the obligation's binder with placeholders before
 //! the `eq`, so it descends past the higher-ranked bound and bottoms out on the
 //! real root cause, the missing `@ItemEncoderComponent.&u64` wiring, with no panic.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E113

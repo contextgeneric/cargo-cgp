@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E030] the trait `PersonName` is used but not declared as a dependency
-  --> src/main.rs:26:39
+  --> src/main.rs:28:39
    |
-26 |         format!("Hello, {}!", context.person_name())
+28 |         format!("Hello, {}!", context.person_name())
    |                                       ^^^^^^^^^^^
    |
    = help: declare it as a dependency with `#[uses(PersonName)]`

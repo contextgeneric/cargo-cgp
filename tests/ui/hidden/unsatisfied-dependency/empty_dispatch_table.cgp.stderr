@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing entry for `ByteStream` in provider `EmptySink`
-   --> src/main.rs:103:9
+   --> src/main.rs:105:9
     |
-103 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+105 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
     |         ^^^^^^
     |
     = note: root cause: [CGP-E114] missing entry for `ByteStream` in provider `EmptySink`

@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing entry for `Tagged<Bytes>` in provider `SinkHandlers`
-   --> src/main.rs:206:16
+   --> src/main.rs:208:16
     |
-206 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
+208 |     app.handle(PhantomData::<Prog>, Vec::new()).await?;
     |                ^^^^^^^^^^^^^^^^^^^
     |
     = note: root cause: [CGP-E114] missing entry for `Tagged<Bytes>` in provider `SinkHandlers`

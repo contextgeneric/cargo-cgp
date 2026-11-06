@@ -22,6 +22,8 @@
 //! (trait-used-as-a-bound) shape and tried after the call-site anchor, so a direct method call
 //! still leads with the trait the programmer invoked. Left to raw rustc the field name is
 //! mangled to an unreadable `Symbol<4, Chars<..>>` buried in a `help`.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E003 CGP-E104 CGP-E110

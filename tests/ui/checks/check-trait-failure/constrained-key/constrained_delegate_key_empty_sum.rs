@@ -5,6 +5,8 @@
 //! non-empty `Either` and never for the empty `Void`. `App` wires `GreeterComponent` to
 //! `PickFirstVariantProvider<Sum![]>`, so the delegation's own bound is unmet. rustc prints the
 //! empty sum as `Void`; the tool's tree and headline write it `Sum![]`, as the program does.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E101 CGP-E102 CGP-E117

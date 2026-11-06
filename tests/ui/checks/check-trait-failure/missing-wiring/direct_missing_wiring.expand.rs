@@ -11,6 +11,8 @@
 //! provider's impl-side dependency (that transitive case is basic_missing_wiring.rs).
 //!
 //! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

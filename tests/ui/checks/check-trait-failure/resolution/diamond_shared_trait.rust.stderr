@@ -1,73 +1,73 @@
 error[E0277]: the trait bound `ProvideShared: IsProviderFor<SharedProviderComponent, App>` is not satisfied
-   --> src/main.rs:102:9
+   --> src/main.rs:104:9
     |
-102 |         TopProviderComponent,
+104 |         TopProviderComponent,
     |         ^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
     |
 help: the trait `IsProviderFor<SharedProviderComponent, App>` is not implemented for `ProvideShared`
-   --> src/main.rs:53:16
+   --> src/main.rs:55:16
     |
- 53 | #[cgp_impl(new ProvideShared)]
+ 55 | #[cgp_impl(new ProvideShared)]
     |                ^^^^^^^^^^^^^
 help: the trait `IsProviderFor<SharedProviderComponent, __Context__>` is conditionally implemented for `ProvideShared`
-   --> src/main.rs:55:1
+   --> src/main.rs:57:1
     |
- 54 |   #[uses(HasName)]
+ 56 |   #[uses(HasName)]
     |          ------- unsatisfied requirement introduced here: `_: HasName`
- 55 | / impl SharedProvider {
- 56 | |     fn shared(&self) {
- 57 | |         let _ = self.name();
- 58 | |     }
- 59 | | }
+ 57 | / impl SharedProvider {
+ 58 | |     fn shared(&self) {
+ 59 | |         let _ = self.name();
+ 60 | |     }
+ 61 | | }
     | |_^
 note: required for `App` to implement `IsProviderFor<SharedProviderComponent, App>`
-   --> src/main.rs:91:1
+   --> src/main.rs:93:1
     |
- 91 | / delegate_components! {
- 92 | |     App {
+ 93 | / delegate_components! {
+ 94 | |     App {
     | |     ^^^
- 93 | |         SharedProviderComponent: ProvideShared,
- 94 | |         LeftProviderComponent: ProvideLeft,
+ 95 | |         SharedProviderComponent: ProvideShared,
+ 96 | |         LeftProviderComponent: ProvideLeft,
 ...   |
- 98 | | }
+100 | | }
     | |_^
 note: required for `App` to implement `SharedProvider<App>`
-   --> src/main.rs:33:1
+   --> src/main.rs:35:1
     |
- 33 | #[cgp_component(SharedProvider)]
+ 35 | #[cgp_component(SharedProvider)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `App` to implement `CanShared`
-   --> src/main.rs:33:1
+   --> src/main.rs:35:1
     |
- 33 | #[cgp_component(SharedProvider)]
+ 35 | #[cgp_component(SharedProvider)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 34 | pub trait CanShared {
+ 36 | pub trait CanShared {
     |           ^^^^^^^^^
     = note: 2 redundant requirements hidden
     = note: required for `App` to implement `IsProviderFor<LeftProviderComponent, App>`
 note: required for `App` to implement `LeftProvider<App>`
-   --> src/main.rs:38:1
+   --> src/main.rs:40:1
     |
- 38 | #[cgp_component(LeftProvider)]
+ 40 | #[cgp_component(LeftProvider)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `App` to implement `CanLeft`
-   --> src/main.rs:38:1
+   --> src/main.rs:40:1
     |
- 38 | #[cgp_component(LeftProvider)]
+ 40 | #[cgp_component(LeftProvider)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 39 | pub trait CanLeft {
+ 41 | pub trait CanLeft {
     |           ^^^^^^^
     = note: 1 redundant requirement hidden
     = note: required for `ProvideTop` to implement `IsProviderFor<TopProviderComponent, App>`
     = note: required for `App` to implement `CanUseComponent<TopProviderComponent>`
 note: required by a bound in `__CheckApp`
-   --> src/main.rs:100:1
+   --> src/main.rs:102:1
     |
-100 | / check_components! {
-101 | |     App {
-102 | |         TopProviderComponent,
-103 | |     }
-104 | | }
+102 | / check_components! {
+103 | |     App {
+104 | |         TopProviderComponent,
+105 | |     }
+106 | | }
     | |_^ required by this bound in `__CheckApp`
     = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

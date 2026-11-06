@@ -1,30 +1,30 @@
 error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
-  --> src/main.rs:95:16
+  --> src/main.rs:97:16
    |
-95 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
+97 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
    |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |         |
    |         required by a bound introduced by this call
    |
 help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:84:1
+  --> src/main.rs:86:1
    |
-84 | pub struct App {
+86 | pub struct App {
    | ^^^^^^^^^^^^^^
 note: required for `App` to implement `HasName`
-  --> src/main.rs:32:1
+  --> src/main.rs:34:1
    |
-32 | #[cgp_auto_getter]
+34 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-33 | pub trait HasName {
+35 | pub trait HasName {
    |           ^^^^^^^
 note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, String)>`
-  --> src/main.rs:59:1
+  --> src/main.rs:61:1
    |
-59 | #[cgp_impl(new HandleName)]
+61 | #[cgp_impl(new HandleName)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-63 |     Self: HasName,
+65 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
    = note: 4 redundant requirements hidden
    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, _)>`
@@ -33,15 +33,15 @@ note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, Ap
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
-  --> src/main.rs:95:5
+  --> src/main.rs:97:5
    |
-95 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
+97 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:84:1
+  --> src/main.rs:86:1
    |
-84 | pub struct App {
+86 | pub struct App {
    | ^^^^^^^^^^^^^^
    = help: the following other types implement trait `Handler<__Context__, Code, Input>`:
              `BuildAndMerge<Provider>` implements `Handler<Context, Code, Builder>`
@@ -54,19 +54,19 @@ help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is 
              `PromoteAsync<Provider>` implements `Handler<Context, Code, Input>`
            and 7 others
 note: required for `App` to implement `HasName`
-  --> src/main.rs:32:1
+  --> src/main.rs:34:1
    |
-32 | #[cgp_auto_getter]
+34 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-33 | pub trait HasName {
+35 | pub trait HasName {
    |           ^^^^^^^
 note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, String)>`
-  --> src/main.rs:59:1
+  --> src/main.rs:61:1
    |
-59 | #[cgp_impl(new HandleName)]
+61 | #[cgp_impl(new HandleName)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-63 |     Self: HasName,
+65 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
    = note: 4 redundant requirements hidden
    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, _)>`
@@ -85,25 +85,25 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the `?` operator can only be applied to values that implement `Try`
-  --> src/main.rs:95:5
+  --> src/main.rs:97:5
    |
-95 | /     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
-96 | |         .await?;
+97 | /     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
+98 | |         .await?;
    | |_______________^ the `?` operator cannot be applied to type `<impl Future<Output = Result<_, _>> as Future>::Output`
    |
    = help: the nightly-only, unstable trait `Try` is not implemented for `<impl Future<Output = Result<_, _>> as Future>::Output`
 
 error[E0277]: the `?` operator can only be used in an async function that returns `Result` or `Option` (or another type that implements `FromResidual`)
-  --> src/main.rs:95:5
-   |
-94 |    async fn run_app(app: &App) -> Result<(), String> {
-   |  ____________________________________________________-
-95 | |/     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
-96 | ||         .await?;
-   | ||_______________^ cannot use the `?` operator in an async function that returns `<impl Future<Output = Result<_, _>> as Future>::Output`
-97 | |      Ok(())
-98 | |  }
-   | |__- this function should return `Result` or `Option` to accept `?`
-   |
+   --> src/main.rs:97:5
+    |
+ 96 |    async fn run_app(app: &App) -> Result<(), String> {
+    |  ____________________________________________________-
+ 97 | |/     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
+ 98 | ||         .await?;
+    | ||_______________^ cannot use the `?` operator in an async function that returns `<impl Future<Output = Result<_, _>> as Future>::Output`
+ 99 | |      Ok(())
+100 | |  }
+    | |__- this function should return `Result` or `Option` to accept `?`
+    |
 
 For more information about this error, try `rustc --explain E0277`.

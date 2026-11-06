@@ -10,6 +10,8 @@
 //! to `PickFirstProvider<Product![]>`, whose `Nil` list has no `PickFirst` impl, so the generated
 //! `DelegateComponent<GreeterComponent> for PickFirstProvider<Nil>` impl cannot apply. The delegate
 //! entry *exists* but its own bound is unmet, distinct from a component wired nowhere.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -10,6 +10,8 @@
 //! shortest spellings (`Empty` for a `Nil` payload, `Pair(u8, u16)` and `Rect { w: f64 }` for a
 //! payload that is itself a shape). Every rendered shape is the type the call wrote, so it can be
 //! copied back into code.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

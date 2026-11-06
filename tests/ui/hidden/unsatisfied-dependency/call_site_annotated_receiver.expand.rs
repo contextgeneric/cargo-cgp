@@ -4,6 +4,8 @@
 //! `make_app()` is the initializer, but the annotation is what names the context: the call-site
 //! anchor reads `App` off `let app: App`, seeds `App: CanFormatPair<(u32, u64)>`, and walks to the
 //! missing `separator` field.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

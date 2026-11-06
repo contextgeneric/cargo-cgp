@@ -22,6 +22,8 @@
 //! `<App as CanHandle<..>>::Output` projection, is dropped by the emitter's `?`-cascade gate: its
 //! span overlaps the CGP failure already reported, and the resolver never takes a `?` error, so
 //! without the gate both errors would print.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

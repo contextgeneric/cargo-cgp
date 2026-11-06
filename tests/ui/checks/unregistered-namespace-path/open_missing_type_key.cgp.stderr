@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `@ItemEncoderComponent.Vec<u8>` on `App`
-  --> src/main.rs:56:13
+  --> src/main.rs:58:13
    |
-56 |             Vec<u8>,
+58 |             Vec<u8>,
    |             ^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `@ItemEncoderComponent.Vec<u8>` on `App`

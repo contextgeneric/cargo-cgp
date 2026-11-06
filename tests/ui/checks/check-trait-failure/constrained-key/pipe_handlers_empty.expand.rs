@@ -11,6 +11,8 @@
 //! component routes through it), and the check fails because the delegate entry's constrained key is
 //! unsatisfiable, not because the component is unwired. The resolver should lead with the real
 //! composition bound rather than the `IsProviderFor`/`DelegateComponent` scaffolding.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

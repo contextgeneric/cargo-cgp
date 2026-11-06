@@ -1,38 +1,38 @@
 error[E0271]: type mismatch resolving `<App as CanHandleApiSend<GreetApi>>::handle_api_send::{opaque#0}<'_> == _`
-  --> src/main.rs:75:10
+  --> src/main.rs:77:10
    |
-75 |     ) -> impl Future<Output = Self::Response> + Send {
+77 |     ) -> impl Future<Output = Self::Response> + Send {
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ types differ
 
 error[E0599]: the method `handle_api` exists for reference `&App`, but its trait bounds were not satisfied
-  --> src/main.rs:76:27
+  --> src/main.rs:78:27
    |
-49 | pub struct App;
+51 | pub struct App;
    | -------------- doesn't satisfy `App: CanHandleApi<_>` or `_: HasField<Symbol<4, Chars<..>>>`
 ...
-76 |         async move { self.handle_api(api).await }
+78 |         async move { self.handle_api(api).await }
    |                           ^^^^^^^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `ApiHandler`
-  --> src/main.rs:33:11
+  --> src/main.rs:35:11
    |
-33 |     async fn handle_api(&self, api: PhantomData<Api>) -> Self::Response;
+35 |     async fn handle_api(&self, api: PhantomData<Api>) -> Self::Response;
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
-  --> src/main.rs:23:1
+  --> src/main.rs:25:1
    |
-23 | #[cgp_auto_getter]
+25 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-24 | pub trait HasName {
+26 | pub trait HasName {
    |           ^^^^^^^
 note: trait bound `&App: ApiHandler<&App, _>` was not satisfied
-  --> src/main.rs:28:17
+  --> src/main.rs:30:17
    |
-28 |   #[cgp_component(ApiHandler)]
+30 |   #[cgp_component(ApiHandler)]
    |  _----------------^-----------
-29 | | #[async_trait]
-30 | | pub trait CanHandleApi<Api> {
+31 | | #[async_trait]
+32 | | pub trait CanHandleApi<Api> {
    | |           ----------------^
    | |___________________________|
    |                             unsatisfied trait bound introduced here
@@ -43,196 +43,196 @@ note: the trait `cgp::prelude::HasField` must be implemented
    | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanHandleApi` defines an item `handle_api`, perhaps you need to implement it
-  --> src/main.rs:30:1
+  --> src/main.rs:32:1
    |
-30 | pub trait CanHandleApi<Api> {
+32 | pub trait CanHandleApi<Api> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
-76 -         async move { self.handle_api(api).await }
-76 +         async move { App::handle_api(api).await }
+78 -         async move { self.handle_api(api).await }
+78 +         async move { App::handle_api(api).await }
    |
 
 error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
-  --> src/main.rs:75:10
+  --> src/main.rs:77:10
    |
-75 |     ) -> impl Future<Output = Self::Response> + Send {
+77 |     ) -> impl Future<Output = Self::Response> + Send {
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:49:1
+  --> src/main.rs:51:1
    |
-49 | pub struct App;
+51 | pub struct App;
    | ^^^^^^^^^^^^^^
 note: required for `App` to implement `HasName`
-  --> src/main.rs:23:1
+  --> src/main.rs:25:1
    |
-23 | #[cgp_auto_getter]
+25 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-24 | pub trait HasName {
+26 | pub trait HasName {
    |           ^^^^^^^
 note: required for `HandleGreet` to implement `IsProviderFor<ApiHandlerComponent, App, GreetApi>`
-  --> src/main.rs:38:1
+  --> src/main.rs:40:1
    |
-38 | #[cgp_impl(new HandleGreet)]
+40 | #[cgp_impl(new HandleGreet)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-39 | #[uses(HasName)]
+41 | #[uses(HasName)]
    |        ------- unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
    = note: required for `App` to implement `IsProviderFor<ApiHandlerComponent, App, GreetApi>`
 note: required for `App` to implement `ApiHandler<App, GreetApi>`
-  --> src/main.rs:28:1
+  --> src/main.rs:30:1
    |
-28 |   #[cgp_component(ApiHandler)]
+30 |   #[cgp_component(ApiHandler)]
    |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | | #[async_trait]
-30 | | pub trait CanHandleApi<Api> {
+31 | | #[async_trait]
+32 | | pub trait CanHandleApi<Api> {
    | |___________________________^
 note: required for `App` to implement `CanHandleApi<GreetApi>`
-  --> src/main.rs:28:1
+  --> src/main.rs:30:1
    |
-28 | #[cgp_component(ApiHandler)]
+30 | #[cgp_component(ApiHandler)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | #[async_trait]
-30 | pub trait CanHandleApi<Api> {
+31 | #[async_trait]
+32 | pub trait CanHandleApi<Api> {
    |           ^^^^^^^^^^^^^^^^^
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: CanUseComponent<ApiHandlerComponent, GreetApi>` is not satisfied
-  --> src/main.rs:59:9
+  --> src/main.rs:61:9
    |
-59 |         ApiHandlerComponent: GreetApi,
+61 |         ApiHandlerComponent: GreetApi,
    |         ^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:49:1
+  --> src/main.rs:51:1
    |
-49 | pub struct App;
+51 | pub struct App;
    | ^^^^^^^^^^^^^^
 note: required for `App` to implement `HasName`
-  --> src/main.rs:23:1
+  --> src/main.rs:25:1
    |
-23 | #[cgp_auto_getter]
+25 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-24 | pub trait HasName {
+26 | pub trait HasName {
    |           ^^^^^^^
 note: required for `HandleGreet` to implement `IsProviderFor<ApiHandlerComponent, App, GreetApi>`
-  --> src/main.rs:38:1
+  --> src/main.rs:40:1
    |
-38 | #[cgp_impl(new HandleGreet)]
+40 | #[cgp_impl(new HandleGreet)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-39 | #[uses(HasName)]
+41 | #[uses(HasName)]
    |        ------- unsatisfied trait bound introduced here
    = note: required for `App` to implement `CanUseComponent<ApiHandlerComponent, GreetApi>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:57:1
+  --> src/main.rs:59:1
    |
-57 | / check_components! {
-58 | |     App {
-59 | |         ApiHandlerComponent: GreetApi,
-60 | |     }
-61 | | }
+59 | / check_components! {
+60 | |     App {
+61 | |         ApiHandlerComponent: GreetApi,
+62 | |     }
+63 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
-  --> src/main.rs:71:6
+  --> src/main.rs:73:6
    |
-71 | impl CanHandleApiSend<GreetApi> for App {
+73 | impl CanHandleApiSend<GreetApi> for App {
    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:49:1
+  --> src/main.rs:51:1
    |
-49 | pub struct App;
+51 | pub struct App;
    | ^^^^^^^^^^^^^^
 note: required for `App` to implement `HasName`
-  --> src/main.rs:23:1
+  --> src/main.rs:25:1
    |
-23 | #[cgp_auto_getter]
+25 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-24 | pub trait HasName {
+26 | pub trait HasName {
    |           ^^^^^^^
 note: required for `HandleGreet` to implement `IsProviderFor<ApiHandlerComponent, App, GreetApi>`
-  --> src/main.rs:38:1
+  --> src/main.rs:40:1
    |
-38 | #[cgp_impl(new HandleGreet)]
+40 | #[cgp_impl(new HandleGreet)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-39 | #[uses(HasName)]
+41 | #[uses(HasName)]
    |        ------- unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
    = note: required for `App` to implement `IsProviderFor<ApiHandlerComponent, App, GreetApi>`
 note: required for `App` to implement `ApiHandler<App, GreetApi>`
-  --> src/main.rs:28:1
+  --> src/main.rs:30:1
    |
-28 |   #[cgp_component(ApiHandler)]
+30 |   #[cgp_component(ApiHandler)]
    |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | | #[async_trait]
-30 | | pub trait CanHandleApi<Api> {
+31 | | #[async_trait]
+32 | | pub trait CanHandleApi<Api> {
    | |___________________________^
 note: required for `App` to implement `CanHandleApi<GreetApi>`
-  --> src/main.rs:28:1
+  --> src/main.rs:30:1
    |
-28 | #[cgp_component(ApiHandler)]
+30 | #[cgp_component(ApiHandler)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | #[async_trait]
-30 | pub trait CanHandleApi<Api> {
+31 | #[async_trait]
+32 | pub trait CanHandleApi<Api> {
    |           ^^^^^^^^^^^^^^^^^
 note: required by a bound in `CanHandleApiSend`
-  --> src/main.rs:66:62
+  --> src/main.rs:68:62
    |
-66 | pub trait CanHandleApiSend<Api>: CanHandleApi<Api, Response: Send> + Send + Sync {
+68 | pub trait CanHandleApiSend<Api>: CanHandleApi<Api, Response: Send> + Send + Sync {
    |                                                              ^^^^ required by this bound in `CanHandleApiSend`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: CanHandleApi<GreetApi>` is not satisfied
-  --> src/main.rs:71:37
+  --> src/main.rs:73:37
    |
-71 | impl CanHandleApiSend<GreetApi> for App {
+73 | impl CanHandleApiSend<GreetApi> for App {
    |                                     ^^^ unsatisfied trait bound
    |
 help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:49:1
+  --> src/main.rs:51:1
    |
-49 | pub struct App;
+51 | pub struct App;
    | ^^^^^^^^^^^^^^
 note: required for `App` to implement `HasName`
-  --> src/main.rs:23:1
+  --> src/main.rs:25:1
    |
-23 | #[cgp_auto_getter]
+25 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-24 | pub trait HasName {
+26 | pub trait HasName {
    |           ^^^^^^^
 note: required for `HandleGreet` to implement `IsProviderFor<ApiHandlerComponent, App, GreetApi>`
-  --> src/main.rs:38:1
+  --> src/main.rs:40:1
    |
-38 | #[cgp_impl(new HandleGreet)]
+40 | #[cgp_impl(new HandleGreet)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-39 | #[uses(HasName)]
+41 | #[uses(HasName)]
    |        ------- unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
    = note: required for `App` to implement `IsProviderFor<ApiHandlerComponent, App, GreetApi>`
 note: required for `App` to implement `ApiHandler<App, GreetApi>`
-  --> src/main.rs:28:1
+  --> src/main.rs:30:1
    |
-28 |   #[cgp_component(ApiHandler)]
+30 |   #[cgp_component(ApiHandler)]
    |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | | #[async_trait]
-30 | | pub trait CanHandleApi<Api> {
+31 | | #[async_trait]
+32 | | pub trait CanHandleApi<Api> {
    | |___________________________^
 note: required for `App` to implement `CanHandleApi<GreetApi>`
-  --> src/main.rs:28:1
+  --> src/main.rs:30:1
    |
-28 | #[cgp_component(ApiHandler)]
+30 | #[cgp_component(ApiHandler)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-29 | #[async_trait]
-30 | pub trait CanHandleApi<Api> {
+31 | #[async_trait]
+32 | pub trait CanHandleApi<Api> {
    |           ^^^^^^^^^^^^^^^^^
 note: required by a bound in `CanHandleApiSend`
-  --> src/main.rs:66:34
+  --> src/main.rs:68:34
    |
-66 | pub trait CanHandleApiSend<Api>: CanHandleApi<Api, Response: Send> + Send + Sync {
+68 | pub trait CanHandleApiSend<Api>: CanHandleApi<Api, Response: Send> + Send + Sync {
    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `CanHandleApiSend`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 

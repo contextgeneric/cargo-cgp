@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E001] missing wiring for `@ItemEncoderComponent.u64` on `App`
-  --> src/main.rs:53:17
+  --> src/main.rs:55:17
    |
-53 |     let _ = app.encode_item(&Seq(vec![1u64]));
+55 |     let _ = app.encode_item(&Seq(vec![1u64]));
    |                 ^^^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `@ItemEncoderComponent.u64` on `App`

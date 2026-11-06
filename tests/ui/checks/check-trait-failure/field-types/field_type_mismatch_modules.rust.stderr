@@ -1,80 +1,80 @@
 error[E0271]: type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<..>>>>::Value == f64`
-  --> src/main.rs:62:13
+  --> src/main.rs:64:13
    |
-62 |             AreaCalculatorAComponent,
+64 |             AreaCalculatorAComponent,
    |             ^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<..>>>>::Value == f64`
    |
 note: expected this to be `f64`
-  --> src/main.rs:51:21
+  --> src/main.rs:53:21
    |
-51 |         pub height: i32,
+53 |         pub height: i32,
    |                     ^^^
 note: required for `shape_a::Rectangle` to implement `HasRectangleFieldsA`
-  --> src/main.rs:31:5
+  --> src/main.rs:33:5
    |
-31 |     #[cgp_auto_getter]
+33 |     #[cgp_auto_getter]
    |     ^^^^^^^^^^^^^^^^^^
-32 |     pub trait HasRectangleFieldsA {
+34 |     pub trait HasRectangleFieldsA {
    |               ^^^^^^^^^^^^^^^^^^^
    = note: associated types for the current `impl` cannot be restricted in `where` clauses
    = note: associated types for the current `impl` cannot be restricted in `where` clauses
 note: required for `RectangleAreaA` to implement `IsProviderFor<AreaCalculatorAComponent, shape_a::Rectangle>`
-  --> src/main.rs:38:5
+  --> src/main.rs:40:5
    |
-38 |     #[cgp_impl(new RectangleAreaA)]
+40 |     #[cgp_impl(new RectangleAreaA)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-41 |         Self: HasRectangleFieldsA,
+43 |         Self: HasRectangleFieldsA,
    |               ------------------- unsatisfied trait bound introduced here
    = note: required for `shape_a::Rectangle` to implement `CanUseComponent<AreaCalculatorAComponent>`
 note: required by a bound in `shape_a::__CheckRectangle`
-  --> src/main.rs:60:5
+  --> src/main.rs:62:5
    |
-60 | /     check_components! {
-61 | |         Rectangle {
-62 | |             AreaCalculatorAComponent,
-63 | |         }
-64 | |     }
+62 | /     check_components! {
+63 | |         Rectangle {
+64 | |             AreaCalculatorAComponent,
+65 | |         }
+66 | |     }
    | |_____^ required by this bound in `__CheckRectangle`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0271]: type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<..>>>>::Value == f64`
-   --> src/main.rs:106:13
+   --> src/main.rs:108:13
     |
-106 |             AreaCalculatorBComponent,
+108 |             AreaCalculatorBComponent,
     |             ^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<..>>>>::Value == f64`
     |
 note: expected this to be `f64`
-   --> src/main.rs:95:21
+   --> src/main.rs:97:21
     |
- 95 |         pub height: i16,
+ 97 |         pub height: i16,
     |                     ^^^
 note: required for `shape_b::Rectangle` to implement `HasRectangleFieldsB`
-   --> src/main.rs:75:5
+   --> src/main.rs:77:5
     |
- 75 |     #[cgp_auto_getter]
+ 77 |     #[cgp_auto_getter]
     |     ^^^^^^^^^^^^^^^^^^
- 76 |     pub trait HasRectangleFieldsB {
+ 78 |     pub trait HasRectangleFieldsB {
     |               ^^^^^^^^^^^^^^^^^^^
     = note: associated types for the current `impl` cannot be restricted in `where` clauses
     = note: associated types for the current `impl` cannot be restricted in `where` clauses
 note: required for `RectangleAreaB` to implement `IsProviderFor<AreaCalculatorBComponent, shape_b::Rectangle>`
-   --> src/main.rs:82:5
+   --> src/main.rs:84:5
     |
- 82 |     #[cgp_impl(new RectangleAreaB)]
+ 84 |     #[cgp_impl(new RectangleAreaB)]
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
- 85 |         Self: HasRectangleFieldsB,
+ 87 |         Self: HasRectangleFieldsB,
     |               ------------------- unsatisfied trait bound introduced here
     = note: required for `shape_b::Rectangle` to implement `CanUseComponent<AreaCalculatorBComponent>`
 note: required by a bound in `shape_b::__CheckRectangle`
-   --> src/main.rs:104:5
+   --> src/main.rs:106:5
     |
-104 | /     check_components! {
-105 | |         Rectangle {
-106 | |             AreaCalculatorBComponent,
-107 | |         }
-108 | |     }
+106 | /     check_components! {
+107 | |         Rectangle {
+108 | |             AreaCalculatorBComponent,
+109 | |         }
+110 | |     }
     | |_____^ required by this bound in `__CheckRectangle`
     = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

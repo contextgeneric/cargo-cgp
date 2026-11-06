@@ -8,6 +8,8 @@
 //! scope and the expansion fails to resolve it, at the empty variant `Closed`.
 //! rustc names the missing `Box` and suggests the import, which is the fix: see
 //! `ok/no_std_empty_variant.rs`.
+//!
+//! CGP error class: out-of-scope generated name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/out-of-scope-generated-name.md).
 #![no_std]
 extern crate core;
 #[prelude_import]

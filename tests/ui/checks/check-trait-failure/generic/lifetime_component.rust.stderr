@@ -1,39 +1,39 @@
 error[E0277]: the trait bound `App<'a>: CanUseComponent<ReferenceGetterComponent, (cgp::prelude::Life<'a>, str)>` is not satisfied
-  --> src/main.rs:51:9
+  --> src/main.rs:53:9
    |
-51 |         ReferenceGetterComponent: (Life<'a>, str),
+53 |         ReferenceGetterComponent: (Life<'a>, str),
    |         ^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App<'a>`
       but trait `HasField<Symbol<5, Chars<..>>>` is implemented for `App<'_>`
-  --> src/main.rs:40:9
+  --> src/main.rs:42:9
    |
-40 |     pub value: &'a str,
+42 |     pub value: &'a str,
    |         ^^^^^
 note: required for `App<'a>` to implement `HasName`
-  --> src/main.rs:21:1
+  --> src/main.rs:23:1
    |
-21 | #[cgp_auto_getter]
+23 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-22 | pub trait HasName {
+24 | pub trait HasName {
    |           ^^^^^^^
 note: required for `GetReference` to implement `IsProviderFor<ReferenceGetterComponent, App<'a>, (cgp::prelude::Life<'a>, str)>`
-  --> src/main.rs:26:1
+  --> src/main.rs:28:1
    |
-26 | #[cgp_impl(new GetReference)]
+28 | #[cgp_impl(new GetReference)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-29 |     Self: HasName,
+31 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
    = note: required for `App<'a>` to implement `CanUseComponent<ReferenceGetterComponent, (cgp::prelude::Life<'a>, str)>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:49:1
+  --> src/main.rs:51:1
    |
-49 | / check_components! {
-50 | |     <'a> App<'a> {
-51 | |         ReferenceGetterComponent: (Life<'a>, str),
-52 | |     }
-53 | | }
+51 | / check_components! {
+52 | |     <'a> App<'a> {
+53 | |         ReferenceGetterComponent: (Life<'a>, str),
+54 | |     }
+55 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

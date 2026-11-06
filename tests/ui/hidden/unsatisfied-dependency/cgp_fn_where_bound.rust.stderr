@@ -1,30 +1,30 @@
 error[E0277]: the trait bound `App: GetName` is not satisfied
-  --> src/main.rs:53:15
+  --> src/main.rs:55:15
    |
-53 |     greet_all(app)
+55 |     greet_all(app)
    |     --------- ^^^ unsatisfied trait bound
    |     |
    |     required by a bound introduced by this call
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<6, Chars<..>>>` is implemented for it
-  --> src/main.rs:49:9
+  --> src/main.rs:51:9
    |
-49 |     pub locale: String,
+51 |     pub locale: String,
    |         ^^^^^^
 note: required for `App` to implement `GetName`
-  --> src/main.rs:32:1
+  --> src/main.rs:34:1
    |
-32 | #[cgp_fn]
+34 | #[cgp_fn]
    | ^^^^^^^^^
-33 | pub fn get_name(&self, #[implicit] name: &str) -> String {
+35 | pub fn get_name(&self, #[implicit] name: &str) -> String {
    |        ^^^^^^^^
 note: required by a bound in `greet_all`
-  --> src/main.rs:41:14
+  --> src/main.rs:43:14
    |
-39 | fn greet_all<Context>(context: &Context) -> String
-40 | where
-41 |     Context: GetName,
+41 | fn greet_all<Context>(context: &Context) -> String
+42 | where
+43 |     Context: GetName,
    |              ^^^^^^^ required by this bound in `greet_all`
    = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
 

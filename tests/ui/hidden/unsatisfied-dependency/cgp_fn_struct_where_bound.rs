@@ -1,6 +1,8 @@
 //! A `#[cgp_fn]` trait required by a struct's `where` clause, built with a context missing the field
 //! the trait reads. The root cause is the missing `name` field on `App`, and `Holder` only passes the
 //! requirement on.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E003 CGP-E104 CGP-E110

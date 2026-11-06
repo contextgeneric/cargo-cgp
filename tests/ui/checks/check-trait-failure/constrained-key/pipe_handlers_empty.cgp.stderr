@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `Product![]: handler::providers::pipe::ComposeProviders` is not satisfied
-  --> src/main.rs:37:9
+  --> src/main.rs:39:9
    |
-37 |         GreeterComponent,
+39 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: this is required through the dependency chain:

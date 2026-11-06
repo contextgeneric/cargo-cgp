@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `Nil: handler::providers::pipe::ComposeProviders` is not satisfied
-  --> src/main.rs:37:9
+  --> src/main.rs:39:9
    |
-37 |         GreeterComponent,
+39 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ the trait `handler::providers::pipe::ComposeProviders` is not implemented for `Nil`
    |
 help: the following other types implement trait `handler::providers::pipe::ComposeProviders`
@@ -18,13 +18,13 @@ help: the following other types implement trait `handler::providers::pipe::Compo
    = note: required for `PipeHandlers<Nil>` to implement `IsProviderFor<GreeterComponent, App>`
    = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:35:1
+  --> src/main.rs:37:1
    |
-35 | / check_components! {
-36 | |     App {
-37 | |         GreeterComponent,
-38 | |     }
-39 | | }
+37 | / check_components! {
+38 | |     App {
+39 | |         GreeterComponent,
+40 | |     }
+41 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E003] missing field `name` on `App`
-  --> src/main.rs:31:26
+  --> src/main.rs:33:26
    |
-31 |     let _holder = Holder(app);
+33 |     let _holder = Holder(app);
    |                          ^^^
    |
    = note: root cause: [CGP-E110] missing field `name` on `App`

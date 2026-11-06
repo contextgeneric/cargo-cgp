@@ -1,35 +1,35 @@
 error[E0277]: the trait bound `Void: PickFirstVariant` is not satisfied
-  --> src/main.rs:58:9
+  --> src/main.rs:60:9
    |
-58 |         GreeterComponent,
+60 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ the trait `PickFirstVariant` is not implemented for `Void`
    |
 help: the trait `PickFirstVariant` is implemented for `cgp::prelude::Either<Head, Tail>`
-  --> src/main.rs:37:1
+  --> src/main.rs:39:1
    |
-37 | impl<Head, Tail> PickFirstVariant for Either<Head, Tail> {
+39 | impl<Head, Tail> PickFirstVariant for Either<Head, Tail> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `PickFirstVariantProvider<Void>` to implement `IsProviderFor<GreeterComponent, App>`
-  --> src/main.rs:41:1
+  --> src/main.rs:43:1
    |
-41 | / delegate_components! {
-42 | |     <Component, Provider, List: PickFirstVariant<Provider = Provider>>
+43 | / delegate_components! {
+44 | |     <Component, Provider, List: PickFirstVariant<Provider = Provider>>
    | |                                                  ------------------- unsatisfied trait bound introduced here
-43 | |     PickFirstVariantProvider<List> {
+45 | |     PickFirstVariantProvider<List> {
    | |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-44 | |         Component: Provider,
-45 | |     }
-46 | | }
+46 | |         Component: Provider,
+47 | |     }
+48 | | }
    | |_^
    = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:56:1
+  --> src/main.rs:58:1
    |
-56 | / check_components! {
-57 | |     App {
-58 | |         GreeterComponent,
-59 | |     }
-60 | | }
+58 | / check_components! {
+59 | |     App {
+60 | |         GreeterComponent,
+61 | |     }
+62 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

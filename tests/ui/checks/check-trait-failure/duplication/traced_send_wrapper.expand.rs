@@ -12,6 +12,8 @@
 //! the wrapper labelled. The block takes its `[CGP-E001]` class and `E0277` code from the check, and
 //! the wrapper's chain, which runs through `CanHandleApi`, shows both routes in one tree. The baseline
 //! `.rust.stderr` shows the full un-traced cascade for contrast.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

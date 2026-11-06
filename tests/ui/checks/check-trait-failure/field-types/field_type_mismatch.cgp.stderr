@@ -1,7 +1,7 @@
 error[E0271]: [CGP-E004] field `height` on `Rectangle` has type `i32`, but `f64` is required
-  --> src/main.rs:58:9
+  --> src/main.rs:60:9
    |
-58 |         AreaCalculatorComponent,
+60 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this is required through the dependency chain:

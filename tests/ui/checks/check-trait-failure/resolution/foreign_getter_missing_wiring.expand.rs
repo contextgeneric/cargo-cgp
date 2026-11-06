@@ -16,6 +16,8 @@
 //!
 //! An authentication provider produces this shape: a getter bound on the request beside the real
 //! missing credential-type wiring.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

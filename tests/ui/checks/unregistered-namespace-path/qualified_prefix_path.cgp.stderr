@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `@app.finance.types.QuantityTypeProviderComponent` on `App`
-  --> src/main.rs:41:9
+  --> src/main.rs:43:9
    |
-41 |         QuantityTypeProviderComponent,
+43 |         QuantityTypeProviderComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `@app.finance.types.QuantityTypeProviderComponent` on `App`

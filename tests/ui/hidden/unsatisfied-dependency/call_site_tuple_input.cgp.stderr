@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `name` on `App`
-   --> src/main.rs:104:9
+   --> src/main.rs:106:9
     |
-104 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
+106 |     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
     |         ^^^^^^
     |
     = note: root cause: [CGP-E110] missing field `name` on `App`

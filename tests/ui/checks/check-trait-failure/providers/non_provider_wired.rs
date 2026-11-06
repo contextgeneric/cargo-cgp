@@ -15,6 +15,8 @@
 //! a provider, reported as a [`CGP-E115`] `NotAProvider` leaf: `the provider trait \`Greeter\` is
 //! not implemented for \`NotAGreeter\``, rather than a `[CGP-E002]` block naming the whole
 //! `WrapGreeter<NotAGreeter>` pipeline.
+//!
+//! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E115

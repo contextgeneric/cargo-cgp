@@ -21,6 +21,8 @@
 //! `<App as CanHandle<..>>::Output` projection, is dropped by the emitter's `?`-cascade gate: its
 //! span overlaps the CGP failure already reported, and the resolver never takes a `?` error, so
 //! without the gate both errors would print.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E103 CGP-E104 CGP-E110

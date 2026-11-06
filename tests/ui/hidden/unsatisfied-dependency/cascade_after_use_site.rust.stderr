@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `ComposeHandlers<HandleName, HandleShout>: IsProviderFor<_, App, _>` is not satisfied
-  --> src/main.rs:97:16
+  --> src/main.rs:99:16
    |
-97 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+99 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
    |         ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |         |
    |         required by a bound introduced by this call
@@ -46,9 +46,9 @@ help: `ComposeHandlers<ProviderA, ProviderB>` implements trait `IsProviderFor<Co
    = note: required for `App` to implement `CanHandle<Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, _>`
 
 error[E0277]: the trait bound `ComposeHandlers<HandleName, HandleShout>: IsProviderFor<_, App, _>` is not satisfied
-  --> src/main.rs:97:5
+  --> src/main.rs:99:5
    |
-97 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+99 |     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `IsProviderFor<HandlerComponent, App, (Prog<Cons<HandleName, Cons<HandleShout, Nil>>>, Vec<_>)>` is not implemented for `ComposeHandlers<HandleName, HandleShout>`
@@ -101,24 +101,24 @@ note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
 
 error[E0277]: the `?` operator can only be applied to values that implement `Try`
-  --> src/main.rs:97:5
-   |
-97 | /     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
-98 | |         .await?;
-   | |_______________^ the `?` operator cannot be applied to type `<impl Future<Output = Result<_, _>> as Future>::Output`
-   |
-   = help: the nightly-only, unstable trait `Try` is not implemented for `<impl Future<Output = Result<_, _>> as Future>::Output`
+   --> src/main.rs:99:5
+    |
+ 99 | /     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+100 | |         .await?;
+    | |_______________^ the `?` operator cannot be applied to type `<impl Future<Output = Result<_, _>> as Future>::Output`
+    |
+    = help: the nightly-only, unstable trait `Try` is not implemented for `<impl Future<Output = Result<_, _>> as Future>::Output`
 
 error[E0277]: the `?` operator can only be used in an async function that returns `Result` or `Option` (or another type that implements `FromResidual`)
-   --> src/main.rs:97:5
+   --> src/main.rs:99:5
     |
- 96 |    async fn run_app(app: &App) -> Result<(), String> {
+ 98 |    async fn run_app(app: &App) -> Result<(), String> {
     |  ____________________________________________________-
- 97 | |/     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
- 98 | ||         .await?;
+ 99 | |/     app.handle(PhantomData::<Prog<Product![HandleName, HandleShout]>>, Vec::new())
+100 | ||         .await?;
     | ||_______________^ cannot use the `?` operator in an async function that returns `<impl Future<Output = Result<_, _>> as Future>::Output`
- 99 | |      Ok(())
-100 | |  }
+101 | |      Ok(())
+102 | |  }
     | |__- this function should return `Result` or `Option` to accept `?`
     |
 

@@ -3,6 +3,8 @@
 //! `make_app()` is the initializer, but the annotation is what names the context: the call-site
 //! anchor reads `App` off `let app: App`, seeds `App: CanFormatPair<(u32, u64)>`, and walks to the
 //! missing `separator` field.
+//!
+//! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110

@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `@end` on `App`
-  --> src/main.rs:41:9
+  --> src/main.rs:43:9
    |
-41 |         GreeterComponent,
+43 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `@end` on `App`

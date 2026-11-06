@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `FooProviderComponent` on `App`
-  --> src/main.rs:34:9
+  --> src/main.rs:36:9
    |
-34 |         FooProviderComponent,
+36 |         FooProviderComponent,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `FooProviderComponent` on `App`
