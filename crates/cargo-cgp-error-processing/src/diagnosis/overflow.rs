@@ -12,6 +12,7 @@ use crate::code::{GROWING_LOOKUP, WIRING_CYCLE};
 use crate::rewrite::{
     ComponentNameMap, last_segment, render_trait_generics, split_generics, split_top_level,
 };
+use crate::signals::overflow_requirement_rest;
 
 /// Why a wiring lookup never resolves, as the driver's walk found it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -109,7 +110,7 @@ pub fn rewrite_wiring_overflow(
     names: &ComponentNameMap,
     overflow: &WiringOverflow,
 ) -> Option<String> {
-    let rest = message.strip_prefix("overflow evaluating the requirement `")?;
+    let rest = overflow_requirement_rest(message)?;
     let (bound, _tail) = rest.split_once('`')?;
     let (subject, trait_ref) = bound.split_once(": ")?;
     let (path, args_str) = split_generics(trait_ref).unwrap_or((trait_ref, ""));

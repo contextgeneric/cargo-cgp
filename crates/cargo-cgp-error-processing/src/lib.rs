@@ -85,10 +85,12 @@ pub use postprocess::{
 pub use rewrite::{ComponentNameMap, ComponentTraitNames, rewrite_message};
 pub use shape::{ShapeTag, render_enum_shape, render_struct_shape, render_variant, shape_name};
 pub use signals::{
-    explain_footer_codes, invokes_macro, is_explain_footer_text, is_method_bounds_text,
+    explain_footer_codes, explain_list_text, explain_pointer_text, invokes_macro,
+    is_explain_footer_text, is_explain_list_text, is_method_bounds_text,
     is_method_probe_advice_text, is_missing_type_parameter_help_text,
     is_question_mark_cascade_text, is_recursion_limit_help_text, is_unbounded_type_param_item_text,
-    mentions_orphan_param_text, mentions_wiring_text,
+    mentions_orphan_param_text, mentions_wiring_text, overflow_requirement_rest,
+    unresolved_assoc_type, unresolved_type_name,
 };
 pub use syntax::{code_chars, is_ident, is_primitive_type, string_literal_end, with_arguments};
 pub use tree::{DependencyTree, render_dependency_tree};

@@ -3,10 +3,11 @@
 //! matches and, as importantly, the near-misses it must not.
 
 use cargo_cgp_error_processing::{
-    explain_footer_codes, invokes_macro, is_explain_footer_text, is_method_bounds_text,
+    explain_footer_codes, explain_list_text, explain_pointer_text, invokes_macro,
+    is_explain_footer_text, is_explain_list_text, is_method_bounds_text,
     is_method_probe_advice_text, is_missing_type_parameter_help_text,
     is_question_mark_cascade_text, is_recursion_limit_help_text, mentions_orphan_param_text,
-    mentions_wiring_text,
+    mentions_wiring_text, overflow_requirement_rest, unresolved_assoc_type, unresolved_type_name,
 };
 
 // Property: `mentions_wiring_text` holds for a message naming `CanUseComponent`, `IsProviderFor`,
@@ -195,4 +196,87 @@ fn the_missing_type_parameter_signal_matches_only_that_help() {
     assert!(!is_missing_type_parameter_help_text(
         "consider importing this struct"
     ));
+}
+
+// Property: `is_explain_list_text` holds for the list footer line and not for the pointer line
+//   (its doc).
+#[test]
+fn tells_the_list_footer_line_from_the_pointer_line() {
+    assert!(is_explain_list_text(
+        "Some errors have detailed explanations: E0277, E0599."
+    ));
+    assert!(!is_explain_list_text(
+        "For more information about an error, try `rustc --explain E0277`."
+    ));
+}
+
+// Property: the footer lines the writers build are rustc's own text, as `print_error_count` in
+//   `rustc_errors` formats them, and for all codes the reader returns what the writer was given.
+#[test]
+fn writes_the_footer_lines_as_rustc_does_and_reads_them_back() {
+    let codes = vec!["E0277".to_owned(), "E0599".to_owned()];
+    let list = explain_list_text(&codes);
+    assert_eq!(
+        list,
+        "Some errors have detailed explanations: E0277, E0599."
+    );
+    assert!(is_explain_footer_text(&list));
+    assert_eq!(explain_footer_codes(&list), codes);
+
+    let only = explain_pointer_text("E0277", true);
+    assert_eq!(
+        only,
+        "For more information about this error, try `rustc --explain E0277`."
+    );
+    assert_eq!(explain_footer_codes(&only), vec!["E0277"]);
+
+    let first = explain_pointer_text("E0277", false);
+    assert_eq!(
+        first,
+        "For more information about an error, try `rustc --explain E0277`."
+    );
+    assert_eq!(explain_footer_codes(&first), vec!["E0277"]);
+}
+
+// Property: `overflow_requirement_rest` returns the text after rustc's overflow lead, the
+//   requirement with its closing backtick, and `None` for any other message (its doc).
+#[test]
+fn reads_the_rest_of_an_overflow_message() {
+    assert_eq!(
+        overflow_requirement_rest("overflow evaluating the requirement `Person: CanGreet`"),
+        Some("Person: CanGreet`")
+    );
+    assert_eq!(overflow_requirement_rest("mismatched types"), None);
+}
+
+// Property: `unresolved_type_name` returns the name of rustc's `cannot find type` message and
+//   `None` for another kind of item or another message (its doc).
+#[test]
+fn reads_the_name_an_unresolved_type_message_names() {
+    assert_eq!(
+        unresolved_type_name("cannot find type `Error` in this scope"),
+        Some("Error")
+    );
+    assert_eq!(
+        unresolved_type_name("cannot find trait `Error` in this scope"),
+        None
+    );
+    assert_eq!(
+        unresolved_type_name("cannot find type `Error` in module `app`"),
+        None
+    );
+}
+
+// Property: `unresolved_assoc_type` returns the associated type and the trait of rustc's
+//   `cannot find associated type` message and `None` for any other message (its doc).
+#[test]
+fn reads_the_names_an_unresolved_associated_type_message_names() {
+    assert_eq!(
+        unresolved_assoc_type("cannot find associated type `Eror` in trait `HasErrorType`"),
+        Some(("Eror", "HasErrorType"))
+    );
+    assert_eq!(
+        unresolved_assoc_type("cannot find type `Eror` in this scope"),
+        None
+    );
 }

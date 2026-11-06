@@ -1,7 +1,9 @@
 //! The stages for an abstract type used without `#[use_type]`, and for a requirement a provider
 //! does not declare, which share the record of the types already reported.
 
-use cargo_cgp_error_processing::{ClassPlan, UndeclaredRequirement, UnimportedAbstractType};
+use cargo_cgp_error_processing::{
+    ClassPlan, UndeclaredRequirement, UnimportedAbstractType, unresolved_type_name,
+};
 use rustc_errors::codes::{E0220, E0277, E0425};
 use rustc_errors::{DiagArgValue, DiagInner};
 use rustc_middle::ty::TyCtxt;
@@ -150,10 +152,9 @@ impl UnimportedStage {
         impl_did: DefId,
         impl_span: Span,
     ) -> bool {
-        let message = format!("cannot find type `{name}` in this scope");
         let is_use = |diag: &DiagInner| {
             diag.code == Some(E0425)
-                && main_message_text(diag) == Some(message.as_str())
+                && main_message_text(diag).and_then(unresolved_type_name) == Some(name)
                 && diag
                     .span
                     .primary_span()

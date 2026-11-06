@@ -10,7 +10,8 @@ use cargo_cgp_error_processing::rewrite::{
 };
 use cargo_cgp_error_processing::{
     DiagKind, PendingNote, Resolved, WiringOverflow, cause_signature, is_method_bounds_text,
-    is_recursion_limit_help_text, plan_resolved, rewrite_wiring_overflow, wiring_overflow_help,
+    is_recursion_limit_help_text, overflow_requirement_rest, plan_resolved,
+    rewrite_wiring_overflow, wiring_overflow_help,
 };
 use rustc_errors::codes::{E0271, E0275, E0277, E0308, E0599};
 use rustc_errors::{DiagInner, DiagMessage, MultiSpan, Style, Sublevel, Suggestions};
@@ -248,8 +249,7 @@ pub fn wiring_overflow(cx: Option<ResolveCtx<'_, '_>>, diag: &DiagInner) -> Opti
         return None;
     }
     let span = diag.span.primary_span()?;
-    let requirement = main_message_text(diag)?
-        .strip_prefix("overflow evaluating the requirement `")?
+    let requirement = overflow_requirement_rest(main_message_text(diag)?)?
         .split_once('`')?
         .0;
     match resolve::overflow_walk(cx?, span, requirement) {

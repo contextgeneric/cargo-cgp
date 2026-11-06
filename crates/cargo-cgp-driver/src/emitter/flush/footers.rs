@@ -2,7 +2,10 @@
 
 use std::collections::HashSet;
 
-use cargo_cgp_error_processing::{explain_footer_codes, is_explain_footer_text};
+use cargo_cgp_error_processing::{
+    explain_footer_codes, explain_list_text, explain_pointer_text, is_explain_footer_text,
+    is_explain_list_text,
+};
 use rustc_errors::{DiagInner, DiagMessage, Level, Style};
 
 use crate::emitter::edit::main_message_text;
@@ -71,26 +74,18 @@ pub fn rebuild_explain_footers(to_emit: &mut Vec<DiagInner>) {
                 // and both footer lines go.
                 return None;
             };
-            if text.starts_with("Some errors have detailed explanations:") {
+            if is_explain_list_text(text) {
                 // The list line is only right for two or more codes; with one, the pointer line
                 // below carries it alone.
                 if kept.len() < 2 {
                     return None;
                 }
-                return Some(footer_note(
-                    &diag,
-                    &format!(
-                        "Some errors have detailed explanations: {}.",
-                        kept.join(", ")
-                    ),
-                ));
+                return Some(footer_note(&diag, &explain_list_text(&kept)));
             }
-            let message = if kept.len() == 1 {
-                format!("For more information about this error, try `rustc --explain {first}`.")
-            } else {
-                format!("For more information about an error, try `rustc --explain {first}`.")
-            };
-            Some(footer_note(&diag, &message))
+            Some(footer_note(
+                &diag,
+                &explain_pointer_text(first, kept.len() == 1),
+            ))
         })
         .collect();
     *to_emit = rebuilt;

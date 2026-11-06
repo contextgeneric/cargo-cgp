@@ -18,6 +18,7 @@
 
 use cargo_cgp_error_processing::{
     ClassPlan, UnresolvedWiringName, is_missing_type_parameter_help_text,
+    overflow_requirement_rest, unresolved_type_name,
 };
 use rustc_errors::codes::{E0275, E0425};
 use rustc_errors::{DiagInner, DiagMessage, Style, Sublevel, Suggestions};
@@ -41,7 +42,7 @@ pub fn is_unresolved_wiring_overflow(diag: &DiagInner, unprovable: &[String]) ->
         return false;
     }
     let Some(requirement) = main_message_text(diag)
-        .and_then(|text| text.strip_prefix("overflow evaluating the requirement `"))
+        .and_then(overflow_requirement_rest)
         .and_then(|text| text.strip_suffix('`'))
     else {
         return false;
@@ -139,9 +140,7 @@ fn unresolved_names(buffer: &[BufEntry]) -> Vec<(usize, Span, String)> {
             if diag.code != Some(E0425) {
                 return None;
             }
-            let name = main_message_text(diag)?
-                .strip_prefix("cannot find type `")?
-                .strip_suffix("` in this scope")?;
+            let name = unresolved_type_name(main_message_text(diag)?)?;
             Some((index, diag.span.primary_span()?, name.to_owned()))
         })
         .collect()

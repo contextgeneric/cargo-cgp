@@ -2,7 +2,9 @@
 //!
 //! The emitter must decide, from a diagnostic's rendered messages alone, whether to attempt a
 //! transform at all; these predicates centralize the rustc wordings those decisions key on, so
-//! each is documented and unit-tested in one place. They are *signals*, not classifications: a
+//! each is documented and unit-tested in one place. The readers that take a name out of a message
+//! and the writers of the footer lines the emitter rebuilds live here too, beside the wording they
+//! share. They are *signals*, not classifications: a
 //! positive match only makes a diagnostic a candidate, and the typed resolver (or the span checks
 //! around a cascade) still verifies the real condition before anything is rewritten or dropped.
 
@@ -90,14 +92,37 @@ pub fn is_recursion_limit_help_text(text: &str) -> bool {
     text.contains("consider increasing the recursion limit")
 }
 
+/// The lead of rustc's footer line that lists the explainable codes.
+const EXPLAIN_LIST_LEAD: &str = "Some errors have detailed explanations:";
+
+/// The lead of rustc's footer line that points at `rustc --explain` for a code.
+const EXPLAIN_POINTER_LEAD: &str = "For more information about";
+
 /// Whether a message is one of rustc's trailing "detailed explanations" footer lines: the
 /// `Some errors have detailed explanations: E0277, E0599.` list or the
 /// `For more information about …, try `rustc --explain E0277`.` pointer that `print_error_count`
 /// emits last. The emitter rebuilds these from the errors that actually survived its suppressions
 /// and merges, so it has to recognize them first.
 pub fn is_explain_footer_text(text: &str) -> bool {
-    text.starts_with("Some errors have detailed explanations:")
-        || text.starts_with("For more information about")
+    is_explain_list_text(text) || text.starts_with(EXPLAIN_POINTER_LEAD)
+}
+
+/// Whether a message is the list form of the footer, `Some errors have detailed explanations: …`.
+pub fn is_explain_list_text(text: &str) -> bool {
+    text.starts_with(EXPLAIN_LIST_LEAD)
+}
+
+/// The list footer line for `codes`, as rustc writes it:
+/// `Some errors have detailed explanations: E0277, E0599.`
+pub fn explain_list_text(codes: &[String]) -> String {
+    format!("{EXPLAIN_LIST_LEAD} {}.", codes.join(", "))
+}
+
+/// The pointer footer line for `code`, as rustc writes it: about "this error" when `code` is the
+/// only explainable one, and about "an error" otherwise.
+pub fn explain_pointer_text(code: &str, only: bool) -> String {
+    let subject = if only { "this error" } else { "an error" };
+    format!("{EXPLAIN_POINTER_LEAD} {subject}, try `rustc --explain {code}`.")
 }
 
 /// The `rustc --explain` codes an [`is_explain_footer_text`] line names: every code of the list
@@ -107,7 +132,7 @@ pub fn is_explain_footer_text(text: &str) -> bool {
 /// rewording upstream), not that the line names nothing. The caller keys on that to leave the
 /// footer alone rather than rebuild it from nothing, since rebuilding would silently delete output.
 pub fn explain_footer_codes(text: &str) -> Vec<String> {
-    if let Some(list) = text.strip_prefix("Some errors have detailed explanations:") {
+    if let Some(list) = text.strip_prefix(EXPLAIN_LIST_LEAD) {
         return list
             .trim()
             .trim_end_matches('.')
@@ -133,4 +158,27 @@ pub fn explain_footer_codes(text: &str) -> Vec<String> {
 /// the same way, such as `table_check_components`, is a different macro.
 pub fn invokes_macro(path: &str, name: &str) -> bool {
     path.rsplit("::").next() == Some(name)
+}
+
+/// The text after the lead of an `E0275`'s ``overflow evaluating the requirement `…` `` message:
+/// the requirement and its closing backtick, or `None` for any other message. Each caller reads the
+/// requirement off the rest itself.
+pub fn overflow_requirement_rest(text: &str) -> Option<&str> {
+    text.strip_prefix("overflow evaluating the requirement `")
+}
+
+/// The name an `E0425` ``cannot find type `Name` in this scope`` message names, or `None` for any
+/// other message.
+pub fn unresolved_type_name(text: &str) -> Option<&str> {
+    text.strip_prefix("cannot find type `")?
+        .strip_suffix("` in this scope")
+}
+
+/// The associated type and the trait an `E0576`
+/// ``cannot find associated type `Name` in trait `Trait` `` message names, or `None` for any other
+/// message.
+pub fn unresolved_assoc_type(text: &str) -> Option<(&str, &str)> {
+    text.strip_prefix("cannot find associated type `")?
+        .strip_suffix('`')?
+        .split_once("` in trait `")
 }

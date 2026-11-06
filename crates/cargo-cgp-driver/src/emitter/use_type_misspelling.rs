@@ -11,7 +11,7 @@
 //! The buffer is read and written under the output's lock, and the detection, which runs compiler
 //! queries, runs with the lock released, as in the name-resolution pass.
 
-use cargo_cgp_error_processing::use_type_misspelling_help;
+use cargo_cgp_error_processing::{unresolved_assoc_type, use_type_misspelling_help};
 use rustc_errors::codes::E0576;
 use rustc_errors::{CodeSuggestion, Sublevel};
 use rustc_middle::ty::TyCtxt;
@@ -79,10 +79,7 @@ fn missing_associated_types(buffer: &[BufEntry]) -> Vec<(usize, Span, String, St
             if diag.code != Some(E0576) {
                 return None;
             }
-            let (type_name, trait_name) = main_message_text(diag)?
-                .strip_prefix("cannot find associated type `")?
-                .strip_suffix('`')?
-                .split_once("` in trait `")?;
+            let (type_name, trait_name) = unresolved_assoc_type(main_message_text(diag)?)?;
             let notes = diag
                 .children
                 .iter()
