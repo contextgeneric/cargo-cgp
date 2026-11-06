@@ -1,4 +1,4 @@
-error[E0599]: the method `describe` exists for reference `&__Context__`, but its trait bounds were not satisfied
+error[E0599]: no method named `describe` found for type parameter `&__Context__` in the current scope
   --> src/main.rs:37:10
    |
 37 |     self.describe()

@@ -1,4 +1,4 @@
-error[E0599]: no associated function or constant named `area` found for type parameter `Inner` in the current scope
+error[E0599]: no method named `area` found for type parameter `Inner` in the current scope
   --> src/main.rs:40:16
    |
 38 | impl<Inner> AreaCalculator {
@@ -19,7 +19,7 @@ help: the following traits define an item `area`, perhaps you need to restrict t
 38 | impl<Inner: FloorAreaCalculator</* __Context__ */>> AreaCalculator {
    |           ++++++++++++++++++++++++++++++++++++++++
 
-error[E0599]: no associated function or constant named `area` found for type parameter `Inner` in the current scope
+error[E0599]: no method named `area` found for type parameter `Inner` in the current scope
   --> src/main.rs:48:30
    |
 46 | impl<Inner> Describer {

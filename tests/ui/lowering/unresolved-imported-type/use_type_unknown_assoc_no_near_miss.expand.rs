@@ -105,7 +105,7 @@ where
     Self: HasScalarType,
 {
     fn get_weight(&self) -> <Self as HasScalarType>::Weight {
-        ::core::panicking::panic("not yet implemented")
+        ::core::panicking::todo_default_msg()
     }
 }
 fn main() {}

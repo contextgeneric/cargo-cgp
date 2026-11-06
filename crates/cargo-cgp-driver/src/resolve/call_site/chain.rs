@@ -186,6 +186,6 @@ fn pattern_binding_ty<'tcx>(tcx: TyCtxt<'tcx>, binding: hir::HirId) -> Option<Ty
                 .fields
                 .iter()
                 .nth(index)?;
-            Some(tcx.erase_and_anonymize_regions(field.ty(tcx, args).skip_norm_wip()))
+            Some(tcx.erase_and_anonymize_regions(field.ty(tcx, *args).skip_norm_wip()))
         })
 }

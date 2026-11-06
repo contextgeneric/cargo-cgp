@@ -33,6 +33,7 @@ note: `CanUseFoo` defines an item `foo`, perhaps you need to implement it
    |
 25 | pub trait CanUseFoo {
    | ^^^^^^^^^^^^^^^^^^^
+26 |     fn foo(&self);
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |

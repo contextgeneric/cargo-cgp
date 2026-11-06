@@ -146,6 +146,7 @@ note: `CanReportFirst` defines an item `report_first`, perhaps you need to imple
     |
  47 | pub trait CanReportFirst {
     | ^^^^^^^^^^^^^^^^^^^^^^^^
+ 48 |     fn report_first(&self) -> String;
     = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
     |

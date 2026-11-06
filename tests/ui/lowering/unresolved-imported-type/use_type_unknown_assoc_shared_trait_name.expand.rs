@@ -109,7 +109,7 @@ where
     Self: HasScalarType,
 {
     fn get_scalar(&self) -> <Self as HasScalarType>::Scalr {
-        ::core::panicking::panic("not yet implemented")
+        ::core::panicking::todo_default_msg()
     }
 }
 fn main() {}

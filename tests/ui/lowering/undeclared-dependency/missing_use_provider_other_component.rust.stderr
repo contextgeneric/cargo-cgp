@@ -1,4 +1,4 @@
-error[E0599]: no associated function or constant named `perimeter` found for type parameter `InnerShape` in the current scope
+error[E0599]: no method named `perimeter` found for type parameter `InnerShape` in the current scope
   --> src/main.rs:30:21
    |
 28 | impl<InnerShape> AreaCalculator {

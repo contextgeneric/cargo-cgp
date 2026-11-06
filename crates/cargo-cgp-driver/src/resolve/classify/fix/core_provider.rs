@@ -44,7 +44,7 @@ pub fn core_provider_hint<'tcx>(
     if provider_is(USE_FIELD_TYPE, CGP_FIELD_CRATE) {
         let use_fields = impl_self_is(USE_FIELDS_TYPE)?;
         let candidate = Ty::new_adt(tcx, use_fields, ty::GenericArgs::empty());
-        let mut args = parent.args.to_vec();
+        let mut args = parent.args.iter().collect::<Vec<_>>();
         args[0] = candidate.into();
         let applied = ty::TraitRef::new_from_args(tcx, parent.def_id, tcx.mk_args(&args));
         return holds(tcx, ty::Binder::dummy(applied).upcast(tcx))

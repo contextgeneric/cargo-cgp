@@ -1,4 +1,4 @@
-error[E0599]: no method named `greet` found for reference `&Context` in the current scope
+error[E0599]: no method named `greet` found for type parameter `&Context` in the current scope
   --> src/main.rs:30:13
    |
 30 |     context.greet();

@@ -1,4 +1,4 @@
-error[E0599]: no associated function or constant named `name` found for type parameter `Inner` in the current scope
+error[E0599]: no method named `name` found for type parameter `Inner` in the current scope
   --> src/main.rs:23:16
    |
 21 | impl<'a, Inner> NameGetter<'a> {

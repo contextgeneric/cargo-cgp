@@ -31,6 +31,7 @@ note: `CanGreet` defines an item `greet`, perhaps you need to implement it
    |
 24 | pub trait CanGreet {
    | ^^^^^^^^^^^^^^^^^^
+25 |     fn greet(&self);
    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |

@@ -1,4 +1,4 @@
-error[E0599]: no associated function or constant named `raise_error` found for type parameter `__Context__` in the current scope
+error[E0599]: no method named `raise_error` found for type parameter `__Context__` in the current scope
   --> src/main.rs:26:19
    |
 22 | #[cgp_impl(new LoadOrFail)]

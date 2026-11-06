@@ -1,7 +1,7 @@
 //! Unifying a call's arguments with the inputs its callee declares.
 
 use rustc_hir::Expr;
-use rustc_middle::ty::{self, GenericArgsRef, Ty};
+use rustc_middle::ty::{self, GenericArgs, Ty};
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
@@ -18,7 +18,7 @@ use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 pub fn unify_call_inputs<'tcx>(
     ocx: &ObligationCtxt<'_, 'tcx>,
     item_did: DefId,
-    item_args: GenericArgsRef<'tcx>,
+    item_args: GenericArgs<'tcx>,
     args: &[Expr<'tcx>],
     skip_inputs: usize,
     mut arg_ty: impl FnMut(&Expr<'tcx>) -> Option<Ty<'tcx>>,

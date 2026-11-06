@@ -1,12 +1,14 @@
 error[E0053]: method `greet` has an incompatible type for trait
   --> src/main.rs:21:28
    |
+20 | impl Greeter {
 21 |     fn greet(&self, times: u64) -> String {
    |                            ^^^ expected `u32`, found `u64`
    |
 note: type in trait
   --> src/main.rs:16:28
    |
+15 | pub trait CanGreet {
 16 |     fn greet(&self, times: u32) -> String;
    |                            ^^^
    = note: expected signature `fn(&_, u32) -> String`

@@ -29,6 +29,7 @@ note: `CanEncode` defines an item `encode`, perhaps you need to implement it
    |
 16 | pub trait CanEncode<Value> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 |     fn encode(&self, value: &Value) -> String;
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |

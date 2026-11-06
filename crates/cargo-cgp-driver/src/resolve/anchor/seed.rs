@@ -76,11 +76,21 @@ pub fn provider_obligation<'tcx>(
     params: Ty<'tcx>,
 ) -> Option<ty::PolyTraitClause<'tcx>> {
     let consumer = consumer_obligation(tcx, context, consumer_did, params)?;
-    let consumer_args = &consumer.skip_binder().trait_ref.args[1..];
+    let consumer_args = consumer.skip_binder().trait_ref.args;
     let mut args: Vec<ty::GenericArg<'tcx>> = vec![provider.into()];
-    args.extend(consumer_args.iter().filter(|arg| arg.as_region().is_some()));
+    args.extend(
+        consumer_args
+            .iter()
+            .skip(1)
+            .filter(|arg| arg.as_region().is_some()),
+    );
     args.push(context.into());
-    args.extend(consumer_args.iter().filter(|arg| arg.as_region().is_none()));
+    args.extend(
+        consumer_args
+            .iter()
+            .skip(1)
+            .filter(|arg| arg.as_region().is_none()),
+    );
     if args.len() != tcx.generics_of(provider_did).count() {
         return None;
     }

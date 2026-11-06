@@ -6,7 +6,7 @@ error[E0599]: [CGP-E031] the inner provider `Inner` is used but not imported
    |
    = help: import it with `#[use_provider(Inner: AreaCalculator)]`
 
-error[E0599]: no associated function or constant named `area` found for type parameter `Inner` in the current scope
+error[E0599]: no method named `area` found for type parameter `Inner` in the current scope
   --> src/main.rs:48:30
    |
 46 | impl<Inner> Describer {

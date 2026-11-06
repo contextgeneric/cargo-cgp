@@ -194,7 +194,7 @@ where
     <Self as HasTypes>::Types: HasScalarType,
 {
     fn get_scalar(&self) -> <<Self as HasTypes>::Types as HasScalarType>::Scalar {
-        ::core::panicking::panic("not yet implemented")
+        ::core::panicking::todo_default_msg()
     }
 }
 pub struct NoScalar;

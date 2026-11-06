@@ -7,7 +7,6 @@
 
 use rustc_hir::def::{CtorKind, DefKind, Res};
 use rustc_hir::{self as hir, Expr, ExprKind, QPath};
-use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 

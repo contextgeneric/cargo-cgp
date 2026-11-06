@@ -88,6 +88,7 @@ note: `CanCalculateArea` defines an item `area`, perhaps you need to implement i
    |
 33 | pub trait CanCalculateArea<Shape> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+34 |     fn area(&self, shape: PhantomData<Shape>) -> f64;
    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |

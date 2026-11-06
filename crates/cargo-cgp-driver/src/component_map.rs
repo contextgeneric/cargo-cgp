@@ -117,8 +117,7 @@ fn provider_names(tcx: TyCtxt<'_>, all_traits: &[DefId]) -> HashMap<DefId, (Stri
                 continue;
             }
             // Args are `[Self, Marker, Context, Params]`; the marker is the second.
-            let Some(marker_ty) = trait_ref.args.get(1).copied().and_then(|arg| arg.as_type())
-            else {
+            let Some(marker_ty) = trait_ref.args.get(1).and_then(|arg| arg.as_type()) else {
                 continue;
             };
             if let ty::Adt(marker, _) = marker_ty.kind() {

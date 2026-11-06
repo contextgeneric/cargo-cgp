@@ -31,6 +31,7 @@ note: `CanFormatPair` defines an item `format_pair`, perhaps you need to impleme
    |
 15 | pub trait CanFormatPair<T> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 |     fn format_pair(&self, value: T) -> String;
    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |

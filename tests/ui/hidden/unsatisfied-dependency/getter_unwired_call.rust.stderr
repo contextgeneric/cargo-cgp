@@ -36,6 +36,7 @@ note: `HasName` defines an item `name`, perhaps you need to implement it
    |
 16 | pub trait HasName {
    | ^^^^^^^^^^^^^^^^^
+17 |     fn name(&self) -> &str;
    = note: this error originates in the attribute macro `cgp_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |

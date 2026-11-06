@@ -2,7 +2,7 @@
 
 use rustc_infer::infer::{InferCtxt, TyCtxtInferExt};
 use rustc_infer::traits::Obligation;
-use rustc_middle::ty::{self, GenericArgsRef, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized};
+use rustc_middle::ty::{self, GenericArgs, TyCtxt, TypeVisitableExt, TypingMode, Unnormalized};
 use rustc_span::DUMMY_SP;
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
@@ -141,7 +141,7 @@ pub fn match_impl<'tcx>(
     ocx: &ObligationCtxt<'_, 'tcx>,
     obligation: ty::PolyTraitRef<'tcx>,
     impl_did: DefId,
-) -> Option<GenericArgsRef<'tcx>> {
+) -> Option<GenericArgs<'tcx>> {
     let param_env = ty::ParamEnv::empty();
     let obligation_ref = ocx.infcx.enter_forall_and_leak_universe(obligation);
     let (impl_args, impl_ref) = fresh_impl_ref(ocx.infcx, impl_did);
@@ -165,7 +165,7 @@ pub fn match_impl<'tcx>(
 pub fn fresh_impl_ref<'tcx>(
     infcx: &InferCtxt<'tcx>,
     impl_did: DefId,
-) -> (GenericArgsRef<'tcx>, ty::TraitRef<'tcx>) {
+) -> (GenericArgs<'tcx>, ty::TraitRef<'tcx>) {
     let tcx = infcx.tcx;
     let impl_args = infcx.fresh_args_for_item(DUMMY_SP, impl_did);
     let impl_ref = tcx
@@ -181,7 +181,7 @@ pub fn fresh_impl_ref<'tcx>(
 pub fn written_order_clauses<'tcx>(
     tcx: TyCtxt<'tcx>,
     impl_did: DefId,
-    args: GenericArgsRef<'tcx>,
+    args: GenericArgs<'tcx>,
 ) -> Vec<Unnormalized<'tcx, ty::Clause<'tcx>>> {
     let generic = tcx.clauses_of(impl_did);
     let instantiated: Vec<Unnormalized<'tcx, ty::Clause<'tcx>>> = generic

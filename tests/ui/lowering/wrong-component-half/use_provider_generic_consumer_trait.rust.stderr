@@ -29,6 +29,7 @@ error[E0308]: mismatched types
 note: method defined here
   --> src/main.rs:19:8
    |
+18 | pub trait CanCalculateArea<Shape> {
 19 |     fn area(&self, shape: &Shape) -> f64;
    |        ^^^^  ----
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)

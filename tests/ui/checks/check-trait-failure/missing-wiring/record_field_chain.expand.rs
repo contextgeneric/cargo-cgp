@@ -142,7 +142,7 @@ where
     Value::Fields: BuildFields<__Context__, Builder>,
 {
     fn build_value(__context__: &__Context__) -> Value {
-        ::core::panicking::panic("not yet implemented")
+        ::core::panicking::todo_default_msg()
     }
 }
 impl<

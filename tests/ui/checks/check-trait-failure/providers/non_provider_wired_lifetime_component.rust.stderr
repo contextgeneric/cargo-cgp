@@ -39,6 +39,7 @@ note: `CanGreet` defines an item `greet`, perhaps you need to implement it
     |
  17 | pub trait CanGreet<'a> {
     | ^^^^^^^^^^^^^^^^^^^^^^
+ 18 |     fn greet(&self, other: &'a str) -> String;
     = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
     |

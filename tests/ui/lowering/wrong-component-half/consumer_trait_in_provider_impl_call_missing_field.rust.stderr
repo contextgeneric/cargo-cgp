@@ -85,6 +85,7 @@ note: `CanCalculateArea` defines an item `area`, perhaps you need to implement i
    |
 18 | pub trait CanCalculateArea {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 |     fn area(&self) -> f64;
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |

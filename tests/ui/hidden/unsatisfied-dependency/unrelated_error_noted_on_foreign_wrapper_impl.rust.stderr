@@ -115,12 +115,12 @@ error[E0599]: the method `inner_greeting` exists for reference `&Box<Person>`, b
  67 |           self.inner_greeting()
     |                ^^^^^^^^^^^^^^ method cannot be called on `&Box<Person>` due to unsatisfied trait bounds
     |
-   ::: $SYSROOT/lib/rustlib/src/rust/library/alloc/src/boxed.rs:236:1
+   ::: $SYSROOT/lib/rustlib/src/rust/library/alloc/src/boxed.rs:308:1
     |
-236 | / pub struct Box<
-237 | |     T: ?Sized,
-238 | |     #[stable(feature = "allocator_api", since = "1.100.0")] A: Allocator = Global,
-239 | | >(Unique<T>, A);
+308 | / pub struct Box<
+309 | |     #[rustc_assert_variance(covariant)] T: ?Sized,
+310 | |     #[stable(feature = "allocator_api", since = "1.100.0")] A: Allocator = Global,
+311 | | >(BoxRaw<T>, A);
     | |_- doesn't satisfy `Box<Person>: HasInner`
     |
 note: trait bound `Person: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
@@ -141,6 +141,7 @@ note: `HasInner` defines an item `inner_greeting`, perhaps you need to implement
     |
  48 | pub trait HasInner {
     | ^^^^^^^^^^^^^^^^^^
+ 49 |     fn inner_greeting(&self) -> String;
     = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: `Rc<u8>` cannot be sent between threads safely

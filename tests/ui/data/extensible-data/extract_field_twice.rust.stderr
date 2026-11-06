@@ -11,6 +11,8 @@ error[E0308]: mismatched types
 note: method defined here
   --> $CGP/crates/core/cgp-field/src/traits/extract_field.rs:35:8
    |
+30 | pub trait ExtractField<Tag> {
+...
 35 |     fn extract_field(self, _tag: PhantomData<Tag>) -> Result<Self::Value, Self::Remainder>;
    |        ^^^^^^^^^^^^^
 

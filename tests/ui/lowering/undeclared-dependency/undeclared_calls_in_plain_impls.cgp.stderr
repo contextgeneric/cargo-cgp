@@ -42,7 +42,7 @@ help: the following trait defines an item `get_count`, perhaps you need to restr
 48 | impl<C: GetCount> Run<C> for Runner {
    |       ++++++++++
 
-error[E0599]: no associated function or constant named `area` found for type parameter `T` in the current scope
+error[E0599]: no method named `area` found for type parameter `T` in the current scope
   --> src/main.rs:62:12
    |
 60 | impl<T> Twice for Wrapper<T> {

@@ -40,7 +40,7 @@ where
         let database: &Pool<Db> = self
             .get_field(::core::marker::PhantomData::<Symbol!("database")>);
         let _ = database;
-        ::core::panicking::panic("not yet implemented")
+        ::core::panicking::todo_default_msg()
     }
 }
 fn main() {}

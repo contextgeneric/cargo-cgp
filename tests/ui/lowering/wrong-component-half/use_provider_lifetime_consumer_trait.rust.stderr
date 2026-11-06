@@ -29,6 +29,7 @@ error[E0308]: mismatched types
 note: method defined here
   --> src/main.rs:18:8
    |
+17 | pub trait CanRead<'a, Source> {
 18 |     fn read(&self, source: &'a Source) -> &'a str;
    |        ^^^^  ----
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)

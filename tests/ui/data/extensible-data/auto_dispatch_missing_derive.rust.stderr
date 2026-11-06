@@ -30,6 +30,7 @@ note: `HasArea` defines an item `area`, perhaps you need to implement it
    |
 25 | pub trait HasArea {
    | ^^^^^^^^^^^^^^^^^
+26 |     fn area(&self) -> f64;
    = note: this error originates in the attribute macro `cgp_auto_dispatch` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0599`.

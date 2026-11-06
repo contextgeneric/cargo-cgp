@@ -18,7 +18,7 @@ help: add missing generic argument
 29 | #[uses(Reader<'static, Text, Source>)]
    |                            ++++++++
 
-error[E0599]: the method `read` exists for reference `&__Context__`, but its trait bounds were not satisfied
+error[E0599]: no method named `read` found for type parameter `&__Context__` in the current scope
   --> src/main.rs:32:14
    |
 32 |         self.read(&Text).to_owned()

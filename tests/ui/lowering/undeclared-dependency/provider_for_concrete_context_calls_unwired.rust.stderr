@@ -35,6 +35,7 @@ note: `CanWave` defines an item `wave`, perhaps you need to implement it
    |
 22 | pub trait CanWave {
    | ^^^^^^^^^^^^^^^^^
+23 |     fn wave(&self) -> String;
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |

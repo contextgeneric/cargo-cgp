@@ -55,7 +55,7 @@ mod backend {
     impl ::core::fmt::Debug for Error {
         #[inline]
         fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-            ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Error", &&self.0)
+            ::core::fmt::Formatter::debug_struct_field1_finish(f, "Error", &&self.0)
         }
     }
     pub struct RaiseBackendError;

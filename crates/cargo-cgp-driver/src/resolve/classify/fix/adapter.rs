@@ -40,7 +40,7 @@ pub fn wrapping_adapters<'tcx>(tcx: TyCtxt<'tcx>, parent: ty::TraitRef<'tcx>) ->
         let Some(candidate) = adapt(tcx, impl_did, impl_self, provider) else {
             continue;
         };
-        let mut args = parent.args.to_vec();
+        let mut args = parent.args.iter().collect::<Vec<_>>();
         args[0] = candidate.into();
         let applied = ty::TraitRef::new_from_args(tcx, parent.def_id, tcx.mk_args(&args));
         if !holds(tcx, ty::Binder::dummy(applied).upcast(tcx)) {

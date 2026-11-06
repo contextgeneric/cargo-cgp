@@ -115,10 +115,14 @@ impl<'a> ::core::fmt::Debug for Token<'a> {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         match self {
             Self::Word(__self_0) => {
-                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Word", &__self_0)
+                ::core::fmt::Formatter::debug_struct_field1_finish(f, "Word", &__self_0)
             }
             Self::Number(__self_0) => {
-                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Number", &__self_0)
+                ::core::fmt::Formatter::debug_struct_field1_finish(
+                    f,
+                    "Number",
+                    &__self_0,
+                )
             }
         }
     }

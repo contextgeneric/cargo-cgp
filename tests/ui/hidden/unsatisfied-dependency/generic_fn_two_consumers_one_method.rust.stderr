@@ -1,4 +1,4 @@
-error[E0599]: the method `greet` exists for reference `&Context`, but its trait bounds were not satisfied
+error[E0599]: no method named `greet` found for type parameter `&Context` in the current scope
   --> src/main.rs:28:13
    |
 28 |     context.greet();

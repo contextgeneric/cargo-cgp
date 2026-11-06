@@ -47,6 +47,8 @@ note: `CanHandleApi` defines an item `handle_api`, perhaps you need to implement
    |
 32 | pub trait CanHandleApi<Api> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+35 |     async fn handle_api(&self, api: PhantomData<Api>) -> Self::Response;
    = note: this error originates in the attribute macro `cgp_auto_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |

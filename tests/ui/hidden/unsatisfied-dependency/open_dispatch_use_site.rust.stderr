@@ -36,6 +36,7 @@ note: `CanEncodeItem` defines an item `encode_item`, perhaps you need to impleme
    |
 25 | pub trait CanEncodeItem<Value> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 |     fn encode_item(&self, value: &Value) -> String;
    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |

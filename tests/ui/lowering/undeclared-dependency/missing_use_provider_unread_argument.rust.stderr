@@ -1,4 +1,4 @@
-error[E0599]: no associated function or constant named `area` found for type parameter `Inner` in the current scope
+error[E0599]: no method named `area` found for type parameter `Inner` in the current scope
   --> src/main.rs:29:16
    |
 27 | impl<Inner> AreaCalculator<Square> {

@@ -5,9 +5,9 @@ error[E0107]: missing generics for struct `Vec`
     |                     ^^^ expected at least 1 generic argument
     |
 note: struct defined here, with at least 1 generic parameter: `T`
-   --> $SYSROOT/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs:439:12
+   --> $SYSROOT/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs:448:12
     |
-439 | pub struct Vec<T, #[stable(feature = "allocator_api", since = "1.100.0")] A: Allocator = Global> {
+448 | pub struct Vec<T, #[stable(feature = "allocator_api", since = "1.100.0")] A: Allocator = Global> {
     |            ^^^ -
 help: add missing generic argument
     |

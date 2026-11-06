@@ -51,6 +51,8 @@ note: `Describe` defines an item `describe`, perhaps you need to implement it
      |
   15 | pub trait Describe {
      | ^^^^^^^^^^^^^^^^^^
+  16 |     fn describe(&self) -> String;
+     |
 
 Some errors have detailed explanations: E0277, E0599.
 For more information about an error, try `rustc --explain E0277`.

@@ -1,6 +1,5 @@
 //! Reading CGP's type-level spines: paths, the `Nil` terminator, symbols, and indices.
 
-use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 
 use crate::config::{

@@ -45,7 +45,7 @@ pub fn field_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, field: &str) -> Option<
         .fields
         .iter()
         .find(|f| f.name.as_str() == field)?;
-    let field_ty = field_def.ty(tcx, args).skip_norm_wip();
+    let field_ty = field_def.ty(tcx, *args).skip_norm_wip();
     Some(tcx.erase_and_anonymize_regions(field_ty).to_string())
 }
 

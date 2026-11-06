@@ -21,10 +21,10 @@ impl ::core::fmt::Debug for FooBar {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         match self {
             Self::Foo(__self_0) => {
-                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Foo", &__self_0)
+                ::core::fmt::Formatter::debug_struct_field1_finish(f, "Foo", &__self_0)
             }
             Self::Bar(__self_0) => {
-                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Bar", &__self_0)
+                ::core::fmt::Formatter::debug_struct_field1_finish(f, "Bar", &__self_0)
             }
         }
     }
@@ -258,10 +258,10 @@ impl ::core::fmt::Debug for FooQux {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         match self {
             Self::Foo(__self_0) => {
-                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Foo", &__self_0)
+                ::core::fmt::Formatter::debug_struct_field1_finish(f, "Foo", &__self_0)
             }
             Self::Qux(__self_0) => {
-                ::core::fmt::Formatter::debug_tuple_field1_finish(f, "Qux", &__self_0)
+                ::core::fmt::Formatter::debug_struct_field1_finish(f, "Qux", &__self_0)
             }
         }
     }
