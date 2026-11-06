@@ -6,6 +6,7 @@ use rustc_errors::codes::E0119;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
+use crate::config::{DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT};
 use crate::detect::{self, ConflictAction, ConflictTrait};
 use crate::emitter::edit::main_message_text;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
@@ -28,9 +29,9 @@ pub fn wiring_conflict(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
     // `DelegateComponent`, while its companion names `IsProviderFor`. A message naming neither can
     // still be a `cgp_namespace!` conflict on the user's own namespace trait, which the classifier
     // recognizes by the impls at the carets.
-    let variant = if message.contains("IsProviderFor") {
+    let variant = if message.contains(IS_PROVIDER_FOR_TRAIT) {
         ConflictTrait::IsProviderFor
-    } else if message.contains("DelegateComponent") {
+    } else if message.contains(DELEGATE_COMPONENT_TRAIT) {
         ConflictTrait::Delegate
     } else {
         ConflictTrait::Other

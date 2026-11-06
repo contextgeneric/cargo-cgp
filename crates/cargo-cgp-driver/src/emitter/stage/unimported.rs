@@ -8,6 +8,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
+use crate::config::CGP_IMPL_CONTEXT_PARAM;
 use crate::detect::{self, DetectedUndeclaredRequirement};
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::edit::main_message_text;
@@ -203,7 +204,8 @@ pub fn undeclared_requirement(
     diag: &DiagInner,
 ) -> Option<DetectedUndeclaredRequirement> {
     if diag.code != Some(E0277)
-        || !main_message_text(diag).is_some_and(|text| text.contains("`__Context__: "))
+        || !main_message_text(diag)
+            .is_some_and(|text| text.contains(&format!("`{CGP_IMPL_CONTEXT_PARAM}: ")))
     {
         return None;
     }

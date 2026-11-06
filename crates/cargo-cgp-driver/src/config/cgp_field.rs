@@ -112,12 +112,24 @@ pub const PARTIAL_VALUE_OPERATIONS: &[(&str, &str)] = &[("CanDowncast", "CanDown
 /// the traits the data leaf reports as unimplemented on a struct or enum, naming the derive to add.
 /// All are defined by [`CGP_FIELD_CRATE`].
 pub const DATA_DERIVES: &[(&str, &str)] = &[
-    ("HasFields", "HasFields"),
-    ("HasFieldsRef", "HasFields"),
-    ("HasExtractor", "ExtractField"),
-    ("HasExtractorRef", "ExtractField"),
-    ("HasExtractorMut", "ExtractField"),
-    ("HasBuilder", "BuildField"),
-    ("IntoBuilder", "BuildField"),
-    ("FromVariant", "FromVariant"),
+    ("HasFields", HAS_FIELDS_DERIVE),
+    ("HasFieldsRef", HAS_FIELDS_DERIVE),
+    ("HasExtractor", EXTRACT_FIELD_DERIVE),
+    ("HasExtractorRef", EXTRACT_FIELD_DERIVE),
+    ("HasExtractorMut", EXTRACT_FIELD_DERIVE),
+    ("HasBuilder", BUILD_FIELD_DERIVE),
+    ("IntoBuilder", BUILD_FIELD_DERIVE),
+    ("FromVariant", FROM_VARIANT_DERIVE),
 ];
+
+/// The derive that implements the field list of a struct or an enum.
+pub const HAS_FIELDS_DERIVE: &str = "HasFields";
+
+/// The derive that implements the extractor of an enum.
+pub const EXTRACT_FIELD_DERIVE: &str = "ExtractField";
+
+/// The derive that implements the builder of a struct.
+pub const BUILD_FIELD_DERIVE: &str = "BuildField";
+
+/// The derive that implements constructing an enum from a variant.
+pub const FROM_VARIANT_DERIVE: &str = "FromVariant";

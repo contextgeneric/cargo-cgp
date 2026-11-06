@@ -25,6 +25,10 @@ pub const CAN_USE_COMPONENT_TRAIT: &str = "CanUseComponent";
 /// whose conflicting impls the duplicate-key conflict classifier reads.
 pub const DELEGATE_COMPONENT_TRAIT: &str = "DelegateComponent";
 
+/// The associated type of [`DELEGATE_COMPONENT_TRAIT`], and of every namespace lookup trait, that
+/// names the provider an entry maps its key to.
+pub const DELEGATE_ASSOC: &str = "Delegate";
+
 /// The name of the `RedirectLookup` provider type (defined by [`CGP_COMPONENT_CRATE`]). The
 /// conflict classifier recognizes a `DelegateComponent` entry whose `Delegate` is a
 /// `RedirectLookup<Table, Path>` as a *redirect* (from `open` or a namespace), reading its

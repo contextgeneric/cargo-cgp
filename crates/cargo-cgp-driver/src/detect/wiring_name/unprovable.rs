@@ -3,6 +3,7 @@
 use rustc_hir::{QPath, TyKind};
 use rustc_middle::ty::TyCtxt;
 
+use crate::config::CAN_USE_COMPONENT_TRAIT;
 use crate::resolve::query::marker_to_consumer;
 
 /// The requirements a wiring entry with an unresolved value leaves unprovable, as the compiler
@@ -32,7 +33,7 @@ pub fn unprovable_requirements(
     vec![
         format!("{context}: {}", tcx.def_path_str(consumer_did)),
         format!(
-            "{context}: CanUseComponent<{}",
+            "{context}: {CAN_USE_COMPONENT_TRAIT}<{}",
             tcx.def_path_str(marker_did)
         ),
     ]

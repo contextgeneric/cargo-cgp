@@ -6,6 +6,8 @@ use std::path::Path;
 use rustc_session::EarlyDiagCtxt;
 use rustc_session::config::ErrorOutputType;
 
+use crate::config::{VERBOSE_FLAG, VERBOSE_SHORT_FLAG};
+
 /// Replace each `@file` argument with the arguments the file holds, one per line, exactly as rustc
 /// does when it starts ([`rustc_driver::args::arg_expand_all`]).
 ///
@@ -120,5 +122,5 @@ fn has_flag(args: &[String], key: &str) -> bool {
             .windows(2)
             .any(|pair| pair[0] == "-Z" && matches(&pair[1], option));
     }
-    key == "--verbose" && args.iter().any(|arg| arg == "-v")
+    key == VERBOSE_FLAG && args.iter().any(|arg| arg == VERBOSE_SHORT_FLAG)
 }

@@ -37,3 +37,6 @@ pub const NEXT_SOLVER_FLAG: &str = "-Znext-solver=globally";
 /// the diagnostics stay in their ordinary shape, only without the elisions. We inject it
 /// unless the invocation already passes `--verbose`, so an explicit choice wins.
 pub const VERBOSE_FLAG: &str = "--verbose";
+
+/// The short form of [`VERBOSE_FLAG`].
+pub const VERBOSE_SHORT_FLAG: &str = "-v";

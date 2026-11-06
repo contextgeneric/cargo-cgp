@@ -4,12 +4,10 @@ use cargo_cgp_error_processing::Adapter;
 use rustc_middle::ty::{self, Ty, TyCtxt, Upcast as _};
 use rustc_span::def_id::DefId;
 
+use crate::config::CGP_PRELUDE_PATH;
 use crate::resolve::classify::known_obligation;
 use crate::resolve::label::render_ty;
 use crate::resolve::query::{holds, import_path, is_provider_trait};
-
-/// The path prefix of the items the prelude exports, which need no `use` in a `help`.
-const PRELUDE_PATH: &str = "cgp::prelude::";
 
 /// How many adapters a `help` names at most.
 const MAX_ADAPTERS: usize = 3;
@@ -54,7 +52,7 @@ pub fn wrapping_adapters<'tcx>(tcx: TyCtxt<'tcx>, parent: ty::TraitRef<'tcx>) ->
         }
         let import = match candidate.kind() {
             ty::Adt(def, _) => {
-                import_path(tcx, def.did()).filter(|path| !path.starts_with(PRELUDE_PATH))
+                import_path(tcx, def.did()).filter(|path| !path.starts_with(CGP_PRELUDE_PATH))
             }
             _ => None,
         };

@@ -7,9 +7,10 @@ use rustc_middle::ty::{self, Ty, TyCtxt, Upcast as _};
 use rustc_span::def_id::DefId;
 
 use crate::config::{
-    CGP_FIELD_CRATE, CGP_FIELD_EXTRA_CRATE, EXTRACT_FIELD_TRAIT, FINALIZE_BUILD_TRAIT,
-    FINALIZE_EXTRACT_TRAIT, FROM_VARIANT_TRAIT, MAPPER_ASSOC, PARTIAL_VALUE_OPERATIONS,
-    TO_OPTIONAL_TRAIT, UPDATE_FIELD_TRAIT, VALUE_ASSOC,
+    BUILD_FIELD_DERIVE, CGP_FIELD_CRATE, CGP_FIELD_EXTRA_CRATE, EXTRACT_FIELD_DERIVE,
+    EXTRACT_FIELD_TRAIT, FINALIZE_BUILD_TRAIT, FINALIZE_EXTRACT_TRAIT, FROM_VARIANT_DERIVE,
+    FROM_VARIANT_TRAIT, MAPPER_ASSOC, PARTIAL_VALUE_OPERATIONS, TO_OPTIONAL_TRAIT,
+    UPDATE_FIELD_TRAIT, VALUE_ASSOC,
 };
 use crate::resolve::classify::{similar_field, similar_variant};
 use crate::resolve::data::{Marker, PartialRead, data_derive, is_data_trait, marker, read_partial};
@@ -317,8 +318,8 @@ fn derive_applies(ty: Ty<'_>, derive: &str) -> bool {
         return false;
     }
     match derive {
-        "ExtractField" | "FromVariant" => def.is_enum(),
-        "BuildField" => def.is_struct(),
+        EXTRACT_FIELD_DERIVE | FROM_VARIANT_DERIVE => def.is_enum(),
+        BUILD_FIELD_DERIVE => def.is_struct(),
         _ => def.is_struct() || def.is_enum(),
     }
 }

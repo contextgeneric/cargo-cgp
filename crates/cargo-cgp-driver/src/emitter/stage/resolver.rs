@@ -16,6 +16,7 @@ use rustc_errors::codes::{E0271, E0275, E0277, E0308, E0599};
 use rustc_errors::{DiagInner, DiagMessage, MultiSpan, Style, Sublevel, Suggestions};
 use rustc_span::Span;
 
+use crate::config::{CHECK_COMPONENTS_TRAIT_PREFIX, DELEGATE_AND_CHECK_COMPONENTS_TRAIT_PREFIX};
 use crate::emitter::edit::{
     diag_kind, diagnostic_spans, is_no_matching_item, is_question_mark_cascade, main_message_text,
     mentions_wiring, rewrite_messages, strip_method_probe_advice, subdiag,
@@ -105,8 +106,8 @@ pub fn resolve_or_rewrite(
                 matches!(
                     message,
                     DiagMessage::Str(text)
-                        if text.contains("__Check")
-                            || text.contains("__CanUse")
+                        if text.contains(CHECK_COMPONENTS_TRAIT_PREFIX)
+                            || text.contains(DELEGATE_AND_CHECK_COMPONENTS_TRAIT_PREFIX)
                             || is_recursion_limit_help_text(text)
                 )
             })

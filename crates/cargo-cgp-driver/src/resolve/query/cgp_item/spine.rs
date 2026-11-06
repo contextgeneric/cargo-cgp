@@ -3,7 +3,10 @@
 use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 
-use crate::config::{CGP_BASE_TYPES_CRATE, CGP_FIELD_CRATE, INDEX_TYPE, NIL_TYPE, PATH_CONS_TYPE};
+use crate::config::{
+    CGP_BASE_TYPES_CRATE, CGP_FIELD_CRATE, CHARS_TYPE, INDEX_TYPE, NIL_TYPE, PATH_CONS_TYPE,
+    SYMBOL_TYPE,
+};
 use crate::resolve::query::is_cgp_item;
 
 /// Whether `ty` is CGP's type-level path spine `PathCons<…>`: an `open`/namespace redirect key,
@@ -77,7 +80,7 @@ pub fn decode_symbol(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<String> {
     let ty::Adt(def, args) = ty.kind() else {
         return None;
     };
-    if !is_cgp_item(tcx, def.did(), "Symbol", CGP_BASE_TYPES_CRATE) {
+    if !is_cgp_item(tcx, def.did(), SYMBOL_TYPE, CGP_BASE_TYPES_CRATE) {
         return None;
     }
 
@@ -95,10 +98,10 @@ pub fn decode_symbol(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<String> {
         let ty::Adt(def, args) = current.kind() else {
             return None;
         };
-        if is_cgp_item(tcx, def.did(), "Nil", CGP_BASE_TYPES_CRATE) {
+        if is_cgp_item(tcx, def.did(), NIL_TYPE, CGP_BASE_TYPES_CRATE) {
             break;
         }
-        if !is_cgp_item(tcx, def.did(), "Chars", CGP_BASE_TYPES_CRATE) {
+        if !is_cgp_item(tcx, def.did(), CHARS_TYPE, CGP_BASE_TYPES_CRATE) {
             return None;
         }
 

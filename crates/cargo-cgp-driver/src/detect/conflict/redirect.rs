@@ -12,6 +12,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode, Unno
 use rustc_span::def_id::DefId;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
+use crate::config::DELEGATE_ASSOC;
 use crate::resolve::query::bounding_trait_ref;
 
 /// What a blanket forwarding maps `concrete_key` to: its `Delegate` for that key, which a redirect
@@ -37,7 +38,7 @@ pub fn namespace_delegate<'tcx>(
     let delegate_did = tcx
         .associated_items(ns_ref.def_id)
         .in_definition_order()
-        .find(|item| item.name().as_str() == "Delegate")?
+        .find(|item| item.name().as_str() == DELEGATE_ASSOC)?
         .def_id;
     let mut args: Vec<ty::GenericArg<'tcx>> = ns_ref.args.iter().collect();
     *args.first_mut()? = concrete_key.into();

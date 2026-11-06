@@ -36,3 +36,7 @@ pub const WILDCARD_PARAM: &str = "__Wildcard__";
 /// it generates. Its presence is the fingerprint of a macro-generated inside-out impl, telling it
 /// apart from a legitimate hand-written direct consumer-trait impl (`impl CanGreet for Person`).
 pub const CGP_IMPL_CONTEXT_PARAM: &str = "__Context__";
+
+/// The reserved generic parameter of the lookup trait `cgp_namespace!` defines, the table a lookup
+/// runs in; an impl generic over it is a namespace's own registration.
+pub const NAMESPACE_TABLE_PARAM: &str = "__Table__";

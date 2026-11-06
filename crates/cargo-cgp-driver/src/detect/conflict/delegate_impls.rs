@@ -4,13 +4,15 @@ use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
+use crate::config::DELEGATE_ASSOC;
+
 /// The value of an impl's `Delegate` associated type (what a wiring entry (a `DelegateComponent`
 /// impl, or a `cgp_namespace!` entry's namespace-trait impl) maps its key to), or `None` when the
 /// impl declares no `Delegate`.
 pub fn impl_delegate_type<'tcx>(tcx: TyCtxt<'tcx>, impl_did: DefId) -> Option<Ty<'tcx>> {
     tcx.associated_items(impl_did)
         .in_definition_order()
-        .find(|item| item.name().as_str() == "Delegate")
+        .find(|item| item.name().as_str() == DELEGATE_ASSOC)
         .map(|item| {
             tcx.type_of(item.def_id)
                 .instantiate_identity()

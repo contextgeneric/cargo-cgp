@@ -4,7 +4,7 @@ use cargo_cgp_error_processing::{WiringKey, similar_key, similar_name};
 use rustc_hir::def::CtorKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
-use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
+use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, INDEX_TYPE};
 use crate::resolve::classify::has_named_fields;
 use crate::resolve::query::{describe_key, find_cgp_trait};
 
@@ -39,7 +39,7 @@ pub fn tuple_index_tag(owner: Ty<'_>, field: &str) -> Option<String> {
     }
     let position: usize = field.parse().ok()?;
     (position < variant.fields.len() && position.to_string() == field)
-        .then(|| format!("Index<{position}>"))
+        .then(|| format!("{INDEX_TYPE}<{position}>"))
 }
 
 /// A variant of `owner`'s enum whose name is a likely slip of the missing `variant`, such as

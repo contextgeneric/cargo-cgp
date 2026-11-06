@@ -7,6 +7,10 @@ use crate::config::{CGP_BASE_TYPES_CRATE, CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, 
 /// compilation's diagnostics can carry CGP constructs at all.
 pub const CGP_UMBRELLA_CRATE: &str = "cgp";
 
+/// The path prefix of the items [`CGP_UMBRELLA_CRATE`]'s prelude exports, which a `help` names
+/// without a `use`.
+pub const CGP_PRELUDE_PATH: &str = "cgp::prelude::";
+
 /// The proc-macro crate that defines `#[cgp_component]`, `#[cgp_impl]`, `cgp_namespace!`, and most of
 /// CGP's other macros.
 pub const CGP_MACRO_CRATE: &str = "cgp_macro";

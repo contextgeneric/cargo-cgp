@@ -13,6 +13,7 @@ use rustc_errors::{DiagInner, DiagMessage, Style};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
+use crate::config::CGP_IMPL_CONTEXT_PARAM;
 use crate::detect::{self, DetectedCgpImplMisuse};
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::pipeline::{BufferEdit, Reshape, SpanPolicy, Verdict};
@@ -142,7 +143,7 @@ pub fn is_cgp_impl_sibling_entry(entry: &BufEntry, impl_span: Span, macro_span: 
 fn mentions_generated_context(diag: &DiagInner) -> bool {
     let in_messages = |messages: &[(DiagMessage, Style)]| {
         messages.iter().any(|(message, _)| {
-            matches!(message, DiagMessage::Str(text) if text.contains("__Context__"))
+            matches!(message, DiagMessage::Str(text) if text.contains(CGP_IMPL_CONTEXT_PARAM))
         })
     };
     in_messages(&diag.messages)

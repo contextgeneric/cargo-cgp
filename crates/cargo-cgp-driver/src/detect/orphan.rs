@@ -22,7 +22,9 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::config::{CGP_COMPONENT_CRATE, CGP_MACRO_CRATE, DELEGATE_COMPONENT_TRAIT};
+use crate::config::{
+    CGP_COMPONENT_CRATE, CGP_MACRO_CRATE, DELEGATE_COMPONENT_TRAIT, NAMESPACE_TABLE_PARAM,
+};
 use crate::resolve::query::{
     byte_range, describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls,
 };
@@ -154,7 +156,7 @@ fn is_local_type(ty: Ty<'_>) -> bool {
 fn orphan_trigger(tcx: TyCtxt<'_>, impl_did: DefId) -> OrphanTrigger {
     let is_table = tcx.generics_of(impl_did).own_params.iter().any(|param| {
         matches!(param.kind, ty::GenericParamDefKind::Type { .. })
-            && param.name.as_str() == "__Table__"
+            && param.name.as_str() == NAMESPACE_TABLE_PARAM
     });
     if is_table {
         OrphanTrigger::Reopen

@@ -6,6 +6,7 @@ use rustc_errors::DiagInner;
 use rustc_errors::codes::E0277;
 use rustc_middle::ty::TyCtxt;
 
+use crate::config::IS_PROVIDER_FOR_TRAIT;
 use crate::detect;
 use crate::emitter::edit::main_message_text;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
@@ -25,7 +26,7 @@ impl MacrolessProviderStage {
     /// structurally by [`detect::detect_provider_impl_without_macro`].
     pub fn run(&mut self, tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
         if diag.code != Some(E0277)
-            || !main_message_text(diag).is_some_and(|text| text.contains("IsProviderFor"))
+            || !main_message_text(diag).is_some_and(|text| text.contains(IS_PROVIDER_FOR_TRAIT))
         {
             return Verdict::Continue;
         }
@@ -49,9 +50,9 @@ impl MacrolessProviderStage {
     pub fn consequence(&self, diag: &DiagInner) -> Verdict {
         let restates = diag.code == Some(E0277)
             && main_message_text(diag).is_some_and(|text| {
-                self.providers
-                    .iter()
-                    .any(|provider| text.contains(&format!("`{provider}: IsProviderFor<")))
+                self.providers.iter().any(|provider| {
+                    text.contains(&format!("`{provider}: {IS_PROVIDER_FOR_TRAIT}<"))
+                })
             });
         if restates {
             Verdict::Drop

@@ -3,6 +3,7 @@
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
+use crate::config::DELEGATE_ASSOC;
 use crate::resolve::query::{is_cgp_crate_trait, is_component_marker, is_path_cons};
 
 /// Whether `def_id` is a **namespace lookup trait**: the fingerprint every `cgp_namespace!`
@@ -30,7 +31,7 @@ pub fn has_namespace_shape(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     };
     items.next().is_none()
         && first.kind.tag() == ty::AssocTag::Type
-        && tcx.item_name(first.def_id).as_str() == "Delegate"
+        && tcx.item_name(first.def_id).as_str() == DELEGATE_ASSOC
 }
 
 /// How far the namespace-evidence search follows a namespace to the parent it inherits. A real
