@@ -2,12 +2,9 @@
 //! the driver, so it is exercised end to end rather than here.
 
 use std::fs;
-use std::io::{self, Write};
 use std::path::PathBuf;
 
-use cargo_cgp::expand::{
-    ExpansionDir, expansion_exit_code, forwards_profile, take_item, write_expansion,
-};
+use cargo_cgp::expand::{ExpansionDir, expansion_exit_code, forwards_profile, take_item};
 
 fn args(list: &[&str]) -> Vec<String> {
     list.iter().map(|s| s.to_string()).collect()
@@ -22,34 +19,6 @@ fn scratch(name: &str) -> PathBuf {
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).expect("creating a scratch directory");
     dir
-}
-
-/// A writer whose every write fails with `kind`, as stdout does once its reader is gone.
-struct FailingWriter(io::ErrorKind);
-
-impl Write for FailingWriter {
-    fn write(&mut self, _: &[u8]) -> io::Result<usize> {
-        Err(self.0.into())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
-/// Property: `write_expansion` fails exactly when the write fails for a reason other than a closed
-/// pipe. Regression: `cargo cgp expand | head` on a long expansion ended with a broken-pipe error.
-#[test]
-fn only_a_closed_pipe_is_not_a_write_failure() {
-    let mut written = Vec::new();
-    write_expansion(&mut written, "text").expect("a working writer");
-    assert_eq!(written, b"text");
-
-    write_expansion(&mut FailingWriter(io::ErrorKind::BrokenPipe), "text")
-        .expect("a closed pipe is not a failure");
-    let error = write_expansion(&mut FailingWriter(io::ErrorKind::StorageFull), "text")
-        .expect_err("a full disk is a failure");
-    assert_eq!(error.kind(), io::ErrorKind::StorageFull);
 }
 
 /// Property: for all cargo codes c, `expansion_exit_code(c, true) == c`, and

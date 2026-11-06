@@ -42,9 +42,20 @@ fn a_closed_stdout_ends_the_driver_quietly() {
     use std::fs;
     use std::process::{Command, Stdio};
 
-    let dir = std::env::temp_dir().join(format!("cargo-cgp-closed-stdout-{}", std::process::id()));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("creating the working directory");
+    /// The working directory, removed on drop so a failing assertion still cleans up.
+    struct WorkDir(std::path::PathBuf);
+    impl Drop for WorkDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    let work = WorkDir(
+        std::env::temp_dir().join(format!("cargo-cgp-closed-stdout-{}", std::process::id())),
+    );
+    let dir = &work.0;
+    let _ = fs::remove_dir_all(dir);
+    fs::create_dir_all(dir).expect("creating the working directory");
 
     for (args, code) in [
         (&["/toolchain/bin/rustc", "-vV"][..], 1),
@@ -56,7 +67,7 @@ fn a_closed_stdout_ends_the_driver_quietly() {
             .args(args)
             .stdout(writer)
             .stderr(Stdio::piped())
-            .current_dir(&dir)
+            .current_dir(dir)
             .output()
             .expect("running the driver");
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -64,10 +75,9 @@ fn a_closed_stdout_ends_the_driver_quietly() {
         assert_eq!(output.status.code(), Some(code), "{args:?}: {stderr}");
         assert!(!stderr.contains("panicked"), "{args:?}: {stderr}");
     }
-    let leftovers: Vec<_> = fs::read_dir(&dir)
+    let leftovers: Vec<_> = fs::read_dir(dir)
         .expect("reading the working directory")
         .map(|entry| entry.expect("a directory entry").file_name())
         .collect();
-    let _ = fs::remove_dir_all(&dir);
     assert!(leftovers.is_empty(), "{leftovers:?}");
 }

@@ -11,6 +11,7 @@ pub mod invocation;
 pub mod preflight;
 pub mod report;
 pub mod setup;
+pub mod stdout;
 pub mod sysroot;
 pub mod update;
 pub mod workspace_wrapper;

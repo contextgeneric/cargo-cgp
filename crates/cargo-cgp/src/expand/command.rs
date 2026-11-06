@@ -1,6 +1,6 @@
 //! Running the wrapped `cargo rustc` that produces an expansion.
 
-use std::io::{self, Write};
+use std::io;
 
 use anyhow::Context;
 
@@ -11,6 +11,7 @@ use crate::expand::output::{ExpansionDir, read_expansion};
 use crate::expand::profile::forwards_profile;
 use crate::help::{expand_help_text, is_help_flag};
 use crate::launch::{split_forwarded, wrapped_cargo};
+use crate::stdout::{print_line, write_output};
 
 /// Expand one target's CGP macros and print the result, returning the exit code to propagate.
 ///
@@ -28,7 +29,7 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
     // Answer a help request here rather than forwarding it: `cargo rustc --help` would describe
     // cargo's options and never mention `--item`, the one flag that is ours.
     if asks_for_help(forwarded_args) {
-        println!("{}", expand_help_text());
+        print_line(&expand_help_text()).context("failed to write the help to stdout")?;
         return Ok(0);
     }
 
@@ -64,7 +65,7 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
     let expansion = read_expansion(&output);
     match &expansion {
         Some(expansion) => {
-            write_expansion(&mut io::stdout(), expansion)
+            write_output(&mut io::stdout(), expansion)
                 .context("failed to write the expansion to stdout")?;
         }
         None => {
@@ -77,18 +78,6 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
         }
     }
     Ok(expansion_exit_code(exit_code(status), expansion.is_some()))
-}
-
-/// Write the expansion to `out`. A reader that closed the pipe, as `head` does once it has enough,
-/// got what it wanted, so that is not a failure; any other write error is returned.
-pub fn write_expansion(out: &mut impl Write, expansion: &str) -> io::Result<()> {
-    match out
-        .write_all(expansion.as_bytes())
-        .and_then(|()| out.flush())
-    {
-        Err(error) if error.kind() == io::ErrorKind::BrokenPipe => Ok(()),
-        result => result,
-    }
 }
 
 /// The exit code of an expansion, from cargo's code and whether an expansion came back.

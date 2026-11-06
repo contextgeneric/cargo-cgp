@@ -22,5 +22,6 @@ pub mod launch;
 pub mod report;
 pub mod run;
 pub mod setup;
+pub mod stdout;
 pub mod toolchain;
 pub mod update;

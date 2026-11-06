@@ -2,7 +2,7 @@
 
 use std::env;
 
-use anyhow::bail;
+use anyhow::{Context, bail};
 
 use crate::args::{strip_subcommand, utf8_args};
 use crate::check::run_check;
@@ -12,6 +12,7 @@ use crate::help::{
     help_text, is_help_flag, is_version_flag, setup_help_text, update_help_text, version_text,
 };
 use crate::setup::run_setup;
+use crate::stdout::print_line;
 use crate::update::run_update;
 
 /// Parse the process arguments and dispatch to the matching subcommand, returning the
@@ -34,18 +35,9 @@ pub fn run() -> anyhow::Result<i32> {
 /// `--help` instead of running, and refuse any other argument rather than silently ignoring it.
 pub fn dispatch(args: &[String]) -> anyhow::Result<i32> {
     match args.split_first() {
-        None => {
-            println!("{}", help_text());
-            Ok(0)
-        }
-        Some((flag, _)) if is_help_flag(flag) => {
-            println!("{}", help_text());
-            Ok(0)
-        }
-        Some((flag, _)) if is_version_flag(flag) => {
-            println!("{}", version_text());
-            Ok(0)
-        }
+        None => answer(&help_text()),
+        Some((flag, _)) if is_help_flag(flag) => answer(&help_text()),
+        Some((flag, _)) if is_version_flag(flag) => answer(&version_text()),
         Some((subcommand, rest)) if subcommand == "check" => run_check(rest),
         Some((subcommand, rest)) if subcommand == "expand" => run_expand(rest),
         Some((subcommand, rest)) if subcommand == "setup" => {
@@ -79,13 +71,17 @@ fn no_argument_command(
 ) -> anyhow::Result<Option<i32>> {
     match rest.first() {
         None => Ok(None),
-        Some(arg) if is_help_flag(arg) => {
-            println!("{}", help());
-            Ok(Some(0))
-        }
+        Some(arg) if is_help_flag(arg) => answer(&help()).map(Some),
         Some(arg) => bail!(
             "`cargo cgp {subcommand}` takes no arguments, but was given `{arg}`\n\n\
              help: run `cargo cgp {subcommand} --help` to see what it does"
         ),
     }
+}
+
+/// Print one of the front-end's own answers and succeed; a closed stdout ends it successfully too
+/// ([`print_line`]).
+fn answer(text: &str) -> anyhow::Result<i32> {
+    print_line(text).context("failed to write to stdout")?;
+    Ok(0)
 }
