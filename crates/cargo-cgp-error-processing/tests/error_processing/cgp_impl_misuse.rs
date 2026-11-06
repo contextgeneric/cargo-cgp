@@ -174,6 +174,7 @@ fn a_provider_trait_in_uses_names_the_consumer_trait_to_declare() {
     let misuse = ProviderTraitInUses {
         provider: "AreaCalculator".to_owned(),
         consumer: "CanCalculateArea".to_owned(),
+        arguments: Vec::new(),
     };
     assert_eq!(
         plan_provider_trait_in_uses(&misuse),
@@ -184,5 +185,30 @@ fn a_provider_trait_in_uses_names_the_consumer_trait_to_declare() {
         provider_trait_in_uses_help(&misuse),
         "name the consumer trait instead: `#[uses(CanCalculateArea)]` (not the provider trait \
          `AreaCalculator`)",
+    );
+}
+
+// Property: for all provider traits in `#[uses]` written with arguments `args`, the help names the
+// consumer trait as `consumer<args>`, in the order written, and the provider trait it replaces
+// bare, as a trait; with no arguments the consumer trait is bare, as the test above checks. The
+// consumer trait takes the component's parameters in the provider trait's order after the context,
+// so `args` carry over unchanged.
+#[test]
+fn a_generic_provider_trait_in_uses_names_the_consumer_trait_with_its_arguments() {
+    let misuse = ProviderTraitInUses {
+        provider: "Reader".to_owned(),
+        consumer: "CanRead".to_owned(),
+        arguments: vec!["'static".to_owned(), "Text".to_owned()],
+    };
+    assert_eq!(
+        provider_trait_in_uses_help(&misuse),
+        "name the consumer trait instead: `#[uses(CanRead<'static, Text>)]` (not the provider trait \
+         `Reader`)",
+    );
+    assert_eq!(
+        plan_provider_trait_in_uses(&misuse),
+        "[CGP-E037] `Reader` is a provider trait and cannot be a `#[uses]` dependency; a dependency \
+         names its consumer trait `CanRead`",
+        "the header names the traits bare",
     );
 }

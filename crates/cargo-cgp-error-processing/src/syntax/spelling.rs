@@ -35,3 +35,14 @@ pub fn is_primitive_type(ident: &str) -> bool {
             | "str"
     )
 }
+
+/// A trait or type `name` with its generic `arguments` in angle brackets, as the reader writes it,
+/// or the bare `name` when there are none: `AreaCalculator` with the argument `Shape` is
+/// `AreaCalculator<Shape>`.
+pub fn with_arguments(name: &str, arguments: &[String]) -> String {
+    if arguments.is_empty() {
+        name.to_owned()
+    } else {
+        format!("{name}<{}>", arguments.join(", "))
+    }
+}

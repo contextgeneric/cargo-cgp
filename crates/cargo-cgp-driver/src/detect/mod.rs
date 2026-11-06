@@ -40,7 +40,7 @@ pub use structural::{
     detect_duplicate_check_trait, detect_entry_parameters_not_in_key, detect_generic_default_impl,
     detect_loop_key_without_variable, is_from_auto_dispatch,
 };
-pub use undeclared::detect_undeclared_trait;
+pub use undeclared::{UndeclaredCall, detect_undeclared_trait};
 pub use unimported::{DetectedUnimportedAbstractType, detect_unimported_abstract_type};
 pub use use_type_misspelling::detect_use_type_misspelling;
 pub use uses_misuse::detect_provider_trait_in_uses;

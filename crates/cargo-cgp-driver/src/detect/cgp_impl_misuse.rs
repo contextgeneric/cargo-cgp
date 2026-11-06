@@ -244,11 +244,11 @@ fn is_inner_provider_bound(bounded: &Ty<'_>, segment: &PathSegment<'_>) -> bool 
     !is_context(bounded) && type_param_name(first.as_unambig_ty()).is_some_and(is_context)
 }
 
-/// The generic arguments the program wrote on a trait reference that `#[cgp_impl]` or
-/// `#[use_provider]` gave the context, each read from its source: every argument and constraint but
-/// the inserted `__Context__`, which follows any lifetimes (`CanRead<'a, __Context__, Text>`).
-/// Empty when an argument's source cannot be read, so the help names the bare trait.
-fn written_arguments(tcx: TyCtxt<'_>, segment: &PathSegment<'_>) -> Vec<String> {
+/// The generic arguments the program wrote on a trait reference, each read from its source: every
+/// argument and constraint but a `__Context__` that `#[cgp_impl]` or `#[use_provider]` inserted,
+/// which follows any lifetimes (`CanRead<'a, __Context__, Text>`). Empty when an argument's source
+/// cannot be read, so the help names the bare trait.
+pub fn written_arguments(tcx: TyCtxt<'_>, segment: &PathSegment<'_>) -> Vec<String> {
     let Some(args) = segment.args else {
         return Vec::new();
     };

@@ -195,6 +195,7 @@ fn lowering_rows() -> Vec<Row> {
     let in_uses = ProviderTraitInUses {
         provider: "Pricer".to_owned(),
         consumer: "CanPrice".to_owned(),
+        arguments: Vec::new(),
     };
     let without_macro = ProviderImplWithoutMacro {
         provider: "FixedPrice".to_owned(),

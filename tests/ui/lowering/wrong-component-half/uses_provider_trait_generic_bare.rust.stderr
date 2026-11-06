@@ -1,0 +1,19 @@
+error[E0107]: missing generics for trait `AreaCalculator`
+  --> src/main.rs:31:8
+   |
+31 | #[uses(AreaCalculator)]
+   |        ^^^^^^^^^^^^^^ expected 2 generic arguments
+   |
+note: trait defined here, with 2 generic parameters: `__Context__`, `Shape`
+  --> src/main.rs:18:17
+   |
+18 | #[cgp_component(AreaCalculator)]
+   | ----------------^^^^^^^^^^^^^^--
+19 | pub trait CanCalculateArea<Shape> {
+   |                            -----
+help: add missing generic arguments
+   |
+31 | #[uses(AreaCalculator<__Context__, Shape>)]
+   |                      ++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0107`.

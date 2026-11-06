@@ -17,7 +17,9 @@ use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 /// The reshape names the trait and carries the `#[uses(…)]` fix, keeping the caret on the call.
 /// Gated to the two `E0599` shapes a method call and a `Self::method(…)` call produce: the
 /// method-bounds message, or, for the second, whose main message is a Fluent one, its help.
-/// [`detect::detect_undeclared_trait`] confirms it structurally.
+/// [`detect::detect_undeclared_trait`] confirms it structurally. A call whose trait the impl
+/// declares under its provider trait is dropped, since the `[CGP-E037]` on that bound states the
+/// mistake.
 pub fn undeclared_trait(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
     if diag.code != Some(E0599)
         || !(main_message_text(diag).is_some_and(is_method_bounds_text)
@@ -30,10 +32,11 @@ pub fn undeclared_trait(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
     };
     let spans = diagnostic_spans(diag);
     match detect::detect_undeclared_trait(tcx, primary_span, &spans) {
-        Some(undeclared) => Verdict::Reshape(Reshape::new(
+        Some(detect::UndeclaredCall::Trait(undeclared)) => Verdict::Reshape(Reshape::new(
             ClassPlan::undeclared_trait(&undeclared),
             SpanPolicy::Primary,
         )),
+        Some(detect::UndeclaredCall::DeclaredAsProvider) => Verdict::Drop,
         None => Verdict::Continue,
     }
 }

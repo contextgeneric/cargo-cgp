@@ -28,6 +28,7 @@
 use crate::code::{
     CONSUMER_TRAIT_IN_PROVIDER_BOUND, CONSUMER_TRAIT_IN_PROVIDER_IMPL, NON_CGP_TRAIT_IN_CGP_IMPL,
 };
+use crate::syntax::with_arguments;
 
 /// A trait named where a `#[cgp_impl]` provider trait belongs: in the impl header, or in a
 /// higher-order provider's inner-provider bound.
@@ -115,14 +116,5 @@ pub fn cgp_impl_misuse_help(misuse: &CgpImplMisuse) -> String {
              consumer trait `{consumer}`)",
             with_arguments(provider, arguments),
         ),
-    }
-}
-
-/// `name` with `arguments` in angle brackets, or bare when there are none.
-fn with_arguments(name: &str, arguments: &[String]) -> String {
-    if arguments.is_empty() {
-        name.to_owned()
-    } else {
-        format!("{name}<{}>", arguments.join(", "))
     }
 }

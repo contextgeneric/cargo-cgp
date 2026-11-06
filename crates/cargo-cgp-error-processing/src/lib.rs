@@ -89,5 +89,5 @@ pub use signals::{
     is_question_mark_cascade_text, is_recursion_limit_help_text, is_unbounded_type_param_item_text,
     mentions_orphan_param_text, mentions_wiring_text,
 };
-pub use syntax::{code_chars, is_ident, is_primitive_type, string_literal_end};
+pub use syntax::{code_chars, is_ident, is_primitive_type, string_literal_end, with_arguments};
 pub use tree::{DependencyTree, render_dependency_tree};

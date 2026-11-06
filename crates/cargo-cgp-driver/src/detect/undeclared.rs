@@ -32,11 +32,22 @@ use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
+use super::uses_misuse::names_provider_trait_in_uses;
 use crate::resolve::query::{
-    argument_ty, binding_let_annotation, enclosing_trait_impl, is_blanket_trait,
-    is_cgp_definition_impl, is_consumer_trait, is_provider_trait, local_binding, local_body_exprs,
-    param_declared_input, peel_hir_refs, trait_items_named, traits_with_method, unify_call_inputs,
+    argument_ty, binding_let_annotation, consumer_provider_trait, enclosing_trait_impl,
+    is_blanket_trait, is_cgp_definition_impl, is_consumer_trait, is_provider_trait, local_binding,
+    local_body_exprs, param_declared_input, peel_hir_refs, trait_items_named, traits_with_method,
+    unify_call_inputs,
 };
+
+/// What a failing call in a CGP body shows about its trait.
+pub enum UndeclaredCall {
+    /// The trait is not declared, and this is the trait to declare.
+    Trait(UndeclaredTrait),
+    /// The trait is declared under its provider trait in `#[uses]`, a mistake `[CGP-E037]` reports
+    /// on the bound, so the call's failure restates it.
+    DeclaredAsProvider,
+}
 
 /// Recognize an undeclared-trait failure and recover the trait to declare, or
 /// `None` when the diagnostic is not one. Everything is keyed on `primary_span`, the failing method
@@ -60,7 +71,7 @@ pub fn detect_undeclared_trait(
     tcx: TyCtxt<'_>,
     primary_span: Span,
     spans: &[Span],
-) -> Option<UndeclaredTrait> {
+) -> Option<UndeclaredCall> {
     let call = failing_call_at(tcx, primary_span)?;
 
     // The impl enclosing the failing call. Walk up the def-parent chain from the call's innermost
@@ -85,6 +96,13 @@ pub fn detect_undeclared_trait(
     }
 
     for (trait_did, method_did) in candidate_traits(tcx, &call, spans) {
+        // Declared under its provider trait without the context: the `#[uses]` mistake
+        // `[CGP-E037]` reports, of which this call's failure is a consequence.
+        if consumer_provider_trait(tcx, trait_did)
+            .is_some_and(|provider| names_provider_trait_in_uses(tcx, impl_did, provider))
+        {
+            return Some(UndeclaredCall::DeclaredAsProvider);
+        }
         // Already a `where` bound of the impl → declared; the failure is something else.
         if impl_bounds_by(tcx, impl_did, trait_did) {
             continue;
@@ -92,11 +110,11 @@ pub fn detect_undeclared_trait(
         let has_self = tcx.associated_item(method_did).is_method();
         let (bound, unresolved) =
             written_bound(tcx, trait_did, method_did, context, call.args, has_self);
-        return Some(UndeclaredTrait {
+        return Some(UndeclaredCall::Trait(UndeclaredTrait {
             trait_name: tcx.item_name(trait_did).to_string(),
             bound,
             unresolved,
-        });
+        }));
     }
     None
 }
