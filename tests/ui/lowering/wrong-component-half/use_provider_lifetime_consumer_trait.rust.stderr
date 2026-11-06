@@ -1,0 +1,37 @@
+error[E0107]: trait takes 1 generic argument but 2 generic arguments were supplied
+  --> src/main.rs:24:23
+   |
+24 | #[use_provider(Inner: CanRead<'a, Source>)]
+   |                       ^^^^^^^ expected 1 generic argument
+   |
+note: trait defined here, with 1 generic parameter: `Source`
+  --> src/main.rs:17:11
+   |
+17 | pub trait CanRead<'a, Source> {
+   |           ^^^^^^^     ------
+
+error[E0308]: mismatched types
+  --> src/main.rs:23:1
+   |
+23 | #[cgp_impl(new ReadThrough<Inner>)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&Inner`, found `&__Context__`
+24 | #[use_provider(Inner: CanRead<'a, Source>)]
+25 | impl<'a, Inner, Source> Reader<'a, Source> {
+   |          ----- expected type parameter
+26 |     fn read(&self, source: &'a Source) -> &'a str {
+27 |         Inner::read(self, source)
+   |         ----------- arguments to this function are incorrect
+   |
+   = note: expected reference `&Inner`
+              found reference `&__Context__`
+   = note: a type parameter was expected, but a different one was found; you might be missing a type parameter or trait bound
+   = note: for more information, visit https://doc.rust-lang.org/book/ch10-02-traits.html#traits-as-parameters
+note: method defined here
+  --> src/main.rs:18:8
+   |
+18 |     fn read(&self, source: &'a Source) -> &'a str;
+   |        ^^^^  ----
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0107, E0308.
+For more information about an error, try `rustc --explain E0107`.

@@ -1,0 +1,32 @@
+error[E0425]: cannot find type `CanReadComponent` in this scope
+  --> src/main.rs:27:1
+   |
+27 | #[cgp_impl(new ReadText)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+note: similarly named trait `CanUseComponent` defined here
+  --> $CGP/crates/core/cgp-component/src/traits/can_use_component.rs:16:1
+   |
+16 | pub trait CanUseComponent<Component, Params: ?Sized = ()> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: a trait with a similar name exists
+   |
+27 - #[cgp_impl(new ReadText)]
+27 + CanUseComponent
+   |
+
+error[E0107]: trait takes 1 generic argument but 2 generic arguments were supplied
+  --> src/main.rs:28:10
+   |
+28 | impl<'a> CanRead<'a, Text> {
+   |          ^^^^^^^ expected 1 generic argument
+   |
+note: trait defined here, with 1 generic parameter: `Source`
+  --> src/main.rs:19:11
+   |
+19 | pub trait CanRead<'a, Source> {
+   |           ^^^^^^^     ------
+
+Some errors have detailed explanations: E0107, E0425.
+For more information about an error, try `rustc --explain E0107`.
