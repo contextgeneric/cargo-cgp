@@ -68,37 +68,32 @@ pub fn impl_where_obligations<'tcx>(
     None
 }
 
-/// One `where` clause of a matched impl, as the walk reads it, or `None` when it is no trait clause.
+/// One `where` clause of a matched impl, as the walk reads it, or `None` when it is not a trait
+/// clause.
 ///
-/// Best-effort: recover a *fixed* associated-type projection that stalls on an unknown
-/// input before it is normalized. The canonical case is a later pipeline stage keyed on
-/// an earlier stage's `::Output` (`ProviderB: Handler<Ctx, Code, <ProviderA as
-/// Handler<Ctx, Code, In>>::Output>`) where the walk's input `In` is a call-site unknown
-/// (a rigid placeholder): the earlier provider's `where` clause (`In: Send`, or a deeper
-/// `In: Into<Body>`) is *false* against a rigid placeholder, so its impl is rejected and
-/// the projection never reduces, even though the provider's `type Output` does not
-/// depend on `In` at all. Resolving the projection with the placeholders as *deferrable*
-/// inference variables (so the blocking bound is ambiguous, not false) lets the solver
-/// commit to the sole impl and read off the fixed output, turning the next stage's input
-/// from an unknowable `_` into the concrete type that carries the real cause (a later
-/// stage's `stream: AsRef<[u8]>`). A no-op unless the clause carries such a placeholder.
-/// Substitute the parent's unifications (including the obligation's placeholder input)
-/// into the raw clause *without* normalizing, so a stalled `::Output` projection (a
-/// later pipeline stage's input keyed on an earlier stage's output) survives as an
-/// alias we can recover here. Normalizing first would collapse it into an opaque
-/// inference variable, losing the projection.
+/// The steps serve a later pipeline stage keyed on an earlier stage's output while the walk's input
+/// `In` is a call-site unknown, a rigid placeholder, as in
+/// `ProviderB: Handler<Ctx, Code, <ProviderA as Handler<Ctx, Code, In>>::Output>`. `ProviderA`'s
+/// own `where` clause (`In: Send`) is false against the placeholder, so its impl is rejected and
+/// the projection does not reduce, even when its `type Output` does not depend on `In`. In body
+/// order:
 ///
-/// A clause that still carries inference vars after solving is one whose parameter the
-/// impl match left unconstrained: most often a *later pipeline stage keyed on an
-/// earlier stage's unresolved `::Output`* (`ProviderB: Handler<Ctx, Code, ProviderA::
-/// Output>`, where `ProviderA` does not hold because the walk's own input is an unknown,
-/// so its `::Output` never normalizes). Dropping it would hide every root cause living
-/// in a stage past the first. Instead, replace those stray vars with rigid placeholders
-/// so the walk can still descend the stage; the placeholder-leaf filter in
-/// [`resolve_leaves`](crate::resolve::walk::resolve_leaves) keeps any leaf that
-/// genuinely depends on the unknown from being reported, exactly as for the call-site
-/// seed's unknown input. A no-op when there are no such vars (the common concrete-input
-/// case), so ordinary walks are unaffected.
+/// - The parent's unifications, the obligation's placeholder input among them, are substituted
+///   without normalizing, so the stalled projection survives as an alias; normalizing first would
+///   collapse it into an opaque inference variable.
+/// - [`resolve_fixed_projections`] resolves each such alias with the placeholders as deferrable
+///   inference variables, so the blocking bound is ambiguous rather than false and the solver
+///   commits to the sole impl and reads off its fixed output; the next stage's input is then the
+///   concrete type that carries the real cause rather than an unknowable `_`.
+/// - The clause is normalized.
+/// - The inference variables left after solving, a parameter the impl match left unconstrained,
+///   become rigid placeholders, so the walk still descends the stage instead of hiding every cause
+///   past the first; the placeholder-leaf filter in
+///   [`resolve_leaves`](crate::resolve::walk::resolve_leaves) keeps a leaf that depends on the
+///   unknown from being reported, as for the call-site seed's unknown input.
+///
+/// The recovery and the placeholder steps change nothing in a clause with neither placeholders nor
+/// stray inference variables, the common concrete-input case.
 fn read_where_clause<'tcx>(
     ocx: &ObligationCtxt<'_, 'tcx>,
     clause: Unnormalized<'tcx, ty::Clause<'tcx>>,

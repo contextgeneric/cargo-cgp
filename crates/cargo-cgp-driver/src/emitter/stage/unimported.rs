@@ -25,8 +25,9 @@ pub struct UnimportedReport {
     pub span: Span,
 }
 
-/// Stages 13 and 14, with their memory: the abstract types reported as used but not imported, and
-/// the provider impls reported for a requirement they do not declare.
+/// The unimported abstract type's and the undeclared requirement's stages, with their memory: the
+/// abstract types reported as used but not imported, and the provider impls reported for a
+/// requirement they do not declare.
 #[derive(Default)]
 pub struct UnimportedStage {
     pub reported: Vec<UnimportedReport>,
@@ -34,10 +35,10 @@ pub struct UnimportedStage {
 }
 
 impl UnimportedStage {
-    /// Stage 13: reword the `E0220` an abstract type used without its `#[use_type(…)]` import
-    /// produces on the generated context, naming the type and carrying the import, once per
-    /// mistake. The type and its context are read from the diagnostic's arguments, since its main
-    /// message is a Fluent one, and [`detect::detect_unimported_abstract_type`] confirms it.
+    /// Reword the `E0220` an abstract type used without its `#[use_type(…)]` import produces on the
+    /// generated context, naming the type and carrying the import, once per mistake. The type and
+    /// its context are read from the diagnostic's arguments, since its main message is a Fluent
+    /// one, and [`detect::detect_unimported_abstract_type`] confirms it.
     pub fn unimported_abstract_type(
         &mut self,
         tcx: Option<TyCtxt<'_>>,
@@ -84,13 +85,14 @@ impl UnimportedStage {
         ))
     }
 
-    /// Stage 14: reword the first `E0277` on the generated `__Context__` that a `#[cgp_impl]`
-    /// provider gets for each requirement its provider trait places on the context and the provider
-    /// does not declare, naming the provider trait, the provider, and each declaration, and drop
-    /// the rest. An abstract type among them that the provider uses without importing is reported
-    /// as that use instead: through a report stage 13 already made, or by converting the
-    /// name-resolution `E0425` of a bare use in `buffer`. The caret moves to the macro's call site,
-    /// without rustc's note that the error originates in the macro.
+    /// Reword the first `E0277` on the generated `__Context__` that a `#[cgp_impl]` provider gets
+    /// for each requirement its provider trait places on the context and the provider does not
+    /// declare, naming the provider trait, the provider, and each declaration, and drop the rest.
+    /// An abstract type among them that the provider uses without importing is reported as that use
+    /// instead: through a report [`unimported_abstract_type`](Self::unimported_abstract_type)
+    /// already made, or by converting the name-resolution `E0425` of a bare use in `buffer`. The
+    /// caret moves to the macro's call site, without rustc's note that the error originates in the
+    /// macro.
     pub fn requirement(
         &mut self,
         detected: DetectedUndeclaredRequirement,
@@ -198,8 +200,8 @@ impl UnimportedStage {
 
 /// Recognize `diag` as a requirement a provider trait places on the context that a `#[cgp_impl]`
 /// provider does not declare: an `E0277` on the generated `__Context__`, confirmed by
-/// [`detect::detect_undeclared_requirement`]. This is stage 14's query, run before the buffer is
-/// read.
+/// [`detect::detect_undeclared_requirement`]. This is
+/// [`requirement`](UnimportedStage::requirement)'s query, run before the buffer is read.
 pub fn undeclared_requirement(
     tcx: Option<TyCtxt<'_>>,
     diag: &DiagInner,

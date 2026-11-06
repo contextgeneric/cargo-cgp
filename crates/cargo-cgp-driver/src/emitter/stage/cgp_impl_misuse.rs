@@ -18,7 +18,8 @@ use crate::detect::{self, DetectedCgpImplMisuse};
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::pipeline::{BufferEdit, Reshape, SpanPolicy, Verdict};
 
-/// Stage 2, with its memory: the crate's `#[cgp_impl]` header mistakes, detected once.
+/// The `#[cgp_impl]` misuse stage, with its memory: the crate's `#[cgp_impl]` header mistakes,
+/// detected once.
 #[derive(Default)]
 pub struct CgpImplMisuseStage {
     /// The mistakes found, or `None` until a `TyCtxt` was in scope to look. The macro-lowering

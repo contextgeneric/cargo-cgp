@@ -8,10 +8,10 @@ use rustc_middle::ty::TyCtxt;
 use crate::detect;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 
-/// Stage 3: reword the `E0107` that `#[uses(AreaCalculator)]` produces, where a dependency names
-/// the consumer trait. rustc reports the provider trait one argument short and suggests the
-/// generated `__Context__`, or a generic component's parameter; the reshape names the consumer
-/// trait to declare and keeps the caret on the trait name.
+/// Reword the `E0107` that `#[uses(AreaCalculator)]` produces, where a dependency names the
+/// provider trait in place of its consumer trait. rustc reports the provider trait one argument
+/// short and suggests the generated `__Context__`, or a generic component's parameter; the reshape
+/// names the consumer trait to declare and keeps the caret on the trait name.
 pub fn provider_trait_in_uses(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
     if diag.code != Some(E0107) {
         return Verdict::Continue;

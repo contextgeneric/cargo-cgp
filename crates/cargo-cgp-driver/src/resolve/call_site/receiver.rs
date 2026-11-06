@@ -67,8 +67,8 @@ pub(crate) fn contexts_at_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<
 /// The type of the binding a receiver path resolves to, its references peeled, since a receiver's
 /// context is the ADT beneath them. A `let` with a type annotation supplies it directly; a `let`
 /// without one is typed by its initializer expression (a struct literal, usually); a fn parameter
-/// is typed by the matching input of the enclosing signature. All three are syntactic, with no typeck
-/// results are consulted.
+/// is typed by the matching input of the enclosing signature. All three are syntactic, and no
+/// typeck results are consulted.
 fn local_binding_context<'tcx>(tcx: TyCtxt<'tcx>, binding: hir::HirId) -> Option<Ty<'tcx>> {
     if let hir::Node::LetStmt(let_stmt) = tcx.parent_hir_node(binding)
         && let_stmt.ty.is_none()

@@ -6,12 +6,12 @@ use rustc_span::Span;
 use crate::emitter::edit::is_question_mark_cascade;
 use crate::emitter::pipeline::Verdict;
 
-/// Stage 15: drop a `?`-operator error on an expression where a CGP wiring failure was already
-/// reported (a primary span overlapping one of `cgp_spans`). Once a wiring bound on `expr` fails,
-/// the type of `expr?` cannot be resolved, so rustc adds a `Try` or `FromResidual` error at the same
-/// span that restates the failure and dumps the unresolved projected type. A `?` error with no CGP
-/// failure on its expression is left alone. The stage runs before the resolver, which would
-/// otherwise re-anchor the cascade onto the failing call it overlaps.
+/// Drop a `?`-operator error on an expression where a CGP wiring failure was already reported (a
+/// primary span overlapping one of `cgp_spans`). Once a wiring bound on `expr` fails, the type of
+/// `expr?` cannot be resolved, so rustc adds a `Try` or `FromResidual` error at the same span that
+/// restates the failure and dumps the unresolved projected type. A `?` error with no CGP failure on
+/// its expression is left alone. The stage runs before the resolver, which would otherwise
+/// re-anchor the cascade onto the failing call it overlaps.
 ///
 /// Only the `?` cascade is dropped, never a `[T]: Sized` one: an unsized error the failed method or
 /// trait resolution trails can land off the failing expression (on the binding pattern, or a later

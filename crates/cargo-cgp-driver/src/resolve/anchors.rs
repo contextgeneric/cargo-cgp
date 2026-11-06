@@ -40,8 +40,9 @@ pub struct Anchor {
     pub run: fn(ResolveCtx<'_, '_>, &AnchorInput<'_>) -> Option<Resolved>,
     /// Whether the diagnostic is what this resolution explains.
     pub accept: fn(&AnchorInput<'_>, &Resolved) -> bool,
-    /// Whether the resolution is anchored at the call expression, so it plans as a use-site failure
-    /// whatever its rustc code.
+    /// Whether the resolution plans as a use-site failure whatever its rustc code: set by the
+    /// anchors at a call expression, and by the forwarding-entry anchor, whose wiring entry fails
+    /// as the consumer it wires.
     pub at_call: bool,
 }
 
@@ -175,8 +176,8 @@ pub static ANCHORS: [Anchor; 12] = [
     },
 ];
 
-/// Try the anchors in order, and return the first resolution an entry accepts, with whether it is
-/// anchored at the call expression.
+/// Try the anchors in order, and return the first resolution an entry accepts, with that entry's
+/// [`at_call`](Anchor::at_call).
 pub fn resolve(cx: ResolveCtx<'_, '_>, input: &AnchorInput<'_>) -> Option<(Resolved, bool)> {
     ANCHORS
         .iter()

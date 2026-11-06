@@ -386,7 +386,8 @@ fn defined_twice(name: &str, caret: Span) -> DiagInner {
     diag
 }
 
-// Concern: stage 8 could pair an `E0428` with any buffered one that names the method's helper.
+// Concern: the shared dispatch method's stage could pair an `E0428` with any buffered one that
+// names the method's helper.
 // Handled: the helper's caret must come from a `#[cgp_auto_dispatch]` expansion, so a helper-shaped
 // name the program wrote itself, at a caret with no expansion, pairs with nothing.
 // Property: for all diagnostics that are not a computer `E0428` with a buffered helper from that

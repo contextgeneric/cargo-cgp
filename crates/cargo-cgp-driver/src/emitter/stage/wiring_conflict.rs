@@ -11,11 +11,11 @@ use crate::detect::{self, ConflictAction, ConflictTrait};
 use crate::emitter::edit::main_message_text;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 
-/// Stage 6: handle the `E0119` a duplicate `delegate_components!` or `cgp_namespace!` entry
-/// produces as one logical error. The redundant `IsProviderFor` half of the pair is dropped, and
-/// the `DelegateComponent` half is reworded to name the colliding keys, keeping rustc's two carets.
-/// The message text routes the shape, and the typed classifier verifies that genuine CGP impls sit
-/// at the caret before either fires.
+/// Handle the `E0119` a duplicate `delegate_components!` or `cgp_namespace!` entry produces as one
+/// logical error. The redundant `IsProviderFor` half of the pair is dropped, and the
+/// `DelegateComponent` half is reworded to name the colliding keys, keeping rustc's two carets. The
+/// message text routes the shape, and the typed classifier verifies that genuine CGP impls sit at
+/// the caret before either fires.
 pub fn wiring_conflict(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
     if diag.code != Some(E0119) {
         return Verdict::Continue;

@@ -66,19 +66,21 @@ pub struct CgpEmitter<E: Emitter> {
     /// rustc-free sub-result, so entries persist for the whole compilation like
     /// [`names`](Self::names) and [`dedup`](Self::dedup).
     resolve_cache: ResolveCache,
-    /// The primary spans of every CGP wiring failure this emitter has recognized this
-    /// compilation, written by the tails and read by stage 15 ([`question_mark_cascade`]) to drop
-    /// a downstream `?`-operator cascade on the same expression. rustc emits the wiring failure
+    /// The primary spans of every CGP wiring failure this emitter has recognized this compilation,
+    /// written by the tails and read by the `?`-cascade stage ([`question_mark_cascade`]) to drop a
+    /// downstream `?`-operator cascade on the same expression. rustc emits the wiring failure
     /// before its cascade, so the span is recorded by the time the cascade arrives.
     cgp_spans: Vec<Span>,
-    /// Stage 2, which owns the crate's `#[cgp_impl]` header mistakes once detected; the resolver's
-    /// stage reads them to drop a check re-report of one.
+    /// The `#[cgp_impl]` misuse stage, which owns the crate's `#[cgp_impl]` header mistakes once
+    /// detected; the resolver's stage reads them to drop a check re-report of one.
     cgp_impl_misuse: CgpImplMisuseStage,
-    /// Stage 9, which owns the structural mistakes already reported.
+    /// The structural stage, which owns the structural mistakes already reported.
     structural: StructuralStage,
-    /// Stages 12 and 16, which own the providers reported as written without `#[cgp_provider]`.
+    /// The macro-less provider's stages, which own the providers reported as written without
+    /// `#[cgp_provider]`.
     macroless_provider: MacrolessProviderStage,
-    /// Stages 13 and 14, which own the abstract types and the provider impls already reported.
+    /// The unimported abstract type's and the undeclared requirement's stages, which own the
+    /// abstract types and the provider impls already reported.
     unimported: UnimportedStage,
     /// The crate facts the post-processing reads, decided once the compiler can answer.
     facts: CrateFacts,
@@ -237,8 +239,8 @@ impl<E: Emitter> CgpEmitter<E> {
         self.finish(diag, original, resolution);
     }
 
-    /// The final tail, after stage 17: post-process the result, drop the suggestions a macro made
-    /// wrong, record a rewritten diagnostic's spans, de-duplicate it, and buffer it.
+    /// The final tail, after the resolver's stage: post-process the result, drop the suggestions a
+    /// macro made wrong, record a rewritten diagnostic's spans, de-duplicate it, and buffer it.
     fn finish(&mut self, mut diag: DiagInner, original: &DiagInner, resolution: Resolution) {
         let (rewritten, cause_sig, resolution, class_headers) = match resolution {
             Resolution::Drop => return,

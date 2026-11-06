@@ -50,10 +50,10 @@ pub fn rebuild_explain_footers(to_emit: &mut Vec<DiagInner>) {
             }
         }
     }
-    // A footer line always names at least one code, so parsing none from any of them means the
-    // parse failed, meaning that rustc reworded, not that the line names nothing. Rebuilding on that would
-    // delete the footer outright, so leave it exactly as rustc wrote it: a stale footer is a far
-    // smaller fault than a silently missing one, and it is the pre-rebuild behaviour.
+    // A footer line always names at least one code, so when no code parses from any of them, rustc
+    // reworded the footer and the parse failed. Rebuilding on that would delete the footer
+    // outright, so leave it exactly as rustc wrote it: a stale footer is a far smaller fault than a
+    // silently missing one, and it is the pre-rebuild behaviour.
     if explainable.is_empty() {
         return;
     }

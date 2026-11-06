@@ -147,7 +147,8 @@ pub fn redirect_path<'tcx>(tcx: TyCtxt<'tcx>, delegate: Ty<'tcx>) -> Option<Stri
 
 /// Render a provider (a `DelegateComponent` entry's `Delegate`, when it is a plain provider rather
 /// than a `RedirectLookup`) to the surface name the fix message uses, e.g. `GreetHello` or
-/// `UseType<String>`. CGP path prefixes are stripped by the post-processing pass that runs after.
+/// `UseType<String>`. The post-processing chain that runs after strips its module qualifiers,
+/// except where they tell two items apart.
 pub fn render_provider<'tcx>(tcx: TyCtxt<'tcx>, delegate: Ty<'tcx>) -> String {
     tcx.erase_and_anonymize_regions(delegate).to_string()
 }

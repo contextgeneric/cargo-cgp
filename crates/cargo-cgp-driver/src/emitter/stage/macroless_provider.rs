@@ -11,19 +11,19 @@ use crate::detect;
 use crate::emitter::edit::main_message_text;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 
-/// Stages 12 and 16, with their memory: the provider structs reported as written without
-/// `#[cgp_provider]`, so a later failure on one is that report's consequence.
+/// The macro-less provider's stages, with their memory: the provider structs reported as written
+/// without `#[cgp_provider]`, so a later failure on one is that report's consequence.
 #[derive(Default)]
 pub struct MacrolessProviderStage {
     pub providers: Vec<String>,
 }
 
 impl MacrolessProviderStage {
-    /// Stage 12: reword the `E0277` a provider-trait impl without `#[cgp_provider]` produces.
-    /// rustc rejects it on the provider trait's `IsProviderFor` supertrait and lists every unrelated
-    /// implementor beside it; the reshape names the provider, carries the macro in a help, and keeps
-    /// the caret on the impl. Gated to an `E0277` whose message names `IsProviderFor`, confirmed
-    /// structurally by [`detect::detect_provider_impl_without_macro`].
+    /// Reword the `E0277` a provider-trait impl without `#[cgp_provider]` produces. rustc rejects
+    /// it on the provider trait's `IsProviderFor` supertrait and lists every unrelated implementor
+    /// beside it; the reshape names the provider, carries the macro in a help, and keeps the caret
+    /// on the impl. Gated to an `E0277` whose message names `IsProviderFor`, confirmed structurally
+    /// by [`detect::detect_provider_impl_without_macro`].
     pub fn run(&mut self, tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
         if diag.code != Some(E0277)
             || !main_message_text(diag).is_some_and(|text| text.contains(IS_PROVIDER_FOR_TRAIT))
@@ -45,8 +45,8 @@ impl MacrolessProviderStage {
         }
     }
 
-    /// Stage 16: drop a check or call that fails on the `IsProviderFor` bound of a provider already
-    /// reported, since it restates that one mistake.
+    /// Drop a check or call that fails on the `IsProviderFor` bound of a provider already reported,
+    /// since it restates that one mistake.
     pub fn consequence(&self, diag: &DiagInner) -> Verdict {
         let restates = diag.code == Some(E0277)
             && main_message_text(diag).is_some_and(|text| {

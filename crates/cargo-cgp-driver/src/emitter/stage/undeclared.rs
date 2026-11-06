@@ -12,11 +12,11 @@ use crate::detect;
 use crate::emitter::edit::{diag_mentions, diagnostic_spans, main_message_text};
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 
-/// Stage 10: reword the vague `E0599` a trait called in a `#[cgp_fn]` or `#[cgp_impl]` body
-/// without `#[uses(…)]` produces, since its method cannot resolve on the generated `__Context__`.
-/// The reshape names the trait and carries the `#[uses(…)]` fix, keeping the caret on the call.
-/// Gated to the two `E0599` shapes a method call and a `Self::method(…)` call produce: the
-/// method-bounds message, or, for the second, whose main message is a Fluent one, its help.
+/// Reword the vague `E0599` a trait called in a `#[cgp_fn]` or `#[cgp_impl]` body without
+/// `#[uses(…)]` produces, since its method cannot resolve on the generated `__Context__`. The
+/// reshape names the trait and carries the `#[uses(…)]` fix, keeping the caret on the call. Gated
+/// to the two `E0599` shapes a method call and a `Self::method(…)` call produce: the method-bounds
+/// message, or, for the second, whose main message is a Fluent one, its help.
 /// [`detect::detect_undeclared_trait`] confirms it structurally. A call whose trait the impl
 /// declares under its provider trait is dropped, since the `[CGP-E037]` on that bound states the
 /// mistake.
@@ -41,12 +41,12 @@ pub fn undeclared_trait(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
     }
 }
 
-/// Stage 11: reword the `E0599` a higher-order provider produces when it calls an inner provider
-/// it never imported with `#[use_provider]`, which leaks `__Context__` and suggests the wrong
+/// Reword the `E0599` a higher-order provider produces when it calls an inner provider it never
+/// imported with `#[use_provider]`, which leaks `__Context__` and suggests the wrong
 /// (consumer-trait) bound. Gated to the "no associated item for a type parameter" shape, reported
 /// during the calling body's typeck, where the detector's queries are cached (unlike the
-/// resolution-class `E0599` emitted mid-`clauses_of`); its main message is a Fluent one, so its help
-/// is read. [`detect::detect_missing_use_provider`] confirms it structurally.
+/// resolution-class `E0599` emitted mid-`clauses_of`); its main message is a Fluent one, so its
+/// help is read. [`detect::detect_missing_use_provider`] confirms it structurally.
 pub fn missing_use_provider(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
     if diag.code != Some(E0599) || !diag_mentions(diag, is_unbounded_type_param_item_text) {
         return Verdict::Continue;

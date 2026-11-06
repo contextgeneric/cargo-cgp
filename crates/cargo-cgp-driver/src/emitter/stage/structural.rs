@@ -10,8 +10,8 @@ use rustc_middle::ty::TyCtxt;
 use crate::detect::{self, DuplicateCheck};
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 
-/// Stage 9, with its memory: the structural mistakes already reported, so a mistake rustc reports
-/// as several errors becomes one.
+/// The structural stage, with its memory: the structural mistakes already reported, so a mistake
+/// rustc reports as several errors becomes one.
 #[derive(Default)]
 pub struct StructuralStage {
     pub reported: Vec<StructuralMistake>,

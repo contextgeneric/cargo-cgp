@@ -1,4 +1,4 @@
-//! Stage 17: the typed root-cause resolver, and the text rewrite when it declines.
+//! The last stage: the typed root-cause resolver, and the text rewrite when it declines.
 //!
 //! A diagnostic no earlier stage took is offered to the typed resolver. A resolution replaces the
 //! diagnostic's header and helps and leaves its `root cause:` note for the flush; when the resolver
@@ -25,7 +25,7 @@ use crate::emitter::edit::{
 use crate::emitter::stage::CgpImplMisuseStage;
 use crate::resolve::{self, AnchorInput, ResolveCtx};
 
-/// What stage 17 made of a diagnostic no earlier stage took.
+/// What the resolver's stage made of a diagnostic no earlier stage took.
 pub enum Resolution {
     /// The downstream check re-report of a `#[cgp_impl]` consumer-trait mistake, a pure consequence
     /// of the `[CGP-E032]` already shown.
@@ -54,10 +54,10 @@ pub struct TransformedResolution {
     pub coalesces: bool,
 }
 
-/// Stage 17: transform a resolvable wiring failure around its dependency tree, or, when the
-/// resolver declines, run the wiring-message rename and the overflow rewrite as the fallback.
-/// `cx` is `None` when no compiler handle is in scope, which the text fallback does not need.
-/// `cgp_impl_misuse` is stage 2, whose detected mistakes make a failing check's re-report a drop.
+/// Transform a resolvable wiring failure around its dependency tree, or, when the resolver
+/// declines, run the wiring-message rename and the overflow rewrite as the fallback. `cx` is `None`
+/// when no compiler handle is in scope, which the text fallback does not need. `cgp_impl_misuse` is
+/// the `#[cgp_impl]` misuse stage, whose detected mistakes make a failing check's re-report a drop.
 pub fn resolve_or_rewrite(
     cx: Option<ResolveCtx<'_, '_>>,
     diag: &mut DiagInner,
@@ -188,13 +188,13 @@ pub fn try_resolve(
     Some((resolved, primary_span, at_call))
 }
 
-/// Transform a resolved wiring failure in place from the rustc-free [`plan_resolved`]: replace
-/// the main message when the plan carries a coded header (re-aiming the caret at the failing
-/// entry), then replace the sub-messages with the plan's fix `help`s, dropping rustc's own
-/// suggestions; the `root cause:` note is returned for the flush to render. A resolution
-/// anchored at the call expression (`at_call`) plans as a use-site failure whatever its rustc
-/// code, so its class is the consumer the call needs, except a genuine field-type mismatch,
-/// whose `E0271` class is the more specific `[CGP-E004]`.
+/// Transform a resolved wiring failure in place from the rustc-free [`plan_resolved`]: replace the
+/// main message when the plan carries a coded header (re-aiming the caret at the failing entry),
+/// then replace the sub-messages with the plan's fix `help`s, dropping rustc's own suggestions; the
+/// `root cause:` note is returned for the flush to render. A resolution whose anchor sets
+/// [`at_call`](crate::resolve::Anchor::at_call) plans as a use-site failure whatever its rustc
+/// code, so its class is the consumer the call or the wiring entry needs, except a genuine
+/// field-type mismatch, whose `E0271` class is the more specific `[CGP-E004]`.
 pub fn transform_resolved(
     diag: &mut DiagInner,
     resolved: &Resolved,

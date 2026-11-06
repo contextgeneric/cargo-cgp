@@ -104,9 +104,8 @@ pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<R
     None
 }
 
-/// Bound on how deep the wrapper-chain descent walks before giving up, matching the dependency-graph
-/// walk's own bound. Real wrapper chains (`CanAddApiRoutes → CanAddMainApiRoutes → CanAddRoute → …`)
-/// are only a few hops.
+/// Bound on how deep the wrapper-chain descent walks before giving up. Real wrapper chains
+/// (`CanAddApiRoutes → CanAddMainApiRoutes → CanAddRoute → …`) are only a few hops.
 const MAX_WRAPPER_DEPTH: u32 = 32;
 
 /// Descend `obligation` (an unmet ordinary-trait bound) looking for the nearest CGP consumer on a

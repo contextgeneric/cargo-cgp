@@ -8,8 +8,8 @@ use rustc_middle::ty::TyCtxt;
 use crate::detect;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 
-/// Stage 5: reword the `E0782` a consumer trait as a wiring key produces. rustc reports a trait
-/// where a type belongs and suggests `dyn`; the reshape names the component the key should be.
+/// Reword the `E0782` a consumer trait as a wiring key produces. rustc reports a trait where a type
+/// belongs and suggests `dyn`; the reshape names the component the key should be.
 pub fn consumer_trait_as_key(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
     if diag.code != Some(E0782) {
         return Verdict::Continue;

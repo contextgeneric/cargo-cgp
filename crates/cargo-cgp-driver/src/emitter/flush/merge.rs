@@ -48,8 +48,9 @@ pub fn merged_diag(
     diag.span = merged_span(diags);
     diag.children = children;
     diag.suggestions = Suggestions::Enabled(Vec::new());
-    // The header, notes, and helps are freshly built, so post-process them (resugar `Symbol!`,
-    // strip CGP prefixes) as the streaming path does for a rewritten diagnostic.
+    // The header, notes, and helps are freshly built, so post-process them (strip the module
+    // qualifiers that tell no two items apart, resugar `Symbol!`) as the streaming path does for a
+    // rewritten diagnostic.
     postprocess_diag(&mut diag, Origin::Rewritten, ambiguous);
     diag
 }

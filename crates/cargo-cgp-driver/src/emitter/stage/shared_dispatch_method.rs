@@ -21,10 +21,10 @@ use crate::detect::is_from_auto_dispatch;
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::pipeline::{BufferEdit, Reshape, SpanPolicy, Verdict};
 
-/// Stage 8: pair `diag`, an incoming computer `E0428`, with the buffered helper `E0428` of the
-/// method two `#[cgp_auto_dispatch]` traits share, and word the pair as one `[CGP-E061]` on `diag`,
-/// whose carets are the two method names, removing the helper's from `buffer`. Any other diagnostic
-/// is left to the next stage.
+/// Pair `diag`, an incoming computer `E0428`, with the buffered helper `E0428` of the method two
+/// `#[cgp_auto_dispatch]` traits share, and word the pair as one `[CGP-E061]` on `diag`, whose
+/// carets are the two method names, removing the helper's from `buffer`. Any other diagnostic is
+/// left to the next stage.
 pub fn shared_dispatch_method(diag: &DiagInner, buffer: &[BufEntry]) -> Verdict {
     let Some(name) = defined_twice(diag) else {
         return Verdict::Continue;

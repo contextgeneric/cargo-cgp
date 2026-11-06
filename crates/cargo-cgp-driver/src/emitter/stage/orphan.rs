@@ -9,11 +9,11 @@ use crate::detect;
 use crate::emitter::edit::main_message_text;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 
-/// Stage 7: reword the `E0210` (or its sibling `E0117`) of a crate registering wiring into a
-/// foreign namespace keyed on a foreign key. The raw error names the machinery parameter and frames
-/// a wiring decision as a bare coherence rule; the reshape names the namespace and the key, keeps
-/// the caret on the offending macro alone (its "uncovered type parameter" label no longer applies),
-/// and carries the ownership fix. The `E0210`'s text must name the machinery parameter
+/// Reword the `E0210` (or its sibling `E0117`) of a crate registering wiring into a foreign
+/// namespace keyed on a foreign key. The raw error names the machinery parameter and frames a
+/// wiring decision as a bare coherence rule; the reshape names the namespace and the key, keeps the
+/// caret on the offending macro alone (its "uncovered type parameter" label no longer applies), and
+/// carries the ownership fix. The `E0210`'s text must name the machinery parameter
 /// (`__Components__` or `__Table__`) before the impl scan runs; the rarer `E0117`, whose message
 /// names none, is left to the typed classifier alone.
 pub fn orphan_conflict(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
