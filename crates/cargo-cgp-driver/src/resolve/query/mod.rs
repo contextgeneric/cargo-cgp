@@ -11,7 +11,9 @@
 //!   [`written_order`](fn@written_order), [`written_order_clauses`], and
 //!   [`misdirected_impl_clauses`].
 //! - **The unification of a call's arguments** with its callee's declared inputs, which the
-//!   call-site anchors and the detectors share: [`unify_call_inputs`](fn@unify_call_inputs).
+//!   call-site anchors and the detectors share: [`unify_call_inputs`](fn@unify_call_inputs), and
+//!   over it [`call_fixed_arguments`](fn@call_fixed_arguments), the trait arguments the detectors'
+//!   helps write.
 //! - **Renderings of a wiring key**, its path, and its provider: [`describe_key`] and its siblings.
 //! - **Syntactic type reads** the call-site anchors and the detectors share: [`lower_hir_ty`] and
 //!   [`expr_written_ty`], and a binding's declared type, as written ([`declared_binding_ty`]) or as
@@ -20,7 +22,8 @@
 //!   read, and [`same_range`].
 //! - **Lookups** several stages make: [`check_impls_at`] over [`can_use_component_supertrait`] and
 //!   [`impl_self_ty_span`], [`context_param_span`],
-//!   [`enclosing_trait_impl`](fn@enclosing_trait_impl), [`import_path`](fn@import_path),
+//!   [`calls_at`](fn@calls_at), [`enclosing_trait_impl`](fn@enclosing_trait_impl),
+//!   [`import_path`](fn@import_path),
 //!   [`local_body_exprs`](fn@local_body_exprs), [`local_trait_impls`](fn@local_trait_impls),
 //!   [`owner_has_impl_of`](fn@owner_has_impl_of), [`trait_items_named`](fn@trait_items_named), and
 //!   [`traits_with_method`](fn@traits_with_method).
@@ -31,6 +34,8 @@
 mod argument_ty;
 mod binding;
 mod byte_range;
+mod call_fixed_arguments;
+mod calls_at;
 mod cgp_item;
 mod check_impl;
 mod context_param;
@@ -56,6 +61,8 @@ mod written_ty;
 pub use argument_ty::*;
 pub use binding::*;
 pub use byte_range::*;
+pub use call_fixed_arguments::*;
+pub use calls_at::*;
 pub use cgp_item::*;
 pub use check_impl::*;
 pub use context_param::*;

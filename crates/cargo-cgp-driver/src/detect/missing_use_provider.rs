@@ -17,17 +17,15 @@
 
 use cargo_cgp_error_processing::MissingUseProvider;
 use rustc_hir::def::DefKind;
-use rustc_hir::{Expr, ExprKind, QPath, TyKind};
-use rustc_infer::infer::TyCtxtInferExt as _;
+use rustc_hir::{Expr, QPath, TyKind};
 use rustc_middle::ty::print::with_forced_trimmed_paths;
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode};
+use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_span::Span;
 use rustc_span::def_id::DefId;
-use rustc_span::{DUMMY_SP, Span};
-use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
 use crate::resolve::query::{
-    argument_ty, enclosing_trait_impl, is_cgp_definition_impl, is_provider_trait, local_body_exprs,
-    trait_items_named, unify_call_inputs,
+    CallAt, call_fixed_arguments, calls_at, enclosing_trait_impl, is_cgp_definition_impl,
+    is_provider_trait, trait_items_named,
 };
 
 /// Recognize a missing-`#[use_provider]` failure and recover the inner provider and the provider
@@ -145,13 +143,12 @@ fn use_provider_bound<'tcx>(
 }
 
 /// The provider trait as `#[use_provider]` writes it, `AreaCalculator<Shape>`: the context argument
-/// left out, since the attribute supplies it, and each further argument the one the call fixes. The
-/// method's signature is instantiated with fresh variables, its `Self` pinned to the inner provider
-/// and its context to the impl's, and each declared input unified with the argument's type where
-/// that type can be read without typeck ([`argument_ty`]). An argument may be one of the impl's own
-/// generic parameters, which the attribute on the same impl can name. A parameter that stays unknown,
-/// or comes out holding a lifetime, is written as the trait's own parameter name for the reader to
-/// replace. `None` when the trait takes a lifetime or const parameter, which the help cannot write.
+/// left out, since the attribute supplies it, and each further argument the one the call fixes
+/// ([`call_fixed_arguments`](fn@call_fixed_arguments), with `Self` pinned to the inner provider and
+/// the context to the impl's). An argument may be one of the impl's own generic parameters, which
+/// the attribute on the same impl can name. A parameter that stays unknown, or comes out holding a
+/// lifetime, is written as the trait's own parameter name for the reader to replace. `None` when
+/// the trait takes a lifetime or const parameter, which the help cannot write.
 fn written_provider_bound<'tcx>(
     tcx: TyCtxt<'tcx>,
     provider_did: DefId,
@@ -169,32 +166,20 @@ fn written_provider_bound<'tcx>(
     {
         return (bare_provider_bound(tcx, provider_did), Vec::new());
     }
-    let param_env = ty::ParamEnv::empty();
-    let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
-    let ocx = ObligationCtxt::new(&infcx);
-    let method_args = infcx.fresh_args_for_item(DUMMY_SP, method_did);
-    let cause = ObligationCause::dummy();
-    let _ = ocx.eq(&cause, param_env, method_args.type_at(0), inner);
-    let _ = ocx.eq(&cause, param_env, method_args.type_at(1), context);
-    // An argument that does not unify leaves its parameter named.
-    unify_call_inputs(&ocx, method_did, method_args, args, 0, |arg| {
-        argument_ty(&infcx, arg)
-    });
-    let _ = ocx.try_evaluate_obligations();
-
+    let fixed = call_fixed_arguments(
+        tcx,
+        method_did,
+        &[inner, context],
+        args,
+        0,
+        &generics.own_params[2..],
+        true,
+    );
     let mut unresolved = Vec::new();
-    let rendered: Vec<String> = generics.own_params[2..]
-        .iter()
-        .map(|param| {
-            let resolved =
-                infcx.deeply_resolve_ignoring_regions(method_args.type_at(param.index as usize));
-            let writable = !resolved.has_infer()
-                && !resolved
-                    .walk()
-                    .any(|arg| matches!(arg.kind(), ty::GenericArgKind::Lifetime(_)));
-            if writable {
-                with_forced_trimmed_paths!(resolved.to_string())
-            } else {
+    let rendered: Vec<String> = std::iter::zip(&generics.own_params[2..], fixed)
+        .map(|(param, resolved)| match resolved {
+            Some(resolved) => with_forced_trimmed_paths!(resolved.to_string()),
+            None => {
                 unresolved.push(param.name.to_string());
                 param.name.to_string()
             }
@@ -227,11 +212,14 @@ struct FailingAssocFnCall<'tcx> {
 /// The associated-function call `Param::method(…)` the primary span points at, matched precisely on
 /// the method segment's own span.
 fn failing_assoc_fn_call_at(tcx: TyCtxt<'_>, primary_span: Span) -> Option<FailingAssocFnCall<'_>> {
-    local_body_exprs(tcx)
-        .filter_map(|expr| {
-            if let ExprKind::Call(callee, args) = expr.kind
-                && let ExprKind::Path(QPath::TypeRelative(qself, segment)) = callee.kind
-                && segment.ident.span.overlaps(primary_span)
+    calls_at(tcx, primary_span)
+        .filter_map(|call| {
+            if let CallAt::TypeRelative {
+                hir_id,
+                qself,
+                segment,
+                args,
+            } = call
                 && let TyKind::Path(QPath::Resolved(_, path)) = qself.kind
                 && let Some(param_did) = path.res.opt_def_id()
             {
@@ -244,7 +232,7 @@ fn failing_assoc_fn_call_at(tcx: TyCtxt<'_>, primary_span: Span) -> Option<Faili
                     inner: name,
                     inner_did: param_did,
                     method: segment.ident.name,
-                    hir_id: expr.hir_id,
+                    hir_id,
                     args,
                 })
             } else {

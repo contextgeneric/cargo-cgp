@@ -24,20 +24,18 @@
 
 use cargo_cgp_error_processing::UndeclaredTrait;
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{self as hir, Expr, ExprKind, HirId, QPath};
-use rustc_infer::infer::TyCtxtInferExt as _;
+use rustc_hir::{self as hir, Expr, HirId, QPath};
 use rustc_middle::ty::print::{PrintTraitRefExt as _, with_forced_trimmed_paths};
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode};
+use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
-use rustc_span::{DUMMY_SP, Span, Symbol};
-use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
+use rustc_span::{Span, Symbol};
 
 use super::uses_misuse::names_provider_trait_in_uses;
 use crate::resolve::query::{
-    argument_ty, binding_let_annotation, consumer_provider_trait, enclosing_trait_impl,
-    is_blanket_trait, is_cgp_definition_impl, is_consumer_trait, is_provider_trait, local_binding,
-    local_body_exprs, param_declared_input, peel_hir_refs, trait_items_named, traits_with_method,
-    unify_call_inputs,
+    CallAt, binding_let_annotation, call_fixed_arguments, calls_at, consumer_provider_trait,
+    enclosing_trait_impl, is_blanket_trait, is_cgp_definition_impl, is_consumer_trait,
+    is_provider_trait, local_binding, param_declared_input, peel_hir_refs, trait_items_named,
+    traits_with_method,
 };
 
 /// What a failing call in a CGP body shows about its trait.
@@ -219,33 +217,30 @@ fn is_referenced(tcx: TyCtxt<'_>, trait_did: DefId, spans: &[Span]) -> bool {
 /// precisely on the method segment's own span, so a call nested beside it in the same expression
 /// (a sibling argument of one `format!`, say) is not mistaken for the failing one.
 fn failing_call_at<'tcx>(tcx: TyCtxt<'tcx>, primary_span: Span) -> Option<FailingCall<'tcx>> {
-    local_body_exprs(tcx)
-        .filter_map(|expr| match expr.kind {
-            ExprKind::MethodCall(segment, receiver, args, _)
-                if segment.ident.span.overlaps(primary_span) =>
-            {
-                Some(FailingCall {
-                    method: segment.ident.name,
-                    hir_id: expr.hir_id,
-                    receiver: CallReceiver::Value(local_binding(receiver)),
-                    args,
-                })
-            }
-            ExprKind::Call(callee, args) => {
-                if let ExprKind::Path(QPath::TypeRelative(qself, segment)) = callee.kind
-                    && segment.ident.span.overlaps(primary_span)
-                {
-                    Some(FailingCall {
-                        method: segment.ident.name,
-                        hir_id: expr.hir_id,
-                        receiver: CallReceiver::Type(qself),
-                        args,
-                    })
-                } else {
-                    None
-                }
-            }
-            _ => None,
+    calls_at(tcx, primary_span)
+        .map(|call| match call {
+            CallAt::Method {
+                hir_id,
+                segment,
+                receiver,
+                args,
+            } => FailingCall {
+                method: segment.ident.name,
+                hir_id,
+                receiver: CallReceiver::Value(local_binding(receiver)),
+                args,
+            },
+            CallAt::TypeRelative {
+                hir_id,
+                qself,
+                segment,
+                args,
+            } => FailingCall {
+                method: segment.ident.name,
+                hir_id,
+                receiver: CallReceiver::Type(qself),
+                args,
+            },
         })
         .last()
 }
@@ -313,43 +308,27 @@ fn written_bound<'tcx>(
     {
         return (None, Vec::new());
     }
-    let param_env = ty::ParamEnv::empty();
-    let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
-    let ocx = ObligationCtxt::new(&infcx);
-    // Fresh variables for the method's whole item, the trait's parameters first and `Self` at index
-    // 0, then `Self` pinned to the context.
-    let method_args = infcx.fresh_args_for_item(DUMMY_SP, method_did);
-    let _ = ocx.eq(
-        &ObligationCause::dummy(),
-        param_env,
-        method_args.type_at(0),
-        context,
-    );
     // A method's `self` receiver is the first declared input and is not among the call's arguments.
-    // An argument that does not unify (a coerced one) leaves its parameter named.
-    let skip = usize::from(has_self);
-    unify_call_inputs(&ocx, method_did, method_args, args, skip, |arg| {
-        argument_ty(&infcx, arg)
-    });
-    let _ = ocx.try_evaluate_obligations();
-
+    let fixed = call_fixed_arguments(
+        tcx,
+        method_did,
+        &[context],
+        args,
+        usize::from(has_self),
+        &generics.own_params[1..],
+        false,
+    );
     let mut unresolved = Vec::new();
     let trait_args = ty::GenericArgs::for_item(tcx, trait_did, |param, _| {
         if param.index == 0 {
             return context.into();
         }
-        let resolved =
-            infcx.deeply_resolve_ignoring_regions(method_args.type_at(param.index as usize));
-        let writable = !resolved.has_infer()
-            && !resolved.has_param()
-            && !resolved
-                .walk()
-                .any(|arg| matches!(arg.kind(), ty::GenericArgKind::Lifetime(_)));
-        if writable {
-            resolved.into()
-        } else {
-            unresolved.push(param.name.to_string());
-            tcx.mk_param_from_def(param)
+        match fixed[param.index as usize - 1] {
+            Some(resolved) => resolved.into(),
+            None => {
+                unresolved.push(param.name.to_string());
+                tcx.mk_param_from_def(param)
+            }
         }
     });
     let trait_ref = ty::TraitRef::new(tcx, trait_did, trait_args);
