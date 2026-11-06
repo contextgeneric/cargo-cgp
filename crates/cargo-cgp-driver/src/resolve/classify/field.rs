@@ -54,13 +54,22 @@ pub(crate) fn field_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, field: &str) -> 
 /// `Index<N>`, never by a string of their position), or a non-ADT is never a match.
 fn adt_has_field(ty: Ty<'_>, field: &str) -> bool {
     match ty.kind() {
-        ty::Adt(def, _) if def.is_struct() && def.non_enum_variant().ctor_kind().is_none() => def
+        ty::Adt(def, _) if has_named_fields(ty) => def
             .non_enum_variant()
             .fields
             .iter()
             .any(|f| f.name.as_str() == field),
         _ => false,
     }
+}
+
+/// Whether `ty` is a struct whose fields are named, the only shape whose fields a `Symbol!` tag can
+/// name and a named field can be added to: not an enum, a tuple or unit struct, or a non-ADT.
+pub fn has_named_fields(ty: Ty<'_>) -> bool {
+    matches!(
+        ty.kind(),
+        ty::Adt(def, _) if def.is_struct() && def.non_enum_variant().ctor_kind().is_none()
+    )
 }
 
 /// The `Deref::Target` of `ty`, read straight from the concrete `impl Deref for ty` rather than by

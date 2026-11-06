@@ -11,9 +11,9 @@ use crate::config::{
     CGP_COMPONENT_CRATE, CGP_FIELD_CRATE, DELEGATE_COMPONENT_TRAIT, HAS_FIELD_TRAIT,
 };
 use crate::resolve::classify::{
-    classify_data_leaf, core_provider_hint, field_issue, field_type, is_blanket_dead_end,
-    is_dispatch_lookup, provided_components, provider_for_other_arguments, required_field_type,
-    similar_field, similar_wired_key, tuple_index_tag, wrapping_adapters,
+    classify_data_leaf, core_provider_hint, field_issue, field_type, has_named_fields,
+    is_blanket_dead_end, is_dispatch_lookup, provided_components, provider_for_other_arguments,
+    required_field_type, similar_field, similar_wired_key, tuple_index_tag, wrapping_adapters,
 };
 use crate::resolve::label::fold_empty_lists;
 use crate::resolve::query::{
@@ -350,9 +350,4 @@ fn component_marker_name<'tcx>(tcx: TyCtxt<'tcx>, marker: Ty<'tcx>) -> String {
 /// rendering).
 fn wired_near_miss<'tcx>(tcx: TyCtxt<'tcx>, context: Ty<'tcx>, target: Option<String>) -> NearMiss {
     NearMiss(target.and_then(|target| similar_wired_key(tcx, context, &target)))
-}
-
-/// Whether `ty` is a struct whose fields are named, the only shape a named field can be added to.
-fn has_named_fields(ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().ctor_kind().is_none())
 }

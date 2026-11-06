@@ -5,6 +5,7 @@ use rustc_hir::def::CtorKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
+use crate::resolve::classify::has_named_fields;
 use crate::resolve::query::{describe_key, find_cgp_trait};
 
 /// A named field of `owner`'s struct whose name is a likely slip of the missing `field`, such as
@@ -13,7 +14,7 @@ pub fn similar_field(owner: Ty<'_>, field: &str) -> Option<String> {
     let ty::Adt(def, _) = owner.kind() else {
         return None;
     };
-    if !def.is_struct() || def.non_enum_variant().ctor_kind().is_some() {
+    if !has_named_fields(owner) {
         return None;
     }
     let names: Vec<String> = def
