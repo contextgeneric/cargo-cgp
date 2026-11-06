@@ -1,11 +1,5 @@
-error[E0207]: the type parameter `__Value__` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:13:1
+error: the namespace `SelfNs` cannot inherit from itself; name another namespace as its parent, or omit the parent
+  --> src/main.rs:14:17
    |
-13 | / cgp_namespace! {
-14 | |     new SelfNs: self::SelfNs {}
-15 | | }
-   | |_^ unconstrained type parameter
-   |
-   = note: this error originates in the macro `cgp_namespace` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-For more information about this error, try `rustc --explain E0207`.
+14 |     new SelfNs: self::SelfNs {}
+   |                 ^^^^^^^^^^^^

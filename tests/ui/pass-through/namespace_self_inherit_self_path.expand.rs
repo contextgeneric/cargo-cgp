@@ -12,15 +12,4 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
-pub struct __SelfNsComponents;
-pub trait SelfNs<__Table__> {
-    type Delegate;
-}
-impl<__Table__, __Key__, __Value__> SelfNs<__Table__> for __Key__
-where
-    __Key__: self::SelfNs<__SelfNsComponents>,
-    __Key__: self::SelfNs<__Table__, Delegate = __Value__>,
-{
-    type Delegate = __Value__;
-}
 fn main() {}
