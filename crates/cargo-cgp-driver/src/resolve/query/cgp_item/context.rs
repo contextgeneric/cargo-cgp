@@ -3,7 +3,7 @@
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
-use crate::resolve::query::{find_cgp_trait, is_provider_trait};
+use crate::resolve::query::{find_cgp_trait, is_provider_trait, owner_has_impl_of};
 
 /// Whether `ty` is a struct or enum defined in the crate being compiled. A context may also come
 /// from another crate ([`is_context_adt`]).
@@ -26,20 +26,8 @@ pub fn is_context_adt(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// type: what makes a type a *context*, the word a message uses only for such a type. A type
 /// argument a consumer trait is required of, with no wiring, is named plainly instead.
 pub fn carries_wiring(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    let ty::Adt(def, _) = ty.kind() else {
-        return false;
-    };
-    let Some(delegate_component) =
-        find_cgp_trait(tcx, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
-    else {
-        return false;
-    };
-    tcx.all_impls(delegate_component).any(|impl_did| {
-        matches!(
-            tcx.impl_trait_ref(impl_did).skip_binder().self_ty().kind(),
-            ty::Adt(self_def, _) if self_def.did() == def.did(),
-        )
-    })
+    find_cgp_trait(tcx, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
+        .is_some_and(|delegate_component| owner_has_impl_of(tcx, delegate_component, ty))
 }
 
 /// Whether `ty` is a *provider* struct (the concrete `Self` of some provider-trait impl) rather

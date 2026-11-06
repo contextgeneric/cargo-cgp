@@ -3,21 +3,16 @@
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
-/// Whether `owner`'s ADT appears as the concrete `Self` of any impl of `trait_did`. This backs the
-/// two "is this owner meant to X" checks the `DelegateComponent` classification needs, each keyed on
-/// a different trait:
-///
-/// - with the **`DelegateComponent`** trait: whether `owner` is a *delegation table*: an aggregate
-///   provider or a `UseDelegate`/`UseInputDelegate` inner table wiring at least one key. Any one
-///   entry is enough; the owner it excludes is one with zero delegation impls.
-/// - with the **parent provider trait**: whether `owner` has a *concrete impl of that provider
-///   trait*, which tells a leaf provider reached via the blanket by an input mismatch (has one, a
-///   dead-end) from a genuine non-provider (has none, a
-///   [`Leaf::NotAProvider`](cargo_cgp_error_processing::Leaf::NotAProvider)).
+/// Whether `owner`'s ADT appears as the concrete `Self` of any impl of `trait_did`: whether the
+/// type implements the trait itself, as opposed to reaching it only through a blanket. The resolver
+/// asks it of `DelegateComponent`, where an impl makes the owner a context or a delegation table,
+/// of a provider trait, where a provider with its own impl that the walk reached through the
+/// delegation blanket is a dead-end and one without is not a provider, and of the extensible-data
+/// traits.
 ///
 /// A blanket impl (whose `Self` is a bare type parameter, like the CGP delegation blanket) is not a
 /// concrete `Self`, so it never counts; only an `impl … for SomeAdt` does.
-pub fn owner_has_impl_of<'tcx>(tcx: TyCtxt<'tcx>, trait_did: DefId, owner: Ty<'tcx>) -> bool {
+pub fn owner_has_impl_of(tcx: TyCtxt<'_>, trait_did: DefId, owner: Ty<'_>) -> bool {
     let ty::Adt(owner_def, _) = owner.kind() else {
         return false;
     };

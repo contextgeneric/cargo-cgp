@@ -5,7 +5,8 @@ use rustc_span::def_id::DefId;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
 use crate::resolve::query::{
-    consumer_provider_trait, is_provider_trait, local_trait_impls, written_order_clauses,
+    consumer_provider_trait, is_provider_trait, local_trait_impls, owner_has_impl_of,
+    written_order_clauses,
 };
 
 /// The requirements the provider of `provider_ref` states in an impl it wrote with the component's
@@ -37,13 +38,7 @@ pub fn misdirected_impl_clauses<'tcx>(
     if tcx.erase_and_anonymize_regions(context) == provider {
         return None;
     }
-    let implements_provider_trait = tcx.all_impls(provider_ref.def_id).any(|impl_did| {
-        matches!(
-            tcx.impl_trait_ref(impl_did).skip_binder().self_ty().kind(),
-            ty::Adt(def, _) if def.did() == provider_def.did()
-        )
-    });
-    if implements_provider_trait {
+    if owner_has_impl_of(tcx, provider_ref.def_id, provider) {
         return None;
     }
 
