@@ -1,0 +1,56 @@
+error[E0107]: trait takes 2 generic arguments but 1 generic argument was supplied
+  --> src/main.rs:29:8
+   |
+29 | #[uses(AreaCalculator<Rectangle>)]
+   |        ^^^^^^^^^^^^^^ --------- supplied 1 generic argument
+   |        |
+   |        expected 2 generic arguments
+   |
+note: trait defined here, with 2 generic parameters: `__Context__`, `Shape`
+  --> src/main.rs:16:17
+   |
+16 | #[cgp_component(AreaCalculator)]
+   | ----------------^^^^^^^^^^^^^^--
+17 | pub trait CanCalculateArea<Shape> {
+   |                            -----
+help: add missing generic argument
+   |
+29 | #[uses(AreaCalculator<Rectangle, Shape>)]
+   |                                +++++++
+
+error[E0599]: the method `area` exists for reference `&__Context__`, but its trait bounds were not satisfied
+  --> src/main.rs:32:14
+   |
+32 |         self.area(&Rectangle) * 2.0
+   |              ^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `AreaCalculator`
+  --> src/main.rs:18:5
+   |
+18 |     fn area(&self, shape: &Shape) -> f64;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: the following trait bounds were not satisfied:
+      `&__Context__: AreaCalculator<&__Context__, _>`
+      `__Context__: AreaCalculator<__Context__, _>`
+  --> src/main.rs:16:17
+   |
+16 |   #[cgp_component(AreaCalculator)]
+   |  _----------------^---------------
+17 | | pub trait CanCalculateArea<Shape> {
+   | |           ----------------------^
+   | |_________________________________|
+   |                                   unsatisfied trait bound introduced here
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+help: use associated function syntax instead
+   |
+28 - #[cgp_impl(new DoubleArea)]
+28 + __Context__::area(&Rectangle)
+   |
+help: the following trait defines an item `area`, perhaps you need to restrict type parameter `__Context__` with it:
+   |
+29 | #[uses(AreaCalculator<Rectangle> + CanCalculateArea</* Shape */>)]
+   |                                  +++++++++++++++++++++++++++++++
+
+Some errors have detailed explanations: E0107, E0599.
+For more information about an error, try `rustc --explain E0107`.

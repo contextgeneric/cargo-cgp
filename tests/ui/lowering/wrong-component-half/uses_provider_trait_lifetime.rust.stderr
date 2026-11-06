@@ -1,0 +1,58 @@
+error[E0107]: trait takes 2 generic arguments but 1 generic argument was supplied
+  --> src/main.rs:29:8
+   |
+29 | #[uses(Reader<'static, Text>)]
+   |        ^^^^^^          ---- supplied 1 generic argument
+   |        |
+   |        expected 2 generic arguments
+   |
+note: trait defined here, with 2 generic parameters: `__Context__`, `Source`
+  --> src/main.rs:16:17
+   |
+16 | #[cgp_component(Reader)]
+   | ----------------^^^^^^--
+17 | pub trait CanRead<'a, Source> {
+   |                       ------
+help: add missing generic argument
+   |
+29 | #[uses(Reader<'static, Text, Source>)]
+   |                            ++++++++
+
+error[E0599]: the method `read` exists for reference `&__Context__`, but its trait bounds were not satisfied
+  --> src/main.rs:32:14
+   |
+32 |         self.read(&Text).to_owned()
+   |              ^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+note: the candidate is defined in the trait `Reader`
+  --> src/main.rs:18:5
+   |
+18 |     fn read(&self, source: &'a Source) -> &'a str;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: the following trait bounds were not satisfied:
+      `&__Context__: Reader<'_, &__Context__, _>`
+      `__Context__: Reader<'_, __Context__, _>`
+  --> src/main.rs:16:17
+   |
+16 |   #[cgp_component(Reader)]
+   |  _----------------^-------
+17 | | pub trait CanRead<'a, Source> {
+   | |           ------------------^
+   | |_____________________________|
+   |                               unsatisfied trait bound introduced here
+   = help: items from traits can only be used if the type parameter is bounded by the trait
+help: use associated function syntax instead
+   |
+28 - #[cgp_impl(new GreetByReading)]
+28 + __Context__::read(&Text)
+   |
+help: the following traits define an item `read`, perhaps you need to restrict type parameter `__Context__` with one of them:
+   |
+29 | #[uses(Reader<'static, Text> + CanRead</* 'a, Source */>)]
+   |                              +++++++++++++++++++++++++++
+29 | #[uses(Reader<'static, Text> + std::io::Read)]
+   |                              +++++++++++++++
+
+Some errors have detailed explanations: E0107, E0599.
+For more information about an error, try `rustc --explain E0107`.

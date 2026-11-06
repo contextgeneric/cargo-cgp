@@ -1,0 +1,30 @@
+error[E0107]: trait takes 2 generic arguments but 1 generic argument was supplied
+  --> src/main.rs:29:8
+   |
+29 | #[uses(AreaCalculator<Rectangle>)]
+   |        ^^^^^^^^^^^^^^ --------- supplied 1 generic argument
+   |        |
+   |        expected 2 generic arguments
+   |
+note: trait defined here, with 2 generic parameters: `__Context__`, `Shape`
+  --> src/main.rs:16:17
+   |
+16 | #[cgp_component(AreaCalculator)]
+   | ----------------^^^^^^^^^^^^^^--
+17 | pub trait CanCalculateArea<Shape> {
+   |                            -----
+help: add missing generic argument
+   |
+29 | #[uses(AreaCalculator<Rectangle, Shape>)]
+   |                                +++++++
+
+error[E0599]: [CGP-E030] the trait `CanCalculateArea` is used but not declared as a dependency
+  --> src/main.rs:32:14
+   |
+32 |         self.area(&Rectangle) * 2.0
+   |              ^^^^
+   |
+   = help: declare it as a dependency with `#[uses(CanCalculateArea<Rectangle>)]`
+
+Some errors have detailed explanations: E0107, E0599.
+For more information about an error, try `rustc --explain E0107`.
