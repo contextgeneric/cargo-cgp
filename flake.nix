@@ -25,13 +25,14 @@
         };
 
         # The exact nightly the driver is welded to, read straight from the workspace
-        # `rust-toolchain.toml`. That file is the single source of truth: it names the
-        # dated `channel` and every component: the `rustc-dev` + `llvm-tools` the
-        # `rustc_private` driver needs, and the `rust-src` the UI snapshots need, and the
-        # crates' `build.rs` scripts read the same file, so the Nix toolchain can never
-        # drift from the pinned one. `rustc-dev` carries `librustc_driver`, which the
-        # driver both links at build time and loads at run time, the whole reason a plain
-        # nightly is not enough.
+        # `rust-toolchain.toml`. That file is the single source of truth for the dated
+        # `channel` and its components: `rustc-dev` and `llvm-tools` for the
+        # `rustc_private` driver, `rust-src` for the UI snapshots, and `clippy` and
+        # `rustfmt`, which the dev shell below, holding this toolchain alone, lints and
+        # formats with. The crates' `build.rs` scripts read the same file, so the Nix
+        # toolchain can never drift from the pinned one. `rustc-dev` carries
+        # `librustc_driver`, which the driver both links at build time and loads at run
+        # time, the whole reason a plain nightly is not enough.
         rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
         # Build both binaries with that one nightly, so the driver embeds the same

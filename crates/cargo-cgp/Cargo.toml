@@ -11,10 +11,10 @@ keywords     = { workspace = true }
 categories   = { workspace = true }
 readme       = "../../README.md"
 
-# The cargo-subcommand front-end. It is deliberately a plain std/anyhow binary and
-# does *not* depend on `rustc_private`: it only launches `cargo check` with the driver
-# wired in as the rustc wrapper and lets cargo's output stream through untouched, since
-# the driver does every diagnostic transform in-process. Keeping the compiler-internal
+# The cargo-subcommand front-end: an ordinary binary that links no compiler crate and
+# does *not* depend on `rustc_private`. It launches cargo with the driver wired in as the
+# rustc wrapper and lets cargo's output stream through untouched, since the driver does
+# every diagnostic transform in-process. Keeping the compiler-internal
 # linkage out of this crate keeps the front-end small and buildable without loading LLVM.
 [[bin]]
 name = "cargo-cgp"

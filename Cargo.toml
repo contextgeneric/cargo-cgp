@@ -36,12 +36,12 @@ unused_qualifications = "warn"
 
 [workspace.dependencies]
 anyhow = { version = "1" }
-# Semantic-version parsing/comparison, used by `cargo cgp update` to decide whether the
-# latest published version is newer than the running one, and to keep updates on the same
-# pre-release channel.
+# Semantic-version parsing/comparison, used by `cargo cgp update` to choose the version it
+# moves to: a stable install stays on stable releases, and a pre-release install moves to
+# the newest newer version, pre-release or stable.
 semver = { version = "1" }
 # Blocking HTTP client, used by `cargo cgp update` to read the crates.io sparse index (all
-# published versions) so it can pick the highest version in the running crate's channel.
+# published versions) so it can pick the version an update moves to.
 # rustls TLS keeps it self-contained. Only the front-end's `update` path links it; the
 # check path and the driver do not. (ureq is a widely used, dependency-light client.)
 ureq = { version = "3" }

@@ -11,7 +11,6 @@ use std::process::Command;
 
 use anyhow::Context;
 
-/// Name of the OS variable that lists directories searched for dynamic libraries.
 /// The variable the platform's dynamic loader searches for the driver's compiler libraries.
 #[cfg(target_os = "macos")]
 pub const DYLIB_PATH_VAR: &str = "DYLD_FALLBACK_LIBRARY_PATH";

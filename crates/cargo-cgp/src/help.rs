@@ -40,7 +40,7 @@ Commands:
               `cargo rustc`, so target selection (--lib, --bin, -p) is cargo's own;
               add `--item <path>` to expand just one module or item of it.
     setup     Install the pinned nightly toolchain and build the matching driver.
-    update    Upgrade cargo-cgp to the latest published version.
+    update    Upgrade cargo-cgp to the newest version its release channel allows.
 
 Options:
     -h, --help       Print this help.
