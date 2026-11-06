@@ -1,4 +1,5 @@
-//! Recognizing a component's traits and marker by the blanket impls `#[cgp_component]` generates.
+//! Recognizing a component's traits and marker by the blanket impls `#[cgp_component]` generates,
+//! and the wiring traits an entry implements on its context, by name.
 
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;

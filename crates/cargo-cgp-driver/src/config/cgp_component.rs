@@ -25,6 +25,10 @@ pub const CAN_USE_COMPONENT_TRAIT: &str = "CanUseComponent";
 /// whose conflicting impls the duplicate-key conflict classifier reads.
 pub const DELEGATE_COMPONENT_TRAIT: &str = "DelegateComponent";
 
+/// The suffix a component marker's default name ends with (`GreeterComponent`). A wiring key that
+/// does not resolve and ends with it may be a consumer trait's name with the suffix appended.
+pub const COMPONENT_MARKER_SUFFIX: &str = "Component";
+
 /// The associated type of [`DELEGATE_COMPONENT_TRAIT`], and of every namespace lookup trait, that
 /// names the provider an entry maps its key to.
 pub const DELEGATE_ASSOC: &str = "Delegate";

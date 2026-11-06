@@ -23,7 +23,8 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::config::{
-    CGP_COMPONENT_CRATE, CGP_MACRO_CRATE, DELEGATE_COMPONENT_TRAIT, NAMESPACE_TABLE_PARAM,
+    CGP_COMPONENT_CRATE, CGP_MACRO_CRATE, CGP_MACRO_NAME_PREFIX, DELEGATE_COMPONENT_TRAIT,
+    NAMESPACE_TABLE_PARAM,
 };
 use crate::resolve::query::{
     byte_range, describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls,
@@ -134,7 +135,10 @@ fn is_from_cgp_macro(tcx: TyCtxt<'_>, span: Span) -> bool {
     span.macro_backtrace().any(|expansion| {
         expansion.macro_def_id.is_some_and(|macro_did| {
             tcx.crate_name(macro_did.krate).as_str() == CGP_MACRO_CRATE
-                && tcx.item_name(macro_did).as_str().starts_with("cgp_")
+                && tcx
+                    .item_name(macro_did)
+                    .as_str()
+                    .starts_with(CGP_MACRO_NAME_PREFIX)
         })
     })
 }

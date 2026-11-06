@@ -17,6 +17,11 @@ pub const CHECK_COMPONENTS_TRAIT_PREFIX: &str = "__Check";
 /// to name the check trait it derives, like [`CHECK_COMPONENTS_TRAIT_PREFIX`].
 pub const DELEGATE_AND_CHECK_COMPONENTS_TRAIT_PREFIX: &str = "__CanUse";
 
+/// The prefix of the CGP macros whose expansions register into a namespace (`cgp_component`,
+/// `cgp_impl`), read together with [`CGP_MACRO_CRATE`](super::CGP_MACRO_CRATE) on the macro's
+/// definition.
+pub const CGP_MACRO_NAME_PREFIX: &str = "cgp_";
+
 /// The name of the `#[cgp_auto_dispatch]` attribute macro, recognized like
 /// [`CHECK_COMPONENTS_MACRO`] in the `E0428`s of two dispatch traits that share a method name.
 pub const CGP_AUTO_DISPATCH_MACRO: &str = "cgp_auto_dispatch";
@@ -38,5 +43,6 @@ pub const WILDCARD_PARAM: &str = "__Wildcard__";
 pub const CGP_IMPL_CONTEXT_PARAM: &str = "__Context__";
 
 /// The reserved generic parameter of the lookup trait `cgp_namespace!` defines, the table a lookup
-/// runs in; an impl generic over it is a namespace's own registration.
+/// runs in. The impls `cgp_namespace!` writes for its own entries are generic over it, where a
+/// `#[default_impl]` or `#[prefix]` registration names its table `__Components__`.
 pub const NAMESPACE_TABLE_PARAM: &str = "__Table__";

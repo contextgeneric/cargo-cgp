@@ -5,6 +5,7 @@ use rustc_hir::{QPath, TyKind};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
+use crate::config::COMPONENT_MARKER_SUFFIX;
 use crate::detect::wiring_name::component::{
     consumer_component, consumer_trait_named, is_type_declared,
 };
@@ -21,7 +22,7 @@ pub fn unresolved_key(
     if is_component_name(tcx, name, markers) {
         return component_not_imported(tcx, name, markers);
     }
-    let consumer = name.strip_suffix("Component")?;
+    let consumer = name.strip_suffix(COMPONENT_MARKER_SUFFIX)?;
     let consumer_did = consumer_trait_named(tcx, consumer)?;
     let component_did = consumer_component(tcx, consumer_did)?;
     Some(UnresolvedWiringName::KeyNamesNoComponent {
