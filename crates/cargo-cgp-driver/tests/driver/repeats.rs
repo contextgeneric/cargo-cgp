@@ -43,6 +43,9 @@ fn also_required(diag: &DiagInner) -> Vec<Span> {
         .collect()
 }
 
+// Property: a repeat of an earlier diagnostic (the same level, code, and plain-string message,
+//   with a primary caret on the same line of the same file) is merged into it, and a caret the
+//   earlier block does not cover becomes a secondary caret labelled `COALESCED_SITE_LABEL`.
 #[test]
 fn a_repeat_at_another_caret_on_the_line_is_merged_and_labelled() {
     source::with_source(SOURCE, |map, span| {
@@ -59,11 +62,12 @@ fn a_repeat_at_another_caret_on_the_line_is_merged_and_labelled() {
     });
 }
 
+// Property: a repeat whose caret overlaps a span of the earlier block is merged without a label:
+//   the same caret, as when rustc checks a requirement once for each item a macro generated, and
+//   the whole call around an earlier caret on its method name.
 #[test]
 fn a_repeat_at_a_caret_the_first_block_covers_adds_no_label() {
     source::with_source(SOURCE, |map, span| {
-        // The same caret, as when rustc checks one requirement for each item a macro generated,
-        // and the whole call around a caret on its method name.
         for (first, repeat) in [(SHAPE, SHAPE), (FROM_TAG, CALL)] {
             let diags = vec![
                 error(Some(E0277), MESSAGE, span(first)),
@@ -78,6 +82,7 @@ fn a_repeat_at_a_caret_the_first_block_covers_adds_no_label() {
     });
 }
 
+// Property: the same error with its caret on another line is not a repeat, so both are kept.
 #[test]
 fn the_same_error_on_another_line_is_kept() {
     source::with_source(SOURCE, |map, span| {
@@ -90,6 +95,8 @@ fn the_same_error_on_another_line_is_kept() {
     });
 }
 
+// Property: an error on the same line that differs from the earlier one in its code, its message,
+//   or its level is not a repeat, so both are kept.
 #[test]
 fn an_error_that_differs_in_its_code_its_message_or_its_level_is_kept() {
     source::with_source(SOURCE, |map, span| {
@@ -108,6 +115,8 @@ fn an_error_that_differs_in_its_code_its_message_or_its_level_is_kept() {
     });
 }
 
+// Property (assumed from the module doc, whose repeats carry rustc's code): errors without a code
+//   are never merged, even when they repeat on one line.
 #[test]
 fn an_error_without_a_code_is_kept() {
     source::with_source(SOURCE, |map, span| {
@@ -120,6 +129,8 @@ fn an_error_without_a_code_is_kept() {
     });
 }
 
+// Property: errors whose main message is not a plain string (here an inline message) are never
+//   merged, since the merge compares plain-string messages only.
 #[test]
 fn an_error_with_an_inline_message_is_kept() {
     source::with_source(SOURCE, |map, span| {
@@ -135,6 +146,8 @@ fn an_error_with_an_inline_message_is_kept() {
     });
 }
 
+// Property: the same error on the same line number of another file is not a repeat, so both are
+//   kept.
 #[test]
 fn the_same_error_on_the_same_line_of_another_file_is_kept() {
     create_default_session_globals_then(|| {

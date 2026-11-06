@@ -6,6 +6,8 @@ fn args(items: &[&str]) -> Vec<String> {
     items.iter().map(|s| s.to_string()).collect()
 }
 
+// Property: for all argument vectors whose second argument is a path with the file stem `rustc`
+//   (wrapper mode), `rustc_args` removes that argument and keeps the others in order.
 #[test]
 fn strips_injected_rustc_path_in_wrapper_mode() {
     let out = rustc_args(
@@ -22,6 +24,8 @@ fn strips_injected_rustc_path_in_wrapper_mode() {
     assert_eq!(out, ["cargo-cgp-driver", "--edition=2024", "lib.rs"]);
 }
 
+// Property: given a sysroot and no argument that sets `sysroot_flag`, `rustc_args` appends
+//   `sysroot_flag` and the sysroot after the invocation's own arguments.
 #[test]
 fn injects_sysroot_when_absent() {
     let out = rustc_args(
@@ -33,6 +37,8 @@ fn injects_sysroot_when_absent() {
     assert_eq!(out, ["cargo-cgp-driver", "lib.rs", "--sysroot", "/tk"]);
 }
 
+// Property: an argument that already sets `sysroot_flag` (here `--sysroot=…`) wins, so no sysroot
+//   is appended.
 #[test]
 fn keeps_existing_sysroot() {
     let out = rustc_args(
@@ -44,9 +50,10 @@ fn keeps_existing_sysroot() {
     assert_eq!(out, ["d", "--sysroot=/other", "lib.rs"]);
 }
 
+// Property: for all argument vectors whose second argument is not a path to `rustc` (a direct
+//   invocation), `rustc_args` removes nothing.
 #[test]
 fn leaves_direct_invocation_untouched() {
-    // No rustc path at args[1]: not wrapper mode, nothing removed.
     let out = rustc_args(
         args(&["cargo-cgp-driver", "--version"]),
         None,
@@ -56,6 +63,8 @@ fn leaves_direct_invocation_untouched() {
     assert_eq!(out, ["cargo-cgp-driver", "--version"]);
 }
 
+// Property: for a compilation whose arguments do not set an injected flag's key, `rustc_args`
+//   appends that flag after the invocation's own arguments.
 #[test]
 fn appends_injected_flags_when_absent() {
     let out = rustc_args(
@@ -67,9 +76,10 @@ fn appends_injected_flags_when_absent() {
     assert_eq!(out, ["d", "lib.rs", "-Znext-solver=globally"]);
 }
 
+// Property: an argument with the key of an injected `-Zkey=value` flag (`-Znext-solver=no`) is
+//   the user's choice, so the injected flag is not appended.
 #[test]
 fn keeps_user_override_of_injected_flag() {
-    // An explicit `-Znext-solver=no` shares the `-Znext-solver` key, so nothing is added.
     let out = rustc_args(
         args(&["d", "/tk/bin/rustc", "-Znext-solver=no", "lib.rs"]),
         None,
@@ -79,10 +89,10 @@ fn keeps_user_override_of_injected_flag() {
     assert_eq!(out, ["d", "-Znext-solver=no", "lib.rs"]);
 }
 
+// Property: cargo's `-vV` version probe, an info query, receives none of the injected flags:
+//   `-vV` already implies `-v`, so an appended `--verbose` would make rustc reject it.
 #[test]
 fn skips_injection_on_version_probe() {
-    // cargo's `rustc -vV` version query already implies `-v`; injecting `--verbose` a
-    // second time would make rustc reject it, so no flag is added to an info query.
     let out = rustc_args(
         args(&["d", "/tk/bin/rustc", "-vV"]),
         None,
@@ -92,10 +102,10 @@ fn skips_injection_on_version_probe() {
     assert_eq!(out, ["d", "-vV"]);
 }
 
+// Property: a `--print` request, a cargo probe, receives none of the injected flags, in both its
+//   split (`--print cfg`) and joined (`--print=…`) forms.
 #[test]
 fn skips_injection_on_print_query() {
-    // `--print` requests (e.g. `--print=cfg`) are cargo probes, not real compilations, so
-    // they receive none of the diagnostic flags either, in both the split and `=` forms.
     let split = rustc_args(
         args(&["d", "/tk/bin/rustc", "--print", "cfg"]),
         None,
@@ -113,9 +123,10 @@ fn skips_injection_on_print_query() {
     assert_eq!(joined, ["d", "--print=file-names", "lib.rs"]);
 }
 
+// Property: a compilation carrying neither `-vV` nor `--print` receives every injected flag, in
+//   the given order, after its own arguments.
 #[test]
 fn injects_flags_on_a_real_compilation() {
-    // A genuine crate build carries neither `-vV` nor `--print`, so it gets every flag.
     let out = rustc_args(
         args(&["d", "/tk/bin/rustc", "--edition=2024", "lib.rs"]),
         None,
@@ -134,6 +145,9 @@ fn injects_flags_on_a_real_compilation() {
     );
 }
 
+// Property: `expand_arg_files` replaces an `@file` argument, in place, with the file's lines, so
+//   `rustc_args` sees a user's choice inside the file (`-Znext-solver=no`) and does not append
+//   the injected flag.
 #[test]
 fn expands_an_argument_file_before_the_driver_reads_its_flags() {
     // When a command line grows long, cargo keeps the wrapper and the rustc path visible and moves
@@ -171,10 +185,10 @@ fn expands_an_argument_file_before_the_driver_reads_its_flags() {
     assert!(!out.iter().any(|arg| arg == "-Znext-solver=globally"));
 }
 
+// Property: a `-Z` option written as two arguments (`-Z next-solver=no`) sets its key as
+//   `-Znext-solver=no` does, so the injected flag is not appended after it.
 #[test]
 fn keeps_a_user_override_written_as_two_arguments() {
-    // rustc accepts `-Z key=value` as two arguments as well as `-Zkey=value`; either is the
-    // user's explicit choice, so the injected `-Znext-solver=globally` is not appended after it.
     let out = rustc_args(
         args(&["d", "/tk/bin/rustc", "-Z", "next-solver=no", "lib.rs"]),
         None,
@@ -184,10 +198,10 @@ fn keeps_a_user_override_written_as_two_arguments() {
     assert_eq!(out, ["d", "-Z", "next-solver=no", "lib.rs"]);
 }
 
+// Property: `-v` sets `--verbose`, so `--verbose` is not appended beside it, which would make
+//   rustc reject the invocation with "Option 'verbose' given more than once".
 #[test]
 fn treats_the_short_verbose_flag_as_verbose() {
-    // `-v` is `--verbose`; appending `--verbose` beside it makes rustc reject the invocation with
-    // "Option 'verbose' given more than once", as `RUSTFLAGS=-v` would.
     let out = rustc_args(
         args(&["d", "/tk/bin/rustc", "-v", "lib.rs"]),
         None,

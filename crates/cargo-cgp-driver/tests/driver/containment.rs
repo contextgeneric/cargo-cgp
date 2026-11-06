@@ -41,12 +41,15 @@ fn texts(diag: &DiagInner) -> Vec<String> {
         .collect()
 }
 
+// Property: for all closures f that return without panicking, `contain(f) == Ok(f())`.
 #[test]
 fn a_finished_closure_returns_its_value() {
     hooks();
     assert_eq!(contain(|| 5), Ok(5));
 }
 
+// Property: for a closure that panics with a message, `contain` returns `Err` holding the message
+//   followed by where the panic was raised.
 #[test]
 fn a_contained_panic_names_its_message_and_where_it_was_raised() {
     hooks();
@@ -56,10 +59,11 @@ fn a_contained_panic_names_its_message_and_where_it_was_raised() {
     assert!(detail.contains("containment.rs"), "{detail}");
 }
 
+// Property: a contained panic's `Err` carries the text of a `String` payload, the form a `panic!`
+//   formatting a runtime value takes (literal arguments fold into a `&str`), and a fixed
+//   description for a payload with no text.
 #[test]
 fn a_contained_panic_reads_a_formatted_or_a_non_string_payload() {
-    // A `panic!` that formats a runtime value carries a `String`, the form most real bugs take (literal
-    // arguments fold into a `&str`); any other payload has no text to show.
     hooks();
     let step = String::from("a step");
     let detail = contain(|| -> u32 { panic!("emitter bug in {step}") }).unwrap_err();
@@ -72,9 +76,10 @@ fn a_contained_panic_reads_a_formatted_or_a_non_string_payload() {
     );
 }
 
+// Property: a `FatalErrorMarker` unwind, rustc ending a failing compilation, is not contained and
+//   keeps unwinding.
 #[test]
 fn a_fatal_error_keeps_unwinding() {
-    // rustc ends a failing compilation by unwinding with this marker; it is not the emitter's panic.
     hooks();
     let unwound =
         panic::catch_unwind(|| contain(|| panic::resume_unwind(Box::new(FatalErrorMarker))))
@@ -83,6 +88,8 @@ fn a_fatal_error_keeps_unwinding() {
     assert!(unwound.is::<FatalErrorMarker>());
 }
 
+// Property: after a nested `contain` returns, the outer one still contains its own panic and
+//   reports where it was raised.
 #[test]
 fn a_nested_contain_leaves_the_outer_one_containing() {
     // The inner call must restore the outer one's state, or the outer panic would reach the ICE
@@ -97,12 +104,16 @@ fn a_nested_contain_leaves_the_outer_one_containing() {
     assert!(detail.starts_with("outer (at "), "{detail}");
 }
 
+// Property: when the transform returns, `transform_or_original` returns `None`, so the caller
+//   buffers nothing in its place.
 #[test]
 fn a_transform_that_finishes_leaves_nothing_in_its_place() {
     hooks();
     assert!(transform_or_original(diag("rustc's message"), |_, _| {}).is_none());
 }
 
+// Property: the transform receives the diagnostic and a copy of it as rustc built it, equal in
+//   their messages.
 #[test]
 fn the_transform_receives_the_diagnostic_as_rustc_built_it() {
     hooks();
@@ -113,6 +124,9 @@ fn the_transform_receives_the_diagnostic_as_rustc_built_it() {
     assert!(fallback.is_none());
 }
 
+// Property: when the transform panics, even after editing its diagnostic, `transform_or_original`
+//   returns the diagnostic as rustc built it with a note added that names the panic and the
+//   bug-report URL.
 #[test]
 fn a_transform_that_panics_gives_back_rustcs_diagnostic_with_a_note() {
     hooks();
@@ -129,6 +143,8 @@ fn a_transform_that_panics_gives_back_rustcs_diagnostic_with_a_note() {
     assert!(texts[1].contains(BUG_REPORT_URL), "{texts:?}");
 }
 
+// Property: when the render returns, `render_or_untransformed` emits what it made, without
+//   calling the fallback.
 #[test]
 fn a_render_that_finishes_is_what_is_emitted() {
     hooks();
@@ -147,6 +163,9 @@ fn a_render_that_finishes_is_what_is_emitted() {
     );
 }
 
+// Property: when the render panics, `render_or_untransformed` emits every buffered entry through
+//   `untransformed`, in buffer order, each given the note that names the panic and the
+//   bug-report URL.
 #[test]
 fn a_render_that_panics_emits_every_entry_untransformed_in_order() {
     hooks();
