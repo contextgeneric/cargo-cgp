@@ -1,22 +1,46 @@
 //! Tests for locating the driver ([`cargo_cgp::launch::locate_driver`]) and naming it in messages.
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::fs;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
 use cargo_cgp::launch::{DriverLocation, DriverOrigin, locate_driver};
 
 const DRIVER: &str = "cargo-cgp-driver";
 
-/// A fresh directory under the system temp directory, unique to this test and process.
-fn scratch(name: &str) -> PathBuf {
+/// A fresh directory under the system temp directory, unique to this test and process, and removed
+/// on drop so a failing assertion still cleans up.
+struct Scratch(PathBuf);
+
+impl Deref for Scratch {
+    type Target = Path;
+
+    fn deref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<OsStr> for Scratch {
+    fn as_ref(&self) -> &OsStr {
+        self.0.as_os_str()
+    }
+}
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
+fn scratch(name: &str) -> Scratch {
     let dir = std::env::temp_dir().join(format!(
         "cargo-cgp-driver-path-{name}-{}",
         std::process::id()
     ));
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).expect("creating a scratch directory");
-    dir
+    Scratch(dir)
 }
 
 fn with_driver(dir: &Path) -> PathBuf {

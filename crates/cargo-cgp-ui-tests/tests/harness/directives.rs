@@ -1,7 +1,8 @@
 //! Tests for the `//@` directive parser ([`cargo_cgp_ui_tests::directives`]).
 
 use std::fs;
-use std::path::PathBuf;
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
 
 use cargo_cgp_ui_tests::directives::{self, Directives, parse};
 
@@ -121,12 +122,34 @@ fn an_aux_build_directive_needs_a_crate() {
 // crate, and the fixture's unresolved import would read as ordinary snapshot staleness rather than
 // as a disabled test.
 
-fn fixture(name: &str, body: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join("cargo-cgp-aux-tests");
+/// A fixture file in a directory of its own under the system temp directory, removed on drop so a
+/// failing or panicking test still cleans up.
+struct TempFixture {
+    dir: PathBuf,
+    path: PathBuf,
+}
+
+impl Deref for TempFixture {
+    type Target = Path;
+
+    fn deref(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl Drop for TempFixture {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.dir);
+    }
+}
+
+fn fixture(name: &str, body: &str) -> TempFixture {
+    let dir =
+        std::env::temp_dir().join(format!("cargo-cgp-aux-tests-{}-{name}", std::process::id()));
     fs::create_dir_all(&dir).expect("creating the temp fixture directory");
     let path = dir.join(name);
     fs::write(&path, body).expect("writing the temp fixture");
-    path
+    TempFixture { dir, path }
 }
 
 // Property: for all fixtures, a `//@aux-build:` line anywhere in the header declares its crate.
@@ -165,7 +188,10 @@ fn a_fixture_without_the_directive_declares_nothing() {
 // Property: a fixture that cannot be read declares no crate.
 #[test]
 fn a_missing_fixture_declares_nothing() {
-    let path = std::env::temp_dir().join("cargo-cgp-aux-tests/does-not-exist.rs");
+    let path = std::env::temp_dir().join(format!(
+        "cargo-cgp-aux-tests-{}-missing/does-not-exist.rs",
+        std::process::id()
+    ));
     assert!(directives::read(&path).aux_build.is_empty());
 }
 
