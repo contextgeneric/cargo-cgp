@@ -18,7 +18,7 @@ use crate::resolve::query::is_cgp_item;
 /// parameter into two, or a `Life<'a>` *type* where a region belongs, the latter aborting the
 /// compiler when the solver relates it. `None` when the slot cannot be matched to the trait's
 /// parameters, so the caller declines to the fallback instead.
-pub(crate) fn consumer_obligation<'tcx>(
+pub fn consumer_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     context: Ty<'tcx>,
     consumer_did: DefId,
@@ -67,7 +67,7 @@ fn life_region<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<ty::Region<'tcx>
 /// `#[cgp_component]` provider trait takes the consumer's lifetimes first, then the context, then
 /// the consumer's type parameters. `None` when that layout does not match the provider trait's
 /// own generics, so the caller declines rather than hand the solver a malformed obligation.
-pub(crate) fn provider_obligation<'tcx>(
+pub fn provider_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     provider: Ty<'tcx>,
     provider_did: DefId,

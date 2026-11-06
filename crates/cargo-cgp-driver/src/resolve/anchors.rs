@@ -9,11 +9,14 @@ use rustc_errors::ErrCode;
 use rustc_errors::codes::{E0277, E0308};
 use rustc_span::Span;
 
-use crate::resolve::{
-    ResolveCtx, resolve_bound_call, resolve_call_site, resolve_check_failure, resolve_data_call,
-    resolve_forwarding_entry, resolve_impl_site, resolve_provider_call, resolve_provider_check,
+use crate::resolve::ResolveCtx;
+use crate::resolve::anchor::{
+    resolve_check_failure, resolve_forwarding_entry, resolve_impl_site, resolve_provider_check,
     resolve_use_site, resolve_use_site_blanket_trait, resolve_use_site_consumer,
     resolve_wrapper_chain,
+};
+use crate::resolve::call_site::{
+    resolve_bound_call, resolve_call_site, resolve_data_call, resolve_provider_call,
 };
 
 /// What the anchors read from a diagnostic.

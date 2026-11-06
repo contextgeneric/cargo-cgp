@@ -36,7 +36,7 @@ pub fn resolve_check_failure(cx: ResolveCtx<'_, '_>, primary_span: Span) -> Opti
 
 /// The consumer obligation the `check_components!` entry whose caret sits at `primary_span` asserts,
 /// read as [`resolve_check_failure`] reads it. `None` when no check impl is there.
-pub(crate) fn check_entry_obligation<'tcx>(
+pub fn check_entry_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     primary_span: Span,
 ) -> Option<ty::PolyTraitClause<'tcx>> {

@@ -22,27 +22,18 @@
 //! `walk`; `call_site`; `anchor`; `overflow`; and `anchors`, the ordered list of anchors [`resolve`]
 //! tries.
 
-mod anchor;
+pub mod anchor;
 mod anchors;
-mod cache;
-mod call_site;
-mod classify;
+pub mod cache;
+pub mod call_site;
+pub mod classify;
 mod ctx;
-mod data;
-mod label;
+pub mod data;
+pub mod label;
 mod overflow;
 pub mod query;
-mod walk;
+pub mod walk;
 
-pub use anchor::{
-    resolve_check_failure, resolve_forwarding_entry, resolve_impl_site, resolve_provider_check,
-    resolve_use_site, resolve_use_site_blanket_trait, resolve_use_site_consumer,
-    resolve_wrapper_chain,
-};
 pub use anchors::{ANCHORS, Anchor, AnchorInput, resolve};
-pub use cache::ResolveCache;
-pub use call_site::{
-    resolve_bound_call, resolve_call_site, resolve_data_call, resolve_provider_call,
-};
 pub use ctx::ResolveCtx;
 pub use overflow::{OverflowWalk, overflow_walk};

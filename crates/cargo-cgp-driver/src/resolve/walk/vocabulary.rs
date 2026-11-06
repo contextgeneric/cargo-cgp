@@ -15,10 +15,7 @@ use crate::resolve::query::{is_cgp_item, is_provider_trait};
 /// (`CanUseComponent`) or a copy of the provider's `where` clause (`IsProviderFor`), both redundant
 /// with the real obligation the walk follows instead. Dropping them as dependencies is what keeps
 /// the resolution independent of `IsProviderFor`.
-pub(crate) fn is_workaround_plumbing<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    pred: ty::PolyTraitClause<'tcx>,
-) -> bool {
+pub fn is_workaround_plumbing<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitClause<'tcx>) -> bool {
     let did = pred.skip_binder().trait_ref.def_id;
     is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)
         || is_cgp_item(tcx, did, CAN_USE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)
@@ -29,7 +26,7 @@ pub(crate) fn is_workaround_plumbing<'tcx>(
 /// **extensible-data traits** (a cast, a builder or extractor operation), whose blanket impl leads
 /// to the presence-marker bound that names the field or variant at fault. It stops at everything
 /// else: an ordinary bound like `f64: Eq`, whose `Self` is a foreign type, is a leaf.
-pub(crate) fn is_descendable<'tcx>(
+pub fn is_descendable<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
@@ -48,7 +45,7 @@ pub(crate) fn is_descendable<'tcx>(
 /// provider's bounds from the provider trait's own impl, not from the `IsProviderFor` marker's
 /// copy of them, so those obligations are dropped as [workaround plumbing](is_workaround_plumbing)
 /// while the real provider-trait obligation beside them carries the cause.
-pub(crate) fn is_context_side<'tcx>(
+pub fn is_context_side<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
@@ -65,7 +62,7 @@ pub(crate) fn is_context_side<'tcx>(
 /// wiring, so a non-context bound's blanket impl is not followed into it: that impl does not
 /// depend on the context the walk is resolving. The context is the provider trait's first type
 /// argument after `Self`, read by type position as the labels read it.
-pub(crate) fn is_other_context_provider<'tcx>(
+pub fn is_other_context_provider<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
@@ -82,7 +79,7 @@ pub(crate) fn is_other_context_provider<'tcx>(
 }
 
 /// Whether a trait predicate is a genuine CGP `HasField` bound: the missing-field leaf.
-pub(crate) fn is_has_field(tcx: TyCtxt<'_>, pred: ty::PolyTraitClause<'_>) -> bool {
+pub fn is_has_field(tcx: TyCtxt<'_>, pred: ty::PolyTraitClause<'_>) -> bool {
     is_cgp_item(
         tcx,
         pred.skip_binder().def_id(),

@@ -22,7 +22,7 @@ use crate::resolve::query::{
 /// value (`Err(remainder)` from a `downcast`). Each step reads the operation's declared signature
 /// and normalizes its output in a fresh inference context, so no typeck results are needed. `None`
 /// for any other expression, or a step whose output does not reduce to a concrete type.
-pub(crate) fn data_expr_ty<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx>> {
+pub fn data_expr_ty<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     match expr.kind {
         ExprKind::MethodCall(segment, receiver, args, _) => {
             let self_ty = data_expr_ty(tcx, receiver)?;
@@ -48,11 +48,7 @@ pub(crate) fn data_expr_ty<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Option
 /// The traits among CGP's extensible-data operations ([`is_data_operation`]) that declare an
 /// associated fn named `name`, each with that fn's `DefId`. A method call (`receiver.name(…)`)
 /// looks only at fns taking `self`.
-pub(crate) fn data_fns_named(
-    tcx: TyCtxt<'_>,
-    name: Symbol,
-    method_call: bool,
-) -> Vec<(DefId, DefId)> {
+pub fn data_fns_named(tcx: TyCtxt<'_>, name: Symbol, method_call: bool) -> Vec<(DefId, DefId)> {
     trait_items_named(tcx, name, |item| match item.kind {
         ty::AssocKind::Fn { has_self, .. } => has_self || !method_call,
         _ => false,

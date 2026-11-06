@@ -21,10 +21,7 @@ use crate::resolve::query::is_cgp_item;
 /// ends a string and a `Field`'s `Nil` payload is a unit variant to the `Enum!` folding. The
 /// replacement is a type parameter named for the macro, which no other code sees: it exists only to
 /// be printed.
-pub(crate) fn fold_empty_lists<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
-    tcx: TyCtxt<'tcx>,
-    value: T,
-) -> T {
+pub fn fold_empty_lists<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(tcx: TyCtxt<'tcx>, value: T) -> T {
     value.fold_with(&mut EmptyLists { tcx })
 }
 

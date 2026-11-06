@@ -5,7 +5,7 @@ use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt as _};
 /// `parent` with its regions erased, or `None` when it holds an inference variable, a placeholder,
 /// a parameter, a projection, or an error: a fix the solver confirms against such an obligation is
 /// confirmed against a guess, and a mismatch found in it may be the walk's own.
-pub(crate) fn known_obligation<'tcx>(
+pub fn known_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     parent: ty::TraitRef<'tcx>,
 ) -> Option<ty::TraitRef<'tcx>> {

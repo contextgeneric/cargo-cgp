@@ -17,25 +17,25 @@ use rustc_errors::emitter::Emitter;
 use crate::emitter::buffer::BufEntry;
 
 /// The inner emitter and the buffered diagnostics, shared between the emitter and the panic hook.
-pub(crate) struct Output<E> {
+pub struct Output<E> {
     /// The compiler's own emitter for the active error format, which renders every diagnostic.
-    pub(crate) inner: E,
+    pub inner: E,
     /// Every diagnostic kept so far, in arrival order, held until the flush so separate failures
     /// sharing one root cause can be coalesced into one block. The compiler streams diagnostics one
     /// at a time with no end-of-compilation hook, so a headline listing every consumer one mistake
     /// breaks can only be built once they have all arrived, which is why the emitter flushes from
     /// its `Drop`. A coalescible [`BufEntry::Resolved`] joins the group of every failure it shares a
     /// root cause with; anything else is a [`BufEntry::Plain`] emitted at its original position.
-    pub(crate) buffer: Vec<BufEntry>,
+    pub buffer: Vec<BufEntry>,
     /// The requirements that wiring entries with an unresolved value leave unprovable, recorded by
     /// the name-resolution pass after expansion, so the emitter drops a later `E0275` overflow on
     /// one as that entry's consequence.
-    pub(crate) unprovable_requirements: Vec<String>,
+    pub unprovable_requirements: Vec<String>,
 }
 
 /// Lock `output`, recovering it if a panic poisoned the lock: the state stays usable, and the
 /// diagnostics in it are still worth printing.
-pub(crate) fn lock_output<T: ?Sized>(output: &Mutex<T>) -> MutexGuard<'_, T> {
+pub fn lock_output<T: ?Sized>(output: &Mutex<T>) -> MutexGuard<'_, T> {
     output.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
@@ -77,7 +77,7 @@ thread_local! {
 }
 
 /// Register `output` as the one the panic hook flushes on this thread.
-pub(crate) fn register_output<E: Emitter + 'static>(output: &Arc<Mutex<Output<E>>>) {
+pub fn register_output<E: Emitter + 'static>(output: &Arc<Mutex<Output<E>>>) {
     let weak: Weak<Mutex<dyn RegisteredOutput>> = Arc::downgrade(output) as _;
     REGISTERED.with(|registered| *registered.borrow_mut() = Some(weak));
 }
@@ -86,7 +86,7 @@ pub(crate) fn register_output<E: Emitter + 'static>(output: &Arc<Mutex<Output<E>
 /// crash, before rustc's report. Does nothing when no output is registered on this thread, or
 /// when the panic struck while the output was locked, since the emitter is then mid-way through
 /// writing it.
-pub(crate) fn flush_registered_output() {
+pub fn flush_registered_output() {
     let output = REGISTERED
         .try_with(|registered| registered.borrow().as_ref().and_then(Weak::upgrade))
         .ok()
@@ -105,13 +105,13 @@ pub(crate) fn flush_registered_output() {
 /// Run `f` on the buffered diagnostics of the output registered on this thread, under its lock, or
 /// return `None` when no output is registered. `f` must not run compiler queries: one that emits a
 /// diagnostic would try to take the same lock.
-pub(crate) fn with_registered_buffer<R>(f: impl FnOnce(&mut Vec<BufEntry>) -> R) -> Option<R> {
+pub fn with_registered_buffer<R>(f: impl FnOnce(&mut Vec<BufEntry>) -> R) -> Option<R> {
     with_registered_output(|output| f(output.buffer_mut()))
 }
 
 /// Add `requirements` to the unprovable requirements of the output registered on this thread, if
 /// one is registered.
-pub(crate) fn record_unprovable_requirements(requirements: Vec<String>) {
+pub fn record_unprovable_requirements(requirements: Vec<String>) {
     with_registered_output(|output| output.unprovable_requirements_mut().extend(requirements));
 }
 

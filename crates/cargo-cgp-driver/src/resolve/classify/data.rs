@@ -39,7 +39,7 @@ use crate::resolve::query::{
 ///   derive when it can be added there; unmet on a partial value, the operation was given a builder
 ///   or an extractor where the struct or enum belongs, and a `help` names the method a partial value
 ///   takes instead when its `parent` operation has one that holds.
-pub(crate) fn classify_data_leaf<'tcx>(
+pub fn classify_data_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
     parent: Option<ty::TraitRef<'tcx>>,

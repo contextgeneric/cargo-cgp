@@ -10,7 +10,7 @@ const MAX_DEREF: u32 = 16;
 /// Classify why the `HasField` bound on `owner` for `field` is unmet: whether `owner` genuinely
 /// lacks the field, carries it directly (so only the `HasField` impl or its type is at fault), or
 /// reaches it only through a `Deref` target the derive does not cross.
-pub(crate) fn field_issue<'tcx>(tcx: TyCtxt<'tcx>, owner: Ty<'tcx>, field: &str) -> FieldIssue {
+pub fn field_issue<'tcx>(tcx: TyCtxt<'tcx>, owner: Ty<'tcx>, field: &str) -> FieldIssue {
     if adt_has_field(owner, field) {
         return FieldIssue::Present;
     }
@@ -33,7 +33,7 @@ pub(crate) fn field_issue<'tcx>(tcx: TyCtxt<'tcx>, owner: Ty<'tcx>, field: &str)
 /// not a struct or has no such field. Read from the struct's `DefId` with the type's own generic
 /// arguments substituted, so a same-named struct in another module is never queried and a generic
 /// context's field type is instantiated correctly.
-pub(crate) fn field_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, field: &str) -> Option<String> {
+pub fn field_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, field: &str) -> Option<String> {
     let ty::Adt(def, args) = ty.kind() else {
         return None;
     };

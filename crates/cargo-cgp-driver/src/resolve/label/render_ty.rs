@@ -23,7 +23,7 @@ use crate::resolve::query::{decode_index, decode_symbol, is_cgp_item, is_nil};
 /// `Enum!` shape it describes, when the shape has an exact spelling, so a `HasFields` field list reads
 /// as the struct or enum it represents. The spelling rules are shared with the text post-processing
 /// through `cargo_cgp_error_processing::shape`.
-pub(crate) fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
+pub fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     // The call-site anchor's stand-in for a parameter the call leaves to inference: render it as
     // the `_` the programmer would write, never rustc's internal placeholder form.
     if let ty::Placeholder(_) = ty.kind() {

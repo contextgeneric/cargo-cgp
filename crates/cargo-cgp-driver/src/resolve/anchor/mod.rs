@@ -21,9 +21,9 @@
 //! [`call_site`](crate::resolve::call_site), which re-read the failing call expression itself and
 //! are tried before the blanket-trait anchor.
 //!
-//! The anchors share two ingredient modules: [`seed`] builds the real obligation each anchor feeds
+//! The anchors share two ingredient modules: `seed` builds the real obligation each anchor feeds
 //! the walk (a consumer obligation, or the provider obligation a `#[check_providers]` entry
-//! asserts), and [`spans`] finds the local items the diagnostic's spans land on.
+//! asserts), and `spans` finds the local items the diagnostic's spans land on.
 
 mod check_failure;
 mod forward_entry;
@@ -39,8 +39,8 @@ pub use check_failure::*;
 pub use forward_entry::*;
 pub use impl_site::*;
 pub use provider_check::*;
-pub(crate) use seed::*;
-pub(crate) use spans::*;
+pub use seed::*;
+pub use spans::*;
 pub use use_site::*;
 pub use use_site_consumer::*;
 pub use wrapper_chain::*;

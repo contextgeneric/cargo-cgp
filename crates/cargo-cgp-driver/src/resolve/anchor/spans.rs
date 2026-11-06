@@ -21,7 +21,7 @@ use crate::resolve::query::{
 /// because the recovery reads the impl's trait supertraits. The *full* item span is taken from HIR
 /// rather than `def_span`, which for an impl covers only the header and would miss a caret inside
 /// the body (a forwarding `self.method(..)` call, say).
-pub(crate) fn enclosing_trait_impls(tcx: TyCtxt<'_>, spans: &[Span]) -> Vec<DefId> {
+pub fn enclosing_trait_impls(tcx: TyCtxt<'_>, spans: &[Span]) -> Vec<DefId> {
     let mut impls = Vec::new();
     for local in local_trait_impls(tcx) {
         let impl_span = tcx.hir_expect_item(local).span;
@@ -40,10 +40,7 @@ pub(crate) fn enclosing_trait_impls(tcx: TyCtxt<'_>, spans: &[Span]) -> Vec<DefI
 /// provider is never a context; the caller then picks the candidate that actually wires a failing
 /// component. A span on the ADT's generics is left out too: rustc's "required by a bound in `Holder`"
 /// note lands on a bound of `struct Holder<T: Trait>`, which `Holder` asks of what it holds.
-pub(crate) fn context_candidates_from_spans<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    spans: &[Span],
-) -> Vec<Ty<'tcx>> {
+pub fn context_candidates_from_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Ty<'tcx>> {
     let mut candidates = Vec::new();
     for local in tcx.hir_crate_items(()).definitions() {
         let did = local.to_def_id();
@@ -73,12 +70,7 @@ pub(crate) fn context_candidates_from_spans<'tcx>(
 /// a call inside a body to a method that the impl's trait or one of its supertraits declares (a
 /// forwarding `self.greet()`, which fails because the supertrait does). An unrelated error inside
 /// a body, such as an `Rc` passed to a `Send` bound, is neither, so it keeps its own diagnostic.
-pub(crate) fn is_about_impl(
-    tcx: TyCtxt<'_>,
-    impl_did: DefId,
-    trait_did: DefId,
-    spans: &[Span],
-) -> bool {
+pub fn is_about_impl(tcx: TyCtxt<'_>, impl_did: DefId, trait_did: DefId, spans: &[Span]) -> bool {
     let Some(local) = impl_did.as_local() else {
         return false;
     };

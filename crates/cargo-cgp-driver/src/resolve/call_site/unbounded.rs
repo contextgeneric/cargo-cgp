@@ -21,10 +21,7 @@ use crate::resolve::query::{
 /// `None` for any other receiver, when no consumer trait or more than one declares the method, when
 /// the trait takes parameters besides `Self` (the bound to add would need arguments the call does
 /// not show), or when the item already declares the bound.
-pub(crate) fn unbounded_receiver<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    call: &MethodCall<'tcx>,
-) -> Option<Resolved> {
+pub fn unbounded_receiver<'tcx>(tcx: TyCtxt<'tcx>, call: &MethodCall<'tcx>) -> Option<Resolved> {
     let binding = local_binding(call.receiver)?;
     let declared = peel_hir_refs(declared_binding_ty(tcx, binding)?);
     let hir::TyKind::Path(QPath::Resolved(None, ty_path)) = declared.kind else {

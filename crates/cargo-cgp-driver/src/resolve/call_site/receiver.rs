@@ -17,7 +17,7 @@ use crate::resolve::query::{
 /// tuple-struct or variant constructor such as `Shape::Circle(…)`) takes the callee's declared
 /// return type; references are peeled on the way. `None` for a
 /// receiver whose type only typeck could know (a method call's result, a field access).
-pub(crate) fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx>> {
+pub fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     match expr.kind {
         ExprKind::Path(QPath::Resolved(None, path)) => match path.res {
             Res::Local(binding) => local_binding_context(tcx, binding),
@@ -57,7 +57,7 @@ pub(crate) fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Op
 /// Every kind of expression `receiver_context` understands contributes; the caller filters to local
 /// ADTs and gates each on actually failing the trait, so an unrelated overlapping expression
 /// (the enclosing call, whose "context" would be its return type) contributes nothing.
-pub(crate) fn contexts_at_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Ty<'tcx>> {
+pub fn contexts_at_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Ty<'tcx>> {
     local_body_exprs(tcx)
         .filter(|expr| spans.iter().any(|span| span.overlaps(expr.span)))
         .filter_map(|expr| receiver_context(tcx, expr))

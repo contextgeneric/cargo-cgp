@@ -44,7 +44,7 @@ pub fn drop_generated_name_suggestions(tcx: TyCtxt<'_>) {
 
 /// Drop each substitution of `diag`'s suggestions that inserts a reserved name the file it edits
 /// does not contain, and a suggestion left with none. Call it only for a crate that uses CGP.
-pub(crate) fn drop_generated_names(diag: &mut DiagInner, source_map: &SourceMap) {
+pub fn drop_generated_names(diag: &mut DiagInner, source_map: &SourceMap) {
     retain_substitutions(diag, |substitution| {
         !inserts_generated_name(source_map, substitution)
     });

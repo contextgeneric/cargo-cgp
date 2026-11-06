@@ -30,9 +30,10 @@ pub fn path_cons_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx
 /// A `RedirectLookup` keys its table on the redirect path *plus the component's own parameters*, so
 /// a `Handler` lookup for the fragment `Missing` reads `@…HandlerComponent.Missing.<Input>`. When
 /// the failure was recovered from a call the code does not fully type (a
-/// [call site](crate::resolve::resolve_call_site) whose input is inferred), that trailing parameter
-/// is a placeholder, and reporting it would name an entry the programmer could not write, besides
-/// being dropped as unknowable. Trimming the trailing run leaves the path they *can* wire.
+/// [call site](crate::resolve::call_site::resolve_call_site) whose input is inferred), that
+/// trailing parameter is a placeholder, and reporting it would name an entry the programmer could
+/// not write, besides being dropped as unknowable. Trimming the trailing run leaves the path they
+/// *can* wire.
 ///
 /// Only a trailing run is trimmed: a placeholder further up is part of what the lookup keys on, so
 /// such a leaf stays unknowable and is dropped as before.

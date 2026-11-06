@@ -31,7 +31,8 @@ use crate::emitter::stage::{
     shared_dispatch_method, undeclared_requirement, undeclared_trait, unresolved_wiring_overflow,
     wiring_conflict,
 };
-use crate::resolve::{ResolveCache, ResolveCtx};
+use crate::resolve::ResolveCtx;
+use crate::resolve::cache::ResolveCache;
 
 /// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
 /// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the

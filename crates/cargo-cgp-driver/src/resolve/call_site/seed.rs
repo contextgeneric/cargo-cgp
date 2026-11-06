@@ -12,7 +12,7 @@ use crate::resolve::query::{expr_written_ty, unify_call_inputs, unknowns_to_plac
 
 /// How a call passes its arguments, and how their types are read.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CallForm {
+pub enum CallForm {
     /// A method call on a consumer or blanket trait (`app.greet(…)`): the arguments follow the
     /// `self` input, each typed as the call writes it.
     Method,
@@ -36,7 +36,7 @@ pub(crate) enum CallForm {
 /// [placeholder](Ty::new_placeholder) the walk treats as unknown
 /// ([`unknowns_to_placeholders`]). `None` when the consumer carries a const parameter, which this
 /// recovery cannot supply.
-pub(crate) fn seed_from_call<'tcx>(
+pub fn seed_from_call<'tcx>(
     tcx: TyCtxt<'tcx>,
     context: Ty<'tcx>,
     consumer_did: DefId,

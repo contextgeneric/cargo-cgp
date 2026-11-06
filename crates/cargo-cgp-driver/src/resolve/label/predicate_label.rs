@@ -37,7 +37,7 @@ use crate::resolve::query::{
 /// missing-delegate leaf a wiring chain bottoms out on is not rendered here: the caller
 /// ([`resolve_leaves`](crate::resolve::walk::resolve_leaves)) re-states the root cause as the
 /// terminal leaf.
-pub(crate) fn label_for<'tcx>(
+pub fn label_for<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitClause<'tcx>,
     context: Ty<'tcx>,
@@ -145,7 +145,7 @@ fn provider_label<'tcx>(tcx: TyCtxt<'tcx>, trait_ref: ty::TraitRef<'tcx>) -> Opt
 /// reattach to the trait exactly as written, read straight off the obligation rather than from a
 /// `CanUseComponent`/`IsProviderFor` params tuple. Lifetime arguments are kept in place: the walk
 /// erases regions, so an unnamed one reads `'_`, as it does in a rendered type (`App<'_>`).
-pub(crate) fn trait_generics<'tcx>(
+pub fn trait_generics<'tcx>(
     tcx: TyCtxt<'tcx>,
     trait_ref: ty::TraitRef<'tcx>,
     skip: usize,
@@ -178,7 +178,7 @@ pub(crate) fn trait_generics<'tcx>(
 /// The table and path of a `RedirectLookup<Table, Path>` provider, or `None` when `provider` is not
 /// a `RedirectLookup`. Anchored to the CGP crate that defines the type, so a same-named type
 /// elsewhere is never mistaken for it.
-pub(crate) fn redirect_lookup_args<'tcx>(
+pub fn redirect_lookup_args<'tcx>(
     tcx: TyCtxt<'tcx>,
     provider: Ty<'tcx>,
 ) -> Option<(Ty<'tcx>, Ty<'tcx>)> {

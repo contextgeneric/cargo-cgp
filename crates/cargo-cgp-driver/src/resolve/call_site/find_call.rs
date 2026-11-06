@@ -84,11 +84,15 @@ pub fn resolve_call_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
 /// One method call found at the diagnostic's primary spans: the method name, the receiver expression,
 /// the call's argument expressions, and the call expression's id, for which the compiler records
 /// the traits in scope.
-pub(crate) struct MethodCall<'tcx> {
-    pub(crate) method: Symbol,
-    pub(crate) receiver: &'tcx Expr<'tcx>,
-    pub(crate) args: &'tcx [Expr<'tcx>],
-    pub(crate) hir_id: HirId,
+pub struct MethodCall<'tcx> {
+    /// The method's name as written.
+    pub method: Symbol,
+    /// The receiver expression.
+    pub receiver: &'tcx Expr<'tcx>,
+    /// The argument expressions, without the receiver.
+    pub args: &'tcx [Expr<'tcx>],
+    /// The call expression's id, for which the compiler records the traits in scope.
+    pub hir_id: HirId,
 }
 
 /// Every method-call expression in a local body that one of the diagnostic's primary spans is about.
@@ -97,7 +101,7 @@ pub(crate) struct MethodCall<'tcx> {
 /// a span overlaps it without lying strictly inside its receiver or one of its arguments. An error
 /// inside an argument (an `Rc` passed to a `Send` bound in `person.greet(count(Rc::new(1)))`) is
 /// about that argument's own code, and an error elsewhere in the enclosing body is about no call.
-pub(crate) fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<MethodCall<'tcx>> {
+pub fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<MethodCall<'tcx>> {
     local_body_exprs(tcx)
         .filter_map(|expr| {
             if let ExprKind::MethodCall(segment, receiver, args, _) = expr.kind
@@ -122,7 +126,7 @@ pub(crate) fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Me
 /// and does not lie strictly inside one of its `operands` (a method call's receiver and arguments,
 /// or a path call's arguments). A span equal to a whole argument (the `PhantomData` tag a failing
 /// handler call is reported on) is about the call.
-pub(crate) fn is_about_call<'a, 'tcx: 'a>(
+pub fn is_about_call<'a, 'tcx: 'a>(
     span: Span,
     call: Span,
     operands: impl IntoIterator<Item = &'a Expr<'tcx>>,

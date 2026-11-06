@@ -25,28 +25,33 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 /// node down to it (node-rooted: this node's own hop first, the terminal leaf node last), so a
 /// parent reuses it by prepending its own hop and the root groups it into a `Cause` by leaf.
 #[derive(Clone)]
-pub(crate) struct SubCause {
-    pub(crate) leaf: Leaf,
-    pub(crate) path: Vec<ChainNode>,
+pub struct SubCause {
+    /// The classified leaf the sub-chain ends at.
+    pub leaf: Leaf,
+    /// The nodes from this node's own hop down to the leaf's node.
+    pub path: Vec<ChainNode>,
 }
 
 /// The owned result of resolving one node's subtree: its sub-causes, the fingerprints of every
 /// obligation reachable within the subtree (for the reuse disjointness check), and whether any guard
 /// (the cycle guard or the depth cap) curtailed it: an incomplete subtree is never cached.
 #[derive(Clone)]
-pub(crate) struct SubResult {
-    pub(crate) causes: Vec<SubCause>,
-    pub(crate) reachable: FxHashSet<Fingerprint>,
-    pub(crate) incomplete: bool,
+pub struct SubResult {
+    /// The subtree's root-cause sub-chains.
+    pub causes: Vec<SubCause>,
+    /// The fingerprints of every obligation reachable within the subtree.
+    pub reachable: FxHashSet<Fingerprint>,
+    /// Whether a guard curtailed the subtree, which keeps it and its ancestors out of the cache.
+    pub incomplete: bool,
     /// Why a guard cut the subtree, when one did: the obligation met again (a cycle), or the depth
     /// cap reached without a repeat (a growing lookup). A wiring overflow is worded from it.
-    pub(crate) cut: Option<WiringOverflow>,
+    pub cut: Option<WiringOverflow>,
 }
 
 impl SubResult {
     /// A branch the cycle guard or depth cap cut, for `reason`: no causes, and flagged incomplete so
     /// it is never cached and taints every ancestor up the stack.
-    pub(crate) fn cut(reason: WiringOverflow) -> Self {
+    pub fn cut(reason: WiringOverflow) -> Self {
         Self {
             causes: Vec::new(),
             reachable: FxHashSet::default(),
@@ -56,7 +61,7 @@ impl SubResult {
     }
 
     /// A complete node that reaches no reportable cause (an impl matched with nothing to report).
-    pub(crate) fn empty(self_fp: Fingerprint) -> Self {
+    pub fn empty(self_fp: Fingerprint) -> Self {
         let mut reachable = FxHashSet::default();
         reachable.insert(self_fp);
         Self {
@@ -69,7 +74,7 @@ impl SubResult {
 
     /// A complete node whose one cause is `leaf`, reached through `hop`, the node's own step, when
     /// it has one; `reachable` holds the fingerprints of the obligations the path covers.
-    pub(crate) fn cause(hop: Option<DepNode>, leaf: Leaf, reachable: &[Fingerprint]) -> Self {
+    pub fn cause(hop: Option<DepNode>, leaf: Leaf, reachable: &[Fingerprint]) -> Self {
         let path = hop
             .map(ChainNode::Hop)
             .into_iter()
@@ -87,10 +92,7 @@ impl SubResult {
 /// A `StableHash` fingerprint of an already region-erased obligation *alone* (no context), used for
 /// the subtree reachable sets and the ancestor-disjointness check: the context is constant within a
 /// walk, so it need not enter these fingerprints.
-pub(crate) fn pred_fingerprint<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    pred: ty::PolyTraitClause<'tcx>,
-) -> Fingerprint {
+pub fn pred_fingerprint<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitClause<'tcx>) -> Fingerprint {
     tcx.with_stable_hashing_context(|mut hcx| {
         let mut hasher = StableHasher::new();
         pred.stable_hash(&mut hcx, &mut hasher);
@@ -101,7 +103,7 @@ pub(crate) fn pred_fingerprint<'tcx>(
 /// Identity of a resolved node: a `StableHash` fingerprint of the region-erased obligation and its
 /// root context.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub(crate) struct NodeKey {
+pub struct NodeKey {
     fingerprint: Fingerprint,
 }
 
@@ -109,7 +111,7 @@ impl NodeKey {
     /// Build a key from an **already region-erased** obligation and its root context. The
     /// fingerprint is faithful because `StableHash` encodes each `DefId` by its stable path
     /// identity, so two same-named types from different modules never collide.
-    pub(crate) fn new<'tcx>(
+    pub fn new<'tcx>(
         tcx: TyCtxt<'tcx>,
         obligation: ty::PolyTraitClause<'tcx>,
         context: Ty<'tcx>,
@@ -133,20 +135,21 @@ pub struct ResolveCache {
 }
 
 impl ResolveCache {
-    pub(crate) fn new() -> Self {
+    /// An empty cache.
+    pub fn new() -> Self {
         Self::default()
     }
 
     /// The cached sub-result for `key`, or `None` when the node has not been resolved yet. A hit
     /// clones the stored value; the borrow is released before the clone returns, so the memo never
     /// holds it across the compute that follows a miss.
-    pub(crate) fn get(&self, key: &NodeKey) -> Option<SubResult> {
+    pub fn get(&self, key: &NodeKey) -> Option<SubResult> {
         self.entries.borrow().get(key).cloned()
     }
 
     /// Record a complete node's sub-result. Only complete (untainted) non-terminal nodes are ever
     /// inserted; see the walk.
-    pub(crate) fn insert(&self, key: NodeKey, value: SubResult) {
+    pub fn insert(&self, key: NodeKey, value: SubResult) {
         self.entries.borrow_mut().insert(key, value);
     }
 }

@@ -11,7 +11,7 @@ use crate::resolve::query::{find_cgp_trait, is_cgp_item, owner_has_impl_of, proj
 
 /// The state a presence marker records for one field or variant of a partial value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Marker {
+pub enum Marker {
     /// `IsPresent`: a builder holds the field, or an extractor may still yield the variant.
     Present,
     /// `IsNothing`: a builder does not hold the field yet.
@@ -26,15 +26,18 @@ pub(crate) enum Marker {
 
 /// A partial value read back: what it is, the struct or enum it builds or matches, and the state of
 /// each field (a builder) or variant (an extractor) in declaration order.
-pub(crate) struct PartialRead<'tcx> {
-    pub(crate) kind: PartialKind,
-    pub(crate) target: Ty<'tcx>,
-    pub(crate) members: Vec<(String, Marker)>,
+pub struct PartialRead<'tcx> {
+    /// The kind of partial value: a builder, or an extractor of owned, shared, or mutable payloads.
+    pub kind: PartialKind,
+    /// The struct or enum the value builds or matches.
+    pub target: Ty<'tcx>,
+    /// Each field's or variant's name with its marker, in declaration order.
+    pub members: Vec<(String, Marker)>,
 }
 
 impl PartialRead<'_> {
     /// The members whose marker is `marker`, in declaration order.
-    pub(crate) fn with_marker(&self, marker: Marker) -> Vec<String> {
+    pub fn with_marker(&self, marker: Marker) -> Vec<String> {
         self.members
             .iter()
             .filter(|(_, member)| *member == marker)
@@ -43,7 +46,7 @@ impl PartialRead<'_> {
     }
 
     /// The marker of the member named `name`, or `None` when the target has no such member.
-    pub(crate) fn marker_of(&self, name: &str) -> Option<Marker> {
+    pub fn marker_of(&self, name: &str) -> Option<Marker> {
         self.members
             .iter()
             .find(|(member, _)| member == name)
@@ -51,7 +54,7 @@ impl PartialRead<'_> {
     }
 
     /// The value in the rustc-free form a chain hop names it by.
-    pub(crate) fn value(&self) -> PartialValue {
+    pub fn value(&self) -> PartialValue {
         let marked = match self.kind {
             PartialKind::Builder => Marker::Present,
             _ => Marker::Void,
@@ -74,7 +77,7 @@ impl PartialRead<'_> {
 /// enum, is stored as `<M as MapType>::Map<…>` for one of the ADT's marker parameters, so the ADT's
 /// own definition pairs every marker with the field or variant it tracks, and `ty`'s arguments give
 /// each marker's state. `None` for any other type.
-pub(crate) fn read_partial<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<PartialRead<'tcx>> {
+pub fn read_partial<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<PartialRead<'tcx>> {
     let ty = tcx.erase_and_anonymize_regions(ty);
     let ty::Adt(adt, args) = ty.kind() else {
         return None;
@@ -160,7 +163,7 @@ fn map_type_param<'tcx>(tcx: TyCtxt<'tcx>, field_ty: Ty<'tcx>) -> Option<u32> {
 }
 
 /// The state a marker argument records.
-pub(crate) fn marker<'tcx>(tcx: TyCtxt<'tcx>, arg: Ty<'tcx>) -> Marker {
+pub fn marker<'tcx>(tcx: TyCtxt<'tcx>, arg: Ty<'tcx>) -> Marker {
     if is_marker(tcx, arg, IS_PRESENT_TYPE) {
         Marker::Present
     } else if is_marker(tcx, arg, IS_NOTHING_TYPE) {

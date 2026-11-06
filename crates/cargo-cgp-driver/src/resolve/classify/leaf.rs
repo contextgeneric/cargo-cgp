@@ -22,22 +22,21 @@ use crate::resolve::query::{
 };
 
 /// Classify the terminal predicate a dependency chain bottoms out on, or `None` when it is a
-/// `DelegateComponent` routing dead-end rather than a root cause ([`delegate_component_leaf`]). The
+/// `DelegateComponent` routing dead-end rather than a root cause (`delegate_component_leaf`). The
 /// walk never hands it an unmet `CanUseComponent` or `IsProviderFor`, which it drops as plumbing
-/// before descending.
-/// A `HasField` whose branch carried an unmet projection (`mismatch` is `Some`) becomes a
-/// [`Leaf::FieldTypeMismatch`], its actual field type queried from the struct; a plain `HasField`
-/// becomes a [`Leaf::Field`] (inspecting the struct so the emitter can tell missing from
+/// before descending. A `HasField` whose branch carried an unmet projection (`mismatch` is `Some`)
+/// becomes a [`Leaf::FieldTypeMismatch`], its actual field type queried from the struct; a plain
+/// `HasField` becomes a [`Leaf::Field`] (inspecting the struct so the emitter can tell missing from
 /// underived); a branch whose unmet projection is on any *other* associated type becomes a
 /// [`Leaf::AssocTypeMismatch`]; an unmet `DelegateComponent<Marker>`, a component the context does
 /// not wire, becomes a [`Leaf::MissingWiring`] naming that component marker (or, for a redirect
-/// path, a [`Leaf::MissingRedirectWiring`] on the context and a [`Leaf::MissingDispatchEntry`] on an
-/// aggregate provider); an unmet namespace lookup (`Path: DefaultNamespace<Table>` or a user
+/// path, a [`Leaf::MissingRedirectWiring`] on the context and a [`Leaf::MissingDispatchEntry`] on
+/// an aggregate provider); an unmet namespace lookup (`Path: DefaultNamespace<Table>` or a user
 /// `cgp_namespace!` trait), a `RedirectLookup` whose path the table does not terminate, becomes a
 /// [`Leaf::MissingRedirectWiring`] naming the path when the table is the context, and a
 /// [`Leaf::MissingDispatchEntry`] when it is an aggregate provider; any other bound becomes a
 /// [`Leaf::Bound`] restating it as `self: Trait`.
-pub(crate) fn classify_leaf<'tcx>(
+pub fn classify_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
     context: Ty<'tcx>,

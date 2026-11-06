@@ -16,7 +16,7 @@ use crate::emitter::edit::retain_suggestions;
 /// Drop each structured suggestion of `diag` with an insertion at the end of an attribute macro's
 /// call site, the point right after the attribute. Call it only for a crate that uses CGP, so a
 /// plain Rust error keeps every suggestion.
-pub(crate) fn drop_attribute_splices(diag: &mut DiagInner) {
+pub fn drop_attribute_splices(diag: &mut DiagInner) {
     retain_suggestions(diag, |suggestion| !splices_after_attribute(suggestion));
 }
 
