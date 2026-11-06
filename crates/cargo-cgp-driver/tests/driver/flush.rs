@@ -2,7 +2,8 @@
 //!
 //! Each test builds its buffer by hand over one in-memory source file, so the carets fall on known
 //! positions. The wording of a block is the error-processing crate's and is pinned there; these
-//! check what the flush decides: which entries become one block, where it sits, and what it carries.
+//! check what the flush decides: which entries become one block, where it sits, and what it
+//! carries.
 
 use cargo_cgp_driver::emitter::{
     BufEntry, ChainNodeSet, ResolvedEntry, Verdict, coalesced_groups, insert_note, merged_diag,
@@ -222,9 +223,9 @@ fn a_merged_block_points_at_the_site_written_first() {
     });
 }
 
-// Property (the part on suggestions assumed from `driver/program.md`'s list of what a merged block holds): a
-// merged block states the shared cause once, in a headline and one note naming every member's
-// consumer, followed by the fix; rustc's own children and suggestions go.
+// Property (the part on suggestions assumed from `driver/program.md`'s list of what a merged block
+// holds): a merged block states the shared cause once, in a headline and one note naming every
+// member's consumer, followed by the fix; rustc's own children and suggestions go.
 #[test]
 fn a_merged_block_states_the_cause_once_and_names_every_consumer() {
     source::with_source(SOURCE, |_, span| {
@@ -274,7 +275,8 @@ fn a_merged_block_states_the_cause_once_and_names_every_consumer() {
     });
 }
 
-/// A buffered resolution that never coalesces, failing `consumer` through `shared` on a missing field.
+/// A buffered resolution that never coalesces, failing `consumer` through `shared` on a missing
+/// field.
 fn through_shared(consumer: &str, shared: &str, caret: Span) -> BufEntry {
     let mut resolved = failure(consumer, &["name"], ResolvedClass::Consumer);
     let causes: Causes = resolved
@@ -307,8 +309,8 @@ fn through_shared(consumer: &str, shared: &str, caret: Span) -> BufEntry {
     }))
 }
 
-// Property: for all buffers, the subtrees drawn so far are shared across blocks in emission order, so
-// a later block `(*)`-elides a subtree an earlier one showed.
+// Property: for all buffers, the subtrees drawn so far are shared across blocks in emission order,
+// so a later block `(*)`-elides a subtree an earlier one showed.
 #[test]
 fn a_later_block_elides_what_an_earlier_one_drew() {
     source::with_source(SOURCE, |_, span| {

@@ -9,6 +9,9 @@
 //! The entrypoint is [`run`], invoked by the thin `bin/cargo-cgp.rs` wrapper. Everything
 //! else is library code so it stays unit-testable and free of `process::exit`.
 
+// Every public item carries a doc line, which the crate's clippy and doc runs hold.
+#![warn(missing_docs)]
+
 pub mod args;
 pub mod check;
 pub mod config;

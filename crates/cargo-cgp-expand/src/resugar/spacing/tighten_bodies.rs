@@ -15,10 +15,10 @@
 //! whitespace (joining a brace body replaces each line break with a single space), only inside the
 //! body of a call to one of the CGP macros `SUGAR_MACROS` names, and never inside a literal. The
 //! search for those calls steps over literals and comments, so text that merely names a macro, such
-//! as `"Sum![a , b]"` in a string or a doc comment, is left alone. So it cannot alter the meaning of
-//! anything, and it cannot reach the surrounding program at all. (A
-//! `Product![…]` a programmer wrote themselves is tightened the same way, which is the same
-//! transformation and equally harmless.)
+//! as `"Sum![a , b]"` in a string or a doc comment, is left alone. So it cannot alter the meaning
+//! of anything, and it cannot reach the surrounding program at all. (A `Product![…]` a programmer
+//! wrote themselves is tightened the same way, which is the same transformation and equally
+//! harmless.)
 
 use crate::resugar::spacing::layout::{Layout, join_lines, tighten};
 use crate::resugar::spacing::scan::{body_end, next_sugar};

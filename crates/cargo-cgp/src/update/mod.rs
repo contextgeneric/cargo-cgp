@@ -12,12 +12,12 @@
 //! running binary, and on Windows, where the running executable is locked, the reinstall
 //! fails and update prints the commands to run by hand instead.
 //!
-//! Enumerating *all* versions (rather than taking the single "latest" cargo would report)
-//! is what makes channel preservation possible: `cargo search`/`cargo info` only report the
-//! max version, which includes pre-releases, so a stable install could not otherwise be
-//! offered the latest stable when a higher pre-release also exists. The sparse-index access
-//! here follows the shape of the `crates-index` crate but is written directly over the
-//! widely-used `ureq` and `serde_json` rather than taking on that dependency.
+//! Enumerating *all* versions (rather than taking the single "latest" cargo would report) makes
+//! channel preservation possible: `cargo search`/`cargo info` only report the max version, which
+//! includes pre-releases, so a stable install could not otherwise be offered the latest stable when
+//! a higher pre-release also exists. The sparse-index access here follows the shape of the
+//! `crates-index` crate but is written directly over the widely-used `ureq` and `serde_json` rather
+//! than taking on that dependency.
 
 mod index;
 mod reinstall;

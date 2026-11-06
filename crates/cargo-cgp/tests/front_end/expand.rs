@@ -54,8 +54,8 @@ fn only_a_closed_pipe_is_not_a_write_failure() {
 
 /// Property: for all cargo codes c, `expansion_exit_code(c, true) == c`, and
 /// `expansion_exit_code(c, false)` is nonzero and equals c when c is nonzero. The inputs cover each
-/// arm: a clean run, a compiler error that still printed an expansion (cargo's 101), an `--item` miss
-/// (cargo's 0 with nothing printed), and a crate that failed before expanding.
+/// arm: a clean run, a compiler error that still printed an expansion (cargo's 101), an `--item`
+/// miss (cargo's 0 with nothing printed), and a crate that failed before expanding.
 #[test]
 fn a_failure_is_reported_whether_or_not_an_expansion_came_back() {
     assert_eq!(expansion_exit_code(0, true), 0);
@@ -156,8 +156,8 @@ fn everything_else_is_forwarded_untouched() {
 
 #[test]
 fn a_bare_word_is_left_to_cargo() {
-    // A positional cannot be told from a cargo flag's value (`--bin release` names a binary), so the
-    // filter is only ever the explicit flag, and a bare word passes through.
+    // A positional cannot be told from a cargo flag's value (`--bin release` names a binary), so
+    // the filter is only ever the explicit flag, and a bare word passes through.
     let (forwarded, item) = take_item(&args(&["--bin", "my_module"])).unwrap();
 
     assert_eq!(forwarded, ["--bin", "my_module"]);

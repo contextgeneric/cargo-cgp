@@ -6,10 +6,10 @@ use std::path::PathBuf;
 use crate::harness::manifest::write_manifest;
 use crate::paths::worker_crate_dir;
 
-/// Create or refresh the `count` per-worker throwaway crates and return their directories.
-/// Giving each worker its own crate is what lets fixtures run in parallel: two workers
-/// never share a `src/main.rs` nor a cargo target lock. The cost is that cgp is built once
-/// per worker rather than once overall, since each crate has its own target directory.
+/// Create or refresh the `count` per-worker throwaway crates and return their directories. Giving
+/// each worker its own crate lets fixtures run in parallel: two workers never share a `src/main.rs`
+/// nor a cargo target lock. The cost is that cgp is built once per worker rather than once overall,
+/// since each crate has its own target directory.
 pub fn ensure_worker_crates(count: usize) -> Vec<PathBuf> {
     (0..count).map(ensure_worker_crate).collect()
 }

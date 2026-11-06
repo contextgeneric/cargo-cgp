@@ -1,7 +1,7 @@
 //! Tests for the resugaring passes, over hand-written expanded source.
 //!
 //! Each case is the source a CGP macro's expansion prints, run through the whole pipeline the way
-//! the driver runs it, so what is asserted is what a reader of `cargo cgp expand` sees.
+//! the driver runs it, so the assertions check the text a reader of `cargo cgp expand` sees.
 
 use cargo_cgp_expand::{ExpandOptions, resugar_expanded_source};
 
@@ -155,7 +155,7 @@ fn a_variant_list_tagged_by_position_stays_a_sum() {
 
 #[test]
 fn resugars_a_generic_element_tightly() {
-    // The printer spaces a macro body's tokens apart, so this is what the spacing pass exists for:
+    // The printer spaces a macro body's tokens apart, and the spacing pass exists to close them up:
     // without it the elements read `Multiply < Symbol!("foo") >`.
     let source = "\
 type Stages = PipeHandlers<
@@ -250,8 +250,8 @@ fn declines_an_open_tailed_path() {
     let source =
         "type Route = PathCons<Symbol<3, Chars<'a', Chars<'p', Chars<'p', Nil>>>>, Rest>;\n";
 
-    // The chain is left whole; its symbol segment still resugars, since that pass is independent
-    // of the path fold, which is what a declined path shows in a diagnostic too.
+    // The chain is left whole; its symbol segment still resugars, since that pass is independent of
+    // the path fold; a declined path shows the same in a diagnostic.
     assert_eq!(
         expand(source),
         "type Route = PathCons<Symbol!(\"app\"), Rest>;\n"

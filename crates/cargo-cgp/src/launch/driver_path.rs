@@ -24,7 +24,8 @@ pub enum DriverOrigin {
 /// The driver executable the front-end runs, and where it was found.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DriverLocation {
-    /// The path to run: absolute when found, the bare executable name when [`DriverOrigin::Missing`].
+    /// The path to run: absolute when found, the bare executable name when
+    /// [`DriverOrigin::Missing`].
     pub path: PathBuf,
     /// Where the path came from.
     pub origin: DriverOrigin,
@@ -50,10 +51,10 @@ impl DriverLocation {
 
 /// Resolve the `cargo-cgp-driver` executable.
 ///
-/// An explicit [`DRIVER_ENV`] override wins, so a driver installed elsewhere can be named. Otherwise,
-/// since cargo and rustup lay the driver next to the
-/// `cargo-cgp` binary that is running (both end up in the same `target/<profile>` or `~/.cargo/bin`
-/// directory), we look for a sibling of the current executable, and failing that on `PATH`.
+/// An explicit [`DRIVER_ENV`] override wins, so a driver installed elsewhere can be named.
+/// Otherwise, since cargo and rustup lay the driver next to the `cargo-cgp` binary that is running
+/// (both end up in the same `target/<profile>` or `~/.cargo/bin` directory), we look for a sibling
+/// of the current executable, and failing that on `PATH`.
 ///
 /// `driver_bin` is the executable name ([`crate::config::DRIVER_BIN`]); the platform executable
 /// suffix (e.g. `.exe`) is appended here.

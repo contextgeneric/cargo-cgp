@@ -1,17 +1,19 @@
 //! Selecting one module or item out of an expansion.
 //!
 //! An expanded crate is large, and a reader usually wants one part of it: the module they are
-//! working in, or the type whose generated impls they are checking. `cargo cgp expand --item <path>`
-//! narrows the output to that path, and this module is the narrowing.
+//! working in, or the type whose generated impls they are checking.
+//! `cargo cgp expand --item <path>` narrows the output to that path, and this module is the
+//! narrowing.
 //!
 //! Three rules decide what a path selects, and the third is the CGP-shaped one:
 //!
-//! 1. An item **declared** at that path, such as a struct, trait, function, and so on. A module selects its
-//!    *contents* rather than the `mod` wrapper, since the wrapper is noise around what was asked for.
+//! 1. An item **declared** at that path, such as a struct, trait, function, and so on. A module
+//!    selects its *contents* rather than the `mod` wrapper, since the wrapper is noise around what
+//!    was asked for.
 //! 2. An `impl` block whose **self type** is that path, so `--item Rectangle` shows the struct
 //!    together with every impl written for it.
 //! 3. An `impl` block whose **trait** is that path, so `--item AreaCalculator` shows a component's
-//!    provider-trait impls. This is what makes the filter useful on CGP code: the interesting part of
+//!    provider-trait impls. This form makes the filter useful on CGP code: the interesting part of
 //!    a CGP expansion is impls, and the name a reader has in mind is usually the trait's.
 //!
 //! An impl inside an unnamed constant's block (`const _: () = { … };`, the shape many third-party
@@ -32,17 +34,18 @@ pub struct ItemPath {
 impl ItemPath {
     /// Parse a path pattern, or `None` when it is not one: after the crate-root prefix below, every
     /// segment must be a plain identifier and at least one must remain. Declining here rather than
-    /// matching nothing keeps a typo (`shapes:Rectangle`, `shapes::`) from looking like an item that
-    /// does not exist.
+    /// matching nothing keeps a typo (`shapes:Rectangle`, `shapes::`) from looking like an item
+    /// that does not exist.
     ///
-    /// A **crate-root prefix is accepted and dropped**: `crate::contexts::app`, `::contexts::app`, and
-    /// `self::contexts::app` all mean `contexts::app`. Matching is against module paths within the
-    /// crate being expanded, which carry no such prefix, but `crate::…` is how the module is spelled
-    /// in the source, so it is what a reader reaches for, and rejecting it would be pedantry.
+    /// A **crate-root prefix is accepted and dropped**: `crate::contexts::app`, `::contexts::app`,
+    /// and `self::contexts::app` all mean `contexts::app`. Matching is against module paths within
+    /// the crate being expanded, which carry no such prefix, but `crate::…` is how the module is
+    /// spelled in the source, so a reader reaches for it, and rejecting it would be pedantry.
     pub fn parse(pattern: &str) -> Option<Self> {
         let mut segments: Vec<String> = pattern.split("::").map(str::to_owned).collect();
 
-        // A leading `::` leaves an empty first segment; `crate` and `self` are real segments to drop.
+        // A leading `::` leaves an empty first segment; `crate` and `self` are real segments to
+        // drop.
         if segments
             .first()
             .is_some_and(|first| first.is_empty() || first == "crate" || first == "self")
@@ -68,8 +71,8 @@ impl std::fmt::Display for ItemPath {
 
 /// Narrow `file` to the items `path` names, reporting whether anything matched.
 ///
-/// On no match the file is left **empty**, not unchanged: an expansion of the whole crate is not what
-/// was asked for, and the caller reports the miss.
+/// On no match the file is left **empty**, not unchanged: an expansion of the whole crate is not
+/// what was asked for, and the caller reports the miss.
 pub fn select_items(file: &mut File, path: &ItemPath) -> bool {
     let mut selected = Vec::new();
     collect(&file.items, &mut Vec::new(), path, &mut selected);
@@ -152,9 +155,9 @@ fn block_impls(expr: &Expr) -> impl Iterator<Item = &ItemImpl> {
 
 /// Whether `path` names the item written as `written` inside module `prefix`.
 ///
-/// Two spellings count: the item's name qualified by the module it sits in (`shapes::Rectangle` for a
-/// `Rectangle` inside `mod shapes`), and the path exactly as written (`shapes::Rectangle` for an impl
-/// that spells its self type out that way).
+/// Two spellings count: the item's name qualified by the module it sits in (`shapes::Rectangle` for
+/// a `Rectangle` inside `mod shapes`), and the path exactly as written (`shapes::Rectangle` for an
+/// impl that spells its self type out that way).
 fn matches(path: &ItemPath, prefix: &[String], written: &[String]) -> bool {
     let qualified: Vec<&String> = prefix.iter().chain(written.iter()).collect();
     let as_written: Vec<&String> = written.iter().collect();
@@ -163,8 +166,8 @@ fn matches(path: &ItemPath, prefix: &[String], written: &[String]) -> bool {
     qualified == target || as_written == target
 }
 
-/// [`matches`](fn@matches) over a `syn::Path`, comparing by its last segment as written (qualified by `prefix`)
-/// and by its whole spelling.
+/// [`matches`](fn@matches) over a `syn::Path`, comparing by its last segment as written (qualified
+/// by `prefix`) and by its whole spelling.
 fn matches_path(path: &ItemPath, prefix: &[String], written: &Path) -> bool {
     let segments: Vec<String> = written
         .segments

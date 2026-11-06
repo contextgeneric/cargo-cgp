@@ -16,8 +16,9 @@ use crate::expand::{ExpandRequest, print_expansion};
 /// In a check, `after_expansion` reshapes the name-resolution errors of the crate's wiring entries
 /// ([`emitter::reshape_name_resolution_errors`]) and of a misspelled `#[use_type]` import
 /// ([`emitter::reshape_use_type_misspellings`]), and drops the suggestions that name a generated
-/// identifier ([`emitter::drop_generated_name_suggestions`]). When the front-end asked for an expansion, it
-/// prints the expanded crate and stops the compilation there instead; see [`crate::expand`].
+/// identifier ([`emitter::drop_generated_name_suggestions`]). When the front-end asked for an
+/// expansion, it prints the expanded crate and stops the compilation there instead; see
+/// [`crate::expand`].
 pub struct CgpCallbacks {
     /// Set when the invocation carried the expand-mode flag, holding where to write the result.
     pub expand: Option<ExpandRequest>,

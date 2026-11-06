@@ -188,7 +188,7 @@ first build. Bump the pin deliberately, and expect to fix driver code against `r
 changes when you do.
 
 Two `rustc_private` consequences are easy to trip over: the `#![feature(rustc_private)]` gate is
-needed on the driver's **binary** crate as well as its library (the binary is what links the compiler
+needed on the driver's **binary** crate as well as its library (the binary links the compiler
 dylib), and the pinned nightly is the compiler the driver *embeds*, so the tool must be run against a
 project using that same nightly (for example with `RUSTUP_TOOLCHAIN` set), or it loads a mismatched
 `librustc_driver` and fails.
@@ -257,8 +257,9 @@ with this: its `harness = false` target and its plain tests both live under
 `crates/cargo-cgp-ui-tests/tests/`.
 
 Keep inline docs brief and current as you write. Add a one-line `///` to any public item that lacks
-one, prefer naming the *why* or a corner case over restating the signature, and delete a comment
-that only repeats the code.
+one (each library crate sets `#![warn(missing_docs)]`, so clippy and the doc build report a
+reachable item without one), prefer naming the *why* or a corner case over restating the
+signature, and delete a comment that only repeats the code.
 
 ## Commands
 
@@ -314,7 +315,7 @@ Passing an argument to the harness needs `--test ui`, so the flag is not also ha
 other (libtest) tests. The harness checks fixtures in parallel across a pool of workers, each with
 its own throwaway crate (so they never share a `src/main.rs` or a cargo target lock); `--jobs`/`-j`
 sets the worker count, which otherwise defaults to the machine's parallelism capped at 8. The
-snapshots capture `cargo-cgp`'s own output end to end, so they are what changes once the tool
+snapshots capture `cargo-cgp`'s own output end to end, so they change once the tool
 reformats diagnostics; a passing suite is also the standing end-to-end proof that the driver runs as
 the compiler. The fixtures are grouped under `tests/ui/` by the *error class* they reproduce,
 mirroring the knowledge base's error catalog (`checks/`, `hidden/`, `lowering/`, `wiring/`, `data/`,

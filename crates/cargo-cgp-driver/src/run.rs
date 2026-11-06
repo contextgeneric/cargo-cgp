@@ -60,9 +60,9 @@ pub fn run() -> ExitCode {
     install_panic_hooks(BUG_REPORT_URL);
 
     rustc_driver::catch_with_exit_code(|| {
-        // Cargo may move all but the wrapper and the `rustc` path into an `@file`, so it is expanded
-        // before the driver reads its own flags or looks for the user's. Inside the catch, so a file
-        // that cannot be read ends the compilation as rustc's own fatal error would.
+        // Cargo may move all but the wrapper and the `rustc` path into an `@file`, so it is
+        // expanded before the driver reads its own flags or looks for the user's. Inside the catch,
+        // so a file that cannot be read ends the compilation as rustc's own fatal error would.
         let mut raw = expand_arg_files(raw);
 
         // Expand mode is requested by a flag of ours rather than an environment variable, so cargo

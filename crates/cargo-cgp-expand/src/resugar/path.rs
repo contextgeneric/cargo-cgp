@@ -7,10 +7,10 @@
 //! a mangled path: a module-qualified segment that is not a plain type path, and a bare lowercase
 //! identifier, which `Path!` would have encoded as a `Symbol`.
 //!
-//! Only a `Nil`-terminated chain is folded. An **open-ended** path, whose tail is a generic "rest of
-//! path" parameter, has no `Path!` spelling, since `Path!(@a.b)` is the closed path, and this pass
-//! writes source, so such a chain is left as it stands. In an expansion the open tail is a named
-//! generic parameter, not the `_` a diagnostic shows.
+//! Only a `Nil`-terminated chain is folded. An **open-ended** path, whose tail is a generic "rest
+//! of path" parameter, has no `Path!` spelling, since `Path!(@a.b)` is the closed path, and this
+//! pass writes source, so such a chain is left as it stands. In an expansion the open tail is a
+//! named generic parameter, not the `_` a diagnostic shows.
 
 use cargo_cgp_error_processing::{is_ident, is_primitive_type};
 use proc_macro2::{Punct, Spacing, TokenStream, TokenTree};

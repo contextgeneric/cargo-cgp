@@ -60,7 +60,8 @@ pub struct Setup {
     pub aux_crates: Vec<(String, PathBuf)>,
 }
 
-/// Resolve the paths and the worker count, build the binaries, and create the crates the workers use.
+/// Resolve the paths and the worker count, build the binaries, and create the crates the workers
+/// use.
 pub fn prepare(options: &Options, fixture_count: usize) -> Setup {
     let cgp_root = paths::cgp_root();
     let sysroot = paths::sysroot();
@@ -86,7 +87,8 @@ pub fn prepare(options: &Options, fixture_count: usize) -> Setup {
     }
 }
 
-/// Check every fixture across the workers, printing each as it finishes, and return how many failed.
+/// Check every fixture across the workers, printing each as it finishes, and return how many
+/// failed.
 pub fn check_fixtures(
     options: &Options,
     fixtures_dir: &Path,

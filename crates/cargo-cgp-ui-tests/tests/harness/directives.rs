@@ -117,9 +117,9 @@ fn an_aux_build_directive_needs_a_crate() {
 }
 
 // `//@aux-build:` read from a file. The guard against a malformed directive is the point of most of
-// these: a directive the parser dropped silently would cost a cross-crate fixture its auxiliary crate,
-// and the fixture's unresolved import would read as ordinary snapshot staleness rather than as a
-// disabled test.
+// these: a directive the parser dropped silently would cost a cross-crate fixture its auxiliary
+// crate, and the fixture's unresolved import would read as ordinary snapshot staleness rather than
+// as a disabled test.
 
 fn fixture(name: &str, body: &str) -> PathBuf {
     let dir = std::env::temp_dir().join("cargo-cgp-aux-tests");

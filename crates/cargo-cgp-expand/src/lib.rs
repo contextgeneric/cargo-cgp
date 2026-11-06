@@ -18,6 +18,9 @@
 //!
 //! The entry point is [`resugar_expanded_source`].
 
+// Every public item carries a doc line, which the crate's clippy and doc runs hold.
+#![warn(missing_docs)]
+
 pub mod options;
 pub mod resugar;
 pub mod select;

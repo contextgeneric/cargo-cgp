@@ -11,8 +11,8 @@ pub const CGP_UMBRELLA_CRATE: &str = "cgp";
 /// without a `use`.
 pub const CGP_PRELUDE_PATH: &str = "cgp::prelude::";
 
-/// The proc-macro crate that defines `#[cgp_component]`, `#[cgp_impl]`, `cgp_namespace!`, and most of
-/// CGP's other macros.
+/// The proc-macro crate that defines `#[cgp_component]`, `#[cgp_impl]`, `cgp_namespace!`, and most
+/// of CGP's other macros.
 pub const CGP_MACRO_CRATE: &str = "cgp_macro";
 
 /// The crates whose traits count as *CGP evidence* when deciding whether a blanket-impl trait

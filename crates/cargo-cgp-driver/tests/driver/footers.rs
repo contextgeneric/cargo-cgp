@@ -2,9 +2,10 @@
 //!
 //! rustc builds the footer from every error code it registered, a superset of what the emitter
 //! shows once it drops re-reports and cascades. The properties come from the driver document
-//! (`cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`): the kept codes are the footer's own
-//! codes that a shown diagnostic still carries, a footer whose codes all survive is rewritten
-//! identically, and a footer that names no code the rebuild can read is left exactly as written.
+//! (`cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`): the kept codes are the
+//! footer's own codes that a shown diagnostic still carries, a footer whose codes all survive is
+//! rewritten identically, and a footer that names no code the rebuild can read is left exactly as
+//! written.
 
 use cargo_cgp_driver::emitter::rebuild_explain_footers;
 use rustc_errors::codes::{E0277, E0308, E0599};

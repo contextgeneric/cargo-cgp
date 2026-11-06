@@ -1,4 +1,5 @@
-//! Resugaring `Product!` and `Sum!`, the type-level list spines, and their `Struct!`/`Enum!` shapes.
+//! Resugaring `Product!` and `Sum!`, the type-level list spines, and their `Struct!`/`Enum!`
+//! shapes.
 //!
 //! A product expands through `Cons` to `Nil` and a sum through `Either` to `Void`, so this pass
 //! collects each spine's heads and prints them as the flat list the programmer wrote. A list whose
@@ -76,8 +77,8 @@ enum Tag {
 
 /// The `Struct!` a product of `Field` cells becomes, or `None` when it has no exact spelling.
 ///
-/// Every tag a writable name gives `Struct! { a: A }`. Every tag an `Index`, counting up from 0 with
-/// at least two cells, gives `Struct!(A, B)`. A single `Index` cell has no spelling, because
+/// Every tag a writable name gives `Struct! { a: A }`. Every tag an `Index`, counting up from 0
+/// with at least two cells, gives `Struct!(A, B)`. A single `Index` cell has no spelling, because
 /// `Struct!(T)` is the bare `T`, and neither has a list that mixes the tags or skips a position.
 fn struct_shape(elements: &[Type]) -> Option<Type> {
     let cells = field_cells(elements)?;

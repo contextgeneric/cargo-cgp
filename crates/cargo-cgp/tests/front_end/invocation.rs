@@ -1,4 +1,5 @@
-//! Tests for assembling a wrapped cargo command's arguments ([`cargo_cgp::launch::cargo_invocation`]).
+//! Tests for assembling a wrapped cargo command's arguments
+//! ([`cargo_cgp::launch::cargo_invocation`]).
 
 use std::ffi::OsString;
 use std::path::Path;

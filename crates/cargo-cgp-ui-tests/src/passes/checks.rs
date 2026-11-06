@@ -21,8 +21,8 @@ pub fn status_check(plain_ok: bool, tool_ok: bool) -> Outcome {
 
 /// Check that `cargo cgp expand` fails exactly when it reported an error. Expansion stops before
 /// type-checking, so its status differs from `cargo check`'s, and this ties it to its own stderr: a
-/// compile error must not end in success, and a clean expansion must not end in failure. `stderr` is
-/// the command's as run with `-q`, so a line starting `error` is a real report.
+/// compile error must not end in success, and a clean expansion must not end in failure. `stderr`
+/// is the command's as run with `-q`, so a line starting `error` is a real report.
 ///
 /// Property: for all (`success`, `stderr`), the result is `Ok` iff `success` differs from whether
 /// some line of `stderr` starts with `error`.
@@ -39,9 +39,9 @@ pub fn expand_status_check(success: bool, stderr: &str) -> Outcome {
 }
 
 /// Check that a `pass-through/` fixture's tool output equals plain rustc's. Both are compared as
-/// [`normalize_baseline`](crate::normalize::normalize_baseline) leaves them, so the baseline's run-to-run spine truncation cannot cause a
-/// difference. A fixture marked `//@rewrites-falsely:` is expected to differ; once it no longer
-/// does, the marker is reported so the fix removes it.
+/// [`normalize_baseline`](crate::normalize::normalize_baseline) leaves them, so the baseline's
+/// run-to-run spine truncation cannot cause a difference. A fixture marked `//@rewrites-falsely:`
+/// is expected to differ; once it no longer does, the marker is reported so the fix removes it.
 pub fn pass_through_check(baseline: &str, tool: &str, rewrites_falsely: Option<&str>) -> Outcome {
     let equal = baseline.trim_end() == tool.trim_end();
     match (equal, rewrites_falsely) {
@@ -60,9 +60,9 @@ pub fn pass_through_check(baseline: &str, tool: &str, rewrites_falsely: Option<&
 
 /// Check an error fixture's structured header against the tool's output: it must declare its
 /// `//@quality:`, and its `//@codes:` must list exactly the `[CGP-Exxx]` codes in `tool_output`.
-/// Fixtures under `ok/`, `pass-through/`, and `robustness/` are `exempt`: a clean compile carries no
-/// codes, a pass-through fixture is held to plain rustc's output instead, and a robustness fixture
-/// pins how the tool degrades when it fails, which no quality describes.
+/// Fixtures under `ok/`, `pass-through/`, and `robustness/` are `exempt`: a clean compile carries
+/// no codes, a pass-through fixture is held to plain rustc's output instead, and a robustness
+/// fixture pins how the tool degrades when it fails, which no quality describes.
 pub fn header_check(exempt: bool, directives: &Directives, tool_output: &str) -> Outcome {
     if exempt {
         return Outcome::Ok;

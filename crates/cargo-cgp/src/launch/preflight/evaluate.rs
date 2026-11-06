@@ -3,9 +3,9 @@
 use crate::launch::preflight::{DriverVersion, PreflightFailure, parse_driver_version};
 
 /// Judge the answer of a driver that started for `--version`: whether it ran (`succeeded`), and
-/// what it printed. A failed run keeps its stderr, the loader's reason; a run whose output lacks the
-/// driver's version line or its `built-against-rustc:` line is unparsable; otherwise [`evaluate`]
-/// compares its identity.
+/// what it printed. A failed run keeps its stderr, the loader's reason; a run whose output lacks
+/// the driver's version line or its `built-against-rustc:` line is unparsable; otherwise
+/// [`evaluate`] compares its identity.
 pub fn judge_driver_answer(
     succeeded: bool,
     stdout: &[u8],

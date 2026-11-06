@@ -17,9 +17,9 @@ pub(crate) enum Delimiter {
 
 /// Build the macro-call type a resugared construct becomes, such as `Symbol!("height")`.
 ///
-/// The output has to be a syntax node rather than a string, because the printer formats the
-/// tree after every pass has run, which is what lets a resugared call be laid out compactly
-/// where the raw spine it replaced was broken across lines.
+/// The output has to be a syntax node rather than a string, because the printer formats the tree
+/// after every pass has run, which lets a resugared call be laid out compactly where the raw spine
+/// it replaced was broken across lines.
 pub(crate) fn macro_type(name: &str, delimiter: Delimiter, tokens: TokenStream) -> Type {
     let delimiter = match delimiter {
         Delimiter::Paren => MacroDelimiter::Paren(Paren::default()),

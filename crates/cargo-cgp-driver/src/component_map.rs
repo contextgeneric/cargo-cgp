@@ -19,11 +19,11 @@
 //!
 //! Composing the two gives, per marker, the consumer and provider trait names.
 //!
-//! **Identity, not spelling.** The `IsProviderFor` supertrait is matched by its resolved
-//! `DefId`, not by its name: `is_cgp_is_provider_for` verifies the bound's trait is defined
-//! in the [`CGP_COMPONENT_CRATE`] crate, so a trait merely *spelled* `IsProviderFor` in an
-//! unrelated crate cannot seed a bogus entry. That anchor is what keeps every map entry
-//! provably rooted in a real CGP provider trait.
+//! **Identity, not spelling.** The `IsProviderFor` supertrait is matched by its resolved `DefId`,
+//! not by its name: `is_cgp_is_provider_for` verifies the bound's trait is defined in the
+//! [`CGP_COMPONENT_CRATE`] crate, so a trait merely *spelled* `IsProviderFor` in an unrelated crate
+//! cannot seed a bogus entry. That anchor keeps every map entry provably rooted in a real CGP
+//! provider trait.
 //!
 //! **Keyed by full path.** Each entry is keyed by the marker's *full path* (`def_path_str`),
 //! not its bare name, so two distinct markers sharing a name in different modules occupy
@@ -46,10 +46,10 @@ use crate::config::{CGP_COMPONENT_CRATE, IS_PROVIDER_FOR_TRAIT};
 ///
 /// This is the `fn`-pointer initializer the driver hands to
 /// [`ComponentNameMap`](cargo_cgp_error_processing::rewrite::ComponentNameMap): the emitter
-/// installs it at session setup, before any `TyCtxt` exists, and it is forced only on the
-/// first message rewrite, which happens during trait solving, when a `TyCtxt` *is* in scope
-/// ([`rustc_middle::ty::tls`]). Being a plain `fn` (capturing nothing, reading TLS) is what
-/// lets the rustc-free `ComponentNameMap` hold it.
+/// installs it at session setup, before any `TyCtxt` exists, and it is forced only on the first
+/// message rewrite, which happens during trait solving, when a `TyCtxt` *is* in scope
+/// ([`rustc_middle::ty::tls`]). Being a plain `fn` (capturing nothing, reading TLS) lets the
+/// rustc-free `ComponentNameMap` hold it.
 pub fn build_name_map_from_tls() -> HashMap<String, ComponentTraitNames> {
     ty::tls::with_opt(|tcx| tcx.map(build_component_name_map).unwrap_or_default())
 }
@@ -138,11 +138,11 @@ fn provider_names(tcx: TyCtxt<'_>, all_traits: &[DefId]) -> HashMap<DefId, (Stri
 }
 
 /// Provider trait DefId → consumer trait name, found by the consumer's blanket impl
-/// `impl<C> Consumer for C where C: Provider<C>`: a blanket impl bounding its *own* self
-/// type on a known provider trait belongs to that provider's consumer. Requiring the
-/// bound's self type to be the impl's self type is what tells this apart from the
-/// provider blanket impl, which also bounds the same provider trait but on a projected
-/// `<C as DelegateComponent<…>>::Delegate` rather than on `C` itself.
+/// `impl<C> Consumer for C where C: Provider<C>`: a blanket impl bounding its *own* self type on a
+/// known provider trait belongs to that provider's consumer. Requiring the bound's self type to be
+/// the impl's self type tells this apart from the provider blanket impl, which also bounds the same
+/// provider trait but on a projected `<C as DelegateComponent<…>>::Delegate` rather than on `C`
+/// itself.
 fn consumer_names(
     tcx: TyCtxt<'_>,
     all_traits: &[DefId],

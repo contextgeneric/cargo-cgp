@@ -11,12 +11,11 @@
 //! 4. registering a *local* component into an upstream namespace with
 //!    `#[default_impl]` (orphan-safe because the crate owns the component key).
 //!
-//! This is the orphan-*safe* counterpart to the failing orphan-rule fixtures: all
-//! of it must compile. Building the positive `ok/cross_crate_wiring.rs` fixture,
-//! which depends on this crate through a `//@aux-build: cgp-test-crate-b` directive,
-//! is what compile-checks every impl below. (The wirings' runtime behaviour is
-//! exercised by the parent `cgp` project's own test suite, not by the UI harness,
-//! which only compiles fixtures and diffs their diagnostics.)
+//! This is the orphan-*safe* counterpart to the failing orphan-rule fixtures: all of it must
+//! compile. Building the positive `ok/cross_crate_wiring.rs` fixture, which depends on this crate
+//! through a `//@aux-build: cgp-test-crate-b` directive, compile-checks every impl below. (The
+//! wirings' runtime behaviour is exercised by the parent `cgp` project's own test suite, not by the
+//! UI harness, which only compiles fixtures and diffs their diagnostics.)
 //!
 //! See the CGP coherence concept:
 //! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/coherence.md>.

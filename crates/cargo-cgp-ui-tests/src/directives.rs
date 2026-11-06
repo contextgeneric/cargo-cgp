@@ -15,12 +15,12 @@
 //! - `//@quality: acceptable|usability|hidden`: how well the tool presents the error today:
 //!   the cause is presented well, present but buried, or absent from the output.
 //!
-//! A misspelled directive would be a silent no-op, so an unknown `//@name` is rejected, and so is
-//! a known name written in another comment form (`// @aux-build:` with a space, or `//! @json`):
-//! a stray space after `//` is the mistake that has actually happened. A comment that merely
-//! starts with an `@`-path, such as commented-out wiring, stays legal. A directive that holds one
-//! value (`//@codes:`, `//@quality:`, `//@rewrites-falsely:`) is rejected when declared twice, since
-//! the second would silently replace the first.
+//! A misspelled directive would be a silent no-op, so an unknown `//@name` is rejected, and so is a
+//! known name written in another comment form (`// @aux-build:` with a space, or `//! @json`): a
+//! stray space after `//` is the mistake that has actually happened. A comment that merely starts
+//! with an `@`-path, such as commented-out wiring, stays legal. A directive that holds one value
+//! (`//@codes:`, `//@quality:`, `//@rewrites-falsely:`) is rejected when declared twice, since the
+//! second would silently replace the first.
 
 use std::fs;
 use std::path::Path;
@@ -142,7 +142,8 @@ fn apply(directives: &mut Directives, rest: &str, line: &str, name: &str) {
     }
 }
 
-/// Reject a second directive that holds one value, which would otherwise silently replace the first.
+/// Reject a second directive that holds one value, which would otherwise silently replace the
+/// first.
 fn once(already_declared: bool, name: &str, line: &str) {
     assert!(
         !already_declared,

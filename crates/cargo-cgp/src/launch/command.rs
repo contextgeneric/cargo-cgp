@@ -16,10 +16,10 @@ use crate::toolchain::pinned_toolchain;
 /// Build a `cargo <subcommand>` command with the cargo-cgp driver wired in as the workspace
 /// rustc wrapper, ready to run.
 ///
-/// `forwarded_args` are the arguments after the cargo-cgp subcommand; they pass straight
-/// through to cargo. `tool_cargo_args` and `tool_rustc_args` are what the subcommand adds for
-/// cargo and for rustc (`expand`'s `--profile check` and its marker flags); [`cargo_invocation`]
-/// places each on its side of a single `--`.
+/// `forwarded_args` are the arguments after the cargo-cgp subcommand; they pass straight through to
+/// cargo. `tool_cargo_args` and `tool_rustc_args` hold what the subcommand adds for cargo and for
+/// rustc (`expand`'s `--profile check` and its marker flags); [`cargo_invocation`] places each on
+/// its side of a single `--`.
 ///
 /// Unless [`NO_MANAGE_ENV`] is set, the tool *manages* the toolchain: it runs the
 /// `preflight` to confirm a matching driver and the pinned toolchain are present, and

@@ -47,8 +47,8 @@ pub(crate) fn symbol_macro_name(ty: &Type) -> Option<String> {
 }
 
 /// Decode a `Symbol<LEN, Chars<'a', … Nil>>` spine to the string it encodes, or `None` on any
-/// mismatch. The length is compared against the decoded string's **byte** length, because that
-/// is what `Symbol!` bakes in (`str::len()`, not the character count).
+/// mismatch. The length is compared against the decoded string's **byte** length, because `Symbol!`
+/// bakes in that length (`str::len()`, not the character count).
 fn symbol_spine_name(ty: &Type) -> Option<String> {
     let args = type_args(ty, "Symbol")?;
     let [length, spine] = args.as_slice() else {

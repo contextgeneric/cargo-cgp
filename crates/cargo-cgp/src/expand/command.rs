@@ -14,12 +14,12 @@ use crate::launch::{split_forwarded, wrapped_cargo};
 
 /// Expand one target's CGP macros and print the result, returning the exit code to propagate.
 ///
-/// `forwarded_args` are the arguments after `expand`; all but `--item <path>` pass straight through to
-/// cargo, so target selection (`--lib`, `--bin`, `-p`, `--features`, …) is cargo's own, while `--item`
-/// narrows the expansion to one module or item of the target. It is `cargo rustc`
-/// rather than `cargo check` because that is the one subcommand which appends rustc arguments to a
-/// *single* target's invocation, which is what scopes expand mode to the crate the user asked
-/// about, leaving its dependencies to compile normally.
+/// `forwarded_args` are the arguments after `expand`; all but `--item <path>` pass straight through
+/// to cargo, so target selection (`--lib`, `--bin`, `-p`, `--features`, …) is cargo's own, while
+/// `--item` narrows the expansion to one module or item of the target. It is `cargo rustc` rather
+/// than `cargo check` because that is the one subcommand which appends rustc arguments to a
+/// *single* target's invocation, which scopes expand mode to the crate the user asked about,
+/// leaving its dependencies to compile normally.
 ///
 /// A clean expansion stops the compilation yet leaves cargo's status at success, so cargo's code
 /// says whether the compiler reported an error, and [`expansion_exit_code`] reports it. An error
@@ -70,9 +70,9 @@ pub fn run_expand(forwarded_args: &[String]) -> anyhow::Result<i32> {
         None => {
             // Whatever went wrong, the layer that knows has already said so above, cargo when it
             // would not run the expansion at all (a package with several targets needs `--lib` or
-            // `--bin NAME`), the compiler when the crate failed before expanding, the driver when an
-            // `--item` path matched nothing. So this line only reports that nothing came back;
-            // guessing at a cause here is what made it confusing.
+            // `--bin NAME`), the compiler when the crate failed before expanding, the driver when
+            // an `--item` path matched nothing. So this line only reports that nothing came back;
+            // guessing at a cause here made it confusing.
             eprintln!("error: no expansion was produced; see the errors above");
         }
     }
@@ -93,9 +93,10 @@ pub fn write_expansion(out: &mut impl Write, expansion: &str) -> io::Result<()> 
 
 /// The exit code of an expansion, from cargo's code and whether an expansion came back.
 ///
-/// Postcondition: a failure in cargo's code is kept either way, since the compiler reported an error
-/// even when it printed what expanded; and with no expansion the result is never 0, since nothing to
-/// print is a failure whatever cargo's status says (the driver's `--item` miss leaves cargo at 0).
+/// Postcondition: a failure in cargo's code is kept either way, since the compiler reported an
+/// error even when it printed what expanded; and with no expansion the result is never 0, since
+/// nothing to print is a failure whatever cargo's status says (the driver's `--item` miss leaves
+/// cargo at 0).
 pub fn expansion_exit_code(cargo_code: i32, produced: bool) -> i32 {
     match (cargo_code, produced) {
         (0, false) => 1,

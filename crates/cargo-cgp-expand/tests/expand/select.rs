@@ -81,7 +81,7 @@ fn an_unqualified_path_reaches_into_a_module() {
 #[test]
 fn a_trait_selects_the_impls_of_it() {
     // The CGP-shaped case: the generated items for a component are its provider trait and the impls
-    // of it, which is what a reader has in mind when they name the trait.
+    // of it, which a reader has in mind when they name the trait.
     let out = expand_item(PROGRAM, "AreaCalculator");
 
     assert!(out.contains("pub trait AreaCalculator<Context>"), "{out}");
@@ -99,8 +99,8 @@ fn nothing_matching_yields_nothing() {
 
 #[test]
 fn a_crate_root_prefix_is_accepted() {
-    // `crate::contexts::app` is how the module is spelled in the source, so it is what a reader
-    // reaches for; matching is against paths within the crate, which carry no such prefix.
+    // `crate::contexts::app` is how the module is spelled in the source, so a reader reaches for
+    // it; matching is against paths within the crate, which carry no such prefix.
     for spelling in [
         "shapes::Rectangle",
         "crate::shapes::Rectangle",
@@ -124,7 +124,7 @@ fn an_item_path_must_be_identifiers() {
     assert!(ItemPath::parse("crate::shapes").is_some());
     assert!(ItemPath::parse("::shapes").is_some());
 
-    // Declining a malformed path is what keeps a typo from looking like an item that is not there.
+    // Declining a malformed path keeps a typo from looking like an item that is not there.
     assert!(ItemPath::parse("shapes::").is_none());
     // A prefix with nothing after it names nothing.
     assert!(ItemPath::parse("crate").is_none());

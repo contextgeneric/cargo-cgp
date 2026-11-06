@@ -67,9 +67,9 @@ pub struct ExpandRun {
 /// flag to pick it.
 ///
 /// A fixture whose compilation stops before expansion and name resolution finish (a type defined
-/// twice, a `macro_rules!` call matching no rule, or an unclosed delimiter) produces no expansion at
-/// all. The marker is what its snapshot records, which pins that the failure happens before the
-/// compiler type-checks the generated code.
+/// twice, a `macro_rules!` call matching no rule, or an unclosed delimiter) produces no expansion
+/// at all. Its snapshot records the marker, which pins that the failure happens before the compiler
+/// type-checks the generated code.
 pub fn run_fixture_expand(
     harness_crate: &Path,
     fixture: &Path,
@@ -97,9 +97,9 @@ pub fn run_fixture_expand(
 pub const NO_EXPANSION: &str = "// no expansion: compilation stops before macro expansion and name resolution\n\
      // finish, so there is nothing to expand.\n";
 
-/// Compile one fixture through plain `cargo check`, with no `cargo-cgp` or driver, and return
-/// its rendered diagnostics from stderr with its exit status. This records the *original* compiler output for the
-/// fixture, the "before" against which the tool's `.cgp.stderr` is the "after": no
+/// Compile one fixture through plain `cargo check`, with no `cargo-cgp` or driver, and return its
+/// rendered diagnostics from stderr with its exit status. This records the *original* compiler
+/// output for the fixture, the "before" against which the tool's `.cgp.stderr` is the "after": no
 /// diagnostic rewriting, the default trait solver rather than the driver's
 /// `-Znext-solver=globally`, and none of the `--verbose` un-eliding the driver injects.
 ///

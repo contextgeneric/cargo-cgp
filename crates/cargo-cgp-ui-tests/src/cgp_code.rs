@@ -1,5 +1,5 @@
-//! The form of a `CGP-Exxx` code, for the two readers of one: a fixture's `//@codes:` and the tool's
-//! output.
+//! The form of a `CGP-Exxx` code, for the two readers of one: a fixture's `//@codes:` and the
+//! tool's output.
 
 /// The `CGP-Exxx` code `text` starts with: `CGP-E` followed by three digits.
 pub fn cgp_code_at(text: &str) -> Option<&str> {

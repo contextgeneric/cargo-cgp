@@ -14,7 +14,7 @@ use crate::launch::scan_flag;
 /// A bare positional path (`cargo cgp expand my::module`, the way `cargo-expand` takes it) is
 /// deliberately not accepted: with every other argument forwarded untouched, a bare word cannot be
 /// told from the value of a cargo flag (`--bin my_module`) without re-declaring cargo's whole
-/// argument grammar here, which is exactly what forwarding exists to avoid.
+/// argument grammar here, which forwarding exists to avoid.
 pub fn take_item(args: &[String]) -> anyhow::Result<(Vec<String>, Option<String>)> {
     let scan = scan_flag(args, ITEM_FLAG);
     let mut item = None;
@@ -28,8 +28,8 @@ pub fn take_item(args: &[String]) -> anyhow::Result<(Vec<String>, Option<String>
     Ok((scan.remainder, item))
 }
 
-/// Record the path, rejecting an empty one and a second `--item`, since either would leave what gets
-/// expanded ambiguous, and guessing is worse than asking.
+/// Record the path, rejecting an empty one and a second `--item`, since either would leave what
+/// gets expanded ambiguous, and guessing is worse than asking.
 fn set_item(item: &mut Option<String>, path: String) -> anyhow::Result<()> {
     if path.is_empty() {
         bail!("`{ITEM_FLAG}` needs the path of a module or item to expand");
@@ -52,10 +52,10 @@ fn set_item(item: &mut Option<String>, path: String) -> anyhow::Result<()> {
 
 /// Whether `path` is a `::`-separated run of plain identifiers, optionally rooted at the crate.
 ///
-/// Checked here, before anything is compiled, so a typo fails at once rather than after a build that
-/// then matches nothing. The driver parses the path again for real: that parser owns the matching and
-/// the crate-root prefix (`crate::`, `self::`, a leading `::`) it strips, so this is a fail-fast
-/// courtesy rather than the authority, and it only has to be no stricter.
+/// Checked here, before anything is compiled, so a typo fails at once rather than after a build
+/// that then matches nothing. The driver parses the path again for real: that parser owns the
+/// matching and the crate-root prefix (`crate::`, `self::`, a leading `::`) it strips, so this is a
+/// fail-fast courtesy rather than the authority, and it only has to be no stricter.
 fn is_item_path(path: &str) -> bool {
     let path = path.strip_prefix("::").unwrap_or(path);
     !path.is_empty()

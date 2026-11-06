@@ -3,8 +3,8 @@
 use std::ffi::OsString;
 use std::path::Path;
 
-/// Split the user's forwarded arguments at their first `--`: the arguments cargo reads, and the ones
-/// after the separator, which cargo hands to rustc (`None` when there is no separator).
+/// Split the user's forwarded arguments at their first `--`: the arguments cargo reads, and the
+/// ones after the separator, which cargo hands to rustc (`None` when there is no separator).
 pub fn split_forwarded(args: &[String]) -> (&[String], Option<&[String]>) {
     match args.iter().position(|arg| arg == "--") {
         Some(separator) => (&args[..separator], Some(&args[separator + 1..])),

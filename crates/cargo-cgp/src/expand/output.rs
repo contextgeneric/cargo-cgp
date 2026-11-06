@@ -5,8 +5,8 @@ use std::io::{self, ErrorKind};
 use std::path::{Path, PathBuf};
 use std::{env, process};
 
-/// How many names [`ExpansionDir::create_in`] tries before giving up, when other directories already
-/// hold the earlier ones.
+/// How many names [`ExpansionDir::create_in`] tries before giving up, when other directories
+/// already hold the earlier ones.
 const NAME_ATTEMPTS: u32 = 100;
 
 /// A directory only this user can enter, created for one expansion and removed when dropped.
@@ -72,8 +72,8 @@ impl Drop for ExpansionDir {
 ///
 /// `None` means the driver wrote nothing: a build error before expansion, a cargo invocation that
 /// compiled no workspace target, or an `--item` path that matched nothing, which the caller reports
-/// rather than printing nothing. A stale file cannot be mistaken for output, since the directory is new for
-/// each run.
+/// rather than printing nothing. A stale file cannot be mistaken for output, since the directory is
+/// new for each run.
 pub fn read_expansion(path: &Path) -> Option<String> {
     let expansion = fs::read_to_string(path).ok()?;
     (!expansion.trim().is_empty()).then_some(expansion)

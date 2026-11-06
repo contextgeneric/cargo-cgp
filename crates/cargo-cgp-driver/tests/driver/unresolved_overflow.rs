@@ -4,8 +4,8 @@
 //! later use reports an `E0275` overflow on that requirement. The name-resolution pass records the
 //! requirement without the component's parameters (`Person: CanGreet`), and the emitter drops an
 //! overflow on it, with whatever parameters the component takes, as the entry's consequence
-//! (`cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`, "Reshaping an unresolved wiring
-//! name").
+//! (`cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`, "Reshaping an
+//! unresolved wiring name").
 
 use cargo_cgp_driver::emitter::is_unresolved_wiring_overflow;
 use rustc_errors::codes::{E0275, E0277};

@@ -1,7 +1,8 @@
-//! The unit tests of the driver: rustc argument preparation, the expand marker flags, the help
-//! and version answers, the panic containment, the emitter's stage pipeline and its apply step,
-//! the overflow drop for an unresolved wiring value, the post-processing of span labels, the merge
-//! of a diagnostic rustc reports twice, the flush's coalescing, the rebuilt explanation footer, and the anchor list's gates.
+//! The unit tests of the driver: rustc argument preparation, the expand marker flags, the help and
+//! version answers, the panic containment, the emitter's stage pipeline and its apply step, the
+//! overflow drop for an unresolved wiring value, the post-processing of span labels, the merge of a
+//! diagnostic rustc reports twice, the flush's coalescing, the rebuilt explanation footer, and the
+//! anchor list's gates.
 //!
 //! One test target per crate, with a module per subject, keeps the crate to a single test binary.
 

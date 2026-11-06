@@ -6,12 +6,11 @@
 //! `cargo-cgp-driver <path-to-rustc> <rustc args...>`, and we run the real compiler
 //! in-process through [`rustc_driver`] with our own [`callbacks::CgpCallbacks`].
 //!
-//! Besides injecting the diagnostic flags (see [`args`]), the callbacks install a custom
-//! diagnostic [`emitter`] that queries the compiler to name the consumer and provider
-//! traits behind a CGP component marker and rewrites the compiler's wiring notes
-//! accordingly. Aside from those transformations the driver compiles exactly as `rustc`
-//! would. Routing through `rustc_driver` is what gives the emitter access to the live
-//! `TyCtxt` needed to recover those names.
+//! Besides injecting the diagnostic flags (see [`args`]), the callbacks install a custom diagnostic
+//! [`emitter`] that queries the compiler to name the consumer and provider traits behind a CGP
+//! component marker and rewrites the compiler's wiring notes accordingly. Aside from those
+//! transformations the driver compiles exactly as `rustc` would. Routing through `rustc_driver`
+//! gives the emitter access to the live `TyCtxt` needed to recover those names.
 //!
 //! # `rustc_private`
 //!
@@ -23,6 +22,8 @@
 //! The entrypoint is [`run::run`], invoked by the thin `bin/cargo-cgp-driver.rs` wrapper.
 
 #![feature(rustc_private)]
+// Every public item carries a doc line, which the crate's clippy and doc runs hold.
+#![warn(missing_docs)]
 
 extern crate rustc_ast;
 extern crate rustc_ast_pretty;

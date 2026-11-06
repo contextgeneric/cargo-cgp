@@ -65,18 +65,17 @@ pub const CHECK_TARGET_DIR: &str = "target/cgp";
 /// path the driver writes the finished expansion to (`--cgp-expand=<path>`).
 ///
 /// It is passed after `cargo rustc`'s `--`, so cargo appends it to exactly one target's rustc
-/// invocation, which is what scopes expand mode to the crate the user asked about. The driver
-/// strips it from the argument vector before the compiler sees it, since it is no flag of rustc's;
-/// the driver crate declares the same name independently, and the shared string is the contract
-/// between them.
+/// invocation, which scopes expand mode to the crate the user asked about. The driver strips it
+/// from the argument vector before the compiler sees it, since it is no flag of rustc's; the driver
+/// crate declares the same name independently, and the shared string is the contract between them.
 pub const EXPAND_FLAG: &str = "--cgp-expand";
 
 /// The rustc flag through which `cargo cgp expand --item <path>` tells the driver to narrow the
 /// expansion to one module or item (`--cgp-expand-item=<path>`).
 ///
-/// A second flag rather than a second value on [`EXPAND_FLAG`], so each carries one thing. Like that
-/// flag it is stripped by the driver before the compiler sees the argument vector, and the driver
-/// declares the same name independently.
+/// A second flag rather than a second value on [`EXPAND_FLAG`], so each carries one thing. Like
+/// that flag it is stripped by the driver before the compiler sees the argument vector, and the
+/// driver declares the same name independently.
 pub const EXPAND_ITEM_FLAG: &str = "--cgp-expand-item";
 
 /// The crate name of the driver on crates.io, installed by `setup` at the front-end's own

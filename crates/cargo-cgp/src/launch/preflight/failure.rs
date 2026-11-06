@@ -11,19 +11,33 @@ pub enum PreflightFailure {
     /// `rustup` is not on `PATH`, so the toolchain can be neither queried nor installed.
     RustupMissing,
     /// rustup could not run the toolchain's `rustc`, usually because it is not installed.
-    ToolchainUnavailable { stderr: String },
+    ToolchainUnavailable {
+        /// rustup's stderr, which says why.
+        stderr: String,
+    },
     /// The driver process could not be started at all.
-    DriverDidNotStart { error: String },
+    DriverDidNotStart {
+        /// The operating system's error for the failed start.
+        error: String,
+    },
     /// The driver started but failed, usually because the loader could not find the
     /// `librustc_driver` it was built against.
-    DriverDidNotRun { stderr: String },
+    DriverDidNotRun {
+        /// The driver's stderr, which usually holds the loader's message.
+        stderr: String,
+    },
     /// The driver's `--version` output is not the shape this front-end expects.
     UnparsableVersion,
     /// The driver is another release than the front-end.
-    VersionMismatch { driver_version: String },
+    VersionMismatch {
+        /// The version the driver reported.
+        driver_version: String,
+    },
     /// The driver was built by another compiler than the toolchain now provides.
     RustcMismatch {
+        /// The `rustc --version` line the driver was built with.
         built_against: String,
+        /// The `rustc --version` line of the toolchain the preflight queried.
         installed: String,
     },
 }

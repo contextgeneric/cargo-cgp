@@ -22,9 +22,11 @@ pub fn pinned_toolchain() -> String {
 pub enum ToolchainError {
     /// `rustup` could not be started, so no toolchain can be queried or installed.
     RustupMissing,
-    /// rustup ran but the query failed, usually because the toolchain is not installed. Holds
-    /// rustup's stderr, which says why.
-    QueryFailed { stderr: String },
+    /// rustup ran but the query failed, usually because the toolchain is not installed.
+    QueryFailed {
+        /// rustup's stderr, which says why.
+        stderr: String,
+    },
     /// Any other failure to run the query or read its output.
     Other(anyhow::Error),
 }

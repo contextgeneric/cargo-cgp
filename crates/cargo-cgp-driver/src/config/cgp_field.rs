@@ -37,13 +37,13 @@ pub const LIFE_TYPE: &str = "Life";
 pub const FIELD_TYPE: &str = "Field";
 
 /// The name of the type-level position tag (defined by [`CGP_FIELD_CRATE`]): `Index<N>` tags the
-/// `N`th field of a tuple struct or tuple variant inside a [`FIELD_TYPE`] cell, and is what lets a
-/// field list resugar to the tuple form `Struct!(A, B)`.
+/// `N`th field of a tuple struct or tuple variant inside a [`FIELD_TYPE`] cell, and lets a field
+/// list resugar to the tuple form `Struct!(A, B)`.
 pub const INDEX_TYPE: &str = "Index";
 
 /// The trait (defined by [`CGP_FIELD_CRATE`]) every partial record or enum a data derive generates
-/// implements, naming the struct or enum it builds or matches as its `Target`. Its impl is what
-/// marks `__PartialPerson<…>` as a partial value rather than an ordinary type.
+/// implements, naming the struct or enum it builds or matches as its `Target`. Its impl marks
+/// `__PartialPerson<…>` as a partial value rather than an ordinary type.
 pub const PARTIAL_DATA_TRAIT: &str = "PartialData";
 
 /// The associated type of [`PARTIAL_DATA_TRAIT`] that names a partial value's struct or enum.

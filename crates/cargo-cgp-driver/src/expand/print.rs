@@ -25,7 +25,7 @@ impl pprust::PpAnn for NoAnn {}
 /// get to resugar anything.
 ///
 /// The crate is printed through the compiler's own [`pprust::print_crate`], the same call
-/// `-Zunpretty=expanded` makes, so the text handed to the resugaring is exactly what `cargo-expand`
+/// `-Zunpretty=expanded` makes, so the text handed to the resugaring matches what `cargo-expand`
 /// would show. `is_expanded` is set for the same reason it is there: it prints the faked
 /// `#![feature(prelude_import)]` / `#![no_std]` preamble that stops the printed source from
 /// re-injecting libstd.
@@ -58,13 +58,13 @@ pub fn print_expansion(sess: &Session, tcx: TyCtxt<'_>, request: &ExpandRequest)
 
     // An item filter that selected nothing is reported *here*, by the layer that knows: the
     // front-end sees only an absent expansion, and cannot tell a path that names nothing from a
-    // crate that never got far enough to expand. Guessing between them is what made this confusing.
+    // crate that never got far enough to expand. Guessing between them made this confusing.
     //
-    // Printed straight to stderr rather than emitted as a compiler diagnostic, for two reasons. It is
-    // not about the code being compiled, so it should not add to the crate's error count and make
-    // cargo report a failed compilation; and the driver's own diagnostic post-processing would rewrite
-    // it: the module-path strip exists to shorten CGP type names in an error, and it would shorten
-    // the very path this message quotes (`contexts::nope` down to `nope`).
+    // Printed straight to stderr rather than emitted as a compiler diagnostic, for two reasons. It
+    // is not about the code being compiled, so it should not add to the crate's error count and
+    // make cargo report a failed compilation; and the driver's own diagnostic post-processing would
+    // rewrite it: the module-path strip exists to shorten CGP type names in an error, and it would
+    // shorten the very path this message quotes (`contexts::nope` down to `nope`).
     if resugared.is_empty()
         && let Some(item) = &request.item
     {
@@ -85,8 +85,8 @@ pub fn print_expansion(sess: &Session, tcx: TyCtxt<'_>, request: &ExpandRequest)
 /// Build the resugaring options for this request, or `None` when its item path is unusable.
 ///
 /// The front-end checks the path's shape before compiling, so a rejected one here means the two
-/// disagree; warning rather than expanding the whole crate keeps that from looking like a filter that
-/// silently did nothing.
+/// disagree; warning rather than expanding the whole crate keeps that from looking like a filter
+/// that silently did nothing.
 fn expand_options(sess: &Session, request: &ExpandRequest) -> Option<ExpandOptions> {
     let item = match &request.item {
         Some(item) => match ItemPath::parse(item) {

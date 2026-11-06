@@ -92,7 +92,8 @@ fn plain_bound() -> Leaf {
 
 // Property: an `E0308` is explained only by a field or variant state; every other shape the anchor
 // reads is explained by whatever it resolved.
-// Concern: a mismatched argument is usually a plain type error, which a resolution must not replace.
+// Concern: a mismatched argument is usually a plain type error, which a resolution must not
+// replace.
 // Handled: the entry's `accept` reads each cause's leaf.
 #[test]
 fn the_data_call_anchor_accepts_a_mismatch_only_for_a_data_state() {
