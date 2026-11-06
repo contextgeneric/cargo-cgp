@@ -25,13 +25,13 @@
 //!
 //! The header trait is then classified: a CGP *consumer* trait ([`consumer_provider_trait`] yields
 //! its paired provider, a `ConsumerTrait` misuse) or neither a consumer nor a provider trait (a
-//! `NonCgpTrait` misuse). A header that *is* the provider trait is the correct form; even then, each
-//! of the impl's inner-provider `where`-bounds is scanned for a consumer trait (a
+//! `NonCgpTrait` misuse). A header that *is* the provider trait is the correct form; even then,
+//! each of the impl's inner-provider `where`-bounds is scanned for a consumer trait (a
 //! `ConsumerProviderBound` misuse). An inner-provider bound is one on a type parameter other than
-//! `__Context__` whose trait takes `__Context__` as its first argument, the shape `#[use_provider]`
-//! writes; a `#[uses]` bound on the context itself is never one, so its own `E0107` (an arity slip)
-//! keeps rustc's wording. Each candidate carries its own trait-reference span, so the `E0107` that
-//! lands on one selects which is reshaped.
+//! `__Context__` whose trait takes `__Context__` as its first argument after any lifetimes, the
+//! shape `#[use_provider]` writes; a `#[uses]` bound on the context itself is never one, so its own
+//! `E0107` (an arity slip) keeps rustc's wording. Each candidate carries its own trait-reference
+//! span, so the `E0107` that lands on one selects which is reshaped.
 //!
 //! No condition forces a query on the malformed impl itself: the header trait's `DefId` and `Self`'s
 //! kind are read from HIR, and the fingerprint queries touch only the well-formed consumer/provider
@@ -221,18 +221,24 @@ fn inner_bound_misuses(
 }
 
 /// Whether a `where` bound has the shape `#[use_provider]` writes, `Inner: Trait<__Context__, …>`:
-/// its bounded type is a type parameter other than `__Context__`, and its trait's first argument is
-/// `__Context__`. A consumer trait in that shape receives the context it cannot take, the mistake
-/// `CGP-E034` names. A bound on `__Context__` itself, as `#[uses]` writes, is a dependency of the
-/// context, so a wrong argument count there is an ordinary arity slip; and a bound on an inner
-/// provider whose first argument is another type is the program's own, not the attribute's.
+/// its bounded type is a type parameter other than `__Context__`, and its trait's first argument
+/// after any lifetimes is `__Context__`, where the attribute inserts it
+/// (`Inner: CanRead<'a, __Context__, Source>`). A consumer trait in that shape receives the context
+/// it cannot take, the mistake `CGP-E034` names. A bound on `__Context__` itself, as `#[uses]`
+/// writes, is a dependency of the context, so a wrong argument count there is an ordinary arity
+/// slip; and a bound on an inner provider whose first such argument is another type is the
+/// program's own, not the attribute's.
 fn is_inner_provider_bound(bounded: &Ty<'_>, segment: &PathSegment<'_>) -> bool {
     let is_context = |name: Symbol| name.as_str() == CGP_IMPL_CONTEXT_PARAM;
     let Some(bounded) = type_param_name(bounded) else {
         return false;
     };
-    let first_arg = segment.args.and_then(|args| args.args.first());
-    let Some(GenericArg::Type(first)) = first_arg else {
+    let first_after_lifetimes = segment.args.and_then(|args| {
+        args.args
+            .iter()
+            .find(|arg| !matches!(arg, GenericArg::Lifetime(_)))
+    });
+    let Some(GenericArg::Type(first)) = first_after_lifetimes else {
         return false;
     };
     !is_context(bounded) && type_param_name(first.as_unambig_ty()).is_some_and(is_context)
