@@ -1,40 +1,40 @@
 error[E0271]: type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<..>>>>::Value == f64`
-  --> src/main.rs:60:9
+  --> src/main.rs:61:9
    |
-60 |         AreaCalculatorComponent,
+61 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<Rectangle as HasField<Symbol<6, Chars<..>>>>::Value == f64`
    |
 note: expected this to be `f64`
-  --> src/main.rs:49:17
+  --> src/main.rs:50:17
    |
-49 |     pub height: i32,
+50 |     pub height: i32,
    |                 ^^^
 note: required for `Rectangle` to implement `HasRectangleFields`
-  --> src/main.rs:29:1
+  --> src/main.rs:30:1
    |
-29 | #[cgp_auto_getter]
+30 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-30 | pub trait HasRectangleFields {
+31 | pub trait HasRectangleFields {
    |           ^^^^^^^^^^^^^^^^^^
    = note: associated types for the current `impl` cannot be restricted in `where` clauses
    = note: associated types for the current `impl` cannot be restricted in `where` clauses
 note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
-  --> src/main.rs:36:1
+  --> src/main.rs:37:1
    |
-36 | #[cgp_impl(new RectangleArea)]
+37 | #[cgp_impl(new RectangleArea)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-39 |     Self: HasRectangleFields,
+40 |     Self: HasRectangleFields,
    |           ------------------ unsatisfied trait bound introduced here
    = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
 note: required by a bound in `__CheckRectangle`
-  --> src/main.rs:58:1
+  --> src/main.rs:59:1
    |
-58 | / check_components! {
-59 | |     Rectangle {
-60 | |         AreaCalculatorComponent,
-61 | |     }
-62 | | }
+59 | / check_components! {
+60 | |     Rectangle {
+61 | |         AreaCalculatorComponent,
+62 | |     }
+63 | | }
    | |_^ required by this bound in `__CheckRectangle`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

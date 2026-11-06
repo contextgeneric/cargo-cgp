@@ -8,7 +8,7 @@
 //! `#[default_impl]`. Building this fixture compiles both aux crates, so a clean
 //! check confirms every cross-crate impl is coherent.
 //!
-//! This is the orphan-*safe* counterpart to the failing `wiring/orphan/` fixtures.
+//! This is the orphan-*safe* counterpart to the failing `wiring/orphan-rule/` fixtures.
 //!
 //! CGP coherence concept:
 //! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/concepts/coherence.md>.

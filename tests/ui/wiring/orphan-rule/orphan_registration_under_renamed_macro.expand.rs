@@ -1,9 +1,9 @@
 #![feature(prelude_import)]
 //! An orphan registration through `#[cgp_impl]` imported under another name.
 //!
-//! The registration is the same `[CGP-E022]` as `default_impl_foreign_key` writes, and its caret is
-//! the attribute. A `use ... as` changes the path the attribute is written with, so recognizing the
-//! macro has to read its definition rather than that path.
+//! The registration is the same `[CGP-E022]` as `default_impl_foreign_type_key` writes, and
+//! its caret is the attribute. A `use ... as` changes the path the attribute is written with,
+//! so recognizing the macro has to read its definition rather than that path.
 //!
 //! CGP error class:
 //! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/orphan-rule.md>.

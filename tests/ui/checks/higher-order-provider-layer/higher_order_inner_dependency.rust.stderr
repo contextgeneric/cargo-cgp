@@ -1,41 +1,41 @@
 error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponent>` is not satisfied
-  --> src/main.rs:78:9
+  --> src/main.rs:79:9
    |
-78 |         AreaCalculatorComponent,
+79 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<9, Chars<..>>>` is not implemented for `Rectangle`
       but trait `HasField<Symbol<12, Chars<..>>>` is implemented for it
-  --> src/main.rs:64:9
+  --> src/main.rs:65:9
    |
-64 |     pub scale_factor: f64,
+65 |     pub scale_factor: f64,
    |         ^^^^^^^^^^^^
 note: required for `Rectangle` to implement `HasBaseArea`
-  --> src/main.rs:31:1
+  --> src/main.rs:32:1
    |
-31 | #[cgp_auto_getter]
+32 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-32 | pub trait HasBaseArea {
+33 | pub trait HasBaseArea {
    |           ^^^^^^^^^^^
 note: required for `BaseArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
-  --> src/main.rs:41:1
+  --> src/main.rs:42:1
    |
-41 | #[cgp_impl(new BaseArea)]
+42 | #[cgp_impl(new BaseArea)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-44 |     Self: HasBaseArea,
+45 |     Self: HasBaseArea,
    |           ----------- unsatisfied trait bound introduced here
    = note: 1 redundant requirement hidden
    = note: required for `ScaledArea<BaseArea>` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
    = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`
 note: required by a bound in `__CheckRectangle`
-  --> src/main.rs:76:1
+  --> src/main.rs:77:1
    |
-76 | / check_components! {
-77 | |     Rectangle {
-78 | |         AreaCalculatorComponent,
-79 | |     }
-80 | | }
+77 | / check_components! {
+78 | |     Rectangle {
+79 | |         AreaCalculatorComponent,
+80 | |     }
+81 | | }
    | |_^ required by this bound in `__CheckRectangle`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

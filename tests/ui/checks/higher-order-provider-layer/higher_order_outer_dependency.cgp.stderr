@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `scale_factor` on `Rectangle`
-  --> src/main.rs:76:9
+  --> src/main.rs:77:9
    |
-76 |         AreaCalculatorComponent,
+77 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `scale_factor` on `Rectangle`

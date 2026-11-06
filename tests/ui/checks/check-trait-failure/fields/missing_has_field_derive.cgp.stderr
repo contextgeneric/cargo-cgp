@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `HasField` not derived for field `name` of `Person`
-  --> src/main.rs:61:9
+  --> src/main.rs:63:9
    |
-61 |         GreeterComponent,
+63 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E111] `HasField` not derived for field `name` of `Person`

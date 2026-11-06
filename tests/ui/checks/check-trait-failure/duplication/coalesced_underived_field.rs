@@ -10,7 +10,7 @@
 //! **distinct** underived fields on one struct into one lead is deliberate, since the derive
 //! emits an impl per field, so they are one fix (`base_area_2`), but every member here
 //! contributes the **same** field, and the union of their causes therefore repeats it once
-//! per member. `merge_causes_by_leaf` folds those copies back into one cause holding all
+//! per member. `Causes::union` folds those copies back into one cause holding all
 //! three paths before the underived-field coalescing runs, so the lead keeps its
 //! single-field wording rather than reading "the fields `name`, `name`, and `name`", and
 //! the merged tree still renders as the one subsuming chain. The cascade's missing-field

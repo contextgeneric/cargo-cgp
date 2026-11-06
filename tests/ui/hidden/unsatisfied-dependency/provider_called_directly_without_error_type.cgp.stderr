@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E002] missing wiring for `ErrorTypeProviderComponent` on `App`
-  --> src/main.rs:31:13
+  --> src/main.rs:32:13
    |
-31 |     let _ = Add::try_compute(&App, PhantomData::<()>, (1, 2));
+32 |     let _ = Add::try_compute(&App, PhantomData::<()>, (1, 2));
    |             ^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `ErrorTypeProviderComponent` on `App`

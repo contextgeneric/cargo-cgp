@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E001] the trait bound `f64: Eq` is not satisfied
-  --> src/main.rs:57:17
+  --> src/main.rs:59:17
    |
-57 |     let _ = app.scalars_equal(&1.0, &2.0);
+59 |     let _ = app.scalars_equal(&1.0, &2.0);
    |                 ^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E117] the trait bound `f64: Eq` is not satisfied

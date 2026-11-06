@@ -1,8 +1,9 @@
 //! Clean compile: a variant helper attribute of another derive on a `#[derive(CgpData)]` enum.
 //!
-//! `#[default]` belongs to `#[derive(Default)]`, which the enum has. The extractor's companion enums
-//! copy each variant but keep only its `#[cfg]` and documentation attributes, so the `#[default]`
-//! stays on `Mode`, as the expansion shows.
+//! `#[default]` belongs to `#[derive(Default)]`, which the enum has. The extractor's
+//! companion enums copy each variant but keep only its documentation, so the `#[default]`
+//! stays on `Mode`, as the expansion shows. A `#[cfg]` or `#[cfg_attr]` needs no mention:
+//! the compiler evaluates both before a derive sees its input, so neither reaches the filter.
 
 use cgp::prelude::*;
 

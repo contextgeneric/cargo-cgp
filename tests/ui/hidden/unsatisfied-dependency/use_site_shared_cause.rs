@@ -7,7 +7,7 @@
 //! `[CGP-E001]` header.
 //!
 //! Pins that both then appear in the note. The anchor unions the two walks' causes, which
-//! name one shared leaf, and `merge_causes_by_leaf` folds them into a single cause holding
+//! name one shared leaf, and `Causes::union` folds them into a single cause holding
 //! *both* routes, where de-duplicating by leaf and discarding the duplicate's paths would
 //! leave the header promising two failing consumers and the note accounting for one. The
 //! two chains converge on the shared `HasName` hop, so the second `(*)`-truncates there.

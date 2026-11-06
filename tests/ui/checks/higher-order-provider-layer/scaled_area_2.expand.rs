@@ -3,10 +3,11 @@
 //!
 //! The mirror of scaled_area_1: `Rectangle` has `width`/`height` but not
 //! `scale_factor`, so the *outer* `ScaledArea` fails on its own dependency and the
-//! inner `RectangleArea` never runs. The output looks structurally similar to the
-//! inner-failure case, but the "introduced here" caret sits on `ScaledArea`'s clause
-//! and the chain is shorter (the inner provider is never named). The tool's tree names
-//! the layer at fault: `ScaledArea<RectangleArea>` over the missing `scale_factor`.
+//! inner `RectangleArea` never runs. Plain `cargo check` prints output that looks
+//! structurally similar to the inner-failure case, with the "introduced here" caret on
+//! `ScaledArea`'s clause and a shorter `required for …` chain (the inner provider is never
+//! named). The tool's tree names the layer at fault: `ScaledArea<RectangleArea>` over the
+//! missing `scale_factor`.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/higher-order-provider-layer.md.

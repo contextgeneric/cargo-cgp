@@ -7,9 +7,11 @@
 //! `help`. rustc reports it twice on the call, and the repeat resolves to the same cause and is
 //! dropped.
 //!
+//! The knowledge base's `cgp-knowledge-base/cgp/reference/macros/cgp_computer.md`, *Common
+//! Mistakes*, states the rule: the fallible members need an error type on the context, while
+//! `compute` does not.
+//!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
-//! `docs/reference/macros/cgp_computer.md`, *Common Mistakes*: the fallible members need an error
-//! type on the context, while `compute` does not.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

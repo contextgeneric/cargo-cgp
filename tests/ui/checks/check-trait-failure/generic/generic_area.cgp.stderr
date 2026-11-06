@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `width` on `Rectangle`
-  --> src/main.rs:53:9
+  --> src/main.rs:54:9
    |
-53 |         AreaCalculatorComponent: f64,
+54 |         AreaCalculatorComponent: f64,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `width` on `Rectangle`

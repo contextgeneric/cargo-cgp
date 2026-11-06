@@ -6,7 +6,7 @@
 //! with the same root cause. cargo-cgp coalesces them into a single `[CGP-E001]` block
 //! naming both consumers, its caret on one check entry and a label on the other, and the cause once.
 //!
-//! Unlike `duplication/density_3.rs`, where `CanCalculateDensity`'s chain *subsumes*
+//! Unlike `density_3.rs`, where `CanCalculateDensity`'s chain *subsumes*
 //! `CanCalculateArea`'s (density depends on area) and the merged block must lead with the
 //! deeper chain, here neither chain contains the other: they are equal-depth parallel
 //! branches to the same missing field, each through its own getter and provider. With no

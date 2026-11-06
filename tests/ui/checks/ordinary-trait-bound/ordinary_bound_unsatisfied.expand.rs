@@ -10,11 +10,12 @@
 //! accepted lazily; forcing it through `check_components!` surfaces the failure via
 //! `IsProviderFor` as `E0277`, but unlike a missing `HasField` (whose leaf sits in
 //! a `help:` note under a `CanUseComponent` primary), the *primary* error names the
-//! ordinary bound on the concrete type directly (`f64: Eq` is not satisfied), the
-//! `help:` lists the standard types that *do* implement `Eq`, and the `IsProviderFor`
-//! note points at the `Scalar: Eq` bound as "introduced here". The fix is to satisfy
-//! the ordinary trait (wire an `Eq` type such as an integer, or derive/impl `Eq`),
-//! not to wire a component or add a field.
+//! ordinary bound on the concrete type directly (`f64: Eq` is not satisfied), and plain
+//! `cargo check` adds a `help:` listing the standard types that *do* implement `Eq` and
+//! an `IsProviderFor` note pointing at the `Scalar: Eq` bound as "introduced here". The
+//! tool keeps that headline, stamps it `[CGP-E001]`, and states the cause as `[CGP-E117]`
+//! at the foot of its chain. The fix is to satisfy the ordinary trait (wire an `Eq` type
+//! such as an integer, or derive/impl `Eq`), not to wire a component or add a field.
 //!
 //! CGP lowers the bound faithfully and cannot see the wired type violates it, so it
 //! defers to the compiler. This is the same lazy-wiring mechanism as a CGP-trait

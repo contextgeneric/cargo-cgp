@@ -5,16 +5,17 @@
 //! but not `base_area`, so the *outer* layer's dependency holds and the *inner*
 //! layer's fails.
 //!
-//! This fixture pins where the diagnostic locates the failing layer: the
-//! `unsatisfied trait bound introduced here` caret lands on `BaseArea`'s
-//! `Self: HasBaseArea` clause (the inner provider), and the `required for …` chain
-//! runs *through* `ScaledArea<BaseArea>`'s `IsProviderFor` before reaching
-//! `CanUseComponent`, so the outer wrapper appears in the chain even though its own
-//! bound is satisfied. Contrast higher_order_outer_dependency.rs, whose caret lands
-//! on `ScaledArea`'s own clause and whose chain never reaches the inner provider:
-//! the two failures are structurally similar but point at different layers, which
-//! is why `#[check_providers(...)]` exists to assert `IsProviderFor` per layer.
-//! This is the check doing its job, not a macro defect.
+//! This fixture pins where the diagnostic locates the failing layer. Plain `cargo check`
+//! puts the `unsatisfied trait bound introduced here` caret on `BaseArea`'s
+//! `Self: HasBaseArea` clause (the inner provider), and its `required for …` chain runs
+//! *through* `ScaledArea<BaseArea>`'s `IsProviderFor` before reaching `CanUseComponent`,
+//! so the outer wrapper appears in the chain even though its own bound is satisfied. The
+//! tool's tree keeps both layers, the outer `ScaledArea<BaseArea>` entry over the inner
+//! `BaseArea` one, and bottoms out on the missing `base_area` field. Contrast
+//! higher_order_outer_dependency.rs, whose caret lands on `ScaledArea`'s own clause and
+//! whose chain never reaches the inner provider: the two failures are structurally similar
+//! but point at different layers, which is why `#[check_providers(...)]` exists to assert
+//! `IsProviderFor` per layer. This is the check doing its job, not a macro defect.
 //!
 //! See cgp-knowledge-base/cgp/errors/checks/higher-order-provider-layer.md.
 

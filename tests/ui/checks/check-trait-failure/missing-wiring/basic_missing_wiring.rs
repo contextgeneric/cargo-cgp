@@ -5,13 +5,13 @@
 //! not because a field is missing but because a component the wired provider needs
 //! is not delegated at all.
 //!
-//! This is the missing-wiring analog of `missing_dependency`: the
-//! typed resolver walks the same `CanUseComponent` → `IsProviderFor` chain, but the
-//! terminal leaf is an unmet `DelegateComponent<BarProviderComponent>` on the context
-//! rather than an unmet `HasField`. It renders as a `[CGP-E001]` header over one
-//! `root cause: missing wiring for \`BarProviderComponent\` on \`App\`` note, with the
-//! dependency chain bottoming out at the `CanUseBar` trait the missing component
-//! would supply.
+//! This is the missing-wiring analog of `missing_dependency`: the typed resolver
+//! walks the same chain of consumer and provider trait impls, but the terminal leaf is
+//! an unmet `DelegateComponent<BarProviderComponent>` on the context rather than an
+//! unmet `HasField`. It renders as a `[CGP-E001]` header over one
+//! `` root cause: [CGP-E113] missing wiring for `BarProviderComponent` on `App` `` note,
+//! with the dependency chain bottoming out at the `CanUseBar` trait the missing
+//! component would supply.
 //!
 //! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md (its "the wiring
 //! is missing" face) and

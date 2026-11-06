@@ -12,9 +12,9 @@
 //! The resolver tells this apart from a leaf-provider dead-end (a valid provider reached by an input
 //! mismatch, whose real cause runs through its concrete impl) by whether the owner has a concrete
 //! impl of the provider trait at all: `NotAGreeter` has *no* `Greeter` impl, so it is genuinely not
-//! a provider, reported as a [`CGP-E115`] `NotAProvider` leaf: `the provider trait \`Greeter\` is
-//! not implemented for \`NotAGreeter\``, rather than a `[CGP-E002]` block naming the whole
-//! `WrapGreeter<NotAGreeter>` pipeline.
+//! a provider, reported as a `[CGP-E115]` leaf whose text reads
+//! `` `NotAGreeter` is not a provider of `Greeter` ``, rather than a `[CGP-E002]` block naming the
+//! whole `WrapGreeter<NotAGreeter>` pipeline.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
