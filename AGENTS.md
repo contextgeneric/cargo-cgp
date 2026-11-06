@@ -221,7 +221,10 @@ one arm per variant whole, since its length follows the enum rather than a mix o
 `resolve/` imports in one direction, from the `query/` layer up through the walk to the anchors, and a
 detector in `detect/` imports `query/` and other detectors, never the rest of the resolver.
 [Architecture](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/architecture.md)
-gives the order.
+gives the order. The resolver's layers depart from the `mod.rs` convention above:
+`resolve/` declares `query`, `classify`, `walk`, and its other layers as `pub mod`, so an item's
+path names its layer, and re-exports at its root only the anchor list, `ResolveCtx`, and the
+overflow walk.
 
 Prefer plain, side-effect-free functions that take their inputs as parameters and return data. A
 function that *computes* a value (a rewritten message, a diagnostic plan, a dependency tree) is

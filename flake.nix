@@ -28,8 +28,8 @@
         # `rust-toolchain.toml`. That file is the single source of truth for the dated
         # `channel` and its components: `rustc-dev` and `llvm-tools` for the
         # `rustc_private` driver, `rust-src` for the UI snapshots, and `clippy` and
-        # `rustfmt`, which the dev shell below, holding this toolchain alone, lints and
-        # formats with. The crates' `build.rs` scripts read the same file, so the Nix
+        # `rustfmt` for linting and formatting in the dev shell below, which holds this
+        # toolchain alone. The crates' `build.rs` scripts read the same file, so the Nix
         # toolchain can never drift from the pinned one. `rustc-dev` carries
         # `librustc_driver`, which the driver both links at build time and loads at run
         # time, the whole reason a plain nightly is not enough.
