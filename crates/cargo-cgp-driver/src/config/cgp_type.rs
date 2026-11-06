@@ -4,7 +4,7 @@
 /// `UseType<T>`, the blanket provider `#[cgp_type]` generates so no bespoke provider is needed. The
 /// leaf classifier looks for an impl of a provider trait *for* this type to confirm that a
 /// single-associated-type consumer trait really is a `#[cgp_type]` abstract-type component, which
-/// is what earns the mismatch leaf its `abstract type` wording and its `UseType<…>` wiring `help`.
+/// earns the mismatch leaf its `abstract type` wording and its `UseType<…>` wiring `help`.
 pub const USE_TYPE_TYPE: &str = "UseType";
 
 /// The crate that defines [`USE_TYPE_TYPE`] (and `HasType`/`TypeProvider`, CGP's built-in
