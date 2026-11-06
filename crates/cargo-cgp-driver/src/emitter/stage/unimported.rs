@@ -20,8 +20,11 @@ use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict, apply_reshape};
 /// the use sits in, and the use's caret. A later report of the same type is the same mistake when
 /// it shares the item (a second use) or the caret (one signature the macro copied into two items).
 pub struct UnimportedReport {
+    /// The trait declaring the abstract type.
     pub trait_did: DefId,
+    /// The generated item the use sits in.
     pub item: DefId,
+    /// The use's caret.
     pub span: Span,
 }
 
@@ -30,7 +33,9 @@ pub struct UnimportedReport {
 /// requirement they do not declare.
 #[derive(Default)]
 pub struct UnimportedStage {
+    /// The abstract types reported as used but not imported.
     pub reported: Vec<UnimportedReport>,
+    /// The provider impls reported for a requirement they do not declare.
     pub requirement_impls: Vec<DefId>,
 }
 

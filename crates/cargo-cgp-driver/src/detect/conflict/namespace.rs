@@ -13,10 +13,10 @@
 //! provider's `#[default_impl(… in Namespace)]` registration, and the inheritance blanket a
 //! `new Child: Parent` header emits. That last one is why the collision is often not the duplicate
 //! it looks like: the blanket forwards *every* key the parent answers, so binding a key the parent
-//! already registers collides with it. When the parent resolves that key to a `RedirectLookup` (
-//! the shape a component's `#[prefix(...)]` produces), the real mistake is that the key is
-//! addressed by its path, and [`redirect_conflict`] recovers that path so
-//! the message names the entry to write instead.
+//! already registers collides with it. When the parent resolves that key to a `RedirectLookup`, the
+//! shape a component's `#[prefix(...)]` produces, the real mistake is that the key is addressed by
+//! its path, and [`redirect_conflict`] recovers that path so the message names the entry to write
+//! instead.
 
 use cargo_cgp_error_processing::WiringConflict;
 use rustc_middle::ty::TyCtxt;

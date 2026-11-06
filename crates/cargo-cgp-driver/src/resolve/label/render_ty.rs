@@ -14,15 +14,15 @@ use crate::resolve::query::{decode_index, decode_symbol, is_cgp_item, is_nil};
 /// `Either<A, Either<B, Void>>` sum spine to `Sum![A, B]`, so a reader meets the field/variant list
 /// as written rather than its raw right-nested spine. Every cell is anchored by `DefId` to the CGP
 /// crate that defines it (`Cons`/`Nil` in `cgp-base-types`, `Either`/`Void` in `cgp-field`), so a
-/// same-named type from another crate is never resugared. Each element is rendered recursively, so a
-/// nested list (a `Sum!` inside a `Product!`, say) is resugared too; a non-spine type falls back to
-/// its ordinary printed form (whose inner `Symbol!`/`Path!` the post-processing then resugars),
+/// same-named type from another crate is never resugared. Each element is rendered recursively, so
+/// a nested list (a `Sum!` inside a `Product!`, say) is resugared too; a non-spine type falls back
+/// to its ordinary printed form (whose inner `Symbol!`/`Path!` the post-processing then resugars),
 /// with a standalone empty list written `Product![]` or `Sum![]` ([`fold_empty_lists`]).
 ///
 /// A list whose elements are *all* `Field` cells resugars one step further to the CGP `Struct!` or
-/// `Enum!` shape it describes, when the shape has an exact spelling, so a `HasFields` field list reads
-/// as the struct or enum it represents. The spelling rules are shared with the text post-processing
-/// through `cargo_cgp_error_processing::shape`.
+/// `Enum!` shape it describes, when the shape has an exact spelling, so a `HasFields` field list
+/// reads as the struct or enum it represents. The spelling rules are shared with the text
+/// post-processing through `cargo_cgp_error_processing::shape`.
 pub fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     // The call-site anchor's stand-in for a parameter the call leaves to inference: render it as
     // the `_` the programmer would write, never rustc's internal placeholder form.
@@ -32,8 +32,8 @@ pub fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     // A tuple can carry such placeholders in its elements (the call-site anchor recovers a written
     // tuple's *shape* while leaving an unwritten element a placeholder), so render it recursively
     // rather than through `to_string`, which would print the raw `!N` placeholder form. This is the
-    // one non-spine structural type the anchor puts placeholders inside (a reference or ADT argument
-    // stays all-or-nothing, so it never contains one).
+    // one non-spine structural type the anchor puts placeholders inside (a reference or ADT
+    // argument stays all-or-nothing, so it never contains one).
     if let ty::Tuple(elems) = ty.kind() {
         let parts: Vec<String> = elems.iter().map(|elem| render_ty(tcx, elem)).collect();
         return match parts.as_slice() {
@@ -125,9 +125,10 @@ fn render_ty_list<'tcx>(tcx: TyCtxt<'tcx>, elems: &[Ty<'tcx>]) -> String {
 /// The head types of a CGP type-level spine `Cell<Head, Tail>` ended by `Terminator` (the element
 /// list a `Product!`/`Sum!` macro was written with), or `None` when `ty` is not such a spine. The
 /// first cell must be a `Cell` (a bare terminator is not resugared, so an empty list is left as its
-/// terminator type), each `Cell` and the final `Terminator` are checked by `DefId` against the given
-/// CGP crate, and an open-ended spine (a tail that is neither another `Cell` nor the terminator, such
-/// as a generic "rest" parameter) declines so only a fully-terminated list is resugared.
+/// terminator type), each `Cell` and the final `Terminator` are checked by `DefId` against the
+/// given CGP crate, and an open-ended spine (a tail that is neither another `Cell` nor the
+/// terminator, such as a generic "rest" parameter) declines so only a fully-terminated list is
+/// resugared.
 fn cgp_spine<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,

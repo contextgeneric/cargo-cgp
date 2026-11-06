@@ -10,9 +10,9 @@
 //! provider trait written and the consumer trait it pairs with, filling the rustc-free
 //! [`ProviderTraitInUses`] the emitter words into a `[CGP-E037]` header.
 //!
-//! The `E0107` arrives while the compiler lowers the impl's `where` clause, so the bound is read from
-//! the HIR, and the search for the consumer trait skips the trait the impl implements, whose blanket
-//! impl may be the one being lowered.
+//! The `E0107` arrives while the compiler lowers the impl's `where` clause, so the bound is read
+//! from the HIR, and the search for the consumer trait skips the trait the impl implements, whose
+//! blanket impl may be the one being lowered.
 
 use cargo_cgp_error_processing::ProviderTraitInUses;
 use rustc_hir::def_id::DefId;
@@ -136,8 +136,8 @@ fn lacks_only_the_context(tcx: TyCtxt<'_>, provider_did: DefId, segment: &PathSe
     written == 0 || written + 1 == taken
 }
 
-/// Whether a `where` bound's bounded type is the generated context: `Self` in a `#[cgp_fn]` impl, or
-/// the `__Context__` `#[cgp_impl]` writes for it.
+/// Whether a `where` bound's bounded type is the generated context: `Self` in a `#[cgp_fn]` impl,
+/// or the `__Context__` `#[cgp_impl]` writes for it.
 fn bounds_context(bounded: &rustc_hir::Ty<'_>) -> bool {
     let TyKind::Path(QPath::Resolved(None, path)) = bounded.kind else {
         return false;

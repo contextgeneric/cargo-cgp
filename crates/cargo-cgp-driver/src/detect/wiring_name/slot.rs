@@ -1,9 +1,10 @@
 //! Finding the wiring entry or the `#[cgp_impl]` header a name sits in.
 //!
 //! `delegate_components!` keeps the key and the value the user wrote as the spans of the generated
-//! `impl DelegateComponent<Key> for Context { type Delegate = Value; }`, and `#[cgp_impl(Provider)]`
-//! keeps the provider's span as the impl's `Self` type. A name that does not resolve carries no
-//! trace of the macro in its own span, so the position is read back from the HIR.
+//! `impl DelegateComponent<Key> for Context { type Delegate = Value; }`, and
+//! `#[cgp_impl(Provider)]` keeps the provider's span as the impl's `Self` type. A name that does
+//! not resolve carries no trace of the macro in its own span, so the position is read back from the
+//! HIR.
 
 use rustc_hir::def::Res;
 use rustc_hir::def_id::LocalDefId;
@@ -123,8 +124,8 @@ pub fn name_slot_at(tcx: TyCtxt<'_>, span: Span) -> Option<NameSlot<'_>> {
 /// that `delegate_components!` builds from an `@`-path, and if so whether it is a whole segment of
 /// the path (the first argument of a `PathCons`) rather than nested in a segment's generic
 /// arguments. The macro gives the spine its own span and each segment the span the user wrote, so
-/// the unresolved type is found by its own span, as a path that resolves to nothing. `in_spine` says
-/// whether an enclosing type is already a `PathCons`.
+/// the unresolved type is found by its own span, as a path that resolves to nothing. `in_spine`
+/// says whether an enclosing type is already a `PathCons`.
 fn path_segment_at(
     tcx: TyCtxt<'_>,
     ty: &rustc_hir::Ty<'_>,

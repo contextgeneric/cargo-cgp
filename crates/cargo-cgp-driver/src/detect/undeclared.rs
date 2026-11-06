@@ -12,9 +12,9 @@
 //! `impl<__Context__> Greeter<__Context__> for GreetHello`, with `self` renamed to a
 //! `__context__: &__Context__` parameter and `Self` to `__Context__`. Its `Self` is the provider
 //! struct, so the context is the provider trait's first argument instead, and the call is
-//! recognized by its receiver: a parameter or a `let` declared as that context, or the context named
-//! as the qualifying type. A call on a value declared with another type (`value: &Value`) is left
-//! alone, since its fix is a bound on that type, which `#[uses]` cannot express.
+//! recognized by its receiver: a parameter or a `let` declared as that context, or the context
+//! named as the qualifying type. A call on a value declared with another type (`value: &Value`) is
+//! left alone, since its fix is a bound on that type, which `#[uses]` cannot express.
 //!
 //! This module recognizes that shape off the compiler: the failing call sits inside a generated
 //! impl over a bare type-parameter context and is made on that context, the call names a method of
@@ -54,12 +54,12 @@ pub enum UndeclaredCall {
 ///
 /// The three conditions, all read structurally off the compiler:
 /// 1. the failing call sits inside a generated impl over the `__Context__` a `#[cgp_fn]` or
-///    `#[cgp_impl]` generates, never a concrete context (the impl's `Self` for a `#[cgp_fn]` blanket
-///    impl, the provider trait's first argument for a `#[cgp_impl]` provider impl), and is made on
-///    that context: a receiver that is a parameter must be declared as the context, a receiver
-///    whose type no signature gives is accepted only in a `#[cgp_fn]` impl, and an associated
-///    function's qualifying type must name the context. The impl is found by walking up from the
-///    call's own body owner (the generated method) to its parent impl, rather than by span
+///    `#[cgp_impl]` generates, never a concrete context (the impl's `Self` for a `#[cgp_fn]`
+///    blanket impl, the provider trait's first argument for a `#[cgp_impl]` provider impl), and is
+///    made on that context: a receiver that is a parameter must be declared as the context, a
+///    receiver whose type no signature gives is accepted only in a `#[cgp_fn]` impl, and an
+///    associated function's qualifying type must name the context. The impl is found by walking up
+///    from the call's own body owner (the generated method) to its parent impl, rather than by span
 ///    containment: a generated impl's item span does not reliably cover its body;
 /// 2. the call names a method of a CGP trait (a consumer trait, or a
 ///    `#[cgp_fn]`/`#[blanket_trait]` blanket trait); and
@@ -75,7 +75,8 @@ pub fn detect_undeclared_trait(
     // The impl enclosing the failing call. Walk up the def-parent chain from the call's innermost
     // body owner rather than taking a single parent: a plain `#[cgp_fn]` body owner *is* the
     // generated method (parent = impl), but an `#[async_trait]` body is an async-block coroutine
-    // nested inside that method, so the impl is two hops up. Stop at the first enclosing trait impl.
+    // nested inside that method, so the impl is two hops up. Stop at the first enclosing trait
+    // impl.
     let owner = tcx.hir_enclosing_body_owner(call.hir_id);
     let impl_did = enclosing_trait_impl(tcx, owner.to_def_id())?;
     let trait_ref = tcx
@@ -131,10 +132,11 @@ fn generated_context(trait_ref: ty::TraitRef<'_>) -> Option<(Ty<'_>, bool)> {
     matches!(first.kind(), ty::Param(_)).then_some((first, false))
 }
 
-/// Whether the call is on the generated `context`; `blanket_impl` is the impl when its `Self` is the
-/// context. A receiver declared with another type (a `value: &Value` parameter, or a `let` annotated
-/// that way) needs a bound on `Value`, which `#[uses]` cannot give, so it is not this failure. A receiver whose type cannot be read off a signature (a method call's
-/// result) is accepted only in a `#[cgp_fn]` impl, whose `Self` is the context.
+/// Whether the call is on the generated `context`; `blanket_impl` is the impl when its `Self` is
+/// the context. A receiver declared with another type (a `value: &Value` parameter, or a `let`
+/// annotated that way) needs a bound on `Value`, which `#[uses]` cannot give, so it is not this
+/// failure. A receiver whose type cannot be read off a signature (a method call's result) is
+/// accepted only in a `#[cgp_fn]` impl, whose `Self` is the context.
 fn called_on_context<'tcx>(
     tcx: TyCtxt<'tcx>,
     receiver: &CallReceiver<'tcx>,
@@ -245,10 +247,10 @@ fn failing_call_at<'tcx>(tcx: TyCtxt<'tcx>, primary_span: Span) -> Option<Failin
         .last()
 }
 
-/// Whether a written type, the qualifying type of an associated-function call or a `let`'s annotation
-/// with its references peeled, names the generated context: a `#[cgp_impl]` body's `Self`, which the macro writes as the `__Context__` parameter, or
-/// a `#[cgp_fn]` body's `Self`, the alias of a blanket impl whose `Self` is the context
-/// (`blanket_impl`).
+/// Whether a written type, the qualifying type of an associated-function call or a `let`'s
+/// annotation with its references peeled, names the generated context: a `#[cgp_impl]` body's
+/// `Self`, which the macro writes as the `__Context__` parameter, or a `#[cgp_fn]` body's `Self`,
+/// the alias of a blanket impl whose `Self` is the context (`blanket_impl`).
 fn names_context(
     tcx: TyCtxt<'_>,
     qself: &hir::Ty<'_>,
@@ -291,8 +293,8 @@ fn traits_with_assoc_fn(tcx: TyCtxt<'_>, method: Symbol) -> Vec<(DefId, DefId)> 
 /// the trait's parameters it does not: each argument the call writes (or names through a parameter
 /// or an annotated `let`) is unified with the method's declared input, as the call-site anchor
 /// does, and a parameter that stays unknown, or comes out holding a lifetime or a generic parameter
-/// a `#[uses]` bound could not write, is written as the trait's own parameter name for the reader to
-/// replace. `(None, [])` when the trait takes a lifetime or const parameter.
+/// a `#[uses]` bound could not write, is written as the trait's own parameter name for the reader
+/// to replace. `(None, [])` when the trait takes a lifetime or const parameter.
 fn written_bound<'tcx>(
     tcx: TyCtxt<'tcx>,
     trait_did: DefId,

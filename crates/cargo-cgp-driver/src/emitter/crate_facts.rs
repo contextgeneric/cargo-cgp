@@ -15,8 +15,9 @@ pub static EMPTY_AMBIGUOUS_NAMES: LazyLock<AmbiguousNames> = LazyLock::new(Ambig
 /// diagnostic for which the compiler can answer and kept for the rest of the compilation.
 #[derive(Default)]
 pub struct CrateFacts {
-    /// Whether the crate uses CGP ([`resolve::query::crate_uses_cgp`]). A crate that does not use CGP can
-    /// carry no CGP encoding, so its untransformed diagnostics are left exactly as rustc built them.
+    /// Whether the crate uses CGP ([`resolve::query::crate_uses_cgp`]). A crate that does not use
+    /// CGP can carry no CGP encoding, so its untransformed diagnostics are left exactly as rustc
+    /// built them.
     pub cgp_used: OnceCell<bool>,
     /// The type names that name more than one item ([`detect::ambiguous_type_names`]), so the
     /// post-processing keeps the qualifier that tells such a name's items apart. This set knows

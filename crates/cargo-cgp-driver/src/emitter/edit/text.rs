@@ -40,9 +40,9 @@ pub fn rewrite_messages<S>(
 /// across fragments is invisible that way, and rustc splits precisely where it highlights a
 /// *difference* between two types, so its "similar impl" hint shreds a `Symbol<3, Chars<'B', …>>`
 /// into a fragment per character and no fragment matches. So the fragments are then read as the one
-/// line they render as ([`postprocess_fragments`]), and when that recovers something the per-fragment
-/// pass could not, the whole message collapses to that single unstyled string. Losing the
-/// highlighting is the price of the recovery, and it is only paid when there was a construct to
+/// line they render as ([`postprocess_fragments`]), and when that recovers something the
+/// per-fragment pass could not, the whole message collapses to that single unstyled string. Losing
+/// the highlighting is the price of the recovery, and it is only paid when there was a construct to
 /// recover.
 pub fn postprocess_messages(
     messages: &mut Vec<(DiagMessage, Style)>,
@@ -112,11 +112,11 @@ pub fn postprocess_multispan(
 }
 
 /// Post-process every message and span label of `diag` and its children: the final cleanup pass
-/// after a transform. It strips module paths, resugars `Symbol!`, `Path!`, and the type-level lists,
-/// and rewords an unmet `HasField` bound. Whether the context implements `HasField` for any field
-/// is a fact of the whole diagnostic (the "similar impl" landmark can sit far from the clause), so
-/// it is decided once up front and passed into each per-message rewrite. `origin` says whether the
-/// tool rewrote the diagnostic (see [`Origin`]).
+/// after a transform. It strips module paths, resugars `Symbol!`, `Path!`, and the type-level
+/// lists, and rewords an unmet `HasField` bound. Whether the context implements `HasField` for any
+/// field is a fact of the whole diagnostic (the "similar impl" landmark can sit far from the
+/// clause), so it is decided once up front and passed into each per-message rewrite. `origin` says
+/// whether the tool rewrote the diagnostic (see [`Origin`]).
 pub fn postprocess_diag(diag: &mut DiagInner, origin: Origin, ambiguous: &AmbiguousNames) {
     let has_field_impls = mentions_hasfield_impls(diag);
     postprocess_messages(&mut diag.messages, has_field_impls, origin, ambiguous);

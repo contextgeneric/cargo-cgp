@@ -12,13 +12,13 @@ use crate::resolve::query::{
 };
 
 /// The `#[default_impl]` an `E0207` at `primary_span` is about. The registration it generates,
-/// `impl<T, __Components__> Table<…, __Components__> for Key { type Delegate = Provider; }`,
-/// copies the provider impl's generic parameters, so a parameter the key and the table do not
-/// mention is unconstrained; the caret is on that parameter in the provider's impl. Recognized as
-/// a local impl of a namespace lookup trait (not `DelegateComponent`) declaring the parameter at the
-/// caret, which neither its key nor its trait arguments use. A provider struct that uses the
-/// parameter (`ShowWith<T>`) is recognized only for a type key, whose type then stands in for the
-/// parameter in the fix (`ShowWith<String>`). `None` otherwise.
+/// `impl<T, __Components__> Table<…, __Components__> for Key { type Delegate = Provider; }`, copies
+/// the provider impl's generic parameters, so a parameter the key and the table do not mention is
+/// unconstrained; the caret is on that parameter in the provider's impl. Recognized as a local impl
+/// of a namespace lookup trait (not `DelegateComponent`) declaring the parameter at the caret,
+/// which neither its key nor its trait arguments use. A provider struct that uses the parameter
+/// (`ShowWith<T>`) is recognized only for a type key, whose type then stands in for the parameter
+/// in the fix (`ShowWith<String>`). `None` otherwise.
 pub fn detect_generic_default_impl(
     tcx: TyCtxt<'_>,
     primary_span: Span,

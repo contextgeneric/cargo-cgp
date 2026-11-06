@@ -67,11 +67,11 @@ pub fn classify_wiring_conflict(
     let delegate_did = find_cgp_trait(tcx, DELEGATE_COMPONENT_TRAIT, CGP_COMPONENT_CRATE)?;
     let impls = local_delegate_impls(tcx, delegate_did);
 
-    // The conflicting entry is the impl whose def-span the caret sits on. Its presence is what
-    // confirms this `E0119` is a real `DelegateComponent` duplicate. Spans are matched by source
-    // range, not `==`: the `IsProviderFor` and `DelegateComponent` halves of a pair carry the same
-    // caret range but under different `SyntaxContext`s, so an exact comparison would miss the
-    // match for one half.
+    // The conflicting entry is the impl whose def-span the caret sits on. Its presence confirms
+    // this `E0119` is a real `DelegateComponent` duplicate. Spans are matched by source range, not
+    // `==`: the `IsProviderFor` and `DelegateComponent` halves of a pair carry the same caret range
+    // but under different `SyntaxContext`s, so an exact comparison would miss the match for one
+    // half.
     let conflicting = impls
         .iter()
         .find(|i| same_range(i.def_span, primary_span))?;

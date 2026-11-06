@@ -33,8 +33,8 @@ pub struct SubCause {
 }
 
 /// The owned result of resolving one node's subtree: its sub-causes, the fingerprints of every
-/// obligation reachable within the subtree (for the reuse disjointness check), and whether any guard
-/// (the cycle guard or the depth cap) curtailed it: an incomplete subtree is never cached.
+/// obligation reachable within the subtree (for the reuse disjointness check), and whether any
+/// guard (the cycle guard or the depth cap) curtailed it: an incomplete subtree is never cached.
 #[derive(Clone)]
 pub struct SubResult {
     /// The subtree's root-cause sub-chains.
@@ -49,8 +49,8 @@ pub struct SubResult {
 }
 
 impl SubResult {
-    /// A branch the cycle guard or depth cap cut, for `reason`: no causes, and flagged incomplete so
-    /// it is never cached and taints every ancestor up the stack.
+    /// A branch the cycle guard or depth cap cut, for `reason`: no causes, and flagged incomplete
+    /// so it is never cached and taints every ancestor up the stack.
     pub fn cut(reason: WiringOverflow) -> Self {
         Self {
             causes: Vec::new(),

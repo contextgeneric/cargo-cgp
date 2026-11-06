@@ -54,10 +54,10 @@ pub fn provider_step<'tcx>(
 }
 
 /// The growing lookup a depth cut ends: the first obligation in `prefix` that a later one repeats
-/// for the same trait with other arguments, its `Self` type included, the later one being the
-/// first larger requirement, and the provider step just above it. The requirement is named by its
-/// trait and arguments when it grows in its arguments (`CanShow<Vec<u32>>`), and by its `Self` type
-/// when that is what grows (`Vec<u32>`).
+/// for the same trait with other arguments, its `Self` type included, the later one being the first
+/// larger requirement, and the provider step just above it. The requirement is named by its trait
+/// and arguments when it grows in its arguments (`CanShow<Vec<u32>>`), and by its `Self` type when
+/// the `Self` type grows (`Vec<u32>`).
 pub fn growing_lookup<'tcx>(
     tcx: TyCtxt<'tcx>,
     prefix: &[ty::PolyTraitClause<'tcx>],

@@ -12,8 +12,8 @@ pub fn byte_range(span: Span) -> ByteRange {
 }
 
 /// Whether two spans cover the same source range, whatever their expansion contexts. The two halves
-/// of an `E0119` pair are re-spanned onto one entry token but carry different contexts, so matching a
-/// caret to a generated impl compares ranges, not whole spans.
+/// of an `E0119` pair are re-spanned onto one entry token but carry different contexts, so matching
+/// a caret to a generated impl compares ranges, not whole spans.
 pub fn same_range(a: Span, b: Span) -> bool {
     byte_range(a) == byte_range(b)
 }

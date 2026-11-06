@@ -22,7 +22,7 @@ pub fn is_data_trait(tcx: TyCtxt<'_>, did: DefId) -> bool {
 
 /// Whether `did` is one of CGP's extensible-data *operations*: a [data trait](is_data_trait) other
 /// than the field-access traits (`HasField` and its kin), which read or write one field of a value
-/// rather than operate on a whole record or enum. A call to one is what the data-call anchor takes.
+/// rather than operate on a whole record or enum. The data-call anchor takes a call to one.
 pub fn is_data_operation(tcx: TyCtxt<'_>, did: DefId) -> bool {
     is_data_trait(tcx, did)
         && !FIELD_ACCESS_TRAITS
@@ -32,9 +32,10 @@ pub fn is_data_operation(tcx: TyCtxt<'_>, did: DefId) -> bool {
 
 /// Whether `pred` is a data trait's recursion over a type-level list: an obligation of a data trait
 /// whose `Self` is a `Cons`, `Nil`, `Either`, or `Void` cell, such as `CanBuildFrom`'s
-/// `FieldsBuilder` over a record's field list or a cast's `FieldsExtractor` over an enum's variants.
-/// The recursion is how the operation visits each field in turn, not a step the reader took, so its
-/// hops are dropped from the tree and the field or variant it reaches is named by the leaf.
+/// `FieldsBuilder` over a record's field list or a cast's `FieldsExtractor` over an enum's
+/// variants. The recursion is how the operation visits each field in turn, not a step the reader
+/// took, so its hops are dropped from the tree and the field or variant it reaches is named by the
+/// leaf.
 pub fn is_data_list_recursion<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitClause<'tcx>) -> bool {
     let trait_ref = pred.skip_binder().trait_ref;
     if !is_data_trait(tcx, trait_ref.def_id) {

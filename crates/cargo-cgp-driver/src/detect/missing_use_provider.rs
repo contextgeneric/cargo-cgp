@@ -3,17 +3,18 @@
 //! A higher-order provider names an inner provider as a generic parameter and invokes it as an
 //! associated function on the context: `InnerCalculator::area(self)`. For that call to resolve, the
 //! inner parameter must carry the provider-trait bound `InnerCalculator: AreaCalculator<Self>`,
-//! declared idiomatically with `#[use_provider(InnerCalculator: AreaCalculator)]`. When the import is
-//! forgotten, the parameter is unbounded and rustc reports a vague `E0599` ("no associated function
-//! `area` found for type parameter `InnerCalculator` … due to unsatisfied trait bounds"), whose
-//! suggestion leaks the generated `__Context__` and offers the *consumer* trait as a bound, the wrong
-//! fix for a higher-order provider.
+//! declared idiomatically with `#[use_provider(InnerCalculator: AreaCalculator)]`. When the import
+//! is forgotten, the parameter is unbounded and rustc reports a vague `E0599` ("no associated
+//! function `area` found for type parameter `InnerCalculator` … due to unsatisfied trait bounds"),
+//! whose suggestion leaks the generated `__Context__` and offers the *consumer* trait as a bound,
+//! the wrong fix for a higher-order provider.
 //!
 //! This module recognizes that shape off the compiler: the failing call is an associated-function
-//! call `Param::method(…)` whose `Param` is a generic parameter of an enclosing provider-trait impl,
-//! the called method belongs to a CGP *provider* trait, and `Param` is not bounded by that provider
-//! trait. It fills the rustc-free [`MissingUseProvider`] the emitter words into a `[CGP-E031]` header
-//! and `#[use_provider(…)]` help, with a generic component's parameters recovered from the call.
+//! call `Param::method(…)` whose `Param` is a generic parameter of an enclosing provider-trait
+//! impl, the called method belongs to a CGP *provider* trait, and `Param` is not bounded by that
+//! provider trait. It fills the rustc-free [`MissingUseProvider`] the emitter words into a
+//! `[CGP-E031]` header and `#[use_provider(…)]` help, with a generic component's parameters
+//! recovered from the call.
 
 use cargo_cgp_error_processing::MissingUseProvider;
 use rustc_hir::def::DefKind;
@@ -49,7 +50,8 @@ pub fn detect_missing_use_provider(
         return None;
     }
 
-    // The enclosing trait impl, and its own provider trait (a higher-order provider implements one).
+    // The enclosing trait impl, and its own provider trait (a higher-order provider implements
+    // one).
     let owner = tcx.hir_enclosing_body_owner(call_hir_id);
     let impl_did = enclosing_trait_impl(tcx, owner.to_def_id())?;
     // `#[use_provider]` goes on a definition a CGP macro lowers. A type parameter of a hand-written
@@ -60,7 +62,7 @@ pub fn detect_missing_use_provider(
     let impl_trait_ref = tcx.impl_trait_ref(impl_did).skip_binder();
     let impl_trait_did = impl_trait_ref.def_id;
 
-    // The provider impl's own context parameter is what `Self` lowers to in a `#[cgp_impl]` body, so
+    // `Self` in a `#[cgp_impl]` body lowers to the provider impl's own context parameter, so
     // `Self::raise_error(…)` names it; it is the context, never an inner provider, and its missing
     // bound is a `#[uses]` dependency rather than a `#[use_provider]` import.
     if is_provider_trait(tcx, impl_trait_did)
@@ -107,8 +109,8 @@ fn called_provider_trait(
     candidates.next().is_none().then_some(only)
 }
 
-/// The bound `#[use_provider]` declares for the inner provider of the impl `impl_did`, and the trait
-/// parameters it leaves named.
+/// The bound `#[use_provider]` declares for the inner provider of the impl `impl_did`, and the
+/// trait parameters it leaves named.
 fn use_provider_bound<'tcx>(
     tcx: TyCtxt<'tcx>,
     impl_did: DefId,

@@ -36,14 +36,14 @@ pub fn delegated_table_lookups<'tcx>(
 /// The unmet `DelegateComponent` obligation to report when `pred` is one **on the context**, with
 /// any trailing unknown segments trimmed off a redirect-path key, or `None` when `pred` is not one.
 ///
-/// The trim is what makes a call-site-anchored redirect reportable. A `RedirectLookup` keys on the
-/// path *plus the component's parameters*, so a lookup recovered from a call whose input is inferred
+/// The trim makes a call-site-anchored redirect reportable. A `RedirectLookup` keys on the path
+/// *plus the component's parameters*, so a lookup recovered from a call whose input is inferred
 /// carries that placeholder as the path's last segment: the leaf would name an entry the programmer
-/// could not write, and would be dropped as unknowable before it was ever shown. Trimming leaves the
-/// path they can actually wire ([`trim_unknown_path_tail`]). The trimmed leaf claims the context has
-/// no entry under that path for *any* value of the unknown, so it is kept only when the lookup may
-/// hold for none ([`may_hold_for_some_unknown`]); otherwise `pred` is returned untrimmed, and the
-/// placeholder it carries drops it.
+/// could not write, and would be dropped as unknowable before it was ever shown. Trimming leaves
+/// the path they can actually wire ([`trim_unknown_path_tail`]). The trimmed leaf claims the
+/// context has no entry under that path for *any* value of the unknown, so it is kept only when the
+/// lookup may hold for none ([`may_hold_for_some_unknown`]); otherwise `pred` is returned
+/// untrimmed, and the placeholder it carries drops it.
 pub fn missing_context_wiring<'tcx>(
     tcx: TyCtxt<'tcx>,
     pred: ty::PolyTraitClause<'tcx>,

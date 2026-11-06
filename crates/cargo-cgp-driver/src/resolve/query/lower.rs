@@ -11,10 +11,10 @@ use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _};
 use rustc_span::def_id::DefId;
 
-/// Lower a *written* type to its `ty::Ty`, syntactically: a path to an ADT or alias (with
-/// written arguments, a literal const argument among them, defaulted parameters filled in, lifetimes
-/// erased), a primitive, a tuple, a reference, or a slice. `None` for any shape beyond it, declining
-/// the anchor rather than guessing.
+/// Lower a *written* type to its `ty::Ty`, syntactically: a path to an ADT or alias (with written
+/// arguments, a literal const argument among them, defaulted parameters filled in, lifetimes
+/// erased), a primitive, a tuple, a reference, or a slice. `None` for any shape beyond it,
+/// declining the anchor rather than guessing.
 pub fn lower_hir_ty<'tcx>(tcx: TyCtxt<'tcx>, hir_ty: &hir::Ty<'tcx>) -> Option<Ty<'tcx>> {
     match hir_ty.kind {
         hir::TyKind::Path(QPath::Resolved(None, path)) => {
@@ -170,10 +170,10 @@ fn lower_const_lit<'tcx>(
 
 /// The declared return type of a call to a non-generic fn named by path, or to a tuple-struct or
 /// enum-variant constructor (`Shape::Circle(…)`), the expression shapes whose type a
-/// (collection-cached) signature supplies without typeck. `None` for a generic
-/// callee (its instantiation is exactly what inference would have decided), a type-relative path
-/// (`Vec::new`, whose resolution lives only in typeck results), or an output that still carries a
-/// late-bound region (relating it would leak an escaping bound var).
+/// (collection-cached) signature supplies without typeck. `None` for a generic callee (inference
+/// would have decided its instantiation), a type-relative path (`Vec::new`, whose resolution lives
+/// only in typeck results), or an output that still carries a late-bound region (relating it would
+/// leak an escaping bound var).
 pub fn call_output_ty<'tcx>(tcx: TyCtxt<'tcx>, callee: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     let ExprKind::Path(QPath::Resolved(None, path)) = callee.kind else {
         return None;

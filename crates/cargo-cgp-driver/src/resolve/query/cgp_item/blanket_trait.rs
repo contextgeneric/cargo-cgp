@@ -12,8 +12,8 @@ use crate::resolve::query::{is_cgp_crate_trait, is_consumer_trait};
 /// any context meeting the blanket's `where` bounds (a `HasField`, another such trait), so a
 /// failing `Ctx: Trait` bound has a recoverable root cause down those bounds even though the trait
 /// is not a CGP *component* (it has no provider trait or `DelegateComponent`). A CGP consumer trait
-/// also matches (its consumer blanket is a blanket impl), which is harmless: callers that care about
-/// the distinction test
+/// also matches (its consumer blanket is a blanket impl), which is harmless: callers that care
+/// about the distinction test
 /// [`consumer_provider_trait`](crate::resolve::query::consumer_provider_trait) separately.
 ///
 /// The blanket impl alone is far too broad a signal to accept, since `ToString`, `Into`, and

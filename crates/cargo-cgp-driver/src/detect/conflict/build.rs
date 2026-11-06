@@ -26,10 +26,10 @@ pub fn build_conflict<'tcx>(
         key: conflicting.key,
         delegate: conflicting.delegate,
     };
-    // Without the first entry the tool cannot say what the key collides with. rustc labels the first
-    // impl only when it is local; an upstream one (the blanket forwarding of a namespace the context
-    // joins in another crate) appears in a note instead, and calling that a duplicate entry would
-    // be false. So the diagnostic keeps rustc's wording, which names the upstream impl.
+    // Without the first entry the tool cannot say what the key collides with. rustc labels the
+    // first impl only when it is local; an upstream one (the blanket forwarding of a namespace the
+    // context joins in another crate) appears in a note instead, and calling that a duplicate entry
+    // would be false. So the diagnostic keeps rustc's wording, which names the upstream impl.
     let first = first?;
     let first_side = ConflictSide {
         impl_did: first.impl_did,
@@ -64,13 +64,13 @@ pub fn build_conflict<'tcx>(
     }
 }
 
-/// Recognize a collision over one key in which at least one entry redirects it: both redirecting
-/// is a duplicate redirect (naming both targets), one is a redirect collision whose fix names the
-/// other entry's provider. The caller asks only for entries that map one key
-/// ([`maps_one_key`]). A blanket forwarding (a namespace join, or a namespace's inheritance blanket)
-/// redirects when it maps the other entry's concrete key to a `RedirectLookup`, and the message then
-/// names that concrete key. `None` when neither entry redirects. `subject` is the context or the
-/// namespace the collision is reported on.
+/// Recognize a collision over one key in which at least one entry redirects it: both redirecting is
+/// a duplicate redirect (naming both targets), one is a redirect collision whose fix names the
+/// other entry's provider. The caller asks only for entries that map one key ([`maps_one_key`]). A
+/// blanket forwarding (a namespace join, or a namespace's inheritance blanket) redirects when it
+/// maps the other entry's concrete key to a `RedirectLookup`, and the message then names that
+/// concrete key. `None` when neither entry redirects. `subject` is the context or the namespace the
+/// collision is reported on.
 pub fn redirect_conflict<'tcx>(
     tcx: TyCtxt<'tcx>,
     subject: &str,

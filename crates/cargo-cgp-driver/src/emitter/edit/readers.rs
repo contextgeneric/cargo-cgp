@@ -25,11 +25,11 @@ pub fn diag_kind(diag: &DiagInner) -> DiagKind {
     }
 }
 
-/// A span-independent signature of a diagnostic's rendered text: its main message plus each
-/// child's message, in order. Used to de-duplicate a text-rewritten CGP diagnostic the typed
-/// resolver *declined*: the same rewritten wiring error re-reported at another span renders the
-/// same text, so the emitter shows the first and suppresses the rest. It deliberately ignores
-/// spans and labels, since those are exactly what differ between the duplicates.
+/// A span-independent signature of a diagnostic's rendered text: its main message plus each child's
+/// message, in order. Used to de-duplicate a text-rewritten CGP diagnostic the typed resolver
+/// *declined*: the same rewritten wiring error re-reported at another span renders the same text,
+/// so the emitter shows the first and suppresses the rest. It deliberately ignores spans and
+/// labels, since the duplicates differ in exactly those.
 pub fn message_signature(diag: &DiagInner) -> String {
     let mut parts: Vec<&str> = Vec::new();
     for (message, _) in &diag.messages {
@@ -49,21 +49,22 @@ pub fn message_signature(diag: &DiagInner) -> String {
 
 /// Whether `diag` is a downstream `?`-operator cascade: the `Try` / `FromResidual` error rustc
 /// emits when the `?` in `expr?` is applied to a value whose type it could not resolve because an
-/// earlier trait bound on that same expression failed
-/// ([`is_question_mark_cascade_text`]). On its own this is not enough to suppress
-/// (a genuine `?` misuse reads the same), so the emitter pairs it with a span check: the cascade is
-/// dropped only when it sits on an expression where a CGP wiring failure was already reported, where
-/// it merely restates that failure in `Try` terms while dumping the unresolved projected type.
+/// earlier trait bound on that same expression failed ([`is_question_mark_cascade_text`]). On its
+/// own this is not enough to suppress (a genuine `?` misuse reads the same), so the emitter pairs
+/// it with a span check: the cascade is dropped only when it sits on an expression where a CGP
+/// wiring failure was already reported, where it merely restates that failure in `Try` terms while
+/// dumping the unresolved projected type.
 pub fn is_question_mark_cascade(diag: &DiagInner) -> bool {
     main_message_text(diag).is_some_and(is_question_mark_cascade_text)
 }
 
 /// Whether `diag` is the method probe's "no method named `…` found" `E0599` (or "no associated
 /// function or constant named `…`" for a type-relative path call), the probe having found no impl
-/// of a trait that declares the item. Its main message is a translatable one, so it is recognized by the arguments
-/// that message names (`item_kind`, `item_ident`), which the resolution-class `E0599`s ("no variant
-/// named …") do not carry. The probe builds the method-bounds `E0599` from the same diagnostic and
-/// replaces its message with a plain string, so a plain-string message rules this shape out.
+/// of a trait that declares the item. Its main message is a translatable one, so it is recognized
+/// by the arguments that message names (`item_kind`, `item_ident`), which the resolution-class
+/// `E0599`s ("no variant named …") do not carry. The probe builds the method-bounds `E0599` from
+/// the same diagnostic and replaces its message with a plain string, so a plain-string message
+/// rules this shape out.
 pub fn is_no_matching_item(diag: &DiagInner) -> bool {
     diag.code == Some(E0599)
         && main_message_text(diag).is_none()

@@ -29,9 +29,13 @@ impl Verdict {
 /// buffered. Replacing the header always drops rustc's own notes and suggestions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Reshape {
+    /// The class's wording: the header, notes, and helps that replace rustc's.
     pub plan: ClassPlan,
+    /// Which of rustc's spans stay.
     pub span: SpanPolicy,
+    /// Whether the result's spans anchor a later `?` cascade on the same expression.
     pub records_spans: bool,
+    /// The edit of the diagnostics already buffered.
     pub buffer_edit: BufferEdit,
 }
 
@@ -61,7 +65,9 @@ pub enum SpanPolicy {
     /// The two definitions of a generated name defined twice: the primary span labelled `second`
     /// and the span rustc labels as the earlier definition labelled `first`.
     TwoDefinitions {
+        /// The label of the earlier definition.
         first: &'static str,
+        /// The label of the primary span, the later definition.
         second: &'static str,
     },
 }
@@ -74,7 +80,12 @@ pub enum BufferEdit {
     /// Drop the buffered siblings of a `#[cgp_impl]` header mistake: the macro-lowering errors in
     /// the impl at `impl_span` or at the macro call site `macro_span`, which can arrive before the
     /// error the mistake is recognized from.
-    DropCgpImplSiblings { impl_span: Span, macro_span: Span },
+    DropCgpImplSiblings {
+        /// The span of the impl the macro wrote.
+        impl_span: Span,
+        /// The macro's call site.
+        macro_span: Span,
+    },
     /// Remove the buffered entry at this index, the partner the reshape words together with its
     /// own diagnostic.
     Remove(usize),

@@ -25,8 +25,8 @@ pub enum NodeStep<'tcx> {
     Descend(Vec<ty::PolyTraitClause<'tcx>>),
 }
 
-/// Choose what the node `erased` does: the context-wiring leaf, a misdirected provider's own needs, or
-/// the unmet `where`-obligations of the impl that would satisfy it.
+/// Choose what the node `erased` does: the context-wiring leaf, a misdirected provider's own needs,
+/// or the unmet `where`-obligations of the impl that would satisfy it.
 ///
 /// An unmet `DelegateComponent` on the **context** is the missing-wiring leaf, whatever impl
 /// nominally matches it. Normally none does and the no-impl terminal catches it, but a
@@ -118,10 +118,11 @@ pub fn select_children<'tcx>(
     }
 }
 
-/// `failing` without the check-trait scaffolding, wherever it appears as a dependency: the generated
-/// blanket impls carry a `CanUseComponent`/`IsProviderFor` bound *beside* the real consumer or
-/// provider-trait obligation, and only the latter is walked, since the `IsProviderFor` bound just
-/// re-states the provider's `where` clause, which the real provider impl already carries.
+/// `failing` without the check-trait scaffolding, wherever it appears as a dependency: the
+/// generated blanket impls carry a `CanUseComponent`/`IsProviderFor` bound *beside* the real
+/// consumer or provider-trait obligation, and only the latter is walked, since the `IsProviderFor`
+/// bound just re-states the provider's `where` clause, which the real provider impl already
+/// carries.
 pub fn unmet_clauses<'tcx>(
     tcx: TyCtxt<'tcx>,
     failing: &[ty::PolyTraitClause<'tcx>],

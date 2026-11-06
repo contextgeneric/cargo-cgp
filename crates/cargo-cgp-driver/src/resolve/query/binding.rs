@@ -45,9 +45,9 @@ pub fn param_declared_input<'tcx>(tcx: TyCtxt<'tcx>, binding: HirId) -> Option<T
 /// results, which do not exist yet for the body whose type checking is reporting the error. `None`
 /// when `binding` is not a parameter.
 ///
-/// An `async fn` body sees its parameters through fresh bindings, since lowering moves each into the
-/// future with an untyped `let __context__ = __context__;`, so such a forwarding `let` is followed
-/// back to the parameter it copies.
+/// An `async fn` body sees its parameters through fresh bindings, since lowering moves each into
+/// the future with an untyped `let __context__ = __context__;`, so such a forwarding `let` is
+/// followed back to the parameter it copies.
 pub fn param_declared_input_binder<'tcx>(
     tcx: TyCtxt<'tcx>,
     mut binding: HirId,

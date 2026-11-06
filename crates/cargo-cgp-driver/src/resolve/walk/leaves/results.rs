@@ -1,4 +1,5 @@
-//! Building the sub-result of a node that ends a path: a terminal leaf, a cause, or a projection mismatch.
+//! Building the sub-result of a node that ends a path: a terminal leaf, a cause, or a projection
+//! mismatch.
 
 use cargo_cgp_error_processing::Leaf;
 use rustc_data_structures::fingerprint::Fingerprint;
@@ -21,9 +22,9 @@ pub fn terminal_result<'tcx>(
     context: Ty<'tcx>,
     self_fp: Fingerprint,
 ) -> SubResult {
-    // A leaf still carrying one of the seed's unknown-parameter placeholders (the call-site anchor's
-    // stand-in for a call's inferred input) is a bound on a type the recovery could not know, so it
-    // is dropped rather than reported as a fabricated `_: Send`.
+    // A leaf still carrying one of the seed's unknown-parameter placeholders (the call-site
+    // anchor's stand-in for a call's inferred input) is a bound on a type the recovery could not
+    // know, so it is dropped rather than reported as a fabricated `_: Send`.
     if erased.has_placeholders() {
         return SubResult::empty(self_fp);
     }
@@ -53,10 +54,10 @@ pub fn cause_result<'tcx>(
     SubResult::cause(label_for(tcx, erased, context), leaf, &[self_fp])
 }
 
-/// Build the sub-result for a projection mismatch: the impl matched with every trait-clause holding,
-/// but an associated type it projects through carries the wrong type. The node itself becomes a chain
-/// hop (its label) and the projection's own trait ref is the terminal leaf, carrying the mismatch.
-/// `parent_ref` (the node's own trait) is that leaf's parent.
+/// Build the sub-result for a projection mismatch: the impl matched with every trait-clause
+/// holding, but an associated type it projects through carries the wrong type. The node itself
+/// becomes a chain hop (its label) and the projection's own trait ref is the terminal leaf,
+/// carrying the mismatch. `parent_ref` (the node's own trait) is that leaf's parent.
 pub fn projection_result<'tcx>(
     tcx: TyCtxt<'tcx>,
     erased: ty::PolyTraitClause<'tcx>,

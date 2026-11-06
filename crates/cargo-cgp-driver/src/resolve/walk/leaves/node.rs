@@ -17,16 +17,16 @@ use crate::resolve::walk::{
 /// cyclic wiring cannot make it loop. Each logical wiring hop expands to several walk frames: a
 /// consumer obligation, the delegation-routing provider obligation, a `RedirectLookup`, the real
 /// provider obligation, then the next consumer, so a deeply nested data type (e.g. a
-/// `Vec<Vec<record>>` threaded through iterator/deref/record providers) reaches
-/// its root cause only tens of frames down. The bound is set well above that so a genuine chain
-/// resolves rather than declining to the raw fallback, but not so high that a *divergent* wiring (
-/// one whose obligations keep growing without ever exactly repeating, which the cycle guard cannot
-/// catch), grinds through the trait solver at every frame for a long time before giving up.
+/// `Vec<Vec<record>>` threaded through iterator/deref/record providers) reaches its root cause only
+/// tens of frames down. The bound is set well above that so a genuine chain resolves rather than
+/// declining to the raw fallback, but not so high that a *divergent* wiring grinds through the
+/// trait solver at every frame for a long time before giving up. A divergent wiring's obligations
+/// keep growing without ever exactly repeating, so the cycle guard cannot catch it.
 pub const MAX_DEPTH: u32 = 256;
 
-/// Resolve one node of the dependency graph to its owned, node-rooted sub-causes, memoized in
-/// the context's cache. `pred` is the (already region-erased) failing obligation, `parent` the trait of the
-/// obligation directly above it (needed only to classify a terminal leaf), `context` the root
+/// Resolve one node of the dependency graph to its owned, node-rooted sub-causes, memoized in the
+/// context's cache. `pred` is the (already region-erased) failing obligation, `parent` the trait of
+/// the obligation directly above it (needed only to classify a terminal leaf), `context` the root
 /// context, and `prefix` the chain of ancestors above `pred` (for the cycle guard and the reuse
 /// disjointness check). A `HasField`, or an obligation with no satisfying impl, or a foreign bound
 /// with nothing context-side to follow, is a terminal leaf; anything else descends into the unmet
@@ -93,10 +93,10 @@ pub fn guard_cut<'tcx>(
     }
 
     // Cycle guard: if this exact obligation already appears among its own ancestors, the wiring
-    // loops (a `UseContext` cycle routes `Ctx: CanUseComponent<C>` straight back to itself), so this
-    // branch carries no new root cause, so stop rather than descend the loop. Regions are erased so a
-    // loop that only differs by lifetime is still seen. The cut flags the subtree incomplete, which
-    // propagates up so no ancestor whose result depended on the cut is cached.
+    // loops (a `UseContext` cycle routes `Ctx: CanUseComponent<C>` straight back to itself), so
+    // this branch carries no new root cause, so stop rather than descend the loop. Regions are
+    // erased so a loop that only differs by lifetime is still seen. The cut flags the subtree
+    // incomplete, which propagates up so no ancestor whose result depended on the cut is cached.
     if prefix
         .iter()
         .any(|ancestor| tcx.erase_and_anonymize_regions(*ancestor) == erased)
@@ -114,11 +114,11 @@ pub fn guard_cut<'tcx>(
 /// The context a node is about, given the `context` above it.
 ///
 /// Cross-context handoff: a consumer obligation whose `Self` is a *different* context is the
-/// cross-context dependency shape: one context's wiring depends on a concrete other context. Re-root
-/// the subtree at that context, so its nodes are labeled and classified against the context they are
-/// actually about: a consumer node reads `for context Inner` (not a plain foreign bound), its
-/// delegation-routing hop is recognized as routing and dropped, and its getter leaf decodes to a
-/// missing field rather than an opaque bound. Re-rooting also keys this node identically to that
+/// cross-context dependency shape: one context's wiring depends on a concrete other context.
+/// Re-root the subtree at that context, so its nodes are labeled and classified against the context
+/// they are actually about: a consumer node reads `for context Inner` (not a plain foreign bound),
+/// its delegation-routing hop is recognized as routing and dropped, and its getter leaf decodes to
+/// a missing field rather than an opaque bound. Re-rooting also keys this node identically to that
 /// context's own walk, so the two share the cache. This only fires cross-context; in single-context
 /// wiring every consumer obligation is already on the root context.
 pub fn rooted_context<'tcx>(

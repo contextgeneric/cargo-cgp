@@ -24,10 +24,10 @@ pub fn holds_projection<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyProjectionClause<
     infcx.predicate_must_hold_modulo_regions(&obligation)
 }
 
-/// Whether `pred` may hold for *some* value of the call-site unknowns it carries: each unknown-input
-/// placeholder becomes an inference variable, and the solver is asked whether any impl could apply.
-/// A leaf that fails only for the placeholder but may hold for a real value states nothing the
-/// programmer can act on.
+/// Whether `pred` may hold for *some* value of the call-site unknowns it carries: each
+/// unknown-input placeholder becomes an inference variable, and the solver is asked whether any
+/// impl could apply. A leaf that fails only for the placeholder but may hold for a real value
+/// states nothing the programmer can act on.
 pub fn may_hold_for_some_unknown<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitClause<'tcx>) -> bool {
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
     let pred = placeholders_to_infer(&infcx, pred);

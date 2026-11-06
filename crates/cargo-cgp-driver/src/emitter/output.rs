@@ -24,8 +24,8 @@ pub struct Output<E> {
     /// sharing one root cause can be coalesced into one block. The compiler streams diagnostics one
     /// at a time with no end-of-compilation hook, so a headline listing every consumer one mistake
     /// breaks can only be built once they have all arrived, which is why the emitter flushes from
-    /// its `Drop`. A coalescible [`BufEntry::Resolved`] joins the group of every failure it shares a
-    /// root cause with; anything else is a [`BufEntry::Plain`] emitted at its original position.
+    /// its `Drop`. A coalescible [`BufEntry::Resolved`] joins the group of every failure it shares
+    /// a root cause with; anything else is a [`BufEntry::Plain`] emitted at its original position.
     pub buffer: Vec<BufEntry>,
     /// The requirements that wiring entries with an unresolved value leave unprovable, recorded by
     /// the name-resolution pass after expansion, so the emitter drops a later `E0275` overflow on

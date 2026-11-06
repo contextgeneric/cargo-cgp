@@ -73,22 +73,22 @@ pub fn resolve_use_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolv
 ///
 /// - A **bare component marker** (`ItemEncoderComponent`) re-checks with the unit parameter `()`,
 ///   the parameterless form an ordinary component's use-site failure exercises, *unless* the same
-///   component is `open`-dispatched (below), in which case its `()` form is meaningless (there is no
-///   unit-keyed value) and would report a spurious `@Component.()` redirect, or the component has
-///   type parameters, whose values a bare marker does not carry, so it is skipped.
+///   component is `open`-dispatched (below), in which case its `()` form is meaningless (there is
+///   no unit-keyed value) and would report a spurious `@Component.()` redirect, or the component
+///   has type parameters, whose values a bare marker does not carry, so it is skipped.
 /// - An **`open`-dispatch redirect path** (`PathCons<ItemEncoderComponent, PathCons<Value, Nil>>`,
 ///   emitted by an `@Component.Value:` entry) is *not* a component marker: re-checking it as one
 ///   reports the internal `PathCons` spine as a bogus consumer trait. Instead the real dispatch
 ///   parameter is recovered from the path, re-checking the consumer obligation `Ctx:
 ///   Consumer<Value>` so the failure is traced with the value the context actually wired (a longer,
 ///   non-two-segment path is skipped rather than mis-rendered).
-/// - A **blanket-forwarding key** (a bare type parameter (`__Key__`)) is the impl a `namespace …;`
+/// - A **blanket-forwarding key**, a bare type parameter (`__Key__`), is the impl a `namespace …;`
 ///   join emits (`impl<__Key__> DelegateComponent<__Key__> for Ctx`), which forwards *every* lookup
 ///   to the namespace rather than naming a concrete component. It is not a real wired key, and
 ///   re-checking a free parameter bottoms out on `__Key__: Sized` noise under a bogus `__Key__`
 ///   consumer-trait header, so it is skipped (as the generic-catch-all `open` value is). The
-///   context's concrete wiring lives in the namespace, out of this per-context view, so a
-///   pure namespace join yields no target and the use-site resolver declines rather than fabricate a
+///   context's concrete wiring lives in the namespace, out of this per-context view, so a pure
+///   namespace join yields no target and the use-site resolver declines rather than fabricate a
 ///   cause.
 fn delegated_check_targets<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -153,12 +153,12 @@ fn delegated_check_targets<'tcx>(
 }
 
 /// Recover the `(component, value)` an `open`-dispatch redirect key stands for (the two-segment
-/// path an `@Component.Value:` wiring entry emits), so a use-site re-check can use the real dispatch
-/// value rather than the raw path. The key is `PathCons<Component, PathCons<Value, Tail>>`, where
-/// `Tail` is the `Nil` terminator or the generic wildcard the macro leaves for prefix matching; both
-/// mark a two-segment key. `None` when `key` is not such a path: a bare marker, or a genuine
-/// three-plus-segment namespace route (whose `Tail` is a further `PathCons`), which the caller skips
-/// rather than mis-render.
+/// path an `@Component.Value:` wiring entry emits), so a use-site re-check can use the real
+/// dispatch value rather than the raw path. The key is
+/// `PathCons<Component, PathCons<Value, Tail>>`, where `Tail` is the `Nil` terminator or the
+/// generic wildcard the macro leaves for prefix matching; both mark a two-segment key. `None` when
+/// `key` is not such a path: a bare marker, or a genuine three-plus-segment namespace route (whose
+/// `Tail` is a further `PathCons`), which the caller skips rather than mis-render.
 fn open_dispatch_target<'tcx>(tcx: TyCtxt<'tcx>, key: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
     let comp_rest = path_cons_parts(tcx, key)?;
     let value_rest = path_cons_parts(tcx, comp_rest.1)?;
@@ -169,8 +169,9 @@ fn open_dispatch_target<'tcx>(tcx: TyCtxt<'tcx>, key: Ty<'tcx>) -> Option<(Ty<'t
 }
 
 /// Whether `ty` ends a `PathCons` spine at the second segment: either CGP's `Nil` terminator or the
-/// generic wildcard parameter the `open` expansion leaves as the tail (so the entry prefix-matches).
-/// A further `PathCons` here means the path has a third segment, so it is not a two-segment key.
+/// generic wildcard parameter the `open` expansion leaves as the tail (so the entry
+/// prefix-matches). A further `PathCons` here means the path has a third segment, so it is not a
+/// two-segment key.
 fn is_path_terminator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     is_nil(tcx, ty) || matches!(ty.kind(), ty::Param(_))
 }

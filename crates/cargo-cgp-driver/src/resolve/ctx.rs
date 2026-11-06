@@ -13,6 +13,8 @@ use crate::resolve::cache::ResolveCache;
 /// anchors and the walk. A detector that never reads the cache takes the `TyCtxt` alone.
 #[derive(Clone, Copy)]
 pub struct ResolveCtx<'a, 'tcx> {
+    /// The compiler handle, valid only inside the emitter's `ty::tls::with_opt` closure.
     pub tcx: TyCtxt<'tcx>,
+    /// The cache the emitter keeps for the whole compilation.
     pub cache: &'a ResolveCache,
 }

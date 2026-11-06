@@ -1,8 +1,8 @@
 //! A check entry that names no parameters for a component that takes some.
 //!
 //! `check_components!` and `delegate_and_check_components!` check a component at the parameters an
-//! entry names, and an entry that names none is checked at the unit parameters `()`. For a component
-//! with type parameters (`CanCalculateArea<Shape>`), or a key whose marker carries one
+//! entry names, and an entry that names none is checked at the unit parameters `()`. For a
+//! component with type parameters (`CanCalculateArea<Shape>`), or a key whose marker carries one
 //! (`<I> FooKeyComponent<I>`), that asks whether the context can use the component at `()`, which a
 //! provider written for particular parameters does not serve, so the check fails with an `E0277` on
 //! `Provider: IsProviderFor<Marker, Context>` that reads like a broken provider.
@@ -59,9 +59,9 @@ pub fn detect_check_at_unit_parameters(
 
 /// The parameters the context can be checked at for `marker`: the `Params` of each `IsProviderFor`
 /// impl whose component and context unify with the check's, fully resolved (a provider generic over
-/// every parameter offers none), and kept only when `Context: CanUseComponent<Marker, Params>` holds
-/// in the check impl's environment. Each is written as the compiler prints it, deduplicated, in impl
-/// order.
+/// every parameter offers none), and kept only when `Context: CanUseComponent<Marker, Params>`
+/// holds in the check impl's environment. Each is written as the compiler prints it, deduplicated,
+/// in impl order.
 fn checkable_parameters<'tcx>(
     tcx: TyCtxt<'tcx>,
     check_impl: DefId,

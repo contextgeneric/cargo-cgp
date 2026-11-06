@@ -4,8 +4,8 @@
 //! clause on the provider trait (`trait Greeter<__Context__> where __Context__: HasName`), so every
 //! provider must declare the bound. `#[cgp_impl]` writes a provider's declarations from its own
 //! `#[uses(…)]` and `#[use_type(…)]`, and a provider that omits one fails the provider trait's
-//! `where` clause: an `E0277` on `__Context__`, at the `#[cgp_impl]` attribute or a method signature,
-//! "required by a bound in `Greeter`".
+//! `where` clause: an `E0277` on `__Context__`, at the `#[cgp_impl]` attribute or a method
+//! signature, "required by a bound in `Greeter`".
 //!
 //! This module recovers the provider impl the error sits in and every requirement of its provider
 //! trait that does not hold under the impl's own declarations, filling the rustc-free
@@ -35,8 +35,8 @@ pub struct DetectedUndeclaredRequirement {
     pub impl_did: DefId,
     /// The provider impl's full span, holding every use of the types it names.
     pub impl_span: Span,
-    /// Each requirement's trait, in the order of [`UndeclaredRequirement::requirements`], and for an
-    /// abstract-type component the name of the type it declares.
+    /// Each requirement's trait, in the order of [`UndeclaredRequirement::requirements`], and for
+    /// an abstract-type component the name of the type it declares.
     pub traits: Vec<(DefId, Option<String>)>,
 }
 

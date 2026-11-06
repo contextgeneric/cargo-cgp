@@ -23,10 +23,10 @@ use crate::resolve::query::{
 /// obligation is not one this leaf words. A builder's or an extractor's partial value records each
 /// field's or variant's state in a marker, so the obligation names the field or variant at fault:
 ///
-/// - `UpdateField<Tag, M>` on a builder: with no impl, the struct lacks the field (the missing-field
-///   leaf); with its `Mapper` found set where the update needs it unset, the field is already set;
-///   found unset where the update needs it set, the field is not set; found set or unset where an
-///   optional builder's update needs it optional, the field is not optional.
+/// - `UpdateField<Tag, M>` on a builder: with no impl, the struct lacks the field (the
+///   missing-field leaf); with its `Mapper` found set where the update needs it unset, the field is
+///   already set; found unset where the update needs it set, the field is not set; found set or
+///   unset where an optional builder's update needs it optional, the field is not optional.
 /// - `FinalizeBuild` on a builder: the fields it does not hold are not set.
 /// - `ExtractField<Tag>` on an extractor with no impl: the enum lacks the variant, or the extractor
 ///   has already ruled it out.
@@ -37,8 +37,8 @@ use crate::resolve::query::{
 /// - a trait only a data derive implements (`HasFields`, `HasExtractor`, `HasBuilder`, …): unmet on
 ///   a type that is not a partial value, the type does not implement it, and a `help` names the
 ///   derive when it can be added there; unmet on a partial value, the operation was given a builder
-///   or an extractor where the struct or enum belongs, and a `help` names the method a partial value
-///   takes instead when its `parent` operation has one that holds.
+///   or an extractor where the struct or enum belongs, and a `help` names the method a partial
+///   value takes instead when its `parent` operation has one that holds.
 pub fn classify_data_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
@@ -160,8 +160,8 @@ fn finalize_extract_leaf<'tcx>(tcx: TyCtxt<'tcx>, self_ty: Ty<'tcx>) -> Option<L
     })
 }
 
-/// The leaf for an unmet `FromVariant<Tag>` on an enum: the variant's payload has the wrong type, or
-/// the enum lacks the variant; an enum with no `FromVariant` impl at all lacks the derive, which
+/// The leaf for an unmet `FromVariant<Tag>` on an enum: the variant's payload has the wrong type,
+/// or the enum lacks the variant; an enum with no `FromVariant` impl at all lacks the derive, which
 /// [`derive_leaf`] words.
 fn from_variant_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -199,9 +199,9 @@ fn from_variant_leaf<'tcx>(
 }
 
 /// The leaf for an unmet trait only a data derive implements (`HasFields`, `HasExtractor`,
-/// `HasBuilder`, …): on a partial value, the operation was given a builder or an extractor where the
-/// struct or enum belongs; on any other type, the type does not implement the trait. `None` when
-/// the trait comes from no derive, or the branch carried an unmet projection.
+/// `HasBuilder`, …): on a partial value, the operation was given a builder or an extractor where
+/// the struct or enum belongs; on any other type, the type does not implement the trait. `None`
+/// when the trait comes from no derive, or the branch carried an unmet projection.
 fn derive_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     did: DefId,

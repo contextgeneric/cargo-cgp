@@ -1,4 +1,5 @@
-//! Recognizing a consumer trait written as a wiring key, as the compiler lowers the entry (`E0782`).
+//! Recognizing a consumer trait written as a wiring key, as the compiler lowers the entry
+//! (`E0782`).
 
 use cargo_cgp_error_processing::UnresolvedWiringName;
 use rustc_hir::def::{DefKind, Res};

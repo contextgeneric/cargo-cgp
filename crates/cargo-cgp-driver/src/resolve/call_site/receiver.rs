@@ -9,14 +9,14 @@ use crate::resolve::query::{
     call_output_ty, declared_binding_ty, item_ty, local_body_exprs, lower_hir_ty, peel_hir_refs,
 };
 
-/// The context type a call's receiver expression names: the *receiver* is what carries the
-/// context in a consumer-method call, so this is the anchor's one source of it. The type is read
-/// syntactically: a path to a binding follows the binding (a `let` typed by its annotation or its
-/// initializer, a fn parameter typed by the enclosing signature); a struct literal, unit-struct
-/// value, const, or static names its type directly; a plain constructor call (`MyApp::new()`, or a
-/// tuple-struct or variant constructor such as `Shape::Circle(…)`) takes the callee's declared
-/// return type; references are peeled on the way. `None` for a
-/// receiver whose type only typeck could know (a method call's result, a field access).
+/// The context type a call's receiver expression names: the *receiver* carries the context in a
+/// consumer-method call, so this is the anchor's one source of it. The type is read syntactically:
+/// a path to a binding follows the binding (a `let` typed by its annotation or its initializer, a
+/// fn parameter typed by the enclosing signature); a struct literal, unit-struct value, const, or
+/// static names its type directly; a plain constructor call (`MyApp::new()`, or a tuple-struct or
+/// variant constructor such as `Shape::Circle(…)`) takes the callee's declared return type;
+/// references are peeled on the way. `None` for a receiver whose type only typeck could know (a
+/// method call's result, a field access).
 pub fn receiver_context<'tcx>(tcx: TyCtxt<'tcx>, expr: &Expr<'tcx>) -> Option<Ty<'tcx>> {
     match expr.kind {
         ExprKind::Path(QPath::Resolved(None, path)) => match path.res {

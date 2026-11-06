@@ -13,10 +13,10 @@ use crate::resolve::walk::resolve_node;
 /// chain. The walk descends the consumer trait to its provider trait and on to the provider's real
 /// `where` bounds, never through `IsProviderFor`. `None` when no branch reaches a resolvable leaf.
 ///
-/// The descent is memoized at **every node** through the context's cache: one CGP mistake surfaces the same
-/// failure at many sites (all seeding the same obligation), and a shared trait is a diamond
-/// reached from several parents, so each distinct obligation is resolved once and reused. See
-/// `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`.
+/// The descent is memoized at **every node** through the context's cache: one CGP mistake surfaces
+/// the same failure at many sites (all seeding the same obligation), and a shared trait is a
+/// diamond reached from several parents, so each distinct obligation is resolved once and reused.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`.
 pub fn resolve_leaves<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,
     top: ty::PolyTraitClause<'tcx>,
@@ -24,8 +24,9 @@ pub fn resolve_leaves<'tcx>(
     let tcx = cx.tcx;
     // Erase the seed's free regions up front, exactly as every descendant obligation is erased by
     // [`impl_where_obligations`]. A lifetime-parameterized check entry (`(Life<'a>, str)`) seeds an
-    // obligation carrying the check impl's own `'a`, and leaving it unerased would make the seed the
-    // one chain entry whose `self_ty == context` comparisons fail, mislabeling the consumer node.
+    // obligation carrying the check impl's own `'a`, and leaving it unerased would make the seed
+    // the one chain entry whose `self_ty == context` comparisons fail, mislabeling the consumer
+    // node.
     let top = tcx.erase_and_anonymize_regions(top);
     let context = top.skip_binder().self_ty();
     compute_leaves(cx, top, context)
@@ -56,16 +57,16 @@ pub fn resolve_provider_leaves<'tcx>(
 }
 
 /// Why walking `top` was cut short, when a guard cut it: the obligation met again (a cycle in the
-/// wiring) or the depth cap reached without a repeat (a lookup that grows). `None` when the walk ran
-/// to its leaves, as it does through a type the compiler could not resolve, and for a seed holding a
-/// type parameter.
+/// wiring) or the depth cap reached without a repeat (a lookup that grows). `None` when the walk
+/// ran to its leaves, as it does through a type the compiler could not resolve, and for a seed
+/// holding a type parameter.
 pub fn walk_overflow<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,
     top: ty::PolyTraitClause<'tcx>,
 ) -> Option<WiringOverflow> {
     let tcx = cx.tcx;
-    // As in [`compute_leaves`]: under an empty parameter environment the walk cannot read the wiring
-    // of a seed holding a type parameter, so a cut would name a provider it never found.
+    // As in [`compute_leaves`]: under an empty parameter environment the walk cannot read the
+    // wiring of a seed holding a type parameter, so a cut would name a provider it never found.
     if top.has_param() {
         return None;
     }
@@ -74,12 +75,12 @@ pub fn walk_overflow<'tcx>(
     resolve_node(cx, top, None, context, &[], 0).cut
 }
 
-/// Fold the root node's owned sub-causes into a [`Resolved`]: group by leaf into one [`Cause`](cargo_cgp_error_processing::Cause) per
-/// distinct root cause, each holding every path that reaches it (so a shared trait's diamond
-/// survives to the renderer). Merging happens in the rustc-free
-/// [dependency graph](cargo_cgp_error_processing::DependencyGraph) at render time, not here. `top`
-/// is already region-erased and `context` is its self type. `None` for a seed holding a type
-/// parameter, as well as for a walk that reaches no resolvable leaf.
+/// Fold the root node's owned sub-causes into a [`Resolved`]: group by leaf into one
+/// [`Cause`](cargo_cgp_error_processing::Cause) per distinct root cause, each holding every path
+/// that reaches it (so a shared trait's diamond survives to the renderer). Merging happens in the
+/// rustc-free [dependency graph](cargo_cgp_error_processing::DependencyGraph) at render time, not
+/// here. `top` is already region-erased and `context` is its self type. `None` for a seed holding a
+/// type parameter, as well as for a walk that reaches no resolvable leaf.
 pub fn compute_leaves<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,
     top: ty::PolyTraitClause<'tcx>,
@@ -87,7 +88,8 @@ pub fn compute_leaves<'tcx>(
 ) -> Option<Resolved> {
     let tcx = cx.tcx;
     // The walk solves under an empty parameter environment, where the solver does not prove a
-    // wiring lookup that names the seed's type parameter, so the walk would blame wiring that exists.
+    // wiring lookup that names the seed's type parameter, so the walk would blame wiring that
+    // exists.
     if top.has_param() {
         return None;
     }

@@ -20,9 +20,9 @@ pub enum CallForm {
     /// method call, and an argument may also be a data value ([`data_expr_ty`]), such as the
     /// source a `build_from` merges.
     DataMethod,
-    /// A type-relative call (`Shape::from_variant(…)` on a data operation, `Provider::compute(…)` on
-    /// a provider trait): the arguments are every input, `Self` named by the path, and typed as for
-    /// [`CallForm::DataMethod`], since a provider method's context argument is often a binding.
+    /// A type-relative call (`Shape::from_variant(…)` on a data operation, `Provider::compute(…)`
+    /// on a provider trait): the arguments are every input, `Self` named by the path, and typed as
+    /// for [`CallForm::DataMethod`], since a provider method's context argument is often a binding.
     Path,
 }
 

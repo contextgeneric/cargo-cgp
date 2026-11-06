@@ -33,9 +33,9 @@
 //! `E0107` (an arity slip) keeps rustc's wording. Each candidate carries its own trait-reference
 //! span, so the `E0107` that lands on one selects which is reshaped.
 //!
-//! No condition forces a query on the malformed impl itself: the header trait's `DefId` and `Self`'s
-//! kind are read from HIR, and the fingerprint queries touch only the well-formed consumer/provider
-//! blanket impls `#[cgp_component]` generates.
+//! No condition forces a query on the malformed impl itself: the header trait's `DefId` and
+//! `Self`'s kind are read from HIR, and the fingerprint queries touch only the well-formed
+//! consumer/provider blanket impls `#[cgp_component]` generates.
 //!
 //! **Boundary.** Recognition is deliberately specific to `#[cgp_impl]`, whose macro-inserted
 //! `__Context__` parameter is the marker used above. The lower-level `#[cgp_provider]` /
@@ -70,16 +70,16 @@ pub struct DetectedCgpImplMisuse {
     /// The impl's self type (the provider struct `RectangleArea`), used to tie the downstream
     /// `NotAProvider` check re-report back to this mistake.
     pub self_ty: String,
-    /// The span of the header trait reference, matched against the `E0107` whose caret lands there so
-    /// that diagnostic is the one reshaped.
+    /// The span of the header trait reference, matched against the `E0107` whose caret lands there
+    /// so that diagnostic is the one reshaped.
     pub trait_ref_span: Span,
     /// The full source span of the impl block, matched against a sibling macro-lowering error whose
     /// caret lands *inside the impl body* (`E0186` on the method) so it is suppressed as a
     /// consequence of the one mistake.
     pub impl_span: Span,
     /// The span of the macro-inserted `__Context__` parameter: the `#[cgp_impl(…)]` attribute
-    /// call-site every synthesized token shares. It is where the siblings landing *outside* the impl
-    /// body sit (`E0425` on the missing `…Component` marker, `E0207` on the unconstrained
+    /// call-site every synthesized token shares. It is where the siblings landing *outside* the
+    /// impl body sit (`E0425` on the missing `…Component` marker, `E0207` on the unconstrained
     /// `__Context__`), so it is the second span sibling errors are matched against.
     pub macro_span: Span,
 }
@@ -134,8 +134,8 @@ fn impl_misuses(tcx: TyCtxt<'_>, local: LocalDefId) -> Vec<DetectedCgpImplMisuse
         return Vec::new();
     };
     let self_ty = tcx.item_name(self_did).to_string();
-    // Classify the header by the trait's fingerprint. A consumer trait pairs with a provider
-    // trait to suggest (`CGP-E032`); a non-component is `CGP-E033`; the provider trait is the *correct*
+    // Classify the header by the trait's fingerprint. A consumer trait pairs with a provider trait
+    // to suggest (`CGP-E032`); a non-component is `CGP-E033`; the provider trait is the *correct*
     // header, leaving only a possible inner-bound mistake below.
     let header_misuse = if let Some(provider_did) = consumer_provider_trait(tcx, header_did) {
         Some(CgpImplMisuse::ConsumerTrait {

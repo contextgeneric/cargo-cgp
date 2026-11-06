@@ -32,9 +32,9 @@ pub struct ProjectionMismatch<'tcx> {
 /// a provider pinned with the `#[use_type(Trait.{Assoc = Concrete})]` equality form while the
 /// context bound it to something else. `None` when the impl carries no unmet projection.
 ///
-/// A `HasField` projection wins when the impl carries both, because a field's value type is the more
-/// specific classification and the one whose leaf can name the struct field to fix; the walk reports
-/// a single leaf per node either way, as it always has.
+/// A `HasField` projection wins when the impl carries both, because a field's value type is the
+/// more specific classification and the one whose leaf can name the struct field to fix; the walk
+/// reports a single leaf per node either way, as it always has.
 ///
 /// Matches each impl as [`impl_where_obligations`](super::impl_where_obligations) does
 /// ([`match_impl`]), but keeps the projection predicates rather than the trait ones, and leaves

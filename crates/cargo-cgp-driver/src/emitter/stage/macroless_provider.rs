@@ -15,6 +15,7 @@ use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 /// without `#[cgp_provider]`, so a later failure on one is that report's consequence.
 #[derive(Default)]
 pub struct MacrolessProviderStage {
+    /// The provider structs reported, by name.
     pub providers: Vec<String>,
 }
 

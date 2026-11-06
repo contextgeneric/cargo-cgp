@@ -20,7 +20,7 @@ use crate::resolve::walk::resolve_leaves;
 /// that trait is a local, non-generic CGP consumer, this recovers it and walks the real obligation
 /// `Ctx: Consumer` directly, with no marker, no `CanUseComponent`/`IsProviderFor` detour.
 ///
-/// This is what reaches a **namespace-joined** context, whose concrete wiring lives in the joined
+/// This anchor reaches a **namespace-joined** context, whose concrete wiring lives in the joined
 /// namespace and not in its own `DelegateComponent` impls.
 /// [`resolve_use_site`](super::resolve_use_site)'s per-component re-check finds only the
 /// namespace's blanket forwarding key (a bare parameter, skipped) and yields nothing; the walk
@@ -46,12 +46,12 @@ pub fn resolve_use_site_consumer(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Opti
 ///
 /// This reaches the shape a trait required through a `where` **bound** or supertrait produces:
 /// `fn greet_all<Context: GetName>(…)` called with a context missing the field, where the failure
-/// is an `E0277` on the call with no method call on a concrete context to read. It is tried **after**
-/// the call-site anchor (`call_site`): a *direct* method call
-/// (`app.describe()`) anchors on the called method there, so its tree leads with the trait the
-/// programmer actually invoked rather than with whichever sub-trait the diagnostic happens to
-/// name in its spans. `None` when the diagnostic names no local blanket trait, or none of the
-/// candidate contexts fails one resolvably.
+/// is an `E0277` on the call with no method call on a concrete context to read. It is tried
+/// **after** the call-site anchor (`call_site`): a *direct* method call (`app.describe()`) anchors
+/// on the called method there, so its tree leads with the trait the programmer actually invoked
+/// rather than with whichever sub-trait the diagnostic happens to name in its spans. `None` when
+/// the diagnostic names no local blanket trait, or none of the candidate contexts fails one
+/// resolvably.
 pub fn resolve_use_site_blanket_trait(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     resolve_from_named_trait(cx, spans, TraitKind::Blanket)
 }
@@ -66,9 +66,9 @@ enum TraitKind {
     Blanket,
 }
 
-/// Recover the context and the named trait of `kind` from the diagnostic's spans, seed `Ctx: Trait`,
-/// and walk it: the shared body of the two anchors above. A [`TraitKind::Blanket`] result has
-/// the wrapper class, since such a trait is not a CGP component.
+/// Recover the context and the named trait of `kind` from the diagnostic's spans, seed
+/// `Ctx: Trait`, and walk it: the shared body of the two anchors above. A [`TraitKind::Blanket`]
+/// result has the wrapper class, since such a trait is not a CGP component.
 fn resolve_from_named_trait(
     cx: ResolveCtx<'_, '_>,
     spans: &[Span],
@@ -76,8 +76,8 @@ fn resolve_from_named_trait(
 ) -> Option<Resolved> {
     let tcx = cx.tcx;
     // The failing context, from a struct-definition span (an `E0599` "method not found for this
-    // struct"), unioned with the *expression* whose type fails (a bound's `E0277` on a call argument,
-    // whose context sits on no struct-definition span; see [`contexts_at_spans`]).
+    // struct"), unioned with the *expression* whose type fails (a bound's `E0277` on a call
+    // argument, whose context sits on no struct-definition span; see [`contexts_at_spans`]).
     let mut contexts = context_candidates_from_spans(tcx, spans);
     contexts.extend(contexts_at_spans(tcx, spans));
     for trait_did in local_traits_from_spans(tcx, spans, kind) {
@@ -109,8 +109,8 @@ fn resolve_from_named_trait(
 
 /// The local traits of `kind` the diagnostic's spans reference: a trait a use-site `E0599`/`E0277`
 /// names in a `` `Trait` defines an item … `` note or a `required for … to implement `Trait`` note,
-/// whose span points at the trait definition. A trait qualifies when it is defined in this crate and
-/// its definition span contains one of the diagnostic's spans, and either it is a CGP consumer
+/// whose span points at the trait definition. A trait qualifies when it is defined in this crate
+/// and its definition span contains one of the diagnostic's spans, and either it is a CGP consumer
 /// ([`TraitKind::CgpConsumer`], paired with a provider via [`consumer_provider_trait`]) or a local
 /// non-consumer blanket-impl trait ([`TraitKind::Blanket`], the `#[cgp_fn]`/`#[blanket_trait]`
 /// shape). The generated provider and getter traits and plain non-CGP traits carry neither pairing

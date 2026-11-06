@@ -20,13 +20,13 @@ pub fn is_blanket_dead_end<'tcx>(
 /// `owner` is a *proper subterm* of `parent_self`, the `Self` of the provider impl whose
 /// `where`-clause introduced the lookup. This is the shape every dispatcher provider shares:
 /// `UseDelegate<Components>` / `UseInputDelegate<Components>` and any custom dispatcher hold their
-/// table as a parameter and look a key up in it (`Components: DelegateComponent<Key>`), so the lookup's
-/// owner is *inside* the provider's `Self`, never equal to it. The generic delegation blanket, by
-/// contrast, keys on the provider *itself* (`P: DelegateComponent<Marker>` with `Self = P`), where
-/// owner equals `parent_self`, so this returns `false` for it, leaving the blanket cases to the
-/// context and owner-property checks. Recognizing the lookup structurally means an entry-less
-/// table is still reported, where the owner-property heuristic (which needs a wired key to find) would
-/// miss it.
+/// table as a parameter and look a key up in it (`Components: DelegateComponent<Key>`), so the
+/// lookup's owner is *inside* the provider's `Self`, never equal to it. The generic delegation
+/// blanket, by contrast, keys on the provider *itself* (`P: DelegateComponent<Marker>` with
+/// `Self = P`), where owner equals `parent_self`, so this returns `false` for it, leaving the
+/// blanket cases to the context and owner-property checks. Recognizing the lookup structurally
+/// means an entry-less table is still reported, where the owner-property heuristic (which needs a
+/// wired key to find) would miss it.
 pub fn is_dispatch_lookup<'tcx>(tcx: TyCtxt<'tcx>, owner: Ty<'tcx>, parent_self: Ty<'tcx>) -> bool {
     let parent_self = tcx.erase_and_anonymize_regions(parent_self);
     parent_self != owner

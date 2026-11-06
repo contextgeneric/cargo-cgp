@@ -15,15 +15,15 @@ use crate::resolve::query::{resolve_fixed_projections, unknowns_to_placeholders,
 /// ref ([`match_impl`]), then instantiating and normalizing that impl's predicates. `Some(vec![])`
 /// means an impl matched but carries no trait-clause `where` obligations.
 ///
-/// A **concrete-`Self`** impl (one whose declared `Self` is a struct/enum, like the `#[cgp_provider]`
-/// impl `impl ValueDeserializer<…> for DeserializeRecordFields`) is preferred over a **blanket** one
-/// (whose `Self` is a bare type parameter, like the CGP delegation blanket `impl<P: DelegateComponent>
-/// ValueDeserializer<…> for P`). Both unify with a provider obligation such as
-/// `DeserializeRecordFields: ValueDeserializer<…>`, but only the specific impl's `where`-clauses lead
-/// to the real cause; the blanket's lead to a `DeserializeRecordFields: DelegateComponent`
-/// dead-end, since a leaf provider does not delegate. A blanket impl is used only when no
-/// concrete-`Self` one matches, the usual case for an obligation whose `Self` *is* the context
-/// (`App: CanUseComponent<…>` has only the blanket).
+/// A **concrete-`Self`** impl (one whose declared `Self` is a struct/enum, like the
+/// `#[cgp_provider]` impl `impl ValueDeserializer<…> for DeserializeRecordFields`) is preferred
+/// over a **blanket** one (whose `Self` is a bare type parameter, like the CGP delegation blanket
+/// `impl<P: DelegateComponent> ValueDeserializer<…> for P`). Both unify with a provider obligation
+/// such as `DeserializeRecordFields: ValueDeserializer<…>`, but only the specific impl's
+/// `where`-clauses lead to the real cause; the blanket's lead to a
+/// `DeserializeRecordFields: DelegateComponent` dead-end, since a leaf provider does not delegate.
+/// A blanket impl is used only when no concrete-`Self` one matches, the usual case for an
+/// obligation whose `Self` *is* the context (`App: CanUseComponent<…>` has only the blanket).
 pub fn impl_where_obligations<'tcx>(
     tcx: TyCtxt<'tcx>,
     obligation: ty::PolyTraitClause<'tcx>,
@@ -41,11 +41,12 @@ pub fn impl_where_obligations<'tcx>(
         // Read the clauses in written order, so the causes they lead to are reported in it.
         let raw = written_order_clauses(tcx, impl_did, impl_args);
         // Register every predicate so the solver can propagate the constraints that *do* hold onto
-        // the impl's otherwise-free parameters, before any single one is read. A record deserializer's
-        // `Record: HasOptionalBuilder<Builder = Builder>` clause pins the free `Builder` param to the
-        // concrete builder type; without solving it first, the sibling `Record::Fields:
-        // HandleMapEntry<.., Builder>` clause (the branch that leads to the real cause) carries
-        // `Builder` as a stray inference var and is dropped as inference-laden below.
+        // the impl's otherwise-free parameters, before any single one is read. A record
+        // deserializer's `Record: HasOptionalBuilder<Builder = Builder>` clause pins the free
+        // `Builder` param to the concrete builder type; without solving it first, the sibling
+        // `Record::Fields: HandleMapEntry<.., Builder>` clause (the branch that leads to the real
+        // cause) carries `Builder` as a stray inference var and is dropped as inference-laden
+        // below.
         for &clause in &raw {
             ocx.register_obligation(Obligation::new(
                 tcx,

@@ -15,13 +15,14 @@ use crate::resolve::query::{
 };
 
 /// The wiring entry an `E0207` at `primary_span` is about, when the unconstrained parameter there
-/// is one an entry's generic list binds and its key leaves out. `<T> GreeterComponent: GreetWith<T>`
-/// in the wiring of `Person` lowers to `impl<T> DelegateComponent<GreeterComponent> for Person`
-/// (with an `IsProviderFor` twin, and a check impl under `delegate_and_check_components!`), and the
-/// same entry in a `cgp_namespace!` to an impl of the namespace's lookup trait for its key; only
-/// the key and the table can bind a parameter there, so rustc reports each one the key leaves out,
-/// once per impl. The mistake names every such parameter, so each of those errors recovers the
-/// same one. `None` when no entry declares the parameter at the caret.
+/// is one an entry's generic list binds and its key leaves out.
+/// `<T> GreeterComponent: GreetWith<T>` in the wiring of `Person` lowers to
+/// `impl<T> DelegateComponent<GreeterComponent> for Person` (with an `IsProviderFor` twin, and a
+/// check impl under `delegate_and_check_components!`), and the same entry in a `cgp_namespace!` to
+/// an impl of the namespace's lookup trait for its key; only the key and the table can bind a
+/// parameter there, so rustc reports each one the key leaves out, once per impl. The mistake names
+/// every such parameter, so each of those errors recovers the same one. `None` when no entry
+/// declares the parameter at the caret.
 pub fn detect_entry_parameters_not_in_key(
     tcx: TyCtxt<'_>,
     primary_span: Span,

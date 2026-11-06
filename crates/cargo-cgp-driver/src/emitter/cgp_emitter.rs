@@ -280,9 +280,9 @@ impl<E: Emitter> CgpEmitter<E> {
             }
         }
         if rewritten {
-            // Remember where this wiring failure landed, so a later `?`-operator cascade on the same
-            // expression is dropped. Recorded before de-duplication, so a re-report that is itself
-            // suppressed still anchors its cascade.
+            // Remember where this wiring failure landed, so a later `?`-operator cascade on the
+            // same expression is dropped. Recorded before de-duplication, so a re-report that is
+            // itself suppressed still anchors its cascade.
             self.record_cgp_spans(&diag);
         }
         if rewritten && self.is_repeat_report(&diag, cause_sig.as_deref(), &class_headers) {
@@ -290,9 +290,9 @@ impl<E: Emitter> CgpEmitter<E> {
         }
         // Buffer rather than emit now: a resolution has its `root cause:` note rendered at flush,
         // where the emission order lets it elide what an earlier block drew, and a consumer failure
-        // is additionally grouped there with every failure sharing one of its root causes. Everything
-        // else is emitted verbatim in place. The flush happens in `Drop`, the only point after every
-        // diagnostic has arrived.
+        // is additionally grouped there with every failure sharing one of its root causes.
+        // Everything else is emitted verbatim in place. The flush happens in `Drop`, the only point
+        // after every diagnostic has arrived.
         match resolution {
             Some((resolved, note, coalescing)) => {
                 self.push(BufEntry::Resolved(Box::new(ResolvedEntry {
@@ -386,10 +386,10 @@ impl<E: Emitter> Drop for CgpEmitter<E> {
     /// offers no end-of-compilation hook. Diagnostics were counted by the `DiagCtxt` as they
     /// arrived, so deferring their *rendering* to here does not change the error count.
     ///
-    /// The rendering is contained: if it panics, every buffered diagnostic is emitted as rustc built
-    /// it, a resolution carrying a note saying why. This runs while the thread unwinds from rustc's
-    /// fatal-error abort, which is how every failing compilation ends, and a panic contained there
-    /// does not escape the destructor, so it does not abort the process.
+    /// The rendering is contained: if it panics, every buffered diagnostic is emitted as rustc
+    /// built it, a resolution carrying a note saying why. This runs while the thread unwinds from
+    /// rustc's fatal-error abort, which is how every failing compilation ends, and a panic
+    /// contained there does not escape the destructor, so it does not abort the process.
     fn drop(&mut self) {
         let buffer = std::mem::take(&mut self.output().buffer);
         if buffer.is_empty() {

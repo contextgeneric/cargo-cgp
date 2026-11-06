@@ -32,9 +32,9 @@ use crate::resolve::query::{
 /// The steps that carry no information for a reader return `None` and are dropped: the
 /// `CanUseComponent`/`IsProviderFor` scaffolding, a provider-trait obligation *for the context
 /// itself* (delegation routing), the `DelegateComponent` table lookup, a namespace lookup, and an
-/// extensible-data trait's recursion over a type-level list. A trait implemented for a builder or an
-/// extractor names that partial value in words. The
-/// missing-delegate leaf a wiring chain bottoms out on is not rendered here: the caller
+/// extensible-data trait's recursion over a type-level list. A trait implemented for a builder or
+/// an extractor names that partial value in words. The missing-delegate leaf a wiring chain bottoms
+/// out on is not rendered here: the caller
 /// ([`resolve_leaves`](crate::resolve::walk::resolve_leaves)) re-states the root cause as the
 /// terminal leaf.
 pub fn label_for<'tcx>(
@@ -59,7 +59,8 @@ pub fn label_for<'tcx>(
     }
 
     // Note: a `HasField` obligation is never labeled here (`resolve_node` classifies it as a
-    // terminal root-cause leaf before `label_for` is reached), so there is no interior HasField hop.
+    // terminal root-cause leaf before `label_for` is reached), so there is no interior HasField
+    // hop.
 
     if is_provider_trait(tcx, did) {
         // A provider-trait obligation for the context itself is delegation routing, dropped.

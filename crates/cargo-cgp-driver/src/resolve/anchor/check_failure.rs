@@ -34,8 +34,8 @@ pub fn resolve_check_failure(cx: ResolveCtx<'_, '_>, primary_span: Span) -> Opti
     None
 }
 
-/// The consumer obligation the `check_components!` entry whose caret sits at `primary_span` asserts,
-/// read as [`resolve_check_failure`] reads it. `None` when no check impl is there.
+/// The consumer obligation the `check_components!` entry whose caret sits at `primary_span`
+/// asserts, read as [`resolve_check_failure`] reads it. `None` when no check impl is there.
 pub fn check_entry_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     primary_span: Span,
@@ -47,9 +47,9 @@ pub fn check_entry_obligation<'tcx>(
 /// Turn a `Ctx: CanUseComponent<Marker, Params>` assertion into the real consumer obligation
 /// `Ctx: ConsumerTrait<Params…>` it stands for: the marker is mapped to its consumer trait
 /// (`IsProviderFor`-free, via [`marker_to_consumer`]) and the `Params` slot is ungrouped back into
-/// the consumer's own arguments. This is what lets the check and use-site anchors feed the walk a
-/// real consumer obligation instead of the `CanUseComponent` wrapper. `None` when the marker keys
-/// no known consumer trait, or the slot does not match the consumer's parameters.
+/// the consumer's own arguments. The check and use-site anchors can then feed the walk a real
+/// consumer obligation instead of the `CanUseComponent` wrapper. `None` when the marker keys no
+/// known consumer trait, or the slot does not match the consumer's parameters.
 fn can_use_to_consumer_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     can_use: ty::PolyTraitClause<'tcx>,

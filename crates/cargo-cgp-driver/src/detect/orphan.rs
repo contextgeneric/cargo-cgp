@@ -10,11 +10,10 @@
 //! [`classify_orphan_conflict`] recovers those from the compiler, not the error text: it finds the
 //! offending impl at the caret, reads its trait and `Self`, and, anchoring the namespace trait by
 //! its structural [namespace-lookup fingerprint](crate::resolve::query::is_namespace_lookup_trait)
-//! rather than by name, words the collision into the rustc-free
-//! [`OrphanConflict`]. Because we only run on an `E0210`/`E0117`, which rustc emits *only* for a
-//! genuine orphan, matching the caret to a foreign-namespace-trait-for-foreign-key impl is the whole
-//! confirmation: rustc has already proved the orphan, and the caret already sits on the impl it
-//! proved it for.
+//! rather than by name, words the collision into the rustc-free [`OrphanConflict`]. Because we only
+//! run on an `E0210`/`E0117`, which rustc emits *only* for a genuine orphan, matching the caret to
+//! a foreign-namespace-trait-for-foreign-key impl is the whole confirmation: rustc has already
+//! proved the orphan, and the caret already sits on the impl it proved it for.
 
 use cargo_cgp_error_processing::{OrphanConflict, OrphanTrigger, WiringKey};
 use rustc_middle::ty::print::with_forced_trimmed_paths;
@@ -50,10 +49,11 @@ pub fn classify_orphan_conflict(tcx: TyCtxt<'_>, primary_span: Span) -> Option<O
     // The offending impl is the one the caret sits on, matched by source range (the macro re-spans
     // its generated impl onto the invocation, whose range the coherence caret shares). When the
     // caret lands on none of them, as for a `#[default_impl]`, whose caret is the `#[cgp_impl]`
-    // attribute and whose impl is spanned on its key, a lone candidate is still unambiguous, so fall
-    // back to it; more than one leaves the choice ambiguous and declines. The fallback needs a caret
-    // a CGP macro generated: an `E0117` names no machinery parameter, so a plain Rust orphan beside a
-    // registration reaches this scan too, its caret on an impl the program or its own macro wrote.
+    // attribute and whose impl is spanned on its key, a lone candidate is still unambiguous, so
+    // fall back to it; more than one leaves the choice ambiguous and declines. The fallback needs a
+    // caret a CGP macro generated: an `E0117` names no machinery parameter, so a plain Rust orphan
+    // beside a registration reaches this scan too, its caret on an impl the program or its own
+    // macro wrote.
     let orphan = candidates
         .iter()
         .find(|candidate| {
@@ -128,9 +128,9 @@ fn orphan_impls(tcx: TyCtxt<'_>) -> Vec<OrphanImpl<'_>> {
     impls
 }
 
-/// Whether `span` comes from a CGP macro's expansion. Every construct that registers into a namespace
-/// is a `cgp_`-named macro of CGP's proc-macro crate. Reading the macro's definition holds under a
-/// renaming import and rejects a program's own macro of a similar name.
+/// Whether `span` comes from a CGP macro's expansion. Every construct that registers into a
+/// namespace is a `cgp_`-named macro of CGP's proc-macro crate. Reading the macro's definition
+/// holds under a renaming import and rejects a program's own macro of a similar name.
 fn is_from_cgp_macro(tcx: TyCtxt<'_>, span: Span) -> bool {
     span.macro_backtrace().any(|expansion| {
         expansion.macro_def_id.is_some_and(|macro_did| {
@@ -154,9 +154,9 @@ fn is_local_type(ty: Ty<'_>) -> bool {
 }
 
 /// Which construct generated the impl, read from its own machinery type parameter: a
-/// `cgp_namespace!` re-open names it `__Table__`, while a `#[default_impl]`/`#[prefix]` registration
-/// names it `__Components__`. The name is a reserved identifier the CGP macros emit, so it is a
-/// reliable, `DefId`-independent discriminator.
+/// `cgp_namespace!` re-open names it `__Table__`, while a `#[default_impl]`/`#[prefix]`
+/// registration names it `__Components__`. The name is a reserved identifier the CGP macros emit,
+/// so it is a reliable, `DefId`-independent discriminator.
 fn orphan_trigger(tcx: TyCtxt<'_>, impl_did: DefId) -> OrphanTrigger {
     let is_table = tcx.generics_of(impl_did).own_params.iter().any(|param| {
         matches!(param.kind, ty::GenericParamDefKind::Type { .. })

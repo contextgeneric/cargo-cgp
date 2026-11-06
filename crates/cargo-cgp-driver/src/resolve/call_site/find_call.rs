@@ -44,8 +44,7 @@ pub fn resolve_call_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
             continue;
         };
         // Only a monomorphic context ADT can be re-checked: a type with no wiring of its own is no
-        // context, and a generic one's arguments are exactly what the missing typeck results would
-        // have supplied.
+        // context, and the missing typeck results would have supplied a generic one's arguments.
         if !is_context_adt(tcx, context) || context.has_param() {
             continue;
         }
@@ -64,11 +63,11 @@ pub fn resolve_call_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
                 continue;
             }
             if let Some(mut resolved) = resolve_leaves(cx, top) {
-                // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait is consumed like a consumer trait
-                // but is not a CGP *component*, so it heads the diagnostic as `[CGP-E003] the trait
-                // …`, the same wording the impl-site anchor gives such a trait reached through a
-                // wrapper. A genuine consumer keeps the class the walk set. The trait
-                // is called on a type that is a context only when it carries wiring, so a type with
+                // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait is consumed like a consumer
+                // trait but is not a CGP *component*, so it heads the diagnostic as `[CGP-E003] the
+                // trait …`, the same wording the impl-site anchor gives such a trait reached
+                // through a wrapper. A genuine consumer keeps the class the walk set. The trait is
+                // called on a type that is a context only when it carries wiring, so a type with
                 // none is named plainly.
                 if kind == CallTrait::Blanket {
                     resolved.class = ResolvedClass::Wrapper;
@@ -81,9 +80,9 @@ pub fn resolve_call_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
     None
 }
 
-/// One method call found at the diagnostic's primary spans: the method name, the receiver expression,
-/// the call's argument expressions, and the call expression's id, for which the compiler records
-/// the traits in scope.
+/// One method call found at the diagnostic's primary spans: the method name, the receiver
+/// expression, the call's argument expressions, and the call expression's id, for which the
+/// compiler records the traits in scope.
 pub struct MethodCall<'tcx> {
     /// The method's name as written.
     pub method: Symbol,
@@ -95,12 +94,13 @@ pub struct MethodCall<'tcx> {
     pub hir_id: HirId,
 }
 
-/// Every method-call expression in a local body that one of the diagnostic's primary spans is about.
-/// A use-site failure's primary span sits on the method name, on one whole argument, or on the
-/// whole call (rustc's re-report where the result is awaited included), so a call is collected when
-/// a span overlaps it without lying strictly inside its receiver or one of its arguments. An error
-/// inside an argument (an `Rc` passed to a `Send` bound in `person.greet(count(Rc::new(1)))`) is
-/// about that argument's own code, and an error elsewhere in the enclosing body is about no call.
+/// Every method-call expression in a local body that one of the diagnostic's primary spans is
+/// about. A use-site failure's primary span sits on the method name, on one whole argument, or on
+/// the whole call (rustc's re-report where the result is awaited included), so a call is collected
+/// when a span overlaps it without lying strictly inside its receiver or one of its arguments. An
+/// error inside an argument (an `Rc` passed to a `Send` bound in `person.greet(count(Rc::new(1)))`)
+/// is about that argument's own code, and an error elsewhere in the enclosing body is about no
+/// call.
 pub fn method_calls_at<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<MethodCall<'tcx>> {
     local_body_exprs(tcx)
         .filter_map(|expr| {

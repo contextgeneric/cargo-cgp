@@ -8,14 +8,19 @@ use crate::resolve::query::{redirect_path, render_provider};
 
 /// One side of a conflict: the impl, the key it maps, and its written `Delegate`.
 pub struct ConflictSide<'tcx> {
+    /// The entry's impl.
     pub impl_did: DefId,
+    /// The key the impl maps, a generic parameter for a blanket forwarding.
     pub key: Ty<'tcx>,
+    /// The impl's written `Delegate`, or `None` when it declares none.
     pub delegate: Option<Ty<'tcx>>,
 }
 
 /// What an entry maps the colliding key to: a redirected path, or a provider a reader wrote.
 pub enum EntryTarget {
+    /// A redirect, rendered as the path it looks the key up under.
     Redirect(String),
+    /// A provider, rendered, or `None` when it names a generic parameter or no `Delegate` exists.
     Provider(Option<String>),
 }
 

@@ -90,8 +90,8 @@ pub fn classify_leaf<'tcx>(
     })
 }
 
-/// Classify an unmet `DelegateComponent<Key>`, or `None` when it is a routing dead-end rather than a
-/// root cause. [`delegate_leaf_shape`] decides which leaf it is, over the facts
+/// Classify an unmet `DelegateComponent<Key>`, or `None` when it is a routing dead-end rather than
+/// a root cause. [`delegate_leaf_shape`] decides which leaf it is, over the facts
 /// [`RustcDelegateLeafFacts`] reads from the compiler, and its doc lists the cases; this function
 /// names each shape from the compiler's types.
 ///
@@ -123,8 +123,8 @@ fn delegate_component_leaf<'tcx>(
             context: owner,
         },
         DelegateLeafShape::Wiring => {
-            // The marker's own item name (`BarProviderComponent`) is what the programmer writes to
-            // fix it, so it names the leaf.
+            // The programmer fixes it by writing the marker's own item name
+            // (`BarProviderComponent`), so the leaf names it.
             let component = component_marker_name(tcx, key);
             Leaf::MissingWiring {
                 similar: wired_near_miss(tcx, self_ty, Some(component.clone())),
@@ -140,7 +140,8 @@ fn delegate_component_leaf<'tcx>(
         },
         DelegateLeafShape::NotAProvider => {
             // The shape is decided only under a parent obligation `owner: ProviderTrait<Ctx>`,
-            // whose blanket produced this leaf, so `parent` is present; it names the provider trait.
+            // whose blanket produced this leaf, so `parent` is present; it names the provider
+            // trait.
             let parent = parent?;
             Leaf::NotAProvider {
                 provider: owner,
@@ -299,13 +300,13 @@ fn field_leaf<'tcx>(
     }
 }
 
-/// Build the [`Leaf::AssocTypeMismatch`] for a projection mismatch on a trait other than `HasField`:
-/// the associated type and its trait named off the projection, the *expected* type read from the
-/// failing projection's right-hand side, and the *actual* one read by normalizing the projection,
-/// the same query for a `UseType<T>` wiring and a hand-written impl alike. When the trait is a CGP
-/// abstract-type component, its wiring marker rides along so the emitter can offer the `UseType<…>`
-/// fix and call the type an *abstract* rather than a plain associated type. An actual type that does
-/// not reduce is rendered `_`, as the field query's does.
+/// Build the [`Leaf::AssocTypeMismatch`] for a projection mismatch on a trait other than
+/// `HasField`: the associated type and its trait named off the projection, the *expected* type read
+/// from the failing projection's right-hand side, and the *actual* one read by normalizing the
+/// projection, the same query for a `UseType<T>` wiring and a hand-written impl alike. When the
+/// trait is a CGP abstract-type component, its wiring marker rides along so the emitter can offer
+/// the `UseType<…>` fix and call the type an *abstract* rather than a plain associated type. An
+/// actual type that does not reduce is rendered `_`, as the field query's does.
 fn assoc_type_mismatch<'tcx>(tcx: TyCtxt<'tcx>, mismatch: ProjectionMismatch<'tcx>) -> Leaf {
     let trait_did = mismatch.trait_ref.def_id;
     let owner = tcx.erase_and_anonymize_regions(mismatch.trait_ref.self_ty());
@@ -344,9 +345,9 @@ fn component_marker_name<'tcx>(tcx: TyCtxt<'tcx>, marker: Ty<'tcx>) -> String {
     }
 }
 
-/// The near miss for a key missing from `context`'s wiring: a key the context wires that is a likely
-/// slip of `target`, the missing key rendered as an entry writes it (`None` when it has no such
-/// rendering).
+/// The near miss for a key missing from `context`'s wiring: a key the context wires that is a
+/// likely slip of `target`, the missing key rendered as an entry writes it (`None` when it has no
+/// such rendering).
 fn wired_near_miss<'tcx>(tcx: TyCtxt<'tcx>, context: Ty<'tcx>, target: Option<String>) -> NearMiss {
     NearMiss(target.and_then(|target| similar_wired_key(tcx, context, &target)))
 }

@@ -9,12 +9,12 @@ use crate::config::{
 use crate::resolve::data::is_data_trait;
 use crate::resolve::query::{is_cgp_item, is_provider_trait};
 
-/// Whether `pred` is the check-trait scaffolding (`CanUseComponent` or `IsProviderFor`), which the walk
-/// resolves *around* rather than through. These sit beside the real consumer/provider-trait
+/// Whether `pred` is the check-trait scaffolding (`CanUseComponent` or `IsProviderFor`), which the
+/// walk resolves *around* rather than through. These sit beside the real consumer/provider-trait
 /// obligation in every generated blanket impl and carry only the delegation check
 /// (`CanUseComponent`) or a copy of the provider's `where` clause (`IsProviderFor`), both redundant
-/// with the real obligation the walk follows instead. Dropping them as dependencies is what keeps
-/// the resolution independent of `IsProviderFor`.
+/// with the real obligation the walk follows instead. Dropping them as dependencies keeps the
+/// resolution independent of `IsProviderFor`.
 pub fn is_workaround_plumbing<'tcx>(tcx: TyCtxt<'tcx>, pred: ty::PolyTraitClause<'tcx>) -> bool {
     let did = pred.skip_binder().trait_ref.def_id;
     is_cgp_item(tcx, did, IS_PROVIDER_FOR_TRAIT, CGP_COMPONENT_CRATE)

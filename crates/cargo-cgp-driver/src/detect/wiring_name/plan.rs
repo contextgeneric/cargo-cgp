@@ -1,4 +1,5 @@
-//! Planning what to do with the name-resolution errors of the wiring entries and `#[cgp_impl]` headers.
+//! Planning what to do with the name-resolution errors of the wiring entries and `#[cgp_impl]`
+//! headers.
 
 use cargo_cgp_error_processing::{UnresolvedWiringName, similar_name};
 use rustc_middle::ty::TyCtxt;
@@ -37,11 +38,12 @@ pub enum NameAction {
 /// The action for each name-resolution `E0425` "cannot find type `name`", given as its primary span
 /// and the name, in the order given. A name outside a wiring entry or a `#[cgp_impl]` header gets
 /// `None` and stays as the compiler wrote it, repeats included. Within them, a repeat of an earlier
-/// diagnostic at the same span is dropped, a wiring value naming the provider a `#[cgp_impl]` header
-/// also fails to declare is dropped as that header's consequence, and a name no rule explains gets
-/// `None`. A type inside an `@`-path of a key or value is a component that needs an import or a type
-/// never declared, and a later one of the same name is dropped as a repeat. A value, a `#[cgp_impl]`
-/// provider, or a path type that names a type declared elsewhere was not imported, so it gets `None`.
+/// diagnostic at the same span is dropped, a wiring value naming the provider a `#[cgp_impl]`
+/// header also fails to declare is dropped as that header's consequence, and a name no rule
+/// explains gets `None`. A type inside an `@`-path of a key or value is a component that needs an
+/// import or a type never declared, and a later one of the same name is dropped as a repeat. A
+/// value, a `#[cgp_impl]` provider, or a path type that names a type declared elsewhere was not
+/// imported, so it gets `None`.
 pub fn plan_unresolved_names(
     tcx: TyCtxt<'_>,
     candidates: &[(Span, String)],

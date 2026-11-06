@@ -6,9 +6,9 @@ use rustc_span::def_id::DefId;
 
 use crate::config::DELEGATE_ASSOC;
 
-/// The value of an impl's `Delegate` associated type (what a wiring entry (a `DelegateComponent`
-/// impl, or a `cgp_namespace!` entry's namespace-trait impl) maps its key to), or `None` when the
-/// impl declares no `Delegate`.
+/// The value of an impl's `Delegate` associated type, or `None` when the impl declares no
+/// `Delegate`. A wiring entry maps its key to that value, the entry being a `DelegateComponent`
+/// impl or a `cgp_namespace!` entry's namespace-trait impl.
 pub fn impl_delegate_type<'tcx>(tcx: TyCtxt<'tcx>, impl_did: DefId) -> Option<Ty<'tcx>> {
     tcx.associated_items(impl_did)
         .in_definition_order()
@@ -23,10 +23,15 @@ pub fn impl_delegate_type<'tcx>(tcx: TyCtxt<'tcx>, impl_did: DefId) -> Option<Ty
 /// One local `DelegateComponent` impl, read off the compiler: where it was written, the context
 /// it wires, the key it maps, and its `Delegate` (the provider or redirect it maps to).
 pub struct DelegateImpl<'tcx> {
+    /// The impl's span, which a conflict's caret is matched against.
     pub def_span: Span,
+    /// The context the impl wires.
     pub self_ty: Ty<'tcx>,
+    /// The key it maps, the `Key` of `DelegateComponent<Key>`.
     pub key: Ty<'tcx>,
+    /// Its `Delegate`, or `None` when the impl declares none.
     pub delegate: Option<Ty<'tcx>>,
+    /// The impl itself.
     pub impl_did: DefId,
 }
 

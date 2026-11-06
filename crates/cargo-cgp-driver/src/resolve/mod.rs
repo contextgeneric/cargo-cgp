@@ -18,9 +18,8 @@
 //!
 //! The compiler readers and solver helpers more than one stage uses sit in the `query` layer, which
 //! the class detectors in [`detect`](crate::detect) share. A resolver module imports only modules
-//! earlier in this order: `query`, `cache`, and `ctx`; `data`; `label`; `classify`;
-//! `walk`; `call_site`; `anchor`; `overflow`; and `anchors`, the ordered list of anchors [`resolve`]
-//! tries.
+//! earlier in this order: `query`, `cache`, and `ctx`; `data`; `label`; `classify`; `walk`;
+//! `call_site`; `anchor`; `overflow`; and `anchors`, the ordered list of anchors [`resolve`] tries.
 
 pub mod anchor;
 mod anchors;

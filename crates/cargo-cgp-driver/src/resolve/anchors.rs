@@ -41,7 +41,7 @@ pub struct Anchor {
     pub gate: fn(&AnchorInput<'_>) -> bool,
     /// The anchor itself, given the part of the input it reads.
     pub run: fn(ResolveCtx<'_, '_>, &AnchorInput<'_>) -> Option<Resolved>,
-    /// Whether the diagnostic is what this resolution explains.
+    /// Whether this resolution explains the diagnostic.
     pub accept: fn(&AnchorInput<'_>, &Resolved) -> bool,
     /// Whether the resolution plans as a use-site failure whatever its rustc code: set by the
     /// anchors at a call expression, and by the forwarding-entry anchor, whose wiring entry fails
@@ -90,17 +90,18 @@ pub static ANCHORS: [Anchor; 12] = [
         accept: accept_any,
         at_call: false,
     },
-    // A hand-written `impl … for Context` block the failure surfaces inside, which recovers the exact
-    // failing obligation with its concrete component parameters, more precisely than a use-site
-    // re-check.
+    // A hand-written `impl … for Context` block the failure surfaces inside, which recovers the
+    // exact failing obligation with its concrete component parameters, more precisely than a
+    // use-site re-check.
     Anchor {
         gate: unmet_obligation,
         run: |cx, input| resolve_impl_site(cx, input.primary_spans),
         accept: accept_any,
         at_call: false,
     },
-    // A wrapper implemented on a foreign type holding the context (`impl … for Router<Arc<MockApp>>`),
-    // whose CGP consumer failure sits several `where`-clause hops down.
+    // A wrapper implemented on a foreign type holding the context
+    // (`impl … for Router<Arc<MockApp>>`), whose CGP consumer failure sits several `where`-clause
+    // hops down.
     Anchor {
         gate: unmet_obligation,
         run: |cx, input| resolve_wrapper_chain(cx, input.primary_spans),
@@ -150,8 +151,9 @@ pub static ANCHORS: [Anchor; 12] = [
         accept: accept_any,
         at_call: true,
     },
-    // A bound of a generic function the call instantiates (`fail::<App>()`), read off the function's
-    // own `where` clauses: an `E0277` whose trait no span names and whose context no receiver carries.
+    // A bound of a generic function the call instantiates (`fail::<App>()`), read off the
+    // function's own `where` clauses: an `E0277` whose trait no span names and whose context no
+    // receiver carries.
     Anchor {
         gate: trait_bound,
         run: |cx, input| resolve_bound_call(cx, input.primary_spans),
@@ -160,9 +162,10 @@ pub static ANCHORS: [Anchor; 12] = [
     },
     // A `#[cgp_fn]` / `#[blanket_trait]` blanket trait the diagnostic names in its spans, required
     // through a `where` bound or supertrait rather than a direct call. The gate is deliberate: an
-    // `E0599` method call is the call-site anchor's, and a generic consumer's method call whose deep
-    // trait bound is only a note must stay declined when its dispatch parameter is unrecoverable,
-    // rather than latch onto that transitive trait (see `generic_consumer_unwritten_arg`).
+    // `E0599` method call is the call-site anchor's, and a generic consumer's method call whose
+    // deep trait bound is only a note must stay declined when its dispatch parameter is
+    // unrecoverable, rather than latch onto that transitive trait (see
+    // `generic_consumer_unwritten_arg`).
     Anchor {
         gate: trait_bound,
         run: |cx, input| resolve_use_site_blanket_trait(cx, &input.spans),

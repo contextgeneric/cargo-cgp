@@ -38,8 +38,9 @@ pub fn enclosing_trait_impls(tcx: TyCtxt<'_>, spans: &[Span]) -> Vec<DefId> {
 /// identity arguments (so a generic context keeps its generic form). A provider struct that merely
 /// shares a span (rustc names it in a "required for … to implement …" note) is excluded, since a
 /// provider is never a context; the caller then picks the candidate that actually wires a failing
-/// component. A span on the ADT's generics is left out too: rustc's "required by a bound in `Holder`"
-/// note lands on a bound of `struct Holder<T: Trait>`, which `Holder` asks of what it holds.
+/// component. A span on the ADT's generics is left out too: rustc's "required by a bound in
+/// `Holder`" note lands on a bound of `struct Holder<T: Trait>`, which `Holder` asks of what it
+/// holds.
 pub fn context_candidates_from_spans<'tcx>(tcx: TyCtxt<'tcx>, spans: &[Span]) -> Vec<Ty<'tcx>> {
     let mut candidates = Vec::new();
     for local in tcx.hir_crate_items(()).definitions() {

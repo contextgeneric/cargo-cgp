@@ -119,7 +119,7 @@ pub fn consumer_of_provider(
 
 /// The provider trait a component marker keys: the trait whose provider blanket bounds on
 /// `DelegateComponent<marker>` ([`provider_blanket_marker`]). `None` when `marker` is not an ADT,
-/// or when no provider trait keys on it, which is what makes this the marker recognizer
+/// or when no provider trait keys on it, which makes this the marker recognizer
 /// [`is_component_marker`] as well.
 pub fn marker_provider_trait(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<DefId> {
     let ty::Adt(marker_def, _) = marker.kind() else {
@@ -134,28 +134,28 @@ pub fn marker_provider_trait(tcx: TyCtxt<'_>, marker: Ty<'_>) -> Option<DefId> {
     })
 }
 
-/// Whether `ty` is a CGP **component marker** (the `…Component` key some provider trait's
-/// delegation blanket bounds on ([`marker_provider_trait`])), rather than an ordinary type used as
-/// a wiring key, such as the `String` of a per-type default or the `u64` of a dispatch table. The
-/// distinction is what lets a conflicting key be worded as a component or as a type, and it is
-/// structural rather than by name, so a type merely *called* `FooComponent` does not pass.
+/// Whether `ty` is a CGP **component marker**, the `…Component` key some provider trait's
+/// delegation blanket bounds on ([`marker_provider_trait`]), rather than an ordinary type used as a
+/// wiring key, such as the `String` of a per-type default or the `u64` of a dispatch table. The
+/// distinction lets a conflicting key be worded as a component or as a type, and it is structural
+/// rather than by name, so a type merely *called* `FooComponent` does not pass.
 pub fn is_component_marker(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     marker_provider_trait(tcx, ty).is_some()
 }
 
 /// The component marker a CGP **abstract-type** component keys on (`ScalarTypeProviderComponent`
-/// for `HasScalarType`), or `None` when `def_id` is not one. This is the name a context writes on the
-/// left of the `delegate_components!` entry that chooses the concrete type, so it is what the
-/// mismatch leaf's `help` offers as the fix.
+/// for `HasScalarType`), or `None` when `def_id` is not one. This is the name a context writes on
+/// the left of the `delegate_components!` entry that chooses the concrete type, so the mismatch
+/// leaf's `help` offers it as the fix.
 ///
 /// An abstract-type component is recognized **structurally**, by the three things
 /// [`#[cgp_type]`](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/reference/macros/cgp_type.md)
 /// generates and nothing else does: the trait is a CGP consumer trait
 /// ([`consumer_provider_trait`]), its *only* associated item is a type, and its provider trait
 /// carries the `UseType<T>` blanket impl that supplies that type. The last condition is the
-/// decisive one, since it makes `UseType<T>` a valid fix to suggest, and it is anchored by
-/// `DefId` to the crate defining `UseType`, so a same-named type elsewhere cannot pass. A
-/// behavioral component, or a plain trait with an associated type, matches none of the three.
+/// decisive one, since it makes `UseType<T>` a valid fix to suggest, and it is anchored by `DefId`
+/// to the crate defining `UseType`, so a same-named type elsewhere cannot pass. A behavioral
+/// component, or a plain trait with an associated type, matches none of the three.
 pub fn abstract_type_component_marker<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
     let mut items = tcx.associated_items(def_id).in_definition_order();
     let first = items.next()?;

@@ -34,8 +34,8 @@ pub fn carries_wiring(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// than a context. A provider is never a context, so a use-site recovery must not treat one as the
 /// failing context even when it merely shares a diagnostic span (rustc names the provider in a
 /// "required for … to implement …" note, whose span can fall inside the provider's own definition).
-/// The delegation blanket `impl<Ctx, P> ProviderTrait<Ctx> for P` has a *type parameter* `Self`, not
-/// an ADT, so it never matches here.
+/// The delegation blanket `impl<Ctx, P> ProviderTrait<Ctx> for P` has a *type parameter* `Self`,
+/// not an ADT, so it never matches here.
 pub fn is_provider_struct(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     let ty::Adt(def, _) = ty.kind() else {
         return false;

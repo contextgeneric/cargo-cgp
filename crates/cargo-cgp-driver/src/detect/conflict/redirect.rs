@@ -1,11 +1,11 @@
 //! Resolving what a blanket namespace forwarding maps one concrete key to.
 //!
-//! Both faces of the override conflict need the same answer. A *context* that joins a namespace
-//! and then wires a bare key it registers, and a *namespace* that inherits a parent and then binds
-//! a bare key the parent registers, each collide with a blanket forwarding whose `Delegate` is a
+//! Both faces of the override conflict need the same answer. A *context* that joins a namespace and
+//! then wires a bare key it registers, and a *namespace* that inherits a parent and then binds a
+//! bare key the parent registers, each collide with a blanket forwarding whose `Delegate` is a
 //! projection rather than a written type. Reading what that projection resolves to for the
-//! colliding key is what turns both from a bare overlap into a redirect collision that names the
-//! path to write instead.
+//! colliding key turns both from a bare overlap into a redirect collision that names the path to
+//! write instead.
 
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode, Unnormalized};
@@ -16,12 +16,12 @@ use crate::config::DELEGATE_ASSOC;
 use crate::resolve::query::bounding_trait_ref;
 
 /// What a blanket forwarding maps `concrete_key` to: its `Delegate` for that key, which a redirect
-/// makes a `RedirectLookup`. `blanket_impl_did` is the forwarding impl and `blanket_key` its generic
-/// key parameter: a context's `namespace …;` join, or a namespace's own inheritance blanket. The
-/// answer is recovered by normalizing the forwarded trait's `Delegate` projection for that key,
-/// `<concrete_key as ParentNamespace<Table>>::Delegate`, through the trait solver, the same
-/// re-entrant normalization the typed resolver uses. `None` unless the key is fully concrete and
-/// the projection resolves.
+/// makes a `RedirectLookup`. `blanket_impl_did` is the forwarding impl and `blanket_key` its
+/// generic key parameter: a context's `namespace …;` join, or a namespace's own inheritance
+/// blanket. The answer is recovered by normalizing the forwarded trait's `Delegate` projection for
+/// that key, `<concrete_key as ParentNamespace<Table>>::Delegate`, through the trait solver, the
+/// same re-entrant normalization the typed resolver uses. `None` unless the key is fully concrete
+/// and the projection resolves.
 pub fn namespace_delegate<'tcx>(
     tcx: TyCtxt<'tcx>,
     blanket_impl_did: DefId,
@@ -49,8 +49,8 @@ pub fn namespace_delegate<'tcx>(
 
 /// Normalize `ty` through a fresh inference context, returning the resolved type, or `None` if it
 /// does not resolve to a concrete type (an ambiguous or unresolved projection leaves inference vars
-/// or an alias behind). Re-entering the solver mid-emission is the same technique the typed resolver
-/// relies on.
+/// or an alias behind). Re-entering the solver mid-emission is the same technique the typed
+/// resolver relies on.
 fn normalize<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
     let ocx = ObligationCtxt::new(&infcx);

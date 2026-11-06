@@ -5,9 +5,9 @@ use rustc_errors::{DiagInner, DiagMessage, MultiSpan};
 use rustc_span::Span;
 
 /// The span of a block that coalesces `members`, ordered by source position: the first member's
-/// caret is the block's one primary span, and each other member's caret is a secondary span labelled
-/// [`COALESCED_SITE_LABEL`], so an editor shows the block as one diagnostic with related locations
-/// rather than one diagnostic per caret. A site repeated across members is labelled once.
+/// caret is the block's one primary span, and each other member's caret is a secondary span
+/// labelled [`COALESCED_SITE_LABEL`], so an editor shows the block as one diagnostic with related
+/// locations rather than one diagnostic per caret. A site repeated across members is labelled once.
 pub fn merged_span(members: &[&DiagInner]) -> MultiSpan {
     let mut sites = members
         .iter()

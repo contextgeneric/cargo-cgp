@@ -52,8 +52,8 @@ pub fn misdirected_impl_clauses<'tcx>(
         return None;
     }
 
-    // The impl's only type parameter is its context ([`is_misdirected_impl`]), and its lifetimes are
-    // erased like every obligation the walk reads.
+    // The impl's only type parameter is its context ([`is_misdirected_impl`]), and its lifetimes
+    // are erased like every obligation the walk reads.
     let args = ty::GenericArgs::for_item(tcx, impl_did, |param, _| match param.kind {
         ty::GenericParamDefKind::Lifetime => tcx.lifetimes.re_erased.into(),
         _ => context.into(),
@@ -71,9 +71,10 @@ pub fn misdirected_impl_clauses<'tcx>(
     )
 }
 
-/// Whether the local trait impl `impl_did` is a `#[cgp_impl]` impl on the provider `provider_did` whose header names the
-/// consumer trait paired with `provider_trait`: its `Self` is the provider, its trait is that
-/// consumer trait, and its type parameters are the context parameter `#[cgp_impl]` inserts alone.
+/// Whether the local trait impl `impl_did` is a `#[cgp_impl]` impl on the provider `provider_did`
+/// whose header names the consumer trait paired with `provider_trait`: its `Self` is the provider,
+/// its trait is that consumer trait, and its type parameters are the context parameter
+/// `#[cgp_impl]` inserts alone.
 fn is_misdirected_impl(
     tcx: TyCtxt<'_>,
     impl_did: DefId,

@@ -1,4 +1,5 @@
-//! Looking a wiring name up: whether a type of the name is declared, and which component a key names.
+//! Looking a wiring name up: whether a type of the name is declared, and which component a key
+//! names.
 
 use cargo_cgp_error_processing::UnresolvedWiringName;
 use rustc_hir::{QPath, TyKind};
@@ -70,7 +71,8 @@ pub fn is_component_name(tcx: TyCtxt<'_>, name: &str, markers: &[(DefId, DefId)]
 }
 
 /// The component `name` names, when exactly one marker is so named, as one that needs an import.
-/// `None` when no marker, several markers, or no public path to the one, so the import is ambiguous.
+/// `None` when no marker, several markers, or no public path to the one, so the import is
+/// ambiguous.
 pub fn component_not_imported(
     tcx: TyCtxt<'_>,
     name: &str,
@@ -95,6 +97,8 @@ pub fn component_not_imported(
 pub struct DeclaredNames(Vec<(String, bool)>);
 
 impl DeclaredNames {
+    /// Whether a type named `name` is declared where the crate could import it from, computed on
+    /// the first ask for that name and remembered.
     pub fn is_declared(&mut self, tcx: TyCtxt<'_>, name: &str) -> bool {
         if let Some(&(_, declared)) = self.0.iter().find(|(known, _)| known == name) {
             return declared;

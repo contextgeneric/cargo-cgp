@@ -14,8 +14,8 @@ use crate::resolve::query::{
 };
 use crate::resolve::walk::resolve_leaves;
 
-/// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait for
-/// Foreign` block whose `Self` is a foreign type holding the context*: for example
+/// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait
+/// for Foreign` block whose `Self` is a foreign type holding the context*: for example
 /// `impl CanAddApiRoutes for Router<Arc<MockApp>>`, where the routing wrapper's supertrait descends
 /// through a chain of ordinary user-trait `where`-clauses (`… CanAddRoute<MockApp, …>` → `MockApp:
 /// CanHandleApiSend<…>`) before it reaches a CGP consumer on the context. The context appears only
@@ -43,10 +43,11 @@ pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<R
             .impl_trait_ref(impl_did)
             .instantiate_identity()
             .skip_norm_wip();
-        // A provider-trait impl's `Self` is a provider struct, and its supertrait is `IsProviderFor`,
-        // so descending it would route the cause through that workaround, leaking `IsProviderFor` and
-        // the provider trait's own `__Context__` parameter into the tree. A caret on a provider's own
-        // impl is a documented decline (mirrored in [`resolve_impl_site`](super::resolve_impl_site)).
+        // A provider-trait impl's `Self` is a provider struct, and its supertrait is
+        // `IsProviderFor`, so descending it would route the cause through that workaround, leaking
+        // `IsProviderFor` and the provider trait's own `__Context__` parameter into the tree. A
+        // caret on a provider's own impl is a documented decline (mirrored in
+        // [`resolve_impl_site`](super::resolve_impl_site)).
         if is_provider_trait(tcx, trait_ref.def_id) {
             continue;
         }
@@ -87,8 +88,9 @@ pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<R
             return Some(Resolved {
                 context: self_ty.to_string(),
                 consumers: vec![wrapper],
-                // The impl's own trait heads the header; a routing wrapper such as `CanAddApiRoutes`
-                // is a plain trait, not a CGP consumer, so it reads `the trait` (`CGP-E003`).
+                // The impl's own trait heads the header; a routing wrapper such as
+                // `CanAddApiRoutes` is a plain trait, not a CGP consumer, so it reads `the trait`
+                // (`CGP-E003`).
                 class: if consumer_provider_trait(tcx, trait_ref.def_id).is_some() {
                     ResolvedClass::Consumer
                 } else {
@@ -111,15 +113,15 @@ const MAX_WRAPPER_DEPTH: u32 = 32;
 /// Descend `obligation` (an unmet ordinary-trait bound) looking for the nearest CGP consumer on a
 /// context beneath it, and append a cause per one found to `out`. Such a consumer obligation
 /// (`App: CanHandleApi<GreetApi>`) is the handoff: `consumer_handoff_causes` recovers its
-/// dependency tree, the descent stops there (that recovery walks the CGP chain the rest of the way),
-/// and the ordinary hops that led here are prepended as `trait impl` nodes. Anything else is
+/// dependency tree, the descent stops there (that recovery walks the CGP chain the rest of the
+/// way), and the ordinary hops that led here are prepended as `trait impl` nodes. Anything else is
 /// descended through its satisfying impl's `where`-clause obligations ([`wrapper_chain_children`]),
 /// following only the unmet ones.
 ///
 /// The descent reaches the consumer two ways, both handled by `wrapper_chain_children`: as a direct
 /// `where`-clause bound, or as the *base* of a projection bound
 /// (`<App as CanHandleApi<GreetApi>>::Response: Send`), since a `where`-clause naming an associated
-/// type of the broken consumer is what makes the outer trait genuinely fail (the direct
+/// type of the broken consumer makes the outer trait genuinely fail (the direct
 /// `App: CanHandleApiSend<GreetApi>` bound is instead *assumed to hold* off its ill-formed impl, so
 /// it is never the failing route). A branch with no satisfying impl, or one reaching no consumer
 /// within [`MAX_WRAPPER_DEPTH`], contributes nothing: only a genuine CGP consumer is ever reported,
@@ -139,8 +141,8 @@ fn collect_wrapper_chain_causes<'tcx>(
     // The handoff: `obligation` is a CGP consumer on a context. Recover its cause tree and
     // prepend the chain of ordinary hops that led here.
     if let Some(causes) = consumer_handoff_causes(cx, obligation) {
-        // Prepend the ordinary hops that led here to each path. `Causes` groups these by leaf at the
-        // top, so alternative routes reaching one cause down different branches all survive.
+        // Prepend the ordinary hops that led here to each path. `Causes` groups these by leaf at
+        // the top, so alternative routes reaching one cause down different branches all survive.
         for cause in causes.iter() {
             for path in &cause.paths {
                 out.push((cause.leaf.clone(), prepend_chain(chain, path.clone())));
@@ -197,9 +199,9 @@ fn consumer_handoff_causes<'tcx>(
 
 /// The obligations to descend from an unmet ordinary-trait bound: the `where`-clause obligations of
 /// the impl that would satisfy it, with each associated-type bound replaced by its *base* trait ref
-/// (`<App as CanHandleApi<Api>>::Response: Send` → `App: CanHandleApi<Api>`). The base is what a
-/// projection bound really rests on, and it is concrete even when the projected type itself is not,
-/// which is exactly why the ordinary
+/// (`<App as CanHandleApi<Api>>::Response: Send` → `App: CanHandleApi<Api>`). A projection bound
+/// really rests on the base, and it is concrete even when the projected type itself is not, which
+/// is exactly why the ordinary
 /// [`impl_where_obligations`](crate::resolve::query::impl_where_obligations) (which normalizes,
 /// turning the projection into an inference variable it then drops) cannot surface it. `None` when
 /// no impl matches. Matches each impl as `impl_where_obligations` does ([`match_impl`]), in the
@@ -219,16 +221,17 @@ fn wrapper_chain_children<'tcx>(
 
         let mut children = Vec::new();
         for (predicate, _) in tcx.clauses_of(impl_did).instantiate(tcx, impl_args) {
-            // Keep the predicate un-normalized so an associated-type `Self` survives; `skip_norm_wip`
-            // unwraps without normalizing, unlike the `ocx.normalize` a trait-clause walk uses.
+            // Keep the predicate un-normalized so an associated-type `Self` survives;
+            // `skip_norm_wip` unwraps without normalizing, unlike the `ocx.normalize` a
+            // trait-clause walk uses.
             let clause = infcx.deeply_resolve_ignoring_regions(predicate.skip_norm_wip());
             let clause = tcx.erase_and_anonymize_regions(clause);
             let Some(tp) = clause.as_trait_clause() else {
                 continue;
             };
-            // An associated-type bound (`<App as CanHandleApi<Api>>::Response: Send`) descends to the
-            // projection's base trait (`App: CanHandleApi<Api>`) (what it truly rests on) rather
-            // than the bound itself.
+            // An associated-type bound (`<App as CanHandleApi<Api>>::Response: Send`) descends to
+            // the projection's base trait (`App: CanHandleApi<Api>`) (what it truly rests on)
+            // rather than the bound itself.
             let child = match tp.self_ty().skip_binder().kind() {
                 ty::Alias(_, alias) if matches!(alias.kind, ty::AliasTyKind::Projection { .. }) => {
                     ty::Binder::dummy(alias.trait_ref(tcx)).upcast(tcx)
@@ -247,8 +250,8 @@ fn wrapper_chain_children<'tcx>(
     None
 }
 
-/// Prepend a top-to-bottom list of ordinary-hop nodes to `path`, so `chain[0]` becomes the outermost
-/// node above the recovered CGP chain.
+/// Prepend a top-to-bottom list of ordinary-hop nodes to `path`, so `chain[0]` becomes the
+/// outermost node above the recovered CGP chain.
 fn prepend_chain(chain: &[DepNode], mut path: Vec<ChainNode>) -> Vec<ChainNode> {
     for hop in chain.iter().rev() {
         path.insert(0, ChainNode::Hop(hop.clone()));

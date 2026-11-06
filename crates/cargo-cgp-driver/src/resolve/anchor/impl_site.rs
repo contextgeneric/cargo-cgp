@@ -35,8 +35,8 @@ use crate::resolve::walk::resolve_leaves;
 /// clause is read as that bound instead (`where_bound_on_context`). `None` when no enclosing impl
 /// on a context carries an unmet CGP consumer supertrait or such a bound.
 ///
-/// `spans` are the diagnostic's primary spans, and an impl counts only when one of them is about the
-/// impl itself (`is_about_impl`), so an unrelated error inside a method body is left alone.
+/// `spans` are the diagnostic's primary spans, and an impl counts only when one of them is about
+/// the impl itself (`is_about_impl`), so an unrelated error inside a method body is left alone.
 pub fn resolve_impl_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     let tcx = cx.tcx;
     for impl_did in enclosing_trait_impls(tcx, spans) {
@@ -62,8 +62,9 @@ pub fn resolve_impl_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
         }
         // A provider-trait impl (`impl Runner<Ctx> for RunViaInner`) has a *provider* struct as its
         // `Self`, not a context, and its only supertrait is `IsProviderFor`, so the supertrait
-        // recovery below would reach a consumer only via the `IsProviderFor` workaround this resolver
-        // sheds (leaking `IsProviderFor` and the trait's `__Context__` into the tree). Skip that.
+        // recovery below would reach a consumer only via the `IsProviderFor` workaround this
+        // resolver sheds (leaking `IsProviderFor` and the trait's `__Context__` into the tree).
+        // Skip that.
         if is_provider_trait(tcx, trait_ref.def_id) {
             continue;
         }
@@ -89,7 +90,8 @@ pub fn resolve_impl_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resol
                 context: context.to_string(),
                 consumers: vec![trait_ref.print_only_trait_path().to_string()],
                 class,
-                // The wrapper is implemented directly on the context, so the subject is the context.
+                // The wrapper is implemented directly on the context, so the subject is the
+                // context.
                 subject_is_context: true,
                 causes,
             });
@@ -138,9 +140,9 @@ fn where_bound_on_context<'tcx>(
 
 /// Recover a cause per unmet CGP consumer supertrait of a wrapper obligation `Self: Wrapper` whose
 /// `Self` is the `context` [`resolve_impl_site`] read, each tree headed by the wrapper's own
-/// `trait impl` node. Returns whether the wrapper is itself a CGP consumer, as a class (for the header wording),
-/// and the causes, or `None` when no CGP consumer supertrait is unmet, so a plain bound like
-/// `Send` is skipped rather than mis-recovered.
+/// `trait impl` node. Returns whether the wrapper is itself a CGP consumer, as a class (for the
+/// header wording), and the causes, or `None` when no CGP consumer supertrait is unmet, so a plain
+/// bound like `Send` is skipped rather than mis-recovered.
 fn wrapper_consumer_causes<'tcx>(
     cx: ResolveCtx<'_, 'tcx>,
     obligation: ty::PolyTraitClause<'tcx>,
@@ -195,8 +197,8 @@ fn wrapper_consumer_causes<'tcx>(
     let causes = Causes::union(causes).headed_by(&wrapper_node);
     // Whether the wrapper trait is a CGP *consumer* trait or a plain wrapper, decided by its
     // fingerprint: a consumer trait carries a blanket impl routing to a provider trait
-    // (`consumer_provider_trait`), while a hand-written wrapper like `CanHandleApiSend` has only its
-    // concrete impl. This picks `the consumer trait` vs `the trait` in the header.
+    // (`consumer_provider_trait`), while a hand-written wrapper like `CanHandleApiSend` has only
+    // its concrete impl. This picks `the consumer trait` vs `the trait` in the header.
     let class = if consumer_provider_trait(tcx, trait_ref.def_id).is_some() {
         ResolvedClass::Consumer
     } else {

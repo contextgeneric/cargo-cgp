@@ -4,8 +4,8 @@
 //! makes the macro generate an inside-out impl of the wrong trait, which produces a burst of
 //! macro-lowering errors (`E0425`, `E0107`, `E0186`, `E0207`, and an `E0308` cascade) plus a
 //! downstream check failure, none naming the mistake. The stage recognizes the mistake once from
-//! the compiler and reshapes the `E0107` whose caret is on the misused trait name, dropping the rest
-//! of the burst.
+//! the compiler and reshapes the `E0107` whose caret is on the misused trait name, dropping the
+//! rest of the burst.
 
 use cargo_cgp_error_processing::{CgpImplMisuse, ClassPlan, Leaf, Resolved};
 use rustc_errors::codes::{E0107, E0186, E0207, E0308, E0425};

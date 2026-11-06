@@ -38,9 +38,11 @@ pub enum Resolution {
 
 /// A failure the resolver traced, with what the emitter's final tail needs from it.
 pub struct ResolvedFailure {
+    /// The traced root causes and their chains.
     pub resolved: Resolved,
     /// The span-independent signature of the cause, for the de-duplication ledger.
     pub cause_signature: String,
+    /// What the transform left for the final tail.
     pub transformed: TransformedResolution,
 }
 
@@ -48,9 +50,11 @@ pub struct ResolvedFailure {
 /// the class headline the de-duplication ledger records, and whether the block may coalesce with
 /// others sharing its cause.
 pub struct TransformedResolution {
+    /// The `root cause:` note, rendered at the flush.
     pub note: PendingNote,
     /// The class headline, and the provider form a declined re-report may carry instead.
     pub headers: Vec<String>,
+    /// Whether the block may coalesce at the flush with others sharing its root cause.
     pub coalesces: bool,
 }
 

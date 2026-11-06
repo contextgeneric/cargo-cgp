@@ -69,8 +69,8 @@ pub fn render_lookup_trait(tcx: TyCtxt<'_>, impl_did: DefId) -> String {
 /// `open` key's per-entry generic or a `for`-loop key parameter, prints its parameter name
 /// (`@ComputerComponent.Code.u64`). The `__Wildcard__` tail `cgp`'s macros end a key with is left
 /// out, since the programmer never wrote it, so a key reads exactly as its entry wrote it. The bare
-/// `@…` form (no `Path!(…)` wrapper) is what the rewritten conflict message uses. `None` on a spine
-/// that is not `PathCons`/`Nil`.
+/// The rewritten conflict message uses the bare `@…` form (no `Path!(…)` wrapper). `None` on a
+/// spine that is not `PathCons`/`Nil`.
 pub fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
     let mut segments: Vec<String> = Vec::new();
     let mut current = path;
@@ -108,8 +108,8 @@ pub fn render_path<'tcx>(tcx: TyCtxt<'tcx>, path: Ty<'tcx>) -> Option<String> {
                     // parameter name, a primitive such as the `u64` an input-keyed `open` entry
                     // names, a type with a qualifier only when it tells two types apart
                     // (`std::io::Error`), and one with arguments with all of them (`Wrap<u64>`),
-                    // which is what tells two keys over one type apart. A plain lowercase name would
-                    // read as a symbol, so it declines.
+                    // which tells two keys over one type apart. A plain lowercase name would read
+                    // as a symbol, so it declines.
                     _ => {
                         let segment = tcx.erase_and_anonymize_regions(head).to_string();
                         if is_symbol_segment(&segment) {

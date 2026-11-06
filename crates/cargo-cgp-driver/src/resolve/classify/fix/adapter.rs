@@ -18,8 +18,8 @@ const MAX_ADAPTERS: usize = 3;
 /// (`WithProvider<P>` where `P: FieldGetter`, `Promote<P>` where `P: Computer`), the ADT applied to
 /// `Provider`, kept when the solver confirms it implements the trait for the same arguments. An ADT
 /// that merely carries its parameter as a type (`UseType<T>`) bounds it by nothing, so it adapts no
-/// provider and is never named. A fix is named only when the solver confirms it for the slot, never by an
-/// adapter's name.
+/// provider and is never named. A fix is named only when the solver confirms it for the slot, never
+/// by an adapter's name.
 ///
 /// Empty when `parent` is not fully known (it holds an inference variable, a placeholder, a
 /// parameter, or a projection), so no adapter is confirmed against a guess.

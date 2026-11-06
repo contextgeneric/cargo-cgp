@@ -1,12 +1,13 @@
 //! Replacing the compiler's help on a `#[use_type]` import that misspells its associated type.
 //!
 //! The import rewrites a bare alias to `<Self as Trait>::Name`, and name resolution reports a name
-//! the trait does not declare (`E0576`) at the alias the program wrote. The compiler's help respells
-//! that alias, which leaves the import's name in place, so the edit does not compile. Once
-//! resolution is over the driver's `after_expansion` callback runs [`reshape_use_type_misspellings`],
-//! which confirms the import ([`detect::detect_use_type_misspelling`]), drops each suggestion that
-//! edits the alias, and adds a `help` naming the rename in the import. The header stays the
-//! compiler's, since it already names the missing type and its trait.
+//! the trait does not declare (`E0576`) at the alias the program wrote. The compiler's help
+//! respells that alias, which leaves the import's name in place, so the edit does not compile. Once
+//! resolution is over the driver's `after_expansion` callback runs
+//! [`reshape_use_type_misspellings`], which confirms the import
+//! ([`detect::detect_use_type_misspelling`]), drops each suggestion that edits the alias, and adds
+//! a `help` naming the rename in the import. The header stays the compiler's, since it already
+//! names the missing type and its trait.
 //!
 //! The buffer is read and written under the output's lock, and the detection, which runs compiler
 //! queries, runs with the lock released, as in the name-resolution pass.

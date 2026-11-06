@@ -14,6 +14,7 @@ use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict};
 /// rustc reports as several errors becomes one.
 #[derive(Default)]
 pub struct StructuralStage {
+    /// The structural mistakes already reported.
     pub reported: Vec<StructuralMistake>,
 }
 

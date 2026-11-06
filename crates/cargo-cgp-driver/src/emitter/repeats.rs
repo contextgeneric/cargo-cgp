@@ -5,8 +5,8 @@
 //! generated, or at a second caret on the same line, when it checks a call's bound once for the
 //! call and once for an argument. The two blocks state one mistake, so the later one is merged into
 //! the earlier, whose notes are the fuller. A caret the earlier block already covers, such as the
-//! whole call around its method name, adds nothing; one elsewhere on the line is kept as a secondary
-//! caret labelled [`COALESCED_SITE_LABEL`], so no location is lost.
+//! whole call around its method name, adds nothing; one elsewhere on the line is kept as a
+//! secondary caret labelled [`COALESCED_SITE_LABEL`], so no location is lost.
 
 use cargo_cgp_error_processing::COALESCED_SITE_LABEL;
 use rustc_errors::DiagInner;

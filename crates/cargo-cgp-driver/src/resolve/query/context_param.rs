@@ -29,9 +29,10 @@ pub fn context_param_span(tcx: TyCtxt<'_>, impl_did: LocalDefId) -> Option<Span>
 }
 
 /// Whether `impl_did` is the impl a `#[cgp_fn]` or `#[cgp_impl]` lowered a definition into, the
-/// definitions that take `#[uses]` and `#[use_provider]`. `#[cgp_impl]` writes the impl's trait path,
-/// in its explicit-context form too, which names its context itself, and `#[cgp_fn]` the whole item;
-/// a hand-written impl, with or without `#[cgp_provider]`, keeps the spans its program wrote.
+/// definitions that take `#[uses]` and `#[use_provider]`. `#[cgp_impl]` writes the impl's trait
+/// path, in its explicit-context form too, which names its context itself, and `#[cgp_fn]` the
+/// whole item; a hand-written impl, with or without `#[cgp_provider]`, keeps the spans its program
+/// wrote.
 pub fn is_cgp_definition_impl(tcx: TyCtxt<'_>, impl_did: DefId) -> bool {
     let Some(local) = impl_did.as_local() else {
         return false;
