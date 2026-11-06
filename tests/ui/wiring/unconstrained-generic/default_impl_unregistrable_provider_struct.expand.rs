@@ -10,6 +10,8 @@
 //! also declares; the shape is an open issue of the class.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/unconstrained-generic.md.
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

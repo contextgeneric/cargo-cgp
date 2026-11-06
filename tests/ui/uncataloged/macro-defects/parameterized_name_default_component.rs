@@ -6,7 +6,7 @@
 //!
 //! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 
 //@quality: usability
 //@codes: none

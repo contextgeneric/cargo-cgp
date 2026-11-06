@@ -1,27 +1,27 @@
 error[E0277]: [CGP-E002] the provider trait `Greeter` with context `Context` is not implemented for provider `GreetHello`
-  --> src/main.rs:25:44
+  --> src/main.rs:27:44
    |
-21 | / macro_rules! greeter_provider {
-22 | |     ($provider:ident) => {
-23 | |         pub struct $provider;
-24 | |
-25 | |         impl<Context> Greeter<Context> for $provider {
+23 | / macro_rules! greeter_provider {
+24 | |     ($provider:ident) => {
+25 | |         pub struct $provider;
+26 | |
+27 | |         impl<Context> Greeter<Context> for $provider {
    | |                                            ^^^^^^^^^ unsatisfied trait bound
 ...  |
-30 | |     };
-31 | | }
+32 | |     };
+33 | | }
    | |_- this error originates in the macro `greeter_provider` which comes from the expansion of the attribute macro `cgp_component`
-32 |
-33 |   greeter_provider!(GreetHello);
+34 |
+35 |   greeter_provider!(GreetHello);
    |   ----------------------------- in this macro invocation
    |
 help: the trait `IsProviderFor<GreeterComponent, Context>` is not implemented for `GreetHello`
-  --> src/main.rs:23:9
+  --> src/main.rs:25:9
    |
-23 |         pub struct $provider;
+25 |         pub struct $provider;
    |         ^^^^^^^^^^^^^^^^^^^^^
 ...
-33 | greeter_provider!(GreetHello);
+35 | greeter_provider!(GreetHello);
    | ----------------------------- in this macro invocation
    = help: the following other types implement trait `IsProviderFor<Component, Context, Params>`:
              `BindErr<M, Cont>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
@@ -34,9 +34,9 @@ help: the trait `IsProviderFor<GreeterComponent, Context>` is not implemented fo
              `BuildAndMergeOutputs<Output, Handlers>` implements `IsProviderFor<ComputerComponent, __Context__, __Params__>`
            and 200 others
 note: required by a bound in `Greeter`
-  --> src/main.rs:16:1
+  --> src/main.rs:18:1
    |
-16 | #[cgp_component(Greeter)]
+18 | #[cgp_component(Greeter)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Greeter`
 
 For more information about this error, try `rustc --explain E0277`.

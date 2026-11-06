@@ -1,7 +1,7 @@
 error[E0119]: conflicting implementations of trait `IsProviderFor<LabelerComponent, _, _>` for type `Broadcaster`
-  --> src/main.rs:41:9
+  --> src/main.rs:43:9
    |
-41 |         LabelerComponent: FixedLabel,
+43 |         LabelerComponent: FixedLabel,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: conflicting implementation in crate `cgp_test_crate_b`:
@@ -9,9 +9,9 @@ error[E0119]: conflicting implementations of trait `IsProviderFor<LabelerCompone
              where <__Key__ as cgp::prelude::DefaultNamespace<Broadcaster>>::Delegate == __Value__, __Key__: cgp::prelude::DefaultNamespace<Broadcaster>, __Value__: IsProviderFor<__Key__, __Context__, __Params__>, __Params__: ?Sized;
 
 error[E0119]: conflicting implementations of trait `DelegateComponent<LabelerComponent>` for type `Broadcaster`
-  --> src/main.rs:41:9
+  --> src/main.rs:43:9
    |
-41 |         LabelerComponent: FixedLabel,
+43 |         LabelerComponent: FixedLabel,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: conflicting implementation in crate `cgp_test_crate_b`:

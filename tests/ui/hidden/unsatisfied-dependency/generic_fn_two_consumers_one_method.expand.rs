@@ -7,6 +7,8 @@
 //! both traits.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

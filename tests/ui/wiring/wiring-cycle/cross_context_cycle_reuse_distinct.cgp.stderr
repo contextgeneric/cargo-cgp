@@ -1,24 +1,24 @@
 error[E0275]: overflow evaluating the requirement `Inner: CanUseComponent<ProviderNComponent>`
-   --> src/main.rs:98:9
+   --> src/main.rs:100:9
     |
- 98 |         ProviderNComponent,
+100 |         ProviderNComponent,
     |         ^^^^^^^^^^^^^^^^^^
     |
 note: required by a bound in `__CheckInner`
-   --> src/main.rs:96:1
+   --> src/main.rs:98:1
     |
- 96 | / check_components! {
- 97 | |     Inner {
- 98 | |         ProviderNComponent,
- 99 | |     }
-100 | | }
+ 98 | / check_components! {
+ 99 | |     Inner {
+100 | |         ProviderNComponent,
+101 | |     }
+102 | | }
     | |_^ required by this bound in `__CheckInner`
     = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: [CGP-E001] missing field `name` on `Outer`
-   --> src/main.rs:104:9
+   --> src/main.rs:106:9
     |
-104 |         ProviderRComponent,
+106 |         ProviderRComponent,
     |         ^^^^^^^^^^^^^^^^^^
     |
     = note: root cause: [CGP-E110] missing field `name` on `Outer`

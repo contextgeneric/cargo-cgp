@@ -1,21 +1,21 @@
 error[E0271]: type mismatch resolving `<App as CanLoad<u32>>::Output == u32`
-  --> src/main.rs:51:22
+  --> src/main.rs:53:22
    |
-51 |     let _: u32 = app.fetch::<u32>();
+53 |     let _: u32 = app.fetch::<u32>();
    |                      ^^^^^ type mismatch resolving `<App as CanLoad<u32>>::Output == u32`
    |
 note: expected this to be `u32`
-  --> src/main.rs:12:1
+  --> src/main.rs:14:1
    |
-12 | #[cgp_component(Loader)]
+14 | #[cgp_component(Loader)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^
 note: required by a bound in `CanFetch::fetch`
-  --> src/main.rs:29:26
+  --> src/main.rs:31:26
    |
-26 | pub trait CanFetch {
-27 |     fn fetch<T>(&self) -> T
-28 |     where
-29 |         Self: CanLoad<T, Output = T>;
+28 | pub trait CanFetch {
+29 |     fn fetch<T>(&self) -> T
+30 |     where
+31 |         Self: CanLoad<T, Output = T>;
    |                          ^^^^^^^^^^ required by this bound in `CanFetch::fetch`
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 

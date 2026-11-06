@@ -11,6 +11,8 @@
 //! import, and the help still speaks of several traits.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 
 //@quality: usability
 //@codes: none

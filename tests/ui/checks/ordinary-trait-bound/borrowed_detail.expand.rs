@@ -6,7 +6,7 @@
 //!
 //! CGP error class: unsatisfied ordinary trait bound (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/ordinary-trait-bound.md).
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -1,22 +1,22 @@
 error[E0599]: the method `encode` exists for struct `App`, but its trait bounds were not satisfied
-  --> src/main.rs:42:24
+  --> src/main.rs:44:24
    |
-26 | pub struct App {
+28 | pub struct App {
    | -------------- method `encode` not found for this struct because it doesn't satisfy `App: CanEncode<_>` or `_: HasField<Symbol<4, Chars<..>>>`
 ...
-42 |     let _ = holder.app.encode(&1u32);
+44 |     let _ = holder.app.encode(&1u32);
    |                        ^^^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `Encoder`
-  --> src/main.rs:15:5
+  --> src/main.rs:17:5
    |
-15 |     fn encode(&self, value: &Value) -> String;
+17 |     fn encode(&self, value: &Value) -> String;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
-  --> src/main.rs:18:1
+  --> src/main.rs:20:1
    |
-18 | #[cgp_impl(new EncodeNamed)]
+20 | #[cgp_impl(new EncodeNamed)]
    | ^^^^^^^^^^^^^^^-----------^^ unsatisfied trait bound introduced here
 note: the trait `cgp::prelude::HasField` must be implemented
   --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
@@ -25,15 +25,15 @@ note: the trait `cgp::prelude::HasField` must be implemented
    | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanEncode` defines an item `encode`, perhaps you need to implement it
-  --> src/main.rs:14:1
+  --> src/main.rs:16:1
    |
-14 | pub trait CanEncode<Value> {
+16 | pub trait CanEncode<Value> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
-42 -     let _ = holder.app.encode(&1u32);
-42 +     let _ = App::encode(&1u32);
+44 -     let _ = holder.app.encode(&1u32);
+44 +     let _ = App::encode(&1u32);
    |
 
 For more information about this error, try `rustc --explain E0599`.

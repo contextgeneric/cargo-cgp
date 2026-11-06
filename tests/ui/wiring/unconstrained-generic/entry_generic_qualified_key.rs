@@ -9,6 +9,8 @@
 //!
 //! CGP error class:
 //! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unconstrained-generic.md>.
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 
 //@quality: usability
 //@codes: CGP-E019

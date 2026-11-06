@@ -4,8 +4,6 @@
 //! wiring entry that causes the overlap is never named.
 //!
 //! CGP error class: conflicting wiring (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/conflicting-wiring.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: acceptable
 //@codes: none

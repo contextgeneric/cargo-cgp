@@ -4,8 +4,6 @@
 //! lookup never reaches, since only `DefaultNamespace` routes the component there.
 //!
 //! CGP error class: unregistered namespace path (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/unregistered-namespace-path.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E113

@@ -1,55 +1,55 @@
 error[E0599]: the method `greet` exists for reference `&Context`, but its trait bounds were not satisfied
-  --> src/main.rs:26:13
+  --> src/main.rs:28:13
    |
-26 |     context.greet();
+28 |     context.greet();
    |             ^^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: candidate #1 is defined in the trait `Greeter`
-  --> src/main.rs:17:5
+  --> src/main.rs:19:5
    |
-17 |     fn greet(&self);
+19 |     fn greet(&self);
    |     ^^^^^^^^^^^^^^^^
 note: candidate #2 is defined in the trait `Welcomer`
-  --> src/main.rs:22:5
+  --> src/main.rs:24:5
    |
-22 |     fn greet(&self);
+24 |     fn greet(&self);
    |     ^^^^^^^^^^^^^^^^
 note: the following trait bounds were not satisfied:
       `&Context: Greeter<&Context>`
       `Context: Greeter<Context>`
-  --> src/main.rs:15:1
+  --> src/main.rs:17:1
    |
-15 | #[cgp_component(Greeter)]
+17 | #[cgp_component(Greeter)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^
-16 | pub trait CanGreet {
+18 | pub trait CanGreet {
    |           ^^^^^^^^
 note: the following trait bounds were not satisfied:
       `&Context: Welcomer<&Context>`
       `Context: Welcomer<Context>`
-  --> src/main.rs:20:1
+  --> src/main.rs:22:1
    |
-20 | #[cgp_component(Welcomer)]
+22 | #[cgp_component(Welcomer)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
-21 | pub trait CanWelcome {
+23 | pub trait CanWelcome {
    |           ^^^^^^^^^^
    = help: items from traits can only be used if the type parameter is bounded by the trait
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: disambiguate the associated function for candidate #1
    |
-26 -     context.greet();
-26 +     <&Context as Greeter>::greet(&);
+28 -     context.greet();
+28 +     <&Context as Greeter>::greet(&);
    |
 help: disambiguate the associated function for candidate #2
    |
-26 -     context.greet();
-26 +     <&Context as Welcomer>::greet(&);
+28 -     context.greet();
+28 +     <&Context as Welcomer>::greet(&);
    |
 help: the following traits define an item `greet`, perhaps you need to restrict type parameter `Context` with one of them:
    |
-25 | fn run<Context: CanGreet>(context: &Context) {
+27 | fn run<Context: CanGreet>(context: &Context) {
    |               ++++++++++
-25 | fn run<Context: CanWelcome>(context: &Context) {
+27 | fn run<Context: CanWelcome>(context: &Context) {
    |               ++++++++++++
 
 For more information about this error, try `rustc --explain E0599`.

@@ -7,6 +7,8 @@
 //!
 //! CGP error class:
 //! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/wrong-component-half.md>.
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 
 //@quality: usability
 //@codes: CGP-E032

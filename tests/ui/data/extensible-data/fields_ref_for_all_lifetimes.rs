@@ -5,7 +5,7 @@
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 
 //@quality: usability
 //@codes: none

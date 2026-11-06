@@ -8,7 +8,7 @@
 //!
 //! CGP error class: none yet.
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

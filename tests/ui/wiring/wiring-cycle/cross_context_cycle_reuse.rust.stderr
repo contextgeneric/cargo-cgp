@@ -1,148 +1,148 @@
 error[E0277]: the trait bound `Inner: CanUseComponent<ProviderNComponent>` is not satisfied
-  --> src/main.rs:96:9
-   |
-96 |         ProviderNComponent,
-   |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-   |
-help: the trait `IsProviderFor<ProviderNComponent, Inner>` is not implemented for `Inner`
-  --> src/main.rs:51:1
-   |
-51 | pub struct Inner {}
-   | ^^^^^^^^^^^^^^^^
-help: the trait `IsProviderFor<ProviderNComponent, __Context__, __Params__>` is conditionally implemented for `Inner`
-  --> src/main.rs:83:9
-   |
-81 | / delegate_components! {
-82 | |     Inner {
-83 | |         ProviderNComponent: DoN<Outer>,
-   | |         ^^^^^^^^^^^^^^^^^^
-84 | |     }
-85 | | }
-   | |_- unsatisfied requirement introduced here: `DoN<Outer>: IsProviderFor<ProviderNComponent, _, _>`
-note: required for `Inner` to implement `ProviderN<Inner>`
-  --> src/main.rs:26:1
-   |
-26 | #[cgp_component(ProviderN)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: required for `Inner` to implement `CanN`
-  --> src/main.rs:26:1
-   |
-26 | #[cgp_component(ProviderN)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-27 | pub trait CanN {
-   |           ^^^^
-note: required for `DoM<Inner>` to implement `IsProviderFor<ProviderMComponent, Outer>`
-  --> src/main.rs:67:1
-   |
-67 | #[cgp_impl(new DoM<Partner>)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-...
-70 |     Partner: CanN,
-   |              ---- unsatisfied trait bound introduced here
-   = note: 1 redundant requirement hidden
-   = note: required for `Outer` to implement `IsProviderFor<ProviderMComponent, Outer>`
-note: required for `Outer` to implement `ProviderM<Outer>`
-  --> src/main.rs:31:1
-   |
-31 | #[cgp_component(ProviderM)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: required for `Outer` to implement `CanM`
-  --> src/main.rs:31:1
-   |
-31 | #[cgp_component(ProviderM)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-32 | pub trait CanM {
-   |           ^^^^
-note: required for `Outer` to implement `Linked`
-  --> src/main.rs:48:15
-   |
-48 | impl<Context> Linked for Context where Context: CanM {}
-   |               ^^^^^^     ^^^^^^^                ---- unsatisfied trait bound introduced here
-   = note: 1 redundant requirement hidden
-   = note: required for `DoN<Outer>` to implement `IsProviderFor<ProviderNComponent, Inner>`
-   = note: required for `Inner` to implement `CanUseComponent<ProviderNComponent>`
-note: required by a bound in `__CheckInner`
-  --> src/main.rs:94:1
-   |
-94 | / check_components! {
-95 | |     Inner {
-96 | |         ProviderNComponent,
-97 | |     }
-98 | | }
-   | |_^ required by this bound in `__CheckInner`
-   = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `Inner: IsProviderFor<ProviderNComponent, Inner>` is not satisfied
-   --> src/main.rs:102:9
+   --> src/main.rs:98:9
     |
-102 |         ProviderRComponent,
+ 98 |         ProviderNComponent,
     |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
     |
 help: the trait `IsProviderFor<ProviderNComponent, Inner>` is not implemented for `Inner`
-   --> src/main.rs:51:1
+   --> src/main.rs:53:1
     |
- 51 | pub struct Inner {}
+ 53 | pub struct Inner {}
     | ^^^^^^^^^^^^^^^^
 help: the trait `IsProviderFor<ProviderNComponent, __Context__, __Params__>` is conditionally implemented for `Inner`
-   --> src/main.rs:83:9
+   --> src/main.rs:85:9
     |
- 81 | / delegate_components! {
- 82 | |     Inner {
- 83 | |         ProviderNComponent: DoN<Outer>,
+ 83 | / delegate_components! {
+ 84 | |     Inner {
+ 85 | |         ProviderNComponent: DoN<Outer>,
     | |         ^^^^^^^^^^^^^^^^^^
- 84 | |     }
- 85 | | }
+ 86 | |     }
+ 87 | | }
     | |_- unsatisfied requirement introduced here: `DoN<Outer>: IsProviderFor<ProviderNComponent, _, _>`
 note: required for `Inner` to implement `ProviderN<Inner>`
-   --> src/main.rs:26:1
+   --> src/main.rs:28:1
     |
- 26 | #[cgp_component(ProviderN)]
+ 28 | #[cgp_component(ProviderN)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `Inner` to implement `CanN`
-   --> src/main.rs:26:1
+   --> src/main.rs:28:1
     |
- 26 | #[cgp_component(ProviderN)]
+ 28 | #[cgp_component(ProviderN)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 27 | pub trait CanN {
+ 29 | pub trait CanN {
     |           ^^^^
 note: required for `DoM<Inner>` to implement `IsProviderFor<ProviderMComponent, Outer>`
-   --> src/main.rs:67:1
+   --> src/main.rs:69:1
     |
- 67 | #[cgp_impl(new DoM<Partner>)]
+ 69 | #[cgp_impl(new DoM<Partner>)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
- 70 |     Partner: CanN,
+ 72 |     Partner: CanN,
     |              ---- unsatisfied trait bound introduced here
     = note: 1 redundant requirement hidden
     = note: required for `Outer` to implement `IsProviderFor<ProviderMComponent, Outer>`
 note: required for `Outer` to implement `ProviderM<Outer>`
-   --> src/main.rs:31:1
+   --> src/main.rs:33:1
     |
- 31 | #[cgp_component(ProviderM)]
+ 33 | #[cgp_component(ProviderM)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `Outer` to implement `CanM`
-   --> src/main.rs:31:1
+   --> src/main.rs:33:1
     |
- 31 | #[cgp_component(ProviderM)]
+ 33 | #[cgp_component(ProviderM)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 32 | pub trait CanM {
+ 34 | pub trait CanM {
     |           ^^^^
 note: required for `Outer` to implement `Linked`
-   --> src/main.rs:48:15
+   --> src/main.rs:50:15
     |
- 48 | impl<Context> Linked for Context where Context: CanM {}
+ 50 | impl<Context> Linked for Context where Context: CanM {}
+    |               ^^^^^^     ^^^^^^^                ---- unsatisfied trait bound introduced here
+    = note: 1 redundant requirement hidden
+    = note: required for `DoN<Outer>` to implement `IsProviderFor<ProviderNComponent, Inner>`
+    = note: required for `Inner` to implement `CanUseComponent<ProviderNComponent>`
+note: required by a bound in `__CheckInner`
+   --> src/main.rs:96:1
+    |
+ 96 | / check_components! {
+ 97 | |     Inner {
+ 98 | |         ProviderNComponent,
+ 99 | |     }
+100 | | }
+    | |_^ required by this bound in `__CheckInner`
+    = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Inner: IsProviderFor<ProviderNComponent, Inner>` is not satisfied
+   --> src/main.rs:104:9
+    |
+104 |         ProviderRComponent,
+    |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+help: the trait `IsProviderFor<ProviderNComponent, Inner>` is not implemented for `Inner`
+   --> src/main.rs:53:1
+    |
+ 53 | pub struct Inner {}
+    | ^^^^^^^^^^^^^^^^
+help: the trait `IsProviderFor<ProviderNComponent, __Context__, __Params__>` is conditionally implemented for `Inner`
+   --> src/main.rs:85:9
+    |
+ 83 | / delegate_components! {
+ 84 | |     Inner {
+ 85 | |         ProviderNComponent: DoN<Outer>,
+    | |         ^^^^^^^^^^^^^^^^^^
+ 86 | |     }
+ 87 | | }
+    | |_- unsatisfied requirement introduced here: `DoN<Outer>: IsProviderFor<ProviderNComponent, _, _>`
+note: required for `Inner` to implement `ProviderN<Inner>`
+   --> src/main.rs:28:1
+    |
+ 28 | #[cgp_component(ProviderN)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Inner` to implement `CanN`
+   --> src/main.rs:28:1
+    |
+ 28 | #[cgp_component(ProviderN)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 29 | pub trait CanN {
+    |           ^^^^
+note: required for `DoM<Inner>` to implement `IsProviderFor<ProviderMComponent, Outer>`
+   --> src/main.rs:69:1
+    |
+ 69 | #[cgp_impl(new DoM<Partner>)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 72 |     Partner: CanN,
+    |              ---- unsatisfied trait bound introduced here
+    = note: 1 redundant requirement hidden
+    = note: required for `Outer` to implement `IsProviderFor<ProviderMComponent, Outer>`
+note: required for `Outer` to implement `ProviderM<Outer>`
+   --> src/main.rs:33:1
+    |
+ 33 | #[cgp_component(ProviderM)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required for `Outer` to implement `CanM`
+   --> src/main.rs:33:1
+    |
+ 33 | #[cgp_component(ProviderM)]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 34 | pub trait CanM {
+    |           ^^^^
+note: required for `Outer` to implement `Linked`
+   --> src/main.rs:50:15
+    |
+ 50 | impl<Context> Linked for Context where Context: CanM {}
     |               ^^^^^^     ^^^^^^^                ---- unsatisfied trait bound introduced here
     = note: 1 redundant requirement hidden
     = note: required for `DoR` to implement `IsProviderFor<ProviderRComponent, Outer>`
     = note: required for `Outer` to implement `CanUseComponent<ProviderRComponent>`
 note: required by a bound in `__CheckOuter`
-   --> src/main.rs:100:1
+   --> src/main.rs:102:1
     |
-100 | / check_components! {
-101 | |     Outer {
-102 | |         ProviderRComponent,
-103 | |     }
-104 | | }
+102 | / check_components! {
+103 | |     Outer {
+104 | |         ProviderRComponent,
+105 | |     }
+106 | | }
     | |_^ required by this bound in `__CheckOuter`
     = note: this error originates in the attribute macro `cgp_component` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

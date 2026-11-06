@@ -1,7 +1,7 @@
 error[E0207]: [CGP-E019] the entry for `@GreeterComponent.Error` in the wiring of `App` binds `T`, but its key does not use it
-  --> src/main.rs:32:10
+  --> src/main.rs:34:10
    |
-32 |         <T> @GreeterComponent.std::io::Error: GreetWith<T>,
+34 |         <T> @GreeterComponent.std::io::Error: GreetWith<T>,
    |          ^
    |
    = help: write a concrete type in place of `T` in `GreetWith<T>`, and remove `T` from the entry's generic parameters

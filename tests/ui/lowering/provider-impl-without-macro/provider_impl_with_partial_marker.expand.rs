@@ -9,6 +9,8 @@
 //! suggestion of a `where` bound.
 //!
 //! CGP error class: provider impl without the macro (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/provider-impl-without-macro.md).
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -1,7 +1,7 @@
 error[E0210]: type parameter `__Components__` must be used as an argument to some local type (e.g., `MyStruct<__Components__>`)
-  --> src/main.rs:19:1
+  --> src/main.rs:21:1
    |
-19 | #[cgp_impl(new RaiseString)]
+21 | #[cgp_impl(new RaiseString)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ uncovered type parameter
    |
    = note: implementing a foreign trait is only possible if at least one of the types for which it is implemented is local
@@ -9,9 +9,9 @@ error[E0210]: type parameter `__Components__` must be used as an argument to som
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0210]: type parameter `__Components__` must be used as an argument to some local type (e.g., `MyStruct<__Components__>`)
-  --> src/main.rs:28:1
+  --> src/main.rs:30:1
    |
-28 | #[cgp_impl(new RaiseStr)]
+30 | #[cgp_impl(new RaiseStr)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^ uncovered type parameter
    |
    = note: implementing a foreign trait is only possible if at least one of the types for which it is implemented is local

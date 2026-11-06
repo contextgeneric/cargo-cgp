@@ -9,14 +9,14 @@
             "column": 1,
             "file": "src/main.rs",
             "label": "",
-            "line": 17,
+            "line": 19,
             "primary": false
           },
           {
             "column": 17,
             "file": "src/main.rs",
             "label": null,
-            "line": 17,
+            "line": 19,
             "primary": true
           }
         ]
@@ -30,7 +30,7 @@
         "column": 12,
         "file": "src/main.rs",
         "label": "expected 1 generic argument",
-        "line": 25,
+        "line": 27,
         "primary": true
       }
     ]

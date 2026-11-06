@@ -5,7 +5,7 @@
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 //!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 
 //@quality: usability
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E115

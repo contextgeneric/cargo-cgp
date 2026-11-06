@@ -17,6 +17,8 @@
 //! The error class is the wiring cycle
 //! (`cgp-knowledge-base/cgp/errors/wiring/wiring-cycle.md`); the reuse rule is in
 //! `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`.
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 
 //@quality: usability
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E104 CGP-E110 CGP-E117

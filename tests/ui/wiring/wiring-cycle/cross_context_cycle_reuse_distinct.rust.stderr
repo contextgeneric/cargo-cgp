@@ -1,59 +1,59 @@
 error[E0275]: overflow evaluating the requirement `Inner: CanUseComponent<ProviderNComponent>`
-   --> src/main.rs:98:9
+   --> src/main.rs:100:9
     |
- 98 |         ProviderNComponent,
+100 |         ProviderNComponent,
     |         ^^^^^^^^^^^^^^^^^^
     |
 note: required by a bound in `__CheckInner`
-   --> src/main.rs:96:1
+   --> src/main.rs:98:1
     |
- 96 | / check_components! {
- 97 | |     Inner {
- 98 | |         ProviderNComponent,
- 99 | |     }
-100 | | }
+ 98 | / check_components! {
+ 99 | |     Inner {
+100 | |         ProviderNComponent,
+101 | |     }
+102 | | }
     | |_^ required by this bound in `__CheckInner`
     = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `Outer: CanUseComponent<ProviderRComponent>` is not satisfied
-   --> src/main.rs:104:9
+   --> src/main.rs:106:9
     |
-104 |         ProviderRComponent,
+106 |         ProviderRComponent,
     |         ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
     |
 help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Outer`
-   --> src/main.rs:56:1
+   --> src/main.rs:58:1
     |
- 56 | pub struct Outer {}
+ 58 | pub struct Outer {}
     | ^^^^^^^^^^^^^^^^
 help: the trait `HasField<Symbol<4, Chars<..>>>` is implemented for `Inner`
-   --> src/main.rs:52:9
+   --> src/main.rs:54:9
     |
- 52 |     pub name: String,
+ 54 |     pub name: String,
     |         ^^^^
 note: required for `Outer` to implement `HasName`
-   --> src/main.rs:41:1
+   --> src/main.rs:43:1
     |
- 41 | #[cgp_auto_getter]
+ 43 | #[cgp_auto_getter]
     | ^^^^^^^^^^^^^^^^^^
- 42 | pub trait HasName {
+ 44 | pub trait HasName {
     |           ^^^^^^^
 note: required for `DoR` to implement `IsProviderFor<ProviderRComponent, Outer>`
-   --> src/main.rs:77:1
+   --> src/main.rs:79:1
     |
- 77 | #[cgp_impl(new DoR)]
+ 79 | #[cgp_impl(new DoR)]
     | ^^^^^^^^^^^^^^^^^^^^
- 78 | #[uses(Linked, HasName)]
+ 80 | #[uses(Linked, HasName)]
     |                ------- unsatisfied trait bound introduced here
     = note: required for `Outer` to implement `CanUseComponent<ProviderRComponent>`
 note: required by a bound in `__CheckOuter`
-   --> src/main.rs:102:1
+   --> src/main.rs:104:1
     |
-102 | / check_components! {
-103 | |     Outer {
-104 | |         ProviderRComponent,
-105 | |     }
-106 | | }
+104 | / check_components! {
+105 | |     Outer {
+106 | |         ProviderRComponent,
+107 | |     }
+108 | | }
     | |_^ required by this bound in `__CheckOuter`
     = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

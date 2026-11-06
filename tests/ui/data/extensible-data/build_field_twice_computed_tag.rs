@@ -7,6 +7,8 @@
 //! tag and reads as ``[CGP-E050] field `1` of `Pair` is already set``.
 //!
 //! CGP error class: extensible data (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/data/extensible-data.md).
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 
 //@quality: usability
 //@codes: none

@@ -7,8 +7,6 @@
 //! that does not fit a struct without the field.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

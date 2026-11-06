@@ -18,6 +18,8 @@
 //! The error class is the wiring cycle
 //! (`cgp-knowledge-base/cgp/errors/wiring/wiring-cycle.md`); the reuse rule is in
 //! `cgp-knowledge-base/cargo-cgp/implementation/cached-dependency-resolution.md`.
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

@@ -1,43 +1,43 @@
 error[E0599]: no associated function or constant named `area` found for type parameter `Inner` in the current scope
-  --> src/main.rs:38:16
+  --> src/main.rs:40:16
    |
-36 | impl<Inner> AreaCalculator {
+38 | impl<Inner> AreaCalculator {
    |      ----- associated function or constant `area` not found for this type parameter
-37 |     fn area(&self) -> f64 {
-38 |         Inner::area(self) * 2.0
+39 |     fn area(&self) -> f64 {
+40 |         Inner::area(self) * 2.0
    |                ^^^^ associated function or constant cannot be called on `Inner` due to unsatisfied trait bounds
    |
    = help: items from traits can only be used if the type parameter is bounded by the trait
 help: the following traits define an item `area`, perhaps you need to restrict type parameter `Inner` with one of them:
    |
-36 | impl<Inner: AreaCalculator</* __Context__ */>> AreaCalculator {
+38 | impl<Inner: AreaCalculator</* __Context__ */>> AreaCalculator {
    |           +++++++++++++++++++++++++++++++++++
-36 | impl<Inner: CanCalculateArea> AreaCalculator {
+38 | impl<Inner: CanCalculateArea> AreaCalculator {
    |           ++++++++++++++++++
-36 | impl<Inner: CanCalculateFloorArea> AreaCalculator {
+38 | impl<Inner: CanCalculateFloorArea> AreaCalculator {
    |           +++++++++++++++++++++++
-36 | impl<Inner: FloorAreaCalculator</* __Context__ */>> AreaCalculator {
+38 | impl<Inner: FloorAreaCalculator</* __Context__ */>> AreaCalculator {
    |           ++++++++++++++++++++++++++++++++++++++++
 
 error[E0599]: no associated function or constant named `area` found for type parameter `Inner` in the current scope
-  --> src/main.rs:46:30
+  --> src/main.rs:48:30
    |
-44 | impl<Inner> Describer {
+46 | impl<Inner> Describer {
    |      ----- associated function or constant `area` not found for this type parameter
-45 |     fn describe(&self) -> String {
-46 |         format!("{}", Inner::area(self))
+47 |     fn describe(&self) -> String {
+48 |         format!("{}", Inner::area(self))
    |                              ^^^^ associated function or constant cannot be called on `Inner` due to unsatisfied trait bounds
    |
    = help: items from traits can only be used if the type parameter is bounded by the trait
 help: the following traits define an item `area`, perhaps you need to restrict type parameter `Inner` with one of them:
    |
-44 | impl<Inner: AreaCalculator</* __Context__ */>> Describer {
+46 | impl<Inner: AreaCalculator</* __Context__ */>> Describer {
    |           +++++++++++++++++++++++++++++++++++
-44 | impl<Inner: CanCalculateArea> Describer {
+46 | impl<Inner: CanCalculateArea> Describer {
    |           ++++++++++++++++++
-44 | impl<Inner: CanCalculateFloorArea> Describer {
+46 | impl<Inner: CanCalculateFloorArea> Describer {
    |           +++++++++++++++++++++++
-44 | impl<Inner: FloorAreaCalculator</* __Context__ */>> Describer {
+46 | impl<Inner: FloorAreaCalculator</* __Context__ */>> Describer {
    |           ++++++++++++++++++++++++++++++++++++++++
 
 For more information about this error, try `rustc --explain E0599`.

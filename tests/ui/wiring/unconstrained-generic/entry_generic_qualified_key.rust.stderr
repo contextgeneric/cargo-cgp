@@ -1,27 +1,27 @@
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:32:10
+  --> src/main.rs:34:10
    |
-32 |         <T> @GreeterComponent.std::io::Error: GreetWith<T>,
+34 |         <T> @GreeterComponent.std::io::Error: GreetWith<T>,
    |          ^ unconstrained type parameter
    |
 help: use the type parameter `T` in the `App` type and use it in the type definition
    |
-28 ~ pub struct App<T>;
-29 |
-30 | delegate_components! {
-31 ~     App<T> {
+30 ~ pub struct App<T>;
+31 |
+32 | delegate_components! {
+33 ~     App<T> {
    |
 
 error[E0207]: the type parameter `T` is not constrained by the impl trait, self type, or predicates
-  --> src/main.rs:32:10
+  --> src/main.rs:34:10
    |
-30 | / delegate_components! {
-31 | |     App {
-32 | |         <T> @GreeterComponent.std::io::Error: GreetWith<T>,
+32 | / delegate_components! {
+33 | |     App {
+34 | |         <T> @GreeterComponent.std::io::Error: GreetWith<T>,
    | |          ^ unconstrained type parameter
-33 | |         @GreeterComponent.Error: GreetWith<u8>,
-34 | |     }
-35 | | }
+35 | |         @GreeterComponent.Error: GreetWith<u8>,
+36 | |     }
+37 | | }
    | |_- help: remove the unused type parameter `T`
 
 For more information about this error, try `rustc --explain E0207`.

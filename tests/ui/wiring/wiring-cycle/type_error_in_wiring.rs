@@ -6,8 +6,6 @@
 //! `E0433` for `backend`. The `[CGP-E020]` help names `DebugError` as the provider that loops.
 //!
 //! CGP error class: wiring cycle (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/wiring-cycle.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: acceptable
 //@codes: CGP-E020

@@ -1,11 +1,11 @@
 error[E0210]: type parameter `__Context__` must be used as an argument to some local type (e.g., `MyStruct<__Context__>`)
-  --> src/main.rs:27:1
+  --> src/main.rs:29:1
    |
-27 | / delegate_components! {
-28 | |     Vec<u8> {
-29 | |         ErrorRaiserComponent: RaisePlain,
-30 | |     }
-31 | | }
+29 | / delegate_components! {
+30 | |     Vec<u8> {
+31 | |         ErrorRaiserComponent: RaisePlain,
+32 | |     }
+33 | | }
    | |_^ uncovered type parameter
    |
    = note: implementing a foreign trait is only possible if at least one of the types for which it is implemented is local
@@ -13,24 +13,24 @@ error[E0210]: type parameter `__Context__` must be used as an argument to some l
    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0210]: [CGP-E022] cannot register the foreign type `String` into the foreign namespace `DefaultImpls1`
-  --> src/main.rs:18:1
+  --> src/main.rs:20:1
    |
-18 | #[cgp_impl(new RaisePlain)]
+20 | #[cgp_impl(new RaisePlain)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: own one end of the wiring: key it on a component defined in this crate, or register it from the crate that defines `DefaultImpls1`
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0117]: only traits defined in the current crate can be implemented for types defined outside of the crate
-  --> src/main.rs:29:9
+  --> src/main.rs:31:9
    |
-27 | / delegate_components! {
-28 | |     Vec<u8> {
+29 | / delegate_components! {
+30 | |     Vec<u8> {
    | |     ------- `Vec` is not defined in the current crate
-29 | |         ErrorRaiserComponent: RaisePlain,
+31 | |         ErrorRaiserComponent: RaisePlain,
    | |         ^^^^^^^^^^^^^^^^^^^^
-30 | |     }
-31 | | }
+32 | |     }
+33 | | }
    | |_- this is not defined in the current crate because this is a foreign trait
    |
    = note: impl doesn't have any local type before any uncovered type parameters

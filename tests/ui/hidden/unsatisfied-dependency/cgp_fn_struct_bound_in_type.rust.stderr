@@ -1,26 +1,26 @@
 error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
-  --> src/main.rs:28:17
+  --> src/main.rs:30:17
    |
-28 |     pub holder: Holder<App>,
+30 |     pub holder: Holder<App>,
    |                 ^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
       but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
-  --> src/main.rs:24:9
+  --> src/main.rs:26:9
    |
-24 |     pub label: String,
+26 |     pub label: String,
    |         ^^^^^
 note: required for `App` to implement `GetName`
-  --> src/main.rs:15:1
+  --> src/main.rs:17:1
    |
-15 | #[cgp_fn]
+17 | #[cgp_fn]
    | ^^^^^^^^^
-16 | fn get_name(&self, #[implicit] name: &str) -> String {
+18 | fn get_name(&self, #[implicit] name: &str) -> String {
    |    ^^^^^^^^
 note: required by a bound in `Holder`
-  --> src/main.rs:20:22
+  --> src/main.rs:22:22
    |
-20 | pub struct Holder<T: GetName>(pub T);
+22 | pub struct Holder<T: GetName>(pub T);
    |                      ^^^^^^^ required by this bound in `Holder`
    = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
 

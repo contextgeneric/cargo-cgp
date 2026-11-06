@@ -1,15 +1,15 @@
 error[E0275]: [CGP-E020] the wiring for the consumer trait `CanRaiseError<ParseIntError>` on context `App` never resolves, because the lookup leads back to itself
-  --> src/main.rs:35:9
+  --> src/main.rs:33:9
    |
-35 |         ErrorRaiserComponent: ParseIntError,
+33 |         ErrorRaiserComponent: ParseIntError,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
    = help: wire a provider in place of `DebugError`, which provides `ErrorRaiser<String>` for `App` by requiring `CanRaiseError<String>` on `App` again
 
 error[E0433]: cannot find module or crate `backend` in this scope
-  --> src/main.rs:27:45
+  --> src/main.rs:25:45
    |
-27 |         ErrorTypeProviderComponent: UseType<backend::Error>,
+25 |         ErrorTypeProviderComponent: UseType<backend::Error>,
    |                                             ^^^^^^^ use of unresolved module or unlinked crate `backend`
    |
    = help: if you wanted to use a crate named `backend`, use `cargo add backend` to add it to your `Cargo.toml`

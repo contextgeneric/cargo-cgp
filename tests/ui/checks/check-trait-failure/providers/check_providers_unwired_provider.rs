@@ -6,8 +6,6 @@
 //! that does not fit a struct without the field.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 
 //@quality: acceptable
 //@codes: CGP-E002 CGP-E102 CGP-E110

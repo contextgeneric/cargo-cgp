@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFor<_, App, String>` is not satisfied
-  --> src/main.rs:39:9
+  --> src/main.rs:37:9
    |
-39 |         ShowImplComponent: String,
+37 |         ShowImplComponent: String,
    |         ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `IsProviderFor<ShowImplComponent, App, String>` is not implemented for `RedirectLookup<App, PathCons<Symbol<3, Chars<..>>, _>>`
@@ -17,13 +17,13 @@ error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, _>>: IsProviderFo
            and 10 others
    = note: required for `App` to implement `CanUseComponent<ShowImplComponent, String>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:37:1
+  --> src/main.rs:35:1
    |
-37 | / check_components! {
-38 | |     App {
-39 | |         ShowImplComponent: String,
-40 | |     }
-41 | | }
+35 | / check_components! {
+36 | |     App {
+37 | |         ShowImplComponent: String,
+38 | |     }
+39 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

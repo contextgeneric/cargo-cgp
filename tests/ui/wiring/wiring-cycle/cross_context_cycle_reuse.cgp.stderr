@@ -1,10 +1,10 @@
 error[E0277]: [CGP-E001] the consumer trait `CanN` is not implemented for context `Inner`, and the consumer trait `CanR` is not implemented for context `Outer`: 2 root causes
-   --> src/main.rs:96:9
+   --> src/main.rs:98:9
     |
- 96 |         ProviderNComponent,
+ 98 |         ProviderNComponent,
     |         ^^^^^^^^^^^^^^^^^^
 ...
-102 |         ProviderRComponent,
+104 |         ProviderRComponent,
     |         ------------------ also required here
     |
     = note: root causes:

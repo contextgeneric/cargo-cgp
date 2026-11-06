@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `GreeterComponent` on `App`
-  --> src/main.rs:44:9
+  --> src/main.rs:42:9
    |
-44 |         GreeterComponent,
+42 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `GreeterComponent` on `App`

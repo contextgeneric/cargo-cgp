@@ -15,6 +15,8 @@
 //! the context joins upstream.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/conflicting-wiring.md.
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

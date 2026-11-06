@@ -9,6 +9,8 @@
 //! keeps rustc's wording.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/namespace-override-conflict.md.
+//!
+//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 
 //@aux-build: cgp-test-crate-a
 //@quality: usability

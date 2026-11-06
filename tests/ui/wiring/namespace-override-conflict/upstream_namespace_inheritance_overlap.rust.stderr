@@ -1,7 +1,7 @@
 error[E0119]: conflicting implementations of trait `AppNamespace<_>` for type `LabelerComponent`
-  --> src/main.rs:34:16
+  --> src/main.rs:36:16
    |
-34 | #[default_impl(LabelerComponent in AppNamespace)]
+36 | #[default_impl(LabelerComponent in AppNamespace)]
    |                ^^^^^^^^^^^^^^^^
    |
    = note: conflicting implementation in crate `cgp_test_crate_a`:

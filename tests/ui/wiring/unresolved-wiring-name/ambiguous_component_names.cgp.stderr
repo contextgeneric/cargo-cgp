@@ -1,7 +1,7 @@
 error[E0425]: cannot find type `GreeterComponent` in this scope
-  --> src/main.rs:64:9
+  --> src/main.rs:66:9
    |
-64 |         GreeterComponent: a::GreetHello,
+66 |         GreeterComponent: a::GreetHello,
    |         ^^^^^^^^^^^^^^^^ not found in this scope
    |
 note: similarly named struct `ComputerComponent` defined here
@@ -11,20 +11,20 @@ note: similarly named struct `ComputerComponent` defined here
    |                 ^^^^^^^^
 help: a struct with a similar name exists
    |
-64 -         GreeterComponent: a::GreetHello,
-64 +         ComputerComponent: a::GreetHello,
+66 -         GreeterComponent: a::GreetHello,
+66 +         ComputerComponent: a::GreetHello,
    |
 help: consider importing one of these structs
    |
-19 + use crate::a::GreeterComponent;
+21 + use crate::a::GreeterComponent;
    |
-19 + use crate::c::GreeterComponent;
+21 + use crate::c::GreeterComponent;
    |
 
 error[E0425]: cannot find type `CanGreetComponent` in this scope
-  --> src/main.rs:70:9
+  --> src/main.rs:72:9
    |
-70 |         CanGreetComponent: b::WelcomeHello,
+72 |         CanGreetComponent: b::WelcomeHello,
    |         ^^^^^^^^^^^^^^^^^ not found in this scope
    |
 note: similarly named trait `CanUseComponent` defined here
@@ -34,12 +34,12 @@ note: similarly named trait `CanUseComponent` defined here
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 help: a trait with a similar name exists
    |
-70 -         CanGreetComponent: b::WelcomeHello,
-70 +         CanUseComponent: b::WelcomeHello,
+72 -         CanGreetComponent: b::WelcomeHello,
+72 +         CanUseComponent: b::WelcomeHello,
    |
 help: you might be missing a type parameter
    |
-70 |         CanGreetComponent<CanGreetComponent>: b::WelcomeHello,
+72 |         CanGreetComponent<CanGreetComponent>: b::WelcomeHello,
    |                          +++++++++++++++++++
 
 For more information about this error, try `rustc --explain E0425`.

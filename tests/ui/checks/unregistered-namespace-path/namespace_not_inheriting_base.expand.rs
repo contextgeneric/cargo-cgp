@@ -5,8 +5,6 @@
 //! lookup never reaches, since only `DefaultNamespace` routes the component there.
 //!
 //! CGP error class: unregistered namespace path (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/unregistered-namespace-path.md).
-//!
-//! Issue: cgp-knowledge-base/cargo-cgp/issues/usability.md.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

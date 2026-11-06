@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E001] missing field `frist_name` on `Person`
-  --> src/main.rs:33:50
+  --> src/main.rs:31:50
    |
-33 |     let _ = Person { first_name: String::new() }.name();
+31 |     let _ = Person { first_name: String::new() }.name();
    |                                                  ^^^^
    |
    = note: root cause: [CGP-E110] missing field `frist_name` on `Person`

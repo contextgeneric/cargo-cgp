@@ -1,10 +1,10 @@
 error[E0119]: [CGP-E011] conflicting wiring: `App` wires `@test.ShowImplComponent.String`, which `@test.ShowImplComponent.T` already covers
-  --> src/main.rs:49:10
+  --> src/main.rs:47:10
    |
-46 |             @test.ShowImplComponent.T: Provider,
+44 |             @test.ShowImplComponent.T: Provider,
    |              ------------------------ first implementation here
 ...
-49 |         @test.ShowImplComponent.String: ShowWithDisplay,
+47 |         @test.ShowImplComponent.String: ShowWithDisplay,
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
 For more information about this error, try `rustc --explain E0119`.

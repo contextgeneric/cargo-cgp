@@ -1,7 +1,7 @@
 error[E0275]: [CGP-E020] the wiring for the consumer trait `CanRaiseError<ParseIntError>` on context `App` never resolves, because the lookup leads back to itself
-  --> src/main.rs:33:9
+  --> src/main.rs:31:9
    |
-33 |         ErrorRaiserComponent: ParseIntError,
+31 |         ErrorRaiserComponent: ParseIntError,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
    = help: wire a provider in place of `DebugError`, which provides `ErrorRaiser<String>` for `App` by requiring `CanRaiseError<String>` on `App` again

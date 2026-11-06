@@ -1,22 +1,22 @@
 error[E0599]: the method `name` exists for struct `Person`, but its trait bounds were not satisfied
-  --> src/main.rs:33:50
+  --> src/main.rs:31:50
    |
-22 | pub struct Person {
+20 | pub struct Person {
    | ----------------- method `name` not found for this struct because it doesn't satisfy `Person: HasName` or `_: HasField<Symbol<10, Chars<..>>>`
 ...
-33 |     let _ = Person { first_name: String::new() }.name();
+31 |     let _ = Person { first_name: String::new() }.name();
    |                                                  ^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `NameGetter`
-  --> src/main.rs:18:5
+  --> src/main.rs:16:5
    |
-18 |     fn name(&self) -> &str;
+16 |     fn name(&self) -> &str;
    |     ^^^^^^^^^^^^^^^^^^^^^^^
 note: trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<10, cgp::prelude::Chars<..>>>` was not satisfied
-  --> src/main.rs:16:1
+  --> src/main.rs:14:1
    |
-16 | #[cgp_getter]
+14 | #[cgp_getter]
    | ^^^^^^^^^^^^^
 note: the trait `cgp::prelude::HasField` must be implemented
   --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
@@ -25,15 +25,15 @@ note: the trait `cgp::prelude::HasField` must be implemented
    | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `HasName` defines an item `name`, perhaps you need to implement it
-  --> src/main.rs:17:1
+  --> src/main.rs:15:1
    |
-17 | pub trait HasName {
+15 | pub trait HasName {
    | ^^^^^^^^^^^^^^^^^
    = note: this error originates in the attribute macro `cgp_getter` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
-33 -     let _ = Person { first_name: String::new() }.name();
-33 +     let _ = Person::name();
+31 -     let _ = Person { first_name: String::new() }.name();
+31 +     let _ = Person::name();
    |
 
 For more information about this error, try `rustc --explain E0599`.
