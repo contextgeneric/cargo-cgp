@@ -11,7 +11,8 @@ use cargo_cgp_error_processing::{
 // names its field.
 #[test]
 fn full_chain_resugars_a_raw_field_spine_to_a_struct() {
-    // End to end: the raw `Symbol` spine is resugared first, then the field list folds to `Struct!`.
+    // End to end: the raw `Symbol` spine is resugared first, then the field list folds to
+    // `Struct!`.
     assert_eq!(
         postprocess_message(
             "Cons<Field<Symbol<1, Chars<'x', Nil>>, u64>, Nil>",

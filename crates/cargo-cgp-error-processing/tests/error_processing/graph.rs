@@ -13,14 +13,16 @@ fn hop(name: &str) -> ChainNode {
     trait_hop(name, "Ctx")
 }
 
-/// A terminal ordinary-bound leaf, rendered as `[CGP-E117] the trait bound \`name\` is not satisfied`.
+/// A terminal ordinary-bound leaf, rendered as
+/// `[CGP-E117] the trait bound \`name\` is not satisfied`.
 fn leaf(name: &str) -> ChainNode {
     ChainNode::Leaf(Leaf::Bound {
         summary: name.to_owned(),
     })
 }
 
-/// A redirect-lookup hop along `route` dispatching `key` (identity carries the key; render does not).
+/// A redirect-lookup hop along `route` dispatching `key` (identity carries the key; render does
+/// not).
 fn redirect(route: &str, key: &str) -> ChainNode {
     support::redirect(route, "App", key)
 }
@@ -96,8 +98,8 @@ fn independent_roots_converging_on_one_leaf_both_render() {
 #[test]
 fn a_diamond_shows_the_shared_subtree_once() {
     // Two top-level nodes `A` and `B` both depend on `C`, which depends on the missing `D`. `C` is
-    // one node with two parents: expanded under `A` (reached first), referenced with `(*)` under `B`,
-    // so the root cause `D` is shown exactly once.
+    // one node with two parents: expanded under `A` (reached first), referenced with `(*)` under
+    // `B`, so the root cause `D` is shown exactly once.
     let out = render(&[
         vec![hop("A"), hop("C"), leaf("D")],
         vec![hop("B"), hop("C"), leaf("D")],

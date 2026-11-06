@@ -3,11 +3,11 @@
 //! `delegate_components!` writes each entry `Key: Value` into an impl,
 //! `impl DelegateComponent<Key> for Context { type Delegate = Value; }`, so a key or a value that
 //! names nothing is a name the compiler cannot find there, and a consumer trait written as a key is
-//! a trait where a type belongs. The compiler reports these during name resolution or type
-//! lowering (`E0425` "cannot find type", `E0782` "expected a type, found a trait"), with suggestions
-//! that follow the spelling rather than CGP: a similarly named trait, a `dyn`, a type parameter. A
-//! `#[cgp_impl(Provider)]` written without `new` fails the same way, since nothing then declares the
-//! provider struct.
+//! a trait where a type belongs. The compiler reports these during name resolution or type lowering
+//! (`E0425` "cannot find type", `E0782` "expected a type, found a trait"), with suggestions that
+//! follow the spelling rather than CGP: a similarly named trait, a `dyn`, a type parameter. A
+//! `#[cgp_impl(Provider)]` written without `new` fails the same way, since nothing then declares
+//! the provider struct.
 //!
 //! The driver recovers which of these mistakes a diagnostic is and the names that fix it, and
 //! [`plan_unresolved_wiring_name`] words the coded header that replaces the message, with

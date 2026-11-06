@@ -144,8 +144,8 @@ fn resugar_path_declines_a_type_named_like_a_primitive() {
 #[test]
 fn resugars_an_open_dispatch_path_with_a_generic_value_segment() {
     // An `open` statement dispatches a component on a *value type* segment that may carry generics
-    // (`Vec<u8>`). `Path!` keeps it verbatim as a type, so it round-trips bare rather than declining
-    // and leaving the raw `PathCons` spine.
+    // (`Vec<u8>`). `Path!` keeps it verbatim as a type, so it round-trips bare rather than
+    // declining and leaving the raw `PathCons` spine.
     assert_eq!(
         resugar_path(
             "PathCons<ItemEncoderComponent, PathCons<Vec<u8>, Nil>>",

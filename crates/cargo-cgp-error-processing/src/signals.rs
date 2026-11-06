@@ -61,13 +61,14 @@ pub fn is_missing_type_parameter_help_text(text: &str) -> bool {
     text.starts_with("you might be missing a type parameter")
 }
 
-/// Whether a main message is the orphan-rule `E0210` naming a CGP machinery type parameter:
-/// "type parameter `__Components__` must be used as an argument to some local type". The
+/// Whether a main message is the orphan-rule `E0210` naming a CGP machinery type parameter: "type
+/// parameter `__Components__` must be used as an argument to some local type". The
 /// double-underscore parameter (`__Components__` from a `#[default_impl]`/`#[prefix]` registration,
-/// `__Table__` from a `cgp_namespace!` re-open) is a reserved identifier the CGP macros emit, so its
-/// presence in this coherence error is the cheap pre-filter that makes the diagnostic a
+/// `__Table__` from a `cgp_namespace!` re-open) is a reserved identifier the CGP macros emit, so
+/// its presence in this coherence error is the cheap pre-filter that makes the diagnostic a
 /// namespace-orphan candidate. It is a *signal*, not a classification: the typed classifier still
-/// confirms a foreign namespace trait is implemented for a foreign key before anything is rewritten.
+/// confirms a foreign namespace trait is implemented for a foreign key before anything is
+/// rewritten.
 pub fn mentions_orphan_param_text(text: &str) -> bool {
     text.contains("must be used as an argument to some local type") && text.contains("`__")
 }
@@ -83,8 +84,8 @@ pub fn is_question_mark_cascade_text(text: &str) -> bool {
 }
 
 /// Whether a `help` is rustc's advice to raise the recursion limit, which an `E0275` overflow
-/// carries. A wiring lookup that never resolves is not fixed by a higher limit, so the emitter drops
-/// it from a rewritten wiring overflow.
+/// carries. A wiring lookup that never resolves is not fixed by a higher limit, so the emitter
+/// drops it from a rewritten wiring overflow.
 pub fn is_recursion_limit_help_text(text: &str) -> bool {
     text.contains("consider increasing the recursion limit")
 }
@@ -103,8 +104,8 @@ pub fn is_explain_footer_text(text: &str) -> bool {
 /// form, or the single code of the pointer form.
 ///
 /// A footer line always names at least one code, so an empty result means the *parse* failed (a
-/// rewording upstream), not that the line names nothing. The caller keys on that to leave the footer
-/// alone rather than rebuild it from nothing, since rebuilding would silently delete output.
+/// rewording upstream), not that the line names nothing. The caller keys on that to leave the
+/// footer alone rather than rebuild it from nothing, since rebuilding would silently delete output.
 pub fn explain_footer_codes(text: &str) -> Vec<String> {
     if let Some(list) = text.strip_prefix("Some errors have detailed explanations:") {
         return list

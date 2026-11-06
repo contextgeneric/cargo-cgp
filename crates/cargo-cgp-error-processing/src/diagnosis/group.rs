@@ -12,20 +12,22 @@ use crate::diagnosis::resolved::Resolved;
 /// is preserved.
 ///
 /// Two failures group when they share *at least one* root cause, and grouping is transitive: the
-/// groups are the connected components of the "shares a cause" relation. Demanding
-/// two *identical* cause sets instead would report one mistake as several blocks. CGP wiring
-/// is lazy, so a single omission surfaces at several depths, and each depth sees a different subset of
-/// its causes: a `check_components!` entry stops at the first unmet leaf on its own branch, while a
-/// use-site call walks every wired component and reaches them all. Those subsets overlap without ever
-/// being equal, so an exact-match key would group no two of them, and the block whose causes are the
-/// *union* of the others would fare worst: its chain would be fully elided against the blocks that had
-/// already drawn every one of its roots, leaving a bare `root causes:` list with no dependency chain.
+/// groups are the connected components of the "shares a cause" relation. Demanding two *identical*
+/// cause sets instead would report one mistake as several blocks. CGP wiring is lazy, so a single
+/// omission surfaces at several depths, and each depth sees a different subset of its causes: a
+/// `check_components!` entry stops at the first unmet leaf on its own branch, while a use-site call
+/// walks every wired component and reaches them all. Those subsets overlap without ever being
+/// equal, so an exact-match key would group no two of them, and the block whose causes are the
+/// *union* of the others would fare worst: its chain would be fully elided against the blocks that
+/// had already drawn every one of its roots, leaving a bare `root causes:` list with no dependency
+/// chain.
 ///
-/// Transitivity makes the relation a partition rather than an ambiguous overlap graph: a
-/// failure whose causes are covered by two others would otherwise have no single group to join.
-/// Grouping this way also earns an invariant the exact-match key could not: **no two coalesced blocks
-/// share a root cause**, so one mistake is stated in exactly one block, and two blocks cannot have the
-/// same top-level roots by way of a shared cause, which would make the whole-chain elision degenerate.
+/// Transitivity makes the relation a partition rather than an ambiguous overlap graph: a failure
+/// whose causes are covered by two others would otherwise have no single group to join. Grouping
+/// this way also earns an invariant the exact-match key could not: **no two coalesced blocks share
+/// a root cause**, so one mistake is stated in exactly one block, and two blocks cannot have the
+/// same top-level roots by way of a shared cause, which would make the whole-chain elision
+/// degenerate.
 ///
 /// A cause is identified by its [`Leaf`] **structurally**, not by the rendered `root cause:` lead
 /// the leaf words. A leaf names its owner (the struct missing a field, the context missing a wiring

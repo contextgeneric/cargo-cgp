@@ -50,8 +50,8 @@ fn the_same_leaf_reached_by_several_consumers_becomes_one_cause() {
 }
 
 /// The invariant exists for this: a duplicate-leaf list makes a downstream reader count one mistake
-/// several times, most visibly as a lead naming one underived field once per consumer that reads it.
-/// The type makes that unreachable: no constructor produces the bad list.
+/// several times, most visibly as a lead naming one underived field once per consumer that reads
+/// it. The type makes that unreachable: no constructor produces the bad list.
 // Property: for all collections of causes naming one underived field, the coalesced lead names that
 //   field once (`Causes`'s invariant, as the lead relies on it).
 #[test]
@@ -192,9 +192,9 @@ fn heading_a_hop_prefixes_every_path() {
     }
 }
 
-/// Heading commutes with the grouping, which is why `headed_by` needs no re-merge: a single constant
-/// hop cannot change any leaf's identity. The two anchors that head a chain rely on this, in opposite
-/// orders.
+/// Heading commutes with the grouping, which is why `headed_by` needs no re-merge: a single
+/// constant hop cannot change any leaf's identity. The two anchors that head a chain rely on this,
+/// in opposite orders.
 // Property: for all causes and every hop h, heading then grouping equals grouping then heading, so
 //   `headed_by` needs no re-merge (`Causes::headed_by`'s doc).
 #[test]

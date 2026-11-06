@@ -24,8 +24,8 @@ pub enum WiringOverflow {
     },
     /// Each step requires the consumer trait again for a larger type, so the lookup grows until the
     /// compiler gives up. `larger` is the first larger requirement (`CanShow<Vec<u32>>`), or the
-    /// larger type itself when the consumer trait is required of a type that grows (`Vec<u32>`), and
-    /// `growing` the provider step that requires it, when a wiring entry chose that provider.
+    /// larger type itself when the consumer trait is required of a type that grows (`Vec<u32>`),
+    /// and `growing` the provider step that requires it, when a wiring entry chose that provider.
     Growing {
         /// The first larger requirement, or the larger type when the type the trait is required of
         /// grows.
@@ -100,8 +100,8 @@ pub fn wiring_overflow_help(overflow: &WiringOverflow) -> String {
 /// Rewrite the `overflow evaluating the requirement …` header (`E0275`) of a wiring lookup that
 /// never resolves, or return `None` for any other overflow. Only an overflow whose requirement is a
 /// `Self: CanUseComponent<Marker, …>` bound, as a check reports it, or a consumer trait the map
-/// knows, as a call reports it (`Person: CanGreet`), is a wiring lookup; `overflow` says how it never
-/// resolves, as the driver's walk found it: a cycle ([`WIRING_CYCLE`]) or a growing lookup
+/// knows, as a call reports it (`Person: CanGreet`), is a wiring lookup; `overflow` says how it
+/// never resolves, as the driver's walk found it: a cycle ([`WIRING_CYCLE`]) or a growing lookup
 /// ([`GROWING_LOOKUP`]). The fix rides in [`wiring_overflow_help`], kept out of the header so the
 /// headline stays one sentence.
 pub fn rewrite_wiring_overflow(

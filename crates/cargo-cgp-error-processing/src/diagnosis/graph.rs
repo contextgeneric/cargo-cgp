@@ -56,8 +56,9 @@ impl DependencyGraph {
                         children.push(Vec::new());
                         is_child.push(false);
                         let id = nodes.len() - 1;
-                        // Register only the first occurrence of a label, so a later path still finds
-                        // the canonical node; a within-path repeat stays unregistered and distinct.
+                        // Register only the first occurrence of a label, so a later path still
+                        // finds the canonical node; a within-path repeat stays unregistered and
+                        // distinct.
                         index.entry(node.clone()).or_insert(id);
                         id
                     }
@@ -96,11 +97,12 @@ impl DependencyGraph {
     /// Whether rendering against `seen` would say nothing new: every top-level root was already
     /// drawn elsewhere, so the whole diagram would collapse to `(*)` references.
     ///
-    /// A caller uses this to render such a graph against a *fresh* set instead, so the block shows its
-    /// own chain rather than a heading over a single pointer that promises a chain and delivers none.
-    /// Eliding here would trim not a shared tail but the entire derivation, leaving the block asserting
-    /// a cause with no account of where it came from. It reports the *whole* graph being redundant, not
-    /// a subtree: a partly-elided graph still has its own hops to show and elides normally.
+    /// A caller uses this to render such a graph against a *fresh* set instead, so the block shows
+    /// its own chain rather than a heading over a single pointer that promises a chain and delivers
+    /// none. Eliding here would trim not a shared tail but the entire derivation, leaving the block
+    /// asserting a cause with no account of where it came from. It reports the *whole* graph being
+    /// redundant, not a subtree: a partly-elided graph still has its own hops to show and elides
+    /// normally.
     pub fn fully_elided_by(&self, seen: &HashSet<ChainNode>) -> bool {
         let roots = self.roots();
         !roots.is_empty()
@@ -112,8 +114,8 @@ impl DependencyGraph {
 
     /// The top-level roots: path heads that are not also some node's child. A head that appears
     /// inside another path (one consumer's chain running through another) is therefore not rendered
-    /// as a second root, which is how subsumption falls out. Falls back to every head if that set is
-    /// empty (a pathological all-cyclic input), so rendering never yields nothing.
+    /// as a second root, which is how subsumption falls out. Falls back to every head if that set
+    /// is empty (a pathological all-cyclic input), so rendering never yields nothing.
     fn roots(&self) -> Vec<usize> {
         let roots: Vec<usize> = self
             .heads
@@ -140,10 +142,10 @@ impl DependencyGraph {
     /// This lets a compilation's diagnostics elide across blocks. CGP wiring is lazy, so one
     /// mistake surfaces in several diagnostics that do not de-duplicate: a hand-written wrapper
     /// trait is a distinct trait from the consumer it reduces to, so it keeps its own block, and
-    /// their chains can share everything below their own first few hops. Threading one `seen` through
-    /// the blocks in emission order keeps each block's own prefix and truncates the shared remainder,
-    /// which is the same `(*)` convention `cargo tree` uses for a subtree printed elsewhere in the
-    /// output.
+    /// their chains can share everything below their own first few hops. Threading one `seen`
+    /// through the blocks in emission order keeps each block's own prefix and truncates the shared
+    /// remainder, which is the same `(*)` convention `cargo tree` uses for a subtree printed
+    /// elsewhere in the output.
     ///
     /// A truncated block stays actionable on its own: its header, its fix `help`, and its
     /// `root cause:` lead all still name the cause, so only chain *detail* is elided, never what
@@ -192,16 +194,16 @@ impl DependencyGraph {
     }
 
     /// Expand node `id` into a render tree. A node whose subtree was already drawn, earlier in this
-    /// render (`expanded`, indexed by id) or by an earlier one (`seen`, keyed by node identity so it
-    /// spans graphs), is emitted as a `(*)` reference rather than re-expanded; the `expanded` marks
-    /// double as cycle protection, since each node is expanded at most once. Only a node with
-    /// children is ever referenced that way: a leaf hides no subtree, so it is drawn in full wherever
-    /// a chain bottoms out on it.
+    /// render (`expanded`, indexed by id) or by an earlier one (`seen`, keyed by node identity so
+    /// it spans graphs), is emitted as a `(*)` reference rather than re-expanded; the `expanded`
+    /// marks double as cycle protection, since each node is expanded at most once. Only a node with
+    /// children is ever referenced that way: a leaf hides no subtree, so it is drawn in full
+    /// wherever a chain bottoms out on it.
     ///
     /// **Every CGP construct is rendered in full.** A hop repeating its parent's trait still prints
-    /// its whole generic list, even in a dispatch chain that restates a program-sized `Code` at every
-    /// step: shortening it to `<…>` would hide the very type the reader is tracing, and leave them
-    /// unable to tell a genuine repeat from a hop whose parameters differ.
+    /// its whole generic list, even in a dispatch chain that restates a program-sized `Code` at
+    /// every step: shortening it to `<…>` would hide the very type the reader is tracing, and leave
+    /// them unable to tell a genuine repeat from a hop whose parameters differ.
     fn expand(
         &self,
         id: usize,
@@ -220,8 +222,9 @@ impl DependencyGraph {
         }
         if has_children && seen.contains(node) {
             // Drawn by an *earlier* render, in another note the reader may not have to hand. The
-            // intervening hops are elided, but the chain must still bottom out at the cause it leads
-            // to: a chain that stops short of the root cause is the one thing it may never do.
+            // intervening hops are elided, but the chain must still bottom out at the cause it
+            // leads to: a chain that stops short of the root cause is the one thing it may never
+            // do.
             return DependencyTree::node(format!("{label} (*)"), self.leaves_below(id));
         }
         expanded[id] = true;

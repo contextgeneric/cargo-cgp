@@ -47,13 +47,13 @@ pub enum Leaf {
         actual: String,
     },
     /// Several fields of one struct, each present but with no `HasField` implementation: the
-    /// coalesced form of two or more [`Leaf::Field`] causes whose issue is
-    /// [`FieldIssue::Present`] on the same owner. `#[derive(HasField)]` derives an impl for
-    /// *every* field, so several underived fields on one struct are one mistake with one fix
-    /// (the missing derive), and reporting them as separate root causes would overstate the
-    /// work. Built by [`coalesce_underived_fields`](crate::diagnosis::coalesce_underived_fields), never by
-    /// the driver's classifier directly; the merged cause's tree still branches to the
-    /// per-field leaves, so each field stays visible in the chain.
+    /// coalesced form of two or more [`Leaf::Field`] causes whose issue is [`FieldIssue::Present`]
+    /// on the same owner. `#[derive(HasField)]` derives an impl for *every* field, so several
+    /// underived fields on one struct are one mistake with one fix (the missing derive), and
+    /// reporting them as separate root causes would overstate the work. Built by
+    /// [`coalesce_underived_fields`](crate::diagnosis::coalesce_underived_fields), never by the
+    /// driver's classifier directly; the merged cause's tree still branches to the per-field
+    /// leaves, so each field stays visible in the chain.
     UnderivedFields {
         /// The field names with no `HasField` impl, in first-seen order, e.g.
         /// `["height", "width"]`.
@@ -96,11 +96,11 @@ pub enum Leaf {
         table: String,
     },
     /// A type wired where a *provider* was expected that does not implement the provider trait at
-    /// all. A higher-order provider's inner slot (or any wiring position that expects a provider) is
-    /// filled with a type that has no impl of the provider trait, such as a request type
-    /// wired where a handler provider belongs. Distinct from [`Leaf::MissingDispatchEntry`]: the
-    /// owner is not a delegation table missing one key, it is simply not a provider, so the fix is to
-    /// use an actual provider (e.g. wrap it in the endpoint handler), not to add a wiring entry.
+    /// all. A higher-order provider's inner slot (or any wiring position that expects a provider)
+    /// is filled with a type that has no impl of the provider trait, such as a request type wired
+    /// where a handler provider belongs. Distinct from [`Leaf::MissingDispatchEntry`]: the owner is
+    /// not a delegation table missing one key, it is simply not a provider, so the fix is to use an
+    /// actual provider (e.g. wrap it in the endpoint handler), not to add a wiring entry.
     NotAProvider {
         /// The type wired where a provider was expected, e.g. `QueryBalanceRequest`.
         provider: String,
@@ -136,9 +136,9 @@ pub enum Leaf {
         required: String,
     },
     /// A component the context wires through a hand-written `DelegateComponent` impl, with no
-    /// `IsProviderFor` impl beside it. `delegate_components!` writes both, and a consumer call needs
-    /// the context's `IsProviderFor` as well as its delegate, so a check of the component passes
-    /// while every call fails.
+    /// `IsProviderFor` impl beside it. `delegate_components!` writes both, and a consumer call
+    /// needs the context's `IsProviderFor` as well as its delegate, so a check of the component
+    /// passes while every call fails.
     WiringWithoutProviderFor {
         /// The component the context wires, e.g. `GreeterComponent`.
         component: String,
@@ -210,8 +210,9 @@ pub enum Leaf {
         /// The component marker a context wires to choose this type (`ErrorTypeProviderComponent`),
         /// present only when the trait is a CGP abstract-type component: a consumer trait with one
         /// associated type whose provider carries the `UseType` blanket `#[cgp_type]` generates. It
-        /// selects the `abstract type` wording over the plain `associated type` one, and supplies the
-        /// wiring `help`; `None` for an ordinary trait's associated type, which has no such fix.
+        /// selects the `abstract type` wording over the plain `associated type` one, and supplies
+        /// the wiring `help`; `None` for an ordinary trait's associated type, which has no such
+        /// fix.
         component: Option<String>,
     },
     /// A field of a record builder that an operation needs unset, which the builder already holds:
@@ -281,8 +282,9 @@ pub enum Leaf {
         /// The trait it does not implement, e.g. `HasFields`.
         trait_name: String,
         /// The derive that implements the trait, named for the `help` when `owner` is a struct or
-        /// enum the crate defines (so a derive can be added to it), e.g. `HasFields`. `None` when the
-        /// derive cannot be added there. Like [`NearMiss`], it is not part of the leaf's identity.
+        /// enum the crate defines (so a derive can be added to it), e.g. `HasFields`. `None` when
+        /// the derive cannot be added there. Like [`NearMiss`], it is not part of the leaf's
+        /// identity.
         derive: DeriveFix,
     },
     /// A field an operation on an optional builder needs held as optional (`set`, `set_optional`),
@@ -298,8 +300,8 @@ pub enum Leaf {
         convert: MethodFix,
     },
     /// A partial value (a record builder or an enum extractor) given to an operation that needs a
-    /// trait the struct or enum itself implements, which no partial value does: `downcast` called on
-    /// the remainder of an earlier downcast, where an extractor takes `downcast_fields`.
+    /// trait the struct or enum itself implements, which no partial value does: `downcast` called
+    /// on the remainder of an earlier downcast, where an extractor takes `downcast_fields`.
     PartialLacksDataTrait {
         /// What the partial value is.
         kind: PartialKind,

@@ -1,11 +1,11 @@
 //! Tests for the orphan-rule namespace-registration wording.
 //!
 //! `plan_orphan_conflict` and `orphan_conflict_help` are pure functions over the rustc-free
-//! [`OrphanConflict`] model, so they are driven directly over hand-built conflicts, with no compiler,
-//! no diagnostic wrapper. The driver fills the same model in from the live `TyCtxt`. The header is
-//! one `[CGP-E022]` shape for both triggers (the violation is identical); only the `help`'s fix
-//! differs by whether the registration was a `#[default_impl]`/`#[prefix]` or a `cgp_namespace!`
-//! re-open. A path key renders in bare `@…` notation (no `Path!(…)` wrapper).
+//! [`OrphanConflict`] model, so they are driven directly over hand-built conflicts, with no
+//! compiler, no diagnostic wrapper. The driver fills the same model in from the live `TyCtxt`. The
+//! header is one `[CGP-E022]` shape for both triggers (the violation is identical); only the
+//! `help`'s fix differs by whether the registration was a `#[default_impl]`/`#[prefix]` or a
+//! `cgp_namespace!` re-open. A path key renders in bare `@…` notation (no `Path!(…)` wrapper).
 
 use cargo_cgp_error_processing::{
     OrphanConflict, OrphanTrigger, WiringKey, orphan_conflict_help, plan_orphan_conflict,
@@ -43,8 +43,8 @@ fn register_path_key() {
 
 #[test]
 fn reopen_gives_inheritance_fix() {
-    // A `cgp_namespace!` re-open has the same header but a different fix: inherit the namespace into
-    // a new local one rather than owning a key.
+    // A `cgp_namespace!` re-open has the same header but a different fix: inherit the namespace
+    // into a new local one rather than owning a key.
     let conflict = OrphanConflict {
         namespace: "AppNamespace".to_owned(),
         key: WiringKey::Component("GreeterComponent".to_owned()),

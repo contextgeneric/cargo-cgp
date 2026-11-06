@@ -1,7 +1,8 @@
 //! The diagnostic kinds a resolved failure plans differently.
 
-/// The `rustc` error-code discriminant [`plan_resolved`](crate::diagnosis::plan_resolved) needs, in rustc-free form so the plan
-/// is decided without linking the compiler. The emitter maps a diagnostic's `rustc` code to it.
+/// The `rustc` error-code discriminant [`plan_resolved`](crate::diagnosis::plan_resolved) needs, in
+/// rustc-free form so the plan is decided without linking the compiler. The emitter maps a
+/// diagnostic's `rustc` code to it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiagKind {
     /// A check-trait or ordinary-bound failure: rustc's `E0277`, the default.

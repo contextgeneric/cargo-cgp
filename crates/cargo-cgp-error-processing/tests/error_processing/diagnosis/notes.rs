@@ -228,9 +228,9 @@ fn merges_two_causes_sharing_a_root_into_one_note() {
 }
 
 /// Two causes reached through *independent* consumer chains that share no node still collapse into
-/// one note (the `parallel_consumers` shape), not two: the `root causes:` heading lists each distinct
-/// leaf, and the graph renders each root chain stacked. This is the behavior the graph adds over the
-/// old shared-prefix-only merge, which would have emitted two separate notes here.
+/// one note (the `parallel_consumers` shape), not two: the `root causes:` heading lists each
+/// distinct leaf, and the graph renders each root chain stacked. This is the behavior the graph
+/// adds over the old shared-prefix-only merge, which would have emitted two separate notes here.
 // Property: causes reached through independent chains render as one note listing each leaf, with
 //   each root chain stacked.
 #[test]
@@ -268,10 +268,11 @@ fn independent_root_causes_render_as_one_note_with_stacked_chains() {
 /// A block whose every root an earlier block already drew still renders its own chain.
 ///
 /// The cross-block elision exists to trim a long shared *tail* hanging under a block's own distinct
-/// prefix. A block with no distinct prefix at all is the degenerate case rather than the case it was
-/// built for: eliding there removes the whole derivation and leaves the block asserting a cause with
-/// no account of where it came from. Such a block has already survived de-duplication, so it is a
-/// distinct failure that merely runs through ground another one covered, and it earns its chain.
+/// prefix. A block with no distinct prefix at all is the degenerate case rather than the case it
+/// was built for: eliding there removes the whole derivation and leaves the block asserting a cause
+/// with no account of where it came from. Such a block has already survived de-duplication, so it
+/// is a distinct failure that merely runs through ground another one covered, and it earns its
+/// chain.
 // Property: a block whose every root an earlier block drew still renders its own chain
 //   (`DependencyGraph::fully_elided_by`'s doc).
 #[test]

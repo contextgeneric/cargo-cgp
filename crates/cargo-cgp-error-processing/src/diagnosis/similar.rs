@@ -99,7 +99,8 @@ fn segments(key: &str) -> Vec<&str> {
 fn edit_distance(a: &str, b: &str) -> usize {
     let a: Vec<char> = a.chars().collect();
     let b: Vec<char> = b.chars().collect();
-    // `rows[i][j]` is the distance between the first `i` characters of `a` and the first `j` of `b`.
+    // `rows[i][j]` is the distance between the first `i` characters of `a` and the first `j` of
+    // `b`.
     let mut rows = vec![vec![0; b.len() + 1]; a.len() + 1];
     for (i, row) in rows.iter_mut().enumerate() {
         row[0] = i;

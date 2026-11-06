@@ -70,7 +70,8 @@ fn keeps_an_ordinary_bound_header_and_drops_the_repeated_lead() {
 #[test]
 fn an_ordinary_bound_header_writes_an_empty_list_as_the_leaf_does() {
     // rustc prints CGP's empty list as `Nil`; the leaf, which knows the type, writes `Product![]`.
-    // The header still restates the leaf, so it takes the leaf's wording in rustc's sentence, uncoded.
+    // The header still restates the leaf, so it takes the leaf's wording in rustc's sentence,
+    // uncoded.
     let leaf = Leaf::Bound {
         summary: "Product![]: PickFirst".to_owned(),
     };
@@ -285,9 +286,9 @@ fn wrapper_header_reads_the_trait_not_the_consumer_trait() {
 //   error-code catalog's `CGP-E003`).
 #[test]
 fn wrapper_header_names_a_foreign_subject_plainly() {
-    // A routing wrapper implemented on a *foreign* type holding the context (`Router<Arc<MockApp>>`)
-    // is named plainly, never mislabelled a "context", while the traced cause on the real context
-    // follows in the dependency tree.
+    // A routing wrapper implemented on a *foreign* type holding the context
+    // (`Router<Arc<MockApp>>`) is named plainly, never mislabelled a "context", while the traced
+    // cause on the real context follows in the dependency tree.
     let resolved = Resolved {
         context: "Router<Arc<MockApp>>".to_owned(),
         consumers: vec!["CanAddApiRoutes".to_owned()],

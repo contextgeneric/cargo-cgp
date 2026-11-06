@@ -3,8 +3,8 @@
 /// A provider trait named in `#[uses(…)]`, where a dependency on a component names its consumer
 /// trait. `#[uses(AreaCalculator)]` emits `Self: AreaCalculator`, which lacks the context argument
 /// the provider trait takes, so rustc reports missing generics and suggests the generated
-/// `__Context__`. `provider` is the provider trait written and `consumer` the consumer trait it pairs
-/// with.
+/// `__Context__`. `provider` is the provider trait written and `consumer` the consumer trait it
+/// pairs with.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProviderTraitInUses {
     /// The provider trait the attribute names.

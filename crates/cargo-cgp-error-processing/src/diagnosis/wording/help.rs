@@ -9,13 +9,13 @@ use crate::diagnosis::wording::quoted_list;
 /// of one kind on one owner merge into one `help`: the fields to add to one struct, the derive one
 /// struct needs, the components to wire on one context, the entries to add to one table, and the
 /// data derives one type needs (named in one attribute). Every other fix is worded whole: a near
-/// miss, a tuple field's tag, an abstract type to reconcile, a non-provider's adapter, component, or
-/// core provider, a hand-written wiring to replace, a bound to add, and a method to call. A missing
-/// field is named with its type when its requirement states one, and gets no help when adding it is
-/// not confirmed to fix the cause (see [`FieldFix`](crate::FieldFix)); a key the reader could not
-/// paste gets none either. Both the streaming plan and the emitter's coalesced block build their
-/// `help`s through this, so a block that merges several consumers carries the same fixes as the
-/// per-consumer one it replaces.
+/// miss, a tuple field's tag, an abstract type to reconcile, a non-provider's adapter, component,
+/// or core provider, a hand-written wiring to replace, a bound to add, and a method to call. A
+/// missing field is named with its type when its requirement states one, and gets no help when
+/// adding it is not confirmed to fix the cause (see [`FieldFix`](crate::FieldFix)); a key the
+/// reader could not paste gets none either. Both the streaming plan and the emitter's coalesced
+/// block build their `help`s through this, so a block that merges several consumers carries the
+/// same fixes as the per-consumer one it replaces.
 ///
 /// Postcondition: a near miss, a similar name the program wrote, comes before the fix of its
 /// cause, also when that fix merges into a `help` an earlier cause opened.

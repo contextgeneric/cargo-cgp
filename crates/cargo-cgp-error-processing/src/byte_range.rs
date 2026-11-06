@@ -1,9 +1,9 @@
 //! The anchors' decisions over source positions, on plain byte ranges.
 //!
-//! The driver converts each `Span` at the call. The comparisons follow `rustc_span`'s `Span::contains`,
-//! `Span::overlaps`, and `Span::overlaps_or_adjacent`, which read only the byte offsets, so an
-//! expansion context never decides them. `Span` equality also compares the context, so a caller that
-//! needs it passes the result in ([`Operand::is_caret`]).
+//! The driver converts each `Span` at the call. The comparisons follow `rustc_span`'s
+//! `Span::contains`, `Span::overlaps`, and `Span::overlaps_or_adjacent`, which read only the byte
+//! offsets, so an expansion context never decides them. `Span` equality also compares the context,
+//! so a caller that needs it passes the result in ([`Operand::is_caret`]).
 
 /// A half-open range of source bytes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -42,10 +42,10 @@ pub struct Operand {
     pub is_caret: bool,
 }
 
-/// Whether a diagnostic's primary `caret` is about the call spanning `call`: it overlaps the call and
-/// does not lie strictly inside one of its `operands` (a method call's receiver and arguments, or a
-/// path call's arguments). A caret that is a whole argument (the `PhantomData` tag a failing handler
-/// call is reported on) is about the call.
+/// Whether a diagnostic's primary `caret` is about the call spanning `call`: it overlaps the call
+/// and does not lie strictly inside one of its `operands` (a method call's receiver and arguments,
+/// or a path call's arguments). A caret that is a whole argument (the `PhantomData` tag a failing
+/// handler call is reported on) is about the call.
 pub fn is_about_call(
     caret: ByteRange,
     call: ByteRange,

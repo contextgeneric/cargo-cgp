@@ -1,8 +1,8 @@
 //! Tests for the wiring-message rewrite (`cargo_cgp_error_processing::rewrite`).
 //!
 //! This crate links no compiler internals, so, unlike the driver that drives this logic, the tests
-//! need no `rustc_private` gate and run on any toolchain. The rewrite is exercised from a hand-built
-//! name map, the same shape the driver produces from a `TyCtxt`.
+//! need no `rustc_private` gate and run on any toolchain. The rewrite is exercised from a
+//! hand-built name map, the same shape the driver produces from a `TyCtxt`.
 
 use std::collections::HashMap;
 

@@ -1,27 +1,30 @@
-//! Post-processor: resugar the `Product!`/`Sum!` type-level lists and their `Struct!`/`Enum!` forms.
+//! Post-processor: resugar the `Product!`/`Sum!` type-level lists and their `Struct!`/`Enum!`
+//! forms.
 //!
-//! `Product![A, B]` expands to the right-nested product spine `Cons<A, Cons<B, Nil>>`, and `Sum![A, B]`
-//! to the sum spine `Either<A, Either<B, Void>>` (see the CGP `Product!` / `Sum!` references). This
-//! reverses those spines back to the surface macro. A spine whose elements are *all* `Field` cells
-//! resugars one step further to the CGP `Struct!` or `Enum!` shape it describes, when the shape has
-//! an exact spelling: a product to `Struct! { name: Type, … }` or `Struct!(A, B)`, and a sum to
-//! `Enum! { Name(Type), … }`. The spelling rules are the shared [`shape`](crate::shape) module's.
+//! `Product![A, B]` expands to the right-nested product spine `Cons<A, Cons<B, Nil>>`, and
+//! `Sum![A, B]` to the sum spine `Either<A, Either<B, Void>>` (see the CGP `Product!` / `Sum!`
+//! references). This reverses those spines back to the surface macro. A spine whose elements are
+//! *all* `Field` cells resugars one step further to the CGP `Struct!` or `Enum!` shape it
+//! describes, when the shape has an exact spelling: a product to `Struct! { name: Type, … }` or
+//! `Struct!(A, B)`, and a sum to `Enum! { Name(Type), … }`. The spelling rules are the shared
+//! [`shape`](crate::shape) module's.
 //!
 //! This is the **fallback** counterpart of the driver's typed `render_ty` (which resugars the same
 //! spines in the dependency tree, anchored by `DefId` to the CGP crates). It exists to catch a raw
-//! spine in a diagnostic the resolver *declined* and left to rustc's own text, so a fallback message
-//! reads the same as a reshaped one. Running on plain text, it cannot check the defining crate, so,
-//! like every resugaring post-processor, it resugars only on an **exact structural match**: the spine
-//! must close on the exact `Nil` (product) or `Void` (sum) terminator, and any other shape is left
-//! untouched. It runs after [`resugar_symbol`](fn@super::resugar_symbol), so a `Field`'s tag is already
-//! in its `Symbol!("…")` surface form when a field/variant name is read from it, and each element is
-//! resugared recursively so a nested list resugars in turn.
+//! spine in a diagnostic the resolver *declined* and left to rustc's own text, so a fallback
+//! message reads the same as a reshaped one. Running on plain text, it cannot check the defining
+//! crate, so, like every resugaring post-processor, it resugars only on an **exact structural
+//! match**: the spine must close on the exact `Nil` (product) or `Void` (sum) terminator, and any
+//! other shape is left untouched. It runs after [`resugar_symbol`](fn@super::resugar_symbol), so a
+//! `Field`'s tag is already in its `Symbol!("…")` surface form when a field/variant name is read
+//! from it, and each element is resugared recursively so a nested list resugars in turn.
 
 use crate::postprocess::scan_head_tail;
 use crate::shape::{ShapeTag, render_enum_shape, render_struct_shape};
 
 /// Which type-level list a spine is: the cell/terminator names it is built from and the surface
-/// macros it resugars to (the plain list, and the record/variant form when every element is a field).
+/// macros it resugars to (the plain list, and the record/variant form when every element is a
+/// field).
 #[derive(Clone, Copy)]
 enum ListKind {
     /// `Cons<…, Nil>`: a `Product!`, or a `Struct!` when every element is a `Field` cell.
@@ -105,10 +108,11 @@ fn next_cell(text: &str) -> Option<(usize, ListKind)> {
     None
 }
 
-/// Parse a `Cons`/`Either` spine at the start of `input` (which begins with the cell's opening token)
-/// and render it as its surface form, returning that and the bytes consumed. `None` on any spine that
-/// is not the cell all the way down to its exact terminator, or whose tail cell is not the whole
-/// remaining tail (a malformed or open-ended spine, which must not be silently rewritten).
+/// Parse a `Cons`/`Either` spine at the start of `input` (which begins with the cell's opening
+/// token) and render it as its surface form, returning that and the bytes consumed. `None` on any
+/// spine that is not the cell all the way down to its exact terminator, or whose tail cell is not
+/// the whole remaining tail (a malformed or open-ended spine, which must not be silently
+/// rewritten).
 fn parse_spine(input: &str, kind: ListKind) -> Option<(String, usize)> {
     let open = &input[..kind.cell().len() + 1];
     let after = input.strip_prefix(open)?;
@@ -139,9 +143,9 @@ fn parse_spine(input: &str, kind: ListKind) -> Option<(String, usize)> {
     Some((render(kind, &elems), consumed))
 }
 
-/// Render a spine's element list as its surface form: the `Struct!`/`Enum!` shape when every element
-/// is a `Field` cell and the shape has an exact spelling, otherwise the plain list macro. Each
-/// element (or field value) is resugared recursively so a nested spine resugars in turn.
+/// Render a spine's element list as its surface form: the `Struct!`/`Enum!` shape when every
+/// element is a `Field` cell and the shape has an exact spelling, otherwise the plain list macro.
+/// Each element (or field value) is resugared recursively so a nested spine resugars in turn.
 fn render(kind: ListKind, elems: &[&str]) -> String {
     if let Some(fields) = field_cells(elems) {
         let shape = match kind {
@@ -175,8 +179,8 @@ fn field_cells(elems: &[&str]) -> Option<Vec<(ShapeTag, String)>> {
             let elem = elem.trim();
             let after = elem.strip_prefix("Field<")?;
             let (tag, value, inner_len) = scan_head_tail(after)?;
-            // `Field<…>` must be the whole element: a trailing `::Something` or arguments mean it is
-            // not a bare field cell.
+            // `Field<…>` must be the whole element: a trailing `::Something` or arguments mean it
+            // is not a bare field cell.
             if "Field<".len() + inner_len != elem.len() {
                 return None;
             }
@@ -192,10 +196,10 @@ fn resugar_element(elem: &str) -> String {
 }
 
 /// The tag of a `Field` cell: the name inside a `Symbol!("name")` tag, or the position inside an
-/// `Index<N>` tag. `None` for any other tag. Only an unescaped symbol literal is read, so a name that
-/// cannot be read back verbatim leaves the list as its plain form rather than being decoded by
-/// guesswork. Meant to run after [`resugar_symbol`](fn@super::resugar_symbol) has already produced the
-/// `Symbol!("…")` surface form.
+/// `Index<N>` tag. `None` for any other tag. Only an unescaped symbol literal is read, so a name
+/// that cannot be read back verbatim leaves the list as its plain form rather than being decoded by
+/// guesswork. Meant to run after [`resugar_symbol`](fn@super::resugar_symbol) has already produced
+/// the `Symbol!("…")` surface form.
 fn shape_tag(tag: &str) -> Option<ShapeTag> {
     if let Some(index) = tag
         .strip_prefix("Index<")

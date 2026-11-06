@@ -1,10 +1,10 @@
 //! The `cargo-cgp` compiler-free diagnostic helpers.
 //!
-//! This crate holds the string-level diagnostic logic the driver drives but keeps out of
-//! its `rustc_private` linkage, so it builds and its tests run on any toolchain. The driver
-//! (`cargo-cgp-driver`) calls the diagnostic logic, `cargo-cgp-expand` calls the spelling rules, and
-//! the front-end touches no diagnostics.
-//! See `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md` for the design.
+//! This crate holds the string-level diagnostic logic the driver drives but keeps out of its
+//! `rustc_private` linkage, so it builds and its tests run on any toolchain. The driver
+//! (`cargo-cgp-driver`) calls the diagnostic logic, `cargo-cgp-expand` calls the spelling rules,
+//! and the front-end touches no diagnostics. See
+//! `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md` for the design.
 //!
 //! Eleven tenants live here, all but [`syntax`] driven by the driver's emitter:
 //!

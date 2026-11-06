@@ -87,8 +87,8 @@ pub fn categorized_header<'a>(
     Header::keep()
 }
 
-/// The headline of a projection mismatch stated by its own leaf, or `None` when the resolver traced it
-/// to another cause.
+/// The headline of a projection mismatch stated by its own leaf, or `None` when the resolver traced
+/// it to another cause.
 pub fn type_mismatch_header(resolved: &Resolved) -> Option<Header<'_>> {
     // A projection mismatch (`E0271`) the resolver traced to a failing associated type is its own
     // class, worded from the mismatch leaf rather than from the consumer trait: the `[CGP-E004]`

@@ -19,7 +19,8 @@ use termtree::{GlyphPalette, Tree};
 /// CGP dependency chains nest deeply (a realistic wiring bottoms out tens of levels down), so
 /// halving the per-level indent keeps a deep tree from marching off the right margin. The item
 /// indent (`─ `, two columns) is wider than the skip indent (` `, one column); `termtree` only
-/// requires the two to match for a *multiline* node label, which these single-line labels never are.
+/// requires the two to match for a *multiline* node label, which these single-line labels never
+/// are.
 const COMPACT_GLYPHS: GlyphPalette = GlyphPalette {
     middle_item: "├",
     last_item: "└",

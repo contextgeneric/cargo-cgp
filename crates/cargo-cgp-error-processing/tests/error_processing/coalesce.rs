@@ -40,7 +40,8 @@ fn two_underived_fields_on_one_struct_become_one_cause() {
     };
     assert_eq!(names, &["height".to_owned(), "width".to_owned()]);
     assert_eq!(owner, "Rectangle");
-    // The merged cause keeps every field's path, so the graph still branches to each per-field leaf.
+    // The merged cause keeps every field's path, so the graph still branches to each per-field
+    // leaf.
     assert_eq!(coalesced[0].paths.len(), 2);
     // One lead, listing both fields; one derive help, naming the one fix.
     assert_eq!(

@@ -61,10 +61,10 @@ fn failures_with_disjoint_causes_stay_apart() {
     assert_eq!(group_by_shared_cause(&resolveds), vec![vec![0], vec![1]]);
 }
 
-/// The shape one omitted wiring entry produces: each check entry reaches one of the causes while the
-/// use-site call reaches both, so the three cause sets overlap without any two being equal. Demanding
-/// equal sets left this as three separate blocks for one mistake; grouping on a *shared* cause folds
-/// it into one.
+/// The shape one omitted wiring entry produces: each check entry reaches one of the causes while
+/// the use-site call reaches both, so the three cause sets overlap without any two being equal.
+/// Demanding equal sets left this as three separate blocks for one mistake; grouping on a *shared*
+/// cause folds it into one.
 // Property: the groups are the connected components of the shares-a-cause relation, so overlapping
 //   cause sets that are never equal still form one group (`group_by_shared_cause`'s doc).
 #[test]
@@ -93,8 +93,8 @@ fn grouping_is_transitive_through_a_shared_cause() {
     assert_eq!(group_by_shared_cause(&resolveds), vec![vec![0, 1, 2]]);
 }
 
-/// The context is part of every cause key, so one field name missing on two different contexts is two
-/// mistakes and never groups.
+/// The context is part of every cause key, so one field name missing on two different contexts is
+/// two mistakes and never groups.
 // Property: a cause is keyed by its leaf, which names its owner, so one field name missing on two
 //   different structs is two causes and never groups.
 #[test]
@@ -120,8 +120,8 @@ fn a_causeless_failure_forms_its_own_group() {
     assert_eq!(group_by_shared_cause(&resolveds), vec![vec![0], vec![1]]);
 }
 
-/// Groups are ordered by their first member and each group holds its members in arrival order, so the
-/// emitter can emit a group where it first appeared and keep the overall diagnostic ordering.
+/// Groups are ordered by their first member and each group holds its members in arrival order, so
+/// the emitter can emit a group where it first appeared and keep the overall diagnostic ordering.
 // Property: groups are ordered by their first member, and each group lists its members in arrival
 //   order (`group_by_shared_cause`'s doc).
 #[test]

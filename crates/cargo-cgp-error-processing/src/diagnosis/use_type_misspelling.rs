@@ -1,10 +1,11 @@
 //! The rustc-free model and wording for a `#[use_type]` import that misspells its associated type.
 //!
-//! `#[use_type(HasScalarType.Scalr)]` rewrites each bare `Scalr` to `<Self as HasScalarType>::Scalr`,
-//! which names an associated type the trait does not declare, so the compiler reports `E0576` with
-//! its caret on the alias the program wrote. The compiler's own help respells that alias, which
-//! leaves the import's name in place and fails on the respelled one. The driver confirms that the
-//! path came from the import, and [`use_type_misspelling_help`] names the rename that compiles.
+//! `#[use_type(HasScalarType.Scalr)]` rewrites each bare `Scalr` to
+//! `<Self as HasScalarType>::Scalr`, which names an associated type the trait does not declare, so
+//! the compiler reports `E0576` with its caret on the alias the program wrote. The compiler's own
+//! help respells that alias, which leaves the import's name in place and fails on the respelled
+//! one. The driver confirms that the path came from the import, and [`use_type_misspelling_help`]
+//! names the rename that compiles.
 
 /// An associated type a `#[use_type]` import names that its trait does not declare, with the one
 /// the trait declares that the name is a slip of.

@@ -1,8 +1,8 @@
 //! Tests for the unimported abstract-type wording (`[CGP-E035]`).
 //!
 //! `plan_unimported_abstract_type` and `unimported_abstract_type_help` are pure functions over the
-//! rustc-free [`UnimportedAbstractType`] model, driven here over hand-built values. The driver fills
-//! the model in when a CGP definition names an abstract type it never imports.
+//! rustc-free [`UnimportedAbstractType`] model, driven here over hand-built values. The driver
+//! fills the model in when a CGP definition names an abstract type it never imports.
 
 use cargo_cgp_error_processing::{
     UnimportedAbstractType, plan_unimported_abstract_type, unimported_abstract_type_help,

@@ -91,7 +91,8 @@ pub struct PartialValue {
     pub kind: PartialKind,
     /// The struct or enum it builds or matches, e.g. `Person`.
     pub target: String,
-    /// The fields a builder holds, or the variants an extractor has ruled out, in declaration order.
+    /// The fields a builder holds, or the variants an extractor has ruled out, in declaration
+    /// order.
     pub marked: Vec<String>,
     /// The fields a builder holds as optional (the optional builder's state), in declaration order.
     pub optional: Vec<String>,

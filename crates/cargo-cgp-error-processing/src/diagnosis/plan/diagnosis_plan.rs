@@ -41,16 +41,16 @@ impl DiagnosisPlan {
     }
 }
 
-/// Build the [`DiagnosisPlan`] for a resolved failure. The main message is rewritten only when
-/// it is an identified CGP class (see `categorized_header`), and then it states the cause: a
-/// mismatch headline is its cause sentence, and every other class gives way to
-/// [`cause_headline`], keeping the class sentence as the internal headline. The sub-messages are
-/// replaced either way. When the main message already states the leaf (a mismatch, or a kept
-/// rustc headline restating the ordinary bound), the note drops its `root cause:` lead so it does
-/// not repeat the header. Causes that share one fix (several underived fields on one struct) are
-/// first coalesced into a single cause ([`coalesce_underived_fields`]), so the note lists one root
-/// cause per required fix. The note is returned unrendered, as a [`PendingNote`]; the caller renders
-/// it once it knows what earlier notes have drawn.
+/// Build the [`DiagnosisPlan`] for a resolved failure. The main message is rewritten only when it
+/// is an identified CGP class (see `categorized_header`), and then it states the cause: a mismatch
+/// headline is its cause sentence, and every other class gives way to [`cause_headline`], keeping
+/// the class sentence as the internal headline. The sub-messages are replaced either way. When the
+/// main message already states the leaf (a mismatch, or a kept rustc headline restating the
+/// ordinary bound), the note drops its `root cause:` lead so it does not repeat the header. Causes
+/// that share one fix (several underived fields on one struct) are first coalesced into a single
+/// cause ([`coalesce_underived_fields`]), so the note lists one root cause per required fix. The
+/// note is returned unrendered, as a [`PendingNote`]; the caller renders it once it knows what
+/// earlier notes have drawn.
 pub fn plan_resolved(
     kind: DiagKind,
     main_message: Option<&str>,

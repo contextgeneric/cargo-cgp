@@ -17,8 +17,8 @@ pub enum Origin {
     Rewritten,
     /// rustc built the diagnostic and the tool left it alone. The chain then changes a message only
     /// where it recovers a CGP encoding (a `Symbol!`, a path, a type-level list, or an unmet
-    /// `HasField` bound), so a plain Rust message stays exactly as rustc printed it; a path shows in
-    /// its `Path!(@…)` form, since the reader meets it as a type.
+    /// `HasField` bound), so a plain Rust message stays exactly as rustc printed it; a path shows
+    /// in its `Path!(@…)` form, since the reader meets it as a type.
     Untransformed,
 }
 

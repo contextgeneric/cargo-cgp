@@ -43,8 +43,8 @@ fn overlaps_matches_the_byte_sets_on_small_ranges() {
     }
 }
 
-// Property: for all non-empty a and b, a.overlaps_or_adjacent(b) holds when they share a byte or one
-// ends where the other starts.
+// Property: for all non-empty a and b, a.overlaps_or_adjacent(b) holds when they share a byte or
+// one ends where the other starts.
 #[test]
 fn overlaps_or_adjacent_adds_touching_ranges_on_small_ranges() {
     for a in small_ranges() {
@@ -55,9 +55,9 @@ fn overlaps_or_adjacent_adds_touching_ranges_on_small_ranges() {
     }
 }
 
-// Property (assumed from `rustc_span`'s definitions, which these comparisons follow): an empty range
-// overlaps only a range it lies strictly inside, and is contained in a range holding its position,
-// ends included.
+// Property (assumed from `rustc_span`'s definitions, which these comparisons follow): an empty
+// range overlaps only a range it lies strictly inside, and is contained in a range holding its
+// position, ends included.
 #[test]
 fn an_empty_range_overlaps_only_strictly_inside_and_is_contained_up_to_the_ends() {
     let outer = range(2, 5);
@@ -84,8 +84,8 @@ const CALL: ByteRange = ByteRange { lo: 0, hi: 22 };
 const RECEIVER: ByteRange = ByteRange { lo: 0, hi: 6 };
 const ARGUMENT: ByteRange = ByteRange { lo: 13, hi: 21 };
 
-/// The call's operands, as the driver passes them for `caret`: an operand is the caret only when its
-/// bytes match, as they do when the two spans share an expansion context.
+/// The call's operands, as the driver passes them for `caret`: an operand is the caret only when
+/// its bytes match, as they do when the two spans share an expansion context.
 fn operands(caret: ByteRange) -> [Operand; 2] {
     [RECEIVER, ARGUMENT].map(|range| Operand {
         range,
@@ -124,7 +124,8 @@ fn a_caret_beside_the_call_is_not_about_it() {
 }
 
 // Concern: a macro-expanded operand can have the caret's bytes in another expansion context.
-// Handled: the caller says whether the spans are equal, and bytes alone do not make the caret whole.
+// Handled: the caller says whether the spans are equal, and bytes alone do not make the caret
+// whole.
 #[test]
 fn an_operand_with_the_carets_bytes_in_another_context_holds_the_caret() {
     let other_context = [Operand {

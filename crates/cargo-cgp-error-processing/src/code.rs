@@ -109,17 +109,18 @@ pub const ENTRY_PARAMETERS_NOT_IN_KEY: &str = "CGP-E019";
 // Wiring that never resolves, and the orphan rule (`CGP-E020` to `CGP-E029`).
 
 /// `CGP-E020`: resolving a component's wiring leads back to itself. Stamped on an `E0275` overflow
-/// at a check entry (on a `CanUseComponent` bound) or a consumer-method call (on the consumer trait)
-/// whose wiring walk meets an obligation again.
+/// at a check entry (on a `CanUseComponent` bound) or a consumer-method call (on the consumer
+/// trait) whose wiring walk meets an obligation again.
 pub const WIRING_CYCLE: &str = "CGP-E020";
 
 /// `CGP-E021`: resolving a component's wiring grows without end, each step requiring the consumer
-/// trait for a larger type. Stamped on an `E0275` overflow at a check entry or a consumer-method call
-/// whose wiring walk reaches its depth limit without a repeat.
+/// trait for a larger type. Stamped on an `E0275` overflow at a check entry or a consumer-method
+/// call whose wiring walk reaches its depth limit without a repeat.
 pub const GROWING_LOOKUP: &str = "CGP-E021";
 
 /// `CGP-E022`: a namespace registration the orphan rule rejects. Stamped on an `E0210` (or its
-/// sibling `E0117`) whose generated impl is a foreign namespace trait implemented for a foreign key.
+/// sibling `E0117`) whose generated impl is a foreign namespace trait implemented for a foreign
+/// key.
 pub const ORPHAN_FOREIGN_NAMESPACE: &str = "CGP-E022";
 
 // Mistakes in what a macro was given (`CGP-E030` to `CGP-E039`).
@@ -156,8 +157,8 @@ pub const ABSTRACT_TYPE_NOT_IMPORTED: &str = "CGP-E035";
 /// `E0277`.
 pub const UNDECLARED_REQUIREMENT: &str = "CGP-E036";
 
-/// `CGP-E037`: `#[uses(…)]` names a component's provider trait where a dependency names its consumer
-/// trait. The Rust code stays `E0107`.
+/// `CGP-E037`: `#[uses(…)]` names a component's provider trait where a dependency names its
+/// consumer trait. The Rust code stays `E0107`.
 pub const PROVIDER_TRAIT_IN_USES: &str = "CGP-E037";
 
 /// `CGP-E038`: `#[cgp_impl(Provider)]` names a provider struct that is never declared, where

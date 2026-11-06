@@ -10,10 +10,10 @@ use crate::diagnosis::wording::cause_notes_seen;
 /// The `root cause:` note as the inputs it renders from, rather than as text.
 ///
 /// Rendering is deferred because a note elides against what *other* notes of the same compilation
-/// already drew (see [`DependencyGraph::render_seen`](crate::DependencyGraph::render_seen)), and only
-/// the emitter's flush knows the order they will appear in. Keeping the note in this form rather than
-/// as a rendered string alongside is deliberate: two representations of one note would let the tests
-/// pin one while the emitter shows the other.
+/// already drew (see [`DependencyGraph::render_seen`](crate::DependencyGraph::render_seen)), and
+/// only the emitter's flush knows the order they will appear in. Keeping the note in this form
+/// rather than as a rendered string alongside is deliberate: two representations of one note would
+/// let the tests pin one while the emitter shows the other.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PendingNote {
     /// The coalesced causes, one per distinct root cause.

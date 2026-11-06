@@ -3,14 +3,14 @@
 //! rustc prints types and traits fully qualified (`contexts::app::MockApp`,
 //! `interfaces::types::QuantityTypeProviderComponent`, `std::cmp::Eq`), which is noise in a CGP
 //! diagnostic, where the programmer wrote and reads the bare name (`MockApp`,
-//! `QuantityTypeProviderComponent`, `Eq`). This drops the module segments of each `a::b::C` run, in both
-//! the rewritten CGP messages and the resugaring fallback, so the two read the same. A module is
-//! named in lowercase and a type or trait in uppercase, so the run keeps everything from its first
-//! uppercase segment: an item inside a trait or type keeps its qualifier
-//! (`cgp::prelude::TryComputer::try_compute` reads `TryComputer::try_compute`), while a run with
-//! no uppercase segment, such as a free function's path, keeps only its last segment. A CGP
-//! re-export path such as `cgp::prelude::Chars` is just one such run. The strip runs first, before
-//! the resugaring stages, so they match the bare names.
+//! `QuantityTypeProviderComponent`, `Eq`). This drops the module segments of each `a::b::C` run, in
+//! both the rewritten CGP messages and the resugaring fallback, so the two read the same. A module
+//! is named in lowercase and a type or trait in uppercase, so the run keeps everything from its
+//! first uppercase segment: an item inside a trait or type keeps its qualifier
+//! (`cgp::prelude::TryComputer::try_compute` reads `TryComputer::try_compute`), while a run with no
+//! uppercase segment, such as a free function's path, keeps only its last segment. A CGP re-export
+//! path such as `cgp::prelude::Chars` is just one such run. The strip runs first, before the
+//! resugaring stages, so they match the bare names.
 //!
 //! It rewrites **only** a run of plain identifiers joined by `::` (`foo::Bar`, `a::b::c::D`) and
 //! leaves everything else alone: a lone identifier keeps its name, a turbofish (`foo::<T>`) is not
@@ -39,9 +39,9 @@ pub const CGP_ENCODING_NAMES: &[&str] = &[
 
 /// Strip module qualifiers from `text` except where they tell two items apart: collapse each
 /// `a::b::C` run to `C` unless [`AmbiguousNames::keeps_qualifier`] says the bare `C` would read as
-/// another item (`Error` for `std::io::Error` beside `backend::Error`). A run rooted at the `cgp` crate
-/// always collapses, since rustc qualifies CGP's names for the prelude glob import, and so does a
-/// run ending in one of [`CGP_ENCODING_NAMES`]. Returns the rewritten text when any run was
+/// another item (`Error` for `std::io::Error` beside `backend::Error`). A run rooted at the `cgp`
+/// crate always collapses, since rustc qualifies CGP's names for the prelude glob import, and so
+/// does a run ending in one of [`CGP_ENCODING_NAMES`]. Returns the rewritten text when any run was
 /// collapsed, `None` otherwise.
 pub fn strip_unambiguous_paths(text: &str, ambiguous: &AmbiguousNames) -> Option<String> {
     collapse_paths(text, |path, first_segment, last_segment| {

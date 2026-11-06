@@ -14,9 +14,9 @@
 //! primitive (`u32`), or a compound value type an `open` statement dispatches on (`Vec<u8>`,
 //! `&Coord`, `DateTime<Utc>`), including a module-qualified type (`std::io::Error`), which rustc
 //! qualifies only when the bare name is ambiguous. Two shapes still decline, leaving the raw
-//! `PathCons` spine rather than risk mangling it: a qualified segment that is not a plain type path,
-//! and a **bare lowercase identifier**, which `Path!` would have made a `Symbol`, so meeting one as a
-//! plain type is ambiguous.
+//! `PathCons` spine rather than risk mangling it: a qualified segment that is not a plain type
+//! path, and a **bare lowercase identifier**, which `Path!` would have made a `Symbol`, so meeting
+//! one as a plain type is ambiguous.
 //!
 //! A path may also be **open-ended**: instead of terminating in `Nil`, its spine ends in a
 //! generic "rest of path" parameter, which rustc renders as the inference placeholder `_` in
@@ -140,11 +140,12 @@ fn is_open_tail(tail: &str) -> bool {
 /// value type an `open` statement dispatches on (`Vec<u8>`, `&Coord`, `DateTime<Utc>`), so it is
 /// rendered verbatim.
 ///
-/// A **`::`-qualified** type segment (`std::io::Error`) is rendered as written, since `Path!` parses
-/// it as the same type. Two shapes decline, so the whole path is left as its raw spine rather than
-/// silently mangled: a qualified segment that is not a plain type path (a lowercase tail, generics),
-/// and a **bare lowercase identifier**, which `Path!` would have made a `Symbol`, so meeting one as a
-/// plain type (rather than inside a `Symbol!(…)`) is ambiguous, not a clean path.
+/// A **`::`-qualified** type segment (`std::io::Error`) is rendered as written, since `Path!`
+/// parses it as the same type. Two shapes decline, so the whole path is left as its raw spine
+/// rather than silently mangled: a qualified segment that is not a plain type path (a lowercase
+/// tail, generics), and a **bare lowercase identifier**, which `Path!` would have made a `Symbol`,
+/// so meeting one as a plain type (rather than inside a `Symbol!(…)`) is ambiguous, not a clean
+/// path.
 fn render_segment(segment: &str) -> Option<String> {
     let segment = segment.trim();
     if let Some(name) = symbol_inner(segment) {
@@ -154,11 +155,11 @@ fn render_segment(segment: &str) -> Option<String> {
         return lowercase_ident.then_some(name);
     }
     // A **module-qualified** segment (`std::io::Error`) is a type `Path!` accepts as written, so it
-    // stays qualified: rustc prints a name qualified only when it is ambiguous, and the chain strips
-    // CGP's own qualifiers before this stage. It must be a run of plain identifiers ending in a type
-    // name; a lowercase tail (would be a `Symbol`) or one carrying generics declines. Only the
-    // segment's own head counts: a path inside its arguments (`Wrap<a::Item>`) leaves it a compound
-    // type.
+    // stays qualified: rustc prints a name qualified only when it is ambiguous, and the chain
+    // strips CGP's own qualifiers before this stage. It must be a run of plain identifiers ending
+    // in a type name; a lowercase tail (would be a `Symbol`) or one carrying generics declines.
+    // Only the segment's own head counts: a path inside its arguments (`Wrap<a::Item>`) leaves it a
+    // compound type.
     let head = segment.split('<').next().unwrap_or(segment);
     if head.contains("::") {
         let tail = type_segment_tail(segment)?;

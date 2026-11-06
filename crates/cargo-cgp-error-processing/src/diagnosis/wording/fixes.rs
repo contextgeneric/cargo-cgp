@@ -257,8 +257,8 @@ fn assoc_mismatch_help(leaf: &Leaf) -> Option<String> {
     // Unlike the header and the leaf, which *describe* the requirement and so lead with the
     // projection that names where it comes from, this `help` prescribes an edit the reader is meant
     // to type, so it takes the reduced form when there is one. `UseType<Tx<Postgres>>` is a wiring
-    // entry; `UseType<Tx<<App as HasDbType>::Db>>` restates the requirement and leaves the reader to
-    // reduce it.
+    // entry; `UseType<Tx<<App as HasDbType>::Db>>` restates the requirement and leaves the reader
+    // to reduce it.
     let required = expected_normalized.as_deref().unwrap_or(expected);
     Some(format!(
         "wire `{component}` to `UseType<{required}>` in the wiring for `{owner}`, or change the provider to work with `{actual}`"

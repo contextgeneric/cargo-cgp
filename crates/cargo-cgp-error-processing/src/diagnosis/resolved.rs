@@ -14,9 +14,9 @@ use crate::diagnosis::node::{ChainNode, DepNode};
 /// shared trait several providers depend on has several, which the
 /// [dependency graph](crate::DependencyGraph) merges when it renders. Keeping several paths on one
 /// cause preserves the *one cause per distinct leaf* invariant the de-duplication signatures, the
-/// consumer coalescing, and the derive `help`s all rely on. For a coalesced underived-field cause the
-/// heading `leaf` is the merged [`Leaf::UnderivedFields`], while the paths still terminate at the
-/// individual per-field leaves so the graph branches to each.
+/// consumer coalescing, and the derive `help`s all rely on. For a coalesced underived-field cause
+/// the heading `leaf` is the merged [`Leaf::UnderivedFields`], while the paths still terminate at
+/// the individual per-field leaves so the graph branches to each.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cause {
     /// The leaf the note heading names (its lead, code, and derive `help` come from this).
@@ -26,14 +26,15 @@ pub struct Cause {
     pub paths: Vec<Vec<ChainNode>>,
 }
 
-/// The root causes of one failure: **one [`Cause`] per distinct leaf**, each holding every path that
-/// reaches it.
+/// The root causes of one failure: **one [`Cause`] per distinct leaf**, each holding every path
+/// that reaches it.
 ///
 /// That invariant is the whole point of the type. The wording, the de-duplication signature, the
 /// coalescing, and the derive `help`s all read a cause list expecting each leaf once, and a list
 /// holding one leaf twice does not fail loudly: it makes a downstream reader count one mistake
-/// several times, which surfaced as `` the fields `name`, `name`, and `name` `` in a lead. There is no way to
-/// construct a `Causes` that violates it: every constructor normalizes, and the field is private.
+/// several times, which surfaced as `` the fields `name`, `name`, and `name` `` in a lead. There is
+/// no way to construct a `Causes` that violates it: every constructor normalizes, and the field is
+/// private.
 ///
 /// Reads go through [`Deref`] to `[Cause]`, so consumers keep slice ergonomics while construction
 /// stays controlled.
@@ -68,7 +69,8 @@ impl Causes {
 
     /// Head every path with `node`, so a recovered CGP chain hangs beneath the trait the programmer
     /// actually wrote (the wrapper an `impl` block names). Prepending a single constant hop cannot
-    /// change any leaf's identity, so the grouping is unaffected and the operation needs no re-merge.
+    /// change any leaf's identity, so the grouping is unaffected and the operation needs no
+    /// re-merge.
     pub fn headed_by(&self, node: &DepNode) -> Self {
         Causes(
             self.0
@@ -98,10 +100,11 @@ impl Causes {
         });
     }
 
-    /// Fold `cause` in, extending the entry for its leaf rather than adding a second one: the single
-    /// place the invariant is maintained, which is why every constructor routes through here. An exact
-    /// duplicate path is dropped: the [dependency graph](crate::DependencyGraph) merges paths by
-    /// structural identity when it renders, so keeping it would change nothing but the work.
+    /// Fold `cause` in, extending the entry for its leaf rather than adding a second one: the
+    /// single place the invariant is maintained, which is why every constructor routes through
+    /// here. An exact duplicate path is dropped: the [dependency graph](crate::DependencyGraph)
+    /// merges paths by structural identity when it renders, so keeping it would change nothing but
+    /// the work.
     fn add_cause(&mut self, cause: Cause) {
         match self.0.iter_mut().find(|seen| seen.leaf == cause.leaf) {
             Some(existing) => {
@@ -145,11 +148,12 @@ pub enum ResolvedClass {
     /// holds the provider, and [`Resolved::consumers`] the provider trait it fails to implement for
     /// [`Resolved::context`].
     Provider(String),
-    /// A call to one of CGP's extensible-data traits, a cast such as `CanUpcast`, a builder operation
-    /// such as `BuildField`, or an extractor operation (`CGP-E050`). It is worded with the plain trait
-    /// sentence, since these traits are not components.
+    /// A call to one of CGP's extensible-data traits, a cast such as `CanUpcast`, a builder
+    /// operation such as `BuildField`, or an extractor operation (`CGP-E050`). It is worded with
+    /// the plain trait sentence, since these traits are not components.
     DataOperation,
-    /// A CGP consumer trait, from a `check_components!` entry or a consumer-method call (`CGP-E001`).
+    /// A CGP consumer trait, from a `check_components!` entry or a consumer-method call
+    /// (`CGP-E001`).
     Consumer,
     /// Any other trait: a hand-written wrapper such as `CanHandleApiSend`, or a `#[cgp_fn]` blanket
     /// trait (`CGP-E003`).
@@ -173,8 +177,8 @@ pub struct Resolved {
     pub class: ResolvedClass,
     /// Whether [`context`](Resolved::context) is the checked CGP context itself (`true`, the usual
     /// case) or a foreign wrapper type the failing trait is implemented for that merely holds the
-    /// context (`false`), as `Router<Arc<MockApp>>` does for a routing trait. It selects whether the
-    /// header calls the subject a `context` or names it plainly, so a foreign wrapper is not
+    /// context (`false`), as `Router<Arc<MockApp>>` does for a routing trait. It selects whether
+    /// the header calls the subject a `context` or names it plainly, so a foreign wrapper is not
     /// mislabelled a context.
     pub subject_is_context: bool,
     /// The root causes, one entry per distinct leaf, in first-seen order.
@@ -183,8 +187,8 @@ pub struct Resolved {
 
 /// Reword the provider-trait hop directly above a [`Leaf::NotAProvider`] of the same provider. The
 /// hop reads as a step through the provider's impl of the trait, which the leaf beneath says does
-/// not exist, so it becomes the requirement it is ([`DepNode::ProviderRequired`]). It stays a step of
-/// the chain with every fact it carried.
+/// not exist, so it becomes the requirement it is ([`DepNode::ProviderRequired`]). It stays a step
+/// of the chain with every fact it carried.
 fn reword_unimplemented_provider_hop(path: &mut [ChainNode]) {
     let [
         ..,

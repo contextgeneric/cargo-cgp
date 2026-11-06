@@ -1,5 +1,5 @@
-//! Post-processor: turn an unmet `HasField` bound into a missing-field message, where the text shows
-//! the field is missing.
+//! Post-processor: turn an unmet `HasField` bound into a missing-field message, where the text
+//! shows the field is missing.
 //!
 //! rustc reports a getter's unmet dependency as
 //! `the trait `HasField<Symbol!("name")>` is not implemented for `Context``. This rewrites

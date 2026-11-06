@@ -1,7 +1,7 @@
 //! Tests for the duplicate-key wiring-conflict wording.
 //!
-//! `plan_wiring_conflict` is a pure function over the rustc-free [`WiringConflict`] model, so it
-//! is driven directly over hand-built conflicts, with no compiler, no diagnostic wrapper. The driver
+//! `plan_wiring_conflict` is a pure function over the rustc-free [`WiringConflict`] model, so it is
+//! driven directly over hand-built conflicts, with no compiler, no diagnostic wrapper. The driver
 //! fills the same model in from the live `TyCtxt`. Each shape carries its own `[CGP-E0xx]` code,
 //! and an `@`-path renders in bare notation (no `Path!(…)` wrapper).
 

@@ -19,8 +19,8 @@ fn wiring_signal_matches_each_wiring_trait_and_nothing_else() {
     assert!(mentions_wiring_text(
         "required for `GreetHello` to implement `IsProviderFor<GreeterComponent, App>`"
     ));
-    // A use-site `E0599` names the missing `HasField` leaf but no `CanUseComponent`/`IsProviderFor`,
-    // so `HasField` makes it a candidate.
+    // A use-site `E0599` names the missing `HasField` leaf but no
+    // `CanUseComponent`/`IsProviderFor`, so `HasField` makes it a candidate.
     assert!(mentions_wiring_text(
         "doesn't satisfy `_: HasField<Symbol!(\"name\")>`"
     ));

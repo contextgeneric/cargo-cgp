@@ -40,7 +40,8 @@ use crate::rewrite::text::{last_segment, split_generics, split_top_level};
 /// recognized CGP wiring form: the obligation-chain notes ([`rewrite_required_for`]) and the
 /// primary `the trait bound … is not satisfied` header ([`rewrite_trait_bound`]). The
 /// `overflow evaluating the requirement …` header has its own entry point,
-/// [`rewrite_wiring_overflow`](crate::rewrite_wiring_overflow), since its wording depends on why the lookup never resolves.
+/// [`rewrite_wiring_overflow`](crate::rewrite_wiring_overflow), since its wording depends on why
+/// the lookup never resolves.
 pub fn rewrite_message(message: &str, names: &ComponentNameMap) -> Option<String> {
     rewrite_required_for(message, names).or_else(|| rewrite_trait_bound(message, names))
 }

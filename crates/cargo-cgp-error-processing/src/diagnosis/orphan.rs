@@ -75,8 +75,8 @@ pub fn plan_orphan_conflict(conflict: &OrphanConflict) -> String {
 
 /// The `help` accompanying the header: the ownership-based fix, which is the one thing the raw
 /// coherence error never states. It differs by [`OrphanTrigger`]: a registration is fixed by owning
-/// one end (a local key, or registering from the namespace's own crate), while a re-open is fixed by
-/// inheriting the namespace into a new local one instead of extending it in place.
+/// one end (a local key, or registering from the namespace's own crate), while a re-open is fixed
+/// by inheriting the namespace into a new local one instead of extending it in place.
 pub fn orphan_conflict_help(conflict: &OrphanConflict) -> String {
     match conflict.trigger {
         OrphanTrigger::Register => format!(

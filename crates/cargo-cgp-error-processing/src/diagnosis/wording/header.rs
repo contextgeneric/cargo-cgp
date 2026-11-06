@@ -11,11 +11,11 @@ use crate::diagnosis::wording::quoted_list;
 /// from the typed resolution, which keys each component marker by its full path, so two same-named
 /// components in different modules can never be confused. A CGP consumer trait reads as
 /// `the consumer trait …`; a trait that is not a CGP consumer (a hand-written wrapper, or a
-/// `#[cgp_fn]` blanket trait) reads as `the trait …`, chosen by [`Resolved::class`].
-/// The subject is named `` context `X` `` when it is the checked context, or plainly `` `X` `` when
-/// it is a foreign type that merely holds the context (`Router<Arc<MockApp>>`), chosen by
-/// [`Resolved::subject_is_context`]. A `#[check_providers]` entry, or a provider's own method called
-/// directly, reads as the provider trait the provider fails to implement for the context.
+/// `#[cgp_fn]` blanket trait) reads as `the trait …`, chosen by [`Resolved::class`]. The subject is
+/// named `` context `X` `` when it is the checked context, or plainly `` `X` `` when it is a
+/// foreign type that merely holds the context (`Router<Arc<MockApp>>`), chosen by
+/// [`Resolved::subject_is_context`]. A `#[check_providers]` entry, or a provider's own method
+/// called directly, reads as the provider trait the provider fails to implement for the context.
 pub fn class_sentence(resolved: &Resolved) -> String {
     if let ResolvedClass::Provider(provider) = &resolved.class {
         return format!(

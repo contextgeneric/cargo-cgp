@@ -2,9 +2,9 @@
 //!
 //! A component's `#[extend(HasName)]` or `#[use_type(HasErrorType.Error)]` requires the trait of
 //! every context, so the provider trait carries the bound in its `where` clause, and a provider
-//! written with `#[cgp_impl]` must declare it too, with `#[uses(…)]` or `#[use_type(…)]`. A provider
-//! that does not fails with `E0277` on the generated `__Context__`, "required by a bound in
-//! `Greeter`", naming neither the provider nor the declaration it lacks.
+//! written with `#[cgp_impl]` must declare it too, with `#[uses(…)]` or `#[use_type(…)]`. A
+//! provider that does not fails with `E0277` on the generated `__Context__`, "required by a bound
+//! in `Greeter`", naming neither the provider nor the declaration it lacks.
 //!
 //! The driver recovers the provider trait, the provider, and each requirement the provider does not
 //! declare, and [`plan_undeclared_requirement`] words the `[CGP-E036]` header, with

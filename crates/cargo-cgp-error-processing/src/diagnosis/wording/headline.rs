@@ -52,9 +52,9 @@ pub fn merged_cause(causes: &[Cause]) -> Option<String> {
     }
 }
 
-/// A [`quoted_list`](fn@quoted_list) of `items`, or its first [`MERGED_CAUSE_NAMES`] items and a count of the rest
-/// when the list is longer. A list one item past the cap is named in full, since its count would
-/// take as much room as the item.
+/// A [`quoted_list`](fn@quoted_list) of `items`, or its first [`MERGED_CAUSE_NAMES`] items and a
+/// count of the rest when the list is longer. A list one item past the cap is named in full, since
+/// its count would take as much room as the item.
 fn capped_list(items: &[String]) -> String {
     if items.len() <= MERGED_CAUSE_NAMES + 1 {
         return quoted_list(items);

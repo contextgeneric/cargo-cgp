@@ -1,9 +1,11 @@
 //! The facts a leaf carries for its `help`s alone, which are not part of its identity.
 
-/// What a missing field's `help`s can name. It rides on a [`Leaf::Field`](crate::diagnosis::Leaf::Field) but is not part of the
-/// leaf's identity: every equality and hash treats two values alike, so one missing field reached
-/// through requirements that state its type differently stays one cause, and
-/// [`Leaf::reconcile_fix`](crate::diagnosis::Leaf::reconcile_fix) keeps only what every route agrees on.
+/// What a missing field's `help`s can name. It rides on a
+/// [`Leaf::Field`](crate::diagnosis::Leaf::Field) but is not part of the leaf's identity: every
+/// equality and hash treats two values alike, so one missing field reached through requirements
+/// that state its type differently stays one cause, and
+/// [`Leaf::reconcile_fix`](crate::diagnosis::Leaf::reconcile_fix) keeps only what every route
+/// agrees on.
 #[derive(Debug, Clone, Default)]
 pub struct FieldFix {
     /// Whether adding the field is confirmed to fix the cause: its struct implements `HasField` for
@@ -28,15 +30,17 @@ pub struct FieldFix {
 #[derive(Debug, Clone, Default)]
 pub struct NearMiss(pub Option<String>);
 
-/// The adapter types a `help` names for a [`Leaf::NotAProvider`](crate::diagnosis::Leaf::NotAProvider): each wraps the wired type, and the
+/// The adapter types a `help` names for a
+/// [`Leaf::NotAProvider`](crate::diagnosis::Leaf::NotAProvider): each wraps the wired type, and the
 /// solver confirmed the result is a provider of the slot's trait (`WithProvider<ReadName>` for a
 /// hand-written getter). Like [`NearMiss`], it is carried for the `help` and is not part of the
 /// leaf's identity.
 #[derive(Debug, Clone, Default)]
 pub struct AdapterFix(pub Vec<Adapter>);
 
-/// An adapter type applied to a wired type, with the `use` path its name needs when the prelude does
-/// not export it (`Promote` comes from `cgp::extra::handler`, `WithProvider` from the prelude).
+/// An adapter type applied to a wired type, with the `use` path its name needs when the prelude
+/// does not export it (`Promote` comes from `cgp::extra::handler`, `WithProvider` from the
+/// prelude).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Adapter {
     /// The adapter applied to the wired type, e.g. `Promote<Double>`.
@@ -46,9 +50,10 @@ pub struct Adapter {
     pub import: Option<String>,
 }
 
-/// The other components a [`Leaf::NotAProvider`](crate::diagnosis::Leaf::NotAProvider)'s wired type is a provider of, each confirmed by
-/// the solver for the same context: the likely mix-up of a provider wired under the wrong key. Like
-/// [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
+/// The other components a [`Leaf::NotAProvider`](crate::diagnosis::Leaf::NotAProvider)'s wired type
+/// is a provider of, each confirmed by the solver for the same context: the likely mix-up of a
+/// provider wired under the wrong key. Like [`NearMiss`], it is carried for the `help` and is not
+/// part of the leaf's identity.
 #[derive(Debug, Clone, Default)]
 pub struct ProvidesFix(pub Vec<ProvidedComponent>);
 
@@ -61,8 +66,9 @@ pub struct ProvidedComponent {
     pub component: String,
 }
 
-/// The fix a `help` names for a [`Leaf::NotAProvider`](crate::diagnosis::Leaf::NotAProvider) that is a misused CGP core provider. Like
-/// [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
+/// The fix a `help` names for a [`Leaf::NotAProvider`](crate::diagnosis::Leaf::NotAProvider) that
+/// is a misused CGP core provider. Like [`NearMiss`], it is carried for the `help` and is not part
+/// of the leaf's identity.
 #[derive(Debug, Clone, Default)]
 pub struct CoreProviderFix(pub Option<CoreProviderHint>);
 
@@ -83,14 +89,17 @@ pub enum CoreProviderHint {
     },
 }
 
-/// The derive a `help` names for a [`Leaf::DataTraitUnimplemented`](crate::diagnosis::Leaf::DataTraitUnimplemented), when one can be added to the
-/// type. Like [`NearMiss`], it is carried for the `help` and is not part of the leaf's identity.
+/// The derive a `help` names for a
+/// [`Leaf::DataTraitUnimplemented`](crate::diagnosis::Leaf::DataTraitUnimplemented), when one can
+/// be added to the type. Like [`NearMiss`], it is carried for the `help` and is not part of the
+/// leaf's identity.
 #[derive(Debug, Clone, Default)]
 pub struct DeriveFix(pub Option<String>);
 
-/// The provider a `help` names for a [`Leaf::WiringWithoutProviderFor`](crate::diagnosis::Leaf::WiringWithoutProviderFor), to write the entry that
-/// replaces a hand-written `DelegateComponent` impl. Like [`NearMiss`], it is carried for the `help`
-/// and is not part of the leaf's identity.
+/// The provider a `help` names for a
+/// [`Leaf::WiringWithoutProviderFor`](crate::diagnosis::Leaf::WiringWithoutProviderFor), to write
+/// the entry that replaces a hand-written `DelegateComponent` impl. Like [`NearMiss`], it is
+/// carried for the `help` and is not part of the leaf's identity.
 #[derive(Debug, Clone, Default)]
 pub struct EntryFix(pub Option<String>);
 
