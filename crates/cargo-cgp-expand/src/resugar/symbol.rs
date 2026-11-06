@@ -26,7 +26,7 @@ impl VisitMut for Symbols {
 }
 
 /// Build the `Symbol!("name")` call a decoded spine becomes.
-pub(crate) fn symbol_macro(name: &str) -> Type {
+pub fn symbol_macro(name: &str) -> Type {
     let literal = LitStr::new(name, proc_macro2::Span::call_site());
     macro_type("Symbol", Delimiter::Paren, literal.to_token_stream())
 }
@@ -35,7 +35,7 @@ pub(crate) fn symbol_macro(name: &str) -> Type {
 ///
 /// The later passes read a symbol back this way rather than re-decoding a spine, since by the
 /// time they run this pass has already folded every well-formed spine into a call.
-pub(crate) fn symbol_macro_name(ty: &Type) -> Option<String> {
+pub fn symbol_macro_name(ty: &Type) -> Option<String> {
     let Type::Macro(mac) = ty else {
         return None;
     };

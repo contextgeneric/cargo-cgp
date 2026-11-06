@@ -9,9 +9,12 @@ use syn::{GenericArgument, Macro, MacroDelimiter, PathArguments, Type, TypeMacro
 /// `Struct!(…)` take parentheses, `Product![…]` and `Sum![…]` brackets, and a named
 /// `Struct! { … }` and `Enum! { … }` braces.
 #[derive(Clone, Copy)]
-pub(crate) enum Delimiter {
+pub enum Delimiter {
+    /// Parentheses: `Symbol!(…)`, `Path!(…)`, and a tuple `Struct!(…)`.
     Paren,
+    /// Brackets: `Product![…]` and `Sum![…]`.
     Bracket,
+    /// Braces: a named `Struct! { … }` and `Enum! { … }`.
     Brace,
 }
 
@@ -20,7 +23,7 @@ pub(crate) enum Delimiter {
 /// The output has to be a syntax node rather than a string, because the printer formats the tree
 /// after every pass has run, which lets a resugared call be laid out compactly where the raw spine
 /// it replaced was broken across lines.
-pub(crate) fn macro_type(name: &str, delimiter: Delimiter, tokens: TokenStream) -> Type {
+pub fn macro_type(name: &str, delimiter: Delimiter, tokens: TokenStream) -> Type {
     let delimiter = match delimiter {
         Delimiter::Paren => MacroDelimiter::Paren(Paren::default()),
         Delimiter::Bracket => MacroDelimiter::Bracket(Bracket::default()),
@@ -42,7 +45,7 @@ pub(crate) fn macro_type(name: &str, delimiter: Delimiter, tokens: TokenStream) 
 /// Only the last segment is compared, so a construct the macros emit fully qualified
 /// (`::cgp::macro_prelude::Symbol<…>`) matches whether or not the qualifier was stripped. A
 /// path with no arguments yields an empty list, which is how a spine terminator is recognized.
-pub(crate) fn type_args(ty: &Type, name: &str) -> Option<Vec<GenericArgument>> {
+pub fn type_args(ty: &Type, name: &str) -> Option<Vec<GenericArgument>> {
     let Type::Path(path) = ty else {
         return None;
     };
@@ -59,6 +62,6 @@ pub(crate) fn type_args(ty: &Type, name: &str) -> Option<Vec<GenericArgument>> {
 
 /// Whether `ty` is the bare path `name` carrying no arguments, a spine terminator such as
 /// `Nil` or `Void`.
-pub(crate) fn is_terminator(ty: &Type, name: &str) -> bool {
+pub fn is_terminator(ty: &Type, name: &str) -> bool {
     type_args(ty, name).is_some_and(|args| args.is_empty())
 }
