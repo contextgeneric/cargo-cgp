@@ -49,7 +49,7 @@ mod use_type_misspelling;
 pub use attribute_splice::drop_attribute_splices;
 pub use buffer::*;
 pub use cgp_emitter::CgpEmitter;
-pub use containment::{contain, install_panic_hooks};
+pub use containment::{contain, install_panic_hooks, is_closed_stdout_panic};
 pub use edit::{merged_span, postprocess_multispan};
 pub use fallback::*;
 pub use flush::*;

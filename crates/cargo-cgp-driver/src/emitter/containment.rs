@@ -56,9 +56,28 @@ pub fn install_panic_hooks(bug_report_url: &'static str) {
             let _ = CAUGHT.try_with(|caught| *caught.borrow_mut() = Some(describe(info)));
             return;
         }
+        // Exiting below skips the emitter's `Drop`, so its buffered diagnostics go out first, as
+        // they do before a crash report.
         flush_registered_output();
+        if is_closed_stdout_panic(payload_message(info.payload())) {
+            // The reader of stdout is gone, as when `head` has read enough: nothing is wrong with
+            // the driver, so end without a report and with rustc's own code for a failed print
+            // (`rustc_driver_impl`'s `safe_print` raises a fatal error, exit code 1).
+            std::process::exit(1);
+        }
         ice_hook(info);
     }));
+}
+
+/// Whether `message` is the panic `println!` raises when stdout's reader has closed the pipe:
+/// std's "failed printing to stdout" with the operating system's broken-pipe error, whose text is
+/// "Broken pipe" on Linux (and, not checked here, on macOS). rustc's own build keeps the default `SIGPIPE` action
+/// (`-Zon-broken-pipe=kill`), so a closed stdout ends rustc quietly; the driver is an ordinary
+/// cargo binary, whose runtime ignores `SIGPIPE`, so rustc's prints panic instead.
+pub fn is_closed_stdout_panic(message: &str) -> bool {
+    message
+        .strip_prefix("failed printing to stdout: ")
+        .is_some_and(|error| error.starts_with("Broken pipe"))
 }
 
 /// The extra line the ICE report carries, naming the driver version that crashed.

@@ -1,6 +1,7 @@
 //! The driver entrypoint: the function the `cargo-cgp-driver` binary calls.
 
 use std::env;
+use std::io::{self, Write};
 use std::process::ExitCode;
 
 use rustc_session::EarlyDiagCtxt;
@@ -38,12 +39,10 @@ pub fn run() -> ExitCode {
         .collect();
     if !is_wrapper_mode(&direct) {
         if wants_help(&direct) || direct.len() <= 1 {
-            println!("{}", help_text());
-            return ExitCode::SUCCESS;
+            return print_answer(&help_text());
         }
         if wants_version(&direct) {
-            println!("{}", version_string());
-            return ExitCode::SUCCESS;
+            return print_answer(&version_string());
         }
     }
 
@@ -84,4 +83,15 @@ pub fn run() -> ExitCode {
         let mut callbacks = CgpCallbacks { expand };
         rustc_driver::compiler_entrypoint(&args, &mut callbacks);
     })
+}
+
+/// Print a direct query's answer and return the exit code. A reader that closed the pipe, as
+/// `head` does once it has enough, got what it wanted, so that ends the driver successfully, as it
+/// ends the front-end's `expand`; any other write error is a failure.
+fn print_answer(text: &str) -> ExitCode {
+    match writeln!(io::stdout(), "{text}") {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) if error.kind() == io::ErrorKind::BrokenPipe => ExitCode::SUCCESS,
+        Err(_) => ExitCode::FAILURE,
+    }
 }

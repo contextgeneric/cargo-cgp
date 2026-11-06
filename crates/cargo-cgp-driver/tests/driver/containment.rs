@@ -9,7 +9,8 @@ use std::sync::Once;
 
 use cargo_cgp_driver::config::BUG_REPORT_URL;
 use cargo_cgp_driver::emitter::{
-    contain, install_panic_hooks, render_or_untransformed, transform_or_original,
+    contain, install_panic_hooks, is_closed_stdout_panic, render_or_untransformed,
+    transform_or_original,
 };
 use rustc_data_structures::FatalErrorMarker;
 use rustc_errors::{DiagInner, DiagMessage, Level};
@@ -186,4 +187,23 @@ fn a_render_that_panics_emits_every_entry_untransformed_in_order() {
             .collect::<Vec<_>>(),
         ["first", "second"]
     );
+}
+
+// Property: `is_closed_stdout_panic` holds exactly for std's "failed printing to stdout" panic with
+//   the broken-pipe error, the panic `println!` raises once stdout's reader is gone.
+// Concern: a print failure for another reason, or on stderr, is a real fault and must still be
+//   reported.
+#[test]
+fn only_a_broken_pipe_on_stdout_is_a_closed_stdout() {
+    assert!(is_closed_stdout_panic(
+        "failed printing to stdout: Broken pipe (os error 32)"
+    ));
+    for other in [
+        "failed printing to stdout: No space left on device (os error 28)",
+        "failed printing to stderr: Broken pipe (os error 32)",
+        "Broken pipe (os error 32)",
+        "emitter bug",
+    ] {
+        assert!(!is_closed_stdout_panic(other), "{other}");
+    }
 }
