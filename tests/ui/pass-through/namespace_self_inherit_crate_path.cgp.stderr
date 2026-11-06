@@ -1,0 +1,11 @@
+error[E0207]: the type parameter `__Value__` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:14:1
+   |
+14 | / cgp_namespace! {
+15 | |     new SelfNs: crate::SelfNs {}
+16 | | }
+   | |_^ unconstrained type parameter
+   |
+   = note: this error originates in the macro `cgp_namespace` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0207`.
