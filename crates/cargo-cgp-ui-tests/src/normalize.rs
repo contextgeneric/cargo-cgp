@@ -23,7 +23,11 @@
 //!
 //! A compiler crash report (from the `robustness/` fixture that makes rustc panic on purpose) names
 //! the panicking thread by its operating-system id, which differs on every run, so [`normalize`]
-//! replaces it with `$TID`.
+//! replaces it with `$TID`. The same report names the host triple rustc was built for
+//! (`x86_64-unknown-linux-gnu` and so on) and the driver's own version, which move when the
+//! snapshot is checked on another machine or the tool gains a version, so [`normalize`] replaces
+//! them with `$HOST` and `$VERSION`. The compiler's own version stays: a toolchain bump is meant
+//! to re-bless a crash snapshot.
 
 use std::path::Path;
 
@@ -42,13 +46,32 @@ const DROP_MARKERS: &[&str] = &[
 
 /// Rewrite the tool's rendered `.stderr` output into its committed-snapshot form: drop the
 /// content-free lines above, replace the throwaway-crate, cgp-checkout, and sysroot absolute paths
-/// with `$DIR`, `$CGP`, and `$SYSROOT`, and a crash report's thread id with `$TID`.
+/// with `$DIR`, `$CGP`, and `$SYSROOT`, and a crash report's thread id, host triple, and driver
+/// version with `$TID`, `$HOST`, and `$VERSION`.
 pub fn normalize(raw: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path) -> String {
     raw.lines()
         .filter(|line| !DROP_MARKERS.iter().any(|marker| line.contains(marker)))
-        .map(|line| replace_thread_id(&replace_paths(line, harness_dir, cgp_root, sysroot)))
+        .map(|line| {
+            let line = replace_paths(line, harness_dir, cgp_root, sysroot);
+            replace_crash_details(&replace_thread_id(&line))
+        })
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+/// Replace the machine- and version-specific details of a compiler crash report: the host triple in
+/// rustc's `running on …` note becomes `$HOST`, and the driver's `version:` note becomes
+/// `$VERSION`. Any other line is returned unchanged.
+fn replace_crash_details(line: &str) -> String {
+    if let Some(rest) = line.strip_prefix("note: rustc ")
+        && let Some((build, _host)) = rest.rsplit_once(" running on ")
+    {
+        return format!("note: rustc {build} running on $HOST");
+    }
+    if line.starts_with("note: cargo-cgp-driver version: ") {
+        return "note: cargo-cgp-driver version: $VERSION".to_owned();
+    }
+    line.to_owned()
 }
 
 /// Replace the thread id in a panic's first line, `thread 'rustc' (1234) panicked at …`, with

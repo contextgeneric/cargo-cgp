@@ -124,3 +124,21 @@ thread 'rustc' panicked at src/main.rs:1:1:
 note: thread 'rustc' (3683731) panicked"
     );
 }
+
+#[test]
+fn replaces_the_host_and_driver_version_of_a_crash_report() {
+    // A crash report names the host rustc was built for and the driver's version, neither of which
+    // may reach a snapshot: the first differs per machine, and the second ahead of a release. The
+    // compiler's own version stays, so a toolchain bump still shows in the diff.
+    let raw = "\
+note: rustc 1.101.0-nightly (32dba69d6 2026-10-09) running on x86_64-unknown-linux-gnu
+note: cargo-cgp-driver version: 9.9.9
+note: rustc 1.101.0-nightly stands as written";
+    assert_eq!(
+        normalize(raw, &harness_dir(), &cgp_root(), &sysroot()),
+        "\
+note: rustc 1.101.0-nightly (32dba69d6 2026-10-09) running on $HOST
+note: cargo-cgp-driver version: $VERSION
+note: rustc 1.101.0-nightly stands as written"
+    );
+}

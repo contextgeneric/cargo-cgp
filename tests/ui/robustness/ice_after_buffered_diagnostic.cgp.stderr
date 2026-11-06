@@ -55,7 +55,7 @@ note: we would appreciate a bug report: https://github.com/contextgeneric/cargo-
 
 note: please make sure that you have updated to the latest nightly
 
-note: rustc 1.101.0-nightly (32dba69d6 2026-10-09) running on x86_64-unknown-linux-gnu
+note: rustc 1.101.0-nightly (32dba69d6 2026-10-09) running on $HOST
 
 note: compiler flags: --crate-type bin -C embed-bitcode=no -C debuginfo=2 -C incremental=[REDACTED] -Z treat-err-as-bug=2
 
@@ -65,4 +65,4 @@ query stack during panic:
 #0 [typeck_root] type-checking `after`
 #1 [analysis] running analysis passes on crate `ui`
 end of query stack
-note: cargo-cgp-driver version: 0.1.0-alpha
+note: cargo-cgp-driver version: $VERSION
