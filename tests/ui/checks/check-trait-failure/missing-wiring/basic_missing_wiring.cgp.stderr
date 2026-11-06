@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `BarProviderComponent` on `App`
-  --> src/main.rs:52:9
+  --> src/main.rs:51:9
    |
-52 |         FooProviderComponent: DoFooWithBar,
+51 |         FooProviderComponent: DoFooWithBar,
    |         ^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `BarProviderComponent` on `App`

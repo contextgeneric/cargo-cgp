@@ -9,10 +9,10 @@
 //! walk reaches `NotAGreeter: Greeter<App>`, whose only matching impl is the CGP delegation blanket,
 //! so it bottoms out on an unmet `NotAGreeter: DelegateComponent<GreeterComponent>`.
 //!
-//! The resolver tells this apart from a leaf-provider dead-end (a valid provider reached by an input
-//! mismatch, whose real cause runs through its concrete impl) by whether the owner has a concrete
-//! impl of the provider trait at all: `NotAGreeter` has *no* `Greeter` impl, so it is genuinely not
-//! a provider, reported as a `[CGP-E115]` leaf whose text reads
+//! The resolver tells this apart from a leaf-provider dead-end (a valid provider reached by an
+//! input mismatch, whose real cause runs through its concrete impl) by whether the owner has a
+//! concrete impl of the provider trait at all: `NotAGreeter` has *no* `Greeter` impl, so it is
+//! genuinely not a provider, reported as a `[CGP-E115]` leaf whose text reads
 //! `` `NotAGreeter` is not a provider of `Greeter` ``, rather than a `[CGP-E002]` block naming the
 //! whole `WrapGreeter<NotAGreeter>` pipeline.
 //!

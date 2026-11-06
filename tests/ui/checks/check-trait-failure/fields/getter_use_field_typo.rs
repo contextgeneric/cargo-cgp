@@ -1,8 +1,8 @@
 //! `UseField<Symbol!("frist_name")>` for a field named `first_name`.
 //!
-//! The headline reads `` [CGP-E001] missing field `frist_name` on `Person` ``, with the same
-//! text as the `` [CGP-E110] `` root cause, and a `help` names the similar field `first_name`,
-//! so the typo is pointed out.
+//! The headline reads `` [CGP-E001] missing field `frist_name` on `Person` ``, with the same text
+//! as the `` [CGP-E110] `` root cause, and a `help` names the similar field `first_name`, so the
+//! typo is pointed out.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 

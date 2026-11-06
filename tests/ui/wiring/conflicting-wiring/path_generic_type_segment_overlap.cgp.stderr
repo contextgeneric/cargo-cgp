@@ -1,9 +1,9 @@
 error[E0119]: [CGP-E011] conflicting wiring: `App` wires `@DescriberComponent.Wrap<u64>`, which `@DescriberComponent.Wrap<T>` already covers
-  --> src/main.rs:41:10
+  --> src/main.rs:40:10
    |
-40 |         @DescriberComponent.<T> Wrap<T>: DescribeAny,
+39 |         @DescriberComponent.<T> Wrap<T>: DescribeAny,
    |          ------------------------------ first implementation here
-41 |         @DescriberComponent.Wrap<u64>: DescribeAny,
+40 |         @DescriberComponent.Wrap<u64>: DescribeAny,
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
 
 For more information about this error, try `rustc --explain E0119`.

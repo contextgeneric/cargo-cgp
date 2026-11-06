@@ -1,13 +1,13 @@
-//! A component that carries a generic parameter, resolved through the typed walk,
-//! so `CanUseComponent`/`IsProviderFor` gain an extra type argument.
+//! A component that carries a generic parameter, resolved through the typed walk, so
+//! `CanUseComponent`/`IsProviderFor` gain an extra type argument.
 //!
 //! `CanCalculateArea<Scalar>` is generic, so its provider trait is
 //! `AreaCalculator<Context, Scalar>` and the check is
-//! `Rectangle: CanUseComponent<AreaCalculatorComponent, f64>`. The
-//! provider depends on a `width` field the `Rectangle` lacks, so the failure surfaces through
-//! the same `IsProviderFor` / `CanUseComponent` chain as `base_area_1`, with the extra `f64`
-//! parameter in the wiring traits. The fixture guards that the typed resolution names the
-//! traits when the component carries a generic parameter.
+//! `Rectangle: CanUseComponent<AreaCalculatorComponent, f64>`. The provider depends on a `width`
+//! field the `Rectangle` lacks, so the failure surfaces through the same `IsProviderFor` /
+//! `CanUseComponent` chain as `base_area_1`, with the extra `f64` parameter in the wiring traits.
+//! The fixture guards that the typed resolution names the traits when the component carries a
+//! generic parameter.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md.

@@ -67,9 +67,9 @@ check_components! {
     }
 }
 
-// Requiring the trait on `App` proves the *pinned* bound is satisfiable,
-// not merely well-formed: the blanket impl applies only if `App`'s
-// wired `Transaction` really is `Tx<App::Db>`, which is the equality the pin emits.
+// Requiring the trait on `App` proves the *pinned* bound is satisfiable, not merely well-formed:
+// the blanket impl applies only if `App`'s wired `Transaction` really is `Tx<App::Db>`, which is
+// the equality the pin emits.
 fn assert_can_begin<Context>()
 where
     Context: BeginTransaction,

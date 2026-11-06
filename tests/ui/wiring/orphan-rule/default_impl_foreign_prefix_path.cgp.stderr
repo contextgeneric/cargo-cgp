@@ -1,7 +1,7 @@
 error[E0210]: [CGP-E022] cannot register the foreign path `@app.AnnouncerComponent` into the foreign namespace `AppNamespace`
-  --> src/main.rs:28:1
+  --> src/main.rs:27:1
    |
-28 | #[cgp_impl(new AnnounceQuietly)]
+27 | #[cgp_impl(new AnnounceQuietly)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: own one end of the wiring: key it on a component defined in this crate, or register it from the crate that defines `AppNamespace`

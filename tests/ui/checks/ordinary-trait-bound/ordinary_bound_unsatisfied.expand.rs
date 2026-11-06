@@ -5,17 +5,16 @@
 //! implement it.
 //!
 //! `CompareScalars` requires `Scalar: Eq` (rewritten by `#[use_type]` to
-//! `<Self as HasScalarType>::Scalar: Eq`). `App` wires its `Scalar` type to `f64`,
-//! which is `PartialEq` but not `Eq`, so the dependency is unmet. The wiring is
-//! accepted lazily; forcing it through `check_components!` surfaces the failure via
-//! `IsProviderFor` as `E0277`, but unlike a missing `HasField` (whose leaf sits in
-//! a `help:` note under a `CanUseComponent` primary), the *primary* error names the
-//! ordinary bound on the concrete type directly (`f64: Eq` is not satisfied), and plain
-//! `cargo check` adds a `help:` listing the standard types that *do* implement `Eq` and
-//! an `IsProviderFor` note pointing at the `Scalar: Eq` bound as "introduced here". The
-//! tool keeps that headline, stamps it `[CGP-E001]`, and states the cause as `[CGP-E117]`
-//! at the foot of its chain. The fix is to satisfy the ordinary trait (wire an `Eq` type
-//! such as an integer, or derive/impl `Eq`), not to wire a component or add a field.
+//! `<Self as HasScalarType>::Scalar: Eq`). `App` wires its `Scalar` type to `f64`, which is
+//! `PartialEq` but not `Eq`, so the dependency is unmet. The wiring is accepted lazily; forcing it
+//! through `check_components!` surfaces the failure via `IsProviderFor` as `E0277`, but unlike a
+//! missing `HasField` (whose leaf sits in a `help:` note under a `CanUseComponent` primary), the
+//! *primary* error names the ordinary bound on the concrete type directly (`f64: Eq` is not
+//! satisfied), and plain `cargo check` adds a `help:` listing the standard types that *do*
+//! implement `Eq` and an `IsProviderFor` note pointing at the `Scalar: Eq` bound as "introduced
+//! here". The tool keeps that headline, stamps it `[CGP-E001]`, and states the cause as
+//! `[CGP-E117]` at the foot of its chain. The fix is to satisfy the ordinary trait (wire an `Eq`
+//! type such as an integer, or derive/impl `Eq`), not to wire a component or add a field.
 //!
 //! CGP lowers the bound faithfully and cannot see the wired type violates it, so it
 //! defers to the compiler. This is the same lazy-wiring mechanism as a CGP-trait

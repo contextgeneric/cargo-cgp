@@ -4,17 +4,15 @@
 //! field, but without the derive, `Person` has *no* `HasField` impls at all, so
 //! `HasName` is unsatisfiable and the check fails.
 //!
-//! This fixture pins the diagnostic that tells this case apart from a single
-//! missing field. Plain `cargo check` prints a `help:` note naming
-//! `HasField<Symbol!("name")>` as unimplemented for `Person` and pointing at the
-//! `Person` struct, but, unlike
-//! `checks/check-trait-failure/fields/missing_dependency.rs`, where a derived `age`
-//! field supplies a "but trait `HasField<Symbol!(\"age\")>` is implemented for it"
-//! landmark, there is no such landmark here, because `Person` implements the trait for
-//! no field. The absence of the landmark is the signal that the whole derive is missing,
-//! and the tool's block reads `` `HasField` not derived for field `name` of `Person` ``. The
-//! fix is to add `#[derive(HasField)]`, not to add a field. This is the
-//! check doing its job, not a macro defect.
+//! This fixture pins the diagnostic that tells this case apart from a single missing field. Plain
+//! `cargo check` prints a `help:` note naming `HasField<Symbol!("name")>` as unimplemented for
+//! `Person` and pointing at the `Person` struct, but, unlike
+//! `checks/check-trait-failure/fields/missing_dependency.rs`, where a derived `age` field supplies
+//! a "but trait `HasField<Symbol!(\"age\")>` is implemented for it" landmark, there is no such
+//! landmark here, because `Person` implements the trait for no field. The absence of the landmark
+//! is the signal that the whole derive is missing, and the tool's block reads
+//! `` `HasField` not derived for field `name` of `Person` ``. The fix is to add
+//! `#[derive(HasField)]`, not to add a field. This is the check doing its job, not a macro defect.
 //!
 //! See cgp-knowledge-base/cgp/errors/checks/check-trait-failure.md (the "when the derive is missing
 //! entirely" variant).

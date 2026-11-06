@@ -5,13 +5,13 @@
 //! with the same root cause. cargo-cgp coalesces them into a single `[CGP-E001]` block
 //! naming both consumers, its caret on one check entry and a label on the other, and the cause once.
 //!
-//! Unlike `density_3.rs`, where `CanCalculateDensity`'s chain *subsumes*
-//! `CanCalculateArea`'s (density depends on area) and the merged block must lead with the
-//! deeper chain, here neither chain contains the other: they are equal-depth parallel
-//! branches to the same missing field, each through its own getter and provider. With no
-//! subsuming chain to prefer, the representative is the first check entry
-//! (`AreaCalculatorComponent`), a deterministic choice that does not flip on entry order.
-//! This pins the parallel counterpart of the subsuming coalescing the cascade fixtures pin.
+//! Unlike `density_3.rs`, where `CanCalculateDensity`'s chain *subsumes* `CanCalculateArea`'s
+//! (density depends on area) and the merged block must lead with the deeper chain, here neither
+//! chain contains the other: they are equal-depth parallel branches to the same missing field, each
+//! through its own getter and provider. With no subsuming chain to prefer, the representative is
+//! the first check entry (`AreaCalculatorComponent`), a deterministic choice that does not flip on
+//! entry order. This pins the parallel counterpart of the subsuming coalescing the cascade fixtures
+//! pin.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/verbose-cascade.md.

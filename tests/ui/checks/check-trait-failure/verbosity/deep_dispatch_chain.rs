@@ -8,9 +8,9 @@
 //! unfolds stage by stage down to the missing field, and each hop states its trait and
 //! parameters as written.
 //!
-//! A hop that repeats its parent's trait states it in full, so the type a reader follows the
-//! chain to trace is always visible, and a genuine repeat reads differently from a hop whose
-//! parameters differ. That costs length, which the snapshot shows whenever it changes.
+//! A hop that repeats its parent's trait states it in full, so the type a reader follows the chain
+//! to trace is always visible, and a genuine repeat reads differently from a hop whose parameters
+//! differ. That costs length, which the snapshot shows whenever it changes.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md

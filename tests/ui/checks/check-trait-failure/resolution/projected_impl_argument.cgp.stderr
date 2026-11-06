@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `beta` on `App`
-  --> src/main.rs:63:9
+  --> src/main.rs:64:9
    |
-63 |         GreeterComponent,
+64 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `beta` on `App`

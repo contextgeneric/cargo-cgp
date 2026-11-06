@@ -2,8 +2,8 @@
 //! A failing call whose receiver is a `let` with a type annotation.
 //!
 //! `make_app()` is the initializer, but the annotation names the context: the call-site anchor
-//! reads `App` off `let app: App`, seeds `App: CanFormatPair<(u32, u64)>`, and walks to the
-//! missing `separator` field.
+//! reads `App` off `let app: App`, seeds `App: CanFormatPair<(u32, u64)>`, and walks to the missing
+//! `separator` field.
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 extern crate std;

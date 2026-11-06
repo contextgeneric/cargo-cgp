@@ -6,15 +6,14 @@
 //! field), so all three consumer failures share that single root cause and coalesce into
 //! one `[CGP-E001]` block.
 //!
-//! Pins that the merged block states the shared cause *once*. Coalescing several
-//! **distinct** underived fields on one struct into one lead is deliberate, since the derive
-//! emits an impl per field, so they are one fix (`base_area_2`), but every member here
-//! contributes the **same** field, and the union of their causes therefore repeats it once
-//! per member. `Causes::union` folds those copies back into one cause holding all
-//! three paths before the underived-field coalescing runs, so the lead keeps its
-//! single-field wording rather than reading "the fields `name`, `name`, and `name`", and
-//! the merged tree still renders as the one subsuming chain. The cascade's missing-field
-//! sibling, where the leaf never coalesces, is `dependency_cascade`.
+//! Pins that the merged block states the shared cause *once*. Coalescing several **distinct**
+//! underived fields on one struct into one lead is deliberate, since the derive emits an impl per
+//! field, so they are one fix (`base_area_2`), but every member here contributes the **same**
+//! field, and the union of their causes therefore repeats it once per member. `Causes::union` folds
+//! those copies back into one cause holding all three paths before the underived-field coalescing
+//! runs, so the lead keeps its single-field wording rather than reading "the fields `name`, `name`,
+//! and `name`", and the merged tree still renders as the one subsuming chain. The cascade's
+//! missing-field sibling, where the leaf never coalesces, is `dependency_cascade`.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md

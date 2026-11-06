@@ -5,14 +5,14 @@
 //! *outer* `ScaledArea` layer fails on its own `Self: HasScaleFactor`.
 //!
 //! This fixture pins the contrast with the inner-failure case. Plain `cargo check` puts the
-//! `unsatisfied trait bound introduced here` caret on `ScaledArea`'s own
-//! `Self: HasScaleFactor` clause, and its `required for …` chain is *shorter*: it reaches
-//! `ScaledArea<BaseArea>`'s `IsProviderFor` and stops, never descending into `BaseArea`,
-//! because the outer layer fails before it ever delegates inward. The tool's tree shows the
-//! same shape: `ScaledArea<BaseArea>` over the missing `scale_factor` field, with no
-//! `BaseArea` entry. Read alongside higher_order_inner_dependency.rs, the pair shows that
-//! the layer at fault is identified by which provider's `where` clause the caret sits on and
-//! how deep the chain runs. This is the check doing its job, not a macro defect.
+//! `unsatisfied trait bound introduced here` caret on `ScaledArea`'s own `Self: HasScaleFactor`
+//! clause, and its `required for …` chain is *shorter*: it reaches `ScaledArea<BaseArea>`'s
+//! `IsProviderFor` and stops, never descending into `BaseArea`, because the outer layer fails
+//! before it ever delegates inward. The tool's tree shows the same shape: `ScaledArea<BaseArea>`
+//! over the missing `scale_factor` field, with no `BaseArea` entry. Read alongside
+//! higher_order_inner_dependency.rs, the pair shows that the layer at fault is identified by which
+//! provider's `where` clause the caret sits on and how deep the chain runs. This is the check doing
+//! its job, not a macro defect.
 //!
 //! See cgp-knowledge-base/cgp/errors/checks/higher-order-provider-layer.md.
 

@@ -12,8 +12,8 @@
 //! generated impl's `Self` is the provider struct, not the bare `__Context__` parameter, so the
 //! failing call's receiver, a parameter declared as `&__Context__`, identifies the shape.
 //!
-//! The tool reshapes it into the same `[CGP-E030]` error as the `#[cgp_fn]` case, with a
-//! help that reads `` declare it as a dependency with `#[uses(PersonName)]` ``, recovered by
+//! The tool reshapes it into the same `[CGP-E030]` error as the `#[cgp_fn]` case, with a help that
+//! reads `` declare it as a dependency with `#[uses(PersonName)]` ``, recovered by
 //! `detect::detect_undeclared_trait` from the receiver's declared type.
 //!
 //! CGP error class: undeclared dependency (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/lowering/undeclared-dependency.md).

@@ -5,16 +5,15 @@
 //! entry overlaps the namespace's blanket forwarding, so coherence rejects the pair with
 //! E0119 (plus a downstream note).
 //!
-//! Because the namespace's value for this key is a `RedirectLookup`, the tool recovers the
-//! redirect target by normalizing
-//! `<ErrorTypeProviderComponent as DefaultNamespace<App>>::Delegate` through the trait solver, so
-//! this reads as a *redirect collision* (`[CGP-E013]`)
-//! rather than a bare overlap: it drops the redundant `IsProviderFor` half (and rustc's
-//! downstream note with it), rewrites the `DelegateComponent` half to "[CGP-E013] conflicting
-//! wiring: `App` wires component `ErrorTypeProviderComponent` directly, but it is redirected to
+//! Because the namespace's value for this key is a `RedirectLookup`, the tool recovers the redirect
+//! target by normalizing `<ErrorTypeProviderComponent as DefaultNamespace<App>>::Delegate` through
+//! the trait solver, so this reads as a *redirect collision* (`[CGP-E013]`) rather than a bare
+//! overlap: it drops the redundant `IsProviderFor` half (and rustc's downstream note with it),
+//! rewrites the `DelegateComponent` half to "[CGP-E013] conflicting wiring: `App` wires component
+//! `ErrorTypeProviderComponent` directly, but it is redirected to
 //! `@cgp.core.error.ErrorTypeProviderComponent`", and adds a `help` naming the provider and the
-//! redirected key. If the projection normalization in `detect/conflict/` regresses, this
-//! reverts to the `[CGP-E011]` overlap form.
+//! redirected key. If the projection normalization in `detect/conflict/` regresses, this reverts to
+//! the `[CGP-E011]` overlap form.
 //!
 //! See cgp-knowledge-base/cgp/errors/wiring/namespace-override-conflict.md and
 //! cgp-knowledge-base/cargo-cgp/error-code.md (CGP-E013).

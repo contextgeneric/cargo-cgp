@@ -3,9 +3,9 @@
 //! *same* marker name `MeasurerComponent` (via the `#[cgp_component { name, provider }]` override),
 //! yet carry different consumer *and* provider trait names: `CanMeasureA`/`MeasurerA` in
 //! `shapes_a`, `CanMeasureB`/`MeasurerB` in `shapes_b`. The typed walk recognizes each marker by
-//! what `#[cgp_component]` generated for it, which is a distinct definition (a distinct `DefId`)
-//! in each module, so the two same-named markers stay apart; the text fallback's component-name
-//! map keys by full path for the same reason.
+//! what `#[cgp_component]` generated for it, which is a distinct definition (a distinct `DefId`) in
+//! each module, so the two same-named markers stay apart; the text fallback's component-name map
+//! keys by full path for the same reason.
 //!
 //! `App` wires and checks *both* components and misses both fields, producing two check failures.
 //! Each recovered tree must name its own module's consumer and provider traits (the `shapes_a`

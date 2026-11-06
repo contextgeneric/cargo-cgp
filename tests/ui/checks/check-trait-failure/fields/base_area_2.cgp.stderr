@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `HasField` not derived for fields `width` and `height` of `Rectangle`
-  --> src/main.rs:60:9
+  --> src/main.rs:59:9
    |
-60 |         AreaCalculatorComponent,
+59 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E111] `HasField` not derived for fields `width` and `height` of `Rectangle`

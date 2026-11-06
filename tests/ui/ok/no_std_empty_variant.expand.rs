@@ -1,11 +1,10 @@
 #![feature(prelude_import)]
-//! `#[derive(CgpVariant)]` on an enum with a variant that has no fields, in a
-//! `no_std` crate that brings `Box` into scope. The mutable extractor builds an
-//! empty variant's `&mut Nil` payload with `Box::leak(Box::new(Nil))`, writing
-//! `Box` bare so it resolves where the derive is used, and here it resolves to
-//! the imported `std::boxed::Box`. `extern crate std;` keeps the binary linkable
-//! while `#![no_std]` drops the `std` prelude, so the import brings `Box` into
-//! scope. The program compiles clean.
+//! `#[derive(CgpVariant)]` on an enum with a variant that has no fields, in a `no_std` crate that
+//! brings `Box` into scope. The mutable extractor builds an empty variant's `&mut Nil` payload with
+//! `Box::leak(Box::new(Nil))`, writing `Box` bare so it resolves where the derive is used, and here
+//! it resolves to the imported `std::boxed::Box`. `extern crate std;` keeps the binary linkable
+//! while `#![no_std]` drops the `std` prelude, so the import brings `Box` into scope. The program
+//! compiles clean.
 #![no_std]
 extern crate core;
 #[prelude_import]

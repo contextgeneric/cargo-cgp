@@ -1,38 +1,38 @@
 error[E0599]: the method `scalars_equal` exists for struct `App`, but its trait bounds were not satisfied
-  --> src/main.rs:59:17
+  --> src/main.rs:58:17
    |
-48 | pub struct App;
+47 | pub struct App;
    | -------------- method `scalars_equal` not found for this struct because it doesn't satisfy `App: CanCompareScalars`
 ...
-59 |     let _ = app.scalars_equal(&1.0, &2.0);
+58 |     let _ = app.scalars_equal(&1.0, &2.0);
    |                 ^^^^^^^^^^^^^ this is an associated function, not a method
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `ScalarEquality`
-  --> src/main.rs:34:5
+  --> src/main.rs:33:5
    |
-34 |     fn scalars_equal(&self, a: &Scalar, b: &Scalar) -> bool;
+33 |     fn scalars_equal(&self, a: &Scalar, b: &Scalar) -> bool;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: trait bound `f64: Eq` was not satisfied
-  --> src/main.rs:41:13
+  --> src/main.rs:40:13
    |
-37 | #[cgp_impl(new CompareScalars)]
+36 | #[cgp_impl(new CompareScalars)]
    | -------------------------------
 ...
-41 |     Scalar: Eq,
+40 |     Scalar: Eq,
    |             ^^ unsatisfied trait bound introduced here
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanCompareScalars` defines an item `scalars_equal`, perhaps you need to implement it
-  --> src/main.rs:33:1
+  --> src/main.rs:32:1
    |
-33 | / pub trait CanCompareScalars {
-34 | |     fn scalars_equal(&self, a: &Scalar, b: &Scalar) -> bool;
-35 | | }
+32 | / pub trait CanCompareScalars {
+33 | |     fn scalars_equal(&self, a: &Scalar, b: &Scalar) -> bool;
+34 | | }
    | |_^
 help: use associated function syntax instead
    |
-59 -     let _ = app.scalars_equal(&1.0, &2.0);
-59 +     let _ = App::scalars_equal(&1.0, &2.0);
+58 -     let _ = app.scalars_equal(&1.0, &2.0);
+58 +     let _ = App::scalars_equal(&1.0, &2.0);
    |
 
 For more information about this error, try `rustc --explain E0599`.

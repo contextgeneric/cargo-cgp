@@ -3,17 +3,16 @@
 //! but exercised by calling the consumer method rather than a check, so the cause
 //! is *hidden*.
 //!
-//! Calling `app.scalars_equal(..)` produces the `E0599` "method exists but its
-//! trait bounds were not satisfied" shape: it names `App: CanCompareScalars` /
-//! `App: ScalarEquality<App>`, misclassifies the method as an associated function
-//! (the provider method has no `self` receiver), and suggests `App::scalars_equal()`
-//! but never mentions the unmet `f64: Eq`. This is byte-for-shape identical to the
-//! HasName hidden case in
-//! `hidden/unsatisfied-dependency/missing_dependency_call.rs`: the compiler's
-//! method-probe heuristic drops the nested `where`-clause bound regardless of whether
-//! that bound is a `HasField`, a CGP trait, or an ordinary trait. The tool's call-site
-//! block states the cause rustc hid: a `[CGP-E001]` headline reading
-//! `` the trait bound `f64: Eq` is not satisfied `` over the chain to the `[CGP-E117]` leaf.
+//! Calling `app.scalars_equal(..)` produces the `E0599` "method exists but its trait bounds were
+//! not satisfied" shape: it names `App: CanCompareScalars` / `App: ScalarEquality<App>`,
+//! misclassifies the method as an associated function (the provider method has no `self` receiver),
+//! and suggests `App::scalars_equal()` but never mentions the unmet `f64: Eq`. This is
+//! byte-for-shape identical to the HasName hidden case in
+//! `hidden/unsatisfied-dependency/missing_dependency_call.rs`: the compiler's method-probe
+//! heuristic drops the nested `where`-clause bound regardless of whether that bound is a
+//! `HasField`, a CGP trait, or an ordinary trait. The tool's call-site block states the cause rustc
+//! hid: a `[CGP-E001]` headline reading `` the trait bound `f64: Eq` is not satisfied `` over the
+//! chain to the `[CGP-E117]` leaf.
 //!
 //! See cgp-knowledge-base/cgp/errors/hidden/unsatisfied-dependency.md; the surfaced counterpart is
 //! cgp-knowledge-base/cgp/errors/checks/ordinary-trait-bound.md.

@@ -1,10 +1,10 @@
 #![feature(prelude_import)]
 //! Clean compile: a variant helper attribute of another derive on a `#[derive(CgpData)]` enum.
 //!
-//! `#[default]` belongs to `#[derive(Default)]`, which the enum has. The extractor's
-//! companion enums copy each variant but keep only its documentation, so the `#[default]`
-//! stays on `Mode`, as the expansion shows. A `#[cfg]` or `#[cfg_attr]` needs no mention:
-//! the compiler evaluates both before a derive sees its input, so neither reaches the filter.
+//! `#[default]` belongs to `#[derive(Default)]`, which the enum has. The extractor's companion
+//! enums copy each variant but keep only its documentation, so the `#[default]` stays on `Mode`, as
+//! the expansion shows. A `#[cfg]` or `#[cfg_attr]` needs no mention: the compiler evaluates both
+//! before a derive sees its input, so neither reaches the filter.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

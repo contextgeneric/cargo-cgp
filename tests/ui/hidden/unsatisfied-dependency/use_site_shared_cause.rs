@@ -6,12 +6,12 @@
 //! walks *every* component the context wires, so both fail and both are named in the
 //! `[CGP-E001]` header.
 //!
-//! Pins that both then appear in the note. The anchor unions the two walks' causes, which
-//! name one shared leaf, and `Causes::union` folds them into a single cause holding
-//! *both* routes, where de-duplicating by leaf and discarding the duplicate's paths would
-//! leave the header promising two failing consumers and the note accounting for one. The
-//! two chains converge on the shared `HasName` hop, so the second `(*)`-truncates there.
-//! The check-entry counterpart of this shape is `parallel_consumers`.
+//! Pins that both then appear in the note. The anchor unions the two walks' causes, which name one
+//! shared leaf, and `Causes::union` folds them into a single cause holding *both* routes, where
+//! de-duplicating by leaf and discarding the duplicate's paths would leave the header promising two
+//! failing consumers and the note accounting for one. The two chains converge on the shared
+//! `HasName` hop, so the second `(*)`-truncates there. The check-entry counterpart of this shape is
+//! `parallel_consumers`.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md
