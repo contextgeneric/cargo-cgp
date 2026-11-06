@@ -12,11 +12,11 @@ use crate::{aux, directives, fixtures, harness, passes, paths, runner};
 
 /// Run the UI suite. `args` are the harness arguments (everything cargo passes after
 /// `--`): `--bless` to regenerate snapshots, `--print` to print each fixture's raw output
-/// instead of comparing, `--jobs N` (`-j N`) to set the worker count, and any bare words as
-/// path substring filters.
+/// instead of comparing, `--list` to list each fixture with its quality and codes,
+/// `--jobs N` (`-j N`) to set the worker count, and any bare words as path substring filters.
 ///
-/// Exits the process: `0` if every fixture matched (or was blessed/printed), `1` on a
-/// snapshot mismatch, `2` if no fixture matched the filters.
+/// Exits the process: `0` if every fixture passed (or was blessed, printed, or listed), `1` when
+/// any fixture failed a snapshot or a check, `2` if no fixture matched the filters.
 pub fn run(args: Vec<String>) {
     let options = Options::parse(args);
 
@@ -157,11 +157,12 @@ pub fn check_fixture(
     }
 }
 
-/// Exit with `1` and say how to bless when any fixture failed.
+/// Exit with `1` when any fixture failed, saying which failures `--bless` can update.
 pub fn exit_on_failures(failed: usize) {
     if failed > 0 {
         eprintln!(
-            "\n{failed} fixture(s) with a snapshot mismatch; re-run with `--bless` to update after an intended change"
+            "\n{failed} fixture(s) failed; a snapshot mismatch from an intended change is updated with \
+             `--bless`, while a failed status, expand-status, header, or pass-through check needs a fix"
         );
         std::process::exit(1);
     }

@@ -94,6 +94,9 @@ fn front_end_name() -> String {
 /// `Option`, say) names a path inside this directory, which carries the user's home
 /// directory, the pinned nightly's name, and the host target triple. The snapshots
 /// normalize it to `$SYSROOT` for the same reason they normalize the `cgp` checkout.
+///
+/// Panics when the query fails or prints no path: an empty sysroot would make the normalization
+/// insert `$SYSROOT` between every character of every line, and a `--bless` would write that.
 pub fn sysroot() -> PathBuf {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
     // Ask through `rustc` as cargo resolves it, so this is the toolchain the fixtures are
@@ -108,11 +111,17 @@ pub fn sysroot() -> PathBuf {
     .output()
     .expect("running `rustc --print sysroot`");
 
-    PathBuf::from(
-        String::from_utf8_lossy(&output.stdout)
-            .trim_end()
-            .to_owned(),
-    )
+    let sysroot = String::from_utf8_lossy(&output.stdout)
+        .trim_end()
+        .to_owned();
+    if !output.status.success() || sysroot.is_empty() {
+        panic!(
+            "`rustc --print sysroot` gave no sysroot ({}): {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim_end(),
+        );
+    }
+    PathBuf::from(sysroot)
 }
 
 /// The root under which the per-worker throwaway crates live (`target/ui-harness`),

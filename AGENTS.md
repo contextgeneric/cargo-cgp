@@ -268,7 +268,10 @@ The commands mirror the `cgp` workspace. Run them from the repository root.
   directory, since the front-end locates the driver as its sibling.
 - **Format:** `cargo +nightly fmt --all` (check with `-- --check`). The `.rustfmt.toml` uses the
   same unstable `group_imports`/`imports_granularity` settings as `cgp`, so formatting needs
-  nightly.
+  nightly. The UI suite's auxiliary crates sit outside the workspace, and their manifests are
+  templates `cargo fmt` cannot read, so format their sources directly:
+  `rustfmt +nightly --edition 2024 crates/cargo-cgp-ui-tests/auxiliary/*/src/*.rs` (check with
+  `--check`).
 - **Lint:** `cargo clippy --all-targets -- -D warnings`. A lint every crate shares goes in the root
   manifest's `[workspace.lints]`, and a crate's own in that crate.
 - **Docs:** `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace --document-private-items`,

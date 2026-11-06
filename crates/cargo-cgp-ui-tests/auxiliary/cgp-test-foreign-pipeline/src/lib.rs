@@ -8,9 +8,9 @@
 //! A fixture pulls it in with a `//@aux-build: cgp-test-foreign-pipeline` header
 //! directive.
 
+use cgp::core::component::UseDelegate;
 use cgp::core::error::{ErrorRaiserComponent, ErrorTypeProviderComponent};
 use cgp::extra::handler::{CanHandle, Handler, HandlerComponent, PipeHandlers};
-use cgp::core::component::UseDelegate;
 use cgp::prelude::*;
 
 pub mod backend {
@@ -83,7 +83,11 @@ where
 {
     type Output = Output;
 
-    async fn handle(&self, _tag: PhantomData<OutCode>, input: Input) -> Result<Output, Self::Error> {
+    async fn handle(
+        &self,
+        _tag: PhantomData<OutCode>,
+        input: Input,
+    ) -> Result<Output, Self::Error> {
         self.handle(PhantomData, input).await
     }
 }
@@ -141,4 +145,3 @@ delegate_components! {
         @HandlerComponent.Stdout: HandleStdout,
     }
 }
-
