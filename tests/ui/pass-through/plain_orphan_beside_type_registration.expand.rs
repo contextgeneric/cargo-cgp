@@ -5,6 +5,8 @@
 //! for the impl at its caret. These two are legal, since `DefaultImpls1<ShowImplComponent>` carries
 //! a local component, and neither sits at the caret, so the error must stay as rustc wrote it
 //! rather than read as `[CGP-E022]` about a key the program registered correctly.
+//!
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

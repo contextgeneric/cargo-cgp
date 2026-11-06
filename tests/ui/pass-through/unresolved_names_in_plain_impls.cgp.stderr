@@ -1,13 +1,13 @@
 error[E0425]: cannot find type `Missing` in this scope
-  --> src/main.rs:18:19
+  --> src/main.rs:20:19
    |
-18 |     type Output = Missing;
+20 |     type Output = Missing;
    |                   ^^^^^^^ not found in this scope
 
 error[E0425]: cannot find type `Absent` in this scope
-  --> src/main.rs:25:27
+  --> src/main.rs:27:27
    |
-25 | impl core::fmt::Debug for Absent {
+27 | impl core::fmt::Debug for Absent {
    |                           ^^^^^^ not found in this scope
 
 For more information about this error, try `rustc --explain E0425`.

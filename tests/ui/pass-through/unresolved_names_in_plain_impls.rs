@@ -4,6 +4,8 @@
 //! `impl Debug for Absent` implements a trait for an undeclared type. Neither impl is a wiring
 //! entry or a `#[cgp_impl]` header, so the tool leaves the `E0425`s as rustc wrote them, though one
 //! sits where a wiring value would and the other where a `#[cgp_impl]` provider would.
+//!
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 
 use cgp::prelude::*;
 

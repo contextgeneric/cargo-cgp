@@ -1,7 +1,10 @@
 #![feature(prelude_import)]
-//! An ordinary impl with a type parameter nothing binds, `impl<T> Describe for Person`, in a crate
-//! that uses CGP. rustc reports E0207, and the tool leaves it as rustc wrote it: the structural
-//! detectors claim only an impl CGP's macros generate for a wiring entry or a registration.
+//! An ordinary impl whose type parameter nothing binds, `impl<T> Describe for Person`.
+//!
+//! rustc reports E0207, and the tool leaves it as rustc wrote it: the structural detectors claim
+//! only an impl CGP's macros generate for a wiring entry or a registration.
+//!
+//! CGP error class: none; plain Rust the tool must pass through unchanged.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

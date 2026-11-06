@@ -1,7 +1,7 @@
 error[E0117]: only traits defined in the current crate can be implemented for types defined outside of the crate
-  --> src/main.rs:35:1
+  --> src/main.rs:34:1
    |
-35 | impl std::fmt::Display for Vec<u8> {
+34 | impl std::fmt::Display for Vec<u8> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^-------
    |                            |
    |                            `Vec` is not defined in the current crate
