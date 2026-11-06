@@ -4,6 +4,6 @@ error[E0107]: [CGP-E032] `CanRead` is a consumer trait, but a `#[cgp_impl]` prov
 28 | impl<'a> CanRead<'a, Text> {
    |          ^^^^^^^
    |
-   = help: change the impl header to target the provider trait: `impl Reader` (not `impl CanRead`)
+   = help: change the impl header to target the provider trait: `impl Reader<'a, Text>` (not `impl CanRead<'a, Text>`)
 
 For more information about this error, try `rustc --explain E0107`.

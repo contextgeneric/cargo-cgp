@@ -4,6 +4,6 @@ error[E0107]: [CGP-E032] `CanCalculateArea` is a consumer trait, but a `#[cgp_im
 29 | impl CanCalculateArea<Rectangle> {
    |      ^^^^^^^^^^^^^^^^
    |
-   = help: change the impl header to target the provider trait: `impl AreaCalculator` (not `impl CanCalculateArea`)
+   = help: change the impl header to target the provider trait: `impl AreaCalculator<Rectangle>` (not `impl CanCalculateArea<Rectangle>`)
 
 For more information about this error, try `rustc --explain E0107`.

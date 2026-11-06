@@ -182,6 +182,7 @@ fn lowering_rows() -> Vec<Row> {
     let consumer = CgpImplMisuse::ConsumerTrait {
         consumer: "CanPrice".to_owned(),
         provider: "Pricer".to_owned(),
+        arguments: Vec::new(),
     };
     let non_cgp = CgpImplMisuse::NonCgpTrait {
         trait_name: "Display".to_owned(),
@@ -189,6 +190,7 @@ fn lowering_rows() -> Vec<Row> {
     let bound = CgpImplMisuse::ConsumerProviderBound {
         consumer: "CanPrice".to_owned(),
         provider: "Pricer".to_owned(),
+        arguments: Vec::new(),
     };
     let in_uses = ProviderTraitInUses {
         provider: "Pricer".to_owned(),

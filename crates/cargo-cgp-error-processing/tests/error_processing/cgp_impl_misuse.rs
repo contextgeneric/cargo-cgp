@@ -3,10 +3,10 @@
 //! `plan_cgp_impl_misuse` and `cgp_impl_misuse_help` are pure functions over the rustc-free
 //! [`CgpImplMisuse`] model, so they are driven directly over hand-built values, with no compiler
 //! and no diagnostic wrapper. The driver fills the same model in from the live `TyCtxt` using the
-//! consumer- and provider-trait fingerprints. The two variants word to distinct codes and distinct
-//! fixes: a consumer trait named where the provider trait belongs (`[CGP-E032]`, naming the
-//! provider to use), and a trait that is not a CGP component at all (`[CGP-E033]`, with no provider
-//! trait to name).
+//! consumer- and provider-trait fingerprints. The variants word to distinct codes and distinct
+//! fixes: a consumer trait named where the provider trait belongs, in the header (`[CGP-E032]`) or
+//! in an inner-provider bound (`[CGP-E034]`), each naming the provider trait to use, and a trait
+//! that is not a CGP component at all (`[CGP-E033]`, with no provider trait to name).
 
 use cargo_cgp_error_processing::{
     CgpImplMisuse, MissingUseProvider, ProviderTraitInUses, cgp_impl_misuse_help,
@@ -19,6 +19,7 @@ fn consumer_trait_names_the_provider_to_use() {
     let misuse = CgpImplMisuse::ConsumerTrait {
         consumer: "CanCalculateArea".to_owned(),
         provider: "AreaCalculator".to_owned(),
+        arguments: Vec::new(),
     };
     assert_eq!(
         plan_cgp_impl_misuse(&misuse),
@@ -54,6 +55,7 @@ fn consumer_trait_in_a_provider_bound() {
     let misuse = CgpImplMisuse::ConsumerProviderBound {
         consumer: "CanCalculateArea".to_owned(),
         provider: "AreaCalculator".to_owned(),
+        arguments: Vec::new(),
     };
     assert_eq!(
         plan_cgp_impl_misuse(&misuse),
@@ -64,6 +66,42 @@ fn consumer_trait_in_a_provider_bound() {
         cgp_impl_misuse_help(&misuse),
         "name the provider trait in the bound, idiomatically `#[use_provider(… : AreaCalculator)]` \
          (not the consumer trait `CanCalculateArea`)",
+    );
+}
+
+// Property: for all consumer-trait misuses with written arguments `args`, the help names the
+// provider trait as `provider<args>`, in the order written, and a header help names the consumer
+// trait it replaces as `consumer<args>`; with no arguments each name is bare, as the tests above
+// check. A trait named without the arguments its component takes does not compile (`E0107`), so the
+// help names what the reader can type.
+#[test]
+fn a_generic_component_is_named_with_the_arguments_written() {
+    let arguments = vec!["'a".to_owned(), "Text".to_owned()];
+    let header = CgpImplMisuse::ConsumerTrait {
+        consumer: "CanRead".to_owned(),
+        provider: "Reader".to_owned(),
+        arguments: arguments.clone(),
+    };
+    assert_eq!(
+        cgp_impl_misuse_help(&header),
+        "change the impl header to target the provider trait: `impl Reader<'a, Text>` (not `impl \
+         CanRead<'a, Text>`)",
+    );
+    let bound = CgpImplMisuse::ConsumerProviderBound {
+        consumer: "CanRead".to_owned(),
+        provider: "Reader".to_owned(),
+        arguments,
+    };
+    assert_eq!(
+        cgp_impl_misuse_help(&bound),
+        "name the provider trait in the bound, idiomatically `#[use_provider(… : Reader<'a, Text>)]` \
+         (not the consumer trait `CanRead`)",
+    );
+    assert_eq!(
+        plan_cgp_impl_misuse(&bound),
+        "[CGP-E034] `CanRead` is a consumer trait and cannot bound an inner provider; a \
+         higher-order provider imports its provider trait `Reader`",
+        "the header names the traits bare",
     );
 }
 

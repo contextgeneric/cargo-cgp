@@ -40,6 +40,9 @@ pub enum CgpImplMisuse {
         consumer: String,
         /// The provider trait the header should name.
         provider: String,
+        /// The generic arguments the header gives the consumer trait, as written, without the
+        /// context the macro inserts; empty for a component without parameters.
+        arguments: Vec<String>,
     },
     /// The impl header names a trait that is not a CGP component, so there is no provider trait to
     /// suggest.
@@ -55,6 +58,9 @@ pub enum CgpImplMisuse {
         consumer: String,
         /// The provider trait the bound should name.
         provider: String,
+        /// The generic arguments the bound gives the consumer trait, as written, without the
+        /// context the attribute inserts; empty for a component without parameters.
+        arguments: Vec<String>,
     },
 }
 
@@ -63,7 +69,9 @@ pub enum CgpImplMisuse {
 /// generated `__Context__` scaffolding the raw errors talk about.
 pub fn plan_cgp_impl_misuse(misuse: &CgpImplMisuse) -> String {
     match misuse {
-        CgpImplMisuse::ConsumerTrait { consumer, provider } => format!(
+        CgpImplMisuse::ConsumerTrait {
+            consumer, provider, ..
+        } => format!(
             "[{CONSUMER_TRAIT_IN_PROVIDER_IMPL}] `{consumer}` is a consumer trait, but a `#[cgp_impl]` \
              provider must implement its provider trait `{provider}`",
         ),
@@ -71,27 +79,50 @@ pub fn plan_cgp_impl_misuse(misuse: &CgpImplMisuse) -> String {
             "[{NON_CGP_TRAIT_IN_CGP_IMPL}] `#[cgp_impl]` can only implement a CGP component's provider \
              trait, but `{trait_name}` is not a CGP component",
         ),
-        CgpImplMisuse::ConsumerProviderBound { consumer, provider } => format!(
+        CgpImplMisuse::ConsumerProviderBound {
+            consumer, provider, ..
+        } => format!(
             "[{CONSUMER_TRAIT_IN_PROVIDER_BOUND}] `{consumer}` is a consumer trait and cannot bound an \
              inner provider; a higher-order provider imports its provider trait `{provider}`",
         ),
     }
 }
 
-/// The `help` accompanying the header: the fix the raw errors never state.
+/// The `help` accompanying the header: the fix the raw errors never state. A trait the fix names
+/// carries the arguments the program wrote, so the reader can type it as it stands.
 pub fn cgp_impl_misuse_help(misuse: &CgpImplMisuse) -> String {
     match misuse {
-        CgpImplMisuse::ConsumerTrait { consumer, provider } => format!(
-            "change the impl header to target the provider trait: `impl {provider}` (not `impl {consumer}`)",
+        CgpImplMisuse::ConsumerTrait {
+            consumer,
+            provider,
+            arguments,
+        } => format!(
+            "change the impl header to target the provider trait: `impl {}` (not `impl {}`)",
+            with_arguments(provider, arguments),
+            with_arguments(consumer, arguments),
         ),
         CgpImplMisuse::NonCgpTrait { trait_name } => format!(
             "make `{trait_name}` a component, as in `#[cgp_component({trait_name}Provider)]`, and \
              implement its provider trait here (`impl {trait_name}Provider`), or drop \
              `#[cgp_impl]` and write a plain `impl` if it is an ordinary trait",
         ),
-        CgpImplMisuse::ConsumerProviderBound { consumer, provider } => format!(
-            "name the provider trait in the bound, idiomatically `#[use_provider(… : {provider})]` \
-             (not the consumer trait `{consumer}`)",
+        CgpImplMisuse::ConsumerProviderBound {
+            consumer,
+            provider,
+            arguments,
+        } => format!(
+            "name the provider trait in the bound, idiomatically `#[use_provider(… : {})]` (not the \
+             consumer trait `{consumer}`)",
+            with_arguments(provider, arguments),
         ),
+    }
+}
+
+/// `name` with `arguments` in angle brackets, or bare when there are none.
+fn with_arguments(name: &str, arguments: &[String]) -> String {
+    if arguments.is_empty() {
+        name.to_owned()
+    } else {
+        format!("{name}<{}>", arguments.join(", "))
     }
 }

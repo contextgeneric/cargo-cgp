@@ -4,6 +4,6 @@ error[E0107]: [CGP-E034] `CanCalculateArea` is a consumer trait and cannot bound
 25 | #[use_provider(Inner: CanCalculateArea<Shape>)]
    |                       ^^^^^^^^^^^^^^^^
    |
-   = help: name the provider trait in the bound, idiomatically `#[use_provider(… : AreaCalculator)]` (not the consumer trait `CanCalculateArea`)
+   = help: name the provider trait in the bound, idiomatically `#[use_provider(… : AreaCalculator<Shape>)]` (not the consumer trait `CanCalculateArea`)
 
 For more information about this error, try `rustc --explain E0107`.

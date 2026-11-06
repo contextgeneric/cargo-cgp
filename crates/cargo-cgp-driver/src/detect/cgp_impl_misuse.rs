@@ -121,12 +121,10 @@ fn impl_misuses(tcx: TyCtxt<'_>, local: LocalDefId) -> Vec<DetectedCgpImplMisuse
     let Some(header) = imp.of_trait else {
         return Vec::new();
     };
-    let trait_ref_span = header
-        .trait_ref
-        .path
-        .segments
-        .last()
-        .map_or(header.trait_ref.path.span, |segment| segment.ident.span);
+    let Some(header_segment) = header.trait_ref.path.segments.last() else {
+        return Vec::new();
+    };
+    let trait_ref_span = header_segment.ident.span;
     // (3) The header trait reference is a token the user wrote, not the macro-synthesized
     // reference every generated forwarding impl carries.
     if trait_ref_span.from_expansion() {
@@ -143,6 +141,7 @@ fn impl_misuses(tcx: TyCtxt<'_>, local: LocalDefId) -> Vec<DetectedCgpImplMisuse
         Some(CgpImplMisuse::ConsumerTrait {
             consumer: tcx.item_name(header_did).to_string(),
             provider: tcx.item_name(provider_did).to_string(),
+            arguments: written_arguments(tcx, header_segment),
         })
     } else if is_provider_trait(tcx, header_did) {
         None
@@ -209,6 +208,7 @@ fn inner_bound_misuses(
                 misuse: CgpImplMisuse::ConsumerProviderBound {
                     consumer: tcx.item_name(bound_did).to_string(),
                     provider: tcx.item_name(provider_did).to_string(),
+                    arguments: written_arguments(tcx, segment),
                 },
                 self_ty: self_ty.to_owned(),
                 trait_ref_span: segment.ident.span,
@@ -236,6 +236,33 @@ fn is_inner_provider_bound(bounded: &Ty<'_>, segment: &PathSegment<'_>) -> bool 
         return false;
     };
     !is_context(bounded) && type_param_name(first.as_unambig_ty()).is_some_and(is_context)
+}
+
+/// The generic arguments the program wrote on a trait reference that `#[cgp_impl]` or
+/// `#[use_provider]` gave the context, each read from its source: every argument and constraint but
+/// the inserted `__Context__`, which follows any lifetimes (`CanRead<'a, __Context__, Text>`).
+/// Empty when an argument's source cannot be read, so the help names the bare trait.
+fn written_arguments(tcx: TyCtxt<'_>, segment: &PathSegment<'_>) -> Vec<String> {
+    let Some(args) = segment.args else {
+        return Vec::new();
+    };
+    let source_map = tcx.sess.source_map();
+    let is_context = |arg: &&GenericArg<'_>| match arg {
+        GenericArg::Type(ty) => type_param_name(ty.as_unambig_ty())
+            .is_some_and(|name| name.as_str() == CGP_IMPL_CONTEXT_PARAM),
+        _ => false,
+    };
+    let arguments = args
+        .args
+        .iter()
+        .filter(|arg| !is_context(arg))
+        .map(GenericArg::span);
+    let constraints = args.constraints.iter().map(|constraint| constraint.span);
+    arguments
+        .chain(constraints)
+        .map(|span| source_map.span_to_snippet(span).ok())
+        .collect::<Option<Vec<_>>>()
+        .unwrap_or_default()
 }
 
 /// The name of the generic type parameter a HIR type is, or `None` for any other type.
