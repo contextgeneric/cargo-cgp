@@ -7,13 +7,11 @@ use rustc_middle::ty::{self, GenericArg, GenericArgKind, GenericParamDefKind, Ty
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::config::{
-    CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT, REDIRECT_LOOKUP_TYPE,
-};
+use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, REDIRECT_LOOKUP_TYPE};
 use crate::detect::conflict::impl_delegate_type;
 use crate::resolve::query::{
-    describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls, render_lookup_trait,
-    same_range,
+    describe_key, impls_declaring_param_at, is_cgp_item, is_namespace_lookup_trait,
+    is_wiring_entry_trait, render_lookup_trait, same_range,
 };
 
 /// The wiring entry an `E0207` at `primary_span` is about, when the unconstrained parameter there
@@ -28,20 +26,7 @@ pub fn detect_entry_parameters_not_in_key(
     tcx: TyCtxt<'_>,
     primary_span: Span,
 ) -> Option<StructuralMistake> {
-    for local in local_trait_impls(tcx) {
-        let impl_did = local.to_def_id();
-        let declares_param = tcx
-            .generics_of(impl_did)
-            .own_params
-            .iter()
-            .any(|param| same_range(tcx.def_span(param.def_id), primary_span));
-        if !declares_param {
-            continue;
-        }
-        let trait_ref = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate_identity()
-            .skip_norm_wip();
+    for (impl_did, _, trait_ref) in impls_declaring_param_at(tcx, primary_span) {
         // `DelegateComponent` has a namespace trait's shape too, so it is told apart first.
         let in_context = is_cgp_item(
             tcx,
@@ -198,26 +183,10 @@ fn binds_loop_variable(
 /// provider impl declares the same parameter; an entry the program wrote in a `cgp_namespace!` is
 /// the only impl declaring its parameters.
 fn declared_by_provider_impl(tcx: TyCtxt<'_>, namespace_impl: DefId, primary_span: Span) -> bool {
-    local_trait_impls(tcx).any(|local| {
-        let impl_did = local.to_def_id();
-        if impl_did == namespace_impl {
-            return false;
-        }
-        let trait_did = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate_identity()
-            .skip_norm_wip()
-            .def_id;
-        let is_wiring = [DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT]
-            .iter()
-            .any(|name| is_cgp_item(tcx, trait_did, name, CGP_COMPONENT_CRATE))
-            || is_namespace_lookup_trait(tcx, trait_did);
-        !is_wiring
-            && tcx
-                .generics_of(impl_did)
-                .own_params
-                .iter()
-                .any(|param| same_range(tcx.def_span(param.def_id), primary_span))
+    impls_declaring_param_at(tcx, primary_span).any(|(impl_did, _, trait_ref)| {
+        impl_did != namespace_impl
+            && !is_wiring_entry_trait(tcx, trait_ref.def_id)
+            && !is_namespace_lookup_trait(tcx, trait_ref.def_id)
     })
 }
 

@@ -3,7 +3,10 @@
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
-use crate::config::{CGP_COMPONENT_CRATE, CGP_TYPE_CRATE, DELEGATE_COMPONENT_TRAIT, USE_TYPE_TYPE};
+use crate::config::{
+    CGP_COMPONENT_CRATE, CGP_TYPE_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT,
+    USE_TYPE_TYPE,
+};
 use crate::resolve::query::is_cgp_item;
 
 /// Whether `def_id` is a CGP *provider* trait, recognized **structurally**: by the provider
@@ -18,6 +21,14 @@ use crate::resolve::query::is_cgp_item;
 /// routing that the tree drops.
 pub fn is_provider_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     provider_blanket_marker(tcx, def_id).is_some()
+}
+
+/// Whether `def_id` is a trait a wiring entry implements on its context, `DelegateComponent` or
+/// its `IsProviderFor` twin: the impls a `delegate_components!` entry or a `for` loop lowers to.
+pub fn is_wiring_entry_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    [DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT]
+        .iter()
+        .any(|name| is_cgp_item(tcx, def_id, name, CGP_COMPONENT_CRATE))
 }
 
 /// The component marker a provider trait keys on, read from its provider blanket's `P:

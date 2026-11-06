@@ -7,20 +7,18 @@
 //! provider written for particular parameters does not serve, so the check fails with an `E0277` on
 //! `Provider: IsProviderFor<Marker, Context>` that reads like a broken provider.
 
-use cargo_cgp_error_processing::{CheckForm, StructuralMistake, invokes_macro};
+use cargo_cgp_error_processing::{CheckForm, StructuralMistake};
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_infer::traits::Obligation;
 use rustc_middle::ty::print::with_forced_trimmed_paths;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt as _, TypingMode};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
-use rustc_span::hygiene::{ExpnKind, MacroKind};
 use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
 use rustc_trait_selection::traits::{ObligationCause, ObligationCtxt};
 
-use crate::config::{
-    CGP_COMPONENT_CRATE, DELEGATE_AND_CHECK_COMPONENTS_MACRO, IS_PROVIDER_FOR_TRAIT,
-};
+use super::check_macro_at;
+use crate::config::{CGP_COMPONENT_CRATE, IS_PROVIDER_FOR_TRAIT};
 use crate::resolve::query::{
     can_use_component_supertrait, check_impls_at, find_cgp_trait, fresh_impl_ref,
     marker_to_consumer,
@@ -113,15 +111,7 @@ fn checkable_parameters<'tcx>(
 
 /// The macro the check trait `trait_did` comes from, read from its definition's expansion:
 /// `delegate_and_check_components!` writes parameters in `#[check_params(…)]`, and
-/// `check_components!` after the component.
+/// `check_components!` after the component, which a definition neither macro wrote is read as.
 fn check_form(tcx: TyCtxt<'_>, trait_did: DefId) -> CheckForm {
-    let from_delegate_and_check = tcx.def_span(trait_did).macro_backtrace().any(|expansion| {
-        matches!(expansion.kind, ExpnKind::Macro(MacroKind::Bang, name)
-            if invokes_macro(name.as_str(), DELEGATE_AND_CHECK_COMPONENTS_MACRO))
-    });
-    if from_delegate_and_check {
-        CheckForm::DelegateAndCheckComponents
-    } else {
-        CheckForm::CheckComponents
-    }
+    check_macro_at(tcx.def_span(trait_did)).unwrap_or(CheckForm::CheckComponents)
 }

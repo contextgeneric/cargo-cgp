@@ -5,9 +5,8 @@ use rustc_middle::ty::print::with_forced_trimmed_paths;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 
-use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT};
 use crate::resolve::query::{
-    describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls, same_range,
+    describe_key, impls_declaring_param_at, is_namespace_lookup_trait, is_wiring_entry_trait,
 };
 
 /// The `for` loop an `E0207` at `primary_span` is about, when the unconstrained parameter there
@@ -20,24 +19,8 @@ pub fn detect_loop_key_without_variable(
     tcx: TyCtxt<'_>,
     primary_span: Span,
 ) -> Option<StructuralMistake> {
-    for local in local_trait_impls(tcx) {
-        let impl_did = local.to_def_id();
-        let declares_param = tcx
-            .generics_of(impl_did)
-            .own_params
-            .iter()
-            .any(|param| same_range(tcx.def_span(param.def_id), primary_span));
-        if !declares_param {
-            continue;
-        }
-        let trait_ref = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate_identity()
-            .skip_norm_wip();
-        let is_entry = [DELEGATE_COMPONENT_TRAIT, IS_PROVIDER_FOR_TRAIT]
-            .iter()
-            .any(|name| is_cgp_item(tcx, trait_ref.def_id, name, CGP_COMPONENT_CRATE));
-        if !is_entry {
+    for (impl_did, _, trait_ref) in impls_declaring_param_at(tcx, primary_span) {
+        if !is_wiring_entry_trait(tcx, trait_ref.def_id) {
             continue;
         }
         // `DelegateComponent<Key> for Context` and `IsProviderFor<Key, …> for Context` both carry

@@ -23,7 +23,7 @@
 //! - **Lookups** several stages make: [`check_impls_at`] over [`can_use_component_supertrait`] and
 //!   [`impl_self_ty_span`], [`context_param_span`],
 //!   [`calls_at`](fn@calls_at), [`enclosing_trait_impl`](fn@enclosing_trait_impl),
-//!   [`import_path`](fn@import_path),
+//!   [`import_path`](fn@import_path), [`impls_declaring_param_at`](fn@impls_declaring_param_at),
 //!   [`local_body_exprs`](fn@local_body_exprs), [`local_trait_impls`](fn@local_trait_impls),
 //!   [`owner_has_impl_of`](fn@owner_has_impl_of), [`trait_items_named`](fn@trait_items_named), and
 //!   [`traits_with_method`](fn@traits_with_method).
@@ -42,6 +42,7 @@ mod context_param;
 mod enclosing_trait_impl;
 mod holds;
 mod impl_match;
+mod impls_declaring_param_at;
 mod import_path;
 mod keys;
 mod local_body_exprs;
@@ -69,6 +70,7 @@ pub use context_param::*;
 pub use enclosing_trait_impl::*;
 pub use holds::*;
 pub use impl_match::*;
+pub use impls_declaring_param_at::*;
 pub use import_path::*;
 pub use keys::*;
 pub use local_body_exprs::*;

@@ -8,7 +8,7 @@ use rustc_span::Span;
 use crate::config::{CGP_COMPONENT_CRATE, DELEGATE_COMPONENT_TRAIT};
 use crate::detect::conflict::impl_delegate_type;
 use crate::resolve::query::{
-    describe_key, is_cgp_item, is_namespace_lookup_trait, local_trait_impls, same_range,
+    describe_key, impls_declaring_param_at, is_cgp_item, is_namespace_lookup_trait,
 };
 
 /// The `#[default_impl]` an `E0207` at `primary_span` is about. The registration it generates,
@@ -23,20 +23,7 @@ pub fn detect_generic_default_impl(
     tcx: TyCtxt<'_>,
     primary_span: Span,
 ) -> Option<StructuralMistake> {
-    for local in local_trait_impls(tcx) {
-        let impl_did = local.to_def_id();
-        let Some(param) = tcx
-            .generics_of(impl_did)
-            .own_params
-            .iter()
-            .find(|param| same_range(tcx.def_span(param.def_id), primary_span))
-        else {
-            continue;
-        };
-        let trait_ref = tcx
-            .impl_trait_ref(impl_did)
-            .instantiate_identity()
-            .skip_norm_wip();
+    for (impl_did, param, trait_ref) in impls_declaring_param_at(tcx, primary_span) {
         // `DelegateComponent` has a namespace trait's shape too, but a per-entry generic in a
         // wiring table is a different mistake.
         if is_cgp_item(
