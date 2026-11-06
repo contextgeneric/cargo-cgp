@@ -9,13 +9,11 @@
 //! `#[implicit]` annotation, and the return type), so every position is pinned
 //! together in one program.
 //!
-//! This is a regression pin. The substitution once ran over type nodes only, so an
-//! alias qualifying an expression path was passed through untouched and the body
-//! failed to resolve with `E0433`, an inconsistency rather than a boundary, since a
-//! `let` annotation in the same body *was* rewritten. What remains a boundary is
-//! arity: a bare single-segment path in expression position names a value, which an
-//! abstract type can never be, so it is left alone. Both halves are pinned at the
-//! macro level by `use_type_fn_expr_path` in `cgp`'s `abstract_types` tests.
+//! This is a regression pin: the substitution rewrites the alias wherever it occurs, so an
+//! alias qualifying an expression path is rewritten as a `let` annotation in the same body
+//! is. Arity stays the boundary: a bare single-segment path in expression position names a
+//! value, which an abstract type can never be, so it is left alone. Both halves are pinned
+//! at the macro level by `use_type_fn_expr_path` in `cgp`'s `abstract_types` tests.
 //!
 //! See cgp-knowledge-base/cgp/reference/attributes/use_type.md.
 

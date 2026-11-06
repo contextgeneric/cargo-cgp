@@ -229,8 +229,8 @@ fn merges_two_causes_sharing_a_root_into_one_note() {
 
 /// Two causes reached through *independent* consumer chains that share no node still collapse into
 /// one note (the `parallel_consumers` shape), not two: the `root causes:` heading lists each
-/// distinct leaf, and the graph renders each root chain stacked. This is the behavior the graph
-/// adds over the old shared-prefix-only merge, which would have emitted two separate notes here.
+/// distinct leaf, and the graph renders each root chain stacked. Grouping by root cause renders
+/// them as one note; a merge that grouped by shared prefix alone would emit two notes here.
 // Property: causes reached through independent chains render as one note listing each leaf, with
 //   each root chain stacked.
 #[test]

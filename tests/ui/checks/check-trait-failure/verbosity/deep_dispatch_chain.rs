@@ -8,11 +8,9 @@
 //! unfolds stage by stage down to the missing field, and each hop states its trait and
 //! parameters as written.
 //!
-//! A hop repeating its parent's trait exactly once rendered as `Handler<…>` to keep the
-//! chain short. That elision was removed deliberately: it hid the very type a reader
-//! follows the chain to trace, and made a genuine repeat indistinguishable from a hop
-//! whose parameters differ. The length here is the accepted cost, and the snapshot is
-//! what makes it visible when it changes.
+//! A hop that repeats its parent's trait states it in full, so the type a reader follows the
+//! chain to trace is always visible, and a genuine repeat reads differently from a hop whose
+//! parameters differ. That costs length, which the snapshot shows whenever it changes.
 //!
 //! CGP error class:
 //! https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md

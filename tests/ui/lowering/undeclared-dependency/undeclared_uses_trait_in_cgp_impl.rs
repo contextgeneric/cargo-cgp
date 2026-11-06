@@ -10,7 +10,7 @@
 //! were not satisfied, naming the generated `__Context__` and pointing at a `HasField` bound of the
 //! called trait rather than at the missing `#[uses(PersonName)]`. Unlike the `#[cgp_fn]` case, the
 //! generated impl's `Self` is the provider struct, not the bare `__Context__` parameter, so the
-//! failing call's receiver, a parameter declared as `&__Context__`, is what identifies the shape.
+//! failing call's receiver, a parameter declared as `&__Context__`, identifies the shape.
 //!
 //! The tool reshapes it into the same `[CGP-E030]` error as the `#[cgp_fn]` case, with a
 //! help that reads `` declare it as a dependency with `#[uses(PersonName)]` ``, recovered by

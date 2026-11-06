@@ -12,8 +12,8 @@
 //! foreign namespace (`AppNamespace`) and the foreign *path* key
 //! (`@app.AnnouncerComponent`, resugared from the `PathCons<Symbol<…>>` spine)
 //! instead of the machinery parameter `__Components__`, with the ownership-based
-//! fix in a `help`. The path key is what distinguishes this from its bare-marker
-//! sibling `default_impl_foreign_component.rs`.
+//! fix in a `help`. The path key distinguishes this from its bare-marker sibling
+//! `default_impl_foreign_component.rs`.
 //!
 //! CGP error class:
 //! <https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/orphan-rule.md>.

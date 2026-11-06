@@ -9,14 +9,14 @@
 //! `Tx<<App as HasDbType>::Db>` rather than a constant, and the two things in conflict
 //! are both the context's own wiring decisions.
 //!
-//! This shape only became reachable once a pin grounded an alias *nested inside* its
-//! right-hand side, so the fixture is the mismatch counterpart of
+//! The pin grounds an alias *nested inside* its right-hand side, so this fixture is the
+//! mismatch counterpart of
 //! [`ok/use_type_pin_nested_alias`](../../../ok/use_type_pin_nested_alias.rs). It pins the
 //! dual rendering on the `[CGP-E005]` header and the `[CGP-E116]` leaf: the required type
 //! appears as the projection the provider wrote, followed by what it reduces to, on the
-//! same rule the field leaf uses: the projection names the wiring to change, the
-//! reduction is what the reader compares against. A pin to a concrete type normalizes to
-//! itself and gets no parenthetical, which is what the sibling fixture pins.
+//! same rule the field leaf uses: the projection names the wiring to change, and the
+//! reduction is the form the reader compares against. A pin to a concrete type normalizes
+//! to itself and gets no parenthetical, which the sibling fixture pins.
 //!
 //! The `help` uses the reduced form alone, since it names an edit the reader types.
 //!

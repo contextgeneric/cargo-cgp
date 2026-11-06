@@ -54,7 +54,7 @@ pub struct Hex;
 pub struct ByteStream;
 /// A forwarding handler: interprets *any* outer code by running the context's handler for the
 /// inner `InCode`, forwarding its `Output`. This is the pipeline-step wrapper shape a handler DSL
-/// uses, and it is what makes a stage's `::Output` resolve *through* `CanHandle`.
+/// uses, and it makes a stage's `::Output` resolve *through* `CanHandle`.
 impl<__Context__, OutCode, InCode, Input, Output> Handler<__Context__, OutCode, Input>
 for Call<InCode>
 where

@@ -3,7 +3,7 @@
 //!
 //! This is the positive counterpart to the lowering failures around abstract database
 //! types. `Db` and `Transaction` are both abstract, so both are nameable in the
-//! components' public signatures, which is what the inferred `#[impl_generics]` form
+//! components' public signatures, which the inferred `#[impl_generics]` form
 //! cannot do, per
 //! [`impl_generics_in_signature`](../lowering/out-of-scope-generated-name/impl_generics_in_signature.rs).
 //! The relationship between them ("a transaction of *this* database") rides in an

@@ -5,14 +5,14 @@
 //! `Inner: CanN` back. `Outer`'s `DoR` also reads a `name` field `Outer` lacks.
 //!
 //! The walk from `Inner: CanN`, which words the overflow at `Inner`'s check, reads `Outer: Linked`
-//! as a leaf and caches the complete subtree. The walk is not cut, since the bound's own evaluation
-//! is what overflows, so the overflow keeps rustc's wording. The walk from `Outer: CanR` descends
+//! as a leaf and caches the complete subtree. The walk is not cut, since the bound's own
+//! evaluation overflows, so the overflow keeps rustc's wording. The walk from `Outer: CanR` descends
 //! `Outer: Linked`, reaches `Inner: CanN`, and finds that cached subtree. Its reachable set holds
 //! `Outer: Linked`, which is now an ancestor, so the walk resolves the node afresh and the cycle
 //! guard cuts the loop: `Outer`'s only cause is its missing `name`. Reusing the cached subtree would
 //! splice the looping `Outer: Linked` leaf into `Outer`'s error.
 //!
-//! The two errors stay apart, which is what lets this fixture pin the reuse rule: in
+//! The two errors stay apart, which lets this fixture pin the reuse rule: in
 //! `cross_context_cycle_reuse` the two errors share a missing field and merge into one block, whose
 //! union of causes would hide the splice.
 //!

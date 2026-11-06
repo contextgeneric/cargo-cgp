@@ -8,8 +8,8 @@
 //! `Rectangle` supplies `u32`.
 //!
 //! The failure is reshaped into the same `[CGP-E005]` class (the mechanism is the projection, not
-//! the trait), but the wording turns on the trait's fingerprint, and that is what this fixture pins.
-//! Because `HasUnit`'s provider trait carries no `UseType` impl, it reads `associated type` rather
+//! the trait), but the wording turns on the trait's fingerprint, which this fixture pins. Because
+//! `HasUnit`'s provider trait carries no `UseType` impl, it reads `associated type` rather
 //! than `abstract type` and carries **no** `help`: there is no wiring entry to change, so suggesting
 //! `UseType<f64>` here would name a fix that does not exist. The concrete type is fixed by the
 //! `impl HasUnit for Rectangle` block, and that is where a reader must go.

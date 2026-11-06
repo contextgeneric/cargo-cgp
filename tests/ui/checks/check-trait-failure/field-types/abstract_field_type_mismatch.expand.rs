@@ -10,7 +10,7 @@
 //! `App` wires `Db` to `Postgres` while declaring a `Pool<Sqlite>` field, so the two
 //! disagree and the `HasField` projection fails as an `E0271`.
 //!
-//! This is what an abstract type buys over the `#[impl_generics]` form that merely
+//! An abstract type buys this over the `#[impl_generics]` form that merely
 //! *infers* the type from the field: under inference the two could never disagree,
 //! because there was only ever one of them. Naming the type makes the pairing a
 //! stated claim, and a stated claim is checkable: the check reports it at the wiring

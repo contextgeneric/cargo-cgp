@@ -59,7 +59,7 @@ pub struct ByteStream;
 
 /// A forwarding handler: interprets *any* outer code by running the context's handler for the
 /// inner `InCode`, forwarding its `Output`. This is the pipeline-step wrapper shape a handler DSL
-/// uses, and it is what makes a stage's `::Output` resolve *through* `CanHandle`.
+/// uses, and it makes a stage's `::Output` resolve *through* `CanHandle`.
 #[async_trait]
 #[cgp_impl(new Call<InCode>)]
 impl<OutCode, InCode, Input, Output> Handler<OutCode, Input>

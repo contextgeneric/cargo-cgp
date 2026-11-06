@@ -7,7 +7,7 @@
 //! unwired `Code` fails not on a dependency of its own but on a missing dispatch entry one
 //! hop away. Here `Missing` has no entry in the namespace, so `Call<Missing>` cannot resolve.
 //!
-//! The namespace join is what makes this hard: it gives the context a blanket
+//! The namespace join makes this hard: it gives the context a blanket
 //! `DelegateComponent<__Key__>` forwarding that unifies with *every* key, so the missing entry
 //! looks like a node to descend, and descending it reaches the namespace's own lookup machinery
 //! rather than a cause. The walk therefore treats an unmet delegation on the context as terminal

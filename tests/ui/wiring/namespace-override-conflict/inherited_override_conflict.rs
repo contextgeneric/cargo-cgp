@@ -24,7 +24,7 @@
 //! The tool recognizes the shape by the namespace-trait impls at the two carets and
 //! rewrites the header to `[CGP-E011]`, naming the key the child binds and the parent
 //! that already sets it. The parent binds `GreeterComponent` to a provider rather than
-//! to a redirect, which is what separates this from namespace_inherited_unprefixed_key.rs:
+//! to a redirect, which separates this from namespace_inherited_unprefixed_key.rs:
 //! there the parent's value normalizes to a `RedirectLookup`, so the collision reads as
 //! `[CGP-E013]` and names the path to write instead.
 //!

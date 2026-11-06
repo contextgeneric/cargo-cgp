@@ -7,13 +7,11 @@
 //! `Self: HasTransactionType<Transaction = Tx<<Self as HasDbType>::Db>>`, naming the
 //! projection rather than a bare `Db` that would resolve to nothing.
 //!
-//! This fixture is a regression pin. The substitution once ran only when the whole
-//! right-hand side *was* an alias (the `{Bar as Baz = Foo}` cross-spec form), so an
-//! alias nested inside one was passed through untouched and the emitted bound failed
-//! to resolve with `E0425`, its caret inside the attribute and nothing in the message
-//! saying the name had been imported. The macro-level expansion is pinned by
-//! `use_type_fn_equality_nested` in `cgp`'s `abstract_types` tests; this fixture is
-//! the end-to-end confirmation that a real crate using the form compiles silently.
+//! This fixture is a regression pin: the substitution grounds an alias wherever it occurs in
+//! the right-hand side, as it already did for the cross-spec form `{Bar as Baz = Foo}`, whose
+//! whole right-hand side is an alias. The macro-level expansion is pinned by
+//! `use_type_fn_equality_nested` in `cgp`'s `abstract_types` tests; this fixture is the
+//! end-to-end confirmation that a real crate using the form compiles silently.
 //!
 //! See cgp-knowledge-base/cgp/reference/attributes/use_type.md.
 
@@ -69,8 +67,8 @@ check_components! {
     }
 }
 
-// Requiring the trait on `App` is what proves the *pinned* bound is
-// satisfiable, not merely well-formed: the blanket impl applies only if `App`'s
+// Requiring the trait on `App` proves the *pinned* bound is satisfiable,
+// not merely well-formed: the blanket impl applies only if `App`'s
 // wired `Transaction` really is `Tx<App::Db>`, which is the equality the pin emits.
 fn assert_can_begin<Context>()
 where

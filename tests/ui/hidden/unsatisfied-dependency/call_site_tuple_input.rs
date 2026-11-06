@@ -102,7 +102,7 @@ delegate_components! {
 
 async fn run_app(app: &App) -> Result<(), String> {
     // The tuple literal's element types are not written (`Vec::new()` is generic), yet the tuple
-    // *shape* `(_, _)` is what `HandleBranch` destructures, so the anchor must recover it.
+    // *shape* `(_, _)` is the one `HandleBranch` destructures, so the anchor must recover it.
     app.handle(PhantomData::<Branch<ReadName>>, (Vec::new(), Vec::new()))
         .await?;
     Ok(())

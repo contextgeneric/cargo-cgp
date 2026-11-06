@@ -4,8 +4,8 @@
 //! empty variant's `&mut Nil` payload with `Box::leak(Box::new(Nil))`, writing
 //! `Box` bare so it resolves where the derive is used, and here it resolves to
 //! the imported `std::boxed::Box`. `extern crate std;` keeps the binary linkable
-//! while `#![no_std]` drops the `std` prelude, so the import is what puts `Box`
-//! in scope. The program compiles clean.
+//! while `#![no_std]` drops the `std` prelude, so the import brings `Box` into
+//! scope. The program compiles clean.
 #![no_std]
 extern crate core;
 #[prelude_import]
