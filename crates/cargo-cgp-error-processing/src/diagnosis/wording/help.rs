@@ -24,8 +24,8 @@ pub fn fix_help_messages(causes: &[Cause]) -> Vec<String> {
     // fix's owner is its text.
     let mut groups: Vec<(FixKind, String, Vec<String>)> = Vec::new();
     for cause in causes {
-        // The whole fixes `fixes_for` lists before a cause's mergeable fix are its near misses,
-        // placed just before that fix's group wherever the group sits.
+        // The whole fixes `fixes_for` lists before a cause's mergeable fix (its near misses, and a
+        // missing field's tuple tag) go just before that fix's group, wherever the group sits.
         let mut near_misses: Vec<String> = Vec::new();
         for (kind, owner, item) in fixes_for(&cause.leaf) {
             if kind == FixKind::Whole {
