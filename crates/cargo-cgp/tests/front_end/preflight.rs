@@ -49,38 +49,24 @@ fn evaluate_accepts_a_matching_driver() {
     assert!(evaluate("0.1.0", &driver, installed).is_ok());
 }
 
-#[test]
-fn evaluate_rejects_a_version_mismatch() {
-    let driver = sample();
-    let installed = "rustc 1.98.0-nightly (4c9d2bfe4 2026-07-01)";
-    // Front-end is 0.2.0 but the driver reports 0.1.0: out of lockstep.
-    assert!(evaluate("0.2.0", &driver, installed).is_err());
-}
-
-#[test]
-fn evaluate_rejects_a_rustc_mismatch() {
-    let driver = sample();
-    // The installed pinned toolchain is a different nightly than the driver was built with.
-    let installed = "rustc 1.98.0-nightly (0000000 2026-08-01)";
-    assert!(evaluate("0.1.0", &driver, installed).is_err());
-}
-
+// Property: the baked-in `PINNED_TOOLCHAIN` is the channel `rust-toolchain.toml` pins: the file
+//   holds exactly one line whose words are `channel`, `=`, and the quoted toolchain. The oracle
+//   splits lines on whitespace and shares no code with `build.rs`'s `parse_channel`, so a fault in
+//   that parser cannot make both sides agree.
 #[test]
 fn pinned_toolchain_matches_the_toolchain_file() {
     let toolchain_file = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../rust-toolchain.toml");
     let text = std::fs::read_to_string(&toolchain_file).expect("reading rust-toolchain.toml");
-    let channel = text
+    let quoted = format!("\"{PINNED_TOOLCHAIN}\"");
+    let expected = ["channel", "=", quoted.as_str()];
+    let pinning_lines = text
         .lines()
-        .find_map(|line| {
-            let line = line.split('#').next().unwrap_or("").trim();
-            let rest = line
-                .strip_prefix("channel")?
-                .trim_start()
-                .strip_prefix('=')?;
-            rest.trim().strip_prefix('"')?.split('"').next()
-        })
-        .expect("a channel in rust-toolchain.toml");
-    assert_eq!(PINNED_TOOLCHAIN, channel);
+        .filter(|line| line.split_whitespace().eq(expected))
+        .count();
+    assert_eq!(
+        pinning_lines, 1,
+        "rust-toolchain.toml should pin {quoted}:\n{text}"
+    );
 }
 
 fn sibling_driver() -> DriverLocation {
@@ -90,16 +76,23 @@ fn sibling_driver() -> DriverLocation {
     }
 }
 
+// Property: `evaluate` reports `RustcMismatch` when only the compilers differ, and
+//   `VersionMismatch` when the versions differ, each naming the values that differ.
+// Property (assumed from the check order, since the doc does not rank the two):
+//   `VersionMismatch` is the one reported when the compilers differ as well.
 #[test]
 fn evaluate_reports_which_identity_differs() {
     let driver = sample();
+    let matching = "rustc 1.98.0-nightly (4c9d2bfe4 2026-07-01)";
     let installed = "rustc 1.98.0-nightly (0000000 2026-08-01)";
-    assert_eq!(
-        evaluate("0.2.0", &driver, installed),
-        Err(PreflightFailure::VersionMismatch {
-            driver_version: "0.1.0".to_owned()
-        })
-    );
+    for installed_rustc in [matching, installed] {
+        assert_eq!(
+            evaluate("0.2.0", &driver, installed_rustc),
+            Err(PreflightFailure::VersionMismatch {
+                driver_version: "0.1.0".to_owned()
+            })
+        );
+    }
     assert_eq!(
         evaluate("0.1.0", &driver, installed),
         Err(PreflightFailure::RustcMismatch {
