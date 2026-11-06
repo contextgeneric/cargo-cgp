@@ -1,7 +1,8 @@
 //! Turning a terminal predicate into the rustc-free [`Leaf`] the emitter words.
 
 use cargo_cgp_error_processing::{
-    AdapterFix, CoreProviderFix, FieldFix, FieldIssue, Leaf, NearMiss, ProvidesFix,
+    AdapterFix, CoreProviderFix, DelegateLeafFacts, DelegateLeafShape, FieldFix, FieldIssue, Leaf,
+    NearMiss, ProvidesFix, delegate_leaf_shape,
 };
 use rustc_middle::ty::print::PrintTraitRefExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -91,26 +92,11 @@ pub(crate) fn classify_leaf<'tcx>(
 }
 
 /// Classify an unmet `DelegateComponent<Key>`, or `None` when it is a routing dead-end rather than a
-/// root cause. It is a root cause in these shapes:
+/// root cause. [`delegate_leaf_shape`] decides which leaf it is, over the facts
+/// [`RustcDelegateLeafFacts`] reads from the compiler, and its doc lists the cases; this function
+/// names each shape from the compiler's types.
 ///
-/// - on the **context** itself: the component it does not wire, or for a redirect path, the path;
-/// - on a **provider reached through its own delegation blanket** although it implements the
-///   parent's trait ([`is_blanket_dead_end`]): the blanket was tried only because that impl did not
-///   unify, so the provider implements the trait for other arguments when one argument explains the
-///   mismatch ([`provider_for_other_arguments`]), and the lookup is a dead-end otherwise, as for a
-///   pipeline stage fed an input the walk does not know;
-/// - on a **delegation table**, a dispatch lookup into a separate table ([`is_dispatch_lookup`],
-///   which reaches even an empty table) or an owner that wires some other key
-///   ([`owner_has_impl_of`] for `DelegateComponent`): the entry the table lacks;
-/// - for a **redirect path** on any other type under a parent obligation, an aggregate provider's
-///   own `open` redirect: the entry missing from that provider's table, in place of the other
-///   arguments a blanket dead-end would name, and dropped where that dead-end names none;
-/// - on **any other type** under a parent obligation: a type wired where a provider was expected,
-///   named against the parent's provider trait.
-///
-/// `parent` is the obligation one hop above the leaf. Only the walk's root has none, and every root
-/// is a consumer, provider, blanket, or data obligation, so a `DelegateComponent` leaf always has
-/// one; the classifier declines without it.
+/// `parent` is the obligation one hop above the leaf, which only the walk's root lacks.
 fn delegate_component_leaf<'tcx>(
     tcx: TyCtxt<'tcx>,
     leaf_ref: ty::TraitRef<'tcx>,
@@ -119,69 +105,100 @@ fn delegate_component_leaf<'tcx>(
 ) -> Option<Leaf> {
     let key = leaf_ref.args.type_at(1);
     let self_ty = tcx.erase_and_anonymize_regions(leaf_ref.self_ty());
-    let owner = self_ty.to_string();
-    // A `DelegateComponent<PathCons<…>>` key is a redirect *path* an `open` statement or a
-    // namespace routed the lookup along, not a bare component marker, and the table it was
-    // looked up in has no entry terminating it. Rendering only its ADT item name would flatten
-    // the whole path to a useless `PathCons`, so the leaf names the full path (its `PathCons`
-    // spine resugars to `@…` when the note is post-processed).
-    let is_path = is_path_cons(tcx, key);
-    let missing_entry = || Leaf::MissingDispatchEntry {
-        key: tcx.erase_and_anonymize_regions(key).to_string(),
-        table: owner.clone(),
+    let facts = RustcDelegateLeafFacts {
+        tcx,
+        leaf_ref,
+        context,
+        parent,
+        key,
+        self_ty,
     };
-    if self_ty == context {
-        // On the context a path is a [`Leaf::MissingRedirectWiring`], parallel to the
-        // namespace-lookup leaf.
-        if is_path {
-            return Some(Leaf::MissingRedirectWiring {
-                path: tcx.erase_and_anonymize_regions(key).to_string(),
-                similar: wired_near_miss(tcx, self_ty, render_path(tcx, key)),
-                context: owner,
-            });
+    let owner = self_ty.to_string();
+    Some(match delegate_leaf_shape(&facts)? {
+        // A `PathCons` key is a redirect *path* an `open` statement or a namespace routed the
+        // lookup along, so the leaf names the whole path, which resugars to `@…` when the note is
+        // post-processed; its ADT item name alone would flatten it to `PathCons`.
+        DelegateLeafShape::RedirectWiring => Leaf::MissingRedirectWiring {
+            path: tcx.erase_and_anonymize_regions(key).to_string(),
+            similar: wired_near_miss(tcx, self_ty, render_path(tcx, key)),
+            context: owner,
+        },
+        DelegateLeafShape::Wiring => {
+            // The marker's own item name (`BarProviderComponent`) is what the programmer writes to
+            // fix it, so it names the leaf.
+            let component = component_marker_name(tcx, key);
+            Leaf::MissingWiring {
+                similar: wired_near_miss(tcx, self_ty, Some(component.clone())),
+                component,
+                owner,
+            }
         }
-        // A bare `DelegateComponent<Marker>` on the context with no satisfying impl: the context
-        // does not wire the component at all. The marker's own item name (`BarProviderComponent`)
-        // is what the programmer writes to fix it, so it names the leaf.
-        let component = component_marker_name(tcx, key);
-        return Some(Leaf::MissingWiring {
-            similar: wired_near_miss(tcx, self_ty, Some(component.clone())),
-            component,
-            owner,
-        });
-    }
-    let parent = parent?;
-    // A provider reached through its own delegation blanket, although it implements the parent's
-    // trait, implements that trait for other arguments than the wiring gives it, or the lookup is a
-    // dead-end. Off the context a path is an aggregate provider's own `open` redirect, so it names
-    // that provider table as any other entry missing from it does.
-    if is_blanket_dead_end(tcx, self_ty, parent) {
-        let other_arguments = provider_for_other_arguments(tcx, parent)?;
-        return Some(if is_path {
-            missing_entry()
-        } else {
-            other_arguments
-        });
-    }
-    // An owner that is a delegation table (a separate-table dispatch lookup or an owner that wires
-    // some other key) is an aggregate provider or a `UseDelegate`/`UseInputDelegate` table missing
-    // this entry, named with the key in full, since it may be a dispatched-on type.
-    if is_path
-        || is_dispatch_lookup(tcx, self_ty, parent.self_ty())
-        || owner_has_impl_of(tcx, leaf_ref.def_id, self_ty)
-    {
-        return Some(missing_entry());
-    }
-    // Otherwise the owner is not a table at all: a type wired where a provider was expected that
-    // does not implement the provider trait. Name the provider trait from the parent obligation
-    // `owner: ProviderTrait<Ctx>` whose blanket produced this leaf.
-    Some(Leaf::NotAProvider {
-        provider: owner,
-        provider_trait: tcx.item_name(parent.def_id).to_string(),
-        adapter: AdapterFix(wrapping_adapters(tcx, parent)),
-        provides: ProvidesFix(provided_components(tcx, parent)),
-        core: CoreProviderFix(core_provider_hint(tcx, parent)),
+        DelegateLeafShape::OtherArguments(leaf) => leaf,
+        // The key is named in full, since it may be a path or a dispatched-on type.
+        DelegateLeafShape::DispatchEntry => Leaf::MissingDispatchEntry {
+            key: tcx.erase_and_anonymize_regions(key).to_string(),
+            table: owner,
+        },
+        DelegateLeafShape::NotAProvider => {
+            // The shape is decided only under a parent obligation `owner: ProviderTrait<Ctx>`,
+            // whose blanket produced this leaf, so `parent` is present; it names the provider trait.
+            let parent = parent?;
+            Leaf::NotAProvider {
+                provider: owner,
+                provider_trait: tcx.item_name(parent.def_id).to_string(),
+                adapter: AdapterFix(wrapping_adapters(tcx, parent)),
+                provides: ProvidesFix(provided_components(tcx, parent)),
+                core: CoreProviderFix(core_provider_hint(tcx, parent)),
+            }
+        }
     })
+}
+
+/// The compiler reads behind [`delegate_leaf_shape`]'s facts about one unmet
+/// `DelegateComponent<Key>` leaf. Private, since `key` and `self_ty` are read from `leaf_ref`.
+struct RustcDelegateLeafFacts<'tcx> {
+    tcx: TyCtxt<'tcx>,
+    leaf_ref: ty::TraitRef<'tcx>,
+    context: Ty<'tcx>,
+    parent: Option<ty::TraitRef<'tcx>>,
+    key: Ty<'tcx>,
+    self_ty: Ty<'tcx>,
+}
+
+impl DelegateLeafFacts for RustcDelegateLeafFacts<'_> {
+    fn on_context(&self) -> bool {
+        self.self_ty == self.context
+    }
+
+    fn key_is_path(&self) -> bool {
+        is_path_cons(self.tcx, self.key)
+    }
+
+    fn has_parent(&self) -> bool {
+        self.parent.is_some()
+    }
+
+    /// [`is_blanket_dead_end`] on the parent.
+    fn blanket_dead_end(&self) -> bool {
+        self.parent
+            .is_some_and(|parent| is_blanket_dead_end(self.tcx, self.self_ty, parent))
+    }
+
+    /// [`provider_for_other_arguments`], the solver query, on the parent.
+    fn other_arguments(&self) -> Option<Leaf> {
+        provider_for_other_arguments(self.tcx, self.parent?)
+    }
+
+    /// [`is_dispatch_lookup`], which reaches even an empty table.
+    fn dispatch_lookup(&self) -> bool {
+        self.parent
+            .is_some_and(|parent| is_dispatch_lookup(self.tcx, self.self_ty, parent.self_ty()))
+    }
+
+    /// [`owner_has_impl_of`] for `DelegateComponent`.
+    fn owner_wires_other_key(&self) -> bool {
+        owner_has_impl_of(self.tcx, self.leaf_ref.def_id, self.self_ty)
+    }
 }
 
 /// Classify an unmet namespace lookup (`Path: DefaultNamespace<Table>` or a user `cgp_namespace!`
