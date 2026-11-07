@@ -22,6 +22,7 @@ edition      = "2024"
 rust-version = "1.96"
 license      = "MIT"
 repository   = "https://github.com/contextgeneric/cargo-cgp"
+homepage        = "https://contextgeneric.dev/docs/cargo-cgp/"
 authors      = ["Soares Chen <soares.chen@maybevoid.com>"]
 keywords     = ["cgp", "cargo-subcommand", "diagnostics", "macros"]
 categories   = ["development-tools::cargo-plugins", "development-tools"]
