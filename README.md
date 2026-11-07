@@ -168,6 +168,21 @@ The check builds into its own `target/cgp` directory, so it does not wait on you
 [usage guide](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/reference/usage.md#editor-integration-rust-analyzer) lists what this override
 changes in the editor.
 
+## Development
+
+Run the checks from the repository root:
+
+```sh
+cargo build
+cargo +nightly fmt --all
+cargo clippy --all-targets -- -D warnings
+RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace --document-private-items
+cargo test
+```
+
+The driver builds only with the pinned nightly that carries `rustc-dev`. `cargo test` includes the UI
+snapshot suite and expects a sibling `cgp` checkout at `../cgp`.
+
 ## Learn more
 
 The [CGP knowledge base](https://github.com/contextgeneric/cgp-knowledge-base) holds this tool's
