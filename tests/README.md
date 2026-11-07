@@ -1,4 +1,4 @@
-# cargo-cgp UI tests
+# cargo-cgp UI tests: the fixtures that pin every error class
 
 This directory holds the UI test fixtures for `cargo-cgp`: small, standalone CGP programs, each
 compiled through the tool and compared against committed snapshots of its output. It is modeled on
@@ -6,6 +6,8 @@ Clippy's `tests/ui/`. The fixtures are the canonical reproductions of CGP's post
 classes: `cgp`'s
 [error catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md)
 links each class to the fixtures here that pin it.
+
+**[Website](https://contextgeneric.dev/docs/cargo-cgp/) · [Error codes](https://contextgeneric.dev/docs/cargo-cgp/error-codes) · [Reading the output](https://contextgeneric.dev/docs/cargo-cgp/reading-output)**
 
 For how the fixtures fit into the project's testing (the unit tests, the harness mechanics, the
 toolchain caveat, and the comparison with Clippy), see the
