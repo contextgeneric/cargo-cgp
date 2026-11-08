@@ -1,0 +1,150 @@
+name: Tests
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: short
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+
+# Cancel in-progress runs when a new commit is pushed to the same PR, branch, or tag.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# To minimize supply-chain exposure this workflow uses only GitHub's own
+# first-party actions; the toolchain and its components come from rustup.
+#
+# The UI suite drives cargo against a sibling `cgp` checkout at `../cgp`, so the
+# test job checks out both repositories under the workspace root. Every other job
+# needs this repository alone.
+defaults:
+  run:
+    working-directory: cargo-cgp
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out cargo-cgp
+        uses: actions/checkout@v4
+        with:
+          path: cargo-cgp
+      - name: Install the pinned nightly and its components
+        run: rustup toolchain install
+      - name: Cache the cargo registry and target directory
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            cargo-cgp/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('cargo-cgp/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Build
+        run: cargo build
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out cargo-cgp
+        uses: actions/checkout@v4
+        with:
+          path: cargo-cgp
+      # `.rustfmt.toml` sets unstable options, so rustfmt needs the pinned nightly
+      # from `rust-toolchain.toml`, which carries the `rustfmt` component.
+      - name: Install the pinned nightly and its components
+        run: rustup toolchain install
+      - run: cargo +nightly-2026-11-05 fmt --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out cargo-cgp
+        uses: actions/checkout@v4
+        with:
+          path: cargo-cgp
+      - name: Install the pinned nightly and its components
+        run: rustup toolchain install
+      - name: Cache the cargo registry and target directory
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            cargo-cgp/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('cargo-cgp/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+  doc:
+    name: Docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out cargo-cgp
+        uses: actions/checkout@v4
+        with:
+          path: cargo-cgp
+      - name: Install the pinned nightly and its components
+        run: rustup toolchain install
+      - name: Cache the cargo registry and target directory
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            cargo-cgp/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('cargo-cgp/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Build the docs with warnings denied
+        run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace --document-private-items
+
+  test:
+    name: UI suite
+    runs-on: ubuntu-latest
+    # Every snapshot compiles a fixture through the driver, so the suite is the
+    # slowest job by far.
+    timeout-minutes: 60
+    steps:
+      - name: Check out cargo-cgp
+        uses: actions/checkout@v4
+        with:
+          path: cargo-cgp
+      - name: Check out cgp as a sibling
+        uses: actions/checkout@v4
+        with:
+          repository: contextgeneric/cgp
+          path: cgp
+      - name: Install the pinned nightly and its components
+        run: rustup toolchain install
+      - name: Cache the cargo registry and target directory
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            cargo-cgp/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('cargo-cgp/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Run the suite
+        run: cargo test
