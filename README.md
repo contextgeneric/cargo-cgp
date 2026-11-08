@@ -2,6 +2,7 @@
 [![Docs.rs](https://docs.rs/cargo-cgp/badge.svg)](https://docs.rs/cargo-cgp)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Rust 1.96+](https://img.shields.io/badge/rustc-1.96+-blue.svg)
+[![Tests](https://github.com/contextgeneric/cargo-cgp/actions/workflows/tests.yml/badge.svg)](https://github.com/contextgeneric/cargo-cgp/actions/workflows/tests.yml)
 
 # cargo-cgp: CGP's error toolchain
 
@@ -201,7 +202,7 @@ Run the checks from the repository root:
 
 ```sh
 cargo build
-cargo +nightly-2026-11-05 fmt --all
+cargo +nightly-2026-11-05 fmt --all -- --check
 cargo clippy --all-targets -- -D warnings
 RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace --document-private-items
 cargo test
