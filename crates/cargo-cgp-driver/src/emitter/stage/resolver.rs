@@ -186,6 +186,7 @@ pub fn try_resolve(
         primary_span,
         primary_spans: diag.span.primary_spans(),
         spans: diagnostic_spans(diag),
+        message: main_message_text(diag),
         data_call_only,
     };
     let (resolved, at_call) = resolve::resolve(cx?, &input)?;

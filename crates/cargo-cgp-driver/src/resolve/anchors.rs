@@ -30,6 +30,9 @@ pub struct AnchorInput<'d> {
     pub primary_spans: &'d [Span],
     /// Every span of the diagnostic, labels and notes included.
     pub spans: Vec<Span>,
+    /// The diagnostic's main message. The `#[check_providers]` anchor reads it to tell apart the
+    /// entries that share one caret, which rustc's message names one component at a time.
+    pub message: Option<&'d str>,
     /// Whether the diagnostic is a shape only the data-call anchor reads: a "no method named"
     /// `E0599`, or an `E0308` on a call's argument.
     pub data_call_only: bool,
@@ -86,7 +89,7 @@ pub static ANCHORS: [Anchor; 12] = [
     // A `#[check_providers]` entry, anchored the same way on the provider it lists.
     Anchor {
         gate: unmet_obligation,
-        run: |cx, input| resolve_provider_check(cx, input.primary_span),
+        run: |cx, input| resolve_provider_check(cx, input.primary_span, input.message),
         accept: accept_any,
         at_call: false,
     },

@@ -16,6 +16,7 @@ fn input(code: ErrCode, data_call_only: bool) -> AnchorInput<'static> {
         primary_span: DUMMY_SP,
         primary_spans: &[],
         spans: Vec::new(),
+        message: None,
         data_call_only,
     }
 }
