@@ -28,6 +28,11 @@
 //! snapshot is checked on another machine or the tool gains a version, so [`normalize`] replaces
 //! them with `$HOST` and `$VERSION`. The compiler's own version stays: a toolchain bump is meant
 //! to re-bless a crash snapshot.
+//!
+//! A crash report also repeats the compiler flags, and cargo passes `-C incremental=…` according to
+//! the caller's `CARGO_INCREMENTAL`: the workspace's CI sets it to `0`, while a developer's shell
+//! usually leaves cargo's default on. The flag records that setting rather than the diagnostic, so
+//! [`normalize`] drops it and a snapshot reads the same in both environments.
 
 use std::path::Path;
 
@@ -53,10 +58,36 @@ pub fn normalize(raw: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path)
         .filter(|line| !DROP_MARKERS.iter().any(|marker| line.contains(marker)))
         .map(|line| {
             let line = replace_paths(line, harness_dir, cgp_root, sysroot);
-            replace_crash_details(&replace_thread_id(&line))
+            strip_incremental_flag(&replace_crash_details(&replace_thread_id(&line)))
         })
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+/// Drop the `incremental=…` token from a `compiler flags` note. Whether cargo passes the flag
+/// depends on the caller's `CARGO_INCREMENTAL`, so a snapshot that kept it would pass in a
+/// developer's shell and fail in CI (which sets the variable to `0`). Rustc's rendering carries the
+/// flag either as `-C incremental=…` or as a bare `incremental=…` after another `-C` value, so the
+/// removal takes the `-C ` with it when it is there. Any other line is returned unchanged.
+fn strip_incremental_flag(line: &str) -> String {
+    const NOTE: &str = "compiler flags:";
+    const FLAG: &str = "incremental=";
+    if !line.contains(NOTE) {
+        return line.to_owned();
+    }
+    let Some(value_start) = line.find(FLAG) else {
+        return line.to_owned();
+    };
+    // The token ends at the next space, which the removal also consumes so the neighbouring flags
+    // keep exactly one space between them.
+    let end = line[value_start..]
+        .find(' ')
+        .map_or(line.len(), |space| value_start + space + 1);
+    let start = value_start
+        .checked_sub("-C ".len())
+        .filter(|&start| line[start..value_start].eq("-C "))
+        .unwrap_or(value_start);
+    format!("{}{}", &line[..start], &line[end..])
 }
 
 /// Replace the machine- and version-specific details of a compiler crash report: the host triple in
