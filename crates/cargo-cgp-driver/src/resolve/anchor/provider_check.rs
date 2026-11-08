@@ -65,16 +65,29 @@ pub fn resolve_provider_check(
     first_resolved
 }
 
-/// Whether `message` names `marker` as the component of an `IsProviderFor<…>` bound. The rendered
-/// marker carries its module path only when it sits inside a module, so either spelling counts.
+/// Whether `message` names `marker` as the component of an `IsProviderFor<…>` bound, which is how
+/// an `E0277` on a `#[check_providers]` entry reports the one it is about. The rendered name is
+/// compared whole, so a component whose name merely extends another cannot stand in for it, and a
+/// marker inside a module is accepted under the qualified spelling rustc prints there.
 fn names_component(tcx: TyCtxt<'_>, marker: ty::Ty<'_>, message: &str) -> bool {
     let Some(marker_did) = marker.ty_adt_def().map(|def| def.did()) else {
         return false;
     };
     let path = tcx.def_path_str(marker_did);
     let leaf = path.rsplit("::").next().unwrap_or(&path);
-    message.contains(&format!("IsProviderFor<{leaf}"))
-        || message.contains(&format!("IsProviderFor<{path}"))
+    message
+        .match_indices("IsProviderFor<")
+        .map(|(start, _)| bound_component(&message[start + "IsProviderFor<".len()..]))
+        .any(|named| named == leaf || named == path || path.ends_with(&format!("::{named}")))
+}
+
+/// The component name at the head of a rendered `IsProviderFor<…>` argument list: everything up to
+/// the first `,`, `>`, `<`, or space.
+fn bound_component(rendered: &str) -> &str {
+    let end = rendered
+        .find([',', '>', '<', ' '])
+        .unwrap_or(rendered.len());
+    &rendered[..end]
 }
 
 /// The `IsProviderFor<..>` supertrait clause of `trait_did` when it is a provider check trait: one

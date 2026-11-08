@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E002] missing field `name` on `App`
-  --> src/main.rs:43:23
+  --> src/main.rs:44:23
    |
-43 |     #[check_providers(GreetAndBye)]
+44 |     #[check_providers(GreetAndBye)]
    |                       ^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `name` on `App`
@@ -10,9 +10,9 @@ error[E0277]: [CGP-E002] missing field `name` on `App`
              └─ [CGP-E110] missing field `name` on `App`
 
 error[E0277]: [CGP-E002] missing field `title` on `App`
-  --> src/main.rs:43:23
+  --> src/main.rs:44:23
    |
-43 |     #[check_providers(GreetAndBye)]
+44 |     #[check_providers(GreetAndBye)]
    |                       ^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `title` on `App`

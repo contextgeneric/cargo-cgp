@@ -4,8 +4,9 @@
 //! The table generates one check impl per component, both with `GreetAndBye` as `Self` on the one
 //! token the attribute names, so the two errors share a caret. The tool reads each error's own
 //! impl and gives one `[CGP-E002]` block per component: `Greeter` needs `name`, `Farewell` needs
-//! `title`. Matching the impls by source position alone would read the first impl twice and drop
-//! the second block as a repeat; the impls differ only in their spans' syntax contexts.
+//! `title`. The caret cannot tell the impls apart, because they differ only in their spans' syntax
+//! contexts, which the compiler reuses when it does not compile incrementally, so the anchor reads
+//! the component each error's own message names.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 extern crate std;
