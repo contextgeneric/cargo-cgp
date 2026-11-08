@@ -160,6 +160,17 @@ fn drops_the_incremental_flag_from_a_compiler_flags_note() {
             "{input}"
         );
     }
+    // A flag last in the list would otherwise leave the space before it at the line's end, which
+    // the snapshot compares.
+    assert_eq!(
+        normalize(
+            "note: compiler flags: --crate-type bin -C incremental=[REDACTED]",
+            &harness_dir(),
+            &cgp_root(),
+            &sysroot()
+        ),
+        "note: compiler flags: --crate-type bin"
+    );
 }
 
 #[test]

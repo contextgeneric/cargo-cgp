@@ -87,7 +87,14 @@ fn strip_incremental_flag(line: &str) -> String {
         .checked_sub("-C ".len())
         .filter(|&start| line[start..value_start].eq("-C "))
         .unwrap_or(value_start);
-    format!("{}{}", &line[..start], &line[end..])
+    let stripped = format!("{}{}", &line[..start], &line[end..]);
+    // A flag that ends the line leaves the space before it at the end, which a snapshot would
+    // otherwise record.
+    if end == line.len() {
+        stripped.trim_end().to_owned()
+    } else {
+        stripped
+    }
 }
 
 /// Replace the machine- and version-specific details of a compiler crash report: the host triple in
