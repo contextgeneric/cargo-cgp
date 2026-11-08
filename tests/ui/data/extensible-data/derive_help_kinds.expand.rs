@@ -57,7 +57,7 @@ impl FromFields for Shape {
 impl ToFields for Shape {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Circle(field) => Either::Left(field.into()),
+            Self::Circle(field) => Either::Left(::core::convert::Into::into(field)),
         }
     }
 }
@@ -67,7 +67,7 @@ impl ToFieldsRef for Shape {
         Self: '__a,
     {
         match self {
-            Self::Circle(field) => Either::Left(field.into()),
+            Self::Circle(field) => Either::Left(::core::convert::Into::into(field)),
         }
     }
 }
@@ -96,7 +96,7 @@ impl FromFields for Big {
 impl ToFields for Big {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Foo(field) => Either::Left(field.into()),
+            Self::Foo(field) => Either::Left(::core::convert::Into::into(field)),
         }
     }
 }
@@ -106,7 +106,7 @@ impl ToFieldsRef for Big {
         Self: '__a,
     {
         match self {
-            Self::Foo(field) => Either::Left(field.into()),
+            Self::Foo(field) => Either::Left(::core::convert::Into::into(field)),
         }
     }
 }
@@ -119,9 +119,11 @@ impl FromVariant<Symbol!("Foo")> for Big {
         Self::Foo(value)
     }
 }
+///The partial extractor for [`Big`].
 pub enum __PartialBig<__F0__: MapType> {
     Foo(<__F0__ as MapType>::Map<u64>),
 }
+///The borrowed partial extractor for [`Big`].
 pub enum __PartialRefBig<'__a__, __R__: MapTypeRef, __F0__: MapType> {
     Foo(<__F0__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, u64>>),
 }

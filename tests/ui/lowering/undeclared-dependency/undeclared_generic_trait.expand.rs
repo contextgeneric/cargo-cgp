@@ -43,6 +43,7 @@ where
         >>::Delegate::format_pair(__context__, value)
     }
 }
+///Component marker for [`CanFormatPair`].
 pub struct PairFormatterComponent;
 impl<__Context__, T> PairFormatter<__Context__, T> for UseContext
 where
@@ -87,7 +88,9 @@ where
     >>::Delegate: IsProviderFor<PairFormatterComponent, __Context__, (T)>
         + PairFormatter<__Context__, T>,
 {}
+///The trait for the `describe` operation.
 pub trait Describe {
+    ///The `describe` operation.
     fn describe(&self) -> String;
 }
 impl<__Context__> Describe for __Context__ {

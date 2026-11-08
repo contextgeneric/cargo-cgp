@@ -45,6 +45,7 @@ where
         >>::Delegate::read(__context__, source)
     }
 }
+///Component marker for [`CanRead`].
 pub struct ReaderComponent;
 impl<'a, __Context__, Source> Reader<'a, __Context__, Source> for UseContext
 where
@@ -120,6 +121,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -169,5 +171,6 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetByRe
 where
     __Context__: Reader<'static, Text>,
 {}
+///Provider `GreetByReading` for [`Greeter`].
 pub struct GreetByReading;
 fn main() {}

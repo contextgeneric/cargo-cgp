@@ -44,7 +44,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 pub trait CanHandleApi<Api> {
@@ -94,6 +96,7 @@ where
             .await
     }
 }
+///Component marker for [`CanHandleApi`].
 pub struct ApiHandlerComponent;
 impl<__Context__, Api> ApiHandler<__Context__, Api> for UseContext
 where
@@ -164,6 +167,7 @@ for HandleGreet
 where
     __Context__: HasName,
 {}
+///Provider `HandleGreet` for [`ApiHandler`].
 pub struct HandleGreet;
 pub struct App;
 impl DelegateComponent<ApiHandlerComponent> for App {

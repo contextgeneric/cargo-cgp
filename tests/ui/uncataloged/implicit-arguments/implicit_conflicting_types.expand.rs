@@ -50,6 +50,7 @@ where
         >>::Delegate::large(__context__)
     }
 }
+///Component marker for [`CanCount`].
 pub struct CounterComponent;
 impl<__Context__> Counter<__Context__> for UseContext
 where
@@ -98,15 +99,21 @@ where
         + HasField<Symbol!("count"), Value = u64>,
 {
     fn small(__context__: &__Context__) -> u32 {
-        let count: u32 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("count")>)
-            .clone();
+        let count: u32 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("count")>,
+            ),
+        );
         count
     }
     fn large(__context__: &__Context__) -> u64 {
-        let count: u64 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("count")>)
-            .clone();
+        let count: u64 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("count")>,
+            ),
+        );
         count
     }
 }
@@ -115,5 +122,6 @@ where
     __Context__: HasField<Symbol!("count"), Value = u32>
         + HasField<Symbol!("count"), Value = u64>,
 {}
+///Provider `ReadCount` for [`Counter`].
 pub struct ReadCount;
 fn main() {}

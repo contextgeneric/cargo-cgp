@@ -5,9 +5,9 @@ error[E0425]: cannot find type `CanReadComponent` in this scope
    | ^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
    |
 note: similarly named trait `CanUseComponent` defined here
-  --> $CGP/crates/core/cgp-component/src/traits/can_use_component.rs:16:1
+  --> $CGP/crates/core/cgp-component/src/traits/can_use_component.rs:8:1
    |
-16 | pub trait CanUseComponent<Component, Params: ?Sized = ()> {}
+ 8 | pub trait CanUseComponent<Component, Params: ?Sized = ()> {}
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: a trait with a similar name exists

@@ -79,6 +79,7 @@ impl<
 where
     __Context__: CanHandle<InCode, Input, Output = Output>,
 {}
+///Provider `Call` for [`Handler`].
 pub struct Call<InCode>(pub ::core::marker::PhantomData<InCode>);
 /// First pipe stage's handler: produces a *fixed* `ByteStream`, but its `Input: Send` dependency
 /// cannot be shown to hold under the call's unknown input, so `<App as CanHandle<Fetch, _>>::Output`
@@ -103,6 +104,7 @@ where
     Input: Send,
     __Context__: HasErrorType,
 {}
+///Provider `HandleFetch` for [`Handler`].
 pub struct HandleFetch;
 /// Second pipe stage's handler: requires its input to be byte-like (`Input: AsRef<[u8]>`). Its
 /// input is the first stage's fixed `ByteStream` output, which is not `AsRef<[u8]>`: the real
@@ -127,12 +129,16 @@ where
     Input: AsRef<[u8]>,
     __Context__: HasErrorType,
 {}
+///Provider `HandleHex` for [`Handler`].
 pub struct HandleHex;
 fn hex_of(_bytes: &[u8]) -> String {
     String::new()
 }
+///Wiring table for the `MyNamespace` namespace.
 pub struct __MyNamespaceComponents;
+///The `MyNamespace` namespace's wiring table.
 pub trait MyNamespace<__Table__> {
+    ///The provider table the `MyNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> MyNamespace<__Table__> for __Key__

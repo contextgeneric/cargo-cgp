@@ -5,15 +5,15 @@ error[E0277]: the trait bound `Nil: handler::providers::pipe::ComposeProviders` 
    |         ^^^^^^^^^^^^^^^^ the trait `handler::providers::pipe::ComposeProviders` is not implemented for `Nil`
    |
 help: the following other types implement trait `handler::providers::pipe::ComposeProviders`
-  --> $CGP/crates/extra/cgp-handler/src/providers/pipe.rs:20:1
+  --> $CGP/crates/extra/cgp-handler/src/providers/pipe.rs:24:1
    |
-20 | / impl<ProviderA, ProviderB, RestProviders, OutProviders> ComposeProviders
-21 | |     for Cons<ProviderA, Cons<ProviderB, RestProviders>>
-22 | | where
-23 | |     Cons<ProviderB, RestProviders>: ComposeProviders<Provider = OutProviders>,
+24 | / impl<ProviderA, ProviderB, RestProviders, OutProviders> ComposeProviders
+25 | |     for Cons<ProviderA, Cons<ProviderB, RestProviders>>
+26 | | where
+27 | |     Cons<ProviderB, RestProviders>: ComposeProviders<Provider = OutProviders>,
    | |______________________________________________________________________________^ `Cons<ProviderA, Cons<ProviderB, RestProviders>>`
 ...
-28 |   impl<Provider> ComposeProviders for Cons<Provider, Nil> {
+32 |   impl<Provider> ComposeProviders for Cons<Provider, Nil> {
    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cons<Provider, Nil>`
    = note: required for `PipeHandlers<Nil>` to implement `IsProviderFor<GreeterComponent, App>`
    = note: required for `App` to implement `CanUseComponent<GreeterComponent>`

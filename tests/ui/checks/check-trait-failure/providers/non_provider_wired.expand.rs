@@ -50,6 +50,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -93,6 +94,7 @@ impl<__Context__> Greeter<__Context__> for GreetHello {
     }
 }
 impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetHello {}
+///Provider `GreetHello` for [`Greeter`].
 pub struct GreetHello;
 /// A higher-order provider that wraps an inner `Greeter`: the shape a wrapper endpoint has.
 impl<__Context__, Inner> Greeter<__Context__> for WrapGreeter<Inner>
@@ -108,6 +110,7 @@ for WrapGreeter<Inner>
 where
     Inner: IsProviderFor<GreeterComponent, __Context__, ()> + Greeter<__Context__>,
 {}
+///Provider `WrapGreeter` for [`Greeter`].
 pub struct WrapGreeter<Inner>(pub ::core::marker::PhantomData<Inner>);
 /// An ordinary struct that is **not** a `Greeter` provider: wired where a provider is expected.
 pub struct NotAGreeter;

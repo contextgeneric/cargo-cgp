@@ -37,7 +37,9 @@ impl<__Context__, Code> Computer<__Context__, Code, Bytes> for WriteBytes {
 }
 impl<__Context__, Code> IsProviderFor<ComputerComponent, __Context__, (Code, Bytes)>
 for WriteBytes {}
+///Provider `WriteBytes` for [`Computer`].
 pub struct WriteBytes;
+///Wiring table `ByteSink`.
 pub struct ByteSink;
 impl DelegateComponent<ComputerComponent> for ByteSink {
     type Delegate = RedirectLookup<ByteSink, Path!(@ComputerComponent)>;

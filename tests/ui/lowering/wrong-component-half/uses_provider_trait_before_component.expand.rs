@@ -11,7 +11,9 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///The trait for the `doubled_area` operation.
 pub trait DoubledArea {
+    ///The `doubled_area` operation.
     fn doubled_area(&self) -> f64;
 }
 impl<__Context__> DoubledArea for __Context__
@@ -52,6 +54,7 @@ where
         >>::Delegate::area(__context__)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__> AreaCalculator<__Context__> for UseContext
 where

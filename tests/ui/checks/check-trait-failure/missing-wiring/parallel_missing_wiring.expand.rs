@@ -49,6 +49,7 @@ where
         >>::Delegate::foo(__context__)
     }
 }
+///Component marker for [`CanUseFoo`].
 pub struct FooProviderComponent;
 impl<__Context__> FooProvider<__Context__> for UseContext
 where
@@ -115,6 +116,7 @@ where
         >>::Delegate::bar(__context__)
     }
 }
+///Component marker for [`CanUseBar`].
 pub struct BarProviderComponent;
 impl<__Context__> BarProvider<__Context__> for UseContext
 where
@@ -181,6 +183,7 @@ where
         >>::Delegate::baz(__context__)
     }
 }
+///Component marker for [`CanUseBaz`].
 pub struct BazProviderComponent;
 impl<__Context__> BazProvider<__Context__> for UseContext
 where
@@ -231,7 +234,9 @@ for DoFooWithBarBaz
 where
     __Context__: CanUseBar + CanUseBaz,
 {}
+///Provider `DoFooWithBarBaz` for [`FooProvider`].
 pub struct DoFooWithBarBaz;
+///Wiring table `App`.
 pub struct App;
 impl DelegateComponent<FooProviderComponent> for App {
     type Delegate = DoFooWithBarBaz;

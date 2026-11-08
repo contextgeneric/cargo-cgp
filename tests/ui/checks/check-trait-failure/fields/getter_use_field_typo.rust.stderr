@@ -19,9 +19,9 @@ note: trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<10, cgp::
 14 | #[cgp_getter]
    | ^^^^^^^^^^^^^
 note: the trait `cgp::prelude::HasField` must be implemented
-  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:10:1
    |
-46 | pub trait HasField<Tag> {
+10 | pub trait HasField<Tag> {
    | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `HasName` defines an item `name`, perhaps you need to implement it

@@ -42,7 +42,7 @@ impl FromFields for Point {
 }
 impl ToFields for Point {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.x.into(), Nil)
+        Cons(::core::convert::Into::into(self.x), Nil)
     }
 }
 impl ToFieldsRef for Point {
@@ -50,9 +50,10 @@ impl ToFieldsRef for Point {
     where
         Self: '__a,
     {
-        Cons((&self.x).into(), Nil)
+        Cons(::core::convert::Into::into(&self.x), Nil)
     }
 }
+///The partial builder for [`Point`].
 pub struct __PartialPoint<__F0__: MapType> {
     pub x: <__F0__ as MapType>::Map<u64>,
 }

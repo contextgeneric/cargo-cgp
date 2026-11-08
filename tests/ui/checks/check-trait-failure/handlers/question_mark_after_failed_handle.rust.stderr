@@ -7,16 +7,16 @@ error[E0599]: the method `handle` exists for struct `AppBuilder`, but its trait 
 89 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
    |                           ^^^^^^ this is an associated function, not a method
    |
-  ::: $CGP/crates/extra/cgp-dispatch/src/providers/field_builders/build_and_merge.rs:7:1
+  ::: $CGP/crates/extra/cgp-dispatch/src/providers/field_builders/build_and_merge.rs:13:1
    |
- 7 | pub struct BuildAndMerge<Provider = UseContext>(pub PhantomData<Provider>);
+13 | pub struct BuildAndMerge<Provider = UseContext>(pub PhantomData<Provider>);
    | ----------------------------------------------- doesn't satisfy `_: IsProviderFor<HandlerComponent, AppBuilder, (_, __PartialApp<IsPresent>)>`
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `Handler`
-  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:17:11
+  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:23:11
    |
-17 |     async fn handle(&self, _tag: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
+23 |     async fn handle(&self, _tag: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: the following trait bounds were not satisfied:
            `BuildAndMerge<BuildHttp>: IsProviderFor<HandlerComponent, AppBuilder, (_, __PartialApp<IsPresent>)>`

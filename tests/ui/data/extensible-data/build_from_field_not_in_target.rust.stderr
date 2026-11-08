@@ -8,18 +8,18 @@ error[E0277]: the trait bound `Cons<Field<Symbol<7, _>, String>, Nil>: FieldsBui
    |
    = help: the trait `cgp::cgp_core::cgp_field::impls::build_from::FieldsBuilder<__PartialPerson<IsNothing, IsPresent>, __PartialEmployee<IsPresent, IsNothing>>` is not implemented for `Cons<Field<Symbol<7, Chars<..>>, String>, Nil>`
 help: the trait `cgp::cgp_core::cgp_field::impls::build_from::FieldsBuilder<Source, Target>` is conditionally implemented for `Cons<cgp::prelude::Field<Tag, Value>, RestFields>`
-  --> $CGP/crates/core/cgp-field/src/impls/build_from.rs:30:1
+  --> $CGP/crates/core/cgp-field/src/impls/build_from.rs:36:1
    |
-30 | / impl<Source, Target, RestFields, Tag, Value> FieldsBuilder<Source, Target>
-31 | |     for Cons<Field<Tag, Value>, RestFields>
-32 | | where
-33 | |     Source: TakeField<Tag, Value = Value>,
-34 | |     Target: BuildField<Tag, Value = Value>,
+36 | / impl<Source, Target, RestFields, Tag, Value> FieldsBuilder<Source, Target>
+37 | |     for Cons<Field<Tag, Value>, RestFields>
+38 | | where
+39 | |     Source: TakeField<Tag, Value = Value>,
+40 | |     Target: BuildField<Tag, Value = Value>,
    | |             ------------------------------
    | |             |               |
    | |             |               unsatisfied requirement introduced here: `<_ as BuildField<_>>::Value == _`
    | |             unsatisfied requirement introduced here: `_: BuildField<_>`
-35 | |     RestFields: FieldsBuilder<Source::Remainder, Target::Output>,
+41 | |     RestFields: FieldsBuilder<Source::Remainder, Target::Output>,
    | |_________________------------------------------------------------^
    |                   |
    |                   unsatisfied requirement introduced here: `_: FieldsBuilder<<_ as TakeField<_>>::Remainder, _>`

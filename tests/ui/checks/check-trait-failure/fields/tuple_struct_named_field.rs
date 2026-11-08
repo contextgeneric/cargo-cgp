@@ -7,8 +7,8 @@
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 
-//@quality: acceptable
-//@codes: CGP-E003 CGP-E104 CGP-E110
+//@quality: hidden
+//@codes: none
 
 use cgp::prelude::*;
 

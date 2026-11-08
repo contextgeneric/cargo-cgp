@@ -51,6 +51,7 @@ pub mod shapes_a {
             >>::Delegate::measure(__context__)
         }
     }
+    ///Component marker for [`CanMeasureA`].
     pub struct MeasurerComponent;
     impl<__Context__> MeasurerA<__Context__> for UseContext
     where
@@ -99,7 +100,12 @@ pub mod shapes_a {
         __Context__: HasField<Symbol!("width_a"), Value = f64>,
     {
         fn width_a(&self) -> f64 {
-            self.get_field(::core::marker::PhantomData::<Symbol!("width_a")>).clone()
+            ::core::clone::Clone::clone(
+                HasField::get_field(
+                    self,
+                    ::core::marker::PhantomData::<Symbol!("width_a")>,
+                ),
+            )
         }
     }
     impl<__Context__> MeasurerA<__Context__> for MeasureWidthA
@@ -114,6 +120,7 @@ pub mod shapes_a {
     where
         __Context__: HasWidthA,
     {}
+    ///Provider `MeasureWidthA` for [`MeasurerA`].
     pub struct MeasureWidthA;
 }
 pub mod shapes_b {
@@ -146,6 +153,7 @@ pub mod shapes_b {
             >>::Delegate::measure(__context__)
         }
     }
+    ///Component marker for [`CanMeasureB`].
     pub struct MeasurerComponent;
     impl<__Context__> MeasurerB<__Context__> for UseContext
     where
@@ -194,7 +202,12 @@ pub mod shapes_b {
         __Context__: HasField<Symbol!("width_b"), Value = f64>,
     {
         fn width_b(&self) -> f64 {
-            self.get_field(::core::marker::PhantomData::<Symbol!("width_b")>).clone()
+            ::core::clone::Clone::clone(
+                HasField::get_field(
+                    self,
+                    ::core::marker::PhantomData::<Symbol!("width_b")>,
+                ),
+            )
         }
     }
     impl<__Context__> MeasurerB<__Context__> for MeasureWidthB
@@ -209,6 +222,7 @@ pub mod shapes_b {
     where
         __Context__: HasWidthB,
     {}
+    ///Provider `MeasureWidthB` for [`MeasurerB`].
     pub struct MeasureWidthB;
 }
 pub struct App {

@@ -74,7 +74,10 @@ impl FromFields for Config {
 }
 impl ToFields for Config {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.port.into(), Cons(self.verbose.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.port),
+            Cons(::core::convert::Into::into(self.verbose), Nil),
+        )
     }
 }
 impl ToFieldsRef for Config {
@@ -82,9 +85,13 @@ impl ToFieldsRef for Config {
     where
         Self: '__a,
     {
-        Cons((&self.port).into(), Cons((&self.verbose).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.port),
+            Cons(::core::convert::Into::into(&self.verbose), Nil),
+        )
     }
 }
+///The partial builder for [`Config`].
 pub struct __PartialConfig<__F0__: MapType, __F1__: MapType> {
     pub port: <__F0__ as MapType>::Map<u16>,
     pub verbose: <__F1__ as MapType>::Map<bool>,

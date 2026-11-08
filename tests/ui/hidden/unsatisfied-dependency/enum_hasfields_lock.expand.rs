@@ -47,6 +47,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -97,6 +98,7 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetChoi
 where
     Choice::Fields: Sized,
 {}
+///Provider `GreetChoice` for [`Greeter`].
 pub struct GreetChoice;
 pub struct App;
 impl DelegateComponent<GreeterComponent> for App {

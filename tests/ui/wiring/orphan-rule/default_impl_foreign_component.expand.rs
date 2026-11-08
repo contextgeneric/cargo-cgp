@@ -37,6 +37,7 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetPoli
 where
     __Context__: HasName,
 {}
+///Provider `GreetPolitely` for [`Greeter`].
 pub struct GreetPolitely;
 impl<__Components__> AppNamespace<__Components__> for GreeterComponent {
     type Delegate = GreetPolitely;

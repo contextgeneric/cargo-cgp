@@ -46,6 +46,7 @@ where
         >>::Delegate::volume(__context__)
     }
 }
+///Component marker for [`CanCalculateVolume`].
 pub struct VolumeCalculatorComponent;
 impl<__Context__> VolumeCalculator<__Context__> for UseContext
 where
@@ -95,10 +96,14 @@ where
     __Context__: HasField<Symbol!("depth"), Value = f64>,
 {
     fn width(&self) -> f64 {
-        self.get_field(::core::marker::PhantomData::<Symbol!("width")>).clone()
+        ::core::clone::Clone::clone(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("width")>),
+        )
     }
     fn depth(&self) -> f64 {
-        self.get_field(::core::marker::PhantomData::<Symbol!("depth")>).clone()
+        ::core::clone::Clone::clone(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("depth")>),
+        )
     }
 }
 impl<__Context__> VolumeCalculator<__Context__> for ShapeVolume
@@ -114,6 +119,7 @@ for ShapeVolume
 where
     __Context__: HasShapeFields,
 {}
+///Provider `ShapeVolume` for [`VolumeCalculator`].
 pub struct ShapeVolume;
 pub struct Shape {
     pub width: f64,

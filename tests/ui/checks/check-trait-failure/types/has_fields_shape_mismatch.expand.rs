@@ -39,6 +39,7 @@ where
         >>::Delegate::describe(__context__)
     }
 }
+///Component marker for [`CanDescribe`].
 pub struct DescriberComponent;
 impl<__Context__> Describer<__Context__> for UseContext
 where
@@ -91,6 +92,7 @@ where
         Fields = Struct! { name: String },
     >,
 {}
+///Provider `DescribeNamed` for [`Describer`].
 pub struct DescribeNamed;
 pub struct App {
     pub name: u32,
@@ -110,7 +112,7 @@ impl FromFields for App {
 }
 impl ToFields for App {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.name.into(), Nil)
+        Cons(::core::convert::Into::into(self.name), Nil)
     }
 }
 impl ToFieldsRef for App {
@@ -118,7 +120,7 @@ impl ToFieldsRef for App {
     where
         Self: '__a,
     {
-        Cons((&self.name).into(), Nil)
+        Cons(::core::convert::Into::into(&self.name), Nil)
     }
 }
 impl DelegateComponent<DescriberComponent> for App {

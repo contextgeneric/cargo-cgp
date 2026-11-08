@@ -69,6 +69,7 @@ where
         DbTypeProviderComponent,
     >>::Delegate as DbTypeProvider<__Context__>>::Db;
 }
+///Component marker for [`HasDbType`].
 pub struct DbTypeProviderComponent;
 impl<__Context__> DbTypeProvider<__Context__> for UseContext
 where
@@ -170,6 +171,7 @@ where
         >>::Delegate::count_rows(__context__)
     }
 }
+///Component marker for [`CanCountRows`].
 pub struct RowCounterComponent;
 impl<__Context__> RowCounter<__Context__> for UseContext
 where
@@ -228,8 +230,10 @@ where
     fn count_rows(
         __context__: &__Context__,
     ) -> Result<u64, <__Context__ as HasErrorType>::Error> {
-        let database: &Pool<<__Context__ as HasDbType>::Db> = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("database")>);
+        let database: &Pool<<__Context__ as HasDbType>::Db> = HasField::get_field(
+            __context__,
+            ::core::marker::PhantomData::<Symbol!("database")>,
+        );
         let _ = database;
         Ok(0)
     }
@@ -243,6 +247,7 @@ where
     __Context__: HasDbType,
     __Context__: HasErrorType,
 {}
+///Provider `CountPooledRows` for [`RowCounter`].
 pub struct CountPooledRows;
 pub struct App {
     pub database: Pool<Sqlite>,

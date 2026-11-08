@@ -62,8 +62,10 @@ impl FromFields for Expr {
 impl ToFields for Expr {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Plus(field) => Either::Left(field.into()),
-            Self::Literal(field) => Either::Right(Either::Left(field.into())),
+            Self::Plus(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Literal(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -73,8 +75,10 @@ impl ToFieldsRef for Expr {
         Self: '__a,
     {
         match self {
-            Self::Plus(field) => Either::Left(field.into()),
-            Self::Literal(field) => Either::Right(Either::Left(field.into())),
+            Self::Plus(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Literal(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -96,10 +100,12 @@ impl FromVariant<Symbol!("Literal")> for Expr {
         Self::Literal(value)
     }
 }
+///The partial extractor for [`Expr`].
 pub enum __PartialExpr<__F0__: MapType, __F1__: MapType> {
     Plus(<__F0__ as MapType>::Map<Plus<Expr>>),
     Literal(<__F1__ as MapType>::Map<Literal>),
 }
+///The borrowed partial extractor for [`Expr`].
 pub enum __PartialRefExpr<'__a__, __R__: MapTypeRef, __F0__: MapType, __F1__: MapType> {
     Plus(<__F0__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, Plus<Expr>>>),
     Literal(<__F1__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, Literal>>),
@@ -249,6 +255,7 @@ for EvalAdd
 where
     __Context__: CanCompute<Code, Expr, Output = u64>,
 {}
+///Provider `EvalAdd` for [`Computer`].
 pub struct EvalAdd;
 impl<__Context__, Code> Computer<__Context__, Code, Literal> for EvalLiteral {
     type Output = u64;
@@ -262,6 +269,7 @@ impl<__Context__, Code> Computer<__Context__, Code, Literal> for EvalLiteral {
 }
 impl<__Context__, Code> IsProviderFor<ComputerComponent, __Context__, (Code, Literal)>
 for EvalLiteral {}
+///Provider `EvalLiteral` for [`Computer`].
 pub struct EvalLiteral;
 pub struct Interp;
 impl DelegateComponent<ComputerComponent> for Interp {

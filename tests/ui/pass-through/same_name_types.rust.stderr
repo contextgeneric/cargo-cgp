@@ -22,7 +22,7 @@ For more information about this error, try `rustc --explain E0308`.
 warning: unused dependency `cgp`
  --> Cargo.toml:8:1
   |
-8 | cgp = { path = "$CGP/crates/main/cgp" }
+8 | cgp = { path = "$CGP/crates/main/cgp", features = ["alloc"] }
   | ^^^
   |
   = note: `cargo::unused_dependencies` is set to `warn` by default

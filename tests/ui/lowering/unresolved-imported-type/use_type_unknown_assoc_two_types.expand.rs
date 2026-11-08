@@ -15,7 +15,9 @@ pub trait HasTypes {
     type Scalar;
     type Unit;
 }
+///The trait for the `get_scalar` operation.
 pub trait GetScalar: HasTypes {
+    ///The `get_scalar` operation.
     fn get_scalar(&self) -> <Self as HasTypes>::Scalr;
 }
 impl<__Context__> GetScalar for __Context__

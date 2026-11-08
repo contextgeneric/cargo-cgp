@@ -44,6 +44,7 @@ where
         >>::Delegate::foo(__context__, tag)
     }
 }
+///Component marker for [`CanFoo`].
 pub struct FooKeyComponent<I>(pub ::core::marker::PhantomData<I>);
 impl<__Context__, I> FooProvider<__Context__, I> for UseContext
 where
@@ -93,6 +94,7 @@ impl<__Context__, I> FooProvider<__Context__, I> for AnyFoo {
     }
 }
 impl<__Context__, I> IsProviderFor<FooKeyComponent<I>, __Context__, (I)> for AnyFoo {}
+///Provider `AnyFoo` for [`FooProvider`].
 pub struct AnyFoo;
 pub struct App;
 impl<I> DelegateComponent<FooKeyComponent<I>> for App {

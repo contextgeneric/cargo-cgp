@@ -47,6 +47,7 @@ where
         >>::Delegate::get_reference(__context__)
     }
 }
+///Component marker for [`HasReference`].
 pub struct ReferenceGetterComponent;
 impl<'a, __Context__, T: 'a + ?Sized> ReferenceGetter<'a, __Context__, T> for UseContext
 where
@@ -107,7 +108,7 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &String {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>)
+        HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>)
     }
 }
 impl<'a, __Context__> ReferenceGetter<'a, __Context__, str> for GetReference
@@ -126,6 +127,7 @@ impl<
 where
     __Context__: HasName,
 {}
+///Provider `GetReference` for [`ReferenceGetter`].
 pub struct GetReference;
 pub struct App<'a> {
     pub value: &'a str,

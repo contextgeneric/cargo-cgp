@@ -50,6 +50,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where

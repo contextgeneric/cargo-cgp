@@ -9,6 +9,6 @@ error[E0599]: [CGP-E001] missing field `name` on `App<u32>`
              [CGP-E101] consumer trait impl `CanGreet` for context `App<u32>`
              └─ [CGP-E102] provider trait impl `Greeter` with context `App<u32>` for provider `GreetName`
                └─ [CGP-E110] missing field `name` on `App<u32>`
-   = help: add the field `name: String` to `App<u32>`
+   = help: add the field `name` to `App<u32>`
 
 For more information about this error, try `rustc --explain E0599`.

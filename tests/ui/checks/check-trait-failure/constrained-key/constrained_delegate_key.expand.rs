@@ -45,6 +45,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -87,6 +88,7 @@ impl<__Context__> Greeter<__Context__> for HelloGreeter {
     }
 }
 impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for HelloGreeter {}
+///Provider `HelloGreeter` for [`Greeter`].
 pub struct HelloGreeter;
 /// A dispatcher provider that forwards a component to whatever provider its `List` reduces to.
 pub struct PickFirstProvider<List>(pub PhantomData<List>);

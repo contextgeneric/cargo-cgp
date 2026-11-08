@@ -42,6 +42,7 @@ pub mod other {
             >>::Delegate::run(__context__)
         }
     }
+    ///Component marker for [`CanRun`].
     pub struct RunnerComponent;
     impl<__Context__> Runner<__Context__> for UseContext
     where
@@ -106,6 +107,7 @@ where
         <__Provider__ as DelegateComponent<GreeterComponent>>::Delegate::run(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -150,7 +152,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 impl<__Context__> Greeter<__Context__> for GreetHello
@@ -165,6 +169,7 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetHell
 where
     __Context__: HasName,
 {}
+///Provider `GreetHello` for [`Greeter`].
 pub struct GreetHello;
 pub struct Person {}
 fn main() {

@@ -40,6 +40,7 @@ where
         >>::Delegate::show(__context__, value)
     }
 }
+///Component marker for [`CanShow`].
 pub struct ShowerComponent;
 impl<__Context__, T> Shower<__Context__, T> for UseContext
 where

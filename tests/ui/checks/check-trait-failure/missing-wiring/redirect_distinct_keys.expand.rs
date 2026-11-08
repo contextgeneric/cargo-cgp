@@ -55,6 +55,7 @@ where
         >>::Delegate::build_value(__context__)
     }
 }
+///Component marker for [`CanBuildValue`].
 pub struct ValueBuilderComponent;
 impl<__Context__, Value> ValueBuilder<__Context__, Value> for UseContext
 where
@@ -105,6 +106,7 @@ impl<__Context__> ValueBuilder<__Context__, u64> for BuildU64 {
     }
 }
 impl<__Context__> IsProviderFor<ValueBuilderComponent, __Context__, (u64)> for BuildU64 {}
+///Provider `BuildU64` for [`ValueBuilder`].
 pub struct BuildU64;
 pub struct Left;
 pub struct Right;
@@ -136,6 +138,7 @@ where
         >>::Delegate::assemble(__context__)
     }
 }
+///Component marker for [`CanAssemble`].
 pub struct AssemblerComponent;
 impl<__Context__> Assembler<__Context__> for UseContext
 where
@@ -185,6 +188,7 @@ impl<__Context__> IsProviderFor<AssemblerComponent, __Context__, ()> for Assembl
 where
     __Context__: CanBuildValue<Left> + CanBuildValue<Right>,
 {}
+///Provider `AssembleParts` for [`Assembler`].
 pub struct AssembleParts;
 pub struct App;
 impl DelegateComponent<ValueBuilderComponent> for App {

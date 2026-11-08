@@ -56,6 +56,7 @@ where
         >>::Delegate::show(__context__, value)
     }
 }
+///Component marker for [`Show`].
 pub struct ShowImplComponent;
 impl<__Context__, T> ShowImpl<__Context__, T> for UseContext
 where
@@ -106,6 +107,7 @@ impl<__Context__> ShowImpl<__Context__, String> for ShowStringA {
 }
 impl<__Context__> IsProviderFor<ShowImplComponent, __Context__, (String)>
 for ShowStringA {}
+///Provider `ShowStringA` for [`ShowImpl`].
 pub struct ShowStringA;
 impl<__Components__> DefaultImpls1<ShowImplComponent, __Components__> for String {
     type Delegate = ShowStringA;
@@ -117,6 +119,7 @@ impl<__Context__> ShowImpl<__Context__, String> for ShowStringB {
 }
 impl<__Context__> IsProviderFor<ShowImplComponent, __Context__, (String)>
 for ShowStringB {}
+///Provider `ShowStringB` for [`ShowImpl`].
 pub struct ShowStringB;
 impl<__Components__> DefaultImpls1<ShowImplComponent, __Components__> for String {
     type Delegate = ShowStringB;

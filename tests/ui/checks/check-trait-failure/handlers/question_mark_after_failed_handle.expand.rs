@@ -79,7 +79,7 @@ impl FromFields for Db {
 }
 impl ToFields for Db {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.db_path.into(), Nil)
+        Cons(::core::convert::Into::into(self.db_path), Nil)
     }
 }
 impl ToFieldsRef for Db {
@@ -87,9 +87,10 @@ impl ToFieldsRef for Db {
     where
         Self: '__a,
     {
-        Cons((&self.db_path).into(), Nil)
+        Cons(::core::convert::Into::into(&self.db_path), Nil)
     }
 }
+///The partial builder for [`Db`].
 pub struct __PartialDb<__F0__: MapType> {
     pub db_path: <__F0__ as MapType>::Map<String>,
 }
@@ -172,7 +173,7 @@ impl FromFields for Http {
 }
 impl ToFields for Http {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.url.into(), Nil)
+        Cons(::core::convert::Into::into(self.url), Nil)
     }
 }
 impl ToFieldsRef for Http {
@@ -180,9 +181,10 @@ impl ToFieldsRef for Http {
     where
         Self: '__a,
     {
-        Cons((&self.url).into(), Nil)
+        Cons(::core::convert::Into::into(&self.url), Nil)
     }
 }
+///The partial builder for [`Http`].
 pub struct __PartialHttp<__F0__: MapType> {
     pub url: <__F0__ as MapType>::Map<String>,
 }
@@ -263,7 +265,7 @@ impl FromFields for App {
 }
 impl ToFields for App {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.db_path.into(), Nil)
+        Cons(::core::convert::Into::into(self.db_path), Nil)
     }
 }
 impl ToFieldsRef for App {
@@ -271,9 +273,10 @@ impl ToFieldsRef for App {
     where
         Self: '__a,
     {
-        Cons((&self.db_path).into(), Nil)
+        Cons(::core::convert::Into::into(&self.db_path), Nil)
     }
 }
+///The partial builder for [`App`].
 pub struct __PartialApp<__F0__: MapType> {
     pub db_path: <__F0__ as MapType>::Map<String>,
 }
@@ -342,6 +345,7 @@ impl<
 where
     __Context__: HasErrorType,
 {}
+///Provider `BuildDb` for [`Handler`].
 pub struct BuildDb;
 impl<__Context__, Code, Input> Handler<__Context__, Code, Input> for BuildHttp
 where
@@ -364,6 +368,7 @@ impl<
 where
     __Context__: HasErrorType,
 {}
+///Provider `BuildHttp` for [`Handler`].
 pub struct BuildHttp;
 pub struct AppBuilder;
 impl DelegateComponent<ErrorTypeProviderComponent> for AppBuilder {

@@ -61,6 +61,7 @@ impl<
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (&'__a__ __Variants__))>
 for ComputeArea {}
+///Provider `ComputeArea` for [`Computer`].
 pub struct ComputeArea;
 impl DelegateComponent<ComputerRefComponent> for ComputeArea
 where

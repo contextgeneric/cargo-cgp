@@ -64,6 +64,7 @@ where
         >>::Delegate::build_value(__context__)
     }
 }
+///Component marker for [`CanBuildValue`].
 pub struct ValueBuilderComponent;
 impl<__Context__, Value> ValueBuilder<__Context__, Value> for UseContext
 where
@@ -114,6 +115,7 @@ impl<__Context__> ValueBuilder<__Context__, u64> for BuildU64 {
     }
 }
 impl<__Context__> IsProviderFor<ValueBuilderComponent, __Context__, (u64)> for BuildU64 {}
+///Provider `BuildU64` for [`ValueBuilder`].
 pub struct BuildU64;
 pub trait HasRecordBuilder {
     type RecordBuilder: Default;
@@ -154,6 +156,7 @@ where
     Value: HasFields + HasRecordBuilder<RecordBuilder = Builder>,
     Value::Fields: BuildFields<__Context__, Builder>,
 {}
+///Provider `BuildRecord` for [`ValueBuilder`].
 pub struct BuildRecord;
 pub struct Inner {
     pub value: u64,
@@ -173,7 +176,7 @@ impl FromFields for Inner {
 }
 impl ToFields for Inner {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.value.into(), Nil)
+        Cons(::core::convert::Into::into(self.value), Nil)
     }
 }
 impl ToFieldsRef for Inner {
@@ -181,7 +184,7 @@ impl ToFieldsRef for Inner {
     where
         Self: '__a,
     {
-        Cons((&self.value).into(), Nil)
+        Cons(::core::convert::Into::into(&self.value), Nil)
     }
 }
 pub struct Outer {
@@ -206,7 +209,10 @@ impl FromFields for Outer {
 }
 impl ToFields for Outer {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.id.into(), Cons(self.inner.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.id),
+            Cons(::core::convert::Into::into(self.inner), Nil),
+        )
     }
 }
 impl ToFieldsRef for Outer {
@@ -214,7 +220,10 @@ impl ToFieldsRef for Outer {
     where
         Self: '__a,
     {
-        Cons((&self.id).into(), Cons((&self.inner).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.id),
+            Cons(::core::convert::Into::into(&self.inner), Nil),
+        )
     }
 }
 impl HasRecordBuilder for Inner {

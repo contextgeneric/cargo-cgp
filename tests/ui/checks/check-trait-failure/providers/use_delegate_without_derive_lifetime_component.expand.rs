@@ -44,6 +44,7 @@ where
         >>::Delegate::label(__context__, item)
     }
 }
+///Component marker for [`CanLabel`].
 pub struct LabellerComponent;
 impl<'a, __Context__, Item: 'a> Labeller<'a, __Context__, Item> for UseContext
 where
@@ -99,8 +100,10 @@ impl<'a, __Context__> Labeller<'a, __Context__, Square> for SquareLabel {
 }
 impl<'a, __Context__> IsProviderFor<LabellerComponent, __Context__, (Life<'a>, Square)>
 for SquareLabel {}
+///Provider `SquareLabel` for [`Labeller`].
 pub struct SquareLabel;
 pub struct App;
+///Wiring table `LabelTable`.
 pub struct LabelTable;
 impl DelegateComponent<LabellerComponent> for App {
     type Delegate = UseDelegate<LabelTable>;

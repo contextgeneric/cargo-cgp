@@ -8,18 +8,18 @@ error[E0277]: the trait bound `Either<Field<Symbol<3, _>, char>, Void>: FieldsEx
    |
    = help: the trait `FieldsExtractor<__PartialFooBar<IsVoid, IsPresent>, FooQux>` is not implemented for `Either<Field<Symbol<3, Chars<..>>, char>, Void>`
 help: the trait `FieldsExtractor<Source, Target>` is conditionally implemented for `Either<cgp::prelude::Field<Tag, Value>, RestFields>`
-  --> $CGP/crates/core/cgp-field/src/impls/cast.rs:66:1
+  --> $CGP/crates/core/cgp-field/src/impls/cast.rs:88:1
    |
-66 | / impl<Source, Target, Tag, Value, RestFields, Remainder> FieldsExtractor<Source, Target>
-67 | |     for Either<Field<Tag, Value>, RestFields>
-68 | | where
-69 | |     Source: ExtractField<Tag, Value = Value>,
+88 | / impl<Source, Target, Tag, Value, RestFields, Remainder> FieldsExtractor<Source, Target>
+89 | |     for Either<Field<Tag, Value>, RestFields>
+90 | | where
+91 | |     Source: ExtractField<Tag, Value = Value>,
    | |             --------------------------------
    | |             |                 |
    | |             |                 unsatisfied requirement introduced here: `<_ as ExtractField<_>>::Value == _`
    | |             unsatisfied requirement introduced here: `_: ExtractField<_>`
-70 | |     Target: FromVariant<Tag, Value = Value>,
-71 | |     RestFields: FieldsExtractor<Source::Remainder, Target, Remainder = Remainder>,
+92 | |     Target: FromVariant<Tag, Value = Value>,
+93 | |     RestFields: FieldsExtractor<Source::Remainder, Target, Remainder = Remainder>,
    | |_________________-----------------------------------------------------------------^
    |                   |                                          |
    |                   |                                          unsatisfied requirement introduced here: `<_ as FieldsExtractor<<_ as ExtractField<_>>::Remainder, _>>::Remainder == _`

@@ -41,6 +41,7 @@ where
         >>::Delegate::prefix(__context__, text)
     }
 }
+///Component marker for [`CanGetPrefix`].
 pub struct PrefixGetterComponent;
 impl<'a, __Context__> PrefixGetter<'a, __Context__> for UseContext
 where
@@ -82,7 +83,9 @@ where
         __Path__,
     >>::Delegate: PrefixGetter<'a, __Context__>,
 {}
+///The trait for the `short_prefix` operation.
 pub trait ShortPrefix<'a> {
+    ///The `short_prefix` operation.
     fn short_prefix(&self, text: &'a str) -> &'a str;
 }
 impl<'a, __Context__> ShortPrefix<'a> for __Context__ {

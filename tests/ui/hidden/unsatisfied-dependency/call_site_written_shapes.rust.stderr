@@ -100,15 +100,15 @@ note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Rea
     = note: 4 redundant requirements hidden
     = note: required for `App` to implement `Handler<App, Branch<ReadName>, (_, _)>`
 note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
-   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:13:17
     |
-  9 |   #[cgp_component(Handler)]
+ 13 |   #[cgp_component(Handler)]
     |  _________________^
- 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
- 11 | | #[derive_delegate(UseDelegate<Code>)]
- 12 | | #[derive_delegate(UseInputDelegate<Input>)]
- 13 | | #[use_type(HasErrorType.Error)]
- 14 | | pub trait CanHandle<Code, Input> {
+ 14 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 15 | | #[derive_delegate(UseDelegate<Code>)]
+ 16 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 17 | | #[use_type(HasErrorType.Error)]
+ 18 | | pub trait CanHandle<Code, Input> {
     | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
     = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
@@ -150,15 +150,15 @@ note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Rea
     = note: 4 redundant requirements hidden
     = note: required for `App` to implement `Handler<App, Branch<ReadName>, ((&str, u8, bool, char, u8, f32), _)>`
 note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
-   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+   --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:13:17
     |
-  9 |   #[cgp_component(Handler)]
+ 13 |   #[cgp_component(Handler)]
     |  _________________^
- 10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
- 11 | | #[derive_delegate(UseDelegate<Code>)]
- 12 | | #[derive_delegate(UseInputDelegate<Input>)]
- 13 | | #[use_type(HasErrorType.Error)]
- 14 | | pub trait CanHandle<Code, Input> {
+ 14 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+ 15 | | #[derive_delegate(UseDelegate<Code>)]
+ 16 | | #[derive_delegate(UseInputDelegate<Input>)]
+ 17 | | #[use_type(HasErrorType.Error)]
+ 18 | | pub trait CanHandle<Code, Input> {
     | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
     = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

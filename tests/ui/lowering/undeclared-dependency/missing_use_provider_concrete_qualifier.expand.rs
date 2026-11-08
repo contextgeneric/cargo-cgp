@@ -44,6 +44,7 @@ where
         >>::Delegate::area(__context__)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__> AreaCalculator<__Context__> for UseContext
 where
@@ -90,7 +91,9 @@ where
     __Context__: HasField<Symbol!("width"), Value = f64>,
 {
     fn width(&self) -> f64 {
-        self.get_field(::core::marker::PhantomData::<Symbol!("width")>).clone()
+        ::core::clone::Clone::clone(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("width")>),
+        )
     }
 }
 impl<__Context__> AreaCalculator<__Context__> for WidthArea
@@ -105,6 +108,7 @@ impl<__Context__> IsProviderFor<AreaCalculatorComponent, __Context__, ()> for Wi
 where
     __Context__: HasWidth,
 {}
+///Provider `WidthArea` for [`AreaCalculator`].
 pub struct WidthArea;
 impl<__Context__> AreaCalculator<__Context__> for DoubledArea {
     fn area(__context__: &__Context__) -> f64 {
@@ -113,5 +117,6 @@ impl<__Context__> AreaCalculator<__Context__> for DoubledArea {
 }
 impl<__Context__> IsProviderFor<AreaCalculatorComponent, __Context__, ()>
 for DoubledArea {}
+///Provider `DoubledArea` for [`AreaCalculator`].
 pub struct DoubledArea;
 fn main() {}

@@ -40,6 +40,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -100,6 +101,7 @@ where
         <__Provider__ as DelegateComponent<WaverComponent>>::Delegate::wave(__context__)
     }
 }
+///Component marker for [`CanWave`].
 pub struct WaverComponent;
 impl<__Context__> Waver<__Context__> for UseContext
 where
@@ -161,6 +163,7 @@ impl Greeter<Person> for GreetPerson {
     }
 }
 impl IsProviderFor<GreeterComponent, Person, ()> for GreetPerson {}
+///Provider `GreetPerson` for [`Greeter`].
 pub struct GreetPerson;
 impl DelegateComponent<GreeterComponent> for Person {
     type Delegate = GreetPerson;

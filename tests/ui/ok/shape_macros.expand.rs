@@ -32,7 +32,10 @@ impl FromFields for Person {
 }
 impl ToFields for Person {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.name.into(), Cons(self.age.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.name),
+            Cons(::core::convert::Into::into(self.age), Nil),
+        )
     }
 }
 impl ToFieldsRef for Person {
@@ -40,7 +43,10 @@ impl ToFieldsRef for Person {
     where
         Self: '__a,
     {
-        Cons((&self.name).into(), Cons((&self.age).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.name),
+            Cons(::core::convert::Into::into(&self.age), Nil),
+        )
     }
 }
 pub struct Pair(pub u8, pub u16);
@@ -57,7 +63,10 @@ impl FromFields for Pair {
 }
 impl ToFields for Pair {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.0.into(), Cons(self.1.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.0),
+            Cons(::core::convert::Into::into(self.1), Nil),
+        )
     }
 }
 impl ToFieldsRef for Pair {
@@ -65,7 +74,10 @@ impl ToFieldsRef for Pair {
     where
         Self: '__a,
     {
-        Cons((&self.0).into(), Cons((&self.1).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.0),
+            Cons(::core::convert::Into::into(&self.1), Nil),
+        )
     }
 }
 pub enum Shape {
@@ -123,23 +135,39 @@ impl FromFields for Shape {
 impl ToFields for Shape {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Empty => Either::Left(Nil.into()),
+            Self::Empty => Either::Left(::core::convert::Into::into(Nil)),
             Self::Rect { width, height } => {
                 Either::Right(
-                    Either::Left(Cons(width.into(), Cons(height.into(), Nil)).into()),
+                    Either::Left(
+                        ::core::convert::Into::into(
+                            Cons(
+                                ::core::convert::Into::into(width),
+                                Cons(::core::convert::Into::into(height), Nil),
+                            ),
+                        ),
+                    ),
                 )
             }
             Self::Pair(field_0, field_1) => {
                 Either::Right(
                     Either::Right(
                         Either::Left(
-                            Cons(field_0.into(), Cons(field_1.into(), Nil)).into(),
+                            ::core::convert::Into::into(
+                                Cons(
+                                    ::core::convert::Into::into(field_0),
+                                    Cons(::core::convert::Into::into(field_1), Nil),
+                                ),
+                            ),
                         ),
                     ),
                 )
             }
             Self::Circle(field) => {
-                Either::Right(Either::Right(Either::Right(Either::Left(field.into()))))
+                Either::Right(
+                    Either::Right(
+                        Either::Right(Either::Left(::core::convert::Into::into(field))),
+                    ),
+                )
             }
         }
     }
@@ -150,23 +178,39 @@ impl ToFieldsRef for Shape {
         Self: '__a,
     {
         match self {
-            Self::Empty => Either::Left(Nil.into()),
+            Self::Empty => Either::Left(::core::convert::Into::into(Nil)),
             Self::Rect { width, height } => {
                 Either::Right(
-                    Either::Left(Cons(width.into(), Cons(height.into(), Nil)).into()),
+                    Either::Left(
+                        ::core::convert::Into::into(
+                            Cons(
+                                ::core::convert::Into::into(width),
+                                Cons(::core::convert::Into::into(height), Nil),
+                            ),
+                        ),
+                    ),
                 )
             }
             Self::Pair(field_0, field_1) => {
                 Either::Right(
                     Either::Right(
                         Either::Left(
-                            Cons(field_0.into(), Cons(field_1.into(), Nil)).into(),
+                            ::core::convert::Into::into(
+                                Cons(
+                                    ::core::convert::Into::into(field_0),
+                                    Cons(::core::convert::Into::into(field_1), Nil),
+                                ),
+                            ),
                         ),
                     ),
                 )
             }
             Self::Circle(field) => {
-                Either::Right(Either::Right(Either::Right(Either::Left(field.into()))))
+                Either::Right(
+                    Either::Right(
+                        Either::Right(Either::Left(::core::convert::Into::into(field))),
+                    ),
+                )
             }
         }
     }
@@ -213,6 +257,7 @@ where
         >>::Delegate::describe_shape(__context__)
     }
 }
+///Component marker for [`CanDescribeShape`].
 pub struct ShapeDescriberComponent;
 impl<__Context__, Shape> ShapeDescriber<__Context__, Shape> for UseContext
 where
@@ -264,6 +309,7 @@ impl<__Context__, Shape> ShapeDescriber<__Context__, Shape> for DescribePoint {
 }
 impl<__Context__, Shape> IsProviderFor<ShapeDescriberComponent, __Context__, (Shape)>
 for DescribePoint {}
+///Provider `DescribePoint` for [`ShapeDescriber`].
 pub struct DescribePoint;
 pub struct App;
 impl DelegateComponent<ShapeDescriberComponent> for App {

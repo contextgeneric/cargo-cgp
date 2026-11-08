@@ -42,6 +42,7 @@ where
         >>::Delegate::area(__context__, shape)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__, Shape> AreaCalculator<__Context__, Shape> for UseContext
 where
@@ -116,6 +117,7 @@ impl<__Context__> AreaCalculator<__Context__, Rectangle> for RectangleArea {
 }
 impl<__Context__> IsProviderFor<AreaCalculatorComponent, __Context__, (Rectangle)>
 for RectangleArea {}
+///Provider `RectangleArea` for [`AreaCalculator`].
 pub struct RectangleArea;
 pub struct App;
 impl DelegateComponent<AreaCalculatorComponent> for App {
@@ -153,6 +155,7 @@ where
         __Params__,
     >,
 {}
+///Wiring table `AreaTable`.
 pub struct AreaTable;
 impl DelegateComponent<AreaCalculatorComponent> for App {
     type Delegate = UseDelegate<AreaTable>;

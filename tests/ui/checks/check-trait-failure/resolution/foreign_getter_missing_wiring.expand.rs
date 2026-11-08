@@ -48,6 +48,7 @@ where
         CredentialTypeProviderComponent,
     >>::Delegate as CredentialTypeProvider<__Context__>>::Credential;
 }
+///Component marker for [`HasCredentialType`].
 pub struct CredentialTypeProviderComponent;
 impl<__Context__> CredentialTypeProvider<__Context__> for UseContext
 where
@@ -130,7 +131,7 @@ where
     __Context__: HasField<Symbol!("credential"), Value = Option<App::Credential>>,
 {
     fn credential(&self) -> &Option<App::Credential> {
-        self.get_field(::core::marker::PhantomData::<Symbol!("credential")>)
+        HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("credential")>)
     }
 }
 pub trait CanAuthenticate<Request> {
@@ -165,6 +166,7 @@ where
         >>::Delegate::authenticate(__context__, request)
     }
 }
+///Component marker for [`CanAuthenticate`].
 pub struct AuthenticatorComponent;
 impl<__Context__, Request> Authenticator<__Context__, Request> for UseContext
 where
@@ -216,6 +218,7 @@ impl<__Context__, Request> Authenticator<__Context__, Request> for AcceptAll {
 }
 impl<__Context__, Request> IsProviderFor<AuthenticatorComponent, __Context__, (Request)>
 for AcceptAll {}
+///Provider `AcceptAll` for [`Authenticator`].
 pub struct AcceptAll;
 impl<__Context__, Request, InAuth> Authenticator<__Context__, Request>
 for RequireCredential<InAuth>
@@ -243,6 +246,7 @@ where
     InAuth: IsProviderFor<AuthenticatorComponent, __Context__, (Request)>
         + Authenticator<__Context__, Request>,
 {}
+///Provider `RequireCredential` for [`Authenticator`].
 pub struct RequireCredential<InAuth>(pub ::core::marker::PhantomData<InAuth>);
 pub struct LoginRequest {
     pub credential: Option<String>,

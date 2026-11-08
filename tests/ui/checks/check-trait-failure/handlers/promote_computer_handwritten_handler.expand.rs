@@ -18,6 +18,7 @@ impl<Context, Code> Computer<Context, Code, u64> for Double {
     }
 }
 impl<Context, Code> IsProviderFor<ComputerComponent, Context, (Code, u64)> for Double {}
+///Provider `Double` for [`Computer`].
 pub struct Double;
 pub struct App;
 impl DelegateComponent<ErrorTypeProviderComponent> for App {

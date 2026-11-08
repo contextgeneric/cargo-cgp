@@ -44,6 +44,7 @@ where
         <__Provider__ as DelegateComponent<LoaderComponent>>::Delegate::load(__context__)
     }
 }
+///Component marker for [`CanLoad`].
 pub struct LoaderComponent;
 impl<__Context__> Loader<__Context__> for UseContext
 where
@@ -103,6 +104,7 @@ where
     __Context__: CanRaiseError<String>,
     __Context__: HasErrorType,
 {}
+///Provider `LoadOrFail` for [`Loader`].
 pub struct LoadOrFail;
 pub fn unrelated(_: Vec) {}
 fn main() {}

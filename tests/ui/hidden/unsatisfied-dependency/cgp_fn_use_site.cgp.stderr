@@ -9,6 +9,6 @@ error[E0599]: [CGP-E003] missing field `name` on `App`
              [CGP-E104] trait impl `Describe` for `App`
              └─ [CGP-E104] trait impl `GetName` for `App`
                └─ [CGP-E110] missing field `name` on `App`
-   = help: add the field `name: String` to `App`
+   = help: add the field `name` to `App`
 
 For more information about this error, try `rustc --explain E0599`.

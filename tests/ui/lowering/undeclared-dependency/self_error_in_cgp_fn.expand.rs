@@ -11,7 +11,9 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///The trait for the `no_error` operation.
 pub trait NoError {
+    ///The `no_error` operation.
     fn no_error(&self) -> bool;
 }
 impl<__Context__> NoError for __Context__ {

@@ -1,20 +1,29 @@
-error[E0277]: the trait bound `App<T>: CanUseComponent<GreeterComponent>` is not satisfied
+error[E0277]: the trait bound `GreetName: IsProviderFor<GreeterComponent, App<T>>` is not satisfied
   --> src/main.rs:46:9
    |
 46 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App<T>`
-      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
-  --> src/main.rs:35:9
-   |
-35 |     pub other: PhantomData<T>,
-   |         ^^^^^
-note: required for `GreetName` to implement `IsProviderFor<GreeterComponent, App<T>>`
-  --> src/main.rs:26:1
+help: the trait `IsProviderFor<GreeterComponent, App<T>>` is not implemented for `GreetName`
+  --> src/main.rs:26:16
    |
 26 | #[cgp_impl(new GreetName)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                ^^^^^^^^^
+help: the trait `IsProviderFor<GreeterComponent, __Context__>` is conditionally implemented for `GreetName`
+  --> src/main.rs:27:1
+   |
+26 |   #[cgp_impl(new GreetName)]
+   |   --------------------------
+   |   |
+   |   unsatisfied requirement introduced here: `_: HasField<Symbol<4, Chars<..>>>`
+   |   unsatisfied requirement introduced here: `<_ as HasField<Symbol<4, Chars<..>>>>::Value: AsRef<str>`
+   |   unsatisfied requirement introduced here: `<_ as HasField<Symbol<4, Chars<..>>>>::Value: 'static`
+27 | / impl Greeter {
+28 | |     fn greet(&self, #[implicit] name: &str) -> String {
+29 | |         name.to_owned()
+30 | |     }
+31 | | }
+   | |_^
    = note: required for `App<T>` to implement `CanUseComponent<GreeterComponent>`
 note: required by a bound in `__CheckApp`
   --> src/main.rs:44:1
@@ -25,6 +34,6 @@ note: required by a bound in `__CheckApp`
 47 | |     }
 48 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

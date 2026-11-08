@@ -12,6 +12,6 @@ error[E0599]: [CGP-E003] the trait `Describe` is not implemented for `Person`: 2
              ├─ [CGP-E117] the trait bound `Person: Clone` is not satisfied
              └─ [CGP-E104] trait impl `GetName` for `Person`
                └─ [CGP-E110] missing field `name` on `Person`
-   = help: add the field `name: String` to `Person`
+   = help: add the field `name` to `Person`
 
 For more information about this error, try `rustc --explain E0599`.

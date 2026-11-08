@@ -52,6 +52,7 @@ where
         >>::Delegate::load(__context__, path)
     }
 }
+///Component marker for [`CanLoad`].
 pub struct LoaderComponent;
 impl<__Context__> Loader<__Context__> for UseContext
 where
@@ -118,6 +119,7 @@ where
     __Context__: CanRaiseError<io::Error> + for<'a> CanWrapError<&'a str>,
     __Context__: HasErrorType,
 {}
+///Provider `LoadFile` for [`Loader`].
 pub struct LoadFile;
 pub struct App;
 impl DelegateComponent<ErrorTypeProviderComponent> for App {

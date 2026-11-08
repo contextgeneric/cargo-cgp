@@ -40,6 +40,7 @@ where
         TypesTypeProviderComponent,
     >>::Delegate as TypesTypeProvider<__Context__>>::Types;
 }
+///Component marker for [`HasTypes`].
 pub struct TypesTypeProviderComponent;
 impl<__Context__> TypesTypeProvider<__Context__> for UseContext
 where
@@ -124,6 +125,7 @@ where
         ScalarTypeProviderComponent,
     >>::Delegate as ScalarTypeProvider<__Context__>>::Scalar;
 }
+///Component marker for [`HasScalarType`].
 pub struct ScalarTypeProviderComponent;
 impl<__Context__> ScalarTypeProvider<__Context__> for UseContext
 where
@@ -182,10 +184,12 @@ for WithProvider<__Provider__>
 where
     __Provider__: TypeProvider<__Context__, ScalarTypeProviderComponent, Type = Scalar>,
 {}
+///The trait for the `get_scalar` operation.
 pub trait GetScalar: HasTypes
 where
     <Self as HasTypes>::Types: HasScalarType,
 {
+    ///The `get_scalar` operation.
     fn get_scalar(&self) -> <<Self as HasTypes>::Types as HasScalarType>::Scalar;
 }
 impl<__Context__> GetScalar for __Context__

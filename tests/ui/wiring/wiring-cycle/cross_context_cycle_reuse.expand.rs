@@ -50,6 +50,7 @@ where
         <__Provider__ as DelegateComponent<ProviderNComponent>>::Delegate::n(__context__)
     }
 }
+///Component marker for [`CanN`].
 pub struct ProviderNComponent;
 impl<__Context__> ProviderN<__Context__> for UseContext
 where
@@ -112,6 +113,7 @@ where
         <__Provider__ as DelegateComponent<ProviderMComponent>>::Delegate::m(__context__)
     }
 }
+///Component marker for [`CanM`].
 pub struct ProviderMComponent;
 impl<__Context__> ProviderM<__Context__> for UseContext
 where
@@ -174,6 +176,7 @@ where
         <__Provider__ as DelegateComponent<ProviderRComponent>>::Delegate::r(__context__)
     }
 }
+///Component marker for [`CanR`].
 pub struct ProviderRComponent;
 impl<__Context__> ProviderR<__Context__> for UseContext
 where
@@ -218,7 +221,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 pub trait Linked {}
@@ -243,6 +248,7 @@ where
     Partner: Linked,
     __Context__: HasName,
 {}
+///Provider `DoN` for [`ProviderN`].
 pub struct DoN<Partner>(pub ::core::marker::PhantomData<Partner>);
 impl<__Context__, Partner> ProviderM<__Context__> for DoM<Partner>
 where
@@ -255,6 +261,7 @@ for DoM<Partner>
 where
     Partner: CanN,
 {}
+///Provider `DoM` for [`ProviderM`].
 pub struct DoM<Partner>(pub ::core::marker::PhantomData<Partner>);
 impl<__Context__> ProviderR<__Context__> for DoR
 where
@@ -266,6 +273,7 @@ impl<__Context__> IsProviderFor<ProviderRComponent, __Context__, ()> for DoR
 where
     __Context__: Linked,
 {}
+///Provider `DoR` for [`ProviderR`].
 pub struct DoR;
 impl DelegateComponent<ProviderNComponent> for Inner {
     type Delegate = DoN<Outer>;

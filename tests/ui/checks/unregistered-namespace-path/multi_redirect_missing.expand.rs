@@ -14,8 +14,11 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///Wiring table for the `MyNamespace` namespace.
 pub struct __MyNamespaceComponents;
+///The `MyNamespace` namespace's wiring table.
 pub trait MyNamespace<__Table__> {
+    ///The provider table the `MyNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Wildcard__> MyNamespace<__Table__>
@@ -54,6 +57,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where

@@ -25,7 +25,12 @@ where
     __Context__: HasField<Symbol!("config_path"), Value = Option<Path>>,
 {
     fn config_path(&self) -> Option<&Path> {
-        self.get_field(::core::marker::PhantomData::<Symbol!("config_path")>).as_ref()
+        ::core::option::Option::as_ref(
+            HasField::get_field(
+                self,
+                ::core::marker::PhantomData::<Symbol!("config_path")>,
+            ),
+        )
     }
 }
 fn main() {}

@@ -42,6 +42,7 @@ where
         <__Provider__ as DelegateComponent<LoaderComponent>>::Delegate::load(__context__)
     }
 }
+///Component marker for [`CanLoad`].
 pub struct LoaderComponent;
 impl<__Context__, T> Loader<__Context__, T> for UseContext
 where
@@ -96,6 +97,7 @@ impl<__Context__, T> Loader<__Context__, T> for LoadString {
     }
 }
 impl<__Context__, T> IsProviderFor<LoaderComponent, __Context__, (T)> for LoadString {}
+///Provider `LoadString` for [`Loader`].
 pub struct LoadString;
 pub trait CanFetch {
     fn fetch<T>(&self) -> T

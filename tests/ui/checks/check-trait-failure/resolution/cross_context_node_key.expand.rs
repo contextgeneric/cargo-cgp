@@ -42,7 +42,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 pub trait CanCompute {
@@ -73,6 +75,7 @@ where
         >>::Delegate::compute(__context__)
     }
 }
+///Component marker for [`CanCompute`].
 pub struct ComputerComponent;
 impl<__Context__> Computer<__Context__> for UseContext
 where
@@ -121,6 +124,7 @@ impl<__Context__> IsProviderFor<ComputerComponent, __Context__, ()> for DoComput
 where
     __Context__: HasName,
 {}
+///Provider `DoCompute` for [`Computer`].
 pub struct DoCompute;
 pub trait CanRun {
     fn run(&self);
@@ -146,6 +150,7 @@ where
         <__Provider__ as DelegateComponent<RunnerComponent>>::Delegate::run(__context__)
     }
 }
+///Component marker for [`CanRun`].
 pub struct RunnerComponent;
 impl<__Context__> Runner<__Context__> for UseContext
 where
@@ -191,6 +196,7 @@ impl<__Context__> IsProviderFor<RunnerComponent, __Context__, ()> for RunViaInne
 where
     Inner: CanCompute,
 {}
+///Provider `RunViaInner` for [`Runner`].
 pub struct RunViaInner;
 pub struct Inner {
     pub age: u8,

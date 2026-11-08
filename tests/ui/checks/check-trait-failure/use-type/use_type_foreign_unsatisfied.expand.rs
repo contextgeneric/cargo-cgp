@@ -39,6 +39,7 @@ where
         ScalarTypeProviderComponent,
     >>::Delegate as ScalarTypeProvider<__Context__>>::Scalar;
 }
+///Component marker for [`HasScalarType`].
 pub struct ScalarTypeProviderComponent;
 impl<__Context__> ScalarTypeProvider<__Context__> for UseContext
 where
@@ -137,6 +138,7 @@ where
         >>::Delegate::area(__context__)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__, Types> AreaCalculator<__Context__, Types> for UseContext
 where

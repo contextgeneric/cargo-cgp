@@ -43,6 +43,7 @@ where
         >>::Delegate::show_value(__context__, value)
     }
 }
+///Component marker for [`CanShowValue`].
 pub struct ValueShowerComponent;
 impl<__Context__, Value> ValueShower<__Context__, Value> for UseContext
 where
@@ -104,6 +105,7 @@ where
     Value: ToFieldsRef,
     for<'b> Value::FieldsRef<'b>: Debug,
 {}
+///Provider `ShowFields` for [`ValueShower`].
 pub struct ShowFields;
 pub enum Token<'a> {
     Word(&'a str),
@@ -157,8 +159,10 @@ impl<'a> FromFields for Token<'a> {
 impl<'a> ToFields for Token<'a> {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Word(field) => Either::Left(field.into()),
-            Self::Number(field) => Either::Right(Either::Left(field.into())),
+            Self::Word(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Number(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -168,8 +172,10 @@ impl<'a> ToFieldsRef for Token<'a> {
         Self: '__a,
     {
         match self {
-            Self::Word(field) => Either::Left(field.into()),
-            Self::Number(field) => Either::Right(Either::Left(field.into())),
+            Self::Word(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Number(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -191,10 +197,12 @@ impl<'a> FromVariant<Symbol!("Number")> for Token<'a> {
         Self::Number(value)
     }
 }
+///The partial extractor for [`Token`].
 pub enum __PartialToken<'a, __F0__: MapType, __F1__: MapType> {
     Word(<__F0__ as MapType>::Map<&'a str>),
     Number(<__F1__ as MapType>::Map<u64>),
 }
+///The borrowed partial extractor for [`Token`].
 pub enum __PartialRefToken<
     '__a__,
     'a: '__a__,

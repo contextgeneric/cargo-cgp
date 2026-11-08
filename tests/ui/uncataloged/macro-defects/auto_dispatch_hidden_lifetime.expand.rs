@@ -63,6 +63,7 @@ impl<
     __Context__,
     (__Code__, (&'__a__ __Variants__, (Cow<str>))),
 > for ComputeLabel {}
+///Provider `ComputeLabel` for [`Computer`].
 pub struct ComputeLabel;
 impl DelegateComponent<ComputerRefComponent> for ComputeLabel
 where

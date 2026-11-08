@@ -19,7 +19,12 @@ where
     __Context__: HasFieldMut<Symbol!("nickname"), Value = Option<String>>,
 {
     fn nickname(&mut self) -> Option<&String> {
-        self.get_field_mut(::core::marker::PhantomData::<Symbol!("nickname")>).as_mut()
+        ::core::option::Option::as_mut(
+            HasFieldMut::get_field_mut(
+                self,
+                ::core::marker::PhantomData::<Symbol!("nickname")>,
+            ),
+        )
     }
 }
 fn main() {}

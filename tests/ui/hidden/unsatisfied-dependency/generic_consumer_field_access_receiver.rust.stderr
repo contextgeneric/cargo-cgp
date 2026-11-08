@@ -1,8 +1,11 @@
 error[E0599]: the method `encode` exists for struct `App`, but its trait bounds were not satisfied
   --> src/main.rs:44:24
    |
+20 | #[cgp_impl(new EncodeNamed)]
+   |                ----------- doesn't satisfy `_: IsProviderFor<EncoderComponent, App, _>`
+...
 28 | pub struct App {
-   | -------------- method `encode` not found for this struct because it doesn't satisfy `App: CanEncode<_>` or `_: HasField<Symbol<4, Chars<..>>>`
+   | -------------- method `encode` not found for this struct because it doesn't satisfy `App: CanEncode<_>`
 ...
 44 |     let _ = holder.app.encode(&1u32);
    |                        ^^^^^^ this is an associated function, not a method
@@ -13,16 +16,23 @@ note: the candidate is defined in the trait `Encoder`
    |
 17 |     fn encode(&self, value: &Value) -> String;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
-  --> src/main.rs:20:1
+note: trait bound `EncodeNamed: IsProviderFor<EncoderComponent, App, _>` was not satisfied
+  --> src/main.rs:32:1
    |
-20 | #[cgp_impl(new EncodeNamed)]
-   | ^^^^^^^^^^^^^^^-----------^^ unsatisfied trait bound introduced here
-note: the trait `cgp::prelude::HasField` must be implemented
-  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+32 | / delegate_components! {
+33 | |     App {
+   | |     ---
+34 | |         EncoderComponent: EncodeNamed,
+35 | |     }
+36 | | }
+   | | ^ unsatisfied trait bound introduced here
+   | |_|
    |
-46 | pub trait HasField<Tag> {
-   | ^^^^^^^^^^^^^^^^^^^^^^^
+note: the trait `IsProviderFor` must be implemented
+  --> $CGP/crates/core/cgp-component/src/traits/is_provider.rs:5:1
+   |
+ 5 | pub trait IsProviderFor<Component, Context, Params: ?Sized = ()> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanEncode` defines an item `encode`, perhaps you need to implement it
   --> src/main.rs:16:1
@@ -30,7 +40,7 @@ note: `CanEncode` defines an item `encode`, perhaps you need to implement it
 16 | pub trait CanEncode<Value> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
 17 |     fn encode(&self, value: &Value) -> String;
-   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
 44 -     let _ = holder.app.encode(&1u32);

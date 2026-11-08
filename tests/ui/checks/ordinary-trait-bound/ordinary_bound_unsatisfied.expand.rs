@@ -51,6 +51,7 @@ where
         ScalarTypeProviderComponent,
     >>::Delegate as ScalarTypeProvider<__Context__>>::Scalar;
 }
+///Component marker for [`HasScalarType`].
 pub struct ScalarTypeProviderComponent;
 impl<__Context__> ScalarTypeProvider<__Context__> for UseContext
 where
@@ -160,6 +161,7 @@ where
         >>::Delegate::scalars_equal(__context__, a, b)
     }
 }
+///Component marker for [`CanCompareScalars`].
 pub struct ScalarEqualityComponent;
 impl<__Context__> ScalarEquality<__Context__> for UseContext
 where
@@ -231,6 +233,7 @@ where
     <__Context__ as HasScalarType>::Scalar: Eq,
     __Context__: HasScalarType,
 {}
+///Provider `CompareScalars` for [`ScalarEquality`].
 pub struct CompareScalars;
 pub struct App;
 impl DelegateComponent<ScalarTypeProviderComponent> for App {

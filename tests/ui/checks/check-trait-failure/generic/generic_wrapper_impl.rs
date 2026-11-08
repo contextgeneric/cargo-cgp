@@ -10,7 +10,7 @@
 //! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
 
 //@quality: usability
-//@codes: none
+//@codes: CGP-E002
 
 use core::marker::PhantomData;
 

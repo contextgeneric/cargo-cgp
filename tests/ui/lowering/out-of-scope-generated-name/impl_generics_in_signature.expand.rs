@@ -29,7 +29,9 @@ pub struct Postgres;
 impl Database for Postgres {
     type Row = String;
 }
+///The trait for the `fetch_row` operation.
 pub trait FetchRow {
+    ///The `fetch_row` operation.
     fn fetch_row(&self) -> Db::Row;
 }
 impl<__Context__, Db: Database> FetchRow for __Context__
@@ -37,8 +39,10 @@ where
     Self: HasField<Symbol!("database"), Value = Pool<Db>>,
 {
     fn fetch_row(&self) -> Db::Row {
-        let database: &Pool<Db> = self
-            .get_field(::core::marker::PhantomData::<Symbol!("database")>);
+        let database: &Pool<Db> = HasField::get_field(
+            self,
+            ::core::marker::PhantomData::<Symbol!("database")>,
+        );
         let _ = database;
         ::core::panicking::todo_default_msg()
     }

@@ -41,6 +41,7 @@ where
         >>::Delegate::area(__context__)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__> AreaCalculator<__Context__> for UseContext
 where
@@ -85,12 +86,18 @@ where
         + HasField<Symbol!("height"), Value = f64>,
 {
     fn area(__context__: &__Context__) -> f64 {
-        let width: f64 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("width")>)
-            .clone();
-        let height: f64 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("height")>)
-            .clone();
+        let width: f64 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("width")>,
+            ),
+        );
+        let height: f64 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("height")>,
+            ),
+        );
         width * height
     }
 }
@@ -100,6 +107,7 @@ where
     __Context__: HasField<Symbol!("width"), Value = f64>
         + HasField<Symbol!("height"), Value = f64>,
 {}
+///Provider `RectangleArea` for [`AreaCalculator`].
 pub struct RectangleArea;
 impl<__Context__, InnerCalculator> AreaCalculator<__Context__>
 for ScaledArea<InnerCalculator>
@@ -107,9 +115,12 @@ where
     __Context__: HasField<Symbol!("scale_factor"), Value = f64>,
 {
     fn area(__context__: &__Context__) -> f64 {
-        let scale_factor: f64 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("scale_factor")>)
-            .clone();
+        let scale_factor: f64 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("scale_factor")>,
+            ),
+        );
         InnerCalculator::area(__context__) * scale_factor * scale_factor
     }
 }
@@ -120,5 +131,6 @@ impl<
 where
     __Context__: HasField<Symbol!("scale_factor"), Value = f64>,
 {}
+///Provider `ScaledArea` for [`AreaCalculator`].
 pub struct ScaledArea<InnerCalculator>(pub ::core::marker::PhantomData<InnerCalculator>);
 fn main() {}

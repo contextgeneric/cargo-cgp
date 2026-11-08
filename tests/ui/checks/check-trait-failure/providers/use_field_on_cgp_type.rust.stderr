@@ -6,33 +6,33 @@ error[E0277]: the trait bound `UseField<Symbol<5, Chars<..>>>: IsProviderFor<_, 
    |
    = help: the trait `IsProviderFor<ScalarTypeProviderComponent, Rectangle>` is not implemented for `UseField<Symbol<5, Chars<..>>>`
 help: the following other types implement trait `IsProviderFor<Component, Context, Params>`
-  --> $CGP/crates/extra/cgp-handler/src/components/async_computer.rs:31:1
+  --> $CGP/crates/extra/cgp-handler/src/components/async_computer.rs:47:1
    |
-31 | / impl<Context, Code, Input, Tag, Output> AsyncComputer<Context, Code, Input> for UseField<Tag>
-32 | | where
-33 | |     Context: HasField<Tag>,
-34 | |     Context::Value: CanComputeAsync<Code, Input, Output = Output>,
+47 | / impl<Context, Code, Input, Tag, Output> AsyncComputer<Context, Code, Input> for UseField<Tag>
+48 | | where
+49 | |     Context: HasField<Tag>,
+50 | |     Context::Value: CanComputeAsync<Code, Input, Output = Output>,
    | |__________________________________________________________________^ `cgp::prelude::UseField<Tag>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Input)>`
    |
-  ::: $CGP/crates/core/cgp-field/src/impls/use_field.rs:69:1
+  ::: $CGP/crates/core/cgp-field/src/impls/use_field.rs:27:1
    |
-69 | / impl<Context, TypeTag, FieldTag, Field> IsProviderFor<TypeProviderComponent, Context, TypeTag>
-70 | |     for UseField<FieldTag>
-71 | | where
-72 | |     Context: HasField<FieldTag, Value = Field>,
+27 | / impl<Context, TypeTag, FieldTag, Field> IsProviderFor<TypeProviderComponent, Context, TypeTag>
+28 | |     for UseField<FieldTag>
+29 | | where
+30 | |     Context: HasField<FieldTag, Value = Field>,
    | |_______________________________________________^ `cgp::prelude::UseField<FieldTag>` implements `IsProviderFor<TypeProviderComponent, Context, TypeTag>`
    |
-  ::: $CGP/crates/extra/cgp-handler/src/components/computer.rs:29:1
+  ::: $CGP/crates/extra/cgp-handler/src/components/computer.rs:42:1
    |
-29 | / impl<Context, Code, Input, Tag, Output> Computer<Context, Code, Input> for UseField<Tag>
-30 | | where
-31 | |     Context: HasField<Tag>,
-32 | |     Context::Value: CanCompute<Code, Input, Output = Output>,
+42 | / impl<Context, Code, Input, Tag, Output> Computer<Context, Code, Input> for UseField<Tag>
+43 | | where
+44 | |     Context: HasField<Tag>,
+45 | |     Context::Value: CanCompute<Code, Input, Output = Output>,
    | |_____________________________________________________________^ `cgp::prelude::UseField<Tag>` implements `IsProviderFor<ComputerComponent, Context, (Code, Input)>`
    |
-  ::: $CGP/crates/extra/cgp-runtime/src/traits/has_runtime.rs:5:1
+  ::: $CGP/crates/extra/cgp-runtime/src/traits/has_runtime.rs:9:1
    |
- 5 |   #[cgp_getter]
+ 9 |   #[cgp_getter]
    |   ^^^^^^^^^^^^^ `cgp::prelude::UseField<__Tag__>` implements `IsProviderFor<RuntimeGetterComponent, __Context__>`
    = note: required for `Rectangle` to implement `CanUseComponent<ScalarTypeProviderComponent>`
 note: required by a bound in `__CheckRectangle`

@@ -47,6 +47,7 @@ where
         >>::Delegate::area(__context__)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__> AreaCalculator<__Context__> for UseContext
 where
@@ -115,6 +116,7 @@ where
         >>::Delegate::area(__context__)
     }
 }
+///Component marker for [`CanCalculateFloorArea`].
 pub struct FloorAreaCalculatorComponent;
 impl<__Context__> FloorAreaCalculator<__Context__> for UseContext
 where
@@ -182,6 +184,7 @@ where
         >>::Delegate::describe(__context__)
     }
 }
+///Component marker for [`CanDescribe`].
 pub struct DescriberComponent;
 impl<__Context__> Describer<__Context__> for UseContext
 where
@@ -225,6 +228,7 @@ impl<__Context__, Inner> AreaCalculator<__Context__> for ScaledArea<Inner> {
 }
 impl<__Context__, Inner> IsProviderFor<AreaCalculatorComponent, __Context__, ()>
 for ScaledArea<Inner> {}
+///Provider `ScaledArea` for [`AreaCalculator`].
 pub struct ScaledArea<Inner>(pub ::core::marker::PhantomData<Inner>);
 impl<__Context__, Inner> Describer<__Context__> for DescribeArea<Inner> {
     fn describe(__context__: &__Context__) -> String {
@@ -235,5 +239,6 @@ impl<__Context__, Inner> Describer<__Context__> for DescribeArea<Inner> {
 }
 impl<__Context__, Inner> IsProviderFor<DescriberComponent, __Context__, ()>
 for DescribeArea<Inner> {}
+///Provider `DescribeArea` for [`Describer`].
 pub struct DescribeArea<Inner>(pub ::core::marker::PhantomData<Inner>);
 fn main() {}

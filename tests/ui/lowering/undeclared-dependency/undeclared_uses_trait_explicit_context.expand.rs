@@ -11,7 +11,9 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///The trait for the `get_count` operation.
 pub trait GetCount {
+    ///The `get_count` operation.
     fn get_count(&self) -> u64;
 }
 impl<__Context__> GetCount for __Context__
@@ -19,8 +21,10 @@ where
     Self: HasField<Symbol!("count"), Value = u64>,
 {
     fn get_count(&self) -> u64 {
-        let count: &u64 = self
-            .get_field(::core::marker::PhantomData::<Symbol!("count")>);
+        let count: &u64 = HasField::get_field(
+            self,
+            ::core::marker::PhantomData::<Symbol!("count")>,
+        );
         *count
     }
 }
@@ -52,6 +56,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -94,5 +99,6 @@ impl<Context> Greeter<Context> for GreetExplicit {
     }
 }
 impl<Context> IsProviderFor<GreeterComponent, Context, ()> for GreetExplicit {}
+///Provider `GreetExplicit` for [`Greeter`].
 pub struct GreetExplicit;
 fn main() {}

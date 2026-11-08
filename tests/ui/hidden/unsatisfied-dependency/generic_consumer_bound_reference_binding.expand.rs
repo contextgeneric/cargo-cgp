@@ -43,6 +43,7 @@ where
         >>::Delegate::format_pair(__context__, value)
     }
 }
+///Component marker for [`CanFormatPair`].
 pub struct PairFormatterComponent;
 impl<__Context__, T> PairFormatter<__Context__, T> for UseContext
 where
@@ -95,7 +96,7 @@ where
     __Context__: HasField<Symbol!("separator"), Value = String>,
 {
     fn separator(&self) -> &String {
-        self.get_field(::core::marker::PhantomData::<Symbol!("separator")>)
+        HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("separator")>)
     }
 }
 impl<__Context__> PairFormatter<__Context__, u32> for FormatWithSeparator
@@ -113,6 +114,7 @@ for FormatWithSeparator
 where
     __Context__: HasSeparator,
 {}
+///Provider `FormatWithSeparator` for [`PairFormatter`].
 pub struct FormatWithSeparator;
 pub struct App {
     pub dummy: (),

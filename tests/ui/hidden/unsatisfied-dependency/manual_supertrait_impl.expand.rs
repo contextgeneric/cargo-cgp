@@ -59,6 +59,7 @@ where
         >>::Delegate::area(__context__, shape)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__, Shape> AreaCalculator<__Context__, Shape> for UseContext
 where
@@ -111,7 +112,7 @@ where
     __Context__: HasField<Symbol!("scale_factor"), Value = f64>,
 {
     fn scale_factor(&self) -> &f64 {
-        self.get_field(::core::marker::PhantomData::<Symbol!("scale_factor")>)
+        HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("scale_factor")>)
     }
 }
 impl<__Context__, Shape> AreaCalculator<__Context__, Shape> for ScaleArea
@@ -127,6 +128,7 @@ for ScaleArea
 where
     __Context__: HasScaleFactor,
 {}
+///Provider `ScaleArea` for [`AreaCalculator`].
 pub struct ScaleArea;
 pub struct App;
 impl DelegateComponent<AreaCalculatorComponent> for App {

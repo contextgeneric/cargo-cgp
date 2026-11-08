@@ -4,7 +4,7 @@ error[E0277]: the trait bound `__Context__: HasField<Symbol<5, Chars<..>>>` is n
 39 |         WidthArea::area(self) * 2.0
    |         ^^^^^^^^^ unsatisfied trait bound
    |
-   = help: the trait `cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>` is not implemented for `__Context__`
+   = help: the trait `HasField<Symbol<5, cgp::prelude::Chars<..>>>` is not implemented for `__Context__`
 note: required for `__Context__` to implement `HasWidth`
   --> src/main.rs:23:1
    |

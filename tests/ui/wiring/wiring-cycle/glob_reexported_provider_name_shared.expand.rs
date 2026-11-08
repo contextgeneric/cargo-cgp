@@ -46,6 +46,7 @@ pub mod components {
             >>::Delegate::greet(__context__)
         }
     }
+    ///Component marker for [`CanGreet`].
     pub struct GreeterComponent;
     impl<__Context__> Greeter<__Context__> for UseContext
     where
@@ -101,6 +102,7 @@ pub mod providers {
             where
                 __Context__: CanGreet,
             {}
+            ///Provider `EvalAdd` for [`Greeter`].
             pub struct EvalAdd;
         }
         pub use add::*;
@@ -123,6 +125,7 @@ pub mod eval {
         where
             __Context__: CanGreet,
         {}
+        ///Provider `EvalAdd` for [`Greeter`].
         pub struct EvalAdd;
     }
 }

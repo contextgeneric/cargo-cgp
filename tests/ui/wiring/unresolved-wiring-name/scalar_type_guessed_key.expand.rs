@@ -36,6 +36,7 @@ where
         ScalarTypeProviderComponent,
     >>::Delegate as ScalarTypeProvider<__Context__>>::Scalar;
 }
+///Component marker for [`HasScalarType`].
 pub struct ScalarTypeProviderComponent;
 impl<__Context__> ScalarTypeProvider<__Context__> for UseContext
 where

@@ -53,6 +53,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -95,16 +96,23 @@ impl<__Context__> Greeter<__Context__> for GreetHello {
     }
 }
 impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetHello {}
+///Provider `GreetHello` for [`Greeter`].
 pub struct GreetHello;
+///Wiring table for the `NamespaceA` namespace.
 pub struct __NamespaceAComponents;
+///The `NamespaceA` namespace's wiring table.
 pub trait NamespaceA<__Table__> {
+    ///The provider table the `NamespaceA` namespace delegates to.
     type Delegate;
 }
 impl<__Table__> NamespaceA<__Table__> for GreeterComponent {
     type Delegate = GreetHello;
 }
+///Wiring table for the `NamespaceB` namespace.
 pub struct __NamespaceBComponents;
+///The `NamespaceB` namespace's wiring table.
 pub trait NamespaceB<__Table__> {
+    ///The provider table the `NamespaceB` namespace delegates to.
     type Delegate;
 }
 pub struct App;

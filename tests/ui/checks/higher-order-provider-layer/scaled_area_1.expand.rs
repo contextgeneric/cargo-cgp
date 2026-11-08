@@ -43,6 +43,7 @@ where
         >>::Delegate::area(__context__)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__> AreaCalculator<__Context__> for UseContext
 where
@@ -91,10 +92,14 @@ where
     __Context__: HasField<Symbol!("height"), Value = f64>,
 {
     fn width(&self) -> f64 {
-        self.get_field(::core::marker::PhantomData::<Symbol!("width")>).clone()
+        ::core::clone::Clone::clone(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("width")>),
+        )
     }
     fn height(&self) -> f64 {
-        self.get_field(::core::marker::PhantomData::<Symbol!("height")>).clone()
+        ::core::clone::Clone::clone(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("height")>),
+        )
     }
 }
 impl<__Context__> AreaCalculator<__Context__> for RectangleArea
@@ -110,6 +115,7 @@ for RectangleArea
 where
     __Context__: HasRectangleFields,
 {}
+///Provider `RectangleArea` for [`AreaCalculator`].
 pub struct RectangleArea;
 pub trait HasScaleFactor {
     fn scale_factor(&self) -> f64;
@@ -119,7 +125,12 @@ where
     __Context__: HasField<Symbol!("scale_factor"), Value = f64>,
 {
     fn scale_factor(&self) -> f64 {
-        self.get_field(::core::marker::PhantomData::<Symbol!("scale_factor")>).clone()
+        ::core::clone::Clone::clone(
+            HasField::get_field(
+                self,
+                ::core::marker::PhantomData::<Symbol!("scale_factor")>,
+            ),
+        )
     }
 }
 impl<__Context__, InnerCalculator> AreaCalculator<__Context__>
@@ -141,6 +152,7 @@ where
     InnerCalculator: IsProviderFor<AreaCalculatorComponent, __Context__, ()>
         + AreaCalculator<__Context__>,
 {}
+///Provider `ScaledArea` for [`AreaCalculator`].
 pub struct ScaledArea<InnerCalculator>(pub ::core::marker::PhantomData<InnerCalculator>);
 pub struct Rectangle {
     pub scale_factor: f64,

@@ -4,25 +4,16 @@ error[E0277]: the trait bound `App: FormatName` is not satisfied
 46 | impl CheckFormatName for App {}
    |                          ^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
-      but trait `HasField<Symbol<6, Chars<..>>>` is implemented for it
-  --> src/main.rs:42:9
+help: the trait `FormatName` is not implemented for `App`
+  --> src/main.rs:40:1
    |
-42 |     pub locale: String,
-   |         ^^^^^^
-note: required for `App` to implement `FormatName`
-  --> src/main.rs:26:1
-   |
-26 | #[cgp_fn]
-   | ^^^^^^^^^
-27 | pub fn format_name(&self, #[implicit] name: &str) -> String {
-   |        ^^^^^^^^^^^
+40 | pub struct App {
+   | ^^^^^^^^^^^^^^
 note: required by a bound in `CheckFormatName`
   --> src/main.rs:45:28
    |
 45 | pub trait CheckFormatName: FormatName {}
    |                            ^^^^^^^^^^ required by this bound in `CheckFormatName`
-   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: Greeting` is not satisfied
   --> src/main.rs:49:24
@@ -30,19 +21,11 @@ error[E0277]: the trait bound `App: Greeting` is not satisfied
 49 | impl CheckGreeting for App {}
    |                        ^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
-      but trait `HasField<Symbol<6, Chars<..>>>` is implemented for it
-  --> src/main.rs:42:9
+help: the trait `FormatName` is not implemented for `App`
+  --> src/main.rs:40:1
    |
-42 |     pub locale: String,
-   |         ^^^^^^
-note: required for `App` to implement `FormatName`
-  --> src/main.rs:26:1
-   |
-26 | #[cgp_fn]
-   | ^^^^^^^^^
-27 | pub fn format_name(&self, #[implicit] name: &str) -> String {
-   |        ^^^^^^^^^^^
+40 | pub struct App {
+   | ^^^^^^^^^^^^^^
 note: required for `App` to implement `Greeting`
   --> src/main.rs:33:1
    |

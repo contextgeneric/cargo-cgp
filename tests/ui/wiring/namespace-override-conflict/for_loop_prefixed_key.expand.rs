@@ -29,15 +29,21 @@ use std::prelude::rust_2024::*;
 use cgp::core::error::ErrorRaiserComponent;
 use cgp::extra::error::DisplayError;
 use cgp::prelude::*;
+///Wiring table for the `ErrorHandlers` namespace.
 pub struct __ErrorHandlersComponents;
+///The `ErrorHandlers` namespace's wiring table.
 pub trait ErrorHandlers<__Table__> {
+    ///The provider table the `ErrorHandlers` namespace delegates to.
     type Delegate;
 }
 impl<__Table__> ErrorHandlers<__Table__> for String {
     type Delegate = DisplayError;
 }
+///Wiring table for the `AppDefaults` namespace.
 pub struct __AppDefaultsComponents;
+///The `AppDefaults` namespace's wiring table.
 pub trait AppDefaults<__Table__> {
+    ///The provider table the `AppDefaults` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> AppDefaults<__Table__> for __Key__

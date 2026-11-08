@@ -27,6 +27,7 @@ impl<__Context__, Code> Computer<__Context__, Code, u64> for Double {
 }
 impl<__Context__, Code> IsProviderFor<ComputerComponent, __Context__, (Code, u64)>
 for Double {}
+///Provider `Double` for [`Computer`].
 pub struct Double;
 impl<__Context__, Code, Input: core::fmt::Debug> Computer<__Context__, Code, Input>
 for Show {
@@ -46,6 +47,7 @@ impl<
     Code,
     Input: core::fmt::Debug,
 > IsProviderFor<ComputerComponent, __Context__, (Code, Input)> for Show {}
+///Provider `Show` for [`Computer`].
 pub struct Show;
 pub struct App;
 impl DelegateComponent<ComputerComponent> for App {

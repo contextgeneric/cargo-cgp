@@ -28,13 +28,20 @@ note: required for `ReadCount` to implement `IsProviderFor<CounterComponent, __C
    = note: associated types for the current `impl` cannot be restricted in `where` clauses
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0282]: type annotations needed
+error[E0284]: type annotations needed: cannot satisfy `<__Context__ as HasField<Symbol<5, Chars<..>>>>::Value == u32`
   --> src/main.rs:22:1
    |
 22 | #[cgp_impl(new ReadCount)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot satisfy `<__Context__ as HasField<Symbol<5, Chars<..>>>>::Value == u32`
    |
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-Some errors have detailed explanations: E0282, E0284.
-For more information about an error, try `rustc --explain E0282`.
+error[E0284]: type annotations needed: cannot satisfy `<__Context__ as HasField<Symbol<5, Chars<..>>>>::Value == u64`
+  --> src/main.rs:22:1
+   |
+22 | #[cgp_impl(new ReadCount)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot satisfy `<__Context__ as HasField<Symbol<5, Chars<..>>>>::Value == u64`
+   |
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0284`.

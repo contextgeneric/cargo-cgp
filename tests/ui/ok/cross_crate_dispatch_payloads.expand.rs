@@ -48,8 +48,10 @@ impl FromFields for Tile {
 impl ToFields for Tile {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Square(field) => Either::Left(field.into()),
-            Self::Circle(field) => Either::Right(Either::Left(field.into())),
+            Self::Square(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Circle(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -59,8 +61,10 @@ impl ToFieldsRef for Tile {
         Self: '__a,
     {
         match self {
-            Self::Square(field) => Either::Left(field.into()),
-            Self::Circle(field) => Either::Right(Either::Left(field.into())),
+            Self::Square(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Circle(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -82,10 +86,12 @@ impl FromVariant<Symbol!("Circle")> for Tile {
         Self::Circle(value)
     }
 }
+///The partial extractor for [`Tile`].
 pub enum __PartialTile<__F0__: MapType, __F1__: MapType> {
     Square(<__F0__ as MapType>::Map<Square>),
     Circle(<__F1__ as MapType>::Map<Circle>),
 }
+///The borrowed partial extractor for [`Tile`].
 pub enum __PartialRefTile<'__a__, __R__: MapTypeRef, __F0__: MapType, __F1__: MapType> {
     Square(<__F0__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, Square>>),
     Circle(<__F1__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, Circle>>),

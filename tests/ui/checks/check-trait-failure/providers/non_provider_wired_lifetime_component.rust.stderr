@@ -1,50 +1,50 @@
 error[E0599]: the method `greet` exists for struct `App`, but its trait bounds were not satisfied
-   --> src/main.rs:34:17
-    |
- 21 | pub struct NotAGreeter;
-    | ---------------------- doesn't satisfy `_: IsProviderFor<GreeterComponent, App, Life<'_>>`
- 22 |
- 23 | pub struct App;
-    | -------------- method `greet` not found for this struct because it doesn't satisfy `App: CanGreet<'_>`
+  --> src/main.rs:34:17
+   |
+21 | pub struct NotAGreeter;
+   | ---------------------- doesn't satisfy `_: IsProviderFor<GreeterComponent, App, Life<'_>>`
+22 |
+23 | pub struct App;
+   | -------------- method `greet` not found for this struct because it doesn't satisfy `App: CanGreet<'_>`
 ...
- 34 |     let _ = app.greet("Ada");
-    |                 ^^^^^ this is an associated function, not a method
-    |
-    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
+34 |     let _ = app.greet("Ada");
+   |                 ^^^^^ this is an associated function, not a method
+   |
+   = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `Greeter`
-   --> src/main.rs:18:5
-    |
- 18 |     fn greet(&self, other: &'a str) -> String;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  --> src/main.rs:18:5
+   |
+18 |     fn greet(&self, other: &'a str) -> String;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: trait bound `NotAGreeter: IsProviderFor<GreeterComponent, App, Life<'_>>` was not satisfied
-   --> src/main.rs:26:1
-    |
- 26 | / delegate_components! {
- 27 | |     App {
-    | |     ---
- 28 | |         GreeterComponent: NotAGreeter,
- 29 | |     }
- 30 | | }
-    | | ^ unsatisfied trait bound introduced here
-    | |_|
-    |
+  --> src/main.rs:26:1
+   |
+26 | / delegate_components! {
+27 | |     App {
+   | |     ---
+28 | |         GreeterComponent: NotAGreeter,
+29 | |     }
+30 | | }
+   | | ^ unsatisfied trait bound introduced here
+   | |_|
+   |
 note: the trait `IsProviderFor` must be implemented
-   --> $CGP/crates/core/cgp-component/src/traits/is_provider.rs:120:1
-    |
-120 | pub trait IsProviderFor<Component, Context, Params: ?Sized = ()> {}
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    = help: items from traits can only be used if the trait is implemented and in scope
+  --> $CGP/crates/core/cgp-component/src/traits/is_provider.rs:5:1
+   |
+ 5 | pub trait IsProviderFor<Component, Context, Params: ?Sized = ()> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanGreet` defines an item `greet`, perhaps you need to implement it
-   --> src/main.rs:17:1
-    |
- 17 | pub trait CanGreet<'a> {
-    | ^^^^^^^^^^^^^^^^^^^^^^
- 18 |     fn greet(&self, other: &'a str) -> String;
-    = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+  --> src/main.rs:17:1
+   |
+17 | pub trait CanGreet<'a> {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+18 |     fn greet(&self, other: &'a str) -> String;
+   = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
-    |
- 34 -     let _ = app.greet("Ada");
- 34 +     let _ = App::greet("Ada");
-    |
+   |
+34 -     let _ = app.greet("Ada");
+34 +     let _ = App::greet("Ada");
+   |
 
 For more information about this error, try `rustc --explain E0599`.

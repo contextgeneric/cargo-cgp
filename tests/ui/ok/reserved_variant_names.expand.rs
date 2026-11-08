@@ -88,18 +88,30 @@ impl FromFields for Token {
 impl ToFields for Token {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Value(field) => Either::Left(field.into()),
-            Self::Remainder(field) => Either::Right(Either::Left(field.into())),
+            Self::Value(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Remainder(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
             Self::Extractor(field) => {
-                Either::Right(Either::Right(Either::Left(field.into())))
+                Either::Right(
+                    Either::Right(Either::Left(::core::convert::Into::into(field))),
+                )
             }
             Self::ExtractorRef(field) => {
-                Either::Right(Either::Right(Either::Right(Either::Left(field.into()))))
+                Either::Right(
+                    Either::Right(
+                        Either::Right(Either::Left(::core::convert::Into::into(field))),
+                    ),
+                )
             }
             Self::ExtractorMut(field) => {
                 Either::Right(
                     Either::Right(
-                        Either::Right(Either::Right(Either::Left(field.into()))),
+                        Either::Right(
+                            Either::Right(
+                                Either::Left(::core::convert::Into::into(field)),
+                            ),
+                        ),
                     ),
                 )
             }
@@ -107,7 +119,11 @@ impl ToFields for Token {
                 Either::Right(
                     Either::Right(
                         Either::Right(
-                            Either::Right(Either::Right(Either::Left(field.into()))),
+                            Either::Right(
+                                Either::Right(
+                                    Either::Left(::core::convert::Into::into(field)),
+                                ),
+                            ),
                         ),
                     ),
                 )
@@ -117,7 +133,11 @@ impl ToFields for Token {
                     Either::Right(
                         Either::Right(
                             Either::Right(
-                                Either::Right(Either::Right(Either::Left(field.into()))),
+                                Either::Right(
+                                    Either::Right(
+                                        Either::Left(::core::convert::Into::into(field)),
+                                    ),
+                                ),
                             ),
                         ),
                     ),
@@ -132,18 +152,30 @@ impl ToFieldsRef for Token {
         Self: '__a,
     {
         match self {
-            Self::Value(field) => Either::Left(field.into()),
-            Self::Remainder(field) => Either::Right(Either::Left(field.into())),
+            Self::Value(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Remainder(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
             Self::Extractor(field) => {
-                Either::Right(Either::Right(Either::Left(field.into())))
+                Either::Right(
+                    Either::Right(Either::Left(::core::convert::Into::into(field))),
+                )
             }
             Self::ExtractorRef(field) => {
-                Either::Right(Either::Right(Either::Right(Either::Left(field.into()))))
+                Either::Right(
+                    Either::Right(
+                        Either::Right(Either::Left(::core::convert::Into::into(field))),
+                    ),
+                )
             }
             Self::ExtractorMut(field) => {
                 Either::Right(
                     Either::Right(
-                        Either::Right(Either::Right(Either::Left(field.into()))),
+                        Either::Right(
+                            Either::Right(
+                                Either::Left(::core::convert::Into::into(field)),
+                            ),
+                        ),
                     ),
                 )
             }
@@ -151,7 +183,11 @@ impl ToFieldsRef for Token {
                 Either::Right(
                     Either::Right(
                         Either::Right(
-                            Either::Right(Either::Right(Either::Left(field.into()))),
+                            Either::Right(
+                                Either::Right(
+                                    Either::Left(::core::convert::Into::into(field)),
+                                ),
+                            ),
                         ),
                     ),
                 )
@@ -161,7 +197,11 @@ impl ToFieldsRef for Token {
                     Either::Right(
                         Either::Right(
                             Either::Right(
-                                Either::Right(Either::Right(Either::Left(field.into()))),
+                                Either::Right(
+                                    Either::Right(
+                                        Either::Left(::core::convert::Into::into(field)),
+                                    ),
+                                ),
                             ),
                         ),
                     ),
@@ -233,6 +273,7 @@ impl FromVariant<Symbol!("FieldsRef")> for Token {
         Self::FieldsRef(value)
     }
 }
+///The partial extractor for [`Token`].
 pub enum __PartialToken<
     __F0__: MapType,
     __F1__: MapType,
@@ -250,6 +291,7 @@ pub enum __PartialToken<
     Fields(<__F5__ as MapType>::Map<bool>),
     FieldsRef(<__F6__ as MapType>::Map<char>),
 }
+///The borrowed partial extractor for [`Token`].
 pub enum __PartialRefToken<
     '__a__,
     __R__: MapTypeRef,

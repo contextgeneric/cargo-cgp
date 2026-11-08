@@ -56,7 +56,10 @@ impl FromFields for Pair {
 }
 impl ToFields for Pair {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.0.into(), Cons(self.1.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.0),
+            Cons(::core::convert::Into::into(self.1), Nil),
+        )
     }
 }
 impl ToFieldsRef for Pair {
@@ -64,9 +67,13 @@ impl ToFieldsRef for Pair {
     where
         Self: '__a,
     {
-        Cons((&self.0).into(), Cons((&self.1).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.0),
+            Cons(::core::convert::Into::into(&self.1), Nil),
+        )
     }
 }
+///The partial builder for [`Pair`].
 pub struct __PartialPair<__F0__: MapType, __F1__: MapType>(
     pub <__F0__ as MapType>::Map<u32>,
     pub <__F1__ as MapType>::Map<u64>,

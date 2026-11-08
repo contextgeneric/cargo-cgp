@@ -37,6 +37,7 @@ where
         >>::Delegate::foo(__context__, value)
     }
 }
+///Component marker for [`CanFoo`].
 pub struct FooerComponent;
 impl<__Context__, T> Fooer<__Context__, T> for UseContext
 where
@@ -104,6 +105,7 @@ where
         <__Provider__ as DelegateComponent<BarerComponent>>::Delegate::bar(__context__)
     }
 }
+///Component marker for [`CanBar`].
 pub struct BarerComponent;
 impl<__Context__> Barer<__Context__> for UseContext
 where
@@ -151,5 +153,6 @@ impl<__Context__> IsProviderFor<BarerComponent, __Context__, ()> for BarFromFoo
 where
     __Context__: CanFoo<u32, u64>,
 {}
+///Provider `BarFromFoo` for [`Barer`].
 pub struct BarFromFoo;
 fn main() {}

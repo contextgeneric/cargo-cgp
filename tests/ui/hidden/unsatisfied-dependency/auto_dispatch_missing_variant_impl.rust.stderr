@@ -7,9 +7,9 @@ error[E0599]: the method `area` exists for enum `Shape`, but its trait bounds we
 42 |     let _ = Shape::Circle(Circle).area();
    |                                   ^^^^ method cannot be called on `Shape` due to unsatisfied trait bounds
    |
-  ::: $CGP/crates/extra/cgp-dispatch/src/providers/matchers/match_with_field_handlers.rs:19:1
+  ::: $CGP/crates/extra/cgp-dispatch/src/providers/matchers/match_with_field_handlers.rs:33:1
    |
-19 | pub struct MatchWithValueHandlersRef<Provider = UseContext>(pub PhantomData<Provider>);
+33 | pub struct MatchWithValueHandlersRef<Provider = UseContext>(pub PhantomData<Provider>);
    | ----------------------------------------------------------- doesn't satisfy `<_ as Computer<(), (), &Shape>>::Output = f64`
    |
 note: trait bound `<MatchWithValueHandlersRef<ComputeArea> as Computer<(), (), &'__a__ Shape>>::Output = f64` was not satisfied

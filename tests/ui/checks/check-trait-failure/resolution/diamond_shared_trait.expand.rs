@@ -34,7 +34,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 pub trait CanShared {
@@ -67,6 +69,7 @@ where
         >>::Delegate::shared(__context__)
     }
 }
+///Component marker for [`CanShared`].
 pub struct SharedProviderComponent;
 impl<__Context__> SharedProvider<__Context__> for UseContext
 where
@@ -135,6 +138,7 @@ where
         >>::Delegate::left(__context__)
     }
 }
+///Component marker for [`CanLeft`].
 pub struct LeftProviderComponent;
 impl<__Context__> LeftProvider<__Context__> for UseContext
 where
@@ -201,6 +205,7 @@ where
         >>::Delegate::right(__context__)
     }
 }
+///Component marker for [`CanRight`].
 pub struct RightProviderComponent;
 impl<__Context__> RightProvider<__Context__> for UseContext
 where
@@ -269,6 +274,7 @@ where
         >>::Delegate::top(__context__)
     }
 }
+///Component marker for [`CanTop`].
 pub struct TopProviderComponent;
 impl<__Context__> TopProvider<__Context__> for UseContext
 where
@@ -318,6 +324,7 @@ for ProvideShared
 where
     __Context__: HasName,
 {}
+///Provider `ProvideShared` for [`SharedProvider`].
 pub struct ProvideShared;
 impl<__Context__> LeftProvider<__Context__> for ProvideLeft
 where
@@ -331,6 +338,7 @@ impl<__Context__> IsProviderFor<LeftProviderComponent, __Context__, ()> for Prov
 where
     __Context__: CanShared,
 {}
+///Provider `ProvideLeft` for [`LeftProvider`].
 pub struct ProvideLeft;
 impl<__Context__> RightProvider<__Context__> for ProvideRight
 where
@@ -344,6 +352,7 @@ impl<__Context__> IsProviderFor<RightProviderComponent, __Context__, ()> for Pro
 where
     __Context__: CanShared,
 {}
+///Provider `ProvideRight` for [`RightProvider`].
 pub struct ProvideRight;
 impl<__Context__> TopProvider<__Context__> for ProvideTop
 where
@@ -358,6 +367,7 @@ impl<__Context__> IsProviderFor<TopProviderComponent, __Context__, ()> for Provi
 where
     __Context__: CanLeft + CanRight,
 {}
+///Provider `ProvideTop` for [`TopProvider`].
 pub struct ProvideTop;
 pub struct App {
     pub age: u8,

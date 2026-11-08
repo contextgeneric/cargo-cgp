@@ -1,20 +1,10 @@
-error[E0599]: the method `person_name` exists for reference `&Value`, but its trait bounds were not satisfied
+error[E0599]: no method named `person_name` found for reference `&Value` in the current scope
   --> src/main.rs:30:37
    |
 30 |         format!("Hello, {}!", value.person_name())
-   |                                     ^^^^^^^^^^^ method cannot be called on `&Value` due to unsatisfied trait bounds
+   |                                     ^^^^^^^^^^^ method not found in `&Value`
    |
-note: the following trait bounds were not satisfied:
-      `&Value: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>`
-      `Value: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>`
-  --> src/main.rs:15:1
-   |
-15 | #[cgp_fn]
-   | ^^^^^^^^^
-16 | fn person_name(&self, #[implicit] name: &str) -> String {
-   |    ^^^^^^^^^^^
    = help: items from traits can only be used if the type parameter is bounded by the trait
-   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: the following trait defines an item `person_name`, perhaps you need to restrict type parameter `Value` with it:
    |
 26 | impl<Value: Default + PersonName> Greeter {

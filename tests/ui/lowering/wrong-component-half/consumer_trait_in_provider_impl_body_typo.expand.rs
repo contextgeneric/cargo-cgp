@@ -42,6 +42,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -86,5 +87,6 @@ impl<__Context__> CanGreet<__Context__> for GreetHello {
     }
 }
 impl<__Context__> IsProviderFor<CanGreetComponent, __Context__, ()> for GreetHello {}
+///Provider `GreetHello` for [`CanGreet`].
 pub struct GreetHello;
 fn main() {}

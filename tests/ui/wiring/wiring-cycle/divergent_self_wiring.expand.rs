@@ -39,6 +39,7 @@ where
         <__Provider__ as DelegateComponent<ShowerComponent>>::Delegate::show(__context__)
     }
 }
+///Component marker for [`CanShow`].
 pub struct ShowerComponent;
 impl<__Context__> Shower<__Context__> for UseContext
 where
@@ -86,6 +87,7 @@ impl<__Context__> IsProviderFor<ShowerComponent, __Context__, ()> for ShowWrappe
 where
     Vec<__Context__>: CanShow,
 {}
+///Provider `ShowWrapped` for [`Shower`].
 pub struct ShowWrapped;
 impl DelegateComponent<ShowerComponent> for u32 {
     type Delegate = ShowWrapped;

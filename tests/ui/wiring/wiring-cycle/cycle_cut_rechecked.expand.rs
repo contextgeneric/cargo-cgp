@@ -39,6 +39,7 @@ where
         <__Provider__ as DelegateComponent<ProviderAComponent>>::Delegate::a(__context__)
     }
 }
+///Component marker for [`CanA`].
 pub struct ProviderAComponent;
 impl<__Context__> ProviderA<__Context__> for UseContext
 where
@@ -101,6 +102,7 @@ where
         <__Provider__ as DelegateComponent<ProviderBComponent>>::Delegate::b(__context__)
     }
 }
+///Component marker for [`CanB`].
 pub struct ProviderBComponent;
 impl<__Context__> ProviderB<__Context__> for UseContext
 where
@@ -145,7 +147,9 @@ where
     __Context__: HasField<Symbol!("width"), Value = f64>,
 {
     fn width(&self) -> f64 {
-        self.get_field(::core::marker::PhantomData::<Symbol!("width")>).clone()
+        ::core::clone::Clone::clone(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("width")>),
+        )
     }
 }
 impl<__Context__> ProviderA<__Context__> for DoA
@@ -161,6 +165,7 @@ impl<__Context__> IsProviderFor<ProviderAComponent, __Context__, ()> for DoA
 where
     __Context__: CanB + HasWidth,
 {}
+///Provider `DoA` for [`ProviderA`].
 pub struct DoA;
 impl<__Context__> ProviderB<__Context__> for DoB
 where
@@ -174,6 +179,7 @@ impl<__Context__> IsProviderFor<ProviderBComponent, __Context__, ()> for DoB
 where
     __Context__: CanA,
 {}
+///Provider `DoB` for [`ProviderB`].
 pub struct DoB;
 pub struct App {}
 impl DelegateComponent<ProviderAComponent> for App {

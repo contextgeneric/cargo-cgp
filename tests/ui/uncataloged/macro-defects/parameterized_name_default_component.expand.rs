@@ -44,6 +44,7 @@ where
         >>::Delegate::area(__context__, shape)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent<Shape>(pub ::core::marker::PhantomData<Shape>);
 impl<__Context__, Shape> AreaCalculator<__Context__, Shape> for UseContext
 where
@@ -98,5 +99,6 @@ impl<__Context__> AreaCalculator<__Context__, Square> for SquareArea {
 }
 impl<__Context__> IsProviderFor<AreaCalculatorComponent, __Context__, (Square)>
 for SquareArea {}
+///Provider `SquareArea` for [`AreaCalculator`].
 pub struct SquareArea;
 fn main() {}

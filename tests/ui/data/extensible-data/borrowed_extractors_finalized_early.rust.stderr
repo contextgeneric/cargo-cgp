@@ -8,9 +8,9 @@ error[E0599]: no method named `finalize_extract` found for enum `__PartialRefSha
    |                                     ^^^^^^^^^^^^^^^^ method not found in `__PartialRefShape<'_, IsRef, IsPresent, IsVoid>`
    |
 note: the method `finalize_extract` exists on the type `<IsVoid as MapType>::Map<<IsRef as MapTypeRef>::Map<'_, Rectangle>>`
-  --> $CGP/crates/core/cgp-field/src/traits/extract_field.rs:39:5
+  --> $CGP/crates/core/cgp-field/src/traits/extract_field.rs:75:5
    |
-39 |     fn finalize_extract<T>(self) -> T;
+75 |     fn finalize_extract<T>(self) -> T;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
    = note: the following trait defines an item `finalize_extract`, perhaps you need to implement it:
@@ -26,9 +26,9 @@ error[E0599]: no method named `finalize_extract` found for enum `__PartialRefSha
    |                                     ^^^^^^^^^^^^^^^^ method not found in `__PartialRefShape<'_, IsMut, IsPresent, IsVoid>`
    |
 note: the method `finalize_extract` exists on the type `<IsVoid as MapType>::Map<<IsMut as MapTypeRef>::Map<'_, Rectangle>>`
-  --> $CGP/crates/core/cgp-field/src/traits/extract_field.rs:39:5
+  --> $CGP/crates/core/cgp-field/src/traits/extract_field.rs:75:5
    |
-39 |     fn finalize_extract<T>(self) -> T;
+75 |     fn finalize_extract<T>(self) -> T;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
    = note: the following trait defines an item `finalize_extract`, perhaps you need to implement it:

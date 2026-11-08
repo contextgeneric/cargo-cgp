@@ -10,9 +10,9 @@ help: the trait `ErrorTypeProvider<App>` is not implemented for `App`
 28 | pub struct App;
    | ^^^^^^^^^^^^^^
 help: the following other types implement trait `ErrorTypeProvider<__Context__>`
-  --> $CGP/crates/core/cgp-error/src/traits/has_error_type.rs:25:1
+  --> $CGP/crates/core/cgp-error/src/traits/has_error_type.rs:10:1
    |
-25 | #[cgp_type]
+10 | #[cgp_type]
    | ^^^^^^^^^^^
    | |
    | `RedirectLookup<__Components__, __Path__>`
@@ -24,14 +24,14 @@ help: the following other types implement trait `ErrorTypeProvider<__Context__>`
    = note: 1 redundant requirement hidden
    = note: required for `Add` to implement `IsProviderFor<TryComputerComponent, App, (_, (u64, u64))>`
 note: required by a bound in `cgp::prelude::TryComputer::try_compute`
-  --> $CGP/crates/extra/cgp-handler/src/components/try_compute.rs:8:1
+  --> $CGP/crates/extra/cgp-handler/src/components/try_compute.rs:13:1
    |
- 8 | #[cgp_component(TryComputer)]
+13 | #[cgp_component(TryComputer)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `TryComputer::try_compute`
 ...
-13 | pub trait CanTryCompute<Code, Input> {
+18 | pub trait CanTryCompute<Code, Input> {
 ...
-16 |     fn try_compute(&self, _code: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
+23 |     fn try_compute(&self, _code: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
    = note: this error originates in the attribute macro `cgp_type` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `App: ErrorTypeProvider<App>` is not satisfied
@@ -46,9 +46,9 @@ help: the trait `ErrorTypeProvider<App>` is not implemented for `App`
 28 | pub struct App;
    | ^^^^^^^^^^^^^^
 help: the following other types implement trait `ErrorTypeProvider<__Context__>`
-  --> $CGP/crates/core/cgp-error/src/traits/has_error_type.rs:25:1
+  --> $CGP/crates/core/cgp-error/src/traits/has_error_type.rs:10:1
    |
-25 | #[cgp_type]
+10 | #[cgp_type]
    | ^^^^^^^^^^^
    | |
    | `RedirectLookup<__Components__, __Path__>`

@@ -19,7 +19,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 pub trait CanShow<T: Display>: HasName {
@@ -58,6 +60,7 @@ where
         >>::Delegate::show(__context__, value)
     }
 }
+///Component marker for [`CanShow`].
 pub struct ShowerComponent;
 impl<__Context__, T: Display> Shower<__Context__, T> for UseContext
 where
@@ -112,5 +115,6 @@ impl<__Context__, T> Shower<__Context__, T> for ShowPlain {
     }
 }
 impl<__Context__, T> IsProviderFor<ShowerComponent, __Context__, (T)> for ShowPlain {}
+///Provider `ShowPlain` for [`Shower`].
 pub struct ShowPlain;
 fn main() {}

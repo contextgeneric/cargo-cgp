@@ -37,6 +37,7 @@ where
         >>::Delegate::describe(__context__)
     }
 }
+///Component marker for [`CanDescribe`].
 pub struct DescriberComponent;
 impl<__Context__> Describer<__Context__> for UseContext
 where
@@ -89,6 +90,7 @@ where
         Fields = Struct! { name: String },
     >,
 {}
+///Provider `DescribeNamed` for [`Describer`].
 pub struct DescribeNamed;
 pub struct App {
     pub name: String,

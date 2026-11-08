@@ -5,8 +5,8 @@ error[E0599]: the method `get_count` exists for reference `&Context`, but its tr
    |              ^^^^^^^^^ method cannot be called on `&Context` due to unsatisfied trait bounds
    |
 note: the following trait bounds were not satisfied:
-      `&Context: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
-      `Context: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `&Context: HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `Context: HasField<Symbol<5, cgp::prelude::Chars<..>>>`
   --> src/main.rs:15:1
    |
 15 | #[cgp_fn]

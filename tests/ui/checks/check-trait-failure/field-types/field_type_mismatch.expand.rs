@@ -51,6 +51,7 @@ where
         >>::Delegate::area(__context__)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__> AreaCalculator<__Context__> for UseContext
 where
@@ -99,10 +100,14 @@ where
     __Context__: HasField<Symbol!("height"), Value = f64>,
 {
     fn width(&self) -> f64 {
-        self.get_field(::core::marker::PhantomData::<Symbol!("width")>).clone()
+        ::core::clone::Clone::clone(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("width")>),
+        )
     }
     fn height(&self) -> f64 {
-        self.get_field(::core::marker::PhantomData::<Symbol!("height")>).clone()
+        ::core::clone::Clone::clone(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("height")>),
+        )
     }
 }
 impl<__Context__> AreaCalculator<__Context__> for RectangleArea
@@ -118,6 +123,7 @@ for RectangleArea
 where
     __Context__: HasRectangleFields,
 {}
+///Provider `RectangleArea` for [`AreaCalculator`].
 pub struct RectangleArea;
 pub struct Rectangle {
     pub width: f64,

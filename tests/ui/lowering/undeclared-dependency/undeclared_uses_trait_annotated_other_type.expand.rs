@@ -11,17 +11,19 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///The trait for the `person_name` operation.
 trait PersonName {
+    ///The `person_name` operation.
     fn person_name(&self) -> String;
 }
 impl<__Context__> PersonName for __Context__
 where
-    Self: HasField<Symbol!("name"), Value = String>,
+    Self: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {
     fn person_name(&self) -> String {
-        let name: &str = self
-            .get_field(::core::marker::PhantomData::<Symbol!("name")>)
-            .as_str();
+        let name: &str = ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        );
         name.to_owned()
     }
 }
@@ -53,6 +55,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -100,5 +103,6 @@ impl<__Context__, Value: Default> Greeter<__Context__> for GreetValue<Value> {
 }
 impl<__Context__, Value: Default> IsProviderFor<GreeterComponent, __Context__, ()>
 for GreetValue<Value> {}
+///Provider `GreetValue` for [`Greeter`].
 pub struct GreetValue<Value>(pub ::core::marker::PhantomData<Value>);
 fn main() {}

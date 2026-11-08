@@ -58,6 +58,7 @@ impl<
 where
     __Context__: CanHandle<InCode, Input, Output = Output>,
 {}
+///Provider `Call` for [`Handler`].
 pub struct Call<InCode>(pub ::core::marker::PhantomData<InCode>);
 /// Stage 1: produces a fixed `ByteStream`, gated on `Input: Send` so it stalls under the call's
 /// unknown input and its output must be recovered as a fixed projection.
@@ -81,7 +82,9 @@ where
     Input: Send,
     __Context__: HasErrorType,
 {}
+///Provider `HandleFetch` for [`Handler`].
 pub struct HandleFetch;
+///Wiring table `HandleSink`.
 pub struct HandleSink;
 impl DelegateComponent<HandlerComponent> for HandleSink {
     type Delegate = UseInputDelegate<EmptySink>;
@@ -95,9 +98,13 @@ where
         EmptySink,
     >: IsProviderFor<HandlerComponent, __Context__, __Params__>,
 {}
+///Wiring table `EmptySink`.
 pub struct EmptySink;
+///Wiring table for the `MyNamespace` namespace.
 pub struct __MyNamespaceComponents;
+///The `MyNamespace` namespace's wiring table.
 pub trait MyNamespace<__Table__> {
+    ///The provider table the `MyNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> MyNamespace<__Table__> for __Key__

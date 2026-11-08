@@ -1,8 +1,11 @@
 error[E0599]: the method `greet` exists for struct `App`, but its trait bounds were not satisfied
   --> src/main.rs:42:24
    |
+18 | #[cgp_impl(new GreetName)]
+   |                --------- doesn't satisfy `GreetName: IsProviderFor<GreeterComponent, App>`
+...
 26 | pub struct App {
-   | -------------- method `greet` not found for this struct because it doesn't satisfy `App: CanGreet` or `_: HasField<Symbol<4, Chars<..>>>`
+   | -------------- method `greet` not found for this struct because it doesn't satisfy `App: CanGreet`
 ...
 42 |     let _ = holder.app.greet();
    |                        ^^^^^ this is an associated function, not a method
@@ -13,16 +16,23 @@ note: the candidate is defined in the trait `Greeter`
    |
 15 |     fn greet(&self) -> String;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
-  --> src/main.rs:18:1
+note: trait bound `GreetName: IsProviderFor<GreeterComponent, App>` was not satisfied
+  --> src/main.rs:30:1
    |
-18 | #[cgp_impl(new GreetName)]
-   | ^^^^^^^^^^^^^^^---------^^ unsatisfied trait bound introduced here
-note: the trait `cgp::prelude::HasField` must be implemented
-  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+30 | / delegate_components! {
+31 | |     App {
+   | |     ---
+32 | |         GreeterComponent: GreetName,
+33 | |     }
+34 | | }
+   | | ^ unsatisfied trait bound introduced here
+   | |_|
    |
-46 | pub trait HasField<Tag> {
-   | ^^^^^^^^^^^^^^^^^^^^^^^
+note: the trait `IsProviderFor` must be implemented
+  --> $CGP/crates/core/cgp-component/src/traits/is_provider.rs:5:1
+   |
+ 5 | pub trait IsProviderFor<Component, Context, Params: ?Sized = ()> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanGreet` defines an item `greet`, perhaps you need to implement it
   --> src/main.rs:14:1
@@ -30,7 +40,7 @@ note: `CanGreet` defines an item `greet`, perhaps you need to implement it
 14 | pub trait CanGreet {
    | ^^^^^^^^^^^^^^^^^^
 15 |     fn greet(&self) -> String;
-   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `delegate_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: use associated function syntax instead
    |
 42 -     let _ = holder.app.greet();

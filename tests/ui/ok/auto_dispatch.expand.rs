@@ -50,8 +50,10 @@ impl FromFields for Shape {
 impl ToFields for Shape {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Circle(field) => Either::Left(field.into()),
-            Self::Square(field) => Either::Right(Either::Left(field.into())),
+            Self::Circle(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Square(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -61,8 +63,10 @@ impl ToFieldsRef for Shape {
         Self: '__a,
     {
         match self {
-            Self::Circle(field) => Either::Left(field.into()),
-            Self::Square(field) => Either::Right(Either::Left(field.into())),
+            Self::Circle(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Square(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -84,10 +88,12 @@ impl FromVariant<Symbol!("Square")> for Shape {
         Self::Square(value)
     }
 }
+///The partial extractor for [`Shape`].
 pub enum __PartialShape<__F0__: MapType, __F1__: MapType> {
     Circle(<__F0__ as MapType>::Map<Circle>),
     Square(<__F1__ as MapType>::Map<Square>),
 }
+///The borrowed partial extractor for [`Shape`].
 pub enum __PartialRefShape<'__a__, __R__: MapTypeRef, __F0__: MapType, __F1__: MapType> {
     Circle(<__F0__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, Circle>>),
     Square(<__F1__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, Square>>),
@@ -302,6 +308,7 @@ impl<
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (&'__a__ __Variants__))>
 for ComputeArea {}
+///Provider `ComputeArea` for [`Computer`].
 pub struct ComputeArea;
 impl DelegateComponent<ComputerRefComponent> for ComputeArea
 where
@@ -474,6 +481,7 @@ impl<
     __Context__,
     (__Code__, (&'__a__ mut __Variants__, (f64))),
 > for ComputeScale {}
+///Provider `ComputeScale` for [`Computer`].
 pub struct ComputeScale;
 impl DelegateComponent<ComputerRefComponent> for ComputeScale
 where
@@ -640,6 +648,7 @@ impl<
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (__Variants__))>
 for ComputeIntoName {}
+///Provider `ComputeIntoName` for [`Computer`].
 pub struct ComputeIntoName;
 impl DelegateComponent<ComputerRefComponent> for ComputeIntoName
 where
@@ -815,6 +824,7 @@ impl<
     __Context__,
     (__Code__, (&'__a__ __Variants__, (&'__a1__ str))),
 > for ComputeLabel {}
+///Provider `ComputeLabel` for [`Computer`].
 pub struct ComputeLabel;
 impl DelegateComponent<ComputerRefComponent> for ComputeLabel
 where
@@ -1004,6 +1014,7 @@ impl<
     __Code__,
 > IsProviderFor<AsyncComputerComponent, __Context__, (__Code__, (&'__a__ __Variants__))>
 for ComputeDescribe {}
+///Provider `ComputeDescribe` for [`AsyncComputer`].
 pub struct ComputeDescribe;
 impl DelegateComponent<AsyncComputerRefComponent> for ComputeDescribe
 where

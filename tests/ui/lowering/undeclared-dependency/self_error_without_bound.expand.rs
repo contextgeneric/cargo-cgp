@@ -39,6 +39,7 @@ where
         >>::Delegate::validate(__context__)
     }
 }
+///Component marker for [`CanValidate`].
 pub struct ValidatorComponent;
 impl<__Context__> Validator<__Context__> for UseContext
 where
@@ -83,5 +84,6 @@ impl<__Context__> Validator<__Context__> for ValidateNothing {
 }
 impl<__Context__> IsProviderFor<ValidatorComponent, __Context__, ()>
 for ValidateNothing {}
+///Provider `ValidateNothing` for [`Validator`].
 pub struct ValidateNothing;
 fn main() {}

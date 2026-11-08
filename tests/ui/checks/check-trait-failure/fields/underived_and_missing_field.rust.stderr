@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Shape: CanUseComponent<VolumeCalculatorComponent>
 57 |         VolumeCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>` is not implemented for `Shape`
+help: the trait `HasField<Symbol<5, cgp::prelude::Chars<..>>>` is not implemented for `Shape`
   --> src/main.rs:44:1
    |
 44 | pub struct Shape {

@@ -48,6 +48,7 @@ where
     __Context__: CanRaiseError<Input::Error>,
     __Context__: HasErrorType,
 {}
+///Provider `ParseInput` for [`Handler`].
 pub struct ParseInput;
 pub trait HasName {
     fn name(&self) -> &str;
@@ -57,7 +58,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 impl<__Context__, Code> Handler<__Context__, Code, u64> for GreetName
@@ -80,6 +83,7 @@ where
     __Context__: HasName,
     __Context__: HasErrorType,
 {}
+///Provider `GreetName` for [`Handler`].
 pub struct GreetName;
 pub struct App {
     pub id: u64,

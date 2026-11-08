@@ -15,7 +15,13 @@ use crate::paths::cgp_crate_dir;
 /// (no-aux) fixtures leaves the manifest untouched and never disturbs cargo's
 /// fingerprints for the cached `cgp` build.
 pub fn write_manifest(harness_crate: &Path, aux: &[(&str, &Path)]) {
-    let mut deps = format!("cgp = {{ path = \"{}\" }}\n", cgp_crate_dir().display());
+    // The fixtures use the error providers that allocate, such as `DebugError`,
+    // which `cgp` gates behind `alloc`. The throwaway crate is an ordinary `std`
+    // crate, so it enables the feature.
+    let mut deps = format!(
+        "cgp = {{ path = \"{}\", features = [\"alloc\"] }}\n",
+        cgp_crate_dir().display()
+    );
     for (name, dir) in aux {
         deps.push_str(&format!("{name} = {{ path = \"{}\" }}\n", dir.display()));
     }

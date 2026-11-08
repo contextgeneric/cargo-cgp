@@ -67,6 +67,7 @@ where
         DbTypeProviderComponent,
     >>::Delegate as DbTypeProvider<__Context__>>::Db;
 }
+///Component marker for [`HasDbType`].
 pub struct DbTypeProviderComponent;
 impl<__Context__> DbTypeProvider<__Context__> for UseContext
 where
@@ -159,6 +160,7 @@ where
         TransactionTypeProviderComponent,
     >>::Delegate as TransactionTypeProvider<__Context__>>::Transaction;
 }
+///Component marker for [`HasTransactionType`].
 pub struct TransactionTypeProviderComponent;
 impl<__Context__> TransactionTypeProvider<__Context__> for UseContext
 where
@@ -284,6 +286,7 @@ where
         >>::Delegate::begin_transaction(__context__)
     }
 }
+///Component marker for [`CanBeginTransaction`].
 pub struct TransactionStarterComponent;
 impl<__Context__> TransactionStarter<__Context__> for UseContext
 where
@@ -386,6 +389,7 @@ where
         >>::Delegate::commit_transaction(__context__, transaction)
     }
 }
+///Component marker for [`CanCommitTransaction`].
 pub struct TransactionCommitterComponent;
 impl<__Context__> TransactionCommitter<__Context__> for UseContext
 where
@@ -456,8 +460,10 @@ where
         <__Context__ as HasTransactionType>::Transaction,
         <__Context__ as HasErrorType>::Error,
     > {
-        let database: &Pool<<__Context__ as HasDbType>::Db> = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("database")>);
+        let database: &Pool<<__Context__ as HasDbType>::Db> = HasField::get_field(
+            __context__,
+            ::core::marker::PhantomData::<Symbol!("database")>,
+        );
         Ok(
             <<__Context__ as HasTransactionType>::Transaction as CanBeginFrom<
                 <__Context__ as HasDbType>::Db,
@@ -479,6 +485,7 @@ where
     __Context__: HasTransactionType,
     __Context__: HasErrorType,
 {}
+///Provider `BeginPooledTransaction` for [`TransactionStarter`].
 pub struct BeginPooledTransaction;
 impl<__Context__> TransactionCommitter<__Context__> for CommitPooledTransaction
 where
@@ -499,8 +506,11 @@ where
     __Context__: HasTransactionType,
     __Context__: HasErrorType,
 {}
+///Provider `CommitPooledTransaction` for [`TransactionCommitter`].
 pub struct CommitPooledTransaction;
+///The trait for the `run_unit_of_work` operation.
 pub trait RunUnitOfWork: HasErrorType {
+    ///The `run_unit_of_work` operation.
     fn run_unit_of_work(&self) -> Result<(), <Self as HasErrorType>::Error>;
 }
 impl<__Context__> RunUnitOfWork for __Context__

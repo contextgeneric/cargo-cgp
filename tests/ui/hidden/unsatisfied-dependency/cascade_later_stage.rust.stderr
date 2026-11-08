@@ -72,15 +72,15 @@ note: required for `HandleName` to implement `IsProviderFor<HandlerComponent, Ap
    = note: required for `App` to implement `IsProviderFor<HandlerComponent, App, (Prog<Cons<_, _>>, _)>`
    = note: required for `App` to implement `Handler<App, Prog<Cons<HandleConnect, Cons<HandleName, Nil>>>, Vec<_>>`
 note: required by a bound in `<__Context__ as CanHandle<Code, Input>>`
-  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:9:17
+  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:13:17
    |
- 9 |   #[cgp_component(Handler)]
+13 |   #[cgp_component(Handler)]
    |  _________________^
-10 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
-11 | | #[derive_delegate(UseDelegate<Code>)]
-12 | | #[derive_delegate(UseInputDelegate<Input>)]
-13 | | #[use_type(HasErrorType.Error)]
-14 | | pub trait CanHandle<Code, Input> {
+14 | | #[prefix(@cgp.extra.handler in DefaultNamespace)]
+15 | | #[derive_delegate(UseDelegate<Code>)]
+16 | | #[derive_delegate(UseInputDelegate<Input>)]
+17 | | #[use_type(HasErrorType.Error)]
+18 | | pub trait CanHandle<Code, Input> {
    | |________________________________^ required by this bound in `<__Context__ as CanHandle<Code, Input>>`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 

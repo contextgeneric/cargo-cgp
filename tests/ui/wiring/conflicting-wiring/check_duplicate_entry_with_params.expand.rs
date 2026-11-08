@@ -37,6 +37,7 @@ where
         >>::Delegate::show(__context__, value)
     }
 }
+///Component marker for [`CanShow`].
 pub struct ShowerComponent;
 impl<__Context__, T> Shower<__Context__, T> for UseContext
 where
@@ -89,6 +90,7 @@ impl<__Context__, T: core::fmt::Debug> Shower<__Context__, T> for ShowDebug {
 }
 impl<__Context__, T: core::fmt::Debug> IsProviderFor<ShowerComponent, __Context__, (T)>
 for ShowDebug {}
+///Provider `ShowDebug` for [`Shower`].
 pub struct ShowDebug;
 pub struct App;
 impl DelegateComponent<ShowerComponent> for App {

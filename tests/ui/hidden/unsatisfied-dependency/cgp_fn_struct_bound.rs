@@ -11,8 +11,8 @@
 //!
 //! CGP error class: unsatisfied dependency, hidden (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/hidden/unsatisfied-dependency.md).
 
-//@quality: acceptable
-//@codes: CGP-E003 CGP-E104 CGP-E110
+//@quality: hidden
+//@codes: none
 
 use cgp::prelude::*;
 

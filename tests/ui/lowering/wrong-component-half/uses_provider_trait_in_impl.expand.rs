@@ -42,6 +42,7 @@ where
         >>::Delegate::area(__context__)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__> AreaCalculator<__Context__> for UseContext
 where
@@ -108,6 +109,7 @@ where
         >>::Delegate::double(__context__)
     }
 }
+///Component marker for [`CanDouble`].
 pub struct DoublerComponent;
 impl<__Context__> Doubler<__Context__> for UseContext
 where
@@ -156,5 +158,6 @@ impl<__Context__> IsProviderFor<DoublerComponent, __Context__, ()> for DoubleAre
 where
     __Context__: AreaCalculator,
 {}
+///Provider `DoubleArea` for [`Doubler`].
 pub struct DoubleArea;
 fn main() {}

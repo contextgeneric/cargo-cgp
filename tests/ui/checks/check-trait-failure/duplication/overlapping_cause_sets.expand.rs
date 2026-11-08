@@ -54,6 +54,7 @@ where
         >>::Delegate::encode(__context__, value)
     }
 }
+///Component marker for [`CanEncode`].
 pub struct EncoderComponent;
 impl<__Context__, Value> Encoder<__Context__, Value> for UseContext
 where
@@ -106,6 +107,7 @@ impl<__Context__, Value: Display> Encoder<__Context__, Value> for EncodeDisplay 
 }
 impl<__Context__, Value: Display> IsProviderFor<EncoderComponent, __Context__, (Value)>
 for EncodeDisplay {}
+///Provider `EncodeDisplay` for [`Encoder`].
 pub struct EncodeDisplay;
 /// The wrapper a container encoder hands each of its elements to. One generic wiring entry covers
 /// every element type at once, so omitting that entry leaves one missing key per element type the
@@ -141,6 +143,7 @@ where
         >>::Delegate::report_first(__context__)
     }
 }
+///Component marker for [`CanReportFirst`].
 pub struct FirstReporterComponent;
 impl<__Context__> FirstReporter<__Context__> for UseContext
 where
@@ -193,6 +196,7 @@ impl<__Context__> IsProviderFor<FirstReporterComponent, __Context__, ()> for Rep
 where
     __Context__: CanEncode<Element<u32>>,
 {}
+///Provider `ReportFirst` for [`FirstReporter`].
 pub struct ReportFirst;
 pub trait CanReportSecond {
     fn report_second(&self) -> String;
@@ -224,6 +228,7 @@ where
         >>::Delegate::report_second(__context__)
     }
 }
+///Component marker for [`CanReportSecond`].
 pub struct SecondReporterComponent;
 impl<__Context__> SecondReporter<__Context__> for UseContext
 where
@@ -277,6 +282,7 @@ for ReportSecond
 where
     __Context__: CanEncode<Element<u64>>,
 {}
+///Provider `ReportSecond` for [`SecondReporter`].
 pub struct ReportSecond;
 pub struct App;
 impl DelegateComponent<EncoderComponent> for App {

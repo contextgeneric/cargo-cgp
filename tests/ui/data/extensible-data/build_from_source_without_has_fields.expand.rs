@@ -16,6 +16,7 @@ pub struct FooBar {
     pub foo: u64,
     pub bar: String,
 }
+///The partial builder for [`FooBar`].
 pub struct __PartialFooBar<__F0__: MapType, __F1__: MapType> {
     pub foo: <__F0__ as MapType>::Map<u64>,
     pub bar: <__F1__ as MapType>::Map<String>,
@@ -116,6 +117,7 @@ pub struct FooBarBaz {
     pub bar: String,
     pub baz: bool,
 }
+///The partial builder for [`FooBarBaz`].
 pub struct __PartialFooBarBaz<__F0__: MapType, __F1__: MapType, __F2__: MapType> {
     pub foo: <__F0__ as MapType>::Map<u64>,
     pub bar: <__F1__ as MapType>::Map<String>,

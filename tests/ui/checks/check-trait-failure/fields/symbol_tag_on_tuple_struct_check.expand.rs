@@ -40,6 +40,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -96,6 +97,7 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetFirs
 where
     __Context__: HasField<Symbol!("0"), Value = u32>,
 {}
+///Provider `GreetFirst` for [`Greeter`].
 pub struct GreetFirst;
 pub struct Pair(pub u32, pub String);
 impl HasField<Index<0>> for Pair {

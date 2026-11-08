@@ -46,6 +46,7 @@ where
         >>::Delegate::name(__context__)
     }
 }
+///Component marker for [`HasName`].
 pub struct NameGetterComponent;
 impl<__Context__> NameGetter<__Context__> for UseContext
 where
@@ -87,7 +88,12 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(__context__: &__Context__) -> &str {
-        __context__.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("name")>,
+            ),
+        )
     }
 }
 impl<__Context__> IsProviderFor<NameGetterComponent, __Context__, ()> for UseFields
@@ -99,7 +105,9 @@ where
     __Context__: HasField<__Tag__, Value = String>,
 {
     fn name(__context__: &__Context__) -> &str {
-        __context__.get_field(::core::marker::PhantomData::<__Tag__>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(__context__, ::core::marker::PhantomData::<__Tag__>),
+        )
     }
 }
 impl<__Context__, __Tag__> IsProviderFor<NameGetterComponent, __Context__, ()>
@@ -112,11 +120,12 @@ where
     __Provider__: FieldGetter<__Context__, NameGetterComponent, Value = String>,
 {
     fn name(__context__: &__Context__) -> &str {
-        __Provider__::get_field(
+        ::core::convert::AsRef::as_ref(
+            __Provider__::get_field(
                 __context__,
                 ::core::marker::PhantomData::<NameGetterComponent>,
-            )
-            .as_str()
+            ),
+        )
     }
 }
 impl<__Context__, __Provider__> IsProviderFor<NameGetterComponent, __Context__, ()>
@@ -165,6 +174,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where

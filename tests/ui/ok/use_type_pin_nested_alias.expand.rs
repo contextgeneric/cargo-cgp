@@ -54,6 +54,7 @@ where
         DbTypeProviderComponent,
     >>::Delegate as DbTypeProvider<__Context__>>::Db;
 }
+///Component marker for [`HasDbType`].
 pub struct DbTypeProviderComponent;
 impl<__Context__> DbTypeProvider<__Context__> for UseContext
 where
@@ -146,6 +147,7 @@ where
         TransactionTypeProviderComponent,
     >>::Delegate as TransactionTypeProvider<__Context__>>::Transaction;
 }
+///Component marker for [`HasTransactionType`].
 pub struct TransactionTypeProviderComponent;
 impl<__Context__> TransactionTypeProvider<__Context__> for UseContext
 where
@@ -216,7 +218,9 @@ where
         Type = Transaction,
     >,
 {}
+///The trait for the `begin_transaction` operation.
 pub trait BeginTransaction: HasDbType + HasTransactionType {
+    ///The `begin_transaction` operation.
     fn begin_transaction(&self) -> <Self as HasTransactionType>::Transaction;
 }
 impl<__Context__> BeginTransaction for __Context__
@@ -226,8 +230,10 @@ where
     Self: HasTransactionType<Transaction = Tx<<Self as HasDbType>::Db>>,
 {
     fn begin_transaction(&self) -> <Self as HasTransactionType>::Transaction {
-        let database: &Pool<<Self as HasDbType>::Db> = self
-            .get_field(::core::marker::PhantomData::<Symbol!("database")>);
+        let database: &Pool<<Self as HasDbType>::Db> = HasField::get_field(
+            self,
+            ::core::marker::PhantomData::<Symbol!("database")>,
+        );
         let _ = database;
         ::core::panicking::todo_default_msg()
     }

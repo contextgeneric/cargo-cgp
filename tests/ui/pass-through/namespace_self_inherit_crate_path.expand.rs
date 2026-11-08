@@ -13,8 +13,11 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///Wiring table for the `SelfNs` namespace.
 pub struct __SelfNsComponents;
+///The `SelfNs` namespace's wiring table.
 pub trait SelfNs<__Table__> {
+    ///The provider table the `SelfNs` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> SelfNs<__Table__> for __Key__

@@ -5,8 +5,8 @@ error[E0599]: the method `get_count` exists for reference `&T`, but its trait bo
    |              ^^^^^^^^^ method cannot be called on `&T` due to unsatisfied trait bounds
    |
 note: the following trait bounds were not satisfied:
-      `&T: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
-      `T: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `&T: HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `T: HasField<Symbol<5, cgp::prelude::Chars<..>>>`
   --> src/main.rs:17:1
    |
 17 | #[cgp_fn]
@@ -27,8 +27,8 @@ error[E0599]: the method `get_count` exists for reference `&C`, but its trait bo
    |                 ^^^^^^^^^ method cannot be called on `&C` due to unsatisfied trait bounds
    |
 note: the following trait bounds were not satisfied:
-      `&C: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
-      `C: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `&C: HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `C: HasField<Symbol<5, cgp::prelude::Chars<..>>>`
   --> src/main.rs:17:1
    |
 17 | #[cgp_fn]
@@ -66,8 +66,8 @@ error[E0599]: the method `get_count` exists for reference `&Context`, but its tr
    |                 ^^^^^^^^^ method cannot be called on `&Context` due to unsatisfied trait bounds
    |
 note: the following trait bounds were not satisfied:
-      `&Context: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
-      `Context: cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `&Context: HasField<Symbol<5, cgp::prelude::Chars<..>>>`
+      `Context: HasField<Symbol<5, cgp::prelude::Chars<..>>>`
   --> src/main.rs:17:1
    |
 17 | #[cgp_fn]

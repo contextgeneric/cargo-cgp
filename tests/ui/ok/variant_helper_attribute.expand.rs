@@ -51,8 +51,10 @@ impl FromFields for Mode {
 impl ToFields for Mode {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Off => Either::Left(Nil.into()),
-            Self::On(field) => Either::Right(Either::Left(field.into())),
+            Self::Off => Either::Left(::core::convert::Into::into(Nil)),
+            Self::On(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -62,8 +64,10 @@ impl ToFieldsRef for Mode {
         Self: '__a,
     {
         match self {
-            Self::Off => Either::Left(Nil.into()),
-            Self::On(field) => Either::Right(Either::Left(field.into())),
+            Self::Off => Either::Left(::core::convert::Into::into(Nil)),
+            Self::On(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -85,10 +89,12 @@ impl FromVariant<Symbol!("On")> for Mode {
         Self::On(value)
     }
 }
+///The partial extractor for [`Mode`].
 pub enum __PartialMode<__F0__: MapType, __F1__: MapType> {
     Off(<__F0__ as MapType>::Map<Nil>),
     On(<__F1__ as MapType>::Map<u64>),
 }
+///The borrowed partial extractor for [`Mode`].
 pub enum __PartialRefMode<'__a__, __R__: MapTypeRef, __F0__: MapType, __F1__: MapType> {
     Off(<__F0__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, Nil>>),
     On(<__F1__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, u64>>),

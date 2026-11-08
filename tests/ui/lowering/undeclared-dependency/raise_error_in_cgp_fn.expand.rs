@@ -13,7 +13,9 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///The trait for the `fail` operation.
 pub trait Fail: HasErrorType {
+    ///The `fail` operation.
     fn fail(&self) -> <Self as HasErrorType>::Error;
 }
 impl<__Context__> Fail for __Context__

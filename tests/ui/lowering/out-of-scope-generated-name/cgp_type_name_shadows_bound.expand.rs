@@ -54,6 +54,7 @@ where
         DatabaseTypeProviderComponent,
     >>::Delegate as DatabaseTypeProvider<__Context__>>::Database;
 }
+///Component marker for [`HasDatabaseType`].
 pub struct DatabaseTypeProviderComponent;
 impl<__Context__> DatabaseTypeProvider<__Context__> for UseContext
 where

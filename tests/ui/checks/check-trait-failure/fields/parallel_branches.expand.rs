@@ -40,6 +40,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -84,7 +85,12 @@ where
     __Context__: HasField<Symbol!("first_name"), Value = String>,
 {
     fn first_name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("first_name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(
+                self,
+                ::core::marker::PhantomData::<Symbol!("first_name")>,
+            ),
+        )
     }
 }
 pub trait HasLastName {
@@ -95,7 +101,12 @@ where
     __Context__: HasField<Symbol!("last_name"), Value = String>,
 {
     fn last_name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("last_name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(
+                self,
+                ::core::marker::PhantomData::<Symbol!("last_name")>,
+            ),
+        )
     }
 }
 impl<__Context__> Greeter<__Context__> for GreetFullName
@@ -117,6 +128,7 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetFull
 where
     __Context__: HasFirstName + HasLastName,
 {}
+///Provider `GreetFullName` for [`Greeter`].
 pub struct GreetFullName;
 pub struct Person {}
 impl DelegateComponent<GreeterComponent> for Person {

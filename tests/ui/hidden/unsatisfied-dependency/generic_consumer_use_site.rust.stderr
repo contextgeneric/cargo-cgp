@@ -21,9 +21,9 @@ note: trait bound `App: cgp::prelude::HasField<Symbol<9, cgp::prelude::Chars<..>
 28 | pub trait HasSeparator {
    |           ^^^^^^^^^^^^
 note: the trait `cgp::prelude::HasField` must be implemented
-  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:10:1
    |
-46 | pub trait HasField<Tag> {
+10 | pub trait HasField<Tag> {
    | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanFormatPair` defines an item `format_pair`, perhaps you need to implement it

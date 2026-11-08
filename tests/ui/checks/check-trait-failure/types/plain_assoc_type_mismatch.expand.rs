@@ -50,6 +50,7 @@ where
         >>::Delegate::area(__context__)
     }
 }
+///Component marker for [`CanCalculateArea`].
 pub struct AreaCalculatorComponent;
 impl<__Context__> AreaCalculator<__Context__> for UseContext
 where
@@ -109,6 +110,7 @@ for RectangleArea
 where
     __Context__: HasUnit<Unit = f64>,
 {}
+///Provider `RectangleArea` for [`AreaCalculator`].
 pub struct RectangleArea;
 impl DelegateComponent<AreaCalculatorComponent> for Rectangle {
     type Delegate = RectangleArea;

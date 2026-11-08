@@ -38,6 +38,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -82,7 +83,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 impl<__Context__> Greeter<__Context__> for GreetHello
@@ -99,6 +102,7 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetHell
 where
     __Context__: HasName,
 {}
+///Provider `GreetHello` for [`Greeter`].
 pub struct GreetHello;
 pub trait CanFarewell {
     fn farewell(&self);
@@ -128,6 +132,7 @@ where
         >>::Delegate::farewell(__context__)
     }
 }
+///Component marker for [`CanFarewell`].
 pub struct FarewellComponent;
 impl<__Context__> Farewell<__Context__> for UseContext
 where
@@ -168,6 +173,7 @@ impl<__Context__> Farewell<__Context__> for SayBye {
     fn farewell(__context__: &__Context__) {}
 }
 impl<__Context__> IsProviderFor<FarewellComponent, __Context__, ()> for SayBye {}
+///Provider `SayBye` for [`Farewell`].
 pub struct SayBye;
 pub struct Person {
     pub name: String,

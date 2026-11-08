@@ -43,6 +43,7 @@ where
         >>::Delegate::show(__context__, value)
     }
 }
+///Component marker for [`CanShow`].
 pub struct ShowImplComponent;
 impl<__Context__, T> ShowImpl<__Context__, T> for UseContext
 where

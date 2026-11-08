@@ -42,6 +42,7 @@ where
         >>::Delegate::name(__context__, prefix)
     }
 }
+///Component marker for [`CanGetName`].
 pub struct NameGetterComponent;
 impl<'a, __Context__> NameGetter<'a, __Context__> for UseContext
 where
@@ -90,5 +91,6 @@ impl<'a, __Context__, Inner> NameGetter<'a, __Context__> for TrimmedName<Inner> 
 }
 impl<'a, __Context__, Inner> IsProviderFor<NameGetterComponent, __Context__, (Life<'a>)>
 for TrimmedName<Inner> {}
+///Provider `TrimmedName` for [`NameGetter`].
 pub struct TrimmedName<Inner>(pub ::core::marker::PhantomData<Inner>);
 fn main() {}

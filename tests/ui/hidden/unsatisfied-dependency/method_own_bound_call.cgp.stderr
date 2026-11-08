@@ -1,21 +1,39 @@
-error[E0277]: the trait bound `App: CanLoad<u32>` is not satisfied
+error[E0277]: [CGP-E002] the provider trait `Loader<u32>` with context `App` is not implemented for provider `LoadName`
   --> src/main.rs:61:22
    |
 61 |     let _: u32 = app.fetch::<u32>();
    |                      ^^^^^ unsatisfied trait bound
    |
-help: missing field `name` on `App`
-  --> src/main.rs:50:9
-   |
-50 |     pub other: String,
-   |         ^^^^^
-note: required for the provider `LoadName` to implement the provider trait `Loader` for the context `App`
-  --> src/main.rs:21:1
+help: the trait `IsProviderFor<LoaderComponent, App, u32>` is not implemented for `LoadName`
+  --> src/main.rs:21:16
    |
 21 | #[cgp_impl(new LoadName)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-   = note: 1 redundant requirement hidden
-   = note: required for the provider `App` to implement the provider trait `Loader` for the context `App`
+   |                ^^^^^^^^
+help: the trait `IsProviderFor<LoaderComponent, __Context__, T>` is conditionally implemented for `LoadName`
+  --> src/main.rs:22:1
+   |
+21 |   #[cgp_impl(new LoadName)]
+   |   -------------------------
+   |   |
+   |   unsatisfied requirement introduced here: `_: HasField<Symbol!("name")>`
+   |   unsatisfied requirement introduced here: `<_ as HasField<Symbol!("name")>>::Value: AsRef<str>`
+   |   unsatisfied requirement introduced here: `<_ as HasField<Symbol!("name")>>::Value: 'static`
+22 | / impl<T> Loader<T>
+23 | | where
+24 | |     T: Default,
+...  |
+31 | | }
+   | |_^
+note: required for the provider `App` to implement the provider trait `Loader` for the context `App`
+  --> src/main.rs:53:1
+   |
+53 | / delegate_components! {
+54 | |     App {
+   | |     ^^^
+55 | |         LoaderComponent: LoadName,
+56 | |     }
+57 | | }
+   | |_^
 note: required for `App` to implement `Loader<App, u32>`
   --> src/main.rs:15:1
    |
@@ -38,6 +56,6 @@ note: required by a bound in `CanFetch::fetch`
 35 |     where
 36 |         Self: CanLoad<T, Output = T>;
    |               ^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `CanFetch::fetch`
-   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `delegate_components` which comes from the expansion of the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

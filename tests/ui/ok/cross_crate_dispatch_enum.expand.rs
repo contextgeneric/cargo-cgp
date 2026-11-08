@@ -58,8 +58,10 @@ impl FromFields for Polygon {
 impl ToFields for Polygon {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Triangle(field) => Either::Left(field.into()),
-            Self::Hexagon(field) => Either::Right(Either::Left(field.into())),
+            Self::Triangle(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Hexagon(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -69,8 +71,10 @@ impl ToFieldsRef for Polygon {
         Self: '__a,
     {
         match self {
-            Self::Triangle(field) => Either::Left(field.into()),
-            Self::Hexagon(field) => Either::Right(Either::Left(field.into())),
+            Self::Triangle(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Hexagon(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -92,10 +96,12 @@ impl FromVariant<Symbol!("Hexagon")> for Polygon {
         Self::Hexagon(value)
     }
 }
+///The partial extractor for [`Polygon`].
 pub enum __PartialPolygon<__F0__: MapType, __F1__: MapType> {
     Triangle(<__F0__ as MapType>::Map<Triangle>),
     Hexagon(<__F1__ as MapType>::Map<Hexagon>),
 }
+///The borrowed partial extractor for [`Polygon`].
 pub enum __PartialRefPolygon<
     '__a__,
     __R__: MapTypeRef,

@@ -11,7 +11,9 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///The trait for the `tag_for` operation.
 pub trait TagFor<T> {
+    ///The `tag_for` operation.
     fn tag_for(&self) -> u64;
 }
 impl<__Context__, T> TagFor<T> for __Context__
@@ -19,8 +21,10 @@ where
     Self: HasField<Symbol!("count"), Value = u64>,
 {
     fn tag_for(&self) -> u64 {
-        let count: &u64 = self
-            .get_field(::core::marker::PhantomData::<Symbol!("count")>);
+        let count: &u64 = HasField::get_field(
+            self,
+            ::core::marker::PhantomData::<Symbol!("count")>,
+        );
         let _ = core::marker::PhantomData::<T>;
         *count
     }
@@ -54,6 +58,7 @@ where
         <__Provider__ as DelegateComponent<TaggerComponent>>::Delegate::tag(__context__)
     }
 }
+///Component marker for [`CanTag`].
 pub struct TaggerComponent;
 impl<__Context__> Tagger<__Context__> for UseContext
 where
@@ -99,5 +104,6 @@ impl<__Context__> Tagger<__Context__> for TagIt {
     }
 }
 impl<__Context__> IsProviderFor<TaggerComponent, __Context__, ()> for TagIt {}
+///Provider `TagIt` for [`Tagger`].
 pub struct TagIt;
 fn main() {}

@@ -63,6 +63,7 @@ where
         DbTypeProviderComponent,
     >>::Delegate as DbTypeProvider<__Context__>>::Db;
 }
+///Component marker for [`HasDbType`].
 pub struct DbTypeProviderComponent;
 impl<__Context__> DbTypeProvider<__Context__> for UseContext
 where
@@ -155,6 +156,7 @@ where
         TransactionTypeProviderComponent,
     >>::Delegate as TransactionTypeProvider<__Context__>>::Transaction;
 }
+///Component marker for [`HasTransactionType`].
 pub struct TransactionTypeProviderComponent;
 impl<__Context__> TransactionTypeProvider<__Context__> for UseContext
 where
@@ -272,6 +274,7 @@ where
         >>::Delegate::name_transaction(__context__, transaction)
     }
 }
+///Component marker for [`CanNameTransaction`].
 pub struct TransactionNamerComponent;
 impl<__Context__> TransactionNamer<__Context__> for UseContext
 where
@@ -342,6 +345,7 @@ where
     __Context__: HasDbType,
     __Context__: HasTransactionType<Transaction = Tx<<__Context__ as HasDbType>::Db>>,
 {}
+///Provider `NamePooledTransaction` for [`TransactionNamer`].
 pub struct NamePooledTransaction;
 pub struct App;
 impl DelegateComponent<DbTypeProviderComponent> for App {

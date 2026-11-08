@@ -10,9 +10,9 @@ help: the trait `ErrorTypeProvider<App>` is not implemented for `App`
 17 | pub struct App;
    | ^^^^^^^^^^^^^^
 help: the following other types implement trait `ErrorTypeProvider<__Context__>`
-  --> $CGP/crates/core/cgp-error/src/traits/has_error_type.rs:25:1
+  --> $CGP/crates/core/cgp-error/src/traits/has_error_type.rs:10:1
    |
-25 | #[cgp_type]
+10 | #[cgp_type]
    | ^^^^^^^^^^^
    | |
    | `RedirectLookup<__Components__, __Path__>`

@@ -54,6 +54,7 @@ where
         >>::Delegate::encode_item(__context__, value)
     }
 }
+///Component marker for [`CanEncodeItem`].
 pub struct ItemEncoderComponent;
 impl<__Context__, Value> ItemEncoder<__Context__, Value> for UseContext
 where
@@ -111,6 +112,7 @@ for EncodeDisplay
 where
     Value: core::fmt::Display,
 {}
+///Provider `EncodeDisplay` for [`ItemEncoder`].
 pub struct EncodeDisplay;
 pub struct App;
 impl DelegateComponent<ItemEncoderComponent> for App {

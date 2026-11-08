@@ -42,6 +42,7 @@ where
         >>::Delegate::show(__context__, value)
     }
 }
+///Component marker for [`CanShow`].
 pub struct ShowerComponent;
 impl<__Context__, T> Shower<__Context__, T> for UseContext
 where
@@ -113,6 +114,7 @@ where
         >>::Delegate::farewell(__context__)
     }
 }
+///Component marker for [`CanFarewell`].
 pub struct FarewellComponent;
 impl<__Context__> Farewell<__Context__> for UseContext
 where
@@ -153,7 +155,9 @@ impl<__Context__> Farewell<__Context__> for SayBye {
     fn farewell(__context__: &__Context__) {}
 }
 impl<__Context__> IsProviderFor<FarewellComponent, __Context__, ()> for SayBye {}
+///Provider `SayBye` for [`Farewell`].
 pub struct SayBye;
+///Wiring table `Bundle`.
 pub struct Bundle;
 impl DelegateComponent<FarewellComponent> for Bundle {
     type Delegate = SayBye;

@@ -47,6 +47,7 @@ where
         >>::Delegate::show(__context__, value)
     }
 }
+///Component marker for [`CanShow`].
 pub struct ShowImplComponent;
 impl<__Context__, T> ShowImpl<__Context__, T> for UseContext
 where
@@ -93,8 +94,11 @@ where
 impl<__Components__> AppNamespace<__Components__> for ShowImplComponent {
     type Delegate = RedirectLookup<__Components__, Path!(@app.ShowImplComponent)>;
 }
+///Wiring table for the `AppNamespace` namespace.
 pub struct __AppNamespaceComponents;
+///The `AppNamespace` namespace's wiring table.
 pub trait AppNamespace<__Table__> {
+    ///The provider table the `AppNamespace` namespace delegates to.
     type Delegate;
 }
 pub struct ShowWith<T>(pub PhantomData<T>);

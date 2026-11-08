@@ -33,6 +33,7 @@ impl<__Context__> IsProviderFor<ErrorRaiserComponent, __Context__, (u64)> for Ra
 where
     __Context__: HasErrorType,
 {}
+///Provider `RaisePlain` for [`ErrorRaiser`].
 pub struct RaisePlain;
 impl<__Components__> DefaultImpls1<ErrorRaiserComponent, __Components__> for u64 {
     type Delegate = RaisePlain;

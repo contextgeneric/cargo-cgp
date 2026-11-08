@@ -8,17 +8,19 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///The trait for the `get_name` operation.
 trait GetName {
+    ///The `get_name` operation.
     fn get_name(&self) -> String;
 }
 impl<__Context__> GetName for __Context__
 where
-    Self: HasField<Symbol!("name"), Value = String>,
+    Self: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {
     fn get_name(&self) -> String {
-        let name: &str = self
-            .get_field(::core::marker::PhantomData::<Symbol!("name")>)
-            .as_str();
+        let name: &str = ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        );
         name.to_owned()
     }
 }

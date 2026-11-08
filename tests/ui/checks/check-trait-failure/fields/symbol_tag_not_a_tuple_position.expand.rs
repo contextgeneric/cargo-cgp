@@ -39,6 +39,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -87,6 +88,7 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetThir
 where
     __Context__: HasField<Symbol!("2"), Value = u32>,
 {}
+///Provider `GreetThird` for [`Greeter`].
 pub struct GreetThird;
 impl<__Context__> Greeter<__Context__> for GreetPadded
 where
@@ -100,6 +102,7 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetPadd
 where
     __Context__: HasField<Symbol!("01"), Value = u32>,
 {}
+///Provider `GreetPadded` for [`Greeter`].
 pub struct GreetPadded;
 pub struct Pair(pub u32, pub u32);
 impl HasField<Index<0>> for Pair {

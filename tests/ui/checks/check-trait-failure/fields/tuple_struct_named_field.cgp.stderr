@@ -1,12 +1,18 @@
-error[E0599]: [CGP-E003] missing field `name` on `Person`
+error[E0599]: no method named `greet` found for struct `Person` in the current scope
   --> src/main.rs:24:35
    |
+21 | pub struct Person(pub String);
+   | ----------------- method `greet` not found for this struct
+...
 24 |     let _ = Person(String::new()).greet();
-   |                                   ^^^^^
+   |                                   ^^^^^ method not found in `Person`
    |
-   = note: root cause: [CGP-E110] missing field `name` on `Person`
-           this is required through the dependency chain:
-             [CGP-E104] trait impl `Greet` for `Person`
-             └─ [CGP-E110] missing field `name` on `Person`
+   = help: items from traits can only be used if the trait is implemented and in scope
+note: `Greet` defines an item `greet`, perhaps you need to implement it
+  --> src/main.rs:15:1
+   |
+15 | #[cgp_fn]
+   | ^^^^^^^^^
+   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0599`.

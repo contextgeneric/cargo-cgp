@@ -31,7 +31,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 pub trait CanFoo {
@@ -58,6 +60,7 @@ where
         <__Provider__ as DelegateComponent<FooComponent>>::Delegate::foo(__context__)
     }
 }
+///Component marker for [`CanFoo`].
 pub struct FooComponent;
 impl<__Context__> Foo<__Context__> for UseContext
 where
@@ -113,6 +116,7 @@ where
         <__Provider__ as DelegateComponent<BarComponent>>::Delegate::bar(__context__)
     }
 }
+///Component marker for [`CanBar`].
 pub struct BarComponent;
 impl<__Context__> Bar<__Context__> for UseContext
 where
@@ -168,6 +172,7 @@ where
         <__Provider__ as DelegateComponent<BazComponent>>::Delegate::baz(__context__)
     }
 }
+///Component marker for [`CanBaz`].
 pub struct BazComponent;
 impl<__Context__> Baz<__Context__> for UseContext
 where
@@ -211,6 +216,7 @@ impl<__Context__> IsProviderFor<FooComponent, __Context__, ()> for ProvideFoo
 where
     __Context__: HasName,
 {}
+///Provider `ProvideFoo` for [`Foo`].
 pub struct ProvideFoo;
 impl<__Context__> Bar<__Context__> for ProvideBar
 where
@@ -224,6 +230,7 @@ impl<__Context__> IsProviderFor<BarComponent, __Context__, ()> for ProvideBar
 where
     __Context__: CanFoo,
 {}
+///Provider `ProvideBar` for [`Bar`].
 pub struct ProvideBar;
 impl<__Context__> Baz<__Context__> for ProvideBaz
 where
@@ -237,6 +244,7 @@ impl<__Context__> IsProviderFor<BazComponent, __Context__, ()> for ProvideBaz
 where
     __Context__: CanBar,
 {}
+///Provider `ProvideBaz` for [`Baz`].
 pub struct ProvideBaz;
 pub struct App {
     pub name: String,

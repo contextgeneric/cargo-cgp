@@ -16,8 +16,11 @@ extern crate std;
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
 pub struct Bar;
+///Wiring table for the `MyNamespace` namespace.
 pub struct __MyNamespaceComponents;
+///The `MyNamespace` namespace's wiring table.
 pub trait MyNamespace<__Table__> {
+    ///The provider table the `MyNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Wildcard__> MyNamespace<__Table__>

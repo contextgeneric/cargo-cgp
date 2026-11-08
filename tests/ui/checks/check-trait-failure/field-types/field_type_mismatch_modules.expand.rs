@@ -54,6 +54,7 @@ pub mod shape_a {
             >>::Delegate::area(__context__)
         }
     }
+    ///Component marker for [`CanCalculateAreaA`].
     pub struct AreaCalculatorAComponent;
     impl<__Context__> AreaCalculatorA<__Context__> for UseContext
     where
@@ -103,10 +104,20 @@ pub mod shape_a {
         __Context__: HasField<Symbol!("height"), Value = f64>,
     {
         fn width(&self) -> f64 {
-            self.get_field(::core::marker::PhantomData::<Symbol!("width")>).clone()
+            ::core::clone::Clone::clone(
+                HasField::get_field(
+                    self,
+                    ::core::marker::PhantomData::<Symbol!("width")>,
+                ),
+            )
         }
         fn height(&self) -> f64 {
-            self.get_field(::core::marker::PhantomData::<Symbol!("height")>).clone()
+            ::core::clone::Clone::clone(
+                HasField::get_field(
+                    self,
+                    ::core::marker::PhantomData::<Symbol!("height")>,
+                ),
+            )
         }
     }
     impl<__Context__> AreaCalculatorA<__Context__> for RectangleAreaA
@@ -122,6 +133,7 @@ pub mod shape_a {
     where
         __Context__: HasRectangleFieldsA,
     {}
+    ///Provider `RectangleAreaA` for [`AreaCalculatorA`].
     pub struct RectangleAreaA;
     pub struct Rectangle {
         pub width: f64,
@@ -209,6 +221,7 @@ pub mod shape_b {
             >>::Delegate::area(__context__)
         }
     }
+    ///Component marker for [`CanCalculateAreaB`].
     pub struct AreaCalculatorBComponent;
     impl<__Context__> AreaCalculatorB<__Context__> for UseContext
     where
@@ -258,10 +271,20 @@ pub mod shape_b {
         __Context__: HasField<Symbol!("height"), Value = f64>,
     {
         fn width(&self) -> f64 {
-            self.get_field(::core::marker::PhantomData::<Symbol!("width")>).clone()
+            ::core::clone::Clone::clone(
+                HasField::get_field(
+                    self,
+                    ::core::marker::PhantomData::<Symbol!("width")>,
+                ),
+            )
         }
         fn height(&self) -> f64 {
-            self.get_field(::core::marker::PhantomData::<Symbol!("height")>).clone()
+            ::core::clone::Clone::clone(
+                HasField::get_field(
+                    self,
+                    ::core::marker::PhantomData::<Symbol!("height")>,
+                ),
+            )
         }
     }
     impl<__Context__> AreaCalculatorB<__Context__> for RectangleAreaB
@@ -277,6 +300,7 @@ pub mod shape_b {
     where
         __Context__: HasRectangleFieldsB,
     {}
+    ///Provider `RectangleAreaB` for [`AreaCalculatorB`].
     pub struct RectangleAreaB;
     pub struct Rectangle {
         pub width: f64,

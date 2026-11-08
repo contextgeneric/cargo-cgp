@@ -1,13 +1,22 @@
-error[E0277]: [CGP-E003] missing field `name` on `App`
+error[E0277]: the trait bound `App: GetName` is not satisfied
   --> src/main.rs:28:26
    |
 28 |     let _holder = Holder(app);
-   |                          ^^^
+   |                   ------ ^^^ unsatisfied trait bound
+   |                   |
+   |                   required by a bound introduced by this call
    |
-   = note: root cause: [CGP-E110] missing field `name` on `App`
-           this is required through the dependency chain:
-             [CGP-E104] trait impl `GetName` for `App`
-             └─ [CGP-E110] missing field `name` on `App`
-   = help: add the field `name: String` to `App`
+help: the trait `GetName` is not implemented for `App`
+  --> src/main.rs:22:1
+   |
+22 | pub struct App {
+   | ^^^^^^^^^^^^^^
+note: required by a bound in `Holder`
+  --> src/main.rs:19:8
+   |
+17 | pub struct Holder<T>(pub T)
+18 | where
+19 |     T: GetName;
+   |        ^^^^^^^ required by this bound in `Holder`
 
 For more information about this error, try `rustc --explain E0277`.

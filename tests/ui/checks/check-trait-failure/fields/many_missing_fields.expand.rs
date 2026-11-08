@@ -38,6 +38,7 @@ where
         <__Provider__ as DelegateComponent<SummerComponent>>::Delegate::sum(__context__)
     }
 }
+///Component marker for [`CanSum`].
 pub struct SummerComponent;
 impl<__Context__> Summer<__Context__> for UseContext
 where
@@ -83,24 +84,42 @@ where
         + HasField<Symbol!("zeta"), Value = u64>,
 {
     fn sum(__context__: &__Context__) -> u64 {
-        let alpha: u64 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("alpha")>)
-            .clone();
-        let beta: u64 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("beta")>)
-            .clone();
-        let gamma: u64 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("gamma")>)
-            .clone();
-        let delta: u64 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("delta")>)
-            .clone();
-        let epsilon: u64 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("epsilon")>)
-            .clone();
-        let zeta: u64 = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("zeta")>)
-            .clone();
+        let alpha: u64 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("alpha")>,
+            ),
+        );
+        let beta: u64 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("beta")>,
+            ),
+        );
+        let gamma: u64 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("gamma")>,
+            ),
+        );
+        let delta: u64 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("delta")>,
+            ),
+        );
+        let epsilon: u64 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("epsilon")>,
+            ),
+        );
+        let zeta: u64 = ::core::clone::Clone::clone(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("zeta")>,
+            ),
+        );
         alpha + beta + gamma + delta + epsilon + zeta
     }
 }
@@ -113,6 +132,7 @@ where
         + HasField<Symbol!("epsilon"), Value = u64>
         + HasField<Symbol!("zeta"), Value = u64>,
 {}
+///Provider `SumFields` for [`Summer`].
 pub struct SumFields;
 pub struct App {
     pub name: String,

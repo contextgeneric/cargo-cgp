@@ -7,25 +7,20 @@ error[E0599]: the method `describe` exists for reference `&Person`, but its trai
 36 |     person.describe()
    |            ^^^^^^^^ method cannot be called on `&Person` due to unsatisfied trait bounds
    |
-note: trait bound `&Person: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
-  --> src/main.rs:16:1
-   |
-16 | #[cgp_fn]
-   | ^^^^^^^^^
-17 | pub fn get_name(&self, #[implicit] name: &str) -> String {
-   |        ^^^^^^^^
-note: trait bound `Person: Clone` was not satisfied
-  --> src/main.rs:25:11
+note: the following trait bounds were not satisfied:
+      `&Person: GetName`
+      `Person: Clone`
+  --> src/main.rs:22:8
    |
 21 | #[cgp_fn]
    | ---------
 22 | #[uses(GetName)]
+   |        ^^^^^^^ unsatisfied trait bound introduced here
 23 | pub fn describe(&self) -> String
    |        --------
 24 | where
 25 |     Self: Clone,
    |           ^^^^^ unsatisfied trait bound introduced here
-   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: consider annotating `Person` with `#[derive(Clone)]`
    |
 31 + #[derive(Clone)]

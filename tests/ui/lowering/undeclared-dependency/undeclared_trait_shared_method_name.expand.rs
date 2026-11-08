@@ -13,17 +13,19 @@ use std::prelude::rust_2024::*;
 use cgp::prelude::*;
 pub mod named {
     use cgp::prelude::*;
+    ///The trait for the `describe` operation.
     pub trait Describe {
+        ///The `describe` operation.
         fn describe(&self) -> String;
     }
     impl<__Context__> Describe for __Context__
     where
-        Self: HasField<Symbol!("name"), Value = String>,
+        Self: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
     {
         fn describe(&self) -> String {
-            let name: &str = self
-                .get_field(::core::marker::PhantomData::<Symbol!("name")>)
-                .as_str();
+            let name: &str = ::core::convert::AsRef::as_ref(
+                HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+            );
             name.to_owned()
         }
     }
@@ -60,6 +62,7 @@ pub mod component {
             >>::Delegate::describe(__context__)
         }
     }
+    ///Component marker for [`CanDescribe`].
     pub struct DescriberComponent;
     impl<__Context__> Describer<__Context__> for UseContext
     where
@@ -102,7 +105,9 @@ pub mod component {
     {}
 }
 use named::Describe;
+///The trait for the `greet` operation.
 pub trait Greet {
+    ///The `greet` operation.
     fn greet(&self) -> String;
 }
 impl<__Context__> Greet for __Context__ {

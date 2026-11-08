@@ -40,6 +40,7 @@ pub mod components {
             >>::Delegate::greet(__context__)
         }
     }
+    ///Component marker for [`CanGreet`].
     pub struct GreeterComponent;
     impl<__Context__> Greeter<__Context__> for UseContext
     where
@@ -80,6 +81,7 @@ pub mod components {
         fn greet(__context__: &__Context__) {}
     }
     impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetHello {}
+    ///Provider `GreetHello` for [`Greeter`].
     pub struct GreetHello;
 }
 pub mod wiring {

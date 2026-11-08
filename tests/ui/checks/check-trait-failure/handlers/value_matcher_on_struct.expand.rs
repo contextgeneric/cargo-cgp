@@ -46,7 +46,7 @@ impl FromFields for Scene {
 }
 impl ToFields for Scene {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.width.into(), Nil)
+        Cons(::core::convert::Into::into(self.width), Nil)
     }
 }
 impl ToFieldsRef for Scene {
@@ -54,9 +54,10 @@ impl ToFieldsRef for Scene {
     where
         Self: '__a,
     {
-        Cons((&self.width).into(), Nil)
+        Cons(::core::convert::Into::into(&self.width), Nil)
     }
 }
+///The partial builder for [`Scene`].
 pub struct __PartialScene<__F0__: MapType> {
     pub width: <__F0__ as MapType>::Map<f64>,
 }

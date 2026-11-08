@@ -56,6 +56,7 @@ where
         >>::Delegate::encode_value(__context__, value)
     }
 }
+///Component marker for [`CanEncodeValue`].
 pub struct ValueEncoderComponent;
 impl<__Context__, Value: ?Sized> ValueEncoder<__Context__, Value> for UseContext
 where
@@ -113,6 +114,7 @@ impl<__Context__> ValueEncoder<__Context__, u64> for EncodeU64 {
 }
 impl<__Context__> IsProviderFor<ValueEncoderComponent, __Context__, (u64)>
 for EncodeU64 {}
+///Provider `EncodeU64` for [`ValueEncoder`].
 pub struct EncodeU64;
 impl<__Context__, Value> ValueEncoder<__Context__, Value> for EncodeIterator
 where
@@ -129,6 +131,7 @@ where
     for<'a> &'a Value: IntoIterator,
     __Context__: for<'a> CanEncodeValue<<&'a Value as IntoIterator>::Item>,
 {}
+///Provider `EncodeIterator` for [`ValueEncoder`].
 pub struct EncodeIterator;
 impl<'a, __Context__, Value> ValueEncoder<__Context__, &'a Value> for EncodeDeref
 where
@@ -146,6 +149,7 @@ impl<
 where
     __Context__: CanEncodeValue<Value>,
 {}
+///Provider `EncodeDeref` for [`ValueEncoder`].
 pub struct EncodeDeref;
 pub trait EncodeFields<Context, Value> {
     fn encode_fields(context: &Context, value: &Value) -> String;
@@ -180,6 +184,7 @@ where
     Value: HasFields,
     Value::Fields: EncodeFields<__Context__, Value>,
 {}
+///Provider `EncodeRecord` for [`ValueEncoder`].
 pub struct EncodeRecord;
 pub struct Inner {
     pub value: u64,
@@ -199,7 +204,7 @@ impl FromFields for Inner {
 }
 impl ToFields for Inner {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.value.into(), Nil)
+        Cons(::core::convert::Into::into(self.value), Nil)
     }
 }
 impl ToFieldsRef for Inner {
@@ -207,7 +212,7 @@ impl ToFieldsRef for Inner {
     where
         Self: '__a,
     {
-        Cons((&self.value).into(), Nil)
+        Cons(::core::convert::Into::into(&self.value), Nil)
     }
 }
 pub struct Mid {
@@ -228,7 +233,7 @@ impl FromFields for Mid {
 }
 impl ToFields for Mid {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.inners.into(), Nil)
+        Cons(::core::convert::Into::into(self.inners), Nil)
     }
 }
 impl ToFieldsRef for Mid {
@@ -236,7 +241,7 @@ impl ToFieldsRef for Mid {
     where
         Self: '__a,
     {
-        Cons((&self.inners).into(), Nil)
+        Cons(::core::convert::Into::into(&self.inners), Nil)
     }
 }
 pub struct Outer {
@@ -257,7 +262,7 @@ impl FromFields for Outer {
 }
 impl ToFields for Outer {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.mids.into(), Nil)
+        Cons(::core::convert::Into::into(self.mids), Nil)
     }
 }
 impl ToFieldsRef for Outer {
@@ -265,7 +270,7 @@ impl ToFieldsRef for Outer {
     where
         Self: '__a,
     {
-        Cons((&self.mids).into(), Nil)
+        Cons(::core::convert::Into::into(&self.mids), Nil)
     }
 }
 pub struct App;

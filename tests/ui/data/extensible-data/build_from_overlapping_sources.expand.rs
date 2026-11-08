@@ -67,7 +67,10 @@ impl FromFields for FooBar {
 }
 impl ToFields for FooBar {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.foo.into(), Cons(self.bar.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.foo),
+            Cons(::core::convert::Into::into(self.bar), Nil),
+        )
     }
 }
 impl ToFieldsRef for FooBar {
@@ -75,9 +78,13 @@ impl ToFieldsRef for FooBar {
     where
         Self: '__a,
     {
-        Cons((&self.foo).into(), Cons((&self.bar).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.foo),
+            Cons(::core::convert::Into::into(&self.bar), Nil),
+        )
     }
 }
+///The partial builder for [`FooBar`].
 pub struct __PartialFooBar<__F0__: MapType, __F1__: MapType> {
     pub foo: <__F0__ as MapType>::Map<u64>,
     pub bar: <__F1__ as MapType>::Map<String>,
@@ -229,7 +236,10 @@ impl FromFields for BarBaz {
 }
 impl ToFields for BarBaz {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.bar.into(), Cons(self.baz.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.bar),
+            Cons(::core::convert::Into::into(self.baz), Nil),
+        )
     }
 }
 impl ToFieldsRef for BarBaz {
@@ -237,9 +247,13 @@ impl ToFieldsRef for BarBaz {
     where
         Self: '__a,
     {
-        Cons((&self.bar).into(), Cons((&self.baz).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.bar),
+            Cons(::core::convert::Into::into(&self.baz), Nil),
+        )
     }
 }
+///The partial builder for [`BarBaz`].
 pub struct __PartialBarBaz<__F0__: MapType, __F1__: MapType> {
     pub bar: <__F0__ as MapType>::Map<String>,
     pub baz: <__F1__ as MapType>::Map<bool>,
@@ -410,7 +424,13 @@ impl FromFields for FooBarBaz {
 }
 impl ToFields for FooBarBaz {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.foo.into(), Cons(self.bar.into(), Cons(self.baz.into(), Nil)))
+        Cons(
+            ::core::convert::Into::into(self.foo),
+            Cons(
+                ::core::convert::Into::into(self.bar),
+                Cons(::core::convert::Into::into(self.baz), Nil),
+            ),
+        )
     }
 }
 impl ToFieldsRef for FooBarBaz {
@@ -418,9 +438,16 @@ impl ToFieldsRef for FooBarBaz {
     where
         Self: '__a,
     {
-        Cons((&self.foo).into(), Cons((&self.bar).into(), Cons((&self.baz).into(), Nil)))
+        Cons(
+            ::core::convert::Into::into(&self.foo),
+            Cons(
+                ::core::convert::Into::into(&self.bar),
+                Cons(::core::convert::Into::into(&self.baz), Nil),
+            ),
+        )
     }
 }
+///The partial builder for [`FooBarBaz`].
 pub struct __PartialFooBarBaz<__F0__: MapType, __F1__: MapType, __F2__: MapType> {
     pub foo: <__F0__ as MapType>::Map<u64>,
     pub bar: <__F1__ as MapType>::Map<String>,

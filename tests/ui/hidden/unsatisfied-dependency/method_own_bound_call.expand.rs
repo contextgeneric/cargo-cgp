@@ -43,6 +43,7 @@ where
         <__Provider__ as DelegateComponent<LoaderComponent>>::Delegate::load(__context__)
     }
 }
+///Component marker for [`CanLoad`].
 pub struct LoaderComponent;
 impl<__Context__, T> Loader<__Context__, T> for UseContext
 where
@@ -93,13 +94,16 @@ where
 impl<__Context__, T> Loader<__Context__, T> for LoadName
 where
     T: Default,
-    __Context__: HasField<Symbol!("name"), Value = String>,
+    __Context__: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {
     type Output = T;
     fn load(__context__: &__Context__) -> T {
-        let name: &str = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("name")>)
-            .as_str();
+        let name: &str = ::core::convert::AsRef::as_ref(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("name")>,
+            ),
+        );
         let _ = name;
         T::default()
     }
@@ -107,8 +111,9 @@ where
 impl<__Context__, T> IsProviderFor<LoaderComponent, __Context__, (T)> for LoadName
 where
     T: Default,
-    __Context__: HasField<Symbol!("name"), Value = String>,
+    __Context__: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {}
+///Provider `LoadName` for [`Loader`].
 pub struct LoadName;
 pub trait CanFetch {
     fn fetch<T>(&self) -> T

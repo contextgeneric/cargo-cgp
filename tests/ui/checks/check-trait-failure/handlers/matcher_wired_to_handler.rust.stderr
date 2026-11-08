@@ -6,24 +6,24 @@ error[E0277]: the trait bound `MatchWithHandlers<Cons<_, _>>: IsProviderFor<_, A
    |
    = help: the trait `IsProviderFor<cgp::prelude::HandlerComponent, App, ((), Shape)>` is not implemented for `MatchWithHandlers<Cons<ExtractFieldAndHandle<Symbol<6, _>, _>, _>>`
 help: `MatchWithHandlers<Handlers>` implements trait `IsProviderFor<Component, Context, Params>`
-  --> $CGP/crates/extra/cgp-dispatch/src/providers/with_handlers/match_with_handlers.rs:12:1
+  --> $CGP/crates/extra/cgp-dispatch/src/providers/with_handlers/match_with_handlers.rs:18:1
    |
-12 | / impl<Context, Code, Input, Output, Remainder, Handlers> Computer<Context, Code, Input>
-13 | |     for MatchWithHandlers<Handlers>
-14 | | where
-15 | |     Input: HasExtractor,
-16 | |     DispatchMatchers<Handlers>:
-17 | |         Computer<Context, Code, Input::Extractor, Output = Result<Output, Remainder>>,
-18 | |     Remainder: FinalizeExtract,
+18 | / impl<Context, Code, Input, Output, Remainder, Handlers> Computer<Context, Code, Input>
+19 | |     for MatchWithHandlers<Handlers>
+20 | | where
+21 | |     Input: HasExtractor,
+22 | |     DispatchMatchers<Handlers>:
+23 | |         Computer<Context, Code, Input::Extractor, Output = Result<Output, Remainder>>,
+24 | |     Remainder: FinalizeExtract,
    | |_______________________________^ `IsProviderFor<cgp::prelude::ComputerComponent, Context, (Code, Input)>`
 ...
-28 | / impl<Context, Code, Input, Output, Remainder, Handlers> AsyncComputer<Context, Code, Input>
-29 | |     for MatchWithHandlers<Handlers>
-30 | | where
-31 | |     Input: HasExtractor,
-32 | |     DispatchMatchers<Handlers>:
-33 | |         AsyncComputer<Context, Code, Input::Extractor, Output = Result<Output, Remainder>>,
-34 | |     Remainder: FinalizeExtract,
+34 | / impl<Context, Code, Input, Output, Remainder, Handlers> AsyncComputer<Context, Code, Input>
+35 | |     for MatchWithHandlers<Handlers>
+36 | | where
+37 | |     Input: HasExtractor,
+38 | |     DispatchMatchers<Handlers>:
+39 | |         AsyncComputer<Context, Code, Input::Extractor, Output = Result<Output, Remainder>>,
+40 | |     Remainder: FinalizeExtract,
    | |_______________________________^ `IsProviderFor<AsyncComputerComponent, Context, (Code, Input)>`
    = note: required for `UseInputDelegate<MatchWithFieldHandlersInputs<HandleFieldValue<ComputeArea>>>` to implement `IsProviderFor<cgp::prelude::HandlerComponent, App, ((), Shape)>`
    = note: required for `App` to implement `CanUseComponent<cgp::prelude::HandlerComponent, ((), Shape)>`

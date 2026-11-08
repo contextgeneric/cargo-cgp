@@ -42,7 +42,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 /// First pipe stage: produce the context's name. Depends on `Self: HasName`, which
@@ -72,6 +74,7 @@ where
     Input: Send,
     __Context__: HasErrorType,
 {}
+///Provider `HandleName` for [`Handler`].
 pub struct HandleName;
 /// Second pipe stage: uppercase the name. Takes the first stage's `String` output.
 impl<__Context__, Code> Handler<__Context__, Code, String> for HandleShout
@@ -94,9 +97,13 @@ where
     __Context__: Sync,
     __Context__: HasErrorType,
 {}
+///Provider `HandleShout` for [`Handler`].
 pub struct HandleShout;
+///Wiring table for the `MyNamespace` namespace.
 pub struct __MyNamespaceComponents;
+///The `MyNamespace` namespace's wiring table.
 pub trait MyNamespace<__Table__> {
+    ///The provider table the `MyNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> MyNamespace<__Table__> for __Key__

@@ -25,5 +25,6 @@ impl<__Context__> Greet<__Context__> for GreetHello {
     }
 }
 impl<__Context__> IsProviderFor<GreetComponent, __Context__, ()> for GreetHello {}
+///Provider `GreetHello` for [`Greet`].
 pub struct GreetHello;
 fn main() {}

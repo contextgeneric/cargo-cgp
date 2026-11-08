@@ -48,7 +48,7 @@ impl FromFields for Db {
 }
 impl ToFields for Db {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.db_path.into(), Nil)
+        Cons(::core::convert::Into::into(self.db_path), Nil)
     }
 }
 impl ToFieldsRef for Db {
@@ -56,9 +56,10 @@ impl ToFieldsRef for Db {
     where
         Self: '__a,
     {
-        Cons((&self.db_path).into(), Nil)
+        Cons(::core::convert::Into::into(&self.db_path), Nil)
     }
 }
+///The partial builder for [`Db`].
 pub struct __PartialDb<__F0__: MapType> {
     pub db_path: <__F0__ as MapType>::Map<String>,
 }
@@ -180,7 +181,10 @@ impl FromFields for App {
 }
 impl ToFields for App {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.db_path.into(), Cons(self.url.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.db_path),
+            Cons(::core::convert::Into::into(self.url), Nil),
+        )
     }
 }
 impl ToFieldsRef for App {
@@ -188,9 +192,13 @@ impl ToFieldsRef for App {
     where
         Self: '__a,
     {
-        Cons((&self.db_path).into(), Cons((&self.url).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.db_path),
+            Cons(::core::convert::Into::into(&self.url), Nil),
+        )
     }
 }
+///The partial builder for [`App`].
 pub struct __PartialApp<__F0__: MapType, __F1__: MapType> {
     pub db_path: <__F0__ as MapType>::Map<String>,
     pub url: <__F1__ as MapType>::Map<String>,
@@ -372,7 +380,10 @@ impl FromFields for Http {
 }
 impl ToFields for Http {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.url.into(), Cons(self.timeout.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.url),
+            Cons(::core::convert::Into::into(self.timeout), Nil),
+        )
     }
 }
 impl ToFieldsRef for Http {
@@ -380,9 +391,13 @@ impl ToFieldsRef for Http {
     where
         Self: '__a,
     {
-        Cons((&self.url).into(), Cons((&self.timeout).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.url),
+            Cons(::core::convert::Into::into(&self.timeout), Nil),
+        )
     }
 }
+///The partial builder for [`Http`].
 pub struct __PartialHttp<__F0__: MapType, __F1__: MapType> {
     pub url: <__F0__ as MapType>::Map<String>,
     pub timeout: <__F1__ as MapType>::Map<u64>,

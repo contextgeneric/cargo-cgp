@@ -74,8 +74,10 @@ impl FromFields for FooBar {
 impl ToFields for FooBar {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Foo(field) => Either::Left(field.into()),
-            Self::Bar(field) => Either::Right(Either::Left(field.into())),
+            Self::Foo(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Bar(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -85,8 +87,10 @@ impl ToFieldsRef for FooBar {
         Self: '__a,
     {
         match self {
-            Self::Foo(field) => Either::Left(field.into()),
-            Self::Bar(field) => Either::Right(Either::Left(field.into())),
+            Self::Foo(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Bar(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -108,10 +112,12 @@ impl FromVariant<Symbol!("Bar")> for FooBar {
         Self::Bar(value)
     }
 }
+///The partial extractor for [`FooBar`].
 pub enum __PartialFooBar<__F0__: MapType, __F1__: MapType> {
     Foo(<__F0__ as MapType>::Map<u64>),
     Bar(<__F1__ as MapType>::Map<String>),
 }
+///The borrowed partial extractor for [`FooBar`].
 pub enum __PartialRefFooBar<
     '__a__,
     __R__: MapTypeRef,
@@ -311,8 +317,10 @@ impl FromFields for FooQux {
 impl ToFields for FooQux {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Foo(field) => Either::Left(field.into()),
-            Self::Qux(field) => Either::Right(Either::Left(field.into())),
+            Self::Foo(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Qux(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -322,8 +330,10 @@ impl ToFieldsRef for FooQux {
         Self: '__a,
     {
         match self {
-            Self::Foo(field) => Either::Left(field.into()),
-            Self::Qux(field) => Either::Right(Either::Left(field.into())),
+            Self::Foo(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Qux(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -345,10 +355,12 @@ impl FromVariant<Symbol!("Qux")> for FooQux {
         Self::Qux(value)
     }
 }
+///The partial extractor for [`FooQux`].
 pub enum __PartialFooQux<__F0__: MapType, __F1__: MapType> {
     Foo(<__F0__ as MapType>::Map<u64>),
     Qux(<__F1__ as MapType>::Map<char>),
 }
+///The borrowed partial extractor for [`FooQux`].
 pub enum __PartialRefFooQux<
     '__a__,
     __R__: MapTypeRef,

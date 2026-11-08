@@ -36,6 +36,7 @@ where
         <__Provider__ as DelegateComponent<LoaderComponent>>::Delegate::load(__context__)
     }
 }
+///Component marker for [`CanLoad`].
 pub struct LoaderComponent;
 impl<__Context__> Loader<__Context__> for UseContext
 where

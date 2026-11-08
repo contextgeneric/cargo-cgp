@@ -39,6 +39,7 @@ where
         ScalarTypeProviderComponent,
     >>::Delegate as ScalarTypeProvider<__Context__>>::Scalar;
 }
+///Component marker for [`HasScalarType`].
 pub struct ScalarTypeProviderComponent;
 impl<__Context__> ScalarTypeProvider<__Context__> for UseContext
 where
@@ -97,7 +98,9 @@ for WithProvider<__Provider__>
 where
     __Provider__: TypeProvider<__Context__, ScalarTypeProviderComponent, Type = Scalar>,
 {}
+///The trait for the `get_weight` operation.
 pub trait GetWeight: HasScalarType {
+    ///The `get_weight` operation.
     fn get_weight(&self) -> <Self as HasScalarType>::Weight;
 }
 impl<__Context__> GetWeight for __Context__

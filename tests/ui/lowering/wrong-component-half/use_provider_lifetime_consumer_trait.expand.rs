@@ -45,6 +45,7 @@ where
         >>::Delegate::read(__context__, source)
     }
 }
+///Component marker for [`CanRead`].
 pub struct ReaderComponent;
 impl<'a, __Context__, Source> Reader<'a, __Context__, Source> for UseContext
 where
@@ -110,5 +111,6 @@ impl<
 where
     Inner: CanRead<'a, __Context__, Source>,
 {}
+///Provider `ReadThrough` for [`Reader`].
 pub struct ReadThrough<Inner>(pub ::core::marker::PhantomData<Inner>);
 fn main() {}

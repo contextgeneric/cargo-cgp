@@ -53,6 +53,7 @@ where
         >>::Delegate::check(__context__)
     }
 }
+///Component marker for [`CanCheck`].
 pub struct CheckerComponent;
 impl<__Context__> Checker<__Context__> for UseContext
 where
@@ -99,5 +100,6 @@ impl<__Context__> Checker<__Context__> for CheckSelf {
     }
 }
 impl<__Context__> IsProviderFor<CheckerComponent, __Context__, ()> for CheckSelf {}
+///Provider `CheckSelf` for [`Checker`].
 pub struct CheckSelf;
 fn main() {}

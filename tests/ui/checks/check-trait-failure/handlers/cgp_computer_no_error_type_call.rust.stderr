@@ -9,19 +9,20 @@ error[E0599]: the method `try_compute` exists for struct `App`, but its trait bo
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter
 note: the candidate is defined in the trait `cgp::prelude::TryComputer`
-  --> $CGP/crates/extra/cgp-handler/src/components/try_compute.rs:16:5
+  --> $CGP/crates/extra/cgp-handler/src/components/try_compute.rs:23:5
    |
-16 |     fn try_compute(&self, _code: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
+23 |     fn try_compute(&self, _code: PhantomData<Code>, input: Input) -> Result<Self::Output, Error>;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: the following trait bounds were not satisfied:
            `App: ErrorTypeProvider<App>`
            which is required by `App: CanTryCompute<_, _>`
 note: the trait `ErrorTypeProvider` must be implemented
-  --> $CGP/crates/core/cgp-error/src/traits/has_error_type.rs:27:1
+  --> $CGP/crates/core/cgp-error/src/traits/has_error_type.rs:12:1
    |
-27 | / pub trait HasErrorType {
-28 | |     type Error: Debug;
-29 | | }
+12 | / pub trait HasErrorType {
+13 | |     /// The context's error type.
+14 | |     type Error: Debug;
+15 | | }
    | |_^
    = help: items from traits can only be used if the trait is implemented and in scope
    = note: the following trait defines an item `try_compute`, perhaps you need to implement it:

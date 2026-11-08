@@ -78,7 +78,7 @@ error[E0277]: the trait bound `App: CanUseComponent<BarComponent>` is not satisf
 88 |         BarComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:73:1
    |
 73 | pub struct App {
@@ -132,7 +132,7 @@ error[E0277]: the trait bound `App: CanUseComponent<FooComponent>` is not satisf
 89 |         FooComponent,
    |         ^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:73:1
    |
 73 | pub struct App {

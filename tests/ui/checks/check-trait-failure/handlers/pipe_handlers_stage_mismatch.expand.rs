@@ -19,6 +19,7 @@ impl<Context, Code> Computer<Context, Code, u64> for ToText {
     }
 }
 impl<Context, Code> IsProviderFor<ComputerComponent, Context, (Code, u64)> for ToText {}
+///Provider `ToText` for [`Computer`].
 pub struct ToText;
 impl<Context, Code> Computer<Context, Code, u64> for Double {
     type Output = u64;
@@ -27,6 +28,7 @@ impl<Context, Code> Computer<Context, Code, u64> for Double {
     }
 }
 impl<Context, Code> IsProviderFor<ComputerComponent, Context, (Code, u64)> for Double {}
+///Provider `Double` for [`Computer`].
 pub struct Double;
 pub struct App;
 impl DelegateComponent<ComputerComponent> for App {

@@ -28,6 +28,7 @@ for RaisePlain
 where
     __Context__: HasErrorType,
 {}
+///Provider `RaisePlain` for [`ErrorRaiser`].
 pub struct RaisePlain;
 impl<__Components__> DefaultImpls1<ErrorRaiserComponent, __Components__> for String {
     type Delegate = RaisePlain;

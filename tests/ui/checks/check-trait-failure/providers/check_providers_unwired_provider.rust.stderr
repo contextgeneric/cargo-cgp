@@ -1,33 +1,29 @@
-error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
+error[E0277]: the trait bound `GreetHello: IsProviderFor<GreeterComponent, App>` is not satisfied
   --> src/main.rs:30:23
    |
 30 |     #[check_providers(GreetHello)]
    |                       ^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:27:1
+help: the trait `IsProviderFor<GreeterComponent, App>` is not implemented for `GreetHello`
+  --> src/main.rs:20:16
    |
-27 | pub struct App;
-   | ^^^^^^^^^^^^^^
+20 | #[cgp_impl(new GreetHello)]
+   |                ^^^^^^^^^^
 help: the trait `IsProviderFor<GreeterComponent, __Context__>` is conditionally implemented for `GreetHello`
   --> src/main.rs:21:1
    |
 20 |   #[cgp_impl(new GreetHello)]
    |   ---------------------------
    |   |
-   |   unsatisfied requirement introduced here: `<_ as HasField<Symbol<4, Chars<..>>>>::Value == String`
    |   unsatisfied requirement introduced here: `_: HasField<Symbol<4, Chars<..>>>`
+   |   unsatisfied requirement introduced here: `<_ as HasField<Symbol<4, Chars<..>>>>::Value: AsRef<str>`
+   |   unsatisfied requirement introduced here: `<_ as HasField<Symbol<4, Chars<..>>>>::Value: 'static`
 21 | / impl Greeter {
 22 | |     fn greet(&self, #[implicit] name: &str) -> String {
 23 | |         format!("hello {name}")
 24 | |     }
 25 | | }
    | |_^
-note: required for `GreetHello` to implement `IsProviderFor<GreeterComponent, App>`
-  --> src/main.rs:20:1
-   |
-20 | #[cgp_impl(new GreetHello)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required by a bound in `__CheckApp`
   --> src/main.rs:29:1
    |
@@ -38,6 +34,6 @@ note: required by a bound in `__CheckApp`
 33 | |     }
 34 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

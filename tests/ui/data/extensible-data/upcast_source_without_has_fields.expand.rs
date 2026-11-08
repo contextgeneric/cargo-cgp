@@ -14,9 +14,11 @@ use cgp::prelude::*;
 pub enum Small {
     Foo(u64),
 }
+///The partial extractor for [`Small`].
 pub enum __PartialSmall<__F0__: MapType> {
     Foo(<__F0__ as MapType>::Map<u64>),
 }
+///The borrowed partial extractor for [`Small`].
 pub enum __PartialRefSmall<'__a__, __R__: MapTypeRef, __F0__: MapType> {
     Foo(<__F0__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, u64>>),
 }
@@ -140,8 +142,10 @@ impl FromFields for Big {
 impl ToFields for Big {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Foo(field) => Either::Left(field.into()),
-            Self::Bar(field) => Either::Right(Either::Left(field.into())),
+            Self::Foo(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Bar(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -151,8 +155,10 @@ impl ToFieldsRef for Big {
         Self: '__a,
     {
         match self {
-            Self::Foo(field) => Either::Left(field.into()),
-            Self::Bar(field) => Either::Right(Either::Left(field.into())),
+            Self::Foo(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Bar(field) => {
+                Either::Right(Either::Left(::core::convert::Into::into(field)))
+            }
         }
     }
 }
@@ -174,10 +180,12 @@ impl FromVariant<Symbol!("Bar")> for Big {
         Self::Bar(value)
     }
 }
+///The partial extractor for [`Big`].
 pub enum __PartialBig<__F0__: MapType, __F1__: MapType> {
     Foo(<__F0__ as MapType>::Map<u64>),
     Bar(<__F1__ as MapType>::Map<String>),
 }
+///The borrowed partial extractor for [`Big`].
 pub enum __PartialRefBig<'__a__, __R__: MapTypeRef, __F0__: MapType, __F1__: MapType> {
     Foo(<__F0__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, u64>>),
     Bar(<__F1__ as MapType>::Map<<__R__ as MapTypeRef>::Map<'__a__, String>>),

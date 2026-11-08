@@ -52,6 +52,7 @@ where
         >>::Delegate::height(__context__)
     }
 }
+///Component marker for [`HasDimensions`].
 pub struct DimensionsGetterComponent;
 impl<__Context__> DimensionsGetter<__Context__> for UseContext
 where
@@ -103,10 +104,13 @@ where
     __Context__: HasField<Symbol!("height"), Value = f64>,
 {
     fn width(__context__: &__Context__) -> &f64 {
-        __context__.get_field(::core::marker::PhantomData::<Symbol!("width")>)
+        HasField::get_field(__context__, ::core::marker::PhantomData::<Symbol!("width")>)
     }
     fn height(__context__: &__Context__) -> &f64 {
-        __context__.get_field(::core::marker::PhantomData::<Symbol!("height")>)
+        HasField::get_field(
+            __context__,
+            ::core::marker::PhantomData::<Symbol!("height")>,
+        )
     }
 }
 impl<__Context__> IsProviderFor<DimensionsGetterComponent, __Context__, ()> for UseFields

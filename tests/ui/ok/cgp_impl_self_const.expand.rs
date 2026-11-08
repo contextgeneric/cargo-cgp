@@ -46,6 +46,7 @@ where
         >>::Delegate::allow(__context__, count)
     }
 }
+///Component marker for [`CanRateLimit`].
 pub struct RateLimiterComponent;
 impl<__Context__> RateLimiter<__Context__> for UseContext
 where
@@ -96,6 +97,7 @@ impl<__Context__> RateLimiter<__Context__> for AllowUnderLimit {
 }
 impl<__Context__> IsProviderFor<RateLimiterComponent, __Context__, ()>
 for AllowUnderLimit {}
+///Provider `AllowUnderLimit` for [`RateLimiter`].
 pub struct AllowUnderLimit;
 pub struct App;
 impl DelegateComponent<RateLimiterComponent> for App {

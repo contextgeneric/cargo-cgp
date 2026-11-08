@@ -44,6 +44,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -82,19 +83,23 @@ where
 {}
 impl<__Context__> Greeter<__Context__> for GreetName
 where
-    __Context__: HasField<Symbol!("name"), Value = String>,
+    __Context__: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {
     fn greet(__context__: &__Context__) -> String {
-        let name: &str = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("name")>)
-            .as_str();
+        let name: &str = ::core::convert::AsRef::as_ref(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("name")>,
+            ),
+        );
         name.to_owned()
     }
 }
 impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetName
 where
-    __Context__: HasField<Symbol!("name"), Value = String>,
+    __Context__: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {}
+///Provider `GreetName` for [`Greeter`].
 pub struct GreetName;
 pub struct App<T> {
     pub other: PhantomData<T>,

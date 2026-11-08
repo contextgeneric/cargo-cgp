@@ -31,6 +31,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (u64, u64))> for Add {}
+///Provider `Add` for [`Computer`].
 pub struct Add;
 impl DelegateComponent<ComputerRefComponent> for Add
 where
@@ -189,6 +190,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (u64, u64))> for CheckedAdd {}
+///Provider `CheckedAdd` for [`Computer`].
 pub struct CheckedAdd;
 impl DelegateComponent<ComputerRefComponent> for CheckedAdd
 where
@@ -349,6 +351,7 @@ impl<
     __Code__,
 > IsProviderFor<AsyncComputerComponent, __Context__, (__Code__, (u64, u64))>
 for AddAsync {}
+///Provider `AddAsync` for [`AsyncComputer`].
 pub struct AddAsync;
 impl DelegateComponent<AsyncComputerRefComponent> for AddAsync
 where
@@ -429,6 +432,7 @@ impl<
     __Code__,
 > IsProviderFor<AsyncComputerComponent, __Context__, (__Code__, (u64, u64))>
 for CheckedAddAsync {}
+///Provider `CheckedAddAsync` for [`AsyncComputer`].
 pub struct CheckedAddAsync;
 impl DelegateComponent<AsyncComputerRefComponent> for CheckedAddAsync
 where
@@ -512,6 +516,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (T, T))> for AddGeneric {}
+///Provider `AddGeneric` for [`Computer`].
 pub struct AddGeneric;
 impl DelegateComponent<ComputerRefComponent> for AddGeneric
 where
@@ -672,6 +677,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (&Value))> for ToStringRef {}
+///Provider `ToStringRef` for [`Computer`].
 pub struct ToStringRef;
 impl DelegateComponent<ComputerRefComponent> for ToStringRef
 where
@@ -827,6 +833,7 @@ impl<__Context__, __Code__> Producer<__Context__, __Code__> for MagicNumber {
 }
 impl<__Context__, __Code__> IsProviderFor<ProducerComponent, __Context__, (__Code__)>
 for MagicNumber {}
+///Provider `MagicNumber` for [`Producer`].
 pub struct MagicNumber;
 impl DelegateComponent<ComputerComponent> for MagicNumber {
     type Delegate = PromoteProducer<Self>;

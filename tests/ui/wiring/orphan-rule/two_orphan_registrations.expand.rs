@@ -32,6 +32,7 @@ for RaiseString
 where
     __Context__: HasErrorType,
 {}
+///Provider `RaiseString` for [`ErrorRaiser`].
 pub struct RaiseString;
 impl<__Components__> DefaultImpls1<ErrorRaiserComponent, __Components__> for String {
     type Delegate = RaiseString;
@@ -51,6 +52,7 @@ for RaiseStr
 where
     __Context__: HasErrorType,
 {}
+///Provider `RaiseStr` for [`ErrorRaiser`].
 pub struct RaiseStr;
 impl<__Components__> DefaultImpls1<ErrorRaiserComponent, __Components__>
 for &'static str {

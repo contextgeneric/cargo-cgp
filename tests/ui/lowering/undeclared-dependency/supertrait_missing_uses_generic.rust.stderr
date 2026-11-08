@@ -4,7 +4,7 @@ error[E0277]: the trait bound `__Context__: TagFor<u32>` is not satisfied
 27 | #[cgp_impl(new TagIt)]
    | ^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-   = help: the trait `cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>` is not implemented for `__Context__`
+   = help: the trait `HasField<Symbol<5, cgp::prelude::Chars<..>>>` is not implemented for `__Context__`
 note: required for `__Context__` to implement `TagFor<u32>`
   --> src/main.rs:15:1
    |

@@ -38,7 +38,7 @@ impl FromFields for Shape {
 impl ToFields for Shape {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Circle(field) => Either::Left(field.into()),
+            Self::Circle(field) => Either::Left(::core::convert::Into::into(field)),
         }
     }
 }
@@ -48,7 +48,7 @@ impl ToFieldsRef for Shape {
         Self: '__a,
     {
         match self {
-            Self::Circle(field) => Either::Left(field.into()),
+            Self::Circle(field) => Either::Left(::core::convert::Into::into(field)),
         }
     }
 }

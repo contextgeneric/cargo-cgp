@@ -46,6 +46,7 @@ pub mod finance {
             QuantityTypeProviderComponent,
         >>::Delegate as QuantityTypeProvider<__Context__>>::Quantity;
     }
+    ///Component marker for [`HasQuantityType`].
     pub struct QuantityTypeProviderComponent;
     impl<__Context__> QuantityTypeProvider<__Context__> for UseContext
     where

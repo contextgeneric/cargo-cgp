@@ -68,7 +68,10 @@ impl FromFields for Person {
 }
 impl ToFields for Person {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.first_name.into(), Cons(self.surname.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.first_name),
+            Cons(::core::convert::Into::into(self.surname), Nil),
+        )
     }
 }
 impl ToFieldsRef for Person {
@@ -76,9 +79,13 @@ impl ToFieldsRef for Person {
     where
         Self: '__a,
     {
-        Cons((&self.first_name).into(), Cons((&self.surname).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.first_name),
+            Cons(::core::convert::Into::into(&self.surname), Nil),
+        )
     }
 }
+///The partial builder for [`Person`].
 pub struct __PartialPerson<__F0__: MapType, __F1__: MapType> {
     pub first_name: <__F0__ as MapType>::Map<String>,
     pub surname: <__F1__ as MapType>::Map<String>,
@@ -232,7 +239,10 @@ impl FromFields for Employee {
 }
 impl ToFields for Employee {
     fn to_fields(self) -> Self::Fields {
-        Cons(self.first_name.into(), Cons(self.last_name.into(), Nil))
+        Cons(
+            ::core::convert::Into::into(self.first_name),
+            Cons(::core::convert::Into::into(self.last_name), Nil),
+        )
     }
 }
 impl ToFieldsRef for Employee {
@@ -240,9 +250,13 @@ impl ToFieldsRef for Employee {
     where
         Self: '__a,
     {
-        Cons((&self.first_name).into(), Cons((&self.last_name).into(), Nil))
+        Cons(
+            ::core::convert::Into::into(&self.first_name),
+            Cons(::core::convert::Into::into(&self.last_name), Nil),
+        )
     }
 }
+///The partial builder for [`Employee`].
 pub struct __PartialEmployee<__F0__: MapType, __F1__: MapType> {
     pub first_name: <__F0__ as MapType>::Map<String>,
     pub last_name: <__F1__ as MapType>::Map<String>,

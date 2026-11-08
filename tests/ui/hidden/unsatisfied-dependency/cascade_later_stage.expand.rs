@@ -36,7 +36,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 /// First pipe stage: depends only on `Input: Send`. With the call's unknown input this cannot be
@@ -65,6 +67,7 @@ where
     Input: Send,
     __Context__: HasErrorType,
 {}
+///Provider `HandleConnect` for [`Handler`].
 pub struct HandleConnect;
 /// Second pipe stage: reads the context's `name` field: the buried root cause. Its input is the
 /// first stage's unresolved `::Output`; because it accepts *any* input (like a real DSL's later
@@ -95,9 +98,13 @@ where
     Input: Send,
     __Context__: HasErrorType,
 {}
+///Provider `HandleName` for [`Handler`].
 pub struct HandleName;
+///Wiring table for the `MyNamespace` namespace.
 pub struct __MyNamespaceComponents;
+///The `MyNamespace` namespace's wiring table.
 pub trait MyNamespace<__Table__> {
+    ///The provider table the `MyNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> MyNamespace<__Table__> for __Key__

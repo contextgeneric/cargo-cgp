@@ -41,6 +41,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -104,6 +105,7 @@ where
         <__Provider__ as DelegateComponent<NamerComponent>>::Delegate::name(__context__)
     }
 }
+///Component marker for [`CanName`].
 pub struct NamerComponent;
 impl<__Context__> Namer<__Context__> for UseContext
 where
@@ -170,6 +172,7 @@ where
         >>::Delegate::welcome(__context__)
     }
 }
+///Component marker for [`CanWelcome`].
 pub struct WelcomerComponent;
 impl<__Context__> Welcomer<__Context__> for UseContext
 where
@@ -222,6 +225,7 @@ impl<__Context__> IsProviderFor<WelcomerComponent, __Context__, ()> for GreetWit
 where
     __Context__: CanGreet + CanName,
 {}
+///Provider `GreetWithName` for [`Welcomer`].
 pub struct GreetWithName;
 impl<__Context__> Namer<__Context__> for NameFixed {
     fn name(__context__: &__Context__) -> String {
@@ -229,6 +233,7 @@ impl<__Context__> Namer<__Context__> for NameFixed {
     }
 }
 impl<__Context__> IsProviderFor<NamerComponent, __Context__, ()> for NameFixed {}
+///Provider `NameFixed` for [`Namer`].
 pub struct NameFixed;
 pub struct App;
 impl<__Key__, __Value__> DelegateComponent<__Key__> for App

@@ -30,6 +30,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (u64, u64))> for Add {}
+///Provider `Add` for [`Computer`].
 pub struct Add;
 impl DelegateComponent<ComputerRefComponent> for Add
 where

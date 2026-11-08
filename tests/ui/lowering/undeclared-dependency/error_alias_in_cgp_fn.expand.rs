@@ -14,7 +14,9 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///The trait for the `some_error` operation.
 pub trait SomeError {
+    ///The `some_error` operation.
     fn some_error(&self) -> Option<Error>;
 }
 impl<__Context__> SomeError for __Context__ {

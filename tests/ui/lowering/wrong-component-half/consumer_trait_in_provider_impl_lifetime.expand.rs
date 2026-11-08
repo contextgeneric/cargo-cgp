@@ -45,6 +45,7 @@ where
         >>::Delegate::read(__context__, source)
     }
 }
+///Component marker for [`CanRead`].
 pub struct ReaderComponent;
 impl<'a, __Context__, Source> Reader<'a, __Context__, Source> for UseContext
 where
@@ -100,5 +101,6 @@ impl<'a, __Context__> CanRead<'a, __Context__, Text> for ReadText {
 }
 impl<'a, __Context__> IsProviderFor<CanReadComponent, __Context__, (Life<'a>, Text)>
 for ReadText {}
+///Provider `ReadText` for [`CanRead`].
 pub struct ReadText;
 fn main() {}

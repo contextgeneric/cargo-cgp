@@ -1,20 +1,10 @@
-error[E0599]: the method `person_name` exists for reference `&__Context__`, but its trait bounds were not satisfied
+error[E0599]: no method named `person_name` found for reference `&__Context__` in the current scope
   --> src/main.rs:39:36
    |
 39 |         format!("Hello, {}!", self.person_name())
-   |                                    ^^^^^^^^^^^ method cannot be called on `&__Context__` due to unsatisfied trait bounds
+   |                                    ^^^^^^^^^^^ method not found in `&__Context__`
    |
-note: the following trait bounds were not satisfied:
-      `&__Context__: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>`
-      `__Context__: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>`
-  --> src/main.rs:26:1
-   |
-26 | #[cgp_fn]
-   | ^^^^^^^^^
-27 | fn person_name(&self, #[implicit] name: &str) -> String {
-   |    ^^^^^^^^^^^
    = help: items from traits can only be used if the type parameter is bounded by the trait
-   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: the following trait defines an item `person_name`, perhaps you need to restrict type parameter `__Context__` with it:
    |
 36 | #[cgp_impl(new GreetHello)]: PersonName

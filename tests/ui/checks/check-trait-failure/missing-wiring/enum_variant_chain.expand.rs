@@ -54,6 +54,7 @@ where
         >>::Delegate::encode_variant(__context__, value)
     }
 }
+///Component marker for [`CanEncodeVariant`].
 pub struct VariantEncoderComponent;
 impl<__Context__, Value> VariantEncoder<__Context__, Value> for UseContext
 where
@@ -105,6 +106,7 @@ impl<__Context__> VariantEncoder<__Context__, u64> for EncodeU64 {
 }
 impl<__Context__> IsProviderFor<VariantEncoderComponent, __Context__, (u64)>
 for EncodeU64 {}
+///Provider `EncodeU64` for [`VariantEncoder`].
 pub struct EncodeU64;
 pub trait EncodeVariants<Context> {
     fn encode_variants(context: &Context) -> String;
@@ -138,6 +140,7 @@ for EncodeChoice
 where
     Enum! { Rect(u64), Circle(f64) }: EncodeVariants<__Context__>,
 {}
+///Provider `EncodeChoice` for [`VariantEncoder`].
 pub struct EncodeChoice;
 pub struct App;
 impl DelegateComponent<VariantEncoderComponent> for App {

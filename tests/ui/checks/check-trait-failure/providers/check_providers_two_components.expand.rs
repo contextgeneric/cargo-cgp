@@ -40,6 +40,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -104,6 +105,7 @@ where
         >>::Delegate::bye(__context__)
     }
 }
+///Component marker for [`CanSayBye`].
 pub struct FarewellComponent;
 impl<__Context__> Farewell<__Context__> for UseContext
 where
@@ -142,12 +144,15 @@ where
 {}
 impl<__Context__> Greeter<__Context__> for GreetAndBye
 where
-    __Context__: HasField<Symbol!("name"), Value = String>,
+    __Context__: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {
     fn greet(__context__: &__Context__) -> String {
-        let name: &str = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("name")>)
-            .as_str();
+        let name: &str = ::core::convert::AsRef::as_ref(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("name")>,
+            ),
+        );
         ::alloc::__export::must_use({
             ::alloc::fmt::format(format_args!("hello {0}", name))
         })
@@ -155,17 +160,24 @@ where
 }
 impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetAndBye
 where
-    __Context__: HasField<Symbol!("name"), Value = String>,
+    __Context__: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {}
+///Provider `GreetAndBye` for [`Greeter`].
 pub struct GreetAndBye;
 impl<__Context__> Farewell<__Context__> for GreetAndBye
 where
-    __Context__: HasField<Symbol!("title"), Value = String>,
+    __Context__: HasField<
+        Symbol!("title"),
+        Value: ::core::convert::AsRef<str> + 'static,
+    >,
 {
     fn bye(__context__: &__Context__) -> String {
-        let title: &str = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("title")>)
-            .as_str();
+        let title: &str = ::core::convert::AsRef::as_ref(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("title")>,
+            ),
+        );
         ::alloc::__export::must_use({
             ::alloc::fmt::format(format_args!("bye {0}", title))
         })
@@ -173,7 +185,10 @@ where
 }
 impl<__Context__> IsProviderFor<FarewellComponent, __Context__, ()> for GreetAndBye
 where
-    __Context__: HasField<Symbol!("title"), Value = String>,
+    __Context__: HasField<
+        Symbol!("title"),
+        Value: ::core::convert::AsRef<str> + 'static,
+    >,
 {}
 pub struct App;
 trait __CheckApp<

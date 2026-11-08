@@ -45,6 +45,7 @@ where
         >>::Delegate::describe(__context__, value)
     }
 }
+///Component marker for [`CanDescribe`].
 pub struct DescriberComponent;
 impl<__Context__, T> Describer<__Context__, T> for UseContext
 where
@@ -95,6 +96,7 @@ impl<__Context__, T> Describer<__Context__, T> for DescribeAny {
 }
 impl<__Context__, T> IsProviderFor<DescriberComponent, __Context__, (T)>
 for DescribeAny {}
+///Provider `DescribeAny` for [`Describer`].
 pub struct DescribeAny;
 pub struct Wrap<T>(pub T);
 pub struct App;

@@ -1,58 +1,14 @@
-error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satisfied
+error[E0277]: the trait bound `GreetAndBye: IsProviderFor<GreeterComponent, App>` is not satisfied
   --> src/main.rs:43:23
    |
 43 |     #[check_providers(GreetAndBye)]
    |                       ^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:40:1
-   |
-40 | pub struct App;
-   | ^^^^^^^^^^^^^^
-help: `GreetAndBye` implements trait `IsProviderFor<Component, Context, Params>`
-  --> src/main.rs:27:1
-   |
-27 | / impl Greeter {
-28 | |     fn greet(&self, #[implicit] name: &str) -> String {
-29 | |         format!("hello {name}")
-30 | |     }
-31 | | }
-   | |_^ `IsProviderFor<GreeterComponent, __Context__>`
-...
-34 | / impl Farewell {
-35 | |     fn bye(&self, #[implicit] title: &str) -> String {
-36 | |         format!("bye {title}")
-37 | |     }
-38 | | }
-   | |_^ `IsProviderFor<FarewellComponent, __Context__>`
-note: required for `GreetAndBye` to implement `IsProviderFor<GreeterComponent, App>`
-  --> src/main.rs:26:1
+help: the trait `IsProviderFor<GreeterComponent, App>` is not implemented for `GreetAndBye`
+  --> src/main.rs:26:16
    |
 26 | #[cgp_impl(new GreetAndBye)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: required by a bound in `__CheckApp`
-  --> src/main.rs:42:1
-   |
-42 | / check_components! {
-43 | |     #[check_providers(GreetAndBye)]
-44 | |     App {
-45 | |         GreeterComponent,
-...  |
-48 | | }
-   | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0277]: the trait bound `App: HasField<Symbol<5, Chars<..>>>` is not satisfied
-  --> src/main.rs:43:23
-   |
-43 |     #[check_providers(GreetAndBye)]
-   |                       ^^^^^^^^^^^ unsatisfied trait bound
-   |
-help: the trait `cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>` is not implemented for `App`
-  --> src/main.rs:40:1
-   |
-40 | pub struct App;
-   | ^^^^^^^^^^^^^^
+   |                ^^^^^^^^^^^
 help: `GreetAndBye` implements trait `IsProviderFor<Component, Context, Params>`
   --> src/main.rs:27:1
    |
@@ -69,11 +25,6 @@ help: `GreetAndBye` implements trait `IsProviderFor<Component, Context, Params>`
 37 | |     }
 38 | | }
    | |_^ `IsProviderFor<FarewellComponent, __Context__>`
-note: required for `GreetAndBye` to implement `IsProviderFor<FarewellComponent, App>`
-  --> src/main.rs:33:1
-   |
-33 | #[cgp_impl(GreetAndBye)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^
 note: required by a bound in `__CheckApp`
   --> src/main.rs:42:1
    |
@@ -84,6 +35,45 @@ note: required by a bound in `__CheckApp`
 ...  |
 48 | | }
    | |_^ required by this bound in `__CheckApp`
-   = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `GreetAndBye: IsProviderFor<FarewellComponent, App>` is not satisfied
+  --> src/main.rs:43:23
+   |
+43 |     #[check_providers(GreetAndBye)]
+   |                       ^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `IsProviderFor<FarewellComponent, App>` is not implemented for `GreetAndBye`
+  --> src/main.rs:26:16
+   |
+26 | #[cgp_impl(new GreetAndBye)]
+   |                ^^^^^^^^^^^
+help: `GreetAndBye` implements trait `IsProviderFor<Component, Context, Params>`
+  --> src/main.rs:27:1
+   |
+27 | / impl Greeter {
+28 | |     fn greet(&self, #[implicit] name: &str) -> String {
+29 | |         format!("hello {name}")
+30 | |     }
+31 | | }
+   | |_^ `IsProviderFor<GreeterComponent, __Context__>`
+...
+34 | / impl Farewell {
+35 | |     fn bye(&self, #[implicit] title: &str) -> String {
+36 | |         format!("bye {title}")
+37 | |     }
+38 | | }
+   | |_^ `IsProviderFor<FarewellComponent, __Context__>`
+note: required by a bound in `__CheckApp`
+  --> src/main.rs:42:1
+   |
+42 | / check_components! {
+43 | |     #[check_providers(GreetAndBye)]
+44 | |     App {
+45 | |         GreeterComponent,
+...  |
+48 | | }
+   | |_^ required by this bound in `__CheckApp`
+   = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

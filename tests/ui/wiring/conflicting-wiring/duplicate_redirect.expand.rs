@@ -43,6 +43,7 @@ where
         <__Provider__ as DelegateComponent<FooComponent>>::Delegate::foo(__context__)
     }
 }
+///Component marker for [`CanFoo`].
 pub struct FooComponent;
 impl<__Context__> Foo<__Context__> for UseContext
 where

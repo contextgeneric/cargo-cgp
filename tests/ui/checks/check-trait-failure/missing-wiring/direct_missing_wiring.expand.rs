@@ -47,6 +47,7 @@ where
         >>::Delegate::foo(__context__)
     }
 }
+///Component marker for [`CanUseFoo`].
 pub struct FooProviderComponent;
 impl<__Context__> FooProvider<__Context__> for UseContext
 where
@@ -87,6 +88,7 @@ impl<__Context__> FooProvider<__Context__> for DoFoo {
     fn foo(__context__: &__Context__) {}
 }
 impl<__Context__> IsProviderFor<FooProviderComponent, __Context__, ()> for DoFoo {}
+///Provider `DoFoo` for [`FooProvider`].
 pub struct DoFoo;
 pub struct App;
 trait __CheckApp<

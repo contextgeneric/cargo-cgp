@@ -36,6 +36,7 @@ impl<__Context__> IsProviderFor<AnnouncerComponent, __Context__, ()> for Announc
 where
     __Context__: HasName,
 {}
+///Provider `AnnounceQuietly` for [`Announcer`].
 pub struct AnnounceQuietly;
 impl<__Components__> AppNamespace<__Components__> for Path!(@app.AnnouncerComponent) {
     type Delegate = AnnounceQuietly;

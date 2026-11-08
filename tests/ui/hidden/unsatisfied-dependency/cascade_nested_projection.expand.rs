@@ -93,6 +93,7 @@ impl<
 where
     __Context__: CanHandle<InCode, Input, Output = Output>,
 {}
+///Provider `Call` for [`Handler`].
 pub struct Call<InCode>(pub ::core::marker::PhantomData<InCode>);
 /// Stage 1: produces a *fixed* `ByteStream`, but its `Input: Send` dependency cannot be shown under
 /// the call's unknown input, so `<App as CanHandle<Fetch, _>>::Output` stalls, even though its
@@ -117,6 +118,7 @@ where
     Input: Send,
     __Context__: HasErrorType,
 {}
+///Provider `HandleFetch` for [`Handler`].
 pub struct HandleFetch;
 /// The inner adapter of `Digest`'s nested pipeline: adapts whatever stream comes in, forwarding a
 /// `ByteStream`. Generic over the code, like a stream-conversion step.
@@ -141,6 +143,7 @@ impl<
 where
     __Context__: HasErrorType,
 {}
+///Provider `HandleAdapt` for [`Handler`].
 pub struct HandleAdapt;
 /// Stage 2's real work: consumes the adapted stream and produces the *fixed* projection output
 /// `Tagged<H::OutSize>`, independent of its input.
@@ -167,6 +170,7 @@ where
     H: HasOutSize,
     __Context__: HasErrorType,
 {}
+///Provider `HandleHash` for [`Handler`].
 pub struct HandleHash;
 /// Stage 3's actual writer: accepts a byte-like input and consumes it. Reached only once the
 /// input-dispatcher below has picked it for a known input type.
@@ -193,7 +197,9 @@ where
     Input: AsRef<[u8]>,
     __Context__: HasErrorType,
 {}
+///Provider `HandleWriteBytes` for [`Handler`].
 pub struct HandleWriteBytes;
+///Wiring table `HandleSink`.
 pub struct HandleSink;
 impl DelegateComponent<HandlerComponent> for HandleSink {
     type Delegate = UseInputDelegate<SinkHandlers>;
@@ -207,6 +213,7 @@ where
         SinkHandlers,
     >: IsProviderFor<HandlerComponent, __Context__, __Params__>,
 {}
+///Wiring table `SinkHandlers`.
 pub struct SinkHandlers;
 impl DelegateComponent<Vec<u8>> for SinkHandlers {
     type Delegate = HandleWriteBytes;
@@ -224,8 +231,11 @@ for SinkHandlers
 where
     HandleWriteBytes: IsProviderFor<String, __Context__, __Params__>,
 {}
+///Wiring table for the `MyNamespace` namespace.
 pub struct __MyNamespaceComponents;
+///The `MyNamespace` namespace's wiring table.
 pub trait MyNamespace<__Table__> {
+    ///The provider table the `MyNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> MyNamespace<__Table__> for __Key__

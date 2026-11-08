@@ -28,7 +28,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 pub trait CanGreet {
@@ -59,6 +61,7 @@ where
         >>::Delegate::greet(__context__)
     }
 }
+///Component marker for [`CanGreet`].
 pub struct GreeterComponent;
 impl<__Context__> Greeter<__Context__> for UseContext
 where
@@ -109,6 +112,7 @@ impl<__Context__> IsProviderFor<GreeterComponent, __Context__, ()> for GreetWith
 where
     __Context__: HasName,
 {}
+///Provider `GreetWithName` for [`Greeter`].
 pub struct GreetWithName;
 pub trait CanBidFarewell {
     fn farewell(&self) -> String;
@@ -138,6 +142,7 @@ where
         >>::Delegate::farewell(__context__)
     }
 }
+///Component marker for [`CanBidFarewell`].
 pub struct FarewellComponent;
 impl<__Context__> Farewell<__Context__> for UseContext
 where
@@ -188,6 +193,7 @@ impl<__Context__> IsProviderFor<FarewellComponent, __Context__, ()> for Farewell
 where
     __Context__: HasName,
 {}
+///Provider `FarewellWithName` for [`Farewell`].
 pub struct FarewellWithName;
 pub struct App {
     pub age: u8,

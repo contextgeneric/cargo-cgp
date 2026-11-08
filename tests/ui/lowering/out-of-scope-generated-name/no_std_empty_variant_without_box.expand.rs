@@ -50,8 +50,8 @@ impl FromFields for Status {
 impl ToFields for Status {
     fn to_fields(self) -> <Self as HasFields>::Fields {
         match self {
-            Self::Active(field) => Either::Left(field.into()),
-            Self::Closed => Either::Right(Either::Left(Nil.into())),
+            Self::Active(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Closed => Either::Right(Either::Left(::core::convert::Into::into(Nil))),
         }
     }
 }
@@ -61,8 +61,8 @@ impl ToFieldsRef for Status {
         Self: '__a,
     {
         match self {
-            Self::Active(field) => Either::Left(field.into()),
-            Self::Closed => Either::Right(Either::Left(Nil.into())),
+            Self::Active(field) => Either::Left(::core::convert::Into::into(field)),
+            Self::Closed => Either::Right(Either::Left(::core::convert::Into::into(Nil))),
         }
     }
 }
@@ -84,10 +84,12 @@ impl FromVariant<Symbol!("Closed")> for Status {
         Self::Closed {}
     }
 }
+///The partial extractor for [`Status`].
 pub enum __PartialStatus<__F0__: MapType, __F1__: MapType> {
     Active(<__F0__ as MapType>::Map<u64>),
     Closed(<__F1__ as MapType>::Map<Nil>),
 }
+///The borrowed partial extractor for [`Status`].
 pub enum __PartialRefStatus<
     '__a__,
     __R__: MapTypeRef,

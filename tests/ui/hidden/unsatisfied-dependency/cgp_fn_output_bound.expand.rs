@@ -41,6 +41,7 @@ where
         <__Provider__ as DelegateComponent<LoaderComponent>>::Delegate::load(__context__)
     }
 }
+///Component marker for [`CanLoad`].
 pub struct LoaderComponent;
 impl<__Context__, T> Loader<__Context__, T> for UseContext
 where
@@ -104,6 +105,7 @@ where
     T: Default,
     Context: HasName,
 {}
+///Provider `LoadVia` for [`Loader`].
 pub struct LoadVia;
 pub trait HasName {
     fn name(&self) -> &str;
@@ -113,10 +115,14 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
+///The trait for the `fetch_value` operation.
 pub trait CanFetchValue<T> {
+    ///The `fetch_value` operation.
     fn fetch_value(&self) -> T;
 }
 impl<__Context__, T> CanFetchValue<T> for __Context__

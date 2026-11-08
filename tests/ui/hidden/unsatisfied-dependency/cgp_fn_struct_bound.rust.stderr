@@ -6,24 +6,15 @@ error[E0277]: the trait bound `App: GetName` is not satisfied
    |                   |
    |                   required by a bound introduced by this call
    |
-help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App`
-      but trait `HasField<Symbol<5, Chars<..>>>` is implemented for it
-  --> src/main.rs:28:9
+help: the trait `GetName` is not implemented for `App`
+  --> src/main.rs:27:1
    |
-28 |     pub label: String,
-   |         ^^^^^
-note: required for `App` to implement `GetName`
-  --> src/main.rs:19:1
-   |
-19 | #[cgp_fn]
-   | ^^^^^^^^^
-20 | fn get_name(&self, #[implicit] name: &str) -> String {
-   |    ^^^^^^^^
+27 | pub struct App {
+   | ^^^^^^^^^^^^^^
 note: required by a bound in `Holder`
   --> src/main.rs:24:22
    |
 24 | pub struct Holder<T: GetName>(pub T);
    |                      ^^^^^^^ required by this bound in `Holder`
-   = note: this error originates in the attribute macro `cgp_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 For more information about this error, try `rustc --explain E0277`.

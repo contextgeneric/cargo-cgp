@@ -38,7 +38,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 /// First pipe stage: produce the context's name. Depends on `Self: HasName`, which
@@ -68,6 +70,7 @@ where
     Input: Send,
     __Context__: HasErrorType,
 {}
+///Provider `HandleReadName` for [`Handler`].
 pub struct HandleReadName;
 /// A pass-through stage, generic over a style marker, so the pipeline has depth and
 /// each step a distinct, DSL-sized name.
@@ -94,9 +97,13 @@ where
     __Context__: Sync,
     __Context__: HasErrorType,
 {}
+///Provider `HandlePass` for [`Handler`].
 pub struct HandlePass<Style>(pub ::core::marker::PhantomData<Style>);
+///Wiring table for the `BaseNamespace` namespace.
 pub struct __BaseNamespaceComponents;
+///The `BaseNamespace` namespace's wiring table.
 pub trait BaseNamespace<__Table__> {
+    ///The provider table the `BaseNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> BaseNamespace<__Table__> for __Key__
@@ -129,8 +136,11 @@ for PathCons<
 > {
     type Delegate = PipeHandlers<Steps>;
 }
+///Wiring table for the `ExtendedNamespace` namespace.
 pub struct __ExtendedNamespaceComponents;
+///The `ExtendedNamespace` namespace's wiring table.
 pub trait ExtendedNamespace<__Table__> {
+    ///The provider table the `ExtendedNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> ExtendedNamespace<__Table__> for __Key__

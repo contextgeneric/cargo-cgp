@@ -45,6 +45,7 @@ where
         <__Provider__ as DelegateComponent<LoaderComponent>>::Delegate::load(__context__)
     }
 }
+///Component marker for [`CanLoad`].
 pub struct LoaderComponent;
 impl<__Context__> Loader<__Context__> for UseContext
 where
@@ -94,5 +95,6 @@ impl<__Context__> Loader<__Context__> for LoadNothing {
     }
 }
 impl<__Context__> IsProviderFor<LoaderComponent, __Context__, ()> for LoadNothing {}
+///Provider `LoadNothing` for [`Loader`].
 pub struct LoadNothing;
 fn main() {}

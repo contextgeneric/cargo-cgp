@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Person: CanUseComponent<GreeterComponent>` is not
 61 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Person`
+help: the trait `HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Person`
   --> src/main.rs:47:1
    |
 47 | pub struct Person {

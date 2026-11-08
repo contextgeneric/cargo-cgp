@@ -42,6 +42,7 @@ where
         >>::Delegate::encode(__context__, value)
     }
 }
+///Component marker for [`CanEncode`].
 pub struct EncoderComponent;
 impl<__Context__, Value> Encoder<__Context__, Value> for UseContext
 where
@@ -88,20 +89,24 @@ where
 {}
 impl<__Context__, Value> Encoder<__Context__, Value> for EncodeNamed
 where
-    __Context__: HasField<Symbol!("name"), Value = String>,
+    __Context__: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {
     fn encode(__context__: &__Context__, _value: &Value) -> String {
-        let name: &str = __context__
-            .get_field(::core::marker::PhantomData::<Symbol!("name")>)
-            .as_str();
+        let name: &str = ::core::convert::AsRef::as_ref(
+            HasField::get_field(
+                __context__,
+                ::core::marker::PhantomData::<Symbol!("name")>,
+            ),
+        );
         name.to_owned()
     }
 }
 impl<__Context__, Value> IsProviderFor<EncoderComponent, __Context__, (Value)>
 for EncodeNamed
 where
-    __Context__: HasField<Symbol!("name"), Value = String>,
+    __Context__: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {}
+///Provider `EncodeNamed` for [`Encoder`].
 pub struct EncodeNamed;
 pub struct App {
     pub other: String,

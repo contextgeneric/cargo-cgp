@@ -15,9 +15,9 @@ note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>
 33 | pub trait HasName {
    |           ^^^^^^^
 note: the trait `cgp::prelude::HasField` must be implemented
-  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:46:1
+  --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:10:1
    |
-46 | pub trait HasField<Tag> {
+10 | pub trait HasField<Tag> {
    | ^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
 note: `CanFetchValue` defines an item `fetch_value`, perhaps you need to implement it

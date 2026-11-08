@@ -37,7 +37,9 @@ where
     __Context__: HasField<Symbol!("name"), Value = String>,
 {
     fn name(&self) -> &str {
-        self.get_field(::core::marker::PhantomData::<Symbol!("name")>).as_str()
+        ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        )
     }
 }
 /// Interpreter for `ReadName`: reads the context's `name` field: the buried root cause.
@@ -63,6 +65,7 @@ where
     Input: Send,
     __Context__: HasErrorType,
 {}
+///Provider `HandleReadName` for [`Handler`].
 pub struct HandleReadName;
 /// Interpreter for `Branch<Cond>`: destructures its input as a 2-tuple and runs `Cond` on the first
 /// component. Its input *shape* is a tuple, so a call that does not type that tuple must still have
@@ -99,9 +102,13 @@ where
     Rest: Send,
     __Context__: HasErrorType,
 {}
+///Provider `HandleBranch` for [`Handler`].
 pub struct HandleBranch;
+///Wiring table for the `MyNamespace` namespace.
 pub struct __MyNamespaceComponents;
+///The `MyNamespace` namespace's wiring table.
 pub trait MyNamespace<__Table__> {
+    ///The provider table the `MyNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> MyNamespace<__Table__> for __Key__

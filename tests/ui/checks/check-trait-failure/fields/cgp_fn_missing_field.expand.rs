@@ -21,25 +21,27 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
-/// A `#[cgp_fn]` trait that reads a `name` field from its context.
+///The trait for the `format_name` operation.
 pub trait FormatName {
+    /// A `#[cgp_fn]` trait that reads a `name` field from its context.
     fn format_name(&self) -> String;
 }
 /// A `#[cgp_fn]` trait that reads a `name` field from its context.
 impl<__Context__> FormatName for __Context__
 where
-    Self: HasField<Symbol!("name"), Value = String>,
+    Self: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {
     fn format_name(&self) -> String {
-        let name: &str = self
-            .get_field(::core::marker::PhantomData::<Symbol!("name")>)
-            .as_str();
+        let name: &str = ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        );
         name.to_owned()
     }
 }
-/// A second `#[cgp_fn]` trait that composes the first through `#[uses]`, so its blanket impl
-/// depends on `Self: FormatName` rather than on a field directly.
+///The trait for the `greeting` operation.
 pub trait Greeting {
+    /// A second `#[cgp_fn]` trait that composes the first through `#[uses]`, so its blanket impl
+    /// depends on `Self: FormatName` rather than on a field directly.
     fn greeting(&self) -> String;
 }
 /// A second `#[cgp_fn]` trait that composes the first through `#[uses]`, so its blanket impl

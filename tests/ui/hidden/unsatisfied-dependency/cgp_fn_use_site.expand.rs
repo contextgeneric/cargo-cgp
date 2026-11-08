@@ -30,24 +30,26 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
-/// A `#[cgp_fn]` trait that reads a `name` field from its context.
+///The trait for the `get_name` operation.
 pub trait GetName {
+    /// A `#[cgp_fn]` trait that reads a `name` field from its context.
     fn get_name(&self) -> String;
 }
 /// A `#[cgp_fn]` trait that reads a `name` field from its context.
 impl<__Context__> GetName for __Context__
 where
-    Self: HasField<Symbol!("name"), Value = String>,
+    Self: HasField<Symbol!("name"), Value: ::core::convert::AsRef<str> + 'static>,
 {
     fn get_name(&self) -> String {
-        let name: &str = self
-            .get_field(::core::marker::PhantomData::<Symbol!("name")>)
-            .as_str();
+        let name: &str = ::core::convert::AsRef::as_ref(
+            HasField::get_field(self, ::core::marker::PhantomData::<Symbol!("name")>),
+        );
         name.to_owned()
     }
 }
-/// A second `#[cgp_fn]` trait that reads a `count` field from its context.
+///The trait for the `get_count` operation.
 pub trait GetCount {
+    /// A second `#[cgp_fn]` trait that reads a `count` field from its context.
     fn get_count(&self) -> u64;
 }
 /// A second `#[cgp_fn]` trait that reads a `count` field from its context.
@@ -56,14 +58,17 @@ where
     Self: HasField<Symbol!("count"), Value = u64>,
 {
     fn get_count(&self) -> u64 {
-        let count: &u64 = self
-            .get_field(::core::marker::PhantomData::<Symbol!("count")>);
+        let count: &u64 = HasField::get_field(
+            self,
+            ::core::marker::PhantomData::<Symbol!("count")>,
+        );
         *count
     }
 }
-/// A composite `#[cgp_fn]` trait that uses both, so its blanket impl depends on
-/// `Self: GetName + GetCount` rather than on a field directly.
+///The trait for the `describe` operation.
 pub trait Describe {
+    /// A composite `#[cgp_fn]` trait that uses both, so its blanket impl depends on
+    /// `Self: GetName + GetCount` rather than on a field directly.
     fn describe(&self) -> String;
 }
 /// A composite `#[cgp_fn]` trait that uses both, so its blanket impl depends on

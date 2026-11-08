@@ -50,6 +50,7 @@ where
         >>::Delegate::label(__context__)
     }
 }
+///Component marker for [`CanLabel`].
 pub struct LabelerComponent;
 impl<__Context__> Labeler<__Context__> for UseContext
 where
@@ -92,6 +93,7 @@ impl<__Context__> Labeler<__Context__> for FixedLabel {
     }
 }
 impl<__Context__> IsProviderFor<LabelerComponent, __Context__, ()> for FixedLabel {}
+///Provider `FixedLabel` for [`Labeler`].
 pub struct FixedLabel;
 impl<__Components__> DefaultNamespace<__Components__> for LabelerComponent {
     type Delegate = FixedLabel;

@@ -14,8 +14,11 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+///Wiring table for the `NamespaceA` namespace.
 pub struct __NamespaceAComponents;
+///The `NamespaceA` namespace's wiring table.
 pub trait NamespaceA<__Table__> {
+    ///The provider table the `NamespaceA` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> NamespaceA<__Table__> for __Key__
@@ -25,8 +28,11 @@ where
 {
     type Delegate = __Value__;
 }
+///Wiring table for the `NamespaceB` namespace.
 pub struct __NamespaceBComponents;
+///The `NamespaceB` namespace's wiring table.
 pub trait NamespaceB<__Table__> {
+    ///The provider table the `NamespaceB` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> NamespaceB<__Table__> for __Key__

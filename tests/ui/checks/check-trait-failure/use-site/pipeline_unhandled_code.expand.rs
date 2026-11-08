@@ -71,6 +71,7 @@ where
     __Context__: CanHandle<InCode, Input, Output = Output>,
     __Context__: HasErrorType,
 {}
+///Provider `Call` for [`Handler`].
 pub struct Call<InCode>(pub ::core::marker::PhantomData<InCode>);
 /// The interpreter for `Present`.
 impl<__Context__, Input> Handler<__Context__, Present, Input> for HandlePresent
@@ -93,9 +94,13 @@ where
     Input: Send,
     __Context__: HasErrorType,
 {}
+///Provider `HandlePresent` for [`Handler`].
 pub struct HandlePresent;
+///Wiring table for the `MyNamespace` namespace.
 pub struct __MyNamespaceComponents;
+///The `MyNamespace` namespace's wiring table.
 pub trait MyNamespace<__Table__> {
+    ///The provider table the `MyNamespace` namespace delegates to.
     type Delegate;
 }
 impl<__Table__, __Key__, __Value__> MyNamespace<__Table__> for __Key__
