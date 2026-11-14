@@ -1,0 +1,17 @@
+error[E0425]: cannot find type `GreeterComponent` in module `crate::facade`
+  --> src/main.rs:31:25
+   |
+31 |     impl crate::facade::Greeter {
+   |                         ^^^^^^^ not found in `crate::facade`
+   |
+help: consider importing this struct
+   |
+28 +     use crate::components::GreeterComponent;
+   |
+help: if you import `GreeterComponent`, refer to it directly
+   |
+31 -     impl crate::facade::Greeter {
+31 +     impl Greeter {
+   |
+
+For more information about this error, try `rustc --explain E0425`.

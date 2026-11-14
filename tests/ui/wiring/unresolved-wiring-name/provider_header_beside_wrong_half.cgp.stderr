@@ -1,0 +1,26 @@
+error[E0425]: [CGP-E041] the component `GreeterComponent` is not in scope
+  --> src/main.rs:33:10
+   |
+33 |     impl Greeter {
+   |          ^^^^^^^
+   |
+   = help: import it with `use crate::components::GreeterComponent;`
+
+error[E0107]: [CGP-E032] `CanGreet` is a consumer trait, but a `#[cgp_impl]` provider must implement its provider trait `Greeter`
+  --> src/main.rs:40:10
+   |
+40 |     impl CanGreet {
+   |          ^^^^^^^^
+   |
+   = help: change the impl header to target the provider trait: `impl Greeter` (not `impl CanGreet`)
+
+error[E0107]: [CGP-E033] `#[cgp_impl]` can only implement a CGP component's provider trait, but `Wave` is not a CGP component
+  --> src/main.rs:47:10
+   |
+47 |     impl Wave {
+   |          ^^^^
+   |
+   = help: make `Wave` a component, as in `#[cgp_component(WaveProvider)]`, and implement its provider trait here (`impl WaveProvider`), or drop `#[cgp_impl]` and write a plain `impl` if it is an ordinary trait
+
+Some errors have detailed explanations: E0107, E0425.
+For more information about an error, try `rustc --explain E0107`.

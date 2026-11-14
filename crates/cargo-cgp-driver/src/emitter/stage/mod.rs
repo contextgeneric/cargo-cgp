@@ -5,6 +5,7 @@
 
 mod cgp_impl_misuse;
 mod consumer_trait_key;
+mod derived_component;
 mod macroless_provider;
 mod orphan;
 mod provider_trait_in_uses;
@@ -19,6 +20,7 @@ mod wiring_conflict;
 
 pub use cgp_impl_misuse::*;
 pub use consumer_trait_key::*;
+pub use derived_component::*;
 pub use macroless_provider::*;
 pub use orphan::*;
 pub use provider_trait_in_uses::*;

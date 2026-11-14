@@ -1,13 +1,13 @@
 #![feature(prelude_import)]
 //! A component named with a parameter and a `#[cgp_impl]` that relies on the default component name.
 //!
-//! The `E0107` carried a suggestion spliced after the attribute (`#[cgp_impl(new SquareArea)]<Shape>`),
-//! which the tool drops; the `CGP-E032`/`CGP-E033` rewrites correctly stay off. What remains does not
-//! say that the component name defaults from the provider trait's name.
+//! The component's key is `AreaCalculatorComponent<Shape>`, but the header `impl AreaCalculator<Square>`
+//! makes the macro derive `AreaCalculatorComponent` without its parameter, so rustc reports an
+//! `E0107` "missing generics" on the trait's name and suggests `AreaCalculator<Shape><Square>`,
+//! which does not reach the key. The tool reshapes it into `[CGP-E070]`, naming the key with the
+//! header's argument in the attribute, `#[cgp_impl(new SquareArea: AreaCalculatorComponent<Square>)]`.
 //!
-//! CGP error class: none yet; a mistake in what a macro lowers, outside the catalog.
-//!
-//! Issue: https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/usability.md
+//! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;

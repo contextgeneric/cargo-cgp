@@ -9,8 +9,8 @@ use rustc_span::def_id::{DefId, LocalDefId};
 use crate::detect::wiring_name::component::component_markers;
 use crate::detect::wiring_name::slot::{NameSlot, name_slot_at};
 use crate::detect::wiring_name::{
-    DeclaredNames, component_not_imported, providers_of_key, unprovable_requirements,
-    unresolved_key,
+    DeclaredNames, component_not_imported, header_component_mistake, provider_header_at,
+    providers_of_key, unprovable_requirements, unresolved_key,
 };
 
 /// What to do with the name-resolution diagnostics of the wiring entries, and the overflows to
@@ -35,9 +35,23 @@ pub enum NameAction {
     Drop,
 }
 
-/// The action for each name-resolution `E0425` "cannot find type `name`", given as its primary span
-/// and the name, in the order given. A name outside a wiring entry or a `#[cgp_impl]` header gets
-/// `None` and stays as the compiler wrote it, repeats included. Within them, a repeat of an earlier
+/// One name-resolution `E0425` "cannot find type `name`": its primary span, the name, and the module
+/// rustc says lacks it, for the ``in module `path` `` form a qualified path gets.
+pub struct UnresolvedNameCandidate {
+    /// The diagnostic's primary span, the name as written.
+    pub span: Span,
+    /// The name rustc cannot find.
+    pub name: String,
+    /// The module rustc looked in, for a qualified path.
+    pub module: Option<String>,
+}
+
+/// The action for each name-resolution `E0425` "cannot find type `name`", in the order given. A
+/// name outside a wiring entry, a `#[cgp_impl]` header's provider, or a provider header's derived
+/// component gets `None` and stays as the compiler wrote it, repeats included. A provider header's
+/// derived component is one not imported, not re-exported by the module the header names, or not
+/// the trait's component at all. Only that position takes the ``in module`` form, since a path
+/// written in a wiring entry is the reader's own. Within them, a repeat of an earlier
 /// diagnostic at the same span is dropped, a wiring value naming the provider a `#[cgp_impl]`
 /// header also fails to declare is dropped as that header's consequence, and a name no rule
 /// explains gets `None`. A type inside an `@`-path of a key or value is a component that needs an
@@ -46,18 +60,24 @@ pub enum NameAction {
 /// imported, so it gets `None`.
 pub fn plan_unresolved_names(
     tcx: TyCtxt<'_>,
-    candidates: &[(Span, String)],
+    candidates: &[UnresolvedNameCandidate],
 ) -> UnresolvedNamesPlan {
     let slots: Vec<Option<NameSlot<'_>>> = candidates
         .iter()
-        .map(|(span, _)| name_slot_at(tcx, *span))
+        .map(|candidate| {
+            candidate
+                .module
+                .is_none()
+                .then(|| name_slot_at(tcx, candidate.span))
+                .flatten()
+        })
         .collect();
     let mut declared = DeclaredNames::default();
     let undeclared_in_cgp_impl: Vec<&str> = candidates
         .iter()
         .zip(&slots)
         .filter(|(_, slot)| matches!(slot, Some(NameSlot::CgpImplProvider)))
-        .map(|((_, name), _)| name.as_str())
+        .map(|(candidate, _)| candidate.name.as_str())
         .filter(|name| !declared.is_declared(tcx, name))
         .collect();
     let mut planner = NamesPlanner {
@@ -73,11 +93,19 @@ pub fn plan_unresolved_names(
         .iter()
         .zip(&slots)
         .enumerate()
-        .map(|(index, ((span, name), slot))| {
-            let slot = slot.as_ref()?;
-            let repeat = candidates[..index]
-                .iter()
-                .any(|(earlier_span, earlier_name)| earlier_span == span && earlier_name == name);
+        .map(|(index, (candidate, slot))| {
+            let UnresolvedNameCandidate { span, name, module } = candidate;
+            let repeat = candidates[..index].iter().any(|earlier| {
+                earlier.span == *span && earlier.name == *name && earlier.module == *module
+            });
+            let Some(slot) = slot else {
+                let header = provider_header_at(tcx, *span)?;
+                if repeat {
+                    return Some(NameAction::Drop);
+                }
+                return header_component_mistake(tcx, &header, name, module.as_deref())
+                    .map(NameAction::Reword);
+            };
             if repeat {
                 return Some(NameAction::Drop);
             }

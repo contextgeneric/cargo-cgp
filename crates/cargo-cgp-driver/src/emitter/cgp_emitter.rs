@@ -26,10 +26,10 @@ use crate::emitter::output::{Output, lock_output, register_output};
 use crate::emitter::pipeline::{BufferEdit, Reshape, Verdict, apply_reshape};
 use crate::emitter::stage::{
     CgpImplMisuseStage, MacrolessProviderStage, Resolution, ResolvedFailure, StructuralStage,
-    UnimportedStage, consumer_trait_as_key, is_cgp_impl_sibling_entry, missing_use_provider,
-    orphan_conflict, provider_trait_in_uses, question_mark_cascade, resolve_or_rewrite,
-    shared_dispatch_method, undeclared_requirement, undeclared_trait, unresolved_wiring_overflow,
-    wiring_conflict,
+    UnimportedStage, consumer_trait_as_key, derived_component_without_args,
+    is_cgp_impl_sibling_entry, missing_use_provider, orphan_conflict, provider_trait_in_uses,
+    question_mark_cascade, resolve_or_rewrite, shared_dispatch_method, undeclared_requirement,
+    undeclared_trait, unresolved_wiring_overflow, wiring_conflict,
 };
 use crate::resolve::ResolveCtx;
 use crate::resolve::cache::ResolveCache;
@@ -206,6 +206,7 @@ impl<E: Emitter> CgpEmitter<E> {
         let verdict = self
             .cgp_impl_misuse
             .run(tcx, &diag)
+            .or_else(|| derived_component_without_args(tcx, &diag))
             .or_else(|| provider_trait_in_uses(tcx, &diag))
             .or_else(|| unresolved_wiring_overflow(&diag, &self.output().unprovable_requirements))
             .or_else(|| consumer_trait_as_key(tcx, &diag))

@@ -174,6 +174,15 @@ pub fn unresolved_type_name(text: &str) -> Option<&str> {
         .strip_suffix("` in this scope")
 }
 
+/// The type and the module an `E0425` ``cannot find type `Name` in module `path` `` message names,
+/// the form rustc gives a qualified path whose module lacks the type, or `None` for any other
+/// message.
+pub fn unresolved_type_in_module(text: &str) -> Option<(&str, &str)> {
+    text.strip_prefix("cannot find type `")?
+        .strip_suffix('`')?
+        .split_once("` in module `")
+}
+
 /// The associated type and the trait an `E0576`
 /// ``cannot find associated type `Name` in trait `Trait` `` message names, or `None` for any other
 /// message.

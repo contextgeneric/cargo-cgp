@@ -1,0 +1,16 @@
+# Auxiliary crate for the UI suite: a user library whose components a downstream provider names
+# without importing their keys. It defines one component in its own module and re-exports
+# `cgp-test-crate-a` whole, so one key sits behind a re-exported crate. The harness replaces
+# `__CGP_CRATE_DIR__` with the sibling `cgp` checkout path, and the empty `[workspace]` table
+# detaches it from the cargo-cgp workspace above `target/`.
+[package]
+name    = "cgp-test-component-library"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+cgp              = { path = "__CGP_CRATE_DIR__" }
+cgp-test-crate-a = { path = "../cgp-test-crate-a" }
+
+[workspace]

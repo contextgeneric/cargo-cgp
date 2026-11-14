@@ -74,7 +74,8 @@ pub use diagnosis::{
     provider_trait_in_uses_help, rewrite_wiring_overflow, root_cause_lead, similar_key,
     similar_name, structural_mistake_help, structural_mistake_note, undeclared_requirement_helps,
     undeclared_trait_help, unimported_abstract_type_help, unresolved_wiring_name_help,
-    use_type_misspelling_help, wiring_conflict_help, wiring_overflow_help, wiring_overflow_reason,
+    unresolved_wiring_name_note, use_type_misspelling_help, wiring_conflict_help,
+    wiring_overflow_help, wiring_overflow_reason,
 };
 pub use naming::{is_reserved_name, reserved_names};
 pub use postprocess::{
@@ -90,7 +91,7 @@ pub use signals::{
     is_method_probe_advice_text, is_missing_type_parameter_help_text,
     is_question_mark_cascade_text, is_recursion_limit_help_text, is_unbounded_type_param_item_text,
     mentions_orphan_param_text, mentions_wiring_text, overflow_requirement_rest,
-    unresolved_assoc_type, unresolved_type_name,
+    unresolved_assoc_type, unresolved_type_in_module, unresolved_type_name,
 };
 pub use syntax::{code_chars, is_ident, is_primitive_type, string_literal_end, with_arguments};
 pub use tree::{DependencyTree, render_dependency_tree};

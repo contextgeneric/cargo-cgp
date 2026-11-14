@@ -1,0 +1,9 @@
+error[E0107]: [CGP-E070] the header derives the component `AreaCalculatorComponent` from the trait name `AreaCalculator`, but the component of `AreaCalculator` is `AreaCalculatorComponent<Shape>`
+  --> src/main.rs:27:6
+   |
+27 | impl AreaCalculator<Square> {
+   |      ^^^^^^^^^^^^^^
+   |
+   = help: name the component in the attribute: `#[cgp_impl(new SquareArea: AreaCalculatorComponent<Square>)]`
+
+For more information about this error, try `rustc --explain E0107`.

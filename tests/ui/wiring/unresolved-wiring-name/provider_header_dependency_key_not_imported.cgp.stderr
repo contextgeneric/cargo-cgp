@@ -1,0 +1,25 @@
+error[E0425]: [CGP-E041] the component `WaverComponent` is not in scope
+  --> src/main.rs:20:6
+   |
+20 | impl Waver {
+   |      ^^^^^
+   |
+   = help: import it with `use cgp_test_component_library::direct::WaverComponent;`
+
+error[E0425]: [CGP-E041] the component `GreeterComponent` is not in scope
+  --> src/main.rs:27:6
+   |
+27 | impl Greeter {
+   |      ^^^^^^^
+   |
+   = help: import it with `use cgp_test_component_library::core::GreeterComponent;`
+
+error[E0425]: [CGP-E041] the component `ErrorTypeProviderComponent` is not in scope
+  --> src/main.rs:34:6
+   |
+34 | impl ErrorTypeProvider {
+   |      ^^^^^^^^^^^^^^^^^
+   |
+   = help: import it with `use cgp::core::error::ErrorTypeProviderComponent;`
+
+For more information about this error, try `rustc --explain E0425`.

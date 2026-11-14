@@ -1,0 +1,23 @@
+error[E0425]: cannot find type `GreeterComponent` in this scope
+  --> src/main.rs:28:10
+   |
+28 |     impl Greeter {
+   |          ^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+23 +     use crate::components::GreeterComponent;
+   |
+
+error[E0425]: cannot find type `GreeterComponent` in this scope
+  --> src/main.rs:37:19
+   |
+37 |     impl<Context> Greeter<Context> for GreetRaw {
+   |                   ^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+23 +     use crate::components::GreeterComponent;
+   |
+
+For more information about this error, try `rustc --explain E0425`.

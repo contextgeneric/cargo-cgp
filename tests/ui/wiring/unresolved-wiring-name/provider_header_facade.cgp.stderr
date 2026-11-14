@@ -1,0 +1,10 @@
+error[E0425]: [CGP-E041] the component `GreeterComponent` is not in module `crate::facade`
+  --> src/main.rs:31:25
+   |
+31 |     impl crate::facade::Greeter {
+   |                         ^^^^^^^
+   |
+   = note: the header names its provider trait through `crate::facade`, so the macro names the trait's component through that module too
+   = help: name the trait through the module that defines its component, `impl crate::components::Greeter`, or re-export `GreeterComponent` from `crate::facade` beside the trait
+
+For more information about this error, try `rustc --explain E0425`.

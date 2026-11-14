@@ -1,0 +1,26 @@
+error[E0425]: cannot find type `GComponent` in this scope
+  --> src/main.rs:29:10
+   |
+29 |     impl G {
+   |          ^ not found in this scope
+
+error[E0425]: cannot find type `GComponent` in this scope
+  --> src/main.rs:38:19
+   |
+38 |     impl<Context> G<Context> for GreetRaw {
+   |                   ^ not found in this scope
+   |
+help: you might be missing a type parameter
+   |
+38 |     impl<Context, GComponent> G<Context> for GreetRaw {
+   |                 ++++++++++++
+
+warning: unused import: `GreeterComponent`
+  --> src/main.rs:26:43
+   |
+26 |     use crate::components::{Greeter as G, GreeterComponent};
+   |                                           ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+For more information about this error, try `rustc --explain E0425`.

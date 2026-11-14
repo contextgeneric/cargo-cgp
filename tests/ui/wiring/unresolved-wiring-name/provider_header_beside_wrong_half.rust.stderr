@@ -1,0 +1,101 @@
+error[E0425]: cannot find type `GreeterComponent` in this scope
+  --> src/main.rs:33:10
+   |
+33 |     impl Greeter {
+   |          ^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+28 +     use crate::components::GreeterComponent;
+   |
+
+error[E0425]: cannot find type `CanGreetComponent` in this scope
+  --> src/main.rs:40:10
+   |
+40 |     impl CanGreet {
+   |          ^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `WaveComponent` in this scope
+  --> src/main.rs:47:10
+   |
+47 |     impl Wave {
+   |          ^^^^ not found in this scope
+
+error[E0107]: trait takes 0 generic arguments but 1 generic argument was supplied
+  --> src/main.rs:40:10
+   |
+39 |       #[cgp_impl(new GreetConsumer)]
+   |  ___________________________________-
+40 | |     impl CanGreet {
+   | |          ^^^^^^^-
+   | |__________|______|
+   |            |      help: remove the unnecessary generics
+   |            expected 0 generic arguments
+   |
+note: trait defined here, with 0 generic parameters
+  --> src/main.rs:18:15
+   |
+18 |     pub trait CanGreet {
+   |               ^^^^^^^^
+
+error[E0186]: method `greet` has a `&self` declaration in the trait, but not in the impl
+  --> src/main.rs:41:9
+   |
+19 |         fn greet(&self) -> String;
+   |         -------------------------- `&self` used in trait
+...
+41 |         fn greet(&self) -> String {
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&self` in impl
+
+error[E0207]: the type parameter `__Context__` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:39:5
+   |
+39 |     #[cgp_impl(new GreetConsumer)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unconstrained type parameter
+   |
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use the type parameter `__Context__` in the `GreetConsumer` type and use it in the type definition
+   |
+39 |     #[cgp_impl(new GreetConsumer<__Context__>)]
+   |                                 +++++++++++++
+
+error[E0107]: trait takes 0 generic arguments but 1 generic argument was supplied
+  --> src/main.rs:47:10
+   |
+46 |       #[cgp_impl(new WaveHand)]
+   |  ______________________________-
+47 | |     impl Wave {
+   | |          ^^^-
+   | |__________|__|
+   |            |  help: remove the unnecessary generics
+   |            expected 0 generic arguments
+   |
+note: trait defined here, with 0 generic parameters
+  --> src/main.rs:22:15
+   |
+22 |     pub trait Wave {
+   |               ^^^^
+
+error[E0186]: method `wave` has a `&self` declaration in the trait, but not in the impl
+  --> src/main.rs:48:9
+   |
+23 |         fn wave(&self) -> String;
+   |         ------------------------- `&self` used in trait
+...
+48 |         fn wave(&self) -> String {
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^ expected `&self` in impl
+
+error[E0207]: the type parameter `__Context__` is not constrained by the impl trait, self type, or predicates
+  --> src/main.rs:46:5
+   |
+46 |     #[cgp_impl(new WaveHand)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ unconstrained type parameter
+   |
+   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use the type parameter `__Context__` in the `WaveHand` type and use it in the type definition
+   |
+46 |     #[cgp_impl(new WaveHand<__Context__>)]
+   |                            +++++++++++++
+
+Some errors have detailed explanations: E0107, E0186, E0207, E0425.
+For more information about an error, try `rustc --explain E0107`.

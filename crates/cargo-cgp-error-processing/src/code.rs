@@ -15,7 +15,8 @@
 //! - `CGP-E030` to `CGP-E039`: mistakes in what a macro was given;
 //! - `CGP-E040` to `CGP-E049`: wiring keys and values that do not resolve;
 //! - `CGP-E050` to `CGP-E059`: extensible data;
-//! - `CGP-E060` to `CGP-E069`: structural mistakes, continued from `CGP-E015`.
+//! - `CGP-E060` to `CGP-E069`: structural mistakes, continued from `CGP-E015`;
+//! - `CGP-E070` to `CGP-E079`: mistakes in what a macro was given, continued from `CGP-E039`.
 //!
 //! A **`CGP-E1xx`** code labels an entry of the `root cause:` note's dependency tree, one code per
 //! rendering template: `CGP-E101` to `CGP-E109` for the steps of the chain, and `CGP-E110` onward
@@ -176,8 +177,9 @@ pub const PROVIDER_IMPL_WITHOUT_MACRO: &str = "CGP-E039";
 /// `E0782`.
 pub const CONSUMER_TRAIT_AS_KEY: &str = "CGP-E040";
 
-/// `CGP-E041`: a wiring key names a component that exists but is not in scope. The Rust code stays
-/// `E0425`.
+/// `CGP-E041`: a wiring key, or the component a `#[cgp_impl]` or `#[cgp_provider]` header derives
+/// from its provider trait, names a component that exists but is not in scope where it is named.
+/// The Rust code stays `E0425`.
 pub const COMPONENT_NOT_IMPORTED: &str = "CGP-E041";
 
 /// `CGP-E042`: a wiring key names no component, and the name points at a consumer trait whose
@@ -210,6 +212,15 @@ pub const CHECK_AT_UNIT_PARAMETERS: &str = "CGP-E060";
 /// `CGP-E061`: two `#[cgp_auto_dispatch]` traits in one module declare a method of one name, so the
 /// macro generates the method's helper and computer twice. The Rust code stays `E0428`.
 pub const SHARED_DISPATCH_METHOD: &str = "CGP-E061";
+
+// Mistakes in what a macro was given, continued (`CGP-E070` to `CGP-E079`): `CGP-E030` to
+// `CGP-E039` are all taken.
+
+/// `CGP-E070`: a `#[cgp_impl]` or `#[cgp_provider]` header derives its component from the provider
+/// trait's name as written, and that name is not the component's: the trait is imported under
+/// another name, or the component's `name:` renames its key or gives it parameters. The Rust code
+/// stays `E0425`, or `E0107` for a key with parameters.
+pub const DERIVED_COMPONENT_NAME: &str = "CGP-E070";
 
 // The steps of a dependency chain (`CGP-E101` to `CGP-E109`).
 

@@ -18,7 +18,7 @@ use crate::diagnosis::{
     plan_wiring_conflict, provider_impl_without_macro_help, provider_trait_in_uses_help,
     structural_mistake_help, structural_mistake_note, undeclared_requirement_helps,
     undeclared_trait_help, unimported_abstract_type_help, unresolved_wiring_name_help,
-    wiring_conflict_help,
+    unresolved_wiring_name_note, wiring_conflict_help,
 };
 
 /// The wording of one reshaped diagnostic: the coded header that replaces rustc's message, the
@@ -135,7 +135,7 @@ impl ClassPlan {
     pub fn unresolved_wiring_name(name: &UnresolvedWiringName) -> Self {
         Self {
             header: plan_unresolved_wiring_name(name),
-            notes: Vec::new(),
+            notes: unresolved_wiring_name_note(name).into_iter().collect(),
             helps: unresolved_wiring_name_help(name).into_iter().collect(),
         }
     }

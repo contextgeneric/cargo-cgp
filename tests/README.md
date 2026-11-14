@@ -129,6 +129,10 @@ declare several. The auxiliary crates and the fixtures they back:
   those traits and an enum over them). They back the clean
   [`ui/ok/cross_crate_dispatch_enum.rs`](ui/ok/cross_crate_dispatch_enum.rs) and
   [`ui/ok/cross_crate_dispatch_payloads.rs`](ui/ok/cross_crate_dispatch_payloads.rs).
+- `cgp-test-component-library` (a user library over `cgp-test-crate-a`: a component in its own
+  `direct` module, and `cgp-test-crate-a` re-exported whole as `core`). It backs
+  [`ui/wiring/unresolved-wiring-name/provider_header_dependency_key_not_imported.rs`](ui/wiring/unresolved-wiring-name/provider_header_dependency_key_not_imported.rs),
+  whose provider headers import a dependency's provider trait without its key.
 - `cgp-test-plain-macros`: attribute macros of a crate with no `cgp` dependency, whose expansions
   fail the way a CGP macro's can. They back
   [`ui/pass-through/generated_lifetime_without_cgp.rs`](ui/pass-through/generated_lifetime_without_cgp.rs)

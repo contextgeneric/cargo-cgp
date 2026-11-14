@@ -7,7 +7,8 @@ use cargo_cgp_error_processing::{
     is_explain_footer_text, is_explain_list_text, is_method_bounds_text,
     is_method_probe_advice_text, is_missing_type_parameter_help_text,
     is_question_mark_cascade_text, is_recursion_limit_help_text, mentions_orphan_param_text,
-    mentions_wiring_text, overflow_requirement_rest, unresolved_assoc_type, unresolved_type_name,
+    mentions_wiring_text, overflow_requirement_rest, unresolved_assoc_type,
+    unresolved_type_in_module, unresolved_type_name,
 };
 
 // Property: `mentions_wiring_text` holds for a message naming `CanUseComponent`, `IsProviderFor`,
@@ -278,5 +279,19 @@ fn reads_the_names_an_unresolved_associated_type_message_names() {
     assert_eq!(
         unresolved_assoc_type("cannot find type `Eror` in this scope"),
         None
+    );
+}
+
+// Property: `unresolved_type_in_module` returns the type and the module of rustc's `cannot find
+// type … in module …` message, the form a qualified path gets, and nothing for the in-scope form.
+#[test]
+fn unresolved_type_in_module_reads_the_qualified_form() {
+    assert_eq!(
+        unresolved_type_in_module("cannot find type `GreeterComponent` in module `crate::facade`"),
+        Some(("GreeterComponent", "crate::facade")),
+    );
+    assert_eq!(
+        unresolved_type_in_module("cannot find type `GreeterComponent` in this scope"),
+        None,
     );
 }
