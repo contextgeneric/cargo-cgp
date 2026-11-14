@@ -7,7 +7,7 @@ error[E0599]: the method `fetch_value` exists for struct `App`, but its trait bo
 52 |     let _: u32 = app.fetch_value();
    |                      ^^^^^^^^^^^ method cannot be called on `App` due to unsatisfied trait bounds
    |
-note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+note: trait bound `App: cgp::prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` was not satisfied
   --> src/main.rs:32:1
    |
 32 | #[cgp_auto_getter]

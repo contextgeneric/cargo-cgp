@@ -14,6 +14,7 @@
 //@codes: none
 
 use cgp::prelude::*;
+use cgp::core::field::traits::FromVariant;
 
 #[derive(CgpData)]
 pub enum Big {

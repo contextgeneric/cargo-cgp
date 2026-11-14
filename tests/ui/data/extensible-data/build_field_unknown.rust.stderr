@@ -6,7 +6,7 @@ error[E0277]: the trait bound `__PartialPerson<IsNothing, IsNothing>: UpdateFiel
    |                               |
    |                               required by a bound introduced by this call
    |
-help: the trait `UpdateField<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, IsPresent>` is not implemented for `__PartialPerson<IsNothing, IsNothing>`
+help: the trait `UpdateField<cgp::macro_prelude::Symbol<3, cgp::macro_prelude::Chars<..>>, IsPresent>` is not implemented for `__PartialPerson<IsNothing, IsNothing>`
   --> src/main.rs:15:1
    |
 15 | pub struct Person {

@@ -1,9 +1,9 @@
 error[E0599]: no method named `finalize_extract_result` found for enum `Result<T, E>` in the current scope
-   --> src/main.rs:30:14
+   --> src/main.rs:31:14
     |
- 28 |         let _ = remainder
- 29 |             .extract_field(PhantomData::<Symbol!("Rectangle")>)
- 30 |             .finalize_extract_result();
+ 29 |         let _ = remainder
+ 30 |             .extract_field(PhantomData::<Symbol!("Rectangle")>)
+ 31 |             .finalize_extract_result();
     |              ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `Result<Rectangle, __PartialShape<IsVoid, IsVoid>>`
     |
    ::: $CGP/crates/core/cgp-field/src/traits/extract_field.rs:101:8

@@ -10,6 +10,7 @@
 //@codes: CGP-E050 CGP-E104 CGP-E123
 
 use cgp::prelude::*;
+use cgp::core::field::traits::FromVariant;
 
 pub struct Circle {
     pub radius: f64,

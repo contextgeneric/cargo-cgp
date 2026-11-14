@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Pair: CanUseComponent<GreeterComponent>` is not s
 60 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<1, cgp::prelude::Chars<..>>>` is not implemented for `Pair`
+help: the trait `cgp::prelude::HasField<cgp::macro_prelude::Symbol<1, cgp::macro_prelude::Chars<..>>>` is not implemented for `Pair`
   --> src/main.rs:41:1
    |
 41 | pub struct Pair(pub u32, pub u32);
@@ -42,7 +42,7 @@ error[E0277]: the trait bound `Couple: CanUseComponent<GreeterComponent>` is not
 67 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<cgp::prelude::Symbol<2, cgp::prelude::Chars<..>>>` is not implemented for `Couple`
+help: the trait `cgp::prelude::HasField<cgp::macro_prelude::Symbol<2, cgp::macro_prelude::Chars<..>>>` is not implemented for `Couple`
   --> src/main.rs:44:1
    |
 44 | pub struct Couple(pub u32, pub u32);

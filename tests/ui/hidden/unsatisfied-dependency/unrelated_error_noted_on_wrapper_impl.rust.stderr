@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Person: CanGreet` is not satisfied
 50 | impl<T: Send> CanGreetWith<T> for Person {
    |                                   ^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Person`
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `Person`
   --> src/main.rs:38:1
    |
 38 | pub struct Person {}
@@ -66,7 +66,7 @@ note: trait bound `&Person: Greeter<&Person>` was not satisfied
    | ^^^^^^^^^^^^^^^^^^^^^^^^^
 20 | pub trait CanGreet {
    |           ^^^^^^^^
-note: trait bound `Person: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+note: trait bound `Person: cgp::prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` was not satisfied
   --> src/main.rs:24:1
    |
 24 | #[cgp_auto_getter]

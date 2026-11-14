@@ -12,6 +12,7 @@
 use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::extra::handler::{Computer, Producer, TryComputer};
 use cgp::prelude::*;
+use cgp::extra::dispatch::MatchWithValueHandlersRef;
 use cgp_test_dispatch_traits::{
     CanDescribe, CheckedHalve, ComputeArea, Double, HasShape, UnitScale,
 };

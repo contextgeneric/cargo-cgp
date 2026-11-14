@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `Double` is not a provider of `TryComputer`
-  --> src/main.rs:36:9
+  --> src/main.rs:37:9
    |
-36 |         HandlerComponent: ((), u64),
+37 |         HandlerComponent: ((), u64),
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E115] `Double` is not a provider of `TryComputer`

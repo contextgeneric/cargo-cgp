@@ -7,8 +7,8 @@ error[E0119]: conflicting implementations of trait `IsProviderFor<FooComponent, 
 34 |         FooComponent =>
    |         ^^^^^^^^^^^^ conflicting implementation for `App`
    |
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<FooComponent, _, _>` for type `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::Nil>>>`
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<FooComponent, _, _>` for type `cgp::prelude::RedirectLookup<App, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::Nil>>>`
+   = note: downstream crates may implement trait `cgp::macro_prelude::IsProviderFor<FooComponent, _, _>` for type `cgp::macro_prelude::RedirectLookup<App, cgp::macro_prelude::PathCons<cgp::macro_prelude::Symbol<3, cgp::macro_prelude::Chars<..>>, cgp::macro_prelude::PathCons<cgp::macro_prelude::Symbol<3, cgp::macro_prelude::Chars<..>>, cgp::prelude::Nil>>>`
+   = note: downstream crates may implement trait `cgp::macro_prelude::IsProviderFor<FooComponent, _, _>` for type `cgp::macro_prelude::RedirectLookup<App, cgp::macro_prelude::PathCons<cgp::macro_prelude::Symbol<3, cgp::macro_prelude::Chars<..>>, cgp::macro_prelude::PathCons<cgp::macro_prelude::Symbol<3, cgp::macro_prelude::Chars<..>>, cgp::prelude::Nil>>>`
 
 error[E0119]: conflicting implementations of trait `DelegateComponent<FooComponent>` for type `App`
   --> src/main.rs:34:9

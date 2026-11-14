@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E001] the wiring of `GreeterComponent` on `App` has no `IsProviderFor` impl
-  --> src/main.rs:36:9
+  --> src/main.rs:37:9
    |
-36 |     App.greet();
+37 |     App.greet();
    |         ^^^^^
    |
    = note: root cause: [CGP-E128] the wiring of `GreeterComponent` on `App` has no `IsProviderFor` impl

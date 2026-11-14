@@ -6,6 +6,7 @@
 //! CGP error class: none; plain Rust the tool must pass through unchanged.
 
 use cgp::prelude::*;
+use cgp::core::field::traits::{ExtractField, HasExtractor};
 
 pub struct Circle {
     pub radius: f64,

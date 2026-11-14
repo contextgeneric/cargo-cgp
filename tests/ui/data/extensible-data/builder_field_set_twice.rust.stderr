@@ -4,7 +4,7 @@ error[E0277]: the trait bound `__PartialConfig<IsPresent, IsPresent>: BuildField
 62 |         ComputerComponent: ((), ()),
    |         ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `BuildField<cgp::prelude::Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `__PartialConfig<IsPresent, IsPresent>`
+help: the trait `BuildField<cgp::macro_prelude::Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `__PartialConfig<IsPresent, IsPresent>`
   --> src/main.rs:21:1
    |
 21 | pub struct Config {

@@ -14,7 +14,7 @@ error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Error
 29 |         @ErrorRaiserComponent.std::io::Error: RaiseFrom,
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
    |
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::cgp_core::cgp_error::ErrorRaiserComponent, cgp::prelude::PathCons<std::io::Error, _>>, _, _>` for type `cgp::cgp_extra::cgp_error_extra::DebugError`
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::cgp_core::cgp_error::ErrorRaiserComponent, cgp::prelude::PathCons<std::io::Error, _>>, _, _>` for type `cgp::cgp_extra::cgp_error_extra::RaiseFrom`
+   = note: downstream crates may implement trait `cgp::macro_prelude::IsProviderFor<cgp::macro_prelude::PathCons<cgp::cgp_core::cgp_error::ErrorRaiserComponent, cgp::macro_prelude::PathCons<std::io::Error, _>>, _, _>` for type `cgp::cgp_extra::cgp_error_extra::DebugError`
+   = note: downstream crates may implement trait `cgp::macro_prelude::IsProviderFor<cgp::macro_prelude::PathCons<cgp::cgp_core::cgp_error::ErrorRaiserComponent, cgp::macro_prelude::PathCons<std::io::Error, _>>, _, _>` for type `cgp::cgp_extra::cgp_error_extra::RaiseFrom`
 
 For more information about this error, try `rustc --explain E0119`.

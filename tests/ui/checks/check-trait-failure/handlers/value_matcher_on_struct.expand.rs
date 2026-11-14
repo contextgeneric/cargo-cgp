@@ -11,6 +11,7 @@ extern crate std;
 use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
 use cgp::prelude::*;
+use cgp::extra::dispatch::MatchWithValueHandlers;
 pub struct Scene {
     pub width: f64,
 }

@@ -60,7 +60,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
 51 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<5, cgp::prelude::Chars<..>>>` is not implemented for `Rectangle`
+help: the trait `cgp::prelude::HasField<Symbol<5, cgp::macro_prelude::Chars<..>>>` is not implemented for `Rectangle`
   --> src/main.rs:38:1
    |
 38 | pub struct Rectangle {

@@ -6,7 +6,7 @@ error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satis
    |         |
    |         required by a bound introduced by this call
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:86:1
    |
 86 | pub struct App {
@@ -38,7 +38,7 @@ error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satis
 97 |     app.handle(PhantomData::<Prog<Product![HandleConnect, HandleName]>>, Vec::new())
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:86:1
    |
 86 | pub struct App {

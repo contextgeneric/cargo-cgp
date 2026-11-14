@@ -36,7 +36,7 @@ error[E0277]: the trait bound `Person: CanGreet` is not satisfied
 51 | impl CanGreetTwice for Person where Person: CanWave {}
    |                        ^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `Person`
+help: the trait `cgp::prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `Person`
   --> src/main.rs:41:1
    |
 41 | pub struct Person {}

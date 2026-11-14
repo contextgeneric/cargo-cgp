@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `Cons<Field<Symbol<5, Chars<..>>, f64>, Nil>: ToFieldHandlers<_>` is not satisfied
-  --> src/main.rs:42:9
+  --> src/main.rs:43:9
    |
-42 |         ComputerComponent: ((), Scene),
+43 |         ComputerComponent: ((), Scene),
    |         ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `dispatch::providers::matchers::to_field_handlers::ToFieldHandlers<dispatch::providers::matchers::to_field_handlers::MapExtractFieldAndHandle<HandleFieldValue<ComputeArea>>>` is not implemented for `Cons<Field<Symbol<5, Chars<..>>, f64>, Nil>`
@@ -21,13 +21,13 @@ help: the following other types implement trait `dispatch::providers::matchers::
    = note: required for `UseInputDelegate<MatchWithFieldHandlersInputs<HandleFieldValue<ComputeArea>>>` to implement `IsProviderFor<cgp::prelude::ComputerComponent, App, ((), Scene)>`
    = note: required for `App` to implement `CanUseComponent<cgp::prelude::ComputerComponent, ((), Scene)>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:40:1
+  --> src/main.rs:41:1
    |
-40 | / check_components! {
-41 | |     App {
-42 | |         ComputerComponent: ((), Scene),
-43 | |     }
-44 | | }
+41 | / check_components! {
+42 | |     App {
+43 | |         ComputerComponent: ((), Scene),
+44 | |     }
+45 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

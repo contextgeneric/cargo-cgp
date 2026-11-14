@@ -13,6 +13,7 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+use cgp::core::component::DelegateComponent;
 pub trait CanGreet {
     fn greet(&self) -> String;
 }

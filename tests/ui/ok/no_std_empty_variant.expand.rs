@@ -12,6 +12,7 @@ use core::prelude::rust_2024::*;
 extern crate std;
 use std::boxed::Box;
 use cgp::prelude::*;
+use cgp::core::field::traits::HasExtractorMut;
 pub enum Status {
     Active(u64),
     Closed,

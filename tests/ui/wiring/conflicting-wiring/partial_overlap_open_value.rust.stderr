@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Wrap<_>, PathCons<Bar, _>>>>` for type `App`
+error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol<3, cgp::macro_prelude::Chars<..>>, PathCons<Wrap<_>, PathCons<Bar, _>>>>` for type `App`
   --> src/main.rs:30:10
    |
 29 |         @app.<X> Wrap<X>: First,
@@ -6,7 +6,7 @@ error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<S
 30 |         @app.<T> T.Bar: Second,
    |          ^^^^^^^^^^^^^ conflicting implementation for `App`
 
-error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol<3, cgp::prelude::Chars<..>>, PathCons<Wrap<_>, PathCons<Bar, _>>>, _, _>` for type `App`
+error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol<3, cgp::macro_prelude::Chars<..>>, PathCons<Wrap<_>, PathCons<Bar, _>>>, _, _>` for type `App`
   --> src/main.rs:30:10
    |
 29 |         @app.<X> Wrap<X>: First,
@@ -14,7 +14,7 @@ error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbo
 30 |         @app.<T> T.Bar: Second,
    |          ^^^^^^^^^^^^^ conflicting implementation for `App`
    |
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<Wrap<_>, cgp::prelude::PathCons<Bar, _>>>, _, _>` for type `First`
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<3, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<Wrap<_>, cgp::prelude::PathCons<Bar, _>>>, _, _>` for type `Second`
+   = note: downstream crates may implement trait `cgp::macro_prelude::IsProviderFor<cgp::macro_prelude::PathCons<cgp::macro_prelude::Symbol<3, cgp::macro_prelude::Chars<..>>, cgp::macro_prelude::PathCons<Wrap<_>, cgp::macro_prelude::PathCons<Bar, _>>>, _, _>` for type `First`
+   = note: downstream crates may implement trait `cgp::macro_prelude::IsProviderFor<cgp::macro_prelude::PathCons<cgp::macro_prelude::Symbol<3, cgp::macro_prelude::Chars<..>>, cgp::macro_prelude::PathCons<Wrap<_>, cgp::macro_prelude::PathCons<Bar, _>>>, _, _>` for type `Second`
 
 For more information about this error, try `rustc --explain E0119`.

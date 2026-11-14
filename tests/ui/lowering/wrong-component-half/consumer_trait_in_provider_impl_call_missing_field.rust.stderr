@@ -69,7 +69,7 @@ note: the candidate is defined in the trait `AreaCalculator`
    |
 19 |     fn area(&self) -> f64;
    |     ^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `Rectangle: cgp::prelude::HasField<Symbol<6, cgp::prelude::Chars<..>>>` was not satisfied
+note: trait bound `Rectangle: cgp::prelude::HasField<Symbol<6, cgp::macro_prelude::Chars<..>>>` was not satisfied
   --> src/main.rs:22:1
    |
 22 | #[cgp_impl(new RectangleArea)]

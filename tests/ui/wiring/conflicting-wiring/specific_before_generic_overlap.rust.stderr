@@ -6,7 +6,7 @@ error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Descr
 39 |         @DescriberComponent.<T> Wrap<T>: DescribeAny,
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
    |
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<DescriberComponent, cgp::prelude::PathCons<Wrap<u64>, _>>, _, _>` for type `DescribeAny`
+   = note: downstream crates may implement trait `cgp::macro_prelude::IsProviderFor<cgp::macro_prelude::PathCons<DescriberComponent, cgp::macro_prelude::PathCons<Wrap<u64>, _>>, _, _>` for type `DescribeAny`
 
 error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<DescriberComponent, PathCons<Wrap<u64>, _>>>` for type `App`
   --> src/main.rs:39:10

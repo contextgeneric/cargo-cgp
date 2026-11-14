@@ -1,10 +1,10 @@
 error[E0599]: no method named `finalize_extract` found for enum `__PartialRefShape<'__a__, __R__, __F0__, __F1__>` in the current scope
-  --> src/main.rs:33:37
+  --> src/main.rs:34:37
    |
-25 | pub enum Shape {
+26 | pub enum Shape {
    | -------------- method `finalize_extract` not found for this enum
 ...
-33 |         Err(remainder) => remainder.finalize_extract(),
+34 |         Err(remainder) => remainder.finalize_extract(),
    |                                     ^^^^^^^^^^^^^^^^ method not found in `__PartialRefShape<'_, IsRef, IsPresent, IsVoid>`
    |
 note: the method `finalize_extract` exists on the type `<IsVoid as MapType>::Map<<IsRef as MapTypeRef>::Map<'_, Rectangle>>`
@@ -14,15 +14,15 @@ note: the method `finalize_extract` exists on the type `<IsVoid as MapType>::Map
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
    = note: the following trait defines an item `finalize_extract`, perhaps you need to implement it:
-           candidate #1: `cgp::prelude::FinalizeExtract`
+           candidate #1: `FinalizeExtract`
 
 error[E0599]: no method named `finalize_extract` found for enum `__PartialRefShape<'__a__, __R__, __F0__, __F1__>` in the current scope
-  --> src/main.rs:40:37
+  --> src/main.rs:41:37
    |
-25 | pub enum Shape {
+26 | pub enum Shape {
    | -------------- method `finalize_extract` not found for this enum
 ...
-40 |         Err(remainder) => remainder.finalize_extract(),
+41 |         Err(remainder) => remainder.finalize_extract(),
    |                                     ^^^^^^^^^^^^^^^^ method not found in `__PartialRefShape<'_, IsMut, IsPresent, IsVoid>`
    |
 note: the method `finalize_extract` exists on the type `<IsVoid as MapType>::Map<<IsMut as MapTypeRef>::Map<'_, Rectangle>>`
@@ -32,6 +32,6 @@ note: the method `finalize_extract` exists on the type `<IsVoid as MapType>::Map
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
    = note: the following trait defines an item `finalize_extract`, perhaps you need to implement it:
-           candidate #1: `cgp::prelude::FinalizeExtract`
+           candidate #1: `FinalizeExtract`
 
 For more information about this error, try `rustc --explain E0599`.

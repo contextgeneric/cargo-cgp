@@ -11,6 +11,7 @@ use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
 use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::prelude::*;
+use cgp::extra::handler::PromoteComputer;
 impl<Context, Code> Computer<Context, Code, u64> for Double {
     type Output = u64;
     fn compute(_context: &Context, _code: PhantomData<Code>, input: u64) -> u64 {

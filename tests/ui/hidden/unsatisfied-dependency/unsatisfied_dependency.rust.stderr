@@ -13,7 +13,7 @@ note: the candidate is defined in the trait `Greeter`
    |
 23 |     fn greet(&self);
    |     ^^^^^^^^^^^^^^^^
-note: trait bound `Person: cgp::prelude::HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+note: trait bound `Person: cgp::prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` was not satisfied
   --> src/main.rs:26:1
    |
 26 | #[cgp_auto_getter]

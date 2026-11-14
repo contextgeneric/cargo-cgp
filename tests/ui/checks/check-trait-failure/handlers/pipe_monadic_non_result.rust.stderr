@@ -5,19 +5,19 @@ error[E0277]: the trait bound `BindErr<IdentMonadic, Double>: IsProviderFor<cgp:
     |         ^^^^^^^^^^^^^^^^^ the trait `IsProviderFor<cgp::prelude::ComputerComponent, App, ((), u64)>` is not implemented for `BindErr<IdentMonadic, Double>`
     |
 help: `BindErr<M, Cont>` implements trait `IsProviderFor<Component, Context, Params>`
-   --> $CGP/crates/extra/cgp-monad/src/monadic/err.rs:82:1
+   --> $CGP/crates/extra/cgp-monad/src/monadic/err.rs:84:1
     |
- 82 | / impl<Context, Code, T1, T2, E, M, Cont> Computer<Context, Code, Result<T1, E>> for BindErr<M, Cont>
- 83 | | where
- 84 | |     Cont: Computer<Context, Code, T1>,
- 85 | |     M: ContainsValue<Cont::Output, Value = Result<T2, E>> + LiftValue<Result<T2, E>, Cont::Output>,
+ 84 | / impl<Context, Code, T1, T2, E, M, Cont> Computer<Context, Code, Result<T1, E>> for BindErr<M, Cont>
+ 85 | | where
+ 86 | |     Cont: Computer<Context, Code, T1>,
+ 87 | |     M: ContainsValue<Cont::Output, Value = Result<T2, E>> + LiftValue<Result<T2, E>, Cont::Output>,
     | |___________________________________________________________________________________________________^ `IsProviderFor<cgp::prelude::ComputerComponent, Context, (Code, Result<T1, E>)>`
 ...
- 98 | / impl<Context, Code, T1, T2, E, M, Cont> AsyncComputer<Context, Code, Result<T1, E>>
- 99 | |     for BindErr<M, Cont>
-100 | | where
-101 | |     Cont: AsyncComputer<Context, Code, T1>,
-102 | |     M: ContainsValue<Cont::Output, Value = Result<T2, E>> + LiftValue<Result<T2, E>, Cont::Output>,
+100 | / impl<Context, Code, T1, T2, E, M, Cont> AsyncComputer<Context, Code, Result<T1, E>>
+101 | |     for BindErr<M, Cont>
+102 | | where
+103 | |     Cont: AsyncComputer<Context, Code, T1>,
+104 | |     M: ContainsValue<Cont::Output, Value = Result<T2, E>> + LiftValue<Result<T2, E>, Cont::Output>,
     | |___________________________________________________________________________________________________^ `IsProviderFor<AsyncComputerComponent, Context, (Code, Result<T1, E>)>`
     = note: required for `ComposeHandlers<Double, BindErr<IdentMonadic, Double>>` to implement `IsProviderFor<cgp::prelude::ComputerComponent, App, ((), u64)>`
     = note: 1 redundant requirement hidden

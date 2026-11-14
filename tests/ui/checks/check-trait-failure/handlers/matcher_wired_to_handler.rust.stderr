@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `MatchWithHandlers<Cons<_, _>>: IsProviderFor<_, App, _>` is not satisfied
-  --> src/main.rs:65:9
+  --> src/main.rs:66:9
    |
-65 |         HandlerComponent: ((), Shape),
+66 |         HandlerComponent: ((), Shape),
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
    = help: the trait `IsProviderFor<cgp::prelude::HandlerComponent, App, ((), Shape)>` is not implemented for `MatchWithHandlers<Cons<ExtractFieldAndHandle<Symbol<6, _>, _>, _>>`
@@ -28,13 +28,13 @@ help: `MatchWithHandlers<Handlers>` implements trait `IsProviderFor<Component, C
    = note: required for `UseInputDelegate<MatchWithFieldHandlersInputs<HandleFieldValue<ComputeArea>>>` to implement `IsProviderFor<cgp::prelude::HandlerComponent, App, ((), Shape)>`
    = note: required for `App` to implement `CanUseComponent<cgp::prelude::HandlerComponent, ((), Shape)>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:63:1
+  --> src/main.rs:64:1
    |
-63 | / check_components! {
-64 | |     App {
-65 | |         HandlerComponent: ((), Shape),
-66 | |     }
-67 | | }
+64 | / check_components! {
+65 | |     App {
+66 | |         HandlerComponent: ((), Shape),
+67 | |     }
+68 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

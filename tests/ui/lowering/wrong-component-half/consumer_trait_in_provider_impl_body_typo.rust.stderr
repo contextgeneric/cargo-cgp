@@ -10,16 +10,16 @@ error[E0425]: cannot find type `CanGreetComponent` in this scope
 23 | #[cgp_impl(new GreetHello)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
    |
-note: similarly named trait `CanUseComponent` defined here
-  --> $CGP/crates/core/cgp-component/src/traits/can_use_component.rs:8:1
+note: similarly named struct `GreeterComponent` defined here
+  --> src/main.rs:18:17
    |
- 8 | pub trait CanUseComponent<Component, Params: ?Sized = ()> {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | #[cgp_component(Greeter)]
+   |                 ^^^^^^^
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
-help: a trait with a similar name exists
+help: a struct with a similar name exists
    |
 23 - #[cgp_impl(new GreetHello)]
-23 + CanUseComponent
+23 + GreeterComponent
    |
 
 error[E0107]: trait takes 0 generic arguments but 1 generic argument was supplied

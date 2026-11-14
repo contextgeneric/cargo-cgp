@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol<4, cgp::prelude::Chars<..>>, PathCons<ShowImplComponent, PathCons<String, _>>>, _, _>` for type `App`
+error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbol<4, cgp::macro_prelude::Chars<..>>, PathCons<ShowImplComponent, PathCons<String, _>>>, _, _>` for type `App`
   --> src/main.rs:47:10
    |
 44 |             @test.ShowImplComponent.T: Provider,
@@ -7,10 +7,10 @@ error[E0119]: conflicting implementations of trait `IsProviderFor<PathCons<Symbo
 47 |         @test.ShowImplComponent.String: ShowWithDisplay,
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
    |
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<4, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<ShowImplComponent, cgp::prelude::PathCons<std::string::String, _>>>, _, _>` for type `ShowString`
-   = note: downstream crates may implement trait `cgp::prelude::IsProviderFor<cgp::prelude::PathCons<cgp::prelude::Symbol<4, cgp::prelude::Chars<..>>, cgp::prelude::PathCons<ShowImplComponent, cgp::prelude::PathCons<std::string::String, _>>>, _, _>` for type `ShowWithDisplay`
+   = note: downstream crates may implement trait `cgp::macro_prelude::IsProviderFor<cgp::macro_prelude::PathCons<cgp::macro_prelude::Symbol<4, cgp::macro_prelude::Chars<..>>, cgp::macro_prelude::PathCons<ShowImplComponent, cgp::macro_prelude::PathCons<std::string::String, _>>>, _, _>` for type `ShowString`
+   = note: downstream crates may implement trait `cgp::macro_prelude::IsProviderFor<cgp::macro_prelude::PathCons<cgp::macro_prelude::Symbol<4, cgp::macro_prelude::Chars<..>>, cgp::macro_prelude::PathCons<ShowImplComponent, cgp::macro_prelude::PathCons<std::string::String, _>>>, _, _>` for type `ShowWithDisplay`
 
-error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol<4, cgp::prelude::Chars<..>>, PathCons<ShowImplComponent, PathCons<String, _>>>>` for type `App`
+error[E0119]: conflicting implementations of trait `DelegateComponent<PathCons<Symbol<4, cgp::macro_prelude::Chars<..>>, PathCons<ShowImplComponent, PathCons<String, _>>>>` for type `App`
   --> src/main.rs:47:10
    |
 44 |             @test.ShowImplComponent.T: Provider,

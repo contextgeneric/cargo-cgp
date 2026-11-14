@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E050] missing variant `circle` on `Shape`
-  --> src/main.rs:34:24
+  --> src/main.rs:35:24
    |
-34 |         .extract_field(PhantomData::<Symbol!("circle")>);
+35 |         .extract_field(PhantomData::<Symbol!("circle")>);
    |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E120] missing variant `circle` on `Shape`

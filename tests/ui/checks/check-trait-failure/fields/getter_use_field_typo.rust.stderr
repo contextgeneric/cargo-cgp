@@ -13,7 +13,7 @@ note: the candidate is defined in the trait `NameGetter`
    |
 16 |     fn name(&self) -> &str;
    |     ^^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `Person: cgp::prelude::HasField<cgp::prelude::Symbol<10, cgp::prelude::Chars<..>>>` was not satisfied
+note: trait bound `Person: cgp::prelude::HasField<cgp::macro_prelude::Symbol<10, cgp::macro_prelude::Chars<..>>>` was not satisfied
   --> src/main.rs:14:1
    |
 14 | #[cgp_getter]

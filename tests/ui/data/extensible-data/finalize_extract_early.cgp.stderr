@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E050] variant `Circle` of `Shape` is not extracted
-  --> src/main.rs:33:37
+  --> src/main.rs:34:37
    |
-33 |         Err(remainder) => remainder.finalize_extract(),
+34 |         Err(remainder) => remainder.finalize_extract(),
    |                                     ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E121] variant `Circle` of `Shape` is not extracted

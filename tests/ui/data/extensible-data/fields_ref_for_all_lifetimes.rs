@@ -13,6 +13,7 @@
 use core::fmt::Debug;
 
 use cgp::prelude::*;
+use cgp::core::field::traits::ToFieldsRef;
 
 #[cgp_component(ValueShower)]
 pub trait CanShowValue<Value> {

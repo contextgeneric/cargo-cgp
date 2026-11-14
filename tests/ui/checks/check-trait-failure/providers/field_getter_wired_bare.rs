@@ -9,6 +9,7 @@
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E115
 
 use cgp::prelude::*;
+use cgp::core::field::traits::FieldGetter;
 
 #[cgp_getter]
 pub trait HasName {

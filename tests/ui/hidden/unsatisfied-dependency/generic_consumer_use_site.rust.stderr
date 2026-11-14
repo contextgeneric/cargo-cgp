@@ -13,7 +13,7 @@ note: the candidate is defined in the trait `PairFormatter`
    |
 24 |     fn format_pair(&self, value: T) -> String;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `App: cgp::prelude::HasField<Symbol<9, cgp::prelude::Chars<..>>>` was not satisfied
+note: trait bound `App: cgp::prelude::HasField<Symbol<9, cgp::macro_prelude::Chars<..>>>` was not satisfied
   --> src/main.rs:27:1
    |
 27 | #[cgp_auto_getter]

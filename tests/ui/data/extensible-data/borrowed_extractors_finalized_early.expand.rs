@@ -11,6 +11,9 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::prelude::*;
+use cgp::core::field::traits::{
+    ExtractField, FinalizeExtract, HasExtractorMut, HasExtractorRef,
+};
 pub struct Circle {
     pub radius: f64,
 }

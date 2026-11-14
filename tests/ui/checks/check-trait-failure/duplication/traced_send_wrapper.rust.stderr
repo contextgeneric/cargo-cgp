@@ -19,7 +19,7 @@ note: the candidate is defined in the trait `ApiHandler`
    |
 35 |     async fn handle_api(&self, api: PhantomData<Api>) -> Self::Response;
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: trait bound `App: HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+note: trait bound `App: HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` was not satisfied
   --> src/main.rs:25:1
    |
 25 | #[cgp_auto_getter]
@@ -62,7 +62,7 @@ error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satis
 77 |     ) -> impl Future<Output = Self::Response> + Send {
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:51:1
    |
 51 | pub struct App;
@@ -107,7 +107,7 @@ error[E0277]: the trait bound `App: CanUseComponent<ApiHandlerComponent, GreetAp
 61 |         ApiHandlerComponent: GreetApi,
    |         ^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:51:1
    |
 51 | pub struct App;
@@ -144,7 +144,7 @@ error[E0277]: the trait bound `App: HasField<Symbol<4, Chars<..>>>` is not satis
 73 | impl CanHandleApiSend<GreetApi> for App {
    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:51:1
    |
 51 | pub struct App;
@@ -194,7 +194,7 @@ error[E0277]: the trait bound `App: CanHandleApi<GreetApi>` is not satisfied
 73 | impl CanHandleApiSend<GreetApi> for App {
    |                                     ^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:51:1
    |
 51 | pub struct App;

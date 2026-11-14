@@ -7,6 +7,7 @@
 
 use cgp::core::field::traits::TransformMapFields;
 use cgp::prelude::*;
+use cgp::core::field::traits::IntoBuilder;
 
 #[derive(CgpData)]
 pub struct Point {

@@ -12,6 +12,7 @@ extern crate std;
 use std::prelude::rust_2024::*;
 use cgp::core::field::traits::{TransformMap, TransformMapFields};
 use cgp::prelude::*;
+use cgp::core::field::impls::{IsNothing, IsPresent};
 pub struct OnlyAbsent;
 impl<T: Default> TransformMap<IsNothing, IsPresent, T> for OnlyAbsent {
     fn transform_mapped(_value: ()) -> T {

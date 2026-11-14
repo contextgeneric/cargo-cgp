@@ -1,7 +1,7 @@
 error[E0308]: [CGP-E050] variant `Circle` of `Shape` is already extracted
-  --> src/main.rs:33:41
+  --> src/main.rs:34:41
    |
-33 |         let _ = remainder.extract_field(PhantomData::<Symbol!("Circle")>);
+34 |         let _ = remainder.extract_field(PhantomData::<Symbol!("Circle")>);
    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E124] variant `Circle` of `Shape` is already extracted

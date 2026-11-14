@@ -7,6 +7,7 @@
 //! by a shape, so the snapshot also shows a written shape surviving expansion unchanged.
 
 use cgp::prelude::*;
+use cgp::core::field::traits::FromFields;
 
 #[derive(HasFields)]
 pub struct Person {

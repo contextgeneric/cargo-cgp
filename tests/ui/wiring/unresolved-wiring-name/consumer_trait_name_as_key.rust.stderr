@@ -4,15 +4,15 @@ error[E0425]: cannot find type `CanGreetComponent` in this scope
 29 |         CanGreetComponent: GreetHello,
    |         ^^^^^^^^^^^^^^^^^ not found in this scope
    |
-note: similarly named trait `CanUseComponent` defined here
-  --> $CGP/crates/core/cgp-component/src/traits/can_use_component.rs:8:1
+note: similarly named struct `GreeterComponent` defined here
+  --> src/main.rs:15:17
    |
- 8 | pub trait CanUseComponent<Component, Params: ?Sized = ()> {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: a trait with a similar name exists
+15 | #[cgp_component(Greeter)]
+   |                 ^^^^^^^
+help: a struct with a similar name exists
    |
 29 -         CanGreetComponent: GreetHello,
-29 +         CanUseComponent: GreetHello,
+29 +         GreeterComponent: GreetHello,
    |
 help: you might be missing a type parameter
    |
@@ -25,15 +25,15 @@ error[E0425]: cannot find type `CanGreetComponent` in this scope
 29 |         CanGreetComponent: GreetHello,
    |         ^^^^^^^^^^^^^^^^^ not found in this scope
    |
-note: similarly named trait `CanUseComponent` defined here
-  --> $CGP/crates/core/cgp-component/src/traits/can_use_component.rs:8:1
+note: similarly named struct `GreeterComponent` defined here
+  --> src/main.rs:15:17
    |
- 8 | pub trait CanUseComponent<Component, Params: ?Sized = ()> {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: a trait with a similar name exists
+15 | #[cgp_component(Greeter)]
+   |                 ^^^^^^^
+help: a struct with a similar name exists
    |
 29 -         CanGreetComponent: GreetHello,
-29 +         CanUseComponent: GreetHello,
+29 +         GreeterComponent: GreetHello,
    |
 
 For more information about this error, try `rustc --explain E0425`.

@@ -11,6 +11,10 @@ pub const CGP_UMBRELLA_CRATE: &str = "cgp";
 /// without a `use`.
 pub const CGP_PRELUDE_PATH: &str = "cgp::prelude::";
 
+/// The module of [`CGP_UMBRELLA_CRATE`] that re-exports every name CGP's macros emit. A `help`
+/// never names an import through it, since users import from the public modules instead.
+pub const CGP_MACRO_PRELUDE_MODULE: &str = "macro_prelude";
+
 /// The proc-macro crate that defines `#[cgp_component]`, `#[cgp_impl]`, `cgp_namespace!`, and most
 /// of CGP's other macros.
 pub const CGP_MACRO_CRATE: &str = "cgp_macro";

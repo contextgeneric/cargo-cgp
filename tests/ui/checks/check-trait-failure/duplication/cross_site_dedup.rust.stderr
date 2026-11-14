@@ -4,7 +4,7 @@ error[E0277]: the trait bound `App: CanUseComponent<GreeterComponent>` is not sa
 49 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:38:1
    |
 38 | pub struct App;
@@ -41,7 +41,7 @@ error[E0277]: the trait bound `App: CanGreet` is not satisfied
 60 | impl CanGreetSend for App {
    |                       ^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<4, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:38:1
    |
 38 | pub struct App;
@@ -96,7 +96,7 @@ note: the candidate is defined in the trait `Greeter`
    |
 26 |     fn greet(&self);
    |     ^^^^^^^^^^^^^^^^
-note: trait bound `App: HasField<Symbol<4, cgp::prelude::Chars<..>>>` was not satisfied
+note: trait bound `App: HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` was not satisfied
   --> src/main.rs:19:1
    |
 19 | #[cgp_auto_getter]

@@ -4,7 +4,7 @@ error[E0277]: the trait bound `App: CanCalculateArea<Rectangle>` is not satisfie
 69 | impl CanCalculateAreaChecked<Rectangle> for App {
    |                                             ^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<12, cgp::prelude::Chars<..>>>` is not implemented for `App`
+help: the trait `HasField<Symbol<12, cgp::macro_prelude::Chars<..>>>` is not implemented for `App`
   --> src/main.rs:51:1
    |
 51 | pub struct App;
@@ -70,7 +70,7 @@ note: trait bound `&App: AreaCalculator<&App, _>` was not satisfied
    | |           ----------------------^
    | |_________________________________|
    |                                   unsatisfied trait bound introduced here
-note: trait bound `App: HasField<Symbol<12, cgp::prelude::Chars<..>>>` was not satisfied
+note: trait bound `App: HasField<Symbol<12, cgp::macro_prelude::Chars<..>>>` was not satisfied
   --> src/main.rs:37:1
    |
 37 | #[cgp_auto_getter]

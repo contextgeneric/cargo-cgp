@@ -8,14 +8,17 @@ use rustc_middle::ty::print::{with_crate_prefix, with_no_trimmed_paths};
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 
+use crate::config::CGP_MACRO_PRELUDE_MODULE;
+
 /// How deep the public module tree of a dependency is searched for an item's import path.
 const IMPORT_PATH_DEPTH: usize = 6;
 
 /// The path a `use` imports `def_id` by: a `crate::` path for a local item, and for an item of a
 /// dependency the shortest public path from a direct dependency's root, following re-exports
-/// (`cgp::core::error::ErrorTypeProviderComponent`). The compiler's own path printing names a
-/// re-exported crate by its crate name (`cgp::cgp_core::…`), which does not compile where the
-/// re-export renames it, so the module tree is walked instead. `None` when no public path is found.
+/// (`cgp::core::error::ErrorTypeProviderComponent`), never through [`CGP_MACRO_PRELUDE_MODULE`].
+/// The compiler's own path printing names a re-exported crate by its crate name
+/// (`cgp::cgp_core::…`), which does not compile where the re-export renames it, so the module tree
+/// is walked instead. `None` when no public path is found.
 pub fn import_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     if def_id.is_local() {
         return Some(with_no_trimmed_paths!(with_crate_prefix!(
@@ -54,6 +57,9 @@ pub fn public_dependency_path(
             let Res::Def(kind, child_did) = child.res else {
                 continue;
             };
+            if child.ident.name.as_str() == CGP_MACRO_PRELUDE_MODULE {
+                continue;
+            }
             let mut child_path = path.clone();
             child_path.push(child.ident.name);
             if wanted(kind, child_did, child.ident.name) {

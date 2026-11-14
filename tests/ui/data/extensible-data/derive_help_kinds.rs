@@ -12,6 +12,7 @@
 
 use cgp::core::field::impls::CanUpcast;
 use cgp::prelude::*;
+use cgp::core::field::traits::HasExtractor;
 
 #[derive(HasField)]
 pub struct Person {

@@ -4,7 +4,7 @@ error[E0271]: type mismatch resolving `<App as HasFields>::Fields == Cons<Field<
 41 |         DescriberComponent,
    |         ^^^^^^^^^^^^^^^^^^ type mismatch resolving `<App as HasFields>::Fields == Cons<Field<Symbol<4, _>, String>, Nil>`
    |
-note: expected this to be `Cons<cgp::prelude::Field<Symbol<4, cgp::prelude::Chars<..>>, String>, Nil>`
+note: expected this to be `Cons<cgp::prelude::Field<Symbol<4, cgp::macro_prelude::Chars<..>>, String>, Nil>`
   --> src/main.rs:28:10
    |
 28 | #[derive(HasFields)]

@@ -12,6 +12,7 @@ extern crate std;
 use std::prelude::rust_2024::*;
 use core::fmt::Debug;
 use cgp::prelude::*;
+use cgp::core::field::traits::ToFieldsRef;
 pub trait CanShowValue<Value> {
     fn show_value(&self, value: &Value) -> String;
 }
