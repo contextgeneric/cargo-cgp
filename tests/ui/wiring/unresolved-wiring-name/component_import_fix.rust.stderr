@@ -1,0 +1,51 @@
+error[E0425]: cannot find type `WelcomerComponent` in this scope
+  --> src/main.rs:36:10
+   |
+36 |     impl Welcomer {
+   |          ^^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+31 +     use crate::components::WelcomerComponent;
+   |
+
+error[E0425]: cannot find type `WelcomerComponent` in this scope
+  --> src/main.rs:48:13
+   |
+48 |             WelcomerComponent: crate::providers::WelcomeHello,
+   |             ^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+44 +     use crate::components::WelcomerComponent;
+   |
+
+error[E0425]: cannot find type `ErrorTypeProviderComponent` in this scope
+  --> src/main.rs:60:10
+   |
+60 |     impl ErrorTypeProvider {
+   |          ^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `WaverComponent` in this scope
+  --> src/main.rs:65:10
+   |
+65 |     impl Waver {
+   |          ^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+54 +     use cgp_test_component_library::direct::WaverComponent;
+   |
+
+error[E0425]: cannot find type `GreeterComponent` in this scope
+  --> src/main.rs:72:10
+   |
+72 |     impl Greeter {
+   |          ^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+54 +     use cgp_test_crate_a::GreeterComponent;
+   |
+
+For more information about this error, try `rustc --explain E0425`.

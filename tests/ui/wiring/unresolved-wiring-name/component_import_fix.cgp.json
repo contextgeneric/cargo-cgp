@@ -1,0 +1,114 @@
+[
+  {
+    "children": [
+      {
+        "level": "help",
+        "message": "import it with `use crate::components::WelcomerComponent;`",
+        "spans": []
+      }
+    ],
+    "code": "E0425",
+    "level": "error",
+    "message": "[CGP-E041] the component `WelcomerComponent` is not in scope",
+    "spans": [
+      {
+        "column": 10,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 36,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "help",
+        "message": "import it with `use crate::components::WelcomerComponent;`",
+        "spans": []
+      }
+    ],
+    "code": "E0425",
+    "level": "error",
+    "message": "[CGP-E041] the component `WelcomerComponent` is not in scope",
+    "spans": [
+      {
+        "column": 13,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 48,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "help",
+        "message": "import it with `use cgp::core::error::ErrorTypeProviderComponent;`",
+        "spans": []
+      }
+    ],
+    "code": "E0425",
+    "level": "error",
+    "message": "[CGP-E041] the component `ErrorTypeProviderComponent` is not in scope",
+    "spans": [
+      {
+        "column": 10,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 60,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "help",
+        "message": "import it with `use cgp_test_component_library::direct::WaverComponent;`",
+        "spans": []
+      }
+    ],
+    "code": "E0425",
+    "level": "error",
+    "message": "[CGP-E041] the component `WaverComponent` is not in scope",
+    "spans": [
+      {
+        "column": 10,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 65,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "help",
+        "message": "import it with `use cgp_test_crate_a::GreeterComponent;`",
+        "spans": []
+      }
+    ],
+    "code": "E0425",
+    "level": "error",
+    "message": "[CGP-E041] the component `GreeterComponent` is not in scope",
+    "spans": [
+      {
+        "column": 10,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 72,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [],
+    "code": null,
+    "level": "failure-note",
+    "message": "For more information about this error, try `rustc --explain E0425`.",
+    "spans": []
+  }
+]

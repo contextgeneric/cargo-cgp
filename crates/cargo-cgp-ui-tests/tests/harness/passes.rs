@@ -92,6 +92,24 @@ fn reduces_cargo_json_to_compiler_messages() {
 }
 
 #[test]
+fn keeps_a_suggestions_replacement_and_applicability() {
+    let stream = r#"{"reason":"compiler-message","message":{"level":"error","code":null,"message":"m","spans":[],"children":[{"level":"help","message":"import it","spans":[{"file_name":"src/main.rs","line_start":1,"column_start":1,"is_primary":true,"label":null,"suggested_replacement":"use a::B;\n","suggestion_applicability":"MachineApplicable"}]}]}}"#;
+    let value: serde_json::Value = serde_json::from_str(&reduce_json(stream)).unwrap();
+    assert_eq!(
+        value[0]["children"][0]["spans"],
+        serde_json::json!([{
+            "file": "src/main.rs",
+            "line": 1,
+            "column": 1,
+            "primary": true,
+            "label": null,
+            "replacement": "use a::B;\n",
+            "applicability": "MachineApplicable",
+        }])
+    );
+}
+
+#[test]
 fn collects_the_distinct_codes_in_order() {
     let output =
         "error[E0277]: [CGP-E001] x\n  [CGP-E110] y\n  [CGP-E101] z [CGP-E110]\n CGP-E1 short";

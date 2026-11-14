@@ -1,0 +1,41 @@
+error[E0425]: [CGP-E041] the component `WelcomerComponent` is not in scope
+  --> src/main.rs:36:10
+   |
+36 |     impl Welcomer {
+   |          ^^^^^^^^
+   |
+   = help: import it with `use crate::components::WelcomerComponent;`
+
+error[E0425]: [CGP-E041] the component `WelcomerComponent` is not in scope
+  --> src/main.rs:48:13
+   |
+48 |             WelcomerComponent: crate::providers::WelcomeHello,
+   |             ^^^^^^^^^^^^^^^^^
+   |
+   = help: import it with `use crate::components::WelcomerComponent;`
+
+error[E0425]: [CGP-E041] the component `ErrorTypeProviderComponent` is not in scope
+  --> src/main.rs:60:10
+   |
+60 |     impl ErrorTypeProvider {
+   |          ^^^^^^^^^^^^^^^^^
+   |
+   = help: import it with `use cgp::core::error::ErrorTypeProviderComponent;`
+
+error[E0425]: [CGP-E041] the component `WaverComponent` is not in scope
+  --> src/main.rs:65:10
+   |
+65 |     impl Waver {
+   |          ^^^^^
+   |
+   = help: import it with `use cgp_test_component_library::direct::WaverComponent;`
+
+error[E0425]: [CGP-E041] the component `GreeterComponent` is not in scope
+  --> src/main.rs:72:10
+   |
+72 |     impl Greeter {
+   |          ^^^^^^^
+   |
+   = help: import it with `use cgp_test_crate_a::GreeterComponent;`
+
+For more information about this error, try `rustc --explain E0425`.
