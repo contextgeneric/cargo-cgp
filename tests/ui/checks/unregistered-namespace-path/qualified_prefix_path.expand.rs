@@ -29,6 +29,7 @@ pub mod finance {
     {
         type Quantity = <__Context__ as QuantityTypeProvider<__Context__>>::Quantity;
     }
+    ///Provider trait for [`HasQuantityType`]. A provider imports this trait's component key, [`QuantityTypeProviderComponent`], beside it.
     pub trait QuantityTypeProvider<
         __Context__,
     >: IsProviderFor<QuantityTypeProviderComponent, __Context__, ()> {

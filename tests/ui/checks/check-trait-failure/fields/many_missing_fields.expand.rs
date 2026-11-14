@@ -25,6 +25,7 @@ where
         __Context__::sum(self)
     }
 }
+///Provider trait for [`CanSum`]. A provider imports this trait's component key, [`SummerComponent`], beside it.
 pub trait Summer<__Context__>: IsProviderFor<SummerComponent, __Context__, ()> {
     fn sum(__context__: &__Context__) -> u64;
 }

@@ -25,6 +25,7 @@ where
         __Context__::show(self, value)
     }
 }
+///Provider trait for [`CanShow`]. A provider imports this trait's component key, [`ShowerComponent`], beside it.
 pub trait Shower<__Context__, T>: IsProviderFor<ShowerComponent, __Context__, (T)> {
     fn show(__context__: &__Context__, value: T);
 }
@@ -97,6 +98,7 @@ where
         __Context__::farewell(self)
     }
 }
+///Provider trait for [`CanFarewell`]. A provider imports this trait's component key, [`FarewellComponent`], beside it.
 pub trait Farewell<__Context__>: IsProviderFor<FarewellComponent, __Context__, ()> {
     fn farewell(__context__: &__Context__);
 }

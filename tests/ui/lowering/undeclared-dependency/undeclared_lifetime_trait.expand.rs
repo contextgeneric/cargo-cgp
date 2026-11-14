@@ -21,6 +21,7 @@ where
         __Context__::prefix(self, text)
     }
 }
+///Provider trait for [`CanGetPrefix`]. A provider imports this trait's component key, [`PrefixGetterComponent`], beside it.
 pub trait PrefixGetter<
     'a,
     __Context__,

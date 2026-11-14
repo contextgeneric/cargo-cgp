@@ -22,6 +22,7 @@ where
         __Context__::name(self, prefix)
     }
 }
+///Provider trait for [`CanGetName`]. A provider imports this trait's component key, [`NameGetterComponent`], beside it.
 pub trait NameGetter<
     'a,
     __Context__,

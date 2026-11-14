@@ -27,6 +27,7 @@ where
         __Context__::large(self)
     }
 }
+///Provider trait for [`CanCount`]. A provider imports this trait's component key, [`CounterComponent`], beside it.
 pub trait Counter<__Context__>: IsProviderFor<CounterComponent, __Context__, ()> {
     fn small(__context__: &__Context__) -> u32;
     fn large(__context__: &__Context__) -> u64;

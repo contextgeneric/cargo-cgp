@@ -31,6 +31,7 @@ pub mod a {
             __Context__::greet(self)
         }
     }
+    ///Provider trait for [`CanGreet`]. A provider imports this trait's component key, [`GreeterComponent`], beside it.
     pub trait Greeter<__Context__>: IsProviderFor<GreeterComponent, __Context__, ()> {
         fn greet(__context__: &__Context__);
     }
@@ -105,6 +106,7 @@ pub mod b {
             __Context__::greet(self)
         }
     }
+    ///Provider trait for [`CanGreet`]. A provider imports this trait's component key, [`WelcomerComponent`], beside it.
     pub trait Welcomer<__Context__>: IsProviderFor<WelcomerComponent, __Context__, ()> {
         fn greet(__context__: &__Context__);
     }
@@ -180,6 +182,7 @@ pub mod c {
             __Context__::hail(self)
         }
     }
+    ///Provider trait for [`CanHail`]. A provider imports this trait's component key, [`GreeterComponent`], beside it.
     pub trait Greeter<__Context__>: IsProviderFor<GreeterComponent, __Context__, ()> {
         fn hail(__context__: &__Context__);
     }

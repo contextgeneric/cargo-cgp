@@ -27,6 +27,7 @@ where
         __Context__::area(self)
     }
 }
+///Provider trait for [`CanCalculateArea`]. A provider imports this trait's component key, [`AreaCalculatorComponent`], beside it.
 pub trait AreaCalculator<
     __Context__,
     Scalar,

@@ -27,6 +27,7 @@ where
         __Context__::volume(self)
     }
 }
+///Provider trait for [`CanCalculateVolume`]. A provider imports this trait's component key, [`VolumeCalculatorComponent`], beside it.
 pub trait VolumeCalculator<
     __Context__,
 >: IsProviderFor<VolumeCalculatorComponent, __Context__, ()> {

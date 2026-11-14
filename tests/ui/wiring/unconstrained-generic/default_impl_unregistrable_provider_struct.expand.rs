@@ -30,6 +30,7 @@ where
         __Context__::show(self, value)
     }
 }
+///Provider trait for [`CanShow`]. A provider imports this trait's component key, [`ShowImplComponent`], beside it.
 pub trait ShowImpl<__Context__, T>: IsProviderFor<ShowImplComponent, __Context__, (T)> {
     fn show(__context__: &__Context__, value: &T) -> String;
 }

@@ -34,6 +34,7 @@ where
 {
     type Scalar = <__Context__ as ScalarTypeProvider<__Context__>>::Scalar;
 }
+///Provider trait for [`HasScalarType`]. A provider imports this trait's component key, [`ScalarTypeProviderComponent`], beside it.
 pub trait ScalarTypeProvider<
     __Context__,
 >: IsProviderFor<ScalarTypeProviderComponent, __Context__, ()> {
@@ -130,6 +131,7 @@ where
         __Context__::scalars_equal(self, a, b)
     }
 }
+///Provider trait for [`CanCompareScalars`]. A provider imports this trait's component key, [`ScalarEqualityComponent`], beside it.
 pub trait ScalarEquality<
     __Context__,
 >: IsProviderFor<ScalarEqualityComponent, __Context__, ()>

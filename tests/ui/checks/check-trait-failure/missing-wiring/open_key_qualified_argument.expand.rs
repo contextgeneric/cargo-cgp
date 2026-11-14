@@ -28,6 +28,7 @@ where
         __Context__::greet(self, input)
     }
 }
+///Provider trait for [`CanGreet`]. A provider imports this trait's component key, [`GreeterComponent`], beside it.
 pub trait Greeter<
     __Context__,
     Input,

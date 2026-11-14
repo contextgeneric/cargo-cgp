@@ -36,6 +36,7 @@ where
         __Context__::n(self)
     }
 }
+///Provider trait for [`CanN`]. A provider imports this trait's component key, [`ProviderNComponent`], beside it.
 pub trait ProviderN<__Context__>: IsProviderFor<ProviderNComponent, __Context__, ()> {
     fn n(__context__: &__Context__);
 }
@@ -99,6 +100,7 @@ where
         __Context__::m(self)
     }
 }
+///Provider trait for [`CanM`]. A provider imports this trait's component key, [`ProviderMComponent`], beside it.
 pub trait ProviderM<__Context__>: IsProviderFor<ProviderMComponent, __Context__, ()> {
     fn m(__context__: &__Context__);
 }
@@ -162,6 +164,7 @@ where
         __Context__::r(self)
     }
 }
+///Provider trait for [`CanR`]. A provider imports this trait's component key, [`ProviderRComponent`], beside it.
 pub trait ProviderR<__Context__>: IsProviderFor<ProviderRComponent, __Context__, ()> {
     fn r(__context__: &__Context__);
 }

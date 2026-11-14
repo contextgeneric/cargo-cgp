@@ -23,6 +23,7 @@ where
         __Context__::allow(self, count)
     }
 }
+///Provider trait for [`CanRateLimit`]. A provider imports this trait's component key, [`RateLimiterComponent`], beside it.
 pub trait RateLimiter<
     __Context__,
 >: IsProviderFor<RateLimiterComponent, __Context__, ()> {

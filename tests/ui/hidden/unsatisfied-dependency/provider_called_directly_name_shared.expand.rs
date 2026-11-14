@@ -25,6 +25,7 @@ pub mod other {
             __Context__::run(self)
         }
     }
+    ///Provider trait for [`CanRun`]. A provider imports this trait's component key, [`RunnerComponent`], beside it.
     pub trait Runner<__Context__>: IsProviderFor<RunnerComponent, __Context__, ()> {
         fn run(__context__: &__Context__) -> u8;
     }
@@ -92,6 +93,7 @@ where
         __Context__::run(self)
     }
 }
+///Provider trait for [`CanGreet`]. A provider imports this trait's component key, [`GreeterComponent`], beside it.
 pub trait Greeter<__Context__>: IsProviderFor<GreeterComponent, __Context__, ()> {
     fn run(__context__: &__Context__) -> String;
 }

@@ -65,6 +65,7 @@ where
         __Context__::handle_api(self, api).await
     }
 }
+///Provider trait for [`CanHandleApi`]. A provider imports this trait's component key, [`ApiHandlerComponent`], beside it.
 pub trait ApiHandler<
     __Context__,
     Api,

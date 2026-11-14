@@ -43,6 +43,7 @@ pub mod component {
             __Context__::describe(self)
         }
     }
+    ///Provider trait for [`CanDescribe`]. A provider imports this trait's component key, [`DescriberComponent`], beside it.
     pub trait Describer<
         __Context__,
     >: IsProviderFor<DescriberComponent, __Context__, ()> {

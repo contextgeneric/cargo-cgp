@@ -21,6 +21,7 @@ mod lib {
             __Context__::greet(self)
         }
     }
+    ///Provider trait for [`CanGreet`]. A provider imports this trait's component key, [`GreeterComponent`], beside it.
     pub trait Greeter<__Context__>: IsProviderFor<GreeterComponent, __Context__, ()> {
         fn greet(__context__: &__Context__);
     }

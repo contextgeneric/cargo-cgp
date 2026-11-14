@@ -35,6 +35,7 @@ pub mod shape_a {
             __Context__::area(self)
         }
     }
+    ///Provider trait for [`CanCalculateAreaA`]. A provider imports this trait's component key, [`AreaCalculatorAComponent`], beside it.
     pub trait AreaCalculatorA<
         __Context__,
     >: IsProviderFor<AreaCalculatorAComponent, __Context__, ()> {
@@ -202,6 +203,7 @@ pub mod shape_b {
             __Context__::area(self)
         }
     }
+    ///Provider trait for [`CanCalculateAreaB`]. A provider imports this trait's component key, [`AreaCalculatorBComponent`], beside it.
     pub trait AreaCalculatorB<
         __Context__,
     >: IsProviderFor<AreaCalculatorBComponent, __Context__, ()> {

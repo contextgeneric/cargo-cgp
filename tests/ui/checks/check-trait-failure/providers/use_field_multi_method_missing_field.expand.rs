@@ -28,6 +28,7 @@ where
         __Context__::height(self)
     }
 }
+///Provider trait for [`HasDimensions`]. A provider imports this trait's component key, [`DimensionsGetterComponent`], beside it.
 pub trait DimensionsGetter<
     __Context__,
 >: IsProviderFor<DimensionsGetterComponent, __Context__, ()> {

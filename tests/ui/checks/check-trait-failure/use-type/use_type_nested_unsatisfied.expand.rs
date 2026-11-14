@@ -23,6 +23,7 @@ where
 {
     type Types = <__Context__ as TypesTypeProvider<__Context__>>::Types;
 }
+///Provider trait for [`HasTypes`]. A provider imports this trait's component key, [`TypesTypeProviderComponent`], beside it.
 pub trait TypesTypeProvider<
     __Context__,
 >: IsProviderFor<TypesTypeProviderComponent, __Context__, ()> {
@@ -108,6 +109,7 @@ where
 {
     type Scalar = <__Context__ as ScalarTypeProvider<__Context__>>::Scalar;
 }
+///Provider trait for [`HasScalarType`]. A provider imports this trait's component key, [`ScalarTypeProviderComponent`], beside it.
 pub trait ScalarTypeProvider<
     __Context__,
 >: IsProviderFor<ScalarTypeProviderComponent, __Context__, ()> {

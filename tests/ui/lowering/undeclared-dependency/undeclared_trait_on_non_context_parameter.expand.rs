@@ -43,6 +43,7 @@ where
         __Context__::report(self, value)
     }
 }
+///Provider trait for [`CanReport`]. A provider imports this trait's component key, [`ReporterComponent`], beside it.
 pub trait Reporter<
     __Context__,
     Value,

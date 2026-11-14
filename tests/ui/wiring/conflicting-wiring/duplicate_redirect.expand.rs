@@ -30,6 +30,7 @@ where
         __Context__::foo(self)
     }
 }
+///Provider trait for [`CanFoo`]. A provider imports this trait's component key, [`FooComponent`], beside it.
 pub trait Foo<__Context__>: IsProviderFor<FooComponent, __Context__, ()> {
     fn foo(__context__: &__Context__);
 }

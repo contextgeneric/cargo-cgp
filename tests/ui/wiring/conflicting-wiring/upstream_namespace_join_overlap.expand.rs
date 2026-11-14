@@ -33,6 +33,7 @@ where
         __Context__::label(self)
     }
 }
+///Provider trait for [`CanLabel`]. A provider imports this trait's component key, [`LabelerComponent`], beside it.
 pub trait Labeler<__Context__>: IsProviderFor<LabelerComponent, __Context__, ()> {
     fn label(__context__: &__Context__) -> String;
 }

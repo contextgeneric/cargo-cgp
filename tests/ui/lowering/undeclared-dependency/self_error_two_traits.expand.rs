@@ -23,6 +23,7 @@ pub mod local {
     {
         type Error = <__Context__ as ErrorTypeProvider<__Context__>>::Error;
     }
+    ///Provider trait for [`HasErrorType`]. A provider imports this trait's component key, [`ErrorTypeProviderComponent`], beside it.
     pub trait ErrorTypeProvider<
         __Context__,
     >: IsProviderFor<ErrorTypeProviderComponent, __Context__, ()> {
@@ -119,6 +120,7 @@ where
         __Context__::validate(self)
     }
 }
+///Provider trait for [`CanValidate`]. A provider imports this trait's component key, [`ValidatorComponent`], beside it.
 pub trait Validator<__Context__>: IsProviderFor<ValidatorComponent, __Context__, ()> {
     fn validate(__context__: &__Context__) -> bool;
 }

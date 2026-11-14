@@ -28,6 +28,7 @@ where
         __Context__::area(self)
     }
 }
+///Provider trait for [`CanCalculateArea`]. A provider imports this trait's component key, [`AreaCalculatorComponent`], beside it.
 pub trait AreaCalculator<
     __Context__,
 >: IsProviderFor<AreaCalculatorComponent, __Context__, ()> {
@@ -97,6 +98,7 @@ where
         __Context__::area(self)
     }
 }
+///Provider trait for [`CanCalculateFloorArea`]. A provider imports this trait's component key, [`FloorAreaCalculatorComponent`], beside it.
 pub trait FloorAreaCalculator<
     __Context__,
 >: IsProviderFor<FloorAreaCalculatorComponent, __Context__, ()> {
@@ -167,6 +169,7 @@ where
         __Context__::describe(self)
     }
 }
+///Provider trait for [`CanDescribe`]. A provider imports this trait's component key, [`DescriberComponent`], beside it.
 pub trait Describer<__Context__>: IsProviderFor<DescriberComponent, __Context__, ()> {
     fn describe(__context__: &__Context__) -> String;
 }

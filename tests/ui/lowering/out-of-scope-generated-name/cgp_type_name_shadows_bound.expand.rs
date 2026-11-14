@@ -37,6 +37,7 @@ where
 {
     type Database = <__Context__ as DatabaseTypeProvider<__Context__>>::Database;
 }
+///Provider trait for [`HasDatabaseType`]. A provider imports this trait's component key, [`DatabaseTypeProviderComponent`], beside it.
 pub trait DatabaseTypeProvider<
     __Context__,
 >: IsProviderFor<DatabaseTypeProviderComponent, __Context__, ()> {

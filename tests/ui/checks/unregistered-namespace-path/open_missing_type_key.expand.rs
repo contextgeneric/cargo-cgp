@@ -34,6 +34,7 @@ where
         __Context__::encode_item(self, value)
     }
 }
+///Provider trait for [`CanEncodeItem`]. A provider imports this trait's component key, [`ItemEncoderComponent`], beside it.
 pub trait ItemEncoder<
     __Context__,
     Value,

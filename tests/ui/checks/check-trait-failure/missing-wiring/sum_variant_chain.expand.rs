@@ -30,6 +30,7 @@ where
         __Context__::encode_variant(self, value)
     }
 }
+///Provider trait for [`CanEncodeVariant`]. A provider imports this trait's component key, [`VariantEncoderComponent`], beside it.
 pub trait VariantEncoder<
     __Context__,
     Value,

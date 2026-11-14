@@ -25,6 +25,7 @@ pub mod shapes_a {
             __Context__::measure(self)
         }
     }
+    ///Provider trait for [`CanMeasureA`]. A provider imports this trait's component key, [`MeasurerComponent`], beside it.
     pub trait MeasurerA<__Context__>: IsProviderFor<MeasurerComponent, __Context__, ()> {
         fn measure(__context__: &__Context__) -> f64;
     }
@@ -127,6 +128,7 @@ pub mod shapes_b {
             __Context__::measure(self)
         }
     }
+    ///Provider trait for [`CanMeasureB`]. A provider imports this trait's component key, [`MeasurerComponent`], beside it.
     pub trait MeasurerB<__Context__>: IsProviderFor<MeasurerComponent, __Context__, ()> {
         fn measure(__context__: &__Context__) -> f64;
     }

@@ -31,6 +31,7 @@ where
 {
     type Credential = <__Context__ as CredentialTypeProvider<__Context__>>::Credential;
 }
+///Provider trait for [`HasCredentialType`]. A provider imports this trait's component key, [`CredentialTypeProviderComponent`], beside it.
 pub trait CredentialTypeProvider<
     __Context__,
 >: IsProviderFor<CredentialTypeProviderComponent, __Context__, ()> {
@@ -145,6 +146,7 @@ where
         __Context__::authenticate(self, request)
     }
 }
+///Provider trait for [`CanAuthenticate`]. A provider imports this trait's component key, [`AuthenticatorComponent`], beside it.
 pub trait Authenticator<
     __Context__,
     Request,

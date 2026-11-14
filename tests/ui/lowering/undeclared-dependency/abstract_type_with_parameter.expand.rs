@@ -19,6 +19,7 @@ where
 {
     type Fault = <__Context__ as FaultTypeProvider<__Context__, Tag>>::Fault;
 }
+///Provider trait for [`HasErrorTypeFor`]. A provider imports this trait's component key, [`FaultTypeProviderComponent`], beside it.
 pub trait FaultTypeProvider<
     __Context__,
     Tag,
@@ -114,6 +115,7 @@ where
         __Context__::greet(self)
     }
 }
+///Provider trait for [`CanGreet`]. A provider imports this trait's component key, [`GreeterComponent`], beside it.
 pub trait Greeter<__Context__>: IsProviderFor<GreeterComponent, __Context__, ()> {
     fn greet(__context__: &__Context__) -> String;
 }

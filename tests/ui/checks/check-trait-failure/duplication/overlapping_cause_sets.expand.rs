@@ -34,6 +34,7 @@ where
         __Context__::encode(self, value)
     }
 }
+///Provider trait for [`CanEncode`]. A provider imports this trait's component key, [`EncoderComponent`], beside it.
 pub trait Encoder<
     __Context__,
     Value,
@@ -124,6 +125,7 @@ where
         __Context__::report_first(self)
     }
 }
+///Provider trait for [`CanReportFirst`]. A provider imports this trait's component key, [`FirstReporterComponent`], beside it.
 pub trait FirstReporter<
     __Context__,
 >: IsProviderFor<FirstReporterComponent, __Context__, ()> {
@@ -209,6 +211,7 @@ where
         __Context__::report_second(self)
     }
 }
+///Provider trait for [`CanReportSecond`]. A provider imports this trait's component key, [`SecondReporterComponent`], beside it.
 pub trait SecondReporter<
     __Context__,
 >: IsProviderFor<SecondReporterComponent, __Context__, ()> {

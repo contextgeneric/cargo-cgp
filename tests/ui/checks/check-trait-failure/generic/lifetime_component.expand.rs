@@ -26,6 +26,7 @@ where
         __Context__::get_reference(self)
     }
 }
+///Provider trait for [`HasReference`]. A provider imports this trait's component key, [`ReferenceGetterComponent`], beside it.
 pub trait ReferenceGetter<
     'a,
     __Context__,

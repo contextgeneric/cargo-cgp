@@ -41,6 +41,7 @@ where
         __Context__::tag(self)
     }
 }
+///Provider trait for [`CanTag`]. A provider imports this trait's component key, [`TaggerComponent`], beside it.
 pub trait Tagger<__Context__>: IsProviderFor<TaggerComponent, __Context__, ()>
 where
     __Context__: TagFor<u32>,

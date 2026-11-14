@@ -25,6 +25,7 @@ where
         __Context__::describe(self, value)
     }
 }
+///Provider trait for [`CanDescribe`]. A provider imports this trait's component key, [`DescriberComponent`], beside it.
 pub trait Describer<
     __Context__,
     T,

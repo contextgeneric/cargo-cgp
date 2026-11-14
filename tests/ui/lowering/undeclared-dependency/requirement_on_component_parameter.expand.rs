@@ -36,6 +36,7 @@ where
         __Context__::show(self, value)
     }
 }
+///Provider trait for [`CanShow`]. A provider imports this trait's component key, [`ShowerComponent`], beside it.
 pub trait Shower<
     __Context__,
     T: Display,

@@ -35,6 +35,7 @@ where
         __Context__::build_value(self)
     }
 }
+///Provider trait for [`CanBuildValue`]. A provider imports this trait's component key, [`ValueBuilderComponent`], beside it.
 pub trait ValueBuilder<
     __Context__,
     Value,
@@ -121,6 +122,7 @@ where
         __Context__::assemble(self)
     }
 }
+///Provider trait for [`CanAssemble`]. A provider imports this trait's component key, [`AssemblerComponent`], beside it.
 pub trait Assembler<__Context__>: IsProviderFor<AssemblerComponent, __Context__, ()> {
     fn assemble(__context__: &__Context__);
 }

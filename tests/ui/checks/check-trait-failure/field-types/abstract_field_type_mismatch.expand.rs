@@ -52,6 +52,7 @@ where
 {
     type Db = <__Context__ as DbTypeProvider<__Context__>>::Db;
 }
+///Provider trait for [`HasDbType`]. A provider imports this trait's component key, [`DbTypeProviderComponent`], beside it.
 pub trait DbTypeProvider<
     __Context__,
 >: IsProviderFor<DbTypeProviderComponent, __Context__, ()> {
@@ -146,6 +147,7 @@ where
         __Context__::count_rows(self)
     }
 }
+///Provider trait for [`CanCountRows`]. A provider imports this trait's component key, [`RowCounterComponent`], beside it.
 pub trait RowCounter<__Context__>: IsProviderFor<RowCounterComponent, __Context__, ()>
 where
     __Context__: HasErrorType,

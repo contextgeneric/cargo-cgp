@@ -58,6 +58,7 @@ where
         __Context__::compute(self)
     }
 }
+///Provider trait for [`CanCompute`]. A provider imports this trait's component key, [`ComputerComponent`], beside it.
 pub trait Computer<__Context__>: IsProviderFor<ComputerComponent, __Context__, ()> {
     fn compute(__context__: &__Context__);
 }
@@ -137,6 +138,7 @@ where
         __Context__::run(self)
     }
 }
+///Provider trait for [`CanRun`]. A provider imports this trait's component key, [`RunnerComponent`], beside it.
 pub trait Runner<__Context__>: IsProviderFor<RunnerComponent, __Context__, ()> {
     fn run(__context__: &__Context__);
 }

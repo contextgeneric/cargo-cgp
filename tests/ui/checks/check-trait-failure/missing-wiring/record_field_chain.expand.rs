@@ -46,6 +46,7 @@ where
         __Context__::build_value(self)
     }
 }
+///Provider trait for [`CanBuildValue`]. A provider imports this trait's component key, [`ValueBuilderComponent`], beside it.
 pub trait ValueBuilder<
     __Context__,
     Value,

@@ -50,6 +50,7 @@ where
         __Context__::shared(self)
     }
 }
+///Provider trait for [`CanShared`]. A provider imports this trait's component key, [`SharedProviderComponent`], beside it.
 pub trait SharedProvider<
     __Context__,
 >: IsProviderFor<SharedProviderComponent, __Context__, ()> {
@@ -119,6 +120,7 @@ where
         __Context__::left(self)
     }
 }
+///Provider trait for [`CanLeft`]. A provider imports this trait's component key, [`LeftProviderComponent`], beside it.
 pub trait LeftProvider<
     __Context__,
 >: IsProviderFor<LeftProviderComponent, __Context__, ()> {
@@ -186,6 +188,7 @@ where
         __Context__::right(self)
     }
 }
+///Provider trait for [`CanRight`]. A provider imports this trait's component key, [`RightProviderComponent`], beside it.
 pub trait RightProvider<
     __Context__,
 >: IsProviderFor<RightProviderComponent, __Context__, ()> {
@@ -255,6 +258,7 @@ where
         __Context__::top(self)
     }
 }
+///Provider trait for [`CanTop`]. A provider imports this trait's component key, [`TopProviderComponent`], beside it.
 pub trait TopProvider<
     __Context__,
 >: IsProviderFor<TopProviderComponent, __Context__, ()> {

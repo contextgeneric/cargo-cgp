@@ -37,6 +37,7 @@ where
         __Context__::encode_value(self, value)
     }
 }
+///Provider trait for [`CanEncodeValue`]. A provider imports this trait's component key, [`ValueEncoderComponent`], beside it.
 pub trait ValueEncoder<
     __Context__,
     Value: ?Sized,

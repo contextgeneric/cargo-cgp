@@ -23,6 +23,7 @@ where
         __Context__::area(self, shape)
     }
 }
+///Provider trait for [`CanCalculateArea`]. A provider imports this trait's component key, [`AreaCalculatorComponent`], beside it.
 pub trait AreaCalculator<
     __Context__,
     Shape,
@@ -100,6 +101,7 @@ where
         __Context__::double(self)
     }
 }
+///Provider trait for [`CanDouble`]. A provider imports this trait's component key, [`DoublerComponent`], beside it.
 pub trait Doubler<__Context__>: IsProviderFor<DoublerComponent, __Context__, ()> {
     fn double(__context__: &__Context__) -> f64;
 }

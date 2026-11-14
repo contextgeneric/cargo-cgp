@@ -24,6 +24,7 @@ where
         __Context__::show_value(self, value)
     }
 }
+///Provider trait for [`CanShowValue`]. A provider imports this trait's component key, [`ValueShowerComponent`], beside it.
 pub trait ValueShower<
     __Context__,
     Value,

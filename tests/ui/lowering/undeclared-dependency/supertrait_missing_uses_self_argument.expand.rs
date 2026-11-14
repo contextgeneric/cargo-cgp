@@ -32,6 +32,7 @@ where
         __Context__::check(self)
     }
 }
+///Provider trait for [`CanCheck`]. A provider imports this trait's component key, [`CheckerComponent`], beside it.
 pub trait Checker<__Context__>: IsProviderFor<CheckerComponent, __Context__, ()>
 where
     __Context__: CanCompareWith<__Context__>,

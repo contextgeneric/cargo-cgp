@@ -23,6 +23,7 @@ where
         __Context__::load(self)
     }
 }
+///Provider trait for [`CanLoad`]. A provider imports this trait's component key, [`LoaderComponent`], beside it.
 pub trait Loader<__Context__>: IsProviderFor<LoaderComponent, __Context__, ()> {
     fn load(__context__: &__Context__) -> Result<String, __Context__::Error>;
 }

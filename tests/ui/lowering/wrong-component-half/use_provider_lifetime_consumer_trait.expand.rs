@@ -23,6 +23,7 @@ where
         __Context__::read(self, source)
     }
 }
+///Provider trait for [`CanRead`]. A provider imports this trait's component key, [`ReaderComponent`], beside it.
 pub trait Reader<
     'a,
     __Context__,

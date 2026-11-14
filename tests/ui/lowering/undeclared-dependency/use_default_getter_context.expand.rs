@@ -27,6 +27,7 @@ where
         __Context__::name(self)
     }
 }
+///Provider trait for [`HasName`]. A provider imports this trait's component key, [`NameGetterComponent`], beside it.
 pub trait NameGetter<__Context__>: IsProviderFor<NameGetterComponent, __Context__, ()> {
     fn name(__context__: &__Context__) -> &str {
         "John"
@@ -149,6 +150,7 @@ where
         __Context__::greet(self)
     }
 }
+///Provider trait for [`CanGreet`]. A provider imports this trait's component key, [`GreeterComponent`], beside it.
 pub trait Greeter<__Context__>: IsProviderFor<GreeterComponent, __Context__, ()>
 where
     __Context__: HasName,

@@ -237,6 +237,7 @@ where
         __Context__::describe_shape(self)
     }
 }
+///Provider trait for [`CanDescribeShape`]. A provider imports this trait's component key, [`ShapeDescriberComponent`], beside it.
 pub trait ShapeDescriber<
     __Context__,
     Shape,

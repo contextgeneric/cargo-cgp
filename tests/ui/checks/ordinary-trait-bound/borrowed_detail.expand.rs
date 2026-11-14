@@ -27,6 +27,7 @@ where
         __Context__::load(self, path)
     }
 }
+///Provider trait for [`CanLoad`]. A provider imports this trait's component key, [`LoaderComponent`], beside it.
 pub trait Loader<__Context__>: IsProviderFor<LoaderComponent, __Context__, ()>
 where
     __Context__: HasErrorType,

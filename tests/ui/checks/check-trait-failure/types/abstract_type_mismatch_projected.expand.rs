@@ -46,6 +46,7 @@ where
 {
     type Db = <__Context__ as DbTypeProvider<__Context__>>::Db;
 }
+///Provider trait for [`HasDbType`]. A provider imports this trait's component key, [`DbTypeProviderComponent`], beside it.
 pub trait DbTypeProvider<
     __Context__,
 >: IsProviderFor<DbTypeProviderComponent, __Context__, ()> {
@@ -139,6 +140,7 @@ where
         __Context__,
     >>::Transaction;
 }
+///Provider trait for [`HasTransactionType`]. A provider imports this trait's component key, [`TransactionTypeProviderComponent`], beside it.
 pub trait TransactionTypeProvider<
     __Context__,
 >: IsProviderFor<TransactionTypeProviderComponent, __Context__, ()> {
@@ -245,6 +247,7 @@ where
         __Context__::name_transaction(self, transaction)
     }
 }
+///Provider trait for [`CanNameTransaction`]. A provider imports this trait's component key, [`TransactionNamerComponent`], beside it.
 pub trait TransactionNamer<
     __Context__,
 >: IsProviderFor<TransactionNamerComponent, __Context__, ()>

@@ -29,6 +29,7 @@ where
         __Context__::format_pair(self, value)
     }
 }
+///Provider trait for [`CanFormatPair`]. A provider imports this trait's component key, [`PairFormatterComponent`], beside it.
 pub trait PairFormatter<
     __Context__,
     T,
