@@ -153,6 +153,12 @@ fn unambiguous_path_strip_keeps_a_disambiguating_qualifier() {
         .as_deref(),
         Some("`backend::Error` beside `HasErrorType` and `Quantity`"),
     );
+    // A name outside the prelude prints through `cgp::macro_prelude`, still rooted at `cgp`.
+    assert_eq!(
+        strip_unambiguous_paths("`cgp::macro_prelude::IsProviderFor<C, App>`", &ambiguous)
+            .as_deref(),
+        Some("`IsProviderFor<C, App>`"),
+    );
     assert_eq!(
         strip_unambiguous_paths("`shape_a::Rectangle`", &ambiguous),
         None

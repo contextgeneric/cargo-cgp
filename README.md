@@ -78,7 +78,7 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
    |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `HasField<Symbol<6, Chars<'h', Chars<'e', Chars<'i', Chars<'g', Chars<_, cgp::prelude::Chars<'t', Nil>>>>>>>>` is not implemented for `Rectangle`
+help: the trait `HasField<Symbol<6, Chars<'h', Chars<'e', Chars<'i', Chars<'g', Chars<_, cgp::macro_prelude::Chars<'t', Nil>>>>>>>>` is not implemented for `Rectangle`
       but trait `HasField<Symbol<5, Chars<'w', Chars<'i', Chars<'d', Chars<'t', Chars<_, Nil>>>>>>>` is implemented for it
 note: required for `RectangleArea` to implement `IsProviderFor<AreaCalculatorComponent, Rectangle>`
    = note: required for `Rectangle` to implement `CanUseComponent<AreaCalculatorComponent>`

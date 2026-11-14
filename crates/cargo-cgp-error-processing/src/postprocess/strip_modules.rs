@@ -9,7 +9,8 @@
 //! first uppercase segment: an item inside a trait or type keeps its qualifier
 //! (`cgp::prelude::TryComputer::try_compute` reads `TryComputer::try_compute`), while a run with no
 //! uppercase segment, such as a free function's path, keeps only its last segment. A CGP re-export
-//! path such as `cgp::prelude::Chars` is just one such run. The strip runs first, before the
+//! path such as `cgp::prelude::Nil`, or `cgp::macro_prelude::Chars` for a name outside the prelude,
+//! is just one such run. The strip runs first, before the
 //! resugaring stages, so they match the bare names.
 //!
 //! It rewrites **only** a run of plain identifiers joined by `::` (`foo::Bar`, `a::b::c::D`) and
@@ -40,9 +41,9 @@ pub const CGP_ENCODING_NAMES: &[&str] = &[
 /// Strip module qualifiers from `text` except where they tell two items apart: collapse each
 /// `a::b::C` run to `C` unless [`AmbiguousNames::keeps_qualifier`] says the bare `C` would read as
 /// another item (`Error` for `std::io::Error` beside `backend::Error`). A run rooted at the `cgp`
-/// crate always collapses, since rustc qualifies CGP's names for the prelude glob import, and so
-/// does a run ending in one of [`CGP_ENCODING_NAMES`]. Returns the rewritten text when any run was
-/// collapsed, `None` otherwise.
+/// crate always collapses, since rustc qualifies CGP's names by the module that re-exports them,
+/// `cgp::prelude` or `cgp::macro_prelude`, and so does a run ending in one of
+/// [`CGP_ENCODING_NAMES`]. Returns the rewritten text when any run was collapsed, `None` otherwise.
 pub fn strip_unambiguous_paths(text: &str, ambiguous: &AmbiguousNames) -> Option<String> {
     collapse_paths(text, |path, first_segment, last_segment| {
         first_segment == "cgp"
