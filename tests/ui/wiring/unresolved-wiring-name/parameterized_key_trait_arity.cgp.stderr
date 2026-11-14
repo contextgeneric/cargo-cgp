@@ -1,0 +1,29 @@
+error[E0107]: trait takes 2 generic arguments but 1 generic argument was supplied
+  --> src/main.rs:26:6
+   |
+25 | #[cgp_impl(new AnyArea)]
+   | ------------------------ supplied 1 generic argument
+26 | impl AreaCalculator {
+   |      ^^^^^^^^^^^^^^ expected 2 generic arguments
+   |
+note: trait defined here, with 2 generic parameters: `__Context__`, `Shape`
+  --> src/main.rs:19:15
+   |
+17 | / #[cgp_component {
+18 | |     name: AreaCalculatorComponent<Shape>,
+19 | |     provider: AreaCalculator,
+   | |               ^^^^^^^^^^^^^^
+20 | | }]
+   | |__-
+21 |   pub trait CanCalculateArea<Shape> {
+   |                              -----
+
+error[E0107]: [CGP-E070] the header derives the component `AreaCalculatorComponent` from the trait name `AreaCalculator`, but the component of `AreaCalculator` is `AreaCalculatorComponent<Shape>`
+  --> src/main.rs:26:6
+   |
+26 | impl AreaCalculator {
+   |      ^^^^^^^^^^^^^^
+   |
+   = help: name the component in the attribute: `#[cgp_impl(new AnyArea: AreaCalculatorComponent<Shape>)]`
+
+For more information about this error, try `rustc --explain E0107`.
