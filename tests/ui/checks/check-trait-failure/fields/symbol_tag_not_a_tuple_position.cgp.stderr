@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `2` on `Pair`
-  --> src/main.rs:60:9
+  --> src/main.rs:61:9
    |
-60 |         GreeterComponent,
+61 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `2` on `Pair`
@@ -11,9 +11,9 @@ error[E0277]: [CGP-E001] missing field `2` on `Pair`
                └─ [CGP-E110] missing field `2` on `Pair`
 
 error[E0277]: [CGP-E001] missing field `01` on `Couple`
-  --> src/main.rs:67:9
+  --> src/main.rs:68:9
    |
-67 |         GreeterComponent,
+68 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `01` on `Couple`

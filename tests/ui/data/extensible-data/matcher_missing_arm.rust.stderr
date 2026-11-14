@@ -18,14 +18,14 @@ help: the trait `FinalizeExtract` is implemented for `__PartialShape<IsVoid, IsV
    |          ^^^^^
    = note: required for `MatchWithHandlers<Cons<ExtractFieldAndHandle<Symbol<6, _>, _>, Nil>>` to implement `IsProviderFor<ComputerComponent, (), ((), Shape)>`
 note: required by a bound in `cgp::macro_prelude::Computer::compute`
-  --> $CGP/crates/extra/cgp-handler/src/components/computer.rs:12:1
+  --> $CGP/crates/extra/cgp-handler/src/components/computer.rs:14:1
    |
-12 | #[cgp_component(Computer)]
+14 | #[cgp_component(Computer)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Computer::compute`
 ...
-16 | pub trait CanCompute<Code, Input> {
+18 | pub trait CanCompute<Code, Input> {
 ...
-21 |     fn compute(&self, _code: PhantomData<Code>, input: Input) -> Self::Output;
+23 |     fn compute(&self, _code: PhantomData<Code>, input: Input) -> Self::Output;
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `__PartialShape<IsVoid, IsPresent>: FinalizeExtract` is not satisfied

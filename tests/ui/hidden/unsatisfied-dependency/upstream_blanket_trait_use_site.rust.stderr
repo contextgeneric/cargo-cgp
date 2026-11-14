@@ -8,11 +8,11 @@ error[E0599]: the method `describe` exists for reference `&App`, but its trait b
    |         ^^^^^^^^ method cannot be called on `&App` due to unsatisfied trait bounds
    |
    = note: the following trait bounds were not satisfied:
-           `App: cgp::prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>`
+           `App: cgp::macro_prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>`
            which is required by `App: Describe`
-           `&App: cgp::prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>`
+           `&App: cgp::macro_prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>`
            which is required by `&App: Describe`
-note: the trait `cgp::prelude::HasField` must be implemented
+note: the trait `cgp::macro_prelude::HasField` must be implemented
   --> $CGP/crates/core/cgp-field/src/traits/has_field.rs:10:1
    |
 10 | pub trait HasField<Tag> {

@@ -32,6 +32,8 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
+use cgp::core::field::traits::HasFields;
+use cgp::core::field::types::{Cons, Field, Nil};
 use cgp::prelude::*;
 pub trait CanBuildValue<Value> {
     fn build_value(&self) -> Value;

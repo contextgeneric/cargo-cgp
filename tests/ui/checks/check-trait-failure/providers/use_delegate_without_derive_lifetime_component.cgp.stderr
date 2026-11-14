@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `UseDelegate<LabelTable>` is not a provider of `Labeller`
-  --> src/main.rs:42:9
+  --> src/main.rs:43:9
    |
-42 |         LabellerComponent: (Life<'a>, Square),
+43 |         LabellerComponent: (Life<'a>, Square),
    |         ^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E115] `UseDelegate<LabelTable>` is not a provider of `Labeller`

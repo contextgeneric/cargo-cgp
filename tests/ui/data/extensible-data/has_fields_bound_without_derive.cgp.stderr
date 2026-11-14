@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `App` does not implement `HasFields`
-  --> src/main.rs:39:9
+  --> src/main.rs:40:9
    |
-39 |         DescriberComponent,
+40 |         DescriberComponent,
    |         ^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E123] `App` does not implement `HasFields`

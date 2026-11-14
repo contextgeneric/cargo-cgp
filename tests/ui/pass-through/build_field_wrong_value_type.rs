@@ -6,6 +6,7 @@
 //!
 //! CGP error class: none; plain Rust the tool must pass through unchanged.
 
+use cgp::core::field::traits::{BuildField, HasBuilder};
 use cgp::prelude::*;
 
 #[derive(CgpData)]

@@ -1,7 +1,7 @@
 error[E0271]: [CGP-E050] field `foo` of `Context` is not optional
-  --> src/main.rs:23:36
+  --> src/main.rs:24:36
    |
-23 |     let _ = Context::builder().set(PhantomData::<Symbol!("foo")>, "foo".to_owned());
+24 |     let _ = Context::builder().set(PhantomData::<Symbol!("foo")>, "foo".to_owned());
    |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E125] field `foo` of `Context` is not optional

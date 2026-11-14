@@ -10,6 +10,7 @@
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E110
 
+use cgp::core::field::traits::HasField;
 use cgp::prelude::*;
 
 #[cgp_component(Greeter)]

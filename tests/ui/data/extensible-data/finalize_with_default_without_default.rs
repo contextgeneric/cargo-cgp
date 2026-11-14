@@ -10,6 +10,7 @@
 //@quality: acceptable
 //@codes: CGP-E050 CGP-E104 CGP-E117
 
+use cgp::core::field::traits::{BuildField, HasBuilder};
 use cgp::extra::field::impls::CanFinalizeWithDefault;
 use cgp::prelude::*;
 

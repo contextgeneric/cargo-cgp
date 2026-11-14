@@ -11,6 +11,7 @@
 //@quality: acceptable
 //@codes: CGP-E001 CGP-E101 CGP-E102 CGP-E115
 
+use cgp::core::field::impls::UseField;
 use cgp::prelude::*;
 
 #[cgp_getter]

@@ -15,6 +15,7 @@
 // A tuple field is keyed by `Index<N>`, never by a string of its digit, so `Symbol!("0")` names no
 // field of a tuple struct. This is the `Index` page's *Common Mistakes* entry on the two tags.
 
+use cgp::core::field::traits::HasField;
 use cgp::prelude::*;
 
 #[derive(HasField)]

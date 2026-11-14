@@ -13,6 +13,7 @@
 
 use core::marker::PhantomData;
 
+use cgp::core::field::types::Either;
 use cgp::prelude::*;
 
 #[cgp_component(Greeter)]

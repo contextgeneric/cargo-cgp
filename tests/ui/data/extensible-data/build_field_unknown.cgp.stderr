@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E050] missing field `age` on `Person`
-  --> src/main.rs:21:43
+  --> src/main.rs:22:43
    |
-21 |     let _ = Person::builder().build_field(PhantomData::<Symbol!("age")>, 42_u8);
+22 |     let _ = Person::builder().build_field(PhantomData::<Symbol!("age")>, 42_u8);
    |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `age` on `Person`

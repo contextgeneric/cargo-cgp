@@ -9,7 +9,7 @@
 //! first uppercase segment: an item inside a trait or type keeps its qualifier
 //! (`cgp::macro_prelude::TryComputer::try_compute` reads `TryComputer::try_compute`), while a run
 //! with no uppercase segment, such as a free function's path, keeps only its last segment. A CGP
-//! re-export path such as `cgp::prelude::Nil`, or `cgp::macro_prelude::Chars` for a name outside
+//! re-export path such as `cgp::prelude::UseType`, or `cgp::macro_prelude::Nil` for a name outside
 //! the prelude, is just one such run. The strip runs first, before the resugaring stages, so they
 //! match the bare names.
 //!

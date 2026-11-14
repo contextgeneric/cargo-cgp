@@ -15,6 +15,7 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
+use cgp::core::field::traits::HasField;
 use cgp::prelude::*;
 pub struct A;
 pub struct B;

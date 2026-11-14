@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E050] field `last_name` of `Person` is not set
-  --> src/main.rs:24:10
+  --> src/main.rs:25:10
    |
-24 |         .finalize_build();
+25 |         .finalize_build();
    |          ^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E119] field `last_name` of `Person` is not set

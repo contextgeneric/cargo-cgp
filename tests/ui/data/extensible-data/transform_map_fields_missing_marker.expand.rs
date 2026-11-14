@@ -11,6 +11,7 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::core::field::impls::{IsNothing, IsPresent};
+use cgp::core::field::traits::{BuildField, FinalizeBuild, HasBuilder};
 use cgp::core::field::traits::{TransformMap, TransformMapFields};
 use cgp::prelude::*;
 pub struct OnlyAbsent;

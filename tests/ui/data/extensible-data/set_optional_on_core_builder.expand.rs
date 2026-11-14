@@ -10,6 +10,7 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
+use cgp::core::field::traits::HasBuilder;
 use cgp::extra::field::impls::SetOptional;
 use cgp::prelude::*;
 pub struct Context {

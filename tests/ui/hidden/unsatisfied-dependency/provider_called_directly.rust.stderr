@@ -7,9 +7,9 @@ error[E0599]: the associated function or constant `compute` exists for struct `P
 23 |     let _ = PipeHandlers::<Product![Increment, Increment]>::compute(&(), PhantomData::<()>, 1u8);
    |                                                             ^^^^^^^ associated function or constant cannot be called due to unsatisfied trait bounds
    |
-  ::: $CGP/crates/extra/cgp-handler/src/providers/pipe.rs:11:1
+  ::: $CGP/crates/extra/cgp-handler/src/providers/pipe.rs:12:1
    |
-11 | pub struct PipeHandlers<Providers>(pub PhantomData<Providers>);
+12 | pub struct PipeHandlers<Providers>(pub PhantomData<Providers>);
    | ---------------------------------- doesn't satisfy `_: Computer<_, _, _>`
    |
    = note: the following trait bounds were not satisfied:

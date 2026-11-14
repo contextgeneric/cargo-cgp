@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E050] missing field `surname` on `Employee`
-  --> src/main.rs:30:21
+  --> src/main.rs:31:21
    |
-30 |         .build_from(Person { first_name: "A".into(), surname: "B".into() })
+31 |         .build_from(Person { first_name: "A".into(), surname: "B".into() })
    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `surname` on `Employee`

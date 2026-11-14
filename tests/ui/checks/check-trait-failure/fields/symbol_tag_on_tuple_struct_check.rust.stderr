@@ -1,38 +1,38 @@
 error[E0277]: the trait bound `Pair: CanUseComponent<GreeterComponent>` is not satisfied
-  --> src/main.rs:42:9
+  --> src/main.rs:43:9
    |
-42 |         GreeterComponent,
+43 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<cgp::macro_prelude::Symbol<1, cgp::macro_prelude::Chars<..>>>` is not implemented for `Pair`
-  --> src/main.rs:32:1
+help: the trait `cgp::macro_prelude::HasField<cgp::macro_prelude::Symbol<1, cgp::macro_prelude::Chars<..>>>` is not implemented for `Pair`
+  --> src/main.rs:33:1
    |
-32 | pub struct Pair(pub u32, pub String);
+33 | pub struct Pair(pub u32, pub String);
    | ^^^^^^^^^^^^^^^
-help: `Pair` implements trait `cgp::prelude::HasField<Tag>`
-  --> src/main.rs:32:17
+help: `Pair` implements trait `cgp::macro_prelude::HasField<Tag>`
+  --> src/main.rs:33:17
    |
-32 | pub struct Pair(pub u32, pub String);
-   |                 ^^^^^^^  ^^^^^^^^^^ `cgp::prelude::HasField<cgp::prelude::Index<1>>`
+33 | pub struct Pair(pub u32, pub String);
+   |                 ^^^^^^^  ^^^^^^^^^^ `cgp::macro_prelude::HasField<cgp::macro_prelude::Index<1>>`
    |                 |
-   |                 `cgp::prelude::HasField<cgp::prelude::Index<0>>`
+   |                 `cgp::macro_prelude::HasField<cgp::macro_prelude::Index<0>>`
 note: required for `GreetFirst` to implement `IsProviderFor<GreeterComponent, Pair>`
-  --> src/main.rs:21:1
+  --> src/main.rs:22:1
    |
-21 | #[cgp_impl(new GreetFirst)]
+22 | #[cgp_impl(new GreetFirst)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-24 |     Self: HasField<Symbol!("0"), Value = u32>,
+25 |     Self: HasField<Symbol!("0"), Value = u32>,
    |                                  ----------- unsatisfied trait bound introduced here
    = note: required for `Pair` to implement `CanUseComponent<GreeterComponent>`
 note: required by a bound in `__CheckPair`
-  --> src/main.rs:40:1
+  --> src/main.rs:41:1
    |
-40 | / check_components! {
-41 | |     Pair {
-42 | |         GreeterComponent,
-43 | |     }
-44 | | }
+41 | / check_components! {
+42 | |     Pair {
+43 | |         GreeterComponent,
+44 | |     }
+45 | | }
    | |_^ required by this bound in `__CheckPair`
    = note: this error originates in the attribute macro `cgp_impl` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

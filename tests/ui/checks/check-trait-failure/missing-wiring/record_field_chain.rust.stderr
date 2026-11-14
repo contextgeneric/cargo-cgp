@@ -1,10 +1,10 @@
 error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProviderFor<_, App, Inner>` is not satisfied
-   --> src/main.rs:127:9
+   --> src/main.rs:129:9
     |
-127 |         ValueBuilderComponent: [
+129 |         ValueBuilderComponent: [
     |         ^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
     |
-    = help: the trait `IsProviderFor<ValueBuilderComponent, App, Inner>` is not implemented for `RedirectLookup<App, PathCons<ValueBuilderComponent, cgp::prelude::Nil>>`
+    = help: the trait `IsProviderFor<ValueBuilderComponent, App, Inner>` is not implemented for `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>`
     = help: `RedirectLookup<__Components__, __Path__>` implements trait `IsProviderFor<Component, Context, Params>`:
               IsProviderFor<AsyncComputerComponent, __Context__, (Code, Input)>
               IsProviderFor<AsyncComputerRefComponent, __Context__, (Code, Input)>
@@ -16,51 +16,51 @@ error[E0277]: the trait bound `RedirectLookup<App, PathCons<_, Nil>>: IsProvider
               IsProviderFor<HandlerComponent, __Context__, (Code, Input)>
             and 10 others
 note: required for `App` to implement `IsProviderFor<ValueBuilderComponent, App, Inner>`
-   --> src/main.rs:114:1
+   --> src/main.rs:116:1
     |
-114 | / delegate_components! {
-115 | |     App {
+116 | / delegate_components! {
+117 | |     App {
     | |     ^^^
-116 | |         open ValueBuilderComponent;
+118 | |         open ValueBuilderComponent;
 ...   |
-123 | | }
+125 | | }
     | |_^
 note: required for `App` to implement `ValueBuilder<App, Inner>`
-   --> src/main.rs:38:1
+   --> src/main.rs:40:1
     |
- 38 |   #[cgp_component(ValueBuilder)]
+ 40 |   #[cgp_component(ValueBuilder)]
     |  _^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 39 | | pub trait CanBuildValue<Value> {
+ 41 | | pub trait CanBuildValue<Value> {
     | |______________________________^
 note: required for `App` to implement `CanBuildValue<Inner>`
-   --> src/main.rs:38:1
+   --> src/main.rs:40:1
     |
- 38 | #[cgp_component(ValueBuilder)]
+ 40 | #[cgp_component(ValueBuilder)]
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 39 | pub trait CanBuildValue<Value> {
+ 41 | pub trait CanBuildValue<Value> {
     |           ^^^^^^^^^^^^^^^^^^^^
 note: required for `Cons<Field<Symbol<5, Chars<..>>, Inner>, Nil>` to implement `BuildFields<App, ()>`
-   --> src/main.rs:63:42
+   --> src/main.rs:65:42
     |
- 63 | impl<Context, Tag, Value, Tail, Builder> BuildFields<Context, Builder>
+ 65 | impl<Context, Tag, Value, Tail, Builder> BuildFields<Context, Builder>
     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 64 |     for Cons<Field<Tag, Value>, Tail>
+ 66 |     for Cons<Field<Tag, Value>, Tail>
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 65 | where
- 66 |     Context: CanBuildValue<Value>,
+ 67 | where
+ 68 |     Context: CanBuildValue<Value>,
     |              -------------------- unsatisfied trait bound introduced here
     = note: 3 redundant requirements hidden
-    = note: required for `RedirectLookup<App, PathCons<ValueBuilderComponent, cgp::prelude::Nil>>` to implement `IsProviderFor<ValueBuilderComponent, App, Outer>`
+    = note: required for `RedirectLookup<App, PathCons<ValueBuilderComponent, Nil>>` to implement `IsProviderFor<ValueBuilderComponent, App, Outer>`
     = note: required for `App` to implement `CanUseComponent<ValueBuilderComponent, Outer>`
 note: required by a bound in `__CheckApp`
-   --> src/main.rs:125:1
+   --> src/main.rs:127:1
     |
-125 | / check_components! {
-126 | |     App {
-127 | |         ValueBuilderComponent: [
-128 | |             Outer,
+127 | / check_components! {
+128 | |     App {
+129 | |         ValueBuilderComponent: [
+130 | |             Outer,
 ...   |
-131 | | }
+133 | | }
     | |_^ required by this bound in `__CheckApp`
     = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

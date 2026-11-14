@@ -23,6 +23,8 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
+use cgp::core::field::traits::HasFields;
+use cgp::core::field::types::{Cons, Field, Nil};
 use cgp::prelude::*;
 pub trait CanEncodeValue<Value: ?Sized> {
     fn encode_value(&self, value: &Value) -> String;

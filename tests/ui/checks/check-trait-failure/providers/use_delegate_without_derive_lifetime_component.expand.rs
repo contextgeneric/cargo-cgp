@@ -10,6 +10,7 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
+use cgp::core::field::types::Life;
 use cgp::prelude::*;
 pub trait CanLabel<'a, Item: 'a> {
     fn label(&self, item: &'a Item) -> &'a str;

@@ -4,12 +4,12 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<AreaCalculatorComponen
 90 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<6, cgp::macro_prelude::Chars<..>>>` is not implemented for `Rectangle`
+help: the trait `cgp::macro_prelude::HasField<Symbol<6, cgp::macro_prelude::Chars<..>>>` is not implemented for `Rectangle`
   --> src/main.rs:70:1
    |
 70 | pub struct Rectangle {
    | ^^^^^^^^^^^^^^^^^^^^
-help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
+help: `Rectangle` implements trait `cgp::macro_prelude::HasField<Tag>`
   --> src/main.rs:71:9
    |
 71 |     pub mass: f64,
@@ -50,12 +50,12 @@ error[E0277]: the trait bound `Rectangle: CanUseComponent<DensityCalculatorCompo
 91 |         DensityCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<6, cgp::macro_prelude::Chars<..>>>` is not implemented for `Rectangle`
+help: the trait `cgp::macro_prelude::HasField<Symbol<6, cgp::macro_prelude::Chars<..>>>` is not implemented for `Rectangle`
   --> src/main.rs:70:1
    |
 70 | pub struct Rectangle {
    | ^^^^^^^^^^^^^^^^^^^^
-help: `Rectangle` implements trait `cgp::prelude::HasField<Tag>`
+help: `Rectangle` implements trait `cgp::macro_prelude::HasField<Tag>`
   --> src/main.rs:71:9
    |
 71 |     pub mass: f64,

@@ -11,6 +11,7 @@
 //@codes: CGP-E050 CGP-E104 CGP-E123
 
 use cgp::core::field::impls::CanBuildFrom;
+use cgp::core::field::traits::{BuildField, FinalizeBuild, HasBuilder};
 use cgp::prelude::*;
 
 #[derive(BuildField)]

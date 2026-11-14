@@ -21,6 +21,7 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
+use cgp::core::field::types::{Either, Field, Void};
 use cgp::prelude::*;
 pub trait CanEncodeVariant<Value> {
     fn encode_variant(&self, value: &Value) -> String;

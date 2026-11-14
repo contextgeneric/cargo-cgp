@@ -1,7 +1,7 @@
 error[E0271]: [CGP-E050] field `first_name` of `Person` is not set
-  --> src/main.rs:21:42
+  --> src/main.rs:22:42
    |
-21 |     let _ = Person::builder().take_field(PhantomData::<Symbol!("first_name")>);
+22 |     let _ = Person::builder().take_field(PhantomData::<Symbol!("first_name")>);
    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E119] field `first_name` of `Person` is not set

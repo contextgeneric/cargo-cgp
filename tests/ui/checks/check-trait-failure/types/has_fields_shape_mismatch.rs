@@ -10,6 +10,7 @@
 //@quality: acceptable
 //@codes: CGP-E005 CGP-E101 CGP-E102 CGP-E116
 
+use cgp::core::field::traits::HasFields;
 use cgp::prelude::*;
 
 #[cgp_component(Describer)]

@@ -1,22 +1,22 @@
 error[E0277]: the trait bound `Pair: HasField<Symbol!("0")>` is not satisfied
-  --> src/main.rs:24:21
+  --> src/main.rs:25:21
    |
-24 |     *pair.get_field(PhantomData::<Symbol!("0")>)
+25 |     *pair.get_field(PhantomData::<Symbol!("0")>)
    |           --------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |           |
    |           required by a bound introduced by this call
    |
 help: the trait `HasField<Symbol!("0")>` is not implemented for `Pair`
-  --> src/main.rs:21:1
+  --> src/main.rs:22:1
    |
-21 | pub struct Pair(pub u32, pub String);
+22 | pub struct Pair(pub u32, pub String);
    | ^^^^^^^^^^^^^^^
-help: `Pair` implements trait `cgp::prelude::HasField<Tag>`
-  --> src/main.rs:21:17
+help: `Pair` implements trait `cgp::macro_prelude::HasField<Tag>`
+  --> src/main.rs:22:17
    |
-21 | pub struct Pair(pub u32, pub String);
-   |                 ^^^^^^^  ^^^^^^^^^^ `cgp::prelude::HasField<cgp::prelude::Index<1>>`
+22 | pub struct Pair(pub u32, pub String);
+   |                 ^^^^^^^  ^^^^^^^^^^ `cgp::macro_prelude::HasField<cgp::macro_prelude::Index<1>>`
    |                 |
-   |                 `cgp::prelude::HasField<cgp::prelude::Index<0>>`
+   |                 `cgp::macro_prelude::HasField<cgp::macro_prelude::Index<0>>`
 
 For more information about this error, try `rustc --explain E0277`.

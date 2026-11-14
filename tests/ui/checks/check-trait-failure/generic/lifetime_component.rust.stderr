@@ -1,39 +1,39 @@
-error[E0277]: the trait bound `App<'a>: CanUseComponent<ReferenceGetterComponent, (cgp::prelude::Life<'a>, str)>` is not satisfied
-  --> src/main.rs:53:9
+error[E0277]: the trait bound `App<'a>: CanUseComponent<ReferenceGetterComponent, (Life<'a>, str)>` is not satisfied
+  --> src/main.rs:54:9
    |
-53 |         ReferenceGetterComponent: (Life<'a>, str),
+54 |         ReferenceGetterComponent: (Life<'a>, str),
    |         ^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
    |
 help: the trait `HasField<Symbol<4, Chars<..>>>` is not implemented for `App<'a>`
       but trait `HasField<Symbol<5, Chars<..>>>` is implemented for `App<'_>`
-  --> src/main.rs:42:9
+  --> src/main.rs:43:9
    |
-42 |     pub value: &'a str,
+43 |     pub value: &'a str,
    |         ^^^^^
 note: required for `App<'a>` to implement `HasName`
-  --> src/main.rs:23:1
+  --> src/main.rs:24:1
    |
-23 | #[cgp_auto_getter]
+24 | #[cgp_auto_getter]
    | ^^^^^^^^^^^^^^^^^^
-24 | pub trait HasName {
+25 | pub trait HasName {
    |           ^^^^^^^
-note: required for `GetReference` to implement `IsProviderFor<ReferenceGetterComponent, App<'a>, (cgp::prelude::Life<'a>, str)>`
-  --> src/main.rs:28:1
+note: required for `GetReference` to implement `IsProviderFor<ReferenceGetterComponent, App<'a>, (Life<'a>, str)>`
+  --> src/main.rs:29:1
    |
-28 | #[cgp_impl(new GetReference)]
+29 | #[cgp_impl(new GetReference)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-31 |     Self: HasName,
+32 |     Self: HasName,
    |           ------- unsatisfied trait bound introduced here
-   = note: required for `App<'a>` to implement `CanUseComponent<ReferenceGetterComponent, (cgp::prelude::Life<'a>, str)>`
+   = note: required for `App<'a>` to implement `CanUseComponent<ReferenceGetterComponent, (Life<'a>, str)>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:51:1
+  --> src/main.rs:52:1
    |
-51 | / check_components! {
-52 | |     <'a> App<'a> {
-53 | |         ReferenceGetterComponent: (Life<'a>, str),
-54 | |     }
-55 | | }
+52 | / check_components! {
+53 | |     <'a> App<'a> {
+54 | |         ReferenceGetterComponent: (Life<'a>, str),
+55 | |     }
+56 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the attribute macro `cgp_auto_getter` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

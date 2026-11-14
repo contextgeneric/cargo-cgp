@@ -6,6 +6,7 @@
 //!
 //! CGP error class: none; plain Rust the tool must pass through unchanged.
 
+use cgp::core::field::traits::HasBuilder;
 use cgp::core::field::traits::UpdateField;
 use cgp::prelude::*;
 

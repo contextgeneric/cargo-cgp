@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing wiring for `@VariantEncoderComponent.f64` on `App`
-  --> src/main.rs:83:9
+  --> src/main.rs:84:9
    |
-83 |         VariantEncoderComponent: [Choice],
+84 |         VariantEncoderComponent: [Choice],
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `@VariantEncoderComponent.f64` on `App`

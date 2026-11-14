@@ -11,6 +11,7 @@
 //@quality: acceptable
 //@codes: none
 
+use cgp::core::field::traits::HasField;
 use cgp::prelude::*;
 
 #[derive(HasField)]

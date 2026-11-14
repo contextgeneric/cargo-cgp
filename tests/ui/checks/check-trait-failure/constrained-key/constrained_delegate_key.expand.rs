@@ -16,6 +16,7 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
+use cgp::core::field::types::Cons;
 use cgp::prelude::*;
 pub trait CanGreet {
     fn greet(&self) -> String;

@@ -13,6 +13,8 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
+use cgp::core::field::traits::{BuildField, HasBuilder};
+use cgp::core::field::types::Index;
 use cgp::prelude::*;
 pub struct Pair(pub u32, pub u64);
 impl HasField<Index<0>> for Pair {

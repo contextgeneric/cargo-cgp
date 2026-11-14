@@ -12,6 +12,8 @@
 
 #![allow(unused_braces)]
 
+use cgp::core::field::traits::{BuildField, HasBuilder};
+use cgp::core::field::types::Index;
 use cgp::prelude::*;
 
 #[derive(CgpData)]

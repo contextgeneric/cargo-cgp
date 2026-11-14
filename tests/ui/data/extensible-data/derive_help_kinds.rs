@@ -11,6 +11,7 @@
 //@codes: CGP-E050 CGP-E104 CGP-E123
 
 use cgp::core::field::impls::CanUpcast;
+use cgp::core::field::traits::HasBuilder;
 use cgp::core::field::traits::HasExtractor;
 use cgp::prelude::*;
 

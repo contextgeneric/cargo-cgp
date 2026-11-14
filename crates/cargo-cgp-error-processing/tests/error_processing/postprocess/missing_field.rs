@@ -42,9 +42,9 @@ fn missing_field_with_separate_impls_note_is_recognized() {
 // Property: `context_has_hasfield_impls` reads the note whether or not rustc qualifies the trait.
 #[test]
 fn separate_impls_note_is_recognized_with_its_path() {
-    // rustc keeps a glob-imported trait's path in the note, so the landmark reads
-    // `cgp::prelude::HasField`; it still shows the context implementing `HasField`.
-    let text = "help: `Pair` implements trait `cgp::prelude::HasField<Tag>`";
+    // rustc keeps the path of a trait the module does not import by name, so the landmark reads
+    // `cgp::macro_prelude::HasField`; it still shows the context implementing `HasField`.
+    let text = "help: `Pair` implements trait `cgp::macro_prelude::HasField<Tag>`";
     assert!(context_has_hasfield_impls(text));
 }
 
@@ -52,8 +52,7 @@ fn separate_impls_note_is_recognized_with_its_path() {
 // the trait.
 #[test]
 fn inline_landmark_is_recognized_with_its_path() {
-    let text =
-        "but trait `cgp::prelude::HasField<Symbol<4, Chars<'n', Nil>>>` is implemented for it";
+    let text = "but trait `cgp::macro_prelude::HasField<Symbol<4, Chars<'n', Nil>>>` is implemented for it";
     assert!(context_has_hasfield_impls(text));
 }
 

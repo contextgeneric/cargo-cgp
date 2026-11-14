@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E050] `Person` does not implement `HasExtractor`
-  --> src/main.rs:33:20
+  --> src/main.rs:34:20
    |
-33 |     let _ = person.to_extractor();
+34 |     let _ = person.to_extractor();
    |                    ^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E123] `Person` does not implement `HasExtractor`
@@ -10,9 +10,9 @@ error[E0599]: [CGP-E050] `Person` does not implement `HasExtractor`
              └─ [CGP-E123] `Person` does not implement `HasExtractor`
 
 error[E0599]: [CGP-E050] `Shape` does not implement `HasBuilder`
-  --> src/main.rs:37:20
+  --> src/main.rs:38:20
    |
-37 |     let _ = Shape::builder();
+38 |     let _ = Shape::builder();
    |                    ^^^^^^^
    |
    = note: root cause: [CGP-E123] `Shape` does not implement `HasBuilder`
@@ -21,9 +21,9 @@ error[E0599]: [CGP-E050] `Shape` does not implement `HasBuilder`
              └─ [CGP-E123] `Shape` does not implement `HasBuilder`
 
 error[E0599]: [CGP-E050] `Option<u64>` does not implement `HasExtractor` and `HasFields`
-  --> src/main.rs:42:24
+  --> src/main.rs:43:24
    |
-42 |     let _: Big = value.upcast(PhantomData::<Big>);
+43 |     let _: Big = value.upcast(PhantomData::<Big>);
    |                        ^^^^^^
    |
    = note: root causes:

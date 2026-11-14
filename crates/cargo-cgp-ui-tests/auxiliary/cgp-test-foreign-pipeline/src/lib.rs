@@ -10,6 +10,7 @@
 
 use cgp::core::component::UseDelegate;
 use cgp::core::error::{ErrorRaiserComponent, ErrorTypeProviderComponent};
+use cgp::core::field::types::{Cons, Nil};
 use cgp::extra::handler::{CanHandle, Handler, HandlerComponent, PipeHandlers};
 use cgp::prelude::*;
 

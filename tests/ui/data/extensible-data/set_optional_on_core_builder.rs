@@ -10,6 +10,7 @@
 //@quality: acceptable
 //@codes: CGP-E050 CGP-E104 CGP-E125
 
+use cgp::core::field::traits::HasBuilder;
 use cgp::extra::field::impls::SetOptional;
 use cgp::prelude::*;
 

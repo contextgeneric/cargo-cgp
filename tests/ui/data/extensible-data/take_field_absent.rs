@@ -8,6 +8,7 @@
 //@quality: acceptable
 //@codes: CGP-E050 CGP-E104 CGP-E119
 
+use cgp::core::field::traits::HasBuilder;
 use cgp::core::field::traits::TakeField;
 use cgp::prelude::*;
 

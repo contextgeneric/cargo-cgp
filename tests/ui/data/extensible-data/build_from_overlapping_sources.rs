@@ -10,6 +10,7 @@
 //@codes: CGP-E050 CGP-E104 CGP-E118
 
 use cgp::core::field::impls::CanBuildFrom;
+use cgp::core::field::traits::{FinalizeBuild, HasBuilder};
 use cgp::prelude::*;
 
 #[derive(CgpData)]

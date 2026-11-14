@@ -1,35 +1,35 @@
 error[E0277]: the trait bound `Void: PickFirstVariant` is not satisfied
-  --> src/main.rs:60:9
+  --> src/main.rs:61:9
    |
-60 |         GreeterComponent,
+61 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ the trait `PickFirstVariant` is not implemented for `Void`
    |
-help: the trait `PickFirstVariant` is implemented for `cgp::prelude::Either<Head, Tail>`
-  --> src/main.rs:39:1
+help: the trait `PickFirstVariant` is implemented for `Either<Head, Tail>`
+  --> src/main.rs:40:1
    |
-39 | impl<Head, Tail> PickFirstVariant for Either<Head, Tail> {
+40 | impl<Head, Tail> PickFirstVariant for Either<Head, Tail> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `PickFirstVariantProvider<Void>` to implement `IsProviderFor<GreeterComponent, App>`
-  --> src/main.rs:43:1
+  --> src/main.rs:44:1
    |
-43 | / delegate_components! {
-44 | |     <Component, Provider, List: PickFirstVariant<Provider = Provider>>
+44 | / delegate_components! {
+45 | |     <Component, Provider, List: PickFirstVariant<Provider = Provider>>
    | |                                                  ------------------- unsatisfied trait bound introduced here
-45 | |     PickFirstVariantProvider<List> {
+46 | |     PickFirstVariantProvider<List> {
    | |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-46 | |         Component: Provider,
-47 | |     }
-48 | | }
+47 | |         Component: Provider,
+48 | |     }
+49 | | }
    | |_^
    = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:58:1
+  --> src/main.rs:59:1
    |
-58 | / check_components! {
-59 | |     App {
-60 | |         GreeterComponent,
-61 | |     }
-62 | | }
+59 | / check_components! {
+60 | |     App {
+61 | |         GreeterComponent,
+62 | |     }
+63 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

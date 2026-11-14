@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E050] field `bar` of `FooBarBaz` is already set
-  --> src/main.rs:37:21
+  --> src/main.rs:38:21
    |
-37 |         .build_from(BarBaz { bar: "bar".into(), baz: true })
+38 |         .build_from(BarBaz { bar: "bar".into(), baz: true })
    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E118] field `bar` of `FooBarBaz` is already set

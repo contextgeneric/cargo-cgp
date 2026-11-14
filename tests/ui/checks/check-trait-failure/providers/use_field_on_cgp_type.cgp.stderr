@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `UseField<Symbol!("width")>` is not a provider of `ScalarTypeProvider`
-  --> src/main.rs:32:9
+  --> src/main.rs:33:9
    |
-32 |         ScalarTypeProviderComponent,
+33 |         ScalarTypeProviderComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E115] `UseField<Symbol!("width")>` is not a provider of `ScalarTypeProvider`

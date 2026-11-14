@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `UseField<Symbol!("width")>` is not a provider of `DimensionsGetter`
-  --> src/main.rs:34:9
+  --> src/main.rs:35:9
    |
-34 |         DimensionsGetterComponent,
+35 |         DimensionsGetterComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E115] `UseField<Symbol!("width")>` is not a provider of `DimensionsGetter`

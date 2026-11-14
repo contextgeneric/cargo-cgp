@@ -10,6 +10,7 @@
 //@quality: acceptable
 //@codes: CGP-E050 CGP-E104 CGP-E119
 
+use cgp::core::field::traits::{BuildField, FinalizeBuild, HasBuilder};
 use cgp::prelude::*;
 
 #[derive(CgpData)]

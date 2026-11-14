@@ -11,6 +11,7 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::core::field::impls::CanBuildFrom;
+use cgp::core::field::traits::{FinalizeBuild, HasBuilder};
 use cgp::prelude::*;
 pub struct Person {
     pub first_name: String,

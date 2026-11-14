@@ -17,6 +17,7 @@
 
 use core::marker::PhantomData;
 
+use cgp::core::field::types::Cons;
 use cgp::prelude::*;
 
 #[cgp_component(Greeter)]

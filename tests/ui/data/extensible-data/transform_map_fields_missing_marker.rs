@@ -11,6 +11,7 @@
 //@codes: none
 
 use cgp::core::field::impls::{IsNothing, IsPresent};
+use cgp::core::field::traits::{BuildField, FinalizeBuild, HasBuilder};
 use cgp::core::field::traits::{TransformMap, TransformMapFields};
 use cgp::prelude::*;
 

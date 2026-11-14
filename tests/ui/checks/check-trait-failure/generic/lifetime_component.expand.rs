@@ -13,6 +13,7 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
+use cgp::core::field::types::Life;
 use cgp::prelude::*;
 pub trait HasReference<'a, T: 'a + ?Sized> {
     fn get_reference(&self) -> &'a T;

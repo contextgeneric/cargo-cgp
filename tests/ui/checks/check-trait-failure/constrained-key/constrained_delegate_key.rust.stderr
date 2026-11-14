@@ -1,35 +1,35 @@
 error[E0277]: the trait bound `Nil: PickFirst` is not satisfied
-  --> src/main.rs:66:9
+  --> src/main.rs:67:9
    |
-66 |         GreeterComponent,
+67 |         GreeterComponent,
    |         ^^^^^^^^^^^^^^^^ the trait `PickFirst` is not implemented for `Nil`
    |
-help: the trait `PickFirst` is implemented for `cgp::prelude::Cons<Head, Tail>`
-  --> src/main.rs:43:1
+help: the trait `PickFirst` is implemented for `Cons<Head, Tail>`
+  --> src/main.rs:44:1
    |
-43 | impl<Head, Tail> PickFirst for Cons<Head, Tail> {
+44 | impl<Head, Tail> PickFirst for Cons<Head, Tail> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required for `PickFirstProvider<Nil>` to implement `IsProviderFor<GreeterComponent, App>`
-  --> src/main.rs:47:1
+  --> src/main.rs:48:1
    |
-47 | / delegate_components! {
-48 | |     <Component, Provider, List: PickFirst<Provider = Provider>>
+48 | / delegate_components! {
+49 | |     <Component, Provider, List: PickFirst<Provider = Provider>>
    | |                                           ------------------- unsatisfied trait bound introduced here
-49 | |     PickFirstProvider<List> {
+50 | |     PickFirstProvider<List> {
    | |     ^^^^^^^^^^^^^^^^^^^^^^^
-50 | |         Component: Provider,
-51 | |     }
-52 | | }
+51 | |         Component: Provider,
+52 | |     }
+53 | | }
    | |_^
    = note: required for `App` to implement `CanUseComponent<GreeterComponent>`
 note: required by a bound in `__CheckApp`
-  --> src/main.rs:64:1
+  --> src/main.rs:65:1
    |
-64 | / check_components! {
-65 | |     App {
-66 | |         GreeterComponent,
-67 | |     }
-68 | | }
+65 | / check_components! {
+66 | |     App {
+67 | |         GreeterComponent,
+68 | |     }
+69 | | }
    | |_^ required by this bound in `__CheckApp`
    = note: this error originates in the macro `delegate_components` which comes from the expansion of the macro `check_components` (in Nightly builds, run with -Z macro-backtrace for more info)
 

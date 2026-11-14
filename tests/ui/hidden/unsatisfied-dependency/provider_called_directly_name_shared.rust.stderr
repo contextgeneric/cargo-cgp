@@ -4,7 +4,7 @@ error[E0277]: the trait bound `Person: HasField<Symbol<4, Chars<..>>>` is not sa
 48 |     let _ = GreetHello::run(&Person {});
    |             ^^^^^^^^^^ unsatisfied trait bound
    |
-help: the trait `cgp::prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `Person`
+help: the trait `cgp::macro_prelude::HasField<Symbol<4, cgp::macro_prelude::Chars<..>>>` is not implemented for `Person`
   --> src/main.rs:45:1
    |
 45 | pub struct Person {}
