@@ -192,3 +192,15 @@ review them before committing. The `.expand.rs` is worth reading as carefully as
 it shows the code the fixture's macros generate, so a surprise there, such as a construct left as a
 raw type-level spine, is a finding of its own. When a `cgp` change alters one of these error
 classes, update the fixture here and the class document in the error catalog together.
+
+## Rules for the fixtures
+
+Each fixture pins one class and today's output, so a change to the tool shows up as a reviewed
+snapshot diff:
+
+- Run the three passes: the tool run, the plain `cargo check` baseline, and the expand run.
+- File a fixture under its error class, mirroring the knowledge base's error catalog.
+- Record a fixture's output quality in its `//@quality:` header.
+- Bless a new or changed fixture with the pinned toolchain, and review each diff.
+- Format the auxiliary crates' sources directly, because their manifests are templates.
+- Run the suite alone with `cargo test -p cargo-cgp-ui-tests` when only the fixtures change.

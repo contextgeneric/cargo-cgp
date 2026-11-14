@@ -1,12 +1,16 @@
-# AGENTS.md
+# AGENTS.md: cargo-cgp
 
-Read this file before working in this repository. The
-[knowledge base's AGENTS.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/AGENTS.md)
-carries the canonical wording of the universal rules. Change a universal rule there first, then
-update this block to match.
+Follow these rules for every change to this repository. Read [README.md](README.md) for what the tool
+does and its checks, and [sibling-projects.md](sibling-projects.md) for the related repositories.
 
 ## Universal rules
 
+These rules hold in every CGP repository. The
+[knowledge base's AGENTS.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/AGENTS.md)
+holds their canonical wording: read it first, and change a rule there before updating this block:
+
+- Learn CGP and its tools from the `/cgp` skill and the knowledge base; never restate them in this
+  file.
 - Prefer the local sibling checkout when reading another project.
 - Write a cross-project link as a GitHub URL on `main`.
 - Name official release versions only, never a pre-release.
@@ -16,12 +20,22 @@ update this block to match.
 - Ask the user when a decision is ambiguous.
 - Apply point-first writing to internal prose.
 
-## Versions
+## Task guides
 
-- Document the tool as v0.1.0.
-- Quote output that names the version with `0.1.0`.
+Each kind of task has a guide that holds its rules. Read the guide before the task:
+
+- **Adding or changing a UI fixture:** [tests/README.md](tests/README.md#rules-for-the-fixtures).
+- **Improving an error message against real-world CGP code:** the knowledge base's
+  [improving-errors.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/improving-errors.md),
+  as [Improving error messages](#improving-error-messages-against-real-world-cgp-code) says.
+- **Writing a `cargo-cgp` document in the knowledge base:**
+  [cargo-cgp/writing-guide.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/writing-guide.md).
+- **Writing an error class or code entry:**
+  [cgp/errors/writing-guide.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/writing-guide.md).
 
 ## Before any task
+
+Read how the tool works and what CGP's errors are before changing either:
 
 - Invoke the `/cgp` skill when a task touches CGP constructs or their diagnostics.
 - Read the [error catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md)
@@ -38,14 +52,15 @@ update this block to match.
 
 ## Sibling projects
 
-- Read [sibling-projects.md](sibling-projects.md) to find a sibling and the revision to read.
-- Use the local checkout first; fetch the file from the repository when it is absent.
-- Write a link to another project as a GitHub URL on `main`; keep a bare checkout path relative.
+The tool reads `cgp` and the skill describes the tool, so each dependency runs one way:
+
 - Keep the code dependency one-way: `cargo-cgp` reads `cgp`, never the reverse.
 - Check whether the skill still describes the tool correctly when a command, flag, or reshaped class
   changes.
 
 ## Toolchain
+
+The driver links the compiler, so it builds only on the nightly the repository pins:
 
 - Build with the pinned nightly in [rust-toolchain.toml](rust-toolchain.toml), which carries
   `rustc-dev` and `llvm-tools`.
@@ -55,6 +70,8 @@ update this block to match.
 
 ## Code organization
 
+Small modules, pure functions, and thin binaries keep most of the code testable without the compiler:
+
 - Keep each module small and focused on one concept.
 - Give a sub-directory a `mod.rs` that only re-exports its children.
 - Keep the few well-known strings in `config` and pass them into the functions that use them.
@@ -62,8 +79,8 @@ update this block to match.
 - Split a function past about 80 lines, but keep a long `match` with one arm per variant whole.
 - Keep the resolver's imports one-directional: `query`, `classify`, `walk`, then the anchors.
 - Prefer pure functions that take their inputs as parameters and return data.
-- Reach for a newtype, a small enum, or a function-pointer seam rather than dragging a compiler type
-  into code that does not need it.
+- Use a newtype, a small enum, or a function-pointer seam rather than dragging a compiler type into
+  code that does not need it.
 - Keep the front-end free of compiler linkage; only the driver links the compiler internals.
 - Keep the two binaries in the same directory, since the front-end locates the driver as its sibling.
 - Keep logic out of the `rustc_private` linkage in `cargo-cgp-error-processing`
@@ -72,31 +89,22 @@ update this block to match.
 - Keep tests out of `src/`; every test lives in the crate's `tests/` directory.
 - Add a one-line `///` to every public item, and keep inline docs current.
 
-## Tests and UI snapshots
+## Tests
+
+A UI fixture pins the output before the tool changes it, so every change to the output is a
+reviewed snapshot diff:
 
 - Add a UI fixture before changing the tool's output.
-- Run the three passes: the tool run, the plain `cargo check` baseline, and the expand run.
-- File a fixture under its error class, mirroring the knowledge base's error catalog.
-- Record a fixture's output quality in its `//@quality:` header.
-- Bless a new or changed fixture with the pinned toolchain, and review each diff.
 
 ## Improving error messages against real-world CGP code
 
-Apply the detailed loop in
-[cgp-knowledge-base/cargo-cgp/implementation/improving-errors.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/improving-errors.md).
-
-- Reproduce the failure in the target project and read its uncommitted diff to learn the root cause.
-- Treat the target project as read-only.
-- Add a distilled, self-contained UI fixture before changing the tool.
-- Verify the fixture improves and every other snapshot still passes before re-checking the project.
-- Confirm the fix the message names in a `git worktree` placed beside the project, never in the
-  project itself.
-- Never hard-code a name, type, or module from an example project; generalize the resolver and the
-  wording.
-- Frame every explanation around core CGP, not around one project.
-- Raise a fixture's quality header when its output clears the usability bar.
+Follow the knowledge base's
+[improving-errors.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/improving-errors.md)
+when the user asks to improve the tool's output for a project; it holds the loop and its rules.
 
 ## Nix
+
+The tool's local build runs where the host has Nix:
 
 - Run the local build through Nix from the target project's directory when the host has Nix.
 - Prefer the local flake over the published one; the knowledge base's installation and usage documents
@@ -104,11 +112,7 @@ Apply the detailed loop in
 
 ## Checks before committing
 
-- Run the build, format, clippy, docs, and test commands from [README.md](README.md) before committing.
-- Format the UI suite's auxiliary sources directly, because their manifests are templates.
-- Run the UI suite through `cargo test -p cargo-cgp-ui-tests` when only the fixtures change.
+Every commit passes the checks CI runs:
 
-## Committing
-
-- Never commit as a side effect, suggest a commit unprompted, or treat a request as standing
-  authorization.
+- Run the build, format, clippy, docs, and test commands from [README.md](README.md#development)
+  before committing.
