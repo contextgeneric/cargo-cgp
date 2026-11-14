@@ -4,6 +4,9 @@ error[E0425]: [CGP-E041] the component `GreeterComponent` is not in scope
 35 |             GreeterComponent: GreetHello,
    |             ^^^^^^^^^^^^^^^^
    |
-   = help: import it with `use crate::components::GreeterComponent;`
+help: import the component
+   |
+27 +     use crate::components::GreeterComponent;
+   |
 
 For more information about this error, try `rustc --explain E0425`.

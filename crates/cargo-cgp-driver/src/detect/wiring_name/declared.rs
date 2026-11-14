@@ -78,17 +78,19 @@ pub fn component_not_imported(
     name: &str,
     markers: &[(DefId, DefId)],
 ) -> Option<UnresolvedWiringName> {
+    Some(UnresolvedWiringName::ComponentNotImported {
+        component: name.to_owned(),
+        path: import_path(tcx, named_marker(tcx, name, markers)?)?,
+    })
+}
+
+/// The one component marker named `name`, or `None` when no marker or several are.
+pub fn named_marker(tcx: TyCtxt<'_>, name: &str, markers: &[(DefId, DefId)]) -> Option<DefId> {
     let mut named = markers
         .iter()
         .filter(|(marker_did, _)| tcx.item_name(*marker_did).as_str() == name);
     let &(marker_did, _) = named.next()?;
-    if named.next().is_some() {
-        return None;
-    }
-    Some(UnresolvedWiringName::ComponentNotImported {
-        component: name.to_owned(),
-        path: import_path(tcx, marker_did)?,
-    })
+    named.next().is_none().then_some(marker_did)
 }
 
 /// Whether a type of each name asked about is declared where the crate could import it from,

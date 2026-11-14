@@ -1,51 +1,62 @@
 error[E0425]: cannot find type `WelcomerComponent` in this scope
-  --> src/main.rs:36:10
+  --> src/main.rs:37:10
    |
-36 |     impl Welcomer {
+37 |     impl Welcomer {
    |          ^^^^^^^^ not found in this scope
    |
 help: consider importing this struct
    |
-31 +     use crate::components::WelcomerComponent;
+32 +     use crate::components::WelcomerComponent;
    |
 
 error[E0425]: cannot find type `WelcomerComponent` in this scope
-  --> src/main.rs:48:13
+  --> src/main.rs:49:13
    |
-48 |             WelcomerComponent: crate::providers::WelcomeHello,
+49 |             WelcomerComponent: crate::providers::WelcomeHello,
    |             ^^^^^^^^^^^^^^^^^ not found in this scope
    |
 help: consider importing this struct
    |
-44 +     use crate::components::WelcomerComponent;
+45 +     use crate::components::WelcomerComponent;
    |
 
 error[E0425]: cannot find type `ErrorTypeProviderComponent` in this scope
-  --> src/main.rs:60:10
+  --> src/main.rs:61:10
    |
-60 |     impl ErrorTypeProvider {
+61 |     impl ErrorTypeProvider {
    |          ^^^^^^^^^^^^^^^^^ not found in this scope
 
 error[E0425]: cannot find type `WaverComponent` in this scope
-  --> src/main.rs:65:10
+  --> src/main.rs:66:10
    |
-65 |     impl Waver {
+66 |     impl Waver {
    |          ^^^^^ not found in this scope
    |
 help: consider importing this struct
    |
-54 +     use cgp_test_component_library::direct::WaverComponent;
+55 +     use cgp_test_component_library::direct::WaverComponent;
    |
 
 error[E0425]: cannot find type `GreeterComponent` in this scope
-  --> src/main.rs:72:10
+  --> src/main.rs:73:10
    |
-72 |     impl Greeter {
+73 |     impl Greeter {
    |          ^^^^^^^ not found in this scope
    |
 help: consider importing this struct
    |
-54 +     use cgp_test_crate_a::GreeterComponent;
+55 +     use cgp_test_crate_a::GreeterComponent;
+   |
+
+error[E0425]: cannot find type `WelcomerComponent` in this scope
+  --> src/main.rs:87:10
+   |
+87 |     impl Welcomer {
+   |          ^^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+81 +     use crate::components::WelcomerComponent;
    |
 
 For more information about this error, try `rustc --explain E0425`.

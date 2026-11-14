@@ -204,6 +204,20 @@ pub fn unresolved_wiring_name_help(name: &UnresolvedWiringName) -> Option<String
     }
 }
 
+/// The message of the fix that imports a component, the structured form of the help
+/// [`unresolved_wiring_name_help`] gives [`UnresolvedWiringName::ComponentNotImported`]. The
+/// inserted line, [`component_import_line`], shows the path.
+pub const COMPONENT_IMPORT_MESSAGE: &str = "import the component";
+
+/// The `use` line that imports a component by `path`, as the fix inserts it at the start of a
+/// line before an item indented by `indent`: indented the same way, ending with a line break, and
+/// followed by a blank line when `module_has_use` is false, since the line then goes before the
+/// module's first item rather than before another `use` line.
+pub fn component_import_line(path: &str, module_has_use: bool, indent: &str) -> String {
+    let blank_line = if module_has_use { "" } else { "\n" };
+    format!("{indent}use {path};\n{blank_line}")
+}
+
 /// The `note` saying why the name does not resolve, for the provider-header mistakes whose cause
 /// the header alone does not show, or `None`.
 pub fn unresolved_wiring_name_note(name: &UnresolvedWiringName) -> Option<String> {

@@ -9,8 +9,8 @@ use rustc_span::def_id::{DefId, LocalDefId};
 use crate::detect::wiring_name::component::component_markers;
 use crate::detect::wiring_name::slot::{NameSlot, name_slot_at};
 use crate::detect::wiring_name::{
-    DeclaredNames, component_not_imported, header_component_mistake, provider_header_at,
-    providers_of_key, unprovable_requirements, unresolved_key,
+    DeclaredNames, ImportFix, component_not_imported, header_component_mistake, import_fix,
+    named_marker, provider_header_at, providers_of_key, unprovable_requirements, unresolved_key,
 };
 
 /// What to do with the name-resolution diagnostics of the wiring entries, and the overflows to
@@ -28,6 +28,9 @@ pub struct UnresolvedNamesPlan {
 pub enum NameAction {
     /// Reword it into the coded form of this mistake.
     Reword(UnresolvedWiringName),
+    /// Reword it into the coded form of a component not in scope, with the import as a fix in
+    /// place of the help.
+    Import(UnresolvedWiringName, ImportFix),
     /// Reword only its header into the coded form of this mistake, keeping the compiler's own notes
     /// and suggestions, which are right for the mistake except for a type parameter to add.
     RewordHeader(UnresolvedWiringName),
@@ -103,14 +106,20 @@ pub fn plan_unresolved_names(
                 if repeat {
                     return Some(NameAction::Drop);
                 }
-                return header_component_mistake(tcx, &header, name, module.as_deref())
-                    .map(NameAction::Reword);
+                let mistake = header_component_mistake(tcx, &header, name, module.as_deref())?;
+                return Some(reword_or_import(
+                    tcx,
+                    mistake,
+                    header.impl_did,
+                    Some(header.marker),
+                    *span,
+                ));
             };
             if repeat {
                 return Some(NameAction::Drop);
             }
             match slot {
-                NameSlot::Key { .. } => planner.key_action(name),
+                NameSlot::Key { impl_did, .. } => planner.key_action(name, *impl_did, *span),
                 NameSlot::Value { key, impl_did } => planner.value_action(name, key, *impl_did),
                 NameSlot::CgpImplProvider => planner.cgp_impl_action(name),
                 NameSlot::Inside {
@@ -118,7 +127,7 @@ pub fn plan_unresolved_names(
                     impl_did,
                     in_value,
                     whole_segment,
-                } => planner.inside_action(name, key, *impl_did, *in_value, *whole_segment),
+                } => planner.inside_action(name, key, *impl_did, *in_value, *whole_segment, *span),
             }
         })
         .collect();
@@ -140,11 +149,13 @@ struct NamesPlanner<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> NamesPlanner<'a, 'tcx> {
-    /// A name that is the key of a wiring entry.
-    fn key_action(&mut self, name: &str) -> Option<NameAction> {
+    /// A name that is the key of the wiring entry `impl_did`, at `span`.
+    fn key_action(&mut self, name: &str, impl_did: LocalDefId, span: Span) -> Option<NameAction> {
         let tcx = self.tcx;
         let markers = self.markers.get_or_insert_with(|| component_markers(tcx));
-        unresolved_key(tcx, name, markers).map(NameAction::Reword)
+        let mistake = unresolved_key(tcx, name, markers)?;
+        let marker = named_marker(tcx, name, markers);
+        Some(reword_or_import(tcx, mistake, impl_did, marker, span))
     }
 
     /// A name that is the value of a wiring entry.
@@ -186,7 +197,7 @@ impl<'a, 'tcx> NamesPlanner<'a, 'tcx> {
         })
     }
 
-    /// A name inside the `@`-path of a key or value.
+    /// A name at `span` inside the `@`-path of a key or value.
     fn inside_action(
         &mut self,
         name: &'a str,
@@ -194,6 +205,7 @@ impl<'a, 'tcx> NamesPlanner<'a, 'tcx> {
         impl_did: LocalDefId,
         in_value: bool,
         whole_segment: bool,
+        span: Span,
     ) -> Option<NameAction> {
         let tcx = self.tcx;
         if in_value {
@@ -206,7 +218,8 @@ impl<'a, 'tcx> NamesPlanner<'a, 'tcx> {
         let markers = self.markers.get_or_insert_with(|| component_markers(tcx));
         if whole_segment && let Some(not_imported) = component_not_imported(tcx, name, markers) {
             self.reported_in_paths.push(name);
-            return Some(NameAction::Reword(not_imported));
+            let marker = named_marker(tcx, name, markers);
+            return Some(reword_or_import(tcx, not_imported, impl_did, marker, span));
         }
         if self.declared.is_declared(tcx, name) {
             return None;
@@ -219,4 +232,23 @@ impl<'a, 'tcx> NamesPlanner<'a, 'tcx> {
             },
         ))
     }
+}
+
+/// The action for the mistake `name` at `span`, in an item of `owner`'s module: the import of
+/// `marker` as a fix beside the coded header when the name is a component not in scope and the
+/// module has a place for the `use` line, and the coded header with its help otherwise.
+fn reword_or_import(
+    tcx: TyCtxt<'_>,
+    name: UnresolvedWiringName,
+    owner: LocalDefId,
+    marker: Option<DefId>,
+    span: Span,
+) -> NameAction {
+    if let UnresolvedWiringName::ComponentNotImported { path, .. } = &name
+        && let Some(marker) = marker
+        && let Some(fix) = import_fix(tcx, owner, marker, path, span)
+    {
+        return NameAction::Import(name, fix);
+    }
+    NameAction::Reword(name)
 }

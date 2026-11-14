@@ -132,7 +132,10 @@ declare several. The auxiliary crates and the fixtures they back:
 - `cgp-test-component-library` (a user library over `cgp-test-crate-a`: a component in its own
   `direct` module, and `cgp-test-crate-a` re-exported whole as `core`). It backs
   [`ui/wiring/unresolved-wiring-name/provider_header_dependency_key_not_imported.rs`](ui/wiring/unresolved-wiring-name/provider_header_dependency_key_not_imported.rs),
-  whose provider headers import a dependency's provider trait without its key.
+  whose provider headers import a dependency's provider trait without its key, and, with
+  `cgp-test-crate-a` beside it,
+  [`ui/wiring/unresolved-wiring-name/component_import_fix.rs`](ui/wiring/unresolved-wiring-name/component_import_fix.rs),
+  whose import fix is only maybe correct for a key two public paths reach.
 - `cgp-test-plain-macros`: attribute macros of a crate with no `cgp` dependency, whose expansions
   fail the way a CGP macro's can. They back
   [`ui/pass-through/generated_lifetime_without_cgp.rs`](ui/pass-through/generated_lifetime_without_cgp.rs)

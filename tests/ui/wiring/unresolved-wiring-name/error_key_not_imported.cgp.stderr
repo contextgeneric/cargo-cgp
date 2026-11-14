@@ -4,6 +4,9 @@ error[E0425]: [CGP-E041] the component `ErrorTypeProviderComponent` is not in sc
 20 |         ErrorTypeProviderComponent: UseType<String>,
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: import it with `use cgp::core::error::ErrorTypeProviderComponent;`
+help: import the component
+   |
+14 + use cgp::core::error::ErrorTypeProviderComponent;
+   |
 
 For more information about this error, try `rustc --explain E0425`.

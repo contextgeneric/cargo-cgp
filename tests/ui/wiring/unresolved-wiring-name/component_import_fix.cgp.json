@@ -3,8 +3,27 @@
     "children": [
       {
         "level": "help",
-        "message": "import it with `use crate::components::WelcomerComponent;`",
-        "spans": []
+        "message": "import the component",
+        "spans": [
+          {
+            "applicability": "MachineApplicable",
+            "column": 1,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 32,
+            "primary": true,
+            "replacement": "    use crate::components::WelcomerComponent;\n"
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 10,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 37,
+            "primary": true,
+            "replacement": "Welcomer"
+          }
+        ]
       }
     ],
     "code": "E0425",
@@ -15,7 +34,7 @@
         "column": 10,
         "file": "src/main.rs",
         "label": null,
-        "line": 36,
+        "line": 37,
         "primary": true
       }
     ]
@@ -24,8 +43,27 @@
     "children": [
       {
         "level": "help",
-        "message": "import it with `use crate::components::WelcomerComponent;`",
-        "spans": []
+        "message": "import the component",
+        "spans": [
+          {
+            "applicability": "MachineApplicable",
+            "column": 1,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 45,
+            "primary": true,
+            "replacement": "    use crate::components::WelcomerComponent;\n\n"
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 13,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 49,
+            "primary": true,
+            "replacement": "WelcomerComponent"
+          }
+        ]
       }
     ],
     "code": "E0425",
@@ -36,7 +74,7 @@
         "column": 13,
         "file": "src/main.rs",
         "label": null,
-        "line": 48,
+        "line": 49,
         "primary": true
       }
     ]
@@ -45,8 +83,27 @@
     "children": [
       {
         "level": "help",
-        "message": "import it with `use cgp::core::error::ErrorTypeProviderComponent;`",
-        "spans": []
+        "message": "import the component",
+        "spans": [
+          {
+            "applicability": "MachineApplicable",
+            "column": 1,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 55,
+            "primary": true,
+            "replacement": "    use cgp::core::error::ErrorTypeProviderComponent;\n"
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 10,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 61,
+            "primary": true,
+            "replacement": "ErrorTypeProvider"
+          }
+        ]
       }
     ],
     "code": "E0425",
@@ -57,7 +114,7 @@
         "column": 10,
         "file": "src/main.rs",
         "label": null,
-        "line": 60,
+        "line": 61,
         "primary": true
       }
     ]
@@ -66,8 +123,27 @@
     "children": [
       {
         "level": "help",
-        "message": "import it with `use cgp_test_component_library::direct::WaverComponent;`",
-        "spans": []
+        "message": "import the component",
+        "spans": [
+          {
+            "applicability": "MachineApplicable",
+            "column": 1,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 55,
+            "primary": true,
+            "replacement": "    use cgp_test_component_library::direct::WaverComponent;\n"
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 10,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 66,
+            "primary": true,
+            "replacement": "Waver"
+          }
+        ]
       }
     ],
     "code": "E0425",
@@ -78,7 +154,7 @@
         "column": 10,
         "file": "src/main.rs",
         "label": null,
-        "line": 65,
+        "line": 66,
         "primary": true
       }
     ]
@@ -87,8 +163,27 @@
     "children": [
       {
         "level": "help",
-        "message": "import it with `use cgp_test_crate_a::GreeterComponent;`",
-        "spans": []
+        "message": "import the component",
+        "spans": [
+          {
+            "applicability": "MaybeIncorrect",
+            "column": 1,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 55,
+            "primary": true,
+            "replacement": "    use cgp_test_crate_a::GreeterComponent;\n"
+          },
+          {
+            "applicability": "MaybeIncorrect",
+            "column": 10,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 73,
+            "primary": true,
+            "replacement": "Greeter"
+          }
+        ]
       }
     ],
     "code": "E0425",
@@ -99,7 +194,47 @@
         "column": 10,
         "file": "src/main.rs",
         "label": null,
-        "line": 72,
+        "line": 73,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "help",
+        "message": "import the component",
+        "spans": [
+          {
+            "applicability": "MachineApplicable",
+            "column": 1,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 84,
+            "primary": true,
+            "replacement": "    use crate::components::WelcomerComponent;\n"
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 10,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 87,
+            "primary": true,
+            "replacement": "Welcomer"
+          }
+        ]
+      }
+    ],
+    "code": "E0425",
+    "level": "error",
+    "message": "[CGP-E041] the component `WelcomerComponent` is not in scope",
+    "spans": [
+      {
+        "column": 10,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 87,
         "primary": true
       }
     ]

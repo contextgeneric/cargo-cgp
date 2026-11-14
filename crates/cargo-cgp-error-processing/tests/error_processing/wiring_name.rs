@@ -3,11 +3,12 @@
 //! (`[CGP-E041]`, `[CGP-E070]`).
 //!
 //! `plan_unresolved_wiring_name` and `unresolved_wiring_name_help` are pure functions over the
-//! rustc-free [`UnresolvedWiringName`] model, driven here over hand-built values.
+//! rustc-free [`UnresolvedWiringName`] model, driven here over hand-built values, and
+//! `component_import_line` words the line the import's fix inserts.
 
 use cargo_cgp_error_processing::{
-    UnresolvedWiringName, plan_unresolved_wiring_name, unresolved_wiring_name_help,
-    unresolved_wiring_name_note,
+    UnresolvedWiringName, component_import_line, plan_unresolved_wiring_name,
+    unresolved_wiring_name_help, unresolved_wiring_name_note,
 };
 
 #[test]
@@ -39,6 +40,26 @@ fn a_component_not_in_scope_names_its_import() {
     assert_eq!(
         unresolved_wiring_name_help(&name).as_deref(),
         Some("import it with `use cgp::core::error::ErrorTypeProviderComponent;`"),
+    );
+}
+
+#[test]
+fn the_import_line_takes_the_indentation_of_the_line_it_goes_before() {
+    assert_eq!(
+        component_import_line("crate::components::GreeterComponent", true, "    "),
+        "    use crate::components::GreeterComponent;\n",
+    );
+    assert_eq!(
+        component_import_line("cgp::core::error::ErrorTypeProviderComponent", true, ""),
+        "use cgp::core::error::ErrorTypeProviderComponent;\n",
+    );
+}
+
+#[test]
+fn the_import_line_leaves_a_blank_line_before_a_module_s_first_item() {
+    assert_eq!(
+        component_import_line("crate::components::GreeterComponent", false, "\t"),
+        "\tuse crate::components::GreeterComponent;\n\n",
     );
 }
 

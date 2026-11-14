@@ -45,6 +45,6 @@ pub use unimported::{DetectedUnimportedAbstractType, detect_unimported_abstract_
 pub use use_type_misspelling::detect_use_type_misspelling;
 pub use uses_misuse::detect_provider_trait_in_uses;
 pub use wiring_name::{
-    NameAction, UnresolvedNameCandidate, UnresolvedNamesPlan, derived_component_name,
+    ImportFix, NameAction, UnresolvedNameCandidate, UnresolvedNamesPlan, derived_component_name,
     detect_consumer_trait_as_key, plan_unresolved_names, provider_header_at,
 };

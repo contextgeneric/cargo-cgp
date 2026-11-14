@@ -3,8 +3,9 @@
 //! or `cargo fix` applies.
 //!
 //! A provider header and a wiring key each name a component the module does not import. The fix
-//! inserts the `use` line where rustc puts its own import suggestion: before the module's first
-//! `use` line, or at the start of a module that has none, followed by a blank line. A second,
+//! inserts the `use` line where rustc puts its own import suggestion, before the module's first
+//! `use` line, or at the start of a module that has none, followed by a blank line. It passes over
+//! a `use` line with an attribute, which the inserted line would come between. A second,
 //! unchanged part spans the name the error points at, so an editor offers the fix there. The fix
 //! is machine-applicable when one public path reaches the key, as for a key of this crate,
 //! `cgp`'s `ErrorTypeProviderComponent`, and `cgp_test_component_library`'s `WaverComponent`,
@@ -145,5 +146,19 @@ pub mod dependency {
     for GreetFromLibrary {}
     ///Provider `GreetFromLibrary` for [`Greeter`].
     pub struct GreetFromLibrary;
+}
+pub mod attributed_use {
+    #[allow(unused_imports)]
+    use cgp::prelude::*;
+    use crate::components::Welcomer;
+    impl<__Context__> Welcomer<__Context__> for WelcomeAgain {
+        fn welcome(__context__: &__Context__) -> String {
+            "Hello again".to_owned()
+        }
+    }
+    impl<__Context__> IsProviderFor<WelcomerComponent, __Context__, ()>
+    for WelcomeAgain {}
+    ///Provider `WelcomeAgain` for [`Welcomer`].
+    pub struct WelcomeAgain;
 }
 fn main() {}

@@ -14,7 +14,7 @@ use crate::resolve::query::is_consumer_trait;
 /// Recognize an `E0782` at `span` as a consumer trait written as a wiring key: the span is the key
 /// of a wiring entry, the key resolves to a CGP consumer trait, and that trait has a component.
 pub fn detect_consumer_trait_as_key(tcx: TyCtxt<'_>, span: Span) -> Option<UnresolvedWiringName> {
-    let NameSlot::Key { key } = name_slot_at(tcx, span)? else {
+    let NameSlot::Key { key, .. } = name_slot_at(tcx, span)? else {
         return None;
     };
     // A bare trait in a type position lowers to a trait object, or to a path in an edition that

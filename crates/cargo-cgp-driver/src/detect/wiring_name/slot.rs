@@ -19,8 +19,12 @@ use crate::resolve::query::{has_context_param, is_cgp_item, local_trait_impls, s
 
 /// Where a name at a span sits.
 pub enum NameSlot<'tcx> {
-    /// The key of a wiring entry, as the HIR type the impl's trait reference carries.
-    Key { key: &'tcx rustc_hir::Ty<'tcx> },
+    /// The key of a wiring entry, as the HIR type the impl's trait reference carries, with the
+    /// entry's impl.
+    Key {
+        key: &'tcx rustc_hir::Ty<'tcx>,
+        impl_did: LocalDefId,
+    },
     /// The value of a wiring entry, with the entry's key as written and the entry's impl.
     Value {
         key: &'tcx rustc_hir::Ty<'tcx>,
@@ -77,7 +81,10 @@ pub fn name_slot_at(tcx: TyCtxt<'_>, span: Span) -> Option<NameSlot<'_>> {
                 continue;
             };
             if same_range(key.span, span) {
-                return Some(NameSlot::Key { key });
+                return Some(NameSlot::Key {
+                    key,
+                    impl_did: local,
+                });
             }
             let value_at = imp.items.iter().any(|&item_id| {
                 let item = tcx.hir_impl_item(item_id);

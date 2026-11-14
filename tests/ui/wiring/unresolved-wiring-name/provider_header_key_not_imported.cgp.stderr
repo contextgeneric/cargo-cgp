@@ -4,7 +4,10 @@ error[E0425]: [CGP-E041] the component `GreeterComponent` is not in scope
 28 |     impl Greeter {
    |          ^^^^^^^
    |
-   = help: import it with `use crate::components::GreeterComponent;`
+help: import the component
+   |
+23 +     use crate::components::GreeterComponent;
+   |
 
 error[E0425]: [CGP-E041] the component `GreeterComponent` is not in scope
   --> src/main.rs:37:19
@@ -12,6 +15,9 @@ error[E0425]: [CGP-E041] the component `GreeterComponent` is not in scope
 37 |     impl<Context> Greeter<Context> for GreetRaw {
    |                   ^^^^^^^
    |
-   = help: import it with `use crate::components::GreeterComponent;`
+help: import the component
+   |
+23 +     use crate::components::GreeterComponent;
+   |
 
 For more information about this error, try `rustc --explain E0425`.
