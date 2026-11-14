@@ -5,7 +5,8 @@
 //! macro name the component `GComponent`, which nothing declares, so rustc reports "cannot find
 //! type `GComponent`" with no suggestion and calls the correct `GreeterComponent` import unused.
 //! The tool reshapes each into `[CGP-E070]`, naming the trait's real component and the attribute
-//! form that names it.
+//! form that names it, in the spelling each header gave its macro: `#[cgp_impl]` with and without
+//! `new`, `#[cgp_provider]`, and `#[cgp_new_provider]`.
 //!
 //! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 extern crate std;
@@ -91,6 +92,13 @@ pub mod providers {
     impl<__Context__> IsProviderFor<GComponent, __Context__, ()> for GreetHello {}
     ///Provider `GreetHello` for [`G`].
     pub struct GreetHello;
+    pub struct GreetPlain;
+    impl<__Context__> G<__Context__> for GreetPlain {
+        fn greet(__context__: &__Context__) -> String {
+            "Hey".to_owned()
+        }
+    }
+    impl<__Context__> IsProviderFor<GComponent, __Context__, ()> for GreetPlain {}
     pub struct GreetRaw;
     impl<Context> G<Context> for GreetRaw {
         fn greet(_context: &Context) -> String {
@@ -98,5 +106,14 @@ pub mod providers {
         }
     }
     impl<Context> IsProviderFor<GComponent, Context, ()> for GreetRaw {}
+    #[allow(clippy::needless_lifetimes)]
+    impl<Context> G<Context> for GreetNew {
+        fn greet(_context: &Context) -> String {
+            "Yo".to_owned()
+        }
+    }
+    impl<Context> IsProviderFor<GComponent, Context, ()> for GreetNew {}
+    ///Provider `GreetNew` for [`G`].
+    pub struct GreetNew;
 }
 fn main() {}

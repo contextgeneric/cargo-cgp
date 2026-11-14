@@ -185,33 +185,34 @@ fn header_arg_for(tcx: TyCtxt<'_>, header: &ProviderHeader<'_>, param: &str) -> 
     tcx.sess.source_map().span_to_snippet(span).ok()
 }
 
-/// The attribute of the header at `impl_did`, rewritten to name `component` explicitly:
-/// `#[cgp_impl(new GreetHello: GreeterComponent)]` for a `#[cgp_impl]` block, whose provider is the
-/// impl's `Self` type written inside the attribute, and `#[cgp_provider(GreeterComponent)]` or
-/// `#[cgp_new_provider(GreeterComponent)]` for an impl that writes its provider after `for`.
+/// The attribute of the header at `impl_did`, rewritten to name `component` explicitly, in the
+/// spelling the program gave the macro. A `#[cgp_impl]` block writes its provider, the impl's `Self`
+/// type, inside the attribute, before the trait's name, so the attribute's text up to the provider
+/// is kept and the component appended: `#[cgp_impl(new GreetHello: GreeterComponent)]`. An impl
+/// that writes its provider after `for` takes the component as the argument of its provider
+/// attribute, the nearest attribute above the impl whose macro name ends in `provider`:
+/// `#[cgp_provider(GreeterComponent)]` or `#[cgp_new_provider(GreeterComponent)]`.
 fn attribute_naming(tcx: TyCtxt<'_>, impl_did: LocalDefId, component: &str) -> Option<String> {
     let ItemKind::Impl(imp) = tcx.hir_expect_item(impl_did).kind else {
         return None;
     };
     let source_map = tcx.sess.source_map();
-    let provider = source_map.span_to_snippet(imp.self_ty.span).ok()?;
-    let before_provider = source_map.span_to_prev_source(imp.self_ty.span).ok()?;
-    let before_provider = before_provider.trim_end();
-    let (new, before_new) = match before_provider.strip_suffix("new") {
-        Some(rest) => ("new ", rest.trim_end()),
-        None => ("", before_provider),
-    };
-    if before_new.ends_with("cgp_impl(") {
-        return Some(format!("#[cgp_impl({new}{provider}: {component})]"));
+    let trait_name = imp.of_trait?.trait_ref.path.segments.last()?.ident.span;
+    if imp.self_ty.span.lo() < trait_name.lo() {
+        let provider = source_map.span_to_snippet(imp.self_ty.span).ok()?;
+        let before_provider = source_map.span_to_prev_source(imp.self_ty.span).ok()?;
+        let opening = &before_provider[before_provider.rfind("#[")?..];
+        return Some(format!("{opening}{provider}: {component})]"));
     }
     let before_impl = source_map
         .span_to_prev_source(tcx.def_span(impl_did))
         .ok()?;
-    let attribute_line = before_impl.trim_end().lines().last().unwrap_or_default();
-    let macro_name = if attribute_line.contains("cgp_new_provider") {
-        "cgp_new_provider"
-    } else {
-        "cgp_provider"
-    };
-    Some(format!("#[{macro_name}({component})]"))
+    let macro_path = before_impl
+        .rmatch_indices("#[")
+        .map(|(start, _)| &before_impl[start + 2..])
+        .filter_map(|attribute| attribute.split(['(', ']']).next())
+        .map(str::trim)
+        .find(|path| path.ends_with("provider"))
+        .unwrap_or("cgp_provider");
+    Some(format!("#[{macro_path}({component})]"))
 }

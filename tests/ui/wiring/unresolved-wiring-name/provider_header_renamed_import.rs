@@ -4,7 +4,8 @@
 //! macro name the component `GComponent`, which nothing declares, so rustc reports "cannot find
 //! type `GComponent`" with no suggestion and calls the correct `GreeterComponent` import unused.
 //! The tool reshapes each into `[CGP-E070]`, naming the trait's real component and the attribute
-//! form that names it.
+//! form that names it, in the spelling each header gave its macro: `#[cgp_impl]` with and without
+//! `new`, `#[cgp_provider]`, and `#[cgp_new_provider]`.
 //!
 //! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 
@@ -32,12 +33,30 @@ pub mod providers {
         }
     }
 
+    pub struct GreetPlain;
+
+    #[cgp_impl(GreetPlain)]
+    impl G {
+        fn greet(&self) -> String {
+            "Hey".to_owned()
+        }
+    }
+
     pub struct GreetRaw;
 
     #[cgp_provider]
     impl<Context> G<Context> for GreetRaw {
         fn greet(_context: &Context) -> String {
             "Hi".to_owned()
+        }
+    }
+
+    // The `allow` between the provider attribute and the impl is one the help skips.
+    #[cgp_new_provider]
+    #[allow(clippy::needless_lifetimes)]
+    impl<Context> G<Context> for GreetNew {
+        fn greet(_context: &Context) -> String {
+            "Yo".to_owned()
         }
     }
 }

@@ -162,8 +162,8 @@ pub fn unresolved_wiring_name_help(name: &UnresolvedWiringName) -> Option<String
             module,
             trait_path,
         } => Some(format!(
-            "name the trait through the module that defines its component, `impl {trait_path}`, \
-             or re-export `{component}` from `{module}` beside the trait"
+            "name the trait as `{trait_path}`, through the module that defines its component, or \
+             re-export `{component}` from `{module}` beside the trait"
         )),
         UnresolvedWiringName::DerivedComponentName {
             written,

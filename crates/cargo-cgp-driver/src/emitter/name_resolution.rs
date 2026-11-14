@@ -55,8 +55,8 @@ pub fn is_unresolved_wiring_overflow(diag: &DiagInner, unprovable: &[String]) ->
     })
 }
 
-/// Reshape the buffered name-resolution `E0425`s that a wiring entry or a provider header produced, and record in the output the requirements the entries with an unresolved value leave
-/// unprovable. Call once name resolution is over, while a `TyCtxt` is available. A panic in the
+/// Reshape the buffered name-resolution `E0425`s that a wiring entry or a provider header produced,
+/// and record in the output the requirements the entries with an unresolved value leave unprovable. Call once name resolution is over, while a `TyCtxt` is available. A panic in the
 /// planning leaves every diagnostic as rustc wrote it.
 pub fn reshape_name_resolution_errors(tcx: TyCtxt<'_>) {
     buffer_pass(

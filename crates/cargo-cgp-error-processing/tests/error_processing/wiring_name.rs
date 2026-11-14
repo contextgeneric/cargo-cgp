@@ -146,9 +146,8 @@ fn a_header_through_a_module_without_the_component_names_the_defining_module() {
     assert_eq!(
         unresolved_wiring_name_help(&name).as_deref(),
         Some(
-            "name the trait through the module that defines its component, \
-             `impl crate::components::Greeter`, or re-export `GreeterComponent` from \
-             `crate::facade` beside the trait"
+            "name the trait as `crate::components::Greeter`, through the module that defines its \
+             component, or re-export `GreeterComponent` from `crate::facade` beside the trait"
         ),
     );
 }
