@@ -5,21 +5,20 @@ error[E0425]: cannot find value `undefined_name` in this scope
    |                        ^^^^^^^^^^^^^^ not found in this scope
 
 error[E0425]: cannot find type `CanGreetComponent` in this scope
-  --> src/main.rs:23:1
+  --> src/main.rs:24:6
    |
-23 | #[cgp_impl(new GreetHello)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+24 | impl CanGreet {
+   |      ^^^^^^^^ not found in this scope
    |
 note: similarly named struct `GreeterComponent` defined here
   --> src/main.rs:18:17
    |
 18 | #[cgp_component(Greeter)]
    |                 ^^^^^^^
-   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: a struct with a similar name exists
    |
-23 - #[cgp_impl(new GreetHello)]
-23 + GreeterComponent
+24 - impl CanGreet {
+24 + impl GreeterComponent {
    |
 
 error[E0107]: trait takes 0 generic arguments but 1 generic argument was supplied

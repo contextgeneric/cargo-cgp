@@ -1,19 +1,18 @@
 error[E0425]: cannot find type `CanCalculateAreaComponent` in this scope
-  --> src/main.rs:28:1
+  --> src/main.rs:29:6
    |
-28 | #[cgp_impl(new RectangleArea)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+29 | impl CanCalculateArea<Rectangle> {
+   |      ^^^^^^^^^^^^^^^^ not found in this scope
    |
 note: similarly named struct `AreaCalculatorComponent` defined here
   --> src/main.rs:17:17
    |
 17 | #[cgp_component(AreaCalculator)]
    |                 ^^^^^^^^^^^^^^
-   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: a struct with a similar name exists
    |
-28 - #[cgp_impl(new RectangleArea)]
-28 + AreaCalculatorComponent
+29 - impl CanCalculateArea<Rectangle> {
+29 + impl AreaCalculatorComponent<Rectangle> {
    |
 
 error[E0107]: trait takes 1 generic argument but 2 generic arguments were supplied

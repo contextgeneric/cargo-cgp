@@ -1,10 +1,8 @@
 error[E0425]: cannot find type `GreetComponent` in this scope
-  --> src/main.rs:28:1
+  --> src/main.rs:29:6
    |
-28 | #[cgp_impl(new GreetHello)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
-   |
-   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+29 | impl Greet {
+   |      ^^^^^ not found in this scope
 
 error[E0107]: trait takes 0 generic arguments but 1 generic argument was supplied
   --> src/main.rs:29:6

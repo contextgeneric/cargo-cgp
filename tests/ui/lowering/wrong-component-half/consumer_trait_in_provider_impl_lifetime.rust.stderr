@@ -1,19 +1,18 @@
 error[E0425]: cannot find type `CanReadComponent` in this scope
-  --> src/main.rs:27:1
+  --> src/main.rs:28:10
    |
-27 | #[cgp_impl(new ReadText)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+28 | impl<'a> CanRead<'a, Text> {
+   |          ^^^^^^^ not found in this scope
    |
 note: similarly named struct `ReaderComponent` defined here
   --> src/main.rs:18:17
    |
 18 | #[cgp_component(Reader)]
    |                 ^^^^^^
-   = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: a struct with a similar name exists
    |
-27 - #[cgp_impl(new ReadText)]
-27 + ReaderComponent
+28 - impl<'a> CanRead<'a, Text> {
+28 + impl<'a> ReaderComponent<'a, Text> {
    |
 
 error[E0107]: trait takes 1 generic argument but 2 generic arguments were supplied
