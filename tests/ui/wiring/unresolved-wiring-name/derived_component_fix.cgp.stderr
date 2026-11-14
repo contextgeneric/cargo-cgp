@@ -1,0 +1,64 @@
+error[E0425]: [CGP-E070] the header derives the component `GComponent` from the trait name `G`, but the component of `Greeter` is `GreeterComponent`
+  --> src/main.rs:42:10
+   |
+42 |     impl G {
+   |          ^
+   |
+   = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
+   = help: name the component in the attribute, `#[cgp_impl(new GreetHello: GreeterComponent)]`, or import the trait under its own name, `Greeter`
+
+error[E0425]: [CGP-E070] the header derives the component `GComponent` from the trait name `G`, but the component of `Greeter` is `GreeterComponent`
+  --> src/main.rs:57:19
+   |
+57 |     impl<Context> G<Context> for GreetRaw {
+   |                   ^
+   |
+   = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
+   = help: name the component in the attribute, `#[cgp_provider(GreeterComponent)]`, or import the trait under its own name, `Greeter`
+
+warning: unused import: `GreeterComponent`
+  --> src/main.rs:52:43
+   |
+52 |     use crate::components::{Greeter as G, GreeterComponent};
+   |                                           ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0107]: [CGP-E070] the header derives the component `AreaCalculatorComponent` from the trait name `AreaCalculator`, but the component of `AreaCalculator` is `AreaCalculatorComponent<Shape>`
+  --> src/main.rs:72:10
+   |
+72 |     impl AreaCalculator<Square> {
+   |          ^^^^^^^^^^^^^^
+   |
+   = help: name the component in the attribute: `#[cgp_impl(new SquareArea: AreaCalculatorComponent<Square>)]`
+
+error[E0107]: [CGP-E070] the header derives the component `AreaCalculatorComponent` from the trait name `AreaCalculator`, but the component of `AreaCalculator` is `AreaCalculatorComponent<Shape>`
+  --> src/main.rs:79:10
+   |
+79 |     impl AreaCalculator {
+   |          ^^^^^^^^^^^^^^
+   |
+   = help: name the component in the attribute: `#[cgp_impl(new AnyArea: AreaCalculatorComponent<Shape>)]`
+
+error[E0107]: trait takes 2 generic arguments but 1 generic argument was supplied
+  --> src/main.rs:79:10
+   |
+78 |     #[cgp_impl(new AnyArea)]
+   |     ------------------------ supplied 1 generic argument
+79 |     impl AreaCalculator {
+   |          ^^^^^^^^^^^^^^ expected 2 generic arguments
+   |
+note: trait defined here, with 2 generic parameters: `__Context__`, `Shape`
+  --> src/main.rs:29:19
+   |
+27 | /     #[cgp_component {
+28 | |         name: AreaCalculatorComponent<Shape>,
+29 | |         provider: AreaCalculator,
+   | |                   ^^^^^^^^^^^^^^
+30 | |     }]
+   | |______-
+31 |       pub trait CanCalculateArea<Shape> {
+   |                                  -----
+
+Some errors have detailed explanations: E0107, E0425.
+For more information about an error, try `rustc --explain E0107`.

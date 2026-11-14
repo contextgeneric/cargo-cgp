@@ -1,0 +1,214 @@
+[
+  {
+    "children": [
+      {
+        "level": "note",
+        "message": "`G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`",
+        "spans": []
+      },
+      {
+        "level": "help",
+        "message": "name the component in the attribute, `#[cgp_impl(new GreetHello: GreeterComponent)]`, or import the trait under its own name, `Greeter`",
+        "spans": []
+      }
+    ],
+    "code": "E0425",
+    "level": "error",
+    "message": "[CGP-E070] the header derives the component `GComponent` from the trait name `G`, but the component of `Greeter` is `GreeterComponent`",
+    "spans": [
+      {
+        "column": 10,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 42,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "note",
+        "message": "`G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`",
+        "spans": []
+      },
+      {
+        "level": "help",
+        "message": "name the component in the attribute, `#[cgp_provider(GreeterComponent)]`, or import the trait under its own name, `Greeter`",
+        "spans": []
+      }
+    ],
+    "code": "E0425",
+    "level": "error",
+    "message": "[CGP-E070] the header derives the component `GComponent` from the trait name `G`, but the component of `Greeter` is `GreeterComponent`",
+    "spans": [
+      {
+        "column": 19,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 57,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "note",
+        "message": "`#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default",
+        "spans": []
+      },
+      {
+        "level": "help",
+        "message": "remove the unused import",
+        "spans": [
+          {
+            "applicability": "MachineApplicable",
+            "column": 41,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 52,
+            "primary": true,
+            "replacement": ""
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 28,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 52,
+            "primary": true,
+            "replacement": ""
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 59,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 52,
+            "primary": true,
+            "replacement": ""
+          }
+        ]
+      }
+    ],
+    "code": "unused_imports",
+    "level": "warning",
+    "message": "unused import: `GreeterComponent`",
+    "spans": [
+      {
+        "column": 43,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 52,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "help",
+        "message": "name the component in the attribute: `#[cgp_impl(new SquareArea: AreaCalculatorComponent<Square>)]`",
+        "spans": []
+      }
+    ],
+    "code": "E0107",
+    "level": "error",
+    "message": "[CGP-E070] the header derives the component `AreaCalculatorComponent` from the trait name `AreaCalculator`, but the component of `AreaCalculator` is `AreaCalculatorComponent<Shape>`",
+    "spans": [
+      {
+        "column": 10,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 72,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "help",
+        "message": "name the component in the attribute: `#[cgp_impl(new AnyArea: AreaCalculatorComponent<Shape>)]`",
+        "spans": []
+      }
+    ],
+    "code": "E0107",
+    "level": "error",
+    "message": "[CGP-E070] the header derives the component `AreaCalculatorComponent` from the trait name `AreaCalculator`, but the component of `AreaCalculator` is `AreaCalculatorComponent<Shape>`",
+    "spans": [
+      {
+        "column": 10,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 79,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "note",
+        "message": "trait defined here, with 2 generic parameters: `__Context__`, `Shape`",
+        "spans": [
+          {
+            "column": 5,
+            "file": "src/main.rs",
+            "label": "",
+            "line": 27,
+            "primary": false
+          },
+          {
+            "column": 32,
+            "file": "src/main.rs",
+            "label": "",
+            "line": 31,
+            "primary": false
+          },
+          {
+            "column": 19,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 29,
+            "primary": true
+          }
+        ]
+      }
+    ],
+    "code": "E0107",
+    "level": "error",
+    "message": "trait takes 2 generic arguments but 1 generic argument was supplied",
+    "spans": [
+      {
+        "column": 10,
+        "file": "src/main.rs",
+        "label": "expected 2 generic arguments",
+        "line": 79,
+        "primary": true
+      },
+      {
+        "column": 5,
+        "file": "src/main.rs",
+        "label": "supplied 1 generic argument",
+        "line": 78,
+        "primary": false
+      }
+    ]
+  },
+  {
+    "children": [],
+    "code": null,
+    "level": "failure-note",
+    "message": "Some errors have detailed explanations: E0107, E0425.",
+    "spans": []
+  },
+  {
+    "children": [],
+    "code": null,
+    "level": "failure-note",
+    "message": "For more information about an error, try `rustc --explain E0107`.",
+    "spans": []
+  }
+]
