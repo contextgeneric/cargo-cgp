@@ -13,8 +13,8 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
-use cgp::prelude::*;
 use cgp::core::field::traits::FromVariant;
+use cgp::prelude::*;
 pub enum Big {
     Foo(u64),
 }

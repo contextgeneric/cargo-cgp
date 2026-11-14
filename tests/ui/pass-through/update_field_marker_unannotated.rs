@@ -6,8 +6,8 @@
 //!
 //! CGP error class: none; plain Rust the tool must pass through unchanged.
 
-use cgp::prelude::*;
 use cgp::core::field::traits::UpdateField;
+use cgp::prelude::*;
 
 #[derive(CgpData)]
 pub struct Person {

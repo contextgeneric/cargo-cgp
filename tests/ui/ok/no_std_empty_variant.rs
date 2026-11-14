@@ -11,8 +11,8 @@ extern crate std;
 
 use std::boxed::Box;
 
-use cgp::prelude::*;
 use cgp::core::field::traits::HasExtractorMut;
+use cgp::prelude::*;
 
 #[derive(CgpVariant)]
 pub enum Status {

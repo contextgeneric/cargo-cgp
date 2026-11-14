@@ -8,8 +8,8 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
-use cgp::prelude::*;
 use cgp::core::field::traits::FieldGetter;
+use cgp::prelude::*;
 pub trait HasName {
     fn name(&self) -> &str;
 }

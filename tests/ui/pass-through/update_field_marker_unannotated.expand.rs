@@ -9,8 +9,8 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
-use cgp::prelude::*;
 use cgp::core::field::traits::UpdateField;
+use cgp::prelude::*;
 pub struct Person {
     pub first_name: String,
     pub last_name: String,

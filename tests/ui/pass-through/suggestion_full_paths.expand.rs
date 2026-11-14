@@ -8,9 +8,8 @@
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
-use cgp::core::field::traits::TransformMapFields;
+use cgp::core::field::traits::{IntoBuilder, TransformMapFields};
 use cgp::prelude::*;
-use cgp::core::field::traits::IntoBuilder;
 pub struct Point {
     pub x: u64,
 }

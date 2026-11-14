@@ -14,8 +14,8 @@
 //@quality: usability
 //@codes: CGP-E002
 
-use cgp::prelude::*;
 use cgp::core::component::IsProviderFor;
+use cgp::prelude::*;
 
 #[cgp_component(Greeter)]
 pub trait CanGreet {

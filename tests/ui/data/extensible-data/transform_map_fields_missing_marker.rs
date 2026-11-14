@@ -10,9 +10,9 @@
 //@quality: acceptable
 //@codes: none
 
+use cgp::core::field::impls::{IsNothing, IsPresent};
 use cgp::core::field::traits::{TransformMap, TransformMapFields};
 use cgp::prelude::*;
-use cgp::core::field::impls::{IsNothing, IsPresent};
 
 pub struct OnlyAbsent;
 

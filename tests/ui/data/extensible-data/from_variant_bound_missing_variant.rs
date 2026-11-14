@@ -13,8 +13,8 @@
 //@quality: acceptable
 //@codes: none
 
-use cgp::prelude::*;
 use cgp::core::field::traits::FromVariant;
+use cgp::prelude::*;
 
 #[derive(CgpData)]
 pub enum Big {

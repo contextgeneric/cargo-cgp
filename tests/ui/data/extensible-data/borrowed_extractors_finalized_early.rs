@@ -10,8 +10,8 @@
 //@quality: acceptable
 //@codes: CGP-E050 CGP-E104 CGP-E121
 
-use cgp::prelude::*;
 use cgp::core::field::traits::{ExtractField, FinalizeExtract, HasExtractorMut, HasExtractorRef};
+use cgp::prelude::*;
 
 pub struct Circle {
     pub radius: f64,

@@ -6,8 +6,8 @@
 //! spelling. `rebuild` names the record shape in its bound, and `App` keys an `open` dispatch entry
 //! by a shape, so the snapshot also shows a written shape surviving expansion unchanged.
 
-use cgp::prelude::*;
 use cgp::core::field::traits::FromFields;
+use cgp::prelude::*;
 
 #[derive(HasFields)]
 pub struct Person {

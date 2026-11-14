@@ -11,8 +11,8 @@
 //@codes: CGP-E050 CGP-E104 CGP-E123
 
 use cgp::core::field::impls::CanUpcast;
-use cgp::prelude::*;
 use cgp::core::field::traits::HasExtractor;
+use cgp::prelude::*;
 
 #[derive(HasField)]
 pub struct Person {

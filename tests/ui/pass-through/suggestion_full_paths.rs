@@ -5,9 +5,8 @@
 //!
 //! CGP error class: none; plain Rust the tool must pass through unchanged.
 
-use cgp::core::field::traits::TransformMapFields;
+use cgp::core::field::traits::{IntoBuilder, TransformMapFields};
 use cgp::prelude::*;
-use cgp::core::field::traits::IntoBuilder;
 
 #[derive(CgpData)]
 pub struct Point {

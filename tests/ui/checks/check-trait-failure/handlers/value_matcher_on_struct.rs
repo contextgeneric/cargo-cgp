@@ -11,8 +11,8 @@
 
 use core::marker::PhantomData;
 
-use cgp::prelude::*;
 use cgp::extra::dispatch::MatchWithValueHandlers;
+use cgp::prelude::*;
 
 #[derive(CgpData)]
 pub struct Scene {
