@@ -7,11 +7,11 @@
 //! both the rewritten CGP messages and the resugaring fallback, so the two read the same. A module
 //! is named in lowercase and a type or trait in uppercase, so the run keeps everything from its
 //! first uppercase segment: an item inside a trait or type keeps its qualifier
-//! (`cgp::prelude::TryComputer::try_compute` reads `TryComputer::try_compute`), while a run with no
-//! uppercase segment, such as a free function's path, keeps only its last segment. A CGP re-export
-//! path such as `cgp::prelude::Nil`, or `cgp::macro_prelude::Chars` for a name outside the prelude,
-//! is just one such run. The strip runs first, before the
-//! resugaring stages, so they match the bare names.
+//! (`cgp::macro_prelude::TryComputer::try_compute` reads `TryComputer::try_compute`), while a run
+//! with no uppercase segment, such as a free function's path, keeps only its last segment. A CGP
+//! re-export path such as `cgp::prelude::Nil`, or `cgp::macro_prelude::Chars` for a name outside
+//! the prelude, is just one such run. The strip runs first, before the resugaring stages, so they
+//! match the bare names.
 //!
 //! It rewrites **only** a run of plain identifiers joined by `::` (`foo::Bar`, `a::b::c::D`) and
 //! leaves everything else alone: a lone identifier keeps its name, a turbofish (`foo::<T>`) is not

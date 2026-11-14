@@ -10,6 +10,7 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
+use cgp::extra::handler::{Computer, ComputerComponent};
 use cgp::prelude::*;
 impl<Context, Code> Computer<Context, Code, u64> for Double {
     type Output = u64;

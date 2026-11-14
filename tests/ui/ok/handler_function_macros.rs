@@ -10,6 +10,7 @@
 use core::fmt::Display;
 
 use cgp::core::error::ErrorTypeProviderComponent;
+use cgp::extra::handler::AsyncComputer;
 use cgp::extra::handler::{Computer, Producer, TryComputer};
 use cgp::prelude::*;
 

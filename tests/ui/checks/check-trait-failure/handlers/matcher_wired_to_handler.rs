@@ -13,6 +13,7 @@
 use core::marker::PhantomData;
 
 use cgp::extra::dispatch::MatchWithValueHandlers;
+use cgp::extra::handler::{Computer, ComputerComponent, HandlerComponent};
 use cgp::prelude::*;
 
 pub struct Circle {

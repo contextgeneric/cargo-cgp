@@ -1,9 +1,8 @@
 //! A wiring key naming a component defined in another module of the crate, without its import.
 //!
 //! `GreeterComponent` is declared in `components`, but the wiring module does not import it, so the
-//! key is an `E0425` "cannot find type". rustc suggests the right import beside a similarly named
-//! `ComputerComponent`, a different component. The tool reshapes it into `[CGP-E041]` with only the
-//! import, `use crate::components::GreeterComponent;`.
+//! key is an `E0425` "cannot find type". rustc suggests the right import, and the tool reshapes it
+//! into `[CGP-E041]` with that import, `use crate::components::GreeterComponent;`.
 //!
 //! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 

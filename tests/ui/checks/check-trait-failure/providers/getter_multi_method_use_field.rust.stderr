@@ -6,21 +6,21 @@ error[E0277]: the trait bound `UseField<Symbol<5, Chars<..>>>: IsProviderFor<_, 
    |
    = help: the trait `IsProviderFor<DimensionsGetterComponent, Rectangle>` is not implemented for `UseField<Symbol<5, Chars<..>>>`
 help: the following other types implement trait `IsProviderFor<Component, Context, Params>`
-  --> $CGP/crates/extra/cgp-handler/src/components/async_computer.rs:47:1
-   |
-47 | / impl<Context, Code, Input, Tag, Output> AsyncComputer<Context, Code, Input> for UseField<Tag>
-48 | | where
-49 | |     Context: HasField<Tag>,
-50 | |     Context::Value: CanComputeAsync<Code, Input, Output = Output>,
-   | |__________________________________________________________________^ `cgp::prelude::UseField<Tag>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Input)>`
-   |
-  ::: $CGP/crates/core/cgp-field/src/impls/use_field.rs:27:1
+  --> $CGP/crates/core/cgp-field/src/impls/use_field.rs:27:1
    |
 27 | / impl<Context, TypeTag, FieldTag, Field> IsProviderFor<TypeProviderComponent, Context, TypeTag>
 28 | |     for UseField<FieldTag>
 29 | | where
 30 | |     Context: HasField<FieldTag, Value = Field>,
    | |_______________________________________________^ `cgp::prelude::UseField<FieldTag>` implements `IsProviderFor<TypeProviderComponent, Context, TypeTag>`
+   |
+  ::: $CGP/crates/extra/cgp-handler/src/components/async_computer.rs:47:1
+   |
+47 | / impl<Context, Code, Input, Tag, Output> AsyncComputer<Context, Code, Input> for UseField<Tag>
+48 | | where
+49 | |     Context: HasField<Tag>,
+50 | |     Context::Value: CanComputeAsync<Code, Input, Output = Output>,
+   | |__________________________________________________________________^ `cgp::prelude::UseField<Tag>` implements `IsProviderFor<AsyncComputerComponent, Context, (Code, Input)>`
    |
   ::: $CGP/crates/extra/cgp-handler/src/components/computer.rs:42:1
    |

@@ -14,6 +14,7 @@ extern crate std;
 use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
 use cgp::extra::dispatch::{BuildAndSetField, BuildWithHandlers};
+use cgp::extra::handler::{Computer, ComputerComponent};
 use cgp::prelude::*;
 pub struct Config {
     pub host: String,

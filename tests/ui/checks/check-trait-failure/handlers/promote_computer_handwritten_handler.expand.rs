@@ -11,6 +11,7 @@ use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
 use cgp::core::error::ErrorTypeProviderComponent;
 use cgp::extra::handler::PromoteComputer;
+use cgp::extra::handler::{Computer, ComputerComponent, HandlerComponent};
 use cgp::prelude::*;
 impl<Context, Code> Computer<Context, Code, u64> for Double {
     type Output = u64;

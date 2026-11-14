@@ -7,9 +7,9 @@ error[E0599]: the method `handle` exists for struct `AppBuilder`, but its trait 
 89 |     let _app = AppBuilder.handle(PhantomData::<()>, ()).await?;
    |                           ^^^^^^ this is an associated function, not a method
    |
-  ::: $CGP/crates/extra/cgp-dispatch/src/providers/field_builders/build_and_merge.rs:13:1
+  ::: $CGP/crates/extra/cgp-dispatch/src/providers/field_builders/build_and_merge.rs:14:1
    |
-13 | pub struct BuildAndMerge<Provider = UseContext>(pub PhantomData<Provider>);
+14 | pub struct BuildAndMerge<Provider = UseContext>(pub PhantomData<Provider>);
    | ----------------------------------------------- doesn't satisfy `_: IsProviderFor<HandlerComponent, AppBuilder, (_, __PartialApp<IsPresent>)>`
    |
    = note: found the following associated functions; to be used as methods, functions must have a `self` parameter

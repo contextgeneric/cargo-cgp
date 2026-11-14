@@ -11,6 +11,7 @@ extern crate std;
 use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
 use cgp::extra::handler::PipeHandlers;
+use cgp::extra::handler::{Computer, ComputerComponent};
 use cgp::prelude::*;
 impl<Context, Code> Computer<Context, Code, u64> for ToText {
     type Output = String;

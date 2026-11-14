@@ -4,16 +4,16 @@ error[E0425]: cannot find type `CanReadComponent` in this scope
 27 | #[cgp_impl(new ReadText)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
    |
-note: similarly named struct `HandlerComponent` defined here
-  --> $CGP/crates/extra/cgp-handler/src/components/handler.rs:13:17
+note: similarly named struct `ReaderComponent` defined here
+  --> src/main.rs:18:17
    |
-13 | #[cgp_component(Handler)]
-   |                 ^^^^^^^
+18 | #[cgp_component(Reader)]
+   |                 ^^^^^^
    = note: this error originates in the attribute macro `cgp_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: a struct with a similar name exists
    |
 27 - #[cgp_impl(new ReadText)]
-27 + HandlerComponent
+27 + ReaderComponent
    |
 
 error[E0107]: trait takes 1 generic argument but 2 generic arguments were supplied

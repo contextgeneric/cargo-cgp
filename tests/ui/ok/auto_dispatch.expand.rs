@@ -308,7 +308,7 @@ impl<
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (&'__a__ __Variants__))>
 for ComputeArea {}
-///Provider `ComputeArea` for [`Computer`].
+///Provider `ComputeArea` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct ComputeArea;
 impl DelegateComponent<ComputerRefComponent> for ComputeArea
 where
@@ -481,7 +481,7 @@ impl<
     __Context__,
     (__Code__, (&'__a__ mut __Variants__, (f64))),
 > for ComputeScale {}
-///Provider `ComputeScale` for [`Computer`].
+///Provider `ComputeScale` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct ComputeScale;
 impl DelegateComponent<ComputerRefComponent> for ComputeScale
 where
@@ -648,7 +648,7 @@ impl<
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (__Variants__))>
 for ComputeIntoName {}
-///Provider `ComputeIntoName` for [`Computer`].
+///Provider `ComputeIntoName` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct ComputeIntoName;
 impl DelegateComponent<ComputerRefComponent> for ComputeIntoName
 where
@@ -824,7 +824,7 @@ impl<
     __Context__,
     (__Code__, (&'__a__ __Variants__, (&'__a1__ str))),
 > for ComputeLabel {}
-///Provider `ComputeLabel` for [`Computer`].
+///Provider `ComputeLabel` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct ComputeLabel;
 impl DelegateComponent<ComputerRefComponent> for ComputeLabel
 where
@@ -1014,7 +1014,7 @@ impl<
     __Code__,
 > IsProviderFor<AsyncComputerComponent, __Context__, (__Code__, (&'__a__ __Variants__))>
 for ComputeDescribe {}
-///Provider `ComputeDescribe` for [`AsyncComputer`].
+///Provider `ComputeDescribe` for [`AsyncComputer`](cgp::macro_prelude::AsyncComputer).
 pub struct ComputeDescribe;
 impl DelegateComponent<AsyncComputerRefComponent> for ComputeDescribe
 where

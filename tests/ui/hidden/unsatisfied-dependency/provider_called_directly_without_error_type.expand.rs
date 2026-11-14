@@ -35,7 +35,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (u64, u64))> for Add {}
-///Provider `Add` for [`Computer`].
+///Provider `Add` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct Add;
 impl DelegateComponent<ComputerRefComponent> for Add
 where

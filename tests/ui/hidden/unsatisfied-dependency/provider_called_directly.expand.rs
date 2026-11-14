@@ -28,7 +28,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (u8))> for Increment {}
-///Provider `Increment` for [`Computer`].
+///Provider `Increment` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct Increment;
 impl DelegateComponent<ComputerRefComponent> for Increment
 where

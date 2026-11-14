@@ -1,23 +1,23 @@
 error[E0277]: the trait bound `__PartialShape<IsVoid, IsPresent>: FinalizeExtract` is not satisfied
-  --> src/main.rs:56:5
+  --> src/main.rs:57:5
    |
-56 | /     MatchWithHandlers::<
-57 | |         Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>],
-58 | |     >::compute(&(), PhantomData::<()>, shape)
+57 | /     MatchWithHandlers::<
+58 | |         Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>],
+59 | |     >::compute(&(), PhantomData::<()>, shape)
    | |_____^ unsatisfied trait bound
    |
 help: the trait `FinalizeExtract` is not implemented for `__PartialShape<IsVoid, IsPresent>`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 | pub enum Shape {
+29 | pub enum Shape {
    | ^^^^^^^^^^^^^^
 help: the trait `FinalizeExtract` is implemented for `__PartialShape<IsVoid, IsVoid>`
-  --> src/main.rs:28:10
+  --> src/main.rs:29:10
    |
-28 | pub enum Shape {
+29 | pub enum Shape {
    |          ^^^^^
-   = note: required for `MatchWithHandlers<Cons<ExtractFieldAndHandle<Symbol<6, _>, _>, Nil>>` to implement `IsProviderFor<cgp::prelude::ComputerComponent, (), ((), Shape)>`
-note: required by a bound in `cgp::prelude::Computer::compute`
+   = note: required for `MatchWithHandlers<Cons<ExtractFieldAndHandle<Symbol<6, _>, _>, Nil>>` to implement `IsProviderFor<ComputerComponent, (), ((), Shape)>`
+note: required by a bound in `cgp::macro_prelude::Computer::compute`
   --> $CGP/crates/extra/cgp-handler/src/components/computer.rs:12:1
    |
 12 | #[cgp_component(Computer)]
@@ -29,23 +29,23 @@ note: required by a bound in `cgp::prelude::Computer::compute`
    = note: this error originates in the attribute macro `cgp_component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `__PartialShape<IsVoid, IsPresent>: FinalizeExtract` is not satisfied
-  --> src/main.rs:56:5
+  --> src/main.rs:57:5
    |
-56 | /     MatchWithHandlers::<
-57 | |         Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>],
-58 | |     >::compute(&(), PhantomData::<()>, shape)
+57 | /     MatchWithHandlers::<
+58 | |         Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>],
+59 | |     >::compute(&(), PhantomData::<()>, shape)
    | |_____________________________________________^ unsatisfied trait bound
    |
 help: the trait `FinalizeExtract` is not implemented for `__PartialShape<IsVoid, IsPresent>`
-  --> src/main.rs:28:1
+  --> src/main.rs:29:1
    |
-28 | pub enum Shape {
+29 | pub enum Shape {
    | ^^^^^^^^^^^^^^
 help: the trait `FinalizeExtract` is implemented for `__PartialShape<IsVoid, IsVoid>`
-  --> src/main.rs:28:10
+  --> src/main.rs:29:10
    |
-28 | pub enum Shape {
+29 | pub enum Shape {
    |          ^^^^^
-   = note: required for `MatchWithHandlers<Cons<ExtractFieldAndHandle<Symbol<6, _>, _>, Nil>>` to implement `cgp::prelude::Computer<(), (), Shape>`
+   = note: required for `MatchWithHandlers<Cons<ExtractFieldAndHandle<Symbol<6, _>, _>, Nil>>` to implement `Computer<(), (), Shape>`
 
 For more information about this error, try `rustc --explain E0277`.

@@ -25,7 +25,7 @@ fn strip_module_paths_keeps_the_type_an_item_belongs_to() {
     // A module is named in lowercase and a type or trait in uppercase, so only the module segments
     // go: a trait's method keeps its trait, and `Self::Output` keeps `Self`.
     assert_eq!(
-        strip_module_paths("required by a bound in `cgp::prelude::TryComputer::try_compute`")
+        strip_module_paths("required by a bound in `cgp::macro_prelude::TryComputer::try_compute`")
             .as_deref(),
         Some("required by a bound in `TryComputer::try_compute`"),
     );

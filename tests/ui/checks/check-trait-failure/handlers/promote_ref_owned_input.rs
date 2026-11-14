@@ -11,6 +11,7 @@
 
 use core::marker::PhantomData;
 
+use cgp::extra::handler::{Computer, ComputerComponent, ComputerRefComponent};
 use cgp::prelude::*;
 
 #[cgp_new_provider]

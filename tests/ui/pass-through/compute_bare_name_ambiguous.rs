@@ -1,12 +1,13 @@
 //! `compute` called by bare name where two traits provide it.
 //!
-//! The error is plain Rust: the call is ambiguous (`E0034`). The tool must print what plain
-//! `cargo check` prints, keeping the `cgp::prelude::Computer` path rustc prints in a note.
+//! The error is plain Rust: the call is ambiguous (`E0034`), because both `CanCompute` and the
+//! imported `Computer` provide `compute`. The tool must print what plain `cargo check` prints.
 //!
 //! CGP error class: none; plain Rust the tool must pass through unchanged.
 
 use core::marker::PhantomData;
 
+use cgp::extra::handler::{Computer, ComputerComponent};
 use cgp::prelude::*;
 
 #[cgp_new_provider]

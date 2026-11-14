@@ -31,7 +31,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (u64, u64))> for CheckedAdd {}
-///Provider `CheckedAdd` for [`Computer`].
+///Provider `CheckedAdd` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct CheckedAdd;
 impl DelegateComponent<ComputerRefComponent> for CheckedAdd
 where

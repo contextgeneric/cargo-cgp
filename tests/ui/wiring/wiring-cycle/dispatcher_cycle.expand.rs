@@ -20,6 +20,7 @@ extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use cgp::extra::dispatch::MatchWithValueHandlers;
+use cgp::extra::handler::Computer;
 use cgp::extra::handler::{CanCompute, ComputerComponent};
 use cgp::prelude::*;
 pub struct Eval;

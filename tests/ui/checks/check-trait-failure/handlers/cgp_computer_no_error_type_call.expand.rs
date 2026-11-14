@@ -12,6 +12,7 @@ extern crate std;
 use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
 use cgp::extra::handler::CanTryCompute;
+use cgp::extra::handler::{TryComputer, TryComputerComponent};
 use cgp::prelude::*;
 fn add(a: u64, b: u64) -> u64 {
     a + b
@@ -30,7 +31,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (u64, u64))> for Add {}
-///Provider `Add` for [`Computer`].
+///Provider `Add` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct Add;
 impl DelegateComponent<ComputerRefComponent> for Add
 where

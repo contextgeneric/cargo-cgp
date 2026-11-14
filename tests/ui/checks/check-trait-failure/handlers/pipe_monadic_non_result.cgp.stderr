@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `BindErr<IdentMonadic, Double>` implements `Computer` only with `Input = Result<_, _>`, not `Input = u64`
-  --> src/main.rs:38:9
+  --> src/main.rs:39:9
    |
-38 |         ComputerComponent: ((), u64),
+39 |         ComputerComponent: ((), u64),
    |         ^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E127] `BindErr<IdentMonadic, Double>` implements `Computer` only with `Input = Result<_, _>`, not `Input = u64`

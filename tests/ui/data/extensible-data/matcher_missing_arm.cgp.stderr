@@ -1,9 +1,9 @@
 error[E0277]: [CGP-E002] variant `Rectangle` of `Shape` is not extracted
-  --> src/main.rs:56:5
+  --> src/main.rs:57:5
    |
-56 | /     MatchWithHandlers::<
-57 | |         Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>],
-58 | |     >::compute(&(), PhantomData::<()>, shape)
+57 | /     MatchWithHandlers::<
+58 | |         Product![ExtractFieldAndHandle<Symbol!("Circle"), HandleFieldValue<ComputeArea>>],
+59 | |     >::compute(&(), PhantomData::<()>, shape)
    | |_____^
    |
    = note: root cause: [CGP-E121] variant `Rectangle` of `Shape` is not extracted

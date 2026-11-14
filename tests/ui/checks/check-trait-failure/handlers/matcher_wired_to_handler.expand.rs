@@ -12,6 +12,7 @@ extern crate std;
 use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
 use cgp::extra::dispatch::MatchWithValueHandlers;
+use cgp::extra::handler::{Computer, ComputerComponent, HandlerComponent};
 use cgp::prelude::*;
 pub struct Circle {
     pub radius: f64,

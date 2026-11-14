@@ -11,6 +11,7 @@ extern crate std;
 use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
 use cgp::extra::dispatch::BuildAndMergeOutputs;
+use cgp::extra::handler::{Computer, ComputerComponent};
 use cgp::prelude::*;
 pub struct Db {
     pub db_path: String,

@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] `Double` implements `Computer` only with `Input = u64`, not `Input = String`
-  --> src/main.rs:45:9
+  --> src/main.rs:46:9
    |
-45 |         ComputerComponent: ((), u64),
+46 |         ComputerComponent: ((), u64),
    |         ^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E127] `Double` implements `Computer` only with `Input = u64`, not `Input = String`

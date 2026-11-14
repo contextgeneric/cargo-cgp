@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] field `port` of `Config` is not set
-  --> src/main.rs:45:9
+  --> src/main.rs:46:9
    |
-45 |         ComputerComponent: ((), ()),
+46 |         ComputerComponent: ((), ()),
    |         ^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E119] field `port` of `Config` is not set

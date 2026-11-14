@@ -20,6 +20,7 @@
 //@codes: CGP-E020
 
 use cgp::extra::dispatch::MatchWithValueHandlers;
+use cgp::extra::handler::Computer;
 use cgp::extra::handler::{CanCompute, ComputerComponent};
 use cgp::prelude::*;
 

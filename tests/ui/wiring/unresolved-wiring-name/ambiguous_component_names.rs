@@ -7,9 +7,8 @@
 //! `CanGreetComponent`, guessed from a consumer trait's name, which could mean either `CanGreet`.
 //! The tool offers no import and no component for either, and leaves each key's `E0425` as rustc
 //! wrote it, dropping only rustc's repeat of the second at the same key. The first suggests
-//! importing each `GreeterComponent`, beside a similarly named `ComputerComponent`, and the second
-//! suggests the similarly named trait `CanUseComponent` and a type parameter, none of which fits a
-//! wiring key.
+//! importing each `GreeterComponent`, and the second suggests a type parameter, which does not fit
+//! a wiring key.
 //!
 //! CGP error class: unresolved wiring name (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/wiring/unresolved-wiring-name.md).
 //!

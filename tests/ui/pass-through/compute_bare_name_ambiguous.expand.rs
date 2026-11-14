@@ -1,14 +1,15 @@
 #![feature(prelude_import)]
 //! `compute` called by bare name where two traits provide it.
 //!
-//! The error is plain Rust: the call is ambiguous (`E0034`). The tool must print what plain
-//! `cargo check` prints, keeping the `cgp::prelude::Computer` path rustc prints in a note.
+//! The error is plain Rust: the call is ambiguous (`E0034`), because both `CanCompute` and the
+//! imported `Computer` provide `compute`. The tool must print what plain `cargo check` prints.
 //!
 //! CGP error class: none; plain Rust the tool must pass through unchanged.
 extern crate std;
 #[prelude_import]
 use std::prelude::rust_2024::*;
 use core::marker::PhantomData;
+use cgp::extra::handler::{Computer, ComputerComponent};
 use cgp::prelude::*;
 impl<Context, Code> Computer<Context, Code, u64> for Double {
     type Output = u64;

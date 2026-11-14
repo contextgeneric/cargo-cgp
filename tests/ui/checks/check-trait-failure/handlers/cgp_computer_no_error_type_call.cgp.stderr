@@ -1,7 +1,7 @@
 error[E0599]: [CGP-E001] missing wiring for `ErrorTypeProviderComponent` on `App`
-  --> src/main.rs:32:17
+  --> src/main.rs:33:17
    |
-32 |     let _ = App.try_compute(PhantomData::<()>, (1, 2));
+33 |     let _ = App.try_compute(PhantomData::<()>, (1, 2));
    |                 ^^^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `ErrorTypeProviderComponent` on `App`

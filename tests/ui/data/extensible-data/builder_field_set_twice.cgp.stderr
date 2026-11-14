@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] field `host` of `Config` is already set
-  --> src/main.rs:62:9
+  --> src/main.rs:63:9
    |
-62 |         ComputerComponent: ((), ()),
+63 |         ComputerComponent: ((), ()),
    |         ^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E118] field `host` of `Config` is already set

@@ -12,6 +12,7 @@ extern crate std;
 use std::prelude::rust_2024::*;
 use core::fmt::Display;
 use cgp::core::error::ErrorTypeProviderComponent;
+use cgp::extra::handler::AsyncComputer;
 use cgp::extra::handler::{Computer, Producer, TryComputer};
 use cgp::prelude::*;
 fn add(a: u64, b: u64) -> u64 {
@@ -31,7 +32,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (u64, u64))> for Add {}
-///Provider `Add` for [`Computer`].
+///Provider `Add` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct Add;
 impl DelegateComponent<ComputerRefComponent> for Add
 where
@@ -190,7 +191,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (u64, u64))> for CheckedAdd {}
-///Provider `CheckedAdd` for [`Computer`].
+///Provider `CheckedAdd` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct CheckedAdd;
 impl DelegateComponent<ComputerRefComponent> for CheckedAdd
 where
@@ -351,7 +352,7 @@ impl<
     __Code__,
 > IsProviderFor<AsyncComputerComponent, __Context__, (__Code__, (u64, u64))>
 for AddAsync {}
-///Provider `AddAsync` for [`AsyncComputer`].
+///Provider `AddAsync` for [`AsyncComputer`](cgp::macro_prelude::AsyncComputer).
 pub struct AddAsync;
 impl DelegateComponent<AsyncComputerRefComponent> for AddAsync
 where
@@ -432,7 +433,7 @@ impl<
     __Code__,
 > IsProviderFor<AsyncComputerComponent, __Context__, (__Code__, (u64, u64))>
 for CheckedAddAsync {}
-///Provider `CheckedAddAsync` for [`AsyncComputer`].
+///Provider `CheckedAddAsync` for [`AsyncComputer`](cgp::macro_prelude::AsyncComputer).
 pub struct CheckedAddAsync;
 impl DelegateComponent<AsyncComputerRefComponent> for CheckedAddAsync
 where
@@ -516,7 +517,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (T, T))> for AddGeneric {}
-///Provider `AddGeneric` for [`Computer`].
+///Provider `AddGeneric` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct AddGeneric;
 impl DelegateComponent<ComputerRefComponent> for AddGeneric
 where
@@ -677,7 +678,7 @@ impl<
     __Context__,
     __Code__,
 > IsProviderFor<ComputerComponent, __Context__, (__Code__, (&Value))> for ToStringRef {}
-///Provider `ToStringRef` for [`Computer`].
+///Provider `ToStringRef` for [`Computer`](cgp::macro_prelude::Computer).
 pub struct ToStringRef;
 impl DelegateComponent<ComputerRefComponent> for ToStringRef
 where
@@ -833,7 +834,7 @@ impl<__Context__, __Code__> Producer<__Context__, __Code__> for MagicNumber {
 }
 impl<__Context__, __Code__> IsProviderFor<ProducerComponent, __Context__, (__Code__)>
 for MagicNumber {}
-///Provider `MagicNumber` for [`Producer`].
+///Provider `MagicNumber` for [`Producer`](cgp::macro_prelude::Producer).
 pub struct MagicNumber;
 impl DelegateComponent<ComputerComponent> for MagicNumber {
     type Delegate = PromoteProducer<Self>;

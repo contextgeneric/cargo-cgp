@@ -13,6 +13,7 @@
 use core::marker::PhantomData;
 
 use cgp::extra::handler::CanTryCompute;
+use cgp::extra::handler::{TryComputer, TryComputerComponent};
 use cgp::prelude::*;
 
 #[cgp_computer]

@@ -1,7 +1,7 @@
 error[E0275]: overflow evaluating the requirement `Person: CanGreet`
-  --> src/main.rs:44:12
+  --> src/main.rs:45:12
    |
-44 |     Person.greet();
+45 |     Person.greet();
    |            ^^^^^
 
 For more information about this error, try `rustc --explain E0275`.

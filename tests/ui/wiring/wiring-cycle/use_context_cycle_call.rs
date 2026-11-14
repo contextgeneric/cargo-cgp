@@ -10,6 +10,7 @@
 //@quality: acceptable
 //@codes: CGP-E020
 
+use cgp::core::component::UseContext;
 use cgp::prelude::*;
 
 #[cgp_component(Greeter)]
