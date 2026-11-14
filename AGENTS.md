@@ -33,7 +33,7 @@ Each kind of task has a guide that holds its rules. Read the guide before the ta
 - **Writing an error class or code entry:**
   [cgp/errors/writing-guide.md](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/writing-guide.md).
 
-## Before any task
+## Orient before any task
 
 Read how the tool works and what CGP's errors are before changing either:
 
