@@ -131,6 +131,7 @@ pub fn derived_component_name(
         provider_trait: tcx.item_name(header.provider_trait).to_string(),
         component: declared,
         attribute: attribute_naming(tcx, header.impl_did, &component)?.text,
+        imports_component: module_imports(tcx, module_of(tcx, header), header.marker, false),
     })
 }
 
@@ -150,7 +151,7 @@ pub fn derived_component_fix(
 ) -> Option<NameFix> {
     let (args, all_written) = attribute_args(tcx, header);
     let marker_name = tcx.item_name(header.marker).to_string();
-    let module = tcx.parent_module_from_def_id(header.impl_did);
+    let module = module_of(tcx, header);
     let naming = |key: &str| {
         attribute_naming(tcx, header.impl_did, &with_args(key, &args))
             .and_then(|naming| naming.insertion)
@@ -189,7 +190,7 @@ pub fn derived_component_fix(
 fn attribute_component(tcx: TyCtxt<'_>, header: &ProviderHeader<'_>) -> String {
     let marker_name = tcx.item_name(header.marker).to_string();
     let (args, _) = attribute_args(tcx, header);
-    let module = tcx.parent_module_from_def_id(header.impl_did);
+    let module = module_of(tcx, header);
     let key = if key_in_scope(tcx, module, header.marker) {
         marker_name
     } else {
@@ -219,12 +220,20 @@ fn attribute_args(tcx: TyCtxt<'_>, header: &ProviderHeader<'_>) -> (Vec<String>,
 /// Whether `module` names `marker` unqualified: the module declares it, or a `use` item of the
 /// module imports it by name or through a glob of the module that declares or re-exports it.
 fn key_in_scope(tcx: TyCtxt<'_>, module: LocalModId, marker: DefId) -> bool {
-    if marker
+    marker
         .as_local()
         .is_some_and(|local| tcx.parent_module_from_def_id(local) == module)
-    {
-        return true;
-    }
+        || module_imports(tcx, module, marker, true)
+}
+
+/// The module holding the header's impl.
+fn module_of(tcx: TyCtxt<'_>, header: &ProviderHeader<'_>) -> LocalModId {
+    tcx.parent_module_from_def_id(header.impl_did)
+}
+
+/// Whether a `use` item of `module` imports `marker` by name, or, with `globs`, also through a
+/// glob of a module that declares or re-exports it.
+fn module_imports(tcx: TyCtxt<'_>, module: LocalModId, marker: DefId, globs: bool) -> bool {
     tcx.hir_get_module(module)
         .0
         .item_ids
@@ -233,24 +242,24 @@ fn key_in_scope(tcx: TyCtxt<'_>, module: LocalModId, marker: DefId) -> bool {
             let ItemKind::Use(tree) = tcx.hir_item(item_id).kind else {
                 return false;
             };
-            use_tree_imports(tcx, &tree, marker)
+            use_tree_imports(tcx, &tree, marker, globs)
         })
 }
 
-/// Whether the `use` tree imports `marker` by name, or through a glob of a module that declares or
-/// re-exports it, searching each list `{a, b}` the tree holds.
-fn use_tree_imports(tcx: TyCtxt<'_>, tree: &UseTree<'_>, marker: DefId) -> bool {
+/// Whether the `use` tree imports `marker` by name, or, with `globs`, through a glob of a module
+/// that declares or re-exports it, searching each list `{a, b}` the tree holds.
+fn use_tree_imports(tcx: TyCtxt<'_>, tree: &UseTree<'_>, marker: DefId, globs: bool) -> bool {
     if let UseKind::Nested { items } = tree.kind {
         return items
             .iter()
-            .any(|(item, ..)| use_tree_imports(tcx, item, marker));
+            .any(|(item, ..)| use_tree_imports(tcx, item, marker, globs));
     }
     let Some(Res::Def(kind, did)) = tree.prefix.res.type_ns else {
         return false;
     };
     match tree.kind {
         UseKind::Single(_) => did == marker,
-        UseKind::Glob if kind == DefKind::Mod => {
+        UseKind::Glob if globs && kind == DefKind::Mod => {
             let children = match did.as_local() {
                 Some(local) => tcx.module_children_local(local),
                 None => tcx.module_children(did),

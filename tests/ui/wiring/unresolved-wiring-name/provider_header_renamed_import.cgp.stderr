@@ -4,7 +4,7 @@ error[E0425]: [CGP-E070] the header derives the component `GComponent` from the 
 30 |     impl G {
    |          ^
    |
-   = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
+   = note: `G` imports `Greeter` under another name, so the import of `GreeterComponent` reads as unused while the header names `G`
 help: name the component in the attribute
    |
 29 |     #[cgp_impl(new GreetHello: GreeterComponent)]
@@ -16,7 +16,7 @@ error[E0425]: [CGP-E070] the header derives the component `GComponent` from the 
 39 |     impl G {
    |          ^
    |
-   = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
+   = note: `G` imports `Greeter` under another name, so the import of `GreeterComponent` reads as unused while the header names `G`
 help: name the component in the attribute
    |
 38 |     #[cgp_impl(GreetPlain: GreeterComponent)]
@@ -28,7 +28,7 @@ error[E0425]: [CGP-E070] the header derives the component `GComponent` from the 
 48 |     impl<Context> G<Context> for GreetRaw {
    |                   ^
    |
-   = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
+   = note: `G` imports `Greeter` under another name, so the import of `GreeterComponent` reads as unused while the header names `G`
 help: name the component in the attribute
    |
 47 |     #[cgp_provider(GreeterComponent)]
@@ -40,7 +40,7 @@ error[E0425]: [CGP-E070] the header derives the component `GComponent` from the 
 57 |     impl<Context> G<Context> for GreetNew {
    |                   ^
    |
-   = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
+   = note: `G` imports `Greeter` under another name, so the import of `GreeterComponent` reads as unused while the header names `G`
 help: name the component in the attribute
    |
 55 |     #[cgp_new_provider(GreeterComponent)]

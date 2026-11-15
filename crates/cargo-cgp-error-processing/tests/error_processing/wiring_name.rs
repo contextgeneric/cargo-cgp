@@ -3,12 +3,13 @@
 //! (`[CGP-E041]`, `[CGP-E070]`).
 //!
 //! `plan_unresolved_wiring_name` and `unresolved_wiring_name_help` are pure functions over the
-//! rustc-free [`UnresolvedWiringName`] model, driven here over hand-built values, and
-//! `component_import_line` words the line the import's fix inserts.
+//! rustc-free [`UnresolvedWiringName`] model, driven here over hand-built values;
+//! `unresolved_wiring_name_fix_message` words the fix that replaces a help, and
+//! `component_import_line` the line the import's fix inserts.
 
 use cargo_cgp_error_processing::{
     UnresolvedWiringName, component_import_line, plan_unresolved_wiring_name,
-    unresolved_wiring_name_help, unresolved_wiring_name_note,
+    unresolved_wiring_name_fix_message, unresolved_wiring_name_help, unresolved_wiring_name_note,
 };
 
 #[test]
@@ -181,6 +182,7 @@ fn a_renamed_import_names_the_real_component_in_the_attribute() {
         provider_trait: "Greeter".to_owned(),
         component: "GreeterComponent".to_owned(),
         attribute: "#[cgp_impl(new GreetHello: GreeterComponent)]".to_owned(),
+        imports_component: true,
     };
     assert_eq!(
         plan_unresolved_wiring_name(&name),
@@ -190,7 +192,7 @@ fn a_renamed_import_names_the_real_component_in_the_attribute() {
     assert_eq!(
         unresolved_wiring_name_note(&name).as_deref(),
         Some(
-            "`G` imports `Greeter` under another name, so an import of `GreeterComponent` reads \
+            "`G` imports `Greeter` under another name, so the import of `GreeterComponent` reads \
              as unused while the header names `G`"
         ),
     );
@@ -210,10 +212,57 @@ fn a_renamed_key_names_the_attribute_form_without_a_note() {
         provider_trait: "AreaCalculator".to_owned(),
         component: "AreaComponent".to_owned(),
         attribute: "#[cgp_impl(new UnitArea: AreaComponent)]".to_owned(),
+        imports_component: true,
     };
     assert_eq!(unresolved_wiring_name_note(&name), None);
     assert_eq!(
         unresolved_wiring_name_help(&name).as_deref(),
         Some("name the component in the attribute: `#[cgp_impl(new UnitArea: AreaComponent)]`"),
     );
+}
+
+#[test]
+fn a_renamed_import_without_the_component_s_import_has_no_note() {
+    let name = UnresolvedWiringName::DerivedComponentName {
+        derived: "GComponent".to_owned(),
+        written: "G".to_owned(),
+        provider_trait: "Greeter".to_owned(),
+        component: "GreeterComponent".to_owned(),
+        attribute: "#[cgp_impl(new GreetHello: crate::components::GreeterComponent)]".to_owned(),
+        imports_component: false,
+    };
+    assert_eq!(unresolved_wiring_name_note(&name), None);
+}
+
+#[test]
+fn a_fix_names_what_it_edits() {
+    let derived = UnresolvedWiringName::DerivedComponentName {
+        derived: "GComponent".to_owned(),
+        written: "G".to_owned(),
+        provider_trait: "Greeter".to_owned(),
+        component: "GreeterComponent".to_owned(),
+        attribute: "#[cgp_impl(new GreetHello: GreeterComponent)]".to_owned(),
+        imports_component: false,
+    };
+    assert_eq!(
+        unresolved_wiring_name_fix_message(&derived, false),
+        Some("name the component in the attribute"),
+    );
+    assert_eq!(
+        unresolved_wiring_name_fix_message(&derived, true),
+        Some("import the component and name it in the attribute"),
+    );
+    let not_imported = UnresolvedWiringName::ComponentNotImported {
+        component: "GreeterComponent".to_owned(),
+        path: "crate::components::GreeterComponent".to_owned(),
+    };
+    assert_eq!(
+        unresolved_wiring_name_fix_message(&not_imported, true),
+        Some("import the component"),
+    );
+    let consumer = UnresolvedWiringName::ConsumerTraitAsKey {
+        consumer: "CanGreet".to_owned(),
+        component: "GreeterComponent".to_owned(),
+    };
+    assert_eq!(unresolved_wiring_name_fix_message(&consumer, false), None);
 }

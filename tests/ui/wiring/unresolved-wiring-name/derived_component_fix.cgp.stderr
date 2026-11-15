@@ -4,7 +4,6 @@ error[E0425]: [CGP-E070] the header derives the component `GComponent` from the 
 44 |     impl G {
    |          ^
    |
-   = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
 help: import the component and name it in the attribute
    |
 39 +     use crate::components::GreeterComponent;
@@ -21,7 +20,7 @@ error[E0425]: [CGP-E070] the header derives the component `GComponent` from the 
 59 |     impl<Context> G<Context> for GreetRaw {
    |                   ^
    |
-   = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
+   = note: `G` imports `Greeter` under another name, so the import of `GreeterComponent` reads as unused while the header names `G`
 help: name the component in the attribute
    |
 58 |     #[cgp_provider(GreeterComponent)]

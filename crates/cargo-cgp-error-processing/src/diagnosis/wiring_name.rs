@@ -70,6 +70,9 @@ pub enum UnresolvedWiringName {
         /// The header's attribute with the component named, such as
         /// `#[cgp_impl(new GreetHello: GreeterComponent)]`.
         attribute: String,
+        /// Whether the module imports the component by name, an import rustc calls unused while
+        /// the header derives another name.
+        imports_component: bool,
     },
     /// A key `key` names no component, and stripping its `Component` suffix names the consumer
     /// trait `consumer`, whose component is `component`.
@@ -236,9 +239,10 @@ pub fn unresolved_wiring_name_note(name: &UnresolvedWiringName) -> Option<String
             written,
             provider_trait,
             component,
+            imports_component: true,
             ..
         } if written != provider_trait => Some(format!(
-            "`{written}` imports `{provider_trait}` under another name, so an import of \
+            "`{written}` imports `{provider_trait}` under another name, so the import of \
              `{component}` reads as unused while the header names `{written}`"
         )),
         _ => None,

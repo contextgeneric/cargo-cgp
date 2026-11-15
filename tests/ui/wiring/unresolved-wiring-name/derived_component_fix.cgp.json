@@ -2,11 +2,6 @@
   {
     "children": [
       {
-        "level": "note",
-        "message": "`G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`",
-        "spans": []
-      },
-      {
         "level": "help",
         "message": "import the component and name it in the attribute",
         "spans": [
@@ -57,7 +52,7 @@
     "children": [
       {
         "level": "note",
-        "message": "`G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`",
+        "message": "`G` imports `Greeter` under another name, so the import of `GreeterComponent` reads as unused while the header names `G`",
         "spans": []
       },
       {
