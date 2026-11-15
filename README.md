@@ -15,7 +15,7 @@ on top of `rustc`. `cargo cgp expand` shows the Rust your CGP macros generate, w
 constructs spelled the way you wrote them. `cargo cgp check` leads with the root cause for the classes
 it recognizes, and the tool does not yet reshape every class.
 
-**[Website](https://contextgeneric.dev/docs/cargo-cgp/) · [Installation](https://contextgeneric.dev/docs/cargo-cgp/installation) · [Reading the output](https://contextgeneric.dev/docs/cargo-cgp/reading-output) · [Error codes](https://contextgeneric.dev/docs/cargo-cgp/error-codes) · [crates.io](https://crates.io/crates/cargo-cgp)**
+**[Website](https://contextgeneric.dev/docs/tooling/cargo-cgp/) · [Installation](https://contextgeneric.dev/docs/tooling/cargo-cgp/installation) · [Reading the output](https://contextgeneric.dev/docs/tooling/cargo-cgp/reading-output) · [Error codes](https://contextgeneric.dev/docs/tooling/cargo-cgp/error-codes) · [crates.io](https://crates.io/crates/cargo-cgp)**
 
 CGP itself is an ordinary library on the stable toolchain. It lets one trait have many interchangeable
 implementations and lets each type choose which one it uses: you write that choice as *wiring* in one
@@ -103,9 +103,9 @@ error[E0277]: [CGP-E001] missing field `height` on `Rectangle`
 ```
 
 The Rust error code stays, so `rustc --explain E0277` still works, and the
-[error-code catalog](https://contextgeneric.dev/docs/cargo-cgp/error-codes) explains each `[CGP-Exxx]`
+[error-code catalog](https://contextgeneric.dev/docs/tooling/cargo-cgp/error-codes) explains each `[CGP-Exxx]`
 code. An error the tool does not recognize passes through as `rustc` wrote it. The
-[reading guide](https://contextgeneric.dev/docs/cargo-cgp/reading-output) walks through the rewritten
+[reading guide](https://contextgeneric.dev/docs/tooling/cargo-cgp/reading-output) walks through the rewritten
 output in more detail.
 
 The check turns on the next-generation trait solver, which surfaces CGP dependency errors the default
@@ -145,7 +145,7 @@ To try the tool without installing it, run the flake from your project's directo
 nix run github:contextgeneric/cargo-cgp/v0.1.0 -- check
 ```
 
-The [installation guide](https://contextgeneric.dev/docs/cargo-cgp/installation) covers updating,
+The [installation guide](https://contextgeneric.dev/docs/tooling/cargo-cgp/installation) covers updating,
 uninstalling, and installing from a source checkout.
 
 ## Expanding the generated code
@@ -165,7 +165,7 @@ A package with a library and a binary needs `--lib` or `--bin NAME`, and every o
 and every impl written for it, and a trait its definition and every impl of it. That last form suits a
 component, whose generated items are almost all impls. The command is not a check, since it stops once
 the macros are expanded, so its success says nothing about your wiring. The
-[expand guide](https://contextgeneric.dev/docs/cargo-cgp/expand) shows the output on a worked example.
+[expand guide](https://contextgeneric.dev/docs/tooling/cargo-cgp/expand) shows the output on a worked example.
 
 ## Editor integration
 
@@ -179,19 +179,19 @@ The command is two words and must emit JSON, so wire it through `check.overrideC
 ```
 
 The check builds into its own `target/cgp` directory, so it does not wait on your normal builds. The
-[editor integration guide](https://contextgeneric.dev/docs/cargo-cgp/editor-integration) lists what
+[editor integration guide](https://contextgeneric.dev/docs/tooling/cargo-cgp/editor-integration) lists what
 this override changes in the editor.
 
 ## Command reference
 
-The [command reference](https://contextgeneric.dev/docs/cargo-cgp/command-reference) covers every
+The [command reference](https://contextgeneric.dev/docs/tooling/cargo-cgp/command-reference) covers every
 subcommand and flag. In short: `check` runs the rewritten check, `expand` prints an expanded target,
 `setup` provisions the pinned nightly and driver, and `update` moves the tool to a newer release.
 
 ## Troubleshooting
 
 When the tool itself will not run, the
-[troubleshooting guide](https://contextgeneric.dev/docs/cargo-cgp/troubleshooting) covers the common
+[troubleshooting guide](https://contextgeneric.dev/docs/tooling/cargo-cgp/troubleshooting) covers the common
 causes: a missing driver, a toolchain mismatch, and a project that needs its own nightly. The
 [known issues](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/issues/README.md)
 list the errors the tool does not yet present well.
@@ -214,14 +214,14 @@ test` includes the UI snapshot suite and expects a sibling `cgp` checkout at `..
 
 ## Learn more
 
-The [website](https://contextgeneric.dev/docs/cargo-cgp/) documents the tool for its users, and the
+The [website](https://contextgeneric.dev/docs/tooling/cargo-cgp/) documents the tool for its users, and the
 [CGP knowledge base](https://github.com/contextgeneric/cgp-knowledge-base) holds the deeper record for
 contributors and agents:
 
-- [Usage](https://contextgeneric.dev/docs/cargo-cgp/check): running the check and reading its output.
-- [Installation](https://contextgeneric.dev/docs/cargo-cgp/installation): every install, update, and uninstall path.
-- [Error codes](https://contextgeneric.dev/docs/cargo-cgp/error-codes): the `[CGP-Exxx]` codes in the output.
-- [Troubleshooting](https://contextgeneric.dev/docs/cargo-cgp/troubleshooting): what to do when the tool itself will not run.
+- [Usage](https://contextgeneric.dev/docs/tooling/cargo-cgp/check): running the check and reading its output.
+- [Installation](https://contextgeneric.dev/docs/tooling/cargo-cgp/installation): every install, update, and uninstall path.
+- [Error codes](https://contextgeneric.dev/docs/tooling/cargo-cgp/error-codes): the `[CGP-Exxx]` codes in the output.
+- [Troubleshooting](https://contextgeneric.dev/docs/tooling/cargo-cgp/troubleshooting): what to do when the tool itself will not run.
 - [Implementation](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/README.md): the two binaries, the driver, and how diagnostics are transformed.
 
 Contributors and agents start from [AGENTS.md](AGENTS.md), and

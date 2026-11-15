@@ -18,7 +18,7 @@ The driver links the compiler's internal crates, so it must be built under the e
 toolchain `cargo-cgp` pins, and at the front-end's own version. `cargo cgp setup` installs that
 toolchain and builds this crate under it.
 
-**[Website](https://contextgeneric.dev/docs/cargo-cgp/) · [Installation](https://contextgeneric.dev/docs/cargo-cgp/installation) · [cargo-cgp repository](https://github.com/contextgeneric/cargo-cgp)**
+**[Website](https://contextgeneric.dev/docs/tooling/cargo-cgp/) · [Installation](https://contextgeneric.dev/docs/tooling/cargo-cgp/installation) · [cargo-cgp repository](https://github.com/contextgeneric/cargo-cgp)**
 
 ## License
 

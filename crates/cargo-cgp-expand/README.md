@@ -14,7 +14,7 @@ toolchain.
 The crate is published so that `cargo-cgp-driver` can depend on it, and its API serves that driver
 alone, so it may change in any release. To expand CGP code, install `cargo-cgp` instead.
 
-**[Website](https://contextgeneric.dev/docs/cargo-cgp/expand) · [cargo-cgp repository](https://github.com/contextgeneric/cargo-cgp)**
+**[Website](https://contextgeneric.dev/docs/tooling/cargo-cgp/expand) · [cargo-cgp repository](https://github.com/contextgeneric/cargo-cgp)**
 
 ## License
 

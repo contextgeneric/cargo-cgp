@@ -7,7 +7,7 @@ classes: `cgp`'s
 [error catalog](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/README.md)
 links each class to the fixtures here that pin it.
 
-**[Website](https://contextgeneric.dev/docs/cargo-cgp/) · [Error codes](https://contextgeneric.dev/docs/cargo-cgp/error-codes) · [Reading the output](https://contextgeneric.dev/docs/cargo-cgp/reading-output)**
+**[Website](https://contextgeneric.dev/docs/tooling/cargo-cgp/) · [Error codes](https://contextgeneric.dev/docs/tooling/cargo-cgp/error-codes) · [Reading the output](https://contextgeneric.dev/docs/tooling/cargo-cgp/reading-output)**
 
 For how the fixtures fit into the project's testing (the unit tests, the harness mechanics, the
 toolchain caveat, and the comparison with Clippy), see the
