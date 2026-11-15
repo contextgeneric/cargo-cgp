@@ -165,15 +165,6 @@ pub fn unresolved_wiring_name_help(name: &UnresolvedWiringName) -> Option<String
             "name the trait as `{trait_path}`, through the module that defines its component, or \
              re-export `{component}` from `{module}` beside the trait"
         )),
-        UnresolvedWiringName::DerivedComponentName {
-            written,
-            provider_trait,
-            attribute,
-            ..
-        } if written != provider_trait => Some(format!(
-            "name the component in the attribute, `{attribute}`, or import the trait under its \
-             own name, `{provider_trait}`"
-        )),
         UnresolvedWiringName::DerivedComponentName { attribute, .. } => Some(format!(
             "name the component in the attribute: `{attribute}`"
         )),
@@ -204,10 +195,25 @@ pub fn unresolved_wiring_name_help(name: &UnresolvedWiringName) -> Option<String
     }
 }
 
-/// The message of the fix that imports a component, the structured form of the help
-/// [`unresolved_wiring_name_help`] gives [`UnresolvedWiringName::ComponentNotImported`]. The
-/// inserted line, [`component_import_line`], shows the path.
-pub const COMPONENT_IMPORT_MESSAGE: &str = "import the component";
+/// The message of the fix that repairs `name` as an edit, the structured form of its help, for the
+/// mistakes whose help is one: the import of a component not in scope, whose inserted line,
+/// [`component_import_line`], shows the path, and the component named in a provider header's
+/// attribute, which `imports_component` says the fix also imports. `None` for the others.
+pub fn unresolved_wiring_name_fix_message(
+    name: &UnresolvedWiringName,
+    imports_component: bool,
+) -> Option<&'static str> {
+    match name {
+        UnresolvedWiringName::ComponentNotImported { .. } => Some("import the component"),
+        UnresolvedWiringName::DerivedComponentName { .. } if imports_component => {
+            Some("import the component and name it in the attribute")
+        }
+        UnresolvedWiringName::DerivedComponentName { .. } => {
+            Some("name the component in the attribute")
+        }
+        _ => None,
+    }
+}
 
 /// The `use` line that imports a component by `path`, as the fix inserts it at the start of a
 /// line before an item indented by `indent`: indented the same way, ending with a line break, and

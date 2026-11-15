@@ -18,21 +18,18 @@
 //! ([`is_unresolved_wiring_overflow`]).
 
 use cargo_cgp_error_processing::{
-    COMPONENT_IMPORT_MESSAGE, ClassPlan, UnresolvedWiringName, is_missing_type_parameter_help_text,
+    ClassPlan, UnresolvedWiringName, is_missing_type_parameter_help_text,
     overflow_requirement_rest, unresolved_type_in_module, unresolved_type_name,
 };
 use rustc_errors::codes::{E0275, E0425};
-use rustc_errors::{
-    Applicability, CodeSuggestion, DiagInner, DiagMessage, Style, Sublevel, Substitution,
-    SubstitutionPart, SuggestionStyle, Suggestions,
-};
+use rustc_errors::{DiagInner, DiagMessage, Style, Sublevel, Suggestions};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
-use crate::detect::{self, ImportFix, NameAction, UnresolvedNameCandidate};
+use crate::detect::{self, NameAction, UnresolvedNameCandidate};
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::buffer_pass::buffer_pass;
-use crate::emitter::edit::{main_message_text, retain_suggestions, subdiag};
+use crate::emitter::edit::{main_message_text, push_name_fix, retain_suggestions, subdiag};
 use crate::emitter::output::record_unprovable_requirements;
 use crate::emitter::pipeline::{SpanPolicy, apply_reshape};
 
@@ -93,11 +90,16 @@ pub fn reshape_name_resolution_errors(tcx: TyCtxt<'_>) {
                             SpanPolicy::Primary,
                         );
                     }
-                    Some(NameAction::Import(name, fix)) => {
+                    Some(NameAction::Fix(name, fix)) => {
                         let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
                             continue;
                         };
-                        reword_with_import(diag, &name, fix);
+                        apply_reshape(
+                            diag,
+                            ClassPlan::unresolved_wiring_name_beside_fix(&name),
+                            SpanPolicy::Primary,
+                        );
+                        push_name_fix(diag, fix);
                     }
                     Some(NameAction::RewordHeader(name)) => {
                         let Some(BufEntry::Plain(diag)) = buffer.get_mut(*index) else {
@@ -114,44 +116,6 @@ pub fn reshape_name_resolution_errors(tcx: TyCtxt<'_>) {
             }
         },
     );
-}
-
-/// Reword `diag` into the coded form of `name`, a component not in scope, with `fix` as a
-/// structured suggestion in place of the help that names the import: one edit inserting the `use`
-/// line and leaving the name at the caret unchanged, so an editor offers it on that name and
-/// `cargo fix` can apply it when one path imports the component. A diagnostic whose suggestions
-/// are disabled keeps the help.
-fn reword_with_import(diag: &mut DiagInner, name: &UnresolvedWiringName, fix: ImportFix) {
-    let mut plan = ClassPlan::unresolved_wiring_name(name);
-    let helps = std::mem::take(&mut plan.helps);
-    apply_reshape(diag, plan, SpanPolicy::Primary);
-    let Suggestions::Enabled(suggestions) = &mut diag.suggestions else {
-        diag.children
-            .extend(helps.into_iter().map(|help| subdiag(Sublevel::Help, help)));
-        return;
-    };
-    let applicability = if fix.machine_applicable {
-        Applicability::MachineApplicable
-    } else {
-        Applicability::MaybeIncorrect
-    };
-    suggestions.push(CodeSuggestion {
-        substitutions: vec![Substitution {
-            parts: vec![
-                SubstitutionPart {
-                    span: fix.use_span,
-                    snippet: fix.use_line,
-                },
-                SubstitutionPart {
-                    span: fix.name_span,
-                    snippet: fix.name_text,
-                },
-            ],
-        }],
-        msg: DiagMessage::Str(COMPONENT_IMPORT_MESSAGE.into()),
-        style: SuggestionStyle::ShowAlways,
-        applicability,
-    });
 }
 
 /// Replace the header of `diag` with the coded form of `name`, keeping the compiler's notes and

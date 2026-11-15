@@ -51,7 +51,7 @@ pub mod providers {
         }
     }
 
-    // The `allow` between the provider attribute and the impl is one the help skips.
+    // The `allow` between the provider attribute and the impl is one the fix skips.
     #[cgp_new_provider]
     #[allow(clippy::needless_lifetimes)]
     impl<Context> G<Context> for GreetNew {

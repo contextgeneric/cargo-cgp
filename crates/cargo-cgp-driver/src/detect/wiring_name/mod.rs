@@ -7,15 +7,14 @@
 //! recognized together once resolution is over ([`plan_unresolved_names`]), from the driver's
 //! `after_expansion` callback. [`slot`] finds the entry or header a name sits in, [`header`] the
 //! provider header whose derived component a name is, [`component`] and
-//! [`declared`] look names up across the crate graph, [`import_fix`](mod@import_fix) builds the
-//! edit that imports a component, and [`unprovable`] lists what a wiring entry with an unresolved
-//! value leaves unprovable.
+//! [`declared`] look names up across the crate graph, [`name_fix`] builds the edit that repairs a
+//! name, and [`unprovable`] lists what a wiring entry with an unresolved value leaves unprovable.
 
 mod component;
 mod consumer_trait_key;
 mod declared;
 mod header;
-mod import_fix;
+mod name_fix;
 mod plan;
 mod slot;
 mod unprovable;
@@ -23,6 +22,6 @@ mod unprovable;
 pub use consumer_trait_key::*;
 pub use declared::*;
 pub use header::*;
-pub use import_fix::*;
+pub use name_fix::*;
 pub use plan::*;
 pub use unprovable::*;

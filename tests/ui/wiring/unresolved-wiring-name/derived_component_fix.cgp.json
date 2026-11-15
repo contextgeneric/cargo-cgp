@@ -8,8 +8,36 @@
       },
       {
         "level": "help",
-        "message": "name the component in the attribute, `#[cgp_impl(new GreetHello: GreeterComponent)]`, or import the trait under its own name, `Greeter`",
-        "spans": []
+        "message": "import the component and name it in the attribute",
+        "spans": [
+          {
+            "applicability": "MachineApplicable",
+            "column": 1,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 39,
+            "primary": true,
+            "replacement": "    use crate::components::GreeterComponent;\n"
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 30,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 43,
+            "primary": true,
+            "replacement": ": GreeterComponent"
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 10,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 44,
+            "primary": true,
+            "replacement": "G"
+          }
+        ]
       }
     ],
     "code": "E0425",
@@ -20,7 +48,7 @@
         "column": 10,
         "file": "src/main.rs",
         "label": null,
-        "line": 42,
+        "line": 44,
         "primary": true
       }
     ]
@@ -34,8 +62,27 @@
       },
       {
         "level": "help",
-        "message": "name the component in the attribute, `#[cgp_provider(GreeterComponent)]`, or import the trait under its own name, `Greeter`",
-        "spans": []
+        "message": "name the component in the attribute",
+        "spans": [
+          {
+            "applicability": "MachineApplicable",
+            "column": 19,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 58,
+            "primary": true,
+            "replacement": "(GreeterComponent)"
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 19,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 59,
+            "primary": true,
+            "replacement": "G"
+          }
+        ]
       }
     ],
     "code": "E0425",
@@ -46,7 +93,7 @@
         "column": 19,
         "file": "src/main.rs",
         "label": null,
-        "line": 57,
+        "line": 59,
         "primary": true
       }
     ]
@@ -67,7 +114,7 @@
             "column": 41,
             "file": "src/main.rs",
             "label": null,
-            "line": 52,
+            "line": 54,
             "primary": true,
             "replacement": ""
           },
@@ -76,7 +123,7 @@
             "column": 28,
             "file": "src/main.rs",
             "label": null,
-            "line": 52,
+            "line": 54,
             "primary": true,
             "replacement": ""
           },
@@ -85,7 +132,7 @@
             "column": 59,
             "file": "src/main.rs",
             "label": null,
-            "line": 52,
+            "line": 54,
             "primary": true,
             "replacement": ""
           }
@@ -100,7 +147,7 @@
         "column": 43,
         "file": "src/main.rs",
         "label": null,
-        "line": 52,
+        "line": 54,
         "primary": true
       }
     ]
@@ -109,8 +156,27 @@
     "children": [
       {
         "level": "help",
-        "message": "name the component in the attribute: `#[cgp_impl(new SquareArea: AreaCalculatorComponent<Square>)]`",
-        "spans": []
+        "message": "name the component in the attribute",
+        "spans": [
+          {
+            "applicability": "MachineApplicable",
+            "column": 30,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 73,
+            "primary": true,
+            "replacement": ": AreaCalculatorComponent<Square>"
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 10,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 74,
+            "primary": true,
+            "replacement": "AreaCalculator"
+          }
+        ]
       }
     ],
     "code": "E0107",
@@ -121,7 +187,7 @@
         "column": 10,
         "file": "src/main.rs",
         "label": null,
-        "line": 72,
+        "line": 74,
         "primary": true
       }
     ]
@@ -130,8 +196,27 @@
     "children": [
       {
         "level": "help",
-        "message": "name the component in the attribute: `#[cgp_impl(new AnyArea: AreaCalculatorComponent<Shape>)]`",
-        "spans": []
+        "message": "name the component in the attribute",
+        "spans": [
+          {
+            "applicability": "MaybeIncorrect",
+            "column": 27,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 80,
+            "primary": true,
+            "replacement": ": AreaCalculatorComponent<Shape>"
+          },
+          {
+            "applicability": "MaybeIncorrect",
+            "column": 10,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 81,
+            "primary": true,
+            "replacement": "AreaCalculator"
+          }
+        ]
       }
     ],
     "code": "E0107",
@@ -142,7 +227,7 @@
         "column": 10,
         "file": "src/main.rs",
         "label": null,
-        "line": 79,
+        "line": 81,
         "primary": true
       }
     ]
@@ -157,21 +242,21 @@
             "column": 5,
             "file": "src/main.rs",
             "label": "",
-            "line": 27,
+            "line": 29,
             "primary": false
           },
           {
             "column": 32,
             "file": "src/main.rs",
             "label": "",
-            "line": 31,
+            "line": 33,
             "primary": false
           },
           {
             "column": 19,
             "file": "src/main.rs",
             "label": null,
-            "line": 29,
+            "line": 31,
             "primary": true
           }
         ]
@@ -185,14 +270,14 @@
         "column": 10,
         "file": "src/main.rs",
         "label": "expected 2 generic arguments",
-        "line": 79,
+        "line": 81,
         "primary": true
       },
       {
         "column": 5,
         "file": "src/main.rs",
         "label": "supplied 1 generic argument",
-        "line": 78,
+        "line": 80,
         "primary": false
       }
     ]

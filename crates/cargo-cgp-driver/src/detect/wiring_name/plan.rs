@@ -9,8 +9,9 @@ use rustc_span::def_id::{DefId, LocalDefId};
 use crate::detect::wiring_name::component::component_markers;
 use crate::detect::wiring_name::slot::{NameSlot, name_slot_at};
 use crate::detect::wiring_name::{
-    DeclaredNames, ImportFix, component_not_imported, header_component_mistake, import_fix,
-    named_marker, provider_header_at, providers_of_key, unprovable_requirements, unresolved_key,
+    DeclaredNames, NameFix, component_not_imported, derived_component_fix,
+    header_component_mistake, import_fix, named_marker, provider_header_at, providers_of_key,
+    unprovable_requirements, unresolved_key,
 };
 
 /// What to do with the name-resolution diagnostics of the wiring entries, and the overflows to
@@ -28,9 +29,9 @@ pub struct UnresolvedNamesPlan {
 pub enum NameAction {
     /// Reword it into the coded form of this mistake.
     Reword(UnresolvedWiringName),
-    /// Reword it into the coded form of a component not in scope, with the import as a fix in
-    /// place of the help.
-    Import(UnresolvedWiringName, ImportFix),
+    /// Reword it into the coded form of this mistake, with its help given as a fix: the import of
+    /// a component not in scope, or the component named in a provider header's attribute.
+    Fix(UnresolvedWiringName, NameFix),
     /// Reword only its header into the coded form of this mistake, keeping the compiler's own notes
     /// and suggestions, which are right for the mistake except for a type parameter to add.
     RewordHeader(UnresolvedWiringName),
@@ -107,13 +108,13 @@ pub fn plan_unresolved_names(
                     return Some(NameAction::Drop);
                 }
                 let mistake = header_component_mistake(tcx, &header, name, module.as_deref())?;
-                return Some(reword_or_import(
-                    tcx,
-                    mistake,
-                    header.impl_did,
-                    Some(header.marker),
-                    *span,
-                ));
+                let fix = match mistake {
+                    UnresolvedWiringName::DerivedComponentName { .. } => {
+                        derived_component_fix(tcx, &header, &mistake, *span)
+                    }
+                    _ => import_fix(tcx, header.impl_did, header.marker, &mistake, *span),
+                };
+                return Some(with_fix(mistake, fix));
             };
             if repeat {
                 return Some(NameAction::Drop);
@@ -155,7 +156,8 @@ impl<'a, 'tcx> NamesPlanner<'a, 'tcx> {
         let markers = self.markers.get_or_insert_with(|| component_markers(tcx));
         let mistake = unresolved_key(tcx, name, markers)?;
         let marker = named_marker(tcx, name, markers);
-        Some(reword_or_import(tcx, mistake, impl_did, marker, span))
+        let fix = marker.and_then(|marker| import_fix(tcx, impl_did, marker, &mistake, span));
+        Some(with_fix(mistake, fix))
     }
 
     /// A name that is the value of a wiring entry.
@@ -218,8 +220,9 @@ impl<'a, 'tcx> NamesPlanner<'a, 'tcx> {
         let markers = self.markers.get_or_insert_with(|| component_markers(tcx));
         if whole_segment && let Some(not_imported) = component_not_imported(tcx, name, markers) {
             self.reported_in_paths.push(name);
-            let marker = named_marker(tcx, name, markers);
-            return Some(reword_or_import(tcx, not_imported, impl_did, marker, span));
+            let fix = named_marker(tcx, name, markers)
+                .and_then(|marker| import_fix(tcx, impl_did, marker, &not_imported, span));
+            return Some(with_fix(not_imported, fix));
         }
         if self.declared.is_declared(tcx, name) {
             return None;
@@ -234,21 +237,11 @@ impl<'a, 'tcx> NamesPlanner<'a, 'tcx> {
     }
 }
 
-/// The action for the mistake `name` at `span`, in an item of `owner`'s module: the import of
-/// `marker` as a fix beside the coded header when the name is a component not in scope and the
-/// module has a place for the `use` line, and the coded header with its help otherwise.
-fn reword_or_import(
-    tcx: TyCtxt<'_>,
-    name: UnresolvedWiringName,
-    owner: LocalDefId,
-    marker: Option<DefId>,
-    span: Span,
-) -> NameAction {
-    if let UnresolvedWiringName::ComponentNotImported { path, .. } = &name
-        && let Some(marker) = marker
-        && let Some(fix) = import_fix(tcx, owner, marker, path, span)
-    {
-        return NameAction::Import(name, fix);
+/// The action for the mistake `name`: its coded form with `fix` in place of its help, or with its
+/// help when there is no fix.
+fn with_fix(name: UnresolvedWiringName, fix: Option<NameFix>) -> NameAction {
+    match fix {
+        Some(fix) => NameAction::Fix(name, fix),
+        None => NameAction::Reword(name),
     }
-    NameAction::Reword(name)
 }

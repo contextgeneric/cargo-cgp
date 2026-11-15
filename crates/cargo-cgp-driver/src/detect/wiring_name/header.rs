@@ -9,13 +9,16 @@
 
 use cargo_cgp_error_processing::UnresolvedWiringName;
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{GenericArg, ItemKind, Path};
+use rustc_hir::{GenericArg, ItemKind, Path, UseKind, UseTree};
 use rustc_middle::ty::{self, GenericParamDefKind, TyCtxt};
-use rustc_span::Span;
-use rustc_span::def_id::{DefId, LocalDefId};
+use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
+use rustc_span::{BytePos, Span};
 
 use crate::config::COMPONENT_MARKER_SUFFIX;
-use crate::resolve::query::{import_path, local_trait_impls, provider_blanket_marker, same_range};
+use crate::detect::wiring_name::{NameFix, import_edit};
+use crate::resolve::query::{
+    has_one_import_path, import_path, local_trait_impls, provider_blanket_marker, same_range,
+};
 
 /// A provider header whose trait name sits at a span: the impl, its trait path as written, the
 /// provider trait it resolves to, and the component that trait keys on.
@@ -121,18 +124,143 @@ pub fn derived_component_name(
     let marker_name = tcx.item_name(header.marker);
     let params = own_param_names(tcx, header.marker);
     let declared = with_args(marker_name.as_str(), &params);
-    let args: Vec<String> = params
-        .iter()
-        .map(|param| header_arg_for(tcx, header, param).unwrap_or_else(|| param.clone()))
-        .collect();
-    let component = with_args(marker_name.as_str(), &args);
+    let component = attribute_component(tcx, header);
     Some(UnresolvedWiringName::DerivedComponentName {
         derived: header.derived(),
         written: header.written(),
         provider_trait: tcx.item_name(header.provider_trait).to_string(),
         component: declared,
-        attribute: attribute_naming(tcx, header.impl_did, &component)?,
+        attribute: attribute_naming(tcx, header.impl_did, &component)?.text,
     })
+}
+
+/// The fix for `name`, the header's derived name that is not its component's, at `name_span`: the
+/// component added to the header's attribute, after the provider of `#[cgp_impl(...)]` or as the
+/// argument of a provider attribute. A key not in scope at the header is imported by the same fix,
+/// with the `use` line a missing component's import inserts, or written by its path when the module
+/// has no place for that line. The fix is machine-applicable when the header writes an argument
+/// for each of the key's parameters and one path imports a key it imports, and only maybe correct
+/// otherwise, as when a parameter's name stands in for an argument. `None` when the attribute is
+/// not where the source can be edited.
+pub fn derived_component_fix(
+    tcx: TyCtxt<'_>,
+    header: &ProviderHeader<'_>,
+    name: &UnresolvedWiringName,
+    name_span: Span,
+) -> Option<NameFix> {
+    let (args, all_written) = attribute_args(tcx, header);
+    let marker_name = tcx.item_name(header.marker).to_string();
+    let module = tcx.parent_module_from_def_id(header.impl_did);
+    let naming = |key: &str| {
+        attribute_naming(tcx, header.impl_did, &with_args(key, &args))
+            .and_then(|naming| naming.insertion)
+    };
+    if key_in_scope(tcx, module, header.marker) {
+        return NameFix::new(
+            tcx,
+            name,
+            false,
+            vec![naming(&marker_name)?],
+            name_span,
+            all_written,
+        );
+    }
+    let path = import_path(tcx, header.marker)?;
+    match import_edit(tcx, module, &path) {
+        Some(import) => {
+            let one_path = has_one_import_path(tcx, header.marker, module.to_local_def_id());
+            let edits = vec![import, naming(&marker_name)?];
+            NameFix::new(tcx, name, true, edits, name_span, all_written && one_path)
+        }
+        None => NameFix::new(
+            tcx,
+            name,
+            false,
+            vec![naming(&path)?],
+            name_span,
+            all_written,
+        ),
+    }
+}
+
+/// The component as the help names it in the header's attribute, with the header's arguments for
+/// its parameters: bare when it is in scope at the header, and by its import path otherwise, so
+/// the attribute resolves where the header is.
+fn attribute_component(tcx: TyCtxt<'_>, header: &ProviderHeader<'_>) -> String {
+    let marker_name = tcx.item_name(header.marker).to_string();
+    let (args, _) = attribute_args(tcx, header);
+    let module = tcx.parent_module_from_def_id(header.impl_did);
+    let key = if key_in_scope(tcx, module, header.marker) {
+        marker_name
+    } else {
+        import_path(tcx, header.marker).unwrap_or(marker_name)
+    };
+    with_args(&key, &args)
+}
+
+/// The arguments the header's attribute gives the component's parameters, the header's own at
+/// each parameter's position, and whether the header writes each of them. A parameter the header
+/// writes no argument for keeps its name.
+fn attribute_args(tcx: TyCtxt<'_>, header: &ProviderHeader<'_>) -> (Vec<String>, bool) {
+    let params = own_param_names(tcx, header.marker);
+    let written: Vec<Option<String>> = params
+        .iter()
+        .map(|param| header_arg_for(tcx, header, param))
+        .collect();
+    let all_written = written.iter().all(Option::is_some);
+    let args = written
+        .into_iter()
+        .zip(&params)
+        .map(|(arg, param)| arg.unwrap_or_else(|| param.clone()))
+        .collect();
+    (args, all_written)
+}
+
+/// Whether `module` names `marker` unqualified: the module declares it, or a `use` item of the
+/// module imports it by name or through a glob of the module that declares or re-exports it.
+fn key_in_scope(tcx: TyCtxt<'_>, module: LocalModId, marker: DefId) -> bool {
+    if marker
+        .as_local()
+        .is_some_and(|local| tcx.parent_module_from_def_id(local) == module)
+    {
+        return true;
+    }
+    tcx.hir_get_module(module)
+        .0
+        .item_ids
+        .iter()
+        .any(|&item_id| {
+            let ItemKind::Use(tree) = tcx.hir_item(item_id).kind else {
+                return false;
+            };
+            use_tree_imports(tcx, &tree, marker)
+        })
+}
+
+/// Whether the `use` tree imports `marker` by name, or through a glob of a module that declares or
+/// re-exports it, searching each list `{a, b}` the tree holds.
+fn use_tree_imports(tcx: TyCtxt<'_>, tree: &UseTree<'_>, marker: DefId) -> bool {
+    if let UseKind::Nested { items } = tree.kind {
+        return items
+            .iter()
+            .any(|(item, ..)| use_tree_imports(tcx, item, marker));
+    }
+    let Some(Res::Def(kind, did)) = tree.prefix.res.type_ns else {
+        return false;
+    };
+    match tree.kind {
+        UseKind::Single(_) => did == marker,
+        UseKind::Glob if kind == DefKind::Mod => {
+            let children = match did.as_local() {
+                Some(local) => tcx.module_children_local(local),
+                None => tcx.module_children(did),
+            };
+            children
+                .iter()
+                .any(|child| child.res.opt_def_id() == Some(marker))
+        }
+        UseKind::Glob | UseKind::Nested { .. } => false,
+    }
 }
 
 /// Whether the item declares generic parameters of its own.
@@ -185,6 +313,15 @@ fn header_arg_for(tcx: TyCtxt<'_>, header: &ProviderHeader<'_>, param: &str) -> 
     tcx.sess.source_map().span_to_snippet(span).ok()
 }
 
+/// The attribute of a header written to name its component, and the edit that writes it.
+struct AttributeNaming {
+    /// The attribute with the component named.
+    text: String,
+    /// Where the component goes in the attribute as written, and the text that adds it there, when
+    /// the attribute is found in the source.
+    insertion: Option<(Span, String)>,
+}
+
 /// The attribute of the header at `impl_did`, rewritten to name `component` explicitly, in the
 /// spelling the program gave the macro. A `#[cgp_impl]` block writes its provider, the impl's `Self`
 /// type, inside the attribute, before the trait's name, so the attribute's text up to the provider
@@ -192,7 +329,11 @@ fn header_arg_for(tcx: TyCtxt<'_>, header: &ProviderHeader<'_>, param: &str) -> 
 /// that writes its provider after `for` takes the component as the argument of its provider
 /// attribute, the nearest attribute above the impl whose macro name ends in `provider`:
 /// `#[cgp_provider(GreeterComponent)]` or `#[cgp_new_provider(GreeterComponent)]`.
-fn attribute_naming(tcx: TyCtxt<'_>, impl_did: LocalDefId, component: &str) -> Option<String> {
+fn attribute_naming(
+    tcx: TyCtxt<'_>,
+    impl_did: LocalDefId,
+    component: &str,
+) -> Option<AttributeNaming> {
     let ItemKind::Impl(imp) = tcx.hir_expect_item(impl_did).kind else {
         return None;
     };
@@ -202,17 +343,41 @@ fn attribute_naming(tcx: TyCtxt<'_>, impl_did: LocalDefId, component: &str) -> O
         let provider = source_map.span_to_snippet(imp.self_ty.span).ok()?;
         let before_provider = source_map.span_to_prev_source(imp.self_ty.span).ok()?;
         let opening = &before_provider[before_provider.rfind("#[")?..];
-        return Some(format!("{opening}{provider}: {component})]"));
+        return Some(AttributeNaming {
+            text: format!("{opening}{provider}: {component})]"),
+            insertion: Some((imp.self_ty.span.shrink_to_hi(), format!(": {component}"))),
+        });
     }
-    let before_impl = source_map
-        .span_to_prev_source(tcx.def_span(impl_did))
-        .ok()?;
-    let macro_path = before_impl
-        .rmatch_indices("#[")
-        .map(|(start, _)| &before_impl[start + 2..])
-        .filter_map(|attribute| attribute.split(['(', ']']).next())
-        .map(str::trim)
-        .find(|path| path.ends_with("provider"))
-        .unwrap_or("cgp_provider");
-    Some(format!("#[{macro_path}({component})]"))
+    let impl_span = tcx.def_span(impl_did);
+    let before_impl = source_map.span_to_prev_source(impl_span).ok()?;
+    let found = before_impl.rmatch_indices("#[").find_map(|(start, _)| {
+        let attribute = &before_impl[start + 2..];
+        let path = attribute.split(['(', ']']).next()?;
+        let macro_path = path.trim();
+        macro_path
+            .ends_with("provider")
+            .then_some((start + 2 + path.len(), macro_path))
+    });
+    let macro_path = found.map_or("cgp_provider", |(_, macro_path)| macro_path);
+    let insertion = found.and_then(|(path_end, _)| {
+        let after = &before_impl[path_end..];
+        let (offset, text) = if after.starts_with(']') {
+            (path_end, format!("({component})"))
+        } else if let Some(inside) = after.strip_prefix('(')
+            && inside.split(')').next()?.trim().is_empty()
+        {
+            (path_end + 1, component.to_owned())
+        } else {
+            return None;
+        };
+        let back = u32::try_from(before_impl.len() - offset).ok()?;
+        let at = impl_span
+            .with_lo(impl_span.lo() - BytePos(back))
+            .shrink_to_lo();
+        Some((at, text))
+    });
+    Some(AttributeNaming {
+        text: format!("#[{macro_path}({component})]"),
+        insertion,
+    })
 }

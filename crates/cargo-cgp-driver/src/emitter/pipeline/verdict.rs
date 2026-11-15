@@ -3,6 +3,8 @@
 use cargo_cgp_error_processing::ClassPlan;
 use rustc_span::Span;
 
+use crate::detect::NameFix;
+
 /// A stage's decision about one diagnostic.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Verdict {
@@ -37,6 +39,9 @@ pub struct Reshape {
     pub records_spans: bool,
     /// The edit of the diagnostics already buffered.
     pub buffer_edit: BufferEdit,
+    /// A fix added as a structured suggestion after the plan's helps, boxed since few stages
+    /// give one.
+    pub fix: Option<Box<NameFix>>,
 }
 
 impl Reshape {
@@ -48,6 +53,15 @@ impl Reshape {
             span,
             records_spans: true,
             buffer_edit: BufferEdit::None,
+            fix: None,
+        }
+    }
+
+    /// This reshape with `fix` added as a structured suggestion.
+    pub fn with_fix(self, fix: Option<NameFix>) -> Self {
+        Self {
+            fix: fix.map(Box::new),
+            ..self
         }
     }
 }

@@ -4,10 +4,11 @@ use std::borrow::Cow;
 
 use cargo_cgp_error_processing::{bound_candidate_list, is_method_probe_advice_text};
 use rustc_errors::{
-    CodeSuggestion, DiagInner, DiagMessage, MultiSpan, Style, Subdiag, Sublevel, Substitution,
-    Suggestions,
+    Applicability, CodeSuggestion, DiagInner, DiagMessage, MultiSpan, Style, Subdiag, Sublevel,
+    Substitution, SubstitutionPart, SuggestionStyle, Suggestions,
 };
 
+use crate::detect::NameFix;
 use crate::emitter::edit::strip_multispan_labels;
 
 /// Replace a diagnostic's main message with `header`, keeping its spans and their labels while
@@ -19,6 +20,39 @@ pub fn replace_header(diag: &mut DiagInner, header: String) {
     diag.messages = vec![(DiagMessage::Str(header.into()), Style::NoStyle)];
     diag.children = Vec::new();
     diag.suggestions = Suggestions::Enabled(Vec::new());
+}
+
+/// Add `fix` to `diag` as a structured suggestion of its edits and the name at the caret
+/// unchanged, in source order, so an editor offers it on that name: machine-applicable when the
+/// fix says it is the one repair, and maybe correct otherwise. A diagnostic whose suggestions are
+/// disabled gets the fix's message as a `help` instead.
+pub fn push_name_fix(diag: &mut DiagInner, fix: NameFix) {
+    let mut parts: Vec<SubstitutionPart> = fix
+        .edits
+        .into_iter()
+        .map(|(span, snippet)| SubstitutionPart { span, snippet })
+        .chain([SubstitutionPart {
+            span: fix.name_span,
+            snippet: fix.name_text,
+        }])
+        .collect();
+    parts.sort_by_key(|part| part.span.lo());
+    let suggestion = CodeSuggestion {
+        substitutions: vec![Substitution { parts }],
+        msg: DiagMessage::Str(fix.message.clone().into()),
+        style: SuggestionStyle::ShowAlways,
+        applicability: if fix.machine_applicable {
+            Applicability::MachineApplicable
+        } else {
+            Applicability::MaybeIncorrect
+        },
+    };
+    match &mut diag.suggestions {
+        Suggestions::Enabled(suggestions) => suggestions.push(suggestion),
+        Suggestions::Sealed(_) | Suggestions::Disabled => {
+            diag.children.push(subdiag(Sublevel::Help, fix.message));
+        }
+    }
 }
 
 /// Build a plain-text sub-diagnostic (a `help` or `note`) with no span: the shape every

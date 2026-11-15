@@ -174,7 +174,7 @@ fn a_header_through_a_module_without_the_component_names_the_defining_module() {
 }
 
 #[test]
-fn a_renamed_import_names_the_real_component_and_the_trait_s_own_name() {
+fn a_renamed_import_names_the_real_component_in_the_attribute() {
     let name = UnresolvedWiringName::DerivedComponentName {
         derived: "GComponent".to_owned(),
         written: "G".to_owned(),
@@ -197,8 +197,7 @@ fn a_renamed_import_names_the_real_component_and_the_trait_s_own_name() {
     assert_eq!(
         unresolved_wiring_name_help(&name).as_deref(),
         Some(
-            "name the component in the attribute, `#[cgp_impl(new GreetHello: GreeterComponent)]`, \
-             or import the trait under its own name, `Greeter`"
+            "name the component in the attribute: `#[cgp_impl(new GreetHello: GreeterComponent)]`"
         ),
     );
 }

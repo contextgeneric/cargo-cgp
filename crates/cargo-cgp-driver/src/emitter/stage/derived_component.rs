@@ -36,11 +36,19 @@ pub fn derived_component_without_args(tcx: Option<TyCtxt<'_>>, diag: &DiagInner)
     {
         return Verdict::Continue;
     }
-    match detect::derived_component_name(tcx, &header) {
-        Some(name) => Verdict::Reshape(Reshape::new(
+    let Some(name) = detect::derived_component_name(tcx, &header) else {
+        return Verdict::Continue;
+    };
+    let reshape = match detect::derived_component_fix(tcx, &header, &name, primary_span) {
+        Some(fix) => Reshape::new(
+            ClassPlan::unresolved_wiring_name_beside_fix(&name),
+            SpanPolicy::Primary,
+        )
+        .with_fix(Some(fix)),
+        None => Reshape::new(
             ClassPlan::unresolved_wiring_name(&name),
             SpanPolicy::Primary,
-        )),
-        None => Verdict::Continue,
-    }
+        ),
+    };
+    Verdict::Reshape(reshape)
 }

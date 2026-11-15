@@ -17,7 +17,7 @@ use crate::emitter::attribute_splice::drop_attribute_splices;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
 use crate::emitter::crate_facts::{CrateFacts, EMPTY_AMBIGUOUS_NAMES};
 use crate::emitter::edit::{
-    bound_candidate_lists, main_message_text, message_signature, postprocess_diag,
+    bound_candidate_lists, main_message_text, message_signature, postprocess_diag, push_name_fix,
 };
 use crate::emitter::fallback::{render_or_untransformed, transform_or_original};
 use crate::emitter::flush::render;
@@ -135,9 +135,13 @@ impl<E: Emitter> CgpEmitter<E> {
             span,
             records_spans,
             buffer_edit,
+            fix,
         } = reshape;
         self.edit_buffer(buffer_edit);
         apply_reshape(&mut diag, plan, span);
+        if let Some(fix) = fix {
+            push_name_fix(&mut diag, *fix);
+        }
         self.postprocess(&mut diag, Origin::Rewritten);
         if records_spans {
             self.record_cgp_spans(&diag);

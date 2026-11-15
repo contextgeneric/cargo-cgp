@@ -5,7 +5,10 @@ error[E0425]: [CGP-E070] the header derives the component `GComponent` from the 
    |          ^
    |
    = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
-   = help: name the component in the attribute, `#[cgp_impl(new GreetHello: GreeterComponent)]`, or import the trait under its own name, `Greeter`
+help: name the component in the attribute
+   |
+29 |     #[cgp_impl(new GreetHello: GreeterComponent)]
+   |                              ++++++++++++++++++
 
 error[E0425]: [CGP-E070] the header derives the component `GComponent` from the trait name `G`, but the component of `Greeter` is `GreeterComponent`
   --> src/main.rs:39:10
@@ -14,7 +17,10 @@ error[E0425]: [CGP-E070] the header derives the component `GComponent` from the 
    |          ^
    |
    = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
-   = help: name the component in the attribute, `#[cgp_impl(GreetPlain: GreeterComponent)]`, or import the trait under its own name, `Greeter`
+help: name the component in the attribute
+   |
+38 |     #[cgp_impl(GreetPlain: GreeterComponent)]
+   |                          ++++++++++++++++++
 
 error[E0425]: [CGP-E070] the header derives the component `GComponent` from the trait name `G`, but the component of `Greeter` is `GreeterComponent`
   --> src/main.rs:48:19
@@ -23,7 +29,10 @@ error[E0425]: [CGP-E070] the header derives the component `GComponent` from the 
    |                   ^
    |
    = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
-   = help: name the component in the attribute, `#[cgp_provider(GreeterComponent)]`, or import the trait under its own name, `Greeter`
+help: name the component in the attribute
+   |
+47 |     #[cgp_provider(GreeterComponent)]
+   |                   ++++++++++++++++++
 
 error[E0425]: [CGP-E070] the header derives the component `GComponent` from the trait name `G`, but the component of `Greeter` is `GreeterComponent`
   --> src/main.rs:57:19
@@ -32,7 +41,10 @@ error[E0425]: [CGP-E070] the header derives the component `GComponent` from the 
    |                   ^
    |
    = note: `G` imports `Greeter` under another name, so an import of `GreeterComponent` reads as unused while the header names `G`
-   = help: name the component in the attribute, `#[cgp_new_provider(GreeterComponent)]`, or import the trait under its own name, `Greeter`
+help: name the component in the attribute
+   |
+55 |     #[cgp_new_provider(GreeterComponent)]
+   |                       ++++++++++++++++++
 
 warning: unused import: `GreeterComponent`
   --> src/main.rs:27:43

@@ -139,4 +139,14 @@ impl ClassPlan {
             helps: unresolved_wiring_name_help(name).into_iter().collect(),
         }
     }
+
+    /// A wiring name that does not resolve, whose fix is a suggestion beside the plan: no help,
+    /// since the suggestion carries the fix the help names.
+    pub fn unresolved_wiring_name_beside_fix(name: &UnresolvedWiringName) -> Self {
+        Self {
+            header: plan_unresolved_wiring_name(name),
+            notes: unresolved_wiring_name_note(name).into_iter().collect(),
+            helps: Vec::new(),
+        }
+    }
 }
