@@ -222,6 +222,7 @@ contributors and agents:
 - [Installation](https://contextgeneric.dev/docs/tooling/cargo-cgp/installation): every install, update, and uninstall path.
 - [Error codes](https://contextgeneric.dev/docs/tooling/cargo-cgp/error-codes): the `[CGP-Exxx]` codes in the output.
 - [Troubleshooting](https://contextgeneric.dev/docs/tooling/cargo-cgp/troubleshooting): what to do when the tool itself will not run.
+- [Release notes](https://contextgeneric.dev/docs/release-notes/): what each release changed and how to upgrade.
 - [Implementation](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/README.md): the two binaries, the driver, and how diagnostics are transformed.
 
 Contributors and agents start from [AGENTS.md](AGENTS.md), and
