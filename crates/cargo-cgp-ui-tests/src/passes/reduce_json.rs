@@ -2,8 +2,8 @@
 
 /// Reduce cargo's JSON message stream to the compiler messages an editor reads, as pretty JSON:
 /// for each message its level, code, text, spans (file, start line and column, primary flag,
-/// label, and for a suggestion's span the replacement and its applicability, which an editor turns
-/// into a quick fix), and children (level and text). Cargo's artifact and build-finished lines,
+/// label, and for a suggestion's span its end, the replacement, and its applicability, which an
+/// editor turns into a quick fix, the end telling an insertion from a replacement), and children (level and text). Cargo's artifact and build-finished lines,
 /// and the `rendered` text (which the `.cgp.stderr` pass already pins), are left out.
 pub fn reduce_json(stream: &str) -> String {
     use serde_json::{Value, json};
@@ -26,6 +26,8 @@ pub fn reduce_json(stream: &str) -> String {
                         });
                         let replacement = field(span, "suggested_replacement");
                         if !replacement.is_null() {
+                            reduced["end_line"] = field(span, "line_end");
+                            reduced["end_column"] = field(span, "column_end");
                             reduced["replacement"] = replacement;
                             reduced["applicability"] = field(span, "suggestion_applicability");
                         }

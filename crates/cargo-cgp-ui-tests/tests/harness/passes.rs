@@ -92,8 +92,8 @@ fn reduces_cargo_json_to_compiler_messages() {
 }
 
 #[test]
-fn keeps_a_suggestions_replacement_and_applicability() {
-    let stream = r#"{"reason":"compiler-message","message":{"level":"error","code":null,"message":"m","spans":[],"children":[{"level":"help","message":"import it","spans":[{"file_name":"src/main.rs","line_start":1,"column_start":1,"is_primary":true,"label":null,"suggested_replacement":"use a::B;\n","suggestion_applicability":"MachineApplicable"}]}]}}"#;
+fn keeps_a_suggestions_end_replacement_and_applicability() {
+    let stream = r#"{"reason":"compiler-message","message":{"level":"error","code":null,"message":"m","spans":[],"children":[{"level":"help","message":"import it","spans":[{"file_name":"src/main.rs","line_start":1,"column_start":1,"is_primary":true,"label":null,"line_end":1,"column_end":1,"suggested_replacement":"use a::B;\n","suggestion_applicability":"MachineApplicable"}]}]}}"#;
     let value: serde_json::Value = serde_json::from_str(&reduce_json(stream)).unwrap();
     assert_eq!(
         value[0]["children"][0]["spans"],
@@ -103,6 +103,8 @@ fn keeps_a_suggestions_replacement_and_applicability() {
             "column": 1,
             "primary": true,
             "label": null,
+            "end_line": 1,
+            "end_column": 1,
             "replacement": "use a::B;\n",
             "applicability": "MachineApplicable",
         }])

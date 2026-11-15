@@ -8,6 +8,8 @@
           {
             "applicability": "MachineApplicable",
             "column": 1,
+            "end_column": 1,
+            "end_line": 39,
             "file": "src/main.rs",
             "label": null,
             "line": 39,
@@ -17,6 +19,8 @@
           {
             "applicability": "MachineApplicable",
             "column": 30,
+            "end_column": 30,
+            "end_line": 43,
             "file": "src/main.rs",
             "label": null,
             "line": 43,
@@ -26,6 +30,8 @@
           {
             "applicability": "MachineApplicable",
             "column": 10,
+            "end_column": 11,
+            "end_line": 44,
             "file": "src/main.rs",
             "label": null,
             "line": 44,
@@ -62,6 +68,8 @@
           {
             "applicability": "MachineApplicable",
             "column": 19,
+            "end_column": 19,
+            "end_line": 58,
             "file": "src/main.rs",
             "label": null,
             "line": 58,
@@ -71,6 +79,8 @@
           {
             "applicability": "MachineApplicable",
             "column": 19,
+            "end_column": 20,
+            "end_line": 59,
             "file": "src/main.rs",
             "label": null,
             "line": 59,
@@ -107,6 +117,8 @@
           {
             "applicability": "MachineApplicable",
             "column": 41,
+            "end_column": 59,
+            "end_line": 54,
             "file": "src/main.rs",
             "label": null,
             "line": 54,
@@ -116,6 +128,8 @@
           {
             "applicability": "MachineApplicable",
             "column": 28,
+            "end_column": 29,
+            "end_line": 54,
             "file": "src/main.rs",
             "label": null,
             "line": 54,
@@ -125,6 +139,8 @@
           {
             "applicability": "MachineApplicable",
             "column": 59,
+            "end_column": 60,
+            "end_line": 54,
             "file": "src/main.rs",
             "label": null,
             "line": 54,
@@ -156,6 +172,8 @@
           {
             "applicability": "MachineApplicable",
             "column": 30,
+            "end_column": 30,
+            "end_line": 73,
             "file": "src/main.rs",
             "label": null,
             "line": 73,
@@ -165,6 +183,8 @@
           {
             "applicability": "MachineApplicable",
             "column": 10,
+            "end_column": 24,
+            "end_line": 74,
             "file": "src/main.rs",
             "label": null,
             "line": 74,
@@ -196,6 +216,8 @@
           {
             "applicability": "MaybeIncorrect",
             "column": 27,
+            "end_column": 27,
+            "end_line": 80,
             "file": "src/main.rs",
             "label": null,
             "line": 80,
@@ -205,6 +227,8 @@
           {
             "applicability": "MaybeIncorrect",
             "column": 10,
+            "end_column": 24,
+            "end_line": 81,
             "file": "src/main.rs",
             "label": null,
             "line": 81,
