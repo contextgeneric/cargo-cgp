@@ -157,8 +157,8 @@ fn spanless_diagnostics_sort_by_content_in_a_batch_and_keep_their_order_at_the_f
     });
 }
 
-/// The order of the two variants `make` builds, sorted in each arrival order, as the indices of
-/// the variants, with whether their keys differ.
+/// The variants `make` builds for `false` and `true`, in the order `sort_canonically` gives them
+/// for each of the two arrival orders, and whether their keys differ.
 fn order_of(map: &SourceMap, make: impl Fn(bool) -> DiagInner) -> (Vec<bool>, Vec<bool>, bool) {
     let first = |sorted: Vec<(bool, DiagInner)>| sorted.into_iter().map(|(v, _)| v).collect();
     let sort = |items: Vec<(bool, DiagInner)>| {
