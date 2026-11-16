@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
-    let toolchain_file = find_toolchain_file();
+    let toolchain_file = toolchain_file();
     println!("cargo::rerun-if-changed={}", toolchain_file.display());
     println!("cargo::rerun-if-env-changed=RUSTC");
 
@@ -27,24 +27,12 @@ fn main() {
     );
 }
 
-/// Locate the `rust-toolchain.toml` that pins the channel. A source checkout keeps the one
-/// canonical file at the workspace root; a published crate ships its own copy in the crate
-/// root (see the crate's `rust-toolchain.toml`), because the workspace file is not part of
-/// the package tarball. Walking up from the manifest directory takes the first match, so the
-/// same build script serves both layouts, including the isolated verification build cargo
-/// runs under `target/package/` during `cargo publish`.
-fn find_toolchain_file() -> PathBuf {
-    let start = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
-    for dir in start.ancestors() {
-        let candidate = dir.join("rust-toolchain.toml");
-        if candidate.exists() {
-            return candidate;
-        }
-    }
-    panic!(
-        "could not find rust-toolchain.toml at or above {}",
-        start.display()
-    );
+/// The crate's `pinned-toolchain.toml`: a link to the workspace `rust-toolchain.toml`, which cargo
+/// packages as a copy. It has its own name because docs.rs deletes a crate's `rust-toolchain.toml`
+/// before building it.
+fn toolchain_file() -> PathBuf {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR");
+    PathBuf::from(manifest_dir).join("pinned-toolchain.toml")
 }
 
 /// The single-line `rustc --version` of the compiler building this driver. cargo sets
