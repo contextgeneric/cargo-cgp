@@ -10,7 +10,7 @@ Context-Generic Programming (CGP) extends Rust with pluggable trait implementati
 generate the traits and impls that select them. `cargo cgp expand` shows that generated code, and
 this crate makes it readable. The compiler prints CGP's type-level strings and lists in full, so a
 field tag that you wrote as `Symbol!("name")` comes out as a nested type, with every name spelled
-through the macros' own module:
+through the macros' own module (the impl's body is elided here):
 
 ```rust
 impl ::cgp::macro_prelude::HasField<::cgp::macro_prelude::Symbol<4,

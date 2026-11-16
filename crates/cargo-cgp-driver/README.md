@@ -32,7 +32,7 @@ error[E0277]: [CGP-E001] missing field `height` on `Rectangle`
 reshape every class.
 
 The driver links the compiler's internal crates, so it builds only under the nightly toolchain
-`cargo-cgp` pins, and only at the front end's own version. That is why you install it through the
+`cargo-cgp` pins, and must match the front end's own version. That is why you install it through the
 front end rather than on its own. CGP itself compiles on stable Rust, and the pinned nightly serves
 only the tool's check, so your project keeps its own toolchain:
 
