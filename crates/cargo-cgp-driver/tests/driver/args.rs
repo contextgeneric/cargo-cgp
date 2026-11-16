@@ -1,7 +1,6 @@
-//! Tests for the rustc argument-vector preparation ([`cargo_cgp_driver::args::rustc_args`] and
-//! [`cargo_cgp_driver::args::force_flags`]).
+//! Tests for the rustc argument-vector preparation ([`cargo_cgp_driver::args::rustc_args`]).
 
-use cargo_cgp_driver::args::{ForcedFlag, expand_arg_files, force_flags, rustc_args};
+use cargo_cgp_driver::args::{expand_arg_files, rustc_args};
 
 fn args(items: &[&str]) -> Vec<String> {
     items.iter().map(|s| s.to_string()).collect()
@@ -212,135 +211,31 @@ fn treats_the_short_verbose_flag_as_verbose() {
     assert_eq!(out, ["d", "-v", "lib.rs"]);
 }
 
-/// The one-thread flag the driver forces, with the options it replaces.
-const ONE_THREAD: ForcedFlag<'static> = ForcedFlag {
-    flag: "-Zthreads=1",
-    replaces: &["-Zthreads", "--jobs-frontend"],
-};
-
-// Property: the postcondition of `force_flags`, for a compilation that sets no thread count: its
-//   arguments are kept and the forced flag follows them.
+// Property: a thread count the invocation sets, in each spelling rustc accepts, reaches rustc
+//   unchanged beside the injected flags, so a user's choice decides the front end's threads.
 #[test]
-fn forces_one_thread_when_no_count_is_set() {
-    let out = force_flags(args(&["d", "--edition=2024", "lib.rs"]), &[ONE_THREAD]);
-    assert_eq!(out, ["d", "--edition=2024", "lib.rs", "-Zthreads=1"]);
-}
-
-// Property: the postcondition of `force_flags`, for every spelling rustc accepts for `-Zthreads`
-//   and `--jobs-frontend`: the thread count is removed, with its value when the value is a separate
-//   argument, the other arguments keep their order, and the forced flag is appended once.
-#[test]
-fn replaces_every_spelling_of_a_thread_count() {
-    let cases: [(&[&str], &[&str]); 6] = [
-        (
-            &["d", "-Zthreads=8", "lib.rs"],
-            &["d", "lib.rs", "-Zthreads=1"],
-        ),
-        (
-            &["d", "-Zthreads", "lib.rs"],
-            &["d", "lib.rs", "-Zthreads=1"],
-        ),
-        (
-            &["d", "-Z", "threads=8", "lib.rs"],
-            &["d", "lib.rs", "-Zthreads=1"],
-        ),
-        (
-            &["d", "--jobs-frontend=4", "lib.rs"],
-            &["d", "lib.rs", "-Zthreads=1"],
-        ),
-        (
-            &["d", "--jobs-frontend", "4", "lib.rs"],
-            &["d", "lib.rs", "-Zthreads=1"],
-        ),
-        // Both options at once, around an unrelated two-argument `-Z` option that stays.
-        (
-            &[
-                "d",
-                "-Zthreads=8",
-                "-Z",
-                "unstable-options",
-                "--jobs-frontend",
-                "4",
-                "lib.rs",
-            ],
-            &["d", "-Z", "unstable-options", "lib.rs", "-Zthreads=1"],
-        ),
-    ];
-    for (input, expected) in cases {
-        assert_eq!(
-            force_flags(args(input), &[ONE_THREAD]),
-            expected,
-            "for {input:?}"
-        );
-    }
-}
-
-// Property: an option that only shares a prefix with a thread-count option (`--jobs`,
-//   `--jobs-backend`, another `-Z` option) is kept.
-#[test]
-fn keeps_options_that_only_share_a_prefix() {
-    let out = force_flags(
-        args(&[
-            "d",
-            "--jobs",
-            "4",
-            "--jobs-backend=2",
-            "-Z",
-            "next-solver=no",
-            "lib.rs",
-        ]),
-        &[ONE_THREAD],
-    );
-    assert_eq!(
-        out,
-        [
-            "d",
-            "--jobs",
-            "4",
-            "--jobs-backend=2",
-            "-Z",
-            "next-solver=no",
-            "lib.rs",
-            "-Zthreads=1"
-        ]
-    );
-}
-
-// Property: cargo's info queries (`-vV`, `--print`) are returned unchanged, a thread count
-//   included.
-#[test]
-fn leaves_info_queries_unchanged() {
-    for query in [
-        &["d", "-vV"][..],
-        &["d", "-Zthreads=8", "--print", "cfg"][..],
+fn keeps_a_thread_count_the_invocation_sets() {
+    for count in [
+        &["-Zthreads=8"][..],
+        &["-Z", "threads=8"][..],
+        &["--jobs-frontend=4"][..],
     ] {
-        assert_eq!(force_flags(args(query), &[ONE_THREAD]), query);
+        let input: Vec<&str> = ["d", "/tk/bin/rustc"]
+            .into_iter()
+            .chain(count.iter().copied())
+            .chain(["lib.rs"])
+            .collect();
+        let expected: Vec<&str> = ["d"]
+            .into_iter()
+            .chain(count.iter().copied())
+            .chain(["lib.rs", "-Znext-solver=globally", "--verbose"])
+            .collect();
+        let out = rustc_args(
+            args(&input),
+            None,
+            "--sysroot",
+            &["-Znext-solver=globally", "--verbose"],
+        );
+        assert_eq!(out, expected, "for {count:?}");
     }
-}
-
-// Property: with no forced flag, as in expand mode, the arguments are returned unchanged.
-#[test]
-fn forces_nothing_without_a_forced_flag() {
-    let input = args(&["d", "-Zthreads=8", "lib.rs"]);
-    assert_eq!(force_flags(input.clone(), &[]), input);
-}
-
-// Property: a thread count inside an `@file` argument is seen once the file is expanded, so it is
-//   replaced like one on the command line.
-#[test]
-fn replaces_a_thread_count_inside_an_argument_file() {
-    let dir = std::env::temp_dir().join(format!("cargo-cgp-threads-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).expect("a temporary directory");
-    let file = dir.join("args");
-    std::fs::write(&file, "--crate-name=demo\n-Z\nthreads=8\nlib.rs").expect("an argument file");
-
-    let expanded = expand_arg_files(args(&[
-        "d",
-        "/tk/bin/rustc",
-        &format!("@{}", file.display()),
-    ]));
-    std::fs::remove_dir_all(&dir).ok();
-
-    let out = force_flags(rustc_args(expanded, None, "--sysroot", &[]), &[ONE_THREAD]);
-    assert_eq!(out, ["d", "--crate-name=demo", "lib.rs", "-Zthreads=1"]);
 }

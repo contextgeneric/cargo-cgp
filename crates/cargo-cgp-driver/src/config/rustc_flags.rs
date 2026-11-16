@@ -40,22 +40,3 @@ pub const VERBOSE_FLAG: &str = "--verbose";
 
 /// The short form of [`VERBOSE_FLAG`].
 pub const VERBOSE_SHORT_FLAG: &str = "-v";
-
-/// The flag that runs rustc's front end on one thread, injected into every workspace-crate
-/// compilation in place of any thread count the invocation carries.
-///
-/// From `nightly-2026-11-14`, rustc type-checks on several threads unless told otherwise, so
-/// diagnostics from different items arrive in a different order on each run. The emitter processes
-/// and prints them in a canonical order, so its output is meant to be the same either way, but no
-/// parallel run has yet shown it; and a diagnostic it transforms outside `analysis` runs under
-/// rustc's diagnostic lock, which under threads blocks on re-entry rather than panicking. One
-/// thread keeps the output identical between runs until then. Unlike the other injected flags, a
-/// user's own thread count does not win, since a `-Z threads=8` set in a cargo configuration for
-/// every build would bring those hazards to the check: [`THREAD_COUNT_OPTIONS`] lists the spellings
-/// removed first.
-pub const THREADS_FLAG: &str = "-Zthreads=1";
-
-/// The options that set the front end's thread count, each removed from the invocation before
-/// [`THREADS_FLAG`] is appended. rustc rejects `--jobs-frontend` beside `-Zthreads`, so keeping a
-/// user's `--jobs-frontend` would end the compilation.
-pub const THREAD_COUNT_OPTIONS: &[&str] = &["-Zthreads", "--jobs-frontend"];

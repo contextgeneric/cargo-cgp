@@ -7,11 +7,11 @@ use std::process::ExitCode;
 use rustc_session::EarlyDiagCtxt;
 use rustc_session::config::ErrorOutputType;
 
-use crate::args::{ForcedFlag, expand_arg_files, force_flags, is_wrapper_mode, rustc_args};
+use crate::args::{expand_arg_files, is_wrapper_mode, rustc_args};
 use crate::callbacks::CgpCallbacks;
 use crate::config::{
     BUG_REPORT_URL, EXPAND_FLAG, EXPAND_ITEM_FLAG, NEXT_SOLVER_FLAG, SYSROOT_ENV, SYSROOT_FLAG,
-    THREAD_COUNT_OPTIONS, THREADS_FLAG, VERBOSE_FLAG,
+    VERBOSE_FLAG,
 };
 use crate::emitter::install_panic_hooks;
 use crate::expand::take_expand_request;
@@ -22,8 +22,9 @@ use crate::version::{version_string, wants_version};
 ///
 /// The sysroot supplied by `cargo-cgp` (via [`SYSROOT_ENV`]), the next-gen trait solver
 /// flag ([`NEXT_SOLVER_FLAG`]), and the diagnostic [`VERBOSE_FLAG`] are folded into the
-/// rustc arguments by [`rustc_args`], and the one-thread [`THREADS_FLAG`] replaces any thread count
-/// the invocation carries through [`force_flags`]. [`rustc_driver::catch_with_exit_code`] runs the
+/// rustc arguments by [`rustc_args`]; a thread count the invocation carries reaches rustc unchanged,
+/// and without one rustc runs its front end on its default thread count.
+/// [`rustc_driver::catch_with_exit_code`] runs the
 /// compiler and turns a compiler-signalled failure into the process exit code, matching
 /// what plain `rustc` would return. Before it runs, the driver sets up what rustc's own
 /// driver does: the `RUSTC_LOG` logger, and an ICE hook, here naming cargo-cgp's issue tracker
@@ -72,23 +73,14 @@ pub fn run() -> ExitCode {
 
         // The injected flags shape diagnostics produced during analysis, which expand mode never
         // reaches (it stops once the crate is expanded), so they are left off there.
-        let (injected_flags, forced_flags): (&[&str], &[ForcedFlag<'_>]) = if expand.is_some() {
-            (&[], &[])
+        let injected_flags: &[&str] = if expand.is_some() {
+            &[]
         } else {
-            (
-                &[NEXT_SOLVER_FLAG, VERBOSE_FLAG],
-                &[ForcedFlag {
-                    flag: THREADS_FLAG,
-                    replaces: THREAD_COUNT_OPTIONS,
-                }],
-            )
+            &[NEXT_SOLVER_FLAG, VERBOSE_FLAG]
         };
 
         let sysroot = env::var(SYSROOT_ENV).ok();
-        let args = force_flags(
-            rustc_args(raw, sysroot, SYSROOT_FLAG, injected_flags),
-            forced_flags,
-        );
+        let args = rustc_args(raw, sysroot, SYSROOT_FLAG, injected_flags);
 
         let mut callbacks = CgpCallbacks { expand };
         rustc_driver::compiler_entrypoint(&args, &mut callbacks);
