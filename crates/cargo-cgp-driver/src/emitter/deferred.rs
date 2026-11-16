@@ -109,7 +109,8 @@ pub fn override_analysis(_session: &Session, providers: &mut Providers) {
 /// emitter reads the first batch once before transforming any of it
 /// ([`DeferredTarget::prepare`]). Any other unwind is a crash: the panic hook has printed the
 /// buffer and the queue already, so it resumes at once. An unwind out of the processing, such as a
-/// fatal error from a query a transform forced, is resumed in turn once the queue is buffered.
+/// fatal error from a query a transform, the check-entry lookup, or the read of the first batch
+/// forced, stops the transforms, and is resumed in turn once the queue is buffered.
 fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     let original = *ORIGINAL_ANALYSIS
         .get()
@@ -131,7 +132,8 @@ fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     // to be taken in the next batch.
     let source_map = tcx.sess.source_map();
     // The lookup forces queries, so it is contained like a transform, and a fatal error it raises
-    // is resumed once the queue is processed, so no diagnostic already taken is lost.
+    // stops the transforms and is resumed once the queue is buffered, so no diagnostic already
+    // taken is lost.
     let fatal = RefCell::new(None);
     let at_check_entry = |diag: &DiagInner| {
         contained_lookup(
@@ -153,10 +155,15 @@ fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
         let mut target = lock_output(&target);
         let mut first = Some(take_ordered());
         if let Some(first) = &first {
-            target.prepare(first);
+            // `prepare` forces queries; its own containment lets a fatal error through, which is
+            // kept here, so the batch already taken is still buffered.
+            let _ = unless_fatal(|| target.prepare(first), &fatal);
         }
         let take = || first.take().unwrap_or_else(take_ordered);
-        drain_queue(take, MAX_ROUNDS, |diag, handling| match handling {
+        // Once a lookup or `prepare` has kept a fatal error, nothing more is transformed, as after
+        // a transform's own.
+        let stop = || fatal.borrow().is_some();
+        drain_queue(take, MAX_ROUNDS, stop, |diag, handling| match handling {
             Handling::Transform => target.transform(diag),
             Handling::KeepUntransformed => target.keep_untransformed(diag),
         })
@@ -166,26 +173,35 @@ fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     }
 }
 
-/// Run `lookup`, a yes-or-no question that forces compiler queries, answering no when it panics or
-/// when an earlier lookup raised a fatal error. A panic is contained, so the panic hook reports
-/// nothing; a fatal error is kept in `fatal`, for the caller to resume once it has buffered what it
-/// holds, and every later lookup answers no without running.
+/// The fatal error a step of the processing raised, kept for the caller to resume.
+pub type KeptFatal = RefCell<Option<Box<dyn Any + Send>>>;
+
+/// Run `lookup`, a yes-or-no question that forces compiler queries, through [`unless_fatal`],
+/// answering no when it does not return.
 ///
 /// Postcondition: the result is `lookup`'s answer when `fatal` was empty and `lookup` returned;
 /// otherwise it is `false`, and `fatal` holds the first fatal error raised.
-pub fn contained_lookup(
-    lookup: impl FnOnce() -> bool,
-    fatal: &RefCell<Option<Box<dyn Any + Send>>>,
-) -> bool {
+pub fn contained_lookup(lookup: impl FnOnce() -> bool, fatal: &KeptFatal) -> bool {
+    unless_fatal(lookup, fatal).unwrap_or(false)
+}
+
+/// Run `step`, which forces compiler queries, unless an earlier step raised a fatal error. A panic
+/// is contained, so the panic hook reports nothing; a fatal error is kept in `fatal`, for the
+/// caller to resume once it has buffered what it holds, and no later step runs.
+///
+/// Postcondition: the result is `Some` of `step`'s result when `fatal` was empty and `step`
+/// returned; otherwise it is `None`, `step` ran only if `fatal` was empty, and `fatal` holds the
+/// first fatal error raised.
+pub fn unless_fatal<R>(step: impl FnOnce() -> R, fatal: &KeptFatal) -> Option<R> {
     if fatal.borrow().is_some() {
-        return false;
+        return None;
     }
-    match panic::catch_unwind(AssertUnwindSafe(|| contain(lookup))) {
-        Ok(Ok(answer)) => answer,
-        Ok(Err(_panic)) => false,
+    match panic::catch_unwind(AssertUnwindSafe(|| contain(step))) {
+        Ok(Ok(result)) => Some(result),
+        Ok(Err(_panic)) => None,
         Err(payload) => {
             *fatal.borrow_mut() = Some(payload);
-            false
+            None
         }
     }
 }
@@ -209,14 +225,18 @@ pub enum Handling {
 /// untransformed.
 ///
 /// An unwind out of a transform stops the transforms: that item, the rest of its batch, and every
-/// later batch are kept untransformed, and the payload is returned for the caller to resume.
+/// later batch are kept untransformed, and the payload is returned for the caller to resume. So
+/// does `stop` holding before an item, as when a step outside the transforms kept a fatal error,
+/// which the caller then resumes.
 ///
 /// Postcondition: `take` is called until it yields an empty batch, and every item it yields is
-/// handed to `handle` once, in the order taken, as `Transform` until the cap or an unwind and as
-/// `KeepUntransformed` after it; the result is the unwind's payload, or `None`.
+/// handed to `handle` once, in the order taken, as `Transform` until the cap, an unwind, or the
+/// first item before which `stop()` holds, and as `KeepUntransformed` from then on; the result is
+/// the unwind's payload, or `None`.
 pub fn drain_queue<T: Clone>(
     mut take: impl FnMut() -> Vec<T>,
     max_rounds: usize,
+    stop: impl Fn() -> bool,
     mut handle: impl FnMut(T, Handling),
 ) -> Option<Box<dyn Any + Send>> {
     for _ in 0..max_rounds {
@@ -226,6 +246,12 @@ pub fn drain_queue<T: Clone>(
         }
         let mut rest = batch.into_iter();
         while let Some(item) = rest.next() {
+            if stop() {
+                handle(item, Handling::KeepUntransformed);
+                rest.for_each(|item| handle(item, Handling::KeepUntransformed));
+                keep_remaining(&mut take, &mut handle);
+                return None;
+            }
             let kept = item.clone();
             let transformed =
                 panic::catch_unwind(AssertUnwindSafe(|| handle(item, Handling::Transform)));

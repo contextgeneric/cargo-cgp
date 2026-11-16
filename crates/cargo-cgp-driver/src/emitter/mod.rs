@@ -57,7 +57,9 @@ pub use attribute_splice::drop_attribute_splices;
 pub use buffer::*;
 pub use cgp_emitter::{CgpEmitter, DeferringEmitter};
 pub use containment::{contain, install_panic_hooks, is_closed_stdout_panic};
-pub use deferred::{Handling, MAX_ROUNDS, contained_lookup, drain_queue, override_analysis};
+pub use deferred::{
+    Handling, KeptFatal, MAX_ROUNDS, contained_lookup, drain_queue, override_analysis, unless_fatal,
+};
 pub use edit::{merged_span, postprocess_multispan};
 pub use fallback::*;
 pub use flush::*;
