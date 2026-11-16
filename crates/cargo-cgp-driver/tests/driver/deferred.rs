@@ -1,10 +1,12 @@
 //! Tests for the processing of the diagnostics queued during `analysis`
 //! ([`cargo_cgp_driver::emitter::drain_queue`]), over plain items standing in for diagnostics.
 
+use std::any::Any;
 use std::cell::RefCell;
 use std::panic;
 
-use cargo_cgp_driver::emitter::{Handling, drain_queue};
+use cargo_cgp_driver::emitter::{Handling, contained_lookup, drain_queue};
+use rustc_data_structures::FatalErrorMarker;
 
 /// A queue the items handed to `handle` can add to, as a query a transform forces adds a
 /// diagnostic, with a record of each item handed on and how.
@@ -138,4 +140,51 @@ fn keeps_the_rest_untransformed_after_an_unwind() {
         run.handled(),
         [(1, Transform), (2, Keep), (3, Keep), (4, Keep)]
     );
+}
+
+/// The fatal error a lookup kept, if any.
+type Fatal = RefCell<Option<Box<dyn Any + Send>>>;
+
+// Property: the postcondition of `contained_lookup`, for a lookup that returns: its answer.
+#[test]
+fn a_lookup_that_returns_gives_its_answer() {
+    let fatal: Fatal = RefCell::new(None);
+    assert!(contained_lookup(|| true, &fatal));
+    assert!(!contained_lookup(|| false, &fatal));
+    assert!(fatal.borrow().is_none());
+}
+
+// Concern: the check-entry lookup forces queries outside a transform's containment, so a panic in
+//   one would unwind out of the `analysis` wrapper with the batch already taken from the queue.
+// Handled: `contained_lookup` contains the panic and answers no.
+#[test]
+fn a_lookup_that_panics_answers_no() {
+    let fatal: Fatal = RefCell::new(None);
+    assert!(!contained_lookup(|| panic!("a query bug"), &fatal));
+    assert!(fatal.borrow().is_none(), "a panic is not kept as fatal");
+}
+
+// Concern: a query the lookup forces can raise a fatal error, which must reach rustc in the end,
+//   but not before the diagnostics already taken are buffered.
+// Handled: `contained_lookup` keeps the fatal error, answers no, and runs no later lookup.
+#[test]
+fn a_fatal_error_is_kept_and_stops_later_lookups() {
+    let fatal: Fatal = RefCell::new(None);
+    let raised = contained_lookup(|| panic::resume_unwind(Box::new(FatalErrorMarker)), &fatal);
+    assert!(!raised);
+    assert!(
+        fatal
+            .borrow()
+            .as_ref()
+            .is_some_and(|p| p.is::<FatalErrorMarker>())
+    );
+    let ran = RefCell::new(false);
+    assert!(!contained_lookup(
+        || {
+            *ran.borrow_mut() = true;
+            true
+        },
+        &fatal
+    ));
+    assert!(!*ran.borrow(), "no lookup runs after a fatal error");
 }

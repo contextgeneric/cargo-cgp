@@ -364,7 +364,8 @@ impl<E: Emitter> CgpEmitter<E> {
     /// error at many sites: the `check_components!` entry, every hand-written `impl` that
     /// references the broken component, and each call. A transformed diagnostic whose signature
     /// the ledger has already recorded is such a re-report, so it is suppressed and only the
-    /// first occurrence is shown; the key scheme lives with the [`DedupLedger`]. Only the tool's
+    /// first occurrence is shown, the first in processing order, which takes a check entry's copy
+    /// first (see [`crate::emitter::deferred`]); the key scheme lives with the [`DedupLedger`]. Only the tool's
     /// own transformed diagnostics are de-duplicated here; an untouched `rustc` error is merged
     /// only at the flush, when rustc reports it twice on one line (`merge_repeats`). cargo
     /// re-counts the diagnostics the emitter produces, so a suppressed re-report drops out of

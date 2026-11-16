@@ -23,6 +23,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_middle::util::Providers;
 use rustc_session::Session;
 
+use crate::emitter::containment::contain;
 use crate::emitter::order::sort_canonically;
 use crate::emitter::output::lock_output;
 use crate::emitter::registry::{LocalSlot, Registry};
@@ -128,10 +129,18 @@ fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     // A query a transform forces may emit; that diagnostic finds the emitter locked and is queued,
     // to be taken in the next batch.
     let source_map = tcx.sess.source_map();
+    // The lookup forces queries, so it is contained like a transform, and a fatal error it raises
+    // is resumed once the queue is processed, so no diagnostic already taken is lost.
+    let fatal = RefCell::new(None);
     let at_check_entry = |diag: &DiagInner| {
-        diag.span
-            .primary_span()
-            .is_some_and(|span| check_entry_obligation(tcx, span).is_some())
+        contained_lookup(
+            || {
+                diag.span
+                    .primary_span()
+                    .is_some_and(|span| check_entry_obligation(tcx, span).is_some())
+            },
+            &fatal,
+        )
     };
     let take_ordered = || {
         preferred_first(
@@ -151,8 +160,32 @@ fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
             Handling::KeepUntransformed => target.keep_untransformed(diag),
         })
     };
-    if let Some(payload) = unwound.or(stopped) {
+    if let Some(payload) = unwound.or(stopped).or(fatal.into_inner()) {
         panic::resume_unwind(payload);
+    }
+}
+
+/// Run `lookup`, a yes-or-no question that forces compiler queries, answering no when it panics or
+/// when an earlier lookup raised a fatal error. A panic is contained, so the panic hook reports
+/// nothing; a fatal error is kept in `fatal`, for the caller to resume once it has buffered what it
+/// holds, and every later lookup answers no without running.
+///
+/// Postcondition: the result is `lookup`'s answer when `fatal` was empty and `lookup` returned;
+/// otherwise it is `false`, and `fatal` holds the first fatal error raised.
+pub fn contained_lookup(
+    lookup: impl FnOnce() -> bool,
+    fatal: &RefCell<Option<Box<dyn Any + Send>>>,
+) -> bool {
+    if fatal.borrow().is_some() {
+        return false;
+    }
+    match panic::catch_unwind(AssertUnwindSafe(|| contain(lookup))) {
+        Ok(Ok(answer)) => answer,
+        Ok(Err(_panic)) => false,
+        Err(payload) => {
+            *fatal.borrow_mut() = Some(payload);
+            false
+        }
     }
 }
 
