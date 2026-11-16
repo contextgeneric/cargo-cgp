@@ -29,10 +29,11 @@
 //! them with `$HOST` and `$VERSION`. The compiler's own version stays: a toolchain bump is meant
 //! to re-bless a crash snapshot.
 //!
-//! A crash report also repeats the compiler flags, and cargo passes `-C incremental=…` according to
-//! the caller's `CARGO_INCREMENTAL`: the workspace's CI sets it to `0`, while a developer's shell
-//! usually leaves cargo's default on. The flag records that setting rather than the diagnostic, so
-//! [`normalize`] drops it and a snapshot reads the same in both environments.
+//! A crash report also repeats the compiler flags, and two of them record how the harness was run
+//! rather than the diagnostic: cargo passes `-C incremental=…` according to the caller's
+//! `CARGO_INCREMENTAL` (the workspace's CI sets it to `0`, while a developer's shell usually leaves
+//! cargo's default on), and the harness's `--threads` mode sets `-Z threads=…`. [`normalize`]
+//! drops both, so a snapshot reads the same in every environment and mode.
 
 use std::path::Path;
 
@@ -58,24 +59,41 @@ pub fn normalize(raw: &str, harness_dir: &Path, cgp_root: &Path, sysroot: &Path)
         .filter(|line| !DROP_MARKERS.iter().any(|marker| line.contains(marker)))
         .map(|line| {
             let line = replace_paths(line, harness_dir, cgp_root, sysroot);
-            strip_incremental_flag(&replace_crash_details(&replace_thread_id(&line)))
+            strip_run_flags(&replace_crash_details(&replace_thread_id(&line)))
         })
         .collect::<Vec<_>>()
         .join("\n")
 }
 
-/// Drop the `incremental=…` token from a `compiler flags` note. Whether cargo passes the flag
-/// depends on the caller's `CARGO_INCREMENTAL`, so a snapshot that kept it would pass in a
-/// developer's shell and fail in CI (which sets the variable to `0`). Rustc's rendering carries the
-/// flag either as `-C incremental=…` or as a bare `incremental=…` after another `-C` value, so the
-/// removal takes the `-C ` with it when it is there. Any other line is returned unchanged.
-fn strip_incremental_flag(line: &str) -> String {
+/// The flags of a `compiler flags` note that record how the harness ran, each with the option
+/// rustc renders before it: cargo's `incremental=…`, set by the caller's `CARGO_INCREMENTAL`, and
+/// the `threads=…` the harness's `--threads` mode adds.
+const RUN_FLAGS: &[(&str, &str)] = &[("incremental=", "-C "), ("threads=", "-Z ")];
+
+/// Drop each of [`RUN_FLAGS`] from a `compiler flags` note, so a snapshot that would otherwise
+/// pass in a developer's shell and fail in CI, or pass on one thread and fail under `--threads 8`,
+/// reads the same in each. Any other line is returned unchanged.
+fn strip_run_flags(line: &str) -> String {
     const NOTE: &str = "compiler flags:";
-    const FLAG: &str = "incremental=";
     if !line.contains(NOTE) {
         return line.to_owned();
     }
-    let Some(value_start) = line.find(FLAG) else {
+    RUN_FLAGS
+        .iter()
+        .fold(line.to_owned(), |line, (flag, option)| {
+            strip_flag(&line, flag, option)
+        })
+}
+
+/// Drop the first token of `line` that starts with `flag`. Rustc's rendering carries a flag
+/// either as `<option>flag…` or as a bare `flag…` after another value of the same option, so the
+/// removal takes the `option` with it when it is there.
+fn strip_flag(line: &str, flag: &str, option: &str) -> String {
+    let token_start = line
+        .match_indices(flag)
+        .map(|(start, _)| start)
+        .find(|&start| line[..start].ends_with(' '));
+    let Some(value_start) = token_start else {
         return line.to_owned();
     };
     // The token ends at the next space, which the removal also consumes so the neighbouring flags
@@ -84,8 +102,8 @@ fn strip_incremental_flag(line: &str) -> String {
         .find(' ')
         .map_or(line.len(), |space| value_start + space + 1);
     let start = value_start
-        .checked_sub("-C ".len())
-        .filter(|&start| line[start..value_start].eq("-C "))
+        .checked_sub(option.len())
+        .filter(|&start| line[start..value_start].eq(option))
         .unwrap_or(value_start);
     let stripped = format!("{}{}", &line[..start], &line[end..]);
     // A flag that ends the line leaves the space before it at the end, which a snapshot would

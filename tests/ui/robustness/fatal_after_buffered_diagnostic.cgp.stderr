@@ -1,7 +1,7 @@
 error[E0277]: [CGP-E001] missing field `height` on `Rectangle`
-  --> src/main.rs:38:9
+  --> src/main.rs:43:9
    |
-38 |         AreaCalculatorComponent,
+43 |         AreaCalculatorComponent,
    |         ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E110] missing field `height` on `Rectangle`
@@ -12,16 +12,16 @@ error[E0277]: [CGP-E001] missing field `height` on `Rectangle`
    = help: add the field `height: f64` to `Rectangle`
 
 error[E0391]: cycle detected when checking if `A` is a trivial const
-  --> src/main.rs:42:1
+  --> src/main.rs:47:1
    |
-42 | const A: usize = B;
+47 | const A: usize = B;
    | ^^^^^^^^^^^^^^
    |
    = note: ...which requires building MIR for `A`...
 note: ...which requires checking if `B` is a trivial const...
-  --> src/main.rs:43:1
+  --> src/main.rs:48:1
    |
-43 | const B: usize = A;
+48 | const B: usize = A;
    | ^^^^^^^^^^^^^^
    = note: ...which requires building MIR for `B`...
    = note: ...which again requires checking if `A` is a trivial const, completing the cycle

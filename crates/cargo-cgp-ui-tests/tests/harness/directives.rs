@@ -13,6 +13,7 @@ fn reads_every_directive() {
 //@aux-build: cgp-test-crate-a
 //@aux-build: cgp-test-crate-b
 //@rewrites-falsely: the module strip drops the paths
+//@varies-under-threads: the cycle starts at either constant
 //@json
 //@env: RUST_BACKTRACE=0
 //@env: RUSTFLAGS=-Ztreat-err-as-bug=1
@@ -25,6 +26,7 @@ fn main() {}
         Directives {
             aux_build: vec!["cgp-test-crate-a".into(), "cgp-test-crate-b".into()],
             rewrites_falsely: Some("the module strip drops the paths".into()),
+            varies_under_threads: Some("the cycle starts at either constant".into()),
             json: true,
             env: vec![
                 ("RUST_BACKTRACE".into(), "0".into()),
@@ -67,6 +69,21 @@ fn a_spaced_directive_is_rejected() {
 #[should_panic(expected = "needs a reason")]
 fn a_rewrites_falsely_marker_needs_a_reason() {
     let _ = parse("//@rewrites-falsely:\nfn main() {}\n", "demo.rs");
+}
+
+#[test]
+#[should_panic(expected = "needs a reason")]
+fn a_varies_under_threads_marker_needs_a_reason() {
+    let _ = parse("//@varies-under-threads:\nfn main() {}\n", "demo.rs");
+}
+
+#[test]
+#[should_panic(expected = "a directive declared twice")]
+fn a_second_varies_under_threads_marker_is_rejected() {
+    let _ = parse(
+        "//@varies-under-threads: a\n//@varies-under-threads: b\nfn main() {}\n",
+        "demo.rs",
+    );
 }
 
 #[test]

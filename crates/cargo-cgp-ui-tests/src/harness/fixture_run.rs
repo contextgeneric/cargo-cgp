@@ -3,24 +3,29 @@
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use std::time::Duration;
 
+use crate::harness::capture::{Captured, capture};
 use crate::harness::cargo::cargo;
+use crate::options::Threads;
 use crate::paths::cargo_cgp_bin;
 
-/// The result of compiling one fixture: the rendered diagnostics and whether the command
-/// succeeded.
+/// The result of compiling one fixture: the rendered diagnostics and how the command ended.
 pub struct Run {
     /// The command's stderr, holding the rendered diagnostics.
     pub stderr: String,
     /// Whether the command exited successfully (the fixture compiled).
     pub success: bool,
+    /// Whether the command was killed at its deadline.
+    pub timed_out: bool,
 }
 
 impl Run {
-    fn from_output(output: &std::process::Output) -> Self {
+    fn from_captured(captured: Captured) -> Self {
         Run {
-            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
-            success: output.status.success(),
+            stderr: captured.stderr,
+            success: captured.success,
+            timed_out: captured.timed_out,
         }
     }
 }
@@ -29,27 +34,40 @@ impl Run {
 /// diagnostics from stderr with its exit status. `-q` suppresses cargo's progress lines,
 /// leaving the compiler diagnostics; `--color never` keeps the snapshot free of ANSI escapes.
 /// This is the "call cargo-cgp directly" pass.
-pub fn run_fixture(harness_crate: &Path, fixture: &Path, env: &[(String, String)]) -> Run {
-    let output = run_cargo_cgp(
+pub fn run_fixture(
+    harness_crate: &Path,
+    fixture: &Path,
+    env: &[(String, String)],
+    timeout: Duration,
+) -> Run {
+    let captured = run_cargo_cgp(
         harness_crate,
         fixture,
         env,
         &["check", "-q", "--color", "never"],
+        timeout,
     );
-    Run::from_output(&output)
+    Run::from_captured(captured)
 }
 
 /// Compile one fixture through `cargo-cgp check --message-format=json` and return cargo's JSON
-/// message stream from stdout, the form an editor reads. The caller keeps only the compiler
-/// messages; cargo's artifact and build-finished lines are noise here.
-pub fn run_fixture_json(harness_crate: &Path, fixture: &Path, env: &[(String, String)]) -> String {
-    let output = run_cargo_cgp(
+/// message stream from stdout, the form an editor reads, and whether the command timed out. The
+/// caller keeps only the compiler messages; cargo's artifact and build-finished lines are noise
+/// here.
+pub fn run_fixture_json(
+    harness_crate: &Path,
+    fixture: &Path,
+    env: &[(String, String)],
+    timeout: Duration,
+) -> (String, bool) {
+    let captured = run_cargo_cgp(
         harness_crate,
         fixture,
         env,
         &["check", "-q", "--message-format=json"],
+        timeout,
     );
-    String::from_utf8_lossy(&output.stdout).into_owned()
+    (captured.stdout, captured.timed_out)
 }
 
 /// One fixture's `cargo cgp expand`: the expansion from **stdout**, and how the command ended.
@@ -74,22 +92,24 @@ pub fn run_fixture_expand(
     harness_crate: &Path,
     fixture: &Path,
     env: &[(String, String)],
+    timeout: Duration,
 ) -> ExpandRun {
-    let output = run_cargo_cgp(
+    let mut captured = run_cargo_cgp(
         harness_crate,
         fixture,
         env,
         &["expand", "-q", "--color", "never"],
+        timeout,
     );
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout = std::mem::take(&mut captured.stdout);
     let expansion = if stdout.trim().is_empty() {
         NO_EXPANSION.to_owned()
     } else {
-        stdout.into_owned()
+        stdout
     };
     ExpandRun {
         expansion,
-        run: Run::from_output(&output),
+        run: Run::from_captured(captured),
     }
 }
 
@@ -105,27 +125,26 @@ pub const NO_EXPANSION: &str = "// no expansion: compilation stops before macro 
 ///
 /// It runs rustc's front end on one thread, by appending [`BASELINE_THREADS_FLAG`] to the ambient
 /// `RUSTFLAGS` ([`baseline_rustflags`]), so the baseline records the order a sequential compiler
-/// reports in, as the driver's own injected `-Zthreads=1` does for the tool's passes.
+/// reports in, whatever thread count the tool's passes run with.
 ///
 /// It builds in a separate target directory (`target-rust/`) from the `cargo-cgp` passes, so
 /// the two do not invalidate each other's `cgp` build: cargo's fingerprint includes
 /// `RUSTC_WORKSPACE_WRAPPER`, which `cargo-cgp` sets and plain `cargo` does not, so sharing a
 /// target directory would recompile `cgp` on every alternation.
-pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path) -> Run {
+pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path, timeout: Duration) -> Run {
     fs::copy(fixture, harness_crate.join("src/main.rs"))
         .unwrap_or_else(|e| panic!("copying fixture {}: {e}", fixture.display()));
 
-    let output = Command::new(cargo())
+    let mut command = Command::new(cargo());
+    command
         .current_dir(harness_crate)
         .env("CARGO_TARGET_DIR", harness_crate.join("target-rust"))
         .env(
             "RUSTFLAGS",
             baseline_rustflags(std::env::var("RUSTFLAGS").ok().as_deref()),
         )
-        .args(["check", "-q", "--color", "never"])
-        .output()
-        .expect("running plain cargo check on a fixture");
-    Run::from_output(&output)
+        .args(["check", "-q", "--color", "never"]);
+    Run::from_captured(capture(&mut command, timeout))
 }
 
 /// The flag the plain `cargo check` pass appends to `RUSTFLAGS`, so rustc's front end runs on one
@@ -136,10 +155,50 @@ pub const BASELINE_THREADS_FLAG: &str = "-Zthreads=1";
 /// [`BASELINE_THREADS_FLAG`] appended, since setting the variable replaces the ambient one. rustc
 /// takes the last `-Zthreads`, so the flag also overrides an ambient thread count.
 pub fn baseline_rustflags(ambient: Option<&str>) -> String {
-    match ambient.map(str::trim) {
-        Some(ambient) if !ambient.is_empty() => format!("{ambient} {BASELINE_THREADS_FLAG}"),
-        _ => BASELINE_THREADS_FLAG.to_owned(),
+    join_flags(ambient, Some(BASELINE_THREADS_FLAG))
+}
+
+/// The environment of the tool's passes: the fixture's `//@env:` variables, with `RUSTFLAGS` set
+/// to the fixture's value when it declares one, else `ambient`, followed by the thread count
+/// `threads` names. With [`Threads::Default`] and no flags at all, `RUSTFLAGS` is left unset.
+///
+/// The check, JSON, and expand passes take the same value, because `RUSTFLAGS` is part of cargo's
+/// fingerprint, and a value that differed between them would rebuild `cgp` at every pass.
+///
+/// Postcondition: the result holds the fixture's variables other than `RUSTFLAGS`, in their
+/// order, then at most one `RUSTFLAGS`, which ends with `threads.flag()` when it is `Some`.
+pub fn tool_env(
+    fixture_env: &[(String, String)],
+    ambient: Option<&str>,
+    threads: Threads,
+) -> Vec<(String, String)> {
+    let declared = fixture_env
+        .iter()
+        .rev()
+        .find(|(key, _)| key == "RUSTFLAGS")
+        .map(|(_, value)| value.as_str());
+    let rustflags = join_flags(declared.or(ambient), threads.flag().as_deref());
+
+    let mut env: Vec<(String, String)> = fixture_env
+        .iter()
+        .filter(|(key, _)| key != "RUSTFLAGS")
+        .cloned()
+        .collect();
+    if !rustflags.is_empty() {
+        env.push(("RUSTFLAGS".to_owned(), rustflags));
     }
+    env
+}
+
+/// `base` and `extra` joined by a space, either left out when blank.
+fn join_flags(base: Option<&str>, extra: Option<&str>) -> String {
+    [base, extra]
+        .into_iter()
+        .flatten()
+        .map(str::trim)
+        .filter(|flags| !flags.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// Copy the fixture in as the throwaway crate's `src/main.rs` and run `cargo-cgp` with
@@ -147,8 +206,8 @@ pub fn baseline_rustflags(ambient: Option<&str>) -> String {
 /// recompile and re-emit diagnostics even when the same fixture was just built by another
 /// pass.
 ///
-/// `env` holds the fixture's `//@env:` variables, which are set on the command (see
-/// [`crate::directives`]).
+/// `env` holds the variables [`tool_env`] gives: the fixture's `//@env:` variables (see
+/// [`crate::directives`]) and the `RUSTFLAGS` that carries the thread count.
 ///
 /// `CARGO_CGP_NO_MANAGE` turns off the front-end's provisioning preflight and toolchain
 /// forcing: the harness drives the freshly built driver under the toolchain `cargo test`
@@ -160,15 +219,16 @@ pub fn run_cargo_cgp(
     fixture: &Path,
     env: &[(String, String)],
     args: &[&str],
-) -> std::process::Output {
+    timeout: Duration,
+) -> Captured {
     fs::copy(fixture, harness_crate.join("src/main.rs"))
         .unwrap_or_else(|e| panic!("copying fixture {}: {e}", fixture.display()));
 
-    Command::new(cargo_cgp_bin())
+    let mut command = Command::new(cargo_cgp_bin());
+    command
         .current_dir(harness_crate)
         .env("CARGO_CGP_NO_MANAGE", "1")
         .envs(env.iter().map(|(key, value)| (key, value)))
-        .args(args)
-        .output()
-        .expect("running cargo-cgp on a fixture")
+        .args(args);
+    capture(&mut command, timeout)
 }

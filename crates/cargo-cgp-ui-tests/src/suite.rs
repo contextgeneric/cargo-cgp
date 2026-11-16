@@ -13,7 +13,9 @@ use crate::{aux, directives, fixtures, harness, passes, paths, runner};
 /// Run the UI suite. `args` are the harness arguments (everything cargo passes after
 /// `--`): `--bless` to regenerate snapshots, `--print` to print each fixture's raw output
 /// instead of comparing, `--list` to list each fixture with its quality and codes,
-/// `--jobs N` (`-j N`) to set the worker count, and any bare words as path substring filters.
+/// `--jobs N` (`-j N`) to set the worker count, `--threads N|default` to set the tool's front-end
+/// threads, `--iterations K` to run each fixture's passes up to K times, `--timeout SECS` to bound
+/// each command, and any bare words as path substring filters (see [`Options::parse`]).
 ///
 /// Exits the process: `0` if every fixture passed (or was blessed, printed, or listed), `1` when
 /// any fixture failed a snapshot or a check, `2` if no fixture matched the filters.
@@ -35,10 +37,15 @@ pub fn run(args: Vec<String>) {
     let setup = prepare(&options, fixtures.len());
 
     if !options.print {
+        let threads = match options.threads.flag() {
+            Some(flag) => flag,
+            None => "rustc's default threads".to_owned(),
+        };
         eprintln!(
-            "checking {} fixture(s) across {} worker(s)",
+            "checking {} fixture(s) across {} worker(s), the tool with {threads}, {} iteration(s)",
             fixtures.len(),
-            setup.jobs
+            setup.jobs,
+            options.iterations,
         );
     }
 
@@ -131,6 +138,11 @@ pub fn check_fixture(
         .to_string();
 
     let directives = directives::read(fixture);
+    let tool_env = harness::tool_env(
+        &directives.env,
+        std::env::var("RUSTFLAGS").ok().as_deref(),
+        options.threads,
+    );
 
     // Point the worker crate at whatever auxiliary crates this fixture declares
     // (usually none) before any pass copies the fixture in and compiles it.
@@ -139,7 +151,7 @@ pub fn check_fixture(
 
     if options.print {
         Report {
-            text: print_block(crate_dir, fixture, &name, &directives.env),
+            text: print_block(crate_dir, fixture, &name, &tool_env, options.timeout),
             failed: false,
         }
     } else {
@@ -148,12 +160,30 @@ pub fn check_fixture(
             cgp_root: &setup.cgp_root,
             sysroot: &setup.sysroot,
         };
-        let outcomes = run_passes(options, fixture, &name, &directives, &paths);
-        let failed = outcomes
-            .iter()
-            .any(|(_, outcome)| matches!(outcome, Outcome::Mismatch(_)));
+        // A bless writes each snapshot once, so it runs one iteration.
+        let iterations = if options.bless {
+            1
+        } else {
+            options.iterations.get()
+        };
+        let mut iteration = 0;
+        let (outcomes, failed) = loop {
+            iteration += 1;
+            let outcomes = run_passes(options, fixture, &name, &directives, &tool_env, &paths);
+            let failed = outcomes
+                .iter()
+                .any(|(_, outcome)| matches!(outcome, Outcome::Mismatch(_)));
+            if failed || iteration == iterations {
+                break (outcomes, failed);
+            }
+        };
+        let label = if failed && iterations > 1 {
+            format!("{name}  [iteration {iteration} of {iterations}]")
+        } else {
+            name
+        };
         Report {
-            text: report_block(&name, &outcomes),
+            text: report_block(&label, &outcomes),
             failed,
         }
     }

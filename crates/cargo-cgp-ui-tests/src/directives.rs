@@ -7,6 +7,9 @@
 //!   [`crate::aux`]).
 //! - `//@rewrites-falsely: <reason>`: a `pass-through/` fixture whose tool output still differs
 //!   from plain rustc's, so its snapshots pin today's output instead of the equality check.
+//! - `//@varies-under-threads: <reason>`: a fixture whose own compiler output rustc varies between
+//!   runs when its front end runs on several threads, so a run under `--threads` other than one
+//!   skips the tool's snapshot comparisons for it and keeps its checks.
 //! - `//@json`: also run the JSON pass, pinning the diagnostics an editor reads.
 //! - `//@env: <KEY>=<VALUE>`: set an environment variable for the tool's runs (the check, JSON,
 //!   and expand passes); a fixture may declare several.
@@ -19,8 +22,8 @@
 //! known name written in another comment form (`// @aux-build:` with a space, or `//! @json`): a
 //! stray space after `//` is the mistake that has actually happened. A comment that merely starts
 //! with an `@`-path, such as commented-out wiring, stays legal. A directive that holds one value
-//! (`//@codes:`, `//@quality:`, `//@rewrites-falsely:`) is rejected when declared twice, since the
-//! second would silently replace the first.
+//! (`//@codes:`, `//@quality:`, `//@rewrites-falsely:`, `//@varies-under-threads:`) is rejected
+//! when declared twice, since the second would silently replace the first.
 
 use std::fs;
 use std::path::Path;
@@ -31,6 +34,7 @@ use crate::cgp_code::cgp_code_at;
 const NAMES: &[&str] = &[
     "aux-build",
     "rewrites-falsely",
+    "varies-under-threads",
     "json",
     "env",
     "codes",
@@ -47,6 +51,8 @@ pub struct Directives {
     pub aux_build: Vec<String>,
     /// Why a `pass-through/` fixture's output still differs from rustc's (`//@rewrites-falsely:`).
     pub rewrites_falsely: Option<String>,
+    /// Why rustc's own output for the fixture varies under threads (`//@varies-under-threads:`).
+    pub varies_under_threads: Option<String>,
     /// Whether the JSON pass runs (`//@json`).
     pub json: bool,
     /// Environment variables for the tool's runs, from `//@env:` lines, in declaration order.
@@ -108,6 +114,14 @@ fn apply(directives: &mut Directives, rest: &str, line: &str, name: &str) {
         );
         once(directives.rewrites_falsely.is_some(), name, line);
         directives.rewrites_falsely = Some(reason.to_owned());
+    } else if let Some(reason) = rest.strip_prefix("varies-under-threads:") {
+        let reason = reason.trim();
+        assert!(
+            !reason.is_empty(),
+            "`//@varies-under-threads:` needs a reason in {name}:\n  {line}"
+        );
+        once(directives.varies_under_threads.is_some(), name, line);
+        directives.varies_under_threads = Some(reason.to_owned());
     } else if rest.trim_end() == "json" {
         directives.json = true;
     } else if let Some(assignment) = rest.strip_prefix("env:") {

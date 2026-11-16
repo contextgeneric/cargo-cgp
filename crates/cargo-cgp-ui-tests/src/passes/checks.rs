@@ -1,5 +1,7 @@
 //! The checks that compare a fixture's passes with each other or with its header.
 
+use std::time::Duration;
+
 use crate::directives::Directives;
 use crate::passes::codes::cgp_codes;
 use crate::snapshot::Outcome;
@@ -16,6 +18,29 @@ pub fn status_check(plain_ok: bool, tool_ok: bool) -> Outcome {
         "  --- status: plain `cargo check` {} but `cargo cgp check` {} ---\n",
         describe(plain_ok),
         describe(tool_ok)
+    ))
+}
+
+/// Check that no command ran past its deadline: `commands` pairs each command's name with whether
+/// it was killed at `timeout`. A command that hangs, as a compiler can under threads, would
+/// otherwise stall the run, or fail only through the partial output it left.
+pub fn timeout_check(commands: &[(&str, bool)], timeout: Duration) -> Outcome {
+    let timed_out: Vec<&str> = commands
+        .iter()
+        .filter(|(_, timed_out)| *timed_out)
+        .map(|(name, _)| *name)
+        .collect();
+    if timed_out.is_empty() {
+        return Outcome::Ok;
+    }
+    Outcome::Mismatch(format!(
+        "  --- timeout: {} did not finish within {} s ---\n",
+        timed_out
+            .iter()
+            .map(|name| format!("`{name}`"))
+            .collect::<Vec<_>>()
+            .join(", "),
+        timeout.as_secs()
     ))
 }
 

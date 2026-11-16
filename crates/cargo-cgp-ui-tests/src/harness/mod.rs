@@ -6,12 +6,14 @@
 //! fixtures it checks keeps cgp built and cached within that worker.
 
 mod build;
+mod capture;
 mod cargo;
 mod fixture_run;
 mod manifest;
 mod worker;
 
 pub use build::*;
+pub use capture::*;
 pub use cargo::*;
 pub use fixture_run::*;
 pub use manifest::*;

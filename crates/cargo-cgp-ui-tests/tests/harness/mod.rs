@@ -1,5 +1,6 @@
 pub mod aux;
 pub mod baseline;
+pub mod capture;
 pub mod cgp_code;
 pub mod directives;
 pub mod fixtures;
@@ -8,3 +9,4 @@ pub mod options;
 pub mod passes;
 pub mod paths;
 pub mod snapshot;
+pub mod tool_env;

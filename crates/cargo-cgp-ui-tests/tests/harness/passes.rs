@@ -1,10 +1,12 @@
 //! Tests for the checks that compare passes ([`cargo_cgp_ui_tests::passes`]) and for the JSON
 //! reduction.
 
+use std::time::Duration;
+
 use cargo_cgp_ui_tests::directives::parse;
 use cargo_cgp_ui_tests::passes::{
     cgp_codes, diagnostic_blocks, expand_status_check, header_check, pass_through_check,
-    reduce_json, status_check,
+    reduce_json, status_check, timeout_check,
 };
 use cargo_cgp_ui_tests::snapshot::Outcome;
 
@@ -31,6 +33,26 @@ fn an_expansions_status_must_match_its_reported_errors() {
     assert!(text.contains("reported an error but exited 0"), "{text}");
     let text = mismatch(expand_status_check(false, ""));
     assert!(text.contains("failed without reporting an error"), "{text}");
+}
+
+// Property: `timeout_check` is `Ok` iff no command timed out, and its report names each one that
+//   did, with the deadline.
+#[test]
+fn a_timed_out_command_fails_the_fixture() {
+    let deadline = Duration::from_secs(600);
+    assert!(is_ok(&timeout_check(&[("cargo check", false)], deadline)));
+    let text = mismatch(timeout_check(
+        &[
+            ("cargo check", false),
+            ("cargo cgp check", true),
+            ("cargo cgp expand", true),
+        ],
+        deadline,
+    ));
+    assert_eq!(
+        text,
+        "  --- timeout: `cargo cgp check`, `cargo cgp expand` did not finish within 600 s ---\n"
+    );
 }
 
 #[test]

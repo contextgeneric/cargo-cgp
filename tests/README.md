@@ -75,12 +75,16 @@ declares two:
 - `//@codes:` lists the exact set of `[CGP-Exxx]` codes the tool's output carries, or `none`. The
   harness fails a fixture whose output gains or loses a code.
 
-Four more directives are used where they apply:
+Five more directives are used where they apply:
 
 - `//@aux-build: <crate>`: build an auxiliary crate and depend on it (see below).
 - `//@rewrites-falsely: <reason>`: a `pass-through/` fixture whose output still differs from plain
   rustc's, for a fix still to come or a documented limitation; its snapshots pin today's output, and
   a fix that closes the difference removes the marker.
+- `//@varies-under-threads: <reason>`: a fixture whose own compiler output rustc varies between
+  runs when its front end runs on several threads, such as a query cycle that starts from whichever
+  item a thread reached first; a run under `--threads` other than one skips the tool's snapshots
+  for it and keeps its checks.
 - `//@json`: also run the JSON pass.
 - `//@env: <KEY>=<VALUE>`: set an environment variable for the tool's runs. A `robustness/`
   fixture sets `RUSTFLAGS=-Ztreat-err-as-bug=2` this way to make the compiler crash.
@@ -98,6 +102,8 @@ Beside the three snapshot comparisons, each fixture runs these checks:
   diagnostics as plain rustc's, each as many times, in any order, since the tool prints in its own
   order.
 - **Header:** an error fixture must declare its quality, and its `//@codes:` must match the output.
+- **Timeout:** every command must finish within the deadline, ten minutes unless `--timeout` sets
+  another; one that runs past it is killed with its children and fails the fixture.
 
 A mismatch prints a line diff for each failing pass, and a missing snapshot fails rather than
 passing as empty.
@@ -173,6 +179,7 @@ flag is not also handed to the crate's other tests:
 cargo test -p cargo-cgp-ui-tests --test ui -- wiring/      # only fixtures whose path contains "wiring/"
 cargo test -p cargo-cgp-ui-tests --test ui -- --bless      # regenerate the snapshots
 cargo test -p cargo-cgp-ui-tests --test ui -- -j 4         # check at most 4 fixtures at once
+cargo test -p cargo-cgp-ui-tests --test ui -- --threads default --iterations 3  # under threads, three times
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --print unsatisfied_dependency  # raw output of all three passes
 cargo test -q -p cargo-cgp-ui-tests --test ui -- --list | grep ^usability        # the fixtures still to improve
 ```
@@ -180,10 +187,18 @@ cargo test -q -p cargo-cgp-ui-tests --test ui -- --list | grep ^usability       
 Fixtures are checked in parallel across a pool of workers, one throwaway crate each, with
 `--jobs`/`-j` setting the count (default: the machine's parallelism, capped at 8). Each fixture's
 result prints the moment it finishes, so the run streams in completion order. Snapshots are blessed
-under the toolchain the repository pins, so a toolchain bump can require a re-bless. Both compilers
-run their front end on one thread, the tool because its driver forces `-Zthreads=1` and plain
-`cargo check` because the harness appends it to `RUSTFLAGS`, so a snapshot keeps one order on
-every run.
+under the toolchain the repository pins, so a toolchain bump can require a re-bless.
+
+The tool's passes run rustc's front end on one thread unless `--threads` says otherwise:
+`--threads N` adds `-Zthreads=N` to their `RUSTFLAGS`, after the ambient value or a fixture's
+`//@env:` one, and `--threads default` adds none, so rustc picks its own count, as a release run
+does. Every snapshot must hold in each mode, so a parallel run checks that the tool's output does
+not depend on the threads. `--iterations K` runs each fixture's passes up to K times and reports
+the first iteration that fails, which catches output that varies only on some runs; a bless runs
+once. Plain `cargo check` runs on one thread in every mode, because the harness appends
+`-Zthreads=1` to its `RUSTFLAGS`, so `.rust.stderr` keeps rustc's sequential order. The driver
+still forces `-Zthreads=1` itself, so for now a parallel mode runs the tool on one thread too.
+CI runs the suite once on one thread and once with `--threads default --iterations 3`.
 
 ## Adding a fixture
 

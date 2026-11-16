@@ -148,3 +148,35 @@ jobs:
             ${{ runner.os }}-cargo-
       - name: Run the suite
         run: cargo test
+
+  test-threads:
+    name: UI suite under threads
+    runs-on: ubuntu-latest
+    # The tool's passes run rustc's front end on its default thread count, as a
+    # release run does, and each fixture runs three times, so output that varies
+    # between runs fails the job. The baseline pass stays on one thread.
+    timeout-minutes: 60
+    steps:
+      - name: Check out cargo-cgp
+        uses: actions/checkout@v4
+        with:
+          path: cargo-cgp
+      - name: Check out cgp as a sibling
+        uses: actions/checkout@v4
+        with:
+          repository: contextgeneric/cgp
+          path: cgp
+      - name: Install the pinned nightly and its components
+        run: rustup toolchain install
+      - name: Cache the cargo registry and target directory
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            cargo-cgp/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('cargo-cgp/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Run the suite under threads
+        run: cargo test -p cargo-cgp-ui-tests --test ui -- --threads default --iterations 3

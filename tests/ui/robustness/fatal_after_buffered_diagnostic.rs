@@ -7,6 +7,11 @@
 //! error unwinds, before the cycle error, in the order plain rustc prints them.
 //!
 //! Error class: none; this pins that buffering survives a fatal error.
+//!
+//! Under threads, rustc's cycle error starts from whichever constant a thread reached first, so its
+//! text differs between runs, and a run under `--threads` other than one skips the tool's snapshot.
+
+//@varies-under-threads: rustc's `E0391` cycle starts from whichever constant a thread reached first
 
 use cgp::prelude::*;
 

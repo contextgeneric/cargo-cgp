@@ -174,6 +174,26 @@ fn drops_the_incremental_flag_from_a_compiler_flags_note() {
 }
 
 #[test]
+fn drops_the_thread_count_from_a_compiler_flags_note() {
+    // Property: a crash report's compiler flags read the same with one thread, a count, and
+    // rustc's default, because `-Z threads=…` comes from the harness's `--threads` mode, which
+    // every snapshot must hold under. The other `-Z` flag stays.
+    let expected = "note: compiler flags: --crate-type bin -C debuginfo=2 -Z treat-err-as-bug=2";
+    for input in [
+        "note: compiler flags: --crate-type bin -C debuginfo=2 -Z treat-err-as-bug=2 -Z threads=1",
+        "note: compiler flags: --crate-type bin -C debuginfo=2 -Z threads=8 -Z treat-err-as-bug=2",
+        "note: compiler flags: --crate-type bin -C debuginfo=2 -C incremental=[REDACTED] -Z treat-err-as-bug=2 -Z threads=8",
+        expected,
+    ] {
+        assert_eq!(
+            normalize(input, &harness_dir(), &cgp_root(), &sysroot()),
+            expected,
+            "{input}"
+        );
+    }
+}
+
+#[test]
 fn keeps_a_mention_of_incremental_outside_a_compiler_flags_note() {
     // The rewrite is scoped to the crash report's flag line, so a diagnostic that talks about the
     // incremental cache keeps its wording.
