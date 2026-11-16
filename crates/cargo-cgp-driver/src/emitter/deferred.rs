@@ -40,6 +40,10 @@ static ORIGINAL_ANALYSIS: OnceLock<for<'tcx> fn(TyCtxt<'tcx>, ())> = OnceLock::n
 
 /// What the processing can do with the emitter, without knowing its inner emitter's type.
 pub trait DeferredTarget {
+    /// Read the first batch before any of it is transformed, so a rule that pairs two diagnostics
+    /// knows both whichever comes first.
+    fn prepare(&mut self, batch: &[DiagInner]);
+
     /// Transform `diag` and buffer the result, as a diagnostic on the streaming path is.
     fn transform(&mut self, diag: DiagInner);
 
@@ -84,7 +88,8 @@ pub fn override_analysis(_session: &Session, providers: &mut Providers) {
 ///
 /// `analysis` ends a failing crate by raising a `FatalErrorMarker` itself once type checking has
 /// reported an error, so the wrapper catches that unwind, transforms the queue while the compiler is
-/// still usable, and resumes it. Any other unwind is a crash: the panic hook has printed the buffer
+/// still usable, and resumes it. The emitter reads the queue once before transforming any of it
+/// ([`DeferredTarget::prepare`]). Any other unwind is a crash: the panic hook has printed the buffer
 /// and the queue already, so it resumes at once. An unwind out of the processing, such as a fatal
 /// error from a query a transform forced, is resumed in turn once the queue is buffered.
 fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
@@ -108,7 +113,12 @@ fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     // to be taken in the next batch.
     let stopped = {
         let mut target = lock_output(&target);
-        drain_queue(take_queued, MAX_ROUNDS, |diag, handling| match handling {
+        let mut first = Some(take_queued());
+        if let Some(first) = &first {
+            target.prepare(first);
+        }
+        let take = || first.take().unwrap_or_else(take_queued);
+        drain_queue(take, MAX_ROUNDS, |diag, handling| match handling {
             Handling::Transform => target.transform(diag),
             Handling::KeepUntransformed => target.keep_untransformed(diag),
         })

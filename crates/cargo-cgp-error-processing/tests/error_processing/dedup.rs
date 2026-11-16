@@ -111,3 +111,22 @@ fn a_second_header_matches_a_fallback_worded_another_way() {
     assert!(!ledger.check_and_record(Some("cause"), no_text, &[class, provider_form]));
     assert!(ledger.check_and_record(None, || "fallback body".to_owned(), &[provider_form]));
 }
+
+// Property: `records_header` holds exactly for the coded headlines a resolved report recorded,
+//   whatever order the reports came in, so the flush can drop a declined report that came first.
+#[test]
+fn a_resolved_report_records_its_coded_headline_for_the_flush() {
+    let mut ledger = DedupLedger::new();
+    let header = "[CGP-E001] `App` cannot implement `CanGreet`";
+    // The declined report arrives first, so the ledger keeps it.
+    assert!(!ledger.check_and_record(None, || "declined text".to_owned(), &[header]));
+    assert!(!ledger.records_header(header));
+    // The resolved report arrives later and records the headline the flush reads.
+    assert!(!ledger.check_and_record(
+        Some("App\u{1f}CanGreet\u{1f}missing name"),
+        no_text,
+        &[header]
+    ));
+    assert!(ledger.records_header(header));
+    assert!(!ledger.records_header("[CGP-E002] another headline"));
+}

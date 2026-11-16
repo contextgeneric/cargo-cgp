@@ -392,8 +392,9 @@ fn defined_twice(name: &str, caret: Span) -> DiagInner {
 // names the method's helper.
 // Handled: the helper's caret must come from a `#[cgp_auto_dispatch]` expansion, so a helper-shaped
 // name the program wrote itself, at a caret with no expansion, pairs with nothing.
-// Property: for all diagnostics that are not a computer `E0428` with a buffered helper from that
-// expansion, `shared_dispatch_method` leaves the diagnostic to the next stage.
+// Property: for all diagnostics that are not one half of the pair with the other half buffered, the
+// helper's from that expansion, `shared_dispatch_method` leaves the diagnostic to the next stage, in
+// either arrival order.
 // The positive pairing needs an expansion span, so
 // `tests/ui/wiring/conflicting-wiring/auto_dispatch_shared_method_name.rs` covers it end to end.
 #[test]
@@ -404,12 +405,20 @@ fn a_diagnostic_without_its_helper_goes_to_the_next_stage() {
             dispatch_helper_method("__compute_area__").map(dispatch_computer_name),
             Some("ComputeArea".to_owned())
         );
-        let computer = defined_twice("ComputeArea", span(SECOND));
-        let written_helper = defined_twice("__compute_area__", span(FIRST));
+        let computer = || defined_twice("ComputeArea", span(SECOND));
+        let written_helper = || defined_twice("__compute_area__", span(FIRST));
         for (diag, buffer) in [
             (error("another error", span(SECOND)), vec![]),
-            (defined_twice("ComputeArea", span(SECOND)), vec![]),
-            (computer, vec![BufEntry::Plain(Box::new(written_helper))]),
+            (computer(), vec![]),
+            (
+                computer(),
+                vec![BufEntry::Plain(Box::new(written_helper()))],
+            ),
+            // The other order: a helper-shaped name arriving after the buffered computer.
+            (
+                written_helper(),
+                vec![BufEntry::Plain(Box::new(computer()))],
+            ),
         ] {
             assert_eq!(shared_dispatch_method(&diag, &buffer), Verdict::Continue);
         }

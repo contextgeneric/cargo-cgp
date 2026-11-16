@@ -165,3 +165,53 @@ fn the_same_error_on_the_same_line_of_another_file_is_kept() {
         assert_eq!(merge_repeats(diags, &map).len(), 2);
     });
 }
+
+/// `error` with `notes` notes.
+fn with_notes(mut diag: DiagInner, notes: usize) -> DiagInner {
+    for index in 0..notes {
+        diag.children.push(rustc_errors::Subdiag {
+            level: rustc_errors::Sublevel::Note,
+            messages: vec![(
+                DiagMessage::from(format!("note {index}")),
+                rustc_errors::Style::NoStyle,
+            )],
+            span: MultiSpan::new(),
+        });
+    }
+    diag
+}
+
+// Concern: rustc's order is what makes the earlier block the fuller one, so the other order would
+//   merge the notes away.
+// Handled: the merged block is the one with more notes, at the earlier block's position.
+// Property: for both orders of a repeat pair whose blocks have different note counts, the merged
+//   block keeps the larger count and labels the other block's caret.
+#[test]
+fn a_merged_repeat_keeps_the_fuller_notes_in_either_order() {
+    source::with_source(SOURCE, |map, span| {
+        let fuller = || with_notes(error(Some(E0277), MESSAGE, span(SHAPE)), 2);
+        let sparser = || with_notes(error(Some(E0277), MESSAGE, span(CIRCLE)), 0);
+        for diags in [vec![fuller(), sparser()], vec![sparser(), fuller()]] {
+            let merged = merge_repeats(diags, map);
+            assert_eq!(merged.len(), 1);
+            assert_eq!(merged[0].children.len(), 2, "the fuller notes survive");
+            assert_eq!(merged[0].span.primary_span(), Some(span(SHAPE)));
+            assert_eq!(also_required(&merged[0]), [span(CIRCLE)]);
+        }
+    });
+}
+
+// Property: for a repeat pair with equal note counts, the earlier block is the merged one.
+#[test]
+fn a_merged_repeat_with_equal_notes_keeps_the_earlier_block() {
+    source::with_source(SOURCE, |map, span| {
+        let diags = vec![
+            with_notes(error(Some(E0277), MESSAGE, span(SHAPE)), 1),
+            with_notes(error(Some(E0277), MESSAGE, span(CIRCLE)), 1),
+        ];
+        let merged = merge_repeats(diags, map);
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].span.primary_span(), Some(span(SHAPE)));
+        assert_eq!(also_required(&merged[0]), [span(CIRCLE)]);
+    });
+}

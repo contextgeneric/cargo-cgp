@@ -14,11 +14,13 @@ use rustc_span::source_map::SourceMap;
 
 use crate::component_map::build_name_map_from_tls;
 use crate::emitter::attribute_splice::drop_attribute_splices;
-use crate::emitter::buffer::{BufEntry, ResolvedEntry};
+use crate::emitter::buffer::{BufEntry, PendingEntry, PendingKind, ResolvedEntry, settle_pending};
+use crate::emitter::containment::contain;
 use crate::emitter::crate_facts::{CrateFacts, EMPTY_AMBIGUOUS_NAMES};
 use crate::emitter::deferred::{DeferredTarget, defer, is_deferring, register_target, take_queued};
 use crate::emitter::edit::{
-    bound_candidate_lists, main_message_text, message_signature, postprocess_diag, push_name_fix,
+    bound_candidate_lists, is_question_mark_cascade, main_message_text, message_signature,
+    postprocess_diag, push_name_fix,
 };
 use crate::emitter::fallback::{render_or_untransformed, transform_or_original};
 use crate::emitter::flush::render;
@@ -71,8 +73,8 @@ pub struct CgpEmitter<E: Emitter> {
     resolve_cache: ResolveCache,
     /// The primary spans of every CGP wiring failure this emitter has recognized this compilation,
     /// written by the tails and read by the `?`-cascade stage ([`question_mark_cascade`]) to drop a
-    /// downstream `?`-operator cascade on the same expression. rustc emits the wiring failure
-    /// before its cascade, so the span is recorded by the time the cascade arrives.
+    /// downstream `?`-operator cascade on the same expression as it arrives, and by the flush
+    /// ([`settle_pending`]) to drop one that arrived before its failure.
     cgp_spans: Vec<Span>,
     /// The `#[cgp_impl]` misuse stage, which owns the crate's `#[cgp_impl]` header mistakes once
     /// detected; the resolver's stage reads them to drop a check re-report of one.
@@ -139,7 +141,9 @@ impl<E: Emitter> CgpEmitter<E> {
             buffer_edit,
             fix,
         } = reshape;
-        self.edit_buffer(buffer_edit);
+        if let Some(subject) = self.edit_buffer(buffer_edit) {
+            diag = subject;
+        }
         apply_reshape(&mut diag, plan, span);
         if let Some(fix) = fix {
             push_name_fix(&mut diag, *fix);
@@ -151,19 +155,33 @@ impl<E: Emitter> CgpEmitter<E> {
         self.push(BufEntry::Plain(Box::new(diag)));
     }
 
-    /// Apply a reshape's edit of the diagnostics already buffered.
-    fn edit_buffer(&self, edit: BufferEdit) {
+    /// Apply a reshape's edit of the diagnostics already buffered, and return the buffered
+    /// diagnostic the reshape is worded on in place of the incoming one, if the edit takes one.
+    fn edit_buffer(&self, edit: BufferEdit) -> Option<DiagInner> {
         match edit {
-            BufferEdit::None => {}
+            BufferEdit::None => None,
             BufferEdit::DropCgpImplSiblings {
                 impl_span,
                 macro_span,
-            } => self
-                .output()
-                .buffer
-                .retain(|entry| !is_cgp_impl_sibling_entry(entry, impl_span, macro_span)),
+            } => {
+                self.output()
+                    .buffer
+                    .retain(|entry| !is_cgp_impl_sibling_entry(entry, impl_span, macro_span));
+                None
+            }
             BufferEdit::Remove(index) => {
                 self.output().buffer.remove(index);
+                None
+            }
+            BufferEdit::TakeAsSubject(index) => {
+                let mut output = self.output();
+                match output.buffer.remove(index) {
+                    BufEntry::Plain(subject) => Some(*subject),
+                    other => {
+                        output.buffer.insert(index, other);
+                        None
+                    }
+                }
             }
         }
     }
@@ -286,10 +304,13 @@ impl<E: Emitter> CgpEmitter<E> {
                 drop_generated_names(&mut diag, source_map);
             }
         }
-        if rewritten {
-            // Remember where this wiring failure landed, so a later `?`-operator cascade on the
-            // same expression is dropped. Recorded before de-duplication, so a re-report that is
-            // itself suppressed still anchors its cascade.
+        // A `?`-operator error is a cascade candidate, settled at the flush against every CGP span
+        // recorded by then, so it must not record its own.
+        let cascade = is_question_mark_cascade(original);
+        if rewritten && !cascade {
+            // Remember where this wiring failure landed, so a `?`-operator cascade on the same
+            // expression is dropped. Recorded before de-duplication, so a re-report that is itself
+            // suppressed still anchors its cascade.
             self.record_cgp_spans(&diag);
         }
         if rewritten && self.is_repeat_report(&diag, cause_sig.as_deref(), &class_headers) {
@@ -310,7 +331,30 @@ impl<E: Emitter> CgpEmitter<E> {
                     original: original.clone(),
                 })));
             }
-            None => self.push(BufEntry::Plain(Box::new(diag))),
+            None if cascade => self.push(BufEntry::Pending(Box::new(PendingEntry {
+                diag,
+                kind: PendingKind::Cascade,
+            }))),
+            None => {
+                // A declined failure the text rewrite reworded restates a resolved failure that
+                // records its coded headline; one that arrives later records it after this check,
+                // so the flush decides.
+                let headers: Vec<String> = main_message_text(&diag)
+                    .filter(|header| {
+                        rewritten && cause_sig.is_none() && header.starts_with("[CGP-E0")
+                    })
+                    .map(str::to_owned)
+                    .into_iter()
+                    .collect();
+                if headers.is_empty() {
+                    self.push(BufEntry::Plain(Box::new(diag)));
+                } else {
+                    self.push(BufEntry::Pending(Box::new(PendingEntry {
+                        diag,
+                        kind: PendingKind::Declined { headers },
+                    })));
+                }
+            }
         }
     }
 
@@ -354,6 +398,18 @@ impl<E: Emitter> CgpEmitter<E> {
 }
 
 impl<E: Emitter> DeferredTarget for CgpEmitter<E> {
+    /// Collect the providers written without `#[cgp_provider]`, contained like a transform, so a
+    /// check that restates one is dropped even when it comes first.
+    fn prepare(&mut self, batch: &[DiagInner]) {
+        let _ = contain(|| {
+            rustc_middle::ty::tls::with_opt(|tcx| {
+                for diag in batch {
+                    self.macroless_provider.collect(tcx, diag);
+                }
+            })
+        });
+    }
+
     fn transform(&mut self, diag: DiagInner) {
         self.emit_now(diag);
     }
@@ -476,6 +532,9 @@ impl<E: Emitter> Drop for CgpEmitter<E> {
     /// contained there does not escape the destructor, so it does not abort the process.
     fn drop(&mut self) {
         let buffer = std::mem::take(&mut self.output().buffer);
+        let buffer = settle_pending(buffer, &self.cgp_spans, |header| {
+            self.dedup.records_header(header)
+        });
         if buffer.is_empty() {
             return;
         }

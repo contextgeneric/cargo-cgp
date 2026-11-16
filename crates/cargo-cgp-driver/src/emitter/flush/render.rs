@@ -86,6 +86,8 @@ pub fn render_blocks(
     for (index, entry) in buffer.iter().enumerate() {
         match entry {
             BufEntry::Plain(diag) => to_emit.push((**diag).clone()),
+            // The flush settles every pending entry before rendering; one left over is kept.
+            BufEntry::Pending(pending) => to_emit.push(pending.diag.clone()),
             BufEntry::Resolved(entry) => {
                 let Some(&group) = groups.group_of.get(&index) else {
                     // A resolution that never coalesces: render its own note and emit it here.

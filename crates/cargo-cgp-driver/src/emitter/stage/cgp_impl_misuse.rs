@@ -134,9 +134,13 @@ pub fn is_cgp_impl_sibling(diag: &DiagInner, impl_span: Span, macro_span: Span) 
 
 /// Whether a buffered entry is a sibling of the impl at `(impl_span, macro_span)`, the shape purged
 /// when the reshaped `E0107` is produced, since a sibling (notably the name-resolution `E0425`) can
-/// arrive before it.
+/// arrive before it. A pending entry, such as a `?` cascade in the impl's body, is purged too.
 pub fn is_cgp_impl_sibling_entry(entry: &BufEntry, impl_span: Span, macro_span: Span) -> bool {
-    matches!(entry, BufEntry::Plain(diag) if is_cgp_impl_sibling(diag, impl_span, macro_span))
+    match entry {
+        BufEntry::Plain(diag) => is_cgp_impl_sibling(diag, impl_span, macro_span),
+        BufEntry::Pending(pending) => is_cgp_impl_sibling(&pending.diag, impl_span, macro_span),
+        BufEntry::Resolved(_) => false,
+    }
 }
 
 /// Whether any message of `diag` or its children names the generated `__Context__` parameter, the

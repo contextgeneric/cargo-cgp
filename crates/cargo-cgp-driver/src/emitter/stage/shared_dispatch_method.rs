@@ -6,9 +6,10 @@
 //! items. The helper's caret carries the macro's expansion; the computer's, spanned on the method
 //! name, does not. So neither alone identifies the mistake, but the pair does: a helper `E0428`
 //! from a `#[cgp_auto_dispatch]` expansion and a computer `E0428` whose name the same method gives.
-//! The macro defines the helper before the computer, so the helper's `E0428` is already buffered
-//! when the computer's arrives. The stage needs no compiler query, since an `E0428` arrives during
-//! name resolution.
+//! Whichever of the two arrives second finds the other in the buffer, and the pair is worded on the
+//! computer's, whose carets are the method names. The macro defines the helper first, so the
+//! computer's usually arrives second. The stage needs no compiler query, since an `E0428` arrives
+//! during name resolution.
 
 use cargo_cgp_error_processing::{
     ClassPlan, FIRST_DISPATCH_METHOD_LABEL, SECOND_DISPATCH_METHOD_LABEL, StructuralMistake,
@@ -21,33 +22,54 @@ use crate::detect::is_from_auto_dispatch;
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::pipeline::{BufferEdit, Reshape, SpanPolicy, Verdict};
 
-/// Pair `diag`, an incoming computer `E0428`, with the buffered helper `E0428` of the method two
-/// `#[cgp_auto_dispatch]` traits share, and word the pair as one `[CGP-E061]` on `diag`, whose
-/// carets are the two method names, removing the helper's from `buffer`. Any other diagnostic is
-/// left to the next stage.
+/// Pair `diag`, an incoming `E0428`, with the buffered `E0428` of the other half of the method two
+/// `#[cgp_auto_dispatch]` traits share, and word the pair as one `[CGP-E061]` on the computer's
+/// diagnostic, whose carets are the two method names. An incoming computer `E0428` pairs with a
+/// buffered helper's, which is removed; an incoming helper's pairs with a buffered computer's,
+/// which is worded in its place. Any other diagnostic is left to the next stage.
 pub fn shared_dispatch_method(diag: &DiagInner, buffer: &[BufEntry]) -> Verdict {
     let Some(name) = defined_twice(diag) else {
         return Verdict::Continue;
     };
-    let partner = buffer.iter().enumerate().find_map(|(index, entry)| {
-        let BufEntry::Plain(buffered) = entry else {
-            return None;
-        };
-        let helper = defined_twice(buffered)?;
+    let buffered_defined_twice = || {
+        buffer
+            .iter()
+            .enumerate()
+            .filter_map(|(index, entry)| match entry {
+                BufEntry::Plain(buffered) => Some((index, buffered, defined_twice(buffered)?)),
+                _ => None,
+            })
+    };
+    let helper_first = buffered_defined_twice().find_map(|(index, buffered, helper)| {
         let method = helper_method(buffered, &helper)?;
-        (dispatch_computer_name(&method) == name).then_some((index, helper, method))
+        (dispatch_computer_name(&method) == name)
+            .then(|| (BufferEdit::Remove(index), method, helper, name.clone()))
     });
-    let Some((index, helper, method)) = partner else {
+    let computer_first = || {
+        let method = helper_method(diag, &name)?;
+        let computer = dispatch_computer_name(&method);
+        buffered_defined_twice().find_map(|(index, _, buffered)| {
+            (buffered == computer).then(|| {
+                (
+                    BufferEdit::TakeAsSubject(index),
+                    method.clone(),
+                    name.clone(),
+                    computer.clone(),
+                )
+            })
+        })
+    };
+    let Some((buffer_edit, method, helper, computer)) = helper_first.or_else(computer_first) else {
         return Verdict::Continue;
     };
     let mistake = StructuralMistake::SharedDispatchMethod {
         method,
         helper,
-        computer: name,
+        computer,
     };
     Verdict::Reshape(Reshape {
         records_spans: false,
-        buffer_edit: BufferEdit::Remove(index),
+        buffer_edit,
         ..Reshape::new(
             ClassPlan::structural_mistake(&mistake),
             SpanPolicy::TwoDefinitions {

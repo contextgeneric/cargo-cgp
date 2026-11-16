@@ -103,4 +103,7 @@ pub enum BufferEdit {
     /// Remove the buffered entry at this index, the partner the reshape words together with its
     /// own diagnostic.
     Remove(usize),
+    /// Remove the buffered entry at this index and word it in place of the incoming diagnostic,
+    /// which is dropped: the partner that arrived first is the one the reshape is written on.
+    TakeAsSubject(usize),
 }

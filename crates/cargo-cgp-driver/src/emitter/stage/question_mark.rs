@@ -11,7 +11,9 @@ use crate::emitter::pipeline::Verdict;
 /// `expr?` cannot be resolved, so rustc adds a `Try` or `FromResidual` error at the same span that
 /// restates the failure and dumps the unresolved projected type. A `?` error with no CGP failure on
 /// its expression is left alone. The stage runs before the resolver, which would otherwise
-/// re-anchor the cascade onto the failing call it overlaps.
+/// re-anchor the cascade onto the failing call it overlaps. A cascade that arrives before its
+/// failure is buffered as a pending entry, which the flush drops on the same test
+/// ([`settle_pending`](crate::emitter::settle_pending)).
 ///
 /// Only the `?` cascade is dropped, never a `[T]: Sized` one: an unsized error the failed method or
 /// trait resolution trails can land off the failing expression (on the binding pattern, or a later

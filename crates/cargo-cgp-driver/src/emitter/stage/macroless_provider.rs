@@ -1,7 +1,7 @@
 //! The stages for a provider-trait impl written without `#[cgp_provider]`, and the failure it
 //! leaves behind.
 
-use cargo_cgp_error_processing::ClassPlan;
+use cargo_cgp_error_processing::{ClassPlan, ProviderImplWithoutMacro};
 use rustc_errors::DiagInner;
 use rustc_errors::codes::E0277;
 use rustc_middle::ty::TyCtxt;
@@ -26,17 +26,9 @@ impl MacrolessProviderStage {
     /// on the impl. Gated to an `E0277` whose message names `IsProviderFor`, confirmed structurally
     /// by [`detect::detect_provider_impl_without_macro`].
     pub fn run(&mut self, tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Verdict {
-        if diag.code != Some(E0277)
-            || !main_message_text(diag).is_some_and(|text| text.contains(IS_PROVIDER_FOR_TRAIT))
-        {
-            return Verdict::Continue;
-        }
-        let (Some(tcx), Some(primary_span)) = (tcx, diag.span.primary_span()) else {
-            return Verdict::Continue;
-        };
-        match detect::detect_provider_impl_without_macro(tcx, primary_span) {
+        match detect_mistake(tcx, diag) {
             Some(mistake) => {
-                self.providers.push(mistake.provider.clone());
+                self.remember(&mistake.provider);
                 Verdict::Reshape(Reshape::new(
                     ClassPlan::provider_impl_without_macro(&mistake),
                     SpanPolicy::Primary,
@@ -46,8 +38,25 @@ impl MacrolessProviderStage {
         }
     }
 
-    /// Drop a check or call that fails on the `IsProviderFor` bound of a provider already reported,
-    /// since it restates that one mistake.
+    /// Remember the provider of `diag` when it is a provider-trait impl written without
+    /// `#[cgp_provider]`, before any diagnostic is transformed: the collect pass over the queue of
+    /// `analysis`, so [`consequence`](Self::consequence) drops a check that restates the provider's
+    /// mistake even when the check arrived first.
+    pub fn collect(&mut self, tcx: Option<TyCtxt<'_>>, diag: &DiagInner) {
+        if let Some(mistake) = detect_mistake(tcx, diag) {
+            self.remember(&mistake.provider);
+        }
+    }
+
+    /// Record `provider` as reported, once.
+    fn remember(&mut self, provider: &str) {
+        if !self.providers.iter().any(|known| known == provider) {
+            self.providers.push(provider.to_owned());
+        }
+    }
+
+    /// Drop a check or call that fails on the `IsProviderFor` bound of a provider reported or
+    /// collected, since it restates that one mistake.
     pub fn consequence(&self, diag: &DiagInner) -> Verdict {
         let restates = diag.code == Some(E0277)
             && main_message_text(diag).is_some_and(|text| {
@@ -61,4 +70,16 @@ impl MacrolessProviderStage {
             Verdict::Continue
         }
     }
+}
+
+/// The provider-trait impl written without `#[cgp_provider]` that `diag` reports: an `E0277` whose
+/// message names `IsProviderFor`, confirmed structurally by
+/// [`detect::detect_provider_impl_without_macro`].
+fn detect_mistake(tcx: Option<TyCtxt<'_>>, diag: &DiagInner) -> Option<ProviderImplWithoutMacro> {
+    if diag.code != Some(E0277)
+        || !main_message_text(diag).is_some_and(|text| text.contains(IS_PROVIDER_FOR_TRAIT))
+    {
+        return None;
+    }
+    detect::detect_provider_impl_without_macro(tcx?, diag.span.primary_span()?)
 }

@@ -3,8 +3,9 @@
 //! rustc reports some CGP errors a second time with the same code and message: at the same caret,
 //! with a note renamed or dropped, when it checks one requirement once for each item a macro
 //! generated, or at a second caret on the same line, when it checks a call's bound once for the
-//! call and once for an argument. The two blocks state one mistake, so the later one is merged into
-//! the earlier, whose notes are the fuller. A caret the earlier block already covers, such as the
+//! call and once for an argument. The two blocks state one mistake, so they are merged into one at
+//! the earlier block's position, written as the block with more notes, the earlier on a tie, so the
+//! fuller notes survive whichever block arrived first. A caret the earlier block already covers, such as the
 //! whole call around its method name, adds nothing; one elsewhere on the line is kept as a
 //! secondary caret labelled [`COALESCED_SITE_LABEL`], so no location is lost.
 
@@ -16,7 +17,8 @@ use rustc_span::source_map::SourceMap;
 use crate::emitter::edit::main_message_text;
 
 /// `diags` with each repeat of an earlier diagnostic merged into it: the same level, code, and
-/// plain-string message, with a primary caret on the same line of the same file.
+/// plain-string message, with a primary caret on the same line of the same file. The merged block
+/// sits at the earlier one's position and is the one with more notes, the earlier on a tie.
 pub fn merge_repeats(diags: Vec<DiagInner>, source_map: &SourceMap) -> Vec<DiagInner> {
     let mut kept: Vec<DiagInner> = Vec::with_capacity(diags.len());
     for diag in diags {
@@ -37,6 +39,15 @@ pub fn merge_repeats(diags: Vec<DiagInner>, source_map: &SourceMap) -> Vec<DiagI
         });
         let Some(earlier) = earlier else {
             kept.push(diag);
+            continue;
+        };
+        // Keep the fuller notes: the later block takes the earlier one's place when it has more,
+        // and the earlier one's caret is then the one to label.
+        let mut diag = diag;
+        if diag.children.len() > earlier.children.len() {
+            std::mem::swap(earlier, &mut diag);
+        }
+        let Some(caret) = diag.span.primary_span() else {
             continue;
         };
         let shown = earlier
