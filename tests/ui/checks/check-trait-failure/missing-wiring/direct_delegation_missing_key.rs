@@ -3,9 +3,9 @@
 //! `GreeterComponent -> Bundle` where `Bundle` has no `GreeterComponent` entry. The compiler first
 //! reports the entry's own forwarding bound, `Bundle: DelegateComponent<GreeterComponent>`, and
 //! the unsized `Delegate` projection it leaves, at the `-> Bundle` the bound is spanned onto. The
-//! forwarding-entry anchor seeds `Person: CanGreet`, the consumer the entry wires, so the first of
-//! them reads ``[CGP-E001] missing entry for `GreeterComponent` in provider `Bundle` `` over the
-//! check's chain, and the second and the check's own report drop as the same failure.
+//! forwarding-entry anchor seeds `Person: CanGreet`, the consumer the entry wires, so it reads the
+//! same failure as the check's own report, ``[CGP-E001] missing entry for `GreeterComponent` in
+//! provider `Bundle` ``; the check entry's copy is the one shown, and the entry's two drop.
 //!
 //! CGP error class: check-trait failure (https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cgp/errors/checks/check-trait-failure.md).
 

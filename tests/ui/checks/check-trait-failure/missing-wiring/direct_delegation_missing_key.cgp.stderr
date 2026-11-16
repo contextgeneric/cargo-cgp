@@ -1,8 +1,8 @@
 error[E0277]: [CGP-E001] missing entry for `GreeterComponent` in provider `Bundle`
-  --> src/main.rs:42:26
+  --> src/main.rs:48:9
    |
-42 |         GreeterComponent -> Bundle,
-   |                          ^^^^^^^^^
+48 |         GreeterComponent,
+   |         ^^^^^^^^^^^^^^^^
    |
    = note: root cause: [CGP-E114] missing entry for `GreeterComponent` in provider `Bundle`
            this is required through the dependency chain:

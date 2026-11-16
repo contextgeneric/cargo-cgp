@@ -1,8 +1,8 @@
 error[E0277]: [CGP-E001] missing field `name` on `Inner`
-   --> src/main.rs:67:5
+   --> src/main.rs:96:9
     |
- 67 |     Inner: CanCompute,
-    |     ^^^^^^^^^^^^^^^^^
+ 96 |         ComputerComponent,
+    |         ^^^^^^^^^^^^^^^^^
 ...
 102 |         RunnerComponent,
     |         --------------- also required here

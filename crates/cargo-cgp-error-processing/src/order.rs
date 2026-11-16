@@ -82,6 +82,21 @@ impl PartialEq for OrderKey {
 
 impl Eq for OrderKey {}
 
+/// `items` with those `preferred` holds for first, each part keeping its order.
+///
+/// The emitter processes a batch in this order with `preferred` marking the diagnostics at a
+/// `check_components!` entry, so of the copies of one mistake, which the de-duplication ledger
+/// keeps the first of, the check's copy is the one kept. Being a check entry is a fact about the
+/// diagnostic, so the choice does not depend on the order rustc produced the copies in.
+///
+/// Postcondition: the result is a permutation of `items` in which every preferred item comes before
+/// every other, and two items that are both preferred, or both not, keep their relative order.
+pub fn preferred_first<T>(items: Vec<T>, preferred: impl Fn(&T) -> bool) -> Vec<T> {
+    let (mut first, rest): (Vec<T>, Vec<T>) = items.into_iter().partition(|item| preferred(item));
+    first.extend(rest);
+    first
+}
+
 /// `items` sorted by the key `key_of` gives each, keeping items with equal keys in their order.
 ///
 /// Postcondition: the result is a permutation of `items`, sorted by `key_of`, and two items with

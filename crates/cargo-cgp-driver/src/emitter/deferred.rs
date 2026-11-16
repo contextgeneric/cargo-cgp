@@ -15,6 +15,7 @@ use std::panic::{self, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
+use cargo_cgp_error_processing::order::preferred_first;
 use rustc_data_structures::FatalErrorMarker;
 use rustc_data_structures::marker::DynSend;
 use rustc_errors::DiagInner;
@@ -25,6 +26,7 @@ use rustc_session::Session;
 use crate::emitter::order::sort_canonically;
 use crate::emitter::output::lock_output;
 use crate::emitter::registry::{LocalSlot, Registry};
+use crate::resolve::anchor::check_entry_obligation;
 
 /// The most batches the processing takes from the queue. Each batch after the first holds the
 /// diagnostics that the previous batch's queries emitted; past the cap, the rest is kept
@@ -98,8 +100,10 @@ pub fn override_analysis(_session: &Session, providers: &mut Providers) {
 /// `analysis` ends a failing crate by raising a `FatalErrorMarker` itself once type checking has
 /// reported an error, so the wrapper catches that unwind, transforms the queue while the compiler
 /// is still usable, and resumes it. Each batch is taken in the canonical order
-/// ([`sort_canonically`]), so the decisions that keep the first of several reports, such as the
-/// de-duplication ledger's, do not depend on the order rustc's threads emitted them in. The emitter
+/// ([`sort_canonically`]), with the diagnostics at a `check_components!` entry moved ahead
+/// ([`preferred_first`]), so the decisions that keep the first of several reports, such as the
+/// de-duplication ledger's, keep a check's copy of a mistake and do not depend on the order rustc's
+/// threads emitted them in. The flush prints in the canonical order again. The emitter
 /// reads the first batch once before transforming any of it ([`DeferredTarget::prepare`]). Any
 /// other unwind is a crash: the panic hook has printed the buffer and the queue already, so it
 /// resumes at once. An unwind out of the processing, such as a fatal error from a query a transform
@@ -124,7 +128,17 @@ fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     // A query a transform forces may emit; that diagnostic finds the emitter locked and is queued,
     // to be taken in the next batch.
     let source_map = tcx.sess.source_map();
-    let take_ordered = || sort_canonically(take_queued(), |diag| diag, source_map);
+    let at_check_entry = |diag: &DiagInner| {
+        diag.span
+            .primary_span()
+            .is_some_and(|span| check_entry_obligation(tcx, span).is_some())
+    };
+    let take_ordered = || {
+        preferred_first(
+            sort_canonically(take_queued(), |diag| diag, source_map),
+            at_check_entry,
+        )
+    };
     let stopped = {
         let mut target = lock_output(&target);
         let mut first = Some(take_ordered());

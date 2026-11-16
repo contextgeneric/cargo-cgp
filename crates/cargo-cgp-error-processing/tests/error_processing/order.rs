@@ -5,7 +5,7 @@
 use std::cmp::Ordering;
 
 use cargo_cgp_error_processing::byte_range::ByteRange;
-use cargo_cgp_error_processing::order::{OrderKey, SpanPlace, sort_by_order_key};
+use cargo_cgp_error_processing::order::{OrderKey, SpanPlace, preferred_first, sort_by_order_key};
 
 fn key(file: &str, lo: u32, hi: u32, code: Option<&str>, message: &str) -> OrderKey {
     OrderKey {
@@ -188,4 +188,26 @@ fn sorting_keeps_equal_keys_in_their_order() {
             "summary"
         ]
     );
+}
+
+// Property: the postcondition of `preferred_first`, for every arrangement of two preferred items
+//   among two others: the preferred come first, and each part keeps its order.
+#[test]
+fn preferred_items_come_first_and_each_part_keeps_its_order() {
+    let arrangements: [[&str; 4]; 6] = [
+        ["check a", "check b", "call a", "call b"],
+        ["call a", "call b", "check a", "check b"],
+        ["call a", "check a", "call b", "check b"],
+        ["check a", "call a", "check b", "call b"],
+        ["call a", "check a", "check b", "call b"],
+        ["check a", "call a", "call b", "check b"],
+    ];
+    for items in arrangements {
+        let out = preferred_first(items.to_vec(), |item| item.starts_with("check"));
+        assert_eq!(
+            out,
+            ["check a", "check b", "call a", "call b"],
+            "for {items:?}"
+        );
+    }
 }
