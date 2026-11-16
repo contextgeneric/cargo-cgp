@@ -20,15 +20,14 @@ use crate::version::{version_string, wants_version};
 
 /// Run the compiler in-process over the wrapper's arguments and return the exit code.
 ///
-/// The sysroot supplied by `cargo-cgp` (via [`SYSROOT_ENV`]), the next-gen trait solver
-/// flag ([`NEXT_SOLVER_FLAG`]), and the diagnostic [`VERBOSE_FLAG`] are folded into the
-/// rustc arguments by [`rustc_args`]; a thread count the invocation carries reaches rustc unchanged,
-/// and without one rustc runs its front end on its default thread count.
-/// [`rustc_driver::catch_with_exit_code`] runs the
-/// compiler and turns a compiler-signalled failure into the process exit code, matching
-/// what plain `rustc` would return. Before it runs, the driver sets up what rustc's own
-/// driver does: the `RUSTC_LOG` logger, and an ICE hook, here naming cargo-cgp's issue tracker
-/// and wrapped so a panic the emitter contains is not reported (see [`install_panic_hooks`]).
+/// The sysroot supplied by `cargo-cgp` (via [`SYSROOT_ENV`]), the next-gen trait solver flag
+/// ([`NEXT_SOLVER_FLAG`]), and the diagnostic [`VERBOSE_FLAG`] are folded into the rustc arguments
+/// by [`rustc_args`]; a thread count the invocation carries reaches rustc unchanged, and without one
+/// rustc runs its front end on its default thread count. [`rustc_driver::catch_with_exit_code`]
+/// runs the compiler and turns a compiler-signalled failure into the process exit code, matching
+/// what plain `rustc` would return. Before it runs, the driver sets up what rustc's own driver
+/// does: the `RUSTC_LOG` logger, and an ICE hook, here naming cargo-cgp's issue tracker and wrapped
+/// so a panic the emitter contains is not reported (see [`install_panic_hooks`]).
 pub fn run() -> ExitCode {
     // A direct invocation (not cargo's wrapper call) answers the tool's own queries here,
     // before touching the compiler: `--help`/`-h` or no arguments prints the help, and

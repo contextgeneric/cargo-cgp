@@ -4,10 +4,10 @@
 //! rustc's crash report before the diagnostics that preceded it, and an unwinding flush could print
 //! them only afterwards. To keep rustc's order, the panic hook must be able to emit the buffer
 //! before the report, so this state lives behind a shared lock that the emitter registers for the
-//! hook to reach from whichever thread panics ([`register_output`], [`flush_registered_output`]). The pass that reshapes the
-//! name-resolution errors after resolution reaches the buffer the same way
-//! ([`with_registered_buffer`]), and records there the requirements the emitter's overflow stage
-//! reads.
+//! hook to reach from whichever thread panics ([`register_output`], [`flush_registered_output`]).
+//! The pass that reshapes the name-resolution errors after resolution reaches the buffer the same
+//! way ([`with_registered_buffer`]), and records there the requirements the emitter's overflow
+//! stage reads.
 
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};

@@ -2,8 +2,8 @@
 //! ([`cargo_cgp_driver::emitter::Registry`]).
 //!
 //! rustc's thread-safe mode is set once per process, so this binary runs these tests in that mode,
-//! the parallel front end's; the one-thread path, the thread-local slot, runs in every UI fixture,
-//! since the driver forces one thread.
+//! the parallel front end's; the one-thread path, the thread-local slot, runs in every fixture of
+//! the UI suite's one-thread run, which passes `-Zthreads=1`.
 
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};

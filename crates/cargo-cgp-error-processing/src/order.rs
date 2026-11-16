@@ -3,8 +3,8 @@
 //! rustc type-checks items on several threads, so the order diagnostics arrive in varies between
 //! runs. The emitter therefore processes and prints them in an order that depends only on each
 //! diagnostic: by its primary span, an inner span before the span around it, then by its code, its
-//! message, and the rest of its content. The driver reads each key off a diagnostic ([`OrderKey`]); the comparison lives
-//! here, so it is tested without a compiler.
+//! message, and the rest of its content. The driver reads each key off a diagnostic
+//! ([`OrderKey`]); the comparison lives here, so it is tested without a compiler.
 
 use std::cmp::Ordering;
 
@@ -25,8 +25,8 @@ pub struct SpanPlace {
 /// A diagnostic's place in the canonical order.
 ///
 /// Two keys compare equal when neither diagnostic has a span, whatever their content, so a stable
-/// sort keeps such diagnostics in the order they arrived. rustc's closing lines, such
-/// as the "For more information about this error" footer, carry no span and come in a fixed order.
+/// sort keeps such diagnostics in the order they arrived. rustc's closing lines, such as the "For
+/// more information about this error" footer, carry no span and come in a fixed order.
 #[derive(Debug, Clone)]
 pub struct OrderKey {
     /// The primary span's place, or `None` for a diagnostic without a span.

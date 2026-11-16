@@ -23,8 +23,8 @@
 //! `edit` (the `DiagInner`-editing helpers), `buffer` (the diagnostics held until the flush),
 //! `output` (the inner emitter and buffer the panic hook can reach), `registry` (the registration
 //! that lets the panic hook and the `analysis` wrapper reach them from any thread),
-//! `name_resolution` (the pass
-//! that reshapes a wiring entry's name-resolution errors once resolution is over),
+//! `name_resolution` (the pass that reshapes a wiring entry's name-resolution errors once
+//! resolution is over),
 //! `generated_names` (the pass that drops a suggestion naming a generated identifier),
 //! `use_type_misspelling` (the pass that names the rename a misspelled `#[use_type]` import
 //! needs), `attribute_splice` (the drop of a suggestion spliced after an attribute macro),

@@ -197,7 +197,8 @@ not depend on the threads. `--iterations K` runs each fixture's passes up to K t
 the first iteration that fails, which catches output that varies only on some runs; a bless runs
 once. Plain `cargo check` runs on one thread in every mode, because the harness appends
 `-Zthreads=1` to its `RUSTFLAGS`, so `.rust.stderr` keeps rustc's sequential order. The driver
-sets no thread count of its own, so the harness's flag decides. CI runs the suite once on one thread and once with `--threads default --iterations 3`.
+sets no thread count of its own, so the harness's flag decides. CI runs the suite once on one
+thread and once with `--threads default --iterations 3`.
 
 ## Adding a fixture
 
