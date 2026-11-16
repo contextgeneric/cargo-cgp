@@ -21,7 +21,9 @@
 //! query, transformed once it ends), `pipeline` (the verdict a
 //! stage returns and the step that writes a reshape), `stage` (the stages, one module each),
 //! `edit` (the `DiagInner`-editing helpers), `buffer` (the diagnostics held until the flush),
-//! `output` (the inner emitter and buffer the panic hook can reach), `name_resolution` (the pass
+//! `output` (the inner emitter and buffer the panic hook can reach), `registry` (the registration
+//! that lets the panic hook and the `analysis` wrapper reach them from any thread),
+//! `name_resolution` (the pass
 //! that reshapes a wiring entry's name-resolution errors once resolution is over),
 //! `generated_names` (the pass that drops a suggestion naming a generated identifier),
 //! `use_type_misspelling` (the pass that names the rename a misspelled `#[use_type]` import
@@ -46,6 +48,7 @@ mod name_resolution;
 mod order;
 mod output;
 mod pipeline;
+mod registry;
 mod repeats;
 mod stage;
 mod use_type_misspelling;
@@ -64,6 +67,7 @@ pub use name_resolution::{is_unresolved_wiring_overflow, reshape_name_resolution
 pub use order::{order_key, sort_canonically};
 pub use output::*;
 pub use pipeline::*;
+pub use registry::{LocalSlot, Registry};
 pub use repeats::merge_repeats;
 pub use stage::shared_dispatch_method;
 pub use use_type_misspelling::reshape_use_type_misspellings;

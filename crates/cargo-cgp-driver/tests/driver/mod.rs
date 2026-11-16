@@ -10,6 +10,7 @@ pub mod order;
 pub mod pending;
 pub mod pipeline;
 pub mod postprocess;
+pub mod registry;
 pub mod repeats;
 pub mod run;
 pub mod source;

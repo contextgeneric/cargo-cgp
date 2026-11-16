@@ -4,7 +4,7 @@ use crate::emitter::buffer::BufEntry;
 use crate::emitter::containment::contain;
 use crate::emitter::output::with_registered_buffer;
 
-/// Run one pass over the buffer of the output registered on this thread: collect its candidates
+/// Run one pass over the buffer of the registered output: collect its candidates
 /// under the output's lock, run `detect` on them with the lock released and any panic contained,
 /// since a query run while detecting can emit a diagnostic that takes the same lock, and then,
 /// under the lock again, `apply` the detection to the buffer. A query run while detecting can only

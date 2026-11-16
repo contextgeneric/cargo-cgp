@@ -13,9 +13,10 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::panic::{self, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, OnceLock, Weak};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use rustc_data_structures::FatalErrorMarker;
+use rustc_data_structures::marker::DynSend;
 use rustc_errors::DiagInner;
 use rustc_middle::ty::TyCtxt;
 use rustc_middle::util::Providers;
@@ -23,6 +24,7 @@ use rustc_session::Session;
 
 use crate::emitter::order::sort_canonically;
 use crate::emitter::output::lock_output;
+use crate::emitter::registry::{LocalSlot, Registry};
 
 /// The most batches the processing takes from the queue. Each batch after the first holds the
 /// diagnostics that the previous batch's queries emitted; past the cap, the rest is kept
@@ -52,15 +54,21 @@ pub trait DeferredTarget {
     fn keep_untransformed(&mut self, diag: DiagInner);
 }
 
+/// The registered emitter, as the wrapper around `analysis` reaches it.
+type SharedTarget = Mutex<dyn DeferredTarget + DynSend>;
+
 thread_local! {
-    /// The emitter the wrapper processes the queue with, registered on the thread that built it.
-    static TARGET: RefCell<Option<Weak<Mutex<dyn DeferredTarget>>>> = const { RefCell::new(None) };
+    /// The registration of [`TARGET`] when rustc runs on one thread.
+    static LOCAL_TARGET: LocalSlot<SharedTarget> = const { RefCell::new(None) };
 }
 
-/// Register `target` as the emitter that processes the queue on this thread.
-pub fn register_target<T: DeferredTarget + 'static>(target: &Arc<Mutex<T>>) {
-    let weak: Weak<Mutex<dyn DeferredTarget>> = Arc::downgrade(target) as _;
-    TARGET.with(|registered| *registered.borrow_mut() = Some(weak));
+/// The emitter the wrapper processes the queue with, found on whichever thread runs `analysis`.
+static TARGET: Registry<SharedTarget> = Registry::new(&LOCAL_TARGET);
+
+/// Register `target` as the emitter that processes the queue.
+pub fn register_target<T: DeferredTarget + DynSend + 'static>(target: &Arc<Mutex<T>>) {
+    let target: Arc<SharedTarget> = target.clone();
+    TARGET.register(&target);
 }
 
 /// Whether a diagnostic arriving now must be queued, because `analysis` is running.
@@ -134,12 +142,9 @@ fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     }
 }
 
-/// The emitter registered on this thread, while it is alive.
-fn registered_target() -> Option<Arc<Mutex<dyn DeferredTarget>>> {
-    TARGET
-        .try_with(|registered| registered.borrow().as_ref().and_then(Weak::upgrade))
-        .ok()
-        .flatten()
+/// The registered emitter, while it is alive.
+fn registered_target() -> Option<Arc<SharedTarget>> {
+    TARGET.get()
 }
 
 /// How [`drain_queue`] hands an item on.

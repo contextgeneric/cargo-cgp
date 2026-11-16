@@ -4,18 +4,20 @@
 //! rustc's crash report before the diagnostics that preceded it, and an unwinding flush could print
 //! them only afterwards. To keep rustc's order, the panic hook must be able to emit the buffer
 //! before the report, so this state lives behind a shared lock that the emitter registers for the
-//! hook to reach ([`register_output`], [`flush_registered_output`]). The pass that reshapes the
+//! hook to reach from whichever thread panics ([`register_output`], [`flush_registered_output`]). The pass that reshapes the
 //! name-resolution errors after resolution reaches the buffer the same way
 //! ([`with_registered_buffer`]), and records there the requirements the emitter's overflow stage
 //! reads.
 
 use std::cell::RefCell;
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError, Weak};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
+use rustc_data_structures::marker::DynSend;
 use rustc_errors::emitter::Emitter;
 
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::deferred::take_queued;
+use crate::emitter::registry::{LocalSlot, Registry};
 
 /// The inner emitter and the buffered diagnostics, shared between the emitter and the panic hook.
 pub struct Output<E> {
@@ -71,28 +73,30 @@ impl<E: Emitter> RegisteredOutput for Output<E> {
     }
 }
 
+/// The registered output, as the panic hook and the passes after name resolution reach it.
+type SharedOutput = Mutex<dyn RegisteredOutput + DynSend>;
+
 thread_local! {
-    /// The output of the emitter installed on this thread, for the panic hook. The compiler emits
-    /// diagnostics on the thread that installed the emitter, which is also where its panics occur.
-    static REGISTERED: RefCell<Option<Weak<Mutex<dyn RegisteredOutput>>>> = const { RefCell::new(None) };
+    /// The registration of [`REGISTERED`] when rustc runs on one thread.
+    static LOCAL_OUTPUT: LocalSlot<SharedOutput> = const { RefCell::new(None) };
 }
 
-/// Register `output` as the one the panic hook flushes on this thread.
-pub fn register_output<E: Emitter + 'static>(output: &Arc<Mutex<Output<E>>>) {
-    let weak: Weak<Mutex<dyn RegisteredOutput>> = Arc::downgrade(output) as _;
-    REGISTERED.with(|registered| *registered.borrow_mut() = Some(weak));
+/// The output of the emitter the compiler installed, for the panic hook on whichever thread
+/// panics.
+static REGISTERED: Registry<SharedOutput> = Registry::new(&LOCAL_OUTPUT);
+
+/// Register `output` as the one the panic hook flushes.
+pub fn register_output<E: Emitter + DynSend + 'static>(output: &Arc<Mutex<Output<E>>>) {
+    let output: Arc<SharedOutput> = output.clone();
+    REGISTERED.register(&output);
 }
 
 /// Emit the registered output's buffered diagnostics, and the diagnostics still queued during
 /// `analysis` after them, untransformed. Called by the panic hook on a crash, before rustc's
-/// report. Does nothing when no output is registered on this thread, or when the panic struck while
-/// the output was locked, since the emitter is then mid-way through writing it.
+/// report, on the thread that panicked. Does nothing when no output is registered, or when the
+/// output is locked, since the emitter is then mid-way through writing it.
 pub fn flush_registered_output() {
-    let output = REGISTERED
-        .try_with(|registered| registered.borrow().as_ref().and_then(Weak::upgrade))
-        .ok()
-        .flatten();
-    let Some(output) = output else {
+    let Some(output) = REGISTERED.get() else {
         return;
     };
     let mut guard = match output.try_lock() {
@@ -107,26 +111,22 @@ pub fn flush_registered_output() {
     guard.flush_on_crash();
 }
 
-/// Run `f` on the buffered diagnostics of the output registered on this thread, under its lock, or
-/// return `None` when no output is registered. `f` must not run compiler queries: one that emits a
+/// Run `f` on the buffered diagnostics of the registered output, under its lock, or return `None`
+/// when no output is registered. `f` must not run compiler queries: one that emits a
 /// diagnostic would try to take the same lock.
 pub fn with_registered_buffer<R>(f: impl FnOnce(&mut Vec<BufEntry>) -> R) -> Option<R> {
     with_registered_output(|output| f(output.buffer_mut()))
 }
 
-/// Add `requirements` to the unprovable requirements of the output registered on this thread, if
-/// one is registered.
+/// Add `requirements` to the unprovable requirements of the registered output, if one is
+/// registered.
 pub fn record_unprovable_requirements(requirements: Vec<String>) {
     with_registered_output(|output| output.unprovable_requirements_mut().extend(requirements));
 }
 
-/// Run `f` on the output registered on this thread, under its lock, or return `None` when no output
-/// is registered.
+/// Run `f` on the registered output, under its lock, or return `None` when no output is registered.
 fn with_registered_output<R>(f: impl FnOnce(&mut dyn RegisteredOutput) -> R) -> Option<R> {
-    let output = REGISTERED
-        .try_with(|registered| registered.borrow().as_ref().and_then(Weak::upgrade))
-        .ok()
-        .flatten()?;
+    let output = REGISTERED.get()?;
     let mut guard = lock_output(&output);
     Some(f(&mut *guard))
 }

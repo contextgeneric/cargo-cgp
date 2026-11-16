@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{DedupLedger, Origin};
+use rustc_data_structures::marker::DynSend;
 use rustc_errors::DiagInner;
 use rustc_errors::emitter::{Emitter, TimingEvent};
 use rustc_errors::timings::TimingRecord;
@@ -94,10 +95,10 @@ pub struct CgpEmitter<E: Emitter> {
 
 impl<E: Emitter> CgpEmitter<E> {
     /// Wrap `inner`, which renders against `source_map`, and register the shared output for the
-    /// panic hook on this thread.
+    /// panic hook.
     pub fn new(inner: E, source_map: Option<Arc<SourceMap>>) -> Self
     where
-        E: 'static,
+        E: DynSend + 'static,
     {
         let output = Arc::new(Mutex::new(Output {
             inner,
@@ -435,9 +436,9 @@ pub struct DeferringEmitter<E: Emitter> {
     source_map: Option<Arc<SourceMap>>,
 }
 
-impl<E: Emitter + 'static> DeferringEmitter<E> {
+impl<E: Emitter + DynSend + 'static> DeferringEmitter<E> {
     /// Wrap `inner`, which renders against `source_map`, and register the transforming half for the
-    /// panic hook and for the `analysis` wrapper on this thread.
+    /// panic hook and for the `analysis` wrapper.
     pub fn new(inner: E, source_map: Option<Arc<SourceMap>>) -> Self {
         let emitter = Arc::new(Mutex::new(CgpEmitter::new(inner, source_map.clone())));
         register_target(&emitter);
