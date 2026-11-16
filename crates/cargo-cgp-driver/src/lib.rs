@@ -1,30 +1,11 @@
-//! The `cargo-cgp-driver` rustc wrapper.
-//!
-//! This crate is the `rustc_driver`-based compiler wrapper that `cargo-cgp` sets as the
-//! `RUSTC_WORKSPACE_WRAPPER`, so cargo invokes it in place of `rustc` for every workspace
-//! crate. It mirrors `clippy-driver`: cargo calls it as
-//! `cargo-cgp-driver <path-to-rustc> <rustc args...>`, and we run the real compiler
-//! in-process through [`rustc_driver`] with our own [`callbacks::CgpCallbacks`].
-//!
-//! Besides injecting the diagnostic flags (see [`args`]), the callbacks install a custom diagnostic
-//! [`emitter`] that queries the compiler to name the consumer and provider traits behind a CGP
-//! component marker and rewrites the compiler's wiring notes accordingly. Aside from those
-//! transformations the driver compiles exactly as `rustc` would. Routing through `rustc_driver`
-//! gives the emitter access to the live `TyCtxt` needed to recover those names.
-//!
-//! # `rustc_private`
-//!
-//! The compiler's internal libraries are unstable, so linking them requires the
-//! `rustc_private` feature and a nightly toolchain with the `rustc-dev` component. The
-//! `extern crate` declarations below pull those libraries from the sysroot; add another
-//! `extern crate rustc_*;` line here when a module needs a further compiler crate.
-//!
-//! The entrypoint is [`run::run`], invoked by the thin `bin/cargo-cgp-driver.rs` wrapper.
-
+#![doc = include_str!("../README.md")]
 #![feature(rustc_private)]
 // Every public item carries a doc line, which the crate's clippy and doc runs hold.
 #![warn(missing_docs)]
 
+// The compiler's internal libraries come from the sysroot through `rustc_private`, which needs a
+// nightly with the `rustc-dev` component. Add an `extern crate rustc_*;` line here when a module
+// needs a further compiler crate.
 extern crate rustc_ast;
 extern crate rustc_ast_pretty;
 extern crate rustc_data_structures;

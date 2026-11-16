@@ -228,8 +228,8 @@ contributors and agents:
 - [Release notes](https://contextgeneric.dev/docs/release-notes/): what each release changed and how to upgrade.
 - [Implementation](https://github.com/contextgeneric/cgp-knowledge-base/blob/main/cargo-cgp/implementation/README.md): the two binaries, the driver, and how diagnostics are transformed.
 
-Contributors and agents start from [AGENTS.md](AGENTS.md), and
-[sibling-projects.md](sibling-projects.md) lists the related repositories.
+Contributors and agents start from [AGENTS.md](https://github.com/contextgeneric/cargo-cgp/blob/main/AGENTS.md), and
+[sibling-projects.md](https://github.com/contextgeneric/cargo-cgp/blob/main/sibling-projects.md) lists the related repositories.
 
 ## License
 

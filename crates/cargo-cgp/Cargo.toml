@@ -10,7 +10,7 @@ homepage     = { workspace = true }
 authors      = { workspace = true }
 keywords     = { workspace = true }
 categories   = { workspace = true }
-readme       = "../../README.md"
+readme       = "README.md"
 
 # The cargo-subcommand front-end: an ordinary binary that links no compiler crate and
 # does *not* depend on `rustc_private`. It launches cargo with the driver wired in as the
@@ -20,6 +20,11 @@ readme       = "../../README.md"
 [[bin]]
 name = "cargo-cgp"
 path = "bin/cargo-cgp.rs"
+
+# The crate doc is the README, a link to the repository's, whose Rust example is meant to fail
+# to compile, and the crate has no doctests of its own.
+[lib]
+doctest = false
 
 [dependencies]
 anyhow = { workspace = true }

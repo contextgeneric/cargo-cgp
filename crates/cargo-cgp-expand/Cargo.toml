@@ -17,6 +17,11 @@ categories   = { workspace = true }
 # it links no compiler internals (it works on text and a `syn` tree), so it builds and its tests
 # run on any toolchain. See `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 
+# The crate doc is the README, whose Rust lines are fragments of an expansion, and the crate has no
+# doctests of its own.
+[lib]
+doctest = false
+
 [dependencies]
 # The parser and syntax tree the resugaring matches on. Matching a parsed `syn::Type` rather
 # than rendered text is what makes the passes immune to the printer's line breaking; see

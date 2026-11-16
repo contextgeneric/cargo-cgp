@@ -1,40 +1,4 @@
-//! The `cargo-cgp` compiler-free diagnostic helpers.
-//!
-//! This crate holds the string-level diagnostic logic the driver drives but keeps out of its
-//! `rustc_private` linkage, so it builds and its tests run on any toolchain. The driver
-//! (`cargo-cgp-driver`) calls the diagnostic logic, `cargo-cgp-expand` calls the spelling rules,
-//! and the front-end touches no diagnostics. See
-//! `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md` for the design.
-//!
-//! Twelve tenants live here, all but [`syntax`] driven by the driver's emitter:
-//!
-//! - [`rewrite`]: the string transform that renames CGP wiring messages, over the
-//!   [`ComponentNameMap`] the driver fills in from the compiler.
-//! - [`postprocess`]: the text transforms ([`postprocess_message`]) the driver applies as its
-//!   final pass, so raw CGP constructs stay readable.
-//! - [`diagnosis`]: the rustc-free root-cause model ([`Resolved`]) the driver's typed
-//!   resolver produces, [`plan_resolved`], which words it into the header, help, and note
-//!   text the emitter emits, and the pure label constructors the driver's tree builder uses.
-//! - [`tree`]: the [`DependencyTree`] and its `cargo tree`-style renderer the diagnosis
-//!   wording uses to show a check failure's dependency chain.
-//! - [`dedup`]: the [`DedupLedger`] that suppresses the re-reports one lazy-wiring mistake
-//!   produces at many sites.
-//! - [`signals`]: the stable rustc phrasings the emitter's candidate checks key on.
-//! - [`naming`]: the rule CGP macros follow for the names they invent.
-//! - [`order`]: the canonical order the emitter decides and emits diagnostics in, whatever order
-//!   rustc produced them in.
-//! - [`shape`]: the `Struct!`/`Enum!` record and variant forms a field list renders to, shared
-//!   by the text post-processing and the driver's typed renderer.
-//! - [`candidates`]: [`bound_candidate_list`], which cuts the implementor list the driver's
-//!   `--verbose` flag un-elides back to the length rustc prints by default.
-//! - [`byte_range`]: the anchors' span decisions over plain byte ranges, which the driver converts
-//!   each `Span` to.
-//! - [`syntax`]: telling a string literal from the code around it in rendered text, and how Rust
-//!   and `Path!` spell a name, which this crate's text passes and the expand crate share.
-//!
-//! A further module, [`code`], holds the `CGP-E` error-code constants the rewrite and the
-//! diagnosis wording stamp on classified main messages.
-
+#![doc = include_str!("../README.md")]
 // Every public item carries a doc line, which the crate's clippy and doc runs hold.
 #![warn(missing_docs)]
 

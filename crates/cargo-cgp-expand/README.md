@@ -19,6 +19,8 @@ impl ::cgp::macro_prelude::HasField<::cgp::macro_prelude::Symbol<4,
     ::cgp::macro_prelude::Chars<'m',
     ::cgp::macro_prelude::Chars<'e', ::cgp::macro_prelude::Nil>>>>>> for
     Person {
+    // …
+}
 ```
 
 This crate rewrites such types back into the macros you write and drops those module paths, so
@@ -26,6 +28,8 @@ This crate rewrites such types back into the macros you write and drops those mo
 
 ```rust
 impl HasField<Symbol!("name")> for Person {
+    // …
+}
 ```
 
 It also narrows an expansion to the one module, type, or trait that `cargo cgp expand --item`
