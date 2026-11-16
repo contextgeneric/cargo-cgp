@@ -1,9 +1,5 @@
-//! Resugaring `Symbol!`: the type-level string every CGP field name travels as.
-//!
-//! `Symbol!("height")` expands to a byte length and a right-folded character list closed by
-//! `Nil`, so this pass reads that spine back into the literal the programmer wrote. The match
-//! is exact: the declared length must equal the decoded string's byte length, the spine must be
-//! `Chars` all the way down to `Nil`, and every head must be a plain character literal.
+//! Resugaring `Symbol!`, the type-level string every CGP field name travels as, on an exact match
+//! only; see `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 
 use quote::ToTokens;
 use syn::visit_mut::{self, VisitMut};

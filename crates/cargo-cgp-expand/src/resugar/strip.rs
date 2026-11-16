@@ -1,10 +1,5 @@
-//! Dropping the `cgp::macro_prelude::` qualifier the CGP macros emit.
-//!
-//! Every construct a CGP macro references is emitted fully qualified, so the expansion is full of
-//! `::cgp::macro_prelude::DelegateComponent` where the programmer wrote `DelegateComponent`. That
-//! qualifier is noise nobody wrote, and stripping it makes the rest of the expansion read like
-//! source. General module qualifiers are left alone: in source, unlike in a diagnostic, a qualifier
-//! carries information.
+//! Dropping the `cgp::macro_prelude::` qualifier the CGP macros emit, while other qualifiers stay;
+//! see `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 
 use syn::visit_mut::{self, VisitMut};
 use syn::{ExprPath, Path, TypePath};

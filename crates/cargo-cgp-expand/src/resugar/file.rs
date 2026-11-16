@@ -9,17 +9,8 @@ use crate::resugar::strip::StripPrelude;
 use crate::resugar::symbol::Symbols;
 
 /// Resugar every CGP construct in `file`, in place, after dropping the `cgp::macro_prelude::`
-/// qualifier the CGP macros emit.
-///
-/// The passes are **separate whole-tree visits in a fixed order**, and that is load-bearing rather
-/// than stylistic. `Symbol!` runs first because the two later passes read the `Symbol!("…")` calls
-/// it produces: as a path segment, and as a `Field`'s name tag. `Path!` runs before the lists
-/// because `Nil` terminates a path *and* an empty product, so the path pass must consume its own
-/// terminator first.
-///
-/// Folding them into one visitor is a bug, not an optimization: a visitor recurses innermost-first,
-/// so it would rewrite a `Symbol`'s terminating `Nil` into `Product![]` before ever examining the
-/// enclosing `Symbol`, which then no longer matches, and every field name silently stays raw. See
+/// qualifier. The passes run as separate whole-tree visits in a fixed order, because each reads the
+/// last's output and `Nil` ends three lists; see
 /// `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 pub fn resugar_file(file: &mut File) {
     StripPrelude.visit_file_mut(file);

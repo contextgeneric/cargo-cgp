@@ -1,24 +1,5 @@
-//! Tightening the spacing the printer leaves inside a resugared macro call.
-//!
-//! A resugared construct is a macro call whose body holds ordinary types, and the printer lays a
-//! macro body out token by token: it has no way to know the body is a type list, so it spaces
-//! every token apart and prints `Product![Multiply < Symbol!("foo") >]`. Its spacing rules cannot
-//! be coaxed into the conventional form: the space *before* a token is the printer's decision and
-//! an identifier cannot ask for it to be dropped, so the layout is corrected after printing.
-//!
-//! The printer also always breaks a brace-delimited macro body onto lines of its own, printing a
-//! `Struct! { … }` shape as a block. It still puts the whole body on one line, so a brace body is
-//! joined back onto the macro's line, `Struct! { width: f64 }`, the way a diagnostic and the
-//! documentation write a shape.
-//!
-//! This is the one text pass in the crate, and it is deliberately narrow: it only ever removes
-//! whitespace (joining a brace body replaces each line break with a single space), only inside the
-//! body of a call to one of the CGP macros `SUGAR_MACROS` names, and never inside a literal. The
-//! search for those calls steps over literals and comments, so text that merely names a macro, such
-//! as `"Sum![a , b]"` in a string or a doc comment, is left alone. So it cannot alter the meaning
-//! of anything, and it cannot reach the surrounding program at all. (A `Product![…]` a programmer
-//! wrote themselves is tightened the same way, which is the same transformation and equally
-//! harmless.)
+//! Tightening the spacing the printer leaves inside a resugared macro call, by removing whitespace
+//! alone; see `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 
 use crate::resugar::spacing::layout::{Layout, join_lines, tighten};
 use crate::resugar::spacing::scan::{body_end, next_sugar};

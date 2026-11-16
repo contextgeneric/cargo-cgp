@@ -1,16 +1,5 @@
-//! Resugaring `Path!`: the type-level path a namespace or an `open` statement dispatches on.
-//!
-//! `Path!(@app.GreeterComponent)` expands to a right-nested `PathCons` chain closed by `Nil`,
-//! and this pass reads it back. Segments are classified the way `Path!` classifies them going
-//! forward: a lowercase, non-primitive identifier is a `Symbol`, and every other segment was
-//! kept verbatim as a named type. Two shapes decline, leaving the raw spine rather than risking
-//! a mangled path: a module-qualified segment that is not a plain type path, and a bare lowercase
-//! identifier, which `Path!` would have encoded as a `Symbol`.
-//!
-//! Only a `Nil`-terminated chain is folded. An **open-ended** path, whose tail is a generic "rest
-//! of path" parameter, has no `Path!` spelling, since `Path!(@a.b)` is the closed path, and this
-//! pass writes source, so such a chain is left as it stands. In an expansion the open tail is a
-//! named generic parameter, not the `_` a diagnostic shows.
+//! Resugaring `Path!`, the type-level path a namespace or an `open` statement dispatches on; see
+//! `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 
 use cargo_cgp_error_processing::{is_ident, is_primitive_type};
 use proc_macro2::{Punct, Spacing, TokenStream, TokenTree};
@@ -44,12 +33,8 @@ impl VisitMut for Paths {
     }
 }
 
-/// Build the `Path!(@a.b.C)` call a decoded spine becomes.
-///
-/// The macro form is used rather than the bare `@…` a diagnostic shows, because this output is
-/// source code, where a path type is written as the macro call. The `@` and `.` separators are
-/// emitted with joint spacing so the printer lays the path out as one word (`@app.Greeter`) rather
-/// than spacing every token apart.
+/// Build the `Path!(@a.b.C)` call a decoded spine becomes, with `@` and `.` joined so the printer
+/// keeps the path one word; see `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 fn path_macro(segments: &[TokenStream]) -> Type {
     let mut body = TokenStream::from(TokenTree::Punct(Punct::new('@', Spacing::Joint)));
     for (index, segment) in segments.iter().enumerate() {

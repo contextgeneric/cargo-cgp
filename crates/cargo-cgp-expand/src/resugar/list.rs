@@ -1,13 +1,5 @@
-//! Resugaring `Product!` and `Sum!`, the type-level list spines, and their `Struct!`/`Enum!`
-//! shapes.
-//!
-//! A product expands through `Cons` to `Nil` and a sum through `Either` to `Void`, so this pass
-//! collects each spine's heads and prints them as the flat list the programmer wrote. A list whose
-//! elements are all `Field` cells folds one step further, to the CGP `Struct!` or `Enum!` shape it
-//! describes, when the shape has an exact spelling: `Struct! { width: f64 }`, `Struct!(u8, u16)`,
-//! or `Enum! { Empty, Circle(f64) }`. Any other list keeps its `Product!`/`Sum!` form. The rules
-//! are the same as the diagnostic resugarers' (see
-//! `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`).
+//! Resugaring `Product!` and `Sum!`, and the `Struct!` and `Enum!` shapes a list of `Field` cells
+//! folds to; see `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 
 use cargo_cgp_error_processing::shape_name;
 use proc_macro2::{Ident, TokenStream};
@@ -189,12 +181,8 @@ fn index_tag(tag: &Type) -> Option<usize> {
     index.base10_parse().ok()
 }
 
-/// Collect the head types of a `Cell<Head, Tail>` spine ended by `Terminator`, or `None` when
-/// `ty` is not such a spine.
-///
-/// The first node must be a cell, so a bare terminator is left as the plain type it reads as
-/// rather than resugared into an empty list, and a tail that is neither a further cell nor the
-/// terminator declines, so only a closed list is folded.
+/// Collect the head types of a `Cell<Head, Tail>` spine closed by `Terminator`, or `None` when `ty`
+/// is not such a spine; a fold needs a first cell and a closed list.
 fn spine_elements(ty: &Type, cell: &str, terminator: &str) -> Option<Vec<Type>> {
     let mut elements = Vec::new();
     let mut current = ty.clone();

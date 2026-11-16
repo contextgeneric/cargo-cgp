@@ -1,27 +1,5 @@
-//! Selecting one module or item out of an expansion.
-//!
-//! An expanded crate is large, and a reader usually wants one part of it: the module they are
-//! working in, or the type whose generated impls they are checking.
-//! `cargo cgp expand --item <path>` narrows the output to that path, and this module is the
-//! narrowing.
-//!
-//! Three rules decide what a path selects, and the third is the CGP-shaped one:
-//!
-//! 1. An item **declared** at that path, such as a struct, trait, function, and so on. A module
-//!    selects its *contents* rather than the `mod` wrapper, since the wrapper is noise around what
-//!    was asked for.
-//! 2. An `impl` block whose **self type** is that path, so `--item Rectangle` shows the struct
-//!    together with every impl written for it.
-//! 3. An `impl` block whose **trait** is that path, so `--item AreaCalculator` shows a component's
-//!    provider-trait impls. This form makes the filter useful on CGP code: the interesting part of
-//!    a CGP expansion is impls, and the name a reader has in mind is usually the trait's.
-//!
-//! An impl inside an unnamed constant's block (`const _: () = { … };`, the shape many third-party
-//! derives emit) is matched by the same two impl rules, and selecting it selects the whole block,
-//! whose imports the impl's paths resolve through.
-//!
-//! A path is matched against the item's own written path, qualified by the module it sits in, so
-//! `shapes::Rectangle` finds a `Rectangle` declared or implemented inside `mod shapes`.
+//! Selecting one module or item out of an expansion for `cargo cgp expand --item`; see
+//! `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 
 use syn::{Expr, File, Item, ItemImpl, Path, Stmt, Type};
 
@@ -32,15 +10,9 @@ pub struct ItemPath {
 }
 
 impl ItemPath {
-    /// Parse a path pattern, or `None` when it is not one: after the crate-root prefix below, every
-    /// segment must be a plain identifier and at least one must remain. Declining here rather than
-    /// matching nothing keeps a typo (`shapes:Rectangle`, `shapes::`) from looking like an item
-    /// that does not exist.
-    ///
-    /// A **crate-root prefix is accepted and dropped**: `crate::contexts::app`, `::contexts::app`,
-    /// and `self::contexts::app` all mean `contexts::app`. Matching is against module paths within
-    /// the crate being expanded, which carry no such prefix, but `crate::…` is how the module is
-    /// spelled in the source, so a reader reaches for it, and rejecting it would be pedantry.
+    /// Parse a path pattern, or `None` when it is not plain identifiers joined by `::`, after
+    /// dropping a crate-root prefix; see
+    /// `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
     pub fn parse(pattern: &str) -> Option<Self> {
         let mut segments: Vec<String> = pattern.split("::").map(str::to_owned).collect();
 
