@@ -5,9 +5,9 @@
 
 **The compiler half of [`cargo-cgp`](https://crates.io/crates/cargo-cgp), CGP's error toolchain.**
 
-Context-Generic Programming (CGP) extends Rust with pluggable trait implementations, chosen at
-compile time. Its macros expand to ordinary Rust, so when a context lacks something a provider
-needs, the compiler reports the mistake in terms of the generated code. `cargo cgp check` compiles
+Context-Generic Programming (CGP) extends Rust with pluggable trait implementations through macros
+that expand to ordinary Rust, so when a context lacks something a provider needs, the compiler
+reports the mistake in terms of the generated code. `cargo cgp check` compiles
 your workspace through this crate, a `rustc` driver that reads CGP's diagnostics inside the compiler
 and rewrites them to lead with the cause. For a `Rectangle` context whose area provider reads a
 `height` field it does not have, the driver reports the mistake at the context's `check_components!`

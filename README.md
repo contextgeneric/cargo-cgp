@@ -19,8 +19,8 @@ it recognizes, and the tool does not yet reshape every class.
 
 CGP itself is an ordinary library on the stable toolchain. It lets one trait have many
 interchangeable implementations and lets each type choose which one it uses: you write that choice
-as *wiring* in one place, and the compiler resolves it statically, without runtime cost. The
-[website](https://contextgeneric.dev/) documents CGP itself, while this repository documents the
+as *wiring* in one place, and the compiler resolves it at compile time, without a runtime lookup.
+The [website](https://contextgeneric.dev/) documents CGP itself, while this repository documents the
 tool.
 
 ## What it solves
