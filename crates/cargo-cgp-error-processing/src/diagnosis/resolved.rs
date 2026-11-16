@@ -31,7 +31,7 @@ pub struct Cause {
 /// Invariant: one [`Cause`] per distinct leaf, each holding every path that reaches it; every
 /// constructor normalizes and the field is private. Reads go through [`Deref`] to `[Cause]`.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md`.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Causes(Vec<Cause>);
 

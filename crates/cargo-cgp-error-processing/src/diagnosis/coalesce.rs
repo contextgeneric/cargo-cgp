@@ -6,7 +6,7 @@ use crate::diagnosis::resolved::Cause;
 /// Coalesce causes that are each a *present-but-underived* field on the same struct into one
 /// [`Leaf::UnderivedFields`] cause, keeping every field's path.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md for why only a
+/// See `cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md` for why only a
 /// present field on one struct merges.
 pub fn coalesce_underived_fields(causes: &[Cause]) -> Vec<Cause> {
     let mut out: Vec<Cause> = Vec::new();

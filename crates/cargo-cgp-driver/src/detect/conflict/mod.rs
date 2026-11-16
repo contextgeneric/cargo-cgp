@@ -1,7 +1,7 @@
 //! Classifying a duplicate-key wiring conflict by querying the trait solver: the redundant
 //! `IsProviderFor` half is dropped and the `DelegateComponent` half names the colliding keys.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 mod build;
 mod classify;

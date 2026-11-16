@@ -27,8 +27,8 @@ pub fn expand_arg_files(raw: Vec<String>) -> Vec<String> {
 /// the invocation already sets it, and skip the injection for cargo's `-vV` and `--print` info
 /// queries.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md for the order of the steps and
-/// why the info queries take no flags.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md` for the order of the steps
+/// and why the info queries take no flags.
 pub fn rustc_args(
     raw_args: impl IntoIterator<Item = String>,
     sysroot: Option<String>,

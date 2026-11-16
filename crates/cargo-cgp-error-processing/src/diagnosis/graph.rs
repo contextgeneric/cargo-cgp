@@ -139,7 +139,7 @@ impl DependencyGraph {
     /// [`render`](Self::render) against a `seen` set that outlives this graph, so a node some
     /// *earlier* graph already drew is `(*)`-referenced here instead of expanded again.
     ///
-    /// See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md for eliding
+    /// See `cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md` for eliding
     /// across blocks.
     pub fn render_seen(&self, seen: &mut HashSet<ChainNode>) -> String {
         let mut expanded = vec![false; self.nodes.len()];
@@ -188,7 +188,7 @@ impl DependencyGraph {
     /// drawn, in this render or an earlier one, as a `(*)` reference; the `expanded` marks also
     /// stop a cycle.
     ///
-    /// See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md for the
+    /// See `cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md` for the
     /// rendering rules.
     fn expand(
         &self,

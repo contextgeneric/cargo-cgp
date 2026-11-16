@@ -1,7 +1,7 @@
 //! Classifying an `E0119` on a namespace's own lookup trait, recognized by the impls at the carets,
 //! with [`redirect_conflict`] naming the path a prefixed key is addressed by.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::WiringConflict;
 use rustc_middle::ty::TyCtxt;

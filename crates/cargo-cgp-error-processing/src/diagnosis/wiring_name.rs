@@ -1,7 +1,7 @@
 //! The rustc-free model and wording for a wiring key or value that does not resolve, including a
 //! provider header's derived component key.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use crate::code::{
     CGP_IMPL_PROVIDER_NOT_DECLARED, COMPONENT_NOT_IMPORTED, CONSUMER_TRAIT_AS_KEY,

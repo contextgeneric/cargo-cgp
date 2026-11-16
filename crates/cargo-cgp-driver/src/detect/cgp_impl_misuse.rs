@@ -1,7 +1,7 @@
 //! Detecting a `#[cgp_impl]` provider that names the wrong trait: the consumer trait in the header,
 //! a trait that is no CGP component, or the consumer trait in an inner-provider bound.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md for the three
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md` for the three
 //! conditions that select the user's impl and why the lower-level provider macros are not covered.
 
 use cargo_cgp_error_processing::CgpImplMisuse;

@@ -30,8 +30,8 @@ pub enum Origin {
 /// their qualifier. `has_field_impls` is the whole-diagnostic fact the field rewrite needs, which
 /// the caller computes once with [`context_has_hasfield_impls`](super::context_has_hasfield_impls).
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/error-processing.md for the stages and why their
-/// order matters.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md` for the stages and why
+/// their order matters.
 pub fn postprocess_message(
     text: &str,
     has_field_impls: bool,
@@ -78,7 +78,7 @@ pub fn postprocess_message(
 ///
 /// Precondition: the caller has run [`postprocess_message`] over each fragment.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/error-processing.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md`.
 pub fn postprocess_fragments(
     fragments: &[&str],
     has_field_impls: bool,

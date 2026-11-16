@@ -1,7 +1,7 @@
 //! Post-processor: resugar the `Path!` type-level path, on a well-formed match only.
 //!
 //! Runs after [`resugar_symbol`](fn@super::resugar_symbol). See
-//! cgp-knowledge-base/cargo-cgp/implementation/resugaring.md for how each segment renders, which
+//! `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md` for how each segment renders, which
 //! ones decline, and the open-ended tail.
 
 use crate::postprocess::scan_head_tail;
@@ -108,7 +108,7 @@ fn is_open_tail(tail: &str) -> bool {
 /// Render one spine segment back to its `Path!` surface form, or `None` when it would not
 /// round-trip.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/resugaring.md for the segment rules.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md` for the segment rules.
 fn render_segment(segment: &str) -> Option<String> {
     let segment = segment.trim();
     if let Some(name) = symbol_inner(segment) {

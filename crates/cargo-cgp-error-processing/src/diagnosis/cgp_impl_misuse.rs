@@ -1,8 +1,8 @@
 //! The rustc-free model and wording for a `#[cgp_impl]` header that names the wrong trait: a
 //! consumer trait, or a trait that is no CGP component.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md and the `CGP-E032`
-//! and `CGP-E033` entries of cgp-knowledge-base/cargo-cgp/error-code.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md` and the
+//! `CGP-E032` and `CGP-E033` entries of `cgp-knowledge-base/cargo-cgp/error-code.md`.
 
 use crate::code::{
     CONSUMER_TRAIT_IN_PROVIDER_BOUND, CONSUMER_TRAIT_IN_PROVIDER_IMPL, NON_CGP_TRAIT_IN_CGP_IMPL,

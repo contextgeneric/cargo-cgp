@@ -3,7 +3,7 @@
 //!
 //! The detectors import the resolver's [`query`](crate::resolve::query) layer and
 //! [`cgp_item`](crate::resolve::query) recognizers, and one another, never the rest of the
-//! resolver. See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! resolver. See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 mod ambiguous_names;
 mod cgp_impl_misuse;

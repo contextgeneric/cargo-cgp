@@ -1,7 +1,7 @@
 //! The rustc-free model and wording for an orphan-rule namespace-registration failure
 //! (`[CGP-E022]`).
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use crate::code::ORPHAN_FOREIGN_NAMESPACE;
 use crate::diagnosis::wiring::WiringKey;

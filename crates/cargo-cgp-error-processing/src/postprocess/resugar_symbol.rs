@@ -1,6 +1,6 @@
 //! Post-processor: resugar the `Symbol!` type-level string, on an exact structural match only.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/resugaring.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 
 /// Rewrite every well-formed `Symbol<…>` spine in `text` to its `Symbol!("…")` surface
 /// form, returning the rewritten text when any was rewritten (and `None` otherwise). Meant

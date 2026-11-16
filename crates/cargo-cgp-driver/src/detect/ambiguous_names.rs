@@ -17,7 +17,7 @@ use rustc_span::def_id::{CRATE_DEF_ID, DefId, LocalDefId};
 /// module during name resolution would force lowering, which emits through the lock the emitter
 /// holds. Without the items, each glob-imported name keeps no qualifier.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/resugaring.md for how rustc's trimmed paths
+/// See `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md` for how rustc's trimmed paths
 /// decide which names are ambiguous.
 pub fn ambiguous_type_names(tcx: TyCtxt<'_>, read_glob_items: bool) -> Option<AmbiguousNames> {
     if !tcx.untracked().cstore.is_frozen() {

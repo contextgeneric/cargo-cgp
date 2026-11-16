@@ -13,7 +13,7 @@ use crate::resolve::query::{decode_index, decode_symbol, is_cgp_item, is_nil};
 /// `DefId`, to `Product!`, `Sum!`, `Struct!`, or `Enum!`, with a standalone empty list written by
 /// [`fold_empty_lists`].
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/resugaring.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 pub fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     // The call-site anchor's stand-in for a parameter the call leaves to inference: render it as
     // the `_` the programmer would write, never rustc's internal placeholder form.

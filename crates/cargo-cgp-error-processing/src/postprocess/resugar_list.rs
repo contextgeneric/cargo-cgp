@@ -2,7 +2,7 @@
 //! forms, on an exact structural match only.
 //!
 //! Runs after [`resugar_symbol`](fn@super::resugar_symbol). See
-//! cgp-knowledge-base/cargo-cgp/implementation/resugaring.md.
+//! `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md`.
 
 use crate::postprocess::scan_head_tail;
 use crate::shape::{ShapeTag, render_enum_shape, render_struct_shape};

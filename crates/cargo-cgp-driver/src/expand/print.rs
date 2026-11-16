@@ -20,7 +20,7 @@ impl pprust::PpAnn for NoAnn {}
 /// the result where the front-end asked for it. It runs from `after_expansion`, since
 /// `-Zunpretty=expanded` would exit before any callback.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/expand-command.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/expand-command.md`.
 pub fn print_expansion(sess: &Session, tcx: TyCtxt<'_>, request: &ExpandRequest) {
     let source_name = sess.io.input.file_name(sess);
     let Some(source) = source_text(sess, &source_name) else {

@@ -1,8 +1,8 @@
 //! The CGP error codes stamped on rewritten main messages and dependency-tree entries.
 //!
 //! Register a new code in the catalog in the same change that adds its constant here. See
-//! cgp-knowledge-base/cargo-cgp/error-code.md for the scheme, the family blocks, and what each code
-//! means.
+//! `cgp-knowledge-base/cargo-cgp/error-code.md` for the scheme, the family blocks, and what each
+//! code means.
 
 // A trait the context cannot use, and the two type mismatches (`CGP-E001` to `CGP-E009`).
 

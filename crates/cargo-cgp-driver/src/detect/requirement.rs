@@ -1,6 +1,6 @@
 //! Detecting a component requirement a `#[cgp_impl]` provider does not declare (`[CGP-E036]`).
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::{Requirement, UndeclaredRequirement};
 use rustc_hir::{ImplItemKind, ItemKind};

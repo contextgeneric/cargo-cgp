@@ -2,7 +2,7 @@
 //! recursion and `vocabulary` decides which obligations it walks into, with the compiler queries in
 //! the [query layer](crate::resolve::query).
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/walk.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/walk.md`.
 
 mod leaves;
 mod vocabulary;

@@ -36,7 +36,7 @@ pub fn rewrite_messages<S>(
 /// ([`postprocess_fragments`]), and the message collapses to one unstyled string only when that
 /// recovers a construct.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/error-processing.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md`.
 pub fn postprocess_messages(
     messages: &mut Vec<(DiagMessage, Style)>,
     has_field_impls: bool,

@@ -21,7 +21,7 @@ use crate::resolve::walk::resolve_leaves;
 ///
 /// `spans` are the diagnostic's primary spans, and an impl counts only when one of them is about
 /// the impl itself (`is_about_impl`). See
-/// cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
+/// `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md`.
 pub fn resolve_impl_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     let tcx = cx.tcx;
     for impl_did in enclosing_trait_impls(tcx, spans) {

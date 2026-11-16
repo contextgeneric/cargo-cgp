@@ -1,7 +1,7 @@
 //! Pairing the two `E0428`s that one method two `#[cgp_auto_dispatch]` traits share produces,
 //! worded on the computer's. The stage needs no compiler query.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::{
     ClassPlan, FIRST_DISPATCH_METHOD_LABEL, SECOND_DISPATCH_METHOD_LABEL, StructuralMistake,

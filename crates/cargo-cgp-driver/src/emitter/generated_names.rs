@@ -1,6 +1,6 @@
 //! Dropping a suggestion that names an identifier a CGP macro generated.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::reserved_names;
 use rustc_errors::{DiagInner, Substitution};

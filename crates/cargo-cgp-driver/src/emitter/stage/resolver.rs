@@ -132,7 +132,7 @@ pub fn resolve_or_rewrite(
 /// `E0599` is declined before any solving, since it arrives during type lowering and solving there
 /// would re-enter the held `DiagCtxt` lock.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md for the gate.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md` for the gate.
 pub fn try_resolve(
     cx: Option<ResolveCtx<'_, '_>>,
     diag: &DiagInner,

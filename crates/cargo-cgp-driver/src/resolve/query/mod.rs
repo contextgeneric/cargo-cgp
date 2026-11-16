@@ -2,7 +2,7 @@
 //! compiler and decides no resolution, and the resolver's other modules and the class detectors
 //! import from here, while nothing here imports them.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md`.
 
 mod argument_ty;
 mod binding;

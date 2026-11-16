@@ -100,7 +100,7 @@ pub fn override_analysis(_session: &Session, providers: &mut Providers) {
 /// canonical order ([`sort_canonically`], [`preferred_first`]) and resume the fatal-error unwind
 /// `analysis` ends a failing crate with.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md for the batches and the
+/// See `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md` for the batches and the
 /// unwinds.
 fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     let original = *ORIGINAL_ANALYSIS

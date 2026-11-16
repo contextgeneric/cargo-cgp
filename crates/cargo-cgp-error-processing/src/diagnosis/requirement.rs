@@ -1,7 +1,7 @@
 //! The rustc-free model and wording for a component requirement a provider does not declare
 //! (`[CGP-E036]`).
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use crate::code::UNDECLARED_REQUIREMENT;
 use crate::diagnosis::wording::quoted_list;

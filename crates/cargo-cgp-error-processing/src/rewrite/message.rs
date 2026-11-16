@@ -2,7 +2,7 @@
 //!
 //! [`rewrite_message`] is the entry point; it dispatches to the note-form rewrite
 //! ([`rewrite_required_for`]) and the header rewrite ([`rewrite_trait_bound`]). See
-//! cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use crate::code::PROVIDER_TRAIT_UNIMPLEMENTED;
 use crate::naming::is_reserved_name;

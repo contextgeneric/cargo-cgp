@@ -8,7 +8,7 @@ use crate::diagnosis::wording::lead::root_cause_lead;
 /// leaf's root-cause lead. It is textual because the de-duplication ledger compares it with
 /// rendered-message keys.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`.
 pub fn cause_signature(resolved: &Resolved) -> String {
     let mut consumers = resolved.consumers.clone();
     consumers.sort();

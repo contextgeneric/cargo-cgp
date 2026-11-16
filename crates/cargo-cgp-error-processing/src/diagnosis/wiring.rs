@@ -1,6 +1,6 @@
 //! The rustc-free model and wording for a duplicate-key wiring conflict.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use crate::code::{
     DUPLICATE_REDIRECT, DUPLICATE_WIRING, MULTIPLE_NAMESPACES, OVERLAPPING_WIRING,

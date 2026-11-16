@@ -1,6 +1,6 @@
 //! Recognizing an orphan-rule namespace registration and recovering what it registered.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::{OrphanConflict, OrphanTrigger, WiringKey};
 use rustc_middle::ty::print::with_forced_trimmed_paths;

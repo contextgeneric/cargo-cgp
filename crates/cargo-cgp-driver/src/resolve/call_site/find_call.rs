@@ -19,7 +19,7 @@ use crate::resolve::walk::resolve_leaves;
 /// when no method call sits at the primary spans, the receiver's type is not syntactically
 /// recoverable, or no placeholder-free root cause is found. Tried after the span-matching anchors.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/call-site.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/call-site.md`.
 pub fn resolve_call_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     let tcx = cx.tcx;
     for call in method_calls_at(tcx, spans) {

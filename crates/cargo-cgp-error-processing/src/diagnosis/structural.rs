@@ -1,6 +1,6 @@
 //! The rustc-free model and wording for the structural mistakes in a wiring or its checks.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use crate::code::{
     CHECK_AT_UNIT_PARAMETERS, DUPLICATE_CHECK, DUPLICATE_CHECK_TRAIT, ENTRY_PARAMETERS_NOT_IN_KEY,

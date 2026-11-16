@@ -2,7 +2,7 @@
 //! HIR and trait definitions are read, since the `E0220` arrives while the definition's types are
 //! lowered.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::UnimportedAbstractType;
 use rustc_hir::def::DefKind;

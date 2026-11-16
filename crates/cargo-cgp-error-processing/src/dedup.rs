@@ -32,8 +32,8 @@ impl DedupLedger {
     /// Record one transformed diagnostic and report whether an equal one was already recorded:
     /// `true` means this diagnostic is a re-report the caller should suppress.
     ///
-    /// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md for the three keys and why
-    /// the coded headline works in one direction only.
+    /// See `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md` for the three keys and
+    /// why the coded headline works in one direction only.
     pub fn check_and_record(
         &mut self,
         cause_signature: Option<&str>,

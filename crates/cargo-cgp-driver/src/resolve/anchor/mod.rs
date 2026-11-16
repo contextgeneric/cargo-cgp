@@ -3,7 +3,7 @@
 //! [`call_site`](crate::resolve::call_site). `seed` builds the obligation each anchor feeds the
 //! walk, and `spans` finds the local items the diagnostic's spans land on.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md`.
 
 mod check_failure;
 mod forward_entry;

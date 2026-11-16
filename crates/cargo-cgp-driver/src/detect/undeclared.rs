@@ -1,7 +1,7 @@
 //! Detecting a CGP trait called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared
 //! (`[CGP-E030]`).
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::UndeclaredTrait;
 use rustc_hir::def::{DefKind, Res};
@@ -32,8 +32,8 @@ pub enum UndeclaredCall {
 /// diagnostic is not one. Everything is keyed on `primary_span`, the failing method call, never on
 /// the diagnostic's note spans, which point at other generated impls.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md for the conditions
-/// it checks.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md` for the
+/// conditions it checks.
 pub fn detect_undeclared_trait(
     tcx: TyCtxt<'_>,
     primary_span: Span,

@@ -12,7 +12,7 @@ use crate::resolve::query::{is_cgp_crate_trait, is_consumer_trait};
 /// [`CGP_CRATES`] defines is excluded. A CGP consumer trait also matches; callers that care test
 /// [`consumer_provider_trait`](crate::resolve::query::consumer_provider_trait) separately.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md`.
 pub fn is_blanket_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     !CGP_CRATES.contains(&tcx.crate_name(def_id.krate).as_str())
         && has_blanket_impl(tcx, def_id)

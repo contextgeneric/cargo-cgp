@@ -1,6 +1,6 @@
 //! The rustc-free model and wording for an abstract type used but not imported (`[CGP-E035]`).
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use crate::code::ABSTRACT_TYPE_NOT_IMPORTED;
 

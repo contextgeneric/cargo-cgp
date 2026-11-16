@@ -1,6 +1,6 @@
 //! Detecting a higher-order provider that calls an inner provider it never imported (`[CGP-E031]`).
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::MissingUseProvider;
 use rustc_hir::def::DefKind;

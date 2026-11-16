@@ -11,7 +11,7 @@ use crate::expand::{ExpandRequest, print_expansion};
 /// wraps the `analysis` query ([`emitter::override_analysis`]), and `after_expansion` runs the
 /// name-resolution passes in a check or prints the expansion ([`crate::expand`]).
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`.
 pub struct CgpCallbacks {
     /// Set when the invocation carried the expand-mode flag, holding where to write the result.
     pub expand: Option<ExpandRequest>,

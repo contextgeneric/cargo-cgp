@@ -365,7 +365,7 @@ impl<E: Emitter> CgpEmitter<E> {
     /// [`DedupLedger`] already recorded is a re-report, and only the first in processing order is
     /// shown.
     ///
-    /// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md for the keys and the
+    /// See `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md` for the keys and the
     /// order.
     fn is_repeat_report(
         &mut self,
@@ -523,7 +523,7 @@ impl<E: Emitter> Drop for CgpEmitter<E> {
     /// compiler drops the emitter, the one place with every diagnostic in hand. If the rendering
     /// panics, the panic is contained and the buffer is emitted as rustc built it.
     ///
-    /// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md.
+    /// See `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`.
     fn drop(&mut self) {
         let buffer = std::mem::take(&mut self.output().buffer);
         let buffer = settle_pending(buffer, &self.cgp_spans, |header| {

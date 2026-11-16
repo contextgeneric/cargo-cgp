@@ -1,7 +1,7 @@
 //! Post-processor: strip module qualifiers from every path, leaving the item the path names. It
 //! runs before the resugaring stages, so they match the bare names.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/resugaring.md for which runs it rewrites and
+//! See `cgp-knowledge-base/cargo-cgp/implementation/resugaring.md` for which runs it rewrites and
 //! which it leaves.
 
 use crate::postprocess::ambiguous::AmbiguousNames;

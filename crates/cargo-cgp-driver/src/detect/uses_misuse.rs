@@ -1,6 +1,6 @@
 //! Detecting a provider trait named in `#[uses(…)]` (`[CGP-E037]`).
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::ProviderTraitInUses;
 use rustc_hir::def_id::DefId;

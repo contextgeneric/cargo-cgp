@@ -1,6 +1,6 @@
 //! Rendering a resolved check failure's dependency chain as a `cargo tree`-style tree.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/dependency-graph-rendering.md`.
 
 use termtree::{GlyphPalette, Tree};
 

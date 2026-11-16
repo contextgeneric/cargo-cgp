@@ -2,7 +2,7 @@
 //! `after_expansion` callback. The buffer is read and written under the output's lock, and the
 //! planning, which runs compiler queries, runs with the lock released.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::{
     ClassPlan, UnresolvedWiringName, is_missing_type_parameter_help_text,
@@ -43,8 +43,9 @@ pub fn is_unresolved_wiring_overflow(diag: &DiagInner, unprovable: &[String]) ->
 }
 
 /// Reshape the buffered name-resolution `E0425`s that a wiring entry or a provider header produced,
-/// and record in the output the requirements the entries with an unresolved value leave unprovable. Call once name resolution is over, while a `TyCtxt` is available. A panic in the
-/// planning leaves every diagnostic as rustc wrote it.
+/// and record in the output the requirements the entries with an unresolved value leave unprovable.
+/// Call once name resolution is over, while a `TyCtxt` is available. A panic in the planning leaves
+/// every diagnostic as rustc wrote it.
 pub fn reshape_name_resolution_errors(tcx: TyCtxt<'_>) {
     buffer_pass(
         unresolved_names,

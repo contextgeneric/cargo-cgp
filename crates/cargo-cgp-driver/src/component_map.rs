@@ -1,8 +1,8 @@
 //! Building the component-marker → trait-names map from the compiler, for the rustc-free
 //! [`rewrite`](cargo_cgp_error_processing::rewrite) module.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md for the two links
-//! it inverts, the `DefId` anchor, and why entries are keyed by full path.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md` for the two
+//! links it inverts, the `DefId` anchor, and why entries are keyed by full path.
 
 use std::collections::HashMap;
 

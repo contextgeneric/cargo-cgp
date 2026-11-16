@@ -14,7 +14,7 @@ use crate::emitter::edit::main_message_text;
 /// `rustc --explain` codes only for errors still shown, filtering the footer's own codes rather
 /// than building a fresh set.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 pub fn rebuild_explain_footers(to_emit: &mut Vec<DiagInner>) {
     let is_footer = |diag: &DiagInner| {
         diag.level() == Level::FailureNote

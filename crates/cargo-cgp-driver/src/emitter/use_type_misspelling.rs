@@ -2,7 +2,7 @@
 //! the driver's `after_expansion` callback. The detection runs with the output's lock released, as
 //! in the name-resolution pass.
 //!
-//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
+//! See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md`.
 
 use cargo_cgp_error_processing::{unresolved_assoc_type, use_type_misspelling_help};
 use rustc_errors::codes::E0576;

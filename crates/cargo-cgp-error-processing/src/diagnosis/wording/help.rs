@@ -11,7 +11,7 @@ use crate::diagnosis::wording::quoted_list;
 /// Postcondition: a near miss, a similar name the program wrote, comes before the fix of its cause,
 /// also when that fix merges into a `help` an earlier cause opened.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/output.md for what merges and
+/// See `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/output.md` for what merges and
 /// when a fix gets no `help`.
 pub fn fix_help_messages(causes: &[Cause]) -> Vec<String> {
     // One group per help: its kind and owner, and the items it names in first-seen order. A whole

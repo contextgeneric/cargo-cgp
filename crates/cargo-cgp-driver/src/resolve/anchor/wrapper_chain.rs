@@ -20,7 +20,7 @@ use crate::resolve::walk::resolve_leaves;
 /// one.
 ///
 /// `spans` are the diagnostic's primary spans, gated by `is_about_impl` as the impl-site anchor's
-/// are. See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
+/// are. See `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md`.
 pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     let tcx = cx.tcx;
     for impl_did in enclosing_trait_impls(tcx, spans) {

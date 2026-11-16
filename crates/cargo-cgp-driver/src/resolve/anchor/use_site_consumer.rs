@@ -19,7 +19,7 @@ use crate::resolve::walk::resolve_leaves;
 /// and restricted to a local consumer whose only generic is `Self`. `None` when the diagnostic
 /// names no such trait, or no candidate context fails one resolvably.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md`.
 pub fn resolve_use_site_consumer(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     resolve_from_named_trait(cx, spans, TraitKind::CgpConsumer)
 }
@@ -29,7 +29,7 @@ pub fn resolve_use_site_consumer(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Opti
 /// call-site anchor. `None` when the diagnostic names no local blanket trait, or no candidate
 /// context fails one resolvably.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md`.
 pub fn resolve_use_site_blanket_trait(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     resolve_from_named_trait(cx, spans, TraitKind::Blanket)
 }

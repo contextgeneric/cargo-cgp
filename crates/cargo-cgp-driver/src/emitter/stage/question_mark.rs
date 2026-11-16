@@ -11,7 +11,7 @@ use crate::emitter::pipeline::Verdict;
 /// buffered as a pending entry, which the flush drops on the same test
 /// ([`settle_pending`](crate::emitter::settle_pending)).
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md for why only the
+/// See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md` for why only the
 /// `?` cascade is dropped.
 pub fn question_mark_cascade(diag: &DiagInner, cgp_spans: &[Span]) -> Verdict {
     let overlaps_cgp_failure = diag

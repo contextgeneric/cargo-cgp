@@ -4,7 +4,7 @@
 //! Meant to run after [`strip_unambiguous_paths`](super::strip_unambiguous_paths) and
 //! [`resugar_symbol`](fn@super::resugar_symbol), so it matches the bare, resugared
 //! `HasField<Symbol!("…")>` form. See
-//! cgp-knowledge-base/cargo-cgp/implementation/error-processing.md for when it fires and which
+//! `cgp-knowledge-base/cargo-cgp/implementation/error-processing.md` for when it fires and which
 //! clauses keep rustc's wording.
 
 use crate::naming::is_reserved_name;
@@ -14,11 +14,11 @@ use crate::postprocess::strip_modules::strip_module_paths;
 /// symbol resugared.
 const ANCHOR: &str = "the trait `HasField<Symbol!(\"";
 
-/// Does the text show the context implementing `HasField` for at least one field? Both of
-/// rustc's "similar impl" phrasings count; their absence across the whole diagnostic means
-/// no impls at all. Module paths are stripped first, since rustc prints a trait the module does
-/// not import by name qualified (`` implements trait `cgp::macro_prelude::HasField<Tag>` ``). A caller passes a message's
-/// fragments joined, since rustc highlights the `is` of `is implemented for it` apart.
+/// Does the text show the context implementing `HasField` for at least one field? Both of rustc's
+/// "similar impl" phrasings count; their absence across the whole diagnostic means no impls at all.
+/// Module paths are stripped first, since rustc prints a trait the module does not import by name
+/// qualified (`` implements trait `cgp::macro_prelude::HasField<Tag>` ``). A caller passes a
+/// message's fragments joined, since rustc highlights the `is` of `is implemented for it` apart.
 pub fn context_has_hasfield_impls(text: &str) -> bool {
     let text = strip_module_paths(text).unwrap_or_else(|| text.to_owned());
     text.contains("is implemented for it") || text.contains("implements trait `HasField")

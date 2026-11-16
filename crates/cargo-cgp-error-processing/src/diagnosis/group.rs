@@ -9,10 +9,11 @@ use crate::diagnosis::resolved::Resolved;
 /// coalesce each group into one block. Returns one `Vec` of indices into `resolveds` per group,
 /// each in arrival order, the groups ordered by their first member.
 ///
-/// Invariant: no two groups share a root cause, keyed structurally on each cause's [`Leaf`].
+/// Postcondition: no two groups share a root cause, a cause being identified by its [`Leaf`], and
+/// an ordinary bound together with the context it was reached from.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md for why grouping is transitive
-/// and keys on the leaf rather than its wording.
+/// See `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md` for why grouping is
+/// transitive and keys on the leaf rather than its wording.
 pub fn group_by_shared_cause(resolveds: &[&Resolved]) -> Vec<Vec<usize>> {
     let mut parent: Vec<usize> = (0..resolveds.len()).collect();
 

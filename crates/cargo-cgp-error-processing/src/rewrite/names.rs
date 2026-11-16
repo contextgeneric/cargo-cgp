@@ -23,7 +23,7 @@ pub struct ComponentTraitNames {
 
 /// A lazily-built map from a component-marker's full path to the trait names behind it.
 ///
-/// See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md for why it is
+/// See `cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md` for why it is
 /// lazy, keyed by full path, and built by a `fn` pointer.
 pub struct ComponentNameMap {
     /// The underlying lazily-initialized map, keyed by each marker's full path. Public so the
