@@ -4,7 +4,7 @@
 //! [`set_emitter`](rustc_errors::DiagCtxtHandle::set_emitter) only replaces it, with no way to
 //! recover the original, so [`install`] rebuilds the same inner emitter the compiler's
 //! `default_emitter` would build for the active error format (a [`JsonEmitter`] or an
-//! [`AnnotateSnippetEmitter`]) and wraps *that* in [`CgpEmitter`], so `cargo-cgp-driver` renders
+//! [`AnnotateSnippetEmitter`]) and wraps *that* in [`DeferringEmitter`], so `cargo-cgp-driver` renders
 //! like vanilla `rustc` in either format, only with the CGP transforms applied.
 
 use std::io;
@@ -16,7 +16,7 @@ use rustc_errors::json::JsonEmitter;
 use rustc_interface::interface::Config;
 use rustc_session::config::ErrorOutputType;
 
-use crate::emitter::cgp_emitter::CgpEmitter;
+use crate::emitter::cgp_emitter::DeferringEmitter;
 
 /// Install the transforming emitter on the compiler session, replicating how rustc builds its
 /// default emitter so cargo's output matches vanilla `rustc`'s apart from the CGP transforms.
@@ -24,7 +24,7 @@ use crate::emitter::cgp_emitter::CgpEmitter;
 /// It handles both the JSON error format (the one the front-end drives cargo with) and the
 /// human-readable one a direct `cargo-cgp-driver` (or `cargo cgp check`) invocation renders,
 /// rebuilding whichever emitter the compiler's `default_emitter` would for that format and
-/// wrapping it in [`CgpEmitter`]. The session options the emitter construction needs are not
+/// wrapping it in [`DeferringEmitter`]. The session options the emitter construction needs are not
 /// reachable from `psess_created`'s `&mut ParseSess`, so they are read here from
 /// [`Config::opts`] and moved into the callback.
 pub fn install(config: &mut Config) {
@@ -70,7 +70,7 @@ pub fn install(config: &mut Config) {
 
                 psess
                     .dcx()
-                    .set_emitter(Box::new(CgpEmitter::new(inner, source_map)));
+                    .set_emitter(Box::new(DeferringEmitter::new(inner, source_map)));
             }));
         }
         ErrorOutputType::HumanReadable {
@@ -102,7 +102,7 @@ pub fn install(config: &mut Config) {
 
                 psess
                     .dcx()
-                    .set_emitter(Box::new(CgpEmitter::new(inner, source_map)));
+                    .set_emitter(Box::new(DeferringEmitter::new(inner, source_map)));
             }));
         }
     }

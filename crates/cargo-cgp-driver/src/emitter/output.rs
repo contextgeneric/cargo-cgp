@@ -15,6 +15,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError, Weak};
 use rustc_errors::emitter::Emitter;
 
 use crate::emitter::buffer::BufEntry;
+use crate::emitter::deferred::take_queued;
 
 /// The inner emitter and the buffered diagnostics, shared between the emitter and the panic hook.
 pub struct Output<E> {
@@ -82,8 +83,8 @@ pub fn register_output<E: Emitter + 'static>(output: &Arc<Mutex<Output<E>>>) {
     REGISTERED.with(|registered| *registered.borrow_mut() = Some(weak));
 }
 
-/// Emit the registered output's buffered diagnostics, untransformed. Called by the panic hook on a
-/// crash, before rustc's report. Does nothing when no output is registered on this thread, or
+/// Emit the registered output's buffered diagnostics, and the diagnostics still queued during
+/// `analysis` after them, untransformed. Called by the panic hook on a crash, before rustc's report. Does nothing when no output is registered on this thread, or
 /// when the panic struck while the output was locked, since the emitter is then mid-way through
 /// writing it.
 pub fn flush_registered_output() {
@@ -99,6 +100,10 @@ pub fn flush_registered_output() {
         Err(std::sync::TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
         Err(std::sync::TryLockError::WouldBlock) => return,
     };
+    // A crash during `analysis` leaves its diagnostics in the queue, ahead of the report too.
+    for diag in take_queued() {
+        guard.buffer_mut().push(BufEntry::Plain(Box::new(diag)));
+    }
     guard.flush_on_crash();
 }
 

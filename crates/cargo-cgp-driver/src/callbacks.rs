@@ -10,7 +10,9 @@ use crate::expand::{ExpandRequest, print_expansion};
 /// The driver's [`rustc_driver::Callbacks`] implementation.
 ///
 /// Its `config` hook installs the diagnostic-rewriting [`emitter`], which wraps the emitter the
-/// compiler would have built for the active error format. Aside from the injected flags and that
+/// compiler would have built for the active error format, and in a check wraps rustc's `analysis`
+/// query so the diagnostics it emits are transformed once it ends
+/// ([`emitter::override_analysis`]). Aside from the injected flags and that
 /// emitter, a check is unchanged from plain `rustc`.
 ///
 /// In a check, `after_expansion` reshapes the name-resolution errors of the crate's wiring entries
@@ -31,6 +33,10 @@ impl rustc_driver::Callbacks for CgpCallbacks {
         // embedded through `rustc_driver` otherwise prints full paths.
         config.opts.trimmed_def_paths = true;
         emitter::install(config);
+        if self.expand.is_none() {
+            // Transform the diagnostics of rustc's `analysis` query once it ends, with no lock held.
+            config.override_queries = Some(emitter::override_analysis);
+        }
     }
 
     fn after_expansion(&mut self, compiler: &Compiler, tcx: TyCtxt<'_>) -> Compilation {

@@ -1,7 +1,7 @@
 //! The diagnostic-transforming emitter the driver installs.
 //!
 //! This is the compiler-side seam of every diagnostic transform. It replaces the session's own
-//! emitter with [`CgpEmitter`], which acts on each diagnostic before handing it to a real inner
+//! emitter with [`DeferringEmitter`], whose [`CgpEmitter`] acts on each diagnostic before handing it to a real inner
 //! emitter, so the transformed result reaches cargo already shaped and rendered like vanilla
 //! `rustc` (see `cgp-knowledge-base/cargo-cgp/implementation/driver/program.md`).
 //!
@@ -16,7 +16,9 @@
 //! the flush that renders the buffered diagnostics, falls back to the diagnostics rustc built.
 //!
 //! The module is split into `install` (rebuilding the compiler's default emitter and wrapping
-//! it), `cgp_emitter` (the [`CgpEmitter`] type and its orchestration), `pipeline` (the verdict a
+//! it), `cgp_emitter` (the [`CgpEmitter`] type and its orchestration, and the [`DeferringEmitter`]
+//! the session holds), `deferred` (the queue of diagnostics emitted during rustc's `analysis`
+//! query, transformed once it ends), `pipeline` (the verdict a
 //! stage returns and the step that writes a reshape), `stage` (the stages, one module each),
 //! `edit` (the `DiagInner`-editing helpers), `buffer` (the diagnostics held until the flush),
 //! `output` (the inner emitter and buffer the panic hook can reach), `name_resolution` (the pass
@@ -34,6 +36,7 @@ mod buffer_pass;
 mod cgp_emitter;
 mod containment;
 mod crate_facts;
+mod deferred;
 mod edit;
 mod fallback;
 mod flush;
@@ -48,8 +51,9 @@ mod use_type_misspelling;
 
 pub use attribute_splice::drop_attribute_splices;
 pub use buffer::*;
-pub use cgp_emitter::CgpEmitter;
+pub use cgp_emitter::{CgpEmitter, DeferringEmitter};
 pub use containment::{contain, install_panic_hooks, is_closed_stdout_panic};
+pub use deferred::{Handling, MAX_ROUNDS, drain_queue, override_analysis};
 pub use edit::{merged_span, postprocess_multispan};
 pub use fallback::*;
 pub use flush::*;

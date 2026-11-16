@@ -1,6 +1,7 @@
 pub mod anchors;
 pub mod args;
 pub mod containment;
+pub mod deferred;
 pub mod expand;
 pub mod flush;
 pub mod footers;

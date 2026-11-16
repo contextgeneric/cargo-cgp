@@ -1,7 +1,7 @@
 //! The wrapping [`Emitter`] that transforms CGP diagnostics before delegating.
 
 use std::path::Path;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 
 use cargo_cgp_error_processing::rewrite::ComponentNameMap;
 use cargo_cgp_error_processing::{DedupLedger, Origin};
@@ -16,6 +16,7 @@ use crate::component_map::build_name_map_from_tls;
 use crate::emitter::attribute_splice::drop_attribute_splices;
 use crate::emitter::buffer::{BufEntry, ResolvedEntry};
 use crate::emitter::crate_facts::{CrateFacts, EMPTY_AMBIGUOUS_NAMES};
+use crate::emitter::deferred::{DeferredTarget, defer, is_deferring, register_target, take_queued};
 use crate::emitter::edit::{
     bound_candidate_lists, main_message_text, message_signature, postprocess_diag, push_name_fix,
 };
@@ -34,10 +35,11 @@ use crate::emitter::stage::{
 use crate::resolve::ResolveCtx;
 use crate::resolve::cache::ResolveCache;
 
-/// The wrapping [`Emitter`] that transforms CGP diagnostics before delegating to the real
-/// inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
+/// The transforming half of the emitter, which transforms CGP diagnostics before delegating to the
+/// real inner emitter. Generic over the inner emitter `E` so the driver can wrap whichever the
 /// compiler's default would build for the active error format (a `JsonEmitter` or an
-/// `AnnotateSnippetEmitter`) and render like vanilla `rustc` in either.
+/// `AnnotateSnippetEmitter`) and render like vanilla `rustc` in either. The session holds it
+/// through [`DeferringEmitter`], which decides when a diagnostic is transformed.
 pub struct CgpEmitter<E: Emitter> {
     /// The compiler's own emitter and the diagnostics buffered for it, shared with the panic hook
     /// so a compiler crash can print the buffer before its report (see [`Output`]).
@@ -56,7 +58,7 @@ pub struct CgpEmitter<E: Emitter> {
     names: ComponentNameMap,
     /// The ledger of CGP diagnostics already emitted this compilation, so a wiring mistake that
     /// surfaces at many sites is shown once and its identical re-reports are suppressed (see
-    /// [`emit_diagnostic`](CgpEmitter::emit_diagnostic)). The keys (the recovered root cause for
+    /// [`emit_now`](CgpEmitter::emit_now)). The keys (the recovered root cause for
     /// a resolved diagnostic, the rendered text for a declined-but-rewritten one, and the coded
     /// header) live with the ledger in the rustc-free crate.
     dedup: DedupLedger,
@@ -189,7 +191,7 @@ impl<E: Emitter> CgpEmitter<E> {
 
 impl<E: Emitter> CgpEmitter<E> {
     /// Transform one diagnostic and buffer the result: the body of
-    /// [`emit_diagnostic`](Emitter::emit_diagnostic), which runs it contained. `original` is the
+    /// [`emit_now`](CgpEmitter::emit_now), which runs it contained. `original` is the
     /// diagnostic as rustc built it, kept for the flush to fall back on.
     fn transform(&mut self, diag: DiagInner, original: &DiagInner) {
         // The compiler handle is read once for the whole stage list. Reading it runs no query, so a
@@ -339,14 +341,72 @@ impl<E: Emitter> CgpEmitter<E> {
     }
 }
 
-impl<E: Emitter> Emitter for CgpEmitter<E> {
+impl<E: Emitter> CgpEmitter<E> {
     /// Transform and buffer `diag`, containing a panic in the transform: the diagnostic is then
     /// buffered as rustc built it, with a note saying why, and the compilation goes on.
-    fn emit_diagnostic(&mut self, diag: DiagInner) {
+    pub fn emit_now(&mut self, diag: DiagInner) {
         if let Some(original) =
             transform_or_original(diag, |diag, original| self.transform(diag, original))
         {
             self.push(BufEntry::Plain(Box::new(original)));
+        }
+    }
+}
+
+impl<E: Emitter> DeferredTarget for CgpEmitter<E> {
+    fn transform(&mut self, diag: DiagInner) {
+        self.emit_now(diag);
+    }
+
+    fn keep_untransformed(&mut self, diag: DiagInner) {
+        self.push(BufEntry::Plain(Box::new(diag)));
+    }
+}
+
+/// The [`Emitter`] the session holds: it transforms a diagnostic as it arrives, through its
+/// [`CgpEmitter`], except while rustc's `analysis` query runs, when it queues the diagnostic for
+/// the wrapper around that query to transform once the query ends
+/// ([`crate::emitter::override_analysis`]).
+pub struct DeferringEmitter<E: Emitter> {
+    /// The transforming half, shared with the `analysis` wrapper, which locks it while it processes
+    /// the queue.
+    emitter: Arc<Mutex<CgpEmitter<E>>>,
+    /// The source map the inner emitter renders against, kept here because
+    /// [`Emitter::source_map`] lends it out, which a value behind the lock cannot be.
+    source_map: Option<Arc<SourceMap>>,
+}
+
+impl<E: Emitter + 'static> DeferringEmitter<E> {
+    /// Wrap `inner`, which renders against `source_map`, and register the transforming half for the
+    /// panic hook and for the `analysis` wrapper on this thread.
+    pub fn new(inner: E, source_map: Option<Arc<SourceMap>>) -> Self {
+        let emitter = Arc::new(Mutex::new(CgpEmitter::new(inner, source_map.clone())));
+        register_target(&emitter);
+        Self {
+            emitter,
+            source_map,
+        }
+    }
+}
+
+impl<E: Emitter> DeferringEmitter<E> {
+    /// The transforming half, locked.
+    fn emitter(&self) -> MutexGuard<'_, CgpEmitter<E>> {
+        lock_output(&self.emitter)
+    }
+}
+
+impl<E: Emitter> Emitter for DeferringEmitter<E> {
+    /// Queue `diag` while `analysis` runs, or while the `analysis` wrapper holds the transforming
+    /// half, as when a query a transform forced emits; transform it now otherwise.
+    fn emit_diagnostic(&mut self, diag: DiagInner) {
+        if is_deferring() {
+            return defer(diag);
+        }
+        match self.emitter.try_lock() {
+            Ok(mut emitter) => emitter.emit_now(diag),
+            Err(TryLockError::Poisoned(poisoned)) => poisoned.into_inner().emit_now(diag),
+            Err(TryLockError::WouldBlock) => defer(diag),
         }
     }
 
@@ -355,37 +415,56 @@ impl<E: Emitter> Emitter for CgpEmitter<E> {
     }
 
     fn emit_artifact_notification(&mut self, path: &Path, artifact_type: &str) {
-        self.output()
+        self.emitter()
+            .output()
             .inner
             .emit_artifact_notification(path, artifact_type);
     }
 
     fn emit_timing_section(&mut self, record: TimingRecord, event: TimingEvent) {
-        self.output().inner.emit_timing_section(record, event);
+        self.emitter()
+            .output()
+            .inner
+            .emit_timing_section(record, event);
     }
 
     fn emit_future_breakage_report(&mut self, diags: Vec<DiagInner>) {
-        self.output().inner.emit_future_breakage_report(diags);
+        self.emitter()
+            .output()
+            .inner
+            .emit_future_breakage_report(diags);
     }
 
     fn emit_unused_externs(&mut self, lint_level: rustc_lint_defs::Level, unused_externs: &[&str]) {
-        self.output()
+        self.emitter()
+            .output()
             .inner
             .emit_unused_externs(lint_level, unused_externs);
     }
 
     fn should_show_explain(&self) -> bool {
-        self.output().inner.should_show_explain()
+        self.emitter().output().inner.should_show_explain()
     }
 
     fn supports_color(&self) -> bool {
-        self.output().inner.supports_color()
+        self.emitter().output().inner.supports_color()
+    }
+}
+
+impl<E: Emitter> Drop for DeferringEmitter<E> {
+    /// Buffer, untransformed, any diagnostic still queued, so nothing is lost when the compilation
+    /// stops early; the transforming half then flushes when its last reference goes.
+    fn drop(&mut self) {
+        let mut emitter = self.emitter();
+        for diag in take_queued() {
+            emitter.keep_untransformed(diag);
+        }
     }
 }
 
 impl<E: Emitter> Drop for CgpEmitter<E> {
     /// Flush the buffered diagnostics when the compiler drops the emitter. This runs during the
-    /// `DiagCtxt`'s own teardown, *after* every diagnostic has been handed to `emit_diagnostic` but
+    /// `DiagCtxt`'s own teardown, *after* every diagnostic has been handed to the emitter but
     /// while the inner emitter (a field of `self`, dropped only after this returns) is still alive:
     /// the one place a "list every affected consumer" block can be built, since the `Emitter` trait
     /// offers no end-of-compilation hook. Diagnostics were counted by the `DiagCtxt` as they
