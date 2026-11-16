@@ -22,6 +22,7 @@ pub mod backend {
     #[automatically_derived]
     impl ::core::fmt::Debug for Error {
         #[inline]
+        #[rustc_trivial_field_reads]
         fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
             ::core::fmt::Formatter::debug_struct_field1_finish(f, "Error", &&self.0)
         }

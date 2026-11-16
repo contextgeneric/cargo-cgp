@@ -103,6 +103,10 @@ pub const NO_EXPANSION: &str = "// no expansion: compilation stops before macro 
 /// diagnostic rewriting, the default trait solver rather than the driver's
 /// `-Znext-solver=globally`, and none of the `--verbose` un-eliding the driver injects.
 ///
+/// It runs rustc's front end on one thread, by appending [`BASELINE_THREADS_FLAG`] to the ambient
+/// `RUSTFLAGS` ([`baseline_rustflags`]), so the baseline records the order a sequential compiler
+/// reports in, as the driver's own injected `-Zthreads=1` does for the tool's passes.
+///
 /// It builds in a separate target directory (`target-rust/`) from the `cargo-cgp` passes, so
 /// the two do not invalidate each other's `cgp` build: cargo's fingerprint includes
 /// `RUSTC_WORKSPACE_WRAPPER`, which `cargo-cgp` sets and plain `cargo` does not, so sharing a
@@ -114,10 +118,28 @@ pub fn run_fixture_rust(harness_crate: &Path, fixture: &Path) -> Run {
     let output = Command::new(cargo())
         .current_dir(harness_crate)
         .env("CARGO_TARGET_DIR", harness_crate.join("target-rust"))
+        .env(
+            "RUSTFLAGS",
+            baseline_rustflags(std::env::var("RUSTFLAGS").ok().as_deref()),
+        )
         .args(["check", "-q", "--color", "never"])
         .output()
         .expect("running plain cargo check on a fixture");
     Run::from_output(&output)
+}
+
+/// The flag the plain `cargo check` pass appends to `RUSTFLAGS`, so rustc's front end runs on one
+/// thread and its diagnostics keep one order between runs.
+pub const BASELINE_THREADS_FLAG: &str = "-Zthreads=1";
+
+/// The `RUSTFLAGS` of the plain `cargo check` pass: the ambient value with
+/// [`BASELINE_THREADS_FLAG`] appended, since setting the variable replaces the ambient one. rustc
+/// takes the last `-Zthreads`, so the flag also overrides an ambient thread count.
+pub fn baseline_rustflags(ambient: Option<&str>) -> String {
+    match ambient.map(str::trim) {
+        Some(ambient) if !ambient.is_empty() => format!("{ambient} {BASELINE_THREADS_FLAG}"),
+        _ => BASELINE_THREADS_FLAG.to_owned(),
+    }
 }
 
 /// Copy the fixture in as the throwaway crate's `src/main.rs` and run `cargo-cgp` with

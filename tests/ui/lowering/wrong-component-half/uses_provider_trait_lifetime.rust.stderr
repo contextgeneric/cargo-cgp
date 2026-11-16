@@ -15,8 +15,9 @@ note: trait defined here, with 2 generic parameters: `__Context__`, `Source`
    |                       ------
 help: add missing generic argument
    |
-29 | #[uses(Reader<'static, Text, Source>)]
-   |                            ++++++++
+28 ~ #[cgp_impl(new GreetByReading), Source]
+29 ~ #[uses(Reader<'static, Text, Source>)]
+   |
 
 error[E0599]: no method named `read` found for type parameter `&__Context__` in the current scope
   --> src/main.rs:32:14

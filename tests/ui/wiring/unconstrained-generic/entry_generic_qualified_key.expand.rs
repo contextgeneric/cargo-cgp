@@ -20,6 +20,7 @@ pub struct Error;
 #[automatically_derived]
 impl ::core::fmt::Debug for Error {
     #[inline]
+    #[rustc_trivial_field_reads]
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         ::core::fmt::Formatter::write_str(f, "Error")
     }

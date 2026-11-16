@@ -74,7 +74,12 @@ pub fn install(config: &mut Config) {
             }));
         }
         ErrorOutputType::HumanReadable {
-            kind: HumanReadableErrorType { short, unicode },
+            kind:
+                HumanReadableErrorType {
+                    no_graphics,
+                    short,
+                    unicode,
+                },
             color_config,
         } => {
             config.psess_created = Some(Box::new(move |psess| {
@@ -92,6 +97,7 @@ pub fn install(config: &mut Config) {
                         OutputTheme::Ascii
                     })
                     .ignored_directories_in_source_blocks(ignored_directories)
+                    .no_graphics(no_graphics)
                     .ui_testing(ui_testing);
 
                 psess

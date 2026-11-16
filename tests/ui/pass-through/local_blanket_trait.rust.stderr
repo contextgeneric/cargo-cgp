@@ -41,9 +41,9 @@ note: trait bound `App: std::fmt::Display` was not satisfied
      |         |
      |         unsatisfied trait bound introduced here
 note: the trait `std::fmt::Display` must be implemented
-    --> $SYSROOT/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:1187:1
+    --> $SYSROOT/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:1186:1
      |
-1187 | pub trait Display: PointeeSized {
+1186 | pub trait Display: PointeeSized {
      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
      = help: items from traits can only be used if the trait is implemented and in scope
 note: `Describe` defines an item `describe`, perhaps you need to implement it

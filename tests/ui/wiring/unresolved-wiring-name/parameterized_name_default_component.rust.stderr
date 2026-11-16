@@ -11,7 +11,8 @@ note: struct defined here, with 1 generic parameter: `Shape`
    |           ^^^^^^^^^^^^^^^^^^^^^^^ -----
 help: add missing generic argument
    |
-27 | impl AreaCalculator<Shape><Square> {
-   |                    +++++++
+26 ~ #[cgp_impl(new SquareArea), Shape]
+27 ~ impl AreaCalculator<Shape><Square> {
+   |
 
 For more information about this error, try `rustc --explain E0107`.

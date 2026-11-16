@@ -36,8 +36,9 @@ note: struct defined here, with 1 generic parameter: `Shape`
    |               ^^^^^^^^^^^^^^^^^^^^^^^ -----
 help: add missing generic argument
    |
-74 |     impl AreaCalculator<Shape><Square> {
-   |                        +++++++
+73 ~     #[cgp_impl(new SquareArea), Shape]
+74 ~     impl AreaCalculator<Shape><Square> {
+   |
 
 error[E0107]: missing generics for struct `AreaCalculatorComponent`
   --> src/main.rs:81:10
@@ -52,8 +53,9 @@ note: struct defined here, with 1 generic parameter: `Shape`
    |               ^^^^^^^^^^^^^^^^^^^^^^^ -----
 help: add missing generic argument
    |
-81 |     impl AreaCalculator<Shape> {
-   |                        +++++++
+80 ~     #[cgp_impl(new AnyArea), Shape]
+81 ~     impl AreaCalculator<Shape> {
+   |
 
 error[E0107]: trait takes 2 generic arguments but 1 generic argument was supplied
   --> src/main.rs:81:10
@@ -76,8 +78,8 @@ note: trait defined here, with 2 generic parameters: `__Context__`, `Shape`
    |                                  -----
 help: add missing generic argument
    |
-80 |     #[cgp_impl(new AnyArea)], Shape
-   |                             +++++++
+80 |     #[cgp_impl(new AnyArea), Shape], Shape
+   |                            +++++++ +++++++
 
 Some errors have detailed explanations: E0107, E0425.
 For more information about an error, try `rustc --explain E0107`.

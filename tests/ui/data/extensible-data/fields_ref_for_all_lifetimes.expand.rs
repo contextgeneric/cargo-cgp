@@ -116,6 +116,7 @@ pub enum Token<'a> {
 #[automatically_derived]
 impl<'a> ::core::fmt::Debug for Token<'a> {
     #[inline]
+    #[rustc_trivial_field_reads]
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         match self {
             Self::Word(__self_0) => {

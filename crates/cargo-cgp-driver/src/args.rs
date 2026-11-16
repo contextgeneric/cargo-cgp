@@ -124,3 +124,73 @@ fn has_flag(args: &[String], key: &str) -> bool {
     }
     key == VERBOSE_FLAG && args.iter().any(|arg| arg == VERBOSE_SHORT_FLAG)
 }
+
+/// A flag the driver sets in place of the invocation's own choice, unlike the injected flags of
+/// [`rustc_args`], which give way to it.
+pub struct ForcedFlag<'a> {
+    /// The flag appended to the arguments.
+    pub flag: &'a str,
+    /// The options removed from the arguments first, each in every spelling rustc accepts.
+    pub replaces: &'a [&'a str],
+}
+
+/// Replace, for each forced flag, every argument that sets one of its `replaces` options with the
+/// flag itself, appended after the other arguments.
+///
+/// An option is recognized in each spelling rustc accepts: `key` and `key=value`; for a `-Z` option
+/// (`-Zthreads`), the two-argument `-Z threads=value`; and for a `--` option that takes a value
+/// (`--jobs-frontend`), the two-argument `--jobs-frontend value`. The arguments reach this function
+/// with their `@file` arguments already expanded, so an option inside such a file is removed too.
+/// Cargo's info queries are returned unchanged, for the reason [`rustc_args`] gives.
+///
+/// Postcondition: unless `args` is an info query or `forced` is empty, the result holds the
+/// arguments of `args` that set none of the `replaces` options, in their order, followed by each
+/// forced `flag` once, in the order of `forced`.
+pub fn force_flags(args: Vec<String>, forced: &[ForcedFlag<'_>]) -> Vec<String> {
+    if forced.is_empty() || is_info_query(&args) {
+        return args;
+    }
+    let mut out = Vec::with_capacity(args.len() + forced.len());
+    let mut rest = args.into_iter().peekable();
+    while let Some(arg) = rest.next() {
+        let next = rest.peek().map(String::as_str);
+        let width = forced
+            .iter()
+            .flat_map(|forced| forced.replaces)
+            .find_map(|key| option_width(&arg, next, key));
+        match width {
+            Some(OptionWidth::OneArgument) => {}
+            Some(OptionWidth::TwoArguments) => {
+                rest.next();
+            }
+            None => out.push(arg),
+        }
+    }
+    out.extend(forced.iter().map(|forced| forced.flag.to_owned()));
+    out
+}
+
+/// How many arguments a spelling of an option occupies.
+enum OptionWidth {
+    OneArgument,
+    TwoArguments,
+}
+
+/// Whether `arg`, followed by `next`, sets the option `key`, and in how many arguments.
+fn option_width(arg: &str, next: Option<&str>, key: &str) -> Option<OptionWidth> {
+    let sets = |arg: &str, key: &str| {
+        arg == key
+            || arg
+                .strip_prefix(key)
+                .is_some_and(|rest| rest.starts_with('='))
+    };
+    if key.starts_with("--") && arg == key {
+        return Some(OptionWidth::TwoArguments);
+    }
+    if sets(arg, key) {
+        return Some(OptionWidth::OneArgument);
+    }
+    let option = key.strip_prefix("-Z")?;
+    (arg == "-Z" && next.is_some_and(|next| sets(next, option)))
+        .then_some(OptionWidth::TwoArguments)
+}

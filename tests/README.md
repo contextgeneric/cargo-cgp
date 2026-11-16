@@ -179,7 +179,10 @@ cargo test -q -p cargo-cgp-ui-tests --test ui -- --list | grep ^usability       
 Fixtures are checked in parallel across a pool of workers, one throwaway crate each, with
 `--jobs`/`-j` setting the count (default: the machine's parallelism, capped at 8). Each fixture's
 result prints the moment it finishes, so the run streams in completion order. Snapshots are blessed
-under the toolchain the repository pins, so a toolchain bump can require a re-bless.
+under the toolchain the repository pins, so a toolchain bump can require a re-bless. Both compilers
+run their front end on one thread, the tool because its driver forces `-Zthreads=1` and plain
+`cargo check` because the harness appends it to `RUSTFLAGS`, so a snapshot keeps one order on
+every run.
 
 ## Adding a fixture
 

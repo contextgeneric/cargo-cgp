@@ -3,6 +3,8 @@ error[E0271]: type mismatch resolving `<App as CanHandleApiSend<GreetApi>>::hand
    |
 86 |     ) -> impl Future<Output = Self::Response> + Send {
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ types differ
+87 |         async move { self.handle_api(api).await }
+   |         ---------- value returned here
 
 error[E0599]: the method `handle_api` exists for reference `&App`, but its trait bounds were not satisfied
   --> src/main.rs:87:27

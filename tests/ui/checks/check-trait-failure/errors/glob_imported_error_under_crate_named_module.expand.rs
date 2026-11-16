@@ -24,6 +24,7 @@ pub mod backend {
         #[automatically_derived]
         impl ::core::fmt::Debug for IoFailure {
             #[inline]
+            #[rustc_trivial_field_reads]
             fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                 ::core::fmt::Formatter::write_str(f, "IoFailure")
             }

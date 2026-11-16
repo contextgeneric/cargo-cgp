@@ -18,6 +18,7 @@ pub enum FooBar {
 #[automatically_derived]
 impl ::core::fmt::Debug for FooBar {
     #[inline]
+    #[rustc_trivial_field_reads]
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         match self {
             Self::Foo(__self_0) => {
@@ -262,6 +263,7 @@ pub enum FooBarBaz {
 #[automatically_derived]
 impl ::core::fmt::Debug for FooBarBaz {
     #[inline]
+    #[rustc_trivial_field_reads]
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         match self {
             Self::Foo(__self_0) => {
