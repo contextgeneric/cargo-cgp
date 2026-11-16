@@ -9,23 +9,16 @@ use rustc_span::Symbol;
 use rustc_span::def_id::{CRATE_DEF_ID, DefId, LocalDefId};
 
 /// The names the crate glob-imports (the resolver's `glob_map`), each with the paths of the items
-/// its globs bring in under that name. With trimmed paths rustc qualifies a name only when it is
-/// not unique or glob-imported (`trimmed_def_paths` in `rustc_middle/src/ty/print/pretty.rs`), so a
-/// qualified name outside the map is ambiguous, and one inside it names a different item unless the
-/// printed path is one of the glob's own. Each item's full path is printed as rustc prints a name
-/// it does not trim, and [`AmbiguousNames::new`] adds the shorter forms rustc prints when it trims
-/// a parent module, given the names a path from the crate root or another crate starts with.
-/// Reading the map, the modules' children, and the crate names computes nothing under the emitter.
-/// Forcing `trimmed_def_paths` itself would, and it takes the diagnostic context's lock, which the
-/// emitter holds.
-///
-/// The glob items are read only when `read_glob_items` is set, since a glob's target module comes
-/// from the HIR, which the caller must know is already built: reading it under the emitter during
-/// name resolution would force lowering, and lowering emits diagnostics through the lock the
-/// emitter holds. Without them each glob-imported name keeps no qualifier.
-///
-/// `None` until name resolution has finished, which the frozen crate store marks (see
+/// its globs bring in under that name, for [`AmbiguousNames::new`]. `None` until name resolution
+/// has finished, which the frozen crate store marks (see
 /// [`crate_uses_cgp`](crate::resolve::query::crate_uses_cgp)).
+///
+/// Precondition: `read_glob_items` is set only once the HIR is built; reading a glob's target
+/// module during name resolution would force lowering, which emits through the lock the emitter
+/// holds. Without the items, each glob-imported name keeps no qualifier.
+///
+/// See cgp-knowledge-base/cargo-cgp/implementation/resugaring.md for how rustc's trimmed paths
+/// decide which names are ambiguous.
 pub fn ambiguous_type_names(tcx: TyCtxt<'_>, read_glob_items: bool) -> Option<AmbiguousNames> {
     if !tcx.untracked().cstore.is_frozen() {
         return None;

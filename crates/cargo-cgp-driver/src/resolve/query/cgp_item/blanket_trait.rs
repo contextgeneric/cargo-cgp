@@ -7,26 +7,12 @@ use crate::config::CGP_CRATES;
 use crate::resolve::query::{is_cgp_crate_trait, is_consumer_trait};
 
 /// Whether `def_id` is a **blanket trait**: one carrying a blanket impl over a bare context
-/// parameter (`impl<Context> Trait for Context where Self: …`). This is the shape `#[cgp_fn]` and
-/// `#[blanket_trait]` generate, and the hand-written desugaring of them: the trait is available to
-/// any context meeting the blanket's `where` bounds (a `HasField`, another such trait), so a
-/// failing `Ctx: Trait` bound has a recoverable root cause down those bounds even though the trait
-/// is not a CGP *component* (it has no provider trait or `DelegateComponent`). A CGP consumer trait
-/// also matches (its consumer blanket is a blanket impl), which is harmless: callers that care
-/// about the distinction test
+/// parameter, the shape `#[cgp_fn]` and `#[blanket_trait]` generate, whose blanket genuinely
+/// depends on CGP ([`blanket_depends_on_cgp`]), wherever the trait is defined. A trait one of
+/// [`CGP_CRATES`] defines is excluded. A CGP consumer trait also matches; callers that care test
 /// [`consumer_provider_trait`](crate::resolve::query::consumer_provider_trait) separately.
 ///
-/// The blanket impl alone is far too broad a signal to accept, since `ToString`, `Into`, and
-/// `Borrow` all carry one, and so does any ordinary blanket trait a CGP crate defines for itself
-/// (`impl<T: Clone> Describe for T`). Reshaping their failures into CGP errors would be an
-/// over-reach, so a trait qualifies only when its blanket genuinely depends on CGP
-/// ([`blanket_depends_on_cgp`]), wherever the trait is defined. That admits the `#[cgp_fn]` output
-/// of the checked crate and a trait a library publishes alike.
-///
-/// A blanket trait one of CGP's own crates defines ([`CGP_CRATES`]) is excluded: those are the
-/// extensible-data casts and builders (`CanUpcast`, `CanBuildFrom`), whose failures end on the
-/// extractor and builder recursions the walk cannot yet word as the field or variant at fault,
-/// while the compiler's own headline names it (`Big: FromVariant<Symbol!("Bar")>`).
+/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
 pub fn is_blanket_trait(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     !CGP_CRATES.contains(&tcx.crate_name(def_id.krate).as_str())
         && has_blanket_impl(tcx, def_id)

@@ -14,44 +14,22 @@ use crate::resolve::query::{
 };
 use crate::resolve::walk::resolve_leaves;
 
-/// Resolve a use-site failure by anchoring on the **consumer trait** the diagnostic names, rather
-/// than on the components the context wires. A consumer-method call names its consumer trait in a
-/// note (`` `CanGreet` defines an item `greet` ``), whose span points at the trait definition; when
-/// that trait is a local, non-generic CGP consumer, this recovers it and walks the real obligation
-/// `Ctx: Consumer` directly, with no marker, no `CanUseComponent`/`IsProviderFor` detour.
+/// Resolve a use-site failure by anchoring on the **consumer trait** the diagnostic names, which
+/// reaches a namespace-joined context. Tried after [`resolve_use_site`](super::resolve_use_site),
+/// and restricted to a local consumer whose only generic is `Self`. `None` when the diagnostic
+/// names no such trait, or no candidate context fails one resolvably.
 ///
-/// This anchor reaches a **namespace-joined** context, whose concrete wiring lives in the joined
-/// namespace and not in its own `DelegateComponent` impls.
-/// [`resolve_use_site`](super::resolve_use_site)'s per-component re-check finds only the
-/// namespace's blanket forwarding key (a bare parameter, skipped) and yields nothing; the walk
-/// started here instead descends `Ctx: Consumer → Provider: ProviderTrait<Ctx, …>` and lets the
-/// delegate normalize *through* the namespace on its own, so no per-context enumeration of the
-/// namespace's wiring is needed. It is deliberately tried after `resolve_use_site`, so a
-/// directly-wired context keeps its existing recovery.
-///
-/// Restricted to a consumer whose only generic is `Self`, so `Ctx: Consumer` forms without the
-/// component parameters a use site does not carry: a generic consumer (`CanHandle<Code, Input>`) is
-/// left to decline. `None` when the diagnostic names no local CGP consumer trait, or none of the
-/// candidate contexts fails one resolvably.
+/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
 pub fn resolve_use_site_consumer(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     resolve_from_named_trait(cx, spans, TraitKind::CgpConsumer)
 }
 
 /// Resolve a use-site failure by anchoring on a `#[cgp_fn]` / `#[blanket_trait]` **blanket trait**
-/// the diagnostic names: the counterpart of [`resolve_use_site_consumer`] for a trait that
-/// is not a CGP *component* (a local blanket-impl trait with no provider trait or
-/// `DelegateComponent`). Its obligation `Ctx: BlanketTrait` is walkable exactly as a consumer's is,
-/// since its `Self` is the context; the result is headed `[CGP-E003] the trait …` rather than
-/// `[CGP-E001] the consumer trait …` by changing [`Resolved::class`].
+/// the diagnostic names, headed `[CGP-E003]` by changing [`Resolved::class`]. Tried after the
+/// call-site anchor. `None` when the diagnostic names no local blanket trait, or no candidate
+/// context fails one resolvably.
 ///
-/// This reaches the shape a trait required through a `where` **bound** or supertrait produces:
-/// `fn greet_all<Context: GetName>(…)` called with a context missing the field, where the failure
-/// is an `E0277` on the call with no method call on a concrete context to read. It is tried
-/// **after** the call-site anchor (`call_site`): a *direct* method call (`app.describe()`) anchors
-/// on the called method there, so its tree leads with the trait the programmer actually invoked
-/// rather than with whichever sub-trait the diagnostic happens to name in its spans. `None` when
-/// the diagnostic names no local blanket trait, or none of the candidate contexts fails one
-/// resolvably.
+/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
 pub fn resolve_use_site_blanket_trait(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     resolve_from_named_trait(cx, spans, TraitKind::Blanket)
 }

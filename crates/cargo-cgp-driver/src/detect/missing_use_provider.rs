@@ -1,20 +1,6 @@
-//! Detecting a higher-order provider that calls an inner provider it never imported.
+//! Detecting a higher-order provider that calls an inner provider it never imported (`[CGP-E031]`).
 //!
-//! A higher-order provider names an inner provider as a generic parameter and invokes it as an
-//! associated function on the context: `InnerCalculator::area(self)`. For that call to resolve, the
-//! inner parameter must carry the provider-trait bound `InnerCalculator: AreaCalculator<Self>`,
-//! declared idiomatically with `#[use_provider(InnerCalculator: AreaCalculator)]`. When the import
-//! is forgotten, the parameter is unbounded and rustc reports a vague `E0599` ("no associated
-//! function `area` found for type parameter `InnerCalculator` … due to unsatisfied trait bounds"),
-//! whose suggestion leaks the generated `__Context__` and offers the *consumer* trait as a bound,
-//! the wrong fix for a higher-order provider.
-//!
-//! This module recognizes that shape off the compiler: the failing call is an associated-function
-//! call `Param::method(…)` whose `Param` is a generic parameter of an enclosing provider-trait
-//! impl, the called method belongs to a CGP *provider* trait, and `Param` is not bounded by that
-//! provider trait. It fills the rustc-free [`MissingUseProvider`] the emitter words into a
-//! `[CGP-E031]` header and `#[use_provider(…)]` help, with a generic component's parameters
-//! recovered from the call.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use cargo_cgp_error_processing::MissingUseProvider;
 use rustc_hir::def::DefKind;

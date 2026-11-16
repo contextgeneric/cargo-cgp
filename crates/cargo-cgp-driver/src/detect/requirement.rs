@@ -1,15 +1,6 @@
-//! Detecting a component requirement a `#[cgp_impl]` provider does not declare.
+//! Detecting a component requirement a `#[cgp_impl]` provider does not declare (`[CGP-E036]`).
 //!
-//! A component's `#[extend(HasName)]` or `#[use_type(HasErrorType.Error)]` lowers to a `where`
-//! clause on the provider trait (`trait Greeter<__Context__> where __Context__: HasName`), so every
-//! provider must declare the bound. `#[cgp_impl]` writes a provider's declarations from its own
-//! `#[uses(…)]` and `#[use_type(…)]`, and a provider that omits one fails the provider trait's
-//! `where` clause: an `E0277` on `__Context__`, at the `#[cgp_impl]` attribute or a method
-//! signature, "required by a bound in `Greeter`".
-//!
-//! This module recovers the provider impl the error sits in and every requirement of its provider
-//! trait that does not hold under the impl's own declarations, filling the rustc-free
-//! [`UndeclaredRequirement`] the emitter words into a `[CGP-E036]` header.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use cargo_cgp_error_processing::{Requirement, UndeclaredRequirement};
 use rustc_hir::{ImplItemKind, ItemKind};

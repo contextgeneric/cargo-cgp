@@ -16,19 +16,11 @@ struct NoAnn;
 
 impl pprust::PpAnn for NoAnn {}
 
-/// Print the expanded crate, resugar its CGP constructs, and write the result where the front-end
-/// asked for it.
+/// Print the expanded crate through [`pprust::print_crate`], resugar its CGP constructs, and write
+/// the result where the front-end asked for it. It runs from `after_expansion`, since
+/// `-Zunpretty=expanded` would exit before any callback.
 ///
-/// This runs from the `after_expansion` callback, which is the earliest point the expanded AST
-/// exists, and the reason the driver does not simply set `-Zunpretty=expanded`: under that flag
-/// the compiler prints the crate and exits *before* any callback runs, so the driver would never
-/// get to resugar anything.
-///
-/// The crate is printed through the compiler's own [`pprust::print_crate`], the same call
-/// `-Zunpretty=expanded` makes, so the text handed to the resugaring matches what `cargo-expand`
-/// would show. `is_expanded` is set for the same reason it is there: it prints the faked
-/// `#![feature(prelude_import)]` / `#![no_std]` preamble that stops the printed source from
-/// re-injecting libstd.
+/// See cgp-knowledge-base/cargo-cgp/implementation/expand-command.md.
 pub fn print_expansion(sess: &Session, tcx: TyCtxt<'_>, request: &ExpandRequest) {
     let source_name = sess.io.input.file_name(sess);
     let Some(source) = source_text(sess, &source_name) else {

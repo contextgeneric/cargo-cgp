@@ -1,19 +1,6 @@
 //! Dropping a suggestion that names an identifier a CGP macro generated.
 //!
-//! A CGP macro declares some names only in its expansion, and spells each as a reserved identifier,
-//! wrapped in double underscores (`__Context__`, the lifetime `'__a__`). When the macro cannot name
-//! what the user wrote, the compiler reports the gap and may suggest inserting one of those names
-//! into the user's source, where it does not resolve. Such a suggestion is wrong whatever the
-//! error, so the pass drops it and leaves the diagnostic's other suggestions in place.
-//!
-//! rustc can offer such a name as one alternative among several (each trait that would bound a type
-//! parameter, as one suggestion), so the drop removes the alternative and keeps the others.
-//!
-//! The emitter applies the drop to each diagnostic of a crate that uses CGP as it arrives. A
-//! diagnostic name resolution raises arrives before the emitter can tell, so the driver's
-//! `after_expansion` callback applies it again over the diagnostics name resolution buffered, the
-//! lifetime errors among them. It reads the buffer through the same lock the name-resolution pass
-//! uses, and changes only a crate that links CGP.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use cargo_cgp_error_processing::reserved_names;
 use rustc_errors::{DiagInner, Substitution};

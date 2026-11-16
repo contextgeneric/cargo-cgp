@@ -124,34 +124,15 @@ pub fn resolve_or_rewrite(
 }
 
 /// Resolve `diag`'s failure to its root-cause dependency tree(s), or `None` when the resolver
-/// cannot trace it to a CGP component failure (so the caller falls back to the in-place text
-/// rewrite). A candidate is every diagnostic that reports an unmet obligation (`E0271`, `E0277`,
-/// and a *method-bounds* `E0599`), whether or not it names a CGP trait, because a failure *not*
-/// worded in CGP terms can still be a consequence of a CGP component failing (a manual `impl`
-/// that forwards to a wired method, a downstream trait bound that needs it), and [`resolve`]
-/// traces the dependency chain to find out. It yields `None` for everything whose chain does not
-/// reach a CGP cause. Returns the primary span alongside the resolution so the caret can be
-/// re-aimed at the entry.
+/// cannot trace it to a CGP component failure, so the caller falls back to the text rewrite.
+/// Returns the primary span alongside the resolution so the caret can be re-aimed at the entry.
 ///
-/// An `E0275` overflow is no candidate: the walk explains it only by a cut, a cycle or a lookup
-/// that grows, which [`wiring_overflow`] words, and a leaf the walk stops
-/// at instead is a bound whose own evaluation overflowed, which no root cause states truly.
+/// A candidate is an `E0271`, an `E0277`, or a method-bounds `E0599`, and the data-call anchor
+/// alone also takes a "no method named" `E0599` and an argument's `E0308`. A resolution-class
+/// `E0599` is declined before any solving, since it arrives during type lowering and solving there
+/// would re-enter the held `DiagCtxt` lock.
 ///
-/// Two more shapes reach the data-call anchor alone: the method probe's "no method named `…`"
-/// `E0599`, and an `E0308` on a call's argument, each of which a call to one of CGP's
-/// extensible-data operations can fail with before its bounds are checked; an `E0308` is taken
-/// only when the walk finds the field or variant state the operation rejects.
-///
-/// The `E0599` arm is otherwise narrowed to the "the method `…` exists … but its trait bounds
-/// were not satisfied" shape, the consumer-method call the use-site anchor handles. A
-/// *resolution*-class `E0599` (`no variant named …`, `no associated item …`) is not a wiring
-/// failure and, worse, is emitted *during* type lowering / `clauses_of`, while that query is
-/// mid-flight: running the resolver's trait solver on it re-forces an emitting query and
-/// re-enters the already-held `DiagCtxt` lock, aborting the compiler (`lock was already held`).
-/// Declining such an `E0599` before any solving both keeps the tool from crashing and is
-/// correct, since the resolver has nothing to say about a name-resolution error.
-/// (`E0271`/`E0277` are trait-solving failures reported after collection, where the queries the
-/// solver forces are already cached.)
+/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/overview.md for the gate.
 pub fn try_resolve(
     cx: Option<ResolveCtx<'_, '_>>,
     diag: &DiagInner,

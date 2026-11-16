@@ -1,21 +1,8 @@
-//! Reshaping the name-resolution errors of a wiring entry or a provider header.
+//! Reshaping the name-resolution errors of a wiring entry or a provider header, from the driver's
+//! `after_expansion` callback. The buffer is read and written under the output's lock, and the
+//! planning, which runs compiler queries, runs with the lock released.
 //!
-//! A wiring key or value that names nothing, a `#[cgp_impl(Provider)]` that never declares its
-//! provider, and a component a `#[cgp_impl]` or `#[cgp_provider]` header derives that is not in
-//! scope, fail during name resolution with an `E0425` "cannot find type", before the compiler
-//! has built the HIR. The emitter buffers those diagnostics as rustc wrote them. Once resolution is
-//! over the driver's `after_expansion` callback runs [`reshape_name_resolution_errors`], which
-//! reads the wiring entries back from the HIR ([`detect::plan_unresolved_names`]) and rewrites the
-//! buffered diagnostics in place: a coded header with the fix, or the diagnostic dropped as a
-//! repeat or a consequence.
-//!
-//! The buffer is read and written under the output's lock, and the planning, which runs compiler
-//! queries, runs with the lock released, since a query that emits a diagnostic takes that lock.
-//!
-//! A wiring entry whose value does not resolve also leaves its context unable to use the component,
-//! which a call later reports as an `E0275` overflow on that requirement. The pass records those
-//! requirements in the output, and the emitter drops such an overflow as the entry's consequence
-//! ([`is_unresolved_wiring_overflow`]).
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use cargo_cgp_error_processing::{
     ClassPlan, UnresolvedWiringName, is_missing_type_parameter_help_text,

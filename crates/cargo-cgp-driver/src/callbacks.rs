@@ -7,20 +7,11 @@ use rustc_middle::ty::TyCtxt;
 use crate::emitter;
 use crate::expand::{ExpandRequest, print_expansion};
 
-/// The driver's [`rustc_driver::Callbacks`] implementation.
+/// The driver's [`rustc_driver::Callbacks`] implementation: `config` installs the [`emitter`] and
+/// wraps the `analysis` query ([`emitter::override_analysis`]), and `after_expansion` runs the
+/// name-resolution passes in a check or prints the expansion ([`crate::expand`]).
 ///
-/// Its `config` hook installs the diagnostic-rewriting [`emitter`], which wraps the emitter the
-/// compiler would have built for the active error format, and in a check wraps rustc's `analysis`
-/// query so the diagnostics it emits are transformed once it ends
-/// ([`emitter::override_analysis`]). Aside from the injected flags and that
-/// emitter, a check is unchanged from plain `rustc`.
-///
-/// In a check, `after_expansion` reshapes the name-resolution errors of the crate's wiring entries
-/// ([`emitter::reshape_name_resolution_errors`]) and of a misspelled `#[use_type]` import
-/// ([`emitter::reshape_use_type_misspellings`]), and drops the suggestions that name a generated
-/// identifier ([`emitter::drop_generated_name_suggestions`]). When the front-end asked for an
-/// expansion, it prints the expanded crate and stops the compilation there instead; see
-/// [`crate::expand`].
+/// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md.
 pub struct CgpCallbacks {
     /// Set when the invocation carried the expand-mode flag, holding where to write the result.
     pub expand: Option<ExpandRequest>,

@@ -21,34 +21,14 @@ pub fn expand_arg_files(raw: Vec<String>) -> Vec<String> {
     rustc_driver::args::arg_expand_all(&early_dcx, &raw)
 }
 
-/// Build the argument vector handed to [`rustc_driver::compiler_entrypoint`].
+/// Build the argument vector handed to [`rustc_driver::compiler_entrypoint`]: drop the compiler
+/// path cargo passes in wrapper mode, inject `--sysroot` from `sysroot` and each of
+/// `injected_flags` ([`crate::config::NEXT_SOLVER_FLAG`], [`crate::config::VERBOSE_FLAG`]) unless
+/// the invocation already sets it, and skip the injection for cargo's `-vV` and `--print` info
+/// queries.
 ///
-/// cargo invokes the wrapper as `cargo-cgp-driver <path-to-rustc> <rustc args...>`. Like
-/// `clippy-driver`, we detect that "wrapper mode" (the second argument is a path whose
-/// file stem is `rustc`) and drop the injected compiler path, leaving our own program
-/// name in `args[0]` (which `compiler_entrypoint` ignores) followed by the genuine rustc flags.
-///
-/// We then adjust the flags in two ways:
-///
-/// - Inject `--sysroot <sysroot>` unless one is already present, because the driver lives
-///   outside any toolchain and rustc cannot otherwise find `std`. `sysroot` is the value
-///   from [`crate::config::SYSROOT_ENV`]; `sysroot_flag` is passed in rather than
-///   hardcoded so the injection logic stays independent of the flag's spelling.
-/// - Append each of `injected_flags` unless the invocation already sets that flag, so an
-///   explicit flag on the command line wins. This is how cargo-cgp turns on the
-///   next-generation trait solver ([`crate::config::NEXT_SOLVER_FLAG`]) and the diagnostic
-///   `--verbose` flag ([`crate::config::VERBOSE_FLAG`]); see those constants for why.
-///
-/// The injection is skipped for cargo's *info queries*: the `rustc -vV` version probe and
-/// the `--print` requests cargo runs before a build. Those need no CGP handling, and one of
-/// our flags actively breaks them: `-vV` already implies `-v`, so appending `--verbose` a
-/// second time makes rustc reject the invocation with "given more than once". Clippy skips
-/// its own added flags on the same queries, and for the same reason ([rust-lang/cargo#14385]
-/// notes that a query carrying unexpected flags also poisons cargo's cache). The real crate
-/// compilation, the only invocation whose diagnostics we care about, carries neither
-/// marker, so it still receives every flag.
-///
-/// [rust-lang/cargo#14385]: https://github.com/rust-lang/cargo/issues/14385
+/// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md for the order of the steps and
+/// why the info queries take no flags.
 pub fn rustc_args(
     raw_args: impl IntoIterator<Item = String>,
     sysroot: Option<String>,

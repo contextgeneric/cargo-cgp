@@ -14,29 +14,14 @@ use crate::resolve::query::{
 };
 use crate::resolve::walk::resolve_leaves;
 
-/// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait
-/// for Context` block*: the shape a wrapper trait that carries a CGP consumer trait as a
-/// supertrait produces when it is implemented directly on a concrete context (such as a
-/// per-endpoint `impl CanHandleApiSend<Api> for MockApp`, added to bound a future
-/// `Send`). Such a failure anchors on neither a `check_components!` entry nor a consumer-method
-/// call, and its caret sits on the impl rather than on the context's own type definition, so
-/// [`resolve_use_site`](super::resolve_use_site) cannot recover the context from a
-/// struct-definition span.
-///
-/// This entry recovers the context from the enclosing impl's `Self` type, and, crucially, the
-/// *exact* failing obligation from the impl's CGP consumer supertrait, so a generic component
-/// carries its concrete parameter (`CanCalculateArea<Rectangle>`, not the `()` form the use-site
-/// re-check would substitute), and walks that supertrait obligation directly. The recovered tree is
-/// then headed by the impl's *own* trait (the wrapper the programmer wrote), so the diagnostic
-/// points at their code and the CGP consumer it reduces to follows beneath: the failure reads
-/// `CanHandleApiSend → CanHandleApi → …`, not `CanHandleApi → …` with the wrapper dropped. Because
-/// the wrapper is a distinct trait from that supertrait, its error stands on its own rather than
-/// de-duplicating into the `check_components!` entry. A caret on a bound of the impl's own `where`
-/// clause is read as that bound instead (`where_bound_on_context`). `None` when no enclosing impl
-/// on a context carries an unmet CGP consumer supertrait or such a bound.
+/// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written
+/// `impl Trait for Context` block*, from the impl's unmet CGP consumer supertrait, or a bound of
+/// its own `where` clause at the caret, with the tree headed by the impl's own trait. `None` when
+/// no enclosing impl on a context carries such a supertrait or bound.
 ///
 /// `spans` are the diagnostic's primary spans, and an impl counts only when one of them is about
-/// the impl itself (`is_about_impl`), so an unrelated error inside a method body is left alone.
+/// the impl itself (`is_about_impl`). See
+/// cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
 pub fn resolve_impl_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     let tcx = cx.tcx;
     for impl_did in enclosing_trait_impls(tcx, spans) {

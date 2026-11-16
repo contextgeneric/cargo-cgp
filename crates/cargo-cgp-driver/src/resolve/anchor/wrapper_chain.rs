@@ -14,28 +14,13 @@ use crate::resolve::query::{
 };
 use crate::resolve::walk::resolve_leaves;
 
-/// Resolve the root cause(s) of a CGP wiring failure reported *inside a hand-written `impl Trait
-/// for Foreign` block whose `Self` is a foreign type holding the context*: for example
-/// `impl CanAddApiRoutes for Router<Arc<MockApp>>`, where the routing wrapper's supertrait descends
-/// through a chain of ordinary user-trait `where`-clauses (`… CanAddRoute<MockApp, …>` → `MockApp:
-/// CanHandleApiSend<…>`) before it reaches a CGP consumer on the context. The context appears only
-/// as a type *argument* of the failing traits, never as the impl's `Self`, so
-/// [`resolve_impl_site`](super::resolve_impl_site)'s "direct supertrait on a context" recovery
-/// cannot fire.
-///
-/// This entry starts from the enclosing impl's own unmet supertrait and walks *down* the ordinary
-/// trait obligations (via each impl's `where`-clauses) until one lands on a CGP consumer whose
-/// `Self` *is* a context (`is_context_adt`), at which point it hands off to
-/// `consumer_handoff_causes`. Every ordinary hop between the impl and that handoff becomes a
-/// `trait impl` node, so the tree reads
-/// from the code the programmer wrote (`CanAddApiRoutes → CanAddMainApiRoutes → CanAddRoute →
-/// CanHandleApiSend → CanHandleApi → …`) down to the root cause. Because it *re-evaluates* each
-/// obligation with the trait solver rather than trusting rustc's cascade-suppressed diagnostic, it
-/// recovers the cause even where rustc's own error names only the outermost unsatisfied bound.
-/// `None` when no enclosing impl's supertrait chain reaches a CGP consumer on a context.
+/// Resolve the root cause(s) of a CGP wiring failure reported inside a hand-written impl whose
+/// `Self` is a foreign type holding the context, by descending the impl's unmet supertrait through
+/// each impl's `where` clauses to a CGP consumer on a context. `None` when no such chain reaches
+/// one.
 ///
 /// `spans` are the diagnostic's primary spans, gated by `is_about_impl` as the impl-site anchor's
-/// are.
+/// are. See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/anchors.md.
 pub fn resolve_wrapper_chain(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     let tcx = cx.tcx;
     for impl_did in enclosing_trait_impls(tcx, spans) {

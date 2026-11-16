@@ -14,24 +14,12 @@ use crate::resolve::query::{
 };
 use crate::resolve::walk::resolve_leaves;
 
-/// Resolve a use-site failure by re-reading the failing *call expression*: recover the context
-/// from the receiver's binding, the component's parameters by unifying the call's written
-/// argument types against the method's declared signature, and seed the walk with a rigid
-/// placeholder for each parameter the call leaves to inference. `None` when no method call sits
-/// at the diagnostic's primary spans, the receiver's type is not syntactically recoverable, or no
-/// placeholder-free root cause is found.
+/// Resolve a use-site failure by re-reading the failing *call expression* through a CGP consumer
+/// trait or a blanket trait, the latter headed `[CGP-E003]` by changing [`Resolved::class`]. `None`
+/// when no method call sits at the primary spans, the receiver's type is not syntactically
+/// recoverable, or no placeholder-free root cause is found. Tried after the span-matching anchors.
 ///
-/// The called method resolves through either a CGP **consumer trait** or a `#[cgp_fn]` /
-/// `#[blanket_trait]` **blanket trait** (a blanket-impl trait, in any crate, that is not a CGP
-/// component and whose blanket depends on CGP). Both are consumed the same way (
-/// `app.describe()`), and both seed a walkable obligation `Ctx: Trait<…>` whose `Self` is the
-/// context; they differ only in the header the result gets. A blanket trait is not a CGP
-/// component, so, exactly as the impl-site anchor words such a trait, its failure reads
-/// `[CGP-E003] the trait …` rather than `[CGP-E001] the consumer trait …`, by changing the
-/// [`Resolved::class`] the walk sets.
-///
-/// Tried after the six span-matching anchors, so a failure any of them can recover keeps its more
-/// precise recovery.
+/// See cgp-knowledge-base/cargo-cgp/implementation/typed-resolution/call-site.md.
 pub fn resolve_call_site(cx: ResolveCtx<'_, '_>, spans: &[Span]) -> Option<Resolved> {
     let tcx = cx.tcx;
     for call in method_calls_at(tcx, spans) {

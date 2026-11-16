@@ -361,18 +361,12 @@ impl<E: Emitter> CgpEmitter<E> {
         }
     }
 
-    /// Cross-diagnostic de-duplication. CGP wiring is lazy, so one mistake surfaces as the same
-    /// error at many sites: the `check_components!` entry, every hand-written `impl` that
-    /// references the broken component, and each call. A transformed diagnostic whose signature
-    /// the ledger has already recorded is such a re-report, so it is suppressed and only the
-    /// first occurrence is shown, the first in processing order, which takes a check entry's copy
-    /// first (see [`crate::emitter::deferred`]); the key scheme lives with the [`DedupLedger`].
-    /// Only the tool's own transformed diagnostics are de-duplicated here; an untouched `rustc`
-    /// error is merged only at the flush, when rustc reports it twice on one line
-    /// (`merge_repeats`). cargo re-counts the diagnostics the emitter produces, so a suppressed
-    /// re-report drops out of its "N errors" summary as well, keeping the count consistent. A
-    /// resolved failure records its class headlines, not the cause it displays, since a declined
-    /// re-report of the same failure is worded with a class sentence.
+    /// Cross-diagnostic de-duplication: a transformed diagnostic whose signature the
+    /// [`DedupLedger`] already recorded is a re-report, and only the first in processing order is
+    /// shown.
+    ///
+    /// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md for the keys and the
+    /// order.
     fn is_repeat_report(
         &mut self,
         diag: &DiagInner,
@@ -525,18 +519,11 @@ impl<E: Emitter> Drop for DeferringEmitter<E> {
 }
 
 impl<E: Emitter> Drop for CgpEmitter<E> {
-    /// Flush the buffered diagnostics when the compiler drops the emitter. This runs during the
-    /// `DiagCtxt`'s own teardown, *after* every diagnostic has been handed to the emitter but
-    /// while the inner emitter (a field of `self`, dropped only after this returns) is still alive:
-    /// the one place a "list every affected consumer" block can be built, since the `Emitter` trait
-    /// offers no end-of-compilation hook. Diagnostics were counted by the `DiagCtxt` as they
-    /// arrived, so deferring their *rendering* to here does not change the error count.
+    /// Flush the buffered diagnostics, in the canonical order ([`sort_canonically`]), when the
+    /// compiler drops the emitter, the one place with every diagnostic in hand. If the rendering
+    /// panics, the panic is contained and the buffer is emitted as rustc built it.
     ///
-    /// The buffer is emitted in the canonical order ([`sort_canonically`]). The rendering is
-    /// contained: if it panics, every buffered diagnostic is emitted as rustc built it, in that
-    /// order, a resolution carrying a note saying why. This runs while the thread unwinds from
-    /// rustc's fatal-error abort, which is how every failing compilation ends, and a panic
-    /// contained there does not escape the destructor, so it does not abort the process.
+    /// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md.
     fn drop(&mut self) {
         let buffer = std::mem::take(&mut self.output().buffer);
         let buffer = settle_pending(buffer, &self.cgp_spans, |header| {

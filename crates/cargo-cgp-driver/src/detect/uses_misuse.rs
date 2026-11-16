@@ -1,18 +1,6 @@
-//! Detecting a provider trait named in `#[uses(…)]`.
+//! Detecting a provider trait named in `#[uses(…)]` (`[CGP-E037]`).
 //!
-//! `#[uses(AreaCalculator)]` on a `#[cgp_fn]` or `#[cgp_impl]` writes the bound `Self:
-//! AreaCalculator` on the generated impl, but a provider trait takes the context as its first
-//! argument, which `#[uses]` does not supply, so the compiler reports `E0107`, missing generics for
-//! trait `AreaCalculator`, and suggests adding the generated `__Context__`. A generic component's
-//! provider trait written with its own arguments (`AreaCalculator<Rectangle>`) gets the same
-//! `E0107` as one argument too few, with a help that adds the component's parameter. A dependency
-//! on a component names its consumer trait (`CanCalculateArea`), so this module recovers the
-//! provider trait written and the consumer trait it pairs with, filling the rustc-free
-//! [`ProviderTraitInUses`] the emitter words into a `[CGP-E037]` header.
-//!
-//! The `E0107` arrives while the compiler lowers the impl's `where` clause, so the bound is read
-//! from the HIR, and the search for the consumer trait skips the trait the impl implements, whose
-//! blanket impl may be the one being lowered.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use cargo_cgp_error_processing::ProviderTraitInUses;
 use rustc_hir::def_id::DefId;

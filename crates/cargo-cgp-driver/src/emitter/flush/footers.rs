@@ -11,20 +11,10 @@ use rustc_errors::{DiagInner, DiagMessage, Level, Style};
 use crate::emitter::edit::main_message_text;
 
 /// Rewrite the trailing "detailed explanations" footer of a flushed diagnostic list so it names
-/// `rustc --explain` codes only for errors still shown.
+/// `rustc --explain` codes only for errors still shown, filtering the footer's own codes rather
+/// than building a fresh set.
 ///
-/// rustc builds that footer in `print_error_count` from every error code it *registered* as
-/// diagnostics arrived, which is a superset of what this emitter emits: it suppresses a
-/// re-reported failure, a `?`-operator cascade, and a `#[cgp_impl]` mistake's sibling burst, and
-/// it *merges* the failures sharing a root cause into one block whose code is the first member's.
-/// Left alone the footer contradicts the output, offering `--explain` for a code no error carries.
-///
-/// It runs over the flushed list rather than on the footer's arrival because only here is the
-/// surviving set final: coalescing happens at flush, after every diagnostic has been buffered.
-/// The kept codes are the footer's own codes filtered by what survived, never a fresh set built
-/// from the survivors: rustc lists only codes that *have* an extended explanation, and
-/// intersecting preserves that filtering instead of second-guessing it. A footer whose codes all
-/// survive is rewritten to the identical text, so output the emitter did not touch is unaffected.
+/// See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 pub fn rebuild_explain_footers(to_emit: &mut Vec<DiagInner>) {
     let is_footer = |diag: &DiagInner| {
         diag.level() == Level::FailureNote

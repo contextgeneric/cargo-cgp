@@ -1,15 +1,8 @@
-//! Detecting an abstract type a CGP definition uses but does not import.
+//! Detecting an abstract type a CGP definition uses but does not import (`[CGP-E035]`). Only the
+//! HIR and trait definitions are read, since the `E0220` arrives while the definition's types are
+//! lowered.
 //!
-//! `Self::Error` in a `#[cgp_fn]`, `#[cgp_impl]`, or `#[cgp_component]` definition names an
-//! associated type of the generated context (`Self`, or the `__Context__` `#[cgp_impl]` writes for
-//! it). Without `#[use_type(HasErrorType.Error)]` that context carries no bound declaring one, and
-//! the compiler reports `E0220`, "associated type `Error` not found for `__Context__`". The fix is
-//! the import, so this module recovers which abstract-type trait declares the name and fills the
-//! rustc-free [`UnimportedAbstractType`] the emitter words into a `[CGP-E035]` header.
-//!
-//! The `E0220` arrives while the compiler lowers the definition's types, so only the HIR and the
-//! trait definitions are read: the definition the caret sits in is recognized from the generated
-//! items' fingerprints, never by forcing the signature or body being lowered.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use cargo_cgp_error_processing::UnimportedAbstractType;
 use rustc_hir::def::DefKind;

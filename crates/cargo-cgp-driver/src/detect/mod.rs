@@ -1,18 +1,9 @@
-//! The class detectors: recognizing a CGP mistake the compiler reports in its own terms.
-//!
-//! Each detector confirms one class of mistake from the compiler state at the error's caret and
-//! fills the rustc-free model the emitter words, without the typed resolver's walk: `conflict`
-//! reads two conflicting `DelegateComponent` impls (`E0119`) and words which keys collide, `orphan`
-//! the namespace registration the orphan rule rejects (`E0210`/`E0117`), `structural` the mistakes
-//! in a wiring or its checks (a check table listing an entry twice), `wiring_name` a wiring name
-//! that does not resolve, and the lowering detectors (`undeclared`, `missing_use_provider`,
-//! `unimported`, `requirement`, `cgp_impl_misuse`, `uses_misuse`, `macro_less_provider`,
-//! `use_type_misspelling`) a dependency or a component half a CGP macro's input left out or
-//! misnamed. `ambiguous_names` reads which type names the post-processing must leave qualified.
+//! The class detectors: recognizing a CGP mistake the compiler reports in its own terms, and
+//! filling the rustc-free model the emitter words.
 //!
 //! The detectors import the resolver's [`query`](crate::resolve::query) layer and
 //! [`cgp_item`](crate::resolve::query) recognizers, and one another, never the rest of the
-//! resolver.
+//! resolver. See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 mod ambiguous_names;
 mod cgp_impl_misuse;

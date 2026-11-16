@@ -96,21 +96,12 @@ pub fn override_analysis(_session: &Session, providers: &mut Providers) {
     providers.queries.analysis = analysis_then_transform;
 }
 
-/// Run the original `analysis` with the diagnostics queued, then transform the queue.
+/// Run the original `analysis` with the diagnostics queued, then transform the queue in the
+/// canonical order ([`sort_canonically`], [`preferred_first`]) and resume the fatal-error unwind
+/// `analysis` ends a failing crate with.
 ///
-/// `analysis` ends a failing crate by raising a `FatalErrorMarker` itself once type checking has
-/// reported an error, so the wrapper catches that unwind, transforms the queue while the compiler
-/// is still usable, and resumes it. Each batch is taken in the canonical order
-/// ([`sort_canonically`]), the diagnostics without a span ordered by their content, since rustc's
-/// threads produce them in any order, and the diagnostics at a `check_components!` entry are then
-/// moved ahead ([`preferred_first`]). So the decisions that keep the first of several reports,
-/// such as the de-duplication ledger's, keep a check's copy of a mistake and do not depend on the
-/// order rustc's threads emitted them in. The flush prints in the canonical order again. The
-/// emitter reads the first batch once before transforming any of it
-/// ([`DeferredTarget::prepare`]). Any other unwind is a crash: the panic hook has printed the
-/// buffer and the queue already, so it resumes at once. An unwind out of the processing, such as a
-/// fatal error from a query a transform, the check-entry lookup, or the read of the first batch
-/// forced, stops the transforms, and is resumed in turn once the queue is buffered.
+/// See cgp-knowledge-base/cargo-cgp/implementation/driver/program.md for the batches and the
+/// unwinds.
 fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     let original = *ORIGINAL_ANALYSIS
         .get()

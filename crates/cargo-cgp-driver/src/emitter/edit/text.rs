@@ -32,18 +32,11 @@ pub fn rewrite_messages<S>(
 }
 
 /// Post-process a message in place through [`postprocess_message`], leaving any Fluent message
-/// untouched.
+/// untouched. Each styled fragment is processed first, then the fragments are read together
+/// ([`postprocess_fragments`]), and the message collapses to one unstyled string only when that
+/// recovers a construct.
 ///
-/// One rustc "message" can be several *styled fragments*: `Diag::highlighted_*` stores one entry
-/// per [`StringPart`](rustc_errors::StringPart), and the renderer concatenates them. Each fragment
-/// is post-processed on its own first, which keeps rustc's highlighting; but a construct split
-/// across fragments is invisible that way, and rustc splits precisely where it highlights a
-/// *difference* between two types, so its "similar impl" hint shreds a `Symbol<3, Chars<'B', …>>`
-/// into a fragment per character and no fragment matches. So the fragments are then read as the one
-/// line they render as ([`postprocess_fragments`]), and when that recovers something the
-/// per-fragment pass could not, the whole message collapses to that single unstyled string. Losing
-/// the highlighting is the price of the recovery, and it is only paid when there was a construct to
-/// recover.
+/// See cgp-knowledge-base/cargo-cgp/implementation/error-processing.md.
 pub fn postprocess_messages(
     messages: &mut Vec<(DiagMessage, Style)>,
     has_field_impls: bool,

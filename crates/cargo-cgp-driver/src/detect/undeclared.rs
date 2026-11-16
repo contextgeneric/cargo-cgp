@@ -1,26 +1,7 @@
-//! Detecting a CGP trait called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared.
+//! Detecting a CGP trait called in a `#[cgp_fn]`/`#[cgp_impl]` body but not declared
+//! (`[CGP-E030]`).
 //!
-//! `#[cgp_fn]` lowers a body into a blanket impl over a generated generic context
-//! (`impl<__Context__> Describe for __Context__ where __Context__: GetName`). A trait the body
-//! calls on `self`, or as an associated function on `Self`, must be a `where` bound on that
-//! context, declared with `#[uses(…)]`. When the body calls a trait the `#[uses]` list omits, the
-//! call cannot resolve and rustc reports a vague `E0599` on `&__Context__` pointing at a transitive
-//! `HasField` bound, or, for `Self::method(…)`, no associated function found for the type parameter
-//! `__Context__`, with suggestions spliced into the macro attribute.
-//!
-//! `#[cgp_impl]` lowers a provider the same way except that the impl is of the provider trait,
-//! `impl<__Context__> Greeter<__Context__> for GreetHello`, with `self` renamed to a
-//! `__context__: &__Context__` parameter and `Self` to `__Context__`. Its `Self` is the provider
-//! struct, so the context is the provider trait's first argument instead, and the call is
-//! recognized by its receiver: a parameter or a `let` declared as that context, or the context
-//! named as the qualifying type. A call on a value declared with another type (`value: &Value`) is
-//! left alone, since its fix is a bound on that type, which `#[uses]` cannot express.
-//!
-//! This module recognizes that shape off the compiler: the failing call sits inside a generated
-//! impl over a bare type-parameter context and is made on that context, the call names a method of
-//! a CGP trait, and that trait is *not* among the impl's `where` bounds. It fills the rustc-free
-//! [`UndeclaredTrait`] the emitter words into a `[CGP-E030]` header and `#[uses(…)]` help, with the
-//! trait written with the arguments the call fixes.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use cargo_cgp_error_processing::UndeclaredTrait;
 use rustc_hir::def::{DefKind, Res};
@@ -47,24 +28,12 @@ pub enum UndeclaredCall {
     DeclaredAsProvider,
 }
 
-/// Recognize an undeclared-trait failure and recover the trait to declare, or
-/// `None` when the diagnostic is not one. Everything is keyed on `primary_span`, the failing method
-/// call, never on the diagnostic's note spans (which point at *other* generated impls, such as the
-/// called trait's own definition).
+/// Recognize an undeclared-trait failure and recover the trait to declare, or `None` when the
+/// diagnostic is not one. Everything is keyed on `primary_span`, the failing method call, never on
+/// the diagnostic's note spans, which point at other generated impls.
 ///
-/// The three conditions, all read structurally off the compiler:
-/// 1. the failing call sits inside a generated impl over the `__Context__` a `#[cgp_fn]` or
-///    `#[cgp_impl]` generates, never a concrete context (the impl's `Self` for a `#[cgp_fn]`
-///    blanket impl, the provider trait's first argument for a `#[cgp_impl]` provider impl), and is
-///    made on that context: a receiver that is a parameter must be declared as the context, a
-///    receiver whose type no signature gives is accepted only in a `#[cgp_fn]` impl, and an
-///    associated function's qualifying type must name the context. The impl is found by walking up
-///    from the call's own body owner (the generated method) to its parent impl, rather than by span
-///    containment: a generated impl's item span does not reliably cover its body;
-/// 2. the call names a method of a CGP trait (a consumer trait, or a
-///    `#[cgp_fn]`/`#[blanket_trait]` blanket trait); and
-/// 3. that trait is *not* already a `where` bound of the impl, so this is a genuinely omitted
-///    dependency, not a trait whose own deeper wiring fails.
+/// See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md for the conditions
+/// it checks.
 pub fn detect_undeclared_trait(
     tcx: TyCtxt<'_>,
     primary_span: Span,

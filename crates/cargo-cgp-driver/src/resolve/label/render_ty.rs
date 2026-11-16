@@ -9,20 +9,11 @@ use crate::config::{
 use crate::resolve::label::fold_empty_lists;
 use crate::resolve::query::{decode_index, decode_symbol, is_cgp_item, is_nil};
 
-/// Render a type to its dependency-tree form, resugaring CGP's type-level list and sum spines back
-/// to their surface macros: a `Cons<A, Cons<B, Nil>>` product spine to `Product![A, B]` and an
-/// `Either<A, Either<B, Void>>` sum spine to `Sum![A, B]`, so a reader meets the field/variant list
-/// as written rather than its raw right-nested spine. Every cell is anchored by `DefId` to the CGP
-/// crate that defines it (`Cons`/`Nil` in `cgp-base-types`, `Either`/`Void` in `cgp-field`), so a
-/// same-named type from another crate is never resugared. Each element is rendered recursively, so
-/// a nested list (a `Sum!` inside a `Product!`, say) is resugared too; a non-spine type falls back
-/// to its ordinary printed form (whose inner `Symbol!`/`Path!` the post-processing then resugars),
-/// with a standalone empty list written `Product![]` or `Sum![]` ([`fold_empty_lists`]).
+/// Render a type to its dependency-tree form, resugaring CGP's list and sum spines, anchored by
+/// `DefId`, to `Product!`, `Sum!`, `Struct!`, or `Enum!`, with a standalone empty list written by
+/// [`fold_empty_lists`].
 ///
-/// A list whose elements are *all* `Field` cells resugars one step further to the CGP `Struct!` or
-/// `Enum!` shape it describes, when the shape has an exact spelling, so a `HasFields` field list
-/// reads as the struct or enum it represents. The spelling rules are shared with the text
-/// post-processing through `cargo_cgp_error_processing::shape`.
+/// See cgp-knowledge-base/cargo-cgp/implementation/resugaring.md.
 pub fn render_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     // The call-site anchor's stand-in for a parameter the call leaves to inference: render it as
     // the `_` the programmer would write, never rustc's internal placeholder form.

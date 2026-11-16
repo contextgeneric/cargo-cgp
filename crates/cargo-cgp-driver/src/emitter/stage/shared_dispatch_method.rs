@@ -1,15 +1,7 @@
-//! Pairing the two `E0428`s that one method two `#[cgp_auto_dispatch]` traits share produces.
+//! Pairing the two `E0428`s that one method two `#[cgp_auto_dispatch]` traits share produces,
+//! worded on the computer's. The stage needs no compiler query.
 //!
-//! The macro names a method's helper function and its computer provider after the method alone, so
-//! two dispatch traits in one module that declare `area` define `__compute_area__` and
-//! `ComputeArea` twice, and name resolution reports an `E0428` for each, naming only the generated
-//! items. The helper's caret carries the macro's expansion; the computer's, spanned on the method
-//! name, does not. So neither alone identifies the mistake, but the pair does: a helper `E0428`
-//! from a `#[cgp_auto_dispatch]` expansion and a computer `E0428` whose name the same method gives.
-//! Whichever of the two arrives second finds the other in the buffer, and the pair is worded on the
-//! computer's, whose carets are the method names. The macro defines the helper first, so the
-//! computer's usually arrives second. The stage needs no compiler query, since an `E0428` arrives
-//! during name resolution.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use cargo_cgp_error_processing::{
     ClassPlan, FIRST_DISPATCH_METHOD_LABEL, SECOND_DISPATCH_METHOD_LABEL, StructuralMistake,

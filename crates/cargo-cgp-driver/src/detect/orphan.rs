@@ -1,19 +1,6 @@
 //! Recognizing an orphan-rule namespace registration and recovering what it registered.
 //!
-//! Registering wiring into a namespace lowers to `impl<Param> Namespace<Param> for Key`, and Rust's
-//! orphan rule rejects it with `E0210` (or its sibling `E0117`) when both the namespace trait and
-//! the key are foreign: a downstream crate registering into an upstream namespace it does not own,
-//! keyed on an upstream component it does not own either. The raw diagnostic names the machinery
-//! parameter (`__Components__` from a `#[default_impl]`/`#[prefix]`, `__Table__` from a
-//! `cgp_namespace!` re-open) rather than the namespace and key the programmer wrote.
-//!
-//! [`classify_orphan_conflict`] recovers those from the compiler, not the error text: it finds the
-//! offending impl at the caret, reads its trait and `Self`, and, anchoring the namespace trait by
-//! its structural [namespace-lookup fingerprint](crate::resolve::query::is_namespace_lookup_trait)
-//! rather than by name, words the collision into the rustc-free [`OrphanConflict`]. Because we only
-//! run on an `E0210`/`E0117`, which rustc emits *only* for a genuine orphan, matching the caret to
-//! a foreign-namespace-trait-for-foreign-key impl is the whole confirmation: rustc has already
-//! proved the orphan, and the caret already sits on the impl it proved it for.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md.
 
 use cargo_cgp_error_processing::{OrphanConflict, OrphanTrigger, WiringKey};
 use rustc_middle::ty::print::with_forced_trimmed_paths;

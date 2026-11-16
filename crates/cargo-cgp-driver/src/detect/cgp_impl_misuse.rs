@@ -1,50 +1,8 @@
-//! Detecting a `#[cgp_impl]` provider that names the wrong trait.
+//! Detecting a `#[cgp_impl]` provider that names the wrong trait: the consumer trait in the header,
+//! a trait that is no CGP component, or the consumer trait in an inner-provider bound.
 //!
-//! `#[cgp_impl(new RectangleArea)] impl AreaCalculator { … }` turns its header inside out into
-//! `impl<__Context__> AreaCalculator<__Context__> for RectangleArea`, inserting the context as the
-//! leading generic. Three mistakes name the wrong trait and need different fixes (see
-//! [`CgpImplMisuse`]): the header naming the component's
-//! *consumer* trait where its *provider* trait belongs, the header naming a trait that is not a CGP
-//! component at all, or a higher-order provider's inner-provider `where`-bound (typically from
-//! `#[use_provider]`) naming the *consumer* trait: the inner-bound sibling of the first.
-//!
-//! This module recognizes all three off the compiler, using the consumer- and provider-trait
-//! fingerprints. The mistake is confirmed structurally, never from error text, by three conditions
-//! that together select the *user's* `#[cgp_impl]` impl and exclude every blanket and forwarding
-//! impl the CGP macros generate (which also carry `__Context__`):
-//!
-//! 1. the impl carries a generic parameter named `__Context__`: the reserved parameter
-//!    `#[cgp_impl]` inserts, so this is a macro-generated inside-out impl and not a legitimate
-//!    hand-written direct consumer impl (`impl CanGreet for Person`, which has no such parameter);
-//! 2. its `Self` is a concrete local struct/enum (the provider struct `RectangleArea`), where the
-//!    `#[cgp_component]`-generated consumer and provider *blanket* impls have a bare type-parameter
-//!    `Self` (`impl<__Context__> CanCalculateArea for __Context__`); and
-//! 3. the header trait reference is a token the user wrote (not from a macro expansion), where the
-//!    generated `IsProviderFor` / `DelegateComponent` forwarding impls carry a macro-synthesized
-//!    trait reference.
-//!
-//! The header trait is then classified: a CGP *consumer* trait ([`consumer_provider_trait`] yields
-//! its paired provider, a `ConsumerTrait` misuse) or neither a consumer nor a provider trait (a
-//! `NonCgpTrait` misuse). A header that *is* the provider trait is the correct form; even then,
-//! each of the impl's inner-provider `where`-bounds is scanned for a consumer trait (a
-//! `ConsumerProviderBound` misuse). An inner-provider bound is one on a type parameter other than
-//! `__Context__` whose trait takes `__Context__` as its first argument after any lifetimes, the
-//! shape `#[use_provider]` writes; a `#[uses]` bound on the context itself is never one, so its own
-//! `E0107` (an arity slip) keeps rustc's wording. Each candidate carries its own trait-reference
-//! span, so the `E0107` that lands on one selects which is reshaped.
-//!
-//! No condition forces a query on the malformed impl itself: the header trait's `DefId` and
-//! `Self`'s kind are read from HIR, and the fingerprint queries touch only the well-formed
-//! consumer/provider blanket impls `#[cgp_component]` generates.
-//!
-//! **Boundary.** Recognition is deliberately specific to `#[cgp_impl]`, whose macro-inserted
-//! `__Context__` parameter is the marker used above. The lower-level `#[cgp_provider]` /
-//! `#[cgp_new_provider]` forms, which spell the whole inside-out impl by hand with a user-named
-//! context parameter, are *not* covered, and cannot be safely: without the reserved `__Context__`
-//! marker, `impl<Ctx> SomeConsumer<Ctx> for ConcreteType` is indistinguishable from a legitimate
-//! hand-written direct impl of a generic consumer trait on a context, so flagging it would risk a
-//! false positive on valid code. `#[cgp_impl]` is the idiomatic provider form, so this covers the
-//! case a programmer is overwhelmingly likely to hit.
+//! See cgp-knowledge-base/cargo-cgp/implementation/driver/diagnostic-reshapes.md for the three
+//! conditions that select the user's impl and why the lower-level provider macros are not covered.
 
 use cargo_cgp_error_processing::CgpImplMisuse;
 use rustc_hir::def::{DefKind, Res};
