@@ -6,7 +6,7 @@
 
 # cargo-cgp: CGP's error toolchain
 
-**CGP's error toolchain: a cargo subcommand that makes the compiler errors of
+**A cargo subcommand that makes the compiler errors of
 [Context-Generic Programming (CGP)](https://contextgeneric.dev/) readable.**
 
 `cargo cgp check` stands in for `cargo check`, compiling your workspace through a `rustc` wrapper
@@ -17,10 +17,11 @@ it recognizes, and the tool does not yet reshape every class.
 
 **[Website](https://contextgeneric.dev/docs/tooling/cargo-cgp/) · [Installation](https://contextgeneric.dev/docs/tooling/cargo-cgp/installation) · [Reading the output](https://contextgeneric.dev/docs/tooling/cargo-cgp/reading-output) · [Error codes](https://contextgeneric.dev/docs/tooling/cargo-cgp/error-codes) · [crates.io](https://crates.io/crates/cargo-cgp)**
 
-CGP itself is an ordinary library on the stable toolchain. It lets one trait have many interchangeable
-implementations and lets each type choose which one it uses: you write that choice as *wiring* in one
-place, and the compiler resolves it statically, without runtime cost. The
-[website](https://contextgeneric.dev/) documents CGP itself; this repository documents the tool.
+CGP itself is an ordinary library on the stable toolchain. It lets one trait have many
+interchangeable implementations and lets each type choose which one it uses: you write that choice
+as *wiring* in one place, and the compiler resolves it statically, without runtime cost. The
+[website](https://contextgeneric.dev/) documents CGP itself, while this repository documents the
+tool.
 
 ## What it solves
 
@@ -210,9 +211,9 @@ cargo test -p cargo-cgp-ui-tests --test ui -- --threads default --iterations 3
 ```
 
 The driver builds only with the pinned nightly that carries `rustc-dev`, so the first command needs
-the `nightly-2026-11-16` toolchain from `rust-toolchain.toml`; CI installs that exact channel. `cargo
-test` includes the UI snapshot suite and expects a sibling `cgp` checkout at `../cgp`. The last
-command runs the suite again with rustc's own thread count, three times over, to check that the
+the `nightly-2026-11-16` toolchain from `rust-toolchain.toml`, and CI installs that exact channel.
+`cargo test` includes the UI snapshot suite and expects a sibling `cgp` checkout at `../cgp`. The
+last command runs the suite again with rustc's own thread count, three times over, to check that the
 output does not depend on the threads.
 
 ## Learn more
@@ -230,7 +231,3 @@ contributors and agents:
 
 Contributors and agents start from [AGENTS.md](https://github.com/contextgeneric/cargo-cgp/blob/main/AGENTS.md), and
 [sibling-projects.md](https://github.com/contextgeneric/cargo-cgp/blob/main/sibling-projects.md) lists the related repositories.
-
-## License
-
-Licensed under the MIT license.
