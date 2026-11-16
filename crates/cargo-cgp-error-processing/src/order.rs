@@ -39,7 +39,9 @@ pub struct OrderKey {
     pub message: String,
     /// The rest of the diagnostic's content, each part as a string that holds no global position:
     /// its span labels, its children, its suggestions, its message arguments, its level, its lint,
-    /// its children's span labels, and its suggestions' styles and applicability. Two diagnostics
+    /// its children's span labels, its suggestions' styles, applicability, and variants, every
+    /// part of its main message with its style, its children's message styles, and the emission
+    /// site and long-type file rustc can print. Two diagnostics
     /// with a span tie only when they print the same, so their order cannot change the output.
     pub detail: Vec<String>,
 }

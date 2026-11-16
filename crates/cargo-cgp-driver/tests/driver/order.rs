@@ -245,3 +245,78 @@ fn diagnostics_that_differ_only_in_a_printed_part_sort_the_same_in_either_order(
         }
     });
 }
+
+// Concern: the main message is read only through its first part, and no message's style nor a
+//   suggestion's variant boundaries reach the detail, so two diagnostics that print differently in
+//   one of those tie and keep arrival order, which varies under threads.
+// Handled: `order_key`'s detail reads every main-message part with its style, each child
+//   message's style, and each suggestion's variants apart.
+// Property: for each of the four differences, the two diagnostics have different keys, and
+//   `sort_canonically` gives them one order in both arrival orders.
+#[test]
+fn diagnostics_that_differ_in_a_later_message_part_or_a_style_sort_the_same_in_either_order() {
+    with_two_files(|map, span| {
+        let later_part = |second: bool| {
+            let mut diag = error("expected ", span(8, 17));
+            let rest = if second { "`B`" } else { "`A`" };
+            diag.messages
+                .push((DiagMessage::from(rest.to_owned()), Style::Highlight));
+            diag
+        };
+        let main_style = |highlighted: bool| {
+            let mut diag = error("expected ", span(8, 17));
+            let style = if highlighted {
+                Style::Highlight
+            } else {
+                Style::NoStyle
+            };
+            diag.messages
+                .push((DiagMessage::from("`A`".to_owned()), style));
+            diag
+        };
+        let child_style = |highlighted: bool| {
+            let mut diag = with_note(error("m", span(8, 17)), "required for `A`");
+            if highlighted {
+                diag.children[0].messages[0].1 = Style::Highlight;
+            }
+            diag
+        };
+        let variants = |split: bool| {
+            let part = |lo, hi, text: &str| SubstitutionPart {
+                span: span(lo, hi),
+                snippet: text.to_owned(),
+            };
+            let substitutions = if split {
+                vec![
+                    Substitution {
+                        parts: vec![part(8, 12, "a")],
+                    },
+                    Substitution {
+                        parts: vec![part(13, 16, "b")],
+                    },
+                ]
+            } else {
+                vec![Substitution {
+                    parts: vec![part(8, 12, "a"), part(13, 16, "b")],
+                }]
+            };
+            let mut diag = error("m", span(8, 17));
+            diag.suggestions = Suggestions::Enabled(vec![CodeSuggestion {
+                substitutions,
+                msg: DiagMessage::from("use these"),
+                style: SuggestionStyle::ShowCode,
+                applicability: Applicability::MachineApplicable,
+            }]);
+            diag
+        };
+        for (part, (one, other, differ)) in [
+            ("later message part", order_of(map, later_part)),
+            ("main message style", order_of(map, main_style)),
+            ("child message style", order_of(map, child_style)),
+            ("suggestion variants", order_of(map, variants)),
+        ] {
+            assert!(differ, "{part}: the keys differ");
+            assert_eq!(one, other, "{part}: one order in both arrival orders");
+        }
+    });
+}

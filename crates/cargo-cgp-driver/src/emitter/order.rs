@@ -76,7 +76,9 @@ fn message_text(message: &DiagMessage) -> &str {
 /// with every span read within its file: each span label, each child with its level, messages,
 /// and primary span, each suggestion with its message and edits, the message arguments sorted by
 /// name, and then the parts added after those, so they break only a tie the earlier parts leave:
-/// the level, the lint, each child's span labels, and each suggestion's style and applicability.
+/// the level, the lint, each child's span labels, each suggestion's style and applicability, every
+/// part of the main message with its style, each child message's style, each suggestion's variants
+/// apart, and the emission site and long-type file rustc can print.
 ///
 /// Postcondition (assumed from what rustc's human and JSON emitters print): two diagnostics with
 /// the same primary span, code, and main message, whose results are equal, print the same.
@@ -149,5 +151,32 @@ fn detail(diag: &DiagInner, source_map: &SourceMap) -> Vec<String> {
             suggestion.style, suggestion.applicability
         ));
     }
+    for (index, (message, style)) in diag.messages.iter().enumerate() {
+        parts.push(format!(
+            "message {index} {style:?} {}",
+            message_text(message)
+        ));
+    }
+    for (index, child) in diag.children.iter().enumerate() {
+        let styles: Vec<String> = child
+            .messages
+            .iter()
+            .map(|(_, style)| format!("{style:?}"))
+            .collect();
+        parts.push(format!("child {index} styles {}", styles.join(" ")));
+    }
+    for (index, suggestion) in suggestions.iter().enumerate() {
+        let variants: Vec<String> = suggestion
+            .substitutions
+            .iter()
+            .map(|substitution| substitution.parts.len().to_string())
+            .collect();
+        parts.push(format!(
+            "suggestion {index} variants {}",
+            variants.join(" ")
+        ));
+    }
+    parts.push(format!("emitted at {:?}", diag.emitted_at));
+    parts.push(format!("long type {:?}", diag.long_ty_path));
     parts
 }
