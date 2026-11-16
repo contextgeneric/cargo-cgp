@@ -189,15 +189,16 @@ Fixtures are checked in parallel across a pool of workers, one throwaway crate e
 result prints the moment it finishes, so the run streams in completion order. Snapshots are blessed
 under the toolchain the repository pins, so a toolchain bump can require a re-bless.
 
-The tool's passes run rustc's front end on one thread unless `--threads` says otherwise:
-`--threads N` adds `-Zthreads=N` to their `RUSTFLAGS`, after the ambient value or a fixture's
-`//@env:` one, and `--threads default` adds none, so rustc picks its own count, as a release run
-does. Every snapshot must hold in each mode, so a parallel run checks that the tool's output does
-not depend on the threads. `--iterations K` runs each fixture's passes up to K times and reports
-the first iteration that fails, which catches output that varies only on some runs; a bless runs
-once. Plain `cargo check` runs on one thread in every mode, because the harness appends
-`-Zthreads=1` to its `RUSTFLAGS`, so `.rust.stderr` keeps rustc's sequential order. The driver
-sets no thread count of its own, so the harness's flag decides. CI runs the suite once on one
+By default the tool's passes run rustc's front end on one thread. `--threads N` adds
+`-Zthreads=N` to their `RUSTFLAGS`, after the ambient value or a fixture's `//@env:` one, while
+`--threads default` adds nothing, so rustc picks its own count as a user's check does. The driver
+sets no thread count of its own, so this flag decides. Every snapshot must hold in each mode, which
+is how a parallel run shows that the tool's output does not depend on the threads.
+
+Output that depends on thread timing may differ on only some runs, so `--iterations K` runs each
+fixture's passes up to K times and reports the first iteration that fails; a bless runs once. Plain
+`cargo check` stays on one thread in every mode, because the harness appends `-Zthreads=1` to its
+`RUSTFLAGS`, and so `.rust.stderr` keeps rustc's sequential order. CI runs the suite once on one
 thread and once with `--threads default --iterations 3`.
 
 ## Adding a fixture
