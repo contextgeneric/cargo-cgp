@@ -202,7 +202,7 @@ Run the checks from the repository root:
 
 ```sh
 cargo build
-cargo +nightly-2026-11-15 fmt --all -- --check
+cargo +nightly-2026-11-16 fmt --all -- --check
 cargo clippy --all-targets -- -D warnings
 RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace --document-private-items
 cargo test
@@ -210,7 +210,7 @@ cargo test -p cargo-cgp-ui-tests --test ui -- --threads default --iterations 3
 ```
 
 The driver builds only with the pinned nightly that carries `rustc-dev`, so the first command needs
-the `nightly-2026-11-15` toolchain from `rust-toolchain.toml`; CI installs that exact channel. `cargo
+the `nightly-2026-11-16` toolchain from `rust-toolchain.toml`; CI installs that exact channel. `cargo
 test` includes the UI snapshot suite and expects a sibling `cgp` checkout at `../cgp`. The last
 command runs the suite again with rustc's own thread count, three times over, to check that the
 output does not depend on the threads.
