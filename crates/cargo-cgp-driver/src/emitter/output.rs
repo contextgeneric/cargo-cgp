@@ -21,7 +21,7 @@ use crate::emitter::deferred::take_queued;
 pub struct Output<E> {
     /// The compiler's own emitter for the active error format, which renders every diagnostic.
     pub inner: E,
-    /// Every diagnostic kept so far, in arrival order, held until the flush so separate failures
+    /// Every diagnostic kept so far, in the order kept, held until the flush so separate failures
     /// sharing one root cause can be coalesced into one block. The compiler streams diagnostics one
     /// at a time with no end-of-compilation hook, so a headline listing every consumer one mistake
     /// breaks can only be built once they have all arrived, which is why the emitter flushes from

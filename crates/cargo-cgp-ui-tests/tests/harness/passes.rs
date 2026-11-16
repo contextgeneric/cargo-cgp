@@ -3,7 +3,8 @@
 
 use cargo_cgp_ui_tests::directives::parse;
 use cargo_cgp_ui_tests::passes::{
-    cgp_codes, expand_status_check, header_check, pass_through_check, reduce_json, status_check,
+    cgp_codes, diagnostic_blocks, expand_status_check, header_check, pass_through_check,
+    reduce_json, status_check,
 };
 use cargo_cgp_ui_tests::snapshot::Outcome;
 
@@ -60,6 +61,38 @@ fn pass_through_requires_equal_output() {
         text.contains("- expected `a::Foo`") && text.contains("+ expected `Foo`"),
         "{text}"
     );
+}
+
+const FIRST: &str = "error[E0308]: mismatched types\n --> src/main.rs:3:5\n  |\n3 |     x\n";
+const SECOND: &str = "error[E0425]: cannot find value `y`\n --> src/main.rs:9:5\n";
+const FOOTER: &str = "For more information about an error, try `rustc --explain E0308`.\n";
+
+// Property: the postcondition of `diagnostic_blocks`: the same diagnostics in another order give
+//   equal results, and one shown twice differs from it shown once.
+#[test]
+fn diagnostic_blocks_ignore_order_but_count_repeats() {
+    let rustc = format!("{FIRST}\n{SECOND}\n{FOOTER}");
+    let reordered = format!("{SECOND}\n{FIRST}\n{FOOTER}");
+    let repeated = format!("{FIRST}\n{FIRST}\n{SECOND}\n{FOOTER}");
+    assert_eq!(diagnostic_blocks(&rustc), diagnostic_blocks(&reordered));
+    assert_ne!(diagnostic_blocks(&rustc), diagnostic_blocks(&repeated));
+    assert_eq!(diagnostic_blocks(&rustc).len(), 3);
+}
+
+// Property: the pass-through check accepts the tool's output in another order than rustc's, and
+//   rejects one that drops a repeat rustc printed.
+#[test]
+fn pass_through_compares_the_diagnostics_in_any_order() {
+    let rustc = format!("{FIRST}\n{FIRST}\n{SECOND}\n{FOOTER}");
+    let reordered = format!("{SECOND}\n{FIRST}\n{FIRST}\n{FOOTER}");
+    let merged = format!("{FIRST}\n{SECOND}\n{FOOTER}");
+    assert!(is_ok(&pass_through_check(&rustc, &reordered, None)));
+    assert!(!is_ok(&pass_through_check(&rustc, &merged, None)));
+    assert!(is_ok(&pass_through_check(
+        &rustc,
+        &merged,
+        Some("merges a repeat")
+    )));
 }
 
 #[test]

@@ -6,6 +6,7 @@ pub mod expand;
 pub mod flush;
 pub mod footers;
 pub mod help;
+pub mod order;
 pub mod pending;
 pub mod pipeline;
 pub mod postprocess;

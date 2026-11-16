@@ -1,8 +1,8 @@
-error[E0271]: [CGP-E003] missing field `name` on `App`
-   --> src/main.rs:86:10
+error[E0277]: [CGP-E003] missing field `name` on `App`
+   --> src/main.rs:82:6
     |
- 86 |     ) -> impl Future<Output = Self::Response> + Send {
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 82 | impl CanHandleApiSend<GreetApi> for App {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
 111 | impl CanAddAppRoutes for Box<App> {}
     |                          -------- also required here
@@ -18,4 +18,4 @@ error[E0271]: [CGP-E003] missing field `name` on `App`
               └─ [CGP-E104] trait impl `CanAddRoute<App, GreetApi>` for `Box<App>`
                 └─ [CGP-E101] consumer trait impl `CanHandleApi<GreetApi>` for context `App` (*)
 
-For more information about this error, try `rustc --explain E0271`.
+For more information about this error, try `rustc --explain E0277`.

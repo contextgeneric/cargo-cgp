@@ -25,6 +25,7 @@ use crate::emitter::edit::{
 use crate::emitter::fallback::{render_or_untransformed, transform_or_original};
 use crate::emitter::flush::render;
 use crate::emitter::generated_names::drop_generated_names;
+use crate::emitter::order::sort_canonically;
 use crate::emitter::output::{Output, lock_output, register_output};
 use crate::emitter::pipeline::{BufferEdit, Reshape, Verdict, apply_reshape};
 use crate::emitter::stage::{
@@ -319,8 +320,8 @@ impl<E: Emitter> CgpEmitter<E> {
         // Buffer rather than emit now: a resolution has its `root cause:` note rendered at flush,
         // where the emission order lets it elide what an earlier block drew, and a consumer failure
         // is additionally grouped there with every failure sharing one of its root causes.
-        // Everything else is emitted verbatim in place. The flush happens in `Drop`, the only point
-        // after every diagnostic has arrived.
+        // Everything else is emitted verbatim at its place in the flush's order. The flush happens
+        // in `Drop`, the only point after every diagnostic has arrived.
         match resolution {
             Some((resolved, note, coalescing)) => {
                 self.push(BufEntry::Resolved(Box::new(ResolvedEntry {
@@ -398,13 +399,15 @@ impl<E: Emitter> CgpEmitter<E> {
 }
 
 impl<E: Emitter> DeferredTarget for CgpEmitter<E> {
-    /// Collect the providers written without `#[cgp_provider]`, contained like a transform, so a
-    /// check that restates one is dropped even when it comes first.
+    /// Collect the providers written without `#[cgp_provider]` and the abstract types used without
+    /// their import, contained like a transform, so a check that restates such a provider, and a
+    /// requirement such an import satisfies, are dropped even when they come first.
     fn prepare(&mut self, batch: &[DiagInner]) {
         let _ = contain(|| {
             rustc_middle::ty::tls::with_opt(|tcx| {
                 for diag in batch {
                     self.macroless_provider.collect(tcx, diag);
+                    self.unimported.collect(tcx, diag);
                 }
             })
         });
@@ -526,8 +529,9 @@ impl<E: Emitter> Drop for CgpEmitter<E> {
     /// offers no end-of-compilation hook. Diagnostics were counted by the `DiagCtxt` as they
     /// arrived, so deferring their *rendering* to here does not change the error count.
     ///
-    /// The rendering is contained: if it panics, every buffered diagnostic is emitted as rustc
-    /// built it, a resolution carrying a note saying why. This runs while the thread unwinds from
+    /// The buffer is emitted in the canonical order ([`sort_canonically`]). The rendering is
+    /// contained: if it panics, every buffered diagnostic is emitted as rustc built it, in that
+    /// order, a resolution carrying a note saying why. This runs while the thread unwinds from
     /// rustc's fatal-error abort, which is how every failing compilation ends, and a panic
     /// contained there does not escape the destructor, so it does not abort the process.
     fn drop(&mut self) {
@@ -538,6 +542,13 @@ impl<E: Emitter> Drop for CgpEmitter<E> {
         if buffer.is_empty() {
             return;
         }
+        // Emit in the canonical order, so the blocks, each note's elision against the blocks before
+        // it, and the repeats merged into an earlier block are the same whatever order rustc
+        // produced the diagnostics in.
+        let buffer = match self.source_map.as_deref() {
+            Some(source_map) => sort_canonically(buffer, BufEntry::diag, source_map),
+            None => buffer,
+        };
         let to_emit = render_or_untransformed(
             buffer,
             |buffer| {

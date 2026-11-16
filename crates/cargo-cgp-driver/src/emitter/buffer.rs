@@ -8,8 +8,8 @@ use crate::emitter::edit::subdiag;
 
 /// One buffered diagnostic awaiting the [`Drop`]-time flush.
 pub enum BufEntry {
-    /// Emitted verbatim at its arrival position. Boxed, like the variant below, so the buffer's
-    /// element stays a pointer rather than a whole `DiagInner`.
+    /// Emitted verbatim at its place in the flush's canonical order. Boxed, like the variant below,
+    /// so the buffer's element stays a pointer rather than a whole `DiagInner`.
     Plain(Box<DiagInner>),
     /// A typed-resolution failure, whose `root cause:` note is rendered at *flush* rather than on
     /// arrival: only there is the emission order known, so a note can `(*)`-elide the subtrees an
@@ -21,8 +21,8 @@ pub enum BufEntry {
     /// at the position of the first. It is clear for a resolution that never coalesces: a type
     /// mismatch, or a kept rustc headline.
     Resolved(Box<ResolvedEntry>),
-    /// A diagnostic emitted verbatim at its arrival position unless the flush finds that another
-    /// diagnostic, wherever it sits in the buffer, already states its mistake (see
+    /// A diagnostic emitted verbatim at its place in the flush's order unless the flush finds that
+    /// another diagnostic, wherever it sits in the buffer, already states its mistake (see
     /// [`settle_pending`]). Deciding at the flush rather than on arrival makes the decision the
     /// same whichever of the two arrived first.
     Pending(Box<PendingEntry>),
@@ -99,6 +99,15 @@ pub struct ResolvedEntry {
 }
 
 impl BufEntry {
+    /// The diagnostic the entry emits, whose place in the canonical order is the entry's.
+    pub fn diag(&self) -> &DiagInner {
+        match self {
+            BufEntry::Plain(diag) => diag,
+            BufEntry::Pending(pending) => &pending.diag,
+            BufEntry::Resolved(entry) => &entry.diag,
+        }
+    }
+
     /// The diagnostic to emit when the flush cannot render the buffer: a plain or pending entry as
     /// it stands, which a crash keeps rather than settles,
     /// and a resolution as rustc built it, since its note was never rendered. `note`, when given,

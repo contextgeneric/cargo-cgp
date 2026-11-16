@@ -16,8 +16,9 @@
 //!   compiles.
 //! - [`expand_status_check`]: `cargo cgp expand` must fail exactly when it reported an error.
 //! - [`pass_through_check`]: for a fixture under `pass-through/`, a plain Rust error the tool must
-//!   not touch, the tool's output must equal plain rustc's, unless the fixture is marked
-//!   `//@rewrites-falsely:` for a fix still to come or a documented limitation.
+//!   not touch, the tool's output must hold the same diagnostics as plain rustc's, in any order,
+//!   unless the fixture is marked `//@rewrites-falsely:` for a fix still to come or a documented
+//!   limitation.
 //!
 //! [`header_check`] holds every error fixture to its structured header: the `//@quality:` it
 //! declares, and the exact set of `[CGP-Exxx]` codes its `//@codes:` lists, checked against the

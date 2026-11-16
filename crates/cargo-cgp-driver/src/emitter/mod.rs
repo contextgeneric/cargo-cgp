@@ -26,9 +26,9 @@
 //! `generated_names` (the pass that drops a suggestion naming a generated identifier),
 //! `use_type_misspelling` (the pass that names the rename a misspelled `#[use_type]` import
 //! needs), `attribute_splice` (the drop of a suggestion spliced after an attribute macro),
-//! `repeats` (the flush's merge of a diagnostic rustc reports twice), `containment` (containing a
-//! panic and the panic hooks), and `fallback` (the diagnostics emitted when a transform or the
-//! flush panics).
+//! `repeats` (the flush's merge of a diagnostic rustc reports twice), `order` (the canonical order
+//! the queue and the flush follow), `containment` (containing a panic and the panic hooks), and
+//! `fallback` (the diagnostics emitted when a transform or the flush panics).
 
 mod attribute_splice;
 mod buffer;
@@ -43,6 +43,7 @@ mod flush;
 mod generated_names;
 mod install;
 mod name_resolution;
+mod order;
 mod output;
 mod pipeline;
 mod repeats;
@@ -60,6 +61,7 @@ pub use flush::*;
 pub use generated_names::{drop_generated_name_suggestions, drop_generated_names};
 pub use install::install;
 pub use name_resolution::{is_unresolved_wiring_overflow, reshape_name_resolution_errors};
+pub use order::{order_key, sort_canonically};
 pub use output::*;
 pub use pipeline::*;
 pub use repeats::merge_repeats;

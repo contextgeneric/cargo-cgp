@@ -38,16 +38,18 @@ pub fn expand_status_check(success: bool, stderr: &str) -> Outcome {
     })
 }
 
-/// Check that a `pass-through/` fixture's tool output equals plain rustc's. Both are compared as
+/// Check that a `pass-through/` fixture's tool output holds the same diagnostics as plain rustc's,
+/// each rendered the same and each as many times, in any order: the tool prints in its own
+/// canonical order, while the baseline keeps rustc's. Both are compared as
 /// [`normalize_baseline`](crate::normalize::normalize_baseline) leaves them, so the baseline's
 /// run-to-run spine truncation cannot cause a difference. A fixture marked `//@rewrites-falsely:`
 /// is expected to differ; once it no longer does, the marker is reported so the fix removes it.
 pub fn pass_through_check(baseline: &str, tool: &str, rewrites_falsely: Option<&str>) -> Outcome {
-    let equal = baseline.trim_end() == tool.trim_end();
+    let equal = diagnostic_blocks(baseline) == diagnostic_blocks(tool);
     match (equal, rewrites_falsely) {
         (true, None) | (false, Some(_)) => Outcome::Ok,
         (false, None) => Outcome::Mismatch(crate::snapshot::format_diff(
-            "pass-through: `-` plain rustc, `+` cargo-cgp (they must be equal)",
+            "pass-through: `-` plain rustc, `+` cargo-cgp (they must hold the same diagnostics)",
             baseline.trim_end(),
             tool.trim_end(),
         )),
@@ -56,6 +58,21 @@ pub fn pass_through_check(baseline: &str, tool: &str, rewrites_falsely: Option<&
              `//@rewrites-falsely: {reason}` marker ---\n"
         )),
     }
+}
+
+/// The blocks of rendered output `text`, sorted: the runs of lines between blank lines, which the
+/// human emitter puts after each diagnostic.
+///
+/// Postcondition: two outputs that hold the same diagnostics, each as many times, give equal
+/// results, whatever their order.
+pub fn diagnostic_blocks(text: &str) -> Vec<&str> {
+    let mut blocks: Vec<&str> = text
+        .split("\n\n")
+        .map(|block| block.trim_matches('\n'))
+        .filter(|block| !block.is_empty())
+        .collect();
+    blocks.sort_unstable();
+    blocks
 }
 
 /// Check an error fixture's structured header against the tool's output: it must declare its

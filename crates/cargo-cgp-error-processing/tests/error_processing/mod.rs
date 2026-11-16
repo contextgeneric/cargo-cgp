@@ -13,6 +13,7 @@ pub mod group;
 pub mod internal_error;
 pub mod macro_less_provider;
 pub mod naming;
+pub mod order;
 pub mod orphan;
 pub mod overflow;
 pub mod postprocess;

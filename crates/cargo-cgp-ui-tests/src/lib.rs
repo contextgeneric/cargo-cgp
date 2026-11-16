@@ -5,7 +5,7 @@
 //! snapshot changes when the tool reformats diagnostics; one runs plain `cargo check` to record the
 //! untransformed `.rust.stderr` baseline the tool improves on; and one runs `cargo cgp expand` to
 //! pin the `.expand.rs` code the fixture's CGP macros generate. Two checks compare the passes with
-//! each other (the exit status, and for `pass-through/` fixtures the output itself), and a
+//! each other (the exit status, and for `pass-through/` fixtures the diagnostics themselves), and a
 //! fixture's `//@json` directive adds a JSON pass (see [`directives`]). It is driven by the
 //! `harness = false` test in [`tests/ui.rs`](../../tests/ui.rs), which calls [`run`]; the logic
 //! lives in this library so it stays small and out of the `bin`/test entrypoint. Fixtures are

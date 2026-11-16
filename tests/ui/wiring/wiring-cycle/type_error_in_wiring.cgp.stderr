@@ -1,11 +1,3 @@
-error[E0275]: [CGP-E020] the wiring for the consumer trait `CanRaiseError<ParseIntError>` on context `App` never resolves, because the lookup leads back to itself
-  --> src/main.rs:33:9
-   |
-33 |         ErrorRaiserComponent: ParseIntError,
-   |         ^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: wire a provider in place of `DebugError`, which provides `ErrorRaiser<String>` for `App` by requiring `CanRaiseError<String>` on `App` again
-
 error[E0433]: cannot find module or crate `backend` in this scope
   --> src/main.rs:25:45
    |
@@ -13,6 +5,14 @@ error[E0433]: cannot find module or crate `backend` in this scope
    |                                             ^^^^^^^ use of unresolved module or unlinked crate `backend`
    |
    = help: if you wanted to use a crate named `backend`, use `cargo add backend` to add it to your `Cargo.toml`
+
+error[E0275]: [CGP-E020] the wiring for the consumer trait `CanRaiseError<ParseIntError>` on context `App` never resolves, because the lookup leads back to itself
+  --> src/main.rs:33:9
+   |
+33 |         ErrorRaiserComponent: ParseIntError,
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: wire a provider in place of `DebugError`, which provides `ErrorRaiser<String>` for `App` by requiring `CanRaiseError<String>` on `App` again
 
 Some errors have detailed explanations: E0275, E0433.
 For more information about an error, try `rustc --explain E0275`.

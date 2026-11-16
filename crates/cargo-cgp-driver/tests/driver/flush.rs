@@ -124,7 +124,7 @@ fn blocks(buffer: &[BufEntry]) -> Vec<DiagInner> {
 }
 
 // Property: for all buffers, the groups partition exactly the coalescible resolutions by shared
-// cause, in arrival order, and `group_of` agrees with them. A plain entry and a resolution that
+// cause, in buffer order, and `group_of` agrees with them. A plain entry and a resolution that
 // never coalesces belong to no group, even when it shares a cause.
 #[test]
 fn only_coalescible_resolutions_are_grouped() {
@@ -148,8 +148,8 @@ fn only_coalescible_resolutions_are_grouped() {
     });
 }
 
-// Property: for all buffers, a group of several is one block at its first member's arrival
-// position, and every other entry keeps its arrival order.
+// Property: for all buffers, a group of several is one block at its first member's position, and
+// every other entry keeps its place in the buffer's order.
 #[test]
 fn a_group_is_one_block_at_its_first_members_position() {
     source::with_source(SOURCE, |_, span| {
@@ -196,7 +196,7 @@ fn a_block_of_its_own_keeps_its_header_with_the_note_before_the_help() {
     });
 }
 
-// Property: a merged block's caret is its member written first in the source, whatever the arrival
+// Property: a merged block's caret is its member written first in the source, whatever the buffer
 // order, and every other member's site is labelled `COALESCED_SITE_LABEL`.
 #[test]
 fn a_merged_block_points_at_the_site_written_first() {

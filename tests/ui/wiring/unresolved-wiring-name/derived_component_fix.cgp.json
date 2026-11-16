@@ -58,55 +58,6 @@
     "children": [
       {
         "level": "note",
-        "message": "`G` imports `Greeter` under another name, so the import of `GreeterComponent` reads as unused while the header names `G`",
-        "spans": []
-      },
-      {
-        "level": "help",
-        "message": "name the component in the attribute",
-        "spans": [
-          {
-            "applicability": "MachineApplicable",
-            "column": 19,
-            "end_column": 19,
-            "end_line": 58,
-            "file": "src/main.rs",
-            "label": null,
-            "line": 58,
-            "primary": true,
-            "replacement": "(GreeterComponent)"
-          },
-          {
-            "applicability": "MachineApplicable",
-            "column": 19,
-            "end_column": 20,
-            "end_line": 59,
-            "file": "src/main.rs",
-            "label": null,
-            "line": 59,
-            "primary": true,
-            "replacement": "G"
-          }
-        ]
-      }
-    ],
-    "code": "E0425",
-    "level": "error",
-    "message": "[CGP-E070] the header derives the component `GComponent` from the trait name `G`, but the component of `Greeter` is `GreeterComponent`",
-    "spans": [
-      {
-        "column": 19,
-        "file": "src/main.rs",
-        "label": null,
-        "line": 59,
-        "primary": true
-      }
-    ]
-  },
-  {
-    "children": [
-      {
-        "level": "note",
         "message": "`#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default",
         "spans": []
       },
@@ -159,6 +110,55 @@
         "file": "src/main.rs",
         "label": null,
         "line": 54,
+        "primary": true
+      }
+    ]
+  },
+  {
+    "children": [
+      {
+        "level": "note",
+        "message": "`G` imports `Greeter` under another name, so the import of `GreeterComponent` reads as unused while the header names `G`",
+        "spans": []
+      },
+      {
+        "level": "help",
+        "message": "name the component in the attribute",
+        "spans": [
+          {
+            "applicability": "MachineApplicable",
+            "column": 19,
+            "end_column": 19,
+            "end_line": 58,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 58,
+            "primary": true,
+            "replacement": "(GreeterComponent)"
+          },
+          {
+            "applicability": "MachineApplicable",
+            "column": 19,
+            "end_column": 20,
+            "end_line": 59,
+            "file": "src/main.rs",
+            "label": null,
+            "line": 59,
+            "primary": true,
+            "replacement": "G"
+          }
+        ]
+      }
+    ],
+    "code": "E0425",
+    "level": "error",
+    "message": "[CGP-E070] the header derives the component `GComponent` from the trait name `G`, but the component of `Greeter` is `GreeterComponent`",
+    "spans": [
+      {
+        "column": 19,
+        "file": "src/main.rs",
+        "label": null,
+        "line": 59,
         "primary": true
       }
     ]

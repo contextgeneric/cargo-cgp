@@ -1,8 +1,8 @@
 error[E0277]: [CGP-E001] missing wiring for `ScalarTypeProviderComponent` on `NoScalar`
-  --> src/main.rs:51:5
+  --> src/main.rs:51:10
    |
 51 |     App: GetScalar,
-   |     ^^^^^^^^^^^^^^
+   |          ^^^^^^^^^
    |
    = note: root cause: [CGP-E113] missing wiring for `ScalarTypeProviderComponent` on `NoScalar`
            this is required through the dependency chain:

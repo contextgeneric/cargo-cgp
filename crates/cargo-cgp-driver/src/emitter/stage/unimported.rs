@@ -11,7 +11,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::config::CGP_IMPL_CONTEXT_PARAM;
-use crate::detect::{self, DetectedUndeclaredRequirement};
+use crate::detect::{self, DetectedUndeclaredRequirement, DetectedUnimportedAbstractType};
 use crate::emitter::buffer::BufEntry;
 use crate::emitter::edit::main_message_text;
 use crate::emitter::pipeline::{Reshape, SpanPolicy, Verdict, apply_reshape};
@@ -37,6 +37,10 @@ pub struct UnimportedStage {
     pub reported: Vec<UnimportedReport>,
     /// The provider impls reported for a requirement they do not declare.
     pub requirement_impls: Vec<DefId>,
+    /// The abstract types the queue of `analysis` reports as used but not imported, collected
+    /// before any of it is transformed, as the trait declaring each and the generated item its use
+    /// sits in, so a requirement the import satisfies is left out whichever report comes first.
+    pub collected: Vec<(DefId, DefId)>,
 }
 
 impl UnimportedStage {
@@ -49,27 +53,7 @@ impl UnimportedStage {
         tcx: Option<TyCtxt<'_>>,
         diag: &DiagInner,
     ) -> Verdict {
-        if diag.code != Some(E0220) {
-            return Verdict::Continue;
-        }
-        let arg = |name: &str| match diag.args.get(name) {
-            Some(DiagArgValue::Str(value)) => Some(value.to_string()),
-            _ => None,
-        };
-        if arg("assoc_kind").as_deref() != Some("type") {
-            return Verdict::Continue;
-        }
-        let (Some(type_name), Some(qself), Some(tcx), Some(primary_span)) = (
-            arg("assoc_ident"),
-            arg("qself"),
-            tcx,
-            diag.span.primary_span(),
-        ) else {
-            return Verdict::Continue;
-        };
-        let Some(detected) =
-            detect::detect_unimported_abstract_type(tcx, primary_span, &type_name, &qself)
-        else {
+        let Some((detected, primary_span)) = detect_unimported(tcx, diag) else {
             return Verdict::Continue;
         };
         let repeated = self.reported.iter().any(|report| {
@@ -90,14 +74,24 @@ impl UnimportedStage {
         ))
     }
 
+    /// Record the abstract type `diag` reports as used but not imported, before any diagnostic is
+    /// transformed: the collect pass over the queue of `analysis`, so
+    /// [`requirement`](Self::requirement) leaves out the requirement its import satisfies even
+    /// when the requirement's `E0277` comes first.
+    pub fn collect(&mut self, tcx: Option<TyCtxt<'_>>, diag: &DiagInner) {
+        if let Some((detected, _)) = detect_unimported(tcx, diag) {
+            self.collected.push((detected.trait_did, detected.item));
+        }
+    }
+
     /// Reword the first `E0277` on the generated `__Context__` that a `#[cgp_impl]` provider gets
     /// for each requirement its provider trait places on the context and the provider does not
     /// declare, naming the provider trait, the provider, and each declaration, and drop the rest.
     /// An abstract type among them that the provider uses without importing is reported as that use
     /// instead: through a report [`unimported_abstract_type`](Self::unimported_abstract_type)
-    /// already made, or by converting the name-resolution `E0425` of a bare use in `buffer`. The
-    /// caret moves to the macro's call site, without rustc's note that the error originates in the
-    /// macro.
+    /// already made or [`collect`](Self::collect) found, or by converting the name-resolution
+    /// `E0425` of a bare use in `buffer`. The caret moves to the macro's call site, without rustc's
+    /// note that the error originates in the macro.
     pub fn requirement(
         &mut self,
         detected: DetectedUndeclaredRequirement,
@@ -119,6 +113,7 @@ impl UnimportedStage {
                 self.reported
                     .iter()
                     .any(|report| report.trait_did == trait_did && report.item == impl_did)
+                    || self.collected.contains(&(trait_did, impl_did))
                     || self.convert_unresolved_abstract_type(
                         buffer,
                         &type_name,
@@ -201,6 +196,33 @@ impl UnimportedStage {
         });
         true
     }
+}
+
+/// The abstract type `diag` reports as used without its `#[use_type(…)]` import, with the use's
+/// caret: an `E0220` on the generated context, whose type and context are read from the
+/// diagnostic's arguments, since its main message is a Fluent one, confirmed by
+/// [`detect::detect_unimported_abstract_type`].
+fn detect_unimported(
+    tcx: Option<TyCtxt<'_>>,
+    diag: &DiagInner,
+) -> Option<(DetectedUnimportedAbstractType, Span)> {
+    if diag.code != Some(E0220) {
+        return None;
+    }
+    let arg = |name: &str| match diag.args.get(name) {
+        Some(DiagArgValue::Str(value)) => Some(value.to_string()),
+        _ => None,
+    };
+    if arg("assoc_kind").as_deref() != Some("type") {
+        return None;
+    }
+    let (type_name, qself, primary_span) = (
+        arg("assoc_ident")?,
+        arg("qself")?,
+        diag.span.primary_span()?,
+    );
+    let detected = detect::detect_unimported_abstract_type(tcx?, primary_span, &type_name, &qself)?;
+    Some((detected, primary_span))
 }
 
 /// Recognize `diag` as a requirement a provider trait places on the context that a `#[cgp_impl]`

@@ -1,4 +1,4 @@
-//! Rendering the whole buffer, in arrival order.
+//! Rendering the whole buffer, in the order the flush sorted it into.
 
 use std::collections::{HashMap, HashSet};
 
@@ -12,7 +12,7 @@ use crate::emitter::repeats::merge_repeats;
 
 /// The coalescible resolutions of a buffer, grouped by the root causes they share.
 pub struct CoalescedGroups {
-    /// Each group's members, as buffer indices in arrival order.
+    /// Each group's members, as buffer indices in buffer order.
     pub groups: Vec<Vec<usize>>,
     /// The group of each coalescible entry, by its buffer index.
     pub group_of: HashMap<usize, usize>,
@@ -38,7 +38,7 @@ pub fn render(
     to_emit
 }
 
-/// The coalescible entries in arrival order, grouped by the root causes they share. Grouping on
+/// The coalescible entries in buffer order, grouped by the root causes they share. Grouping on
 /// shared causes rather than on one whole-failure key keeps a single mistake in a single block: the
 /// depths it surfaces at each see a different subset of its causes, so no two of them ever carry
 /// equal keys (see [`group_by_shared_cause`]).
@@ -70,7 +70,7 @@ pub fn coalesced_groups(buffer: &[BufEntry]) -> CoalescedGroups {
     CoalescedGroups { groups, group_of }
 }
 
-/// Each buffered entry as the diagnostic to emit, in arrival order: a plain entry as it stands, a
+/// Each buffered entry as the diagnostic to emit, in buffer order: a plain entry as it stands, a
 /// resolution with its note rendered, and a group of several resolutions as one merged block at its
 /// first member's position. The subtrees drawn so far are threaded through every block in emission
 /// order, so a later one truncates at what an earlier one already showed; this is why notes are

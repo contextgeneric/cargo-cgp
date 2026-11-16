@@ -21,6 +21,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_middle::util::Providers;
 use rustc_session::Session;
 
+use crate::emitter::order::sort_canonically;
 use crate::emitter::output::lock_output;
 
 /// The most batches the processing takes from the queue. Each batch after the first holds the
@@ -88,10 +89,13 @@ pub fn override_analysis(_session: &Session, providers: &mut Providers) {
 ///
 /// `analysis` ends a failing crate by raising a `FatalErrorMarker` itself once type checking has
 /// reported an error, so the wrapper catches that unwind, transforms the queue while the compiler
-/// is still usable, and resumes it. The emitter reads the queue once before transforming any of it
-/// ([`DeferredTarget::prepare`]). Any other unwind is a crash: the panic hook has printed the
-/// buffer and the queue already, so it resumes at once. An unwind out of the processing, such as a
-/// fatal error from a query a transform forced, is resumed in turn once the queue is buffered.
+/// is still usable, and resumes it. Each batch is taken in the canonical order
+/// ([`sort_canonically`]), so the decisions that keep the first of several reports, such as the
+/// de-duplication ledger's, do not depend on the order rustc's threads emitted them in. The emitter
+/// reads the first batch once before transforming any of it ([`DeferredTarget::prepare`]). Any
+/// other unwind is a crash: the panic hook has printed the buffer and the queue already, so it
+/// resumes at once. An unwind out of the processing, such as a fatal error from a query a transform
+/// forced, is resumed in turn once the queue is buffered.
 fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
     let original = *ORIGINAL_ANALYSIS
         .get()
@@ -111,13 +115,15 @@ fn analysis_then_transform(tcx: TyCtxt<'_>, key: ()) {
 
     // A query a transform forces may emit; that diagnostic finds the emitter locked and is queued,
     // to be taken in the next batch.
+    let source_map = tcx.sess.source_map();
+    let take_ordered = || sort_canonically(take_queued(), |diag| diag, source_map);
     let stopped = {
         let mut target = lock_output(&target);
-        let mut first = Some(take_queued());
+        let mut first = Some(take_ordered());
         if let Some(first) = &first {
             target.prepare(first);
         }
-        let take = || first.take().unwrap_or_else(take_queued);
+        let take = || first.take().unwrap_or_else(take_ordered);
         drain_queue(take, MAX_ROUNDS, |diag, handling| match handling {
             Handling::Transform => target.transform(diag),
             Handling::KeepUntransformed => target.keep_untransformed(diag),

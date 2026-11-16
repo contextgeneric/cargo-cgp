@@ -1,3 +1,11 @@
+warning: unused import: `GreeterComponent`
+  --> src/main.rs:27:43
+   |
+27 |     use crate::components::{Greeter as G, GreeterComponent};
+   |                                           ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
 error[E0425]: [CGP-E070] the header derives the component `GComponent` from the trait name `G`, but the component of `Greeter` is `GreeterComponent`
   --> src/main.rs:30:10
    |
@@ -45,13 +53,5 @@ help: name the component in the attribute
    |
 55 |     #[cgp_new_provider(GreeterComponent)]
    |                       ++++++++++++++++++
-
-warning: unused import: `GreeterComponent`
-  --> src/main.rs:27:43
-   |
-27 |     use crate::components::{Greeter as G, GreeterComponent};
-   |                                           ^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
 For more information about this error, try `rustc --explain E0425`.

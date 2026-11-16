@@ -1,19 +1,3 @@
-error[E0107]: missing generics for struct `Vec`
-   --> src/main.rs:29:21
-    |
- 29 | pub fn unrelated(_: Vec) {}
-    |                     ^^^ expected at least 1 generic argument
-    |
-note: struct defined here, with at least 1 generic parameter: `T`
-   --> $SYSROOT/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs:448:12
-    |
-448 | pub struct Vec<T, #[stable(feature = "allocator_api", since = "1.100.0")] A: Allocator = Global> {
-    |            ^^^ -
-help: add missing generic argument
-    |
- 29 | pub fn unrelated(_: Vec<T>) {}
-    |                        +++
-
 error[E0308]: mismatched types
    --> src/main.rs:24:13
     |
@@ -40,6 +24,22 @@ help: consider constraining the associated type `<__Context__ as cgp::prelude::H
     |
  21 | #[use_type(HasErrorType<Error = String>.Error)]
     |                        ++++++++++++++++
+
+error[E0107]: missing generics for struct `Vec`
+   --> src/main.rs:29:21
+    |
+ 29 | pub fn unrelated(_: Vec) {}
+    |                     ^^^ expected at least 1 generic argument
+    |
+note: struct defined here, with at least 1 generic parameter: `T`
+   --> $SYSROOT/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs:448:12
+    |
+448 | pub struct Vec<T, #[stable(feature = "allocator_api", since = "1.100.0")] A: Allocator = Global> {
+    |            ^^^ -
+help: add missing generic argument
+    |
+ 29 | pub fn unrelated(_: Vec<T>) {}
+    |                        +++
 
 Some errors have detailed explanations: E0107, E0308.
 For more information about an error, try `rustc --explain E0107`.
