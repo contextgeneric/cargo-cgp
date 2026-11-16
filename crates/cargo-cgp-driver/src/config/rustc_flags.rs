@@ -45,13 +45,14 @@ pub const VERBOSE_SHORT_FLAG: &str = "-v";
 /// compilation in place of any thread count the invocation carries.
 ///
 /// From `nightly-2026-11-14`, rustc type-checks on several threads unless told otherwise, so
-/// diagnostics from different items arrive in a different order on each run. The emitter transforms
-/// each diagnostic as it arrives, and its choices, such as which re-report of one failure it keeps,
-/// follow that order; under threads it also re-enters rustc's diagnostic lock, which then blocks
-/// rather than panics. One thread keeps the output identical between runs and the emitter on the
-/// path it was built for. Unlike the other injected flags, a user's own thread count does not win,
-/// since a `-Z threads=8` set in a cargo configuration for every build would bring those hazards to
-/// the check: [`THREAD_COUNT_OPTIONS`] lists the spellings removed first.
+/// diagnostics from different items arrive in a different order on each run. The emitter processes
+/// the queue of `analysis` in arrival order, so some of its choices, such as which re-report of one
+/// failure it keeps, follow that order; and a diagnostic it transforms outside `analysis` runs
+/// under rustc's diagnostic lock, which under threads blocks on re-entry rather than panicking. One
+/// thread keeps the output identical between runs. Unlike the other injected flags, a user's own
+/// thread count does not win, since a `-Z threads=8` set in a cargo configuration for every build
+/// would bring those hazards to the check: [`THREAD_COUNT_OPTIONS`] lists the spellings removed
+/// first.
 pub const THREADS_FLAG: &str = "-Zthreads=1";
 
 /// The options that set the front end's thread count, each removed from the invocation before
